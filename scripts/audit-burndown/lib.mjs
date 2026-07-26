@@ -25,15 +25,77 @@ export function findingPriority(title) {
   return match ? Number(match[1]) : null;
 }
 
-// The implementer reports the sha of the commit it made, but that field is
-// optional in its schema — a success=false return has no commit to point at — so
-// a model that finished the whole job can still omit it, and treating the gap as
-// failure throws away the most expensive work the driver does. Trust git over
-// the envelope: HEAD past the base means it committed, whatever it remembered to
-// report. An unmoved HEAD still yields '' so a genuine no-op defers as before.
+// The implementer reports the sha of the commit it made. Even with a required
+// schema field, a failed call or legacy runner envelope can omit it, and treating
+// the gap as failure throws away the most expensive work the driver does. Trust
+// git over the envelope: HEAD past the base means it committed, whatever it
+// remembered to report. An unmoved HEAD still yields '' so a genuine no-op
+// defers as before.
 export function resolveImplSha({ reported, head, baseSha }) {
   if (reported) return reported;
   return head && head !== baseSha ? head : '';
+}
+
+export function implementationCommitMessage(title, round = 0) {
+  const plainTitle =
+    String(title ?? '')
+      .replace(/^(?:\[[^\]]+\])+\s*/, '')
+      .trim() || 'apply verified finding';
+  const subject = round
+    ? `fix(audit): address review round ${round} for ${plainTitle}`
+    : `fix(audit): ${plainTitle}`;
+  return `${subject}\n\nAudit: ${title}`;
+}
+
+const auditCommitTitle = (message) => {
+  const lines = String(message ?? '').split(/\r?\n/);
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    if (lines[index].startsWith('Audit: ')) return lines[index].slice('Audit: '.length).trim();
+  }
+  return '';
+};
+
+// A clean `Audit:` commit is still provisional while its exact backlog heading
+// remains. The approved amend removes that heading, so git plus AUDIT.md can
+// distinguish interrupted gate/review rounds without disposable run state.
+export function incompleteAuditCommitPlan({ headSha, auditBody, commitAt }) {
+  if (!headSha || typeof commitAt !== 'function') return null;
+
+  const headTitle = auditCommitTitle(commitAt(headSha)?.message);
+  const pendingHeading = `### ${headTitle}`;
+  if (
+    !headTitle ||
+    !String(auditBody ?? '')
+      .split(/\r?\n/)
+      .includes(pendingHeading)
+  )
+    return null;
+
+  let sha = headSha;
+  let baseSha = headSha;
+  let count = 0;
+  const visited = new Set();
+
+  while (sha && !visited.has(sha)) {
+    visited.add(sha);
+    const commit = commitAt(sha);
+    if (auditCommitTitle(commit?.message) !== headTitle) break;
+    if (!commit?.parentSha) return null;
+    baseSha = commit.parentSha;
+    count += 1;
+    sha = commit.parentSha;
+  }
+
+  return count ? { title: headTitle, baseSha, count } : null;
+}
+
+export function protectedImplementationPaths(paths, auditPath = auditFile()) {
+  return paths.filter(
+    (path) =>
+      path === auditPath ||
+      path === 'docs/AUDIT-DEFERRED.md' ||
+      path.startsWith('docs/audit-deferred/')
+  );
 }
 
 // Every env knob that changes how a run behaves, and is therefore part of that
@@ -47,6 +109,7 @@ export function resolveImplSha({ reported, head, baseSha }) {
 // get them.
 export const LAUNCH_KNOBS = [
   'RESUME',
+  'AGENT_RUNNER',
   'PUSH_EVERY',
   'BRANCH',
   'AUDIT_FILE',
@@ -220,6 +283,25 @@ export const gitOut = (...args) => (git(...args).stdout ?? '').trim();
 // through the shell.
 export function shellOk(command) {
   return spawnSync(command, { shell: true, stdio: 'ignore', maxBuffer: MAX_BUFFER }).status === 0;
+}
+
+export function shellResult(command) {
+  return spawnSync(command, {
+    shell: true,
+    encoding: 'utf8',
+    maxBuffer: MAX_BUFFER,
+  });
+}
+
+export function commandFailureOutput(result, maxLength = 6000) {
+  const ansiPattern = new RegExp(`${String.fromCharCode(27)}\\[[0-?]*[ -/]*[@-~]`, 'g');
+  const output = [result.stdout, result.stderr]
+    .filter(Boolean)
+    .join('\n')
+    .replace(ansiPattern, '')
+    .trim();
+  if (!output) return `command exited ${result.status ?? 'without a status'}`;
+  return output.length <= maxLength ? output : `…${output.slice(-maxLength)}`;
 }
 
 // ---- docs/AUDIT.md parsing --------------------------------------------------

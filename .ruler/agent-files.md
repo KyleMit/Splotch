@@ -9,16 +9,23 @@ ADR-0058.
   nested `<dir>/.ruler/AGENTS.md` holds that directory's orientation and generates the sibling
   `<dir>/CLAUDE.md` + `<dir>/AGENTS.md`.
 * Skills are authored in `.ruler/skills/<name>/SKILL.md` and copied verbatim to `.claude/skills/`
-  and `.agents/skills/` — including helper files (`driver.mjs`, extra `.md` references). When you
-  delete a skill from `.ruler/skills/`, the next apply deletes the generated copies; commit those
-  deletions too.
+  and `.agents/skills/` — including helper files (`driver.mjs`, extra `.md` references).
+* A skill whose implementation genuinely differs by runner is absent from the shared tree. Its
+  complete, independent packages live in `.ruler/skill-forks/<runner>/skills/<name>/`.
+  `scripts/apply-ruler-skill-forks.mjs` replaces that whole generated skill directory after Ruler's
+  shared pass (`claude` → `.claude`, `codex` → `.agents`). It rejects a name that also exists under
+  `.ruler/skills/` or lacks a package for either configured runner, preventing either fork from
+  inheriting shared implementation files or disappearing from one agent. Markdown fork sources end
+  in `.template`; the suffix is removed at the destination and keeps Ruler's recursive rule loader
+  from concatenating them into root instructions.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md` and mirrored to `.claude/skill-notes/`
-  and `.agents/skill-notes/` by `scripts/mirror-skill-notes.mjs`, which the apply runs after ruler.
-  ruler itself only knows how to copy skills, and these are deliberately *not* skills — see below.
-  Deleting a note deletes both copies on the next apply.
-* `npm run ruler:apply` regenerates everything and dprint-formats the output. `npm run ruler:check`
-  re-applies and fails if anything changed — the CI drift gate. `npm run ruler:dry-run` previews
-  what an apply would regenerate without writing.
+  and `.agents/skill-notes/` by `scripts/mirror-skill-notes.mjs`. A forked skill's independent note
+  instead lives under `.ruler/skill-forks/<runner>/skill-notes/` and must be absent from the shared
+  note tree. Notes are deliberately *not* part of a skill — see below.
+* `npm run ruler:apply` runs Ruler, mirrors shared skill notes, applies complete skill forks, and
+  dprint-formats the output. `npm run ruler:check` repeats that pipeline and fails if anything
+  changed — the CI drift gate. `npm run ruler:dry-run` previews Ruler's shared output only; it does
+  not preview the post-apply forks.
 
 **If asked to update agent instructions, docs, or skills: change `.ruler/**` sources, never the
 generated files.** A generated file carries a `<!-- Source: ... -->` marker pointing back to its
@@ -28,9 +35,10 @@ Not generated — edit in place: `.claude/rules/` (path-scoped rules), `.claude/
 `.claude/settings.json`, `.claude/audit-conventions.md`, `.claude/cloud/`, and everything under
 `docs/`.
 
-`.ruler/skill-notes/` holds the **design history and open questions** for a skill — why it is shaped
-the way it is, which failures earned which rule, what was rejected, what is still unvalidated. It is
-deliberately *not* linked from any `SKILL.md`: a skill pays context for everything it references,
-and this material is for someone working on the skill, not running it. It also lives beside the
-skills rather than inside `.ruler/skills/<name>/`, which would file a skill's design history inside
-the very skill it is kept out of. See its `README.md` for the convention.
+`.ruler/skill-notes/` and the fork-specific `skill-notes/` directories hold the **design history and
+open questions** for a skill — why it is shaped the way it is, which failures earned which rule,
+what was rejected, what is still unvalidated. They are deliberately *not* linked from any
+`SKILL.md`: a skill pays context for everything it references, and this material is for someone
+working on the skill, not running it. Notes live beside skills rather than inside a skill package,
+which would file design history inside the very skill it is kept out of. See
+`.ruler/skill-notes/README.md` for the convention.

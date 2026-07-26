@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   briefIsStale,
+  commandFailureOutput,
   countEntries,
   DEFAULT_MAX_ISSUES,
   deferralReason,
@@ -20,7 +21,10 @@ import {
   draftPatchPath,
   findingPriority,
   getEntry,
+  incompleteAuditCommitPlan,
+  implementationCommitMessage,
   launchCommand,
+  protectedImplementationPaths,
   renderDeferralNotes,
   resolveImplSha,
 } from '../audit-burndown/lib.mjs';
@@ -256,6 +260,146 @@ describe('resolveImplSha', () => {
   });
 });
 
+describe('Codex driver-owned commits', () => {
+  it('keeps the finding identity in the deterministic commit message', () => {
+    const title = '[P3][maintainability] Name the shared ring width';
+    expect(implementationCommitMessage(title)).toBe(
+      `fix(audit): Name the shared ring width\n\nAudit: ${title}`
+    );
+    expect(implementationCommitMessage(title, 2)).toContain(
+      'fix(audit): address review round 2 for Name the shared ring width'
+    );
+  });
+
+  it('blocks model edits to driver-owned audit state while allowing source changes', () => {
+    expect(
+      protectedImplementationPaths([
+        'web/src/lib/example.ts',
+        'docs/AUDIT.md',
+        'docs/AUDIT-DEFERRED.md',
+        'docs/audit-deferred/rejected.patch',
+      ])
+    ).toEqual(['docs/AUDIT.md', 'docs/AUDIT-DEFERRED.md', 'docs/audit-deferred/rejected.patch']);
+  });
+});
+
+describe('incomplete audit commit recovery', () => {
+  const title = '[P3][maintainability] Name the shared ring width';
+  const otherTitle = '[P4][readability] Rename the palette helper';
+  const baseSha = 'a'.repeat(40);
+  const initialSha = 'b'.repeat(40);
+  const roundOneSha = 'c'.repeat(40);
+  const roundTwoSha = 'd'.repeat(40);
+  const previousSha = 'e'.repeat(40);
+  const pendingAudit = `${FIXTURE}\n### ${title}\n\n#### Problem\n\nRepeated magic number.\n`;
+
+  const plan = (headSha, commits, auditBody = pendingAudit) =>
+    incompleteAuditCommitPlan({
+      headSha,
+      auditBody,
+      commitAt: (sha) => commits.get(sha),
+    });
+
+  it('rewinds a clean initial implementation whose exact finding remains pending', () => {
+    const commits = new Map([
+      [
+        initialSha,
+        {
+          message: implementationCommitMessage(title),
+          parentSha: baseSha,
+        },
+      ],
+      [baseSha, { message: 'chore: previous work', parentSha: previousSha }],
+    ]);
+
+    expect(plan(initialSha, commits)).toEqual({ title, baseSha, count: 1 });
+  });
+
+  it('rewinds the complete contiguous repair chain to the finding base', () => {
+    const commits = new Map([
+      [
+        roundTwoSha,
+        {
+          message: implementationCommitMessage(title, 2),
+          parentSha: roundOneSha,
+        },
+      ],
+      [
+        roundOneSha,
+        {
+          message: implementationCommitMessage(title, 1),
+          parentSha: initialSha,
+        },
+      ],
+      [
+        initialSha,
+        {
+          message: implementationCommitMessage(title),
+          parentSha: baseSha,
+        },
+      ],
+      [
+        baseSha,
+        {
+          message: implementationCommitMessage(otherTitle),
+          parentSha: previousSha,
+        },
+      ],
+    ]);
+
+    expect(plan(roundTwoSha, commits)).toEqual({ title, baseSha, count: 3 });
+  });
+
+  it('preserves an approved commit after its exact audit entry was removed', () => {
+    const commits = new Map([
+      [
+        initialSha,
+        {
+          message: implementationCommitMessage(title),
+          parentSha: baseSha,
+        },
+      ],
+    ]);
+
+    expect(plan(initialSha, commits, FIXTURE)).toBeNull();
+  });
+
+  it('does not confuse a title mentioned in prose with a pending entry heading', () => {
+    const commits = new Map([
+      [
+        initialSha,
+        {
+          message: implementationCommitMessage(title),
+          parentSha: baseSha,
+        },
+      ],
+    ]);
+
+    expect(plan(initialSha, commits, `${FIXTURE}\nSee ${title} for context.\n`)).toBeNull();
+  });
+});
+
+describe('gate failure output', () => {
+  it('strips terminal color and keeps the actionable tail within the prompt budget', () => {
+    const output = commandFailureOutput(
+      {
+        status: 1,
+        stdout: `prefix\n\u001b[31mExpected ring width 4.5px\u001b[0m\n${'x'.repeat(40)}`,
+        stderr: 'trace tail',
+      },
+      60
+    );
+    expect(output).not.toContain('\u001b');
+    expect(output).toContain('trace tail');
+    expect(output.length).toBe(61);
+    expect(output.startsWith('…')).toBe(true);
+  });
+
+  it('reports an exit status when a command produced no text', () => {
+    expect(commandFailureOutput({ status: 2, stdout: '', stderr: '' })).toBe('command exited 2');
+  });
+});
+
 // The reason lands in a docs/AUDIT-DEFERRED.md commit message that someone
 // reads months later to decide whether to re-stage the finding. Attributing a
 // tooling failure to the reviewer sends them hunting a quality problem that
@@ -348,6 +492,10 @@ describe('launchCommand', () => {
     expect(launchCommand({ COMMENT_STORE: 'docs/PENDING.jsonl' })).toContain(
       "COMMENT_STORE='docs/PENDING.jsonl'"
     );
+  });
+
+  it('records the agent runner so a Codex run never resumes through Claude', () => {
+    expect(launchCommand({ AGENT_RUNNER: 'codex' })).toContain("AGENT_RUNNER='codex'");
   });
 
   it('records every non-default knob as a shell-quoted assignment', () => {

@@ -16,6 +16,7 @@
 
 import { appendFileSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parseSavedAgentOutput } from './agent-runner.mjs';
 import { chdirRoot, gitOut, LOGS, logLine, WORK } from './lib.mjs';
 import { commitCommentBody, findingProblem } from './comment.mjs';
 
@@ -55,11 +56,8 @@ const writeStore = (records) =>
 
 const structured = (file) => {
   if (!existsSync(file)) return null;
-  try {
-    return JSON.parse(readFileSync(file, 'utf8')).structured_output ?? null;
-  } catch {
-    return null;
-  }
+  const parsed = parseSavedAgentOutput(readFileSync(file, 'utf8'));
+  return Object.keys(parsed.structured ?? {}).length ? parsed.structured : null;
 };
 
 // run.log interleaves `iterNNNN  (N remaining)  <title>` with a later

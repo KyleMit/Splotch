@@ -211,6 +211,6 @@ ios/local.xcconfig
 .scrapbook-scratch/
 
 # Working state of the scripted audit burndown (npm run audit:burndown, the
-# burn-down-audits skill): per-call claude JSON envelopes, run log, completed
-# list, PR number, STOP sentinel. The durable state is docs/AUDIT.md + git.
+# burn-down-audits skill): per-call Claude JSON / Codex JSONL envelopes, run
+# log, completed list, schemas, STOP sentinel. Durable state is docs/AUDIT.md + git.
 .audit-work/

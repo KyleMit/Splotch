@@ -1,23 +1,21 @@
-// burndown.mjs — drive the audit burndown with one `claude -p` session per
-// role per issue (verify → implement → adversarial review → fix). This script
-// is the orchestrator; no subagents, no shared context, no compaction. State
-// lives in docs/AUDIT.md and git, so a crash costs one iteration, not the run.
+// burndown.mjs — drive the audit burndown with one isolated agent session per
+// role per issue (verify → implement → adversarial review → fix). Claude Code
+// and Codex are runner backends; this script is the orchestrator. State lives
+// in docs/AUDIT.md and git, so a crash costs one iteration, not the run.
 //
 //   npm run audit:burndown                       # canary (MAX_ISSUES=5)
 //   MAX_ISSUES=600 npm run audit:burndown        # full run
 //
 // Graceful stop:  touch .audit-work/STOP
-// Hard stop:      pkill -TERM -f 'claude -p'
+// Hard stop:      pkill -TERM -f 'claude -p|codex exec'
 //
 // Three design points worth knowing before editing (see the burn-down-audits
 // skill for the full architecture):
-// * `--resume` is the handoff: the driver MINTS each role's session id with
-//   `--session-id` and passes the implementer's back on fix rounds, so it
-//   resumes with its full history instead of re-deriving the change from review
-//   text. Minting rather than reading `session_id` back off the envelope is
-//   load-bearing — see claudeStep.
-// * `--json-schema` replaces prose parsing: verdicts, SHAs, and review
-//   statuses come back typed in .structured_output.
+// * The runner's session id is the handoff: the driver passes the
+//   implementer's back on fix rounds, so it resumes with its full history
+//   instead of re-deriving the change from review text.
+// * JSON schemas replace prose parsing: verdicts, SHAs, and review statuses
+//   come back typed regardless of runner.
 // * The driver never talks to GitHub. It commits and pushes; the supervising
 //   agent opens the PR and drains COMMENT_STORE through the GitHub MCP tools.
 
@@ -30,13 +28,14 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
-import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { hasCommand, sleep } from '../lib/utils.mjs';
+import { agentRunnerDefaults, normalizeAgentRunner, runAgentStep } from './agent-runner.mjs';
 import {
   auditFile,
   briefIsStale,
   chdirRoot,
+  commandFailureOutput,
   countEntries,
   DEFAULT_MAX_ISSUES,
   deferralReason,
@@ -49,14 +48,18 @@ import {
   git,
   gitOk,
   gitOut,
+  incompleteAuditCommitPlan,
+  implementationCommitMessage,
   launchCommand,
   logLine,
   LOGS,
   PROMPTS,
+  protectedImplementationPaths,
   renderDeferralNotes,
   resolveImplSha,
   runCmd,
   shellOk,
+  shellResult,
   WORK,
 } from './lib.mjs';
 import { findingProblem } from './comment.mjs';
@@ -70,7 +73,7 @@ const MAX_ISSUES = Number(process.env.MAX_ISSUES ?? DEFAULT_MAX_ISSUES); // cana
 // is reclaimed without warning, so an unpushed commit is a commit at risk: the
 // only durable artifact is what is on origin. Batching existed to amortise a
 // full-suite gate that no longer runs here (see PUSH_TEST_CMD), which leaves
-// nothing to amortise — a push is a second, and a lost hour of Opus work is an
+// nothing to amortise — a push is a second, and a lost hour of model work is an
 // hour. Raise it only if you are pushing somewhere rate-limited.
 const PUSH_EVERY = Number(process.env.PUSH_EVERY ?? 1);
 const BRANCH = process.env.BRANCH ?? 'audit/burndown';
@@ -96,73 +99,32 @@ const PUSH_TEST_CMD = process.env.PUSH_TEST_CMD ?? '';
 // container would matter.
 const COMMENT_STORE = process.env.COMMENT_STORE ?? join(WORK, 'pending-comments.jsonl');
 const MAX_DEFERRALS = Number(process.env.MAX_DEFERRALS ?? 3); // consecutive deferrals before halting
-const RETRIES = Number(process.env.RETRIES ?? 3); // retries for transient claude failures
+const RETRIES = Number(process.env.RETRIES ?? 3); // retries for transient agent failures
 
-// Impl/review are pinned to the explicit Opus 5 id, not the `opus` alias: the
-// alias still resolves to opus-4-8 in this environment, so the pin is what
-// actually moves both roles onto Opus 5 (verify stays on Sonnet 5 — the `sonnet`
-// alias already resolves there). Override with MODEL_* to tier for cost/speed.
-const MODEL_VERIFY = process.env.MODEL_VERIFY ?? 'sonnet';
-const MODEL_IMPL = process.env.MODEL_IMPL ?? 'claude-opus-5';
-const MODEL_IMPL_MINOR = process.env.MODEL_IMPL_MINOR ?? 'sonnet'; // P4/P5 mechanical tail
-const MODEL_REVIEW = process.env.MODEL_REVIEW ?? 'claude-opus-5';
+// The generated runner-specific skills set this explicitly. Claude remains the
+// default for backward compatibility with existing launch commands.
+const AGENT_RUNNER = normalizeAgentRunner(process.env.AGENT_RUNNER);
+const RUNNER_DEFAULTS = agentRunnerDefaults(AGENT_RUNNER);
+const MODEL_VERIFY = process.env.MODEL_VERIFY ?? RUNNER_DEFAULTS.verifyModel;
+const MODEL_IMPL = process.env.MODEL_IMPL ?? RUNNER_DEFAULTS.implementModel;
+const MODEL_IMPL_MINOR = process.env.MODEL_IMPL_MINOR ?? RUNNER_DEFAULTS.minorImplementModel;
+const MODEL_REVIEW = process.env.MODEL_REVIEW ?? RUNNER_DEFAULTS.reviewModel;
 
-const BUDGET_VERIFY = process.env.BUDGET_VERIFY ?? '3.00'; // verify reads a lot of code; $1 capped complex findings and clustered deferrals (2026-07-24 retro)
+// Claude Code enforces these per-call dollar caps. Codex subscription-backed
+// runs have no equivalent CLI switch, so its backend ignores them.
+const BUDGET_VERIFY = process.env.BUDGET_VERIFY ?? '3.00';
 const BUDGET_IMPL = process.env.BUDGET_IMPL ?? '4.00';
-const BUDGET_REVIEW = process.env.BUDGET_REVIEW ?? '3.00'; // $2 capped a P4 review mid-verdict, discarding a sound fix (2026-07-24 retro)
+const BUDGET_REVIEW = process.env.BUDGET_REVIEW ?? '3.00';
 
-// Effort (`claude --effort`) is Opus 5's primary cost/latency control, and it
-// governs ALL tokens — thinking, prose, and tool calls — so a lower level also
-// means fewer tool calls, not just shorter reasoning. Wall-clock, not dollars,
-// is what actually bounds a 600-finding run, which makes this the highest-value
-// knob here. Anthropic's Opus 5 guidance is to use low/medium liberally and
-// step up only where evals show it buys something.
-//   verify  stays mid: an INVALID verdict *deletes a finding permanently*, so
-//           it is the one role whose mistakes are unrecoverable.
-//   impl    stays high: this is where correctness is actually manufactured.
-//   review  runs mid on the documented finding that Opus 5's review accuracy
-//           holds at reduced effort, with the deterministic gates as backstop.
-// Raise review (and verify) to `high` for a run where correctness dominates.
+// Both backends expose reasoning effort. Verify stays medium because an INVALID
+// verdict permanently drops a finding; implementation stays high because it
+// manufactures the change; review stays medium behind deterministic gates.
 const EFFORT_VERIFY = process.env.EFFORT_VERIFY ?? 'medium';
 const EFFORT_IMPL = process.env.EFFORT_IMPL ?? 'high';
 const EFFORT_REVIEW = process.env.EFFORT_REVIEW ?? 'medium';
 
-// ---- tool scopes ------------------------------------------------------------
-// TWO different flags, doing two different jobs — both are needed:
-//   --tools        which tools EXIST for the session (coarse: `Bash`, no args)
-//   --allowedTools which of them run WITHOUT a permission prompt (fine-grained:
-//                  `Bash(git show *)`)
-// --allowedTools alone does not remove a tool, it only pre-approves one. Left to
-// itself every role could still reach `Agent` and `Workflow` and fan out into
-// subagents — and Opus 5 delegates markedly more readily than earlier models, so
-// a role that starts spawning agents burns its whole BUDGET_* before doing any
-// work, and budget caps are already this driver's main deferral source. Each
-// role gets exactly the tools its job needs and nothing else; delegation, web
-// access, and background tasks are simply absent rather than discouraged in
-// prose. Verified: with --tools set, `Agent`/`Workflow`/`WebFetch` do not appear
-// in the session's tool list at all.
-const AVAIL_VERIFY = 'Read,Grep,Glob,Write,Bash';
-const AVAIL_IMPL = 'Read,Edit,Write,Grep,Glob,Bash';
-const AVAIL_REVIEW = 'Read,Grep,Glob,Bash';
-
-// NOTE the space before each '*'. `Bash(git diff *)` prefix-matches correctly;
-// `Bash(git diff*)` would also match `git diff-index`.
-// Also note: acceptEdits auto-approves file writes and common fs commands
-// (mkdir/touch/mv/cp) but NOT other shell commands — npm and git must be listed.
-const TOOLS_VERIFY =
-  'Read,Grep,Glob,Write,Bash(git show *),Bash(git log *),Bash(git rev-parse *),Bash(rg *),Bash(grep *),Bash(mkdir *)';
-const TOOLS_IMPL =
-  'Read,Edit,Write,Grep,Glob,Bash(npm *),Bash(npx *),Bash(node *),Bash(git add *),Bash(git commit *),Bash(git status *),Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git rev-parse *),Bash(rg *),Bash(grep *)';
-// The reviewer deliberately has NO npm/npx: the driver has already run the
-// type-check, unit tests, lint and targeted E2E on this exact commit before the
-// review starts, so a reviewer re-running them can only confirm what is already
-// known — at Opus rates, on the critical path of every finding. Withholding the
-// commands enforces that structurally instead of asking the model nicely.
-const TOOLS_REVIEW =
-  'Read,Grep,Glob,Bash(git show *),Bash(git diff *),Bash(git log *),Bash(git rev-parse *),Bash(rg *),Bash(grep *)';
-
 // ---- structured output schemas ---------------------------------------------
-const SCHEMA_VERIFY = JSON.stringify({
+const SCHEMA_VERIFY = {
   type: 'object',
   properties: {
     verdict: { type: 'string', enum: ['VALID', 'INVALID'] },
@@ -173,91 +135,90 @@ const SCHEMA_VERIFY = JSON.stringify({
     // behavioural surface. The per-finding E2E gate runs exactly these.
     e2e_specs: { type: 'array', items: { type: 'string' } },
   },
-  required: ['verdict', 'reason'],
-});
-const SCHEMA_IMPL = JSON.stringify({
+  required: ['verdict', 'reason', 'brief_path', 'e2e_specs'],
+  additionalProperties: false,
+};
+const SCHEMA_IMPL = {
   type: 'object',
   properties: {
     success: { type: 'boolean' },
     sha: { type: 'string' },
     summary: { type: 'string' },
   },
-  required: ['success', 'summary'],
-});
-const SCHEMA_REVIEW = JSON.stringify({
+  required: ['success', 'sha', 'summary'],
+  additionalProperties: false,
+};
+const SCHEMA_REVIEW = {
   type: 'object',
   properties: {
     status: { type: 'string', enum: ['APPROVED', 'CHANGES_REQUIRED'] },
     findings: { type: 'array', items: { type: 'string' } },
   },
-  required: ['status'],
-});
+  required: ['status', 'findings'],
+  additionalProperties: false,
+};
 
 function halt(message) {
   logLine(`HALT: ${message}`);
   process.exit(1);
 }
 
-// ---- claude invocation with backoff ----------------------------------------
-// Distinguishes a transient failure (network blip, rate limit, overload) from
-// a real answer. WITHOUT this, a 20-minute outage at 2am trips the consecutive
-// deferral limit and you wake to 40 issues done instead of 300.
-// Returns { ok, env, sessionId } where env is the parsed JSON envelope (or {})
-// and sessionId is the id this call ran under ('' on a --resume call, which
-// inherits one).
-//
-// EVERY fresh role call gets a minted `--session-id`, and the resume handle is
-// that minted id — NOT `env.session_id` read back off the envelope. This is not
-// belt-and-braces; it is the only thing that makes the handoff work in a cloud
-// session. Claude Code on the web pins CLAUDE_CODE_SESSION_ID in the container
-// environment, every `claude -p` child inherits it, and all of them then report
-// the SAME session_id and append to ONE transcript file. `--resume <that id>`
-// resolves to whatever wrote to that transcript last — which, at a fix round, is
-// the reviewer that just rejected the work, or even the supervising agent's own
-// tool output. The 2026-07-25 canary confirmed it: both fix rounds resumed the
-// reviewer's leaf, so the implementer was handed the critic's context instead of
-// its own and the blind writer/verifier pairing was silently void. Unsetting the
-// env var does not help; minting the id does.
-//
-// A fresh id per ATTEMPT, not per call: a retry that reused the id of a partial
-// session would collide with it.
-async function claudeStep(tag, args) {
-  let env = {};
-  let sessionId = '';
-  const resuming = args.includes('--resume');
-  for (let attempt = 1; attempt <= RETRIES; attempt++) {
-    const idArgs = [];
-    if (!resuming) {
-      sessionId = randomUUID();
-      idArgs.push('--session-id', sessionId);
-    }
-    const result = runCmd('claude', ['-p', ...args, ...idArgs, '--output-format', 'json']);
-    const out = result.stdout ?? '';
-    writeFileSync(join(LOGS, `${tag}.json`), out);
-    if (result.stderr) appendFileSync(join(LOGS, `${tag}.err`), result.stderr);
+const agentStep = (options) =>
+  runAgentStep({
+    runner: AGENT_RUNNER,
+    retries: RETRIES,
+    root: process.cwd(),
+    workDir: WORK,
+    logsDir: LOGS,
+    runCmd,
+    logLine,
+    sleep,
+    ...options,
+  });
 
-    try {
-      env = out ? JSON.parse(out) : {};
-    } catch {
-      env = {};
-    }
-    if (out && env.is_error !== true && result.status === 0) return { ok: true, env, sessionId };
-
-    const subtype = env.subtype ?? 'no_output';
-    if (subtype === 'error_max_budget_usd' || subtype === 'error_max_turns') {
-      // A cap is a real answer, not a blip. Don't burn retries on it.
-      logLine(`  ${tag} hit a cap (${subtype}) — not retrying`);
-      return { ok: false, env, sessionId };
-    }
-
-    const wait = attempt * attempt * 30;
-    logLine(`  ${tag} attempt ${attempt}/${RETRIES} failed (${subtype}) — backing off ${wait}s`);
-    await sleep(wait * 1000);
-  }
-  return { ok: false, env, sessionId };
+function changedImplementationPaths() {
+  const outputs = [
+    gitOut('diff', '--name-only'),
+    gitOut('diff', '--cached', '--name-only'),
+    gitOut('ls-files', '--others', '--exclude-standard'),
+  ];
+  return [...new Set(outputs.flatMap((output) => output.split('\n').filter(Boolean)))];
 }
 
-const structured = (env) => env.structured_output ?? {};
+function commitCodexImplementation({ title, baseSha, round = 0 }) {
+  if (AGENT_RUNNER !== 'codex' || gitOut('rev-parse', 'HEAD') !== baseSha) return '';
+
+  const paths = changedImplementationPaths();
+  if (paths.length === 0) {
+    logLine('  Codex returned success without worktree changes');
+    return '';
+  }
+
+  const protectedPaths = protectedImplementationPaths(paths);
+  if (protectedPaths.length) {
+    logLine(`  Codex changed protected audit state: ${protectedPaths.join(', ')}`);
+    return '';
+  }
+
+  const add = git('add', '-A', '--', ...paths);
+  if (add.status !== 0) {
+    logLine(
+      `  driver could not stage Codex changes: ${(add.stderr ?? '').trim() || 'git add failed'}`
+    );
+    return '';
+  }
+  const commit = git('commit', '-q', '-m', implementationCommitMessage(title, round));
+  if (commit.status !== 0) {
+    logLine(
+      `  driver could not commit Codex changes: ${(commit.stderr ?? '').trim() || 'git commit failed'}`
+    );
+    return '';
+  }
+
+  const sha = gitOut('rev-parse', 'HEAD');
+  logLine(`  driver committed Codex worktree ${sha.slice(0, 12)}`);
+  return sha;
+}
 
 // ---- deferral ---------------------------------------------------------------
 const DEFERRED_FILE = 'docs/AUDIT-DEFERRED.md';
@@ -331,37 +292,51 @@ function defer(title, why, notes = {}) {
 //
 //   * A red tree comes back to the implementer as a fix round it can still
 //     recover from, instead of discarding a finished finding at the very end.
-//   * The reviewer only ever sees a commit that already passes, so it does not
-//     re-run any of this — it reviews the diff. Re-running was the single
+//   * The reviewer only ever sees a finding range whose head already passes, so
+//     it does not re-run any of this — it reviews the diff. Re-running was the single
 //     largest slice of review wall-clock and bought nothing the driver's own
 //     run doesn't already guarantee (see prompts/reviewer.md).
 //
-// Returns null when green, else { reason, detail }: `reason` is the deferral
-// label a human reads months later in docs/AUDIT-DEFERRED.md, `detail` is what
-// the implementer is told to fix.
+// Returns null when green, else { reason, detail, output }: `reason` is the
+// deferral label a human reads months later in docs/AUDIT-DEFERRED.md;
+// `detail` and the bounded command output are what the implementer gets.
 function gateFailure(baseSha, specs) {
-  if (!shellOk(CHECK_CMD))
-    return { reason: 'fix broke the type-check', detail: `${CHECK_CMD} is red` };
-  if (!shellOk(TEST_CMD))
-    return { reason: 'fix broke the test suite', detail: `${TEST_CMD} is red` };
+  const runGate = (command, reason, detail) => {
+    const result = shellResult(command);
+    return result.status === 0 ? null : { reason, detail, output: commandFailureOutput(result) };
+  };
+
+  const checkFailure = runGate(CHECK_CMD, 'fix broke the type-check', `${CHECK_CMD} is red`);
+  if (checkFailure) return checkFailure;
+
+  const testFailure = runGate(TEST_CMD, 'fix broke the test suite', `${TEST_CMD} is red`);
+  if (testFailure) return testFailure;
+
   // Targeted E2E — only for findings the verifier flagged as touching a runtime
   // surface. Catches a behavioural regression attributed to this one finding,
   // without paying full-suite E2E per finding; the batch push still runs it all.
-  if (specs.length && !shellOk(`${E2E_CMD} ${specs.join(' ')}`))
-    return {
-      reason: 'fix broke a targeted E2E spec',
-      detail: `the Playwright spec(s) ${specs.join(' ')} are red`,
-    };
+  if (specs.length) {
+    const e2eFailure = runGate(
+      `${E2E_CMD} ${specs.join(' ')}`,
+      'fix broke a targeted E2E spec',
+      `the Playwright spec(s) ${specs.join(' ')} are red`
+    );
+    if (e2eFailure) return e2eFailure;
+  }
+
   // Lint is a separate axis from the type-check: a fix can satisfy CHECK_CMD yet
   // ship a stray `any` or a raw Map in a .svelte.ts and redden CI's Quality job.
   const lintable = gitOut('diff', '--name-only', baseSha, 'HEAD')
     .split('\n')
     .filter((f) => /\.(ts|svelte|mjs|cjs|js)$/.test(f));
-  if (lintable.length && !shellOk(`${LINT_CMD} ${lintable.join(' ')}`))
-    return {
-      reason: 'fix introduced a lint violation',
-      detail: `${LINT_CMD} is red on ${lintable.join(' ')}`,
-    };
+  if (lintable.length) {
+    const lintFailure = runGate(
+      `${LINT_CMD} ${lintable.join(' ')}`,
+      'fix introduced a lint violation',
+      `${LINT_CMD} is red on ${lintable.join(' ')}`
+    );
+    if (lintFailure) return lintFailure;
+  }
   return null;
 }
 
@@ -373,7 +348,7 @@ function gateFailure(baseSha, specs) {
 // crashed run" in the burn-down-audits skill.
 const RESUME = process.env.RESUME === '1' || process.env.RESUME === 'true';
 
-if (!hasCommand('claude')) halt('missing dependency: claude');
+if (!hasCommand(RUNNER_DEFAULTS.binary)) halt(`missing dependency: ${RUNNER_DEFAULTS.binary}`);
 
 // Adopt the branch. A fresh clone has origin/BRANCH but no local BRANCH:
 // `git switch -c BRANCH` there would fork a new branch off the current HEAD
@@ -402,7 +377,32 @@ if (hasRemote && !gitOk('merge', '--ff-only', `origin/${BRANCH}`))
 if (!gitOk('diff', '--quiet') || !gitOk('diff', '--cached', '--quiet')) {
   if (!RESUME) halt('working tree is dirty (set RESUME=1 to discard crash residue and resume)');
   logLine('  RESUME: dirty tree from an interrupted run — resetting to HEAD');
-  git('reset', '-q', '--hard', 'HEAD');
+  if (git('reset', '-q', '--hard', 'HEAD').status !== 0) halt('could not reset crash residue');
+}
+if (RESUME) {
+  const headSha = gitOut('rev-parse', 'HEAD');
+  const rollback = incompleteAuditCommitPlan({
+    headSha,
+    auditBody: existsSync(auditFile()) ? readFileSync(auditFile(), 'utf8') : '',
+    commitAt: (sha) => ({
+      message: gitOut('show', '-s', '--format=%B', sha),
+      parentSha: gitOut('rev-parse', `${sha}^`),
+    }),
+  });
+
+  if (rollback) {
+    if (hasRemote && gitOk('merge-base', '--is-ancestor', headSha, `origin/${BRANCH}`))
+      halt(
+        `incomplete implementation for ${rollback.title} is already published; refusing to rewrite origin/${BRANCH}`
+      );
+    logLine(
+      `  RESUME: rewinding ${rollback.count} incomplete implementation commit${
+        rollback.count === 1 ? '' : 's'
+      } for ${rollback.title}`
+    );
+    if (git('reset', '-q', '--hard', rollback.baseSha).status !== 0)
+      halt(`could not rewind incomplete implementation for ${rollback.title}`);
+  }
 }
 if (RESUME) rmSync(join(WORK, 'STOP'), { force: true }); // a graceful stop leaves STOP behind
 
@@ -446,8 +446,8 @@ function pushBatch({ final = false } = {}) {
 // Nothing else can recover it: overnight.mjs launches via `env VAR=… node …`, and
 // `env` execs node, so the overrides live in the environment and never reach argv,
 // leaving nothing for `ps` to scrape. This file is what
-// .claude/hooks/precompact-burndown-snapshot.sh reads, and it is the one fact a
-// post-compaction session genuinely cannot re-derive.
+// the Claude compaction hook and runner-specific durable checkpoints read, and
+// it is the one fact a later supervising session genuinely cannot re-derive.
 //
 // It is written HERE, below every halt() gate, and not up in preflight: halt()
 // exits without restoring the file, so a launch that dies on a missing binary, a
@@ -459,7 +459,7 @@ function pushBatch({ final = false } = {}) {
 writeFileSync(join(WORK, 'launch-command'), `${launchCommand(process.env, MAX_ISSUES)}\n`);
 writeFileSync(join(WORK, 'launch-pid'), `${process.pid}\n`);
 
-logLine(`starting — target ${MAX_ISSUES} issues on ${BRANCH}`);
+logLine(`starting — target ${MAX_ISSUES} issues on ${BRANCH} via ${AGENT_RUNNER}`);
 
 // =============================================================================
 while (done < MAX_ISSUES) {
@@ -485,35 +485,25 @@ while (done < MAX_ISSUES) {
   logLine(`${tag}  (${remaining} remaining)  ${title}`);
 
   // ---- 2. VERIFY ------------------------------------------------------------
-  const verify = await claudeStep(`${tag}.verify`, [
-    'Verify the finding in .audit-work/current-issue.md against HEAD.',
-    '--append-system-prompt-file',
-    join(PROMPTS, 'verifier.md'),
-    '--model',
-    MODEL_VERIFY,
-    '--effort',
-    EFFORT_VERIFY,
-    '--tools',
-    AVAIL_VERIFY,
-    '--allowedTools',
-    TOOLS_VERIFY,
-    '--permission-mode',
-    'acceptEdits',
-    '--json-schema',
-    SCHEMA_VERIFY,
-    '--max-turns',
-    '40',
-    '--max-budget-usd',
-    BUDGET_VERIFY,
-  ]);
+  const verify = await agentStep({
+    tag: `${tag}.verify`,
+    prompt: 'Verify the finding in .audit-work/current-issue.md against HEAD.',
+    systemPromptFile: join(PROMPTS, 'verifier.md'),
+    model: MODEL_VERIFY,
+    effort: EFFORT_VERIFY,
+    role: 'verify',
+    schema: SCHEMA_VERIFY,
+    maxTurns: 40,
+    budget: BUDGET_VERIFY,
+  });
   if (!verify.ok) {
     defer(title, 'verifier unavailable');
     continue;
   }
-  const verdict = structured(verify.env).verdict ?? 'ERROR';
+  const verdict = verify.structured.verdict ?? 'ERROR';
 
   if (verdict === 'INVALID') {
-    const reason = structured(verify.env).reason ?? 'no reason given';
+    const reason = verify.structured.reason ?? 'no reason given';
     logLine(`  INVALID: ${reason}`);
     deleteEntryByTitle(title);
     git('add', 'docs/AUDIT.md');
@@ -553,7 +543,7 @@ while (done < MAX_ISSUES) {
   // Targeted E2E for a UI-touching finding (see the per-finding E2E gate in
   // close-out). Sanitize hard: these strings are LLM-authored and reach a
   // shell, so keep only spec-path-shaped values and drop anything else.
-  const e2eSpecs = (structured(verify.env).e2e_specs ?? []).filter(
+  const e2eSpecs = (verify.structured.e2e_specs ?? []).filter(
     (spec) => typeof spec === 'string' && /^[\w./-]+$/.test(spec)
   );
   if (e2eSpecs.length) logLine(`  E2E gate: ${e2eSpecs.join(' ')}`);
@@ -569,47 +559,41 @@ while (done < MAX_ISSUES) {
   const implModel = priority !== null && priority >= 4 ? MODEL_IMPL_MINOR : MODEL_IMPL;
   if (implModel !== MODEL_IMPL) logLine(`  impl model: ${implModel} (P${priority})`);
 
-  let impl = await claudeStep(`${tag}.impl`, [
-    'Implement the fix described in .audit-work/current-brief.md.',
-    '--append-system-prompt-file',
-    join(PROMPTS, 'implementer.md'),
-    '--model',
-    implModel,
-    '--effort',
-    EFFORT_IMPL,
-    '--tools',
-    AVAIL_IMPL,
-    '--allowedTools',
-    TOOLS_IMPL,
-    '--permission-mode',
-    'acceptEdits',
-    '--json-schema',
-    SCHEMA_IMPL,
-    '--max-turns',
-    '80',
-    '--max-budget-usd',
-    BUDGET_IMPL,
-  ]);
+  let impl = await agentStep({
+    tag: `${tag}.impl`,
+    prompt: 'Implement the fix described in .audit-work/current-brief.md.',
+    systemPromptFile: join(PROMPTS, 'implementer.md'),
+    model: implModel,
+    effort: EFFORT_IMPL,
+    role: 'implement',
+    schema: SCHEMA_IMPL,
+    maxTurns: 80,
+    budget: BUDGET_IMPL,
+  });
 
-  // The resume handle is the id the driver MINTED for this call, not the one the
-  // envelope reports — in a cloud session those differ, and the envelope's is
-  // shared by every role (see claudeStep). Addressing by session id rather than
-  // by agent name is what makes hundreds of iterations safe.
+  // The backend returns the implementer's authoritative session handle: a
+  // driver-minted Claude id or Codex's `thread.started` id. Addressing by
+  // session id rather than by agent name makes hundreds of iterations safe.
   const implSession = impl.sessionId ?? '';
-  const reportedSha = structured(impl.env).sha ?? '';
+  const reportedSha = AGENT_RUNNER === 'codex' ? '' : (impl.structured.sha ?? '');
+  const headAfterImpl = impl.structured.success === true ? gitOut('rev-parse', 'HEAD') : '';
+  const driverSha =
+    impl.ok && impl.structured.success === true && headAfterImpl === baseSha
+      ? commitCodexImplementation({ title, baseSha })
+      : '';
   let sha = resolveImplSha({
     reported: reportedSha,
-    head: structured(impl.env).success === true ? gitOut('rev-parse', 'HEAD') : '',
+    head: driverSha || headAfterImpl,
     baseSha,
   });
   if (sha && !reportedSha) logLine(`  implementer omitted its sha — recovered ${sha.slice(0, 12)}`);
 
-  if (!impl.ok || structured(impl.env).success !== true || !sha) {
+  if (!impl.ok || impl.structured.success !== true || !sha) {
     logLine(`  implementer failed — restoring ${baseSha}`);
     // Its own account of why — routinely the most useful thing on the record,
     // because a brief that cannot be executed (a proposed fix that does not
     // compile, a stale brief) reads as a model failure until you see the reason.
-    const tried = [(structured(impl.env).summary ?? '').trim()].filter(Boolean);
+    const tried = [(impl.structured.summary ?? '').trim()].filter(Boolean);
     git('reset', '-q', '--hard', baseSha);
     defer(title, 'implementation failed', { tried });
     continue;
@@ -625,7 +609,7 @@ while (done < MAX_ISSUES) {
   // wrong about the code it sits under.
   const fixSummaries = [];
   const captureSummary = () => {
-    const text = (structured(impl.env).summary ?? '').trim();
+    const text = (impl.structured.summary ?? '').trim();
     if (text) fixSummaries.push(text);
   };
   captureSummary();
@@ -658,29 +642,19 @@ while (done < MAX_ISSUES) {
     if (gateRed) {
       logLine(`  round ${round}: gates red — ${gateRed.detail}`);
       status = 'CHANGES_REQUIRED';
-      feedback = `- The commit does not pass the driver's gates: ${gateRed.detail}. Fix that before anything else; the fix is discarded if it never goes green.`;
+      feedback = `- The commit does not pass the driver's gates: ${gateRed.detail}. Fix that before anything else; the fix is discarded if it never goes green.\n\nDriver-captured failure output:\n${gateRed.output}`;
     } else {
-      const review = await claudeStep(`${tag}.review${round}`, [
-        `Adversarially review commit ${sha}.\n\nThe original finding this fix must resolve:\n${issue}\n\nAcceptance criteria the verifier derived from it (which may themselves be mis-scoped):\n${acceptance}`,
-        '--append-system-prompt-file',
-        join(PROMPTS, 'reviewer.md'),
-        '--model',
-        MODEL_REVIEW,
-        '--effort',
-        EFFORT_REVIEW,
-        '--tools',
-        AVAIL_REVIEW,
-        '--allowedTools',
-        TOOLS_REVIEW,
-        '--permission-mode',
-        'dontAsk',
-        '--json-schema',
-        SCHEMA_REVIEW,
-        '--max-turns',
-        '50',
-        '--max-budget-usd',
-        BUDGET_REVIEW,
-      ]);
+      const review = await agentStep({
+        tag: `${tag}.review${round}`,
+        prompt: `Adversarially review the complete finding range ${baseSha}..${sha}. The head commit is ${sha}.\n\nThe original finding this fix must resolve:\n${issue}\n\nAcceptance criteria the verifier derived from it (which may themselves be mis-scoped):\n${acceptance}`,
+        systemPromptFile: join(PROMPTS, 'reviewer.md'),
+        model: MODEL_REVIEW,
+        effort: EFFORT_REVIEW,
+        role: 'review',
+        schema: SCHEMA_REVIEW,
+        maxTurns: 50,
+        budget: BUDGET_REVIEW,
+      });
       // A reviewer that never ran (budget/turn cap, API error) has not rejected
       // anything — it produced no verdict at all. Recording that as
       // CHANGES_REQUIRED would roll the fix back and file it under "failed
@@ -691,12 +665,12 @@ while (done < MAX_ISSUES) {
         reviewUnavailable = true;
         break;
       }
-      status = structured(review.env).status ?? 'CHANGES_REQUIRED';
+      status = review.structured.status ?? 'CHANGES_REQUIRED';
       if (status === 'APPROVED') break;
 
       // Only real reviewer findings become PR-comment "catches" — a red gate is
       // the driver's own bookkeeping, not an adversarial catch worth publishing.
-      const roundFindings = structured(review.env).findings ?? [];
+      const roundFindings = review.structured.findings ?? [];
       reviewCatches.push(...roundFindings);
       feedback = roundFindings.map((f) => `- ${f}`).join('\n');
       logLine(`  round ${round}: changes required`);
@@ -714,51 +688,52 @@ while (done < MAX_ISSUES) {
     // and this session's prefix is the entire first implementation pass. Escalating
     // effort on a later round looks like an obvious win and would silently pay to
     // re-read everything it already knows.
-    // No minted id means the first impl call never produced one, so there is no
+    // No session id means the first impl call never produced one, so there is no
     // history to resume. Re-deriving the change from the feedback is worse than
-    // resuming but far better than `--resume ''`, which just errors out and
-    // burns the finding on a retry loop. The resumed path inherits its system
-    // prompt from the session, so it is re-supplied only on the fallback.
-    const resumeArgs = implSession
-      ? ['--resume', implSession]
-      : ['--append-system-prompt-file', join(PROMPTS, 'implementer.md')];
+    // resuming but far better than trying to resume an empty handle and burning
+    // the finding on a retry loop. The resumed path inherits its role prompt;
+    // the fallback gets it again.
     if (!implSession)
       logLine(`  round ${round}: no impl session to resume — fixing without history`);
 
-    impl = await claudeStep(`${tag}.fix${round}`, [
-      `The following must be addressed on commit ${sha}. Address every point and commit.\n\n${feedback}`,
-      ...resumeArgs,
-      '--effort',
-      EFFORT_IMPL,
-      '--tools',
-      AVAIL_IMPL,
-      '--allowedTools',
-      TOOLS_IMPL,
-      '--permission-mode',
-      'acceptEdits',
-      '--json-schema',
-      SCHEMA_IMPL,
-      '--max-turns',
-      '60',
-      '--max-budget-usd',
-      BUDGET_IMPL,
-    ]);
+    impl = await agentStep({
+      tag: `${tag}.fix${round}`,
+      prompt:
+        AGENT_RUNNER === 'codex'
+          ? `The following must be addressed on commit ${sha}. Address every point, run the permitted non-listener checks, and leave the resulting worktree changes for the driver to commit.\n\n${feedback}`
+          : `The following must be addressed on commit ${sha}. Address every point and commit.\n\n${feedback}`,
+      systemPromptFile: join(PROMPTS, 'implementer.md'),
+      model: implModel,
+      effort: EFFORT_IMPL,
+      role: 'implement',
+      schema: SCHEMA_IMPL,
+      maxTurns: 60,
+      budget: BUDGET_IMPL,
+      sessionId: implSession,
+    });
     if (!impl.ok) {
       status = 'CHANGES_REQUIRED';
       implFailed = true;
       break;
     }
-    // Same HEAD fallback the first implementer call gets: `sha` is optional in
-    // SCHEMA_IMPL, and an implementer that finishes the job but omits the field
-    // would otherwise have a complete, tested fix reset away. Trust the observable
-    // side effect (the commit) over the envelope — a commit cannot forget itself.
+    // Same HEAD fallback the first implementer call gets: a role can violate its
+    // schema and omit `sha`, and an implementer that finishes the job but omits
+    // the field would otherwise have a complete, tested fix reset away. Trust the
+    // observable side effect (the commit) over the envelope — a commit cannot
+    // forget itself.
     // The base to compare against is the commit under review, NOT this finding's
     // original baseSha: HEAD is already past baseSha from the previous round, so
     // comparing to that would resolve a round that committed nothing back to the
     // same rejected sha and re-review it unchanged.
+    const reportedFixSha = AGENT_RUNNER === 'codex' ? '' : (impl.structured.sha ?? '');
+    const headAfterFix = impl.structured.success === true ? gitOut('rev-parse', 'HEAD') : '';
+    const driverFixSha =
+      impl.structured.success === true && headAfterFix === sha
+        ? commitCodexImplementation({ title, baseSha: sha, round })
+        : '';
     const newSha = resolveImplSha({
-      reported: structured(impl.env).sha ?? '',
-      head: structured(impl.env).success === true ? gitOut('rev-parse', 'HEAD') : '',
+      reported: reportedFixSha,
+      head: driverFixSha || headAfterFix,
       baseSha: sha,
     });
     if (!newSha) {
