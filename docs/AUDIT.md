@@ -22,34 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P3][duplication] `FOLDER_CHOSEN_KEY` is a `splotch-*` storage key that lives outside the storage layer and is re-hardcoded as a build marker
-
-**File(s):** `web/src/lib/drawing/folderSave.ts:27` (`FOLDER_CHOSEN_KEY`) — pinned at SHA f934d43
-
-#### Problem
-
-`'splotch-save-folder-chosen'` is a localStorage flag written via `writeBool`/`removeKey`, so it
-belongs to the same key namespace as everything in `settings.svelte.ts` — yet it's declared here,
-then re-typed in `folderSave.test.ts:49,150` and, critically, hardcoded as a bundle-content marker
-in `startup-bundle.spec.ts:23`. A rename must be coordinated across three files by grep, and the
-startup spec silently depends on the literal. This is the grepability problem in miniature: the same
-string is a storage key in one file and a "this module is present" fingerprint in another.
-
-#### Proposed solution
-
-Fold it into the central `STORAGE_KEYS` registry (see the P2 registry finding) and import it here
-and in the tests. The startup-bundle marker should reference `STORAGE_KEYS.saveFolderChosen` (or an
-intentionally distinct, commented marker constant) rather than an inline literal, so the coupling is
-explicit.
-
-#### Verification
-
-`grep -rn "splotch-save-folder-chosen"` shows only the registry definition; `startup-bundle.spec.ts`
-still fails loudly if the module leaves the marker (its anti-vacuity test at lines 59-73 guards
-this).
-
----
-
 ### [P3][readability] `readString`'s generic return type `string | T` is needlessly clever for a two-shape API
 
 **File(s):** `web/src/lib/storage.ts:114-121` — pinned at SHA f934d43
