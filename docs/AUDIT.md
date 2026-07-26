@@ -26,29 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P4][design-tokens] Magic breakpoints and modal max-width are unshared literals
-
-**File(s):** `web/src/lib/components/ColoringBook.svelte:183,341` — pinned at SHA f934d43
-
-#### Problem
-
-`max-width: min(920px, calc(100vw - 32px))` and `@media (max-width: 520px)` embed layout constants
-with no shared source. Other components almost certainly define their own `520px`/`920px`-ish
-breakpoints, so the app's responsive thresholds aren't coordinated and can't be adjusted centrally.
-
-#### Proposed solution
-
-Pull the breakpoint into a shared value (CSS custom media / a documented breakpoint token in the
-design system) and the modal max-width into a modal sizing token, per the design skill. At minimum,
-name the `520px` threshold consistently with other components.
-
-#### Verification
-
-Grep other components for the same px thresholds to confirm the duplication before consolidating;
-visual check at the boundary widths.
-
----
-
 ### [P5][readability] Page-grid column counts are restated across three breakpoints
 
 **File(s):** `web/src/lib/components/ColoringBook.svelte:263-269,341-357` — pinned at SHA f934d43
