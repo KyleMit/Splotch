@@ -25,6 +25,7 @@ import { join, relative } from 'node:path';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
+import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { scoreSolidity } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
@@ -67,11 +68,8 @@ const [W, H] = wide ? [1536, 1024] : [1024, 1536];
 const aspect = wide ? '3:2' : '2:3';
 const orientWord = wide ? 'LANDSCAPE (wider than tall)' : 'PORTRAIT (taller than wide)';
 
-const maxAttempts = Number(args.values['max-attempts'] ?? 5);
-if (!(Number.isInteger(maxAttempts) && maxAttempts >= 1))
-  fail('--max-attempts must be a positive integer');
-const baseTemp = args.values.temperature === undefined ? 1.0 : Number(args.values.temperature);
-if (!(baseTemp >= 0 && baseTemp <= 2)) fail('--temperature must be between 0 and 2');
+const maxAttempts = parsePositiveInt(args.values['max-attempts'], '--max-attempts', 5);
+const baseTemp = parseTemperature(args.values.temperature, '--temperature', 1.0);
 
 const prompt = `${STYLE_PROMPT}
 

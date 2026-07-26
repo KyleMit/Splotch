@@ -36,6 +36,7 @@ import { join, dirname, relative } from 'node:path';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
+import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
@@ -123,15 +124,9 @@ const { values, positionals } = parseArgs({
   },
 });
 
-const samples = values.samples === undefined ? 1 : Number(values.samples);
-if (!(Number.isInteger(samples) && samples >= 1)) {
-  fail(`--samples must be a positive integer, got "${values.samples}"`);
-}
+const samples = parsePositiveInt(values.samples, '--samples', 1);
 if (values.apply && samples > 1) fail('--apply cannot be combined with --samples greater than 1.');
-const baseTemp = values.temperature === undefined ? undefined : Number(values.temperature);
-if (baseTemp !== undefined && !(baseTemp >= 0 && baseTemp <= 2)) {
-  fail(`--temperature must be a number between 0 and 2, got "${values.temperature}"`);
-}
+const baseTemp = parseTemperature(values.temperature, '--temperature', undefined);
 if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
 
 const pages = await resolveOutlineTargets(positionals, {

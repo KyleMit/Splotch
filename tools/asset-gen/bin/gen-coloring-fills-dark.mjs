@@ -57,6 +57,7 @@ import {
   fail,
   resolveNightLineArt,
 } from '../lib/paths.mjs';
+import { parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
@@ -215,29 +216,32 @@ const { values, positionals } = parseArgs({
     'dry-run': { type: 'boolean' },
   },
 });
-const samples = values.samples === undefined ? 1 : Number(values.samples);
-if (!(Number.isInteger(samples) && samples >= 1)) fail(`--samples must be a positive integer`);
+const samples = parsePositiveInt(values.samples, '--samples', 1);
 
 // Per-page tuning resolves in the page loop — defaults, then the page's
 // fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
 function nightSettings(v, where) {
   const s = {
-    baseTemp: v.temperature === undefined ? 0.6 : Number(v.temperature),
-    maxAttempts: v['max-attempts'] === undefined ? 3 : Number(v['max-attempts']),
-    driftThreshold:
-      v['drift-threshold'] === undefined ? DRIFT_THRESHOLD_DEFAULT : Number(v['drift-threshold']),
-    nightLumaMax:
-      v['night-luma-max'] === undefined ? NIGHT_BG_LUMA_MAX_DEFAULT : Number(v['night-luma-max']),
-    lineWhiteMin:
-      v['line-white-min'] === undefined ? LINE_WHITE_MIN_DEFAULT : Number(v['line-white-min']),
+    baseTemp: parseTemperature(v.temperature, `--temperature (${where})`, 0.6),
+    maxAttempts: parsePositiveInt(v['max-attempts'], `--max-attempts (${where})`, 3),
+    driftThreshold: parseNonNegative(
+      v['drift-threshold'],
+      `--drift-threshold (${where})`,
+      DRIFT_THRESHOLD_DEFAULT
+    ),
+    nightLumaMax: parseNonNegative(
+      v['night-luma-max'],
+      `--night-luma-max (${where})`,
+      NIGHT_BG_LUMA_MAX_DEFAULT
+    ),
+    lineWhiteMin: parseNonNegative(
+      v['line-white-min'],
+      `--line-white-min (${where})`,
+      LINE_WHITE_MIN_DEFAULT
+    ),
     dilateLines: v['dilate-lines'] === undefined ? 0 : Number(v['dilate-lines']),
     notes: v.notes,
   };
-  if (!(Number.isInteger(s.maxAttempts) && s.maxAttempts >= 1))
-    fail(`--max-attempts must be a positive integer (${where})`);
-  if (!(s.driftThreshold >= 0)) fail(`--drift-threshold must be a non-negative number (${where})`);
-  if (!(s.nightLumaMax >= 0)) fail(`--night-luma-max must be a non-negative number (${where})`);
-  if (!(s.lineWhiteMin >= 0)) fail(`--line-white-min must be a non-negative number (${where})`);
   if (!(Number.isInteger(s.dilateLines) && s.dilateLines >= 0))
     fail(`--dilate-lines must be a non-negative integer (${where})`);
   return s;

@@ -42,6 +42,7 @@ import { existsSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
@@ -91,14 +92,10 @@ if (!values['dry-run'] && !process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is n
 // fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
 function normalizeSettings(v, where) {
   const s = {
-    baseTemp: v.temperature === undefined ? 0.3 : Number(v.temperature),
-    maxAttempts: v['max-attempts'] === undefined ? 4 : Number(v['max-attempts']),
+    baseTemp: parseTemperature(v.temperature, `--temperature (${where})`, 0.3),
+    maxAttempts: parsePositiveInt(v['max-attempts'], `--max-attempts (${where})`, 4),
     notes: v.notes,
   };
-  if (!(s.baseTemp >= 0 && s.baseTemp <= 2))
-    fail(`--temperature must be between 0 and 2 (${where})`);
-  if (!(Number.isInteger(s.maxAttempts) && s.maxAttempts >= 1))
-    fail(`--max-attempts must be a positive integer (${where})`);
   s.instruction = s.notes ? `${INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${s.notes}` : INSTRUCTION;
   return s;
 }

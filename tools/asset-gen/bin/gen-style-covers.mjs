@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { STYLES_DIR, fail } from '../lib/paths.mjs';
+import { parseTemperature } from '../lib/cli.mjs';
 import { STYLE_SUFFIXES, STYLE_NAMES } from '../../../web/src/lib/ai/styles.ts';
 import { buildPromptForStyle } from '../../../web/src/lib/ai/prompt.ts';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
@@ -65,10 +66,7 @@ const { values } = parseArgs({
 });
 
 const styles = values.style?.length ? values.style.map(resolveStyle) : STYLE_NAMES;
-const temperature = values.temperature === undefined ? undefined : Number(values.temperature);
-if (temperature !== undefined && !(temperature >= 0 && temperature <= 2)) {
-  fail(`--temperature must be a number between 0 and 2, got "${values.temperature}"`);
-}
+const temperature = parseTemperature(values.temperature, '--temperature', undefined);
 if (!process.env.GEMINI_API_KEY) {
   fail('GEMINI_API_KEY is not set.');
 }

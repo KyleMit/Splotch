@@ -56,6 +56,7 @@ import { join, dirname, relative } from 'node:path';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+import { parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
@@ -228,19 +229,20 @@ if (!values.rescore && !values['dry-run'] && !process.env.GEMINI_API_KEY)
 // fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
 function chalkSettings(v, where) {
   const s = {
-    baseTemp: v.temperature === undefined ? 0.35 : Number(v.temperature),
-    maxAttempts: v['max-attempts'] === undefined ? 4 : Number(v['max-attempts']),
-    inventedMax: v['invented-max'] === undefined ? INVENTED_MAX_DEFAULT : Number(v['invented-max']),
-    whiteFracMax:
-      v['white-frac-max'] === undefined ? WHITE_FRAC_MAX_DEFAULT : Number(v['white-frac-max']),
+    baseTemp: parseTemperature(v.temperature, `--temperature (${where})`, 0.35),
+    maxAttempts: parsePositiveInt(v['max-attempts'], `--max-attempts (${where})`, 4),
+    inventedMax: parseNonNegative(
+      v['invented-max'],
+      `--invented-max (${where})`,
+      INVENTED_MAX_DEFAULT
+    ),
+    whiteFracMax: parseNonNegative(
+      v['white-frac-max'],
+      `--white-frac-max (${where})`,
+      WHITE_FRAC_MAX_DEFAULT
+    ),
     notes: v.notes,
   };
-  if (!(s.baseTemp >= 0 && s.baseTemp <= 2))
-    fail(`--temperature must be between 0 and 2 (${where})`);
-  if (!(Number.isInteger(s.maxAttempts) && s.maxAttempts >= 1))
-    fail(`--max-attempts must be a positive integer (${where})`);
-  if (!(s.inventedMax >= 0)) fail(`--invented-max must be a non-negative number (${where})`);
-  if (!(s.whiteFracMax >= 0)) fail(`--white-frac-max must be a non-negative number (${where})`);
   s.instruction = s.notes ? `${INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${s.notes}` : INSTRUCTION;
   return s;
 }
