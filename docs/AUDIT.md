@@ -22,30 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P3][performance] Every swatch element is captured into `$state`, but only the custom swatch's ref is read
-
-**File(s):** `web/src/lib/components/ColorPalette.svelte:23, 137, 85` — pinned at SHA f934d43
-
-#### Problem
-
-`let swatchEls = $state<Record<string, HTMLButtonElement>>({})` and every palette button does
-`bind:this={swatchEls[hex]}` (line 137), but the only consumer is `selectCustomColor` reading
-`swatchEls[CUSTOM_SWATCH]` (line 85). All ten color-swatch refs are stored into a reactive `$state`
-record that nothing reads, causing needless proxy writes on mount/trim.
-
-#### Proposed solution
-
-Bind only the custom swatch: replace the record with a single
-`let customSwatchEl: HTMLButtonElement | undefined` bound at line 153, drop the per-swatch
-`bind:this` at line 137, and read `customSwatchEl` in `selectCustomColor`.
-
-#### Verification
-
-Opening the picker still anchors to the custom swatch center (`buttonCenter`); no other code
-references `swatchEls` (`rg swatchEls`).
-
----
-
 ### [P3][maintainability] The `4.5px` selection-ring width is a magic number repeated across JS and CSS
 
 **File(s):** `web/src/lib/components/ColorPalette.svelte:68, 72, 208, 211` — pinned at SHA f934d43
