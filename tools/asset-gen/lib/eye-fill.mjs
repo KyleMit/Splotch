@@ -20,8 +20,7 @@
 // light sclera); a flat-flooded eye contrasts in neither. Pages with no
 // detected eye core aren't gated.
 import sharp from 'sharp';
-
-const INK_LUMA = 150;
+import { OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
 
 // Pass bars, shared by the generation gates and the raw-fill auditor: of the
 // eye core and its surrounding band, the lighter side must be genuinely light,
@@ -44,7 +43,7 @@ async function inkMask(buf) {
   const ink = new Uint8Array(w * h);
   for (let p = 0, i = 0; p < w * h; p++, i += 3) {
     const luma = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-    if (luma < INK_LUMA) ink[p] = 1;
+    if (luma < OUTLINE_LUMA_THRESHOLD) ink[p] = 1;
   }
   return { ink, w, h };
 }

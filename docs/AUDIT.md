@@ -32,40 +32,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P2][maintainability] The ink-luma threshold `150` is redeclared in four modules with "keep in sync" comments
-
-**File(s):** `tools/asset-gen/lib/punch-fill.mjs:35` (`OUTLINE_LUMA_THRESHOLD`),
-`solid-regions.mjs:23` (`SOLID_LUMA_THRESHOLD`), `eye-fill.mjs:24` (`INK_LUMA`),
-`composite-eye.mjs:10` (`PUNCH_LUMA`) — pinned at SHA f934d43
-
-#### Problem
-
-Four constants all equal `150` and all mean "line-art pixel this dark = outline ink." Each carries a
-comment tying it back to `punch-fill.mjs`:
-
-```js
-export const SOLID_LUMA_THRESHOLD = 150; // Same ink bar as the punch mask (lib/punch-fill.mjs OUTLINE_LUMA_THRESHOLD)
-const PUNCH_LUMA = 150; // lib/punch-fill.mjs OUTLINE_LUMA_THRESHOLD
-```
-
-`night-halo.mjs` and the punch itself already import `OUTLINE_LUMA_THRESHOLD` — proving the
-canonical source exists — but three other modules copy the literal instead. If the punch bar moves,
-three gates silently keep the old value and the "solid = the pixels the punch would cut" invariant
-breaks.
-
-#### Proposed solution
-
-Import `OUTLINE_LUMA_THRESHOLD` in `composite-eye.mjs` (replace `PUNCH_LUMA`) and `eye-fill.mjs`
-(replace `INK_LUMA`). `solid-regions.mjs` may keep a re-export alias for its public API but should
-define it as `export const SOLID_LUMA_THRESHOLD = OUTLINE_LUMA_THRESHOLD;`.
-
-#### Verification
-
-`grep -rn "= 150" lib/` returns only the single definition (plus unrelated `EYE_LIGHT_MIN`). Golden
-diff unchanged.
-
----
-
 ### [P2][complexity] `scoreEyeFill` is a 100-line function mixing resize, per-core sampling, annulus geometry, and the liveliness verdict
 
 **File(s):** `tools/asset-gen/lib/eye-fill.mjs:208-307` — pinned at SHA f934d43

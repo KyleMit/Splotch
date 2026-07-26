@@ -18,10 +18,11 @@
 // hundreds of px, stroke junctions and antialiasing residue in the tens.
 import sharp from 'sharp';
 import { dilateMask, erodeMask } from './morphology.mjs';
+import { OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
 
 // Same ink bar as the punch mask (lib/punch-fill.mjs OUTLINE_LUMA_THRESHOLD),
 // so "solid" is judged on exactly the pixels the punch would cut.
-export const SOLID_LUMA_THRESHOLD = 150;
+export const SOLID_LUMA_THRESHOLD = OUTLINE_LUMA_THRESHOLD;
 
 // Bounds for the erosion radius. The radius is derived per page from the
 // MEASURED stroke width (see strokeWidthP90) rather than fixed: a fixed r=8

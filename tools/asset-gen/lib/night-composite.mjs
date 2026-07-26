@@ -6,8 +6,8 @@
 // child actually SEES at night (the eye gates in gen-coloring-fills-dark.mjs
 // and audit-fill-eyes.mjs) must run on this composite, not the raw fill.
 import sharp from 'sharp';
+import { OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
 
-const PUNCH_LUMA = 150; // lib/punch-fill.mjs OUTLINE_LUMA_THRESHOLD
 const PAPER_DARK = [0x21, 0x1f, 0x29]; // app.css --paper (dark)
 
 export async function compositeNight(fillBuf, chalkBuf) {
@@ -22,7 +22,7 @@ export async function compositeNight(fillBuf, chalkBuf) {
     .toBuffer({ resolveWithObject: true });
   const out = Buffer.alloc(width * height * 3);
   for (let p = 0, i = 0; p < width * height; p++, i += 3) {
-    const punched = ink[p] < PUNCH_LUMA;
+    const punched = ink[p] < OUTLINE_LUMA_THRESHOLD;
     const chalkWhite = 255 - ink[p];
     for (let c = 0; c < 3; c++) {
       const base = punched ? PAPER_DARK[c] : fill[i + c];
