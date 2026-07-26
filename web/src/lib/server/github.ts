@@ -5,6 +5,9 @@ import { config } from './config';
 // ADR-0047) so route code never touches the token or the REST shape directly.
 
 const GITHUB_API = 'https://api.github.com';
+const GITHUB_ACCEPT = 'application/vnd.github+json';
+const GITHUB_API_VERSION = '2022-11-28';
+const GITHUB_USER_AGENT = 'splotch-feedback';
 
 function targetRepo(): string {
   return config.githubIssueRepo();
@@ -60,11 +63,11 @@ export async function createIssue(
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
+      Accept: GITHUB_ACCEPT,
+      'X-GitHub-Api-Version': GITHUB_API_VERSION,
       'Content-Type': 'application/json',
       // GitHub rejects API calls without a User-Agent.
-      'User-Agent': 'splotch-feedback',
+      'User-Agent': GITHUB_USER_AGENT,
     },
     body: JSON.stringify(input),
   });

@@ -22,37 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P4][maintainability] `GITHUB_API` base is hard-coded and the User-Agent is a bare literal
-
-**File(s):** `web/src/lib/server/github.ts:7,67` — pinned at SHA f934d43
-
-#### Problem
-
-`const GITHUB_API = 'https://api.github.com'` and `'User-Agent': 'splotch-feedback'` are inline in
-the seam. The API version `'2022-11-28'` (line 64) and Accept header are also literals. Minor, but
-the app-identifying User-Agent and API-version pin are the kind of values that belong to a small
-named config block rather than buried in the fetch call — and there's no single place that says
-"this is how Splotch identifies itself to GitHub."
-
-#### Proposed solution
-
-Hoist to named module constants at the top of `github.ts`:
-
-```ts
-const GITHUB_API = 'https://api.github.com';
-const GITHUB_API_VERSION = '2022-11-28';
-const USER_AGENT = 'splotch-feedback';
-```
-
-(They're already module-scoped for `GITHUB_API`; add the other two and reference them in the
-headers.) Low urgency — this is a single-consumer seam.
-
-#### Verification
-
-`github.test.ts` still passes (asserts headers/shape). No behavior change.
-
----
-
 ### [P4][maintainability] csp-report's caps and formats are undiscoverable from the CSP header source
 
 **File(s):** `web/src/routes/api/csp-report/+server.ts:7-17`; cross-ref
