@@ -30,34 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P2][duplication] Centralize the `MODEL`, `WEBP_QUALITY`, and timeout constants
-
-**File(s):** `MODEL = 'gemini-3.1-flash-image'` at gen-coloring-fills.mjs:47,
-gen-coloring-fills-dark.mjs:76, gen-coloring-chalk.mjs:69, normalize-outline-strokes.mjs:52,
-gen-coloring-outlines-fresh.mjs:32, gen-style-covers.mjs:21; `WEBP_QUALITY` at fills:48 (90),
-dark:78 (90), chalk:70 (92), normalize:53 (92), fresh:33 (90), covers:24 (75) — pinned at SHA
-f934d43
-
-#### Problem
-
-The model id is duplicated in six files. When the catalog migrates models again (there is already a
-`docs/gemini-3.1-migration.md` run record for exactly this), all six must change in lockstep — a
-grep-and-replace hazard, and nothing enforces they stay equal. `WEBP_QUALITY` is likewise scattered
-with two different values (90 vs 92) and no named rationale for the split.
-
-#### Proposed solution
-
-Export `IMAGE_MODEL` and encode settings from `lib/gemini.mjs` (or a small `lib/encode.mjs`): e.g.
-`export const LINE_ART_WEBP_QUALITY = 92; export const FILL_WEBP_QUALITY = 90;` with a one-line WHY
-for why line art wants the higher quality. Import everywhere.
-
-#### Verification
-
-`grep -rn "gemini-3.1-flash-image" bin/` returns zero after refactor (only the lib defines it).
-Golden diff stays clean (quality values unchanged, just named).
-
----
-
 ### [P2][duplication] Three hand-rolled arg→target resolvers duplicate `resolveOutlineTargets`
 
 **File(s):** `audit-invented-shapes.mjs:84-105` (`targetsUnder`/`resolveArg`);

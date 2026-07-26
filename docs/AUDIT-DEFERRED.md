@@ -2116,3 +2116,66 @@ The rolled-back draft is kept at
 (2 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p1-duplication-extract-the-six-near-identical-gemini-generatecontent-wra.patch`.
+
+### [P2][duplication] Centralize the `MODEL`, `WEBP_QUALITY`, and timeout constants
+
+**File(s):** `MODEL = 'gemini-3.1-flash-image'` at gen-coloring-fills.mjs:47,
+gen-coloring-fills-dark.mjs:76, gen-coloring-chalk.mjs:69, normalize-outline-strokes.mjs:52,
+gen-coloring-outlines-fresh.mjs:32, gen-style-covers.mjs:21; `WEBP_QUALITY` at fills:48 (90),
+dark:78 (90), chalk:70 (92), normalize:53 (92), fresh:33 (90), covers:24 (75) — pinned at SHA
+f934d43
+
+#### Problem
+
+The model id is duplicated in six files. When the catalog migrates models again (there is already a
+`docs/gemini-3.1-migration.md` run record for exactly this), all six must change in lockstep — a
+grep-and-replace hazard, and nothing enforces they stay equal. `WEBP_QUALITY` is likewise scattered
+with two different values (90 vs 92) and no named rationale for the split.
+
+#### Proposed solution
+
+Export `IMAGE_MODEL` and encode settings from `lib/gemini.mjs` (or a small `lib/encode.mjs`): e.g.
+`export const LINE_ART_WEBP_QUALITY = 92; export const FILL_WEBP_QUALITY = 90;` with a one-line WHY
+for why line art wants the higher quality. Import everywhere.
+
+#### Verification
+
+`grep -rn "gemini-3.1-flash-image" bin/` returns zero after refactor (only the lib defines it).
+Golden diff stays clean (quality values unchanged, just named).
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* `WEBP_QUALITY` remains locally defined in `gen-coloring-chalk.mjs`,
+  `normalize-outline-strokes.mjs`, `gen-coloring-outlines-fresh.mjs`, and `gen-style-covers.mjs`,
+  leaving four of the six listed encode settings scattered and still providing no shared rationale
+  for the quality split. Export appropriately named shared constants for the remaining 92, 90, and
+  75 settings and import them in every listed generator.
+* `tools/asset-gen/lib/gemini.mjs` still repeats the 90 and 92 values across per-script constants
+  without documenting why chalk/normalized outlines require higher quality than fills/fresh
+  outlines, leaving the original finding’s missing rationale unresolved; add the requested one-line
+  WHY or encode shared semantic quality categories where appropriate.
+
+#### What was tried
+
+1. Centralized the asset pipeline’s Gemini image model and timeout in a shared module used by all
+   six generators. The light and dark fill generators now also share their existing WebP quality
+   setting, while every output-specific quality value remains unchanged.
+2. Applied Prettier’s canonical wrapping to the dark-fill WebP encoding expression, removing the
+   formatting-gate failure without changing behavior.
+3. Centralized the chalk, normalized-outline, fresh-outline, and style-cover WebP qualities under
+   explicit output-specific exports. Every listed generator now gets its encode setting from the
+   shared Gemini settings module while preserving the existing values.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-duplication-centralize-the-model-webp-quality-and-timeout-constants.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-duplication-centralize-the-model-webp-quality-and-timeout-constants.patch`.
