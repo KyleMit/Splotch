@@ -30,34 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P4][complexity] Settings builders called once purely for their validation side-effect, then discarded
-
-**File(s):** `gen-coloring-fills-dark.mjs:238` (`nightSettings(values, 'cli')`);
-`gen-coloring-chalk.mjs:247` (`chalkSettings(values, 'cli')`); `normalize-outline-strokes.mjs:105`
-(`normalizeSettings(values, 'cli')`) — pinned at SHA f934d43
-
-#### Problem
-
-Each script calls its settings builder at top level and throws the result away, relying on the
-function's `fail()` side effects to validate the raw CLI flags early; the real per-page settings are
-rebuilt later inside the loop (dark:353, chalk:326, normalize:201). This "call for side effects,
-ignore return" is a smell — the function name implies it produces settings, but here it's used as a
-validator, and the double invocation means validation logic and construction logic are entangled in
-one function.
-
-#### Proposed solution
-
-Split validation from construction: a `validateFlags(values)` that only checks the raw CLI, called
-once up front, and a pure `buildSettings(merged)` used per page. (Composes naturally with the shared
-validators in finding 9.)
-
-#### Verification
-
-Invalid CLI flags still fail before any API call; the per-page path no longer re-runs top-level
-validation. Dry-run output unchanged.
-
----
-
 ### [P4][naming] Amber overlay color and dim factor are unexplained literals
 
 **File(s):** `audit-invented-shapes.mjs:44-56` (`* 0.55` base dim; `r=255,g=210,b=0` "amber";
