@@ -22,28 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P3][naming] `9×9` grid dimensions are unnamed magic across the module
-
-**File(s):** `web/src/lib/hexPickerLayout.ts:12-165` — pinned at SHA f934d43
-
-#### Problem
-
-The "9 families × 9 shades" invariant is asserted in the header comment and enforced only by the
-literal shape of `COLOR_FAMILIES` and by the test. There is no `FAMILY_COUNT`/`SHADE_COUNT`
-constant, so the r/c CSS trim classes in `ColorPicker.svelte` (`.r1..r9`, `.c1..c9`) are coupled to
-a count that lives nowhere as a value.
-
-#### Proposed solution
-
-Export `SHADE_COUNT = 9` and `FAMILY_COUNT = COLOR_FAMILIES.length`; use `SHADE_COUNT` in the
-transpose and reference the counts in the test instead of the literal `9`/`81`.
-
-#### Verification
-
-`hexPickerLayout.test.ts` derives `81` from `FAMILY_COUNT * SHADE_COUNT`; still green.
-
----
-
 ### [P3][maintainability] `data-trim-rank` numeric coupling between `TRIM_ORDER` and ~15 CSS selectors is invisible
 
 **File(s):** `web/src/lib/components/ColorPalette.svelte:110, 129, 325-433` — pinned at SHA f934d43
