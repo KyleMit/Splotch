@@ -37,7 +37,7 @@ export function onDurableRestore(cb: () => void) {
 // that triggered it. Swallow the failure (the native durable mirror still backs
 // the value up) and warn at most once so we don't spam the console.
 let storageWarned = false;
-function safeLocalStorage(op: () => void) {
+function safeStorageMutation(op: () => void) {
   try {
     op();
   } catch (err) {
@@ -53,7 +53,7 @@ function safeLocalStorage(op: () => void) {
 // iframes, private-mode WebViews). Reads run at module init inside $state
 // initializers, so an escaping throw would kill hydration; return the caller's
 // fallback instead — the same degrade model as the app.html boot script.
-function safeRead<T>(read: () => T, fallback: T): T {
+function safeStorageRead<T>(read: () => T, fallback: T): T {
   try {
     return read();
   } catch (err) {
@@ -98,7 +98,7 @@ function mirror(key: StorageKey, value: string) {
 
 export function readBool(key: StorageKey, fallback: boolean): boolean {
   if (!browser) return fallback;
-  return safeRead(() => {
+  return safeStorageRead(() => {
     const raw = localStorage.getItem(key);
     if (raw === 'true') return true;
     if (raw === 'false') return false;
@@ -109,7 +109,7 @@ export function readBool(key: StorageKey, fallback: boolean): boolean {
 export function writeBool(key: StorageKey, value: boolean) {
   if (!browser) return;
   const str = value ? 'true' : 'false';
-  safeLocalStorage(() => localStorage.setItem(key, str));
+  safeStorageMutation(() => localStorage.setItem(key, str));
   mirror(key, str);
 }
 
@@ -120,7 +120,7 @@ export function readString(
   fallback: string | null
 ): string | null {
   if (!browser) return fallback;
-  return safeRead(() => {
+  return safeStorageRead(() => {
     const raw = localStorage.getItem(key);
     return raw === null ? fallback : raw;
   }, fallback);
@@ -128,7 +128,7 @@ export function readString(
 
 export function writeString(key: StorageKey, value: string) {
   if (!browser) return;
-  safeLocalStorage(() => localStorage.setItem(key, value));
+  safeStorageMutation(() => localStorage.setItem(key, value));
   mirror(key, value);
 }
 
@@ -137,7 +137,7 @@ export function writeString(key: StorageKey, value: string) {
 // been migrated into secure storage).
 export function removeKey(key: StorageKey) {
   if (!browser) return;
-  safeLocalStorage(() => localStorage.removeItem(key));
+  safeStorageMutation(() => localStorage.removeItem(key));
   void runWithDurablePreferences((Preferences) => Preferences.remove({ key }));
 }
 
@@ -147,7 +147,7 @@ export function readInt(
   allowed: readonly number[] | null = null
 ): number {
   if (!browser) return fallback;
-  return safeRead(() => {
+  return safeStorageRead(() => {
     const raw = parseInt(localStorage.getItem(key) ?? '', 10);
     if (Number.isNaN(raw)) return fallback;
     if (allowed && !allowed.includes(raw)) return fallback;
@@ -158,7 +158,7 @@ export function readInt(
 export function writeInt(key: StorageKey, value: number) {
   if (!browser) return;
   const str = String(value);
-  safeLocalStorage(() => localStorage.setItem(key, str));
+  safeStorageMutation(() => localStorage.setItem(key, str));
   mirror(key, str);
 }
 
