@@ -30,35 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P2][consistency] Unify CLI argument parsing — three different mechanisms in one directory
-
-**File(s):** `parseArgs` in most files; `process.argv.slice(2)` in audit-fill-eyes.mjs:23 and
-audit-outline-solidity.mjs:16; `process.argv[2]` in audit-golden.mjs:175; env vars
-`QUALITY`/`LOSSLESS` in png-to-webp.mjs:11-12; bare `process.argv.slice(2)` as dir list in
-gen-coloring-thumbs.mjs:47 — pinned at SHA f934d43
-
-#### Problem
-
-Five scripts opt out of `node:util` `parseArgs` that the rest of the directory standardizes on.
-`png-to-webp` uniquely takes options through environment variables (`QUALITY=90 LOSSLESS=1`),
-`gen-coloring-thumbs` treats every positional as a category with no flag support, and `audit-golden`
-reads a single positional `process.argv[2]` for its `--freeze`/`--diff` mode. A newcomer cannot
-predict how any given script takes options, and `--help`-style discoverability is nonexistent.
-
-#### Proposed solution
-
-Standardize on `parseArgs` everywhere. Convert `png-to-webp` to `--quality`/`--lossless` flags (env
-can stay as a fallback if desired), give `gen-coloring-thumbs` an `allowPositionals` parse, and
-parse `audit-golden`'s mode via `options` or at least document it. A tiny `lib/cli.mjs`
-`parse(spec)` wrapper could carry the shared `allowPositionals: true` default.
-
-#### Verification
-
-Each script's usage comment matches its parser. `npm run info` descriptions still hold; smoke-run
-each audit with no args.
-
----
-
 ### [P3][consistency] Duplicated, divergent numeric-flag validators
 
 **File(s):** temperature/samples/max-attempts/non-negative checks at gen-coloring-fills.mjs:126-133,
