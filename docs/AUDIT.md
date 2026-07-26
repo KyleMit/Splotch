@@ -30,30 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P3][duplication] Two base64 data-URI helpers with different names
-
-**File(s):** `review-orb-eyes.mjs:36` (`b64`); `gen-coloring-book-proof-sheet.mjs:82-85` (`dataUri`)
-and `:94-105` (`gitDataUri`) — pinned at SHA f934d43
-
-#### Problem
-
-`review-orb-eyes` defines
-`const b64 = (buf) => \`data:image/png;base64,${buf.toString('base64')}\``; the proof sheet defines`dataUri(p)`(reads a file, webp mime) and`gitDataUri`.
-Both are "bytes → embeddable data URI" for the two HTML-review generators, named and shaped
-differently, so the shared concept isn't grepable.
-
-#### Proposed solution
-
-Add `lib/data-uri.mjs` `bytesToDataUri(buf, mime = 'image/webp')` and `fileToDataUri(path, mime)`
-(null on missing). Both HTML generators import them; `gitDataUri` keeps its git-specific read but
-returns via the shared formatter.
-
-#### Verification
-
-Both `review-orb-eyes` and the proof sheet still render inline images; the HTML output is unchanged.
-
----
-
 ### [P3][consistency] Inconsistent exit-code conventions across the CLIs
 
 **File(s):** `process.exitCode = 1` at audit-golden.mjs:226, check-coloring-drift.mjs:90,

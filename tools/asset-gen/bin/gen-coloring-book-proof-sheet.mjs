@@ -11,6 +11,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname, relative } from 'node:path';
 import { outlineMatch } from '../lib/outline-match.mjs';
+import { bytesToDataUri, fileToDataUri } from '../lib/data-uri.mjs';
 import {
   ASSET_GEN_DIR,
   COLORING_DIR,
@@ -79,11 +80,6 @@ const lineArtPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.o
 const chalkPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.chalk.webp`);
 const lightPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.light.webp`);
 
-function dataUri(p) {
-  if (!existsSync(p)) return null;
-  return `data:image/webp;base64,${readFileSync(p).toString('base64')}`;
-}
-
 // The lined raw fills (fill-src/) — the git-mode before-cell fallback when an era
 // predates the shipped fills-only webp.
 const nightRawPath = (id, orient) => join(FILL_SRC_DIR, catId, `${id}-${orient}.night.raw.webp`);
@@ -98,7 +94,7 @@ function gitDataUri(ref, absPath) {
       maxBuffer: 64 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'ignore'],
     });
-    return buf.length ? `data:image/webp;base64,${buf.toString('base64')}` : null;
+    return buf.length ? bytesToDataUri(buf) : null;
   } catch {
     return null;
   }
@@ -108,7 +104,7 @@ function gitDataUri(ref, absPath) {
 // git ref (era = "<ref>"). Night/light before-cells fall back to their lined raw
 // fill where the shipped fills-only webp didn't exist yet at that ref.
 async function makeCell(p, orient, era) {
-  const read = era ? (abs) => gitDataUri(era, abs) : (abs) => dataUri(abs);
+  const read = era ? (abs) => gitDataUri(era, abs) : (abs) => fileToDataUri(abs);
   let night = read(nightPath(p.id, orient));
   let light = read(lightPath(p.id, orient));
   // Tracked per theme: the raw fill carries its own outline, so the half showing
