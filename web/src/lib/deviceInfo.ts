@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { APP_VERSION } from '$lib/appVersion';
-import { getPlatform, isStandalone } from '$lib/platform';
+import { getPlatform, isStandalone, osLabelFromUserAgent } from '$lib/platform';
 import type { DeviceInfo } from '$lib/deviceReport';
 
 const PLATFORM_LABEL: Record<string, string> = { web: 'Web', ios: 'iOS', android: 'Android' };
@@ -47,31 +47,13 @@ export async function collectDeviceInfo(): Promise<DeviceInfo> {
       // Plugin missing or failed (e.g. an older installed build that predates
       // it) — fall back to whatever the WebView user-agent yields below.
     }
-    if (!info.os) info.os = osFromUserAgent(navigator.userAgent);
+    if (!info.os) info.os = osLabelFromUserAgent(navigator.userAgent);
   } else {
     info.display = isStandalone() ? 'Installed (PWA)' : 'Browser tab';
-    info.os = osFromUserAgent(navigator.userAgent);
+    info.os = osLabelFromUserAgent(navigator.userAgent);
     // The full UA is the single most useful field for reproducing a web bug, and
     // the parent is shown it before opting in, so include it verbatim.
     info.browser = navigator.userAgent;
   }
   return info;
-}
-
-// Best-effort friendly OS name from a user-agent string. Pure display sugar — on
-// the web the raw UA is sent alongside it, so a miss here loses nothing.
-function osFromUserAgent(ua: string): string {
-  if (!ua) return '';
-  const android = ua.match(/Android ([0-9.]+)/);
-  if (android) return `Android ${android[1]}`;
-  const ios = ua.match(/(?:iPhone|iPad|iPod).*?OS ([0-9_]+)/);
-  if (ios) return `iOS ${ios[1].replace(/_/g, '.')}`;
-  const mac = ua.match(/Mac OS X ([0-9_]+)/);
-  if (mac) return `macOS ${mac[1].replace(/_/g, '.')}`;
-  if (/Windows NT 10/.test(ua)) return 'Windows 10/11';
-  const win = ua.match(/Windows NT ([0-9.]+)/);
-  if (win) return `Windows (NT ${win[1]})`;
-  if (/CrOS/.test(ua)) return 'ChromeOS';
-  if (/Linux/.test(ua)) return 'Linux';
-  return '';
 }

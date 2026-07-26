@@ -28,32 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P3][duplication] User-agent OS/device parsing duplicated between `deviceInfo.ts` and `platform.ts`
-
-**File(s):** `web/src/lib/deviceInfo.ts:64-78` (`osFromUserAgent`), `web/src/lib/platform.ts:38-49`
-(`isIosDevice`, `isAndroidBrowser`) — pinned at SHA f934d43
-
-#### Problem
-
-`platform.ts` sniffs the UA for iOS (`/iPad|iPhone|iPod/`) and Android (`/android/i`);
-`deviceInfo.ts` independently re-parses the same UA for `Android ([0-9.]+)`,
-`(?:iPhone|iPad|iPod).*?OS ([0-9_]+)`, etc. Two modules own UA-regex knowledge, so a UA quirk (e.g.
-the iPadOS-masquerades-as-Mac case that `platform.ts` handles at line 42 but `osFromUserAgent` does
-not) is fixed in one and missed in the other.
-
-#### Proposed solution
-
-Centralize UA parsing in the platform module: expose the raw sniff helpers plus a
-`osLabelFromUserAgent(ua)` and let `deviceInfo.ts` import it, so there's one place that knows how to
-read a UA. At minimum, move `osFromUserAgent` next to `isIosDevice`/`isAndroidBrowser` in
-`platform.ts`.
-
-#### Verification
-
-`git grep -n "iPhone|iPad|iPod"` in `src/lib` shows UA regexes in one module; `npm run check`.
-
----
-
 ### [P3][performance] `measureSafeAreaInsets()` creates + appends + reflows a probe on every resize/orientation event
 
 **File(s):** `web/src/lib/safeArea.ts:16-37`; caller
