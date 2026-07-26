@@ -30,30 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P3][duplication] Number/percent formatting reinvented per script
-
-**File(s):** `round(v, digits)` audit-golden.mjs:51-54; `pct` check-coloring-drift.mjs:68;
-`Math.round(keep*1000)/10` gen-coloring-book-proof-sheet.mjs:161; ad-hoc `(v*100).toFixed(1)` across
-fills, dark, chalk, normalize, audit-fill-eyes — pinned at SHA f934d43
-
-#### Problem
-
-"Format a 0–1 ratio as a percentage" and "round to N digits" are each implemented several times with
-different precision and padding. The proof sheet's `Math.round(keep*1000)/10` and
-check-coloring-drift's `pct` compute the same keep percentage two different ways, risking display
-drift between the audit and the review sheet that are supposed to agree.
-
-#### Proposed solution
-
-`lib/format.mjs`: `pct(ratio, digits = 1)`, `round(v, digits)`. Replace the scattered inline
-formatting; the proof sheet and drift audit then render keep identically by construction.
-
-#### Verification
-
-Audit tables and the proof-sheet badge show the same keep % for a given page.
-
----
-
 ### [P3][error-handling] Audits abort the whole run on one unreadable/missing asset
 
 **File(s):** `check-coloring-drift.mjs:50-62`; `audit-fill-eyes.mjs:37-72`;
