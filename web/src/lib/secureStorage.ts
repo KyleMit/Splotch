@@ -172,7 +172,8 @@ async function selectBackend(): Promise<SecureBackend> {
 
 /** Persist a named secret to the platform's secure store. */
 async function saveSecret(name: string, value: string) {
-  if (!browser || !value) return;
+  if (!browser) return;
+  if (!value) return clearSecret(name);
   const backend = await selectBackend();
   await backend.save(name, value);
 }

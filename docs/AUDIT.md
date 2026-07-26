@@ -22,29 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P4][error-handling] `saveSecret` silently no-ops on an empty value, coupling "save" to truthiness
-
-**File(s):** `web/src/lib/secureStorage.ts:121-129` — pinned at SHA f934d43
-
-#### Problem
-
-`if (!browser || !value) return;` — calling `saveApiKey('')` does nothing, neither saving nor
-clearing. The intended clear path is elsewhere (`settings.setAiUserApiKey` branches to
-`clearApiKey`, `settings.svelte.ts:218-221`), so `saveSecret` quietly assumes callers never pass
-empty. A future caller expecting `save('')` to persist-or-clear gets a silent nothing.
-
-#### Proposed solution
-
-Either document the contract at the signature ("non-empty only; use clearSecret to remove") or make
-it total: on empty value, delegate to `clearSecret(name)` so save/clear can't drift apart.
-
-#### Verification
-
-Unit test: `saveApiKey('')` after a stored key — assert the stored payload is removed (if
-delegating) or that the no-op is intentional and documented.
-
----
-
 ### [P4][maintainability] `getMasterKey` memoizes on a module-global promise that ignores which `db` it was created for
 
 **File(s):** `web/src/lib/secureStorage.ts:57-83` — pinned at SHA f934d43

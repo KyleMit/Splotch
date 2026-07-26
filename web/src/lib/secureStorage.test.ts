@@ -139,6 +139,14 @@ describe('web save/load round trip', () => {
     expect(ctrl.rows.has(MASTER_KEY_ROW)).toBe(true);
     await expect(secureStorage.loadApiKey()).resolves.toBeNull();
   });
+
+  it('clears a saved API key when saving an empty value', async () => {
+    await secureStorage.saveApiKey('secret-key-123');
+    await secureStorage.saveApiKey('');
+
+    expect(ctrl.rows.has(API_KEY_ROW)).toBe(false);
+    await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+  });
 });
 
 describe('master key creation', () => {
