@@ -28,40 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P3][duplication] `volumeMultiplier()` re-clamps a value `settings` already clamped, with magic `/ 50`
-
-**File(s):** `web/src/lib/audio/drawingSound.ts:19-21` and `81`;
-`web/src/lib/state/settings.svelte.ts:108-111` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-function volumeMultiplier() {
-  return Math.max(0, Math.min(settings.soundVolume, 100)) / 50;
-}
-```
-
-`settings.soundVolume` is already clamped to `0..100` by `clampVolume()` on every read/write, so the
-`Math.max(0, Math.min(…, 100))` is dead defensiveness. The `/ 50` is an unexplained magic number —
-it means "50 is the authored/normal volume, so 50→1.0×, 100→2.0×", but nothing says so (the
-equivalent constant `SOUND_VOLUME_DEFAULT = 50` lives in `settings`). Combined with
-`SOUND_VOLUME = 0.2` at line 5, the final gain math `SOUND_VOLUME * volumeMultiplier() * …` is three
-magic numbers deep.
-
-#### Proposed solution
-
-Drop the redundant clamp (`return settings.soundVolume / NORMAL_VOLUME`), and name the divisor:
-`const NORMAL_VOLUME = SOUND_VOLUME_DEFAULT;` (import from settings) or a local
-`const NORMAL_SOUND_VOLUME = 50` with a one-line WHY. Rename `SOUND_VOLUME` (line 5) to something
-like `BASE_SCRATCH_GAIN` since it's a base gain, not a "volume" in the settings sense.
-
-#### Verification
-
-`npm run check`; the new drawingSound unit test (above) asserts gain at `soundVolume=50` equals
-`BASE_SCRATCH_GAIN` at full speed.
-
----
-
 ### [P3][duplication] User-agent OS/device parsing duplicated between `deviceInfo.ts` and `platform.ts`
 
 **File(s):** `web/src/lib/deviceInfo.ts:64-78` (`osFromUserAgent`), `web/src/lib/platform.ts:38-49`
