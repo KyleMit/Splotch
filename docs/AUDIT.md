@@ -28,45 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P2][maintainability] `drawingSound.ts` audio graph is five module-level mutable globals — untestable singleton
-
-**File(s):** `web/src/lib/audio/drawingSound.ts:13-17` (module state), `19-104` (all functions) —
-pinned at SHA f934d43
-
-#### Problem
-
-The entire Web Audio lifecycle hangs off module-scope `let`s: `audioContext`, `buffers`,
-`loadStarted`, `currentSource`, `currentGain`. Every function mutates them by side effect. There is
-no unit test for this file (unlike its neighbors), and there can't easily be one — you can't
-construct an isolated instance, reset state between cases, or inject a fake `AudioContext`. It also
-means two consumers (the canvas and `SoundSection.svelte`'s preview) share one graph, so a preview
-during an active stroke would stomp `currentSource`.
-
-#### Proposed solution
-
-Wrap the state in a factory returning a small object, mirroring `createLatestRequest()`'s pattern:
-
-```ts
-export function createDrawingSound(deps?: { audioContext?: () => AudioContext | null }): {
-  preload(): void;
-  play(speed: number): void;
-  stop(): void;
-};
-```
-
-Export a default singleton (`export const drawingSound = createDrawingSound()`) plus the named
-functions for back-compat, or migrate the two callers. This makes the node lifecycle testable
-(assert one buffer source per stroke, gain disconnect on stop) and lets the preview own its own
-graph.
-
-#### Verification
-
-Add a Vitest suite with a stubbed `AudioContext` asserting: `play` creates exactly one source per
-start, `stop` ramps to 0 and disconnects, volume scales with `speed`. Existing `dragToClear.test.ts`
-mock of `stopDrawSound` still works.
-
----
-
 ### [P3][duplication] `volumeMultiplier()` re-clamps a value `settings` already clamped, with magic `/ 50`
 
 **File(s):** `web/src/lib/audio/drawingSound.ts:19-21` and `81`;
