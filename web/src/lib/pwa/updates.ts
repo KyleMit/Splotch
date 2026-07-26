@@ -151,6 +151,42 @@ export async function checkVersionMismatch(attemptedVersion: string | null = nul
   }
 }
 
+function activateWaitingSW(sw: ServiceWorker): void {
+  if (refreshState !== 'idle' || !canvasState.canvasEmpty) return;
+  let recoveryTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  const onControllerChange = () => {
+    clearTimeout(recoveryTimer);
+    if (!canvasState.canvasEmpty) {
+      refreshState = 'deferred';
+      return;
+    }
+    refreshState = 'idle';
+    window.location.reload();
+  };
+  navigator.serviceWorker.addEventListener('controllerchange', onControllerChange, {
+    once: true,
+  });
+  refreshState = 'activating';
+  try {
+    sw.postMessage({ type: 'SKIP_WAITING' });
+  } catch (error) {
+    navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+    refreshState = 'idle';
+    throw error;
+  }
+  // A dropped SKIP_WAITING — or an activation that never emits controllerchange —
+  // must not pin the lifecycle in 'activating' for the rest of the session: that
+  // short-circuits every later checkForUpdates (line: `if (refreshState ===
+  // 'activating') return`) and the deferred-reload path, silently blocking all
+  // future updates. Release back to idle after a grace period so a later check
+  // re-attempts; controllerchange clears this the moment it fires.
+  recoveryTimer = setTimeout(() => {
+    if (refreshState !== 'activating') return;
+    navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+    refreshState = 'idle';
+  }, ACTIVATION_RECOVERY_MS);
+}
+
 export async function checkForUpdates() {
   try {
     if (refreshState === 'deferred') {
@@ -166,42 +202,6 @@ export async function checkForUpdates() {
     if (!registration) return;
 
     await registration.update();
-
-    const activateWaitingSW = (sw: ServiceWorker) => {
-      if (refreshState !== 'idle' || !canvasState.canvasEmpty) return;
-      let recoveryTimer: ReturnType<typeof setTimeout> | undefined = undefined;
-      const onControllerChange = () => {
-        clearTimeout(recoveryTimer);
-        if (!canvasState.canvasEmpty) {
-          refreshState = 'deferred';
-          return;
-        }
-        refreshState = 'idle';
-        window.location.reload();
-      };
-      navigator.serviceWorker.addEventListener('controllerchange', onControllerChange, {
-        once: true,
-      });
-      refreshState = 'activating';
-      try {
-        sw.postMessage({ type: 'SKIP_WAITING' });
-      } catch (error) {
-        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
-        refreshState = 'idle';
-        throw error;
-      }
-      // A dropped SKIP_WAITING — or an activation that never emits controllerchange —
-      // must not pin the lifecycle in 'activating' for the rest of the session: that
-      // short-circuits every later checkForUpdates (line: `if (refreshState ===
-      // 'activating') return`) and the deferred-reload path, silently blocking all
-      // future updates. Release back to idle after a grace period so a later check
-      // re-attempts; controllerchange clears this the moment it fires.
-      recoveryTimer = setTimeout(() => {
-        if (refreshState !== 'activating') return;
-        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
-        refreshState = 'idle';
-      }, ACTIVATION_RECOVERY_MS);
-    };
 
     if (registration.waiting) {
       activateWaitingSW(registration.waiting);

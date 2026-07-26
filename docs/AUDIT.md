@@ -24,35 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P2][complexity] `checkForUpdates` is a 70-line function wrapping a nested `activateWaitingSW` state machine
-
-**File(s):** `web/src/lib/pwa/updates.ts:160-229` (whole function); nested closure `176-210` —
-pinned at SHA f934d43
-
-#### Problem
-
-`checkForUpdates` mixes four concerns in one function: the `'deferred'`/`'activating'` guard
-(162-169), the registration lookup + `update()` (171-174), a 35-line nested `activateWaitingSW`
-closure that owns its own recovery-timer/`controllerchange` state machine (176-210), and the
-waiting-vs-installing dispatch (212-225). The nested closure captures `registration`-adjacent state
-and is re-created on every call. This is hard to read and impossible to unit-test in isolation (it's
-reachable only through `checkForUpdates`).
-
-#### Proposed solution
-
-Extract to module scope: `function activateWaitingSW(sw: ServiceWorker): void` (it already depends
-only on `canvasState`, `refreshState`, `ACTIVATION_RECOVERY_MS`). Then `checkForUpdates` reads as a
-flat sequence: guard → lookup → `if (registration.waiting) activateWaitingSW(...)` → installing
-branch. Consider a second helper `function onInstalledActivate(registration)` for the installing
-branch.
-
-#### Verification
-
-`updates.test.ts` exercises this via `checkForUpdates`; behavior is unchanged so the suite is the
-regression net. `npm run check` confirms the extracted signature.
-
----
-
 ### [P2][duplication] `manualMode()` and `installDeviceOs()` duplicate device-family sniffing with subtly different results
 
 **File(s):** `web/src/lib/state/install.svelte.ts:48-69` (`isIosSafari`, `installDeviceOs`,
