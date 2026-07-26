@@ -9,40 +9,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P2][maintainability] `hooks.server.ts` `handle` mixes CORS and security-header concerns and repeats the header-copy loop
-
-**File(s):** `web/src/hooks.server.ts:20-46, 57-68` — pinned at SHA f934d43
-
-#### Problem
-
-The single `handle` does two unrelated jobs — CORS for `/api/*` (preflight + response headers) and
-stamping `SECURITY_HEADERS` onto non-API SSR responses — and both use the same open-coded pattern:
-
-```js
-for (const [key, value] of Object.entries(corsHeaders())) response.headers.set(key, value);
-...
-for (const [key, value] of Object.entries(SECURITY_HEADERS)) response.headers.set(key, value);
-```
-
-`corsHeaders()` is also called twice per preflight-adjacent request, re-allocating the object each
-time. As more cross-cutting response logic accretes, one monolithic `handle` gets harder to reason
-about.
-
-#### Proposed solution
-
-Split into two named handles — `handleCors` and `handleSecurityHeaders` — composed with SvelteKit's
-`sequence()` from `@sveltejs/kit/hooks`, each single-responsibility. Factor the repeated loop into a
-local `applyHeaders(response, headers)` helper, and hoist the CORS header object to a module-level
-`const` (it's static) instead of a per-call factory.
-
-#### Verification
-
-`npm run test:api:smoke` and `securityHeaders.test.ts` still pass; a preflight `OPTIONS /api/*`
-returns 204 with CORS headers, `/admin` SSR responses still carry the full security set, and
-CDN/prerendered responses are untouched.
-
----
-
 ### [P3][architecture] The `/dev/*` harnesses have no index and inconsistent chrome — only `ai-timer` has a Breadcrumb; there is no discoverable landing page
 
 **File(s):** `web/src/routes/dev/ai-timer/+page.svelte:92`,
