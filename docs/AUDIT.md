@@ -30,34 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P3][consistency] Inconsistent exit-code conventions across the CLIs
-
-**File(s):** `process.exitCode = 1` at audit-golden.mjs:226, check-coloring-drift.mjs:90,
-audit-invented-shapes.mjs:160, audit-fill-eyes.mjs:81; `process.exit(0)` at png-to-webp.mjs:20 and
-gen-asset-manifest.mjs:61; `fail()`→`process.exit(1)` throughout; `audit-night-halo.mjs` sets no
-exit code at all — pinned at SHA f934d43
-
-#### Problem
-
-Some tools signal "found problems" via `process.exitCode = 1` (lets the event loop drain), some
-hard-`process.exit(0)` mid-file, and `audit-night-halo` — explicitly described in its header as a
-ranking, but still a catalog audit — never sets a non-zero code even conceptually. A caller/CI
-cannot rely on a uniform "non-zero = something to look at" contract, and the mixed `process.exit()`
-vs `process.exitCode` styles risk truncating buffered stdout.
-
-#### Proposed solution
-
-Adopt one rule: audits set `process.exitCode = 1` on findings and never call `process.exit()`;
-generators keep `fail()` for hard errors. Document the "which audits gate CI" contract (halo is
-advisory by design — say so in code, not just prose).
-
-#### Verification
-
-Run each audit against a known-flagged page and check `echo $?`; confirm buffered output isn't cut
-off.
-
----
-
 ### [P3][maintainability] `describeLevers` settings object rebuilt by hand in three generators
 
 **File(s):** `gen-coloring-fills-dark.mjs:354-371`; `gen-coloring-chalk.mjs:327-342`;
