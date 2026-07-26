@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { STORAGE_KEYS } from '$lib/storage';
 
 const mocks = vi.hoisted(() => ({ native: false }));
 vi.mock('$app/environment', () => ({ browser: true }));
@@ -8,9 +9,6 @@ vi.mock('$lib/platform', async (importOriginal) => ({
   ...(await importOriginal<typeof import('$lib/platform')>()),
   isNative: () => mocks.native,
 }));
-
-const DISMISSED_KEY = 'splotch-install-dismissed';
-const INSTALLED_KEY = 'splotch-install-completed';
 
 function setUA(ua: string, platform = '', maxTouchPoints = 0) {
   Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
@@ -120,7 +118,7 @@ describe('initInstallPrompt — already installed', () => {
 
   it('stays suppressed once a prior install was recorded', async () => {
     setUA(ANDROID_UA);
-    localStorage.setItem(INSTALLED_KEY, 'true');
+    localStorage.setItem(STORAGE_KEYS.installCompleted, 'true');
     const { install, initInstallPrompt } = await freshModule();
     initInstallPrompt();
     expect(install.installed).toBe(true);
@@ -131,7 +129,7 @@ describe('initInstallPrompt — already installed', () => {
     // localStorage survives a PWA uninstall; beforeinstallprompt only fires
     // when the app is NOT installed, so the live event wins.
     setUA(ANDROID_UA);
-    localStorage.setItem(INSTALLED_KEY, 'true');
+    localStorage.setItem(STORAGE_KEYS.installCompleted, 'true');
     const { install, initInstallPrompt } = await freshModule();
     initInstallPrompt();
     expect(install.mode).toBe('none');
@@ -139,7 +137,7 @@ describe('initInstallPrompt — already installed', () => {
     window.dispatchEvent(makePromptEvent('accepted'));
     expect(install.mode).toBe('oneTap');
     expect(install.installed).toBe(false);
-    expect(localStorage.getItem(INSTALLED_KEY)).toBe('false');
+    expect(localStorage.getItem(STORAGE_KEYS.installCompleted)).toBe('false');
   });
 
   it('is inert inside the native Capacitor shell', async () => {
@@ -162,7 +160,7 @@ describe('promptInstall', () => {
     expect(outcome).toBe('accepted');
     expect(install.installed).toBe(true);
     expect(install.mode).toBe('none');
-    expect(localStorage.getItem(INSTALLED_KEY)).toBe('true');
+    expect(localStorage.getItem(STORAGE_KEYS.installCompleted)).toBe('true');
   });
 
   it('falls back to the manual hint and stops nagging when declined', async () => {
@@ -176,7 +174,7 @@ describe('promptInstall', () => {
     expect(install.installed).toBe(false);
     expect(install.mode).toBe('android');
     expect(install.dismissed).toBe(true);
-    expect(localStorage.getItem(DISMISSED_KEY)).toBe('true');
+    expect(localStorage.getItem(STORAGE_KEYS.installDismissed)).toBe('true');
   });
 
   it('reports unavailable when there is no live prompt to replay', async () => {
@@ -235,7 +233,7 @@ describe('appinstalled event', () => {
     window.dispatchEvent(new Event('appinstalled'));
     expect(install.installed).toBe(true);
     expect(install.mode).toBe('none');
-    expect(localStorage.getItem(INSTALLED_KEY)).toBe('true');
+    expect(localStorage.getItem(STORAGE_KEYS.installCompleted)).toBe('true');
   });
 });
 
@@ -246,7 +244,7 @@ describe('dismissInstall', () => {
     initInstallPrompt();
     dismissInstall();
     expect(install.dismissed).toBe(true);
-    expect(localStorage.getItem(DISMISSED_KEY)).toBe('true');
+    expect(localStorage.getItem(STORAGE_KEYS.installDismissed)).toBe('true');
 
     const next = await freshModule();
     next.initInstallPrompt();

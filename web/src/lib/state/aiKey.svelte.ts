@@ -1,4 +1,4 @@
-import { readString, removeKey } from '../storage';
+import { STORAGE_KEYS, readString, removeKey } from '../storage';
 import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage';
 import { settings } from './settings.svelte';
 
@@ -7,9 +7,7 @@ import { settings } from './settings.svelte';
 // of ours. Either this OR aiAccessToken being set unlocks the AI features.
 // The key itself is no longer kept here in plaintext — it lives in secure
 // storage (Keychain/Keystore on native, an encrypted IndexedDB payload on the
-// web). This constant only names the legacy localStorage slot so hydrateApiKey
-// can migrate and scrub any key written by an earlier build.
-const AI_USER_API_KEY = 'splotch-ai-user-api-key';
+// web).
 
 let aiKeyWriteVersion = 0;
 // Keep secure writes ordered so an older save already in flight cannot finish
@@ -55,10 +53,10 @@ export async function hydrateApiKey() {
   let key = await loadApiKey();
 
   if (!key) {
-    const legacy = readString(AI_USER_API_KEY, '');
+    const legacy = readString(STORAGE_KEYS.legacyAiUserApiKey, '');
     if (legacy) {
       await saveApiKey(legacy);
-      removeKey(AI_USER_API_KEY); // remove the plaintext copy now that it's secured
+      removeKey(STORAGE_KEYS.legacyAiUserApiKey); // remove the plaintext copy now that it's secured
       key = legacy;
     }
   }

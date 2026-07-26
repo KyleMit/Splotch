@@ -1,6 +1,9 @@
 import { browser } from '$app/environment';
 import { isNative } from './platform';
 import { lazyPluginModule } from './nativePlugin';
+import type { StorageKey } from './storageKeys';
+
+export { STORAGE_KEYS, type StorageKey } from './storageKeys';
 
 // Storage is dual-layer so the web app and the native apps share one code path:
 //
@@ -18,9 +21,9 @@ import { lazyPluginModule } from './nativePlugin';
 // Every key that flows through read*/write* is remembered so the durable layer
 // knows exactly what to back up and restore. State stores read their keys at
 // init (before hydrate runs), so this set is complete by then.
-const managedKeys = new Set<string>();
+const managedKeys = new Set<StorageKey>();
 
-function track(key: string) {
+function track(key: StorageKey) {
   managedKeys.add(key);
 }
 
@@ -85,7 +88,7 @@ const getPrefs = lazyPluginModule(() =>
 // __IS_CAPACITOR__ guards (here and below) make the Preferences paths
 // compile-time dead on web so Rollup drops the plugin chunk; isNative() alone
 // is a runtime check it can't tree-shake.
-function mirror(key: string, value: string) {
+function mirror(key: StorageKey, value: string) {
   if (__IS_CAPACITOR__ && isNative()) {
     getPrefs()
       .then(({ Preferences }) => Preferences.set({ key, value: String(value) }))
@@ -93,7 +96,7 @@ function mirror(key: string, value: string) {
   }
 }
 
-export function readBool(key: string, fallback: boolean): boolean {
+export function readBool(key: StorageKey, fallback: boolean): boolean {
   track(key);
   if (!browser) return fallback;
   return safeRead(() => {
@@ -103,7 +106,7 @@ export function readBool(key: string, fallback: boolean): boolean {
   }, fallback);
 }
 
-export function writeBool(key: string, value: boolean) {
+export function writeBool(key: StorageKey, value: boolean) {
   track(key);
   if (!browser) return;
   const str = value ? 'true' : 'false';
@@ -111,7 +114,7 @@ export function writeBool(key: string, value: boolean) {
   mirror(key, str);
 }
 
-export function readString<T extends string | null>(key: string, fallback: T): string | T {
+export function readString<T extends string | null>(key: StorageKey, fallback: T): string | T {
   track(key);
   if (!browser) return fallback;
   return safeRead(() => {
@@ -120,7 +123,7 @@ export function readString<T extends string | null>(key: string, fallback: T): s
   }, fallback);
 }
 
-export function writeString(key: string, value: string) {
+export function writeString(key: StorageKey, value: string) {
   track(key);
   if (!browser) return;
   safeLocalStorage(() => localStorage.setItem(key, value));
@@ -130,7 +133,7 @@ export function writeString(key: string, value: string) {
 // Delete a key from localStorage and, on native, its durable Preferences mirror.
 // Used to scrub a value that has moved elsewhere (e.g. a plaintext API key that's
 // been migrated into secure storage).
-export function removeKey(key: string) {
+export function removeKey(key: StorageKey) {
   track(key);
   if (!browser) return;
   safeLocalStorage(() => localStorage.removeItem(key));
@@ -142,7 +145,7 @@ export function removeKey(key: string) {
 }
 
 export function readInt(
-  key: string,
+  key: StorageKey,
   fallback: number,
   allowed: readonly number[] | null = null
 ): number {
@@ -156,7 +159,7 @@ export function readInt(
   }, fallback);
 }
 
-export function writeInt(key: string, value: number) {
+export function writeInt(key: StorageKey, value: number) {
   track(key);
   if (!browser) return;
   const str = String(value);

@@ -1,4 +1,5 @@
 import {
+  STORAGE_KEYS,
   readBool,
   writeBool,
   readString,
@@ -6,31 +7,10 @@ import {
   readInt,
   writeInt,
   onDurableRestore,
+  type StorageKey,
 } from '../storage';
 import { applyTheme, isThemePreference, THEME_DEFAULT, type ThemePreference } from '../theme';
 import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
-
-const SOUND_KEY = 'splotch-sound-enabled';
-const SOUND_VOLUME_KEY = 'splotch-sound-volume';
-const ACTION_BUTTON_SCALE_KEY = 'splotch-action-button-scale';
-const SAVE_ON_DELETE_KEY = 'splotch-save-on-delete';
-const SCREENSHOT_KEY = 'splotch-screenshot-enabled';
-const UNDO_KEY = 'splotch-undo-button-enabled';
-const STROKE_CTRL_KEY = 'splotch-stroke-width-control';
-const ERASER_KEY = 'splotch-eraser-enabled';
-const COLORING_BOOK_KEY = 'splotch-coloring-book-enabled';
-const AI_IMAGE_KEY = 'splotch-ai-image-enabled';
-const AI_CUSTOMIZATION_KEY = 'splotch-ai-customization-enabled';
-const AUTO_SAVE_AI_KEY = 'splotch-auto-save-ai';
-const AI_ACCESS_TOKEN_KEY = 'splotch-ai-access-token';
-const ADVANCED_CONTROLS_KEY = 'splotch-advanced-controls';
-const DRAWER_OPEN_KEY = 'splotch-drawer-open';
-const ADMIN_LINK_VISIBLE_KEY = 'splotch-admin-link-visible';
-const LOCK_ROTATION_KEY = 'splotch-lock-rotation';
-const FORCE_LANDSCAPE_KEY = 'splotch-force-landscape';
-const PENCIL_ERASER_KEY = 'splotch-pencil-eraser-enabled';
-const APPLE_PENCIL_SEEN_KEY = 'splotch-apple-pencil-seen';
-const THEME_KEY = 'splotch-theme';
 
 function defaultForceLandscapeOrientation() {
   if (typeof window === 'undefined') return true;
@@ -48,47 +28,47 @@ function defaultForceLandscapeOrientation() {
 // Forgetting the reloadSettings entry — the bug this table exists to prevent —
 // is now impossible.
 const BOOL_SETTINGS = {
-  soundEnabled: [SOUND_KEY, true],
-  saveOnDeleteEnabled: [SAVE_ON_DELETE_KEY, false],
-  screenshotEnabled: [SCREENSHOT_KEY, true],
-  undoButtonEnabled: [UNDO_KEY, true],
-  strokeWidthControlEnabled: [STROKE_CTRL_KEY, true],
+  soundEnabled: [STORAGE_KEYS.soundEnabled, true],
+  saveOnDeleteEnabled: [STORAGE_KEYS.saveOnDelete, false],
+  screenshotEnabled: [STORAGE_KEYS.screenshotEnabled, true],
+  undoButtonEnabled: [STORAGE_KEYS.undoButtonEnabled, true],
+  strokeWidthControlEnabled: [STORAGE_KEYS.strokeWidthControl, true],
   // Hides the eraser entry in the Actions Panel's Brush Menu (the eraser moved
   // there from its old top-level button; the stored key predates the move).
-  eraserEnabled: [ERASER_KEY, true],
-  coloringBookEnabled: [COLORING_BOOK_KEY, true],
-  aiImageEnabled: [AI_IMAGE_KEY, true],
-  aiCustomizationEnabled: [AI_CUSTOMIZATION_KEY, true],
+  eraserEnabled: [STORAGE_KEYS.eraserEnabled, true],
+  coloringBookEnabled: [STORAGE_KEYS.coloringBookEnabled, true],
+  aiImageEnabled: [STORAGE_KEYS.aiImageEnabled, true],
+  aiCustomizationEnabled: [STORAGE_KEYS.aiCustomizationEnabled, true],
   // When on, a finished AI image is dropped straight into the photo gallery
   // (a download on the web) along with the child's drawing — no Download button,
   // and the freed space goes to a larger preview.
-  autoSaveAiEnabled: [AUTO_SAVE_AI_KEY, false],
+  autoSaveAiEnabled: [STORAGE_KEYS.autoSaveAi, false],
   // Master switch for the collapsible action drawer. When on, the chevron
   // toggle shows and the drawer can be opened/closed; when off, the controls
   // are always visible and the chevron is hidden.
-  advancedControlsEnabled: [ADVANCED_CONTROLS_KEY, true],
+  advancedControlsEnabled: [STORAGE_KEYS.advancedControls, true],
   // Remembered open/closed state of the drawer (defaults closed).
-  drawerOpen: [DRAWER_OPEN_KEY, false],
+  drawerOpen: [STORAGE_KEYS.drawerOpen, false],
   // Whether the hidden link to the /admin console is shown in the About tab.
   // Unlocked by the version-tap easter egg and kept visible for anyone who has
   // an admin_session cookie; reset to hidden on logout / failed login / leaving
   // the admin page without signing in (see /admin and AboutSection).
-  adminLinkVisible: [ADMIN_LINK_VISIBLE_KEY, false],
+  adminLinkVisible: [STORAGE_KEYS.adminLinkVisible, false],
   // Parent device-orientation controls. The force-landscape default is filled
   // in below from the viewport so phones start portrait while tablet-class
   // devices, including iPad Mini, start landscape.
-  lockRotationEnabled: [LOCK_ROTATION_KEY, true],
-  forceLandscapeOrientation: [FORCE_LANDSCAPE_KEY, defaultForceLandscapeOrientation()],
+  lockRotationEnabled: [STORAGE_KEYS.lockRotation, true],
+  forceLandscapeOrientation: [STORAGE_KEYS.forceLandscape, defaultForceLandscapeOrientation()],
   // Apple Pencil double-tap → toggle eraser (iOS native). On by default; the
   // toggle that controls it only appears once a pencil has actually been used on
   // this device (applePencilSeen), giving parents a way to turn it off if a
   // toddler keeps flipping tools by accident. See web/src/lib/plugins/pencilEraser.ts.
-  pencilEraserEnabled: [PENCIL_ERASER_KEY, true],
+  pencilEraserEnabled: [STORAGE_KEYS.pencilEraserEnabled, true],
   // Sticky per-device detection flag, set the first time an Apple Pencil
   // double-tap fires. Not a user toggle itself — it's what reveals the
   // pencilEraserEnabled row in the Parent Center.
-  applePencilSeen: [APPLE_PENCIL_SEEN_KEY, false],
-} satisfies Record<string, [string, boolean]>;
+  applePencilSeen: [STORAGE_KEYS.applePencilSeen, false],
+} satisfies Record<string, [StorageKey, boolean]>;
 
 type BoolSettingKey = keyof typeof BOOL_SETTINGS;
 
@@ -118,15 +98,19 @@ function clampButtonScale(v: number) {
 // int setting is one entry here plus its named-export wrapper.
 const INT_SETTINGS = {
   // Drawing sound volume percentage. 50 is the normal authored volume, 100 is 2x.
-  soundVolume: [SOUND_VOLUME_KEY, SOUND_VOLUME_DEFAULT, clampVolume],
+  soundVolume: [STORAGE_KEYS.soundVolume, SOUND_VOLUME_DEFAULT, clampVolume],
   // Action-center button size percentage (see ACTION_BUTTON_SCALE_* above).
-  actionButtonScale: [ACTION_BUTTON_SCALE_KEY, ACTION_BUTTON_SCALE_DEFAULT, clampButtonScale],
-} satisfies Record<string, [string, number, (v: number) => number]>;
+  actionButtonScale: [
+    STORAGE_KEYS.actionButtonScale,
+    ACTION_BUTTON_SCALE_DEFAULT,
+    clampButtonScale,
+  ],
+} satisfies Record<string, [StorageKey, number, (v: number) => number]>;
 
 type IntSettingKey = keyof typeof INT_SETTINGS;
 
 function readTheme(fallback: ThemePreference): ThemePreference {
-  const raw = readString(THEME_KEY, fallback);
+  const raw = readString(STORAGE_KEYS.theme, fallback);
   return isThemePreference(raw) ? raw : fallback;
 }
 
@@ -157,7 +141,7 @@ export const settings: Settings = $state({
     ])
   ) as Record<IntSettingKey, number>),
   theme: readTheme(THEME_DEFAULT),
-  aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
+  aiAccessToken: readString(STORAGE_KEYS.aiAccessToken, ''),
   aiUserApiKey: '',
   saveFolderName: null,
 });
@@ -191,7 +175,7 @@ export const setApplePencilSeen = makeBoolSetter('applePencilSeen');
 
 export function setTheme(v: ThemePreference) {
   settings.theme = v;
-  writeString(THEME_KEY, v);
+  writeString(STORAGE_KEYS.theme, v);
   applyTheme(v);
 }
 
@@ -210,7 +194,7 @@ export const setActionButtonScale = makeIntSetter('actionButtonScale');
 
 export function setAiAccessToken(v: string) {
   settings.aiAccessToken = v;
-  writeString(AI_ACCESS_TOKEN_KEY, v);
+  writeString(STORAGE_KEYS.aiAccessToken, v);
 }
 
 export type AiCredentialKind = 'apiKey' | 'accessCode' | 'none';
@@ -229,17 +213,17 @@ export function aiCredentialKind(): AiCredentialKind {
 export function reloadSettings() {
   for (const [prop, [key]] of Object.entries(BOOL_SETTINGS) as [
     BoolSettingKey,
-    [string, boolean],
+    [StorageKey, boolean],
   ][]) {
     settings[prop] = readBool(key, settings[prop]);
   }
   for (const [prop, [key, , clamp]] of Object.entries(INT_SETTINGS) as [
     IntSettingKey,
-    [string, number, (v: number) => number],
+    [StorageKey, number, (v: number) => number],
   ][]) {
     settings[prop] = clamp(readInt(key, settings[prop]));
   }
-  settings.aiAccessToken = readString(AI_ACCESS_TOKEN_KEY, settings.aiAccessToken);
+  settings.aiAccessToken = readString(STORAGE_KEYS.aiAccessToken, settings.aiAccessToken);
   settings.theme = readTheme(settings.theme);
   applyTheme(settings.theme);
 }

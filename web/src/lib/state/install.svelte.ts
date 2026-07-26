@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { isAndroidBrowser, isIosDevice, isNative, isStandalone } from '$lib/platform';
-import { readBool, writeBool } from '$lib/storage';
+import { STORAGE_KEYS, readBool, writeBool } from '$lib/storage';
 
 // "Add to Home Screen" / PWA install, surfaced as a friendly parent-facing prompt.
 //
@@ -13,9 +13,6 @@ import { readBool, writeBool } from '$lib/storage';
 //
 // Inside the native Capacitor shell the app is already "installed", so the whole
 // feature is inert there.
-
-const DISMISSED_KEY = 'splotch-install-dismissed';
-const INSTALLED_KEY = 'splotch-install-completed';
 
 // Chromium-only event; not in the default TS DOM lib.
 interface BeforeInstallPromptEvent extends Event {
@@ -78,7 +75,7 @@ function markInstalled() {
   deferredPrompt = null;
   install.installed = true;
   install.mode = 'none';
-  writeBool(INSTALLED_KEY, true);
+  writeBool(STORAGE_KEYS.installCompleted, true);
 }
 
 // beforeinstallprompt is one-shot and can fire before the page component
@@ -93,9 +90,9 @@ if (browser && !isNative()) {
     // The browser only fires this when the app is NOT currently installed, so
     // it outranks a stale persisted flag (installed once, later uninstalled —
     // localStorage survives a PWA uninstall).
-    if (install.installed || readBool(INSTALLED_KEY, false)) {
+    if (install.installed || readBool(STORAGE_KEYS.installCompleted, false)) {
       install.installed = false;
-      writeBool(INSTALLED_KEY, false);
+      writeBool(STORAGE_KEYS.installCompleted, false);
     }
     install.mode = 'oneTap';
   });
@@ -110,13 +107,13 @@ export function initInstallPrompt() {
   if (!browser || initialized || isNative()) return;
   initialized = true;
 
-  install.dismissed = readBool(DISMISSED_KEY, false);
+  install.dismissed = readBool(STORAGE_KEYS.installDismissed, false);
 
   // A live prompt captured before init already proved the app is installable
   // (and not installed) — the listener above has set mode/installed.
   if (deferredPrompt) return;
 
-  if (readBool(INSTALLED_KEY, false) || isStandalone()) {
+  if (readBool(STORAGE_KEYS.installCompleted, false) || isStandalone()) {
     install.installed = true;
     install.mode = 'none';
     return;
@@ -160,5 +157,5 @@ export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unava
 
 export function dismissInstall() {
   install.dismissed = true;
-  writeBool(DISMISSED_KEY, true);
+  writeBool(STORAGE_KEYS.installDismissed, true);
 }

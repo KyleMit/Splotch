@@ -22,6 +22,7 @@ vi.mock('@capacitor/preferences', () => ({
 }));
 
 import {
+  STORAGE_KEYS,
   readBool,
   writeBool,
   readString,
@@ -41,56 +42,56 @@ beforeEach(() => {
 
 describe('readBool / writeBool', () => {
   it('round-trips true and false', () => {
-    writeBool('k', true);
-    expect(localStorage.getItem('k')).toBe('true');
-    expect(readBool('k', false)).toBe(true);
+    writeBool(STORAGE_KEYS.soundEnabled, true);
+    expect(localStorage.getItem(STORAGE_KEYS.soundEnabled)).toBe('true');
+    expect(readBool(STORAGE_KEYS.soundEnabled, false)).toBe(true);
 
-    writeBool('k', false);
-    expect(readBool('k', true)).toBe(false);
+    writeBool(STORAGE_KEYS.soundEnabled, false);
+    expect(readBool(STORAGE_KEYS.soundEnabled, true)).toBe(false);
   });
 
   it('returns the fallback when the key is absent', () => {
-    expect(readBool('missing', true)).toBe(true);
-    expect(readBool('missing', false)).toBe(false);
+    expect(readBool(STORAGE_KEYS.saveOnDelete, true)).toBe(true);
+    expect(readBool(STORAGE_KEYS.saveOnDelete, false)).toBe(false);
   });
 });
 
 describe('readString / writeString', () => {
   it('round-trips a string and falls back when absent', () => {
-    writeString('s', 'hello');
-    expect(readString('s', 'fallback')).toBe('hello');
-    expect(readString('absent', 'fallback')).toBe('fallback');
+    writeString(STORAGE_KEYS.aiAccessToken, 'hello');
+    expect(readString(STORAGE_KEYS.aiAccessToken, 'fallback')).toBe('hello');
+    expect(readString(STORAGE_KEYS.adminLinkVisible, 'fallback')).toBe('fallback');
   });
 });
 
 describe('readInt', () => {
   it('round-trips an integer', () => {
-    writeInt('n', 7);
-    expect(localStorage.getItem('n')).toBe('7');
-    expect(readInt('n', 0)).toBe(7);
+    writeInt(STORAGE_KEYS.soundVolume, 7);
+    expect(localStorage.getItem(STORAGE_KEYS.soundVolume)).toBe('7');
+    expect(readInt(STORAGE_KEYS.soundVolume, 0)).toBe(7);
   });
 
   it('falls back when the stored value is not a number', () => {
-    localStorage.setItem('n', 'not-a-number');
-    expect(readInt('n', 3)).toBe(3);
+    localStorage.setItem(STORAGE_KEYS.soundVolume, 'not-a-number');
+    expect(readInt(STORAGE_KEYS.soundVolume, 3)).toBe(3);
   });
 
   it('falls back when an allowed-list is given and the value is excluded', () => {
-    localStorage.setItem('n', '99');
-    expect(readInt('n', 3, [1, 2, 3, 4, 5])).toBe(3);
+    localStorage.setItem(STORAGE_KEYS.soundVolume, '99');
+    expect(readInt(STORAGE_KEYS.soundVolume, 3, [1, 2, 3, 4, 5])).toBe(3);
   });
 
   it('returns the value when it is in the allowed-list', () => {
-    localStorage.setItem('n', '4');
-    expect(readInt('n', 3, [1, 2, 3, 4, 5])).toBe(4);
+    localStorage.setItem(STORAGE_KEYS.soundVolume, '4');
+    expect(readInt(STORAGE_KEYS.soundVolume, 3, [1, 2, 3, 4, 5])).toBe(4);
   });
 });
 
 describe('removeKey', () => {
   it('removes the key from localStorage', () => {
-    writeString('s', 'x');
-    removeKey('s');
-    expect(localStorage.getItem('s')).toBeNull();
+    writeString(STORAGE_KEYS.aiAccessToken, 'x');
+    removeKey(STORAGE_KEYS.aiAccessToken);
+    expect(localStorage.getItem(STORAGE_KEYS.aiAccessToken)).toBeNull();
   });
 });
 
@@ -101,9 +102,9 @@ describe('resilience to a throwing localStorage', () => {
     });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
-      expect(() => writeBool('k', true)).not.toThrow();
-      expect(() => writeString('s', 'v')).not.toThrow();
-      expect(() => writeInt('n', 1)).not.toThrow();
+      expect(() => writeBool(STORAGE_KEYS.soundEnabled, true)).not.toThrow();
+      expect(() => writeString(STORAGE_KEYS.aiAccessToken, 'v')).not.toThrow();
+      expect(() => writeInt(STORAGE_KEYS.soundVolume, 1)).not.toThrow();
     } finally {
       spy.mockRestore();
       warn.mockRestore();
@@ -116,12 +117,12 @@ describe('resilience to a throwing localStorage', () => {
     });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
-      expect(readBool('k', true)).toBe(true);
-      expect(readBool('k', false)).toBe(false);
-      expect(readString('s', 'fallback')).toBe('fallback');
-      expect(readString('s', null)).toBeNull();
-      expect(readInt('n', 7)).toBe(7);
-      expect(readInt('n', 3, [1, 2, 3])).toBe(3);
+      expect(readBool(STORAGE_KEYS.soundEnabled, true)).toBe(true);
+      expect(readBool(STORAGE_KEYS.soundEnabled, false)).toBe(false);
+      expect(readString(STORAGE_KEYS.aiAccessToken, 'fallback')).toBe('fallback');
+      expect(readString(STORAGE_KEYS.aiAccessToken, null)).toBeNull();
+      expect(readInt(STORAGE_KEYS.soundVolume, 7)).toBe(7);
+      expect(readInt(STORAGE_KEYS.soundVolume, 3, [1, 2, 3])).toBe(3);
     } finally {
       spy.mockRestore();
       warn.mockRestore();
@@ -134,7 +135,7 @@ describe('resilience to a throwing localStorage', () => {
     });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
-      expect(() => removeKey('k')).not.toThrow();
+      expect(() => removeKey(STORAGE_KEYS.soundEnabled)).not.toThrow();
     } finally {
       spy.mockRestore();
       warn.mockRestore();
@@ -145,18 +146,18 @@ describe('resilience to a throwing localStorage', () => {
 describe('mirror to durable storage (native)', () => {
   it('does not touch Preferences on the web', async () => {
     ctrl.native = false;
-    writeString('web-key', 'v');
+    writeString(STORAGE_KEYS.theme, 'v');
     // Let any (mistaken) async mirror settle, then assert nothing was mirrored.
     await Promise.resolve();
-    expect(prefsStore.has('web-key')).toBe(false);
+    expect(prefsStore.has(STORAGE_KEYS.theme)).toBe(false);
   });
 
   it('mirrors writes to Preferences on native', async () => {
     ctrl.native = true;
-    writeString('nk', 'v');
+    writeString(STORAGE_KEYS.brushType, 'v');
     // mirror() is fire-and-forget: flush the microtask queue (dynamic import +
     // the Preferences.set promise) before asserting.
-    await vi.waitFor(() => expect(prefsStore.get('nk')).toBe('v'));
+    await vi.waitFor(() => expect(prefsStore.get(STORAGE_KEYS.brushType)).toBe('v'));
   });
 });
 
@@ -171,22 +172,22 @@ describe('hydrateDurableStorage', () => {
     ctrl.native = true;
     // Register the key as managed (read*/write* track it) without writing to
     // localStorage, then seed only the durable store — simulating eviction.
-    readString('evicted', null);
-    prefsStore.set('evicted', 'recovered');
+    readString(STORAGE_KEYS.strokeWidthSize, null);
+    prefsStore.set(STORAGE_KEYS.strokeWidthSize, 'recovered');
 
     const restored = await hydrateDurableStorage();
     expect(restored).toBe(true);
-    expect(localStorage.getItem('evicted')).toBe('recovered');
+    expect(localStorage.getItem(STORAGE_KEYS.strokeWidthSize)).toBe('recovered');
   });
 
   it('back-fills Preferences from a localStorage-only value without reporting a restore', async () => {
     ctrl.native = true;
-    writeString('local-only', 'keep'); // tracked; mirror also fires but store is cleared below
+    writeString(STORAGE_KEYS.drawerOpen, 'keep'); // tracked; mirror also fires but store is cleared below
     prefsStore.clear();
 
     const restored = await hydrateDurableStorage();
     expect(restored).toBe(false); // nothing was restored *into* localStorage
-    expect(prefsStore.get('local-only')).toBe('keep'); // but durable store was seeded
+    expect(prefsStore.get(STORAGE_KEYS.drawerOpen)).toBe('keep'); // but durable store was seeded
   });
 });
 
@@ -196,8 +197,8 @@ describe('onDurableRestore', () => {
     const cb = vi.fn();
     const off = onDurableRestore(cb);
     try {
-      readString('evicted', null); // register the key as managed
-      prefsStore.set('evicted', 'recovered'); // durable-only value the WebView lost
+      readString(STORAGE_KEYS.eraserWidthSize, null); // register the key as managed
+      prefsStore.set(STORAGE_KEYS.eraserWidthSize, 'recovered'); // durable-only value the WebView lost
 
       const restored = await hydrateDurableStorage();
       expect(restored).toBe(true);

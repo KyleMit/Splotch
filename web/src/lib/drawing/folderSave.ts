@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { readBool, writeBool, removeKey } from '$lib/storage';
+import { STORAGE_KEYS, readBool, writeBool, removeKey } from '$lib/storage';
 import { lazyIdbDatabase } from '$lib/idb';
 
 // Silent folder save for the web target. On desktop Chromium (in-tab or
@@ -24,8 +24,6 @@ const DB_NAME = 'splotch-fs';
 const DB_VERSION = 1;
 const STORE = 'handles';
 const HANDLE_KEY = 'saveDir';
-const FOLDER_CHOSEN_KEY = 'splotch-save-folder-chosen';
-
 const getDb = lazyIdbDatabase(DB_NAME, STORE, DB_VERSION);
 
 // In-memory copy of the stored handle (undefined = not read yet, null = none),
@@ -43,7 +41,7 @@ export function onSaveFolderCleared(listener: () => void) {
 
 async function loadHandle(): Promise<FileSystemDirectoryHandle | null> {
   if (cachedHandle !== undefined) return cachedHandle;
-  if (!readBool(FOLDER_CHOSEN_KEY, false)) {
+  if (!readBool(STORAGE_KEYS.saveFolderChosen, false)) {
     cachedHandle = null;
     return null;
   }
@@ -90,7 +88,7 @@ export async function chooseSaveFolder(): Promise<string | null> {
     return null;
   }
   cachedHandle = handle;
-  writeBool(FOLDER_CHOSEN_KEY, true);
+  writeBool(STORAGE_KEYS.saveFolderChosen, true);
   try {
     await storeHandle(handle);
   } catch (err) {
@@ -105,7 +103,7 @@ export async function chooseSaveFolder(): Promise<string | null> {
 export async function clearSaveFolder(): Promise<void> {
   if (!browser) return;
   cachedHandle = null;
-  removeKey(FOLDER_CHOSEN_KEY);
+  removeKey(STORAGE_KEYS.saveFolderChosen);
   try {
     const db = await getDb();
     await db.delete(STORE, HANDLE_KEY);

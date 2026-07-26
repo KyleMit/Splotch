@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { STORAGE_KEYS } from '$lib/storage';
 
 // In-memory stand-in for the idb-backed handle store, so the test exercises our
 // dispatch/permission logic without depending on happy-dom's IndexedDB. The
@@ -46,7 +47,7 @@ function makeHandle(permission: PermissionState = 'granted', name = 'My Pictures
 
 function seedFolder(handle: unknown) {
   store.set('saveDir', handle);
-  localStorage.setItem('splotch-save-folder-chosen', 'true');
+  localStorage.setItem(STORAGE_KEYS.saveFolderChosen, 'true');
 }
 
 function setPicker(impl: () => unknown) {
@@ -147,7 +148,7 @@ describe('getSaveFolderName', () => {
 
   it('degrades to no-folder when IndexedDB is unavailable', async () => {
     failIdb = true;
-    localStorage.setItem('splotch-save-folder-chosen', 'true');
+    localStorage.setItem(STORAGE_KEYS.saveFolderChosen, 'true');
     setPicker(vi.fn());
     expect(await folderSave.getSaveFolderName()).toBeNull();
     expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(false);
