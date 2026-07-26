@@ -31,7 +31,7 @@ export function sessionToken() {
 // Constant-time secret comparison. The length check happens first and is not
 // itself a secret leak (an attacker already controls their own input length);
 // timingSafeEqual then guards against byte-by-byte timing attacks on the value.
-export function secretMatches(provided: string | undefined, expected: string | undefined) {
+export function constantTimeEqual(provided: string | undefined, expected: string | undefined) {
   if (!expected || !provided) return false;
   const a = Buffer.from(provided);
   const b = Buffer.from(expected);
@@ -41,7 +41,7 @@ export function secretMatches(provided: string | undefined, expected: string | u
 
 /** Whether `key` is the raw admin secret (the login check). */
 export function verifyAdminSecret(key: string | undefined) {
-  return secretMatches(key, env.ADMIN_ACCESS_TOKEN);
+  return constantTimeEqual(key, env.ADMIN_ACCESS_TOKEN);
 }
 
 // Both front doors throttle into this one bucket so an attacker can't double
@@ -75,7 +75,15 @@ export function beginAdminLogin(ip: string): AdminLoginAttempt {
 
 /** Whether `token` is a currently valid derived session token. */
 export function verifySessionToken(token: string | undefined) {
-  return secretMatches(token, sessionToken());
+  return constantTimeEqual(token, sessionToken());
+}
+
+const BEARER_PREFIX = 'Bearer ';
+
+/** Extract the bearer token from an `Authorization: Bearer <token>` header, or '' if absent/malformed. */
+export function bearerToken(request: Request): string {
+  const auth = request.headers.get('authorization') ?? '';
+  return auth.startsWith(BEARER_PREFIX) ? auth.slice(BEARER_PREFIX.length).trim() : '';
 }
 
 /** Pair each access token with the invite URL an admin hands out. */

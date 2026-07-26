@@ -205,6 +205,8 @@ export async function removeToken(token: unknown): Promise<MutationResult> {
   const t = String(token ?? '').trim();
   return mutateList(
     (list) => {
+      // Empty/no-match input isn't a special case: it just never matches, so it
+      // falls into the same no-op path below as a real, unmatched token.
       const next = list.filter((x) => x !== t);
       // A no-op remove must not rewrite the blob: under eventual consistency the
       // list may be a stale replica read, and persisting it would clobber a token

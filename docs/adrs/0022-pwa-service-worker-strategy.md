@@ -73,7 +73,8 @@ update-lifecycle and manifest-generation features are explicitly disabled. A cus
 
 ### Custom update lifecycle (`src/lib/pwa/updates.ts`)
 
-`initPWAUpdates()` is called from `+page.svelte` on web (skipped in native and dev). It:
+`initPWAUpdates()` is called from `lib/boot/webOnlyServices.ts` on web (skipped in native and dev).
+It:
 
 * Calls `registration.update()` on page load, on `visibilitychange` to visible, on `focus`, and
   hourly — so the browser always has a fresh copy of `sw.js` to compare against.

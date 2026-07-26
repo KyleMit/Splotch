@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Self-contained smoke test for the /api/* HTTP contract (see the `api` skill).
-// Boots a throwaway `vite dev` with test env, exercises the admin auth flow, the
-// public oracles, the csp-report receiver, and generate-image's auth gate against the documented shapes,
-// then tears the server down. No Gemini key or Netlify Blobs needed — every
+// Boots a throwaway `vite dev` with test env, exercises the CORS/preflight
+// contract, the admin auth flow, the public oracles, the csp-report receiver,
+// and generate-image's auth gate against the documented shapes, then tears the
+// server down. No Gemini key or Netlify Blobs needed — every
 // generate-image case here is rejected before the model call; successful
 // generation and verify-key (which make live model calls) are out of scope.
 
@@ -10,6 +11,10 @@ import { randomUUID } from 'node:crypto';
 import { spawnViteServer } from './lib/vite-server.mjs';
 import { waitForUrl } from './lib/utils.mjs';
 import { check, fatal, summarize, json } from './lib/smoke.mjs';
+// Type-stripped at runtime (the npm script passes --experimental-strip-types)
+// so the absence assertions below name the same headers the hook stamps — a new
+// security header is covered here the moment it's added to that module.
+import { SECURITY_HEADERS } from '../web/src/lib/server/securityHeaders.ts';
 
 const PORT = Number(process.env.SMOKE_PORT ?? 5199);
 const BASE = `http://localhost:${PORT}`;
@@ -59,6 +64,44 @@ async function run() {
     headers: { Authorization: 'Bearer deadbeef' },
   });
   check('tokens with bad bearer → 401', badAuth.status === 401, `got ${badAuth.status}`);
+
+  // --- CORS contract (hooks.server.ts `handleCors`, ADR-0007) ---
+  // The native WebViews call /api/* from a foreign origin, so the preflight is
+  // answered before any route logic and every /api/* response carries the CORS
+  // set. Neither may carry the SSR security headers: `handleSecurityHeaders`
+  // skips /api, and a preflight short-circuits the handle sequence before it
+  // runs at all.
+  const CORS_SET = {
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS',
+    'access-control-allow-headers': 'Content-Type, Authorization, X-Access-Token, X-Api-Key',
+    'access-control-max-age': '86400',
+  };
+  const wrongCors = (res) =>
+    Object.entries(CORS_SET)
+      .filter(([name, value]) => res.headers.get(name) !== value)
+      .map(([name]) => `${name}: ${res.headers.get(name)}`);
+  const leakedSecurity = (res) => Object.keys(SECURITY_HEADERS).filter((h) => res.headers.has(h));
+
+  // OPTIONS returns before `resolve()`, so this spends no rate-limit budget —
+  // which is what lets it sit ahead of the burst checks further down.
+  const preflight = await fetch(`${BASE}/api/generate-image`, { method: 'OPTIONS' });
+  check(
+    'OPTIONS /api/* → 204 with the CORS set and no security headers',
+    preflight.status === 204 &&
+      wrongCors(preflight).length === 0 &&
+      leakedSecurity(preflight).length === 0,
+    `got ${preflight.status}, wrong ${JSON.stringify(wrongCors(preflight))}, leaked ${JSON.stringify(leakedSecurity(preflight))}`
+  );
+
+  // Reuses the 401 above rather than spending a request: the headers are
+  // stamped after `resolve()`, so every /api/* response carries them whatever
+  // its status.
+  check(
+    'non-OPTIONS /api/* → CORS set stamped, no security headers',
+    wrongCors(noAuth).length === 0 && leakedSecurity(noAuth).length === 0,
+    `wrong ${JSON.stringify(wrongCors(noAuth))}, leaked ${JSON.stringify(leakedSecurity(noAuth))}`
+  );
 
   // --- tokens snapshot + mutations ---
   const list = await fetch(`${BASE}/api/admin/tokens`, { headers: auth });

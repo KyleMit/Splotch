@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import Button from '$lib/components/design/Button.svelte';
   import Disclosure from '$lib/components/design/Disclosure.svelte';
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
@@ -53,6 +54,8 @@
 
 <main class="styleguide">
   <header>
+    <Breadcrumb current="Design tokens" />
+
     <h1>Design tokens</h1>
     <p>
       Rendered live from <code>lib/design/tokens.ts</code> — the source that generates
@@ -284,6 +287,13 @@
     touch-action: pan-y;
     user-select: text;
     -webkit-user-select: text;
+  }
+
+  /* Breadcrumb pins its current crumb to #666 for the light-only /admin host;
+     this page is themed (and its toggle flips to dark, where #666 is 3.1:1).
+     --text-mid is the same #666 in light theme, so only dark changes. */
+  .styleguide :global(.crumb-current) {
+    color: var(--text-mid);
   }
 
   header p,

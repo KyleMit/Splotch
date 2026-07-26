@@ -60,10 +60,13 @@
     color: var(--text-faint);
   }
 
-  /* Hardcoded #666, not --text-mid: the host pages' backgrounds are hardcoded
-     light (#f5f5f5 admin, #f0ecf7 harness), so the dark-theme value of
-     --text-mid (#b3b1bf) would drop to 1.9:1 there; #666 clears the 4.5:1
-     floor on both (the old --text-faint #999 was a 2.6:1 axe serious). */
+  /* Hardcoded #666, not --text-mid, for the light-pinned host: /admin's
+     background is a hardcoded #f5f5f5, so --text-mid's dark-theme value
+     (#b3b1bf) would drop to 1.9:1 there, while #666 clears 4.5:1 (the old
+     --text-faint #999 was a 2.6:1 axe serious). #666 is only safe on a light
+     background — it is 3.1:1 on the dark --app-bg — so the themed hosts (the
+     /dev harnesses) override this with var(--text-mid), whose light value is
+     this same #666. A themed host that adds a breadcrumb needs that override. */
   .crumb-current {
     color: #666;
     cursor: default;

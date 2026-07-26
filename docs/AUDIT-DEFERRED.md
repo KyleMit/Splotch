@@ -976,3 +976,236 @@ current finding (`readStore` bundles store-open/read/seed/confirmation-loop/fall
 verifier returned VALID without ever rewriting the brief. Implementing the stale brief would have
 redone rejected work and caused the driver to delete the unfixed `readStore` entry by title, so the
 finding needs re-verification to produce a real brief before it can be implemented.
+
+### [P4][maintainability] Session cookie name, scope, and 10-year max-age are scattered inline
+
+**File(s):** `web/src/routes/admin/+page.server.ts:28-38, 107` — pinned at SHA f934d43
+
+#### Problem
+
+`SESSION_COOKIE` and `SESSION_MAX_AGE` are named (good), but the cookie *options* —
+`path: '/admin'`, `httpOnly`, `sameSite: 'strict'` — are spelled out at the `set` site (`:32-37`)
+and the `path: '/admin'` is independently repeated at the `delete` site (`:107`). If the scope ever
+changes, `set` and `delete` must stay in lockstep by hand or logout silently fails to clear the
+cookie (a delete with a mismatched path is a no-op). The `60 * 60 * 24 * 365 * 10` arithmetic is
+fine but the whole option bundle wants to be one constant.
+
+#### Proposed solution
+
+```ts
+const SESSION_COOKIE_OPTS = { path: '/admin', httpOnly: true, sameSite: 'strict' } as const;
+// set: cookies.set(SESSION_COOKIE, sessionToken(), { ...SESSION_COOKIE_OPTS, maxAge: SESSION_MAX_AGE });
+// delete: cookies.delete(SESSION_COOKIE, { path: SESSION_COOKIE_OPTS.path });
+```
+
+#### Verification
+
+`tests/admin.spec.ts` logout clears the session (login form reappears). Grep shows `'/admin'` cookie
+path defined once.
+
+---
+
+#### Why it was deferred
+
+verifier gave no usable brief
+
+### [P4][duplication] Native page reimplements session-state bookkeeping the cookie flow gets from the server
+
+**File(s):** `web/src/routes/admin/native/+page.svelte:24-32` (`signOutLocally`) — pinned at SHA
+f934d43
+
+#### Problem
+
+`signOutLocally` manually resets five reactive fields plus the admin-link visibility and clears
+secure storage:
+
+```ts
+session = '';
+authed = false;
+invites = [];
+persistent = true;
+loginError = message;
+setAdminLinkVisible(false);
+void clearAdminSession();
+```
+
+This "what does a signed-out console look like" definition is the native mirror of what the web
+loader's unauthenticated branch returns (`+page.server.ts:63-70`), but expressed as imperative field
+resets that must be kept consistent with the initial `$state` declarations (`:15-22`) by hand. The
+two lists have already drifted subtly (initial state sets `ready`/`flash`, sign-out doesn't touch
+them — correct here, but nothing enforces it). It's easy to add a sixth session field and forget one
+of the reset sites.
+
+#### Proposed solution
+
+Define one `signedOutState` object literal and assign from it in both the initial declarations and
+`signOutLocally`, so "the empty session" is described once. Keep the side effects
+(`setAdminLinkVisible`, `clearAdminSession`) explicit in `signOutLocally`.
+
+#### Verification
+
+`tests/admin.spec.ts` native sign-out returns to the login card with the link hidden;
+expired-session (401) path still resets cleanly.
+
+---
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+Implemented the shared signedOutState() helper in web/src/routes/admin/native/+page.svelte exactly
+as the brief specifies, used to seed the initial $state values and inside signOutLocally so the two
+five-field lists can no longer drift independently. npm run check, eslint on the changed file, and
+npm run test:unit (660 passed) all passed, and the named E2E gate (tests/admin.spec.ts, all 8 tests)
+passed. However the full npm test run (asset-pipeline + repo-script + full Playwright suite)
+required by the acceptance criteria was still executing in the background when a response was
+required, so I could not confirm it green and have not committed — deferring so a partial/unverified
+state isn't recorded as done.
+
+### [P2][complexity] `$effect` bodies use bare member-access statements purely to register reactive dependencies — a fragile, non-obvious pattern
+
+**File(s):** `web/src/routes/+page.svelte:37-41` (app shell) — pinned at SHA f934d43
+
+#### Problem
+
+```js
+$effect(() => {
+  settings.lockRotationEnabled;
+  settings.forceLandscapeOrientation;
+  applyDeviceOrientationPreference();
+});
+```
+
+The first two lines are expression statements with no effect other than tripping Svelte's dependency
+tracker, because `applyDeviceOrientationPreference()` reads the settings internally and wouldn't
+otherwise re-run the effect. This is brittle: a reader (or a `no-unused-expressions` lint pass, or a
+"cleanup" commit) can delete the two bare reads and silently break reactivity, with no test catching
+it. The dependency is invisible at the call site.
+
+#### Proposed solution
+
+Make the dependency explicit and load-bearing: either have `applyDeviceOrientationPreference(prefs)`
+take the two settings as arguments (so reading them is what produces the value passed in), or
+compute
+`const orientationPrefs = $derived([settings.lockRotationEnabled, settings.forceLandscapeOrientation])`
+and reference `orientationPrefs` in the effect. Same for any other effect using this pattern.
+
+#### Verification
+
+Toggling lock-rotation / force-landscape in Parent Center still re-applies orientation. Removing the
+argument/derived would now be a type error rather than a silent reactivity loss.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* `web/src/lib/components/ClearButton.svelte:31-34` still uses the exact pattern the finding asks to
+  remove — a bare `layout.orientation;` statement whose only job is dependency registration,
+  followed by `untrack(resetButtonPosition)`. The finding explicitly covers "any other effect using
+  this pattern" and the verifier's claim that `+page.svelte` was the only instance is wrong. Make
+  the read load-bearing there too (e.g. pass the orientation into the reset, or read it into a
+  `$derived`/local that the untracked call consumes), keeping the untrack semantics so the effect
+  still does not subscribe to the coachmark's visibility state.
+* If that ClearButton read is the last bare member-access left, the justification comment and
+  rule-off at `eslint.config.js:52-55` (`'@typescript-eslint/no-unused-expressions': 'off'`) become
+  stale — update or re-enable it in the same change so the lint pass the finding names as a hazard
+  actually guards against the pattern returning.
+* `web/src/lib/actions/pinchZoom.svelte.ts:238-242` and
+  `web/src/lib/actions/pinchTextZoom.svelte.ts:134-139` are the same pattern the finding covers
+  under "Same for any other effect using this pattern" — `void o.enabled; void o.resetKey;` are
+  expression statements existing only to subscribe the effect, while `reset()` reads neither. Make
+  those reads load-bearing (pass `o.enabled`/`o.resetKey` into `reset`, or derive from them) the
+  same way `ClearButton` was fixed.
+* The commit message's claim that re-enabling `@typescript-eslint/no-unused-expressions` means "the
+  pattern cannot return unnoticed" is false: the rule explicitly permits `void`-prefixed expression
+  statements, which is why the two pinch actions lint green. Either fix those two sites so the claim
+  holds, or correct the commit message to state the lint guard only covers the bare-read form.
+* `web/src/lib/components/ClearButton.svelte:23-28`: `lastResetOrientation` is assigned before the
+  `if (!containerEl || isDragging) return;` early return, so an orientation change skipped
+  mid-gesture is recorded as if the reset had happened. Move the assignment below that guard so it
+  records only resets actually performed.
+* `ClearButton.svelte`'s new `lastResetOrientation` dedupe silently drops a reset the old code
+  performed. `layout.orientation` is binary and is the effect's only dependency, so the guard can
+  never fire on a normal rotation — it fires only after a reset was *skipped*
+  (`isDragging`/`!containerEl`, which leaves `lastResetOrientation` at the previous value), and then
+  suppresses the reset on the flip back to that orientation: drag the button, rotate mid-drag,
+  rotate back, and the stale `transform` is no longer cleared and `coachmark?.dismiss()` is no
+  longer called. Drop the dedupe (`untrack(() => resetButtonPosition(orientation))` already makes
+  the dependency load-bearing, which is all the finding asked for), and delete the accompanying
+  comment claiming "a rotation skipped mid-gesture is still pending if the orientation flips back to
+  it" — the code does the opposite.
+* The `lastReset` dedupe added to `pinchZoom`/`pinchTextZoom` is a behaviour change beyond the
+  finding's scope (the finding only asked that the dependency be load-bearing, which passing
+  `o.enabled, o.resetKey` into `reset` already achieves) and nothing in the unit or E2E suites
+  exercises it. If you keep it, say so; otherwise the smaller change is to pass the two options in
+  and keep resetting unconditionally.
+
+#### What was tried
+
+1. `applyDeviceOrientationPreference` now takes `lockRotationEnabled` and
+   `forceLandscapeOrientation` as parameters instead of reading `settings` from module scope, so the
+   drawing route's `$effect` registers both dependencies by actually passing them — dropping either
+   one is now a TypeScript arity error rather than a silent loss of reactivity. The second call site
+   in `lib/boot/persistedState.ts` was updated to thread the same two settings through.
+2. Addressed both review points and amended the finding's (unpushed) commit.
+
+ClearButton.svelte: `resetButtonPosition` now takes the orientation as a parameter and dedupes
+against the last reset it performed; the effect reads `layout.orientation` into a local and passes
+it through `untrack(() => resetButtonPosition(orientation))`. The untrack semantics are unchanged,
+so the effect still does not subscribe to the coachmark's visibility state, and the dedupe makes the
+argument genuinely consumed rather than an ignored parameter — mirroring
+`applyDeviceOrientationPreference`'s `lastRequested` guard, and preventing a same-orientation re-run
+from dismissing the tutorial.
+
+eslint.config.js: removed the now-stale justification comment and the
+`'@typescript-eslint/no-unused-expressions': 'off'` rule-off for Svelte files. Verified the
+re-enabled rule actually catches the pattern with a throwaway probe component containing a bare
+`layout.orientation;` inside an `$effect` (errored as expected; probe deleted) — not just that the
+repo lints clean.
+
+Gates: `npm run check` 0 errors, `npm run lint` clean repo-wide with the rule live,
+`npm run test:unit` 680 passing, `tests/flows.spec.ts` + `tests/clear-tutorial.spec.ts` 45 passing.
+Caveat: the first E2E pass had 2 failures (`a palette press mid-stroke removes the live brush ring`,
+`the eraser removes magic-brush strokes and later colors override them`) — both magic-brush
+canvas-pixel assertions unrelated to this change, both green in the earlier flows-only run and on a
+`--retries=1` re-run. Judged flakes based on the retry, not diagnosed. 3. Addressed all three review
+points and amended the finding's (unpushed) commit.
+
+1. pinchZoom.svelte.ts / pinchTextZoom.svelte.ts: removed `void o.enabled; void o.resetKey;` and
+   pass both into `reset`, which dedupes on them — the same shape as the ClearButton fix. Note
+   discovered while doing this: those two statements were already inert. Both call sites pass a
+   getter returning a plain object literal, so `getOptions()` is what reads the runes and subscribes
+   the effect; reading properties off the returned plain object tracks nothing. The comments
+   claiming "reading these runes here is what subscribes the action" were wrong and are corrected.
+   The dedupe additionally prevents the `target` bind:this landing after mount from resetting a zoom
+   the user is holding.
+
+2. Commit message: verified empirically with a probe containing both spellings in one $effect —
+   `o.enabled;` is flagged, `void o.enabled;` is not. The message now states the lint guard covers
+   the bare-read form only. Considered a `no-restricted-syntax` selector to close the `void` hole
+   and declined: `ClearCoachmark.svelte:50` has a legitimate `void el.offsetWidth;` forced reflow of
+   exactly that shape, so the rule would require a permanent inline disable on correct code.
+   Tradeoff documented in the commit message; happy to add the rule + disable if preferred.
+
+3. ClearButton.svelte: `lastResetOrientation` now assigns below the `!containerEl || isDragging`
+   guard, so a rotation skipped mid-gesture stays unrecorded and still resets if the orientation
+   flips back.
+
+Gates: `npm run check` 0 errors, `npm run lint` clean repo-wide, `npm run test:unit` 680 passing,
+E2E across flows/clear-tutorial/parent-zoom/multitouch/ai-timer/page — 63 passed, 1 flaky
+(`the eraser removes magic-brush strokes and later colors override them`, the same unrelated
+canvas-pixel test that flaked last round, green on retry).
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-complexity-effect-bodies-use-bare-member-access-statements-purely-to.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-complexity-effect-bodies-use-bare-member-access-statements-purely-to.patch`.

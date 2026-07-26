@@ -1,5 +1,9 @@
 import type { Usage } from './components/admin/AdminConsole.svelte';
 
+// Netlify Blobs status is unknown until the first real read proves otherwise —
+// assume persistent so the "Blobs unavailable" banner doesn't flash on load.
+export const ASSUME_PERSISTENT = true;
+
 // Compact "3 days ago" label for a last-used timestamp, falling back to a
 // plain date if the value won't parse.
 export function timeAgo(iso: string) {

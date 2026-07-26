@@ -140,8 +140,20 @@ as possible:
   like a regression**. A second finding extracted a component into a new file, carrying four hexes
   into a path with no baseline entry. Both fixes were correct; nothing in `CHECK_CMD`, `TEST_CMD`,
   `LINT_CMD` or a targeted spec can see either. Set
-  `CHECK_CMD='npm run check && npm run lint:tokens'` for a few seconds per finding, and check
-  `.github/workflows/` for any other bespoke gate before a long run.
+  `CHECK_CMD='npm run check && npm run lint:tokens && npm run gen:tokens:check'` — both ratchets
+  cost ~0.3s each — and check `.github/workflows/` for any other bespoke gate before a long run.
+
+  Two of CI's Quality gates deliberately stay **out** of `CHECK_CMD`, and it is worth knowing why so
+  the next run doesn't re-litigate it. `npm run format:check` costs ~23s (≈3 hours over a
+  450-finding backlog) and is already covered: the repo's `format-edited-file.sh` `PostToolUse` hook
+  is registered project-level in `.claude/settings.json`, so it fires inside the `claude -p`
+  subprocesses and formats every file a role edits — confirmed by a full run whose Quality job
+  passed `format:check` on every push. The residual risk is a role editing through `Bash` instead of
+  `Edit`/`Write`, which CI catches. And `npm run ruler:check` **cannot** be a gate at all: it
+  re-applies ruler, so it *writes* files, and a gate that mutates the tree mid-finding would land in
+  the fix commit. A finding that edits any `.ruler/` source must run `npm run ruler:apply` itself
+  and commit the regenerated output in the same commit — several did, unprompted, but nothing
+  enforces it.
 * **Cross-finding interactions the per-finding specs can't see are CI's job, not the driver's.**
   `PUSH_TEST_CMD` (the local full-suite gate) defaults to empty and does not run. Every finding is
   pushed to the draft PR, and the PR's CI runs the whole suite on that push — in parallel, off the
@@ -403,18 +415,25 @@ hard** — with `MODEL_IMPL_MINOR` tiering on, P4/P5 findings land in 3–5 min 
 takes two fix rounds runs 20–30 and is still healthy. Check the finding's `[P<n>]` tag before
 reading a duration as slow; the table above describes a mid-priority finding, not every finding.
 
-Measured under the current defaults (2026-07-25, cloud, `EFFORT_*` and gate reordering in place).
-**Ten findings — a small sample, and every one of them P2–P5**, so treat this as shape rather than
+Measured under the current defaults (2026-07-25/26, cloud, `EFFORT_*` and gate reordering in place),
+across two runs totalling 18 findings — still a small sample, so treat this as shape rather than
 distribution:
 
-| Finding shape                 | Elapsed  |
-| ----------------------------- | -------- |
-| dropped at verify (`INVALID`) | ~1.5 min |
-| P4/P5, no fix round           | ~4 min   |
-| P4/P5, one fix round          | 8–12 min |
-| P3, one fix round             | ~11 min  |
-| P2, one fix round             | ~18 min  |
-| P2, two fix rounds + E2E gate | ~26 min  |
+| Finding shape                 | Elapsed      |
+| ----------------------------- | ------------ |
+| dropped at verify (`INVALID`) | 25 s–1.5 min |
+| P4/P5, no fix round           | ~4 min       |
+| P4/P5, one fix round          | 8–12 min     |
+| P3, one fix round             | ~11 min      |
+| P2, one fix round             | 10–18 min    |
+| P2, two fix rounds + E2E gate | ~26 min      |
+| P1, no fix round              | ~8.5 min     |
+| P1, two fix rounds            | 23–26 min    |
+
+**A P1 is not automatically slow** — the P1 that cleared review first time beat several P2s. Round
+count dominates priority, so read a long elapsed as "probably in a fix round", not "probably a big
+finding". A P1 that reaches `round 3: changes required` is the one shape that reliably runs past 25
+minutes and can still end in a rollback.
 
 The headline: **fix rounds dominate, and priority sets how many you get.** A finding that clears
 review first time lands in a third the wall-clock of one that doesn't, at the same priority. The
@@ -451,6 +470,18 @@ itself. No `claude` call in the sample exceeded ~13 min.
   (`144`) and takes any background waiter whose command line also mentions it. Read that exit code
   as "I shot my own shell", not "the kill failed", and re-verify with a separate
   `pgrep -af burndown.mjs | grep -v 'bash -c'`.
+
+  **The same self-match makes `pgrep` wait loops hang forever.** The obvious way to wait for a clean
+  stop — `until ! pgrep -f 'audit-burndown/burndown.mjs' >/dev/null; do sleep 15; done` — **can
+  never exit**: the loop's own command line contains the pattern, so it matches itself and waits on
+  its own death. It looks exactly like a driver that will not stop, and it will still be "waiting"
+  long after the run has finished. Anchor the pattern so only the bare driver process matches:
+  ```bash
+  until ! pgrep -f '^node scripts/audit-burndown/burndown.mjs' >/dev/null; do sleep 15; done
+  ```
+  `env` execs node, so the real driver's cmdline starts with `node` and the anchor is safe on every
+  launch path. The same anchor is what to use for the plain liveness question — an unanchored
+  `pgrep -f` answering "still running" is meaningless until you have read the matched lines.
 
 * **No `claude -p` child at all, while `burndown.mjs` is still alive** → the driver is **orphaned**,
   and this is the one case where killing the orchestrator is correct. It happens when the container
@@ -779,11 +810,19 @@ Notes from real runs — set these before a large run rather than discovering th
   `mcp__github__update_pull_request` (`draft: false`). **Take the counts from each run's `finished:`
   line** (`N fixed, N dropped, N deferred`) and cross-check them against the commit record —
   `chore(audit): defer` and `drop invalid finding` subjects are one per finding, so they are exact.
-  Do **not** count fix commits: a finding whose review demanded changes can land two or three
-  commits, so commits-with-an-`Audit:`-trailer over-reports fixes. Ignore `audit:status`'s
-  `of <total>` denominator here; it is derived from `completed.log` (which is gitignored,
-  container-local, and accumulates across runs) plus a cumulative deferred file, so it drifts by a
-  finding or two and is not an auditable figure. `remaining` is the trustworthy number.
+  A session that ran a canary *and* a full run has **two** `finished:` lines and the log row covers
+  both; sum them rather than reporting the last one.
+
+  **`audit:status`'s `deferred findings` list is cumulative, not this run's.** It prints every entry
+  in `docs/AUDIT-DEFERRED.md`, which accumulates across every run against this backlog — a session
+  that deferred 3 can easily see a list of 10. Taking the log row's deferral count from that list
+  over-reports it by every earlier run. Same caution as the `of <total>` denominator below: the list
+  is for triage, not for counting. Do **not** count fix commits: a finding whose review demanded
+  changes can land two or three commits, so commits-with-an-`Audit:`-trailer over-reports fixes.
+  Ignore `audit:status`'s `of <total>` denominator here; it is derived from `completed.log` (which
+  is gitignored, container-local, and accumulates across runs) plus a cumulative deferred file, so
+  it drifts by a finding or two and is not an auditable figure. `remaining` is the trustworthy
+  number.
 
   **A run that was killed never printed `finished:`, so reconstruct the counts from git and check
   the arithmetic closes.** Deferrals and drops are one commit each and exact; fixes are whatever is

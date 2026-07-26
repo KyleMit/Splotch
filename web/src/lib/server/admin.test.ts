@@ -11,11 +11,12 @@ vi.mock('$env/dynamic/private', () => ({ env: envState }));
 
 import {
   sessionToken,
-  secretMatches,
+  constantTimeEqual,
   verifyAdminSecret,
   verifySessionToken,
   buildInvites,
   beginAdminLogin,
+  bearerToken,
   SESSION_LABEL,
 } from './admin';
 
@@ -51,24 +52,24 @@ describe('sessionToken', () => {
   });
 });
 
-describe('secretMatches', () => {
+describe('constantTimeEqual', () => {
   it('rejects missing provided or expected values', () => {
-    expect(secretMatches(undefined, 'x')).toBe(false);
-    expect(secretMatches('x', undefined)).toBe(false);
-    expect(secretMatches('', 'x')).toBe(false);
-    expect(secretMatches('x', '')).toBe(false);
+    expect(constantTimeEqual(undefined, 'x')).toBe(false);
+    expect(constantTimeEqual('x', undefined)).toBe(false);
+    expect(constantTimeEqual('', 'x')).toBe(false);
+    expect(constantTimeEqual('x', '')).toBe(false);
   });
 
   it('rejects values of differing length', () => {
-    expect(secretMatches('short', 'longer-value')).toBe(false);
+    expect(constantTimeEqual('short', 'longer-value')).toBe(false);
   });
 
   it('rejects same-length but different values', () => {
-    expect(secretMatches('aaaa', 'bbbb')).toBe(false);
+    expect(constantTimeEqual('aaaa', 'bbbb')).toBe(false);
   });
 
   it('accepts an exact match', () => {
-    expect(secretMatches('matching', 'matching')).toBe(true);
+    expect(constantTimeEqual('matching', 'matching')).toBe(true);
   });
 });
 
@@ -135,6 +136,31 @@ describe('beginAdminLogin', () => {
   it('buckets per IP, so one client cannot lock another out', () => {
     for (let i = 0; i < 11; i++) beginAdminLogin('10.0.0.3');
     expect(beginAdminLogin('10.0.0.4').ok).toBe(true);
+  });
+});
+
+describe('bearerToken', () => {
+  const withAuth = (value: string | undefined) =>
+    new Request(
+      'https://splotch.art',
+      value === undefined ? {} : { headers: { authorization: value } }
+    );
+
+  it('is empty when the header is absent', () => {
+    expect(bearerToken(withAuth(undefined))).toBe('');
+  });
+
+  it('is empty for the wrong scheme or a lowercase "bearer "', () => {
+    expect(bearerToken(withAuth('Basic dGVzdA=='))).toBe('');
+    expect(bearerToken(withAuth('bearer tok'))).toBe('');
+  });
+
+  it('is empty for "Bearer" with no trailing space', () => {
+    expect(bearerToken(withAuth('Bearer'))).toBe('');
+  });
+
+  it('trims surrounding whitespace from the token', () => {
+    expect(bearerToken(withAuth('Bearer  tok  '))).toBe('tok');
   });
 });
 

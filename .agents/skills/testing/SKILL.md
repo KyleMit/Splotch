@@ -34,8 +34,9 @@ and the native toolchains.
 Two Node smoke tests guard the server contract, on demand:
 
 * **`test:api:smoke`** boots a throwaway `vite dev` and checks the `/api/*` shapes (admin auth flow,
-  bearer gate, token add/remove, `verify-access-code`). No Blobs, so it asserts the snapshot's
-  `persistent` is `false`. See the `api` skill.
+  bearer gate, token add/remove, `verify-access-code`) plus the CORS/preflight contract the native
+  apps depend on. No Blobs, so it asserts the snapshot's `persistent` is `false`. See the `api`
+  skill.
 * **`test:blobs:smoke`** runs against a **real deploy** to prove Netlify Blobs is actually live on
   the deployed function — the failure mode of ADR-0025, which the local `vite dev` tests
   structurally cannot catch:

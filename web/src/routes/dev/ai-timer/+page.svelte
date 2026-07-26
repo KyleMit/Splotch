@@ -180,6 +180,13 @@
     color: var(--text-strong);
   }
 
+  /* Breadcrumb pins its current crumb to #666 for the light-only /admin host;
+     .debug has no background of its own, so it sits on the themed var(--app-bg)
+     where #666 is 3.1:1. --text-mid is the same #666 in light theme. */
+  .debug :global(.crumb-current) {
+    color: var(--text-mid);
+  }
+
   h1 {
     font-size: var(--font-size-2xl);
     margin: 0 0 8px;
