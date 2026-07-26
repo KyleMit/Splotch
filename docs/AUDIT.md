@@ -22,46 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P5][consistency] Provider result `kind` vocab (`refusal`/`error`) differs from classifier `kind` vocab (`safety`/`empty`)
-
-**File(s):** `web/src/lib/server/ai/provider.ts:14-20`;
-`web/src/lib/server/ai/geminiSafety.ts:10-13`; `web/src/lib/drawing/aiImageResponse.ts:1-5` — pinned
-at SHA f934d43
-
-#### Problem
-
-Three adjacent layers name the same outcomes with three vocabularies:
-
-* classifier: `'image' | 'safety' | 'empty'`
-* provider: `'image' | 'refusal' | 'error'`
-* client: `'image' | 'safety' | 'throttled' | 'error'`
-
-`safety` (classifier) maps to `refusal` (provider) maps back to `safety` (client); `empty`
-(classifier) maps to `error` (provider). The gemini adapter (`gemini.ts:78-82`) exists mostly to
-translate one vocab into the other. The renaming across a two-hop path is cognitive overhead and
-invites mismapping.
-
-#### Proposed solution
-
-Align the discriminants. Either the classifier adopts `refusal`/`error` to match the provider seam
-(then `gemini.ts` just forwards `classified` when `kind !== 'empty'` without renaming), or the
-provider adopts `safety` to match classifier and client. Pick the client-facing vocab (`safety`) as
-canonical since it's the contract users of the API care about.
-
-#### Verification
-
-`geminiSafety.test.ts` / `gemini.test.ts` updated to the unified `kind` names; `npm run check`;
-generate-image still maps to 422/502 correctly.
-
----
-
-That's 25 findings, ordered P1→P5. All line numbers verified against SHA `f934d43`. The strongest
-structural themes: shared helpers that already exist (`http.ts`) should absorb the duplicated
-content-type/body-cap/error-shape logic; the rate-limit **key strings** and **budgets** plus
-**header names**, **status codes**, and **env-var names** should each become one referenced symbol
-instead of scattered literals; and the client/server response contracts should share types so drift
-is a compile error.
-
 ## Source: Code audit — PWA / service worker
 
 ### [P2][platform-branching] Install-prompt module branches on `isNative()` at runtime where it could be a build-time exclusion
