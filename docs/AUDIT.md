@@ -9,40 +9,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P1][architecture] The drawing-page shell buries ~140 lines of imperative boot logic inline across three `onMount` and four `$effect` blocks
-
-**File(s):** `web/src/routes/+page.svelte:37-175` (app shell) — pinned at SHA f934d43
-
-#### Problem
-
-`+page.svelte` is the composition root, but its `<script>` mixes composition with a large, unnamed
-boot sequence: orientation reactivity (37-41), the app-surface flag (48-51), deferred SW
-registration (57-60), Parent Center latching (74-78), the overlay idle-mount pump (80-104), and a
-second `onMount` (106-175) that alone does token capture, theme re-stamp, key/folder hydration,
-durable-storage recovery, context-menu blocking, wake lock, fullscreen seeding, and PWA/install
-init. The boot order is expressed only by block position and long prose comments; there is no named
-`boot()` entry point to grep for, and the meaning lives in comments rather than function names. This
-is the single biggest maintainability liability in scope.
-
-#### Proposed solution
-
-Extract cohesive units into a `web/src/lib/boot/` module of named, testable `.ts` helpers that the
-shell calls in an explicit order, e.g. `installWakeLock(): () => void`,
-`installContextMenuGuard(): () => void`, `hydratePersistedState(): void` (wraps
-`hydrateApiKey`/`hydrateSaveFolder`/`hydrateDurableStorage`), and
-`initWebOnlyServices(): () => void` (PWA + install). The shell's `onMount` then reads as a short
-checklist of named calls whose return values are the teardown functions, so the ordering is
-self-documenting and each piece is unit-testable in isolation.
-
-#### Verification
-
-`npm run check` + `npm test` stay green; the drawing route still boots (engine accepts strokes, wake
-lock requested on first pointerdown, overlays mount at idle). Diff should show the `<script>`
-shrinking to imports + composition + a short ordered boot list; grep for the new helper names to
-confirm the sequence is now discoverable.
-
----
-
 ### [P1][platform-branching] Web-only PWA code is gated by runtime `isNative()` where a build-time `__IS_CAPACITOR__` branch would tree-shake it out of the native bundle
 
 **File(s):** `web/src/routes/+page.svelte:57-60, 163-167` (app shell);

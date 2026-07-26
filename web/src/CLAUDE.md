@@ -24,6 +24,13 @@ Where things live (full file-by-file map: `architecture` skill):
   `$derived` — the getter reads reactive state so a caller opts into reactivity locally by wrapping
   it in its own `$derived` when a template needs it (e.g. `ColorPalette.svelte`), yet stays callable
   as a plain function from a unit test with no reactive context.
+* `lib/boot/` — the drawing route's boot steps as named helpers, called in order from
+  `routes/+page.svelte`'s `onMount`: `hydratePersistedState()`, then `mountBootHiddenOverlays()`
+  (the idle overlay pump, ADR-0049), `installContextMenuGuard()`, `installWakeLock()`, and
+  `initWebOnlyServices()` (PWA updates + install prompt) — the last four return the teardowns the
+  route collects and runs on unmount. This is page-lifecycle-scoped imperative wiring — the
+  counterpart to the self-initializing stores above, not an exception to them: it needs
+  mount/unmount teardown, which is exactly what the route's `onMount` provides.
 * `lib/components/` — UI components with scoped styles.
 * `lib/actions/` — Svelte actions for gestures and dialog wiring.
 * `lib/server/` — server-only modules (tokens, admin, rate limiting). Never imported client-side;

@@ -30,12 +30,12 @@ before a parent ever sees it. The prompt must be present but restrained, and wor
 
 A single reactive module, `web/src/lib/state/install.svelte.ts`, owns install state and the
 `beforeinstallprompt` capture (modeled on `network.svelte.ts`: a `$state` object plus an `init*()`
-function called once from `+page.svelte`, web-only). One deviation from that model: the
-`beforeinstallprompt` / `appinstalled` listeners register at **module load**, not inside `init*()` —
-the event is one-shot and on a repeat visit (service worker already controlling the page) Chromium's
-installability check races hydration, so an `onMount`-time listener could miss it forever. The
-module also owns device detection (`installDeviceOs()`); consumers must not re-sniff the UA. It
-computes a `mode`:
+function called once from `lib/boot/webOnlyServices.ts`, web-only). One deviation from that model:
+the `beforeinstallprompt` / `appinstalled` listeners register at **module load**, not inside
+`init*()` — the event is one-shot and on a repeat visit (service worker already controlling the
+page) Chromium's installability check races hydration, so an `onMount`-time listener could miss it
+forever. The module also owns device detection (`installDeviceOs()`); consumers must not re-sniff
+the UA. It computes a `mode`:
 
 | `mode`    | Meaning                                                                     | UI                                               |
 | --------- | --------------------------------------------------------------------------- | ------------------------------------------------ |
