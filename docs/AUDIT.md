@@ -24,43 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P3][maintainability] Unexplained `100` ms magic delay and un-removed `statechange` listener in the installing branch
-
-**File(s):** `web/src/lib/pwa/updates.ts:217-225` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-registration.installing.addEventListener('statechange', function(this: ServiceWorker) {
-  if (this.state === 'installed' && registration.waiting) {
-    setTimeout(() => {
-      if (registration.waiting) activateWaitingSW(registration.waiting);
-    }, 100);
-  }
-});
-```
-
-Three smells: (a) the `100` ms is a bare magic number with no WHY — unlike the sibling
-`ACTIVATION_RECOVERY_MS` which is a named, commented constant; (b) the `statechange` listener is
-never removed, so repeated `checkForUpdates` calls while a worker installs stack duplicate listeners
-on the same worker; (c) the `function (this: ServiceWorker)` style clashes with the arrow-function
-style used everywhere else in the file and only exists to read `this.state` when
-`registration.installing.state` was available.
-
-#### Proposed solution
-
-Name the delay (`const WAITING_SETTLE_MS = 100` with a comment on why a tick is needed after
-`installed`), add `{ once: true }` to the listener (a worker transitions to `installed` once), and
-switch to an arrow reading `registration.installing?.state`.
-
-#### Verification
-
-Existing test "rechecks canvas state after an installing worker takes control"
-(`updates.test.ts:298-335`) uses `advanceTimersByTimeAsync(100)`; keep it in sync with the named
-constant.
-
----
-
 ### [P3][type-safety] `BeforeInstallPromptEvent` requires a cast because `WindowEventMap` isn't augmented
 
 **File(s):** `web/src/lib/state/install.svelte.ts:21-24,83-86` — pinned at SHA f934d43

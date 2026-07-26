@@ -245,11 +245,9 @@ describe('checkForUpdates — canvas-empty guard', () => {
 
     await checkForUpdates();
 
-    expect(worker.addEventListener).toHaveBeenCalledWith(
-      'statechange',
-      expect.any(Function),
-      { once: true }
-    );
+    expect(worker.addEventListener).toHaveBeenCalledWith('statechange', expect.any(Function), {
+      once: true,
+    });
   });
 
   it('observes the same installing worker only once across update checks', async () => {
