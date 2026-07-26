@@ -28,38 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P2][duplication] `Orientation = 'portrait' | 'landscape'` is redeclared in ~8 places
-
-**File(s):** `web/src/lib/notchBand.ts:38`, `web/src/lib/state/layout.svelte.ts:4`,
-`web/src/lib/orientation.ts:5` (`OrientationLockType`), plus inline copies in
-`web/src/lib/state/books.ts:49`, `state/canvas.svelte.ts:18`, `drawing/engine.ts:258`,
-`components/ParentCenter.svelte:60`, `tests/global.d.ts:48` — pinned at SHA f934d43
-
-#### Problem
-
-The literal union `'portrait' | 'landscape'` is defined independently as `Orientation` in
-`notchBand.ts` and `layout.svelte.ts`, as `OrientationLockType` in `orientation.ts`, as
-`BookOrientation` in `books.ts`, and inlined anonymously in at least four more spots. `notchBand.ts`
-even imports `Platform` from `platform.ts` but redefines `Orientation` locally instead of sharing
-one. Any change (e.g. adding a `'square'`/`'auto'` case) touches every copy, and there's no single
-grep target for "the orientation type."
-
-#### Proposed solution
-
-Export one canonical `export type Orientation = 'portrait' | 'landscape'` from the platform module
-(naturally alongside `Platform` in `platform.ts` / the proposed `platform/detect.ts`), and have
-`layout.svelte.ts`, `notchBand.ts`, `orientation.ts` (`OrientationLockType = Orientation`),
-`books.ts`, `engine.ts`, `canvas.svelte.ts`, and `ParentCenter.svelte` import it. Keep
-semantically-distinct aliases (e.g. `BookOrientation`) as `type BookOrientation = Orientation` if
-the name adds meaning.
-
-#### Verification
-
-`git grep "'portrait' | 'landscape'"` returns only the single definition (plus deliberate value
-literals); `npm run check` passes.
-
----
-
 ### [P2][duplication] Three uncoordinated writers to `<meta name="theme-color">`; NotchBand re-inlines the setter
 
 **File(s):** `web/src/lib/theme.ts:50-54` (`updateThemeColorMeta`),

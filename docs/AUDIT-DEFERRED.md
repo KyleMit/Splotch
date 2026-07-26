@@ -1982,3 +1982,60 @@ Moved the platform/device cluster, rewired consumers and tests, and updated the 
 plus its writable mirror. The required Codex architecture mirror remains stale because
 `npm run ruler:apply` cannot write `.agents/skills` in this sandbox, so the requested
 generated-output portion is incomplete.
+
+### [P2][duplication] `Orientation = 'portrait' | 'landscape'` is redeclared in ~8 places
+
+**File(s):** `web/src/lib/notchBand.ts:38`, `web/src/lib/state/layout.svelte.ts:4`,
+`web/src/lib/orientation.ts:5` (`OrientationLockType`), plus inline copies in
+`web/src/lib/state/books.ts:49`, `state/canvas.svelte.ts:18`, `drawing/engine.ts:258`,
+`components/ParentCenter.svelte:60`, `tests/global.d.ts:48` — pinned at SHA f934d43
+
+#### Problem
+
+The literal union `'portrait' | 'landscape'` is defined independently as `Orientation` in
+`notchBand.ts` and `layout.svelte.ts`, as `OrientationLockType` in `orientation.ts`, as
+`BookOrientation` in `books.ts`, and inlined anonymously in at least four more spots. `notchBand.ts`
+even imports `Platform` from `platform.ts` but redefines `Orientation` locally instead of sharing
+one. Any change (e.g. adding a `'square'`/`'auto'` case) touches every copy, and there's no single
+grep target for "the orientation type."
+
+#### Proposed solution
+
+Export one canonical `export type Orientation = 'portrait' | 'landscape'` from the platform module
+(naturally alongside `Platform` in `platform.ts` / the proposed `platform/detect.ts`), and have
+`layout.svelte.ts`, `notchBand.ts`, `orientation.ts` (`OrientationLockType = Orientation`),
+`books.ts`, `engine.ts`, `canvas.svelte.ts`, and `ParentCenter.svelte` import it. Keep
+semantically-distinct aliases (e.g. `BookOrientation`) as `type BookOrientation = Orientation` if
+the name adds meaning.
+
+#### Verification
+
+`git grep "'portrait' | 'landscape'"` returns only the single definition (plus deliberate value
+literals); `npm run check` passes.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `docs/audit-deferred/p2-complexity-effect-bodies-use-bare-member-access-statements-purely-to.patch`
+  still redeclares `OrientationLockType = 'portrait' | 'landscape'` and imports the now-removed
+  `Orientation` export from `layout.svelte.ts`; update this reapplicable draft to use the canonical
+  type from `platform.ts`.
+
+#### What was tried
+
+Added the canonical `Orientation` union to `platform.ts` and converted all eight consumers to
+type-only imports. Semantic aliases remain where they clarify locking and coloring-book roles, while
+duplicate module-level exports were removed.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-duplication-orientation-portrait-landscape-is-redeclared-in-8-places.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-duplication-orientation-portrait-landscape-is-redeclared-in-8-places.patch`.
