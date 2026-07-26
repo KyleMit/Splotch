@@ -101,7 +101,8 @@ function analyzeEyePage(sourceBuf) {
 async function analyzeEyePageOnce(sourceBuf) {
   const { ink, w, h } = await inkMask(sourceBuf);
   const { label, regions } = labelRegions(ink, w, h);
-  return { ink, label, regions, w, h };
+  const parents = new Int32Array(regions.length).fill(-2);
+  return { ink, label, regions, parents, w, h };
 }
 
 // The region enclosing `reg`: march left from its leftmost pixel across the ink
@@ -118,6 +119,14 @@ function parentOf(reg, label, ink, w) {
   return -1;
 }
 
+function parentFromAnalysis(reg, analysis) {
+  let parent = analysis.parents[reg.id];
+  if (parent !== -2) return parent;
+  parent = parentOf(reg, analysis.label, analysis.ink, analysis.w);
+  analysis.parents[reg.id] = parent;
+  return parent;
+}
+
 const contains = (outer, inner, slack = 2) =>
   outer.minX <= inner.minX + slack &&
   outer.minY <= inner.minY + slack &&
@@ -129,17 +138,18 @@ const contains = (outer, inner, slack = 2) =>
 // double-nesting with bbox containment is what keeps this precise: a loose
 // "childless region at depth 2" filter also matches blanket checks and leaf
 // cells, whose flat fill is legitimate, and drowns the real eyes.
-function findEyeCoresFromAnalysis({ ink, label, regions, w, h }) {
+function findEyeCoresFromAnalysis(analysis) {
+  const { ink, label, regions, w, h } = analysis;
   const page = w * h;
   const cores = [];
   for (const a of regions) {
     if (a.border || a.area < CORE_MIN_PX || a.area > page * CORE_MAX_FRAC) continue;
-    const bId = parentOf(a, label, ink, w);
+    const bId = parentFromAnalysis(a, analysis);
     if (bId < 0) continue;
     const b = regions[bId];
     if (b.border || b.area > page * PARENT_MAX_FRAC || a.area > b.area * 0.7) continue;
     if (!contains(b, a)) continue;
-    const cId = parentOf(b, label, ink, w);
+    const cId = parentFromAnalysis(b, analysis);
     if (cId < 0) continue;
     const c = regions[cId];
     if (c.border || !contains(c, b)) continue;
@@ -167,7 +177,8 @@ export const EYE_RING_DEPTH_MAX = 4;
 // — maxDepth 0 means no eye cores; overDeep lists the outermost eye-scale
 // region of every chain past the bar, so a normalization redraw can treat that
 // whole eye interior as replaceable.
-function scoreEyeRingsFromAnalysis({ ink, label, regions, w, h }) {
+function scoreEyeRingsFromAnalysis(analysis) {
+  const { regions, w, h } = analysis;
   const page = w * h;
   let maxDepth = 0;
   let worst = null;
@@ -177,7 +188,7 @@ function scoreEyeRingsFromAnalysis({ ink, label, regions, w, h }) {
     let depth = 1;
     let cur = a;
     while (true) {
-      const pId = parentOf(cur, label, ink, w);
+      const pId = parentFromAnalysis(cur, analysis);
       if (pId < 0) break;
       const p = regions[pId];
       if (p.border || p.area > page * PARENT_MAX_FRAC || !contains(p, cur)) break;

@@ -32,34 +32,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P2][performance] `scoreEyeRings` and `findEyeCores` each re-run the ink mask + full region labeling on the same buffer
-
-**File(s):** `tools/asset-gen/lib/eye-fill.mjs:117-136` (`findEyeCores`) and `153-184`
-(`scoreEyeRings`) — pinned at SHA f934d43
-
-#### Problem
-
-Both functions open with `await inkMask(sourceBuf)` then `labelRegions(ink, w, h)` — a full
-4-connected labeling of every non-ink pixel at native resolution.
-`bin/normalize-outline-strokes.mjs` (lines 225 + 277) and `bin/gen-coloring-outlines-fresh.mjs`
-(lines 178-180) call *both* on the same page, so the most expensive step in the module — decode +
-connected-component labeling of a multi-megapixel page — runs twice per candidate. `scoreEyeRings`
-also re-walks the parent chain that `findEyeCores` already established.
-
-#### Proposed solution
-
-Factor a `labelPage(sourceBuf)` → `{ ink, label, regions, w, h }` and have both `findEyeCores` and
-`scoreEyeRings` accept either a buffer or a pre-labeled page. Add a combined
-`export async function scoreEyes(sourceBuf)` returning `{ cores, rings }` from one labeling, and
-switch the two bin callers to it.
-
-#### Verification
-
-Add a labeling call-counter in a test; assert one labeling per `scoreEyes`. Golden
-ring-depth/eye-core numbers unchanged; wall-clock of `normalize`/`fresh` measurably drops.
-
----
-
 ### [P3][performance] `outlineMatch` always encodes a 512×512 overlay PNG even when the caller discards it
 
 **File(s):** `tools/asset-gen/lib/outline-match.mjs:87,129-132` — pinned at SHA f934d43
