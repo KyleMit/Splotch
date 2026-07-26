@@ -1,8 +1,7 @@
 # Handoff — Codex audit burndown
 
-> 2026-07-26 · branch `codex/audit-burndown-20260726` · PR
-> [#548](https://github.com/KyleMit/Splotch/pull/548) · Adapt the bulk audit driver to Codex and
-> resume the 399-finding backlog.
+> 2026-07-26 · branch `codex/audit-burndown-fixes-20260726` · Resume the 399-finding backlog on a
+> separate audit-fixes PR stacked on agent-runner PR #548.
 
 This is the durable checkpoint required by the `burn-down-audits` skill. A fresh session resumes
 from this file plus `npm run audit:status`.
@@ -21,7 +20,7 @@ Carry every override on every run:
 
 ```bash
 AGENT_RUNNER='codex' \
-BRANCH='codex/audit-burndown-20260726' \
+BRANCH='codex/audit-burndown-fixes-20260726' \
 CHECK_CMD='npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check' \
 TEST_CMD='npm run test:unit && npm run test:scripts' \
 npm run audit:burndown:overnight -- 600
@@ -41,7 +40,8 @@ compatibility.
 * Branch forked from current `main` at 899fd035191b, the merge of PR #547.
 * Backlog before this continuation: **399 findings**.
 * The prior Claude run fixed 40 findings, dropped 6, and deferred 4; its PR #547 is merged.
-* The runner adaptation is committed and pushed on draft PR #548.
+* The runner adaptation is committed and pushed on draft PR #548. This branch forks from it so the
+  actual audit fixes can be reviewed in a separate stacked PR without merge conflicts.
 * Ruler 0.3.44 cannot select different skill source trees per agent. The deterministic
   `scripts/apply-ruler-agent-overrides.mjs` post-step overlays `.template` sources after
   `ruler apply`; Claude retains the shared skill while Codex receives the generated `.agents`
@@ -100,7 +100,7 @@ failure is expected because that gate intentionally reports unstaged generated o
 ## Closeout tasks
 
 1. Stop cleanly with `.audit-work/STOP`; wait for the driver and nested Codex call to exit.
-2. Confirm `HEAD` equals `origin/codex/audit-burndown-20260726`.
+2. Confirm `HEAD` equals `origin/codex/audit-burndown-fixes-20260726`.
 3. Capture and drain every pending PR comment through the GitHub connector, with an OpenAI Codex
    attribution footer, then run capture once more.
 4. Reconcile fixed/deferred/dropped counts from each run's `finished:` line.
@@ -110,10 +110,10 @@ failure is expected because that gate intentionally reports unstaged generated o
 
 ## Risks & next 3 steps
 
-1. Commit and push the Codex E2E-boundary fix and refreshed checkpoint.
-2. Re-run exact-override preflight, then restart the five-finding foreground Codex canary.
-3. Inspect all canary diffs and audit-entry removals, require final-HEAD CI green, report cost, then
-   launch the full continuation command.
+1. Commit and push this separate audit-fixes checkpoint, then open its draft PR against the agent
+   branch.
+2. Record the audit PR number here and push that checkpoint update.
+3. Re-run exact-override preflight, then restart and inspect the five-finding foreground canary.
 
 ## Reread first
 
