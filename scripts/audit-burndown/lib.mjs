@@ -36,6 +36,26 @@ export function resolveImplSha({ reported, head, baseSha }) {
   return head && head !== baseSha ? head : '';
 }
 
+export function implementationCommitMessage(title, round = 0) {
+  const plainTitle =
+    String(title ?? '')
+      .replace(/^(?:\[[^\]]+\])+\s*/, '')
+      .trim() || 'apply verified finding';
+  const subject = round
+    ? `fix(audit): address review round ${round} for ${plainTitle}`
+    : `fix(audit): ${plainTitle}`;
+  return `${subject}\n\nAudit: ${title}`;
+}
+
+export function protectedImplementationPaths(paths, auditPath = auditFile()) {
+  return paths.filter(
+    (path) =>
+      path === auditPath ||
+      path === 'docs/AUDIT-DEFERRED.md' ||
+      path.startsWith('docs/audit-deferred/')
+  );
+}
+
 // Every env knob that changes how a run behaves, and is therefore part of that
 // run's relaunch command. ONE list with two consumers, deliberately: overnight.mjs
 // bakes these into the detached job's command line, and burndown.mjs records them

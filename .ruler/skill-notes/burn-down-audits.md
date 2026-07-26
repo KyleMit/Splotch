@@ -877,10 +877,25 @@ refused to commit because Playwright's preview server hit `listen EPERM` on both
 nested sandbox — never had a chance to validate it.
 
 The Codex implementer prompt now makes that ownership explicit: it must not start Playwright or
-another listener, must commit after the non-listener checks pass, and leaves verifier-selected E2E
-to the driver's deterministic pre-review gate. Giving the implementer `danger-full-access` would
-also make the port bind, but would throw away the filesystem boundary for every implementation;
-duplicating the already-authoritative driver gate is not worth that expansion.
+another listener and leaves verifier-selected E2E to the driver's deterministic pre-review gate.
+Giving the implementer `danger-full-access` would also make the port bind, but would throw away the
+filesystem boundary for every implementation; duplicating the already-authoritative driver gate is
+not worth that expansion.
+
+The prompt-only fix exposed the same boundary one layer deeper on the retry. The Sol implementer
+again completed the change and passed every permitted check, followed the new instruction not to run
+E2E, and then hit `Permission denied` creating `.git/index.lock`. Codex's workspace-write sandbox
+protects Git metadata as well as listener creation. The durable answer is still not
+`danger-full-access`: the outer driver now owns Codex commits. A Codex implementer leaves a dirty
+worktree and returns `success=true` with an empty `sha`; the driver enumerates tracked, staged, and
+untracked changed paths, rejects changes to `docs/AUDIT.md`, deferral state, or rejected-draft
+state, stages only those paths, and commits with the finding identity in the message. Claude keeps
+its existing role-owned commit flow.
+
+This also changes the fix-round seam. A resumed Codex implementer edits on top of the rejected
+commit but still leaves Git alone; the outer driver creates a new round commit before re-running
+gates. The exact Codex thread remains the conversational handoff, while the driver-owned commit
+becomes the deterministic Git handoff.
 
 The resume mechanism was probed before the port: a Terra thread was given a codeword, resumed by its
 reported thread id with the same JSON schema, and returned the codeword. The probe also confirmed
@@ -927,3 +942,4 @@ rather than hidden in the apply script.
 | 2026-07-26 | —        | Verifier must name which kind of "stale" on INVALID; HALT env-cause note  |
 | 2026-07-26 | —        | Codex runner backend + runner-specific Ruler skill overlay                |
 | 2026-07-26 | —        | Codex implementer leaves listener-based E2E to the outer driver           |
+| 2026-07-26 | —        | Codex implementer leaves Git commits to the outer driver                  |

@@ -57,6 +57,9 @@ compatibility.
 * The first canary implementer completed the change and passed type-check, unit, and lint checks,
   but the nested workspace-write sandbox denied Playwright's localhost listener. The canary was
   stopped before a second false deferral, and 94503cbd restored the first finding.
+* The retry passed the corrected non-listener checks but confirmed the sandbox also protects
+  `.git/index.lock`. The separate audit branch restored the finding again; the agent branch now
+  assigns Codex staging and commits to the outer driver.
 
 | Commit       | What landed                                                          |
 | ------------ | -------------------------------------------------------------------- |
@@ -79,15 +82,15 @@ compatibility.
 
 ## Unverified assumptions
 
-* The restarted five-finding driver canary works after assigning listener-based E2E exclusively to
-  the outer driver.
+* The restarted five-finding driver canary works after assigning listener-based E2E and Git commits
+  exclusively to the outer driver.
 * The canary's final GitHub Actions run is green.
 * No canary finding requires a fix round. If one does, confirm the implementation and fix JSONL
   envelopes carry the same Codex thread id.
 
 ## Done & verified
 
-* `npm run test:scripts` — 79 tests passed after the E2E-boundary regression test.
+* `npm run test:scripts` — 81 tests passed after the E2E and Git-boundary regression tests.
 * `npm run check` — zero errors and warnings.
 * `npm run lint` — passed.
 * `npm run format:check` — passed.

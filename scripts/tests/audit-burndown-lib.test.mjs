@@ -20,7 +20,9 @@ import {
   draftPatchPath,
   findingPriority,
   getEntry,
+  implementationCommitMessage,
   launchCommand,
+  protectedImplementationPaths,
   renderDeferralNotes,
   resolveImplSha,
 } from '../audit-burndown/lib.mjs';
@@ -253,6 +255,29 @@ describe('resolveImplSha', () => {
   it('stays empty when HEAD never moved, so a genuine no-op still defers', () => {
     expect(resolveImplSha({ reported: '', head: baseSha, baseSha })).toBe('');
     expect(resolveImplSha({ reported: '', head: '', baseSha })).toBe('');
+  });
+});
+
+describe('Codex driver-owned commits', () => {
+  it('keeps the finding identity in the deterministic commit message', () => {
+    const title = '[P3][maintainability] Name the shared ring width';
+    expect(implementationCommitMessage(title)).toBe(
+      `fix(audit): Name the shared ring width\n\nAudit: ${title}`
+    );
+    expect(implementationCommitMessage(title, 2)).toContain(
+      'fix(audit): address review round 2 for Name the shared ring width'
+    );
+  });
+
+  it('blocks model edits to driver-owned audit state while allowing source changes', () => {
+    expect(
+      protectedImplementationPaths([
+        'web/src/lib/example.ts',
+        'docs/AUDIT.md',
+        'docs/AUDIT-DEFERRED.md',
+        'docs/audit-deferred/rejected.patch',
+      ])
+    ).toEqual(['docs/AUDIT.md', 'docs/AUDIT-DEFERRED.md', 'docs/audit-deferred/rejected.patch']);
   });
 });
 
