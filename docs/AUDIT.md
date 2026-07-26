@@ -24,40 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P2][duplication] `'SKIP_WAITING'` service-worker message type is an ungreppable magic string split across producer, config, and (implicit) SW
-
-**File(s):** `web/src/lib/pwa/updates.ts:193`; comments at `updates.ts:44-47,199-204`;
-`web/vite.config.ts:101-125` — pinned at SHA f934d43
-
-#### Problem
-
-The SW control protocol hinges on one string:
-
-```ts
-sw.postMessage({ type: 'SKIP_WAITING' });
-```
-
-The workbox-generated SW listens for this exact value, the vite.config comment
-(`registerType: 'prompt'` … "activates it via SKIP_WAITING message") describes it, and the recovery
-comment references it — but nothing binds them. A typo or a rename on either side silently breaks
-all updates with no type error and no test failure (the test asserts the literal
-`{ type: 'SKIP_WAITING' }`, so it would pass against a matching typo). This is the single most
-load-bearing string in the update lifecycle and it is un-discoverable.
-
-#### Proposed solution
-
-Export a named constant `export const SW_SKIP_WAITING_MESSAGE = { type: 'SKIP_WAITING' } as const;`
-(or a `SW_MESSAGE.SKIP_WAITING` enum) from a small `web/src/lib/pwa/messages.ts`, and post it by
-reference. Reference the constant name in the vite.config comment so the SW-side coupling is
-greppable.
-
-#### Verification
-
-`grep -rn SKIP_WAITING web/src` should find one definition + one use. Update the test to import the
-constant instead of re-typing the literal, so a rename can't drift.
-
----
-
 ### [P2][complexity] `checkForUpdates` is a 70-line function wrapping a nested `activateWaitingSW` state machine
 
 **File(s):** `web/src/lib/pwa/updates.ts:160-229` (whole function); nested closure `176-210` —
