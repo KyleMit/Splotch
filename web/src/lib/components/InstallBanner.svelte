@@ -31,7 +31,7 @@
   let showHint = $state(false);
   let busy = $state(false);
   let parting = $state(false);
-  let exitIntoParentButton = false;
+  let exitIntoParentButton = $state(false);
 
   // Wait until the child has actually drawn a little, so the prompt feels earned
   // and never competes with the very first finger-on-screen moment.

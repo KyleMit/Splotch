@@ -24,39 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P3][readability] InstallBanner mixes `$state` flags with a plain `let` mutated inside an `$effect`
-
-**File(s):** `web/src/lib/components/InstallBanner.svelte:21-25,45-46,52-53` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-let showHint = $state(false);
-let busy = $state(false);
-let parting = $state(false);
-let shownAtStroke: number | null = null;
-let exitIntoParentButton = false; // plain let, no $state
-```
-
-`exitIntoParentButton` is a plain `let` written inside the auto-clear `$effect` (line 45) and read
-in `bannerExit` (line 53); `shownAtStroke` is similarly a non-reactive `let` written in the effect.
-It happens to work because `bannerExit` reads at transition time and the effect doesn't depend on
-them — but a reader can't tell at a glance which flags are reactive and which aren't, and a future
-edit that *renders* off `exitIntoParentButton` would break with no warning. The inconsistency is a
-latent trap.
-
-#### Proposed solution
-
-Either make them `$state` (harmless, uniform) or add a one-line comment on each non-`$state` `let`
-explaining it's an imperative transition-time latch deliberately kept out of reactivity. Uniformity
-is the cheaper fix.
-
-#### Verification
-
-`npm run check`; banner auto-clear + fly-into-button animation still behave.
-
----
-
 ### [P4][duplication] Reload-side-effect pair (`refreshState = 'idle'; window.location.reload()`) is repeated across three lifecycle paths
 
 **File(s):** `web/src/lib/pwa/updates.ts:164-166,184-186` — pinned at SHA f934d43
