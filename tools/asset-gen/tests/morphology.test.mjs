@@ -43,6 +43,19 @@ describe('dilateMask', () => {
     expect(count(dilateMask(corner, w, h, 1))).toBe(4);
   });
 
+  it('can treat out-of-bounds pixels as set', () => {
+    const w = 5,
+      h = 5;
+    const empty = mask(w, h, () => false);
+    const expandedBorder = dilateMask(empty, w, h, 1, 1);
+    expect(count(expandedBorder)).toBe(16);
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++)
+        expect(at(expandedBorder, w, x, y)).toBe(
+          x === 0 || x === w - 1 || y === 0 || y === h - 1 ? 1 : 0
+        );
+  });
+
   it('is a no-op on the empty mask and leaves a full mask full', () => {
     const w = 6,
       h = 6;

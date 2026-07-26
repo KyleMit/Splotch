@@ -32,35 +32,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P2][duplication] `solid-regions.mjs` reimplements the erode/dilate that `morphology.mjs` already exports
-
-**File(s):** `tools/asset-gen/lib/solid-regions.mjs:46-85` (`erode`, `dilate`) vs
-`tools/asset-gen/lib/morphology.mjs:7-42` (`morph`/`erodeMask`/`dilateMask`) — pinned at SHA f934d43
-
-#### Problem
-
-`morphology.mjs` exists precisely to be "shared" (its header names two callers) and provides
-separable `erodeMask`/`dilateMask`. Yet `solid-regions.mjs` defines its own `erode` (separable,
-breaks on first unset) and `dilate` (invert→erode→invert) that compute the identical opening. A
-*third* erosion — Set-based — appears in `composite-eye.mjs:211-231`. Three morphology
-implementations for one concept; `solid-regions`'s copy is a near-verbatim duplicate of the exported
-one.
-
-#### Proposed solution
-
-Delete `solid-regions.mjs`'s local `erode`/`dilate`; import `erodeMask`/`dilateMask` from
-`morphology.mjs` and call them in `scoreSolidity` (lines 181-182) and `whitenSolidRegions` (line
-224). Verify the border-handling matches (both treat out-of-bounds as unset for erode); if
-`whitenSolidRegions`'s rim relies on the invert-based dilate's border behavior, add a `border`
-option to `morph` rather than keeping a fork.
-
-#### Verification
-
-`tests/solid-regions.test.mjs` and `tests/morphology.test.mjs` pass; `scoreSolidity` on the golden
-fixtures returns the same `interiorPx`/`biggestBlob`.
-
----
-
 ### [P2][maintainability] The ink-luma threshold `150` is redeclared in four modules with "keep in sync" comments
 
 **File(s):** `tools/asset-gen/lib/punch-fill.mjs:35` (`OUTLINE_LUMA_THRESHOLD`),
