@@ -22,37 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P3][complexity] `saveBlobToFolder` mixes permission negotiation, unique-naming, the write, and stale-handle recovery in one function
-
-**File(s):** `web/src/lib/drawing/folderSave.ts:147-181` — pinned at SHA f934d43
-
-#### Problem
-
-The function does: support check, load handle, query-then-maybe-request permission (lines 159-163),
-unique-name resolution + createWritable + write + close (165-168), and a catch block that performs
-*semantic recovery* — detecting a `NotFoundError`, clearing the stored folder, and firing the UI
-listener (175-178). The recovery logic (stale folder → forget + notify) is a distinct concern buried
-in a catch arm.
-
-#### Proposed solution
-
-Extract two helpers:
-
-```ts
-async function ensureWritePermission(handle, allowPrompt): Promise<boolean>;
-async function forgetStaleFolder(): Promise<void>; // clearSaveFolder() + folderClearedListener?.()
-```
-
-`saveBlobToFolder` becomes: guard → load → `if (!await ensureWritePermission(...)) return false` →
-write → `catch` that calls `forgetStaleFolder()` only on `NotFoundError`. The happy path reads
-top-to-bottom without the permission ladder inline.
-
-#### Verification
-
-`folderSave.test.ts`'s permission, stale-handle, and suffix tests pass unchanged.
-
----
-
 ### [P3][duplication] `FOLDER_CHOSEN_KEY` is a `splotch-*` storage key that lives outside the storage layer and is re-hardcoded as a build marker
 
 **File(s):** `web/src/lib/drawing/folderSave.ts:27` (`FOLDER_CHOSEN_KEY`) — pinned at SHA f934d43

@@ -140,6 +140,22 @@ async function createUniqueFile(
   }
 }
 
+async function ensureWritePermission(
+  handle: FileSystemDirectoryHandle,
+  allowPrompt: boolean
+): Promise<boolean> {
+  let permission = await handle.queryPermission({ mode: 'readwrite' });
+  if (permission !== 'granted' && allowPrompt) {
+    permission = await handle.requestPermission({ mode: 'readwrite' });
+  }
+  return permission === 'granted';
+}
+
+async function forgetStaleFolder(): Promise<void> {
+  await clearSaveFolder();
+  folderClearedListener?.();
+}
+
 // Write `blob` as `filename` into the chosen folder. Returns true once written;
 // false (no folder set, unsupported, or permission lost) tells the caller to
 // fall back to a download. Never opens the folder picker — folder selection is a
@@ -159,11 +175,7 @@ export async function saveBlobToFolder(
     const handle = await loadHandle();
     if (!handle) return false;
 
-    let permission = await handle.queryPermission({ mode: 'readwrite' });
-    if (permission !== 'granted' && allowPrompt) {
-      permission = await handle.requestPermission({ mode: 'readwrite' });
-    }
-    if (permission !== 'granted') return false;
+    if (!(await ensureWritePermission(handle, allowPrompt))) return false;
 
     const fileHandle = await createUniqueFile(handle, filename);
     const writable = await fileHandle.createWritable();
@@ -176,8 +188,7 @@ export async function saveBlobToFolder(
     // so the UI stops naming it. AbortError and any other write failure just
     // fall back to a download.
     if (err instanceof DOMException && err.name === 'NotFoundError') {
-      await clearSaveFolder();
-      folderClearedListener?.();
+      await forgetStaleFolder();
     }
     return false;
   }
