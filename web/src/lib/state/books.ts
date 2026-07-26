@@ -336,16 +336,12 @@ export function bookAssetPaths(book: Book): string[] {
   // Night fills exist only for processed orientations (ADR-0052) — no thumbnail,
   // same as the light fills.
   const nightFills = book.pages.flatMap((page) =>
-    ALL_ORIENTATIONS
-      .map((o) => page.nightImages[o])
-      .filter((p): p is string => !!p)
+    ALL_ORIENTATIONS.map((o) => page.nightImages[o]).filter((p): p is string => !!p)
   );
   // Chalk outlines exist only for forked orientations — the full-screen overlay
   // and the picker tile (via its .chalk.thumb sibling) swap to them in dark mode.
   const chalkOutlines = book.pages.flatMap((page) =>
-    ALL_ORIENTATIONS
-      .map((o) => page.chalkImages[o])
-      .filter((p): p is string => !!p)
+    ALL_ORIENTATIONS.map((o) => page.chalkImages[o]).filter((p): p is string => !!p)
   );
   return [
     ...lineArt,

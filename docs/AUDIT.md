@@ -26,33 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P3][readability] `ALL_ORIENTATIONS` exists but `bookAssetPaths` re-inlines `['portrait','landscape'] as BookOrientation[]` twice
-
-**File(s):** `web/src/lib/state/books.ts:78,304,311` — pinned at SHA f934d43
-
-#### Problem
-
-`const ALL_ORIENTATIONS: BookOrientation[] = ['portrait', 'landscape'];` is defined and used in
-`page()`, yet `bookAssetPaths` writes the array literal with an inline cast twice more:
-
-```ts
-(['portrait', 'landscape'] as BookOrientation[]).map((o) => page.nightImages[o]);
-```
-
-The cast is only needed because the literal isn't the typed constant. Two representations of "all
-orientations" can diverge (add a `'square'` orientation and one gets missed).
-
-#### Proposed solution
-
-Reuse `ALL_ORIENTATIONS` in both `flatMap` blocks, dropping the casts. If a third orientation is
-ever added, one edit covers `page()` and `bookAssetPaths`.
-
-#### Verification
-
-`npm run check`; `bookAssetPaths` tests unchanged.
-
----
-
 ### [P3][type-safety] The `'light' | 'dark'` theme union is re-typed in `pageThumb` instead of a shared `ResolvedTheme`
 
 **File(s):** `web/src/lib/state/books.ts:279-283`; `web/src/lib/state/appearance.svelte.ts:26` —
