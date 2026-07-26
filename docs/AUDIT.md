@@ -22,38 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P2][duplication] `ringShadow` and `gradientRingShadow` differ only in whether the ring color is derived
-
-**File(s):** `web/src/lib/components/ColorPalette.svelte:66-73` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-function ringShadow(color: string) {
-  const ringColor = getRingColor(color);
-  return `0 0 0 0.5px var(--surface), 0 0 0 4.5px ${ringColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
-}
-function gradientRingShadow(color: string) {
-  return `0 0 0 0.5px var(--surface), 0 0 0 4.5px ${color}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
-}
-```
-
-The entire `box-shadow` template (`0.5px` seam, `4.5px` ring, drop shadow) is duplicated; only the
-ring color source differs. A change to the ring geometry must be made in two places.
-
-#### Proposed solution
-
-Keep one builder: `function selectionRingShadow(ringColor: string): string`. Call sites pass
-`getRingColor(shown)` for palette swatches and `colors.customColor` for the gradient swatch. Delete
-`gradientRingShadow`.
-
-#### Verification
-
-Rendered `box-shadow` strings are identical to before for both an active palette swatch and a ringed
-custom swatch; visual check in `/dev/design` or a running instance.
-
----
-
 ### [P2][design-tokens] Hardcoded shadow literals bypass the elevation tokens
 
 **File(s):** `web/src/lib/components/ColorPalette.svelte:68, 72, 167, 184, 296` — pinned at SHA

@@ -63,13 +63,8 @@
   // The selected-state gap (border + seam) is surface-colored, not white, so in
   // dark mode it reads as bar background and the colored ring floats around the
   // swatch. Light mode is unchanged (surface is white there).
-  function ringShadow(color: string) {
-    const ringColor = getRingColor(color);
+  function selectionRingShadow(ringColor: string): string {
     return `0 0 0 0.5px var(--surface), 0 0 0 4.5px ${ringColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
-  }
-
-  function gradientRingShadow(color: string) {
-    return `0 0 0 0.5px var(--surface), 0 0 0 4.5px ${color}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
   }
 
   function selectSwatch(hex: string, paint: string) {
@@ -120,6 +115,7 @@
 >
   {#each PALETTE_COLORS as { hex, label, bonus } (hex)}
     {@const shown = themedSwatchColor(hex, dark)}
+    {@const ringColor = getRingColor(shown)}
     <button
       class="color-swatch"
       class:bonus
@@ -128,7 +124,7 @@
       data-color={hex}
       data-trim-rank={trimRank.get(hex)}
       style="background-color: {shown}; {!erasing && colors.activeSwatch === hex
-        ? `box-shadow: ${ringShadow(shown)}; --ring-color: ${getRingColor(shown)};`
+        ? `box-shadow: ${selectionRingShadow(ringColor)}; --ring-color: ${ringColor};`
         : ''}"
       aria-label={shown === hex ? label : 'White'}
       use:scribbleTap={() => selectSwatch(hex, shown)}
@@ -145,7 +141,7 @@
     data-color="custom"
     aria-label="Custom Color"
     style={!erasing && colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected
-      ? `box-shadow: ${gradientRingShadow(colors.customColor)};`
+      ? `box-shadow: ${selectionRingShadow(colors.customColor)};`
       : ''}
     use:scribbleTap={selectCustomColor}
     onpointerdown={handlePaletteDown}
