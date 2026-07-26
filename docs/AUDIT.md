@@ -28,32 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P4][type-safety] Loose feature-detection casts for `navigator.standalone` and screen-orientation lock
-
-**File(s):** `web/src/lib/platform.ts:29` (`window.navigator as { standalone?: boolean }`),
-`web/src/lib/orientation.ts:7-10`, `50` (`LockableScreenOrientation`) — pinned at SHA f934d43
-
-#### Problem
-
-Both files hand-roll ad-hoc structural casts to reach non-standard/optional web APIs:
-`(window.navigator as { standalone?: boolean }).standalone`, and
-`window.screen.orientation as LockableScreenOrientation | undefined`. These are the classic "the
-lib.dom types don't know about this API" casts, scattered and repeated (the `standalone` cast in
-particular is the same shape `deviceInfo.ts` and `platform.ts` both need for iOS PWA detection).
-
-#### Proposed solution
-
-Declare the augmentations once in `web/src/app.d.ts` (a `Navigator.standalone?: boolean` and
-`ScreenOrientation.lock?/unlock?` global interface merge), so call sites read `navigator.standalone`
-and `screen.orientation.lock` without inline casts. This is the idiomatic home given `app.d.ts`
-already augments `globalThis.Capacitor`.
-
-#### Verification
-
-`npm run check` with the inline casts removed; behavior unchanged.
-
----
-
 ### [P4][naming] `THEME_COLOR_LIGHT` hardcodes `'#ffffff'` while its dark twin reads from a token
 
 **File(s):** `web/src/lib/theme.ts:30-31` — pinned at SHA f934d43
