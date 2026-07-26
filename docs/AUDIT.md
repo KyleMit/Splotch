@@ -9,39 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P2][architecture] Unify the three near-identical ghost-click guards
-
-**File(s):** `web/src/lib/actions/modalDialog.svelte.ts:82-88` (`onClick`),
-`web/src/lib/actions/pinchTextZoom.svelte.ts:119-124` (`onClickCapture`),
-`web/src/lib/actions/scribbleGuard.ts:60-62` (`click`) — pinned at SHA f934d43
-
-#### Problem
-
-Three actions independently implement the same "swallow the trailing synthesized click" pattern
-documented in `svelte.md`, each with the `detail === 0` keyboard/AT carve-out and capture-phase
-`preventDefault()`/`stopPropagation()`:
-
-* modalDialog: swallow click if `detail !== 0` and inside a launch zone.
-* pinchTextZoom: swallow one click after a two-finger pinch (`pinchedRecently`).
-* scribbleTap: treat `detail === 0` as activation, ignore `detail >= 1`.
-
-The `detail === 0 ⇒ keyboard/AT` rule is subtle and re-derived in each file, so a fix to that
-heuristic must land in three places.
-
-#### Proposed solution
-
-Extract a small shared helper, e.g. `$lib/gestures/ghostClick.ts` exposing
-`isSyntheticPointerClick(e: MouseEvent): boolean` (`e.detail !== 0`) and/or a
-`swallowNextClick(node)` primitive, and have all three actions consume it. Even just centralizing
-the `detail === 0` predicate removes the re-derivation.
-
-#### Verification
-
-`scribbleGuard.test.ts` (`activates on a keyboard/AT click (detail 0…)`) and pinch/modal behavior
-must be unchanged. `npm run test:unit -- scribble pinch modal`.
-
----
-
 ### [P2][maintainability] Collapse the redundant `isDragging` + `activePointerId` drag-state pair
 
 **File(s):** `web/src/lib/actions/dragToClear.ts:26-27, 77-78, 174-175, 194, 249` — pinned at SHA
