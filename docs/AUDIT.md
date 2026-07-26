@@ -24,43 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P3][architecture] Auto-clear/dismiss lifecycle policy lives in the banner component, not the install state module
-
-**File(s):** `web/src/lib/components/InstallBanner.svelte:34-47` (auto-clear `$effect`) — pinned at
-SHA f934d43
-
-#### Problem
-
-Per `.claude/rules/svelte.md`: "Shared state lives in `src/lib/state/*.svelte.ts`. Components read
-state and call setters; they never own shared state." The banner owns a genuine policy decision —
-*when* an ignored install prompt should auto-dismiss (`shownAtStroke + STROKES_BEFORE_AUTO_CLEAR`,
-then call `dismissInstall()`):
-
-```ts
-if (canvasState.strokeCount < shownAtStroke + STROKES_BEFORE_AUTO_CLEAR) return;
-parting = true;
-dismissInstall();
-```
-
-The stroke-count-based auto-dismiss is install-lifecycle logic (it mutates persisted dismissal),
-sitting in a component alongside the presentation. `shownAtStroke` bookkeeping is duplicated
-conceptually with the state module's `SETTLED_IN_STROKES` gating.
-
-#### Proposed solution
-
-Move the "should auto-clear" decision into `install.svelte.ts` (e.g. a derived/`autoClearDue`
-computed from stroke count, or an `armAutoClear(shownAtStroke)` helper), leaving the component to
-render `parting` and run the exit animation. Keep the animation (`PARTING_MESSAGE_MS`, `bannerExit`)
-in the component — only the persistence-affecting policy moves.
-
-#### Verification
-
-Add/keep a unit test in `install.svelte.test.ts` for the auto-clear threshold (currently untested —
-it's only reachable through the component). Playwright banner flow still auto-clears after the
-threshold.
-
----
-
 ### [P3][duplication] localStorage key strings are re-hard-coded in the test instead of imported
 
 **File(s):** `web/src/lib/state/install.svelte.ts:17-18`;

@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { isAndroidBrowser, isIosDevice, isNative, isStandalone } from '$lib/platform';
 import { STORAGE_KEYS, readBool, writeBool } from '$lib/storage';
+import { canvasState } from './canvas.svelte';
 
 // "Add to Home Screen" / PWA install, surfaced as a friendly parent-facing prompt.
 //
@@ -35,6 +36,9 @@ export const install = $state({
 
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 let initialized = false;
+let installAutoClearArmedAt: number | null = null;
+
+const STROKES_BEFORE_AUTO_CLEAR = 5;
 
 function isIosSafari() {
   if (!isIosDevice()) return false;
@@ -152,4 +156,19 @@ export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unava
 export function dismissInstall() {
   install.dismissed = true;
   writeBool(STORAGE_KEYS.installDismissed, true);
+}
+
+export function armInstallAutoClear() {
+  installAutoClearArmedAt ??= canvasState.strokeCount;
+}
+
+export function autoDismissInstallIfDue(): boolean {
+  if (
+    installAutoClearArmedAt === null ||
+    canvasState.strokeCount < installAutoClearArmedAt + STROKES_BEFORE_AUTO_CLEAR
+  ) {
+    return false;
+  }
+  dismissInstall();
+  return true;
 }

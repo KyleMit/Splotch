@@ -251,3 +251,22 @@ describe('dismissInstall', () => {
     expect(next.install.dismissed).toBe(true);
   });
 });
+
+describe('install auto-clear', () => {
+  it('dismisses and persists after five strokes relative to when it is armed', async () => {
+    const { install, armInstallAutoClear, autoDismissInstallIfDue } = await freshModule();
+    const { canvasState } = await import('./canvas.svelte');
+    canvasState.strokeCount = 12;
+    armInstallAutoClear();
+
+    canvasState.strokeCount = 16;
+    expect(autoDismissInstallIfDue()).toBe(false);
+    expect(install.dismissed).toBe(false);
+    expect(localStorage.getItem(STORAGE_KEYS.installDismissed)).toBeNull();
+
+    canvasState.strokeCount = 17;
+    expect(autoDismissInstallIfDue()).toBe(true);
+    expect(install.dismissed).toBe(true);
+    expect(localStorage.getItem(STORAGE_KEYS.installDismissed)).toBe('true');
+  });
+});
