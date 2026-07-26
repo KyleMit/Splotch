@@ -26,37 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P5][readability] Page-grid column counts are restated across three breakpoints
-
-**File(s):** `web/src/lib/components/ColoringBook.svelte:263-269,341-357` — pinned at SHA f934d43
-
-#### Problem
-
-`.coloring-pages-grid` (2 cols), `.portrait-pages` (3 cols), then the `max-width: 520px` block
-resets both back to 2:
-
-```ts
-.coloring-pages-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.coloring-pages-grid.portrait-pages { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 520px) {
-  .coloring-pages-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }        /* same as base */
-  .coloring-pages-grid.portrait-pages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-```
-
-The non-portrait override inside the media query is a no-op (identical to the base rule), and the
-column counts (2/3/2) are scattered magic numbers describing one responsive intent.
-
-#### Proposed solution
-
-Drop the redundant `.coloring-pages-grid` rule inside the media query (base already sets 2), and
-express the intent via a single `--page-cols` custom property flipped by orientation/breakpoint, so
-`grid-template-columns: repeat(var(--page-cols), minmax(0,1fr))` appears once.
-
-#### Verification
-
-Visual check of the pages grid at desktop portrait/landscape and at ≤520px; column counts unchanged.
-
 ## Source: Code audit — Misc lib utilities + Audio
 
 ### [P2][architecture] Scatter of platform/device utilities across `lib/` root hurts grepability — group under one folder

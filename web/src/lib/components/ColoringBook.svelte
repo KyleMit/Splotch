@@ -257,11 +257,12 @@
   }
 
   .coloring-pages-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    --page-cols: 2;
+    grid-template-columns: repeat(var(--page-cols), minmax(0, 1fr));
   }
 
   .coloring-pages-grid.portrait-pages {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    --page-cols: 3;
   }
 
   /* Tiles are little paper cards that preview each page/cover's line art, and
@@ -343,12 +344,8 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .coloring-pages-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     .coloring-pages-grid.portrait-pages {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      --page-cols: 2;
     }
   }
 
