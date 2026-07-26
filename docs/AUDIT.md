@@ -32,31 +32,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P2][duplication] `STRONG_LIGHT_SIDE = 180` is declared in two eye modules instead of imported
-
-**File(s):** `tools/asset-gen/lib/eye-fill.mjs:326` and `tools/asset-gen/lib/composite-eye.mjs:47` —
-pinned at SHA f934d43
-
-#### Problem
-
-`composite-eye.mjs:36` already imports `BAND_BLIND_INK_FRAC` and `scoreEyeFill` from `eye-fill.mjs`,
-and its own comments (46) reference "judgeNightEyes's own reference test." Yet it redeclares
-`const STRONG_LIGHT_SIDE = 180;` — the same "strong light side" bar `judgeNightEyes` uses at
-`eye-fill.mjs:351`. The two checks are documented as complementary halves of the same eye-reference
-oracle; a change to one 180 silently desynchronizes them.
-
-#### Proposed solution
-
-`export const STRONG_LIGHT_SIDE = 180;` from `eye-fill.mjs` and import it in `composite-eye.mjs` (it
-already imports two symbols from that file).
-
-#### Verification
-
-`grep -n "STRONG_LIGHT_SIDE = 180" lib/` returns one line. `tests/composite-eye.test.mjs` and
-`tests/eye-fill.test.mjs` pass.
-
----
-
 ### [P2][performance] `scoreEyeRings` and `findEyeCores` each re-run the ink mask + full region labeling on the same buffer
 
 **File(s):** `tools/asset-gen/lib/eye-fill.mjs:117-136` (`findEyeCores`) and `153-184`

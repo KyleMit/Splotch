@@ -33,7 +33,7 @@
 // vs. all 17 over-flags (≥ 0.10) and the good band-blind controls (≥ 0.46):
 // coreDarkFrac < CORE_DARK_FRAC_MIN ⇔ blank orb. See tools/asset-gen/tests.
 import sharp from 'sharp';
-import { BAND_BLIND_INK_FRAC, scoreEyeFill } from './eye-fill.mjs';
+import { BAND_BLIND_INK_FRAC, scoreEyeFill, STRONG_LIGHT_SIDE } from './eye-fill.mjs';
 
 // A pupil check is anchored only at a CONFIRMED eye, using the same light-fill
 // oracle judgeNightEyes trusts — so shape blanket-checks and segment dots (which
@@ -44,8 +44,6 @@ import { BAND_BLIND_INK_FRAC, scoreEyeFill } from './eye-fill.mjs';
 //     the solid-ink pupil (annulusInkFrac high). judgeNightEyes SKIPS these as
 //     band-blind, which is exactly why the stego blank orb slipped through — so
 //     this check must own them.
-const STRONG_LIGHT_SIDE = 180;
-
 // Working resolution — coarse enough to be cheap, fine enough for eye-scale.
 const WORK_W = 512;
 const DARK = 90; // luma below this is "pupil dark" (matches the light-mode pupil)

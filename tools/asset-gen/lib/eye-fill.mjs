@@ -333,7 +333,7 @@ export function judgeLightEyes(scored) {
 // sclera — the catchlight carried the verdict while the eye read as a dark
 // socket. Every strong structure must survive: the catchlight stays bright ON
 // a dark pupil AND the pupil stays dark ON a light sclera.
-const STRONG_LIGHT_SIDE = 180;
+export const STRONG_LIGHT_SIDE = 180;
 
 // A core whose annulus is mostly PEN ink is band-blind: the ink exclusion
 // hides whatever surrounds it (an accident-era solid pupil around a
