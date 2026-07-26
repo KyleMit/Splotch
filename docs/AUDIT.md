@@ -9,54 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P1][duplication] `pinchTextZoom` reimplements the DOM-free pinch accumulator that `createPinchZoom` already provides
-
-**File(s):** `web/src/lib/actions/pinchTextZoom.svelte.ts:43-114` vs
-`web/src/lib/components/aiPreview.ts:91-160` — pinned at SHA f934d43
-
-#### Problem
-
-`pinchZoom.svelte.ts` correctly delegates all pointer bookkeeping to the tested, DOM-free
-`createPinchZoom` accumulator (a `Map<number,Point>`, `rebase()` snapshotting base
-transform/spread/count, and `spread()` via `Math.hypot`). `pinchTextZoom` hand-rolls the *same*
-machinery again:
-
-```ts
-const points = new Map<number, { x: number; y: number }>();
-let baseZoom = MIN_TEXT_ZOOM;
-let baseSpread = 0;
-function spread(): number {
-  const [a, b] = [...points.values()];
-  if (!a || !b) return 0;
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-function rebase() {
-  baseZoom = zoom;
-  baseSpread = spread();
-}
-```
-
-This is a second, parallel implementation of two-finger spread tracking and base re-snapshotting —
-the exact concern `createPinchZoom` was factored out to own (its comment even says "The Svelte
-action wires real PointerEvents to it"). Two copies drift independently and double the surface for
-pointer-bookkeeping bugs.
-
-#### Proposed solution
-
-Extract the finger-spread/rebase core from `createPinchZoom` into a shared primitive, e.g.
-`createSpreadTracker(): { down, move, up, spread, pointerCount, clear }` in `aiPreview.ts` (or a new
-`$lib/gestures/`), and have both `createPinchZoom` and `pinchTextZoom` consume it. `pinchTextZoom`
-then keeps only its `zoom`/`baseZoom` math (`nextTextZoom`) and drops its private `points` map and
-`spread()`.
-
-#### Verification
-
-`pinchTextZoom.svelte.test.ts` (pure `nextTextZoom`/`clampTextZoom`) and `aiPreview.test.ts`
-(`createPinchZoom`) both still pass. Add a tracker unit test.
-`npm run test:unit -- pinch aiPreview`.
-
----
-
 ### [P1][naming] Name the drag-to-clear timing/animation magic numbers as constants
 
 **File(s):** `web/src/lib/actions/dragToClear.ts:182-234` (`finishDrag`, `onPointerUp`) — pinned at
