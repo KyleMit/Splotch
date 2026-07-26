@@ -94,6 +94,17 @@ describe('removeKey', () => {
     removeKey(STORAGE_KEYS.aiAccessToken);
     expect(localStorage.getItem(STORAGE_KEYS.aiAccessToken)).toBeNull();
   });
+
+  it('removes the key from Preferences on native', async () => {
+    ctrl.native = true;
+    localStorage.setItem(STORAGE_KEYS.aiAccessToken, 'x');
+    prefsStore.set(STORAGE_KEYS.aiAccessToken, 'x');
+
+    removeKey(STORAGE_KEYS.aiAccessToken);
+
+    expect(localStorage.getItem(STORAGE_KEYS.aiAccessToken)).toBeNull();
+    await vi.waitFor(() => expect(prefsStore.has(STORAGE_KEYS.aiAccessToken)).toBe(false));
+  });
 });
 
 describe('resilience to a throwing localStorage', () => {

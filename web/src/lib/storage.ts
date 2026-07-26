@@ -76,17 +76,24 @@ const getPrefs = lazyPluginModule(() =>
     : Promise.reject(new Error('native-only plugin'))
 );
 
-// Fire-and-forget durable mirror. Never throws into the caller — a failed
-// durable write just means we fall back to the localStorage copy. The literal
-// __IS_CAPACITOR__ guards (here and below) make the Preferences paths
-// compile-time dead on web so Rollup drops the plugin chunk; isNative() alone
-// is a runtime check it can't tree-shake.
-function mirror(key: StorageKey, value: string) {
-  if (__IS_CAPACITOR__ && isNative()) {
-    getPrefs()
-      .then(({ Preferences }) => Preferences.set({ key, value: String(value) }))
-      .catch(() => {});
+type DurablePreferences = Awaited<ReturnType<typeof getPrefs>>['Preferences'];
+
+async function runWithDurablePreferences<T>(
+  operation: (preferences: DurablePreferences) => Promise<T>
+): Promise<T | undefined> {
+  if (!__IS_CAPACITOR__ || !isNative()) return undefined;
+  try {
+    const { Preferences } = await getPrefs();
+    return await operation(Preferences);
+  } catch {
+    return undefined;
   }
+}
+
+// Fire-and-forget durable mirror. Never throws into the caller — a failed
+// durable write just means we fall back to the localStorage copy.
+function mirror(key: StorageKey, value: string) {
+  void runWithDurablePreferences((Preferences) => Preferences.set({ key, value: String(value) }));
 }
 
 export function readBool(key: StorageKey, fallback: boolean): boolean {
@@ -125,11 +132,7 @@ export function writeString(key: StorageKey, value: string) {
 export function removeKey(key: StorageKey) {
   if (!browser) return;
   safeLocalStorage(() => localStorage.removeItem(key));
-  if (__IS_CAPACITOR__ && isNative()) {
-    getPrefs()
-      .then(({ Preferences }) => Preferences.remove({ key }))
-      .catch(() => {});
-  }
+  void runWithDurablePreferences((Preferences) => Preferences.remove({ key }));
 }
 
 export function readInt(
@@ -170,10 +173,9 @@ function notifyDurableRestore() {
  * Returns true if localStorage was changed, so callers can reload their stores.
  */
 export async function hydrateDurableStorage() {
-  let restored = false;
-  if (__IS_CAPACITOR__ && isNative()) {
-    try {
-      const { Preferences } = await getPrefs();
+  const restored =
+    (await runWithDurablePreferences(async (Preferences) => {
+      let restoredValue = false;
       // Fire every durable get concurrently rather than one serial bridge
       // round-trip per declared key on the cold-start critical path.
       const durable = await Promise.all(hydrationKeys.map((key) => Preferences.get({ key })));
@@ -184,16 +186,14 @@ export async function hydrateDurableStorage() {
         const action = reconcileStorageValues(local, value);
         if (action.restore !== undefined) {
           localStorage.setItem(key, action.restore); // WebView lost it — recover from durable store
-          restored = true;
+          restoredValue = true;
         } else if (action.backup !== undefined) {
           backups.push(Preferences.set({ key, value: action.backup })); // back up the existing value
         }
       });
       await Promise.all(backups);
-    } catch {
-      // If the durable layer is unavailable we simply keep the localStorage copy.
-    }
-  }
+      return restoredValue;
+    })) ?? false;
   // localStorage is now repopulated, so every registered reloader re-reads fresh
   // values. Only fire when something actually changed — a no-op restore leaves
   // the live stores untouched.
