@@ -22,39 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P3][architecture] `lazyIdbDatabase` exposes a `version` param but its `upgrade` handler can never migrate — the versioning is decorative
-
-**File(s):** `web/src/lib/idb.ts:4-21` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-export function lazyIdbDatabase(dbName, storeName, version = 1) { …
-  openDB(dbName, version, { upgrade(db) {
-    if (!db.objectStoreNames.contains(storeName)) db.createObjectStore(storeName);
-  }});
-```
-
-The signature advertises a `version` knob, but `upgrade` ignores
-`oldVersion`/`newVersion`/`transaction` and only ever creates one store idempotently. A caller that
-bumps `version` to add a store or migrate data has no hook to do so — the abstraction promises
-schema versioning it doesn't deliver. Both current callers pin `version` at 1
-(`secureStorage.ts:28`, `folderSave.ts:24`), so the parameter is presently inert but misleading.
-
-#### Proposed solution
-
-Either (a) drop the `version` param and hardcode `1` until a real migration is needed, documenting
-that the store is single-version; or (b) accept an `upgrade` callback so callers own their
-migration: `lazyIdbDatabase(dbName, version, upgrade: (db, oldV, newV, tx) => void)`. Given YAGNI,
-(a) is the honest choice now.
-
-#### Verification
-
-`npm run check`; both callers still open their single store; a code reader can no longer assume
-version bumps migrate.
-
----
-
 ### [P3][type-safety] `lazyIdbDatabase` returns an unparameterized `IDBPDatabase`, forcing `any` on every consumer
 
 **File(s):** `web/src/lib/idb.ts:4-8` (return type), consumed at `secureStorage.ts:68,94,99` and

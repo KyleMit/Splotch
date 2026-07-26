@@ -25,5 +25,6 @@ describe('lazyIdbDatabase', () => {
     await expect(getDb()).resolves.toBe(database);
     await expect(getDb()).resolves.toBe(database);
     expect(openDB).toHaveBeenCalledTimes(2);
+    expect(openDB).toHaveBeenCalledWith('test-db', 1, expect.any(Object));
   });
 });

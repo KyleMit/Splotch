@@ -26,7 +26,6 @@ const ADMIN_SESSION = 'admin-session';
 
 // IndexedDB layout for the web path.
 const DB_NAME = 'splotch-secure';
-const DB_VERSION = 1;
 const STORE = 'secrets';
 const MASTER_KEY_ROW = 'master-key'; // the non-extractable AES-GCM CryptoKey
 
@@ -55,7 +54,7 @@ const getPlugin = lazyPluginModule(() =>
 );
 
 // --- web: IndexedDB via idb (also lazy) ---
-const getDb = lazyIdbDatabase<SecureDb>(DB_NAME, STORE, DB_VERSION);
+const getDb = lazyIdbDatabase<SecureDb>(DB_NAME, STORE);
 
 function isSecretPayload(value: unknown): value is SecretPayload {
   return (

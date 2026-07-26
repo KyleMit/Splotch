@@ -21,10 +21,9 @@ import { lazyIdbDatabase } from '$lib/idb';
 // opens IndexedDB just to find nothing.
 
 const DB_NAME = 'splotch-fs';
-const DB_VERSION = 1;
 const STORE = 'handles';
 const HANDLE_KEY = 'saveDir';
-const getDb = lazyIdbDatabase(DB_NAME, STORE, DB_VERSION);
+const getDb = lazyIdbDatabase(DB_NAME, STORE);
 
 // In-memory copy of the stored handle (undefined = not read yet, null = none),
 // so only the first save of a session touches IndexedDB.
