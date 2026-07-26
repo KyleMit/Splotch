@@ -28,35 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P4][type-safety] `currentGain!` non-null assertion in `playDrawSound`
-
-**File(s):** `web/src/lib/audio/drawingSound.ts:82` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-rampGainTo(currentGain!.gain, target, ctx.currentTime, GAIN_RAMP_S);
-```
-
-The `!` asserts `currentGain` is set. It's true today (the `if (!currentSource)` block always
-assigns `currentGain` alongside `currentSource`, and the early `if (!ctx || !buffers) return` guards
-the rest), but the invariant "`currentSource` set ⟺ `currentGain` set" is implicit across two
-branches — a refactor that sets one without the other would crash at runtime past the compiler. It's
-the kind of coupled-nullable pair the factory refactor (P2 above) would let you model as a single
-non-null object.
-
-#### Proposed solution
-
-In the `createDrawingSound` refactor, hold `{ source, gain }` as one nullable object so the pair is
-atomically set/cleared and the `!` disappears. Short term, pull `currentGain` into a local after the
-start block: `const gain = currentGain; if (!gain) return;`.
-
-#### Verification
-
-`npm run check` with no non-null assertion; new unit test exercises the start-then-ramp path.
-
----
-
 ### [P5][dead-code] `osFromUserAgent` carries a Windows-only branch the app can't reach meaningfully
 
 **File(s):** `web/src/lib/deviceInfo.ts:72-74` — pinned at SHA f934d43

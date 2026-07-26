@@ -14,8 +14,7 @@ const STOP_RAMP_S = 0.03;
 let audioContext: AudioContext | null = null;
 let buffers: AudioBuffer[] | null = null;
 let loadStarted = false;
-let currentSource: AudioBufferSourceNode | null = null;
-let currentGain: GainNode | null = null;
+let currentPlayback: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
 
 function volumeMultiplier() {
   return settings.soundVolume / SOUND_VOLUME_DEFAULT;
@@ -61,41 +60,41 @@ export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
   const ctx = audioContext;
   if (!ctx || !buffers) return;
 
-  if (!currentSource) {
+  if (!currentPlayback) {
     // Stroke start runs from pointerdown, satisfying the autoplay gesture
     // requirement for resuming the context.
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
 
     const buffer = buffers[Math.floor(Math.random() * buffers.length)];
-    currentGain = ctx.createGain();
-    currentGain.gain.value = 0;
-    currentGain.connect(ctx.destination);
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    gain.connect(ctx.destination);
 
-    currentSource = ctx.createBufferSource();
-    currentSource.buffer = buffer;
-    currentSource.loop = true;
-    currentSource.connect(currentGain);
-    currentSource.start(0, Math.random() * buffer.duration);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.connect(gain);
+    source.start(0, Math.random() * buffer.duration);
+    currentPlayback = { source, gain };
   }
 
   const target = BASE_SCRATCH_GAIN * volumeMultiplier() * Math.min(speed / FULL_VOLUME_SPEED, 1);
-  rampGainTo(currentGain!.gain, target, ctx.currentTime, GAIN_RAMP_S);
+  rampGainTo(currentPlayback.gain.gain, target, ctx.currentTime, GAIN_RAMP_S);
 }
 
 export function stopDrawSound() {
-  if (currentSource && currentGain && audioContext) {
+  const playback = currentPlayback;
+  if (playback && audioContext) {
     const now = audioContext.currentTime;
-    rampGainTo(currentGain.gain, 0, now, STOP_RAMP_S);
-    const source = currentSource;
-    const gain = currentGain;
+    const { source, gain } = playback;
+    rampGainTo(gain.gain, 0, now, STOP_RAMP_S);
     source.stop(now + STOP_RAMP_S);
     source.onended = () => {
       source.disconnect();
       gain.disconnect();
     };
   }
-  currentSource = null;
-  currentGain = null;
+  currentPlayback = null;
 }
 
 // Ramping (instead of setting the value directly) avoids audible clicks; the
