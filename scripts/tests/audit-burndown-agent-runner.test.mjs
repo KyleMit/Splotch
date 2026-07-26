@@ -3,6 +3,7 @@ import {
   agentAuthCommand,
   agentRunnerDefaults,
   codexArgs,
+  codexRoleInstructions,
   normalizeAgentRunner,
   parseSavedAgentOutput,
 } from '../audit-burndown/agent-runner.mjs';
@@ -72,6 +73,14 @@ describe('Codex invocation', () => {
   it('makes reviewer sessions structurally read-only', () => {
     const args = codexArgs({ ...base, role: 'review' });
     expect(args).toContain('read-only');
+  });
+
+  it('leaves listener-based E2E to the outer driver', () => {
+    const instructions = codexRoleInstructions('implement');
+    expect(instructions).toContain('Do not run Playwright');
+    expect(instructions).toContain('outside this nested sandbox');
+    expect(instructions).toContain('Commit when');
+    expect(codexRoleInstructions('review')).toBe('');
   });
 });
 

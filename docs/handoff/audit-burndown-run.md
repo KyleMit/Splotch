@@ -51,10 +51,15 @@ compatibility.
 * Actual nested `codex exec` calls must be launched outside the outer filesystem sandbox. A direct
   Codex JSONL, schema, and resume probe passed; the same call failed only when deliberately run
   inside the outer sandbox with `Operation not permitted`.
+* The first canary implementer completed the change and passed type-check, unit, and lint checks,
+  but the nested workspace-write sandbox denied Playwright's localhost listener. The canary was
+  stopped before a second false deferral, and 94503cbd restored the first finding.
 
 | Commit       | What landed                                                          |
 | ------------ | -------------------------------------------------------------------- |
 | 9777726c0285 | Codex runner, runner-specific skill generation, tests, docs, and ADR |
+| afc228760f47 | Record draft PR #548 in the durable checkpoint                       |
+| 94503cbd906e | Restore the mechanically deferred first canary finding               |
 
 ## Decisions made
 
@@ -71,15 +76,15 @@ compatibility.
 
 ## Unverified assumptions
 
-* The complete five-finding driver canary works through the new adapter; direct CLI probes and unit
-  tests cover its components but not the whole loop.
+* The restarted five-finding driver canary works after assigning listener-based E2E exclusively to
+  the outer driver.
 * The canary's final GitHub Actions run is green.
 * No canary finding requires a fix round. If one does, confirm the implementation and fix JSONL
   envelopes carry the same Codex thread id.
 
 ## Done & verified
 
-* `npm run test:scripts` — 78 tests passed.
+* `npm run test:scripts` — 79 tests passed after the E2E-boundary regression test.
 * `npm run check` — zero errors and warnings.
 * `npm run lint` — passed.
 * `npm run format:check` — passed.
@@ -87,6 +92,7 @@ compatibility.
 * Ruler generated distinct Claude and Codex skill files; both frontmatters parse and validate.
 * `codex login status` — logged in using ChatGPT.
 * Direct `codex exec` probes verified JSONL output, JSON Schema output, and thread resumption.
+* Exact-override Codex preflight passed with 399 findings before the first canary launch.
 
 `npm run ruler:check` must be rerun after the generated files are staged. Its current dirty-tree
 failure is expected because that gate intentionally reports unstaged generated output.
@@ -104,8 +110,8 @@ failure is expected because that gate intentionally reports unstaged generated o
 
 ## Risks & next 3 steps
 
-1. Commit and push this PR-number update to complete the durable checkpoint.
-2. Run exact-override preflight, then the five-finding foreground Codex canary.
+1. Commit and push the Codex E2E-boundary fix and refreshed checkpoint.
+2. Re-run exact-override preflight, then restart the five-finding foreground Codex canary.
 3. Inspect all canary diffs and audit-entry removals, require final-HEAD CI green, report cost, then
    launch the full continuation command.
 

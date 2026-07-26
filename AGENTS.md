@@ -1126,6 +1126,19 @@ vendor binary; it was **isolated one-shot role processes with an exact implement
 * Saved envelopes stay under the existing `iter*.json` names. Claude writes one JSON object; Codex
   writes JSONL events. One parser normalizes both for the driver, cost report, and comment backfill.
 
+The first live canary exposed a runner boundary the direct probes could not: an outer unsandboxed
+driver does not make its nested `codex exec --sandbox workspace-write` role unsandboxed. The first
+Sol implementer completed the change and passed type-check, all unit tests, and scoped ESLint, then
+refused to commit because Playwright's preview server hit `listen EPERM` on both `::1:4173` and
+`127.0.0.1:4173`. The driver never got the commit, so its own E2E gate — which runs outside the
+nested sandbox — never had a chance to validate it.
+
+The Codex implementer prompt now makes that ownership explicit: it must not start Playwright or
+another listener, must commit after the non-listener checks pass, and leaves verifier-selected E2E
+to the driver's deterministic pre-review gate. Giving the implementer `danger-full-access` would
+also make the port bind, but would throw away the filesystem boundary for every implementation;
+duplicating the already-authoritative driver gate is not worth that expansion.
+
 The resume mechanism was probed before the port: a Terra thread was given a codeword, resumed by its
 reported thread id with the same JSON schema, and returned the codeword. The probe also confirmed
 the installed CLI accepts `gpt-5.6-terra`, `--output-schema`, and per-call reasoning effort.
@@ -1170,6 +1183,7 @@ rather than hidden in the apply script.
 | 2026-07-26 | 049d5e35 | Stop the verifier naming `npm test` — it discarded a finished, green fix  |
 | 2026-07-26 | —        | Verifier must name which kind of "stale" on INVALID; HALT env-cause note  |
 | 2026-07-26 | —        | Codex runner backend + runner-specific Ruler skill overlay                |
+| 2026-07-26 | —        | Codex implementer leaves listener-based E2E to the outer driver           |
 
 <!-- Source: .ruler/skill-notes/README.md -->
 

@@ -97,6 +97,11 @@ At the top of every review round the driver runs:
 The reviewer sees only a commit that passed. It must not rerun tests; it reads the diff for behavior
 smuggled into a refactor, incomplete renames, missing runtime guards, and uncovered behavior.
 
+The nested Codex workspace-write sandbox cannot bind Playwright's localhost listener. The
+implementer therefore runs type-check, unit, and scoped-lint checks but deliberately leaves every
+E2E spec to the driver, which runs outside the nested sandbox before review. A localhost `EPERM`
+inside a role is an environment boundary, not an implementation verdict.
+
 The default gates do not cover bespoke repository ratchets. For this repository use:
 
 ```bash

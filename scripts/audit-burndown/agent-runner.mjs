@@ -29,6 +29,22 @@ const CODEX_SANDBOX = {
   review: 'read-only',
 };
 
+const CODEX_ROLE_INSTRUCTIONS = {
+  implement: `## Codex runner boundary
+
+This role runs inside a nested workspace-write sandbox that cannot bind a localhost listener. The
+driver runs every verifier-selected Playwright spec outside this nested sandbox after you commit
+and before adversarial review.
+
+* Do not run Playwright, an E2E command, or a dev/preview server, even when the brief lists it.
+* Run the remaining acceptance commands that do not open a listener: type-check, unit tests, and
+  scoped lint.
+* Commit when the implementation and those non-listener checks pass. Do not report failure or
+  refuse to commit merely because E2E was deliberately left to the driver.
+
+The driver will roll the commit back if its E2E gate fails.`,
+};
+
 export function normalizeAgentRunner(value) {
   const runner = value || 'claude';
   if (runner !== 'claude' && runner !== 'codex') {
@@ -178,10 +194,15 @@ function claudeArgs({
   return args;
 }
 
-function codexPrompt(prompt, systemPromptFile, sessionId) {
+export function codexRoleInstructions(role) {
+  return CODEX_ROLE_INSTRUCTIONS[role] ?? '';
+}
+
+function codexPrompt(prompt, systemPromptFile, sessionId, role) {
   if (sessionId) return prompt;
   const rolePrompt = readFileSync(systemPromptFile, 'utf8').trim();
-  return `${rolePrompt}\n\n## Current task\n\n${prompt}`;
+  const runnerInstructions = codexRoleInstructions(role);
+  return `${rolePrompt}${runnerInstructions ? `\n\n${runnerInstructions}` : ''}\n\n## Current task\n\n${prompt}`;
 }
 
 export async function runAgentStep({
@@ -241,7 +262,7 @@ export async function runAgentStep({
       writeFileSync(schemaPath, `${JSON.stringify(schema, null, 2)}\n`);
       cmd = 'codex';
       args = codexArgs({
-        prompt: codexPrompt(prompt, systemPromptFile, sessionId),
+        prompt: codexPrompt(prompt, systemPromptFile, sessionId, role),
         model,
         effort,
         role,
