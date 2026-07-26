@@ -30,33 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P3][duplication] The `GEMINI_API_KEY` guard is copy-pasted six ways
-
-**File(s):** gen-coloring-fills.mjs:135, gen-coloring-fills-dark.mjs:239,
-gen-coloring-chalk.mjs:224, normalize-outline-strokes.mjs:88, gen-coloring-outlines-fresh.mjs:61,
-gen-style-covers.mjs:72 — pinned at SHA f934d43
-
-#### Problem
-
-`if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.')` appears six times, and three
-scripts additionally repeat the guarded-construct idiom
-`const ai = process.env.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: … }) : null` (dark:341-343,
-chalk:249-251, normalize:107-109) with an extra `--dry-run`/`--rescore` escape hatch bolted on
-inconsistently.
-
-#### Proposed solution
-
-`lib/gemini.mjs` `makeClient({ optional = false })`: returns a client, calls `fail` when the key is
-missing and `optional` is false, returns `null` when optional (for `--dry-run`/`--rescore`).
-Replaces both idioms.
-
-#### Verification
-
-Unset the key and run each generator; confirm the same failure message. Run
-`gen:coloring-chalk -- nature --dry-run` with no key and confirm it still previews.
-
----
-
 ### [P3][maintainability] Prompt strings and the transport live tangled in the bin scripts
 
 **File(s):** `FILL_PROMPT` gen-coloring-fills.mjs:52-70; `darkFillPrompt`/`EYES_*`

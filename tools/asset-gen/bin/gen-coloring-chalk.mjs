@@ -54,9 +54,9 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import sharp from 'sharp';
-import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
 import { parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import { makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
@@ -222,8 +222,7 @@ if (!positionals.length)
   fail('give one or more pages or categories, e.g. "nature/ant-tall" or "nature"');
 // --rescore re-runs the gates over the existing candidates in the samples dir
 // (no API calls) — for re-judging after a gate change without burning takes.
-if (!values.rescore && !values['dry-run'] && !process.env.GEMINI_API_KEY)
-  fail('GEMINI_API_KEY is not set.');
+const ai = makeClient({ optional: values['dry-run'] || values.rescore });
 
 // Per-page tuning resolves in the page loop — defaults, then the page's
 // fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
@@ -249,10 +248,6 @@ function chalkSettings(v, source) {
   return s;
 }
 chalkSettings(values);
-
-const ai = process.env.GEMINI_API_KEY
-  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-  : null;
 
 async function drawChalk(imageBytes, temperature, instruction) {
   const response = await ai.models.generateContent({

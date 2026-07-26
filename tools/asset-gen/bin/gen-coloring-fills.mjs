@@ -34,9 +34,9 @@ import { parseArgs } from 'node:util';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
 import sharp from 'sharp';
-import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
 import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import { makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
@@ -127,7 +127,7 @@ const { values, positionals } = parseArgs({
 const samples = parsePositiveInt(values.samples, '--samples', 1);
 if (values.apply && samples > 1) fail('--apply cannot be combined with --samples greater than 1.');
 const baseTemp = parseTemperature(values.temperature, '--temperature', undefined);
-if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
+const ai = makeClient();
 
 const pages = await resolveOutlineTargets(positionals, {
   includeCovers: false,
@@ -137,7 +137,6 @@ const pages = await resolveOutlineTargets(positionals, {
   onMissing: 'defer',
 });
 const sampleMode = samples > 1;
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // A candidate is only usable if it holds the original outline — globally AND in
 // every region — and leaves no big blank-white area. Below any bar the fill either

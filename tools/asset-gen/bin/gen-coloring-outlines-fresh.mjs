@@ -23,9 +23,9 @@ import { parseArgs } from 'node:util';
 import { writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
-import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
 import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import { makeClient } from '../lib/gemini.mjs';
 import { scoreSolidity } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
@@ -59,7 +59,7 @@ if (!pageRel || !args.values.scene) {
     'usage: gen:coloring-outlines:fresh -- <category/page-orient> --scene "…" [--eyes] [--apply] [--max-attempts N] [-t F] [--notes "…"]'
   );
 }
-if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
+const ai = makeClient();
 
 const orient = pageRel.endsWith('-wide') ? 'wide' : pageRel.endsWith('-tall') ? 'tall' : null;
 if (!orient) fail(`page "${pageRel}" must end in -tall or -wide`);
@@ -76,8 +76,6 @@ const prompt = `${STYLE_PROMPT}
 The page is ${orientWord}, ${aspect} aspect ratio.
 
 THE SCENE: ${args.values.scene}${args.values.notes ? `\n\nADDITIONAL INSTRUCTIONS: ${args.values.notes}` : ''}`;
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 async function generateOutline(temperature) {
   const response = await ai.models.generateContent({

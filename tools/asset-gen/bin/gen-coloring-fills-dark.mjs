@@ -48,7 +48,6 @@ import { readFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import sharp from 'sharp';
-import { GoogleGenAI } from '@google/genai';
 import {
   REPO_ROOT,
   COLORING_DIR,
@@ -58,6 +57,7 @@ import {
   resolveNightLineArt,
 } from '../lib/paths.mjs';
 import { parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import { makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
@@ -250,7 +250,7 @@ function nightSettings(v, source) {
   return s;
 }
 nightSettings(values);
-if (!values['dry-run'] && !process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
+const ai = makeClient({ optional: values['dry-run'] });
 
 // Generate one take, register it to the source, and score four ways: structural
 // DRIFT (invented outlines), NIGHT-ness (background too bright / daytime), LINE
@@ -351,10 +351,6 @@ if (!positionals.length) fail('give a category or page, e.g. "space"');
 if (values.tall && values.wide) fail('pass only one of --tall / --wide');
 if (values.tall) pages = pages.filter((p) => p.includes('-tall'));
 if (values.wide) pages = pages.filter((p) => p.includes('-wide'));
-
-const ai = process.env.GEMINI_API_KEY
-  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-  : null;
 
 let failures = 0;
 for (const page of pages) {

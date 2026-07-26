@@ -40,9 +40,9 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';
-import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
 import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import { makeClient } from '../lib/gemini.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
@@ -86,7 +86,7 @@ const { values, positionals } = parseArgs({
   },
 });
 if (!positionals.length) fail('give one or more pages, e.g. "nature/ant-tall"');
-if (!values['dry-run'] && !process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
+const ai = makeClient({ optional: values['dry-run'] });
 
 // Per-page tuning resolves in the page loop — defaults, then the page's
 // fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
@@ -100,10 +100,6 @@ function normalizeSettings(v, source) {
   return s;
 }
 normalizeSettings(values);
-
-const ai = process.env.GEMINI_API_KEY
-  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-  : null;
 
 async function editLineArt(imageBytes, temperature, instruction) {
   const response = await ai.models.generateContent({

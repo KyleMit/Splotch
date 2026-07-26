@@ -12,9 +12,9 @@ import { parseArgs } from 'node:util';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
-import { GoogleGenAI } from '@google/genai';
 import { STYLES_DIR, fail } from '../lib/paths.mjs';
 import { parseTemperature } from '../lib/cli.mjs';
+import { makeClient } from '../lib/gemini.mjs';
 import { STYLE_SUFFIXES, STYLE_NAMES } from '../../../web/src/lib/ai/styles.ts';
 import { buildPromptForStyle } from '../../../web/src/lib/ai/prompt.ts';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
@@ -67,14 +67,11 @@ const { values } = parseArgs({
 
 const styles = values.style?.length ? values.style.map(resolveStyle) : STYLE_NAMES;
 const temperature = parseTemperature(values.temperature, '--temperature', undefined);
-if (!process.env.GEMINI_API_KEY) {
-  fail('GEMINI_API_KEY is not set.');
-}
+const ai = makeClient();
 
 const sourcePng = await sharp(await readFile(SOURCE_SVG))
   .png()
   .toBuffer();
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 let failures = 0;
 for (const style of styles) {

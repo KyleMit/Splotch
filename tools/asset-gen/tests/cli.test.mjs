@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import { makeClient } from '../lib/gemini.mjs';
 
 let error;
 let exit;
@@ -15,6 +16,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 function expectFailure(parse, raw, name, fallback, source, message) {
@@ -79,6 +81,22 @@ describe('parseNonNegative', () => {
       'page via notes.json',
       `--threshold must be a non-negative number, got "${raw}" (page via notes.json)`
     );
+  });
+});
+
+describe('makeClient', () => {
+  test('fails with the canonical diagnostic when the key is required but absent', () => {
+    vi.stubEnv('GEMINI_API_KEY', undefined);
+
+    expect(() => makeClient()).toThrow('process exited');
+    expect(error).toHaveBeenCalledWith('GEMINI_API_KEY is not set.');
+    expect(exit).toHaveBeenCalledWith(1);
+  });
+
+  test('returns null when the key is optional and absent', () => {
+    vi.stubEnv('GEMINI_API_KEY', undefined);
+
+    expect(makeClient({ optional: true })).toBeNull();
   });
 });
 
@@ -168,3 +186,38 @@ test.each(commandCases)('%s uses the canonical numeric diagnostic', (script, arg
   expect(result.status).toBe(1);
   expect(result.stderr.trim()).toBe(expected);
 });
+
+const offlineCommandCases = [
+  ['gen-coloring-fills-dark.mjs', ['--dry-run'], 'give a category or page, e.g. "space"'],
+  [
+    'gen-coloring-chalk.mjs',
+    ['nature/ant-tall', '--dry-run', '--temperature', 'invalid'],
+    '--temperature must be a number between 0 and 2, got "invalid"',
+  ],
+  [
+    'gen-coloring-chalk.mjs',
+    ['nature/ant-tall', '--rescore', '--temperature', 'invalid'],
+    '--temperature must be a number between 0 and 2, got "invalid"',
+  ],
+  [
+    'normalize-outline-strokes.mjs',
+    ['nature/ant-tall', '--dry-run', '--temperature', 'invalid'],
+    '--temperature must be a number between 0 and 2, got "invalid"',
+  ],
+];
+
+test.each(offlineCommandCases)(
+  '%s keeps its offline mode key-optional',
+  (script, args, expected) => {
+    const env = { ...process.env, NODE_NO_WARNINGS: '1' };
+    delete env.GEMINI_API_KEY;
+    const result = spawnSync(
+      process.execPath,
+      ['--experimental-strip-types', join(import.meta.dirname, '..', 'bin', script), ...args],
+      { encoding: 'utf8', env }
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stderr.trim()).toBe(expected);
+  }
+);
