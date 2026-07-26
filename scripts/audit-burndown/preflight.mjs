@@ -49,7 +49,9 @@ if (runCmd(auth.cmd, auth.args).status === 0) ok(`${AGENT_RUNNER} logged in`);
 else bad(`${AGENT_RUNNER} not logged in (run: ${auth.login})`);
 
 console.log('repo');
-if (gitOk('diff', '--quiet') && gitOk('diff', '--cached', '--quiet')) ok('working tree clean');
+const hasUntracked = Boolean(gitOut('ls-files', '--others', '--exclude-standard'));
+if (gitOk('diff', '--quiet') && gitOk('diff', '--cached', '--quiet') && !hasUntracked)
+  ok('working tree clean');
 else if (RESUME) warn('working tree is dirty — RESUME=1 will reset it to HEAD');
 else bad('working tree is dirty');
 ok(`runner: ${AGENT_RUNNER}`);

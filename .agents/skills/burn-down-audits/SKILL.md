@@ -34,8 +34,8 @@ Opus-tier work. Override with `MODEL_*` or `EFFORT_*` only when the run has a me
 * The driver never talks to GitHub. It pushes commits and appends
   `.audit-work/pending-comments.jsonl`; the supervising Codex agent opens/updates the PR, posts
   comments through the GitHub connector, and watches CI.
-* Never edit a tracked file while the driver is running. Its rollback path uses
-  `git reset --hard <base>`, which destroys uncommitted edits. Pause first.
+* Never edit a tracked file while the driver is running. Its rollback path resets tracked changes to
+  the finding base and removes untracked files introduced by that implementation. Pause first.
 
 ## Commands
 
@@ -272,8 +272,9 @@ the timestamped `run.log` line and file mtime, not by the number alone.
 ## Resume after a crash
 
 The unattended launcher sets `RESUME=1`. It adopts `origin/<branch>`, fast-forwards when safe,
-resets only crash residue from a half-finished finding, clears stale `STOP`, and starts with the
-same `docs/AUDIT.md` entry because deletion happens only inside an approved commit.
+resets tracked crash residue and removes untracked crash files from a half-finished finding, clears
+stale `STOP`, and starts with the same `docs/AUDIT.md` entry because deletion happens only inside an
+approved commit.
 
 Codex implementation and repair rounds are clean, driver-owned commits before gates and review. When
 the exact `Audit:` finding is still present, resume rewinds that contiguous local-only commit chain

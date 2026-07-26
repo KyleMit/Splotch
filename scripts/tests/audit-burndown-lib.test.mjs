@@ -25,6 +25,7 @@ import {
   implementationCommitMessage,
   launchCommand,
   protectedImplementationPaths,
+  removeNewUntrackedPaths,
   renderDeferralNotes,
   resolveImplSha,
 } from '../audit-burndown/lib.mjs';
@@ -280,6 +281,25 @@ describe('Codex driver-owned commits', () => {
         'docs/audit-deferred/rejected.patch',
       ])
     ).toEqual(['docs/AUDIT.md', 'docs/AUDIT-DEFERRED.md', 'docs/audit-deferred/rejected.patch']);
+  });
+});
+
+describe('failed implementation cleanup', () => {
+  it('removes only untracked paths introduced by the current implementation', () => {
+    const removed = [];
+    const added = removeNewUntrackedPaths(
+      ['notes/local.txt', 'scratch/existing.txt'],
+      [
+        'notes/local.txt',
+        'scratch/existing.txt',
+        'web/src/new-helper.ts',
+        'web/src/new-helper.test.ts',
+      ],
+      (path) => removed.push(path)
+    );
+
+    expect(added).toEqual(['web/src/new-helper.ts', 'web/src/new-helper.test.ts']);
+    expect(removed).toEqual(added);
   });
 });
 
