@@ -20,38 +20,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P4][architecture] `$effect` that syncs `activeColor` from theme is derived state written imperatively
-
-**File(s):** `web/src/lib/components/ColorPalette.svelte:35-39` — pinned at SHA f934d43
-
-#### Problem
-
-```svelte
-$effect(() => {
-  if (colors.activeSwatch === BLACK_INK) {
-    colors.activeColor = themedSwatchColor(BLACK_INK, dark);
-  }
-});
-```
-
-This is an effect whose only job is to keep one piece of shared state (`activeColor`) in sync with
-another (`activeSwatch` + theme) — a classic "derived-as-effect" smell. It lives in a component but
-mutates the shared `colors` module, so the invariant "Black paints white on dark paper" is enforced
-only while `ColorPalette` is mounted, and re-runs write on every `dark` toggle.
-
-#### Proposed solution
-
-Model `activeColor` as a `$derived`/getter in `colors.svelte.ts` (out of scope to implement there,
-but flag it): the paint color is a pure function of `activeSwatch`, `customColor`, and theme. The
-component would then not need the effect. Note in the finding for the App-state agent.
-
-#### Verification
-
-Toggling OS theme while Black is selected still repaints ink white↔black with the effect removed; no
-component owns the invariant.
-
----
-
 ### [P4][maintainability] `isLightColor` threshold `0.5` is an unnamed magic number
 
 **File(s):** `web/src/lib/colorRing.ts:18-20` — pinned at SHA f934d43
