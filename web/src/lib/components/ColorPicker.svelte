@@ -190,8 +190,10 @@
   .picker {
     display: inline-flex;
     padding: var(--space-4);
-    margin-top: 15px;
+    margin-top: var(--hex-first-row-overlap);
     --hex-offset: 31px;
+    --hex-first-row-overlap: 15px;
+    --hex-row-overlap: 18px;
     --hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   }
 
@@ -202,11 +204,11 @@
 
   .row {
     display: flex;
-    margin-top: -15px;
+    margin-top: calc(-1 * var(--hex-first-row-overlap));
   }
 
   .row:not(:first-child) {
-    margin-top: -18px;
+    margin-top: calc(-1 * var(--hex-row-overlap));
   }
 
   /* ── Responsive trimming (ADR-0048) ──────────────────────────────────────

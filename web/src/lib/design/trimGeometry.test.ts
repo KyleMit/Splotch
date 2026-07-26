@@ -52,8 +52,12 @@ function declaration(body: string, property: string, unit: string): number {
 }
 
 function px(body: string, property: string, variables = body): number {
-  const variable = body.match(new RegExp(`(?:^|[\\s;{])${property}:\\s*var\\((--[\\w-]+)\\)`))?.[1];
-  return declaration(variable ? variables : body, variable ?? property, 'px');
+  const variable = body.match(
+    new RegExp(`(?:^|[\\s;{])${property}:\\s*(calc\\(\\s*-1\\s*\\*\\s*)?var\\((--[\\w-]+)\\)`)
+  );
+  if (!variable) return declaration(body, property, 'px');
+  const value = declaration(variables, variable[2], 'px');
+  return variable[1] ? -value : value;
 }
 
 /** `max-height: 90vh` → 0.9, the fraction of the viewport the grid may use. */
@@ -185,14 +189,16 @@ describe('ColorPicker', () => {
     expect(HEX_GRID_GEOMETRY.firstRowPx).toBe(px(hexagon, 'height'));
     expect(HEX_GRID_GEOMETRY.columnPitchPx).toBe(px(hexagon, 'width'));
     // Later rows overlap upward, so the pitch is the hexagon minus that pull.
-    expect(HEX_GRID_GEOMETRY.rowPitchPx).toBe(px(hexagon, 'height') + px(laterRow, 'margin-top'));
+    expect(HEX_GRID_GEOMETRY.rowPitchPx).toBe(
+      px(hexagon, 'height') + px(laterRow, 'margin-top', picker)
+    );
     expect(HEX_GRID_GEOMETRY.rowOffsetPx).toBe(px(offsetRow, 'margin-left', picker));
     expect(HEX_GRID_GEOMETRY.paddingPx).toBe(2 * px(picker, 'padding', tokens));
     expect(HEX_GRID_GEOMETRY.viewportFraction).toBe(viewportFraction(dialog, 'max-height', 'vh'));
     expect(HEX_GRID_GEOMETRY.viewportFraction).toBe(viewportFraction(dialog, 'max-width', 'vw'));
     // firstRowPx counts the first hexagon whole, which only holds while the
     // first row's negative margin is cancelled by the picker's own.
-    expect(px(picker, 'margin-top') + px(firstRow, 'margin-top')).toBe(0);
+    expect(px(picker, 'margin-top') + px(firstRow, 'margin-top', picker)).toBe(0);
   });
 
   it('drops a honeycomb row at a time', () => {

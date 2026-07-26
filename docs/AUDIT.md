@@ -22,30 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P3][design-tokens] Honeycomb offset `31px` and picker paddings are un-tokenized repeated literals
-
-**File(s):** `web/src/lib/components/ColorPicker.svelte:237-330` (`margin-left: 31px` ~15×),
-`:193-208` (`padding: 16px`, `margin-top: 15px/-15px/-18px`) — pinned at SHA f934d43
-
-#### Problem
-
-`margin-left: 31px` is restated in every trim breakpoint (the honeycomb interlock offset) — over a
-dozen copies of the same magic number. The `16px` picker padding equals `--space-4`;
-`15px`/`-15px`/`-18px` row overlaps are geometry literals with no name. Changing the honeycomb
-offset means editing ~15 lines.
-
-#### Proposed solution
-
-Define `--hex-offset: 31px` (and `--hex-row-overlap`) on `.grid`/`.picker`, and use
-`var(--hex-offset)` in every trim rule. Swap the `16px` padding for `var(--space-4)`.
-
-#### Verification
-
-`rg '31px' ColorPicker.svelte` collapses to one definition; honeycomb still interlocks at every
-breakpoint; `lint:tokens` unaffected.
-
----
-
 ### [P3][type-safety] The hex-center record type is declared inline twice
 
 **File(s):** `web/src/lib/components/ColorPicker.svelte:23, 61` — pinned at SHA f934d43
