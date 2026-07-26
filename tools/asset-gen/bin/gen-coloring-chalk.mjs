@@ -364,7 +364,7 @@ for (const page of pages) {
     ? await scoreEyeFill(await readFile(lightRawPath), pen)
     : null;
   const score = async (candidate, shift, attempt) => {
-    const fwd = await outlineMatch(keepReference, candidate, { overlay: true });
+    const fwd = await outlineMatch(keepReference, candidate);
     const newInk = await scoreNewInk(pen, candidate);
     const eyes = lightEyes
       ? judgeChalkEyes(await scoreEyeFill(candidate, pen), lightEyes)
@@ -373,7 +373,6 @@ for (const page of pages) {
       candidate,
       keep: fwd.keep,
       localKeep: fwd.localKeep,
-      overlay: fwd.overlay,
       newInk,
       eyes,
       shift,
@@ -381,6 +380,7 @@ for (const page of pages) {
     };
   };
   let best = null;
+  let overlay;
   try {
     if (values.rescore) {
       if (!existsSync(sample)) {
@@ -403,6 +403,7 @@ for (const page of pages) {
         if (passes(cand, cfg)) break;
       }
     }
+    ({ overlay } = await outlineMatch(keepReference, best.candidate, { overlay: true }));
   } catch (err) {
     failures++;
     console.log(`FAILED (${err instanceof Error ? err.message : err})`);
@@ -416,7 +417,7 @@ for (const page of pages) {
     .negate({ alpha: false })
     .webp({ quality: WEBP_QUALITY })
     .toFile(sample.replace(/\.webp$/, '.display.webp'));
-  await sharp(best.overlay).toFile(sample.replace(/\.webp$/, '.overlay.png'));
+  await sharp(overlay).toFile(sample.replace(/\.webp$/, '.overlay.png'));
 
   const ok = passes(best, cfg);
   const warn = [];

@@ -32,32 +32,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P3][performance] `outlineMatch` always encodes a 512×512 overlay PNG even when the caller discards it
-
-**File(s):** `tools/asset-gen/lib/outline-match.mjs:87,129-132` — pinned at SHA f934d43
-
-#### Problem
-
-`outlineMatch` allocates `rgb = Buffer.alloc(MASK_W*MASK_W*3, 255)`, paints it throughout the scan,
-and always `await sharp(rgb…).png().toBuffer()` before returning. But
-`bin/check-coloring-drift.mjs:55-60` uses `overlay` only under `if (values.overlay && failed)`, and
-the generator gate at `bin/gen-coloring-fills.mjs:199` uses `keep`/`localKeep` for the pass/fail
-decision. Every gate evaluation pays a full PNG encode purely for a diagnostic image most calls
-throw away — on the hot batch path.
-
-#### Proposed solution
-
-Add an options arg: `outlineMatch(sourceBuf, filledBuf, { overlay = false } = {})`. Only paint `rgb`
-and encode when `overlay` is true; return `overlay: null` otherwise. Callers that want it pass
-`{ overlay: true }`.
-
-#### Verification
-
-`tests/outline-match.test.mjs` passes with `{overlay:true}`; time a batch drift check without
-`--overlay` before/after — the PNG encodes disappear from the profile.
-
----
-
 ### [P3][architecture] `golden-catalog.mjs` bundles a composite eye scorer with the golden-diff registry and has no header
 
 **File(s):** `tools/asset-gen/lib/golden-catalog.mjs:1-16` (`scoreGoldenNightEyes`) vs `18-80`

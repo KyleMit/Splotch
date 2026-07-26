@@ -252,6 +252,7 @@ for (const arg of positionals) {
     `${arg}  (blob ${srcSolidity.biggestBlob}, rings ${srcRings.maxDepth}) ... `
   );
   let best = null;
+  let overlay;
   try {
     for (let attempt = 0; attempt < cfg.maxAttempts; attempt++) {
       const temperature = Math.min(2, cfg.baseTemp + attempt * 0.15);
@@ -262,7 +263,7 @@ for (const arg of positionals) {
 
       const solidity = await scoreSolidity(candidate);
       const { cores, rings } = await scoreEyes(candidate);
-      const fwd = await outlineMatch(reference, candidate, { overlay: true });
+      const fwd = await outlineMatch(reference, candidate);
       const revCandidate = srcRings.overDeep.length
         ? await whitenEyeInteriors(candidate)
         : candidate;
@@ -274,7 +275,6 @@ for (const arg of positionals) {
         eyesPreserved: eyesPreserved(srcEyeCores, cores.cores),
         keep: fwd.keep,
         localKeep: fwd.localKeep,
-        overlay: fwd.overlay,
         reverseKeep: rev.keep,
         shift: { dx, dy },
         attempt,
@@ -282,6 +282,7 @@ for (const arg of positionals) {
       if (!best || rank(cand) > rank(best)) best = cand;
       if (passes(cand)) break;
     }
+    ({ overlay } = await outlineMatch(reference, best.candidate, { overlay: true }));
   } catch (err) {
     failures++;
     console.log(`FAILED (${err instanceof Error ? err.message : err})`);
@@ -291,7 +292,7 @@ for (const arg of positionals) {
   const dest = join(OUT_DIR, `${arg}.webp`);
   await mkdir(dirname(dest), { recursive: true });
   await writeFile(dest, best.candidate);
-  await sharp(best.overlay).toFile(dest.replace(/\.webp$/, '.overlay.png'));
+  await sharp(overlay).toFile(dest.replace(/\.webp$/, '.overlay.png'));
 
   const ok = passes(best);
   const warn = [];

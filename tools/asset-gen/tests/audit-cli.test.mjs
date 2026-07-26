@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const state = vi.hoisted(() => ({ roots: null, pages: [] }));
+const state = vi.hoisted(() => ({ roots: null, pages: [], overlayRequests: 0 }));
 
 const assertReadable = (buffer) => {
   if (buffer.toString() === 'corrupt') throw new Error('corrupt image');
@@ -38,10 +38,17 @@ vi.mock('../lib/outline-targets.mjs', () => ({
 vi.mock('../lib/outline-match.mjs', () => ({
   KEEP_THRESHOLD: 0.92,
   LOCAL_KEEP_THRESHOLD: 0.8,
-  outlineMatch: async (source, fill) => {
+  outlineMatch: async (source, fill, { overlay = false } = {}) => {
     assertReadable(source);
     assertReadable(fill);
-    return { keep: 1, localKeep: 1, worstTile: null, overlay: Buffer.alloc(0) };
+    if (overlay) state.overlayRequests++;
+    const drifted = fill.toString() === 'drift fill';
+    return {
+      keep: drifted ? 0.5 : 1,
+      localKeep: drifted ? 0.4 : 1,
+      worstTile: null,
+      overlay: overlay ? Buffer.from('overlay') : null,
+    };
   },
 }));
 
@@ -112,11 +119,14 @@ const cliImports = {
 
 const outputOf = (spy) => spy.mock.calls.map((args) => args.join(' ')).join('\n');
 
-async function addPage(name, { corruptOutline = false, corruptFill = false } = {}) {
+async function addPage(
+  name,
+  { corruptOutline = false, corruptFill = false, drifted = false } = {}
+) {
   const outline = join(state.roots.coloring, `test/${name}.outline.webp`);
   const fill = join(state.roots.fillSrc, `test/${name}.light.raw.webp`);
   await writeFile(outline, corruptOutline ? 'corrupt' : 'valid outline');
-  await writeFile(fill, corruptFill ? 'corrupt' : 'valid fill');
+  await writeFile(fill, corruptFill ? 'corrupt' : drifted ? 'drift fill' : 'valid fill');
   return outline;
 }
 
@@ -141,6 +151,7 @@ beforeEach(async () => {
     mkdir(join(state.roots.fillSrc, 'test'), { recursive: true }),
   ]);
   state.pages = [];
+  state.overlayRequests = 0;
   process.exitCode = undefined;
   log = vi.spyOn(console, 'log').mockImplementation(() => {});
   error = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -161,6 +172,17 @@ test('coloring drift reports a corrupt fill, continues, and exits non-zero', asy
   expect(outputOf(error)).toContain('test/bad  ERROR (corrupt image)');
   expect(outputOf(log)).toContain('test/good');
   expect(process.exitCode).toBe(1);
+});
+
+test('coloring drift only renders requested overlays for failed pages', async () => {
+  state.pages = [await addPage('bad', { drifted: true }), await addPage('good')];
+
+  await runCli('check-coloring-drift.mjs', '--overlay');
+
+  await expect(
+    readFile(join(state.roots.samples, 'drift/test-bad.overlay.png'), 'utf8')
+  ).resolves.toBe('overlay');
+  expect(state.overlayRequests).toBe(1);
 });
 
 test('fill eyes reports a corrupt fill, continues, and exits non-zero', async () => {
