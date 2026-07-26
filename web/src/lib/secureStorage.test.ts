@@ -91,16 +91,39 @@ describe('web save/load round trip', () => {
   });
 
   it('returns null when nothing is stored', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
     await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it.each([
     ['a non-payload value', 'not-a-payload'],
     ['a malformed payload', { iv: new Uint8Array(12), data: 'not-an-array-buffer' }],
-  ])('returns null when the secret row contains %s', async (_description, record) => {
+  ])('warns and returns null when the secret row contains %s', async (_description, record) => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     ctrl.rows.set(API_KEY_ROW, record);
 
     await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith('Secure storage load failed', expect.any(Error));
+  });
+
+  it('warns and returns null when the persisted master key cannot decrypt the payload', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await secureStorage.saveApiKey('secret-key-123');
+    const replacement = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, [
+      'encrypt',
+      'decrypt',
+    ]);
+    ctrl.rows.set(MASTER_KEY_ROW, replacement);
+
+    vi.resetModules();
+    const freshTab = await import('./secureStorage');
+
+    await expect(freshTab.loadApiKey()).resolves.toBeNull();
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith('Secure storage load failed', expect.any(Error));
   });
 
   it('clearApiKey removes the payload but keeps the master key for reuse', async () => {

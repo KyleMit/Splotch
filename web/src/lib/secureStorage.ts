@@ -124,14 +124,11 @@ async function webSave(name: string, value: string) {
 async function webLoad(name: string) {
   const db = await getDb();
   const record = await db.get(STORE, name);
-  if (!isSecretPayload(record)) return null;
+  if (record === undefined) return null;
+  if (!isSecretPayload(record)) throw new Error('Malformed secure-storage payload');
   const key = await getMasterKey(db);
-  try {
-    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: record.iv }, key, record.data);
-    return new TextDecoder().decode(plain);
-  } catch {
-    return null; // master key missing/rotated or payload corrupt — treat as no value
-  }
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: record.iv }, key, record.data);
+  return new TextDecoder().decode(plain);
 }
 
 async function webClear(name: string) {
@@ -180,7 +177,8 @@ async function loadSecret(name: string) {
   try {
     const backend = await selectBackend();
     return await backend.load(name);
-  } catch {
+  } catch (err) {
+    console.warn('Secure storage load failed', err);
     return null;
   }
 }

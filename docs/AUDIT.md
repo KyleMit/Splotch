@@ -22,35 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P3][error-handling] `loadSecret` and `webLoad` collapse every failure into `null` — a decrypt/plugin error is indistinguishable from "no key stored"
-
-**File(s):** `web/src/lib/secureStorage.ts:97-108` (`webLoad`), `131-144` (`loadSecret`) — pinned at
-SHA f934d43
-
-#### Problem
-
-`webLoad` catches a failed `crypto.subtle.decrypt` and returns `null` (line 105-107); `loadSecret`
-wraps everything in a `try { … } catch { return null }` (line 141-143), with no log on either. So a
-corrupt payload, a rotated master key, a Keychain error, or a genuinely-absent secret all surface
-identically as "no credential." For the parent's API key / admin session that means a silent,
-unexplained logout with zero diagnostic trail. The comment "master key missing/rotated or payload
-corrupt — treat as no value" acknowledges lumping distinct failures together.
-
-#### Proposed solution
-
-Keep the null-return contract (callers rely on it) but distinguish *absent* from *failed*: return
-`null` only when `db.get` yields no record; on a decrypt/plugin throw, `console.warn` (once) before
-returning null so the failure is observable. Optionally return a discriminated `{ ok: false }` for
-callers that could prompt a re-entry. At minimum, add the warn so a wiped-credential incident is
-debuggable.
-
-#### Verification
-
-Unit test: store a payload, then swap the master key row; assert `loadApiKey()` returns null *and* a
-warning was logged (spy on `console.warn`).
-
----
-
 ### [P3][architecture] `lazyIdbDatabase` exposes a `version` param but its `upgrade` handler can never migrate — the versioning is decorative
 
 **File(s):** `web/src/lib/idb.ts:4-21` — pinned at SHA f934d43
