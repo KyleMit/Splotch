@@ -86,9 +86,13 @@ export function stopDrawSound() {
   if (currentSource && currentGain && audioContext) {
     const now = audioContext.currentTime;
     rampGainTo(currentGain.gain, 0, now, STOP_RAMP_S);
-    currentSource.stop(now + STOP_RAMP_S);
+    const source = currentSource;
     const gain = currentGain;
-    currentSource.onended = () => gain.disconnect();
+    source.stop(now + STOP_RAMP_S);
+    source.onended = () => {
+      source.disconnect();
+      gain.disconnect();
+    };
   }
   currentSource = null;
   currentGain = null;

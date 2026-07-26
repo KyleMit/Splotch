@@ -28,37 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P4][maintainability] `stopDrawSound` disconnects the gain node but never the source node
-
-**File(s):** `web/src/lib/audio/drawingSound.ts:85-95` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-currentSource.stop(now + STOP_RAMP_S);
-const gain = currentGain;
-currentSource.onended = () => gain.disconnect();
-```
-
-On stop, only the `GainNode` is disconnected (via `onended`); the `AudioBufferSourceNode` is stopped
-but never explicitly `disconnect()`-ed. A stopped source is GC-eligible once `onended` fires, so
-this isn't a hard leak, but the asymmetric cleanup (gain handled, source not) is a lifecycle smell —
-and if `onended` never fires (e.g. context already closed), the gain stays connected. One stroke
-starts exactly one source + gain, so over a long session this is the only teardown path.
-
-#### Proposed solution
-
-In the `onended` handler disconnect both:
-`currentSource.onended = () => { source.disconnect(); gain.disconnect(); }` (capture `source` like
-`gain` is captured). Fold this into the `createDrawingSound` factory refactor above and assert it in
-the new test.
-
-#### Verification
-
-New drawingSound unit test asserts both nodes disconnected after `stop` + `onended`.
-
----
-
 ### [P4][naming] `deviceInfo.ts` vs `deviceReport.ts` split isn't self-evident from the names
 
 **File(s):** `web/src/lib/deviceInfo.ts`, `web/src/lib/deviceReport.ts` — pinned at SHA f934d43
