@@ -26,32 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P4][maintainability] Comment hardcodes "eight full covers" — drifts as the catalog grows
-
-**File(s):** `web/src/lib/components/ColoringBook.svelte:32-34` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-// paints instantly instead of fetching eight full covers on demand.
-$effect(() => scheduleIdle(() => prefetchImages(books.map((book) => thumbPath(book.cover)))));
-```
-
-There are currently eight books, but the count is derived from `BOOKS`. The comment will silently
-lie the moment a ninth book ships, and it also says "full covers" when the code prefetches
-`thumbPath(book.cover)` (the thumbnail, not the full cover).
-
-#### Proposed solution
-
-Drop the count and correct "covers" → "cover thumbnails": "…instead of fetching every book's cover
-thumbnail on demand."
-
-#### Verification
-
-Doc-only read-through.
-
----
-
 ### [P4][readability] Stale migration comment references a `.js` module that no longer exists
 
 **File(s):** `web/src/lib/state/coloringBook.svelte.ts:1-3` — pinned at SHA f934d43

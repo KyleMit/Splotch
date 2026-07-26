@@ -32,7 +32,7 @@
   const orientation = $derived(canvasState.paperOrientation ?? layout.orientation);
 
   // Warm the cover thumbnails once at idle so the very first open of the picker
-  // paints instantly instead of fetching eight full covers on demand.
+  // paints instantly instead of fetching every book's cover thumbnail on demand.
   $effect(() => scheduleIdle(() => prefetchImages(books.map((book) => thumbPath(book.cover)))));
 
   // Pressing/hovering a book tile warms that book's page thumbs before the
