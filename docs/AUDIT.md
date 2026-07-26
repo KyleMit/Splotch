@@ -7,28 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P4][complexity] `ai-timer` hotkey bindings are duplicated between the `onKeyDown` switch and the on-screen hint text
-
-**File(s):** `web/src/routes/dev/ai-timer/+page.svelte:72-81, 129-134` — pinned at SHA f934d43
-
-#### Problem
-
-The key→action mapping exists twice: as an `if/else if` chain over `'p'/'f'/'s'/'e'/'t'/'r'` (72-81)
-and as hand-written `<kbd>` hints (129-134). Adding or renaming a hotkey requires editing both, and
-they can silently disagree.
-
-#### Proposed solution
-
-Define one `const HOTKEYS: { key: string; label: string; run: () => void }[]` and drive both the
-handler (look up by `e.key.toLowerCase()`) and the rendered hint (`{#each HOTKEYS …}`) from it.
-
-#### Verification
-
-Every listed hotkey works and every working hotkey is listed, from a single array; adding one
-updates both surfaces.
-
----
-
 ### [P4][platform-branching] `app.html` seeds `data-app-surface` with a runtime `location.pathname === '/'` check that duplicates the `/`-page effect and hardcodes the route string
 
 **File(s):** `web/src/app.html:95`; duplicated by `web/src/routes/+page.svelte:48-51` — pinned at

@@ -70,15 +70,19 @@
   // Once the modal opens it's a modal <dialog>, so it makes the rest of the page
   // inert and the buttons below become unclickable. Global key listeners still
   // fire, so offer hotkeys to drive the animation while it's on screen.
+  const HOTKEYS: { key: string; label: string; run: () => void }[] = [
+    { key: 'p', label: 'play', run: () => play() },
+    { key: 'f', label: 'finish', run: finishNow },
+    { key: 's', label: 'safety', run: triggerSafety },
+    { key: 'e', label: 'server error', run: triggerServerError },
+    { key: 't', label: 'timeout', run: triggerTimeout },
+    { key: 'r', label: 'reset', run: reset },
+  ];
+
   function onKeyDown(e: KeyboardEvent) {
     if (e.target instanceof HTMLInputElement) return;
     const k = e.key.toLowerCase();
-    if (k === 'p') play();
-    else if (k === 'f') finishNow();
-    else if (k === 's') triggerSafety();
-    else if (k === 'e') triggerServerError();
-    else if (k === 't') triggerTimeout();
-    else if (k === 'r') reset();
+    HOTKEYS.find((h) => h.key === k)?.run();
   }
 
   onDestroy(() => {
@@ -129,9 +133,8 @@
 
   <p class="hint">
     The modal blocks the page once open — use hotkeys to drive it from anywhere:
-    <kbd>P</kbd> play · <kbd>F</kbd> finish · <kbd>S</kbd> safety · <kbd>E</kbd> server error ·
-    <kbd>T</kbd>
-    timeout · <kbd>R</kbd> reset.
+    {#each HOTKEYS as h, i (h.key)}<kbd>{h.key.toUpperCase()}</kbd>
+      {h.label}{i < HOTKEYS.length - 1 ? ' · ' : '.'}{/each}
   </p>
 
   <dl class="state" aria-label="ui state">
