@@ -30,35 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P3][maintainability] Prompt strings and the transport live tangled in the bin scripts
-
-**File(s):** `FILL_PROMPT` gen-coloring-fills.mjs:52-70; `darkFillPrompt`/`EYES_*`
-gen-coloring-fills-dark.mjs:84-117; `INSTRUCTION` gen-coloring-chalk.mjs:190-204; `INSTRUCTION`
-normalize-outline-strokes.mjs:61-74; `STYLE_PROMPT` gen-coloring-outlines-fresh.mjs:35-41 — pinned
-at SHA f934d43
-
-#### Problem
-
-The multi-paragraph model prompts are the actual product of this pipeline and the thing most often
-tuned, yet each is embedded mid-file between imports and control flow. Finding "the dark-fill
-prompt" means opening a 441-line CLI and scrolling past scoring code. There is no single surface
-where a prompt-tuner can see and diff all of them (contrast the app side, which has
-`web/src/lib/ai/prompt.ts`).
-
-#### Proposed solution
-
-Move the prompt constants to `lib/prompts.mjs` (or one file per prompt under `lib/prompts/`),
-exporting `FILL_PROMPT`, `darkFillPrompt(chalked)`, `CHALK_INSTRUCTION`, `NORMALIZE_INSTRUCTION`,
-`FRESH_STYLE_PROMPT`. The bins import them; the transport and scoring stay in bin. This also makes
-the prompts unit-referenceable.
-
-#### Verification
-
-Golden diff clean (byte-identical prompts, just relocated). `grep -n 'You are given' bin/` returns
-nothing.
-
----
-
 ### [P3][duplication] Repeated status-line assembly at the end of each generator loop
 
 **File(s):** gen-coloring-fills.mjs:242-263; gen-coloring-fills-dark.mjs:414-432;

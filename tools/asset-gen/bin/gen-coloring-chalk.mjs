@@ -65,6 +65,7 @@ import { crispInk } from '../lib/crisp-ink.mjs';
 import { dilateMask } from '../lib/morphology.mjs';
 import { scoreEyeFill, EYE_DARK_MAX, EYE_LIGHT_MIN } from '../lib/eye-fill.mjs';
 import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
+import { CHALK_INSTRUCTION } from '../lib/prompts.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
@@ -188,22 +189,6 @@ function judgeChalkEyes(chalkScored, lightScored) {
   return { passes: pupilsInked === 0, pupilsInked, whitesMissed };
 }
 
-const INSTRUCTION = `This is a children's coloring-page drawing rendered as WHITE line art on a BLACK background — a chalk line drawing on a blackboard.
-
-YOUR EDIT — redraw it as a proper CHALK LINE DRAWING, making the judgment calls a chalk artist makes about which areas should be SOLID WHITE and which should stay black:
-- THE WHITES OF EYES: fill each eye's sclera — ONLY the area between the eyeball outline and the pupil circle — SOLID WHITE, and fill each tiny catchlight/glare circle SOLID WHITE, so the eyes read correctly on the dark board.
-- PUPILS STAY BLACK. The pupil is the large circle inside each eye: its inside must remain BLACK — the dark board showing through — surrounded by the solid white sclera, with only the small catchlight circle white inside it. NEVER fill a pupil white, and NEVER fill the entire eye white: an eye that is one solid white disc is WRONG and unusable. Every finished eye must show white sclera, BLACK pupil, and a small white catchlight.
-- Small features that are naturally white on the subject (teeth, a white patch or marking, a sparkle) may also be filled solid white.
-- Everything else stays exactly as it is: thin white outlines on black.
-
-ABSOLUTE RULES:
-- Keep every existing white line exactly where it is — do not move, redraw, thicken, thin, smooth, or erase a single line. The drawing must line up pixel-for-pixel with the original.
-- Do not add any new lines, shapes, stars, dots, patterns, decorations, or objects. The ONLY change allowed is filling some existing enclosed regions solid white.
-- NEVER fill the open background white, and never fill a large body or a whole shape white — only small deliberate features (eye whites, catchlights, teeth, small markings).
-- Output PURE WHITE on PURE BLACK only — no grey, no color, no shading, no chalk texture, dust, or smudging.
-- Keep the same polarity as the input: a white drawing on a black background.
-- Do not crop, zoom, rotate, shift, or resize. Same composition, framing, and margins.`;
-
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
@@ -244,7 +229,9 @@ function chalkSettings(v, source) {
     ),
     notes: v.notes,
   };
-  s.instruction = s.notes ? `${INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${s.notes}` : INSTRUCTION;
+  s.instruction = s.notes
+    ? `${CHALK_INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${s.notes}`
+    : CHALK_INSTRUCTION;
   return s;
 }
 chalkSettings(values);

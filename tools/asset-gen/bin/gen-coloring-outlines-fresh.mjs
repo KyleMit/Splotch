@@ -28,18 +28,11 @@ import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { makeClient } from '../lib/gemini.mjs';
 import { scoreSolidity } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
+import { FRESH_STYLE_PROMPT } from '../lib/prompts.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 90;
-
-const STYLE_PROMPT = `Draw ONE page of a toddler coloring book (for age 2+), in this exact style:
-
-- Clean black pen OUTLINES on a pure white background. Medium, even line weight throughout — like a thick felt-tip pen. No shading, no grey, no color, no hatching, no texture, no text, letters, or numbers, and no border frame around the page.
-- Simple, rounded, chunky cartoon shapes with very little detail. Big friendly forms a two-year-old can color. Generous white margins around the drawing.
-- EVERY shape is a closed thin-line outline that can be colored in. There must be NO solid black filled areas anywhere on the page.
-- If the drawing has a face: each eye is a white eyeball outlined with a thin line, containing ONE outlined pupil circle (drawn as a thin ring, NOT filled black) with ONE small round catchlight circle inside it. Add a simple smiling mouth and thin eyebrow strokes. Never fill a pupil solid black.
-- Background elements stay sparse and simple (for example a couple of puffy outlined clouds, small grass tufts, a simple flower) so the page stays easy to color.`;
 
 const args = parseArgs({
   allowPositionals: true,
@@ -71,7 +64,7 @@ const orientWord = wide ? 'LANDSCAPE (wider than tall)' : 'PORTRAIT (taller than
 const maxAttempts = parsePositiveInt(args.values['max-attempts'], '--max-attempts', 5);
 const baseTemp = parseTemperature(args.values.temperature, '--temperature', 1.0);
 
-const prompt = `${STYLE_PROMPT}
+const prompt = `${FRESH_STYLE_PROMPT}
 
 The page is ${orientWord}, ${aspect} aspect ratio.
 

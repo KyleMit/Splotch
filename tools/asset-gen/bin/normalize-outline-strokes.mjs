@@ -48,6 +48,7 @@ import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outli
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
+import { NORMALIZE_INSTRUCTION } from '../lib/prompts.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
@@ -58,21 +59,6 @@ const OUT_DIR = join(SAMPLES_DARK_DIR, 'normalize');
 // hair inside the old solid's footprint, which reads as new ink to the reverse
 // direction but not to the eye.
 const REVERSE_KEEP_THRESHOLD = 0.9;
-
-const INSTRUCTION = `This is a black-and-white children's COLORING PAGE — clean black outlines on a pure white background.
-
-PROBLEM: some areas of this drawing are filled with SOLID BLACK ink — for example the pupils of eyes, or other fully-black shapes. A coloring page must be made of THIN OUTLINES ONLY, so every region can be colored in.
-
-YOUR EDIT — convert every solid-black area into an outlined shape:
-- Trace the BOUNDARY of each solid-black area with the same clean, thin black stroke used everywhere else in the drawing, exactly where the solid shape's edge is now, and leave its INSIDE pure white.
-- EYES: a solid black pupil becomes an outlined pupil — EXACTLY ONE thin black circle/oval of the same size and position, white inside, plus EXACTLY ONE small thin-outlined catchlight circle inside it (where the white glare dot is now). Two circles per eye interior, NO MORE — never draw extra concentric circles, double rings, spirals, or repeated outlines inside an eye.
-- Do this for EVERY solid black area in the picture, large or small.
-
-ABSOLUTE RULES:
-- The finished page must contain NO solid black regions at all — every black mark on the page must be a thin stroke or outline.
-- Change NOTHING else. Every line that is already a thin stroke stays exactly where it is — do not move, redraw, thicken, thin, smooth, or erase it. Keep the same composition, framing, margins, and line style.
-- Do not add any new details, shapes, patterns, or decorations beyond the boundary outlines described above.
-- Output only clean black line art on a pure white background — no color, no grey, no shading.`;
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -96,7 +82,9 @@ function normalizeSettings(v, source) {
     maxAttempts: parsePositiveInt(v['max-attempts'], '--max-attempts', 4, source),
     notes: v.notes,
   };
-  s.instruction = s.notes ? `${INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${s.notes}` : INSTRUCTION;
+  s.instruction = s.notes
+    ? `${NORMALIZE_INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${s.notes}`
+    : NORMALIZE_INSTRUCTION;
   return s;
 }
 normalizeSettings(values);

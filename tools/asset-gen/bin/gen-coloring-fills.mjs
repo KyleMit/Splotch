@@ -43,32 +43,11 @@ import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outli
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { scoreEyeFill, judgeLightEyes } from '../lib/eye-fill.mjs';
 import { punchFill } from '../lib/punch-fill.mjs';
+import { FILL_PROMPT } from '../lib/prompts.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 90;
-
-// The single prompt used for every page — no per-page tailoring. It leans hard
-// on "do not touch the lines" because the whole point is a pixel-faithful fill.
-const FILL_PROMPT = `You are given a black-and-white coloring-book page for a toddler. Color it in neatly, exactly like a completed page in a coloring book.
-
-ABSOLUTE RULES — the colored image must line up perfectly on top of the original:
-- Keep every black outline exactly where it is. Do not move, redraw, thicken, thin, smooth, or erase a single line. The black line art must be pixel-for-pixel identical to the original.
-- Do not add any new lines, outlines, details, decorations, patterns, textures, letters, or objects. Only add color to the empty white areas that are already there.
-- Do not crop, zoom, rotate, shift, or resize the picture. Keep the exact same composition, framing, and margins.
-
-COLORING STYLE:
-- Fill each region with one solid, flat, even color. No gradients, no shading, no highlights, no shadows, no extra outlines around the fills, no crayon or paint texture.
-- Choose simple, cheerful, natural colors that suit each part of the picture.
-- EYES: fill each outlined pupil solid BLACK, leave the small catchlight circle inside it pure white, and keep the surrounding eyeball white or a very pale tint — a classic lively cartoon eye.
-- Stay inside the lines; every fill should butt right up against the black outline without covering it.
-
-FILL EVERYTHING — no blank white:
-- Every enclosed region must be filled with a color, including the whole background and sky. No area may be left as plain white paper, because a blank area would look uncolored.
-- Things that are normally white must still get a soft tint instead of pure white: color clouds, snow, the moon, teeth, white fur or white clothing a pale cream or very light pastel; color a plain background a light color (for example a soft sky blue behind an outdoor scene, or a gentle cream/pastel behind a single object).
-- The ONLY places allowed to stay pure white are tiny highlights, such as a small glint in an eye or a little shine dot.
-
-The result must look like the identical line drawing, fully colored in with clean flat colors and no blank white gaps.`;
 
 // Generate one flat-colored version of a coloring page. Returns raw image bytes
 // + mime type, or throws with the refusal/empty reason. Kept free of file/CLI
