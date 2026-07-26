@@ -20,34 +20,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P4][readability] `--pop-scale: 1.12` and its `calc(100% / var(--pop-scale))` sizing math is opaque
-
-**File(s):** `web/src/lib/components/ColorPalette.svelte:240, 256-257, 268` — pinned at SHA f934d43
-
-#### Problem
-
-The gradient swatch's selection-pop uses `--pop-scale: 1.12` with resting size
-`calc(100% / var(--pop-scale))` so the popped cluster lands on the content box. The reasoning is in
-a long comment (lines 245-250) but `1.12` itself is an unexplained constant, and the inverse-scale
-trick reads as clever-but-obscure inline geometry.
-
-#### Proposed solution
-
-Keep the mechanism but name the intent: comment `1.12` as "selection pop overshoot, matches
-round-swatch ring band" and consider deriving it from the ring width so the "same white band"
-invariant (its stated goal, issue #310) is enforced rather than eyeballed.
-
-#### Verification
-
-Ringed hexagon cluster still shows the same white band width as a ringed round swatch in both
-themes.
-
----
-
-That is 27 findings. The dominant structural issue is the two hand-maintained CSS trim ladders (P1);
-the highest-value quick wins are the `colorRing.ts` hex-parse/`substr`/magic-number cleanup and the
-`ringShadow`/`gradientRingShadow` + clip-path de-duplication.
-
 ## Source: Code audit — Storage / persistence
 
 ### [P2][architecture] No central storage-key registry — every persisted key is a magic string scattered across modules and re-declared in tests
