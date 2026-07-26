@@ -7,13 +7,17 @@ import { STORAGE_KEYS } from '$lib/storage';
 // test re-imports a fresh module instance via vi.resetModules().
 const store = new Map<string, unknown>();
 let openDbCalls = 0;
+let getCalls = 0;
 let failIdb = false;
 vi.mock('idb', () => ({
   openDB: async () => {
     openDbCalls++;
     if (failIdb) throw new Error('idb unavailable');
     return {
-      get: async (_s: string, k: string) => store.get(k),
+      get: async (_s: string, k: string) => {
+        getCalls++;
+        return store.get(k);
+      },
       put: async (_s: string, v: unknown, k: string) => void store.set(k, v),
       delete: async (_s: string, k: string) => void store.delete(k),
     };
@@ -58,6 +62,7 @@ beforeEach(async () => {
   store.clear();
   localStorage.clear();
   openDbCalls = 0;
+  getCalls = 0;
   failIdb = false;
   vi.resetModules();
   folderSave = await import('./folderSave');
@@ -187,6 +192,7 @@ describe('saveBlobToFolder', () => {
 
     expect(await folderSave.saveBlobToFolder(blob, 'b.png', { allowPrompt: false })).toBe(true);
     expect(await folderSave.saveBlobToFolder(blob, 'c.png', { allowPrompt: false })).toBe(true);
+    expect(getCalls).toBe(1);
     expect(openDbCalls).toBe(1);
   });
 

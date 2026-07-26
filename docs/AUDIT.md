@@ -22,30 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P4][readability] `cachedHandle`'s tri-state `undefined | null | handle` overloads two "nothing" values
-
-**File(s):** `web/src/lib/drawing/folderSave.ts:31-33, 44-60` — pinned at SHA f934d43
-
-#### Problem
-
-`undefined = not read yet`, `null = read, none set`, handle = set. The distinction is load-bearing
-(line 45's `cachedHandle !== undefined` is the "have I hit IndexedDB this session" gate) but relies
-on the reader remembering which nullish value means which. This is exactly the kind of
-non-self-documenting async cache the audit flags.
-
-#### Proposed solution
-
-Make the "loaded" state explicit:
-`let loaded = false; let cachedHandle: FileSystemDirectoryHandle | null = null;` and gate on
-`if (loaded) return cachedHandle;`. Removes the `undefined`-vs-`null` semantics entirely.
-
-#### Verification
-
-`folderSave.test.ts:182-190` ("reads the handle once, not per save") still asserts
-`openDbCalls === 1`.
-
----
-
 ### [P4][architecture] `mirror` wraps an already-`string` value in `String(value)` — dead defensive cast
 
 **File(s):** `web/src/lib/storage.ts:88-92` — pinned at SHA f934d43

@@ -34,9 +34,10 @@ interface FolderSaveDb extends DBSchema {
 
 const handleStore = idbKvStore<FolderSaveDb>(DB_NAME, STORE);
 
-// In-memory copy of the stored handle (undefined = not read yet, null = none),
-// so only the first save of a session touches IndexedDB.
-let cachedHandle: FileSystemDirectoryHandle | null | undefined;
+// In-memory copy of the stored handle, so only the first save of a session
+// touches IndexedDB.
+let cachedHandle: FileSystemDirectoryHandle | null = null;
+let loadedHandle = false;
 
 let folderClearedListener: (() => void) | null = null;
 
@@ -48,9 +49,10 @@ export function onSaveFolderCleared(listener: () => void) {
 }
 
 async function loadHandle(): Promise<FileSystemDirectoryHandle | null> {
-  if (cachedHandle !== undefined) return cachedHandle;
+  if (loadedHandle) return cachedHandle;
   if (!readBool(STORAGE_KEYS.saveFolderChosen, false)) {
     cachedHandle = null;
+    loadedHandle = true;
     return null;
   }
   let handle: FileSystemDirectoryHandle | null = null;
@@ -61,6 +63,7 @@ async function loadHandle(): Promise<FileSystemDirectoryHandle | null> {
     // behave as if no folder is set, so saves degrade to plain downloads.
   }
   cachedHandle = handle;
+  loadedHandle = true;
   return handle;
 }
 
@@ -94,6 +97,7 @@ export async function chooseSaveFolder(): Promise<string | null> {
     return null;
   }
   cachedHandle = handle;
+  loadedHandle = true;
   writeBool(STORAGE_KEYS.saveFolderChosen, true);
   try {
     await storeHandle(handle);
@@ -109,6 +113,7 @@ export async function chooseSaveFolder(): Promise<string | null> {
 export async function clearSaveFolder(): Promise<void> {
   if (!browser) return;
   cachedHandle = null;
+  loadedHandle = true;
   removeKey(STORAGE_KEYS.saveFolderChosen);
   try {
     await handleStore.delete(HANDLE_KEY);
