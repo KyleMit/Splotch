@@ -29,8 +29,10 @@ Implement **dual-layer storage** in `src/lib/storage.ts`:
   silently (the localStorage copy still holds the value).
 * **On native app launch**, `hydrateDurableStorage()` reconciles the two layers: any key missing
   from localStorage is restored from Preferences (recovering from OS eviction), and any key present
-  in localStorage but absent from Preferences is backed up. All managed keys are fetched from
-  Preferences concurrently (not serially) to minimize cold-start latency.
+  in localStorage but absent from Preferences is backed up. The hydration list is derived from the
+  static `STORAGE_KEYS` registry, excluding the legacy plaintext API-key migration key because it
+  must only be scrubbed, and all hydration keys are fetched from Preferences concurrently (not
+  serially) to minimize cold-start latency.
 * `localStorage.setItem()` calls are wrapped in a try/catch (`safeLocalStorage`) to handle
   `QuotaExceededError` and `SecurityError` without interrupting the toggle that triggered the write.
 
@@ -47,6 +49,7 @@ On web, `isNative()` returns false and the Preferences layer is never touched.
 * **-** A brief window exists between a write and its async mirror completing, so a crash in that
   window could lose the write on next launch. In practice this is negligible for user preference
   data.
-* **-** All keys that flow through `readX`/`writeX` are tracked in a `managedKeys` Set at module
-  load; a key only appears in that set if it has been read at least once before
-  `hydrateDurableStorage()` runs.
+* **+** Durable recovery does not depend on a storage helper touching a key before hydration; adding
+  a persisted key to `STORAGE_KEYS` includes it automatically.
+* **-** Scrub-only migration keys must be explicitly excluded from durable hydration so stale
+  plaintext cannot be restored or backed up.

@@ -18,7 +18,9 @@ export { STORAGE_KEYS, type StorageKey } from './storageKeys';
 // On the web, isNative() is false and the Preferences layer is skipped entirely
 // — behaviour is identical to before.
 
-const hydrationKeys: StorageKey[] = Object.values(STORAGE_KEYS);
+const hydrationKeys: StorageKey[] = Object.values(STORAGE_KEYS).filter(
+  (key) => key !== STORAGE_KEYS.legacyAiUserApiKey
+);
 
 // Each persisted store registers its reloader here at module init, so
 // hydrateDurableStorage() can refresh every live store after a native recovery
