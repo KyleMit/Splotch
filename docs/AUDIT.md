@@ -24,47 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P2][duplication] `manualMode()` and `installDeviceOs()` duplicate device-family sniffing with subtly different results
-
-**File(s):** `web/src/lib/state/install.svelte.ts:48-69` (`isIosSafari`, `installDeviceOs`,
-`manualMode`) — pinned at SHA f934d43
-
-#### Problem
-
-Two functions branch over the same iOS/Android device families to slightly different vocabularies:
-
-```ts
-export function installDeviceOs(): InstallDeviceOs { // ios | android | desktop
-  if (isIosDevice()) return 'ios';
-  if (isAndroidBrowser()) return 'android';
-  return 'desktop';
-}
-function manualMode(): InstallMode { // ios | android | none
-  if (isIosSafari()) return 'ios';
-  if (isAndroidBrowser()) return 'android';
-  return 'none';
-}
-```
-
-They disagree on iOS: `installDeviceOs` uses `isIosDevice()` (any iOS), `manualMode` uses
-`isIosSafari()` (real Safari only). A reader can't tell whether that divergence is intentional or a
-bug. The near-identical shape invites "fixing" one to match the other and silently breaking the
-in-app-browser guard.
-
-#### Proposed solution
-
-Compute the device family once (`installDeviceOs()`), and derive `manualMode` from it plus the
-Safari refinement — e.g. `manualMode` returns `'ios'` only when
-`installDeviceOs() === 'ios' && isIosSafari()`, `'android'` when `=== 'android'`, else `'none'`. Add
-a one-line WHY comment on the iOS divergence so the difference is documented rather than accidental.
-
-#### Verification
-
-`install.svelte.test.ts` covers iOS-Safari→`ios`, iOS-Chrome→`none`, Android→`android`,
-desktop→`none`; all must still pass.
-
----
-
 ### [P2][architecture] InstallBanner reaches into another component's DOM by a hard-coded element id for its exit animation
 
 **File(s):** `web/src/lib/components/InstallBanner.svelte:52-66` (`bannerExit`), specifically line
