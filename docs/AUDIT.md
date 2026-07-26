@@ -30,37 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P4][naming] Amber overlay color and dim factor are unexplained literals
-
-**File(s):** `audit-invented-shapes.mjs:44-56` (`* 0.55` base dim; `r=255,g=210,b=0` "amber";
-red-rect `stroke-width="3"`, `x0-3`/`+6` insets) — pinned at SHA f934d43
-
-#### Problem
-
-`overlayImage` hard-codes the 0.55 dim multiplier for the background and the `(255,210,0)`
-deviant-pixel color inline (the trailing `// deviant bg pixel = amber` helps, but the numbers aren't
-named), plus the SVG rect padding (`-3`/`+6`). These are presentation constants a reviewer may want
-to tune, buried in a triple pixel loop.
-
-#### Proposed solution
-
-Hoist named constants at the top of the file:
-`const OVERLAY_DIM = 0.55; const DEVIANT_RGB = [255, 210, 0]; const RECT_PAD = 3;`. Minor, but it
-makes the one visual-tuning surface in the audit legible.
-
-#### Verification
-
-Regenerate an overlay with `--overlay`; the image is pixel-identical, the constants are now
-discoverable.
-
----
-
-I reviewed all 18 scripts in `tools/asset-gen/bin/` against the shared `lib/`. The dominant themes
-are cross-script duplication of the Gemini transport, the keep-best-of-N retry ladder, arg/target
-resolution, and the chalk-fork source selection — each reimplemented 5–6 times — plus inconsistent
-CLI parsing, validation, and exit-code conventions. The audit scripts also lack the per-page error
-isolation the generators already have. All findings are report-only; no code was changed.
-
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
 ### [P2][duplication] Every module reimplements RGB decode + luma; the luma coefficients live in six files

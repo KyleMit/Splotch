@@ -39,6 +39,11 @@ import {
   ANCHOR_MAX,
 } from '../lib/invented-shapes.mjs';
 
+const OVERLAY_DIM = 0.55;
+const DEVIANT_RGB = [255, 210, 0];
+const OVERLAY_RECT_PADDING = 3;
+const OVERLAY_RECT_STROKE_WIDTH = 3;
+
 async function overlayImage(fillBuf, res, outPath) {
   const { w, h } = res;
   const base = await sharp(fillBuf)
@@ -48,13 +53,11 @@ async function overlayImage(fillBuf, res, outPath) {
     .toBuffer({ resolveWithObject: true });
   const out = Buffer.alloc(w * h * 3);
   for (let i = 0; i < w * h; i++) {
-    let r = base.data[i * 3] * 0.55;
-    let g = base.data[i * 3 + 1] * 0.55;
-    let b = base.data[i * 3 + 2] * 0.55;
+    let r = base.data[i * 3] * OVERLAY_DIM;
+    let g = base.data[i * 3 + 1] * OVERLAY_DIM;
+    let b = base.data[i * 3 + 2] * OVERLAY_DIM;
     if (res.dev && res.dev[i]) {
-      r = 255;
-      g = 210;
-      b = 0; // deviant bg pixel = amber
+      [r, g, b] = DEVIANT_RGB; // deviant bg pixel = amber
     }
     out[i * 3] = r;
     out[i * 3 + 1] = g;
@@ -66,7 +69,7 @@ async function overlayImage(fillBuf, res, outPath) {
     const rects = res.flagged
       .map(
         ({ bbox: [x0, y0, x1, y1] }) =>
-          `<rect x="${x0 - 3}" y="${y0 - 3}" width="${x1 - x0 + 6}" height="${y1 - y0 + 6}" fill="none" stroke="red" stroke-width="3"/>`
+          `<rect x="${x0 - OVERLAY_RECT_PADDING}" y="${y0 - OVERLAY_RECT_PADDING}" width="${x1 - x0 + OVERLAY_RECT_PADDING * 2}" height="${y1 - y0 + OVERLAY_RECT_PADDING * 2}" fill="none" stroke="red" stroke-width="${OVERLAY_RECT_STROKE_WIDTH}"/>`
       )
       .join('');
     const svg = Buffer.from(
