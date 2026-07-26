@@ -36,13 +36,13 @@ export function onDurableRestore(cb: () => void) {
 // inside every settings setX handler, so an escaping throw would break the toggle
 // that triggered it. Swallow the failure (the native durable mirror still backs
 // the value up) and warn at most once so we don't spam the console.
-let storageWarned = false;
+let storageMutationWarned = false;
 function safeStorageMutation(op: () => void) {
   try {
     op();
   } catch (err) {
-    if (!storageWarned) {
-      storageWarned = true;
+    if (!storageMutationWarned) {
+      storageMutationWarned = true;
       console.warn('localStorage write failed; relying on durable mirror', err);
     }
   }
@@ -53,12 +53,13 @@ function safeStorageMutation(op: () => void) {
 // iframes, private-mode WebViews). Reads run at module init inside $state
 // initializers, so an escaping throw would kill hydration; return the caller's
 // fallback instead — the same degrade model as the app.html boot script.
+let storageReadWarned = false;
 function safeStorageRead<T>(read: () => T, fallback: T): T {
   try {
     return read();
   } catch (err) {
-    if (!storageWarned) {
-      storageWarned = true;
+    if (!storageReadWarned) {
+      storageReadWarned = true;
       console.warn('localStorage read failed; using fallback', err);
     }
     return fallback;

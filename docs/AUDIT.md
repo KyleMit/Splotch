@@ -22,29 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P4][error-handling] A single `storageWarned` flag silences read *and* write warnings across each other
-
-**File(s):** `web/src/lib/storage.ts:43, 48-51, 64-67` — pinned at SHA f934d43
-
-#### Problem
-
-`storageWarned` is shared by `safeLocalStorage` (write) and `safeRead` (read). The first failure of
-*either* kind sets it, so a later failure of the *other* kind is silent. A quota-exceeded write
-followed by a security-error read (distinct problems) logs only the first, hiding the second failure
-mode from the console entirely.
-
-#### Proposed solution
-
-Either use two flags (`readWarned` / `writeWarned`) so each failure class warns once, or accept the
-one-warning-total policy and rename the flag/comment to say so explicitly. Given the two causes are
-genuinely different (quota vs. blocked storage), two flags is the clearer fix.
-
-#### Verification
-
-Force a write throw then a read throw in a test; assert `console.warn` fired twice.
-
----
-
 ### [P4][readability] `createUniqueFile` uses an unbounded `for (;;)` probe loop with no iteration cap
 
 **File(s):** `web/src/lib/drawing/folderSave.ts:120-138` — pinned at SHA f934d43

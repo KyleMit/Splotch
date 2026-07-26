@@ -119,6 +119,27 @@ describe('removeKey', () => {
 });
 
 describe('resilience to a throwing localStorage', () => {
+  it('warns once for each failure class', () => {
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError');
+    });
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError');
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      writeBool(STORAGE_KEYS.soundEnabled, true);
+      writeBool(STORAGE_KEYS.soundEnabled, false);
+      expect(readBool(STORAGE_KEYS.soundEnabled, true)).toBe(true);
+      expect(readBool(STORAGE_KEYS.soundEnabled, false)).toBe(false);
+      expect(warn).toHaveBeenCalledTimes(2);
+    } finally {
+      setItem.mockRestore();
+      getItem.mockRestore();
+      warn.mockRestore();
+    }
+  });
+
   it('does not let a setItem throw escape into the caller', () => {
     const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('quota', 'QuotaExceededError');
