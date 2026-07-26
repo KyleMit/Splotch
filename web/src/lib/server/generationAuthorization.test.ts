@@ -79,10 +79,10 @@ describe('authorizeGenerationRequest', () => {
       managedToken: 'daycare-club',
     });
     expect(rateLimit).toHaveBeenCalledOnce();
-    expect(rateLimit).toHaveBeenCalledWith(
-      generateImageBucket('daycare-club'),
-      rateLimitPolicy.generateToken
-    );
+    expect(rateLimit).toHaveBeenCalledWith(generateImageBucket('daycare-club'), {
+      limit: 15,
+      windowMs: 60_000,
+    });
   });
 
   it('throttles valid managed traffic in its per-token generation bucket', async () => {
@@ -94,10 +94,10 @@ describe('authorizeGenerationRequest', () => {
     const response = result as Response;
     expect(response.status).toBe(429);
     expect(response.headers.get('Retry-After')).toBe('9');
-    expect(rateLimit).toHaveBeenCalledWith(
-      generateImageBucket('daycare-club'),
-      rateLimitPolicy.generateToken
-    );
+    expect(rateLimit).toHaveBeenCalledWith(generateImageBucket('daycare-club'), {
+      limit: 15,
+      windowMs: 60_000,
+    });
   });
 
   it('throttles BYOK traffic per IP without consulting the managed allowlist', async () => {
@@ -115,10 +115,10 @@ describe('authorizeGenerationRequest', () => {
     expect(response.headers.get('Retry-After')).toBe('7');
     expect(peekRateLimit).not.toHaveBeenCalled();
     expect(isAllowedToken).not.toHaveBeenCalled();
-    expect(rateLimit).toHaveBeenCalledWith(
-      generateImageByokBucket('198.51.100.8'),
-      rateLimitPolicy.generateByok
-    );
+    expect(rateLimit).toHaveBeenCalledWith(generateImageByokBucket('198.51.100.8'), {
+      limit: 30,
+      windowMs: 60_000,
+    });
   });
 });
 

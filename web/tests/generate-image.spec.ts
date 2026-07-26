@@ -19,7 +19,7 @@ const TINY_PNG = Buffer.from(
   'base64'
 );
 
-// Mirrors of GENERATE_LIMIT / BYOK_LIMIT in src/lib/server/generationAuthorization.ts.
+// Mirrors of generateToken / generateByok in src/lib/server/rateLimitPolicy.ts.
 const GENERATE_LIMIT = 15;
 const BYOK_LIMIT = 30;
 

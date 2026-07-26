@@ -22,46 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P3][maintainability] Collect the per-endpoint rate-limit budgets into one table
-
-**File(s):** `web/src/lib/server/generationAuthorization.ts:7-9` (`GENERATE_LIMIT=15`,
-`GENERATE_WINDOW_MS`, `BYOK_LIMIT=30`); `web/src/routes/api/report/+server.ts:57-58` (`limit:5`);
-`web/src/routes/api/csp-report/+server.ts:99-100` (`limit:10`);
-`web/src/routes/api/verify-key/+server.ts:15` (default 10);
-`web/src/routes/api/verify-access-code/+server.ts` (default 10) — pinned at SHA f934d43
-
-#### Problem
-
-Every endpoint's throttle budget is defined next to its own call, so the tuned relationship between
-them (oracles 10/min, report 5/min tighter as a write, generate 15/min per token, BYOK 30/min
-generous — all reasoning that ADR-0014 and the api skill describe as a system) is invisible in code.
-`report` and `csp-report` also redundantly pass `windowMs: 60_000`, duplicating the module default.
-There's no single spot to see or adjust the throttle policy.
-
-#### Proposed solution
-
-Add a `web/src/lib/server/rateLimitPolicy.ts` exporting one object per bucket, e.g.:
-
-```ts
-export const RATE_LIMITS = {
-  oracle: { limit: 10, windowMs: 60_000 }, // verify-*, managed-token guess
-  report: { limit: 5, windowMs: 60_000 },
-  cspReport: { limit: 10, windowMs: 60_000 },
-  generateToken: { limit: 15, windowMs: 60_000 },
-  byok: { limit: 30, windowMs: 60_000 },
-} as const;
-```
-
-Spread these into the `rateLimit(...)` calls. Drop the redundant `windowMs: 60_000` where it equals
-the default only if you don't centralize; centralizing is cleaner.
-
-#### Verification
-
-One file shows the whole throttle policy. `generationAuthorization.test.ts` (which asserts
-`{ limit: 15, windowMs: 60_000 }` etc.) still passes. `npm run test:api:smoke`.
-
----
-
 ### [P3][complexity] Extract a type guard for the Reporting-API entry predicate in csp-report
 
 **File(s):** `web/src/routes/api/csp-report/+server.ts:64-84` (`extractViolations`) — pinned at SHA
