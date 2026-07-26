@@ -248,3 +248,57 @@ describe('dragToClear pointer identity', () => {
     expect(options.acceptZoneEl.style.display).toBe('none');
   });
 });
+
+describe('dragToClear hold-to-show-tutorial timer', () => {
+  let cleanup: (() => void) | null = null;
+  afterEach(() => {
+    cleanup?.();
+    cleanup = null;
+    vi.useRealTimers();
+    vi.clearAllMocks();
+    document.documentElement.style.removeProperty('--clear-progress');
+  });
+
+  it('shows the tutorial when the pointer is held still for the hold duration', () => {
+    vi.useFakeTimers();
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+
+    vi.advanceTimersByTime(499);
+
+    expect(options.onTutorialShow).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+
+    expect(options.onTutorialShow).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels the hold when the pointer moves past the movement threshold', () => {
+    vi.useFakeTimers();
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    node.dispatchEvent(pointerEvent('pointermove', 1, 160, 100));
+
+    expect(options.onTutorialDismiss).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(1000);
+
+    expect(options.onTutorialShow).not.toHaveBeenCalled();
+  });
+
+  it('cancels a pending hold when the action is destroyed mid-hold', () => {
+    vi.useFakeTimers();
+    const { node, options, action } = setup();
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    action.destroy();
+
+    vi.advanceTimersByTime(1000);
+
+    expect(options.onTutorialShow).not.toHaveBeenCalled();
+  });
+});

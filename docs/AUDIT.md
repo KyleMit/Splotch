@@ -9,32 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P3][maintainability] `dragToClear` mixes two timer-tracking mechanisms
-
-**File(s):** `web/src/lib/actions/dragToClear.ts:32-48,279-282` — pinned at SHA f934d43
-
-#### Problem
-
-The action tracks pending timers two different ways: `holdTimer` and `acceptZoneFrame` as individual
-nullable vars, and everything else through a `resetTimers` `Set` fed by `scheduleReset`. `destroy`
-must therefore remember to clean up three separate things (`holdTimer`, `acceptZoneFrame`, and the
-whole `resetTimers` set). A new timer added by a future editor is easy to forget in `destroy`, and
-the split obscures which timers a given path owns.
-
-#### Proposed solution
-
-Route the hold timer through the same `scheduleReset` set (it's cleared on move/finish anyway, and
-`destroy` already flushes the set), leaving only `acceptZoneFrame` special-cased for
-`cancelAnimationFrame`. Or wrap both a timer-set and the rAF handle in one small `timers` object
-with a single `clearAll()` that `destroy` and `finishDrag` call.
-
-#### Verification
-
-`npm run test:unit -- dragToClear`; the fake-timer cancel test asserts deferred callbacks
-fire/cancel correctly.
-
----
-
 ### [P3][dead-code] `LaunchGuardOptions` (radius/duration) is never exercised in production
 
 **File(s):** `web/src/lib/actions/launchGuard.ts:34-52`, consumed at
