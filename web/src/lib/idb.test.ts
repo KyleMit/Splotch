@@ -2,9 +2,20 @@ import type { DBSchema, IDBPDatabase } from 'idb';
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { idbKvStore, lazyIdbDatabase } from './idb';
 
+const persistence = vi.hoisted(() => ({ browser: true, native: false }));
 const { openDB } = vi.hoisted(() => ({ openDB: vi.fn() }));
 
+vi.mock('$app/environment', () => ({
+  get browser() {
+    return persistence.browser;
+  },
+}));
+
 vi.mock('idb', () => ({ openDB }));
+
+vi.mock('./platform', () => ({
+  isNative: () => persistence.native,
+}));
 
 interface TestDb extends DBSchema {
   records: {
@@ -15,6 +26,38 @@ interface TestDb extends DBSchema {
 
 beforeEach(() => {
   openDB.mockReset();
+  persistence.browser = true;
+  persistence.native = false;
+  vi.unstubAllGlobals();
+});
+
+describe('requestPersistentStorage', () => {
+  it('asks the browser to persist storage on the web', async () => {
+    const persist = vi.fn().mockResolvedValue(true);
+    vi.stubGlobal('navigator', { storage: { persist } });
+    const { requestPersistentStorage } = await import('./idb');
+
+    await expect(requestPersistentStorage()).resolves.toBe(true);
+    expect(persist).toHaveBeenCalledOnce();
+  });
+
+  it('does not request persistence outside the web path', async () => {
+    const persist = vi.fn().mockResolvedValue(true);
+    persistence.browser = false;
+    vi.stubGlobal('navigator', { storage: { persist } });
+    const { requestPersistentStorage } = await import('./idb');
+
+    await expect(requestPersistentStorage()).resolves.toBe(false);
+    expect(persist).not.toHaveBeenCalled();
+  });
+
+  it('returns false when the browser rejects the persistence request', async () => {
+    const persist = vi.fn().mockRejectedValue(new Error('denied'));
+    vi.stubGlobal('navigator', { storage: { persist } });
+    const { requestPersistentStorage } = await import('./idb');
+
+    await expect(requestPersistentStorage()).resolves.toBe(false);
+  });
 });
 
 describe('lazyIdbDatabase', () => {

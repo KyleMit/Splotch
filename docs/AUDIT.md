@@ -22,29 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P4][architecture] `requestPersistentStorage` lives in `secureStorage` but is a generic IndexedDB-persistence concern
-
-**File(s):** `web/src/lib/secureStorage.ts:174-182` — pinned at SHA f934d43
-
-#### Problem
-
-`navigator.storage.persist()` asks the browser not to evict *any* of the origin's IndexedDB — it
-protects `splotch-fs` (folder handles) just as much as `splotch-secure`. Housing it in
-`secureStorage` (and calling it from `settings.hydrateApiKey`, line 273) frames a whole-origin
-concern as a secrets-only one, so a future reader looking for "do we request persistent storage?"
-won't find it near the folder-save DB it also guards.
-
-#### Proposed solution
-
-Move `requestPersistentStorage` to `idb.ts` (or `storage.ts`) as the generic IndexedDB-durability
-helper, and have `secureStorage` re-export or the boot code call it once. Purely a relocation.
-
-#### Verification
-
-`npm run check`; boot still calls it once; the web bundle is unchanged.
-
----
-
 ### [P4][error-handling] `saveSecret` silently no-ops on an empty value, coupling "save" to truthiness
 
 **File(s):** `web/src/lib/secureStorage.ts:121-129` — pinned at SHA f934d43

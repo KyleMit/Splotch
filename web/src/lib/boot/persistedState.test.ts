@@ -27,6 +27,9 @@ vi.mock('../secureStorage', () => ({
   clearApiKey: vi.fn(async () => {
     secureStore.apiKey = null;
   }),
+}));
+
+vi.mock('../idb', () => ({
   requestPersistentStorage: vi.fn(async () => false),
 }));
 

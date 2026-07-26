@@ -210,15 +210,3 @@ export const clearApiKey = () => clearSecret(API_KEY);
 export const saveAdminSession = (value: string) => saveSecret(ADMIN_SESSION, value);
 export const loadAdminSession = () => loadSecret(ADMIN_SESSION);
 export const clearAdminSession = () => clearSecret(ADMIN_SESSION);
-
-// Ask the browser not to evict our IndexedDB during low-storage cleanups, so the
-// key survives across sessions without the parent ever re-entering it. Web only.
-export async function requestPersistentStorage() {
-  if (!browser || isNative()) return false;
-  try {
-    if (navigator.storage?.persist) return await navigator.storage.persist();
-  } catch {
-    // ignore — persistence is a best-effort nicety
-  }
-  return false;
-}

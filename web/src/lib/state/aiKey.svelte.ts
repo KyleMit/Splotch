@@ -1,5 +1,6 @@
 import { STORAGE_KEYS, readString, removeKey } from '../storage';
-import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage';
+import { saveApiKey, loadApiKey, clearApiKey } from '../secureStorage';
+import { requestPersistentStorage } from '../idb';
 import { settings } from './settings.svelte';
 
 // The parent's own Gemini API key (BYOK). Stored only on this device and sent

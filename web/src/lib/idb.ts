@@ -1,3 +1,17 @@
+import { browser } from '$app/environment';
+import { isNative } from './platform';
+
+// Ask the browser not to evict our IndexedDB during low-storage cleanups. Web only.
+export async function requestPersistentStorage() {
+  if (!browser || isNative()) return false;
+  try {
+    if (navigator.storage?.persist) return await navigator.storage.persist();
+  } catch {
+    // ignore — persistence is a best-effort nicety
+  }
+  return false;
+}
+
 // Lazily open (and memoize) an IndexedDB database with a single object store.
 // The idb package is dynamically imported on first use so it never lands in the
 // boot bundle; every later call reuses the same connection promise.
