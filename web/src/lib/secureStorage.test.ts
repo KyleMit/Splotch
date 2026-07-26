@@ -94,6 +94,15 @@ describe('web save/load round trip', () => {
     await expect(secureStorage.loadApiKey()).resolves.toBeNull();
   });
 
+  it.each([
+    ['a non-payload value', 'not-a-payload'],
+    ['a malformed payload', { iv: new Uint8Array(12), data: 'not-an-array-buffer' }],
+  ])('returns null when the secret row contains %s', async (_description, record) => {
+    ctrl.rows.set(API_KEY_ROW, record);
+
+    await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+  });
+
   it('clearApiKey removes the payload but keeps the master key for reuse', async () => {
     await secureStorage.saveApiKey('secret-key-123');
     await secureStorage.clearApiKey();
@@ -120,6 +129,22 @@ describe('master key creation', () => {
 
     await secureStorage.saveApiKey('second');
     await expect(secureStorage.loadApiKey()).resolves.toBe('second');
+  });
+
+  it('replaces a payload-shaped master-key row with a generated key', async () => {
+    ctrl.rows.set(MASTER_KEY_ROW, {
+      iv: new Uint8Array(12),
+      data: new ArrayBuffer(16),
+    });
+
+    await secureStorage.saveApiKey('secret-key-123');
+
+    expect(ctrl.txPuts).toContain(MASTER_KEY_ROW);
+    expect(ctrl.rows.get(MASTER_KEY_ROW)).not.toMatchObject({
+      iv: expect.any(Uint8Array),
+      data: expect.any(ArrayBuffer),
+    });
+    await expect(secureStorage.loadApiKey()).resolves.toBe('secret-key-123');
   });
 
   it('a tab that loses the cross-tab race adopts the winner key instead of overwriting it', async () => {

@@ -4,6 +4,16 @@
 export function lazyIdbDatabase(
   dbName: string,
   storeName: string,
+  version?: number
+): () => Promise<import('idb').IDBPDatabase>;
+export function lazyIdbDatabase<Schema extends import('idb').DBSchema>(
+  dbName: string,
+  storeName: import('idb').StoreNames<Schema>,
+  version?: number
+): () => Promise<import('idb').IDBPDatabase<Schema>>;
+export function lazyIdbDatabase(
+  dbName: string,
+  storeName: string,
   version = 1
 ): () => Promise<import('idb').IDBPDatabase> {
   let dbPromise: Promise<import('idb').IDBPDatabase> | null = null;

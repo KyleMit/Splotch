@@ -1,3 +1,4 @@
+import type { DBSchema, IDBPDatabase } from 'idb';
 import { browser } from '$app/environment';
 import { isNative } from './platform';
 import { lazyPluginModule } from './nativePlugin';
@@ -29,6 +30,18 @@ const DB_VERSION = 1;
 const STORE = 'secrets';
 const MASTER_KEY_ROW = 'master-key'; // the non-extractable AES-GCM CryptoKey
 
+type SecretPayload = {
+  iv: Uint8Array<ArrayBuffer>;
+  data: ArrayBuffer;
+};
+
+interface SecureDb extends DBSchema {
+  secrets: {
+    key: string;
+    value: CryptoKey | SecretPayload;
+  };
+}
+
 // Native plugin, loaded lazily so it's never pulled in on the web or during SSR.
 // Returns the module namespace, not the SecureStorage proxy — see
 // lazyPluginModule for why that distinction is load-bearing.
@@ -42,7 +55,19 @@ const getPlugin = lazyPluginModule(() =>
 );
 
 // --- web: IndexedDB via idb (also lazy) ---
-const getDb = lazyIdbDatabase(DB_NAME, STORE, DB_VERSION);
+const getDb = lazyIdbDatabase<SecureDb>(DB_NAME, STORE, DB_VERSION);
+
+function isSecretPayload(value: unknown): value is SecretPayload {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'iv' in value &&
+    value.iv instanceof Uint8Array &&
+    value.iv.buffer instanceof ArrayBuffer &&
+    'data' in value &&
+    value.data instanceof ArrayBuffer
+  );
+}
 
 // Get (or lazily create) the persistent, non-extractable master key. Because it
 // can never be exported, code that reads IndexedDB can't lift the raw bytes out —
@@ -56,7 +81,7 @@ const getDb = lazyIdbDatabase(DB_NAME, STORE, DB_VERSION);
 // transaction, so a tab that loses the race adopts the winner's key.
 let masterKeyPromise: Promise<CryptoKey> | null = null;
 
-function getMasterKey(db: import('idb').IDBPDatabase): Promise<CryptoKey> {
+function getMasterKey(db: IDBPDatabase<SecureDb>): Promise<CryptoKey> {
   masterKeyPromise ??= loadOrCreateMasterKey(db).catch((err) => {
     masterKeyPromise = null;
     throw err;
@@ -64,9 +89,9 @@ function getMasterKey(db: import('idb').IDBPDatabase): Promise<CryptoKey> {
   return masterKeyPromise;
 }
 
-async function loadOrCreateMasterKey(db: import('idb').IDBPDatabase): Promise<CryptoKey> {
+async function loadOrCreateMasterKey(db: IDBPDatabase<SecureDb>): Promise<CryptoKey> {
   const existing = await db.get(STORE, MASTER_KEY_ROW);
-  if (existing) return existing;
+  if (existing && !isSecretPayload(existing)) return existing;
   // Generated *before* the transaction: an IDB transaction auto-commits once
   // control returns to the event loop with no pending requests, so awaiting
   // crypto.subtle.generateKey inside it would leave the transaction closed by
@@ -77,9 +102,10 @@ async function loadOrCreateMasterKey(db: import('idb').IDBPDatabase): Promise<Cr
   ]);
   const tx = db.transaction(STORE, 'readwrite');
   const winner = await tx.store.get(MASTER_KEY_ROW);
-  if (!winner) await tx.store.put(fresh, MASTER_KEY_ROW);
+  const winningKey = winner && !isSecretPayload(winner) ? winner : null;
+  if (!winningKey) await tx.store.put(fresh, MASTER_KEY_ROW);
   await tx.done;
-  return winner ?? fresh;
+  return winningKey ?? fresh;
 }
 
 async function webSave(name: string, value: string) {
@@ -91,13 +117,14 @@ async function webSave(name: string, value: string) {
     key,
     new TextEncoder().encode(value)
   );
-  await db.put(STORE, { iv, data }, name);
+  const payload: SecretPayload = { iv, data };
+  await db.put(STORE, payload, name);
 }
 
 async function webLoad(name: string) {
   const db = await getDb();
   const record = await db.get(STORE, name);
-  if (!record) return null;
+  if (!isSecretPayload(record)) return null;
   const key = await getMasterKey(db);
   try {
     const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: record.iv }, key, record.data);

@@ -22,45 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P2][type-safety] The secure-storage object store holds two incompatible value shapes under `any` — a `CryptoKey` and `{ iv, data }` payloads with no discriminant
-
-**File(s):** `web/src/lib/secureStorage.ts:67-108` (`loadOrCreateMasterKey`, `webSave`, `webLoad`) —
-pinned at SHA f934d43
-
-#### Problem
-
-The single `secrets` store keeps the raw non-extractable `CryptoKey` under `MASTER_KEY_ROW` *and*
-every secret as `{ iv, data }` under its name. `idb`'s `db.get` returns `any`, so
-`const existing = await db.get(STORE, MASTER_KEY_ROW)` (line 68) is untyped and `record.iv` /
-`record.data` (line 103) are unchecked property accesses on `any`. Nothing at compile time stops a
-future edit from reading a payload row as a key or vice versa, and the stored payload shape has no
-named type despite being the app's on-disk secret format.
-
-#### Proposed solution
-
-Introduce named types and a schema-typed DB:
-
-```ts
-interface SecretPayload {
-  iv: Uint8Array;
-  data: ArrayBuffer;
-}
-interface SecureDB extends DBSchema {
-  secrets: { key: string; value: CryptoKey | SecretPayload };
-}
-```
-
-Pass the schema through `lazyIdbDatabase<SecureDB>` (see the idb generic finding) and narrow with a
-helper (`isSecretPayload(v)`) before decrypt. Even without the schema, declaring `SecretPayload` and
-annotating `webSave`/`webLoad` removes the silent `any`.
-
-#### Verification
-
-`npm run check`; grep for `record.iv`/`record.data` and confirm they resolve to `SecretPayload`, not
-`any`.
-
----
-
 ### [P3][duplication] The `getPrefs().then(...).catch()` native-Preferences pattern is hand-copied three times
 
 **File(s):** `web/src/lib/storage.ts:88-94, 133-142, 169-189` (`mirror`, `removeKey`,
