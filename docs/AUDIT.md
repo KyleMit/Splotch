@@ -9,36 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P4][performance] `pinchTextZoom.spread()` allocates an array on every pointermove
-
-**File(s):** `web/src/lib/actions/pinchTextZoom.svelte.ts:56-60,103` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-function spread(): number {
-  const [a, b] = [...points.values()];
-  ...
-}
-```
-
-`spread()` is called from `onPointerMove` on every move event during a pinch, and each call spreads
-the map iterator into a fresh array just to read the first two entries — a per-frame allocation on
-the hot gesture path.
-
-#### Proposed solution
-
-Iterate without materializing an array (grab the first two via the iterator directly), or, better,
-get this for free by adopting the shared spread tracker from the P1 duplication finding. Minor on
-its own; do it as part of that extraction.
-
-#### Verification
-
-Behavior unchanged; `npm run test:unit -- pinchTextZoom`. Optionally spot-check with the `profiling`
-harness that pinch moves allocate less.
-
----
-
 ### [P4][readability] Repeated `e.preventDefault(); e.stopPropagation();` tail in every `dragToClear` handler
 
 **File(s):** `web/src/lib/actions/dragToClear.ts:111-112,161-162,244-245,264-265` — pinned at SHA

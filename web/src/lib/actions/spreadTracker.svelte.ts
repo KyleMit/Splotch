@@ -39,7 +39,9 @@ export function createSpreadTracker() {
     },
     // Distance between the first two fingers; 0 until a second one lands.
     spread(): number {
-      const [a, b] = [...pointers.values()];
+      const it = pointers.values();
+      const a = it.next().value;
+      const b = it.next().value;
       if (!a || !b) return 0;
       return Math.hypot(a.x - b.x, a.y - b.y);
     },
