@@ -33,10 +33,10 @@ Five of them then mount **one per idle callback** (`{#each overlays as Overlay (
 idle slice forms its own long task.
 
 The **Parent Center dialog is the exception**: at ~200 ms mounted (throttled) it is too heavy even
-for an idle slice, so it mounts on its **first open** — `ui.parentCenterOpen` latches
-`parentCenterWanted`, and the mount cost hides inside the tap-to-fly-in moment (a parent gesture,
-not a toddler one). Its always-visible corner trigger was extracted to `ParentHelpButton.svelte` so
-the button itself stays eagerly rendered.
+for an idle slice, so it mounts on its **first open** — `parentCenter.open` latches
+`parentCenterEverOpened`, and the mount cost hides inside the tap-to-fly-in moment (a parent
+gesture, not a toddler one). Its always-visible corner trigger was extracted to
+`ParentHelpButton.svelte` so the button itself stays eagerly rendered.
 
 Why late mount is safe — and the invariant to keep: **every overlay must be fully state-driven.**
 The `modalDialog` action reads its `ui.*Open` flag on its first `$effect` run, so a tap that lands

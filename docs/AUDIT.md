@@ -7,38 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P3][naming] `parentCenterWanted` is a one-way latch driven by an `$effect` that writes state — an obscure idiom for "mount on first open"
-
-**File(s):** `web/src/routes/+page.svelte:74-78, 191-193` (app shell) — pinned at SHA f934d43
-
-#### Problem
-
-```js
-let parentCenterWanted = $state(false);
-$effect(() => {
-  if (ui.parentCenterOpen) parentCenterWanted = true;
-});
-```
-
-An `$effect` whose sole job is to latch another piece of `$state` to `true` and never reset it is a
-subtle pattern (state-writing effects are usually a smell), and the name `parentCenterWanted`
-doesn't convey "has ever been opened, so keep it mounted." The intent — "mount ParentCenter
-permanently after its first open" — is only clear from the surrounding comment.
-
-#### Proposed solution
-
-Rename to `parentCenterEverOpened` (or `parentCenterMounted`) to state the latch's meaning, and
-consider replacing the effect with a plain handler at the open site, or a small
-`latch(() => ui.parentCenterOpen)` helper that encapsulates the never-reset semantics, so the
-write-in-effect isn't open-coded in the shell.
-
-#### Verification
-
-Parent Center still mounts on first tap and stays mounted across subsequent close/open cycles; the
-name now reads as the latch it is.
-
----
-
 ### [P3][type-safety] `ai-timer` uses `0` as a sentinel for "no pending timeout" instead of `null`
 
 **File(s):** `web/src/routes/dev/ai-timer/+page.svelte:26, 29-34, 42` — pinned at SHA f934d43

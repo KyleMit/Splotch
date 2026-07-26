@@ -62,9 +62,9 @@
   // dialog's modalDialog $effect shows it as soon as it lands. The corner
   // button that opens it (ParentHelpButton) stays eagerly mounted above.
   let ParentCenter = $state<Component | null>(null);
-  let parentCenterWanted = $state(false);
+  let parentCenterEverOpened = $state(false);
   $effect(() => {
-    if (parentCenter.open) parentCenterWanted = true;
+    if (parentCenter.open) parentCenterEverOpened = true;
   });
 
   onMount(() => {
@@ -102,6 +102,6 @@
 {#each overlays as Overlay (Overlay)}
   <Overlay />
 {/each}
-{#if ParentCenter && parentCenterWanted}
+{#if ParentCenter && parentCenterEverOpened}
   <ParentCenter />
 {/if}
