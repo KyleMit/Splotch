@@ -191,6 +191,7 @@
     display: inline-flex;
     padding: 16px;
     margin-top: 15px;
+    --hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   }
 
   .grid {
@@ -383,7 +384,7 @@
     width: 60px;
     height: 69px; /* For a regular hexagon, height = width * 1.15 */
     flex-shrink: 0;
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    clip-path: var(--hex-clip);
     padding: 0;
     border: none;
     background: transparent;
@@ -398,7 +399,7 @@
     position: absolute;
     inset: 0;
     background-color: var(--color, #007bff);
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    clip-path: var(--hex-clip);
     transition:
       inset 0.1s ease,
       filter 0.1s ease;

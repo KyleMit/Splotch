@@ -22,28 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P2][duplication] The hexagon `clip-path` polygon is duplicated verbatim
-
-**File(s):** `web/src/lib/components/ColorPicker.svelte:377, 392` — pinned at SHA f934d43
-
-#### Problem
-
-`clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);` appears identically on
-`.hexagon` and `.hexagon::after`. The hexagon shape is defined twice; changing the silhouette means
-editing both, and the two can silently diverge (element clip vs. fill clip).
-
-#### Proposed solution
-
-Hoist to a custom property on `.picker` (or `:root`): `--hex-clip: polygon(...);` and use
-`clip-path: var(--hex-clip)` in both rules. Pairs well with the `60px`/`69px`/`1.15` geometry
-constants (next finding).
-
-#### Verification
-
-Both selectors resolve to the same polygon; hexagons render unchanged.
-
----
-
 ### [P3][maintainability] Hexagon geometry constants are scattered and coupled to a JS comment
 
 **File(s):** `web/src/lib/components/ColorPicker.svelte:372-377` (CSS) and `:53-58` (JS comment) —
