@@ -28,31 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P3][naming] `haptics.ts` web-fallback vibrates for a magic `15` ms
-
-**File(s):** `web/src/lib/haptics.ts:31` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-navigator.vibrate?.(15);
-```
-
-`15` is the fallback vibration duration (ms) that's meant to approximate the native
-`ImpactStyle.Medium` "click." It's undocumented and un-named; anyone tuning the feel has to know
-this line exists.
-
-#### Proposed solution
-
-`const WEB_IMPACT_MS = 15;` at module top with a comment tying it to the native Medium impact it
-mimics.
-
-#### Verification
-
-`npm run check`; greppable constant.
-
----
-
 ### [P4][performance] `playDrawSound` calls `preloadDrawSounds()` on every pointermove
 
 **File(s):** `web/src/lib/audio/drawingSound.ts:57-59`; engine call site `drawing/engine.ts:905` —
