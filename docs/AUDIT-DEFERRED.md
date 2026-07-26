@@ -1939,3 +1939,46 @@ The rolled-back draft is kept at
 (1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p4-design-tokens-hardcoded-brand-rgb-171-113-225-fallback-will-silently.patch`.
+
+### [P2][architecture] Scatter of platform/device utilities across `lib/` root hurts grepability — group under one folder
+
+**File(s):** `web/src/lib/platform.ts`, `deviceInfo.ts`, `deviceReport.ts`, `orientation.ts`,
+`safeArea.ts`, `haptics.ts`, `notchBand.ts` (whole files) — pinned at SHA f934d43
+
+#### Problem
+
+Seven closely-related "what device / platform am I on and how do I adapt to it" modules sit loose in
+the `lib/` root, interleaved with unrelated utilities (`idle.ts`, `latestRequest.ts`, `storage.ts`,
+`imagePrefetch.ts`, …). They form a natural cluster — `deviceInfo.ts` imports `platform.ts`;
+`orientation.ts` imports `platform.ts`; `notchBand.ts` imports `platform`'s `Platform` type;
+`safeArea.ts` feeds `notchBand`/`layout`; `haptics.ts` imports `platform.ts`. Someone trying to
+answer "where does the app detect iOS / read insets / lock rotation?" has to already know each
+filename. The task brief flags grepability/discoverability as a primary theme and this is its
+clearest instance.
+
+#### Proposed solution
+
+Move the platform/device cluster into a `web/src/lib/platform/` (or `device/`) barrel:
+`platform/detect.ts` (current `platform.ts`), `platform/deviceInfo.ts`, `platform/deviceReport.ts`,
+`platform/orientation.ts`, `platform/safeArea.ts`, `platform/haptics.ts`, `platform/notchBand.ts`,
+plus an `index.ts` re-export. Update the `architecture` skill's file map and the `$lib/...` import
+paths. Colocated tests move with their modules. This is a pure move (no behavior change); ignore the
+one-time churn per the brief.
+
+#### Verification
+
+`npm run check` + `npm test` green after the move; `git grep "from '\$lib/platform'"` and friends
+resolve; the `architecture` skill map lists the new folder.
+
+---
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+Moved the platform/device cluster, rewired consumers and tests, and updated the architecture source
+plus its writable mirror. The required Codex architecture mirror remains stale because
+`npm run ruler:apply` cannot write `.agents/skills` in this sandbox, so the requested
+generated-output portion is incomplete.

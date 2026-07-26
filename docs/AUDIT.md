@@ -28,38 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P2][architecture] Scatter of platform/device utilities across `lib/` root hurts grepability — group under one folder
-
-**File(s):** `web/src/lib/platform.ts`, `deviceInfo.ts`, `deviceReport.ts`, `orientation.ts`,
-`safeArea.ts`, `haptics.ts`, `notchBand.ts` (whole files) — pinned at SHA f934d43
-
-#### Problem
-
-Seven closely-related "what device / platform am I on and how do I adapt to it" modules sit loose in
-the `lib/` root, interleaved with unrelated utilities (`idle.ts`, `latestRequest.ts`, `storage.ts`,
-`imagePrefetch.ts`, …). They form a natural cluster — `deviceInfo.ts` imports `platform.ts`;
-`orientation.ts` imports `platform.ts`; `notchBand.ts` imports `platform`'s `Platform` type;
-`safeArea.ts` feeds `notchBand`/`layout`; `haptics.ts` imports `platform.ts`. Someone trying to
-answer "where does the app detect iOS / read insets / lock rotation?" has to already know each
-filename. The task brief flags grepability/discoverability as a primary theme and this is its
-clearest instance.
-
-#### Proposed solution
-
-Move the platform/device cluster into a `web/src/lib/platform/` (or `device/`) barrel:
-`platform/detect.ts` (current `platform.ts`), `platform/deviceInfo.ts`, `platform/deviceReport.ts`,
-`platform/orientation.ts`, `platform/safeArea.ts`, `platform/haptics.ts`, `platform/notchBand.ts`,
-plus an `index.ts` re-export. Update the `architecture` skill's file map and the `$lib/...` import
-paths. Colocated tests move with their modules. This is a pure move (no behavior change); ignore the
-one-time churn per the brief.
-
-#### Verification
-
-`npm run check` + `npm test` green after the move; `git grep "from '\$lib/platform'"` and friends
-resolve; the `architecture` skill map lists the new folder.
-
----
-
 ### [P2][duplication] `Orientation = 'portrait' | 'landscape'` is redeclared in ~8 places
 
 **File(s):** `web/src/lib/notchBand.ts:38`, `web/src/lib/state/layout.svelte.ts:4`,
