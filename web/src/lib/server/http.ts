@@ -2,12 +2,9 @@ import { error, json } from '@sveltejs/kit';
 
 /**
  * Parse a JSON request body, turning a malformed payload into a uniform
- * 400 instead of an unhandled 500. The loose return type matches how
- * endpoints probe fields — inline (`typeof body?.x === 'string'`, which the
- * ones that trim or test in place still do) or through the `stringField`
- * wrapper below. A JSON primitive or array simply yields no matching fields.
+ * 400 instead of an unhandled 500.
  */
-export async function readJsonBody(request: Request): Promise<Record<string, unknown> | null> {
+export async function readJsonBody(request: Request): Promise<unknown> {
   try {
     return await request.json();
   } catch {
@@ -15,8 +12,14 @@ export async function readJsonBody(request: Request): Promise<Record<string, unk
   }
 }
 
-export function stringField(body: Record<string, unknown> | null, name: string): string {
-  const v = body?.[name];
+export function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+export function stringField(body: unknown, name: string): string {
+  const v = asRecord(body)?.[name];
   return typeof v === 'string' ? v : '';
 }
 

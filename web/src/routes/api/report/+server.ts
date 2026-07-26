@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import { rateLimit } from '$lib/server/rateLimit';
 import { reportBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
-import { readJsonBody, throttled } from '$lib/server/http';
+import { asRecord, readJsonBody, throttled } from '$lib/server/http';
 import { createIssue, escapeIssueMarkdown, isReportingConfigured } from '$lib/server/github';
 import { describeDeviceInfo, sanitizeDeviceInfo, type DeviceInfo } from '$lib/deviceReport';
 import type { RequestHandler } from './$types';
@@ -61,7 +61,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   );
   if (limited) return throttled(retryAfter);
 
-  const body = await readJsonBody(request);
+  const body = asRecord(await readJsonBody(request));
 
   // Honeypot: a hidden field no human fills. If it's populated, quietly accept
   // without creating an issue — a bot gets no signal and no issue lands.

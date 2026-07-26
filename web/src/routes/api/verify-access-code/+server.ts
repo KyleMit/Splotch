@@ -3,7 +3,7 @@ import { isAllowedToken } from '$lib/server/tokens';
 import { peekRateLimit, rateLimit } from '$lib/server/rateLimit';
 import { verifyAccessCodeBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
-import { readJsonBody, throttled } from '$lib/server/http';
+import { asRecord, readJsonBody, throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 /**
@@ -23,7 +23,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   const guess = peekRateLimit(key, rateLimitPolicy.verifyAccessCode);
   if (guess.limited) return throttled(guess.retryAfter);
 
-  const body = await readJsonBody(request);
+  const body = asRecord(await readJsonBody(request));
   const code = typeof body?.code === 'string' ? body.code.trim() : '';
   if (!code) return json({ ok: false, error: 'No access code provided' });
 

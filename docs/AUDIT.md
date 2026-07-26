@@ -22,39 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P3][type-safety] `readJsonBody`'s return type misrepresents `request.json()`
-
-**File(s):** `web/src/lib/server/http.ts:9-15` — pinned at SHA f934d43
-
-#### Problem
-
-`readJsonBody` is typed `Promise<Record<string, unknown> | null>`, but `request.json()` can resolve
-to an array, string, number, boolean, or `null`. The `| null` is the only non-object case
-acknowledged, and the JSDoc even leans on this ("a JSON primitive or array simply yields no matching
-fields") — but the declared type asserts callers get an object-or-null, so `body?.code` on a JSON
-*array* body type-checks yet the runtime value isn't what the type implies. It's a soft `any`
-dressed as a `Record`.
-
-#### Proposed solution
-
-Type it honestly as `Promise<unknown>` and let each endpoint narrow, or return a small tagged
-result. Given every caller already does `typeof body?.x === 'string'`, `unknown` is the accurate
-type and forces the guard the callers already perform:
-
-```ts
-export async function readJsonBody(request: Request): Promise<unknown> { ... }
-```
-
-Callers keep working (they already guard) but the type stops lying. Optionally add
-`asRecord(body): Record<string, unknown>` for ergonomics.
-
-#### Verification
-
-`npm run check` — the existing `typeof body?.x === 'string'` guards satisfy `unknown`.
-`http.test.ts` unchanged.
-
----
-
 ### [P3][consistency] Two divergent `[ai-usage]` log formats for the same concept
 
 **File(s):** `web/src/routes/api/generate-image/+server.ts:122` (BYOK log) vs

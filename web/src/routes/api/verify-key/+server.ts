@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import { rateLimit } from '$lib/server/rateLimit';
 import { verifyKeyBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
-import { readJsonBody, throttled } from '$lib/server/http';
+import { asRecord, readJsonBody, throttled } from '$lib/server/http';
 import { aiProvider } from '$lib/server/ai/provider';
 import type { RequestHandler } from './$types';
 
@@ -20,7 +20,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   );
   if (limited) return throttled(retryAfter);
 
-  const body = await readJsonBody(request);
+  const body = asRecord(await readJsonBody(request));
   const apiKey = typeof body?.apiKey === 'string' ? body.apiKey.trim() : '';
   if (!apiKey) return json({ ok: false, error: 'No API key provided' });
 
