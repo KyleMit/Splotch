@@ -86,12 +86,8 @@
     node.addEventListener('pointermove', onMove);
     return { destroy: () => node.removeEventListener('pointermove', onMove) };
   }
-  function selectBook(book: Book) {
+  function showView(book: Book | null) {
     activeBook = book;
-    hoverArmed = false;
-  }
-  function goToBooks() {
-    activeBook = null;
     hoverArmed = false;
   }
 
@@ -105,8 +101,8 @@
     open: coloringBook.open,
     origin: coloringBook.origin,
     onRequestClose: coloringBook.hide,
-    onOpen: goToBooks,
-    onClose: goToBooks,
+    onOpen: () => showView(null),
+    onClose: () => showView(null),
   })}
 >
   <div class="coloring-book-content" class:hover-armed={hoverArmed} use:armHoverOnMouseMove>
@@ -138,7 +134,7 @@
               class="coloring-tile coloring-book-tile"
               type="button"
               aria-label="{book.name} coloring book"
-              onclick={() => selectBook(book)}
+              onclick={() => showView(book)}
               onpointerenter={() => prefetchBookPages(book)}
               onpointerdown={() => prefetchBookPages(book)}
             >
@@ -151,7 +147,7 @@
     {:else}
       <div class="coloring-book-view">
         <div class="coloring-book-header">
-          <button class="coloring-back-button" aria-label="Back" onclick={goToBooks}>
+          <button class="coloring-back-button" aria-label="Back" onclick={() => showView(null)}>
             <Icon name="chevron-left" class="coloring-back-icon" />
           </button>
           <h2>{activeBook.name}</h2>

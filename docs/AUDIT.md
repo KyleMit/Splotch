@@ -26,39 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P3][duplication] `hoverArmed = false` reset duplicated across both navigation handlers
-
-**File(s):** `web/src/lib/components/ColoringBook.svelte:89-96` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-function selectBook(book: Book) {
-  activeBook = book;
-  hoverArmed = false;
-}
-function goToBooks() {
-  activeBook = null;
-  hoverArmed = false;
-}
-```
-
-Every view transition must remember to disarm hover; the coupling ("changing the visible grid resets
-hover") is implicit and repeated, so a future third navigation path can forget it and reintroduce
-the stuck-hover bug the arming logic exists to prevent.
-
-#### Proposed solution
-
-Route both through a single `showView(book: Book | null)` that sets `activeBook` and always resets
-`hoverArmed`, or make `hoverArmed` reset a `$derived`/effect keyed on `activeBook` so it can't be
-forgotten. `selectBook`/`goToBooks` become one-liners calling `showView`.
-
-#### Verification
-
-`npm run check`; tap a book tile then back out on a touchscreen and confirm no tile is stuck armed.
-
----
-
 ### [P4][design-tokens] Hardcoded brand RGB `171,113,225` fallback will silently drift from `--brand`
 
 **File(s):** `web/src/lib/components/ColoringBook.svelte:296-298` — pinned at SHA f934d43
