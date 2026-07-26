@@ -17,8 +17,8 @@
   const drawingInputUrl = '/dev/ai-timer/artifacts/drawing-input.jpeg';
   const aiOutputUrl = '/dev/ai-timer/artifacts/ai-output.jpeg';
 
-  // We drive AiImageResult.svelte through the exact ui.svelte.js seam the real
-  // generate flow uses (see src/lib/drawing/aiImage.js): open in the loading
+  // We drive AiImageResult.svelte through the exact ui.svelte.ts seam the real
+  // generate flow uses (see src/lib/drawing/aiImage.ts): open in the loading
   // state with a preview, then deliver the finished image after a delay. No
   // production code is touched — this page just calls the same public actions.
 

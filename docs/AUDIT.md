@@ -7,31 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P3][maintainability] `ai-timer` comments reference `.js` filenames for modules that are `.ts`, contradicting the TypeScript-everywhere convention
-
-**File(s):** `web/src/routes/dev/ai-timer/+page.svelte:20-22` — pinned at SHA f934d43
-
-#### Problem
-
-```js
-// We drive AiImageResult.svelte through the exact ui.svelte.js seam the real
-// generate flow uses (see src/lib/drawing/aiImage.js): open in the loading
-```
-
-The seam is `ui.svelte.ts` and the module is `src/lib/drawing/aiImage.ts` (line 53 of the same file
-correctly says `aiImage.ts`). These stale `.js` references are misleading in a repo whose CLAUDE.md
-mandates "No plain `.js` source files in `src/`" — a reader may grep for a non-existent file.
-
-#### Proposed solution
-
-Correct the two comment references to `ui.svelte.ts` and `src/lib/drawing/aiImage.ts`.
-
-#### Verification
-
-Grep `dev/ai-timer/+page.svelte` for `.js` returns nothing; the referenced `.ts` files exist.
-
----
-
 ### [P3][naming] `parentCenterWanted` is a one-way latch driven by an `$effect` that writes state — an obscure idiom for "mount on first open"
 
 **File(s):** `web/src/routes/+page.svelte:74-78, 191-193` (app shell) — pinned at SHA f934d43
