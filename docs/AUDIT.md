@@ -24,32 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P4][complexity] `initPWAUpdates` bundles cache-bust URL cleanup, version check, re-registration, and listener wiring in one function (with a redundant `getRegistration`)
-
-**File(s):** `web/src/lib/pwa/updates.ts:95-143` — pinned at SHA f934d43
-
-#### Problem
-
-`initPWAUpdates` does five loosely related things: strips the `?v=` cache-bust param (101-106),
-kicks a version-mismatch check (109), calls `checkForUpdates()` (108) *and then* independently calls
-`getRegistration()` again to decide whether to re-register (113-118) — two `getRegistration`
-round-trips per init — then wires the interval + two listeners (120-135). The `?v=` cache-bust
-cleanup is a distinct concern from the SW update lifecycle but shares the function.
-
-#### Proposed solution
-
-Extract `consumeCacheBustParam(): string | null` (the `?v=` strip + `replaceState`) and
-`scheduleRepeatVisitReregister()` (the `getRegistration().then` block). `initPWAUpdates` then reads
-as a short orchestration list. Optionally have `checkForUpdates` return the registration it looked
-up so the second `getRegistration` is avoided.
-
-#### Verification
-
-`updates.test.ts` `initPWAUpdates` describe block (URL strip, cache-bust loop guard, idempotency,
-teardown) covers all paths — must stay green.
-
----
-
 ### [P4][readability] `bannerExit` inline transition is ~14 lines of geometry with a duplicated fallback distance
 
 **File(s):** `web/src/lib/components/InstallBanner.svelte:52-66` — pinned at SHA f934d43
