@@ -189,8 +189,9 @@
 
   .picker {
     display: inline-flex;
-    padding: 16px;
+    padding: var(--space-4);
     margin-top: 15px;
+    --hex-offset: 31px;
     --hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   }
 
@@ -245,7 +246,7 @@
   .r4,
   .r6,
   .r8 {
-    margin-left: 31px;
+    margin-left: var(--hex-offset);
   }
 
   @media (max-height: 564.98px) {
@@ -257,7 +258,7 @@
     .r5,
     .r7,
     .r9 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r4,
     .r6,
@@ -273,7 +274,7 @@
     .r3,
     .r6,
     .r8 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r5,
     .r7,
@@ -289,7 +290,7 @@
     .r3,
     .r7,
     .r9 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r5,
     .r8 {
@@ -303,7 +304,7 @@
     }
     .r3,
     .r7 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r5,
     .r9 {
@@ -317,7 +318,7 @@
     }
     .r5,
     .r9 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r7 {
       margin-left: 0;
@@ -329,7 +330,7 @@
       display: none;
     }
     .r5 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r9 {
       margin-left: 0;
