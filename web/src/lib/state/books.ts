@@ -1,7 +1,7 @@
 // Coloring-book catalog - the single source of truth for which books exist and
-// where each one is allowed to ship. This file is intentionally plain JS (no
-// Svelte runes) so it can be imported both by the app and by Node build scripts
-// (see scripts/strip-native-assets.mjs).
+// where each one is allowed to ship. This file is intentionally rune-free (and
+// is not a `.svelte.ts` module) so it can be imported both by the app and by
+// Node build scripts (see scripts/strip-native-assets.mjs).
 //
 // Image storage format:
 //   static/coloring/{book}/cover.outline.webp         cover line art, 1:1
