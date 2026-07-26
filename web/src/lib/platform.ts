@@ -74,6 +74,9 @@ export function getPlatform(): Platform {
   return platform === 'android' || platform === 'ios' ? platform : 'web';
 }
 
+// This boundary implements the tablet-class heuristic documented by supportsOrientationLock().
+const TABLET_MIN_SIDE_PX = 600;
+
 /**
  * Whether the app may force its own device orientation.
  *
@@ -109,5 +112,5 @@ export function getPlatform(): Platform {
 export function supportsOrientationLock(): boolean {
   if (!browser) return false;
   if (!isNative()) return true;
-  return Math.min(window.screen.width, window.screen.height) < 600;
+  return Math.min(window.screen.width, window.screen.height) < TABLET_MIN_SIDE_PX;
 }

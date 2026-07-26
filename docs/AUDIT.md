@@ -28,32 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P3][naming] `supportsOrientationLock` hides its tablet cutoff behind a bare `600`
-
-**File(s):** `web/src/lib/platform.ts:90-94` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-return Math.min(window.screen.width, window.screen.height) < 600;
-```
-
-The `600` is the phone/tablet split (a device with a short side ≥ 600 CSS px is treated as a tablet
-that owns its own orientation). It's a load-bearing heuristic explained at length in the doc comment
-above, but the actual threshold is an unnamed literal buried in the return, so a reader scanning the
-code (not the essay) sees a magic number and grepping for the tablet cutoff finds nothing.
-
-#### Proposed solution
-
-`const TABLET_MIN_SIDE_PX = 600;` (with a one-line WHY pointing at the doc comment) and use it in
-the comparison.
-
-#### Verification
-
-`npm run check`; the constant is greppable.
-
----
-
 ### [P3][complexity] `collectDeviceInfo` is a ~40-line function mixing web + native collection
 
 **File(s):** `web/src/lib/deviceInfo.ts:20-60` — pinned at SHA f934d43
