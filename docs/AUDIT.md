@@ -9,41 +9,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P2][complexity] `$effect` bodies use bare member-access statements purely to register reactive dependencies — a fragile, non-obvious pattern
-
-**File(s):** `web/src/routes/+page.svelte:37-41` (app shell) — pinned at SHA f934d43
-
-#### Problem
-
-```js
-$effect(() => {
-  settings.lockRotationEnabled;
-  settings.forceLandscapeOrientation;
-  applyDeviceOrientationPreference();
-});
-```
-
-The first two lines are expression statements with no effect other than tripping Svelte's dependency
-tracker, because `applyDeviceOrientationPreference()` reads the settings internally and wouldn't
-otherwise re-run the effect. This is brittle: a reader (or a `no-unused-expressions` lint pass, or a
-"cleanup" commit) can delete the two bare reads and silently break reactivity, with no test catching
-it. The dependency is invisible at the call site.
-
-#### Proposed solution
-
-Make the dependency explicit and load-bearing: either have `applyDeviceOrientationPreference(prefs)`
-take the two settings as arguments (so reading them is what produces the value passed in), or
-compute
-`const orientationPrefs = $derived([settings.lockRotationEnabled, settings.forceLandscapeOrientation])`
-and reference `orientationPrefs` in the effect. Same for any other effect using this pattern.
-
-#### Verification
-
-Toggling lock-rotation / force-landscape in Parent Center still re-applies orientation. Removing the
-argument/derived would now be a type error rather than a silent reactivity loss.
-
----
-
 ### [P2][architecture] Wake-lock lifecycle (request/re-request/teardown) is inlined in `onMount` and should be a self-contained helper
 
 **File(s):** `web/src/routes/+page.svelte:137-154, 169-174` (app shell) — pinned at SHA f934d43
