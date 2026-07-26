@@ -22,35 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P4][readability] Redundant `typeof style === 'string'` on an already-`string | null` value
-
-**File(s):** `web/src/routes/api/generate-image/+server.ts:114,129` — pinned at SHA f934d43
-
-#### Problem
-
-`source.style` is typed `string | null` (interface `GenerationRequest`, line 42). Line 114 aliases
-it `const style = source.style;`, then line 129 re-checks its type:
-
-```ts
-style: typeof style === 'string' ? style : null,
-```
-
-The guard can never take the `null`-producing branch differently than `style` already is — it's dead
-narrowing that implies `style` might be some other type. (`buildPromptForStyle(style, …)` at 117
-also accepts `unknown`, further hiding that `style` is already narrow.)
-
-#### Proposed solution
-
-Pass `style` directly:
-`recordTokenUsage(authorization.managedToken, { style, prompt: finalPrompt })`. Drop the redundant
-check.
-
-#### Verification
-
-`npm run check` passes (types already `string | null`). generate-image handler test unchanged.
-
----
-
 ### [P4][naming] `readImage` thunk field obscures that it also validates size/emptiness
 
 **File(s):** `web/src/routes/api/generate-image/+server.ts:39-96` (`GenerationRequest.readImage`) —

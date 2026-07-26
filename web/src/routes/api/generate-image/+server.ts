@@ -110,7 +110,7 @@ function recordGenerationUsage(
     // keeps the function alive long enough to finish on Netlify; without it
     // (local dev) it's a fire-and-forget whose errors are caught internally.
     const usage = recordTokenUsage(authorization.managedToken, {
-      style: typeof style === 'string' ? style : null,
+      style,
       prompt: finalPrompt,
     });
     platform?.context?.waitUntil?.(usage);
