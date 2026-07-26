@@ -57,6 +57,22 @@ regenerated output in the same commit. Nothing enforces this; CI catches it.
 * Backlog at launch: **449** findings (`node scripts/audit-burndown/pop.mjs --count`).
 * Commits land as `Audit: <title>`; deferrals as `chore(audit): defer —`; drops as
   `chore(audit): drop invalid finding`.
+* **As of 2026-07-26 10:20, this session's wrap-up:** canary (5 fixed) + full run (35 fixed, 6
+  dropped, 3 deferred) landed **40 fixed, 6 dropped, 4 deferred total**; backlog 449 → **399**
+  (reconciled from git — see `docs/AUDIT-LOG.md`'s row for this run for the full retrospective). PR
+  #547 marked ready (not draft) with CI green on the final push. The run is **not finished** — 399
+  findings remain — and can be resumed by a fresh session with the relaunch command below, after
+  fixing the blocker in the next bullet.
+* **Blocker for any relaunch: workspace trust may still be lost.** The run halted at 07:56 on 3
+  consecutive deferrals whose real cause was `hasTrustDialogAccepted: false` for this project in
+  `/root/.claude.json` (a container event reset it mid-run) — every `claude -p` subprocess errored
+  immediately regardless of role. Confirmed still `false` at wrap-up; fixing it needs either an
+  interactive `claude` session in this workspace once (to accept the trust dialog) or editing
+  `/root/.claude.json` directly, both outside a supervising agent's default permission scope. Check
+  this **before** relaunching — a resume into a still-untrusted workspace halts on the identical
+  pattern immediately. See the skill's "While it runs" section (env-trust HALT) and
+  `.ruler/skill-notes/burn-down-audits.md`'s "A HALT with an environment cause" entry for the full
+  diagnosis.
 
 ## Decisions made (and why)
 
@@ -99,11 +115,12 @@ regenerated output in the same commit. Nothing enforces this; CI catches it.
 
 ## Risks & next 3 steps
 
-1. ~~Open the draft PR~~ — done, PR #547 (draft).
-2. Canary (`MAX_ISSUES=5`), then run the skill's canary checklist — especially the **entry-deletion
-   count per commit must be exactly one**, and CI green on the canary's pushes.
-3. Launch the full run and supervise it event-driven, re-arming the run-log monitor about every 30
-   minutes.
+1. ~~Open the draft PR~~ — done, PR #547, now **ready** (not draft).
+2. ~~Canary + full run~~ — done this session: 40 fixed, 6 dropped, 4 deferred; 399 remain.
+3. To resume: confirm workspace trust is fixed (see the blocker note in State above), then relaunch
+   with the exact command in "Relaunch command" above, and supervise event-driven per the skill's
+   "Surviving the context window" section. Delete this file once the backlog fully drains and the PR
+   is merged.
 
 ## Reread first
 
