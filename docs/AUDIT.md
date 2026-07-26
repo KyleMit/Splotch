@@ -22,54 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P3][complexity] Extract a type guard for the Reporting-API entry predicate in csp-report
-
-**File(s):** `web/src/routes/api/csp-report/+server.ts:64-84` (`extractViolations`) — pinned at SHA
-f934d43
-
-#### Problem
-
-The array-branch predicate casts `item` to `Record<string, unknown>` **four times** inside one
-boolean expression to reach `.type` and `.body`:
-
-```ts
-.filter((item): item is Record<string, unknown> =>
-  typeof item === 'object' && item !== null &&
-  (item as Record<string, unknown>).type === 'csp-violation' &&
-  typeof (item as Record<string, unknown>).body === 'object' &&
-  (item as Record<string, unknown>).body !== null)
-.map((item) => fromReportingApiPayload(item.body as Record<string, unknown>, item.url));
-```
-
-It's hard to read and the repeated casts signal a missing guard.
-
-#### Proposed solution
-
-Extract a named type guard:
-
-```ts
-interface ReportingApiEntry {
-  type: 'csp-violation';
-  url?: unknown;
-  body: Record<string, unknown>;
-}
-function isReportingApiEntry(item: unknown): item is ReportingApiEntry {
-  if (typeof item !== 'object' || item === null) return false;
-  const o = item as Record<string, unknown>;
-  return o.type === 'csp-violation' && typeof o.body === 'object' && o.body !== null;
-}
-```
-
-`extractViolations` becomes
-`payload.filter(isReportingApiEntry).map((e) => fromReportingApiPayload(e.body, e.url))`.
-
-#### Verification
-
-`geminiSafety`/csp tests + `npm run test:api:smoke` (two payload formats) still classify
-identically.
-
----
-
 ### [P3][type-safety] `readJsonBody`'s return type misrepresents `request.json()`
 
 **File(s):** `web/src/lib/server/http.ts:9-15` — pinned at SHA f934d43

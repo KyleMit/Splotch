@@ -73,9 +73,7 @@ function isReportingApiEntry(item: unknown): item is ReportingApiEntry {
   if (typeof item !== 'object' || item === null) return false;
 
   const entry = item as Record<string, unknown>;
-  return (
-    entry.type === 'csp-violation' && typeof entry.body === 'object' && entry.body !== null
-  );
+  return entry.type === 'csp-violation' && typeof entry.body === 'object' && entry.body !== null;
 }
 
 function extractViolations(payload: unknown): CspViolation[] {
