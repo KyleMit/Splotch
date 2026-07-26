@@ -109,9 +109,7 @@ describe('parsePngToWebpOptions', () => {
 
   test('rejects an invalid environment quality fallback', () => {
     expect(() => parsePngToWebpOptions([], { QUALITY: 'invalid' })).toThrow('process exited');
-    expect(error).toHaveBeenCalledWith(
-      '--quality must be a non-negative number, got "invalid"'
-    );
+    expect(error).toHaveBeenCalledWith('--quality must be a non-negative number, got "invalid"');
     expect(exit).toHaveBeenCalledWith(1);
   });
 });

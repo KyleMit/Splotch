@@ -30,30 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P3][consistency] `png-to-webp` configured by env vars instead of flags
-
-**File(s):** `png-to-webp.mjs:11-12` — pinned at SHA f934d43
-
-#### Problem
-
-`const quality = Number(process.env.QUALITY ?? 80); const lossless = process.env.LOSSLESS === '1';`
-is the only script in the directory that takes its options through environment variables. It's
-undiscoverable (no `parseArgs`, no validation — `QUALITY=abc` silently yields `NaN`), and
-inconsistent with the `namespace:variant` + flag conventions everywhere else.
-
-#### Proposed solution
-
-Switch to `parseArgs` with `--quality <n>` (validated via the shared `parseNonNegative`) and
-`--lossless`. Keep reading the env var only as a documented fallback if existing muscle-memory
-matters.
-
-#### Verification
-
-`node bin/png-to-webp.mjs --quality 90 --lossless` works; `--quality abc` fails loudly instead of
-writing `NaN`-quality webps.
-
----
-
 ### [P3][duplication] Two base64 data-URI helpers with different names
 
 **File(s):** `review-orb-eyes.mjs:36` (`b64`); `gen-coloring-book-proof-sheet.mjs:82-85` (`dataUri`)
