@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { spawnSync } from 'node:child_process';
+import { join } from 'node:path';
 import { parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 
 let error;
@@ -15,8 +17,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function expectFailure(parse, raw, name, fallback, message) {
-  expect(() => parse(raw, name, fallback)).toThrow('process exited');
+function expectFailure(parse, raw, name, fallback, source, message) {
+  expect(() => parse(raw, name, fallback, source)).toThrow('process exited');
   expect(error).toHaveBeenCalledWith(message);
   expect(exit).toHaveBeenCalledWith(1);
 }
@@ -34,6 +36,7 @@ describe('parsePositiveInt', () => {
       raw,
       '--samples',
       3,
+      undefined,
       `--samples must be a positive integer, got "${raw}"`
     );
   });
@@ -52,9 +55,10 @@ describe('parseTemperature', () => {
     expectFailure(
       parseTemperature,
       raw,
-      '--temperature (cli)',
+      '--temperature',
       0.5,
-      `--temperature (cli) must be a number between 0 and 2, got "${raw}"`
+      undefined,
+      `--temperature must be a number between 0 and 2, got "${raw}"`
     );
   });
 });
@@ -70,9 +74,97 @@ describe('parseNonNegative', () => {
     expectFailure(
       parseNonNegative,
       raw,
-      '--threshold (page via notes.json)',
+      '--threshold',
       2,
-      `--threshold (page via notes.json) must be a non-negative number, got "${raw}"`
+      'page via notes.json',
+      `--threshold must be a non-negative number, got "${raw}" (page via notes.json)`
     );
   });
+});
+
+const commandCases = [
+  [
+    'gen-coloring-fills.mjs',
+    ['--temperature', 'invalid'],
+    '--temperature must be a number between 0 and 2, got "invalid"',
+  ],
+  [
+    'gen-coloring-fills-dark.mjs',
+    ['nature/ant-tall', '--dry-run', '--temperature', 'invalid'],
+    '--temperature must be a number between 0 and 2, got "invalid"',
+  ],
+  [
+    'gen-coloring-chalk.mjs',
+    ['nature/ant-tall', '--dry-run', '--temperature', 'invalid'],
+    '--temperature must be a number between 0 and 2, got "invalid"',
+  ],
+  [
+    'normalize-outline-strokes.mjs',
+    ['nature/ant-tall', '--dry-run', '--temperature', 'invalid'],
+    '--temperature must be a number between 0 and 2, got "invalid"',
+  ],
+  [
+    'gen-coloring-outlines-fresh.mjs',
+    ['nature/ant-tall', '--scene', 'test', '--temperature', 'invalid'],
+    '--temperature must be a number between 0 and 2, got "invalid"',
+  ],
+  [
+    'gen-style-covers.mjs',
+    ['--temperature', 'invalid'],
+    '--temperature must be a number between 0 and 2, got "invalid"',
+  ],
+  [
+    'gen-coloring-fills.mjs',
+    ['--samples', '1.5'],
+    '--samples must be a positive integer, got "1.5"',
+  ],
+  [
+    'gen-coloring-fills-dark.mjs',
+    ['nature/ant-tall', '--dry-run', '--samples', '1.5'],
+    '--samples must be a positive integer, got "1.5"',
+  ],
+  [
+    'gen-coloring-fills-dark.mjs',
+    ['nature/ant-tall', '--dry-run', '--max-attempts', '1.5'],
+    '--max-attempts must be a positive integer, got "1.5"',
+  ],
+  [
+    'gen-coloring-chalk.mjs',
+    ['nature/ant-tall', '--dry-run', '--max-attempts', '1.5'],
+    '--max-attempts must be a positive integer, got "1.5"',
+  ],
+  [
+    'normalize-outline-strokes.mjs',
+    ['nature/ant-tall', '--dry-run', '--max-attempts', '1.5'],
+    '--max-attempts must be a positive integer, got "1.5"',
+  ],
+  [
+    'gen-coloring-outlines-fresh.mjs',
+    ['nature/ant-tall', '--scene', 'test', '--max-attempts', '1.5'],
+    '--max-attempts must be a positive integer, got "1.5"',
+  ],
+  [
+    'gen-coloring-fills-dark.mjs',
+    ['nature/ant-tall', '--dry-run', '--drift-threshold', 'invalid'],
+    '--drift-threshold must be a non-negative number, got "invalid"',
+  ],
+  [
+    'gen-coloring-chalk.mjs',
+    ['nature/ant-tall', '--dry-run', '--invented-max', 'invalid'],
+    '--invented-max must be a non-negative number, got "invalid"',
+  ],
+];
+
+test.each(commandCases)('%s uses the canonical numeric diagnostic', (script, args, expected) => {
+  const result = spawnSync(
+    process.execPath,
+    ['--experimental-strip-types', join(import.meta.dirname, '..', 'bin', script), ...args],
+    {
+      encoding: 'utf8',
+      env: { ...process.env, GEMINI_API_KEY: 'test', NODE_NO_WARNINGS: '1' },
+    }
+  );
+
+  expect(result.status).toBe(1);
+  expect(result.stderr.trim()).toBe(expected);
 });

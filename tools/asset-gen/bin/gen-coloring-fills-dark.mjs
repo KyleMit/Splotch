@@ -220,33 +220,36 @@ const samples = parsePositiveInt(values.samples, '--samples', 1);
 
 // Per-page tuning resolves in the page loop — defaults, then the page's
 // fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
-function nightSettings(v, where) {
+function nightSettings(v, source) {
   const s = {
-    baseTemp: parseTemperature(v.temperature, `--temperature (${where})`, 0.6),
-    maxAttempts: parsePositiveInt(v['max-attempts'], `--max-attempts (${where})`, 3),
+    baseTemp: parseTemperature(v.temperature, '--temperature', 0.6, source),
+    maxAttempts: parsePositiveInt(v['max-attempts'], '--max-attempts', 3, source),
     driftThreshold: parseNonNegative(
       v['drift-threshold'],
-      `--drift-threshold (${where})`,
-      DRIFT_THRESHOLD_DEFAULT
+      '--drift-threshold',
+      DRIFT_THRESHOLD_DEFAULT,
+      source
     ),
     nightLumaMax: parseNonNegative(
       v['night-luma-max'],
-      `--night-luma-max (${where})`,
-      NIGHT_BG_LUMA_MAX_DEFAULT
+      '--night-luma-max',
+      NIGHT_BG_LUMA_MAX_DEFAULT,
+      source
     ),
     lineWhiteMin: parseNonNegative(
       v['line-white-min'],
-      `--line-white-min (${where})`,
-      LINE_WHITE_MIN_DEFAULT
+      '--line-white-min',
+      LINE_WHITE_MIN_DEFAULT,
+      source
     ),
     dilateLines: v['dilate-lines'] === undefined ? 0 : Number(v['dilate-lines']),
     notes: v.notes,
   };
   if (!(Number.isInteger(s.dilateLines) && s.dilateLines >= 0))
-    fail(`--dilate-lines must be a non-negative integer (${where})`);
+    fail(`--dilate-lines must be a non-negative integer${source ? ` (${source})` : ''}`);
   return s;
 }
-nightSettings(values, 'cli');
+nightSettings(values);
 if (!values['dry-run'] && !process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
 
 // Generate one take, register it to the source, and score four ways: structural

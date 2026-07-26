@@ -90,16 +90,16 @@ if (!values['dry-run'] && !process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is n
 
 // Per-page tuning resolves in the page loop — defaults, then the page's
 // fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
-function normalizeSettings(v, where) {
+function normalizeSettings(v, source) {
   const s = {
-    baseTemp: parseTemperature(v.temperature, `--temperature (${where})`, 0.3),
-    maxAttempts: parsePositiveInt(v['max-attempts'], `--max-attempts (${where})`, 4),
+    baseTemp: parseTemperature(v.temperature, '--temperature', 0.3, source),
+    maxAttempts: parsePositiveInt(v['max-attempts'], '--max-attempts', 4, source),
     notes: v.notes,
   };
   s.instruction = s.notes ? `${INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${s.notes}` : INSTRUCTION;
   return s;
 }
-normalizeSettings(values, 'cli');
+normalizeSettings(values);
 
 const ai = process.env.GEMINI_API_KEY
   ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })

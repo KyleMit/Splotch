@@ -1,28 +1,28 @@
 import { fail } from './paths.mjs';
 
-export function parsePositiveInt(raw, name, fallback) {
+export function parsePositiveInt(raw, name, fallback, source) {
   if (raw === undefined) return fallback;
   const value = Number(raw);
   if (!(Number.isInteger(value) && value >= 1)) {
-    fail(`${name} must be a positive integer, got "${raw}"`);
+    fail(`${name} must be a positive integer, got "${raw}"${source ? ` (${source})` : ''}`);
   }
   return value;
 }
 
-export function parseTemperature(raw, name, fallback) {
+export function parseTemperature(raw, name, fallback, source) {
   if (raw === undefined) return fallback;
   const value = Number(raw);
   if (!(value >= 0 && value <= 2)) {
-    fail(`${name} must be a number between 0 and 2, got "${raw}"`);
+    fail(`${name} must be a number between 0 and 2, got "${raw}"${source ? ` (${source})` : ''}`);
   }
   return value;
 }
 
-export function parseNonNegative(raw, name, fallback) {
+export function parseNonNegative(raw, name, fallback, source) {
   if (raw === undefined) return fallback;
   const value = Number(raw);
   if (!(value >= 0)) {
-    fail(`${name} must be a non-negative number, got "${raw}"`);
+    fail(`${name} must be a non-negative number, got "${raw}"${source ? ` (${source})` : ''}`);
   }
   return value;
 }

@@ -30,35 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P3][consistency] Duplicated, divergent numeric-flag validators
-
-**File(s):** temperature/samples/max-attempts/non-negative checks at gen-coloring-fills.mjs:126-133,
-gen-coloring-fills-dark.mjs:211-235, gen-coloring-chalk.mjs:229-247,
-normalize-outline-strokes.mjs:92-104, gen-coloring-outlines-fresh.mjs:70-74,
-gen-style-covers.mjs:68-70 — pinned at SHA f934d43
-
-#### Problem
-
-The same validations are re-written with inconsistent wording:
-`--temperature must be between 0 and 2` (chalk, fresh, normalize) vs
-`--temperature must be a number between 0 and 2, got "…"` (fills, covers);
-`--samples must be a positive integer` with vs without the offending value. dark alone repeats four
-`>= 0` guards inline. Each is a hand-rolled `if (!(Number.isInteger(x) && x >= 1)) fail(...)`.
-
-#### Proposed solution
-
-Add `lib/cli.mjs` validators: `parsePositiveInt(raw, name, fallback)`,
-`parseTemperature(raw, name, fallback)` (0–2), `parseNonNegative(raw, name, fallback)`. Each returns
-the parsed number or calls `fail` with one canonical message. The
-`nightSettings`/`chalkSettings`/`normalizeSettings` builders shrink to a table of these.
-
-#### Verification
-
-Feed each script `--temperature 9` / `--samples 0` and confirm one consistent error string.
-Unit-test the validators.
-
----
-
 ### [P3][duplication] The `GEMINI_API_KEY` guard is copy-pasted six ways
 
 **File(s):** gen-coloring-fills.mjs:135, gen-coloring-fills-dark.mjs:239,
