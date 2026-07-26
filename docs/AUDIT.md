@@ -28,32 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P4][naming] `deviceInfo.ts` vs `deviceReport.ts` split isn't self-evident from the names
-
-**File(s):** `web/src/lib/deviceInfo.ts`, `web/src/lib/deviceReport.ts` — pinned at SHA f934d43
-
-#### Problem
-
-Two files whose names both say "device + noun" own different halves: `deviceInfo.ts` *collects* a
-snapshot (browser/native, client-only), `deviceReport.ts` holds the *shared shape + label ordering +
-server-side sanitizer* (dependency-free, used by both client and `/api/report`). Nothing in the
-names conveys "collector" vs "shared schema," so a reader looking for where the `DeviceInfo` type
-lives, or where sanitization happens, has to open both. The `DeviceInfo` interface actually living
-in `deviceReport.ts` (not `deviceInfo.ts`) is a mild surprise.
-
-#### Proposed solution
-
-Rename for role clarity, e.g. `collectDeviceInfo.ts` (or `deviceInfo.client.ts`) for the collector
-and `deviceReport.ts` / `deviceInfo.shared.ts` for the schema — or merge the schema into a
-`deviceReport` that the collector imports, and note the split in a one-line header on each. Low
-urgency; do it if the platform-folder move (P2) is done anyway.
-
-#### Verification
-
-`npm run check`; imports in `ReportForm.svelte` and `api/report/+server.ts` updated.
-
----
-
 ### [P4][type-safety] `currentGain!` non-null assertion in `playDrawSound`
 
 **File(s):** `web/src/lib/audio/drawingSound.ts:82` — pinned at SHA f934d43
