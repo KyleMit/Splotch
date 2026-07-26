@@ -2229,3 +2229,52 @@ The rolled-back draft is kept at
 (1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-duplication-background-flood-fill-is-written-twice-in-lib-and-a-third.patch`.
+
+### [P3][complexity] `scoreCompositeEyes` is a 100-line function with an inline pupil-shape validator
+
+**File(s):** `tools/asset-gen/lib/composite-eye.mjs:158-259` — pinned at SHA f934d43
+
+#### Problem
+
+Inside the `for (const ref of refs)` loop, three distinct rejection stages are inlined: bounding-box
+fill + aspect ratio (194-206), a Set-based erosion survival test (211-232), and centroid +
+disc-stats measurement (235-243). The blob-is-a-pupil decision spans ~50 lines mixed with the
+measurement, and the erosion here is a fourth ad-hoc morphology implementation.
+
+#### Proposed solution
+
+Extract `function isPupilDisc(blob, w, h)` → boolean (the bbox-fill, aspect, and erosion checks,
+194-232, reusing `erodeMask` from `morphology.mjs`) and `function blobCentroid(blob, w)`. The loop
+body reduces to: grow blob → `if (!isPupilDisc) continue` → measure disc → push.
+
+#### Verification
+
+`tests/composite-eye.test.mjs` (calibrated on stego/horse/17-overflag fixtures) passes;
+`coreDarkFrac`/`blankOrb` verdicts identical.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `isPupilDisc` in `tools/asset-gen/lib/composite-eye.mjs:161` still contains the same Set-based
+  erosion loop, leaving the fourth ad-hoc morphology implementation that the original finding
+  explicitly required removing; build the blob mask and reuse `erodeMask` from `morphology.mjs`
+  while preserving the calibrated fixture verdicts.
+
+#### What was tried
+
+Extracted module-private `isPupilDisc` and `blobCentroid` helpers from the scoring loop while
+preserving the exact cross-kernel erosion and measurements. Fixture verdicts and `coreDarkFrac`
+outputs remain identical to HEAD.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p3-complexity-scorecompositeeyes-is-a-100-line-function-with-an-inline-p.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p3-complexity-scorecompositeeyes-is-a-100-line-function-with-an-inline-p.patch`.

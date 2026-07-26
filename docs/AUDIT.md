@@ -32,30 +32,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P3][complexity] `scoreCompositeEyes` is a 100-line function with an inline pupil-shape validator
-
-**File(s):** `tools/asset-gen/lib/composite-eye.mjs:158-259` — pinned at SHA f934d43
-
-#### Problem
-
-Inside the `for (const ref of refs)` loop, three distinct rejection stages are inlined: bounding-box
-fill + aspect ratio (194-206), a Set-based erosion survival test (211-232), and centroid +
-disc-stats measurement (235-243). The blob-is-a-pupil decision spans ~50 lines mixed with the
-measurement, and the erosion here is a fourth ad-hoc morphology implementation.
-
-#### Proposed solution
-
-Extract `function isPupilDisc(blob, w, h)` → boolean (the bbox-fill, aspect, and erosion checks,
-194-232, reusing `erodeMask` from `morphology.mjs`) and `function blobCentroid(blob, w)`. The loop
-body reduces to: grow blob → `if (!isPupilDisc) continue` → measure disc → push.
-
-#### Verification
-
-`tests/composite-eye.test.mjs` (calibrated on stego/horse/17-overflag fixtures) passes;
-`coreDarkFrac`/`blankOrb` verdicts identical.
-
----
-
 ### [P3][performance] Every night scorer independently decodes and resizes the same source buffer
 
 **File(s):** `tools/asset-gen/lib/night-scores.mjs:44-53,99-108,164-173` (three scorers) plus
