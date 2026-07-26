@@ -22,37 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P3][consistency] Logical-failure status convention differs (200+{ok:false} vs 4xx) between verify-* and report
-
-**File(s):** `web/src/routes/api/verify-access-code/+server.ts:26,30`;
-`web/src/routes/api/verify-key/+server.ts:20,24`; `web/src/routes/api/report/+server.ts:73,78` —
-pinned at SHA f934d43
-
-#### Problem
-
-verify-access-code and verify-key return **HTTP 200** with `{ ok: false, error }` for logical
-failures (no code, unrecognized code, no key, bad key), while `report` returns proper **4xx** with
-`{ ok: false, error }` for its logical failures (missing kind → 400, empty message → 400). Both are
-"the request was well-formed but the operation didn't succeed," handled with opposite status
-conventions. A caller (or a smoke test) can't rely on status alone; `aiCredential.ts:41` has to
-check `res.ok && data.ok === true` precisely because of the 200-on-failure choice.
-
-#### Proposed solution
-
-This is partly intentional (verify-* returning 200 avoids status-based oracle signal), so the fix is
-to **document the rule**, not necessarily flip statuses: in `.claude/rules/server-api.md`, state
-that credential oracles answer 200+`{ok:false}` deliberately while non-oracle validation uses
-4xx+`{ok:false}`. If you'd rather standardize, move verify-* to return `{ ok:false }` with 200
-uniformly (they already do) and note report is the exception. The value here is making the
-divergence a written decision instead of an accident.
-
-#### Verification
-
-Rule doc updated; `npm run test:api:smoke` already asserts the verify-access-code shape and report's
-400s — keep both.
-
----
-
 ### [P4][readability] Rename the terse `str`/`num` coercers in csp-report
 
 **File(s):** `web/src/routes/api/csp-report/+server.ts:30-36` — pinned at SHA f934d43
