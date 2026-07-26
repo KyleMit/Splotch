@@ -7,36 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P4][platform-branching] `app.html` seeds `data-app-surface` with a runtime `location.pathname === '/'` check that duplicates the `/`-page effect and hardcodes the route string
-
-**File(s):** `web/src/app.html:95`; duplicated by `web/src/routes/+page.svelte:48-51` — pinned at
-SHA f934d43
-
-#### Problem
-
-```js
-el.toggleAttribute('data-app-surface', location.pathname === '/');
-```
-
-The immersive-surface flag is set in three places with the drawing route's path expressed as the
-bare literal `'/'`: the boot script (app.html), the `/` page's mount effect (sets it), and its
-cleanup (removes it on nav away). The seed logic and the page logic must agree on which path is the
-app surface, but the coupling is only the shared `'/'` literal and prose comments. A future change
-to the drawing route's path would need edits in both files with no compile-time link.
-
-#### Proposed solution
-
-This is inherently split (inline vanilla JS vs component), so at minimum name the route once — e.g.
-a documented `DRAWING_ROUTE = '/'` constant referenced by the page effect — and extend the app.html
-sync test proposed in the P1 app.html finding to assert the boot script's path literal matches it.
-
-#### Verification
-
-The app-surface locks apply from first paint only on `/`, and the test fails if the page's route
-constant and the boot script's literal diverge.
-
----
-
 ### [P4][type-safety] The engine harness types its public API seam as `Record<string, unknown>`, discarding the real engine signatures at the test boundary
 
 **File(s):** `web/src/routes/dev/engine/+page.svelte:28-33, 60` (app shell wiring for the harness) —

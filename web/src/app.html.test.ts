@@ -124,15 +124,25 @@ describe("app.html's boot script mirrors the state modules", () => {
   });
 
   // Catches the other half of the divergence app.html's literal can't see:
-  // DRAWING_ROUTE naming a route that no longer has a page, e.g. because the
-  // drawing page moved. `data-app-surface` matching a literal that resolves
-  // nowhere would be silently wrong in the same way an unmatched literal is.
-  it('DRAWING_ROUTE resolves to an actual +page.svelte under routes/', () => {
+  // DRAWING_ROUTE naming a route whose +page.svelte is no longer the drawing
+  // page, e.g. because the drawing page moved to /draw and a landing page
+  // took over '/'. Asserting mere existence would still pass in that
+  // scenario (routes/+page.svelte still exists — it's just the wrong page
+  // now), so this reads the file and requires it to actually own the
+  // data-app-surface set/clear effect.
+  it('DRAWING_ROUTE resolves to the +page.svelte that owns data-app-surface', () => {
     const routeSegment = DRAWING_ROUTE.replace(/^\/|\/$/g, '');
     const pagePath = new URL(
       `./routes/${routeSegment ? `${routeSegment}/` : ''}+page.svelte`,
       import.meta.url
     );
     expect(existsSync(pagePath), `expected a +page.svelte for route '${DRAWING_ROUTE}'`).toBe(true);
+
+    const pageSource = readFileSync(pagePath, 'utf8');
+    expect(
+      pageSource,
+      `expected the +page.svelte at '${DRAWING_ROUTE}' to set/clear data-app-surface`
+    ).toMatch(/setAttribute\('data-app-surface', ''\)/);
+    expect(pageSource).toMatch(/removeAttribute\('data-app-surface'\)/);
   });
 });
