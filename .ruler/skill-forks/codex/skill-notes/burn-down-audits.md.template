@@ -1,10 +1,8 @@
-<!-- Source: .ruler/skill-forks/codex/skill-notes/burn-down-audits.md.template -->
-
 # `burn-down-audits` for Codex — design notes
 
-Design history and open questions for the Codex implementation of the `burn-down-audits` skill. This
-note belongs only to the Codex fork under `.ruler/skill-forks/codex/`; it is not a shared contract
-with the Claude Code implementation.
+Design history and open questions for the Codex implementation of the `burn-down-audits` skill.
+This note belongs only to the Codex fork under `.ruler/skill-forks/codex/`; it is not a shared
+contract with the Claude Code implementation.
 
 Current as of **2026-07-26**. The Codex runner was validated with direct CLI probes and a live
 canary before its runbook was separated from the Claude Code skill.
@@ -71,8 +69,8 @@ That contract creates clean commits before gates and adversarial review. A crash
 to preserve the local-ahead commit while leaving the finding in `docs/AUDIT.md`; re-verification
 could then call the finding already fixed and drop it without ever gating or reviewing the change.
 `RESUME=1` now recognizes the exact `Audit:` trailer while the matching entry heading remains,
-rewinds the entire contiguous implementation and repair chain, and reprocesses the finding. It halts
-instead of rewriting if that incomplete chain was somehow published.
+rewinds the entire contiguous implementation and repair chain, and reprocesses the finding. It
+halts instead of rewriting if that incomplete chain was somehow published.
 
 ## Diagnostics and review input
 

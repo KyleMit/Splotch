@@ -3,7 +3,8 @@
 On-demand **skills** (consult when the topic comes up — don't guess from memory). Claude Code
 auto-invokes them by description (or via `/name`); agents without skill support should read the
 skill's `SKILL.md` directly from `.agents/skills/<name>/` (or `.claude/skills/<name>/`). Most are
-identical; runner-specific workflows may be produced from `.ruler/agent-overrides/`:
+identical; fully independent runner implementations may be produced from
+`.ruler/skill-forks/<runner>/`:
 
 | Skill                                   | Read it before…                                                                                                                                                                                                          |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -25,11 +26,11 @@ handoffs, ADRs) — is the `skills-guide` skill (`/skills-guide`). Consult it wh
 applies or how skills relate.
 
 **Prefer skills over slash commands.** Every reusable agent workflow in this repo is authored as a
-skill in `.ruler/skills/<name>/SKILL.md` (with rare runner-specific variants under
-`.ruler/agent-overrides/`), not as a command in `.claude/commands/`. A skill with a good
-`description` is both user-invocable (`/name`) *and* model-invocable, so Claude can reach for it on
-its own — a plain command can't. When authoring a new reusable workflow, create a skill: give it a
-`name` and a `description` that says both what it does and when to use it (add
+skill in `.ruler/skills/<name>/SKILL.md` (or, when implementations must be isolated, as complete
+packages under `.ruler/skill-forks/<runner>/`), not as a command in `.claude/commands/`. A skill
+with a good `description` is both user-invocable (`/name`) *and* model-invocable, so Claude can
+reach for it on its own — a plain command can't. When authoring a new reusable workflow, create a
+skill: give it a `name` and a `description` that says both what it does and when to use it (add
 `disable-model-invocation: true` if it should stay user-only), and **register it in the
 `skills-guide` skill** (`.ruler/skills/skills-guide/SKILL.md`) under the group it belongs to — same
 when renaming or deleting a skill. If the user asks to create a *command*, ask whether they'd like a

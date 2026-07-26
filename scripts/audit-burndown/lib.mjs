@@ -47,6 +47,48 @@ export function implementationCommitMessage(title, round = 0) {
   return `${subject}\n\nAudit: ${title}`;
 }
 
+const auditCommitTitle = (message) => {
+  const lines = String(message ?? '').split(/\r?\n/);
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    if (lines[index].startsWith('Audit: ')) return lines[index].slice('Audit: '.length).trim();
+  }
+  return '';
+};
+
+// A clean `Audit:` commit is still provisional while its exact backlog heading
+// remains. The approved amend removes that heading, so git plus AUDIT.md can
+// distinguish interrupted gate/review rounds without disposable run state.
+export function incompleteAuditCommitPlan({ headSha, auditBody, commitAt }) {
+  if (!headSha || typeof commitAt !== 'function') return null;
+
+  const headTitle = auditCommitTitle(commitAt(headSha)?.message);
+  const pendingHeading = `### ${headTitle}`;
+  if (
+    !headTitle ||
+    !String(auditBody ?? '')
+      .split(/\r?\n/)
+      .includes(pendingHeading)
+  )
+    return null;
+
+  let sha = headSha;
+  let baseSha = headSha;
+  let count = 0;
+  const visited = new Set();
+
+  while (sha && !visited.has(sha)) {
+    visited.add(sha);
+    const commit = commitAt(sha);
+    if (auditCommitTitle(commit?.message) !== headTitle) break;
+    if (!commit?.parentSha) return null;
+    baseSha = commit.parentSha;
+    count += 1;
+    sha = commit.parentSha;
+  }
+
+  return count ? { title: headTitle, baseSha, count } : null;
+}
+
 export function protectedImplementationPaths(paths, auditPath = auditFile()) {
   return paths.filter(
     (path) =>
