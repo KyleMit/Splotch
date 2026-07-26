@@ -200,19 +200,25 @@ const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
 const pageCount = Object.keys(current.pages).length;
 
 if (mode === '--freeze') {
-  await mkdir(dirname(GOLDEN_PATH), { recursive: true });
-  await writeFile(GOLDEN_PATH, JSON.stringify(current, null, 2) + '\n');
-  const fails = Object.entries(current.pages).flatMap(([rel, p]) =>
-    GOLDEN_VERDICTS.filter((v) => get(p, v) === false).map((v) => `${rel}  ${v}`)
-  );
-  console.log(
-    `Froze ${pageCount} page(s) in ${elapsed}s -> ${relative(process.cwd(), GOLDEN_PATH)}`
-  );
-  if (fails.length) {
-    console.log(`\n${fails.length} known-failing verdict(s) frozen as the baseline:`);
-    for (const f of fails) console.log(`  ${f}`);
+  if (errors) {
+    console.log(
+      `Skipped freeze after scoring ${pageCount} page(s) in ${elapsed}s; ${errors} page(s) errored and ${relative(process.cwd(), GOLDEN_PATH)} was not changed.`
+    );
+    process.exitCode = 1;
+  } else {
+    await mkdir(dirname(GOLDEN_PATH), { recursive: true });
+    await writeFile(GOLDEN_PATH, JSON.stringify(current, null, 2) + '\n');
+    const fails = Object.entries(current.pages).flatMap(([rel, p]) =>
+      GOLDEN_VERDICTS.filter((v) => get(p, v) === false).map((v) => `${rel}  ${v}`)
+    );
+    console.log(
+      `Froze ${pageCount} page(s) in ${elapsed}s -> ${relative(process.cwd(), GOLDEN_PATH)}`
+    );
+    if (fails.length) {
+      console.log(`\n${fails.length} known-failing verdict(s) frozen as the baseline:`);
+      for (const f of fails) console.log(`  ${f}`);
+    }
   }
-  if (errors) process.exitCode = 1;
 } else {
   if (!existsSync(GOLDEN_PATH))
     fail(`no golden file at ${GOLDEN_PATH} — run gen:coloring-golden:freeze first`);
