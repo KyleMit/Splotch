@@ -598,6 +598,60 @@ but the narrative around them waits for an agent to drain the store.
 One more thing the run demonstrated, at no cost: the container restarted mid-session. The disk
 happened to survive. `PUSH_EVERY=1` exists because next time it might not.
 
+### An acceptance criterion the implementer cannot afford discards the whole fix (2026-07-26)
+
+Fifth cloud run. The canary deferred a finding as `implementation failed` whose fix was **complete
+and fully green** — type-check, eslint, 660 unit tests, and the named E2E spec all passed. Its
+post-mortem said so plainly: *"the full npm test run … required by the acceptance criteria was still
+executing when a response was required, so I could not confirm it green and have not committed —
+deferring so a partial/unverified state isn't recorded as done."*
+
+The implementer's judgement was **correct at every step**. It was told a command must pass, it could
+not confirm that command passed, and it refused to record unverified work as done. Nothing in the
+role prompts was violated; the loss came from the brief asking for something the architecture had
+already decided against.
+
+The chain, and why each link looked reasonable:
+
+1. `verifier.md` asked for *"the exact commands that must pass"* without saying **which**.
+   `npm test` is a defensible reading of "the tests must pass" for a model that has not been told
+   the driver's gate set.
+2. `implementer.md` lists *"the acceptance commands from the brief"* **first**, ahead of the gates
+   the driver actually runs — so a brief naming the full suite silently widens the required set.
+3. The driver gates on `test:unit` precisely *because* the full suite belongs to CI. So the criteria
+   demanded the one thing the design deliberately moved off the per-finding path.
+
+Fixed in `verifier.md` by naming the four real gates and forbidding `npm test` outright, with the
+consequence spelled out — an implementer that cannot finish a named command declines to commit, so
+the criterion throws away a finished fix and the finding is re-paid on a later run.
+
+**The general shape is new and worth keeping separate from the budget-cap lesson it resembles.** The
+existing rule is "a budget set too tight converts finished work into a deferral". This is the same
+outcome reached without any cap firing: *any* acceptance criterion the implementer cannot satisfy in
+its budget is a work-discard mechanism, and unlike a budget knob it is authored fresh by a model on
+every single finding. A knob is wrong once and you fix it once; a prompt that permits an
+unaffordable criterion is wrong at whatever rate the verifier happens to write one.
+
+Two smaller things from the same run, both recorded because they generalise:
+
+* **`pgrep` wait loops self-match and hang forever.** The natural way to wait out a clean stop —
+  `until ! pgrep -f 'audit-burndown/burndown.mjs'; do sleep 15; done` — never exits, because the
+  loop's own command line contains the pattern and it ends up waiting on itself. It presents as a
+  driver that will not die, indefinitely, long after the run has finished. This is the third
+  distinct way `-f`'s whole-command-line matching has bitten a supervising agent (after `pkill`
+  killing its own shell, and the orphan check matching the supervising CLI), and the first where the
+  failure is a silent hang rather than a wrong answer. The anchored
+  `'^node
+  scripts/audit-burndown/burndown.mjs'` form fixes all three; it is now in the skill for
+  the wait loop as well as the liveness check.
+* **The verifier invalidated a finding the run itself had obsoleted, correctly and in 25 seconds.**
+  An early P1 extracted the drawing shell's boot sequence into `lib/boot/`; a later P2 asked for
+  wake-lock lifecycle to be pulled out of `onMount`, which the P1 had already done. The verifier
+  matched HEAD against the finding's own proposed solution, said "it was fixed by an earlier
+  iteration of this burndown", and dropped it. Worth recording as a **verified negative**: at 450+
+  findings a broad refactor will obsolete later entries, and the drop path handles it without
+  supervision. Nobody needs to pre-prune the backlog for self-collision.
+
 ## Rejected, and why
 
 Proposals that were considered on their merits and turned down. Each is here so it does not get
@@ -787,3 +841,4 @@ the stale timing table for free.
 | 2026-07-25 | 6ec397a8 | PR comment no longer describes a superseded commit                        |
 | 2026-07-25 | —        | Cloud cutover: minted `--session-id`, no `gh`, push every finding         |
 | 2026-07-25 | f389dd39 | Delete backlog entries by title — the canary destroyed 3 findings in 5    |
+| 2026-07-26 | 049d5e35 | Stop the verifier naming `npm test` — it discarded a finished, green fix  |
