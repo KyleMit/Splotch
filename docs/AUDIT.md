@@ -9,33 +9,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P2][architecture] Wake-lock lifecycle (request/re-request/teardown) is inlined in `onMount` and should be a self-contained helper
-
-**File(s):** `web/src/routes/+page.svelte:137-154, 169-174` (app shell) — pinned at SHA f934d43
-
-#### Problem
-
-The screen wake-lock — a `WakeLockSentinel | null`, `requestWakeLock()`, a
-`pointerdown … {once:true}` acquirer, a `visibilitychange` re-acquirer, and their removals in the
-teardown — is a complete, reusable concern threaded through the middle of the omnibus `onMount`. It
-shares the block with unrelated context-menu blocking, fullscreen seeding, and PWA init, and its
-teardown lines (170-173) are physically separated from its setup. The `'screen'` sentinel string and
-the re-request-on-visible rule are buried.
-
-#### Proposed solution
-
-Extract `web/src/lib/boot/wakeLock.ts` exporting `installWakeLock(): () => void` that owns the
-sentinel, listeners, and re-request-on-visibility, and returns the teardown. The shell calls
-`const teardownWakeLock = installWakeLock()` and includes it in the cleanup return.
-
-#### Verification
-
-On a device/browser supporting the Wake Lock API, the lock is acquired on first pointerdown and
-re-acquired after tab-hide/show; navigating away removes both listeners. Unit-test the helper
-against a mocked `navigator.wakeLock`.
-
----
-
 ### [P2][maintainability] `hooks.server.ts` `handle` mixes CORS and security-header concerns and repeats the header-copy loop
 
 **File(s):** `web/src/hooks.server.ts:20-46, 57-68` — pinned at SHA f934d43
