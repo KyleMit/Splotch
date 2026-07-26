@@ -9,6 +9,7 @@
     failAiGeneration,
     closeAiResult,
   } from '$lib/state/aiGeneration.svelte';
+  import { AI_SAFETY_REFUSAL_MESSAGE, AI_TIMEOUT_MESSAGE } from '$lib/drawing/aiImage';
 
   // Sample artifacts stand in for a real generation: the child's drawing (shown
   // blurred behind the dial) and the finished "AI" image that's revealed. They
@@ -57,8 +58,8 @@
     if (!ui.aiResultOpen) runId = startAiGeneration(drawingInputUrl);
     failAiGeneration(runId, message, kind);
   }
-  const triggerSafety = () => fail("Let's try drawing something else!", 'safety');
-  const triggerTimeout = () => fail("That's taking too long — please try again.", 'retry');
+  const triggerSafety = () => fail(AI_SAFETY_REFUSAL_MESSAGE, 'safety');
+  const triggerTimeout = () => fail(AI_TIMEOUT_MESSAGE, 'retry');
   const triggerServerError = () => fail(undefined, 'generic');
 
   function reset() {

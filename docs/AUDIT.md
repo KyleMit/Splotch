@@ -7,34 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P3][maintainability] `ai-timer` re-hardcodes the AI failure-mode copy that lives in `aiImage.ts`, so the two can drift
-
-**File(s):** `web/src/routes/dev/ai-timer/+page.svelte:60-62` — pinned at SHA f934d43
-
-#### Problem
-
-```js
-const triggerSafety = () => fail("Let's try drawing something else!", 'safety');
-const triggerTimeout = () => fail("That's taking too long — please try again.", 'retry');
-```
-
-The comment promises these "mirror exactly what src/lib/drawing/aiImage.ts passes to
-failAiGeneration()," but the strings are copied by hand. If production copy changes, the harness
-silently previews stale text — defeating the harness's purpose of reviewing the real error UI.
-
-#### Proposed solution
-
-Export the canonical failure messages from `aiImage.ts` (or a shared `aiMessages.ts`) as named
-constants and import them in both the production flow and the harness, so the harness renders
-exactly the shipping copy.
-
-#### Verification
-
-Changing a message constant updates both the app and `/dev/ai-timer` with no second edit; grep shows
-the strings defined once.
-
----
-
 ### [P4][readability] The shell's two separate `onMount` blocks have no ordering rationale and could confuse teardown reasoning
 
 **File(s):** `web/src/routes/+page.svelte:80-104, 106-175` (app shell) — pinned at SHA f934d43
