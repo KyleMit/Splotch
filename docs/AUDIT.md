@@ -24,31 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P5][readability] Deferred-prompt bookkeeping is spread across the listener, `markInstalled`, and `promptInstall`
-
-**File(s):** `web/src/lib/state/install.svelte.ts:45,71-76,86,132-133,144-149` — pinned at SHA
-f934d43
-
-#### Problem
-
-`deferredPrompt` is set in the `beforeinstallprompt` listener (86), nulled in `markInstalled` (72),
-nulled again in `promptInstall` (133), and its absence re-derives `manualMode()` in three places
-(129,141,149). The one-shot lifecycle of the stashed event ("captured → consumed once → gone → fall
-back to manual") is real but reconstructing it requires reading all five sites; the "on spent
-prompt, drop `oneTap` → manual" fixup is copy-pasted three times.
-
-#### Proposed solution
-
-Add a single private helper `function consumeDeferredPrompt() { deferredPrompt = null; }` and
-`function fallBackToManualHint() { if (install.mode === 'oneTap') install.mode = manualMode(); }`,
-replacing the three inline `if (install.mode === 'oneTap') install.mode = manualMode()` repetitions.
-Centralizes the one-shot semantics.
-
-#### Verification
-
-`install.svelte.test.ts` `promptInstall` cases (accepted / declined / unavailable /
-cannot-replay-twice / throws / stale-oneTap) all pass unchanged.
-
 ## Source: Code audit — Coloring books
 
 ### [P1][duplication] Book id is re-typed as a string argument on every `page()` call, silently generating asset paths on mismatch
