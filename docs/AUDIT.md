@@ -9,36 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P4][maintainability] `scheduleReset` returns an id that no caller uses
-
-**File(s):** `web/src/lib/actions/dragToClear.ts:41-48` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-function scheduleReset(fn: () => void, delay: number) {
-  const id = setTimeout(...);
-  resetTimers.add(id);
-  return id;
-}
-```
-
-Every call site (`scheduleReset(...)` at lines 182, 217, 221, 229) ignores the return value — the
-whole point of `resetTimers` is that individual ids need not be tracked by callers. The `return id`
-implies a caller might `clearTimeout` a specific reset, which never happens, and invites someone to
-start doing so and bypass the set.
-
-#### Proposed solution
-
-Drop `return id` (make it `: void`). If a single reset ever needs individual cancellation, add that
-deliberately.
-
-#### Verification
-
-`npm run check` (no unused-value change breaks); `npm run test:unit -- dragToClear`.
-
----
-
 ### [P4][readability] `pinchZoom.onPointerUp` runs even when the gesture is disabled
 
 **File(s):** `web/src/lib/actions/pinchZoom.svelte.ts:77-84` — pinned at SHA f934d43
