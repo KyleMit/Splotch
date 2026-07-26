@@ -1,6 +1,7 @@
 import { releaseAllPointers } from '$lib/drawing/engine';
 import { stopDrawSound } from '$lib/audio/drawingSound';
 import { impactThreshold } from '$lib/haptics';
+import { capturePointer, releasePointer } from './pointerCapture';
 
 // Drag-to-clear gesture constants.
 export const ACCEPT_RADIUS_FACTOR = 0.4;
@@ -106,9 +107,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     holdTimer = setTimeout(o.onTutorialShow, HOLD_DURATION);
 
     activePointerId = e.pointerId;
-    try {
-      node.setPointerCapture(e.pointerId);
-    } catch {}
+    capturePointer(node, e.pointerId);
     startPointerX = clientX;
     startPointerY = clientY;
     clearReady = false;
@@ -193,9 +192,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       acceptZoneFrame = null;
     }
     activePointerId = null;
-    try {
-      node.releasePointerCapture(pointerId);
-    } catch {}
+    releasePointer(node, pointerId);
 
     o.acceptZoneEl.classList.remove('visible');
     o.acceptZoneEl.classList.remove('threshold-reached');

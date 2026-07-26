@@ -7,6 +7,7 @@
 // locked.
 
 import { createSpreadTracker, type Point } from './spreadTracker.svelte';
+import { capturePointer, releasePointer } from './pointerCapture';
 
 export type { Point };
 
@@ -193,9 +194,7 @@ export function pinchZoom(node: HTMLElement, getOptions: () => PinchZoomOptions)
     if (!getOptions().enabled) return;
     if (zoom.pointerCount === 0) rect = node.getBoundingClientRect();
     zoom.down(e.pointerId, local(e));
-    try {
-      node.setPointerCapture(e.pointerId);
-    } catch {}
+    capturePointer(node, e.pointerId);
     if (engaged()) e.preventDefault();
   }
 
@@ -212,9 +211,7 @@ export function pinchZoom(node: HTMLElement, getOptions: () => PinchZoomOptions)
 
   function onPointerUp(e: PointerEvent) {
     zoom.up(e.pointerId);
-    try {
-      node.releasePointerCapture(e.pointerId);
-    } catch {}
+    releasePointer(node, e.pointerId);
     apply(getOptions().target);
     if (zoom.pointerCount === 0) rect = null;
   }

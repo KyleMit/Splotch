@@ -1,4 +1,5 @@
 import { createSpreadTracker } from './spreadTracker.svelte';
+import { capturePointer, releasePointer } from './pointerCapture';
 
 export const MIN_TEXT_ZOOM = 1;
 export const MAX_TEXT_ZOOM = 3;
@@ -80,9 +81,7 @@ export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoom
     if (tracker.pointerCount === 2) {
       pinchedRecently = true;
       rebase();
-      try {
-        node.setPointerCapture(e.pointerId);
-      } catch {}
+      capturePointer(node, e.pointerId);
     }
   }
 
@@ -98,9 +97,7 @@ export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoom
 
   function onPointerUp(e: PointerEvent) {
     if (!tracker.up(e.pointerId)) return;
-    try {
-      node.releasePointerCapture(e.pointerId);
-    } catch {}
+    releasePointer(node, e.pointerId);
     if (tracker.pointerCount >= 2) rebase();
   }
 

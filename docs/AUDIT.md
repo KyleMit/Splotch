@@ -9,52 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P3][duplication] Extract a shared `capturePointer`/`releasePointer` wrapper for the repeated empty-catch capture calls
-
-**File(s):** `web/src/lib/actions/dragToClear.ts:79-81,176-178`;
-`web/src/lib/actions/pinchZoom.svelte.ts:60-62,79-81`;
-`web/src/lib/actions/pinchTextZoom.svelte.ts:90-93,110-112` — pinned at SHA f934d43
-
-#### Problem
-
-All three gesture actions guard pointer capture the same way, with a silent empty catch:
-
-```ts
-try { node.setPointerCapture(e.pointerId); } catch {}
-...
-try { node.releasePointerCapture(e.pointerId); } catch {}
-```
-
-Six copies of the same swallow-the-throw idiom. Empty `catch {}` blocks are also a code smell (they
-hide any unexpected error), and the reason capture can throw (a released/invalid pointer id) is
-undocumented at each site.
-
-#### Proposed solution
-
-Add `$lib/gestures/pointerCapture.ts`:
-
-```ts
-export function capturePointer(node: Element, id: number): void {
-  try {
-    node.setPointerCapture(id);
-  } catch {}
-}
-export function releasePointer(node: Element, id: number): void {
-  try {
-    node.releasePointerCapture(id);
-  } catch {}
-}
-```
-
-with a one-line comment on *why* it can throw, and call them from all three actions.
-
-#### Verification
-
-Actions behave identically. `npm run test:unit -- dragToClear pinch`; the pinch/drag tests stub
-`setPointerCapture`/`releasePointerCapture` so they still assert the calls.
-
----
-
 ### [P3][type-safety] Share one `Origin`/point type instead of redefining `{x,y}` per action
 
 **File(s):** `web/src/lib/actions/launchGuard.ts:41` (`Origin | null`) vs
