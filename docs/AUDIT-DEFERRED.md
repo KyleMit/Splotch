@@ -1741,3 +1741,84 @@ The rolled-back draft is kept at
 (1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p4-duplication-reload-side-effect-pair-refreshstate-idle-window-location.patch`.
+
+### [P1][duplication] Book id is re-typed as a string argument on every `page()` call, silently generating asset paths on mismatch
+
+**File(s):** `web/src/lib/state/books.ts:92-122` (`page()` factory) and `124-237` (`BOOKS`) — pinned
+at SHA f934d43
+
+#### Problem
+
+`page()` takes the book id as its first positional arg, so every entry repeats the enclosing book's
+`id` as a bare string:
+
+```ts
+{ id: 'farm', name: 'Farm', ... pages: [
+    page('farm', 'cat', 'Cat'),
+    page('farm', 'cow', 'Cow'),   // 'farm' repeated 6× per book, 48× total
+```
+
+The book id lives in two independent places (`Book.id` and each `page(book, …)` call) that must
+agree by hand. `page('farm', …)`, `id`, `name`, and the exceptions object are all
+strings/loosely-typed positionals, so a copy-paste slip (`page('farm', …)` pasted into the
+`dinosaur` block) compiles cleanly and silently emits `/coloring/farm/...` paths under the Dinosaurs
+book. Nothing in the type system ties a page to its book.
+
+#### Proposed solution
+
+Bind the book id once. Give `page()` a curried/closure form per book, e.g. a
+`defineBook(id, name, platforms, pages: (p) => …)` builder where the inner `page(id, name, opts)`
+closes over the book id, or a `book('farm','Farm', ['cat','cow',…])` helper that maps ids→pages.
+Then `Book.id` is the single source and `page` can't reference a foreign book. Signature sketch:
+
+```ts
+function defineBook(
+  id: string,
+  name: string,
+  platforms: BookPlatform[],
+  pages: Array<[id: string, name: string, opts?: PageExceptions]>,
+): Book;
+```
+
+#### Verification
+
+`npm run test:unit -- books` still green; add a test asserting every `page.images.portrait` in a
+book starts with `/coloring/${book.id}/`. Grep confirms the book id literal now appears once per
+book, not per page.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* Update `tools/asset-gen/docs/pipeline.md:334-337`: it still instructs contributors to call the
+  obsolete three-argument `page('nature', 'ant', 'Ant', ...)` signature, which no longer compiles
+  now that the book ID is bound by `book()` and the inner page helper accepts only the page ID,
+  name, and exceptions.
+* `tools/asset-gen/legacy/night-fills.md` still describes its ship/wire instructions as accurate but
+  tells users to call `page('farm', 'cat', 'Cat')`; update that live catalog-wiring guidance to the
+  new book-bound `page('cat', 'Cat')` signature.
+* `tools/asset-gen/legacy/night-fills.md:22` still presents the removed three-argument
+  `page('nature', 'ant', 'Ant', …)` signature as current ship/wire guidance; update it to the
+  book-bound `page('ant', 'Ant', …)` form.
+
+#### What was tried
+
+1. Bound each coloring-page factory to its enclosing book ID and derived the cover from that same
+   ID, eliminating cross-book path mismatches while preserving catalog values. Added a table-driven
+   invariant covering every generated image variant for every page.
+2. Updated the asset-pipeline runbook to describe the book-bound page helper and use its current
+   two-argument form, with page exceptions correctly shown as the optional third argument.
+3. Updated the legacy night-fill shipping guidance to identify the page helper as book-bound and use
+   `page('cat', 'Cat')`, matching the current catalog API.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p1-duplication-book-id-is-re-typed-as-a-string-argument-on-every-page-ca.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p1-duplication-book-id-is-re-typed-as-a-string-argument-on-every-page-ca.patch`.

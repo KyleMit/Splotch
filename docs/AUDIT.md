@@ -26,52 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P1][duplication] Book id is re-typed as a string argument on every `page()` call, silently generating asset paths on mismatch
-
-**File(s):** `web/src/lib/state/books.ts:92-122` (`page()` factory) and `124-237` (`BOOKS`) — pinned
-at SHA f934d43
-
-#### Problem
-
-`page()` takes the book id as its first positional arg, so every entry repeats the enclosing book's
-`id` as a bare string:
-
-```ts
-{ id: 'farm', name: 'Farm', ... pages: [
-    page('farm', 'cat', 'Cat'),
-    page('farm', 'cow', 'Cow'),   // 'farm' repeated 6× per book, 48× total
-```
-
-The book id lives in two independent places (`Book.id` and each `page(book, …)` call) that must
-agree by hand. `page('farm', …)`, `id`, `name`, and the exceptions object are all
-strings/loosely-typed positionals, so a copy-paste slip (`page('farm', …)` pasted into the
-`dinosaur` block) compiles cleanly and silently emits `/coloring/farm/...` paths under the Dinosaurs
-book. Nothing in the type system ties a page to its book.
-
-#### Proposed solution
-
-Bind the book id once. Give `page()` a curried/closure form per book, e.g. a
-`defineBook(id, name, platforms, pages: (p) => …)` builder where the inner `page(id, name, opts)`
-closes over the book id, or a `book('farm','Farm', ['cat','cow',…])` helper that maps ids→pages.
-Then `Book.id` is the single source and `page` can't reference a foreign book. Signature sketch:
-
-```ts
-function defineBook(
-  id: string,
-  name: string,
-  platforms: BookPlatform[],
-  pages: Array<[id: string, name: string, opts?: PageExceptions]>,
-): Book;
-```
-
-#### Verification
-
-`npm run test:unit -- books` still green; add a test asserting every `page.images.portrait` in a
-book starts with `/coloring/${book.id}/`. Grep confirms the book id literal now appears once per
-book, not per page.
-
----
-
 ### [P1][architecture] `coloringBookState` stores four URLs that are pure functions of `(page, orientation)`, kept in sync by a manual re-invocation effect
 
 **File(s):** `web/src/lib/state/coloringBook.svelte.ts:15-47` and
