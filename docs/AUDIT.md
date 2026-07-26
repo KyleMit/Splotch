@@ -32,30 +32,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P2][complexity] `detectInventedShapes` is a 155-line function whose five numbered comments are begging to be functions
-
-**File(s):** `tools/asset-gen/lib/invented-shapes.mjs:40-195` — pinned at SHA f934d43
-
-#### Problem
-
-The body is literally sectioned `// 1. flood…`, `// 2. dilated source-ink mask`,
-`// 3. median background color`, `// 4. foreign pixels`, `// 5. connected components + anchoring`.
-Step 5 alone (129-179) is a 50-line inline connected-components scan with per-blob bbox, color sums,
-and border/anchor accounting. Numbered-comment steps in a long function are the canonical
-extract-into-named-function signal.
-
-#### Proposed solution
-
-Extract `floodBackground` (shared, see the flood-fill finding), `foreignPixels(t, cand, med, DEV_T)`
-→ `Uint8Array`, and `labelBlobs(dev, nearLine, t, w, h)` → `blobs[]`. The top-level function becomes
-the five one-line calls plus the `flagged`/`washes` partition (180-183).
-
-#### Verification
-
-`tests/invented-shapes.test.mjs` passes; `flagged`/`washes`/`blobs` arrays match on fixtures.
-
----
-
 ### [P2][duplication] `STRONG_LIGHT_SIDE = 180` is declared in two eye modules instead of imported
 
 **File(s):** `tools/asset-gen/lib/eye-fill.mjs:326` and `tools/asset-gen/lib/composite-eye.mjs:47` —

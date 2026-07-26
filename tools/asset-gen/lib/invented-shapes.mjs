@@ -37,29 +37,14 @@ export const ANCHOR_MAX = 0.05; // blob FLOATS if <5% of its pixels touch the li
 export const MAX_BLOB = 8000;
 export const MIN_BG_FRAC = 0.04; // skip pages with almost no open background (as scoreNightness)
 
-export async function detectInventedShapes(fillBuf, sourceBuf) {
-  const s = await sharp(sourceBuf)
-    .resize(W, null, { fit: 'inside' })
-    .grayscale()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  const t = await sharp(fillBuf)
-    .resize(W, null, { fit: 'inside' })
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  const w = s.info.width;
-  const h = s.info.height;
-  const n = w * h;
-
-  // 1. flood the open background from the border through source-light pixels
-  const bg = new Uint8Array(n);
+function floodBackground(source, w, h, lightThreshold) {
+  const background = new Uint8Array(w * h);
   const stack = [];
   const push = (x, y) => {
     if (x < 0 || x >= w || y < 0 || y >= h) return;
     const i = y * w + x;
-    if (!bg[i] && s.data[i] > SRC_LIGHT) {
-      bg[i] = 1;
+    if (!background[i] && source[i] > lightThreshold) {
+      background[i] = 1;
       stack.push(i);
     }
   };
@@ -80,50 +65,38 @@ export async function detectInventedShapes(fillBuf, sourceBuf) {
     push(x, y + 1);
     push(x, y - 1);
   }
+  return background;
+}
 
-  // 2. dilated source-ink mask (lines + solid chalk whites)
-  const ink = new Uint8Array(n);
-  for (let i = 0; i < n; i++) if (s.data[i] < SRC_DARK) ink[i] = 1;
-  const nearLine = dilateMask(ink, w, h, LINE_DILATE);
-
-  // candidate pixels: open background, clear of any source ink
-  const cand = new Uint8Array(n);
-  let candCount = 0;
-  for (let i = 0; i < n; i++) {
-    if (bg[i] && !nearLine[i]) {
-      cand[i] = 1;
-      candCount++;
-    }
-  }
-  if (candCount < n * MIN_BG_FRAC)
-    return { skipped: true, bgFrac: candCount / n, blobs: [], flagged: [], washes: [] };
-
-  // 3. median background color over candidates
+function medianCandidateColor(fill, candidates) {
   const rs = [],
     gs = [],
     bs = [];
-  for (let i = 0; i < n; i++) {
-    if (!cand[i]) continue;
-    rs.push(t.data[i * 3]);
-    gs.push(t.data[i * 3 + 1]);
-    bs.push(t.data[i * 3 + 2]);
+  for (let i = 0; i < candidates.length; i++) {
+    if (!candidates[i]) continue;
+    rs.push(fill[i * 3]);
+    gs.push(fill[i * 3 + 1]);
+    bs.push(fill[i * 3 + 2]);
   }
-  const med = (a) => (a.sort((x, y) => x - y), a[a.length >> 1]);
-  const mr = med(rs),
-    mg = med(gs),
-    mb = med(bs);
+  const median = (values) => (values.sort((a, b) => a - b), values[values.length >> 1]);
+  return [median(rs), median(gs), median(bs)];
+}
 
-  // 4. foreign pixels: candidates whose color sits far from the bg median
-  const dev = new Uint8Array(n);
-  for (let i = 0; i < n; i++) {
-    if (!cand[i]) continue;
-    const dr = t.data[i * 3] - mr;
-    const dg = t.data[i * 3 + 1] - mg;
-    const db = t.data[i * 3 + 2] - mb;
+function foreignPixels(fill, candidates, medianColor) {
+  const dev = new Uint8Array(candidates.length);
+  const [mr, mg, mb] = medianColor;
+  for (let i = 0; i < candidates.length; i++) {
+    if (!candidates[i]) continue;
+    const dr = fill[i * 3] - mr;
+    const dg = fill[i * 3 + 1] - mg;
+    const db = fill[i * 3 + 2] - mb;
     if (Math.sqrt(dr * dr + dg * dg + db * db) > DEV_T) dev[i] = 1;
   }
+  return dev;
+}
 
-  // 5. connected components (4-conn) + anchoring stats
+function labelBlobs(dev, nearLine, fill, w, h) {
+  const n = w * h;
   const seen = new Uint8Array(n);
   const blobs = [];
   for (let start = 0; start < n; start++) {
@@ -145,9 +118,9 @@ export async function detectInventedShapes(fillBuf, sourceBuf) {
       const x = i % w;
       const y = (i / w) | 0;
       area++;
-      sr += t.data[i * 3];
-      sg += t.data[i * 3 + 1];
-      sb += t.data[i * 3 + 2];
+      sr += fill[i * 3];
+      sg += fill[i * 3 + 1];
+      sb += fill[i * 3 + 2];
       if (x < minX) minX = x;
       if (x > maxX) maxX = x;
       if (y < minY) minY = y;
@@ -177,6 +150,52 @@ export async function detectInventedShapes(fillBuf, sourceBuf) {
       color: [Math.round(sr / area), Math.round(sg / area), Math.round(sb / area)],
     });
   }
+  return blobs;
+}
+
+export async function detectInventedShapes(fillBuf, sourceBuf) {
+  const s = await sharp(sourceBuf)
+    .resize(W, null, { fit: 'inside' })
+    .grayscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const t = await sharp(fillBuf)
+    .resize(W, null, { fit: 'inside' })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const w = s.info.width;
+  const h = s.info.height;
+  const n = w * h;
+
+  // 1. flood the open background from the border through source-light pixels
+  const bg = floodBackground(s.data, w, h, SRC_LIGHT);
+
+  // 2. dilated source-ink mask (lines + solid chalk whites)
+  const ink = new Uint8Array(n);
+  for (let i = 0; i < n; i++) if (s.data[i] < SRC_DARK) ink[i] = 1;
+  const nearLine = dilateMask(ink, w, h, LINE_DILATE);
+
+  // candidate pixels: open background, clear of any source ink
+  const cand = new Uint8Array(n);
+  let candCount = 0;
+  for (let i = 0; i < n; i++) {
+    if (bg[i] && !nearLine[i]) {
+      cand[i] = 1;
+      candCount++;
+    }
+  }
+  if (candCount < n * MIN_BG_FRAC)
+    return { skipped: true, bgFrac: candCount / n, blobs: [], flagged: [], washes: [] };
+
+  // 3. median background color over candidates
+  const [mr, mg, mb] = medianCandidateColor(t.data, cand);
+
+  // 4. foreign pixels: candidates whose color sits far from the bg median
+  const dev = foreignPixels(t.data, cand, [mr, mg, mb]);
+
+  // 5. connected components (4-conn) + anchoring stats
+  const blobs = labelBlobs(dev, nearLine, t.data, w, h);
   const flagged = blobs.filter(
     (b) => b.area >= MIN_BLOB && b.area <= MAX_BLOB && b.anchorFrac < ANCHOR_MAX
   );
