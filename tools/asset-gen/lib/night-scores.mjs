@@ -18,7 +18,7 @@ import { OUTLINE_INK_CUTOFF } from './outline-match.mjs';
 // dilate that mask to absorb registration slack + the fill's glow, then count
 // fill white/low-chroma pixels that fall outside it. Normalized by the source
 // outline mass so pages of different line density compare on one scale.
-const DRIFT_W = 512; // working width for the comparison
+const SOURCE_SCORE_W = 512; // working width for source-based comparisons
 const DRIFT_DILATE = 6; // px of slack around each source line (registration + glow)
 const DRIFT_THIN = 3; // white strokes up to ~2*this px wide are outline-like, not fills
 const DRIFT_LUMA_WHITE = 185; // fill pixel this bright...
@@ -39,6 +39,14 @@ const NIGHT_W = 384;
 const NIGHT_SRC_LIGHT = 170; // source pixel brighter than this = background candidate
 export const NIGHT_BG_LUMA_MAX_DEFAULT = 60; // median background luma above this = too bright / daytime (3.1-migration bar; shipped catalog is 18-48)
 const NIGHT_MIN_BG_FRAC = 0.04; // skip the check if there's barely any open background
+
+export async function prepareSourceScore(sourceBuf) {
+  return sharp(sourceBuf)
+    .resize(SOURCE_SCORE_W, null, { fit: 'inside' })
+    .grayscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+}
 
 export async function scoreNightness(fillBuf, sourceBuf) {
   const s = await sharp(sourceBuf)
@@ -95,14 +103,10 @@ export async function scoreNightness(fillBuf, sourceBuf) {
   return { bgLuma: lumas[lumas.length >> 1], bgFrac: lumas.length / n };
 }
 
-export async function scoreDrift(fillBuf, sourceBuf) {
-  const s = await sharp(sourceBuf)
-    .resize(DRIFT_W, null, { fit: 'inside' })
-    .grayscale()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+export async function scoreDrift(fillBuf, sourceBuf, preparedSource) {
+  const s = preparedSource ?? (await prepareSourceScore(sourceBuf));
   const t = await sharp(fillBuf)
-    .resize(DRIFT_W, null, { fit: 'inside' })
+    .resize(SOURCE_SCORE_W, null, { fit: 'inside' })
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -156,17 +160,12 @@ export async function scoreDrift(fillBuf, sourceBuf) {
 // (a mostly-white dog with a few dark contours) is the hard case — it can land near
 // the boundary, so a flagged page may need a targeted low-temp regen to come back
 // cleanly white; eyeball borderline pages in the coloring-book proof sheet.
-const LINE_W = 512;
 export const LINE_WHITE_MIN_DEFAULT = 150; // median outline brightness below this = dark outlines
 
-export async function scoreLineColor(fillBuf, sourceBuf) {
-  const s = await sharp(sourceBuf)
-    .resize(LINE_W, null, { fit: 'inside' })
-    .grayscale()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+export async function scoreLineColor(fillBuf, sourceBuf, preparedSource) {
+  const s = preparedSource ?? (await prepareSourceScore(sourceBuf));
   const t = await sharp(fillBuf)
-    .resize(LINE_W, null, { fit: 'inside' })
+    .resize(SOURCE_SCORE_W, null, { fit: 'inside' })
     .grayscale()
     .raw()
     .toBuffer({ resolveWithObject: true });
