@@ -30,36 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P2][duplication] Three hand-rolled arg→target resolvers duplicate `resolveOutlineTargets`
-
-**File(s):** `audit-invented-shapes.mjs:84-105` (`targetsUnder`/`resolveArg`);
-`audit-night-halo.mjs:70-86` (`pagesUnder`/`resolveArg`); `punch-fill-outlines.mjs:28-46`
-(`rawsUnder`/`resolveArg`) — pinned at SHA f934d43
-
-#### Problem
-
-`lib/outline-targets.mjs` exists precisely to turn `["nature", "nature/ant-wide"]` into resolved
-paths, and the five generators plus two audits use it. But three scripts that walk `fill-src/**` or
-`**/*.night.webp` instead each re-implement the identical "arg is a category dir, or a page, else
-fail" logic with their own glob + `existsSync`/`statSync().isDirectory()` branch. They diverge in
-error wording and in how a themed page (`space/ship-tall.night`) is handled. A newcomer cannot tell
-these three resolvers are meant to behave like the shared one.
-
-#### Proposed solution
-
-Generalize `resolveOutlineTargets` to accept a `root`, a `suffixPattern` (e.g.
-`**/*.{light,night}.raw.webp`, `**/*.night.webp`, `**/*.raw.webp`), and a `stripSuffix`, or add a
-sibling `resolveAssetTargets({ root, pattern, toKey })` in `lib/outline-targets.mjs`. Route all
-three scripts through it.
-
-#### Verification
-
-`npm run gen:coloring-punch -- nature/ant-wide`, `gen:coloring-fills:audit:halo -- vehicles`, and
-`gen:coloring-fills:audit:shapes -- space/ship-tall.night` produce the same target lists as today;
-delete the three local resolvers.
-
----
-
 ### [P2][duplication] Extract the `pageRel(path)` derivation repeated in seven files
 
 **File(s):** `relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '').replace(/\\/g, '/')` (or
