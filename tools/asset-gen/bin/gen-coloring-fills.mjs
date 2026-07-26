@@ -51,9 +51,8 @@ const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 90;
 
 // Generate one flat-colored version of a coloring page. Returns raw image bytes
-// + mime type, or throws with the refusal/empty reason. Kept free of file/CLI
-// concerns so it can be reused (batch, samples, or eventually in-app).
-export async function generateColoredPage(ai, { imageBytes, mimeType, temperature }) {
+// + mime type, or throws with the refusal/empty reason.
+async function generateColoredPage(ai, { imageBytes, mimeType, temperature }) {
   const response = await ai.models.generateContent({
     model: MODEL,
     contents: [

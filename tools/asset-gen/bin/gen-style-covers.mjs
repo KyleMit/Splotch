@@ -25,9 +25,8 @@ const THUMB_SIZE = 448;
 const WEBP_QUALITY = 75;
 
 // Generate one styled render of a drawing. Returns raw image bytes + mime type,
-// or throws with the refusal/empty reason. Kept free of file/CLI concerns so it
-// can migrate toward in-app use later.
-export async function generateStyledImage(ai, { imageBytes, mimeType, style, temperature }) {
+// or throws with the refusal/empty reason.
+async function generateStyledImage(ai, { imageBytes, mimeType, style, temperature }) {
   const prompt = buildPromptForStyle(style, STYLE_SUFFIXES);
   const response = await ai.models.generateContent({
     model: MODEL,

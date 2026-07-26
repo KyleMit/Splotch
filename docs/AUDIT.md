@@ -30,33 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P4][dead-code] `export` on generator functions that are never imported
-
-**File(s):** `gen-coloring-fills.mjs:75` (`export async function generateColoredPage`);
-`gen-style-covers.mjs:29` (`export async function generateStyledImage`) — pinned at SHA f934d43
-
-#### Problem
-
-Both are `export`ed with a comment ("Kept free of file/CLI concerns so it can be reused (batch,
-samples, or eventually in-app)"), but a repo-wide grep shows each is only ever called within its own
-file (fills:187, covers:86) — no importer exists. The export is aspirational dead surface that
-implies a shared API that isn't there, and `generateDarkPage`/`drawChalk`/`editLineArt` in sibling
-files are (correctly) not exported, so the pattern is inconsistent anyway.
-
-#### Proposed solution
-
-Drop the `export` keyword (make them file-local) — or, better, subsume them into the
-`lib/gemini.mjs` `generateImage` from finding 1, which is the actual reuse point the comments
-anticipate.
-
-#### Verification
-
-`grep -rn "import.*generateColoredPage\|import.*generateStyledImage" .` (excluding
-`ideas-exploration/`) returns nothing; removing the export doesn't break `node --check` or the
-scripts.
-
----
-
 ### [P4][duplication] Working-resolution and threshold magic numbers scattered across pixel scans
 
 **File(s):** `gen-coloring-fills.mjs:102` (`WHITE_LEVEL = 248`) & `:104` (`resize(360, 360)`);
