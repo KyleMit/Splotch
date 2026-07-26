@@ -22,38 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P3][readability] `readString`'s generic return type `string | T` is needlessly clever for a two-shape API
-
-**File(s):** `web/src/lib/storage.ts:114-121` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-export function readString<T extends string | null>(key: string, fallback: T): string | T;
-```
-
-The only two real uses are "fallback is a string" (→ `string`) and "fallback is null" (→
-`string | null`), yet the signature encodes this with a generic constraint plus a `string | T` union
-that reads awkwardly and is easy to get subtly wrong when editing. It's more machinery than the two
-cases warrant.
-
-#### Proposed solution
-
-Two overloads make intent explicit:
-
-```ts
-export function readString(key: string, fallback: string): string;
-export function readString(key: string, fallback: null): string | null;
-export function readString(key: string, fallback: string | null): string | null { … }
-```
-
-#### Verification
-
-`npm run check`; the existing callers (`settings.svelte.ts:159`, `tool.svelte.ts:48`) type-check
-with no change.
-
----
-
 ### [P4][error-handling] `readBool` honors the fallback only for a *missing* key, not a *corrupt* value — inconsistent with `readInt`
 
 **File(s):** `web/src/lib/storage.ts:96-104` — pinned at SHA f934d43

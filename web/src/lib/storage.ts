@@ -112,7 +112,12 @@ export function writeBool(key: StorageKey, value: boolean) {
   mirror(key, str);
 }
 
-export function readString<T extends string | null>(key: StorageKey, fallback: T): string | T {
+export function readString(key: StorageKey, fallback: string): string;
+export function readString(key: StorageKey, fallback: null): string | null;
+export function readString(
+  key: StorageKey,
+  fallback: string | null
+): string | null {
   if (!browser) return fallback;
   return safeRead(() => {
     const raw = localStorage.getItem(key);
