@@ -26,43 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P2][design-tokens] Spacing and font sizes are raw px while colors/radii/durations use tokens
-
-**File(s):** `web/src/lib/components/ColoringBook.svelte:190,194-198,206-228,254-269,341-372` —
-pinned at SHA f934d43
-
-#### Problem
-
-The stylesheet correctly tokenizes color (`var(--surface-2)`, `var(--brand)`), radius
-(`var(--radius-md)`), and motion (`var(--duration-*)`), but hardcodes every spacing and type value
-even though `--space-1…8` and `--font-size-xs…3xl` exist:
-
-```ts
-.coloring-book-content { padding: 32px; }
-.coloring-book-content h2 { margin: 0 0 20px 0; font-size: 24px; }
-.coloring-book-header { gap: 12px; margin-bottom: 20px; }
-.coloring-back-button { width: 36px; height: 36px; padding: 8px; }
-.coloring-grid { gap: 12px; }
-```
-
-`--font-size-md` is used for the tile label (line 369), proving the tokens are in scope — so the raw
-`font-size: 24px` on the h2 and the 8/12/20/32px spacing are inconsistent with the design system the
-same file otherwise follows.
-
-#### Proposed solution
-
-Map each raw value to the nearest `--space-*` / `--font-size-*` token (e.g.
-`padding: var(--space-8)` for 32px, `font-size: var(--font-size-2xl)` for the h2,
-`gap: var(--space-3)` for 12px). Where an exact token doesn't exist, that's a signal to reconcile
-with the design skill's scale rather than invent a px value.
-
-#### Verification
-
-`/dev/design` styleguide + visual diff of the picker before/after; values should be visually
-unchanged if tokens are chosen to match.
-
----
-
 ### [P3][dead-code] `PLATFORMS` is exported and re-exported but never consumed; the catalog uses raw string literals instead
 
 **File(s):** `web/src/lib/state/books.ts:76`, `124-237`;

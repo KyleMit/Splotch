@@ -1,0 +1,91 @@
+diff --git a/web/src/lib/components/ColoringBook.svelte b/web/src/lib/components/ColoringBook.svelte
+index 6c27590f..73fce991 100644
+--- a/web/src/lib/components/ColoringBook.svelte
++++ b/web/src/lib/components/ColoringBook.svelte
+@@ -187,12 +187,12 @@
+   }
+ 
+   .coloring-book-content {
+-    padding: 32px;
++    padding: var(--space-7);
+     position: relative;
+   }
+ 
+   .coloring-book-content h2 {
+-    margin: 0 0 20px 0;
++    margin: 0 0 var(--space-5) 0;
+     font-size: 24px;
+     color: var(--text-strong);
+     font-weight: 600;
+@@ -206,8 +206,8 @@
+   .coloring-book-header {
+     display: flex;
+     align-items: center;
+-    gap: 12px;
+-    margin-bottom: 20px;
++    gap: var(--space-3);
++    margin-bottom: var(--space-5);
+   }
+ 
+   .coloring-book-header h2 {
+@@ -224,7 +224,7 @@
+     display: flex;
+     align-items: center;
+     justify-content: center;
+-    padding: 8px;
++    padding: var(--space-2);
+     transition: background var(--duration-base) ease;
+   }
+ 
+@@ -253,7 +253,7 @@
+ 
+   .coloring-grid {
+     display: grid;
+-    gap: 12px;
++    gap: var(--space-3);
+   }
+ 
+   .coloring-books-grid {
+@@ -310,7 +310,7 @@
+     width: 100%;
+     height: 100%;
+     object-fit: contain;
+-    padding: 8px;
++    padding: var(--space-2);
+     pointer-events: none;
+     mix-blend-mode: var(--lineart-blend);
+     filter: var(--lineart-filter);
+@@ -321,13 +321,13 @@
+   :global(.coloring-remove-icon) {
+     width: 100%;
+     height: 75%;
+-    padding: 8px;
++    padding: var(--space-2);
+     pointer-events: none;
+     mix-blend-mode: var(--lineart-blend);
+   }
+ 
+   .coloring-book-tile img {
+-    padding: 8px 8px 28px 8px;
++    padding: var(--space-2) var(--space-2) 28px var(--space-2);
+   }
+ 
+   .coloring-pages-grid .coloring-tile {
+@@ -340,7 +340,7 @@
+ 
+   @media (max-width: 520px) {
+     .coloring-book-content {
+-      padding: 24px 18px;
++      padding: var(--space-6) 18px;
+     }
+ 
+     .coloring-books-grid {
+@@ -361,7 +361,7 @@
+     left: 0;
+     right: 0;
+     bottom: 0;
+-    padding: 6px 8px;
++    padding: 6px var(--space-2);
+     /* rgba fallback precedes the color-mix (docs/COMPATIBILITY.md); both follow
+        the theme so the caption sits on the tile's own paper tone. */
+     background: rgba(255, 255, 255, 0.92);
