@@ -1,4 +1,4 @@
-import { relativeLuminance } from '../colorRing';
+import { perceivedBrightness } from '../colorRing';
 
 // Display order, top-to-bottom (landscape) / left-to-right (portrait). The three
 // `bonus` colors are extras that only appear on a tall landscape (see the trim
@@ -105,5 +105,5 @@ export function isWhite(hex: string): boolean {
 const DARK_INK_LUMINANCE_MAX = 0.15;
 
 export function isDarkInk(hex: string): boolean {
-  return relativeLuminance(hex) < DARK_INK_LUMINANCE_MAX;
+  return perceivedBrightness(hex) < DARK_INK_LUMINANCE_MAX;
 }

@@ -22,32 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P2][naming] `relativeLuminance` computes perceived brightness (BT.601 luma), not relative luminance
-
-**File(s):** `web/src/lib/colorRing.ts:1-14` — pinned at SHA f934d43
-
-#### Problem
-
-The function is named `relativeLuminance` but its own comment says "Perceived brightness … ITU-R
-BT.601 weights," and it applies `0.299/0.587/0.114` directly to raw 8-bit channels with no sRGB
-linearization. WCAG *relative luminance* is a different quantity (BT.709 weights
-`0.2126/0.7152/0.0722` over gamma-expanded channels). The name promises a standard metric the code
-doesn't implement; a future contributor reaching for "relative luminance" for a contrast-ratio calc
-will get wrong numbers. It's imported by `colors.svelte.ts` (`isDarkInk`) too, so the misnomer
-propagates.
-
-#### Proposed solution
-
-Rename to `perceivedBrightness` (or `luma601`) and update the three importers (`isLightColor`,
-`getRingColor`, `colors.svelte.ts` `isDarkInk`). Keep the comment. This is a mechanical rename with
-clear grep coverage.
-
-#### Verification
-
-`rg 'relativeLuminance'` returns zero after rename; `npm run check` and the unit suites pass.
-
----
-
 ### [P2][maintainability] Special-case swatch colors are magic string literals in the picker markup
 
 **File(s):** `web/src/lib/components/ColorPicker.svelte:155-157` — pinned at SHA f934d43

@@ -14,7 +14,7 @@ function hexToRgb(color: string): { r: number; g: number; b: number } {
 
 // Perceived brightness of a hex color on a 0–1 scale (ITU-R BT.601 weights).
 // Accepts `#rgb`, `#rrggbb`, or the same without the leading `#`.
-export function relativeLuminance(color: string): number {
+export function perceivedBrightness(color: string): number {
   const { r, g, b } = hexToRgb(color);
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 }
@@ -22,7 +22,7 @@ export function relativeLuminance(color: string): number {
 // Whether dark foreground content (text/icons) reads better than light on top
 // of this color. Used to pick a contrasting status-bar icon style.
 export function isLightColor(color: string): boolean {
-  return relativeLuminance(color) >= 0.5;
+  return perceivedBrightness(color) >= 0.5;
 }
 
 const DARK_SWATCH_LUMINANCE = 0.2;
@@ -37,7 +37,7 @@ export function getRingColor(color: string): string {
   const { r, g, b } = hexToRgb(color);
 
   const shift =
-    relativeLuminance(color) < DARK_SWATCH_LUMINANCE
+    perceivedBrightness(color) < DARK_SWATCH_LUMINANCE
       ? (v: number) => Math.min(255, Math.round(v + LIGHTEN_STEP))
       : (v: number) => Math.max(0, Math.round(v * DARKEN_FACTOR));
 
