@@ -24,33 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P3][naming] `refreshState` machine (`idle`/`activating`/`deferred`) is under-documented and the states aren't self-describing
-
-**File(s):** `web/src/lib/pwa/updates.ts:35,162-169,176-210` — pinned at SHA f934d43
-
-#### Problem
-
-The core update lifecycle is a 3-state variable named `refreshState` with values
-`'idle' | 'activating' | 'deferred'`. The actual SW lifecycle (waiting → SKIP_WAITING posted →
-`controllerchange` → reload, with a "reload owed but ink present" branch) maps onto these names
-non-obviously: `'deferred'` means "controllerchange already happened but a reload is owed until the
-canvas next goes empty," which no reader would infer from the name. The transitions are scattered
-across the top-of-function guard and the nested closure.
-
-#### Proposed solution
-
-Rename to something intent-revealing (`updateReload: 'none' | 'activating' | 'owed'`) and add a
-short state-transition comment block at the declaration enumerating the four transitions.
-Alternatively model it as a tiny typed transition table. No behavior change — this is legibility of
-the central state machine.
-
-#### Verification
-
-`updates.test.ts` (which references states only through behavior) still passes;
-`resetUpdatesForTests` updated to the new name.
-
----
-
 ### [P3][maintainability] Unexplained `100` ms magic delay and un-removed `statechange` listener in the installing branch
 
 **File(s):** `web/src/lib/pwa/updates.ts:217-225` — pinned at SHA f934d43

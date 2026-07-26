@@ -167,8 +167,8 @@ describe('checkVersionMismatch', () => {
 
 describe('checkForUpdates — canvas-empty guard', () => {
   beforeEach(() => {
-    // refreshState is a module singleton; reset it so a leftover 'activating' or
-    // 'deferred' from a prior test can't couple these cases to execution order.
+    // updateReload is a module singleton; reset it so a leftover 'activating' or
+    // 'owed' from a prior test can't couple these cases to execution order.
     resetUpdatesForTests();
     canvasState.canvasEmpty = true;
     Object.defineProperty(window, 'location', {
@@ -282,7 +282,7 @@ describe('checkForUpdates — canvas-empty guard', () => {
       await checkForUpdates();
       expect(worker.postMessage).toHaveBeenCalledTimes(1);
 
-      // After the grace period the lifecycle releases back to idle...
+      // After the grace period the lifecycle releases back to none...
       await vi.advanceTimersByTimeAsync(ACTIVATION_RECOVERY_MS);
 
       // ...so the next check re-attempts activation instead of no-oping forever.

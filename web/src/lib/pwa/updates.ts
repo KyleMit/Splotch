@@ -32,7 +32,12 @@ import { canvasState } from '$lib/state/canvas.svelte';
 import { scheduleIdle } from '$lib/idle';
 
 let initialized = false;
-let refreshState: 'idle' | 'activating' | 'deferred' = 'idle';
+// none → activating after activateWaitingSW posts SKIP_WAITING.
+// activating → none on failure/timeout, or before reload when
+// controllerchange finds an empty canvas.
+// activating → owed when controllerchange arrives after ink appears.
+// owed → none and reload when a later update check finds the canvas empty.
+let updateReload: 'none' | 'activating' | 'owed' = 'none';
 let registrationScheduled = false;
 
 // Grace period after posting SKIP_WAITING before we give up waiting for the new
@@ -41,10 +46,10 @@ let registrationScheduled = false;
 export const ACTIVATION_RECOVERY_MS = 10_000;
 
 // Reset the module's lifecycle singletons. Exported for unit tests, which share a
-// single module instance across cases; without it a leftover refreshState (or
+// single module instance across cases; without it a leftover updateReload (or
 // initialized) leaks state between tests and couples them to execution order.
 export function resetUpdatesForTests() {
-  refreshState = 'idle';
+  updateReload = 'none';
   initialized = false;
   registrationScheduled = false;
 }
@@ -152,51 +157,51 @@ export async function checkVersionMismatch(attemptedVersion: string | null = nul
 }
 
 function activateWaitingSW(sw: ServiceWorker): void {
-  if (refreshState !== 'idle' || !canvasState.canvasEmpty) return;
+  if (updateReload !== 'none' || !canvasState.canvasEmpty) return;
   let recoveryTimer: ReturnType<typeof setTimeout> | undefined = undefined;
   const onControllerChange = () => {
     clearTimeout(recoveryTimer);
     if (!canvasState.canvasEmpty) {
-      refreshState = 'deferred';
+      updateReload = 'owed';
       return;
     }
-    refreshState = 'idle';
+    updateReload = 'none';
     window.location.reload();
   };
   navigator.serviceWorker.addEventListener('controllerchange', onControllerChange, {
     once: true,
   });
-  refreshState = 'activating';
+  updateReload = 'activating';
   try {
     sw.postMessage({ type: 'SKIP_WAITING' });
   } catch (error) {
     navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
-    refreshState = 'idle';
+    updateReload = 'none';
     throw error;
   }
   // A dropped SKIP_WAITING — or an activation that never emits controllerchange —
   // must not pin the lifecycle in 'activating' for the rest of the session: that
-  // short-circuits every later checkForUpdates (line: `if (refreshState ===
-  // 'activating') return`) and the deferred-reload path, silently blocking all
-  // future updates. Release back to idle after a grace period so a later check
+  // short-circuits every later checkForUpdates (line: `if (updateReload ===
+  // 'activating') return`) and the owed-reload path, silently blocking all
+  // future updates. Release back to none after a grace period so a later check
   // re-attempts; controllerchange clears this the moment it fires.
   recoveryTimer = setTimeout(() => {
-    if (refreshState !== 'activating') return;
+    if (updateReload !== 'activating') return;
     navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
-    refreshState = 'idle';
+    updateReload = 'none';
   }, ACTIVATION_RECOVERY_MS);
 }
 
 export async function checkForUpdates() {
   try {
-    if (refreshState === 'deferred') {
+    if (updateReload === 'owed') {
       if (canvasState.canvasEmpty) {
-        refreshState = 'idle';
+        updateReload = 'none';
         window.location.reload();
       }
       return;
     }
-    if (refreshState === 'activating') return;
+    if (updateReload === 'activating') return;
 
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) return;
