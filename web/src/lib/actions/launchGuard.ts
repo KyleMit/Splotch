@@ -54,17 +54,13 @@ export function guardLaunchZone(origin: Origin | null, options: LaunchGuardOptio
 // True while a point sits inside an unexpired dead zone. Prunes lapsed zones as
 // it goes, so no timer is needed to reclaim them.
 export function isPointInLaunchZone(x: number, y: number): boolean {
-  const now = Date.now();
+  zones = liveZones();
   let hit = false;
-  const surviving: DeadZone[] = [];
   for (const zone of zones) {
-    if (zone.expiresAt <= now) continue;
-    surviving.push(zone);
     const dx = x - zone.x;
     const dy = y - zone.y;
     if (dx * dx + dy * dy <= zone.radiusSq) hit = true;
   }
-  zones = surviving;
   return hit;
 }
 

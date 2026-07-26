@@ -9,40 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P3][duplication] Collapse `launchGuard`'s two zone-pruning code paths
-
-**File(s):** `web/src/lib/actions/launchGuard.ts:45,56-68,77-80` — pinned at SHA f934d43
-
-#### Problem
-
-Expired-zone pruning is implemented twice. `guardLaunchZone` calls `zones = liveZones()` (a
-`filter(zone.expiresAt > now)`), while `isPointInLaunchZone` prunes inline with the opposite
-comparison during its scan:
-
-```ts
-for (const zone of zones) {
-  if (zone.expiresAt <= now) continue;
-  surviving.push(zone);
-  ...
-}
-zones = surviving;
-```
-
-Two expressions of "drop lapsed zones" (`> now` vs `<= now … continue`) that must stay logically
-consistent.
-
-#### Proposed solution
-
-Keep a single `pruneZones()` (the `liveZones` filter) and call it at the top of both
-`guardLaunchZone` and `isPointInLaunchZone`; let the hit-test loop just scan the already-pruned
-array. Or drop `liveZones` and reuse the single-pass prune.
-
-#### Verification
-
-`launchGuard.test.ts` covers arm/expire/concurrent/clear; run `npm run test:unit -- launchGuard`.
-
----
-
 ### [P3][lifecycle] `dragToClear.destroy` leaves in-flight visual state on shared DOM
 
 **File(s):** `web/src/lib/actions/dragToClear.ts:273-284` (`destroy`) — pinned at SHA f934d43
