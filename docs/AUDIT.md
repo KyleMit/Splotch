@@ -24,34 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P3][maintainability] Hourly update interval is an inline magic number while its siblings are named constants
-
-**File(s):** `web/src/lib/pwa/updates.ts:120-125` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-const updateCheckInterval = setInterval(() => {
-  checkForUpdates();
-}, 60 * 60 * 1000);
-```
-
-This file already names `ACTIVATION_RECOVERY_MS = 10_000` and `STROKES_BEFORE_SW_REGISTER` with
-explanatory comments, but the update cadence — arguably the most policy-relevant number in the file,
-and referenced in the module header comment ("Update checks run on init, hourly, …") — is an inline
-`60 * 60 * 1000`. Inconsistent and un-tunable-by-name.
-
-#### Proposed solution
-
-`export const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;` next to the other constants; the header
-comment's "hourly" then has a named anchor.
-
-#### Verification
-
-`npm run check`; behavior identical.
-
----
-
 ### [P3][maintainability] Module-global mutable singletons force a test-only `resetUpdatesForTests` export in production code
 
 **File(s):** `web/src/lib/pwa/updates.ts:34-56` — pinned at SHA f934d43

@@ -123,12 +123,9 @@ export function initPWAUpdates(): (() => void) | undefined {
     })
     .catch(() => {});
 
-  const updateCheckInterval = setInterval(
-    () => {
-      checkForUpdates();
-    },
-    UPDATE_CHECK_INTERVAL_MS
-  );
+  const updateCheckInterval = setInterval(() => {
+    checkForUpdates();
+  }, UPDATE_CHECK_INTERVAL_MS);
 
   const onVisibilityChange = () => {
     if (document.visibilityState === 'visible') checkForUpdates();
