@@ -1,8 +1,8 @@
-import { settings } from '$lib/state/settings.svelte';
+import { settings, SOUND_VOLUME_DEFAULT } from '$lib/state/settings.svelte';
 
 const SOUND_URLS = ['/sounds/pencil-1.mp3', '/sounds/pencil-2.mp3', '/sounds/pencil-3.mp3'];
 
-const SOUND_VOLUME = 0.2;
+const BASE_SCRATCH_GAIN = 0.2;
 // Pointer speed (canvas px/ms) at which the scratch reaches full volume. Slow
 // strokes scale down linearly toward silence instead of hard-pausing at a
 // threshold like the old HTMLAudioElement implementation did.
@@ -17,7 +17,7 @@ let currentSource: AudioBufferSourceNode | null = null;
 let currentGain: GainNode | null = null;
 
 function volumeMultiplier() {
-  return Math.max(0, Math.min(settings.soundVolume, 100)) / 50;
+  return settings.soundVolume / SOUND_VOLUME_DEFAULT;
 }
 
 function ensureContext(): AudioContext | null {
@@ -78,7 +78,7 @@ export function playDrawSound(movementData: { speed?: number } = {}) {
   }
 
   const { speed = 0 } = movementData;
-  const target = SOUND_VOLUME * volumeMultiplier() * Math.min(speed / FULL_VOLUME_SPEED, 1);
+  const target = BASE_SCRATCH_GAIN * volumeMultiplier() * Math.min(speed / FULL_VOLUME_SPEED, 1);
   rampGainTo(currentGain!.gain, target, ctx.currentTime, GAIN_RAMP_S);
 }
 
