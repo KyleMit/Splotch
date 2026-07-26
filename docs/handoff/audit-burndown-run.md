@@ -17,9 +17,10 @@ GitHub Issues.
 * Base: `main` at 8ebfa534
 * Draft PR: [#550](https://github.com/KyleMit/Splotch/pull/550)
 * Starting backlog: 394 of 511 findings remaining; 88 completed and 29 deferred in prior runs
-* Driver: stopped; the prior run left `.audit-work/STOP`
-* Commits: this checkpoint only
-* Files touched: `docs/handoff/audit-burndown-run.md`
+* Current backlog: 384 findings remaining; the canary fixed 5, dropped 5, and deferred 0
+* Driver: idle after the successful foreground canary
+* Commits: checkpoint plus the canary history in `main..HEAD`
+* Files touched: 27 non-backlog files, chiefly the typed storage-key registry and its callers/tests
 
 ## Exact commands
 
@@ -67,7 +68,7 @@ npm run audit:burndown:overnight -- 600
 
 * Codex CLI authentication is still valid.
 * Origin is reachable for fetch and push.
-* The prior run's disposable `.audit-work` state will be safely replaced by fresh preflight state.
+* The 600-finding overnight launcher can recover cleanly from the successful canary state.
 
 ## Done & verified
 
@@ -75,13 +76,25 @@ npm run audit:burndown:overnight -- 600
 * `npm run audit:status`: `STOPPED`, 394 findings remaining.
 * No active driver was reported by the burndown status command; OS process enumeration is blocked by
   the workspace sandbox.
+* Exact Codex preflight: passed with all repository-specific gates, authentication, origin, branch,
+  and 394 parsed findings green.
+* Five-fix canary: 5 fixed, 5 dropped, 0 deferred, 384 remaining in 44 minutes.
+* Canary deletion reconciliation: each completed/dropped finding removed exactly one entry;
+  intermediate repair commits removed zero.
+* Resume invariant: iteration 4's implementer/fix thread ID matched; iteration 5's
+  implementer/fix1/fix2 thread ID matched; all reviewer IDs were distinct.
+* Manual non-backlog diff inspection: passed.
+* GitHub Actions: Tests run 30207539666 passed for bc7cc18da494.
+* Per-fix comments: all 5 posted to PR #550; capture completeness check found nothing pending.
+* Cumulative projection from `npm run audit:cost`: about 102M tokens for the remaining 384 findings.
 
 ## Risks & next 3 steps
 
-1. Commit and push this checkpoint, open the draft PR, then replace “pending” with its PR link.
-2. Run the exact preflight and five-fix canary; inspect all non-backlog diffs, deletion counts,
-   resume thread IDs when applicable, cost, and final canary CI.
-3. Launch the durable continuation, supervise events and CI, and drain per-commit PR comments.
+1. Launch the exact durable continuation and confirm its detached PID/log paths.
+2. Supervise finding events and final-push CI, pausing only for a demonstrated recurring mechanism
+   that is losing work.
+3. Drain per-commit PR comments in the at-least-once loop and keep this checkpoint current at
+   pauses.
 
 ## Closeout tasks
 
