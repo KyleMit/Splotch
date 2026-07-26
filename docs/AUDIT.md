@@ -20,31 +20,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P3][maintainability] `data-trim-rank` numeric coupling between `TRIM_ORDER` and ~15 CSS selectors is invisible
-
-**File(s):** `web/src/lib/components/ColorPalette.svelte:110, 129, 325-433` — pinned at SHA f934d43
-
-#### Problem
-
-`trimRank` maps each hex to its index in `TRIM_ORDER`, stamped as `data-trim-rank`, and the
-stylesheet hard-codes `[data-trim-rank='3']` … `='9']` with prose comments naming the color ("rank
-3: Red"). The mapping from array position → CSS selector → color name is triple-encoded and
-drift-prone: reorder `TRIM_ORDER` (in the out-of-scope `colors.svelte.ts`) and every CSS comment
-lies while selectors silently trim the wrong swatch. Nothing links them.
-
-#### Proposed solution
-
-This is inherent to the CSS-only trim, but the risk can be cut: generate the ranked selector blocks
-from `TRIM_ORDER` via the codegen pipeline (same as finding P1), or at least add a unit test
-asserting `TRIM_ORDER` order/labels so a reorder fails CI with a pointer to the CSS. Replace the
-color-name comments with the computed label so they can't rot independently.
-
-#### Verification
-
-A `TRIM_ORDER`-ordering unit test pins Brown/Teal/Pink/Red/…; deliberately reordering fails it.
-
----
-
 ### [P3][maintainability] `#007bff` is an off-palette fallback color repeated in the picker CSS
 
 **File(s):** `web/src/lib/components/ColorPicker.svelte:391, 447` — pinned at SHA f934d43
