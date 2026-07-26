@@ -24,40 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P3][duplication] localStorage key strings are re-hard-coded in the test instead of imported
-
-**File(s):** `web/src/lib/state/install.svelte.ts:17-18`;
-`web/src/lib/state/install.svelte.test.ts:12-13` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-// install.svelte.ts
-const DISMISSED_KEY = 'splotch-install-dismissed';
-const INSTALLED_KEY = 'splotch-install-completed';
-// install.svelte.test.ts (copy)
-const DISMISSED_KEY = 'splotch-install-dismissed';
-const INSTALLED_KEY = 'splotch-install-completed';
-```
-
-The keys are `const` (unexported) in source and re-typed verbatim in the test. Renaming the source
-key would leave the test asserting the old key — the test would keep passing against
-`localStorage.getItem(INSTALLED_KEY)` with its stale copy while production writes a different key.
-Silent source/test drift on persisted state.
-
-#### Proposed solution
-
-Export the keys from `install.svelte.ts` (they're already a natural public contract for persistence)
-and import them in the test. Or centralize install keys with the other storage keys if such a
-registry exists.
-
-#### Verification
-
-`grep -rn "splotch-install-" web/src` should show one definition site. Test imports it; a rename now
-breaks compilation, not silently.
-
----
-
 ### [P3][maintainability] Hourly update interval is an inline magic number while its siblings are named constants
 
 **File(s):** `web/src/lib/pwa/updates.ts:120-125` — pinned at SHA f934d43
