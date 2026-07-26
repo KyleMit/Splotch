@@ -30,33 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P4][consistency] Progress written to `stderr` in one audit, `stdout` in the rest
-
-**File(s):** `audit-night-halo.mjs:98-100` and `:111` (`console.error` for progress and timing) vs
-the `console.log`/`process.stdout.write` progress in every other audit and generator — pinned at SHA
-f934d43
-
-#### Problem
-
-`audit-night-halo` prints its per-page progress counter and final timing via `console.error`, while
-its ranked table goes to `console.log`. The intent (keep the pipeable table on stdout, chatter on
-stderr) is defensible but undocumented and unique — no other tool in the directory splits streams,
-so it reads as an inconsistency rather than a deliberate choice, and `--out` already exists for
-machine consumption.
-
-#### Proposed solution
-
-Either document the stdout/stderr split with a one-line comment and adopt it as the convention for
-audits that emit a pipeable table, or move progress to `console.log` for consistency with the
-sibling audits. Pick one and note it.
-
-#### Verification
-
-`node bin/audit-night-halo.mjs vehicles 1>table.txt` yields only the table in `table.txt`; the
-chosen convention is stated in the header.
-
----
-
 ### [P4][complexity] Settings builders called once purely for their validation side-effect, then discarded
 
 **File(s):** `gen-coloring-fills-dark.mjs:238` (`nightSettings(values, 'cli')`);

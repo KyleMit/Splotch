@@ -21,6 +21,8 @@
 // the top of the table needs an eyeball. Diff --out JSON runs before/after any
 // change to lib/punch-fill.mjs or a chalk/raw regen — unchanged pages reproduce
 // bit-identical scores.
+// Progress and timing use stderr so stdout stays a pipeable ranked table; --out
+// writes the full JSON results.
 //
 //   npm run gen:coloring-fills:audit:halo                   whole catalog
 //   npm run gen:coloring-fills:audit:halo -- vehicles       one category
