@@ -195,6 +195,8 @@ test('golden diff reports a corrupt outline, retains successful pages, and exits
 
   expect(outputOf(error)).toContain('test/bad  ERROR (corrupt image)');
   expect(outputOf(log)).toContain('1 page(s) diffed vs golden');
+  expect(outputOf(log)).toContain('0 regression(s)');
+  expect(outputOf(log)).not.toContain('test/bad  page missing');
   expect(process.exitCode).toBe(1);
 });
 

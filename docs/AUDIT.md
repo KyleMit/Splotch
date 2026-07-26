@@ -30,32 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P3][error-handling] Audits abort the whole run on one unreadable/missing asset
-
-**File(s):** `check-coloring-drift.mjs:50-62`; `audit-fill-eyes.mjs:37-72`;
-`audit-outline-solidity.mjs:26-42`; `audit-golden.mjs:57-134` (`scorePage`) — pinned at SHA f934d43
-
-#### Problem
-
-The generators wrap each page in `try/catch` and tally `failures` so one bad page doesn't kill a
-category run (e.g. chalk:413-417, dark:433-436). The audits do not: a single corrupt webp or a race
-with a half-written file throws out of the loop and aborts the entire catalog pass with a raw stack
-trace, losing all results computed so far. For tools meant to double as CI checks over ~94 pages,
-that's a fragile failure mode and gives no indication which page broke.
-
-#### Proposed solution
-
-Wrap each audit's per-page body in `try/catch`, print `<page>  ERROR (<msg>)`, increment a failure
-counter, and set `process.exitCode = 1` at the end if any page errored — mirroring the generators'
-convention.
-
-#### Verification
-
-Point one audit at a directory containing a truncated `.webp`; confirm it reports that page and
-still scores the rest, exiting non-zero.
-
----
-
 ### [P3][consistency] `png-to-webp` configured by env vars instead of flags
 
 **File(s):** `png-to-webp.mjs:11-12` — pinned at SHA f934d43

@@ -146,7 +146,7 @@ async function scoreCatalog() {
 
   const results = new Map();
   let next = 0;
-  let errors = 0;
+  const erroredPages = new Set();
   await Promise.all(
     Array.from({ length: Math.min(CONCURRENCY, outlines.length) }, async () => {
       while (next < outlines.length) {
@@ -161,7 +161,7 @@ async function scoreCatalog() {
           console.error(
             `${rel}  ERROR (${error instanceof Error ? error.message : String(error)})`
           );
-          errors++;
+          erroredPages.add(rel);
         }
       }
     })
@@ -184,7 +184,8 @@ async function scoreCatalog() {
       },
       pages,
     },
-    errors,
+    errors: erroredPages.size,
+    erroredPages,
   };
 }
 
@@ -195,7 +196,7 @@ if (mode !== '--freeze' && mode !== '--diff' && mode !== undefined)
   fail('usage: audit-golden.mjs [--freeze | --diff]   (default: --diff)');
 
 const t0 = performance.now();
-const { catalog: current, errors } = await scoreCatalog();
+const { catalog: current, errors, erroredPages } = await scoreCatalog();
 const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
 const pageCount = Object.keys(current.pages).length;
 
@@ -229,8 +230,11 @@ if (mode === '--freeze') {
       `catalog schema version ${golden.version} -> ${current.version} (re-freeze required)`
     );
   for (const rel of Object.keys(golden.pages)) {
-    if (!current.pages[rel]) out.regressions.push(`${rel}  page missing (was in golden set)`);
-    else diffGoldenPage(rel, golden.pages[rel], current.pages[rel], out);
+    if (!current.pages[rel]) {
+      if (!erroredPages.has(rel)) out.regressions.push(`${rel}  page missing (was in golden set)`);
+    } else {
+      diffGoldenPage(rel, golden.pages[rel], current.pages[rel], out);
+    }
   }
   for (const rel of Object.keys(current.pages))
     if (!golden.pages[rel])
