@@ -7,35 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P3][maintainability] The `privacy` page hardcodes a full palette of hex colors instead of design tokens, opting out of the token system
-
-**File(s):** `web/src/routes/privacy/+page.svelte:131-225` (`<style>`) — pinned at SHA f934d43
-
-#### Problem
-
-The page hardcodes `#f5f5f5`, `#2b2b33`, `#7c4dcf` (×3), `#6c6c76`, `#6b3fa0`, `#f7f2fd`, `#eadcfa`,
-`white`, while inconsistently using `var(--brand)` for the `h1`. Some hardcodes carry contrast
-justifications (the `#7c4dcf` link comment), but the page as a whole bypasses `lib/design/tokens` —
-the `design` skill's stated source of truth — so a palette change to the token set silently skips
-this route, and light/dark theming can't reach it (it's pinned light). It's the one user-facing
-route in scope that ignores the token vocabulary.
-
-#### Proposed solution
-
-Map these to design tokens where an equivalent exists (surface/text/brand-text/border tokens),
-keeping a hardcoded value only where a documented contrast requirement forces it — and in that case
-reference the token it deviates from in the comment (as `Breadcrumb.svelte` does). If the page is
-intentionally always-light legal chrome, state that decision once at the top of the `<style>` and
-derive the few colors from a small local constant set rather than scattering literals.
-
-#### Verification
-
-Visual check of `/privacy` unchanged; grep for raw hex in the file drops to only the
-contrast-justified exceptions; flipping the design tokens now visibly affects the page (or the
-always-light decision is documented).
-
----
-
 ### [P3][duplication] Error-log prefix strings (`[client error]`, `[server error]`, `[render error]`) are magic literals scattered across three files with no shared source
 
 **File(s):** `web/src/hooks.client.ts:7`, `web/src/hooks.server.ts:53`,

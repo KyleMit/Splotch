@@ -125,35 +125,56 @@
 </main>
 
 <style>
+  /* This page is deliberately light-only, like /admin: the themed color tokens
+     flip with data-theme / prefers-color-scheme (tokens.css sets them on
+     :root, which reaches this route too), so adopting them would
+     half-dark-theme legal copy whose links are contrast-pinned to a light
+     background. So the colors are declared once below as a local palette
+     instead of scattered literals. Each value is the page's own — hoisting
+     them changed no pixels — with a comment naming the light-theme token it
+     approximates, for whoever revisits the pinning. The one real token this
+     page uses is --brand (h1), which is exempt because it is theme-invariant:
+     tokens.css defines it once and never redefines it in a dark block. */
+
   /* A full-viewport scroll panel with its own light background. The legal copy is
      a normal scrollable, selectable, zoomable document — the drawing-route
      app-surface locks (app.css) don't reach this route, so no opt-out is needed. */
   .legal {
+    --legal-bg: #f5f5f5; /* = --app-bg, light */
+    --legal-sheet: #ffffff; /* = --surface, light */
+    --legal-text: #2b2b33; /* ~ --text-strong (#333), light */
+    --legal-text-muted: #6c6c76; /* ~ --text-mid (#666), light */
+    --legal-heading: #6b3fa0; /* ~ --brand-text (#7c50bb), light */
+    --legal-card: #f7f2fd; /* ~ --brand-wash (#ede7f6), light */
+    /* No token; paired with --legal-card, which it has to outline visibly. */
+    --legal-card-border: #eadcfa;
+    /* Darker than --brand, whose 3.4:1 fails WCAG AA for body-size text (axe
+       serious); this clears 4.5:1 on the sheet. */
+    --legal-link: #7c4dcf;
+
     position: fixed;
     inset: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    background: #f5f5f5;
+    background: var(--legal-bg);
     padding: 24px 16px 64px;
-    color: #2b2b33;
+    color: var(--legal-text);
     line-height: 1.6;
   }
 
   .sheet {
     max-width: 680px;
     margin: 0 auto;
-    background: white;
+    background: var(--legal-sheet);
     border-radius: 20px;
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
     padding: 32px clamp(20px, 5vw, 44px) 40px;
   }
 
-  /* Links use the darker #7c4dcf (4.5:1+ on white) instead of --brand, whose
-     3.4:1 fails WCAG AA for body-size text (axe serious). */
   .back {
     display: inline-block;
     margin-bottom: 20px;
-    color: #7c4dcf;
+    color: var(--legal-link);
     text-decoration: none;
     font-weight: 600;
   }
@@ -173,7 +194,7 @@
   }
 
   .updated {
-    color: #6c6c76;
+    color: var(--legal-text-muted);
     font-size: 0.9rem;
     margin-bottom: 24px;
   }
@@ -185,7 +206,7 @@
 
   h2 {
     font-size: 1.25rem;
-    color: #6b3fa0;
+    color: var(--legal-heading);
     margin: 28px 0 8px;
   }
 
@@ -213,14 +234,14 @@
   }
 
   .highlights li {
-    background: #f7f2fd;
-    border: 2px solid #eadcfa;
+    background: var(--legal-card);
+    border: 2px solid var(--legal-card-border);
     border-radius: 14px;
     padding: 12px 14px;
     margin: 0;
   }
 
   a {
-    color: #7c4dcf;
+    color: var(--legal-link);
   }
 </style>
