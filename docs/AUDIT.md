@@ -22,31 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P4][maintainability] `getMasterKey` memoizes on a module-global promise that ignores which `db` it was created for
-
-**File(s):** `web/src/lib/secureStorage.ts:57-83` — pinned at SHA f934d43
-
-#### Problem
-
-`masterKeyPromise` is module-scoped but `getMasterKey(db)` takes a `db` argument (line 59). The
-first caller's `db` wins; every later caller's `db` is ignored because the memoized promise is
-returned regardless. Today `getDb` is itself memoized so it's always the same connection — but the
-API *looks* like it keys off `db` when it doesn't, which will mislead anyone who later makes `getDb`
-return per-call databases (e.g. after a delete/reopen).
-
-#### Proposed solution
-
-Either drop the `db` parameter and have `loadOrCreateMasterKey` call `getDb()` itself (making the
-single-connection assumption explicit), or key the memo off the db instance. Removing the misleading
-parameter is the smaller fix.
-
-#### Verification
-
-`secureStorage.test.ts` master-key tests (lines 107-146) pass; the cross-tab race test still adopts
-the winner key.
-
----
-
 ### [P4][error-handling] IO error responsibility is split inconsistently within `folderSave` — `loadHandle` swallows, `storeHandle` throws
 
 **File(s):** `web/src/lib/drawing/folderSave.ts:44-65` (`loadHandle` vs `storeHandle`) — pinned at

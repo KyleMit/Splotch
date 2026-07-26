@@ -1,4 +1,4 @@
-import type { DBSchema, IDBPDatabase } from 'idb';
+import type { DBSchema } from 'idb';
 import { browser } from '$app/environment';
 import { isNative } from './platform';
 import { lazyPluginModule } from './nativePlugin';
@@ -88,15 +88,16 @@ function isSecretPayload(value: unknown): value is SecretPayload {
 // transaction, so a tab that loses the race adopts the winner's key.
 let masterKeyPromise: Promise<CryptoKey> | null = null;
 
-function getMasterKey(db: IDBPDatabase<SecureDb>): Promise<CryptoKey> {
-  masterKeyPromise ??= loadOrCreateMasterKey(db).catch((err) => {
+function getMasterKey(): Promise<CryptoKey> {
+  masterKeyPromise ??= loadOrCreateMasterKey().catch((err) => {
     masterKeyPromise = null;
     throw err;
   });
   return masterKeyPromise;
 }
 
-async function loadOrCreateMasterKey(db: IDBPDatabase<SecureDb>): Promise<CryptoKey> {
+async function loadOrCreateMasterKey(): Promise<CryptoKey> {
+  const db = await getDb();
   const existing = await db.get(STORE, MASTER_KEY_ROW);
   if (existing && !isSecretPayload(existing)) return existing;
   // Generated *before* the transaction: an IDB transaction auto-commits once
@@ -116,8 +117,7 @@ async function loadOrCreateMasterKey(db: IDBPDatabase<SecureDb>): Promise<Crypto
 }
 
 async function webSave(name: string, value: string) {
-  const db = await getDb();
-  const key = await getMasterKey(db);
+  const key = await getMasterKey();
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },
@@ -132,8 +132,7 @@ async function webLoad(name: string) {
   const record = await payloadStore.get(name);
   if (record === undefined) return null;
   if (!isSecretPayload(record)) throw new Error('Malformed secure-storage payload');
-  const db = await getDb();
-  const key = await getMasterKey(db);
+  const key = await getMasterKey();
   const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: record.iv }, key, record.data);
   return new TextDecoder().decode(plain);
 }
