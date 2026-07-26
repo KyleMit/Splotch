@@ -1,7 +1,8 @@
 # Handoff — audit burndown run
 
-> 2026-07-26 · branch `codex/audit-burndown-20260726-2` · PR pending · burn down the remaining
-> staged audit findings with isolated Codex roles
+> 2026-07-26 · branch `codex/audit-burndown-20260726-2` · PR
+> [#550](https://github.com/KyleMit/Splotch/pull/550) · burn down the remaining staged audit
+> findings with isolated Codex roles
 
 ## Objective & non-goals
 
@@ -14,7 +15,7 @@ GitHub Issues.
 
 * Branch: `codex/audit-burndown-20260726-2`
 * Base: `main` at 8ebfa534
-* Draft PR: pending
+* Draft PR: [#550](https://github.com/KyleMit/Splotch/pull/550)
 * Starting backlog: 394 of 511 findings remaining; 88 completed and 29 deferred in prior runs
 * Driver: stopped; the prior run left `.audit-work/STOP`
 * Commits: this checkpoint only
