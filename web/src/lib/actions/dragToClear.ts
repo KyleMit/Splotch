@@ -27,7 +27,6 @@ export interface DragToClearOptions {
 }
 
 export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToClearOptions) {
-  let isDragging = false;
   let activePointerId: number | null = null;
   let startPointerX = 0;
   let startPointerY = 0;
@@ -95,7 +94,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   }
 
   function onPointerDown(e: PointerEvent) {
-    if (isDragging) return;
+    if (activePointerId !== null) return;
 
     const o = getOptions();
     if (registerTap(Date.now(), o)) return;
@@ -106,7 +105,6 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     holdStartY = clientY;
     holdTimer = setTimeout(o.onTutorialShow, HOLD_DURATION);
 
-    isDragging = true;
     activePointerId = e.pointerId;
     try {
       node.setPointerCapture(e.pointerId);
@@ -136,7 +134,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   }
 
   function onPointerMove(e: PointerEvent) {
-    if (!isDragging || e.pointerId !== activePointerId) return;
+    if (activePointerId === null || e.pointerId !== activePointerId) return;
 
     const o = getOptions();
     const clientX = e.clientX;
@@ -194,7 +192,6 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       cancelAnimationFrame(acceptZoneFrame);
       acceptZoneFrame = null;
     }
-    isDragging = false;
     activePointerId = null;
     try {
       node.releasePointerCapture(pointerId);
@@ -203,7 +200,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     o.acceptZoneEl.classList.remove('visible');
     o.acceptZoneEl.classList.remove('threshold-reached');
     scheduleReset(() => {
-      if (!isDragging) o.acceptZoneEl.style.display = 'none';
+      if (activePointerId === null) o.acceptZoneEl.style.display = 'none';
     }, ACCEPT_ZONE_HIDE_DELAY);
 
     clearReady = false;
@@ -255,7 +252,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   }
 
   function onPointerUp(e: PointerEvent) {
-    if (!isDragging || e.pointerId !== activePointerId) return;
+    if (activePointerId === null || e.pointerId !== activePointerId) return;
 
     const o = getOptions();
 
@@ -282,7 +279,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   }
 
   function onPointerCancel(e: PointerEvent) {
-    if (!isDragging || e.pointerId !== activePointerId) return;
+    if (activePointerId === null || e.pointerId !== activePointerId) return;
 
     const o = getOptions();
     finishDrag(o, e.pointerId);

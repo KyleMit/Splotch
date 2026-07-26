@@ -9,34 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P2][maintainability] Collapse the redundant `isDragging` + `activePointerId` drag-state pair
-
-**File(s):** `web/src/lib/actions/dragToClear.ts:26-27, 77-78, 174-175, 194, 249` — pinned at SHA
-f934d43
-
-#### Problem
-
-`isDragging` and `activePointerId` are two variables encoding one fact. They are always set and
-cleared together (`isDragging = true; activePointerId = e.pointerId` on down;
-`isDragging = false; activePointerId = null` in `finishDrag`), and every guard checks
-`!isDragging || e.pointerId !== activePointerId`. Two sources of truth for one state invites them
-drifting out of sync in a future edit.
-
-#### Proposed solution
-
-Drop `isDragging` and derive it: a drag is active iff `activePointerId !== null`. Replace
-`isDragging` reads with `activePointerId !== null` (or a
-`const isDragging = () => activePointerId !== null` accessor). The one nuance — `finishDrag`'s
-deferred `if (!isDragging)` in the 250ms `scheduleReset` at line 183 — stays correct since
-`activePointerId` is nulled synchronously in `finishDrag`.
-
-#### Verification
-
-`npm run test:unit -- dragToClear`; the `does not let a second pointerdown restart an active drag`
-and different-pointer cases specifically exercise this guard.
-
----
-
 ### [P3][duplication] Extract a shared `capturePointer`/`releasePointer` wrapper for the repeated empty-catch capture calls
 
 **File(s):** `web/src/lib/actions/dragToClear.ts:79-81,176-178`;
