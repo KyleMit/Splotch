@@ -9,32 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P5][readability] `scribbleGuard` reuses one `cancel` handler for three events without naming the shared listener options
-
-**File(s):** `web/src/lib/actions/scribbleGuard.ts:17-34` — pinned at SHA f934d43
-
-#### Problem
-
-Minor: `addEventListener` uses `opts = { passive: false }` (correct, since `cancel` calls
-`preventDefault`), but `removeEventListener` in `destroy` omits the options entirely. That's
-harmless (the capture flag is the only field matched on removal, and it's `false` both times), yet
-the asymmetry can read as a bug to someone auditing listener cleanup, since the more common footgun
-is a *capture*-flag mismatch. There's also no test asserting the `passive:false`/preventDefault
-contract holds under a passive default.
-
-#### Proposed solution
-
-Leave the code as-is (it's correct) but add a one-line comment that `removeEventListener` matches on
-type + capture only, so omitting `passive` is intentional — pre-empting a "fix" that adds the
-options back and implies they matter for removal.
-
-#### Verification
-
-`scribbleGuard.test.ts`'s `detaches on destroy` already proves removal works; no change needed
-beyond the comment.
-
----
-
 ## Summary
 
 22 findings across the gesture actions and native plugins. The concentration is in
