@@ -188,6 +188,75 @@ function median(vals) {
   return vals[vals.length >> 1];
 }
 
+function coreLuma(luma, w, core, label) {
+  const coreVals = [];
+  for (let y = core.minY; y <= core.maxY; y++)
+    for (let x = core.minX; x <= core.maxX; x++)
+      if (label[y * w + x] === core.id) coreVals.push(luma[y * w + x]);
+  return median(coreVals);
+}
+
+function sampleAnnulus(luma, ink, label, w, h, core, cx, cy, r) {
+  // Neighborhood: a TIGHT geometric annulus just outside the core's ring —
+  // wide enough to cross a double-stroked ring into the next region, narrow
+  // enough that features beyond the eye (a lit cheek, the dark face) barely
+  // register. Flood- and label-based variants each failed a real page: label
+  // marches tunnel past tangent rings (bee-tall), sealed floods starve
+  // behind double-stroked rings (spider), leaky floods drown the sclera in
+  // face pixels (spider again), and wide annuli sample the cheek
+  // (caterpillar). Geometry with a tight cap is the only definition that
+  // held up. Samples keep 1px of ink clearance — enough to skip line
+  // antialiasing while still reaching the thin slivers of pupil paint
+  // around a large catchlight.
+  const rIn = r + 3;
+  const rOut = r + 3 + Math.max(12, r * 0.6);
+  const bandVals = [];
+  let annulusTotal = 0;
+  let annulusInk = 0;
+  for (
+    let y = Math.max(0, Math.floor(cy - rOut));
+    y <= Math.min(h - 1, Math.ceil(cy + rOut));
+    y++
+  ) {
+    for (
+      let x = Math.max(0, Math.floor(cx - rOut));
+      x <= Math.min(w - 1, Math.ceil(cx + rOut));
+      x++
+    ) {
+      const p = y * w + x;
+      if (label[p] === core.id) continue;
+      const d = Math.hypot(x - cx, y - cy);
+      if (d < rIn || d > rOut) continue;
+      annulusTotal++;
+      if (ink[p]) {
+        annulusInk++;
+        continue;
+      }
+      let nearInk = false;
+      for (let dy = -1; dy <= 1 && !nearInk; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          const yy = y + dy;
+          if (xx < 0 || xx >= w || yy < 0 || yy >= h || ink[yy * w + xx]) {
+            nearInk = true;
+            break;
+          }
+        }
+      }
+      if (!nearInk) bandVals.push(luma[p]);
+    }
+  }
+  return { bandVals, annulusInkFrac: annulusTotal ? annulusInk / annulusTotal : 0 };
+}
+
+function judgeLively(coreLuma, bandDark, bandLight) {
+  return coreLuma >= EYE_LIGHT_MIN
+    ? bandDark <= EYE_DARK_MAX && coreLuma - bandDark >= EYE_CONTRAST_MIN
+    : coreLuma <= EYE_DARK_MAX
+      ? bandLight >= EYE_LIGHT_MIN && bandLight - coreLuma >= EYE_CONTRAST_MIN
+      : false; // a mid-gray core is washed out no matter the neighbors
+}
+
 // Measure a fill at every eye core of its source line art. Returns one entry
 // per measurable core: its median luma, its neighborhood's dark/light
 // quartiles, and whether the core reads as part of a LIVELY eye.
@@ -222,84 +291,26 @@ export async function scoreEyeFill(fillBuf, sourceBuf) {
     const cy = (core.minY + core.maxY) / 2;
     const r = Math.max(core.maxX - core.minX, core.maxY - core.minY) / 2 + 1;
 
-    const coreVals = [];
-    for (let y = core.minY; y <= core.maxY; y++)
-      for (let x = core.minX; x <= core.maxX; x++)
-        if (label[y * w + x] === core.id) coreVals.push(luma[y * w + x]);
-
-    // Neighborhood: a TIGHT geometric annulus just outside the core's ring —
-    // wide enough to cross a double-stroked ring into the next region, narrow
-    // enough that features beyond the eye (a lit cheek, the dark face) barely
-    // register. Flood- and label-based variants each failed a real page: label
-    // marches tunnel past tangent rings (bee-tall), sealed floods starve
-    // behind double-stroked rings (spider), leaky floods drown the sclera in
-    // face pixels (spider again), and wide annuli sample the cheek
-    // (caterpillar). Geometry with a tight cap is the only definition that
-    // held up. Samples keep 1px of ink clearance — enough to skip line
-    // antialiasing while still reaching the thin slivers of pupil paint
-    // around a large catchlight.
-    const rIn = r + 3;
-    const rOut = r + 3 + Math.max(12, r * 0.6);
-    const bandVals = [];
-    let annulusTotal = 0;
-    let annulusInk = 0;
-    for (
-      let y = Math.max(0, Math.floor(cy - rOut));
-      y <= Math.min(h - 1, Math.ceil(cy + rOut));
-      y++
-    ) {
-      for (
-        let x = Math.max(0, Math.floor(cx - rOut));
-        x <= Math.min(w - 1, Math.ceil(cx + rOut));
-        x++
-      ) {
-        const p = y * w + x;
-        if (label[p] === core.id) continue;
-        const d = Math.hypot(x - cx, y - cy);
-        if (d < rIn || d > rOut) continue;
-        annulusTotal++;
-        if (ink[p]) {
-          annulusInk++;
-          continue;
-        }
-        let nearInk = false;
-        for (let dy = -1; dy <= 1 && !nearInk; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            const xx = x + dx;
-            const yy = y + dy;
-            if (xx < 0 || xx >= w || yy < 0 || yy >= h || ink[yy * w + xx]) {
-              nearInk = true;
-              break;
-            }
-          }
-        }
-        if (!nearInk) bandVals.push(luma[p]);
-      }
-    }
+    const measuredCoreLuma = coreLuma(luma, w, core, label);
+    const { bandVals, annulusInkFrac } = sampleAnnulus(luma, ink, label, w, h, core, cx, cy, r);
     if (bandVals.length < MIN_BAND_SAMPLES) continue;
 
-    const coreLuma = median(coreVals);
     bandVals.sort((a, b) => a - b);
     // p15/p85, not min/max or quartiles: the contrasting element can be a
     // sliver (the pupil paint around a big catchlight), but a handful of
     // stray pixels shouldn't fake one.
     const bandDark = bandVals[Math.floor(bandVals.length * 0.15)];
     const bandLight = bandVals[Math.floor(bandVals.length * 0.85)];
-    const lively =
-      coreLuma >= EYE_LIGHT_MIN
-        ? bandDark <= EYE_DARK_MAX && coreLuma - bandDark >= EYE_CONTRAST_MIN
-        : coreLuma <= EYE_DARK_MAX
-          ? bandLight >= EYE_LIGHT_MIN && bandLight - coreLuma >= EYE_CONTRAST_MIN
-          : false; // a mid-gray core is washed out no matter the neighbors
+    const lively = judgeLively(measuredCoreLuma, bandDark, bandLight);
     measured.push({
       x: Math.round(cx),
       y: Math.round(cy),
-      coreLuma,
+      coreLuma: measuredCoreLuma,
       bandDark,
       bandLight,
-      contrast: Math.max(coreLuma - bandDark, bandLight - coreLuma),
+      contrast: Math.max(measuredCoreLuma - bandDark, bandLight - measuredCoreLuma),
       lively,
-      annulusInkFrac: annulusTotal ? annulusInk / annulusTotal : 0,
+      annulusInkFrac,
     });
   }
   return { eyes: measured.length, cores: measured };

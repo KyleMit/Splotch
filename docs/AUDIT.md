@@ -32,36 +32,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P2][complexity] `scoreEyeFill` is a 100-line function mixing resize, per-core sampling, annulus geometry, and the liveliness verdict
-
-**File(s):** `tools/asset-gen/lib/eye-fill.mjs:208-307` — pinned at SHA f934d43
-
-#### Problem
-
-One function decodes+resizes the fill and builds a luma plane (211-218), then per core: collects
-core pixels (226-229), builds a geometric annulus while running an inner 3×3 near-ink exclusion
-(231-279), computes p15/p85 band stats (282-288), and evaluates the tri-branch liveliness ladder
-(289-294). The annulus loop alone is a 30-line quadruple-nested block with a `nearInk` inner scan.
-The reader must hold all of it to follow one core's verdict.
-
-#### Proposed solution
-
-Extract named steps:
-
-* `function coreLuma(luma, w, core, label)` → median core value,
-* `function sampleAnnulus(luma, ink, label, w, h, core, cx, cy, r)` →
-  `{ bandVals, annulusInkFrac }`,
-* `function judgeLively(coreLuma, bandDark, bandLight)` → boolean (the 289-294 ladder).
-  `scoreEyeFill` then loops cores calling the three. Keep the dense per-page-tuning comments on
-  `sampleAnnulus`.
-
-#### Verification
-
-`tests/eye-fill.test.mjs` passes unchanged (pure refactor); the returned `cores[]` shape is
-identical.
-
----
-
 ### [P2][complexity] `detectInventedShapes` is a 155-line function whose five numbered comments are begging to be functions
 
 **File(s):** `tools/asset-gen/lib/invented-shapes.mjs:40-195` — pinned at SHA f934d43
