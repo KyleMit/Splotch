@@ -12,7 +12,7 @@ import { isAllowedToken } from './tokens';
 
 export type GenerationAuthorization =
   | { usingByok: true; effectiveKey: string; managedToken: null }
-  | { usingByok: false; effectiveKey: string | undefined; managedToken: string };
+  | { usingByok: false; effectiveKey: string; managedToken: string };
 
 export async function authorizeGenerationRequest(input: {
   apiKey: string | null;
@@ -37,9 +37,11 @@ export async function authorizeGenerationRequest(input: {
     // Valid managed traffic is keyed per token to contain a leaked credential.
     const generation = rateLimit(generateImageBucket(input.token), rateLimitPolicy.generateToken);
     if (generation.limited) return throttled(generation.retryAfter);
+    const effectiveKey = config.geminiApiKey();
+    if (!effectiveKey) throw error(500, 'Server is missing GEMINI_API_KEY');
     return {
       usingByok: false,
-      effectiveKey: config.geminiApiKey(),
+      effectiveKey,
       managedToken: input.token,
     };
   }
@@ -52,11 +54,4 @@ export async function authorizeGenerationRequest(input: {
   );
   if (generation.limited) return throttled(generation.retryAfter);
   return { usingByok: true, effectiveKey: userKey, managedToken: null };
-}
-
-export function requireEffectiveGenerationKey(authorization: GenerationAuthorization): string {
-  if (!authorization.effectiveKey) {
-    throw error(500, 'Server is missing GEMINI_API_KEY');
-  }
-  return authorization.effectiveKey;
 }

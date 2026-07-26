@@ -22,36 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P5][readability] `requireEffectiveGenerationKey` reads as a getter but throws
-
-**File(s):** `web/src/lib/server/generationAuthorization.ts:58-63` — pinned at SHA f934d43
-
-#### Problem
-
-`requireEffectiveGenerationKey(authorization): string` throws
-`error(500, 'Server is missing GEMINI_API_KEY')` when the managed key is absent. The two-step API —
-`authorizeGenerationRequest` then a separate `requireEffectiveGenerationKey` at the call site
-(generate-image:115) — splits "am I authorized" from "is the server actually configured to serve
-me," which is easy to forget to call. The name is fine (`require…` implies it may throw), but the
-split responsibility is the smell: authorization succeeds returning a managed result whose
-`effectiveKey` may be `undefined`, deferring the real failure to a second call.
-
-#### Proposed solution
-
-Either fold the managed-key presence check into `authorizeGenerationRequest` (return a
-`Response`/error there so an authorized result always carries a usable `effectiveKey: string`),
-narrowing the union so `requireEffectiveGenerationKey` disappears; or keep the split but document
-why (BYOK must not require the server key) at the function. Given BYOK always has a key and managed
-always needs `GEMINI_API_KEY`, checking it inside authorize for the managed branch is clean and
-removes a call the handler must remember.
-
-#### Verification
-
-`generationAuthorization.test.ts` updated: a managed request with no `GEMINI_API_KEY` yields the 500
-(or a `Response`) directly from `authorizeGenerationRequest`. `npm run check`.
-
----
-
 ### [P5][consistency] Provider result `kind` vocab (`refusal`/`error`) differs from classifier `kind` vocab (`safety`/`empty`)
 
 **File(s):** `web/src/lib/server/ai/provider.ts:14-20`;

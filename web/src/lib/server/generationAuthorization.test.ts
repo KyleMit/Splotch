@@ -12,10 +12,7 @@ vi.mock('$env/dynamic/private', () => ({ env: envState }));
 vi.mock('./tokens', () => ({ isAllowedToken }));
 vi.mock('./rateLimit', () => ({ peekRateLimit, rateLimit }));
 
-import {
-  authorizeGenerationRequest,
-  requireEffectiveGenerationKey,
-} from './generationAuthorization';
+import { authorizeGenerationRequest } from './generationAuthorization';
 import {
   generateImageBucket,
   generateImageByokBucket,
@@ -120,15 +117,11 @@ describe('authorizeGenerationRequest', () => {
       windowMs: 60_000,
     });
   });
-});
 
-describe('requireEffectiveGenerationKey', () => {
   it('rejects a valid managed request when no server key is configured', async () => {
     envState.GEMINI_API_KEY = undefined;
-    const authorization = await authorizeGenerationRequest(managedInput);
-    if (authorization instanceof Response) throw new Error('Expected an authorization');
 
-    expect(() => requireEffectiveGenerationKey(authorization)).toThrowError(
+    await expect(authorizeGenerationRequest(managedInput)).rejects.toThrowError(
       expect.objectContaining({
         status: 500,
         body: { message: 'Server is missing GEMINI_API_KEY' },

@@ -6,7 +6,6 @@ import { recordByokUsage, recordTokenUsage } from '$lib/server/usage';
 import { aiProvider } from '$lib/server/ai/provider';
 import {
   authorizeGenerationRequest,
-  requireEffectiveGenerationKey,
   type GenerationAuthorization,
 } from '$lib/server/generationAuthorization';
 import type { RequestHandler } from './$types';
@@ -134,7 +133,6 @@ export const POST: RequestHandler = async ({ request, url, platform, getClientAd
     throw error(415, 'Unsupported image type');
   }
   const style = source.style;
-  const effectiveKey = requireEffectiveGenerationKey(authorization);
 
   const finalPrompt = buildPromptForStyle(style, STYLE_SUFFIXES);
 
@@ -143,7 +141,7 @@ export const POST: RequestHandler = async ({ request, url, platform, getClientAd
   const inputBase64 = inputBytes.toString('base64');
 
   const result = await aiProvider.generateImage({
-    apiKey: effectiveKey,
+    apiKey: authorization.effectiveKey,
     image: { base64: inputBase64, mimeType: mimeType || 'image/png' },
     prompt: finalPrompt,
   });
