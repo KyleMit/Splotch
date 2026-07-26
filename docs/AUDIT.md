@@ -20,27 +20,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P4][maintainability] `isLightColor` threshold `0.5` is an unnamed magic number
-
-**File(s):** `web/src/lib/colorRing.ts:18-20` — pinned at SHA f934d43
-
-#### Problem
-
-`return relativeLuminance(color) >= 0.5;` — the light/dark decision boundary is a bare literal with
-no name, sitting next to `getRingColor`'s separate `0.2` cutoff (finding P2). Two different
-luminance thresholds in one file, both unnamed, invite confusion about which governs what.
-
-#### Proposed solution
-
-`const LIGHT_COLOR_LUMINANCE = 0.5;` at module top; reference it. Keeps it visually distinct from
-`DARK_SWATCH_LUMINANCE`.
-
-#### Verification
-
-`isLightColor` behavior unchanged; both thresholds now grep-able and named.
-
----
-
 ### [P4][readability] BT.601 luma weights are inline magic numbers
 
 **File(s):** `web/src/lib/colorRing.ts:13` — pinned at SHA f934d43

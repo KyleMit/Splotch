@@ -22,9 +22,10 @@ export function perceivedBrightness(color: string): number {
 // Whether dark foreground content (text/icons) reads better than light on top
 // of this color. Used to pick a contrasting status-bar icon style.
 export function isLightColor(color: string): boolean {
-  return perceivedBrightness(color) >= 0.5;
+  return perceivedBrightness(color) >= LIGHT_COLOR_BRIGHTNESS;
 }
 
+const LIGHT_COLOR_BRIGHTNESS = 0.5;
 const DARK_SWATCH_LUMINANCE = 0.2;
 const LIGHTEN_STEP = 38;
 const DARKEN_FACTOR = 0.9;
