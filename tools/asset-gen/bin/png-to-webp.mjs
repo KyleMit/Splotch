@@ -5,19 +5,11 @@
 import { globSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { parseArgs } from 'node:util';
 import sharp from 'sharp';
-import { parseNonNegative } from '../lib/cli.mjs';
+import { parsePngToWebpOptions } from '../lib/cli.mjs';
 import { WEB_STATIC } from '../lib/paths.mjs';
 
-const { values } = parseArgs({
-  options: {
-    quality: { type: 'string' },
-    lossless: { type: 'boolean' },
-  },
-});
-const quality = parseNonNegative(values.quality ?? process.env.QUALITY, '--quality', 80);
-const lossless = values.lossless ?? process.env.LOSSLESS === '1';
+const { quality, lossless } = parsePngToWebpOptions();
 
 // Forward-slash glob against a resolved cwd so it works regardless of the launch
 // directory and stays cross-platform (ADR-0017).

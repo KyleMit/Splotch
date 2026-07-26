@@ -1,4 +1,19 @@
+import { parseArgs } from 'node:util';
 import { fail } from './paths.mjs';
+
+export function parsePngToWebpOptions(args = process.argv.slice(2), env = process.env) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      quality: { type: 'string' },
+      lossless: { type: 'boolean' },
+    },
+  });
+  return {
+    quality: parseNonNegative(values.quality ?? env.QUALITY, '--quality', 80),
+    lossless: values.lossless ?? env.LOSSLESS === '1',
+  };
+}
 
 export function parsePositiveInt(raw, name, fallback, source) {
   if (raw === undefined) return fallback;

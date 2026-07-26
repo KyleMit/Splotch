@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import {
+  parseNonNegative,
+  parsePngToWebpOptions,
+  parsePositiveInt,
+  parseTemperature,
+} from '../lib/cli.mjs';
 import { makeClient } from '../lib/gemini.mjs';
 
 let error;
@@ -81,6 +86,33 @@ describe('parseNonNegative', () => {
       'page via notes.json',
       `--threshold must be a non-negative number, got "${raw}" (page via notes.json)`
     );
+  });
+});
+
+describe('parsePngToWebpOptions', () => {
+  test('uses defaults and environment compatibility fallbacks', () => {
+    expect(parsePngToWebpOptions([], {})).toEqual({ quality: 80, lossless: false });
+    expect(parsePngToWebpOptions([], { QUALITY: '90', LOSSLESS: '1' })).toEqual({
+      quality: 90,
+      lossless: true,
+    });
+  });
+
+  test('parses flags with precedence over environment fallbacks', () => {
+    expect(
+      parsePngToWebpOptions(['--quality', '95', '--lossless'], {
+        QUALITY: '70',
+        LOSSLESS: '0',
+      })
+    ).toEqual({ quality: 95, lossless: true });
+  });
+
+  test('rejects an invalid environment quality fallback', () => {
+    expect(() => parsePngToWebpOptions([], { QUALITY: 'invalid' })).toThrow('process exited');
+    expect(error).toHaveBeenCalledWith(
+      '--quality must be a non-negative number, got "invalid"'
+    );
+    expect(exit).toHaveBeenCalledWith(1);
   });
 });
 
