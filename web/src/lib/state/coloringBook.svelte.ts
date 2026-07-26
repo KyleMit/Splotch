@@ -1,6 +1,6 @@
-// The catalog itself lives in a plain JS module so build scripts can read it
-// too. Re-exported here so existing `$lib/state/coloringBook.svelte.js` imports
-// keep working.
+// The catalog itself lives in a rune-free TypeScript module so build scripts
+// can read it too. Re-exported here so existing
+// `$lib/state/coloringBook.svelte.js` imports keep working.
 import {
   pageImage,
   pageColorImage,

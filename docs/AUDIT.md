@@ -26,31 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P3][readability] Header comment claims the module is "plain JS" when it is TypeScript
-
-**File(s):** `web/src/lib/state/books.ts:2-4` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-// where each one is allowed to ship. This file is intentionally plain JS (no
-// Svelte runes) so it can be imported both by the app and by Node build scripts
-```
-
-The file is `.ts` with interfaces and typed exports throughout — not "plain JS." The intended point
-is "no Svelte runes, so Node build scripts can import it," but "plain JS" is factually wrong and
-could mislead someone into thinking they can't add types here.
-
-#### Proposed solution
-
-Reword to "intentionally rune-free (no `.svelte.ts`) so Node build scripts … can import it."
-
-#### Verification
-
-Doc-only; read-through confirms accuracy.
-
----
-
 ### [P3][duplication] `hoverArmed = false` reset duplicated across both navigation handlers
 
 **File(s):** `web/src/lib/components/ColoringBook.svelte:89-96` — pinned at SHA f934d43
