@@ -9,37 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P3][type-safety] `initPencilEraser` swallows a rejected `addListener` promise
-
-**File(s):** `web/src/lib/plugins/pencilEraser.ts:40-43` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-PencilEraser.addListener('doubleTap', handleDoubleTap).then((h) => {
-  if (removed) h.remove();
-  else handle = h;
-});
-```
-
-The `.then` has no `.catch`. If the native `addListener` bridge rejects (plugin not registered,
-bridge not ready), it becomes an unhandled promise rejection with no diagnostic, and `handle`
-silently stays `undefined` so the returned cleanup is a no-op. The floating promise is also the kind
-of thing `no-floating-promises` lint targets.
-
-#### Proposed solution
-
-Add a `.catch` that records/logs the failure (or at least `.catch(() => {})` with a comment on why a
-failed subscription is non-fatal off the happy path), and consider `void`-marking the floating
-promise for lint clarity.
-
-#### Verification
-
-`pencilEraser.test.ts` covers the web-fallback happy path; add a case where `addListener` rejects
-and assert `cleanup()` still doesn't throw. `npm run test:unit -- pencilEraser`.
-
----
-
 ### [P4][performance] `pinchTextZoom.spread()` allocates an array on every pointermove
 
 **File(s):** `web/src/lib/actions/pinchTextZoom.svelte.ts:56-60,103` — pinned at SHA f934d43
