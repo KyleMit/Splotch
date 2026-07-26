@@ -26,33 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P3][dead-code] `PLATFORMS` is exported and re-exported but never consumed; the catalog uses raw string literals instead
-
-**File(s):** `web/src/lib/state/books.ts:76`, `124-237`;
-`web/src/lib/state/coloringBook.svelte.ts:13` — pinned at SHA f934d43
-
-#### Problem
-
-`export const PLATFORMS = { WEB: 'web', MOBILE: 'mobile' } as const;` is defined and re-exported
-through `coloringBook.svelte.ts`, but a repo-wide grep shows zero consumers — the `BOOKS` entries
-all write `platforms: ['web', 'mobile']` as raw strings, and `booksForPlatform`/callers pass the
-literals `'web'`/`'mobile'` (`ColoringBook.svelte:22`). The constant that exists to prevent
-stringly-typed platform values is bypassed by the very data it was meant to guard.
-
-#### Proposed solution
-
-Either delete `PLATFORMS` (and its re-export) as dead code, or actually use it:
-`platforms: [PLATFORMS.WEB, PLATFORMS.MOBILE]` and
-`booksForPlatform(isNative() ? PLATFORMS.MOBILE : PLATFORMS.WEB)`. Given `BookPlatform` already
-type-checks the literals, deletion is the simpler win.
-
-#### Verification
-
-Remove it, run `npm run check` + `npm run build:cap` — no reference breaks. Grep for `PLATFORMS`
-returns nothing.
-
----
-
 ### [P3][type-safety] `Book.id`, `ColoringPage.id`, and `page()`'s `book`/`id`/`name` are bare `string`
 
 **File(s):** `web/src/lib/state/books.ts:51-74,92-97` — pinned at SHA f934d43

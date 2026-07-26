@@ -73,8 +73,6 @@ export interface Book {
   pages: ColoringPage[];
 }
 
-export const PLATFORMS = { WEB: 'web', MOBILE: 'mobile' } as const;
-
 const COLORING_ROOT = '/coloring';
 const ORIENTATION_SLUGS: Record<BookOrientation, string> = {
   portrait: 'tall',

@@ -10,7 +10,7 @@ import {
   type ColoringPage,
 } from './books';
 
-export { BOOKS, PLATFORMS, booksForPlatform } from './books';
+export { BOOKS, booksForPlatform } from './books';
 
 interface ColoringBookState {
   overlayPage: ColoringPage | null;
