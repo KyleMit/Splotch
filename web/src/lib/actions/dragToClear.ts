@@ -104,7 +104,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const clientY = e.clientY;
     holdStartX = clientX;
     holdStartY = clientY;
-    holdTimer = setTimeout(o.onTutorialShow, HOLD_DURATION);
+    holdTimer = scheduleReset(o.onTutorialShow, HOLD_DURATION);
 
     activePointerId = e.pointerId;
     capturePointer(node, e.pointerId);
@@ -142,7 +142,8 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const deltaX = Math.abs(clientX - holdStartX);
     const deltaY = Math.abs(clientY - holdStartY);
     if (deltaX > MOVEMENT_THRESHOLD || deltaY > MOVEMENT_THRESHOLD) {
-      if (holdTimer) {
+      if (holdTimer !== null) {
+        resetTimers.delete(holdTimer);
         clearTimeout(holdTimer);
         holdTimer = null;
       }
@@ -183,7 +184,8 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   }
 
   function finishDrag(o: DragToClearOptions, pointerId: number) {
-    if (holdTimer) {
+    if (holdTimer !== null) {
+      resetTimers.delete(holdTimer);
       clearTimeout(holdTimer);
       holdTimer = null;
     }
@@ -315,7 +317,6 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       node.removeEventListener('pointerup', onPointerUp);
       node.removeEventListener('pointercancel', onPointerCancel);
       node.removeEventListener('transitionend', onTransitionEnd);
-      if (holdTimer) clearTimeout(holdTimer);
       if (acceptZoneFrame !== null) cancelAnimationFrame(acceptZoneFrame);
       for (const id of resetTimers) clearTimeout(id);
       resetTimers.clear();
