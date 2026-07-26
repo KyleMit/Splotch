@@ -20,29 +20,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P4][maintainability] Inconsistent hex casing in `COLOR_FAMILIES` (greys use lowercase, rest uppercase)
-
-**File(s):** `web/src/lib/hexPickerLayout.ts:137` (`#ffffff`) vs. the other 80 uppercase entries —
-pinned at SHA f934d43
-
-#### Problem
-
-Every shade is uppercase except the greys family's `#ffffff` (and it's the value the picker compares
-case-sensitively against at `ColorPicker.svelte:155`). Mixed casing makes `rg '#FFFFFF'` miss it and
-invites case-sensitivity bugs like the white-border check.
-
-#### Proposed solution
-
-Normalize all `COLOR_FAMILIES` hexes to one case (uppercase, matching the majority) and make
-consumers case-insensitive. The uniqueness test already lower-cases, so it won't catch this.
-
-#### Verification
-
-`hexPickerLayout.test.ts` still green; `rg '#[0-9a-f]{6}'` (lowercase) in the module returns only
-intended entries.
-
----
-
 ### [P4][naming] `aria-label={shown === hex ? label : 'White'}` hardcodes the only themed label
 
 **File(s):** `web/src/lib/components/ColorPalette.svelte:133` — pinned at SHA f934d43
