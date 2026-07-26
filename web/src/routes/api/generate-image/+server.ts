@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 import { STYLE_SUFFIXES } from '$lib/ai/styles';
 import { buildPromptForStyle } from '$lib/ai/prompt';
 import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
-import { recordTokenUsage } from '$lib/server/usage';
+import { recordByokUsage, recordTokenUsage } from '$lib/server/usage';
 import { aiProvider } from '$lib/server/ai/provider';
 import {
   authorizeGenerationRequest,
@@ -103,7 +103,7 @@ function recordGenerationUsage(
   // Only the managed tokens are worth a per-token tally (to spot one going
   // rogue). BYOK requests run on the parent's own quota, so just log them.
   if (authorization.usingByok) {
-    console.log(`[ai-usage] byok style=${style || 'none'} at=${new Date().toISOString()}`);
+    recordByokUsage(style, finalPrompt);
   } else {
     // The synchronous audit log inside recordTokenUsage runs immediately; only
     // the Blobs write is async, and we don't make the image wait on it. waitUntil

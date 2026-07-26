@@ -22,37 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P3][consistency] Two divergent `[ai-usage]` log formats for the same concept
-
-**File(s):** `web/src/routes/api/generate-image/+server.ts:122` (BYOK log) vs
-`web/src/lib/server/usage.ts:45-47` (managed log) — pinned at SHA f934d43
-
-#### Problem
-
-The managed path logs via `recordTokenUsage` with a structured line
-(`token=… style=… prompt=… at=…`, masked token), but the BYOK path hand-writes a *different*
-`[ai-usage]` line inline in the route:
-
-```ts
-console.log(`[ai-usage] byok style=${style || 'none'} at=${new Date().toISOString()}`);
-```
-
-Same log namespace, two formats, one of them living in route code instead of the usage module that
-owns `[ai-usage]` logging. A log consumer parsing `[ai-usage]` lines must handle two schemas, and
-the route now knows the audit-log format.
-
-#### Proposed solution
-
-Add `recordByokUsage({ style }: { style: string | null })` to `usage.ts` that emits a line
-consistent with `recordTokenUsage` (same field order, a `token=byok` marker). Route calls it instead
-of the inline `console.log`, keeping all `[ai-usage]` formatting in one module.
-
-#### Verification
-
-`grep -rn "\[ai-usage\]" web/src` shows all emitters in `usage.ts`. Both lines share field shape.
-
----
-
 ### [P3][consistency] Logical-failure status convention differs (200+{ok:false} vs 4xx) between verify-* and report
 
 **File(s):** `web/src/routes/api/verify-access-code/+server.ts:26,30`;

@@ -24,6 +24,12 @@ function maskToken(token: unknown) {
 
 const CAS_ATTEMPTS = 3;
 
+export function recordByokUsage(style: string | null, prompt: string): void {
+  console.log(
+    `[ai-usage] token=byok style=${style || 'none'} prompt=${JSON.stringify(prompt)} at=${new Date().toISOString()}`
+  );
+}
+
 /**
  * Record that a token generated an image, so we can spot a token going rogue.
  * Logs to the Netlify function log (real-time, synchronous) and keeps a durable
