@@ -1,4 +1,5 @@
 import { rateLimit } from '$lib/server/rateLimit';
+import { cspReportBucket } from '$lib/server/rateLimitKeys';
 import { throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
@@ -95,7 +96,7 @@ function extractViolations(payload: unknown): CspViolation[] {
  * how many reports inside it were usable.
  */
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-  const { limited, retryAfter } = rateLimit(`csp-report:${getClientAddress()}`, {
+  const { limited, retryAfter } = rateLimit(cspReportBucket(getClientAddress()), {
     limit: 10,
     windowMs: 60_000,
   });

@@ -10,10 +10,11 @@ const { isAllowedToken, peekRateLimit, rateLimit } = vi.hoisted(() => ({
 vi.mock('$lib/server/tokens', () => ({ isAllowedToken }));
 vi.mock('$lib/server/rateLimit', () => ({ peekRateLimit, rateLimit }));
 
+import { verifyAccessCodeBucket } from '$lib/server/rateLimitKeys';
 import { POST } from './+server';
 
 const address = '203.0.113.5';
-const key = `verify-access-code:${address}`;
+const key = verifyAccessCodeBucket(address);
 
 function post(body: unknown) {
   const request = new Request('http://localhost/api/verify-access-code', {

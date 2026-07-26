@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { rateLimit } from '$lib/server/rateLimit';
+import { verifyKeyBucket } from '$lib/server/rateLimitKeys';
 import { readJsonBody, throttled } from '$lib/server/http';
 import { aiProvider } from '$lib/server/ai/provider';
 import type { RequestHandler } from './$types';
@@ -12,7 +13,7 @@ import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   // Same throttle as verify-access-code: a live model call per request makes
   // this worth guarding against rapid repeated probes from one client.
-  const { limited, retryAfter } = rateLimit(`verify-key:${getClientAddress()}`);
+  const { limited, retryAfter } = rateLimit(verifyKeyBucket(getClientAddress()));
   if (limited) return throttled(retryAfter);
 
   const body = await readJsonBody(request);

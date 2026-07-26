@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { isAllowedToken } from '$lib/server/tokens';
 import { peekRateLimit, rateLimit } from '$lib/server/rateLimit';
+import { verifyAccessCodeBucket } from '$lib/server/rateLimitKeys';
 import { readJsonBody, throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
@@ -17,7 +18,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   // failure path (ADR-0014): peek before checking the code — a limited IP gets a
   // blind 429 with no oracle answer — then charge the bucket only on a failed
   // guess, so valid families behind one NAT never spend it.
-  const key = `verify-access-code:${getClientAddress()}`;
+  const key = verifyAccessCodeBucket(getClientAddress());
   const guess = peekRateLimit(key);
   if (guess.limited) return throttled(guess.retryAfter);
 

@@ -8,6 +8,7 @@ vi.mock('$lib/server/tokens', () => ({ isAllowedToken }));
 
 import { POST } from './+server';
 import { peekRateLimit } from '$lib/server/rateLimit';
+import { verifyAccessCodeBucket } from '$lib/server/rateLimitKeys';
 
 function post(address: string, body: unknown) {
   const request = new Request('http://localhost/api/verify-access-code', {
@@ -34,7 +35,7 @@ describe('POST /api/verify-access-code (real rateLimit)', () => {
       expect(response.status).toBe(200);
     }
 
-    expect(peekRateLimit(`verify-access-code:${address}`)).toEqual({
+    expect(peekRateLimit(verifyAccessCodeBucket(address))).toEqual({
       limited: false,
       retryAfter: 0,
     });

@@ -2,6 +2,11 @@ import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { throttled } from './http';
 import { peekRateLimit, rateLimit } from './rateLimit';
+import {
+  generateImageBucket,
+  generateImageByokBucket,
+  verifyAccessCodeBucket,
+} from './rateLimitKeys';
 import { isAllowedToken } from './tokens';
 
 const GENERATE_LIMIT = 15;
@@ -24,7 +29,7 @@ export async function authorizeGenerationRequest(input: {
   // Peek before the allowlist read, then charge only failures to its shared
   // per-IP budget so valid families behind one NAT never consume it.
   if (!usingByok) {
-    const guessKey = `verify-access-code:${input.clientAddress}`;
+    const guessKey = verifyAccessCodeBucket(input.clientAddress);
     const guess = peekRateLimit(guessKey);
     if (guess.limited) return throttled(guess.retryAfter);
     if (typeof input.token !== 'string' || !(await isAllowedToken(input.token))) {
@@ -33,7 +38,7 @@ export async function authorizeGenerationRequest(input: {
     }
 
     // Valid managed traffic is keyed per token to contain a leaked credential.
-    const generation = rateLimit(`generate-image:${input.token}`, {
+    const generation = rateLimit(generateImageBucket(input.token), {
       limit: GENERATE_LIMIT,
       windowMs: GENERATE_WINDOW_MS,
     });
@@ -47,7 +52,7 @@ export async function authorizeGenerationRequest(input: {
 
   // BYOK is keyed per IP because the provider result is still a key-validity
   // oracle, even though successful calls spend the parent's own quota.
-  const generation = rateLimit(`generate-image-byok:${input.clientAddress}`, {
+  const generation = rateLimit(generateImageByokBucket(input.clientAddress), {
     limit: BYOK_LIMIT,
     windowMs: GENERATE_WINDOW_MS,
   });

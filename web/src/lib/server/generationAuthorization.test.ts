@@ -16,6 +16,7 @@ import {
   authorizeGenerationRequest,
   requireEffectiveGenerationKey,
 } from './generationAuthorization';
+import { verifyAccessCodeBucket } from './rateLimitKeys';
 
 const managedInput = {
   apiKey: null,
@@ -52,10 +53,10 @@ describe('authorizeGenerationRequest', () => {
       body: { message: 'Invalid access token' },
     });
 
-    expect(peekRateLimit).toHaveBeenCalledWith('verify-access-code:203.0.113.5');
+    expect(peekRateLimit).toHaveBeenCalledWith(verifyAccessCodeBucket('203.0.113.5'));
     expect(isAllowedToken).toHaveBeenCalledWith('daycare-club');
     expect(rateLimit).toHaveBeenCalledOnce();
-    expect(rateLimit).toHaveBeenCalledWith('verify-access-code:203.0.113.5');
+    expect(rateLimit).toHaveBeenCalledWith(verifyAccessCodeBucket('203.0.113.5'));
   });
 
   it('keeps a valid managed token out of the shared verification budget', async () => {
