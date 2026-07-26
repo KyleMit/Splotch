@@ -146,12 +146,23 @@ async function scoreCatalog() {
 
   const results = new Map();
   let next = 0;
+  let errors = 0;
   await Promise.all(
     Array.from({ length: Math.min(CONCURRENCY, outlines.length) }, async () => {
       while (next < outlines.length) {
         const path = outlines[next++];
-        const [rel, entry] = await scorePage(path);
-        results.set(rel, entry);
+        try {
+          const [rel, entry] = await scorePage(path);
+          results.set(rel, entry);
+        } catch (error) {
+          const rel = relative(COLORING_DIR, path)
+            .replace(/\.outline\.webp$/, '')
+            .replace(/\\/g, '/');
+          console.error(
+            `${rel}  ERROR (${error instanceof Error ? error.message : String(error)})`
+          );
+          errors++;
+        }
       }
     })
   );
@@ -159,18 +170,21 @@ async function scoreCatalog() {
   const pages = {};
   for (const rel of [...results.keys()].sort()) pages[rel] = results.get(rel);
   return {
-    version: 2,
-    thresholds: {
-      keep: KEEP_THRESHOLD,
-      localKeep: LOCAL_KEEP_THRESHOLD,
-      nightDriftMax: DRIFT_THRESHOLD_DEFAULT,
-      bgLumaMax: NIGHT_BG_LUMA_MAX_DEFAULT,
-      lineWhiteMin: LINE_WHITE_MIN_DEFAULT,
-      solidBlobMax: SOLID_BLOB_MAX,
-      solidInteriorMax: SOLID_INTERIOR_MAX,
-      eyeRingDepthMax: EYE_RING_DEPTH_MAX,
+    catalog: {
+      version: 2,
+      thresholds: {
+        keep: KEEP_THRESHOLD,
+        localKeep: LOCAL_KEEP_THRESHOLD,
+        nightDriftMax: DRIFT_THRESHOLD_DEFAULT,
+        bgLumaMax: NIGHT_BG_LUMA_MAX_DEFAULT,
+        lineWhiteMin: LINE_WHITE_MIN_DEFAULT,
+        solidBlobMax: SOLID_BLOB_MAX,
+        solidInteriorMax: SOLID_INTERIOR_MAX,
+        eyeRingDepthMax: EYE_RING_DEPTH_MAX,
+      },
+      pages,
     },
-    pages,
+    errors,
   };
 }
 
@@ -181,7 +195,7 @@ if (mode !== '--freeze' && mode !== '--diff' && mode !== undefined)
   fail('usage: audit-golden.mjs [--freeze | --diff]   (default: --diff)');
 
 const t0 = performance.now();
-const current = await scoreCatalog();
+const { catalog: current, errors } = await scoreCatalog();
 const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
 const pageCount = Object.keys(current.pages).length;
 
@@ -198,6 +212,7 @@ if (mode === '--freeze') {
     console.log(`\n${fails.length} known-failing verdict(s) frozen as the baseline:`);
     for (const f of fails) console.log(`  ${f}`);
   }
+  if (errors) process.exitCode = 1;
 } else {
   if (!existsSync(GOLDEN_PATH))
     fail(`no golden file at ${GOLDEN_PATH} — run gen:coloring-golden:freeze first`);
@@ -227,7 +242,7 @@ if (mode === '--freeze') {
     `\n${pageCount} page(s) diffed vs golden in ${elapsed}s · ` +
       `${out.regressions.length} regression(s) · ${out.improvements.length} improvement(s) · ${out.info.length} other change(s).`
   );
-  if (out.regressions.length) process.exitCode = 1;
+  if (out.regressions.length || errors) process.exitCode = 1;
   else if (!out.improvements.length && !out.info.length)
     console.log('Clean — no drift from the golden set.');
 }
