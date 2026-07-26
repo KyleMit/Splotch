@@ -1,3 +1,5 @@
+import { QUICKSAND_FONT_FAMILY } from '../fonts.ts';
+
 // Design-token single source of truth (ADR-0071).
 //
 // Every value here is emitted into web/src/tokens.css by `npm run gen:tokens`
@@ -69,6 +71,11 @@ export const scale = {
   // drawing route would strand the canvas zoomed with no way to reset it
   // (ADR-0076). Every parent-center text input must reference this.
   inputFontSize: 'max(16px, var(--font-size-md))',
+
+  // The app-wide sans stack. Components reference var(--font-family) rather
+  // than hand-copying it (ErrorScreen, AdminConsole) so there is one source of
+  // truth for the family name.
+  fontFamily: `'${QUICKSAND_FONT_FAMILY}', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`,
 
   // Raw code/version values (masked API keys, version strings, inline code).
   fontMono: "'Courier New', monospace",

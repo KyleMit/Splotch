@@ -26,14 +26,7 @@ body {
      height (inherited from body via height: 100%), so an over-tall body pushed them
      up off-center in the browser while the chrome-less PWA looked fine. */
   height: 100dvh;
-  font-family:
-    'Quicksand Variable',
-    'Quicksand',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-family: var(--font-family);
   background: var(--app-bg);
 }
 

@@ -28,7 +28,7 @@
     text-align: center;
     background: var(--app-bg, #fcfbf8);
     color: var(--text-strong, #333);
-    font-family: 'Quicksand Variable', system-ui, sans-serif;
+    font-family: var(--font-family, 'Quicksand Variable', system-ui, sans-serif);
   }
 
   .error-blob {
