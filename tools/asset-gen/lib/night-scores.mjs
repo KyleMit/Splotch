@@ -9,6 +9,7 @@
 //   scoreLineColor() — the model re-inked the white outlines DARK.
 import sharp from 'sharp';
 import { dilateMask, erodeMask } from './morphology.mjs';
+import { OUTLINE_INK_CUTOFF } from './outline-match.mjs';
 
 // --- Drift detection ----------------------------------------------------------
 // A night fill's white pixels are outlines; the model has drifted when it draws a
@@ -18,7 +19,6 @@ import { dilateMask, erodeMask } from './morphology.mjs';
 // fill white/low-chroma pixels that fall outside it. Normalized by the source
 // outline mass so pages of different line density compare on one scale.
 const DRIFT_W = 512; // working width for the comparison
-const DRIFT_SRC_DARK = 110; // source pixel darker than this = a line
 const DRIFT_DILATE = 6; // px of slack around each source line (registration + glow)
 const DRIFT_THIN = 3; // white strokes up to ~2*this px wide are outline-like, not fills
 const DRIFT_LUMA_WHITE = 185; // fill pixel this bright...
@@ -112,7 +112,7 @@ export async function scoreDrift(fillBuf, sourceBuf) {
   const outline = new Uint8Array(n);
   let srcCount = 0;
   for (let i = 0; i < n; i++) {
-    if (s.data[i] < DRIFT_SRC_DARK) {
+    if (s.data[i] < OUTLINE_INK_CUTOFF) {
       outline[i] = 1;
       srcCount++;
     }
@@ -157,7 +157,6 @@ export async function scoreDrift(fillBuf, sourceBuf) {
 // the boundary, so a flagged page may need a targeted low-temp regen to come back
 // cleanly white; eyeball borderline pages in the coloring-book proof sheet.
 const LINE_W = 512;
-const LINE_SRC_DARK = 110; // source pixel darker than this = an outline
 export const LINE_WHITE_MIN_DEFAULT = 150; // median outline brightness below this = dark outlines
 
 export async function scoreLineColor(fillBuf, sourceBuf) {
@@ -176,7 +175,7 @@ export async function scoreLineColor(fillBuf, sourceBuf) {
   const maxes = [];
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      if (s.data[y * w + x] >= LINE_SRC_DARK) continue; // not a source outline pixel
+      if (s.data[y * w + x] >= OUTLINE_INK_CUTOFF) continue; // not a source outline pixel
       let mx = 0;
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {

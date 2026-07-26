@@ -32,33 +32,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P3][maintainability] "Source dark = a line" (`110`) is a magic number copied across four scorers
-
-**File(s):** `tools/asset-gen/lib/outline-match.mjs:23` (`THRESHOLD`), `night-scores.mjs:21`
-(`DRIFT_SRC_DARK`) & `:160` (`LINE_SRC_DARK`), `invented-shapes.mjs:28` (`SRC_DARK`) — pinned at SHA
-f934d43
-
-#### Problem
-
-Four constants equal `110`, all meaning "a source line-art pixel darker than this is an outline
-stroke." `invented-shapes.mjs:28` even comments `// … (as scoreDrift)` to flag the coupling. Unlike
-the ink-150 case there is no canonical export — the value floats independently in each file, so the
-modules that must "see the same picture the gates do" (invented-shapes' stated goal) can drift apart
-on a tuning change.
-
-#### Proposed solution
-
-Export a single `SOURCE_LINE_DARK = 110` (from `lib/pixels.mjs` or `night-scores.mjs`) and import it
-in the four sites. Keep `LINE_SRC_DARK`/`DRIFT_SRC_DARK` as local aliases only if a comment
-justifies why they might diverge (none currently do).
-
-#### Verification
-
-`grep -rn "= 110" lib/` collapses to one definition. `tests/night-scores.test.mjs`,
-`tests/outline-match.test.mjs`, `tests/invented-shapes.test.mjs` pass.
-
----
-
 ### [P3][complexity] `scoreCompositeEyes` is a 100-line function with an inline pupil-shape validator
 
 **File(s):** `tools/asset-gen/lib/composite-eye.mjs:158-259` — pinned at SHA f934d43

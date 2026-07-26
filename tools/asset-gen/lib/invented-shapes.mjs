@@ -20,12 +20,12 @@
 // flagged.
 import sharp from 'sharp';
 import { dilateMask } from './morphology.mjs';
+import { OUTLINE_INK_CUTOFF } from './outline-match.mjs';
 
 // Geometry constants are inherited unchanged from scoreDrift/scoreNightness
 // (lib/night-scores.mjs) so this detector sees the same picture the gates do; the
 // blob thresholds are calibrated in ideas-exploration/idea-13/report.md.
 export const W = 512; // working width, matches scoreDrift's scale
-export const SRC_DARK = 110; // source pixel darker than this = line/solid ink (as scoreDrift)
 export const SRC_LIGHT = 170; // source pixel brighter than this = floodable background (as scoreNightness)
 export const LINE_DILATE = 6; // px of slack around source ink (registration + glow), as DRIFT_DILATE
 export const DEV_T = 60; // Euclidean RGB distance from median bg color to call a pixel "foreign"
@@ -173,7 +173,7 @@ export async function detectInventedShapes(fillBuf, sourceBuf) {
 
   // 2. dilated source-ink mask (lines + solid chalk whites)
   const ink = new Uint8Array(n);
-  for (let i = 0; i < n; i++) if (s.data[i] < SRC_DARK) ink[i] = 1;
+  for (let i = 0; i < n; i++) if (s.data[i] < OUTLINE_INK_CUTOFF) ink[i] = 1;
   const nearLine = dilateMask(ink, w, h, LINE_DILATE);
 
   // candidate pixels: open background, clear of any source ink
