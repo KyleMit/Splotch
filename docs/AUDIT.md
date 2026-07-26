@@ -9,32 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P3][type-safety] Share one `Origin`/point type instead of redefining `{x,y}` per action
-
-**File(s):** `web/src/lib/actions/launchGuard.ts:41` (`Origin | null`) vs
-`web/src/lib/actions/modalDialog.svelte.ts:40` (`origin?: { x: number; y: number } | null`); also
-`pinchTextZoom.svelte.ts:43` and `aiPreview.ts:33` `Point` — pinned at SHA f934d43
-
-#### Problem
-
-`guardLaunchZone` takes `Origin | null`, but `modalDialog` declares its `origin` as an inline
-`{ x: number; y: number } | null` and passes it straight in (`guardLaunchZone(o.origin ?? null)`).
-It compiles only because the shapes coincide. The same `{x:number;y:number}` shape is also
-independently spelled as `Point` (`aiPreview.ts`) and as an inline `{ x: number; y: number }` map
-value in `pinchTextZoom`. Four spellings of one 2D-point concept.
-
-#### Proposed solution
-
-Have `modalDialog`'s `ModalOptions.origin` reference the same `Origin` type `guardLaunchZone`
-consumes (import it), and reuse the existing `Point` type in `pinchTextZoom`'s pointer map.
-Consolidate on a single exported point type.
-
-#### Verification
-
-`npm run check` (svelte-check) passes; no behavioral change.
-
----
-
 ### [P3][duplication] Collapse `launchGuard`'s two zone-pruning code paths
 
 **File(s):** `web/src/lib/actions/launchGuard.ts:45,56-68,77-80` — pinned at SHA f934d43
