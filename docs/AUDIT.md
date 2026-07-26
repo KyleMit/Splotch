@@ -9,43 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P2][complexity] Split `dragToClear.onPointerDown` — it mixes multi-tap detection, hold timer, and accept-zone geometry
-
-**File(s):** `web/src/lib/actions/dragToClear.ts:54-113` (`onPointerDown`) — pinned at SHA f934d43
-
-#### Problem
-
-`onPointerDown` is ~60 lines spanning four unrelated concerns: (1) multi-click/tutorial detection
-(`clickCount`/`lastClickTime`), (2) hold-timer arming, (3) drag-state init + pointer capture, and
-(4) computing and positioning the circular accept zone (`homeButtonCenter`, `radius`, five
-`acceptZoneEl.style.*` writes, an rAF to add `.visible`). The reader must hold all four in mind at
-once, and the accept-zone geometry block is the kind of self-contained unit that reads far better
-named.
-
-#### Proposed solution
-
-Extract named helpers:
-
-```ts
-function registerTap(now: number, o: DragToClearOptions): boolean; // returns true if it triggered the tutorial (caller returns early)
-function armAcceptZone(
-  o: DragToClearOptions,
-  center: { x: number; y: number },
-  radius: number,
-): void;
-```
-
-Leave `onPointerDown` as a short orchestration: tap check → hold timer → drag init →
-`armAcceptZone`.
-
-#### Verification
-
-Existing `dragToClear.test.ts` cases (`commits the clear…`,
-`does not let a second pointerdown restart…`) cover the behavior; they must stay green after the
-extraction. `npm run test:unit -- dragToClear`.
-
----
-
 ### [P2][duplication] Extract the repeated distance-vs-threshold computation in `dragToClear`
 
 **File(s):** `web/src/lib/actions/dragToClear.ts:133-138` (`onPointerMove`) and `198-203`

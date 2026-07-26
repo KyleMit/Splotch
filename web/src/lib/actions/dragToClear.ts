@@ -55,22 +55,46 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     return Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
   }
 
-  function onPointerDown(e: PointerEvent) {
-    if (isDragging) return;
-
-    const o = getOptions();
-    const now = Date.now();
+  // True when the tap completed a multi-tap run and showed the tutorial, in which
+  // case the caller must not start a drag.
+  function registerTap(now: number, o: DragToClearOptions): boolean {
     if (now - lastClickTime < MULTI_CLICK_WINDOW) {
       clickCount++;
       if (clickCount >= MULTI_CLICK_THRESHOLD) {
         o.onTutorialShow();
         clickCount = 0;
-        return;
+        return true;
       }
     } else {
       clickCount = 1;
     }
     lastClickTime = now;
+    return false;
+  }
+
+  function armAcceptZone(
+    o: DragToClearOptions,
+    center: { x: number; y: number },
+    radius: number
+  ): void {
+    homeButtonCenter = center;
+
+    o.acceptZoneEl.style.left = `${homeButtonCenter.x - radius}px`;
+    o.acceptZoneEl.style.top = `${homeButtonCenter.y - radius}px`;
+    o.acceptZoneEl.style.width = `${radius * 2}px`;
+    o.acceptZoneEl.style.height = `${radius * 2}px`;
+    o.acceptZoneEl.style.display = 'block';
+    acceptZoneFrame = requestAnimationFrame(() => {
+      acceptZoneFrame = null;
+      o.acceptZoneEl.classList.add('visible');
+    });
+  }
+
+  function onPointerDown(e: PointerEvent) {
+    if (isDragging) return;
+
+    const o = getOptions();
+    if (registerTap(Date.now(), o)) return;
 
     const clientX = e.clientX;
     const clientY = e.clientY;
@@ -91,7 +115,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     releaseAllPointers();
 
     const rect = node.getBoundingClientRect();
-    homeButtonCenter = {
+    const center = {
       x: (rect.left + rect.right) / 2,
       y: (rect.top + rect.bottom) / 2,
     };
@@ -99,16 +123,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     o.containerEl.classList.add('dragging-active');
     node.classList.add('dragging');
 
-    const radius = getAcceptRadius();
-    o.acceptZoneEl.style.left = `${homeButtonCenter.x - radius}px`;
-    o.acceptZoneEl.style.top = `${homeButtonCenter.y - radius}px`;
-    o.acceptZoneEl.style.width = `${radius * 2}px`;
-    o.acceptZoneEl.style.height = `${radius * 2}px`;
-    o.acceptZoneEl.style.display = 'block';
-    acceptZoneFrame = requestAnimationFrame(() => {
-      acceptZoneFrame = null;
-      o.acceptZoneEl.classList.add('visible');
-    });
+    armAcceptZone(o, center, getAcceptRadius());
 
     o.onDragStart?.();
 
