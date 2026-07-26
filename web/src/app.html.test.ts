@@ -2,7 +2,7 @@
 // importing settings.svelte.ts for the clamp constants runs that module's
 // load-time localStorage reads, so the file has to stay on the happy-dom
 // default (.claude/rules/testing.md).
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
 import {
@@ -121,5 +121,18 @@ describe("app.html's boot script mirrors the state modules", () => {
     expect(
       bootStringLiteral(/toggleAttribute\('data-app-surface', location\.pathname === '([^']*)'\)/)
     ).toBe(DRAWING_ROUTE);
+  });
+
+  // Catches the other half of the divergence app.html's literal can't see:
+  // DRAWING_ROUTE naming a route that no longer has a page, e.g. because the
+  // drawing page moved. `data-app-surface` matching a literal that resolves
+  // nowhere would be silently wrong in the same way an unmatched literal is.
+  it('DRAWING_ROUTE resolves to an actual +page.svelte under routes/', () => {
+    const routeSegment = DRAWING_ROUTE.replace(/^\/|\/$/g, '');
+    const pagePath = new URL(
+      `./routes/${routeSegment ? `${routeSegment}/` : ''}+page.svelte`,
+      import.meta.url
+    );
+    expect(existsSync(pagePath), `expected a +page.svelte for route '${DRAWING_ROUTE}'`).toBe(true);
   });
 });

@@ -34,9 +34,10 @@
   // zoom, or iOS callout. Every other route is a normal document; the drawing
   // page is the override, so it sets the flag app.css keys off and clears it when
   // the user navigates away (client-side nav to /privacy etc.). The app.html boot
-  // script seeds the same flag for first paint, keyed off `DRAWING_ROUTE`
-  // (`lib/boot/appSurfaceRoute.ts`) — app.html can't import it, so
-  // `app.html.test.ts` keeps the two in sync.
+  // script re-types the same route as a `'/'` literal to seed the flag for first
+  // paint (it can't import `DRAWING_ROUTE` from `lib/boot/appSurfaceRoute.ts` —
+  // it's vanilla JS in a template file); `app.html.test.ts` asserts that literal
+  // matches the constant.
   $effect(() => {
     document.documentElement.setAttribute('data-app-surface', '');
     return () => document.documentElement.removeAttribute('data-app-surface');
