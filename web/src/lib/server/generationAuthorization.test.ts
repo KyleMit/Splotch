@@ -16,7 +16,11 @@ import {
   authorizeGenerationRequest,
   requireEffectiveGenerationKey,
 } from './generationAuthorization';
-import { verifyAccessCodeBucket } from './rateLimitKeys';
+import {
+  generateImageBucket,
+  generateImageByokBucket,
+  verifyAccessCodeBucket,
+} from './rateLimitKeys';
 
 const managedInput = {
   apiKey: null,
@@ -68,7 +72,7 @@ describe('authorizeGenerationRequest', () => {
       managedToken: 'daycare-club',
     });
     expect(rateLimit).toHaveBeenCalledOnce();
-    expect(rateLimit).toHaveBeenCalledWith('generate-image:daycare-club', {
+    expect(rateLimit).toHaveBeenCalledWith(generateImageBucket('daycare-club'), {
       limit: 15,
       windowMs: 60_000,
     });
@@ -83,7 +87,7 @@ describe('authorizeGenerationRequest', () => {
     const response = result as Response;
     expect(response.status).toBe(429);
     expect(response.headers.get('Retry-After')).toBe('9');
-    expect(rateLimit).toHaveBeenCalledWith('generate-image:daycare-club', {
+    expect(rateLimit).toHaveBeenCalledWith(generateImageBucket('daycare-club'), {
       limit: 15,
       windowMs: 60_000,
     });
@@ -104,7 +108,7 @@ describe('authorizeGenerationRequest', () => {
     expect(response.headers.get('Retry-After')).toBe('7');
     expect(peekRateLimit).not.toHaveBeenCalled();
     expect(isAllowedToken).not.toHaveBeenCalled();
-    expect(rateLimit).toHaveBeenCalledWith('generate-image-byok:198.51.100.8', {
+    expect(rateLimit).toHaveBeenCalledWith(generateImageByokBucket('198.51.100.8'), {
       limit: 30,
       windowMs: 60_000,
     });

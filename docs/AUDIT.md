@@ -22,56 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P1][duplication] Extract the shared per-IP rate-limit bucket key into one helper
-
-**File(s):** `web/src/lib/server/generationAuthorization.ts:27` and
-`web/src/routes/api/verify-access-code/+server.ts:20` (`verify-access-code:${clientAddress}`) —
-pinned at SHA f934d43
-
-#### Problem
-
-The verify-access-code oracle and generate-image's managed-token check deliberately share **one**
-per-IP budget, but the key string is hand-built in two places:
-
-```ts
-// generationAuthorization.ts:27
-const guessKey = `verify-access-code:${input.clientAddress}`;
-// verify-access-code/+server.ts:20
-const key = `verify-access-code:${getClientAddress()}`;
-```
-
-Plus every rate-limit key (`generate-image:`, `generate-image-byok:`, `report:`, `csp-report:`,
-`verify-key:`) is an inline template literal at its one call site. The shared bucket is a
-load-bearing contract (the whole ADR-0014 oracle story depends on both sites producing the identical
-key), yet nothing links them — a rename of one silently splits the bucket, and the tests hard-code
-the literal (`server.test.ts:16`, `generationAuthorization.test.ts:55`) so they'd stay green. The
-prefix is undiscoverable: you can't grep one symbol to see who shares a bucket.
-
-#### Proposed solution
-
-Add a small key-builder module (e.g. `web/src/lib/server/rateLimitKeys.ts`) exporting one function
-per bucket:
-
-```ts
-export const verifyAccessCodeBucket = (addr: string) => `verify-access-code:${addr}`;
-export const generateImageBucket = (token: string) => `generate-image:${token}`;
-export const generateImageByokBucket = (addr: string) => `generate-image-byok:${addr}`;
-export const reportBucket = (addr: string) => `report:${addr}`;
-export const cspReportBucket = (addr: string) => `csp-report:${addr}`;
-export const verifyKeyBucket = (addr: string) => `verify-key:${addr}`;
-```
-
-Call these everywhere (routes, generationAuthorization, tests). The shared bucket becomes a single
-referenced symbol.
-
-#### Verification
-
-`grep -rn 'verify-access-code:'` returns only the helper afterward. Existing
-`generationAuthorization.test.ts` / `verify-access-code/*.test.ts` pass unchanged (same string
-produced); update their literals to import the helper so a future rename can't desync.
-
----
-
 ### [P1][consistency] Unify the two error-response shapes across the API surface
 
 **File(s):** `web/src/lib/server/http.ts:9-15,22-27`;
