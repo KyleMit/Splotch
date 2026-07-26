@@ -41,6 +41,8 @@ let updateReload: 'none' | 'activating' | 'owed' = 'none';
 let registrationScheduled = false;
 let observedInstallingWorkers = new WeakSet<ServiceWorker>();
 
+const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+
 // Grace period after posting SKIP_WAITING before we give up waiting for the new
 // worker to take control. If controllerchange never arrives, the lifecycle must
 // not stay pinned in 'activating' — see activateWaitingSW.
@@ -125,7 +127,7 @@ export function initPWAUpdates(): (() => void) | undefined {
     () => {
       checkForUpdates();
     },
-    60 * 60 * 1000
+    UPDATE_CHECK_INTERVAL_MS
   );
 
   const onVisibilityChange = () => {
