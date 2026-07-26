@@ -9,68 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P1][complexity] Extract the drag-to-clear exit animation out of nested `scheduleReset` callbacks
-
-**File(s):** `web/src/lib/actions/dragToClear.ts:207-235` (`onPointerUp`, commit branch) — pinned at
-SHA f934d43
-
-#### Problem
-
-The successful-clear branch choreographs a multi-stage animation entirely in JS by mutating inline
-styles inside three nested `scheduleReset` closures:
-
-```ts
-node.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-node.style.opacity = '0';
-node.style.transform = 'scale(0.8)';
-o.pageTurnOverlayEl.classList.add('animating');
-scheduleReset(() => {
-  stopDrawSound();
-}, 300);
-scheduleReset(() => {
-  o.pageTurnOverlayEl.classList.remove('animating');
-  o.containerEl.style.transform = '';
-  node.classList.remove('dragging');
-  node.style.transition = 'none';
-  node.style.transform = 'scale(0.8)';
-  scheduleReset(() => {
-    o.containerEl.classList.remove('dragging-active');
-    node.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-    node.style.opacity = '1';
-    node.style.transform = '';
-  }, 50);
-}, 600);
-```
-
-Timing (`300`/`600`/`50`), easing, opacity and scale values are all hard-coded and interleaved, so
-the animation timeline can only be understood by mentally executing the nested timers. The
-transition strings duplicate durations that must stay in sync with `app.css`, and reading the
-sequence requires tracking which `node.style.*` is set/unset at each step.
-
-#### Proposed solution
-
-Move the choreography into CSS by toggling classes (`node.classList.add('clearing')`, a
-`.clearing-done` state) and driving it with `transitionend`/CSS animations, as the codebase already
-does for `pageTurnOverlayEl.animating` and `.clear-preview`. Extract the JS side into a single named
-helper:
-
-```ts
-function playClearExit(node: HTMLButtonElement, o: DragToClearOptions): void;
-```
-
-that adds the class, schedules `stopDrawSound()`, and removes the classes on animation end — no
-inline `style.transition`/`opacity`/`transform` string assignments. Keep only the audio timing in
-JS.
-
-#### Verification
-
-`dragToClear.test.ts` already exercises the cancel path; add a commit-path test asserting `onClear`
-fires and that after the animation window the node's `dragging`/`clearing` classes are cleared. Run
-`npm run test:unit -- dragToClear`. Visually verify the clear animation in `run-splotch` still
-matches.
-
----
-
 ### [P1][duplication] `pinchTextZoom` reimplements the DOM-free pinch accumulator that `createPinchZoom` already provides
 
 **File(s):** `web/src/lib/actions/pinchTextZoom.svelte.ts:43-114` vs

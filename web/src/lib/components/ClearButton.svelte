@@ -150,6 +150,30 @@
     display: block;
   }
 
+  /* Commit exit, staged by dragToClear: fade + shrink away, hold at the shrunk
+     size with no easing while the ripple sweeps, then ease back to rest.
+     .clearing / .clearing-done / .clearing-return are added imperatively via
+     classList — the return leg keeps its own timing because opacity is absent
+     from the base button's transition list, so it would snap back. */
+  .clear-button:global(.clearing) {
+    opacity: 0;
+    transform: scale(0.8);
+    transition:
+      opacity var(--duration-base) ease,
+      transform var(--duration-base) ease;
+  }
+
+  .clear-button:global(.clearing-done) {
+    transform: scale(0.8);
+    transition: none;
+  }
+
+  .clear-button:global(.clearing-return) {
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s ease;
+  }
+
   .clear-button:global(.delete-ready) {
     background: linear-gradient(135deg, #ff3838, #d63031);
     transform: scale(1.1);

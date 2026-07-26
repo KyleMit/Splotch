@@ -190,6 +190,41 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     node.classList.remove('delete-ready');
   }
 
+  // Commit exit choreography: the button's fade/shrink and the page-turn ripple
+  // live in ClearButton.svelte's CSS; the delays below only hand the classes over
+  // at each stage.
+  function playClearExit(node: HTMLButtonElement, o: DragToClearOptions): void {
+    node.classList.add('clearing');
+    o.pageTurnOverlayEl.classList.add('animating');
+
+    scheduleReset(() => {
+      stopDrawSound();
+    }, 300);
+
+    scheduleReset(() => {
+      o.pageTurnOverlayEl.classList.remove('animating');
+      o.containerEl.style.transform = '';
+      node.classList.remove('dragging');
+      node.classList.add('clearing-done');
+    }, 600);
+
+    scheduleReset(() => {
+      o.containerEl.classList.remove('dragging-active');
+      node.classList.remove('clearing', 'clearing-done');
+      node.classList.add('clearing-return');
+    }, 650);
+  }
+
+  // The return leg's easing is the only reason .clearing-return exists, so it
+  // comes off when that transition ends — reading the duration off the animation
+  // itself rather than re-encoding ClearButton.svelte's timing here. The icons
+  // transition their own margin and bubble, hence the target/property filter.
+  function onTransitionEnd(e: TransitionEvent) {
+    if (e.target === node && e.propertyName === 'opacity') {
+      node.classList.remove('clearing-return');
+    }
+  }
+
   function onPointerUp(e: PointerEvent) {
     if (!isDragging || e.pointerId !== activePointerId) return;
 
@@ -208,31 +243,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       o.onTutorialDismiss();
       o.onClear();
 
-      node.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-      node.style.opacity = '0';
-      node.style.transform = 'scale(0.8)';
-
-      o.pageTurnOverlayEl.classList.add('animating');
-
-      scheduleReset(() => {
-        stopDrawSound();
-      }, 300);
-
-      scheduleReset(() => {
-        o.pageTurnOverlayEl.classList.remove('animating');
-
-        o.containerEl.style.transform = '';
-        node.classList.remove('dragging');
-        node.style.transition = 'none';
-        node.style.transform = 'scale(0.8)';
-
-        scheduleReset(() => {
-          o.containerEl.classList.remove('dragging-active');
-          node.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-          node.style.opacity = '1';
-          node.style.transform = '';
-        }, 50);
-      }, 600);
+      playClearExit(node, o);
     } else {
       o.containerEl.classList.remove('dragging-active');
       o.containerEl.style.transform = '';
@@ -254,9 +265,10 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     o.containerEl.classList.remove('dragging-active');
     o.containerEl.style.transform = '';
     node.classList.remove('dragging');
-    node.style.transition = '';
-    node.style.opacity = '';
-    node.style.transform = '';
+    // A fresh drag can start while a previous commit's exit is still playing,
+    // so cancelling has to put the button back on screen rather than leave it
+    // mid-fade until that exit's timers catch up.
+    node.classList.remove('clearing', 'clearing-done', 'clearing-return');
     o.pageTurnOverlayEl.classList.remove('animating');
     stopDrawSound();
     o.onDragEnd?.();
@@ -269,6 +281,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   node.addEventListener('pointermove', onPointerMove);
   node.addEventListener('pointerup', onPointerUp);
   node.addEventListener('pointercancel', onPointerCancel);
+  node.addEventListener('transitionend', onTransitionEnd);
 
   return {
     destroy() {
@@ -276,6 +289,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);
       node.removeEventListener('pointercancel', onPointerCancel);
+      node.removeEventListener('transitionend', onTransitionEnd);
       if (holdTimer) clearTimeout(holdTimer);
       if (acceptZoneFrame !== null) cancelAnimationFrame(acceptZoneFrame);
       for (const id of resetTimers) clearTimeout(id);
