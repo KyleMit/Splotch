@@ -28,33 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P4][maintainability] `orientation.ts` memoizes through a module-level `lastRequested` — hidden global, hard to reset
-
-**File(s):** `web/src/lib/orientation.ts:12`, `27-29` — pinned at SHA f934d43
-
-#### Problem
-
-`let lastRequested` at module scope caches the last requested lock target to skip redundant plugin
-calls. Like `drawingSound`'s globals, this is invisible mutable state: it can't be reset for tests,
-and a hot-reload / re-entrant scenario carries stale state. There's no unit test for this module
-(the notchBand pure layer exists precisely to avoid this pattern, but
-`applyDeviceOrientationPreference` keeps the impure state inline).
-
-#### Proposed solution
-
-Either accept it as pragmatic (document why) or lift the pure decision — `settings → target` mapping
-and the "changed since last?" check — into a testable helper, leaving only the plugin call impure.
-Given `notchBand.ts` set the precedent of a pure decision layer for exactly this file family, a
-`resolveOrientationTarget(settings): 'portrait'|'landscape'|'unlocked'` pure function would be
-consistent and testable.
-
-#### Verification
-
-`npm run check`; if extracted, a node-env unit test covers the
-`lockRotationEnabled × forceLandscape` matrix.
-
----
-
 ### [P4][type-safety] Loose feature-detection casts for `navigator.standalone` and screen-orientation lock
 
 **File(s):** `web/src/lib/platform.ts:29` (`window.navigator as { standalone?: boolean }`),
