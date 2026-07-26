@@ -8,6 +8,10 @@ const HOLD_DURATION = 500;
 const MOVEMENT_THRESHOLD = 50;
 const MULTI_CLICK_WINDOW = 1000;
 const MULTI_CLICK_THRESHOLD = 3;
+const ACCEPT_ZONE_HIDE_DELAY = 250;
+const DRAW_SOUND_STOP_DELAY = 300;
+const PAGE_TURN_DURATION = 600;
+const EXIT_RETURN_DELAY = 650;
 
 export interface DragToClearOptions {
   containerEl: HTMLDivElement;
@@ -181,7 +185,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     o.acceptZoneEl.classList.remove('threshold-reached');
     scheduleReset(() => {
       if (!isDragging) o.acceptZoneEl.style.display = 'none';
-    }, 250);
+    }, ACCEPT_ZONE_HIDE_DELAY);
 
     clearReady = false;
     o.clearPreviewEl.classList.remove('committed');
@@ -199,20 +203,20 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
     scheduleReset(() => {
       stopDrawSound();
-    }, 300);
+    }, DRAW_SOUND_STOP_DELAY);
 
     scheduleReset(() => {
       o.pageTurnOverlayEl.classList.remove('animating');
       o.containerEl.style.transform = '';
       node.classList.remove('dragging');
       node.classList.add('clearing-done');
-    }, 600);
+    }, PAGE_TURN_DURATION);
 
     scheduleReset(() => {
       o.containerEl.classList.remove('dragging-active');
       node.classList.remove('clearing', 'clearing-done');
       node.classList.add('clearing-return');
-    }, 650);
+    }, EXIT_RETURN_DELAY);
   }
 
   // The return leg's easing is the only reason .clearing-return exists, so it

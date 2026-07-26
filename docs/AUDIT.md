@@ -9,44 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P1][naming] Name the drag-to-clear timing/animation magic numbers as constants
-
-**File(s):** `web/src/lib/actions/dragToClear.ts:182-234` (`finishDrag`, `onPointerUp`) — pinned at
-SHA f934d43
-
-#### Problem
-
-The file opens with a clean named-constants block (`HOLD_DURATION`, `MOVEMENT_THRESHOLD`, etc.), but
-the teardown/animation code then hard-codes a second set of unnamed timings and transforms:
-
-```ts
-scheduleReset(() => { if (!isDragging) o.acceptZoneEl.style.display = 'none'; }, 250);
-...
-scheduleReset(() => { stopDrawSound(); }, 300);
-scheduleReset(() => { ... }, 600);
-scheduleReset(() => { ... }, 50);
-node.style.transform = 'scale(0.8)';
-```
-
-`250`, `300`, `600`, `50`, and `0.8` are load-bearing (they must stay coordinated with the CSS
-fly-out and page-turn durations) yet carry no name explaining what each governs, and the same
-literal `scale(0.8)` appears twice. A future editor changing the page-turn CSS has no signal these
-must move together.
-
-#### Proposed solution
-
-Add named constants beside the existing block, e.g. `ACCEPT_ZONE_HIDE_DELAY = 250`,
-`DRAW_SOUND_STOP_DELAY = 300`, `PAGE_TURN_DURATION = 600`, `EXIT_SETTLE_DELAY = 50`,
-`CLEAR_EXIT_SCALE = 0.8`, and reference them. Ideally fold into the CSS-class approach from the P1
-complexity finding so timings live in one place.
-
-#### Verification
-
-Grep confirms no bare timing literals remain in the teardown path.
-`npm run test:unit -- dragToClear` stays green.
-
----
-
 ### [P2][complexity] Split `dragToClear.onPointerDown` — it mixes multi-tap detection, hold timer, and accept-zone geometry
 
 **File(s):** `web/src/lib/actions/dragToClear.ts:54-113` (`onPointerDown`) — pinned at SHA f934d43
