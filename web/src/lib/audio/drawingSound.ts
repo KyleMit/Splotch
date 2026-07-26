@@ -1,4 +1,5 @@
 import { settings, SOUND_VOLUME_DEFAULT } from '$lib/state/settings.svelte';
+import type { DrawSoundData } from '$lib/drawing/engine';
 
 const SOUND_URLS = ['/sounds/pencil-1.mp3', '/sounds/pencil-2.mp3', '/sounds/pencil-3.mp3'];
 
@@ -54,7 +55,7 @@ export function preloadDrawSounds() {
     });
 }
 
-export function playDrawSound(movementData: { speed?: number } = {}) {
+export function playDrawSound({ speed }: DrawSoundData) {
   if (!settings.soundEnabled) return;
   preloadDrawSounds();
   const ctx = audioContext;
@@ -77,7 +78,6 @@ export function playDrawSound(movementData: { speed?: number } = {}) {
     currentSource.start(0, Math.random() * buffer.duration);
   }
 
-  const { speed = 0 } = movementData;
   const target = BASE_SCRATCH_GAIN * volumeMultiplier() * Math.min(speed / FULL_VOLUME_SPEED, 1);
   rampGainTo(currentGain!.gain, target, ctx.currentTime, GAIN_RAMP_S);
 }

@@ -95,7 +95,7 @@ export { setColorSheet };
 
 // --- Canvas, tool, and callback state -------------------------------------
 
-interface DrawSoundData {
+export interface DrawSoundData {
   speed: number;
 }
 

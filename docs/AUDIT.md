@@ -28,38 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P3][type-safety] `playDrawSound`'s param is a loose inline type named `movementData` — should share the engine's `DrawSoundData`
-
-**File(s):** `web/src/lib/audio/drawingSound.ts:57`, `80`; `web/src/lib/drawing/engine.ts:96-98`
-(`DrawSoundData`), `905` (call site) — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-export function playDrawSound(movementData: { speed?: number } = {}) { … const { speed = 0 } = movementData; … }
-```
-
-The engine defines `interface DrawSoundData { speed: number }` and always calls
-`onDrawSoundCallback({ speed })`, but `playDrawSound` accepts a *different*, looser inline shape
-(`speed?` optional, whole arg optional) and re-defaults `speed`. The two definitions can drift
-silently, and the name `movementData` overpromises — the object carries only a speed. It reads as a
-leftover from a richer former signature.
-
-#### Proposed solution
-
-Export `DrawSoundData` from the engine (or a shared type module) and type the param
-`playDrawSound(data: DrawSoundData)`. Rename the param to `data` or destructure directly:
-`playDrawSound({ speed }: DrawSoundData)`. Keep the `= { speed: 0 }` default only if
-`SoundSection.svelte`'s preview needs a no-arg call — it currently passes
-`{ speed: PREVIEW_SPEED }`, so the default is unused and can go.
-
-#### Verification
-
-`npm run check`; grep call sites (`DrawingCanvas.svelte:155`, `SoundSection.svelte:20`) still
-typecheck.
-
----
-
 ### [P3][type-safety] `getPlatform()` casts an arbitrary string to `Platform` without validating
 
 **File(s):** `web/src/lib/platform.ts:53-56` — pinned at SHA f934d43
