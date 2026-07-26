@@ -94,8 +94,15 @@ At the top of every review round the driver runs:
 3. The verifier-selected Playwright specs, if any
 4. `LINT_CMD` on changed code files
 
-The reviewer sees only a commit that passed. It must not rerun tests; it reads the diff for behavior
-smuggled into a refactor, incomplete renames, missing runtime guards, and uncovered behavior.
+The reviewer sees only a finding range that passed. It must not rerun tests; it reads the complete
+`<finding-base>..<current-head>` diff for behavior smuggled into a refactor, incomplete renames,
+missing runtime guards, and uncovered behavior. Reviewing only the latest fix-round commit can hide
+the source change in its parent.
+
+When a gate is red, the driver includes a bounded, ANSI-free tail of the command output in the
+resumed implementer's feedback. Preserve that output: a nested Codex role cannot rerun a
+listener-based E2E command, so a generic "Playwright is red" message makes it guess at a failure the
+driver already observed.
 
 The nested Codex workspace-write sandbox cannot bind Playwright's localhost listener or write Git
 metadata. The implementer therefore runs type-check, unit, and scoped-lint checks, leaves its
