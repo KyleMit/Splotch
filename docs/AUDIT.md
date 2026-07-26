@@ -9,34 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P4][architecture] `launchGuard` holds all dead zones in module-global mutable state
-
-**File(s):** `web/src/lib/actions/launchGuard.ts:32` (`let zones: DeadZone[] = []`) — pinned at SHA
-f934d43
-
-#### Problem
-
-`zones` is a module-level singleton mutated by
-`guardLaunchZone`/`isPointInLaunchZone`/`clearLaunchZones`. It works because there is only ever one
-modal-launch context, but module-global mutable state is easy to miss when reasoning about
-lifecycle: every test must `clearLaunchZones()` in `beforeEach` (both test files do), and an
-SSR/prerender import evaluates and retains this array. It also can't be reset per-action-instance.
-
-#### Proposed solution
-
-This is acceptable given the single-consumer design, so treat as a documentation/boundary note
-rather than a rewrite: add a one-line comment stating the singleton is intentional (one global
-launch context, `modalDialog` owns its lifecycle via `clearLaunchZones` on `close`). If multiple
-independent guard contexts ever appear, promote to a `createLaunchGuard()` factory returning the
-three functions closed over a private array.
-
-#### Verification
-
-No behavior change if documented; if factored, update both `modalDialog` and `launchGuard.test.ts`
-and run `npm run test:unit -- launchGuard`.
-
----
-
 ### [P4][maintainability] `scheduleReset` returns an id that no caller uses
 
 **File(s):** `web/src/lib/actions/dragToClear.ts:41-48` — pinned at SHA f934d43

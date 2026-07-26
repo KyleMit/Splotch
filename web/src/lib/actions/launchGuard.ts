@@ -29,6 +29,9 @@ interface DeadZone {
   expiresAt: number;
 }
 
+// Module-level singleton, intentionally: there is only ever one modal-launch
+// context in the app, and modalDialog owns clearing it via clearLaunchZones()
+// on close.
 let zones: DeadZone[] = [];
 
 // Arm a dead zone at the launching button's center. A null origin (a modal
