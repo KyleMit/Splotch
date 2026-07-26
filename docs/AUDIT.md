@@ -22,35 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P2][design-tokens] Hardcoded shadow literals bypass the elevation tokens
-
-**File(s):** `web/src/lib/components/ColorPalette.svelte:68, 72, 167, 184, 296` — pinned at SHA
-f934d43
-
-#### Problem
-
-Multiple raw shadow literals sit in a component `<style>`/script that the design system says must
-use tokens (`--shadow-sm`, `--float-shadow`, etc.): `0 4px 8px rgba(0, 0, 0, 0.2)` (twice, in the
-ring builders), `.color-palette` `box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1)` (line 167),
-`.color-swatch` `box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2)` (line 184), and the portrait override
-`0 2px 10px rgba(0, 0, 0, 0.1)` (line 296). None of these are documented one-offs. `--shadow-sm` is
-`0 2px 6px rgba(0,0,0,0.12)` — close enough that these swatch shadows likely should be tokens or a
-new palette-specific token.
-
-#### Proposed solution
-
-Replace with `var(--shadow-sm)` / `var(--float-shadow)` where the value matches; if the swatch drop
-shadow is intentionally distinct, mint one token (e.g. `--swatch-shadow`) in `tokens.ts` and
-reference it from all four call sites plus the two ring builders. The ring builders can interpolate
-`var(--swatch-shadow)` into the string.
-
-#### Verification
-
-`npm run lint:tokens` ratchet does not regress; `/dev/design` diff shows no visual change;
-`gen:tokens:check` green.
-
----
-
 ### [P2][maintainability] Magic thresholds/factors in `getRingColor` (0.2, 38, 0.9) are unnamed
 
 **File(s):** `web/src/lib/colorRing.ts:37-40` — pinned at SHA f934d43
