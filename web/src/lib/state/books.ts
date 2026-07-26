@@ -42,6 +42,8 @@
 //   ['mobile']         -> native only       (hidden on web)
 //   ['web', 'mobile']  -> ships everywhere  ("both")
 
+import type { ResolvedTheme } from '../theme';
+
 // Distribution platforms a book may ship on - distinct from the runtime
 // platform in platform.ts (which also has 'ios'/'android').
 export type BookPlatform = 'web' | 'mobile';
@@ -314,7 +316,7 @@ export function chalkThumbPath(src: string): string {
 export function pageThumb(
   page: ColoringPage,
   orientation: BookOrientation,
-  theme: 'light' | 'dark'
+  theme: ResolvedTheme
 ): string {
   const chalk = theme === 'dark' ? page.chalkImages[orientation] : undefined;
   return chalk ? chalkThumbPath(chalk) : thumbPath(page.images[orientation]);

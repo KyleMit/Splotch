@@ -26,29 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P3][type-safety] The `'light' | 'dark'` theme union is re-typed in `pageThumb` instead of a shared `ResolvedTheme`
-
-**File(s):** `web/src/lib/state/books.ts:279-283`; `web/src/lib/state/appearance.svelte.ts:26` —
-pinned at SHA f934d43
-
-#### Problem
-
-`resolvedTheme(): 'light' | 'dark'` and `pageThumb(page, orientation, theme: 'light' | 'dark')` each
-spell the union inline; `DrawingCanvas` compares `resolvedTheme() === 'dark'` in several places.
-There's no `type ResolvedTheme`, so the two-value theme vocabulary isn't greppable and can't be
-extended in one place.
-
-#### Proposed solution
-
-Export `type ResolvedTheme = 'light' | 'dark'` from `appearance.svelte.ts`, have `resolvedTheme`
-return it and `pageThumb`'s `theme` param use it.
-
-#### Verification
-
-`npm run check`; grep for `'light' | 'dark'` collapses to the single type definition.
-
----
-
 ### [P3][readability] Header comment claims the module is "plain JS" when it is TypeScript
 
 **File(s):** `web/src/lib/state/books.ts:2-4` — pinned at SHA f934d43
