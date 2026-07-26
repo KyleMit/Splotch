@@ -13,43 +13,44 @@ import {
 export { BOOKS, PLATFORMS, booksForPlatform } from './books';
 
 interface ColoringBookState {
-  overlayUrl: string | null;
-  // The chalk outline for the active page/orientation — the dedicated dark-mode
-  // line art (ink-on-white, inverted by --lineart-filter at render) — or null
-  // when the page hasn't forked yet. DrawingCanvas shows this instead of
-  // overlayUrl in dark mode, falling back to overlayUrl if null.
-  chalkUrl: string | null;
-  // The flat-colored fill of the active page, revealed by the magic brush
-  // (ADR-0043). Tracked alongside overlayUrl so it's always in lockstep with the
-  // line art currently shown.
-  colorSheetUrl: string | null;
-  // The pre-colored "night" fill for the active page/orientation (ADR-0052
-  // direction B), or null when none is generated yet. Dark mode reveals this
-  // instead of colorSheetUrl; DrawingCanvas falls back to colorSheetUrl if null.
-  nightSheetUrl: string | null;
   overlayPage: ColoringPage | null;
+  orientation: BookOrientation;
 }
 
 export const coloringBookState: ColoringBookState = $state({
-  overlayUrl: null,
-  chalkUrl: null,
-  colorSheetUrl: null,
-  nightSheetUrl: null,
   overlayPage: null,
+  orientation: 'portrait',
 });
 
 export function setOverlayPage(page: ColoringPage, orientation: BookOrientation) {
   coloringBookState.overlayPage = page;
-  coloringBookState.overlayUrl = pageImage(page, orientation);
-  coloringBookState.chalkUrl = pageChalkImage(page, orientation);
-  coloringBookState.colorSheetUrl = pageColorImage(page, orientation);
-  coloringBookState.nightSheetUrl = pageNightImage(page, orientation);
+  coloringBookState.orientation = orientation;
+}
+
+export function setOverlayOrientation(orientation: BookOrientation) {
+  coloringBookState.orientation = orientation;
+}
+
+export function overlayUrl(): string | null {
+  const page = coloringBookState.overlayPage;
+  return page ? pageImage(page, coloringBookState.orientation) : null;
+}
+
+export function chalkUrl(): string | null {
+  const page = coloringBookState.overlayPage;
+  return page ? pageChalkImage(page, coloringBookState.orientation) : null;
+}
+
+export function colorSheetUrl(): string | null {
+  const page = coloringBookState.overlayPage;
+  return page ? pageColorImage(page, coloringBookState.orientation) : null;
+}
+
+export function nightSheetUrl(): string | null {
+  const page = coloringBookState.overlayPage;
+  return page ? pageNightImage(page, coloringBookState.orientation) : null;
 }
 
 export function clearOverlay() {
-  coloringBookState.overlayUrl = null;
-  coloringBookState.chalkUrl = null;
-  coloringBookState.colorSheetUrl = null;
-  coloringBookState.nightSheetUrl = null;
   coloringBookState.overlayPage = null;
 }

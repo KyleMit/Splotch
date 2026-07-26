@@ -23,7 +23,12 @@
     getStrokeWidthPx,
     getEraserWidthPx,
   } from '$lib/state/strokeWidth.svelte';
-  import { coloringBookState } from '$lib/state/coloringBook.svelte';
+  import {
+    overlayUrl,
+    chalkUrl,
+    colorSheetUrl,
+    nightSheetUrl,
+  } from '$lib/state/coloringBook.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
@@ -241,8 +246,8 @@
   // so the overlay <img> stays the single source of line work. Reading
   // resolvedTheme() re-runs this on a live theme switch, re-rasterizing the sheet.
   $effect(() => {
-    const nightUrl = resolvedTheme() === 'dark' ? coloringBookState.nightSheetUrl : null;
-    setColorSheet(nightUrl ?? coloringBookState.colorSheetUrl);
+    const nightUrl = resolvedTheme() === 'dark' ? nightSheetUrl() : null;
+    setColorSheet(nightUrl ?? colorSheetUrl());
   });
 
   $effect(() => {
@@ -259,9 +264,7 @@
   // falling back to inverting the pen outline for un-forked pages. Reading
   // resolvedTheme() re-picks the art on a live theme switch.
   const themedOverlayUrl = $derived(
-    resolvedTheme() === 'dark'
-      ? (coloringBookState.chalkUrl ?? coloringBookState.overlayUrl)
-      : coloringBookState.overlayUrl
+    resolvedTheme() === 'dark' ? (chalkUrl() ?? overlayUrl()) : overlayUrl()
   );
 
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
@@ -312,7 +315,7 @@
   let blendNudge = $state(false);
 
   function nudgeBlendLayer(e: PointerEvent) {
-    if (!coloringBookState.overlayUrl) return;
+    if (!overlayUrl()) return;
     if (e.type === 'pointermove' && e.buttons === 0) return;
     blendNudge = !blendNudge;
   }
@@ -358,7 +361,7 @@
     style:width={paperCssWidth}
     style:height={paperCssHeight}
     style:transform={paperViewTransform}
-    hidden={!coloringBookState.overlayUrl}
+    hidden={!overlayUrl()}
   >
     <img
       class="coloring-overlay"
@@ -366,7 +369,7 @@
       id="coloringOverlay"
       src={displayedOverlayUrl ?? ''}
       alt=""
-      hidden={!coloringBookState.overlayUrl}
+      hidden={!overlayUrl()}
     />
   </div>
   <!-- The stack isolates the canvas + the engine's crayon pass overlays into

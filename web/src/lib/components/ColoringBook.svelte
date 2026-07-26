@@ -5,6 +5,8 @@
     booksForPlatform,
     coloringBookState,
     setOverlayPage,
+    setOverlayOrientation,
+    overlayUrl,
     clearOverlay,
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
@@ -48,9 +50,7 @@
   // paper re-adopts the viewport — i.e. only on rotations with a blank canvas;
   // a locked paper keeps `orientation` (and so the art) unchanged.
   $effect(() => {
-    if (coloringBookState.overlayPage) {
-      setOverlayPage(coloringBookState.overlayPage, orientation);
-    }
+    setOverlayOrientation(orientation);
   });
 
   // The other orientation's art is what a blank-canvas rotation will swap to;
@@ -95,7 +95,7 @@
     hoverArmed = false;
   }
 
-  const overlayActive = $derived(!!coloringBookState.overlayUrl);
+  const overlayActive = $derived(!!overlayUrl());
 </script>
 
 <dialog
