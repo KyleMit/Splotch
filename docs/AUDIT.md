@@ -22,47 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P2][architecture] No central storage-key registry — every persisted key is a magic string scattered across modules and re-declared in tests
-
-**File(s):** `web/src/lib/storage.ts:21-25, 96-161` (the `read*/write*` helpers + `managedKeys`) —
-pinned at SHA f934d43
-
-#### Problem
-
-`storage.ts` owns persistence but owns none of the key names. Every key is a `splotch-*` string
-literal declared in a caller (`settings.svelte.ts:14-43`, `tool.svelte.ts:35`,
-`strokeWidth.svelte.ts:15-16`, `install.svelte.ts:17-18`, `folderSave.ts:27`,
-`secureStorage.ts:23-27`) and then re-declared, verbatim, in each store's test and in
-`storage.restore.integration.test.ts:50-52`, `startup-bundle.spec.ts:23`, `flows.spec.ts`. The
-task's "grepability" bar — "can a newcomer find every storage key and what's persisted?" — fails:
-the only enumeration of persisted keys is the runtime `managedKeys` Set (line 21), which is empty
-until code runs. There is no single source of truth listing what Splotch writes to localStorage.
-
-#### Proposed solution
-
-Add an exported key registry in `storage.ts` (the persistence owner), e.g.:
-
-```ts
-export const STORAGE_KEYS = {
-  soundEnabled: 'splotch-sound-enabled',
-  brushType: 'splotch-brush-type',
-  penSize: 'splotch-stroke-width-size',
-  // …every persisted key, with a one-line comment on what it holds
-} as const;
-export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
-```
-
-Type `read*/write*/removeKey`'s `key` param as `StorageKey`. Callers and tests import the constant
-instead of re-typing the literal. This makes the registry the one grep target and turns a typo'd key
-into a compile error.
-
-#### Verification
-
-`grep -rn "splotch-" web/src --include=*.ts | grep -v STORAGE_KEYS` returns only the registry;
-`npm run check` passes with `read*` keys constrained to `StorageKey`.
-
----
-
 ### [P2][architecture] `managedKeys` is populated as an implicit side effect of the first read/write — durable restore silently depends on import ordering
 
 **File(s):** `web/src/lib/storage.ts:18-25, 169-201` (`track`, `managedKeys`,
