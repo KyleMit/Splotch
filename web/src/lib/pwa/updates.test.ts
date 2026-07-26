@@ -6,6 +6,7 @@ import {
   checkForUpdates,
   resetUpdatesForTests,
   ACTIVATION_RECOVERY_MS,
+  WAITING_SETTLE_MS,
 } from './updates';
 
 const canvasState = vi.hoisted(() => ({ canvasEmpty: true }));
@@ -244,7 +245,22 @@ describe('checkForUpdates — canvas-empty guard', () => {
 
     await checkForUpdates();
 
-    expect(worker.addEventListener).toHaveBeenCalledWith('statechange', expect.any(Function));
+    expect(worker.addEventListener).toHaveBeenCalledWith(
+      'statechange',
+      expect.any(Function),
+      { once: true }
+    );
+  });
+
+  it('observes the same installing worker only once across update checks', async () => {
+    const worker = makeWorker();
+    const reg = makeRegistration({ installing: worker as unknown as ServiceWorker });
+    stubServiceWorker(reg);
+
+    await checkForUpdates();
+    await checkForUpdates();
+
+    expect(worker.addEventListener).toHaveBeenCalledTimes(1);
   });
 
   it('registers only one reload while a waiting worker activates', async () => {
@@ -310,11 +326,11 @@ describe('checkForUpdates — canvas-empty guard', () => {
         value: waitingWorker,
         configurable: true,
       });
-      registeredListener(installingWorker.addEventListener, 'statechange').call(
-        installingWorker,
-        new Event('statechange')
-      );
-      await vi.advanceTimersByTimeAsync(100);
+      registeredListener(
+        installingWorker.addEventListener,
+        'statechange'
+      )(new Event('statechange'));
+      await vi.advanceTimersByTimeAsync(WAITING_SETTLE_MS);
       canvasState.canvasEmpty = false;
 
       registeredListener(

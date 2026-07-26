@@ -39,11 +39,15 @@ let initialized = false;
 // owed → none and reload when a later update check finds the canvas empty.
 let updateReload: 'none' | 'activating' | 'owed' = 'none';
 let registrationScheduled = false;
+let observedInstallingWorkers = new WeakSet<ServiceWorker>();
 
 // Grace period after posting SKIP_WAITING before we give up waiting for the new
 // worker to take control. If controllerchange never arrives, the lifecycle must
 // not stay pinned in 'activating' — see activateWaitingSW.
 export const ACTIVATION_RECOVERY_MS = 10_000;
+
+// Allow registration.waiting to settle after the installing worker reaches installed.
+export const WAITING_SETTLE_MS = 100;
 
 // Reset the module's lifecycle singletons. Exported for unit tests, which share a
 // single module instance across cases; without it a leftover updateReload (or
@@ -52,6 +56,7 @@ export function resetUpdatesForTests() {
   updateReload = 'none';
   initialized = false;
   registrationScheduled = false;
+  observedInstallingWorkers = new WeakSet<ServiceWorker>();
 }
 
 function serviceWorkerSupported() {
@@ -213,14 +218,20 @@ export async function checkForUpdates() {
       return;
     }
 
-    if (registration.installing) {
-      registration.installing.addEventListener('statechange', function (this: ServiceWorker) {
-        if (this.state === 'installed' && registration.waiting) {
-          setTimeout(() => {
-            if (registration.waiting) activateWaitingSW(registration.waiting);
-          }, 100);
-        }
-      });
+    const installing = registration.installing;
+    if (installing && !observedInstallingWorkers.has(installing)) {
+      observedInstallingWorkers.add(installing);
+      installing.addEventListener(
+        'statechange',
+        () => {
+          if (installing.state === 'installed' && registration.waiting) {
+            setTimeout(() => {
+              if (registration.waiting) activateWaitingSW(registration.waiting);
+            }, WAITING_SETTLE_MS);
+          }
+        },
+        { once: true }
+      );
     }
   } catch {
     // registration lookup or update failed (e.g. offline) — try again later
