@@ -88,7 +88,17 @@ function labelRegions(ink, w, h) {
   return { label, regions };
 }
 
-async function analyzeEyePage(sourceBuf) {
+const eyePageAnalyses = new WeakMap();
+
+function analyzeEyePage(sourceBuf) {
+  const existing = eyePageAnalyses.get(sourceBuf);
+  if (existing) return existing;
+  const analysis = analyzeEyePageOnce(sourceBuf);
+  eyePageAnalyses.set(sourceBuf, analysis);
+  return analysis;
+}
+
+async function analyzeEyePageOnce(sourceBuf) {
   const { ink, w, h } = await inkMask(sourceBuf);
   const { label, regions } = labelRegions(ink, w, h);
   return { ink, label, regions, w, h };

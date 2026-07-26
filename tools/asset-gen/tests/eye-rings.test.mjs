@@ -70,4 +70,17 @@ describe('eye-ring-depth gate', () => {
       fill.mockRestore();
     }
   });
+
+  it('reuses labeled regions after a standalone ring score', async () => {
+    const source = await swirlEyeSource();
+    const fill = vi.spyOn(Int32Array.prototype, 'fill');
+    try {
+      const rings = await scoreEyeRings(source);
+      const combined = await scoreEyes(source);
+      expect(combined.rings).toEqual(rings);
+      expect(fill.mock.calls.filter(([value]) => value === -1)).toHaveLength(1);
+    } finally {
+      fill.mockRestore();
+    }
+  });
 });
