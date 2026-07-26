@@ -170,9 +170,6 @@ describe('hydrateDurableStorage', () => {
 
   it('restores a key the WebView evicted from localStorage', async () => {
     ctrl.native = true;
-    // Register the key as managed (read*/write* track it) without writing to
-    // localStorage, then seed only the durable store — simulating eviction.
-    readString(STORAGE_KEYS.strokeWidthSize, null);
     prefsStore.set(STORAGE_KEYS.strokeWidthSize, 'recovered');
 
     const restored = await hydrateDurableStorage();
@@ -182,8 +179,7 @@ describe('hydrateDurableStorage', () => {
 
   it('back-fills Preferences from a localStorage-only value without reporting a restore', async () => {
     ctrl.native = true;
-    writeString(STORAGE_KEYS.drawerOpen, 'keep'); // tracked; mirror also fires but store is cleared below
-    prefsStore.clear();
+    localStorage.setItem(STORAGE_KEYS.drawerOpen, 'keep');
 
     const restored = await hydrateDurableStorage();
     expect(restored).toBe(false); // nothing was restored *into* localStorage
@@ -197,7 +193,6 @@ describe('onDurableRestore', () => {
     const cb = vi.fn();
     const off = onDurableRestore(cb);
     try {
-      readString(STORAGE_KEYS.eraserWidthSize, null); // register the key as managed
       prefsStore.set(STORAGE_KEYS.eraserWidthSize, 'recovered'); // durable-only value the WebView lost
 
       const restored = await hydrateDurableStorage();

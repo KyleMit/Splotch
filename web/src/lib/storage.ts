@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { isNative } from './platform';
 import { lazyPluginModule } from './nativePlugin';
-import type { StorageKey } from './storageKeys';
+import { STORAGE_KEYS, type StorageKey } from './storageKeys';
 
 export { STORAGE_KEYS, type StorageKey } from './storageKeys';
 
@@ -18,19 +18,12 @@ export { STORAGE_KEYS, type StorageKey } from './storageKeys';
 // On the web, isNative() is false and the Preferences layer is skipped entirely
 // — behaviour is identical to before.
 
-// Every key that flows through read*/write* is remembered so the durable layer
-// knows exactly what to back up and restore. State stores read their keys at
-// init (before hydrate runs), so this set is complete by then.
-const managedKeys = new Set<StorageKey>();
+const hydrationKeys: StorageKey[] = Object.values(STORAGE_KEYS);
 
-function track(key: StorageKey) {
-  managedKeys.add(key);
-}
-
-// Restore-side counterpart to managedKeys: each persisted store registers its
-// reloader here at module init, so hydrateDurableStorage() can refresh every
-// live store after a native recovery without a hand-maintained call-site list
-// (issue #521). Returns a disposer, mainly so tests can unregister.
+// Each persisted store registers its reloader here at module init, so
+// hydrateDurableStorage() can refresh every live store after a native recovery
+// without a hand-maintained call-site list (issue #521). Returns a disposer,
+// mainly so tests can unregister.
 const durableRestoreCallbacks = new Set<() => void>();
 
 export function onDurableRestore(cb: () => void) {
@@ -97,7 +90,6 @@ function mirror(key: StorageKey, value: string) {
 }
 
 export function readBool(key: StorageKey, fallback: boolean): boolean {
-  track(key);
   if (!browser) return fallback;
   return safeRead(() => {
     const raw = localStorage.getItem(key);
@@ -107,7 +99,6 @@ export function readBool(key: StorageKey, fallback: boolean): boolean {
 }
 
 export function writeBool(key: StorageKey, value: boolean) {
-  track(key);
   if (!browser) return;
   const str = value ? 'true' : 'false';
   safeLocalStorage(() => localStorage.setItem(key, str));
@@ -115,7 +106,6 @@ export function writeBool(key: StorageKey, value: boolean) {
 }
 
 export function readString<T extends string | null>(key: StorageKey, fallback: T): string | T {
-  track(key);
   if (!browser) return fallback;
   return safeRead(() => {
     const raw = localStorage.getItem(key);
@@ -124,7 +114,6 @@ export function readString<T extends string | null>(key: StorageKey, fallback: T
 }
 
 export function writeString(key: StorageKey, value: string) {
-  track(key);
   if (!browser) return;
   safeLocalStorage(() => localStorage.setItem(key, value));
   mirror(key, value);
@@ -134,7 +123,6 @@ export function writeString(key: StorageKey, value: string) {
 // Used to scrub a value that has moved elsewhere (e.g. a plaintext API key that's
 // been migrated into secure storage).
 export function removeKey(key: StorageKey) {
-  track(key);
   if (!browser) return;
   safeLocalStorage(() => localStorage.removeItem(key));
   if (__IS_CAPACITOR__ && isNative()) {
@@ -149,7 +137,6 @@ export function readInt(
   fallback: number,
   allowed: readonly number[] | null = null
 ): number {
-  track(key);
   if (!browser) return fallback;
   return safeRead(() => {
     const raw = parseInt(localStorage.getItem(key) ?? '', 10);
@@ -160,7 +147,6 @@ export function readInt(
 }
 
 export function writeInt(key: StorageKey, value: number) {
-  track(key);
   if (!browser) return;
   const str = String(value);
   safeLocalStorage(() => localStorage.setItem(key, str));
@@ -179,11 +165,10 @@ export async function hydrateDurableStorage() {
     try {
       const { Preferences } = await getPrefs();
       // Fire every durable get concurrently rather than one serial bridge
-      // round-trip per key — ~15 keys on the cold-start critical path.
-      const keys = [...managedKeys];
-      const durable = await Promise.all(keys.map((key) => Preferences.get({ key })));
+      // round-trip per declared key on the cold-start critical path.
+      const durable = await Promise.all(hydrationKeys.map((key) => Preferences.get({ key })));
       const backups: Promise<unknown>[] = [];
-      keys.forEach((key, i) => {
+      hydrationKeys.forEach((key, i) => {
         const local = localStorage.getItem(key);
         const { value } = durable[i];
         if (local === null && value !== null) {

@@ -38,9 +38,9 @@ vi.mock('@capacitor/preferences', () => ({
 }));
 
 import { STORAGE_KEYS, hydrateDurableStorage } from './storage';
-// Importing the real store modules runs their module-init code: each reads its
-// persisted key (registering it as managed) and calls onDurableRestore() to
-// register its reloader — exactly what earlyBoot.ts does at boot.
+// Importing the real store modules runs their module-init code: each calls
+// onDurableRestore() to register its reloader — exactly what earlyBoot.ts does
+// at boot.
 import { strokeState } from './state/strokeWidth.svelte';
 import { toolState } from './state/tool.svelte';
 import { settings } from './state/settings.svelte';
@@ -63,8 +63,6 @@ describe('hydrateDurableStorage restores real persisted stores (issue #521)', ()
 
     // Simulate a WebView eviction: the durable Preferences layer still holds the
     // parent's saved values, but localStorage lost them (cleared in beforeEach).
-    // The keys are already tracked as managed because the store modules read
-    // them at init above.
     prefsStore.set(STORAGE_KEYS.strokeWidthSize, '5');
     prefsStore.set(STORAGE_KEYS.brushType, 'crayon');
     prefsStore.set(STORAGE_KEYS.soundVolume, '80');
