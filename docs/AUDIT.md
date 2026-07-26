@@ -7,32 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P3][duplication] Error-log prefix strings (`[client error]`, `[server error]`, `[render error]`) are magic literals scattered across three files with no shared source
-
-**File(s):** `web/src/hooks.client.ts:7`, `web/src/hooks.server.ts:53`,
-`web/src/routes/+layout.svelte:28` — pinned at SHA f934d43
-
-#### Problem
-
-The three uncaught-error sinks each invent their own `console.error` prefix as an inline string.
-They form a de-facto logging taxonomy (client vs server vs render-boundary) but nothing ties them
-together, so the set can drift (e.g. someone adds a fourth path with `[error]`), and there's no
-single place to see or change the convention. The user-facing message `'Something went wrong.'` is
-likewise duplicated in both hooks.
-
-#### Proposed solution
-
-Introduce a tiny `web/src/lib/errorLog.ts` exporting the prefixes (or a `logUncaught(scope, ...)`
-helper) and the shared fallback message string, and have all three sinks use it. Keeps the taxonomy
-in one grep-able place.
-
-#### Verification
-
-All three paths still log with their scope prefix; grep for the literals shows a single definition
-site. `npm run check` green.
-
----
-
 ### [P3][maintainability] `ai-timer` re-hardcodes the AI failure-mode copy that lives in `aiImage.ts`, so the two can drift
 
 **File(s):** `web/src/routes/dev/ai-timer/+page.svelte:60-62` — pinned at SHA f934d43

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { ERROR_LOG_PREFIX } from '$lib/errorLog';
   // Import the package's CSS entry explicitly: the bare specifier resolves to
   // index.css via the package's exports map, but only a path ending in `.css`
   // matches Vite's ambient `*.css` module type (so svelte-check stays happy).
@@ -25,7 +26,7 @@
   });
 </script>
 
-<svelte:boundary onerror={(error) => console.error('[render error]', error)}>
+<svelte:boundary onerror={(error) => console.error(ERROR_LOG_PREFIX.render, error)}>
   {@render children()}
 
   {#snippet failed(_error, reset)}

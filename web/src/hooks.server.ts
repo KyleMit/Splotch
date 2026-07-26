@@ -1,6 +1,7 @@
 import { building } from '$app/environment';
 import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
+import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
 import { SECURITY_HEADERS } from '$lib/server/securityHeaders';
 
 // The native apps load from a WebView origin (https://localhost on Android,
@@ -71,6 +72,6 @@ export const handle: Handle = sequence(handleCors, handleSecurityHeaders);
 // SSR or /api/* failure — SvelteKit only calls this for unexpected errors,
 // so expected error(4xx) responses never land here.
 export const handleError: HandleServerError = ({ error, event, status }) => {
-  console.error('[server error]', event.url.pathname, status, error);
-  return { message: 'Something went wrong.' };
+  console.error(ERROR_LOG_PREFIX.server, event.url.pathname, status, error);
+  return { message: GENERIC_ERROR_MESSAGE };
 };
