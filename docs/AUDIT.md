@@ -24,45 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P2][platform-branching] Install-prompt module branches on `isNative()` at runtime where it could be a build-time exclusion
-
-**File(s):** `web/src/lib/state/install.svelte.ts:82-120` (module-load listeners +
-`initInstallPrompt`); `web/src/routes/+page.svelte:164-167` — pinned at SHA f934d43
-
-#### Problem
-
-The entire install feature is dead in the native build (the Capacitor shell is "already installed"),
-yet it ships in the native bundle and is gated purely at runtime:
-
-```ts
-if (browser && !isNative()) {
-  window.addEventListener('beforeinstallprompt', (e) => { ... });
-  window.addEventListener('appinstalled', markInstalled);
-}
-```
-
-plus `initInstallPrompt()` re-checks `isNative()` (line 104) and the caller *also* guards
-`if (!isNative())` (`+page.svelte:164`). CLAUDE.md states: "The `CAPACITOR=true` env var … is the
-single signal for all web-vs-native branching. Do not add runtime platform branches that could be
-build-time branches instead." `isNative()` cannot tree-shake; `__IS_CAPACITOR__` (the literal
-declared in `app.d.ts:24`) can, letting Rollup drop the whole module from the native bundle.
-
-#### Proposed solution
-
-Guard the module-load side effects and `initInstallPrompt`'s early return on the compile-time
-literal instead of `isNative()`: `if (browser && !__IS_CAPACITOR__)`. Then the triple-guarding
-(`+page.svelte` caller, `initInstallPrompt`, listener block) collapses to one build-time branch and
-the native bundle drops the code. Same treatment for the `updates.ts` PWA module (see next finding).
-
-#### Verification
-
-`CAPACITOR=true npm run build:cap` then grep the native bundle for `beforeinstallprompt` /
-`splotch-install-dismissed` — should be absent. Web build + `install.svelte.test.ts` still pass
-(tests already stub `isNative`; swap to a `__IS_CAPACITOR__` define in vitest.config or keep the
-runtime `isNative` fallback inside the build-time branch).
-
----
-
 ### [P2][platform-branching] `updates.ts` ships in the native bundle instead of being build-excluded
 
 **File(s):** `web/src/lib/pwa/updates.ts:58-99` (`serviceWorkerSupported`, `initPWAUpdates`,
