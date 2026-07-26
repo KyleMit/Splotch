@@ -70,7 +70,8 @@ export type Platform = 'android' | 'ios' | 'web';
 
 export function getPlatform(): Platform {
   if (!browser) return 'web';
-  return (globalThis.Capacitor?.getPlatform?.() ?? 'web') as Platform;
+  const platform = globalThis.Capacitor?.getPlatform?.();
+  return platform === 'android' || platform === 'ios' ? platform : 'web';
 }
 
 /**

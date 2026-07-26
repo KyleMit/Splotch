@@ -28,36 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P3][type-safety] `getPlatform()` casts an arbitrary string to `Platform` without validating
-
-**File(s):** `web/src/lib/platform.ts:53-56` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-export function getPlatform(): Platform {
-  if (!browser) return 'web';
-  return (globalThis.Capacitor?.getPlatform?.() ?? 'web') as Platform;
-}
-```
-
-`Capacitor.getPlatform()` is typed `string`; the `as Platform` promises it's one of
-`'android' | 'ios' | 'web'` with no runtime check. A future Capacitor platform (or a shimmed
-environment) would be silently mistyped, and downstream `PLATFORM_LABEL[platform]` / branch logic
-would be reasoning about a lie.
-
-#### Proposed solution
-
-Validate:
-`const p = globalThis.Capacitor?.getPlatform?.() ?? 'web'; return p === 'android' || p === 'ios' ? p : 'web';`.
-This also removes the cast.
-
-#### Verification
-
-`npm run check`; unit test asserts an unexpected platform string collapses to `'web'`.
-
----
-
 ### [P3][type-safety] `PLATFORM_LABEL` typed `Record<string, string>` defeats exhaustiveness against `Platform`
 
 **File(s):** `web/src/lib/deviceInfo.ts:7`, used `24` — pinned at SHA f934d43
