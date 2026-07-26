@@ -7,38 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P5][readability] Font-warm and wake-lock rely on unnamed magic strings (`'1em "Quicksand Variable"'`, `'screen'`)
-
-**File(s):** `web/src/routes/+layout.svelte:23`, `web/src/routes/+page.svelte:143` — pinned at SHA
-f934d43
-
-#### Problem
-
-The layout warms the font with the literal `document.fonts.load('1em "Quicksand Variable"')` — the
-family name is duplicated from the `@fontsource` import and the CSS `font-family` with no shared
-constant, so a font swap must find all copies. Similarly `navigator.wakeLock.request('screen')` uses
-the bare API string. Minor, but these are the kind of literals that silently rot.
-
-#### Proposed solution
-
-Export the font-family string as a constant from a shared module (or derive the warm string from it)
-so the family is named once; leave `'screen'` as-is or a local `const WAKE_LOCK_TYPE = 'screen'` if
-the wake-lock extraction (P2) lands.
-
-#### Verification
-
-Font still warms at boot (Quicksand ready before the first text dialog); grep for the family string
-shows a single source.
-
----
-
-That is 26 findings. The highest-leverage work is the three P1s: decomposing the `+page.svelte` boot
-sprawl into named helpers, converting the web-only `isNative()` gates to build-time
-`__IS_CAPACITOR__` branches, and closing the untested `app.html` ↔ `settings.svelte.ts` duplication
-with a guard test. The dev-harness section is generally solid but under-discovered (no `/dev` index)
-and carries a few stale `.js` references and hand-copied strings; the `privacy` route is the one
-user-facing page that opts out of the design-token system.
-
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
 ### [P1][complexity] Extract the drag-to-clear exit animation out of nested `scheduleReset` callbacks

@@ -38,8 +38,9 @@ pierce Svelte's style scoping, so every component references them directly via `
 | Radius    | `--radius-xs/sm/md/lg/xl` (4/8/12/16/22px), `--radius-pill`                                               |
 | Border    | `--border-width` (1px) — the hairline width; the color comes from a theme token (`--border`,              |
 |           | `--border-warm`, `--float-border`). Older components still write `1px solid` raw — prefer the token       |
-| Type      | `--font-size-xs/sm/md/lg/xl/2xl/3xl` (12–28px), `--font-mono`, `--font-weight-semibold` (600 — the only   |
-|           | weight with a token; 500/700 are still raw everywhere they appear)                                        |
+| Type      | `--font-size-xs/sm/md/lg/xl/2xl/3xl` (12–28px), `--font-family` (the app-wide sans stack),                |
+|           | `--font-mono`, `--font-weight-semibold` (600 — the only weight with a token; 500/700 are still raw        |
+|           | everywhere they appear)                                                                                   |
 | Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s), `--ease-pop` (overshoot), `--ease-pop-strong` (harder       |
 |           | overshoot — visibly springier than `--ease-pop`, don't converge them), `--ease-glide` (settle)            |
 | Elevation | `--shadow-sm`, `--shadow-pop`, `--shadow-segment` (neutral; the last is the tight active-segment          |
