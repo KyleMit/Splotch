@@ -66,6 +66,7 @@ import { dilateMask } from '../lib/morphology.mjs';
 import { scoreEyeFill, EYE_DARK_MAX, EYE_LIGHT_MIN } from '../lib/eye-fill.mjs';
 import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
 import { CHALK_INSTRUCTION } from '../lib/prompts.mjs';
+import { formatCandidateLine } from '../lib/report.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
@@ -412,8 +413,6 @@ for (const page of pages) {
   await sharp(best.overlay).toFile(sample.replace(/\.webp$/, '.overlay.png'));
 
   const ok = passes(best, cfg);
-  const tries = best.attempt > 0 ? `  (${best.attempt + 1} tries)` : '';
-  const nudge = best.shift.dx || best.shift.dy ? `  shift ${best.shift.dx},${best.shift.dy}` : '';
   const warn = [];
   if (best.keep < KEEP_THRESHOLD) warn.push('drifting');
   if (best.localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
@@ -423,7 +422,13 @@ for (const page of pages) {
   if (best.eyes.whitesMissed) warn.push(`eye whites not chalked (${best.eyes.whitesMissed})`);
   const stats = `keep ${(best.keep * 100).toFixed(1)}%  local ${(best.localKeep * 100).toFixed(1)}%  white ${(best.newInk.whiteFrac * 100).toFixed(1)}%  invented ${best.newInk.inventedRatio.toFixed(4)}`;
   console.log(
-    `${stats}${nudge}${tries}${warn.length ? `  ⚠ ${warn.join(' + ')}` : ''}  -> ${relative(REPO_ROOT, sample)}`
+    formatCandidateLine({
+      stats,
+      warnings: warn,
+      attempt: best.attempt,
+      shift: best.shift,
+      outPath: sample,
+    })
   );
 
   if (values.apply) {

@@ -44,6 +44,7 @@ import { alignToSource } from '../lib/align-to-source.mjs';
 import { scoreEyeFill, judgeLightEyes } from '../lib/eye-fill.mjs';
 import { punchFill } from '../lib/punch-fill.mjs';
 import { FILL_PROMPT } from '../lib/prompts.mjs';
+import { formatCandidateLine } from '../lib/report.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
@@ -213,15 +214,12 @@ for (const page of pages) {
     try {
       const cand = await renderClean(source, width, height, i);
       const { colored, keep, localKeep, overlay, white, shift, attempt } = cand;
-      const tries = attempt > 0 ? `  (${attempt + 1} tries)` : '';
-      const nudge = shift.dx || shift.dy ? `  shift ${shift.dx},${shift.dy}` : '';
       const warn = [];
       if (keep < KEEP_THRESHOLD) warn.push('drifting');
       if (localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
       if (white > WHITE_THRESHOLD) warn.push('white');
       if (!cand.eyesOk) warn.push('flat eyes');
-      const flag = warn.length ? `  ⚠ ${warn.join(' + ')}` : '';
-      const score = `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%${nudge}`;
+      const score = `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%`;
 
       const dir = join(SAMPLES_DIR, rel);
       await mkdir(dir, { recursive: true });
@@ -233,7 +231,9 @@ for (const page of pages) {
       // candidates routinely miss a gate while exploring palettes, so a gate miss
       // there must not fail the run. A thrown error below always counts.
       else if (!sampleMode) failures++;
-      console.log(`${score}${tries}${flag}  -> ${relative(REPO_ROOT, out)}`);
+      console.log(
+        formatCandidateLine({ stats: score, warnings: warn, attempt, shift, outPath: out })
+      );
     } catch (err) {
       failures++;
       console.log(`FAILED (${err instanceof Error ? err.message : err})`);

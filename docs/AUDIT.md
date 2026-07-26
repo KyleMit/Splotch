@@ -30,31 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P3][duplication] Repeated status-line assembly at the end of each generator loop
-
-**File(s):** gen-coloring-fills.mjs:242-263; gen-coloring-fills-dark.mjs:414-432;
-gen-coloring-chalk.mjs:429-441; normalize-outline-strokes.mjs:310-322 — pinned at SHA f934d43
-
-#### Problem
-
-Each generator ends its per-page block with the same shape: build a `warn`/`flags` array from failed
-gates, compute `tries = attempt > 0 ? \` (${attempt+1} tries)\` : ''`,`nudge = shift.dx||shift.dy ?
-\` shift ${dx},${dy}\` : ''`, a`stats`string of`keep/local/…`, and`${warn.length ? \` ⚠
-${warn.join(' + ')}\` : ''} -> ${relative(REPO_ROOT, out)}`. The scaffolding (tries/nudge/⚠
-join/arrow) is identical; only the gate names differ.
-
-#### Proposed solution
-
-Add `lib/report.mjs` `formatCandidateLine({ stats, warnings, attempt, shift, outPath })` returning
-the assembled string (owning the tries/nudge/⚠/arrow formatting and `relative(REPO_ROOT, …)`). Each
-generator passes its gate-specific `stats` and `warnings[]`.
-
-#### Verification
-
-Console output for a re-run is byte-identical; the four inline assemblies collapse to one call each.
-
----
-
 ### [P3][duplication] Number/percent formatting reinvented per script
 
 **File(s):** `round(v, digits)` audit-golden.mjs:51-54; `pct` check-coloring-drift.mjs:68;

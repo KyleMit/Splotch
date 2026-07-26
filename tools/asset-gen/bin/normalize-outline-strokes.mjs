@@ -49,6 +49,7 @@ import { alignToSource } from '../lib/align-to-source.mjs';
 import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
 import { NORMALIZE_INSTRUCTION } from '../lib/prompts.mjs';
+import { formatCandidateLine } from '../lib/report.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
@@ -288,8 +289,6 @@ for (const arg of positionals) {
   await sharp(best.overlay).toFile(dest.replace(/\.webp$/, '.overlay.png'));
 
   const ok = passes(best);
-  const tries = best.attempt > 0 ? `  (${best.attempt + 1} tries)` : '';
-  const nudge = best.shift.dx || best.shift.dy ? `  shift ${best.shift.dx},${best.shift.dy}` : '';
   const warn = [];
   if (!best.solidity.passes) warn.push(`still solid (blob ${best.solidity.biggestBlob})`);
   if (!best.rings.passes) warn.push(`over-ringed (depth ${best.rings.maxDepth})`);
@@ -299,7 +298,13 @@ for (const arg of positionals) {
   if (best.reverseKeep < REVERSE_KEEP_THRESHOLD) warn.push('invented strokes');
   const stats = `blob ${srcSolidity.biggestBlob}→${best.solidity.biggestBlob}  keep ${(best.keep * 100).toFixed(1)}%  local ${(best.localKeep * 100).toFixed(1)}%  rev ${(best.reverseKeep * 100).toFixed(1)}%`;
   console.log(
-    `${stats}${nudge}${tries}${warn.length ? `  ⚠ ${warn.join(' + ')}` : ''}  -> ${relative(REPO_ROOT, dest)}`
+    formatCandidateLine({
+      stats,
+      warnings: warn,
+      attempt: best.attempt,
+      shift: best.shift,
+      outPath: dest,
+    })
   );
 
   if (values.apply) {
