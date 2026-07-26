@@ -17,10 +17,16 @@
     { name: 'portrait', rows: PORTRAIT_ROWS },
   ];
 
+  interface HexCenter {
+    color: string;
+    cx: number;
+    cy: number;
+  }
+
   let pickerEl: HTMLDivElement;
   let hoveredHex = $state<string | null>(null);
   let isTrackingDrag = false;
-  let hexCenters: { color: string; cx: number; cy: number }[] | null = null;
+  let hexCenters: HexCenter[] | null = null;
 
   function selectColor(hex: string) {
     pickCustomColor(hex);
@@ -58,7 +64,7 @@
   const HEX_SNAP_RADIUS = 40;
 
   function snapshotHexCenters() {
-    const centers: { color: string; cx: number; cy: number }[] = [];
+    const centers: HexCenter[] = [];
     for (const hex of pickerEl.querySelectorAll<HTMLElement>('.hexagon')) {
       const color = hex.dataset.color;
       if (!color) continue;

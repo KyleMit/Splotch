@@ -22,27 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P3][type-safety] The hex-center record type is declared inline twice
-
-**File(s):** `web/src/lib/components/ColorPicker.svelte:23, 61` — pinned at SHA f934d43
-
-#### Problem
-
-`{ color: string; cx: number; cy: number }[]` is written out for both the `hexCenters` field
-(line 23) and `snapshotHexCenters`'s local (line 61). The shape is duplicated; a field rename must
-touch both.
-
-#### Proposed solution
-
-Declare `interface HexCenter { color: string; cx: number; cy: number }` once and type
-`hexCenters: HexCenter[] | null` and the accumulator against it.
-
-#### Verification
-
-`npm run check` passes; behavior unchanged.
-
----
-
 ### [P3][maintainability] `LANDSCAPE_ROWS` transpose keys off `COLOR_FAMILIES[0]` and assumes uniform shade counts
 
 **File(s):** `web/src/lib/hexPickerLayout.ts:162-165` — pinned at SHA f934d43
