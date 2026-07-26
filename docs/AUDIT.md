@@ -26,54 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P1][architecture] `coloringBookState` stores four URLs that are pure functions of `(page, orientation)`, kept in sync by a manual re-invocation effect
-
-**File(s):** `web/src/lib/state/coloringBook.svelte.ts:15-47` and
-`web/src/lib/components/ColoringBook.svelte:50-54` — pinned at SHA f934d43
-
-#### Problem
-
-`overlayUrl`, `chalkUrl`, `colorSheetUrl`, `nightSheetUrl` are all derivable from `overlayPage` +
-orientation via the existing `pageImage`/`pageChalkImage`/`pageColorImage`/`pageNightImage`
-accessors. `setOverlayPage` snapshots all four:
-
-```ts
-coloringBookState.overlayUrl = pageImage(page, orientation);
-coloringBookState.chalkUrl = pageChalkImage(page, orientation);
-coloringBookState.colorSheetUrl = pageColorImage(page, orientation);
-coloringBookState.nightSheetUrl = pageNightImage(page, orientation);
-```
-
-Because orientation can change after selection, the component needs a dedicated effect to re-push
-the snapshot:
-
-```ts
-$effect(() => {
-  if (coloringBookState.overlayPage) setOverlayPage(coloringBookState.overlayPage, orientation);
-});
-```
-
-This is denormalized state maintained by a hand-written sync effect — exactly what `$derived` exists
-to eliminate. The URLs can drift from `overlayPage` for one frame, and every new derived asset
-variant (a 5th URL) means touching the interface, the `$state` initializer, `setOverlayPage`,
-`clearOverlay`, and this effect.
-
-#### Proposed solution
-
-Store only the source-of-truth pair `{ overlayPage, orientation }` in the rune state (add an
-`orientation` field set by the same effect, or pass orientation in). Expose the four URLs as
-`$derived` (or plain accessor functions the component reads) computed from
-`overlayPage`+`orientation`. Delete the sync effect at `ColoringBook.svelte:50-54` — the derivations
-react automatically. `DrawingCanvas` already re-derives theme on top, so it keeps working.
-
-#### Verification
-
-`coloringBook.svelte.test.ts` should still pass after adapting to the new shape; assert that
-changing orientation updates all four URLs without an intervening `setOverlayPage` call. Manual:
-rotate with an applied page and confirm the overlay swaps.
-
----
-
 ### [P1][maintainability] Asset filename grammar (suffixes + portrait→tall / landscape→wide) is scattered as string literals with no single mapping
 
 **File(s):** `web/src/lib/state/books.ts:100-118` (`page()`), `264-271`

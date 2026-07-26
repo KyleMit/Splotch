@@ -97,9 +97,10 @@ the duplication is the accepted cost; keep the blocks in sync.
   screened on top, and the night-fill reveals already baked into the replayed strokes.
 * **Catalog.** `books.ts` carries a `nightImages: Partial<Record<orientation, url>>` per page (only
   the orientations that have a generated fill) with a `pageNightImage()` helper;
-  `coloringBook.svelte.ts` tracks `nightSheetUrl` alongside `colorSheetUrl`. `bookAssetPaths()`
-  lists the shipped night fills so `check-assets` validates them and `strip-native-assets` removes
-  them, exactly like the light `.light.webp` fills (no thumbnails — never in the grid).
+  `coloringBook.svelte.ts` stores only the selected page and orientation, deriving the outline,
+  chalk, light-fill, and night-fill URLs through accessors. `bookAssetPaths()` lists the shipped
+  night fills so `check-assets` validates them and `strip-native-assets` removes them, exactly like
+  the light `.light.webp` fills (no thumbnails — never in the grid).
 * **Prominence of the float cards in dark mode.** The action buttons' warm drop shadow vanishes on
   dark paper, so `--float-border` (a faint light hairline) + `--float-shadow` /
   `--float-shadow-flyout` give each card a visible edge and lift in dark mode; both are
