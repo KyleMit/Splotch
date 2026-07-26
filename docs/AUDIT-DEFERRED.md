@@ -1338,3 +1338,39 @@ via the single source.
 #### Why it was deferred
 
 implementation failed
+
+### [P3][performance] `getRingColor` is recomputed 2-3× per active swatch in the template
+
+**File(s):** `web/src/lib/components/ColorPalette.svelte:130-132` — pinned at SHA f934d43
+
+#### Problem
+
+For the active swatch the style string calls `ringShadow(shown)` (which internally calls
+`getRingColor(shown)`) *and* separately `getRingColor(shown)` again for `--ring-color`:
+
+```svelte
+? `box-shadow: ${ringShadow(shown)}; --ring-color: ${getRingColor(shown)};`
+```
+
+So `getRingColor` (hex parse + luminance + per-channel math, itself re-parsing hex) runs at least
+twice for the selected swatch on every reactive tick that touches this `{#each}`. Minor per-swatch,
+but it's pure work recomputed needlessly.
+
+#### Proposed solution
+
+Compute the ring color once. Since only one swatch is active at a time, derive it near the
+selection:
+`const activeRingColor = $derived(getRingColor(themedSwatchColor(colors.activeSwatch, dark)))` and
+reuse it for both `box-shadow` and `--ring-color`. Combined with the `selectionRingShadow`
+extraction, the active swatch computes its ring color exactly once.
+
+#### Verification
+
+`box-shadow` and `--ring-color` still match; add a spy/count in a unit-ish harness or just confirm
+identical rendered output.
+
+---
+
+#### Why it was deferred
+
+verifier unavailable
