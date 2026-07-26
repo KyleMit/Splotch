@@ -52,7 +52,10 @@
   // with real Playwright pointer input on the canvas; these are for the
   // imperative operations the app invokes from buttons (undo/clear) and for
   // reading the resulting bitmap.
-  function buildEngineApi() {
+  // Annotated against the ambient Window.__engine contract (web/tests/global.d.ts)
+  // that the Playwright specs compile against, so a harness member that drifts
+  // from that spec-facing contract errors here instead of type-checking silently.
+  function buildEngineApi(): Window['__engine'] {
     return {
       setColor,
       setStrokeWidth,

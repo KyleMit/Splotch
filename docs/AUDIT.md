@@ -7,39 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P4][type-safety] The engine harness types its public API seam as `Record<string, unknown>`, discarding the real engine signatures at the test boundary
-
-**File(s):** `web/src/routes/dev/engine/+page.svelte:28-33, 60` (app shell wiring for the harness) —
-pinned at SHA f934d43
-
-#### Problem
-
-```js
-interface EngineHarnessWindow {
-  __engineState: { canUndo: boolean; canvasEmpty: boolean };
-  __engine: Record<string, unknown>;
-  __engineReady: boolean;
-}
-```
-
-`__engine` is assigned a rich object of typed engine functions (`setColor`, `exportCanvasBlob`,
-`strokeSync`, …) but typed as `Record<string, unknown>`, so nothing checks that the harness exposes
-what the Playwright spec expects, and the spec sees `unknown`. A rename in `engine.ts` won't surface
-here.
-
-#### Proposed solution
-
-Type `__engine` as the actual assigned shape — e.g. `typeof engineApi` where `engineApi` is a named
-`const` object, or an explicit interface listing the exposed methods — so the seam is checked
-against the engine's real exports. This also documents the harness contract.
-
-#### Verification
-
-`npm run check` flags a mismatch if an exposed method's signature changes; the engine Playwright
-spec still drives the harness.
-
----
-
 ### [P4][maintainability] CORS allowed-methods/headers are inline magic strings that must track the actual `/api` surface
 
 **File(s):** `web/src/hooks.server.ts:57-67` — pinned at SHA f934d43
