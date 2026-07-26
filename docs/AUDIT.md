@@ -22,35 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P4][maintainability] `onSaveFolderCleared` stores a single listener slot, silently clobbering any prior registration
-
-**File(s):** `web/src/lib/drawing/folderSave.ts:35-42` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-let folderClearedListener: (() => void) | null = null;
-export function onSaveFolderCleared(listener) {
-  folderClearedListener = listener;
-}
-```
-
-A second call replaces the first with no warning and no unregister handle. Compare `storage.ts`'s
-`onDurableRestore` (lines 33-36), which uses a `Set` and returns a disposer. Only one caller exists
-today (`settings.svelte.ts:304`), but the single-slot design is an easy footgun for a future second
-subscriber and is inconsistent with the sibling pattern in the same storage subsystem.
-
-#### Proposed solution
-
-Mirror `onDurableRestore`: hold a `Set<() => void>`, return a disposer, and fire all listeners in
-`saveBlobToFolder`'s recovery path. Small change; makes the two notification hooks consistent.
-
-#### Verification
-
-Register two listeners; trigger a stale-handle clear; assert both fired.
-
----
-
 ### [P4][readability] `cachedHandle`'s tri-state `undefined | null | handle` overloads two "nothing" values
 
 **File(s):** `web/src/lib/drawing/folderSave.ts:31-33, 44-60` — pinned at SHA f934d43
