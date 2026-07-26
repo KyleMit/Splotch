@@ -9,16 +9,23 @@ ADR-0058.
   nested `<dir>/.ruler/AGENTS.md` holds that directory's orientation and generates the sibling
   `<dir>/CLAUDE.md` + `<dir>/AGENTS.md`.
 * Skills are authored in `.ruler/skills/<name>/SKILL.md` and copied verbatim to `.claude/skills/`
-  and `.agents/skills/` — including helper files (`driver.mjs`, extra `.md` references). When you
-  delete a skill from `.ruler/skills/`, the next apply deletes the generated copies; commit those
-  deletions too.
+  and `.agents/skills/` — including helper files (`driver.mjs`, extra `.md` references). Ruler
+  0.3.44 cannot vary skill content per output, so the apply then overlays any files under
+  `.ruler/agent-overrides/<runner>/` onto that runner's generated root (`claude` → `.claude`,
+  `codex` → `.agents`) via `scripts/apply-ruler-agent-overrides.mjs`. Override sources end in
+  `.template`; the suffix is removed in the generated path, and it keeps Ruler's recursive Markdown
+  rule loader from concatenating the variant into root instructions. An override must replace a file
+  Ruler just generated; it cannot create a runner-only file. Use one only when a workflow genuinely
+  differs by runner; shared content stays in `.ruler/skills/`. When you delete an override, the next
+  apply restores the shared generated copy; commit that change too.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md` and mirrored to `.claude/skill-notes/`
   and `.agents/skill-notes/` by `scripts/mirror-skill-notes.mjs`, which the apply runs after ruler.
   ruler itself only knows how to copy skills, and these are deliberately *not* skills — see below.
   Deleting a note deletes both copies on the next apply.
-* `npm run ruler:apply` regenerates everything and dprint-formats the output. `npm run ruler:check`
-  re-applies and fails if anything changed — the CI drift gate. `npm run ruler:dry-run` previews
-  what an apply would regenerate without writing.
+* `npm run ruler:apply` runs Ruler, applies runner-specific overlays, mirrors skill notes, and
+  dprint-formats the output. `npm run ruler:check` repeats that pipeline and fails if anything
+  changed — the CI drift gate. `npm run ruler:dry-run` previews Ruler's shared output only; it does
+  not preview the post-apply overlays.
 
 **If asked to update agent instructions, docs, or skills: change `.ruler/**` sources, never the
 generated files.** A generated file carries a `<!-- Source: ... -->` marker pointing back to its

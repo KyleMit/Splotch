@@ -25,12 +25,12 @@ export function findingPriority(title) {
   return match ? Number(match[1]) : null;
 }
 
-// The implementer reports the sha of the commit it made, but that field is
-// optional in its schema — a success=false return has no commit to point at — so
-// a model that finished the whole job can still omit it, and treating the gap as
-// failure throws away the most expensive work the driver does. Trust git over
-// the envelope: HEAD past the base means it committed, whatever it remembered to
-// report. An unmoved HEAD still yields '' so a genuine no-op defers as before.
+// The implementer reports the sha of the commit it made. Even with a required
+// schema field, a failed call or legacy runner envelope can omit it, and treating
+// the gap as failure throws away the most expensive work the driver does. Trust
+// git over the envelope: HEAD past the base means it committed, whatever it
+// remembered to report. An unmoved HEAD still yields '' so a genuine no-op
+// defers as before.
 export function resolveImplSha({ reported, head, baseSha }) {
   if (reported) return reported;
   return head && head !== baseSha ? head : '';
@@ -47,6 +47,7 @@ export function resolveImplSha({ reported, head, baseSha }) {
 // get them.
 export const LAUNCH_KNOBS = [
   'RESUME',
+  'AGENT_RUNNER',
   'PUSH_EVERY',
   'BRANCH',
   'AUDIT_FILE',

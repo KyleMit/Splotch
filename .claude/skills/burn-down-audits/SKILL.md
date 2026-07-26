@@ -1,6 +1,6 @@
 ---
 name: burn-down-audits
-description: Drive the scripted bulk burndown of docs/AUDIT.md — one one-shot `claude -p` subprocess per role per finding (verify → implement → adversarial review → fix), orchestrated by scripts/audit-burndown/ and built to run unattended. Use when the staged audit backlog is too large to vet-and-file as GitHub issues (hundreds of findings) and the user asks to burn it down in bulk, run the audit burndown, or launch/check on a run.
+description: Drive the scripted bulk burndown of docs/AUDIT.md with isolated Claude Code subprocesses per role and finding (verify → implement → adversarial review → fix). Use when the staged audit backlog is too large to vet-and-file as GitHub issues, or when asked to launch, resume, supervise, pause, report on, or close out an audit burndown from Claude Code.
 ---
 
 # Burn down audits
@@ -9,6 +9,9 @@ Progressive, adversarial burndown of a large `docs/AUDIT.md` backlog. Each findi
 verify → implement → review → fix, entirely inside one-shot `claude -p` subprocesses, so nothing
 accumulates in a long-lived context window. The driver is `scripts/audit-burndown/burndown.mjs`;
 this skill is the runbook for launching, watching, and closing out a run.
+
+This is the Claude Code-generated variant and uses the driver's default `AGENT_RUNNER=claude`. Codex
+receives its own generated runbook and sets `AGENT_RUNNER=codex`.
 
 **This runs in a Claude Code cloud session.** Two facts shape everything below and are not
 negotiable knobs:
@@ -90,6 +93,7 @@ Draining the per-commit comments (there is no `gh`; you post these yourself):
 All environment variables on `audit:burndown`, all with defaults:
 
 ```bash
+AGENT_RUNNER=claude   # this generated runner variant; Codex uses its own runbook
 MAX_ISSUES=5          # how many to FIX before stopping — drops/deferrals don't count (see step 4)
 PUSH_EVERY=1          # push after every finding — the container is ephemeral (see below)
 BRANCH=audit/burndown

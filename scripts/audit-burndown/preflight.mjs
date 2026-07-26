@@ -4,6 +4,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { hasCommand } from '../lib/utils.mjs';
+import { agentAuthCommand, agentRunnerDefaults, normalizeAgentRunner } from './agent-runner.mjs';
 import {
   auditFile,
   chdirRoot,
@@ -20,6 +21,8 @@ chdirRoot();
 
 const RESUME = process.env.RESUME === '1' || process.env.RESUME === 'true';
 const BRANCH = process.env.BRANCH ?? 'audit/burndown';
+const AGENT_RUNNER = normalizeAgentRunner(process.env.AGENT_RUNNER);
+const RUNNER_DEFAULTS = agentRunnerDefaults(AGENT_RUNNER);
 
 let failed = false;
 const ok = (msg) => console.log(`  \x1b[32m✓\x1b[0m ${msg}`);
@@ -31,7 +34,7 @@ const warn = (msg) => console.log(`  \x1b[33m!\x1b[0m ${msg}`);
 
 // No `gh` here, by design — the driver never calls GitHub.
 console.log('dependencies');
-for (const bin of ['claude', 'git', 'npm']) {
+for (const bin of [RUNNER_DEFAULTS.binary, 'git', 'npm']) {
   if (!hasCommand(bin)) {
     bad(`${bin} not found`);
     continue;
@@ -41,13 +44,15 @@ for (const bin of ['claude', 'git', 'npm']) {
 }
 
 console.log('auth');
-if (runCmd('claude', ['auth', 'status']).status === 0) ok('claude logged in');
-else bad('claude not logged in (run: claude auth login)');
+const auth = agentAuthCommand(AGENT_RUNNER);
+if (runCmd(auth.cmd, auth.args).status === 0) ok(`${AGENT_RUNNER} logged in`);
+else bad(`${AGENT_RUNNER} not logged in (run: ${auth.login})`);
 
 console.log('repo');
 if (gitOk('diff', '--quiet') && gitOk('diff', '--cached', '--quiet')) ok('working tree clean');
 else if (RESUME) warn('working tree is dirty — RESUME=1 will reset it to HEAD');
 else bad('working tree is dirty');
+ok(`runner: ${AGENT_RUNNER}`);
 ok(`branch: ${gitOut('rev-parse', '--abbrev-ref', 'HEAD')}`);
 if (existsSync(auditFile())) ok(`${auditFile()} present`);
 else bad(`${auditFile()} missing — nothing staged to burn down`);

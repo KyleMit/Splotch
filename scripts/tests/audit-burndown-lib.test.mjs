@@ -350,6 +350,10 @@ describe('launchCommand', () => {
     );
   });
 
+  it('records the agent runner so a Codex run never resumes through Claude', () => {
+    expect(launchCommand({ AGENT_RUNNER: 'codex' })).toContain("AGENT_RUNNER='codex'");
+  });
+
   it('records every non-default knob as a shell-quoted assignment', () => {
     expect(launchCommand({ MAX_ISSUES: '600', BRANCH: 'audit/other', EFFORT_REVIEW: 'high' })).toBe(
       "BRANCH='audit/other' EFFORT_REVIEW='high' npm run audit:burndown:overnight -- 600"

@@ -7,9 +7,9 @@
 > [!IMPORTANT]
 > Every `CLAUDE.md` and `AGENTS.md` in this repo, plus the `.claude/skills/` and `.agents/skills/`
 > trees, is **generated** by [ruler](https://github.com/intellectronica/ruler) — never edit those
-> files directly. Edit the sources in `.ruler/` (or the nested `<dir>/.ruler/`), then run
-> `npm run ruler:apply` and commit the regenerated output. CI fails on drift
-> (`npm run ruler:check`).
+> files directly. Edit the sources in `.ruler/` (or the nested `<dir>/.ruler/`); runner-specific
+> skill variants live in `.ruler/agent-overrides/<runner>/`. Then run `npm run ruler:apply` and
+> commit the regenerated output. CI fails on drift (`npm run ruler:check`).
 
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
 
@@ -40,16 +40,23 @@ ADR-0058.
   nested `<dir>/.ruler/AGENTS.md` holds that directory's orientation and generates the sibling
   `<dir>/CLAUDE.md` + `<dir>/AGENTS.md`.
 * Skills are authored in `.ruler/skills/<name>/SKILL.md` and copied verbatim to `.claude/skills/`
-  and `.agents/skills/` — including helper files (`driver.mjs`, extra `.md` references). When you
-  delete a skill from `.ruler/skills/`, the next apply deletes the generated copies; commit those
-  deletions too.
+  and `.agents/skills/` — including helper files (`driver.mjs`, extra `.md` references). Ruler
+  0.3.44 cannot vary skill content per output, so the apply then overlays any files under
+  `.ruler/agent-overrides/<runner>/` onto that runner's generated root (`claude` → `.claude`,
+  `codex` → `.agents`) via `scripts/apply-ruler-agent-overrides.mjs`. Override sources end in
+  `.template`; the suffix is removed in the generated path, and it keeps Ruler's recursive Markdown
+  rule loader from concatenating the variant into root instructions. An override must replace a file
+  Ruler just generated; it cannot create a runner-only file. Use one only when a workflow genuinely
+  differs by runner; shared content stays in `.ruler/skills/`. When you delete an override, the next
+  apply restores the shared generated copy; commit that change too.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md` and mirrored to `.claude/skill-notes/`
   and `.agents/skill-notes/` by `scripts/mirror-skill-notes.mjs`, which the apply runs after ruler.
   ruler itself only knows how to copy skills, and these are deliberately *not* skills — see below.
   Deleting a note deletes both copies on the next apply.
-* `npm run ruler:apply` regenerates everything and dprint-formats the output. `npm run ruler:check`
-  re-applies and fails if anything changed — the CI drift gate. `npm run ruler:dry-run` previews
-  what an apply would regenerate without writing.
+* `npm run ruler:apply` runs Ruler, applies runner-specific overlays, mirrors skill notes, and
+  dprint-formats the output. `npm run ruler:check` repeats that pipeline and fails if anything
+  changed — the CI drift gate. `npm run ruler:dry-run` previews Ruler's shared output only; it does
+  not preview the post-apply overlays.
 
 **If asked to update agent instructions, docs, or skills: change `.ruler/**` sources, never the
 generated files.** A generated file carries a `<!-- Source: ... -->` marker pointing back to its
@@ -137,8 +144,8 @@ Backticks around file paths, identifiers, and commands are still correct — thi
 
 On-demand **skills** (consult when the topic comes up — don't guess from memory). Claude Code
 auto-invokes them by description (or via `/name`); agents without skill support should read the
-skill's `SKILL.md` directly from `.agents/skills/<name>/` (or `.claude/skills/<name>/` — same
-content):
+skill's `SKILL.md` directly from `.agents/skills/<name>/` (or `.claude/skills/<name>/`). Most are
+identical; runner-specific workflows may be produced from `.ruler/agent-overrides/`:
 
 | Skill                                   | Read it before…                                                                                                                                                                                                          |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -160,15 +167,15 @@ handoffs, ADRs) — is the `skills-guide` skill (`/skills-guide`). Consult it wh
 applies or how skills relate.
 
 **Prefer skills over slash commands.** Every reusable agent workflow in this repo is authored as a
-skill in `.ruler/skills/<name>/SKILL.md` (ruler propagates it to `.claude/skills/` and
-`.agents/skills/`), not as a command in `.claude/commands/`. A skill with a good `description` is
-both user-invocable (`/name`) *and* model-invocable, so Claude can reach for it on its own — a plain
-command can't. When authoring a new reusable workflow, create a skill: give it a `name` and a
-`description` that says both what it does and when to use it (add `disable-model-invocation: true`
-if it should stay user-only), and **register it in the `skills-guide` skill**
-(`.ruler/skills/skills-guide/SKILL.md`) under the group it belongs to — same when renaming or
-deleting a skill. If the user asks to create a *command*, ask whether they'd like a skill instead
-before making one.
+skill in `.ruler/skills/<name>/SKILL.md` (with rare runner-specific variants under
+`.ruler/agent-overrides/`), not as a command in `.claude/commands/`. A skill with a good
+`description` is both user-invocable (`/name`) *and* model-invocable, so Claude can reach for it on
+its own — a plain command can't. When authoring a new reusable workflow, create a skill: give it a
+`name` and a `description` that says both what it does and when to use it (add
+`disable-model-invocation: true` if it should stay user-only), and **register it in the
+`skills-guide` skill** (`.ruler/skills/skills-guide/SKILL.md`) under the group it belongs to — same
+when renaming or deleting a skill. If the user asks to create a *command*, ask whether they'd like a
+skill instead before making one.
 
 **Skill naming:** the name's shape signals what invoking the skill does. **Workflow skills** — ones
 that perform a procedure with side effects (`create-adr`, `fix-audits`, `prune-remote-branches`) —
@@ -1101,6 +1108,35 @@ the stale timing table for free.
 * **Parallelism** — git worktrees per finding — is named in the skill as "a real redesign, not a
   knob". Still true, still unattempted.
 
+## Codex runner port (2026-07-26)
+
+The original invariant said “one-shot `claude -p` subprocesses.” The durable part was never the
+vendor binary; it was **isolated one-shot role processes with an exact implementer-session resume**.
+`scripts/audit-burndown/agent-runner.mjs` now owns that seam:
+
+* `AGENT_RUNNER=claude` preserves the existing backend and remains the default for old checkpoint
+  commands.
+* `AGENT_RUNNER=codex` uses schema-constrained `codex exec --json` calls, reads the authoritative
+  `thread.started.thread_id`, and resumes fix rounds with `codex exec resume <thread-id>`.
+* The model mapping is role-for-role: Sonnet-tier verify/minor-implementation → `gpt-5.6-terra`;
+  Opus-tier implementation/review → `gpt-5.6-sol`.
+* Codex reviewers start in a read-only sandbox; verifier/implementer start in workspace-write.
+  `multi_agent` and `multi_agent_v2` are disabled in every subprocess, preserving one process per
+  role rather than letting a nested role fan out.
+* Saved envelopes stay under the existing `iter*.json` names. Claude writes one JSON object; Codex
+  writes JSONL events. One parser normalizes both for the driver, cost report, and comment backfill.
+
+The resume mechanism was probed before the port: a Terra thread was given a codeword, resumed by its
+reported thread id with the same JSON schema, and returned the codeword. The probe also confirmed
+the installed CLI accepts `gpt-5.6-terra`, `--output-schema`, and per-call reasoning effort.
+
+Ruler 0.3.44 copies skills verbatim and cannot take per-agent skill sources. The shared Claude
+runbook therefore remains in `.ruler/skills/burn-down-audits/`, while the Codex-native runbook lives
+under `.ruler/agent-overrides/codex/skills/burn-down-audits/SKILL.md.template` (the suffix keeps
+Ruler from concatenating it into root instructions). `scripts/apply-ruler-agent-overrides.mjs` runs
+immediately after `ruler apply` and before dprint. This is documented as an amendment to ADR-0058
+rather than hidden in the apply script.
+
 ## Timeline
 
 | Date       | Commit   | What                                                                      |
@@ -1133,6 +1169,7 @@ the stale timing table for free.
 | 2026-07-25 | f389dd39 | Delete backlog entries by title — the canary destroyed 3 findings in 5    |
 | 2026-07-26 | 049d5e35 | Stop the verifier naming `npm test` — it discarded a finished, green fix  |
 | 2026-07-26 | —        | Verifier must name which kind of "stale" on INVALID; HALT env-cause note  |
+| 2026-07-26 | —        | Codex runner backend + runner-specific Ruler skill overlay                |
 
 <!-- Source: .ruler/skill-notes/README.md -->
 

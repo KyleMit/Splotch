@@ -851,6 +851,35 @@ the stale timing table for free.
 * **Parallelism** — git worktrees per finding — is named in the skill as "a real redesign, not a
   knob". Still true, still unattempted.
 
+## Codex runner port (2026-07-26)
+
+The original invariant said “one-shot `claude -p` subprocesses.” The durable part was never the
+vendor binary; it was **isolated one-shot role processes with an exact implementer-session resume**.
+`scripts/audit-burndown/agent-runner.mjs` now owns that seam:
+
+* `AGENT_RUNNER=claude` preserves the existing backend and remains the default for old checkpoint
+  commands.
+* `AGENT_RUNNER=codex` uses schema-constrained `codex exec --json` calls, reads the authoritative
+  `thread.started.thread_id`, and resumes fix rounds with `codex exec resume <thread-id>`.
+* The model mapping is role-for-role: Sonnet-tier verify/minor-implementation → `gpt-5.6-terra`;
+  Opus-tier implementation/review → `gpt-5.6-sol`.
+* Codex reviewers start in a read-only sandbox; verifier/implementer start in workspace-write.
+  `multi_agent` and `multi_agent_v2` are disabled in every subprocess, preserving one process per
+  role rather than letting a nested role fan out.
+* Saved envelopes stay under the existing `iter*.json` names. Claude writes one JSON object; Codex
+  writes JSONL events. One parser normalizes both for the driver, cost report, and comment backfill.
+
+The resume mechanism was probed before the port: a Terra thread was given a codeword, resumed by its
+reported thread id with the same JSON schema, and returned the codeword. The probe also confirmed
+the installed CLI accepts `gpt-5.6-terra`, `--output-schema`, and per-call reasoning effort.
+
+Ruler 0.3.44 copies skills verbatim and cannot take per-agent skill sources. The shared Claude
+runbook therefore remains in `.ruler/skills/burn-down-audits/`, while the Codex-native runbook lives
+under `.ruler/agent-overrides/codex/skills/burn-down-audits/SKILL.md.template` (the suffix keeps
+Ruler from concatenating it into root instructions). `scripts/apply-ruler-agent-overrides.mjs` runs
+immediately after `ruler apply` and before dprint. This is documented as an amendment to ADR-0058
+rather than hidden in the apply script.
+
 ## Timeline
 
 | Date       | Commit   | What                                                                      |
@@ -883,3 +912,4 @@ the stale timing table for free.
 | 2026-07-25 | f389dd39 | Delete backlog entries by title — the canary destroyed 3 findings in 5    |
 | 2026-07-26 | 049d5e35 | Stop the verifier naming `npm test` — it discarded a finished, green fix  |
 | 2026-07-26 | —        | Verifier must name which kind of "stale" on INVALID; HALT env-cause note  |
+| 2026-07-26 | —        | Codex runner backend + runner-specific Ruler skill overlay                |

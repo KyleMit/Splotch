@@ -10,6 +10,12 @@ and skills in `.claude/skills/` (ADR-0018). Agents that follow the cross-vendor 
 convention — OpenAI Codex foremost — found nothing, so running them against this repo meant working
 blind or hand-maintaining a parallel `AGENTS.md` tree that would inevitably drift.
 
+The first implementation assumed every skill could be copied verbatim to every runner. That stopped
+being true when `burn-down-audits` gained a Codex backend: the workflow's process commands,
+authentication, model names, session-resume semantics, liveness probes, and operating environment
+are runner-native even though the git state machine is shared. Ruler 0.3.44 supports per-agent
+instruction output paths but not per-agent skill sources.
+
 Alternatives considered:
 
 * **Hand-maintain `AGENTS.md` beside each `CLAUDE.md`.** No tooling, but every edit must be made
@@ -35,12 +41,23 @@ deliberate):
   agents read `AGENTS.md`), plus verbatim skill copies in `.claude/skills/` and `.agents/skills/`.
   Committing the output keeps fresh clones and web-UI browsing correct without requiring
   contributors to run ruler.
+* **Runner-specific skill overlays:** shared skills still live in `.ruler/skills/`. A workflow that
+  genuinely differs by runner may replace individual generated files from
+  `.ruler/agent-overrides/<runner>/`, whose contents mirror the runner's generated root (`claude` →
+  `.claude`, `codex` → `.agents`). `scripts/apply-ruler-agent-overrides.mjs` applies those
+  `.template` files immediately after `ruler apply`, removing the suffix at the destination. The
+  non-Markdown suffix prevents Ruler's recursive rule loader from concatenating a skill variant into
+  root instructions. An override may only replace a path the preceding Ruler pass generated. This is
+  deliberately an overlay, not a second skill generator or a patched dependency: when an override
+  disappears, the preceding Ruler pass restores the shared file automatically.
 * **Config:** `.ruler/ruler.toml` — `default_agents = ["claude", "codex"]`, gitignore/MCP/backup all
   disabled (files are tracked; there are no project MCP servers; `.bak` files would be noise).
-* **Commands:** `npm run ruler:apply` regenerates and then runs `dprint fmt` (ruler's raw output
-  carries extra blank lines dprint collapses — formatting post-apply keeps the committed files
-  inside the ADR-0057 gate). `npm run ruler:check` (`scripts/ruler-check.mjs`) re-applies and fails
-  on any worktree change or untracked generated file; the Quality CI job runs it.
+* **Commands:** `npm run ruler:apply` regenerates, applies runner-specific overlays, mirrors skill
+  notes, and then runs `dprint fmt` (ruler's raw output carries extra blank lines dprint collapses —
+  formatting post-apply keeps the committed files inside the ADR-0057 gate). `npm run ruler:check`
+  (`scripts/ruler-check.mjs`) repeats the whole pipeline and fails on any worktree change or
+  untracked generated file; the Quality CI job runs it. `ruler:dry-run` previews only Ruler's shared
+  pass because upstream has no concept of the overlay.
 * **Not generated** (edited in place): `.claude/rules/` path-scoped rules, `.claude/hooks/`,
   `.claude/settings.json`, `.claude/audit-conventions.md`, `.claude/cloud/`, and `docs/`.
 
@@ -53,16 +70,21 @@ never the output.
 ## Consequences
 
 * \+ Codex (and any AGENTS.md-reading agent) gets the same project knowledge as Claude Code,
-  including skills, from one authored tree — no parallel maintenance.
+  including skills, from one authored `.ruler/` tree. Runner-native workflows can differ without
+  direct edits to generated output.
 * \+ Drift is structurally impossible to land: CI re-generates and fails on any difference, in
   either direction (unapplied source edit, or a direct edit to a generated file).
 * \+ Skill helper files (`driver.mjs`, extra reference docs) propagate verbatim, so skills stay more
   than just prose.
 * − Instruction content is duplicated three ways in the repo (source + two generated trees);
-  reviewers see every skill edit twice more in diffs, and the checkout grows accordingly.
+  reviewers see every shared skill edit twice more in diffs, and a runner-specific skill has an
+  additional authored variant to keep intentionally aligned on shared safety invariants.
 * − Ruler's nested mode and skills propagation are marked experimental; a future ruler release may
   change output format or file layout, which the exact version pin converts into a deliberate,
   reviewable upgrade rather than surprise CI failures.
+* − The post-apply overlay is project-owned machinery outside Ruler. A future Ruler release with
+  native per-agent skill sources should replace it; until then, every apply/check must keep the
+  overlay step between Ruler and formatting.
 * − Claude Code-specific routing (skill auto-invocation, path-scoped rules, `memory/`) has no Codex
   equivalent — the shared text can only *ask* other agents to read those files, not make it
   automatic.
