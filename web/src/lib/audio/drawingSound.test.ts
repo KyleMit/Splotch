@@ -30,12 +30,12 @@ describe('playDrawSound', () => {
       onended: null,
     };
 
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)),
-      })
-    );
+    let failLoad = true;
+    const fetch = vi.fn(() => {
+      if (failLoad) return Promise.reject(new Error('load failed'));
+      return Promise.resolve({ arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    });
+    vi.stubGlobal('fetch', fetch);
     vi.stubGlobal(
       'AudioContext',
       class {
@@ -51,10 +51,25 @@ describe('playDrawSound', () => {
 
     setSound(true);
     setSoundVolume(50);
-    playDrawSound({ speed: 0.45 });
+
+    playDrawSound({ speed: 0, isStrokeStart: true });
+    playDrawSound({ speed: 0.45, isStrokeStart: false });
+
+    expect(fetch).toHaveBeenCalledTimes(3);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    playDrawSound({ speed: 0.45, isStrokeStart: false });
+
+    expect(fetch).toHaveBeenCalledTimes(3);
+
+    failLoad = false;
+    playDrawSound({ speed: 0, isStrokeStart: true });
+
+    expect(fetch).toHaveBeenCalledTimes(6);
 
     await vi.waitFor(() => {
-      playDrawSound({ speed: 0.45 });
+      playDrawSound({ speed: 0.45, isStrokeStart: false });
       expect(linearRampToValueAtTime).toHaveBeenCalled();
     });
 

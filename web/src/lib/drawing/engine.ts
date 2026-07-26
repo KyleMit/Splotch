@@ -97,6 +97,7 @@ export { setColorSheet };
 
 export interface DrawSoundData {
   speed: number;
+  isStrokeStart: boolean;
 }
 
 interface InitOptions {
@@ -549,7 +550,7 @@ function renderStrokeStart(ps: PointerState) {
   ctx.beginPath();
   ctx.moveTo(ps.x, ps.y);
 
-  if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0 });
+  if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0, isStrokeStart: true });
 }
 
 // One quadratic segment per input point: the path runs midpoint-to-midpoint
@@ -909,7 +910,7 @@ function draw(e: PointerEvent) {
 
   pointerState.lastTime = now;
 
-  if (onDrawSoundCallback) onDrawSoundCallback({ speed });
+  if (onDrawSoundCallback) onDrawSoundCallback({ speed, isStrokeStart: false });
 
   if (PERF_MARKS) performance.measure('engine.draw', 'engine.draw:start');
 }

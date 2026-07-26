@@ -55,9 +55,9 @@ export function preloadDrawSounds() {
     });
 }
 
-export function playDrawSound({ speed }: DrawSoundData) {
+export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
   if (!settings.soundEnabled) return;
-  preloadDrawSounds();
+  if (isStrokeStart) preloadDrawSounds();
   const ctx = audioContext;
   if (!ctx || !buffers) return;
 
