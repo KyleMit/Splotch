@@ -18,8 +18,6 @@ empty-catch `setPointerCapture` idiom. `launchGuard` has doubled pruning logic a
 surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.svelte.ts`, and
 `modalDialog.svelte.ts` are largely clean (only minor notes). No code was changed — report only.
 
-## Source: Code audit — Color palette & picker
-
 ## Source: Code audit — Storage / persistence
 
 ### [P4][error-handling] IO error responsibility is split inconsistently within `folderSave` — `loadHandle` swallows, `storeHandle` throws
