@@ -7,33 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P4][consistency] The engine harness uses `onDestroy` + a top-level `window` read, against the repo's `$effect`-cleanup convention for teardown
-
-**File(s):** `web/src/routes/dev/engine/+page.svelte:33, 237-239` — pinned at SHA f934d43
-
-#### Problem
-
-`.claude/rules/svelte.md` explicitly warns that `onDestroy` (and top-level component init) also run
-during SSR and can throw `ReferenceError: window is not defined`, and directs teardown into an
-`$effect` cleanup. This page reads `const win = window as …` at top-level script (line 33) and tears
-down via `onDestroy` (237-239). It's safe *today* only because `+page.ts` sets `ssr = false` — a
-non-local invariant. If someone re-enables SSR for the harness (or another page imports this
-component), it breaks in exactly the way the rule describes.
-
-#### Proposed solution
-
-Move `engine?.teardown()` into an `$effect` cleanup (`$effect(() => () => engine?.teardown())`) and
-guard/relocate the `window` cast so the component follows the documented SSR-safe pattern regardless
-of the route's `ssr` flag; or add an inline comment pinning the `ssr = false` dependency at the
-`window` read.
-
-#### Verification
-
-Harness still tears the engine down on navigation; the component no longer relies on `ssr = false`
-for correctness (or the dependency is documented). Playwright engine spec passes.
-
----
-
 ### [P5][readability] `+error.svelte` and both `handleError` hooks produce a `{ message }` that nothing ever displays
 
 **File(s):** `web/src/routes/+error.svelte:1-7`, `web/src/hooks.client.ts:6-9`,

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import {
     initDrawingCanvas,
     setColor,
@@ -30,6 +30,7 @@
     __engine: ReturnType<typeof buildEngineApi>;
     __engineReady: boolean;
   }
+  // ssr = false in +page.ts is what makes this top-level window read safe (see the comment there).
   const win = window as unknown as Window & EngineHarnessWindow;
 
   // Mirrors how the app wires the engine (see DrawingCanvas.svelte), but routes
@@ -240,8 +241,8 @@
     win.__engineReady = true;
   });
 
-  onDestroy(() => {
-    engine?.teardown();
+  $effect(() => {
+    return () => engine?.teardown();
   });
 </script>
 
