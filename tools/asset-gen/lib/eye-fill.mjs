@@ -88,6 +88,12 @@ function labelRegions(ink, w, h) {
   return { label, regions };
 }
 
+async function analyzeEyePage(sourceBuf) {
+  const { ink, w, h } = await inkMask(sourceBuf);
+  const { label, regions } = labelRegions(ink, w, h);
+  return { ink, label, regions, w, h };
+}
+
 // The region enclosing `reg`: march left from its leftmost pixel across the ink
 // ring; the first non-ink pixel belongs to the enclosing region (for the closed
 // loops an eye is made of).
@@ -113,9 +119,7 @@ const contains = (outer, inner, slack = 2) =>
 // double-nesting with bbox containment is what keeps this precise: a loose
 // "childless region at depth 2" filter also matches blanket checks and leaf
 // cells, whose flat fill is legitimate, and drowns the real eyes.
-export async function findEyeCores(sourceBuf) {
-  const { ink, w, h } = await inkMask(sourceBuf);
-  const { label, regions } = labelRegions(ink, w, h);
+function findEyeCoresFromAnalysis({ ink, label, regions, w, h }) {
   const page = w * h;
   const cores = [];
   for (const a of regions) {
@@ -134,6 +138,10 @@ export async function findEyeCores(sourceBuf) {
   return { cores, label, ink, w, h };
 }
 
+export async function findEyeCores(sourceBuf) {
+  return findEyeCoresFromAnalysis(await analyzeEyePage(sourceBuf));
+}
+
 // Deeper nesting than a normal eye means the outline grew extra concentric
 // circles — the "hypno swirl" failure a normalization redraw produced on
 // caterpillar-tall. Registration can't catch it (extra rings hug the old pupil
@@ -149,9 +157,7 @@ export const EYE_RING_DEPTH_MAX = 4;
 // — maxDepth 0 means no eye cores; overDeep lists the outermost eye-scale
 // region of every chain past the bar, so a normalization redraw can treat that
 // whole eye interior as replaceable.
-export async function scoreEyeRings(sourceBuf) {
-  const { ink, w, h } = await inkMask(sourceBuf);
-  const { label, regions } = labelRegions(ink, w, h);
+function scoreEyeRingsFromAnalysis({ ink, label, regions, w, h }) {
   const page = w * h;
   let maxDepth = 0;
   let worst = null;
@@ -180,6 +186,18 @@ export async function scoreEyeRings(sourceBuf) {
     }
   }
   return { maxDepth, worst, overDeep, passes: maxDepth <= EYE_RING_DEPTH_MAX };
+}
+
+export async function scoreEyeRings(sourceBuf) {
+  return scoreEyeRingsFromAnalysis(await analyzeEyePage(sourceBuf));
+}
+
+export async function scoreEyes(sourceBuf) {
+  const analysis = await analyzeEyePage(sourceBuf);
+  return {
+    cores: findEyeCoresFromAnalysis(analysis),
+    rings: scoreEyeRingsFromAnalysis(analysis),
+  };
 }
 
 function median(vals) {

@@ -47,7 +47,7 @@ import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
-import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
+import { scoreEyeRings, scoreEyes } from '../lib/eye-fill.mjs';
 import { NORMALIZE_INSTRUCTION } from '../lib/prompts.mjs';
 import { formatCandidateLine } from '../lib/report.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
@@ -206,13 +206,16 @@ for (const arg of positionals) {
   const source = await readFile(src);
   const { width, height } = await sharp(source).metadata();
   const srcSolidity = await scoreSolidity(source);
-  const srcRings = await scoreEyeRings(source);
-  if (srcSolidity.passes && srcRings.passes && !values.force) {
-    console.log(
-      `${arg}  already thin-stroke (biggest blob ${srcSolidity.biggestBlob}, ring depth ${srcRings.maxDepth}) — skipping (--force to redraw anyway)`
-    );
-    continue;
+  if (srcSolidity.passes && !values.force) {
+    const srcRings = await scoreEyeRings(source);
+    if (srcRings.passes) {
+      console.log(
+        `${arg}  already thin-stroke (biggest blob ${srcSolidity.biggestBlob}, ring depth ${srcRings.maxDepth}) — skipping (--force to redraw anyway)`
+      );
+      continue;
+    }
   }
+  const { cores: srcCores, rings: srcRings } = await scoreEyes(source);
   // An over-ringed eye's interior is REPLACEABLE (the redraw simplifies it to
   // one pupil + one catchlight), so clear it on BOTH sides of the registration
   // scoring — from the reference for the same reason solid interiors are
@@ -243,7 +246,7 @@ for (const arg of positionals) {
   let reference = await whitenSolidRegions(source, srcSolidity);
   if (srcRings.overDeep.length) reference = await whitenEyeInteriors(reference);
 
-  const srcEyeCores = (await findEyeCores(source)).cores;
+  const srcEyeCores = srcCores.cores;
 
   process.stdout.write(
     `${arg}  (blob ${srcSolidity.biggestBlob}, rings ${srcRings.maxDepth}) ... `
@@ -258,7 +261,7 @@ for (const arg of positionals) {
       const candidate = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
       const solidity = await scoreSolidity(candidate);
-      const rings = await scoreEyeRings(candidate);
+      const { cores, rings } = await scoreEyes(candidate);
       const fwd = await outlineMatch(reference, candidate);
       const revCandidate = srcRings.overDeep.length
         ? await whitenEyeInteriors(candidate)
@@ -268,7 +271,7 @@ for (const arg of positionals) {
         candidate,
         solidity,
         rings,
-        eyesPreserved: eyesPreserved(srcEyeCores, (await findEyeCores(candidate)).cores),
+        eyesPreserved: eyesPreserved(srcEyeCores, cores.cores),
         keep: fwd.keep,
         localKeep: fwd.localKeep,
         overlay: fwd.overlay,

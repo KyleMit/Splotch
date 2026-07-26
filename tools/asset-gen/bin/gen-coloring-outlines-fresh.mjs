@@ -27,7 +27,7 @@ import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
 import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { makeClient } from '../lib/gemini.mjs';
 import { scoreSolidity } from '../lib/solid-regions.mjs';
-import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
+import { scoreEyeRings, scoreEyes } from '../lib/eye-fill.mjs';
 import { FRESH_STYLE_PROMPT } from '../lib/prompts.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
@@ -166,10 +166,12 @@ for (let attempt = 0; attempt < maxAttempts; attempt++) {
     continue;
   }
 
-  const [solidity, rings, cores, borderWhite, ink] = await Promise.all([
+  const eyeScores = args.values.eyes
+    ? scoreEyes(pen)
+    : scoreEyeRings(pen).then((rings) => ({ rings, cores: null }));
+  const [solidity, { rings, cores }, borderWhite, ink] = await Promise.all([
     scoreSolidity(pen),
-    scoreEyeRings(pen),
-    args.values.eyes ? findEyeCores(pen) : Promise.resolve(null),
+    eyeScores,
     borderWhiteFraction(pen),
     inkFraction(pen),
   ]);
