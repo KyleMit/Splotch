@@ -26,35 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P3][dead-code] `booksForPlatform`'s `?? ['web', 'mobile']` default is unreachable — every book sets `platforms`
-
-**File(s):** `web/src/lib/state/books.ts:239-242`; every `BOOKS` entry sets `platforms`
-(128,142,156,170,184,198,213,227) — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-return BOOKS.filter((book) => (book.platforms ?? ['web', 'mobile']).includes(platform));
-```
-
-The "omitting the field ⇒ ships everywhere" fallback (also documented in the header, lines 43-44) is
-never exercised because all eight books declare `platforms: ['web', 'mobile']` explicitly. The
-default is documented behavior with no test and no data path, so it can silently rot (e.g. the
-`strip-native-assets` side that must agree may not honor the same default).
-
-#### Proposed solution
-
-Either make `platforms` required on `Book` and drop the `??` (removes a "both" magic literal
-duplicated from the header), or keep the optional field and add one catalog entry / unit test that
-omits `platforms` to lock the default. Prefer required unless the default is genuinely used.
-
-#### Verification
-
-Make `platforms` required → `npm run check` still passes (all books already set it), confirming the
-branch was dead.
-
----
-
 ### [P3][readability] `ALL_ORIENTATIONS` exists but `bookAssetPaths` re-inlines `['portrait','landscape'] as BookOrientation[]` twice
 
 **File(s):** `web/src/lib/state/books.ts:78,304,311` — pinned at SHA f934d43

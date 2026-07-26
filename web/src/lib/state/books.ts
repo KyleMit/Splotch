@@ -41,7 +41,6 @@
 //   ['web']            -> web only          (hidden + assets stripped on native)
 //   ['mobile']         -> native only       (hidden on web)
 //   ['web', 'mobile']  -> ships everywhere  ("both")
-// Omitting the field is treated as ships-everywhere.
 
 // Distribution platforms a book may ship on - distinct from the runtime
 // platform in platform.ts (which also has 'ios'/'android').
@@ -68,7 +67,7 @@ export interface ColoringPage {
 export interface Book {
   id: string;
   name: string;
-  platforms?: BookPlatform[];
+  platforms: BookPlatform[];
   cover: string;
   pages: ColoringPage[];
 }
@@ -270,7 +269,7 @@ export const BOOKS: Book[] = [
 
 /** Books allowed on the given platform ('web' | 'mobile'). */
 export function booksForPlatform(platform: BookPlatform): Book[] {
-  return BOOKS.filter((book) => (book.platforms ?? ['web', 'mobile']).includes(platform));
+  return BOOKS.filter((book) => book.platforms.includes(platform));
 }
 
 export function pageImage(page: ColoringPage, orientation: BookOrientation): string {
