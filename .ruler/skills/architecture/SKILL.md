@@ -131,6 +131,8 @@ media queries + the head-script stamp in `app.html`).
 | `/admin`                  | SSR    | Token management console (`prerender = false` — cookie-authenticated form actions). Not bundled for native.                                                               |
 | `/admin/native`           | SSG    | Static, prerendered variant of the console for the native apps; manages the same tokens through `/api/admin/*`.                                                           |
 | `/privacy`                | SSG    | Static privacy policy page.                                                                                                                                               |
+| `/dev`                    | SSR    | Index of the dev harnesses — links to each one. `prerender = false`; unlocked by `PUBLIC_ENABLE_DEV_HARNESS=true`.                                                        |
+| `/dev/design`             | SSR    | Living styleguide — every design token and primitive, in both themes (ADR-0071). `prerender = false`; unlocked by `PUBLIC_ENABLE_DEV_HARNESS=true`.                       |
 | `/dev/engine`             | SSR    | Drawing engine test harness — blank canvas with debug controls. `prerender = false`; unlocked by `PUBLIC_ENABLE_DEV_HARNESS=true`.                                        |
 | `/dev/ai-timer`           | SSR    | AI generation timer — exercises the full round-trip with timing display. `prerender = false`; used by Playwright E2E specs. Unlocked by `PUBLIC_ENABLE_DEV_HARNESS=true`. |
 

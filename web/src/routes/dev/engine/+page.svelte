@@ -239,6 +239,9 @@
   });
 </script>
 
+<!-- Deliberately bare, unlike the sibling harnesses: nobody browses this page —
+     it's an automated Playwright target, and chrome would only sit under the
+     viewport-pinned canvas the specs read pixels and pointer coordinates from. -->
 <div class="harness">
   <div class="canvas-wrapper" bind:this={wrapperEl}>
     <canvas bind:this={canvasEl} id="engineCanvas"></canvas>

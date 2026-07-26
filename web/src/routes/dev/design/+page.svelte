@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import Button from '$lib/components/design/Button.svelte';
   import Disclosure from '$lib/components/design/Disclosure.svelte';
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
@@ -53,6 +54,8 @@
 
 <main class="styleguide">
   <header>
+    <Breadcrumb current="Design tokens" />
+
     <h1>Design tokens</h1>
     <p>
       Rendered live from <code>lib/design/tokens.ts</code> — the source that generates
