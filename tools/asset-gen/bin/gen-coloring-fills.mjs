@@ -170,8 +170,8 @@ async function renderClean(source, width, height, slot) {
     const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
     const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
-    const [{ keep, drift, localKeep, worstTile, overlay }, white, eyeScore] = await Promise.all([
-      outlineMatch(source, colored, { overlay: true }),
+    const [{ keep, drift, localKeep, worstTile }, white, eyeScore] = await Promise.all([
+      outlineMatch(source, colored),
       whiteFraction(colored),
       scoreEyeFill(colored, source),
     ]);
@@ -181,7 +181,6 @@ async function renderClean(source, width, height, slot) {
       drift,
       localKeep,
       worstTile,
-      overlay,
       white,
       eyesOk: judgeLightEyes(eyeScore).passes,
       shift: { dx, dy },
@@ -190,7 +189,8 @@ async function renderClean(source, width, height, slot) {
     if (!best || rank(cand) > rank(best)) best = cand;
     if (passes(cand)) break;
   }
-  return best;
+  const { overlay } = await outlineMatch(source, best.colored, { overlay: true });
+  return { ...best, overlay };
 }
 
 let failures = 0;

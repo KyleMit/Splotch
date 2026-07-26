@@ -364,7 +364,7 @@ for (const page of pages) {
     ? await scoreEyeFill(await readFile(lightRawPath), pen)
     : null;
   const score = async (candidate, shift, attempt) => {
-    const fwd = await outlineMatch(keepReference, candidate);
+    const fwd = await outlineMatch(keepReference, candidate, { overlay: true });
     const newInk = await scoreNewInk(pen, candidate);
     const eyes = lightEyes
       ? judgeChalkEyes(await scoreEyeFill(candidate, pen), lightEyes)

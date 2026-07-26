@@ -262,7 +262,7 @@ for (const arg of positionals) {
 
       const solidity = await scoreSolidity(candidate);
       const { cores, rings } = await scoreEyes(candidate);
-      const fwd = await outlineMatch(reference, candidate);
+      const fwd = await outlineMatch(reference, candidate, { overlay: true });
       const revCandidate = srcRings.overDeep.length
         ? await whitenEyeInteriors(candidate)
         : candidate;
