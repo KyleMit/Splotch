@@ -20,27 +20,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P5][readability] `removeKey`'s native arm re-inlines the Preferences pattern instead of expressing intent
-
-**File(s):** `web/src/lib/storage.ts:133-142` — pinned at SHA f934d43
-
-#### Problem
-
-`removeKey` restates the full `__IS_CAPACITOR__ && isNative()` →
-`getPrefs().then(({ Preferences }) => Preferences.remove({ key })).catch(() => {})` block (lines
-137-141), a near-clone of `mirror`. Folded into the `durable()` helper proposed in the P3 dedup
-finding, `removeKey` would read `durable((P) => P.remove({ key }))` and its intent (delete the
-durable mirror too) would be legible at a glance.
-
-#### Proposed solution
-
-Subsumed by the P3 `durable()` extraction; listed separately so the `removeKey` site isn't missed
-when that refactor lands.
-
-#### Verification
-
-`storage.test.ts` `removeKey` suite (lines 89-95, 131-142) passes.
-
 ## Source: Code audit — Server / API backend
 
 ### [P1][duplication] Extract the shared per-IP rate-limit bucket key into one helper
