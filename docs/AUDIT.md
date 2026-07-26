@@ -7,32 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P5][readability] `+error.svelte` and both `handleError` hooks produce a `{ message }` that nothing ever displays
-
-**File(s):** `web/src/routes/+error.svelte:1-7`, `web/src/hooks.client.ts:6-9`,
-`web/src/hooks.server.ts:52-55` — pinned at SHA f934d43
-
-#### Problem
-
-Both hooks return `{ message: 'Something went wrong.' }` (the `App.Error` shape), but
-`+error.svelte` renders `<ErrorScreen />` with no props and `ErrorScreen` shows its own hardcoded
-"Something went wrong. Let's start a fresh drawing." So the returned `message` is dead data —
-computed and typed but never surfaced. A reader reasonably assumes the hook message reaches the UI;
-it doesn't.
-
-#### Proposed solution
-
-Either drop the message payload to a comment noting the UI copy is intentionally fixed in
-`ErrorScreen`, or wire `page.error?.message` into `ErrorScreen` via a prop so the returned value is
-actually used. Pick one so the data flow isn't misleading.
-
-#### Verification
-
-Trigger a load/nav error → `/error` renders; confirm whether the message is shown or intentionally
-ignored, and that the code reflects that decision.
-
----
-
 ### [P5][type-safety] `app.d.ts` leaves `App.Error`, `Locals`, `PageData`, `PageState` as commented-out stubs while a concrete error shape is already in use
 
 **File(s):** `web/src/app.d.ts:4-7` — pinned at SHA f934d43

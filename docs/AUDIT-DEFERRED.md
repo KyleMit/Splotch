@@ -1209,3 +1209,102 @@ The rolled-back draft is kept at
 (1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-complexity-effect-bodies-use-bare-member-access-statements-purely-to.patch`.
+
+### [P5][readability] `+error.svelte` and both `handleError` hooks produce a `{ message }` that nothing ever displays
+
+**File(s):** `web/src/routes/+error.svelte:1-7`, `web/src/hooks.client.ts:6-9`,
+`web/src/hooks.server.ts:52-55` — pinned at SHA f934d43
+
+#### Problem
+
+Both hooks return `{ message: 'Something went wrong.' }` (the `App.Error` shape), but
+`+error.svelte` renders `<ErrorScreen />` with no props and `ErrorScreen` shows its own hardcoded
+"Something went wrong. Let's start a fresh drawing." So the returned `message` is dead data —
+computed and typed but never surfaced. A reader reasonably assumes the hook message reaches the UI;
+it doesn't.
+
+#### Proposed solution
+
+Either drop the message payload to a comment noting the UI copy is intentionally fixed in
+`ErrorScreen`, or wire `page.error?.message` into `ErrorScreen` via a prop so the returned value is
+actually used. Pick one so the data flow isn't misleading.
+
+#### Verification
+
+Trigger a load/nav error → `/error` renders; confirm whether the message is shown or intentionally
+ignored, and that the code reflects that decision.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* The new comments in web/src/hooks.client.ts:9-10 and web/src/hooks.server.ts:76-77 assert
+  something false: there is no `src/error.html`, so SvelteKit falls back to its default error
+  template, which renders `%sveltekit.error.message%` — the handleError message *is* shown to the
+  user whenever an error escapes `+error.svelte` (e.g. thrown inside the `handle` sequence in
+  hooks.server.ts, or a root-layout failure), and is also serialized into SvelteKit's JSON error
+  responses for data requests. Reword to say the message is not used by
+  `+error.svelte`/`ErrorScreen` but is surfaced by SvelteKit's fallback error page and data-request
+  error responses; also drop "required by SvelteKit's App.Error contract", since
+  `HandleServerError`/`HandleClientError` may return void.
+* web/src/lib/errorLog.ts:1-3 still describes `GENERIC_ERROR_MESSAGE` as the "user-facing fallback"
+  kept "in step" across three sinks including the layout's render boundary — but the render boundary
+  renders `ErrorScreen`'s own copy and never imports the constant. That comment is the same
+  misleading data-flow claim the finding targets, and it now directly contradicts the two comments
+  this commit added; update it in the same change.
+* The comment added to web/src/hooks.client.ts:9-10, web/src/hooks.server.ts:76-77 and
+  web/src/lib/errorLog.ts:3-5 claims "data-request error responses do surface it", which is false: a
+  load error during client-side navigation serializes App.Error into __data.json, the client sets it
+  as page.error, and the root +error.svelte then renders <ErrorScreen /> ignoring it — that path
+  transports the message but never displays it. Drop that clause.
+* The real second consumer the comment omits is the /api/* +server.ts endpoints: when one throws,
+  handleError's returned { message } becomes the JSON error body sent to the caller. Name that
+  (alongside SvelteKit's default fallback error page, which is correct since there is no custom
+  web/src/error.html) instead of "data-request error responses".
+* web/src/routes/+error.svelte is untouched even though the finding names it first and it is where
+  the message is actually discarded; add to its existing comment block that page.error.message is
+  deliberately ignored because ErrorScreen owns the user-facing copy.
+* `web/src/routes/+error.svelte:4` misattributes the source: `page.error.message` is set by
+  `handleError` only for *unexpected* errors — for expected throws it is the `error()` body, which
+  is the actual path in this repo (`web/src/routes/admin/+page.server.ts:45` throws
+  `error(403, 'Forbidden')`, plus SvelteKit's own 404 `'Not Found'`). This contradicts the invariant
+  already documented in `web/src/hooks.server.ts` ("expected error(4xx) responses never land here");
+  reword so the parenthetical covers both sources rather than naming the hooks as the setter.
+
+#### What was tried
+
+1. Added a short comment above the `return { message: GENERIC_ERROR_MESSAGE }` in both
+   hooks.client.ts and hooks.server.ts explaining that `message` is required by SvelteKit's
+   `App.Error` contract but is never actually surfaced in the UI (ErrorScreen's copy is fixed
+   independently) — a comment-only fix, per the brief, since neither of the finding's two proposed
+   code changes was actually a good fit here.
+2. Fixed both review points on the amended (still-unpushed) commit: the hook comments in
+   hooks.client.ts and hooks.server.ts now correctly state that `message` isn't read by
+   +error.svelte/ErrorScreen but is surfaced by SvelteKit's fallback error page and data-request
+   error responses, and no longer claim it's "required by App.Error"
+   (HandleServerError/HandleClientError may return void). errorLog.ts's header comment was corrected
+   to stop claiming GENERIC_ERROR_MESSAGE is a shared "user-facing fallback" across all three error
+   sinks — it now states only the two hooks consume it, and that ErrorScreen/+error.svelte/the
+   render boundary render their own hardcoded copy instead. Verified with `npm run check`, eslint on
+   the three changed files, and `npm run test:unit` (682 tests passing).
+3. Fixed all three review points on the amended (still-unpushed) commit: dropped the false
+   "data-request error responses" claim from the hooks.client.ts, hooks.server.ts, and errorLog.ts
+   comments; named the real second consumer of the message — SvelteKit's default fallback error page
+   (no custom error.html) plus, from the server hook only, the JSON error body returned by a thrown
+   /api/* +server.ts handler (client hook has no /api/* consumer, so its comment names only the
+   fallback page); and added a note to +error.svelte's existing comment block stating
+   page.error.message is deliberately ignored because ErrorScreen owns the user-facing copy.
+   Verified with npm run check, eslint on the four changed files, and npm run test:unit (682 tests
+   passing).
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p5-readability-error-svelte-and-both-handleerror-hooks-produce-a-message.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p5-readability-error-svelte-and-both-handleerror-hooks-produce-a-message.patch`.
