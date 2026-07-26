@@ -24,36 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P2][platform-branching] `updates.ts` ships in the native bundle instead of being build-excluded
-
-**File(s):** `web/src/lib/pwa/updates.ts:58-99` (`serviceWorkerSupported`, `initPWAUpdates`,
-`registerDeferredServiceWorker`); `web/src/routes/+page.svelte:57-60,164-165` — pinned at SHA
-f934d43
-
-#### Problem
-
-`VitePWA` is excluded from the native build (`vite.config.ts:97-99`), so `/sw.js` never exists there
-— yet all of `updates.ts` is still compiled into the native bundle and is only kept dormant at
-runtime via `import.meta.env.DEV` / `serviceWorkerSupported()` checks and the caller's
-`if (!isNative())` (`+page.svelte:59,164`). This is registration/version-check machinery that is
-provably dead on native. Like the install module, it should be dropped at build time via
-`__IS_CAPACITOR__`, not merely skipped at runtime.
-
-#### Proposed solution
-
-Early-return `initPWAUpdates`/`registerDeferredServiceWorker` on `if (__IS_CAPACITOR__) return;`,
-and drop the redundant `!isNative()` caller guards in `+page.svelte`. Because `__IS_CAPACITOR__` is
-a compile-time literal, Rollup eliminates the bodies (and their transitive imports) from the native
-build.
-
-#### Verification
-
-`CAPACITOR=true npm run build:cap`; grep native bundle for `SKIP_WAITING` / `version.json` — absent.
-Web build unchanged; `updates.test.ts` unaffected (it drives the exported functions directly with
-DEV toggled).
-
----
-
 ### [P2][duplication] `'SKIP_WAITING'` service-worker message type is an ungreppable magic string split across producer, config, and (implicit) SW
 
 **File(s):** `web/src/lib/pwa/updates.ts:193`; comments at `updates.ts:44-47,199-204`;
