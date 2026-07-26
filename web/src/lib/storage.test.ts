@@ -30,6 +30,7 @@ import {
   readInt,
   writeInt,
   removeKey,
+  reconcileStorageValues,
   hydrateDurableStorage,
   onDurableRestore,
 } from './storage';
@@ -158,6 +159,24 @@ describe('mirror to durable storage (native)', () => {
     // mirror() is fire-and-forget: flush the microtask queue (dynamic import +
     // the Preferences.set promise) before asserting.
     await vi.waitFor(() => expect(prefsStore.get(STORAGE_KEYS.brushType)).toBe('v'));
+  });
+});
+
+describe('reconcileStorageValues', () => {
+  it('takes no action when both values are present', () => {
+    expect(reconcileStorageValues('local', 'durable')).toEqual({});
+  });
+
+  it('backs up a local-only value', () => {
+    expect(reconcileStorageValues('local', null)).toEqual({ backup: 'local' });
+  });
+
+  it('restores a durable-only value', () => {
+    expect(reconcileStorageValues(null, 'durable')).toEqual({ restore: 'durable' });
+  });
+
+  it('takes no action when neither value is present', () => {
+    expect(reconcileStorageValues(null, null)).toEqual({});
   });
 });
 

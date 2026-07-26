@@ -153,6 +153,16 @@ export function writeInt(key: StorageKey, value: number) {
   mirror(key, str);
 }
 
+export function reconcileStorageValues(local: string | null, durable: string | null) {
+  if (local === null && durable !== null) return { restore: durable };
+  if (local !== null && durable === null) return { backup: local };
+  return {};
+}
+
+function notifyDurableRestore() {
+  for (const cb of durableRestoreCallbacks) cb();
+}
+
 /**
  * Reconcile the durable Preferences store with localStorage (native only).
  * Restores any key the WebView dropped, and seeds Preferences with any value
@@ -171,11 +181,12 @@ export async function hydrateDurableStorage() {
       hydrationKeys.forEach((key, i) => {
         const local = localStorage.getItem(key);
         const { value } = durable[i];
-        if (local === null && value !== null) {
-          localStorage.setItem(key, value); // WebView lost it — recover from durable store
+        const action = reconcileStorageValues(local, value);
+        if (action.restore !== undefined) {
+          localStorage.setItem(key, action.restore); // WebView lost it — recover from durable store
           restored = true;
-        } else if (local !== null && value === null) {
-          backups.push(Preferences.set({ key, value: local })); // back up the existing value
+        } else if (action.backup !== undefined) {
+          backups.push(Preferences.set({ key, value: action.backup })); // back up the existing value
         }
       });
       await Promise.all(backups);
@@ -187,7 +198,7 @@ export async function hydrateDurableStorage() {
   // values. Only fire when something actually changed — a no-op restore leaves
   // the live stores untouched.
   if (restored) {
-    for (const cb of durableRestoreCallbacks) cb();
+    notifyDurableRestore();
   }
   return restored;
 }

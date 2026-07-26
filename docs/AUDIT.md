@@ -22,41 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P2][complexity] `hydrateDurableStorage` bundles concurrency orchestration, two-way reconciliation, and store-notification in one function
-
-**File(s):** `web/src/lib/storage.ts:169-201` (`hydrateDurableStorage`) — pinned at SHA f934d43
-
-#### Problem
-
-One function does four separable jobs: (1) gate on native + lazy-load Preferences, (2) fan out
-concurrent `Preferences.get` across all keys, (3) a per-key reconciliation loop that both *restores*
-localStorage-from-durable and *back-fills* durable-from-localStorage in the same `forEach` with two
-branches (lines 179-188), and (4) fire the restore callbacks (lines 197-199). The dual-direction
-branch inside the loop is the hard part to read — `restored` tracks only the restore direction while
-the backfill quietly mutates the durable store and is deliberately not reported. This is the
-"serialization + IO + migration in one function" smell the audit targets.
-
-#### Proposed solution
-
-Extract the per-key decision into a named pure-ish helper and keep the outer function as
-orchestration:
-
-```ts
-type Reconciliation = { restore?: string; backup?: string };
-function reconcile(local: string | null, durable: string | null): Reconciliation;
-```
-
-Then the loop reads: `const { restore, backup } = reconcile(local, value);` with restore applied to
-`localStorage.setItem` and backup pushed to the `Preferences.set` batch. Move callback-firing to its
-own `notifyRestore()` call. The two directions become individually testable.
-
-#### Verification
-
-Unit-test `reconcile()` directly for all four cases (both present, local-only, durable-only,
-neither). Existing `storage.test.ts` hydrate tests still pass unchanged.
-
----
-
 ### [P2][type-safety] The secure-storage object store holds two incompatible value shapes under `any` — a `CryptoKey` and `{ iv, data }` payloads with no discriminant
 
 **File(s):** `web/src/lib/secureStorage.ts:67-108` (`loadOrCreateMasterKey`, `webSave`, `webLoad`) —
