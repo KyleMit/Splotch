@@ -14,7 +14,7 @@
   import ParentHelpButton from '$lib/components/ParentHelpButton.svelte';
   import { parentCenter } from '$lib/state/ui.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
-  import { registerDeferredServiceWorker } from '$lib/pwa/updates';
+  import { pwaUpdates } from '$lib/pwa/updates';
   import { captureAiAccessTokenFromUrl, settings } from '$lib/state/settings.svelte';
   import { applyTheme } from '$lib/theme';
   import { applyDeviceOrientationPreference } from '$lib/orientation';
@@ -53,7 +53,7 @@
   // registration slightly further.
   $effect(() => {
     if (canvasState.strokeCount < SETTLED_IN_STROKES) return;
-    if (!__IS_CAPACITOR__) registerDeferredServiceWorker();
+    if (!__IS_CAPACITOR__) pwaUpdates.registerDeferredServiceWorker();
   });
 
   // Filled one at a time by the idle mount pump (see boot/bootHiddenOverlays.ts).

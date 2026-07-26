@@ -1,13 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  initPWAUpdates,
-  registerDeferredServiceWorker,
-  checkVersionMismatch,
-  checkForUpdates,
-  resetUpdatesForTests,
-  ACTIVATION_RECOVERY_MS,
-  WAITING_SETTLE_MS,
-} from './updates';
+import { createPWAUpdates, ACTIVATION_RECOVERY_MS, WAITING_SETTLE_MS } from './updates';
 
 const canvasState = vi.hoisted(() => ({ canvasEmpty: true }));
 vi.mock('$lib/state/canvas.svelte', () => ({ canvasState, SETTLED_IN_STROKES: 3 }));
@@ -30,6 +22,12 @@ vi.mock('$lib/idle', () => ({
     };
   },
 }));
+
+let pwaUpdates: ReturnType<typeof createPWAUpdates>;
+
+beforeEach(() => {
+  pwaUpdates = createPWAUpdates();
+});
 
 // --- helpers ---
 
@@ -99,7 +97,7 @@ describe('checkVersionMismatch', () => {
       json: () => Promise.resolve({ version: '1.0.0-test' }),
     } as Response);
 
-    await checkVersionMismatch();
+    await pwaUpdates.checkVersionMismatch();
 
     expect(window.location.replace).not.toHaveBeenCalled();
   });
@@ -110,7 +108,7 @@ describe('checkVersionMismatch', () => {
       json: () => Promise.resolve({ version: '1.0.1' }),
     } as Response);
 
-    await checkVersionMismatch();
+    await pwaUpdates.checkVersionMismatch();
 
     expect(window.location.replace).toHaveBeenCalledWith(expect.stringContaining('?v=1.0.1'));
   });
@@ -118,7 +116,7 @@ describe('checkVersionMismatch', () => {
   it('does nothing when response is not ok', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: false } as Response);
 
-    await checkVersionMismatch();
+    await pwaUpdates.checkVersionMismatch();
 
     expect(window.location.replace).not.toHaveBeenCalled();
   });
@@ -126,7 +124,7 @@ describe('checkVersionMismatch', () => {
   it('swallows fetch errors silently (offline)', async () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
 
-    await expect(checkVersionMismatch()).resolves.toBeUndefined();
+    await expect(pwaUpdates.checkVersionMismatch()).resolves.toBeUndefined();
     expect(window.location.replace).not.toHaveBeenCalled();
   });
 
@@ -136,7 +134,7 @@ describe('checkVersionMismatch', () => {
       json: () => Promise.resolve({ version: '1.0.0-test' }),
     } as Response);
 
-    await checkVersionMismatch();
+    await pwaUpdates.checkVersionMismatch();
 
     expect(globalThis.fetch).toHaveBeenCalledWith('/version.json', { cache: 'no-store' });
   });
@@ -147,7 +145,7 @@ describe('checkVersionMismatch', () => {
       json: () => Promise.resolve({ version: '1.0.1' }),
     } as Response);
 
-    await checkVersionMismatch('1.0.1');
+    await pwaUpdates.checkVersionMismatch('1.0.1');
 
     expect(window.location.replace).not.toHaveBeenCalled();
   });
@@ -158,7 +156,7 @@ describe('checkVersionMismatch', () => {
       json: () => Promise.resolve({ version: '1.0.2' }),
     } as Response);
 
-    await checkVersionMismatch('1.0.1');
+    await pwaUpdates.checkVersionMismatch('1.0.1');
 
     expect(window.location.replace).toHaveBeenCalledWith(expect.stringContaining('?v=1.0.2'));
   });
@@ -168,9 +166,6 @@ describe('checkVersionMismatch', () => {
 
 describe('checkForUpdates — canvas-empty guard', () => {
   beforeEach(() => {
-    // updateReload is a module singleton; reset it so a leftover 'activating' or
-    // 'owed' from a prior test can't couple these cases to execution order.
-    resetUpdatesForTests();
     canvasState.canvasEmpty = true;
     Object.defineProperty(window, 'location', {
       value: { href: 'https://splotch.art/', reload: vi.fn() },
@@ -188,7 +183,7 @@ describe('checkForUpdates — canvas-empty guard', () => {
     const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
     const container = stubServiceWorker(reg);
 
-    await checkForUpdates();
+    await pwaUpdates.checkForUpdates();
 
     const onControllerChange = registeredListener(container.addEventListener, 'controllerchange');
     onControllerChange(new Event('controllerchange'));
@@ -207,7 +202,7 @@ describe('checkForUpdates — canvas-empty guard', () => {
     const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
     const container = stubServiceWorker(reg);
 
-    await checkForUpdates();
+    await pwaUpdates.checkForUpdates();
     canvasState.canvasEmpty = false;
 
     const onControllerChange = registeredListener(container.addEventListener, 'controllerchange');
@@ -216,7 +211,7 @@ describe('checkForUpdates — canvas-empty guard', () => {
     expect(window.location.reload).not.toHaveBeenCalled();
 
     canvasState.canvasEmpty = true;
-    await checkForUpdates();
+    await pwaUpdates.checkForUpdates();
 
     expect(window.location.reload).toHaveBeenCalledTimes(1);
   });
@@ -227,7 +222,7 @@ describe('checkForUpdates — canvas-empty guard', () => {
     const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
     stubServiceWorker(reg);
 
-    await checkForUpdates();
+    await pwaUpdates.checkForUpdates();
 
     expect(worker.postMessage).not.toHaveBeenCalled();
   });
@@ -235,7 +230,7 @@ describe('checkForUpdates — canvas-empty guard', () => {
   it('resolves cleanly when there is no active registration', async () => {
     stubServiceWorker(undefined);
 
-    await expect(checkForUpdates()).resolves.toBeUndefined();
+    await expect(pwaUpdates.checkForUpdates()).resolves.toBeUndefined();
   });
 
   it('attaches a statechange listener when the SW is still installing', async () => {
@@ -243,7 +238,7 @@ describe('checkForUpdates — canvas-empty guard', () => {
     const reg = makeRegistration({ installing: worker as unknown as ServiceWorker });
     stubServiceWorker(reg);
 
-    await checkForUpdates();
+    await pwaUpdates.checkForUpdates();
 
     expect(worker.addEventListener).toHaveBeenCalledWith('statechange', expect.any(Function), {
       once: true,
@@ -255,8 +250,8 @@ describe('checkForUpdates — canvas-empty guard', () => {
     const reg = makeRegistration({ installing: worker as unknown as ServiceWorker });
     stubServiceWorker(reg);
 
-    await checkForUpdates();
-    await checkForUpdates();
+    await pwaUpdates.checkForUpdates();
+    await pwaUpdates.checkForUpdates();
 
     expect(worker.addEventListener).toHaveBeenCalledTimes(1);
   });
@@ -266,8 +261,8 @@ describe('checkForUpdates — canvas-empty guard', () => {
     const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
     const container = stubServiceWorker(reg);
 
-    await checkForUpdates();
-    await checkForUpdates();
+    await pwaUpdates.checkForUpdates();
+    await pwaUpdates.checkForUpdates();
 
     expect(worker.postMessage).toHaveBeenCalledTimes(1);
     expect(container.addEventListener).toHaveBeenCalledTimes(1);
@@ -285,7 +280,7 @@ describe('checkForUpdates — canvas-empty guard', () => {
       const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
       stubServiceWorker(reg);
 
-      await checkForUpdates();
+      await pwaUpdates.checkForUpdates();
       expect(worker.postMessage).toHaveBeenCalledTimes(1); // entered 'activating'
 
       // The new worker never takes control, so no controllerchange arrives. Before
@@ -293,7 +288,7 @@ describe('checkForUpdates — canvas-empty guard', () => {
       // guard and posts nothing — the session-long lockout.
       const stuckReg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
       stubServiceWorker(stuckReg);
-      await checkForUpdates();
+      await pwaUpdates.checkForUpdates();
       expect(worker.postMessage).toHaveBeenCalledTimes(1);
 
       // After the grace period the lifecycle releases back to none...
@@ -302,7 +297,7 @@ describe('checkForUpdates — canvas-empty guard', () => {
       // ...so the next check re-attempts activation instead of no-oping forever.
       const freshReg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
       stubServiceWorker(freshReg);
-      await checkForUpdates();
+      await pwaUpdates.checkForUpdates();
       expect(worker.postMessage).toHaveBeenCalledTimes(2);
     } finally {
       vi.useRealTimers();
@@ -319,7 +314,7 @@ describe('checkForUpdates — canvas-empty guard', () => {
       });
       const container = stubServiceWorker(reg);
 
-      await checkForUpdates();
+      await pwaUpdates.checkForUpdates();
       Object.defineProperty(reg, 'waiting', {
         value: waitingWorker,
         configurable: true,
@@ -340,7 +335,7 @@ describe('checkForUpdates — canvas-empty guard', () => {
       expect(window.location.reload).not.toHaveBeenCalled();
 
       canvasState.canvasEmpty = true;
-      await checkForUpdates();
+      await pwaUpdates.checkForUpdates();
 
       expect(window.location.reload).toHaveBeenCalledTimes(1);
     } finally {
@@ -366,7 +361,6 @@ describe('deferred service worker registration', () => {
   }
 
   beforeEach(() => {
-    resetUpdatesForTests();
     idle.queue = [];
     canvasState.canvasEmpty = true;
     originalFetch = globalThis.fetch;
@@ -388,7 +382,7 @@ describe('deferred service worker registration', () => {
   it('registers sw.js only once the idle slot is released', async () => {
     const container = stubServiceWorker(undefined);
 
-    registerDeferredServiceWorker();
+    pwaUpdates.registerDeferredServiceWorker();
     expect(container.register).not.toHaveBeenCalled();
 
     idle.flush();
@@ -400,13 +394,13 @@ describe('deferred service worker registration', () => {
   it('is idempotent: repeated gate calls schedule a single registration', async () => {
     const container = stubServiceWorker(undefined);
 
-    registerDeferredServiceWorker();
-    registerDeferredServiceWorker();
+    pwaUpdates.registerDeferredServiceWorker();
+    pwaUpdates.registerDeferredServiceWorker();
     expect(idle.queue).toHaveLength(1);
 
     idle.flush();
     await flushAsync();
-    registerDeferredServiceWorker();
+    pwaUpdates.registerDeferredServiceWorker();
     idle.flush();
 
     expect(container.register).toHaveBeenCalledTimes(1);
@@ -416,7 +410,7 @@ describe('deferred service worker registration', () => {
     const container = stubServiceWorker(undefined);
     const restore = stubConnection(true);
 
-    registerDeferredServiceWorker();
+    pwaUpdates.registerDeferredServiceWorker();
     idle.flush();
 
     expect(container.register).not.toHaveBeenCalled();
@@ -427,7 +421,7 @@ describe('deferred service worker registration', () => {
     const container = stubServiceWorker(undefined);
     const restore = stubConnection(false);
 
-    registerDeferredServiceWorker();
+    pwaUpdates.registerDeferredServiceWorker();
     idle.flush();
     await flushAsync();
 
@@ -439,7 +433,7 @@ describe('deferred service worker registration', () => {
     const container = stubServiceWorker(undefined);
     (import.meta.env as Record<string, unknown>).DEV = true;
 
-    registerDeferredServiceWorker();
+    pwaUpdates.registerDeferredServiceWorker();
 
     expect(idle.queue).toHaveLength(0);
     expect(container.register).not.toHaveBeenCalled();
@@ -449,12 +443,12 @@ describe('deferred service worker registration', () => {
     const container = stubServiceWorker(undefined);
     container.register.mockRejectedValueOnce(new TypeError('Failed to fetch'));
 
-    registerDeferredServiceWorker();
+    pwaUpdates.registerDeferredServiceWorker();
     idle.flush();
     await flushAsync();
     expect(container.register).toHaveBeenCalledTimes(1);
 
-    registerDeferredServiceWorker();
+    pwaUpdates.registerDeferredServiceWorker();
     idle.flush();
     await flushAsync();
 
@@ -464,7 +458,7 @@ describe('deferred service worker registration', () => {
   it('update checks no-op before registration and arm once one exists', async () => {
     const container = stubServiceWorker(undefined);
 
-    await expect(checkForUpdates()).resolves.toBeUndefined();
+    await expect(pwaUpdates.checkForUpdates()).resolves.toBeUndefined();
     expect(container.register).not.toHaveBeenCalled();
 
     // Registration arrives late (gate passed) — the same check now reaches the
@@ -472,7 +466,7 @@ describe('deferred service worker registration', () => {
     const worker = makeWorker();
     const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
     container.getRegistration.mockResolvedValue(reg);
-    registerDeferredServiceWorker();
+    pwaUpdates.registerDeferredServiceWorker();
     idle.flush();
     await flushAsync();
 
@@ -488,7 +482,7 @@ describe('deferred service worker registration', () => {
       json: () => Promise.resolve({ version: '1.0.0-test' }),
     } as Response);
 
-    const teardown = initPWAUpdates();
+    const teardown = pwaUpdates.initPWAUpdates();
     await flushAsync();
     expect(container.register).not.toHaveBeenCalled(); // still waits for idle
 
@@ -506,7 +500,7 @@ describe('deferred service worker registration', () => {
       json: () => Promise.resolve({ version: '1.0.0-test' }),
     } as Response);
 
-    const teardown = initPWAUpdates();
+    const teardown = pwaUpdates.initPWAUpdates();
     await flushAsync();
     idle.flush();
     await flushAsync();
@@ -536,7 +530,6 @@ describe('initPWAUpdates', () => {
   const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
 
   beforeEach(() => {
-    resetUpdatesForTests();
     originalFetch = globalThis.fetch;
     replaceStateSpy = vi.spyOn(history, 'replaceState').mockImplementation(() => {});
     // Prevent checkForUpdates / checkVersionMismatch from doing real work
@@ -560,7 +553,7 @@ describe('initPWAUpdates', () => {
   it('strips ?v= from the URL and calls replaceState', () => {
     stubLocation('https://splotch.art/?v=1.0.1');
 
-    teardown = initPWAUpdates();
+    teardown = pwaUpdates.initPWAUpdates();
 
     expect(replaceStateSpy).toHaveBeenCalledWith(null, '', expect.not.stringContaining('?v='));
   });
@@ -568,7 +561,7 @@ describe('initPWAUpdates', () => {
   it('does not call replaceState when no ?v= param is present', () => {
     stubLocation('https://splotch.art/');
 
-    teardown = initPWAUpdates();
+    teardown = pwaUpdates.initPWAUpdates();
 
     expect(replaceStateSpy).not.toHaveBeenCalled();
   });
@@ -580,7 +573,7 @@ describe('initPWAUpdates', () => {
       json: () => Promise.resolve({ version: '1.0.1' }),
     } as Response);
 
-    teardown = initPWAUpdates();
+    teardown = pwaUpdates.initPWAUpdates();
     await flushAsync();
 
     expect(replace).not.toHaveBeenCalled();
@@ -593,7 +586,7 @@ describe('initPWAUpdates', () => {
       json: () => Promise.resolve({ version: '1.0.2' }),
     } as Response);
 
-    teardown = initPWAUpdates();
+    teardown = pwaUpdates.initPWAUpdates();
     await flushAsync();
 
     expect(replace).toHaveBeenCalledWith(expect.stringContaining('?v=1.0.2'));
@@ -605,8 +598,8 @@ describe('initPWAUpdates', () => {
     const winListenerSpy = vi.spyOn(window, 'addEventListener');
     const setIntervalSpy = vi.spyOn(globalThis, 'setInterval');
 
-    teardown = initPWAUpdates();
-    const second = initPWAUpdates();
+    teardown = pwaUpdates.initPWAUpdates();
+    const second = pwaUpdates.initPWAUpdates();
 
     expect(second).toBeUndefined();
     expect(docListenerSpy).toHaveBeenCalledTimes(1);
@@ -620,14 +613,14 @@ describe('initPWAUpdates', () => {
     const winRemoveSpy = vi.spyOn(window, 'removeEventListener');
     const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval');
 
-    const first = initPWAUpdates();
+    const first = pwaUpdates.initPWAUpdates();
     first?.();
 
     expect(docRemoveSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
     expect(winRemoveSpy).toHaveBeenCalledWith('focus', expect.any(Function));
     expect(clearIntervalSpy).toHaveBeenCalledTimes(1);
 
-    teardown = initPWAUpdates();
+    teardown = pwaUpdates.initPWAUpdates();
     expect(teardown).toBeDefined();
   });
 });

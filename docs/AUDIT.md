@@ -24,44 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P3][maintainability] Module-global mutable singletons force a test-only `resetUpdatesForTests` export in production code
-
-**File(s):** `web/src/lib/pwa/updates.ts:34-56` — pinned at SHA f934d43
-
-#### Problem
-
-The module keeps three mutable module-scope singletons (`initialized`, `refreshState`,
-`registrationScheduled`) and ships a production export whose sole purpose is un-leaking them between
-tests:
-
-```ts
-export function resetUpdatesForTests() {
-  refreshState = 'idle';
-  initialized = false;
-  registrationScheduled = false;
-}
-```
-
-A `*ForTests` symbol in the shipped API surface is a code smell — it signals the module's state is
-only testable because it exposes its guts. Every new singleton must be remembered here or tests
-couple by execution order (the comment admits this).
-
-#### Proposed solution
-
-Two options: (a) accept it as pragmatic but move the reset behind an `import.meta.vitest`/dev-only
-guard so it can't be called in prod; or (b) encapsulate the lifecycle in a factory
-(`createPWAUpdates()`) that returns the public functions closing over private state — each test
-constructs a fresh instance, no reset export needed, and `+page.svelte` holds the single app
-instance. Option (b) also removes the `initialized` idempotency singleton (each instance is
-naturally single-use).
-
-#### Verification
-
-`updates.test.ts` drops `resetUpdatesForTests` in favor of a fresh factory per `beforeEach`; all
-cases pass without the shared-instance caveats.
-
----
-
 ### [P3][readability] InstallBanner mixes `$state` flags with a plain `let` mutated inside an `$effect`
 
 **File(s):** `web/src/lib/components/InstallBanner.svelte:21-25,45-46,52-53` — pinned at SHA f934d43
