@@ -1,7 +1,8 @@
 # Handoff — Codex audit burndown
 
-> 2026-07-26 · branch `codex/audit-burndown-fixes-20260726` · Resume the 399-finding backlog on a
-> separate audit-fixes PR stacked on agent-runner PR #548.
+> 2026-07-26 · branch `codex/audit-burndown-fixes-20260726` · PR
+> [#549](https://github.com/KyleMit/Splotch/pull/549) · Resume the 399-finding backlog on a separate
+> audit-fixes PR stacked on agent-runner PR #548.
 
 This is the durable checkpoint required by the `burn-down-audits` skill. A fresh session resumes
 from this file plus `npm run audit:status`.
@@ -42,6 +43,8 @@ compatibility.
 * The prior Claude run fixed 40 findings, dropped 6, and deferred 4; its PR #547 is merged.
 * The runner adaptation is committed and pushed on draft PR #548. This branch forks from it so the
   actual audit fixes can be reviewed in a separate stacked PR without merge conflicts.
+* Draft PR #549 targets the agent branch, so its diff contains only this run's checkpoint and audit
+  fixes. Retarget it to `main` after PR #548 merges.
 * Ruler 0.3.44 cannot select different skill source trees per agent. The deterministic
   `scripts/apply-ruler-agent-overrides.mjs` post-step overlays `.template` sources after
   `ruler apply`; Claude retains the shared skill while Codex receives the generated `.agents`
@@ -110,10 +113,10 @@ failure is expected because that gate intentionally reports unstaged generated o
 
 ## Risks & next 3 steps
 
-1. Commit and push this separate audit-fixes checkpoint, then open its draft PR against the agent
-   branch.
-2. Record the audit PR number here and push that checkpoint update.
-3. Re-run exact-override preflight, then restart and inspect the five-finding foreground canary.
+1. Commit and push this PR-number update to complete the separate audit checkpoint.
+2. Re-run exact-override preflight, then restart and inspect the five-finding foreground canary.
+3. Apply session learnings to the shared or Codex-only Ruler source as appropriate, update PR #548,
+   then advance this stacked branch before the full continuation.
 
 ## Reread first
 
