@@ -26,42 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P2][architecture] The `armHoverOnMouseMove` gesture action is defined inline instead of in `lib/actions/`
-
-**File(s):** `web/src/lib/components/ColoringBook.svelte:75-88` — pinned at SHA f934d43
-
-#### Problem
-
-A Svelte action wiring pointer listeners lives inline in the component:
-
-```ts
-function armHoverOnMouseMove(node: HTMLElement) {
-  function onMove(e: PointerEvent) {
-    if (e.pointerType === 'mouse') hoverArmed = true;
-  }
-  node.addEventListener('pointermove', onMove);
-  return { destroy: () => node.removeEventListener('pointermove', onMove) };
-}
-```
-
-`.claude/rules/svelte.md` states: "Complex gestures and dialog wiring are Svelte actions in
-`src/lib/actions/` … not inline component logic." This "arm hover only after a real mouse move"
-pattern is exactly the pointer-activation gotcha the rules call out, and it's a reusable primitive
-(any tile grid that opens under the pointer wants it), not ColoringBook-specific.
-
-#### Proposed solution
-
-Move it to `src/lib/actions/armHoverOnMouseMove.ts` as a reusable action that takes a callback or
-toggles a returned rune. Keep the closure over `hoverArmed` by having the action accept a setter
-param: `use:armHoverOnMouseMove={() => (hoverArmed = true)}`.
-
-#### Verification
-
-`npm run check`; visually confirm a tap on a hover-capable touchscreen doesn't leave a tile stuck in
-hover chrome (the behavior this guards).
-
----
-
 ### [P2][design-tokens] Spacing and font sizes are raw px while colors/radii/durations use tokens
 
 **File(s):** `web/src/lib/components/ColoringBook.svelte:190,194-198,206-228,254-269,341-372` —
