@@ -24,35 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P4][maintainability] Manifest icons are a second source of truth, already drifted from the PWA plugin's asset list
-
-**File(s):** `web/static/site.webmanifest:7-32`; `web/vite.config.ts:112-118` (`includeAssets`,
-`manifest: false`) — pinned at SHA f934d43
-
-#### Problem
-
-`VitePWA` is configured `manifest: false` (line 118), so the manifest is authored by hand in
-`static/site.webmanifest` and linked from `app.html:47`, while the plugin's `includeAssets`
-separately lists icons (`favicon-96x96.png`, `apple-touch-icon.png`) and the manifest references a
-different set (`web-app-manifest-192x192.png`, `web-app-manifest-512x512.png`). Two disjoint icon
-inventories with no cross-check means a renamed/removed icon breaks install visuals silently
-(nothing fails the build). The PWA surface (manifest ⇄ precache ⇄ app.html links) is spread across
-three files with no single map.
-
-#### Proposed solution
-
-At minimum, add a comment in `vite.config.ts` (or `static/ICONS-README.md`) pointing at
-`site.webmanifest` as the manifest source of truth and enumerating why `manifest: false`. Better: a
-small build/test assertion that every manifest icon `src` and every `includeAssets` entry resolves
-to a real file in `static/`.
-
-#### Verification
-
-`npm run build`, then confirm each referenced icon exists in the build output; a deleted icon should
-fail the added check rather than 404 at install time.
-
----
-
 ### [P4][complexity] `initPWAUpdates` bundles cache-bust URL cleanup, version check, re-registration, and listener wiring in one function (with a redundant `getRegistration`)
 
 **File(s):** `web/src/lib/pwa/updates.ts:95-143` — pinned at SHA f934d43
