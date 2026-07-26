@@ -23,13 +23,13 @@
   // production code is touched — this page just calls the same public actions.
 
   let delayMs = $state(10000);
-  let pending: ReturnType<typeof setTimeout> | 0 = 0; // setTimeout id for the scheduled "finish"
+  let pending: ReturnType<typeof setTimeout> | null = null; // setTimeout id for the scheduled "finish"
   let runId = 0;
 
   function clearPending() {
-    if (pending) {
+    if (pending !== null) {
       clearTimeout(pending);
-      pending = 0;
+      pending = null;
     }
   }
 

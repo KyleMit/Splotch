@@ -7,33 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P3][type-safety] `ai-timer` uses `0` as a sentinel for "no pending timeout" instead of `null`
-
-**File(s):** `web/src/routes/dev/ai-timer/+page.svelte:26, 29-34, 42` — pinned at SHA f934d43
-
-#### Problem
-
-```js
-let pending: ReturnType<typeof setTimeout> | 0 = 0; // setTimeout id for the scheduled "finish"
-```
-
-`ReturnType<typeof setTimeout>` is `number` in the browser, and `0` is a valid-looking (falsy)
-member of that type, so the union `| 0` and the `if (pending)` truthiness check conflate "no timer"
-with "a timer whose id is 0." It works only because browser timer ids are positive, an
-implementation detail. The idiomatic sentinel is `null`.
-
-#### Proposed solution
-
-`let pending: ReturnType<typeof setTimeout> | null = null;`, guard with `if (pending !== null)`, and
-reset to `null`. Removes the reliance on timer-id truthiness.
-
-#### Verification
-
-Play → the scheduled finish still fires; Reset/replay cancels a pending timer; `npm run check`
-green.
-
----
-
 ### [P3][maintainability] The `privacy` page hardcodes a full palette of hex colors instead of design tokens, opting out of the token system
 
 **File(s):** `web/src/routes/privacy/+page.svelte:131-225` (`<style>`) — pinned at SHA f934d43
