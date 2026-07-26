@@ -7,30 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P4][readability] The shell's two separate `onMount` blocks have no ordering rationale and could confuse teardown reasoning
-
-**File(s):** `web/src/routes/+page.svelte:80-104, 106-175` (app shell) — pinned at SHA f934d43
-
-#### Problem
-
-Two adjacent `onMount` callbacks run in registration order, but nothing signals why overlay-mounting
-is a separate mount from the rest of boot, or that their cleanups are independent. A reader must
-know Svelte's mount-ordering semantics to reason about sequence, and splitting boot across two
-mounts makes "what runs at startup, in what order" harder to trace than a single ordered entry.
-
-#### Proposed solution
-
-After the P1 extraction, collapse to one `onMount` that calls the named boot helpers in explicit
-order and returns a combined teardown, or, if two are kept, add a one-line comment on each stating
-why it's separate (e.g. "overlay pump is isolated so its cancel flag can't entangle the main
-teardown").
-
-#### Verification
-
-Boot behavior unchanged; the startup sequence is readable top-to-bottom in one place.
-
----
-
 ### [P4][naming] `EFFECTIVE_DATE` is displayed under the label "Last updated" — the constant name and the UI text describe different concepts
 
 **File(s):** `web/src/routes/privacy/+page.svelte:9, 27` — pinned at SHA f934d43
