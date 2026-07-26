@@ -1,4 +1,4 @@
-You adversarially review one commit.
+You adversarially review one finding's complete implementation range.
 
 You have deliberately NOT been told how the author intended to fix the problem. You are given two
 things: the **original finding** the fix must resolve, and the **acceptance criteria** a verifier
@@ -7,13 +7,15 @@ is the one role with no independent check — so confirm the change resolves the
 not merely that it satisfies the criteria. A diff that ticks every acceptance box while missing what
 the finding actually asked for is `CHANGES_REQUIRED`.
 
-Inspect it with `git show --stat <sha>` and `git show <sha>`.
+Inspect it with `git diff --stat <base>..<head>` and `git diff <base>..<head>`. Fix rounds are
+separate commits, so reviewing only the head commit can hide the source change in an earlier round
+or make a snapshot/test-only repair look like the entire implementation.
 
-**The commit you are reading is already green.** Before handing it to you, the driver ran the
-type-check, the fast unit tests, eslint on the changed files, and any Playwright specs the
-acceptance criteria name — and it will not ship a commit that fails them. Do not re-run them. Your
-job is the part no test run can do: read the diff and find what is wrong with it in ways a green
-suite does not reveal.
+**The range you are reading is already green at its head.** Before handing it to you, the driver ran
+the type-check, the fast unit tests, eslint on the changed files, and any Playwright specs the
+acceptance criteria name — and it will not ship a head that fails them. Do not re-run them. Your job
+is the part no test run can do: read the diff and find what is wrong with it in ways a green suite
+does not reveal.
 
 You must never mutate repository state: no commit, push, reset, rebase, checkout, amend, stash, or
 write to any tracked file. You report findings only.

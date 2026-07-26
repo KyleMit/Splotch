@@ -133,6 +133,12 @@ through.
   reviewer then reads — so a red gate becomes a recoverable fix round, and the reviewer lost `npm`
   and `npx` from its tool scope entirely. This is why `reviewer.md` can state "the commit you are
   reading is already green."
+* **A red gate without its output is not recoverable** (2026-07-26 Codex canary). The driver knew
+  Playwright's exact screenshot mismatch but sent only "the spec is red" into two fix rounds. The
+  implementer could not run a localhost listener in its sandbox, guessed by updating snapshots, and
+  the reviewer correctly rejected the unrelated churn. Gate failures now carry a bounded,
+  ANSI-stripped output tail into feedback. This is runner-independent: even a role that can rerun
+  the command should not have to rediscover a fact the driver already measured.
 
 Related, from the same review: **the reviewer is given the original finding, not only the verifier's
 acceptance criteria.** Until then the reviewer *"graded the diff against the same frame that
@@ -142,6 +148,12 @@ called this *"the hardest failure to catch after the fact"*. The finding was alr
 `.audit-work/current-issue.md`, so including it cost nothing: most of the benefit of a second
 verifier without paying for one. A diff that ticks every acceptance box while missing what the
 finding asked for is `CHANGES_REQUIRED`.
+
+The same 2026-07-26 canary exposed the second half of that reviewer input: **review the complete
+finding range, not only the latest commit.** Driver-owned Codex fix rounds produced an initial
+source commit followed by a snapshot/test repair. `git show <head>` made the reviewer see only three
+PNGs and forced it to reconstruct the parent chain itself. The task now names
+`<finding-base>..<current-head>`, and `reviewer.md` tells every runner to diff that range.
 
 ### Tooling failure must never be recorded as a model verdict
 
@@ -943,3 +955,4 @@ rather than hidden in the apply script.
 | 2026-07-26 | —        | Codex runner backend + runner-specific Ruler skill overlay                |
 | 2026-07-26 | —        | Codex implementer leaves listener-based E2E to the outer driver           |
 | 2026-07-26 | —        | Codex implementer leaves Git commits to the outer driver                  |
+| 2026-07-26 | —        | Gate feedback carries output; reviewer reads the full finding range       |

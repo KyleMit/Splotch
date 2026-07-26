@@ -35,6 +35,7 @@ import {
   auditFile,
   briefIsStale,
   chdirRoot,
+  commandFailureOutput,
   countEntries,
   DEFAULT_MAX_ISSUES,
   deferralReason,
@@ -57,6 +58,7 @@ import {
   resolveImplSha,
   runCmd,
   shellOk,
+  shellResult,
   WORK,
 } from './lib.mjs';
 import { findingProblem } from './comment.mjs';
@@ -289,37 +291,51 @@ function defer(title, why, notes = {}) {
 //
 //   * A red tree comes back to the implementer as a fix round it can still
 //     recover from, instead of discarding a finished finding at the very end.
-//   * The reviewer only ever sees a commit that already passes, so it does not
-//     re-run any of this — it reviews the diff. Re-running was the single
+//   * The reviewer only ever sees a finding range whose head already passes, so
+//     it does not re-run any of this — it reviews the diff. Re-running was the single
 //     largest slice of review wall-clock and bought nothing the driver's own
 //     run doesn't already guarantee (see prompts/reviewer.md).
 //
-// Returns null when green, else { reason, detail }: `reason` is the deferral
-// label a human reads months later in docs/AUDIT-DEFERRED.md, `detail` is what
-// the implementer is told to fix.
+// Returns null when green, else { reason, detail, output }: `reason` is the
+// deferral label a human reads months later in docs/AUDIT-DEFERRED.md;
+// `detail` and the bounded command output are what the implementer gets.
 function gateFailure(baseSha, specs) {
-  if (!shellOk(CHECK_CMD))
-    return { reason: 'fix broke the type-check', detail: `${CHECK_CMD} is red` };
-  if (!shellOk(TEST_CMD))
-    return { reason: 'fix broke the test suite', detail: `${TEST_CMD} is red` };
+  const runGate = (command, reason, detail) => {
+    const result = shellResult(command);
+    return result.status === 0 ? null : { reason, detail, output: commandFailureOutput(result) };
+  };
+
+  const checkFailure = runGate(CHECK_CMD, 'fix broke the type-check', `${CHECK_CMD} is red`);
+  if (checkFailure) return checkFailure;
+
+  const testFailure = runGate(TEST_CMD, 'fix broke the test suite', `${TEST_CMD} is red`);
+  if (testFailure) return testFailure;
+
   // Targeted E2E — only for findings the verifier flagged as touching a runtime
   // surface. Catches a behavioural regression attributed to this one finding,
   // without paying full-suite E2E per finding; the batch push still runs it all.
-  if (specs.length && !shellOk(`${E2E_CMD} ${specs.join(' ')}`))
-    return {
-      reason: 'fix broke a targeted E2E spec',
-      detail: `the Playwright spec(s) ${specs.join(' ')} are red`,
-    };
+  if (specs.length) {
+    const e2eFailure = runGate(
+      `${E2E_CMD} ${specs.join(' ')}`,
+      'fix broke a targeted E2E spec',
+      `the Playwright spec(s) ${specs.join(' ')} are red`
+    );
+    if (e2eFailure) return e2eFailure;
+  }
+
   // Lint is a separate axis from the type-check: a fix can satisfy CHECK_CMD yet
   // ship a stray `any` or a raw Map in a .svelte.ts and redden CI's Quality job.
   const lintable = gitOut('diff', '--name-only', baseSha, 'HEAD')
     .split('\n')
     .filter((f) => /\.(ts|svelte|mjs|cjs|js)$/.test(f));
-  if (lintable.length && !shellOk(`${LINT_CMD} ${lintable.join(' ')}`))
-    return {
-      reason: 'fix introduced a lint violation',
-      detail: `${LINT_CMD} is red on ${lintable.join(' ')}`,
-    };
+  if (lintable.length) {
+    const lintFailure = runGate(
+      `${LINT_CMD} ${lintable.join(' ')}`,
+      'fix introduced a lint violation',
+      `${LINT_CMD} is red on ${lintable.join(' ')}`
+    );
+    if (lintFailure) return lintFailure;
+  }
   return null;
 }
 
@@ -600,11 +616,11 @@ while (done < MAX_ISSUES) {
     if (gateRed) {
       logLine(`  round ${round}: gates red — ${gateRed.detail}`);
       status = 'CHANGES_REQUIRED';
-      feedback = `- The commit does not pass the driver's gates: ${gateRed.detail}. Fix that before anything else; the fix is discarded if it never goes green.`;
+      feedback = `- The commit does not pass the driver's gates: ${gateRed.detail}. Fix that before anything else; the fix is discarded if it never goes green.\n\nDriver-captured failure output:\n${gateRed.output}`;
     } else {
       const review = await agentStep({
         tag: `${tag}.review${round}`,
-        prompt: `Adversarially review commit ${sha}.\n\nThe original finding this fix must resolve:\n${issue}\n\nAcceptance criteria the verifier derived from it (which may themselves be mis-scoped):\n${acceptance}`,
+        prompt: `Adversarially review the complete finding range ${baseSha}..${sha}. The head commit is ${sha}.\n\nThe original finding this fix must resolve:\n${issue}\n\nAcceptance criteria the verifier derived from it (which may themselves be mis-scoped):\n${acceptance}`,
         systemPromptFile: join(PROMPTS, 'reviewer.md'),
         model: MODEL_REVIEW,
         effort: EFFORT_REVIEW,

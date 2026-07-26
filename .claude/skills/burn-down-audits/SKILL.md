@@ -180,16 +180,25 @@ as possible:
 
 **The gates run *before* the review, not after it** — and that ordering does two jobs at once. A red
 gate becomes a **fix round** the implementer can still recover from (it is holding the same session)
-instead of discarding a finished finding at the very end; and the reviewer only ever sees a commit
-that already passes, so it does not re-run any of this. Re-running was the single largest slice of
-review wall-clock and could only ever confirm what the driver already knew. The reviewer therefore
-has **no `npm`/`npx` in its tool scope at all** — the constraint is structural, not a request in the
-prompt — and its brief is the part no test run can do: reading the diff for behaviour smuggled
-inside a refactor, stragglers left by a rename, and changed behaviour that nothing covers.
+instead of discarding a finished finding at the very end; and the reviewer only ever sees a finding
+range whose head already passes, so it does not re-run any of this. Re-running was the single
+largest slice of review wall-clock and could only ever confirm what the driver already knew. The
+reviewer therefore has **no `npm`/`npx` in its tool scope at all** — the constraint is structural,
+not a request in the prompt — and its brief is the part no test run can do: reading the diff for
+behaviour smuggled inside a refactor, stragglers left by a rename, and changed behaviour that
+nothing covers.
+
+When a gate is red, the driver captures a bounded, ANSI-free tail of that command's output and
+includes it in the fix-round feedback. Preserve that diagnostic path for every runner. A generic
+"Playwright is red" verdict forces an implementer to guess at a failure the driver already observed,
+which turns a recoverable gate into snapshot churn or a deferral.
 
 The reviewer is also handed the **original finding**, not just the verifier's acceptance criteria,
 so it can reject a fix that satisfies mis-scoped criteria while missing what the finding asked for —
-the verifier is the one role with no independent check.
+the verifier is the one role with no independent check. It reviews the complete
+`<finding-base>..<current-head>` range, not only the latest fix-round commit: later rounds are
+separate commits and a head-only diff can hide the actual source change or make a test-only repair
+look like the whole implementation.
 
 A deferral now names the role that actually failed: `fix broke the test suite` /
 `fix broke a targeted E2E spec` / `fix introduced a lint violation` / `fix broke the type-check` for

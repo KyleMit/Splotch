@@ -60,6 +60,11 @@ compatibility.
 * The retry passed the corrected non-listener checks but confirmed the sandbox also protects
   `.git/index.lock`. The separate audit branch restored the finding again; the agent branch now
   assigns Codex staging and commits to the outer driver.
+* The driver-owned commit path passed its integration test, including same-thread fix resumption.
+  The finding then exhausted both rounds because gate feedback omitted Playwright's screenshot
+  mismatch and said only "red." The audit branch restored it a third time. Gate feedback now carries
+  bounded command output, and reviewers receive the complete finding range rather than only the
+  latest round commit.
 
 | Commit       | What landed                                                          |
 | ------------ | -------------------------------------------------------------------- |
@@ -83,14 +88,15 @@ compatibility.
 ## Unverified assumptions
 
 * The restarted five-finding driver canary works after assigning listener-based E2E and Git commits
-  exclusively to the outer driver.
+  exclusively to the outer driver and forwarding captured gate output into fix rounds.
 * The canary's final GitHub Actions run is green.
 * No canary finding requires a fix round. If one does, confirm the implementation and fix JSONL
   envelopes carry the same Codex thread id.
 
 ## Done & verified
 
-* `npm run test:scripts` — 81 tests passed after the E2E and Git-boundary regression tests.
+* `npm run test:scripts` — 83 tests passed after the runner-boundary and gate-output regression
+  tests.
 * `npm run check` — zero errors and warnings.
 * `npm run lint` — passed.
 * `npm run format:check` — passed.

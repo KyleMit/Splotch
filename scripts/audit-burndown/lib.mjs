@@ -243,6 +243,25 @@ export function shellOk(command) {
   return spawnSync(command, { shell: true, stdio: 'ignore', maxBuffer: MAX_BUFFER }).status === 0;
 }
 
+export function shellResult(command) {
+  return spawnSync(command, {
+    shell: true,
+    encoding: 'utf8',
+    maxBuffer: MAX_BUFFER,
+  });
+}
+
+export function commandFailureOutput(result, maxLength = 6000) {
+  const ansiPattern = new RegExp(`${String.fromCharCode(27)}\\[[0-?]*[ -/]*[@-~]`, 'g');
+  const output = [result.stdout, result.stderr]
+    .filter(Boolean)
+    .join('\n')
+    .replace(ansiPattern, '')
+    .trim();
+  if (!output) return `command exited ${result.status ?? 'without a status'}`;
+  return output.length <= maxLength ? output : `…${output.slice(-maxLength)}`;
+}
+
 // ---- docs/AUDIT.md parsing --------------------------------------------------
 // Findings are level-3 headings of the form `### [Category] Title` under
 // `## Source: <audit>` sections (.claude/audit-conventions.md). An entry runs

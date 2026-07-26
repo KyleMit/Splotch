@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   briefIsStale,
+  commandFailureOutput,
   countEntries,
   DEFAULT_MAX_ISSUES,
   deferralReason,
@@ -278,6 +279,27 @@ describe('Codex driver-owned commits', () => {
         'docs/audit-deferred/rejected.patch',
       ])
     ).toEqual(['docs/AUDIT.md', 'docs/AUDIT-DEFERRED.md', 'docs/audit-deferred/rejected.patch']);
+  });
+});
+
+describe('gate failure output', () => {
+  it('strips terminal color and keeps the actionable tail within the prompt budget', () => {
+    const output = commandFailureOutput(
+      {
+        status: 1,
+        stdout: `prefix\n\u001b[31mExpected ring width 4.5px\u001b[0m\n${'x'.repeat(40)}`,
+        stderr: 'trace tail',
+      },
+      60
+    );
+    expect(output).not.toContain('\u001b');
+    expect(output).toContain('trace tail');
+    expect(output.length).toBe(61);
+    expect(output.startsWith('…')).toBe(true);
+  });
+
+  it('reports an exit status when a command produced no text', () => {
+    expect(commandFailureOutput({ status: 2, stdout: '', stderr: '' })).toBe('command exited 2');
   });
 });
 
