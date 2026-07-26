@@ -26,54 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P2][duplication] `page()` builds `nightImages` and `chalkImages` with two copy-pasted filter+branch blocks
-
-**File(s):** `web/src/lib/state/books.ts:92-122` (`page()`) — pinned at SHA f934d43
-
-#### Problem
-
-The night and chalk stanzas are structurally identical, differing only in the suffix and the
-exception list:
-
-```ts
-const night = ALL_ORIENTATIONS.filter((o) => !nightExcept.includes(o));
-const chalk = ALL_ORIENTATIONS.filter((o) => !chalkExcept.includes(o));
-const nightImages: Partial<Record<BookOrientation, string>> = {};
-if (night.includes('portrait')) nightImages.portrait = `/coloring/${book}/${id}-tall.night.webp`;
-if (night.includes('landscape')) nightImages.landscape = `/coloring/${book}/${id}-wide.night.webp`;
-const chalkImages: Partial<Record<BookOrientation, string>> = {};
-if (chalk.includes('portrait')) chalkImages.portrait = `/coloring/${book}/${id}-tall.chalk.webp`;
-if (chalk.includes('landscape')) chalkImages.landscape = `/coloring/${book}/${id}-wide.chalk.webp`;
-```
-
-Two orientations × two variants = four near-identical `if` lines plus two parallel scaffolds; adding
-a third optional variant would triple the block.
-
-#### Proposed solution
-
-Extract a helper that turns an "except" list + variant into a
-`Partial<Record<BookOrientation,string>>` (using the `ORIENTATION_SLUG`/`VARIANT_SUFFIX` tables from
-the P1 grepability finding):
-
-```ts
-function optionalVariant(
-  book: string,
-  id: string,
-  except: BookOrientation[],
-  v: 'night' | 'chalk',
-): Partial<Record<BookOrientation, string>>;
-```
-
-Then `page()` is `nightImages: optionalVariant(book, id, nightExcept, 'night')`,
-`chalkImages: optionalVariant(book, id, chalkExcept, 'chalk')`.
-
-#### Verification
-
-Existing exact-path unit tests stay green; the "every page ships night+chalk for both orientations"
-test in `books.test.ts:14-21` still passes.
-
----
-
 ### [P2][maintainability] The state field set is hand-enumerated in four places that must stay in lockstep
 
 **File(s):** `web/src/lib/state/coloringBook.svelte.ts:15-55` — pinned at SHA f934d43

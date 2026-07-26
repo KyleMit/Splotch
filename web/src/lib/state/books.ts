@@ -102,6 +102,21 @@ function pageAssetPath(
   return `${COLORING_ROOT}/${bookId}/${pageId}-${ORIENTATION_SLUGS[orientation]}${ASSET_SUFFIXES[variant]}`;
 }
 
+function optionalPageAssetPaths(
+  bookId: string,
+  pageId: string,
+  exceptions: BookOrientation[],
+  variant: Extract<PageAssetVariant, 'night' | 'chalk'>
+): Partial<Record<BookOrientation, string>> {
+  const paths: Partial<Record<BookOrientation, string>> = {};
+  for (const orientation of ALL_ORIENTATIONS) {
+    if (!exceptions.includes(orientation)) {
+      paths[orientation] = pageAssetPath(bookId, pageId, orientation, variant);
+    }
+  }
+  return paths;
+}
+
 function coverPath(bookId: string): string {
   return `${COLORING_ROOT}/${bookId}/cover${ASSET_SUFFIXES.outline}`;
 }
@@ -124,18 +139,6 @@ function page(
   name: string,
   { nightExcept = [], chalkExcept = [] }: PageExceptions = {}
 ): ColoringPage {
-  const night = ALL_ORIENTATIONS.filter((o) => !nightExcept.includes(o));
-  const chalk = ALL_ORIENTATIONS.filter((o) => !chalkExcept.includes(o));
-  const nightImages: Partial<Record<BookOrientation, string>> = {};
-  if (night.includes('portrait'))
-    nightImages.portrait = pageAssetPath(book, id, 'portrait', 'night');
-  if (night.includes('landscape'))
-    nightImages.landscape = pageAssetPath(book, id, 'landscape', 'night');
-  const chalkImages: Partial<Record<BookOrientation, string>> = {};
-  if (chalk.includes('portrait'))
-    chalkImages.portrait = pageAssetPath(book, id, 'portrait', 'chalk');
-  if (chalk.includes('landscape'))
-    chalkImages.landscape = pageAssetPath(book, id, 'landscape', 'chalk');
   return {
     id,
     name,
@@ -147,8 +150,8 @@ function page(
       portrait: pageAssetPath(book, id, 'portrait', 'light'),
       landscape: pageAssetPath(book, id, 'landscape', 'light'),
     },
-    nightImages,
-    chalkImages,
+    nightImages: optionalPageAssetPaths(book, id, nightExcept, 'night'),
+    chalkImages: optionalPageAssetPaths(book, id, chalkExcept, 'chalk'),
   };
 }
 
