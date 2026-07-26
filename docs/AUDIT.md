@@ -22,26 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P2][maintainability] Deprecated `String.prototype.substr` used for channel slicing
-
-**File(s):** `web/src/lib/colorRing.ts:10-12, 33-35` — pinned at SHA f934d43
-
-#### Problem
-
-`parseInt(hex.substr(0, 2), 16)` etc. `substr` is a deprecated (Annex B) API. In a "TypeScript
-everywhere" codebase this is a latent lint/tooling flag and the wrong idiom to copy.
-
-#### Proposed solution
-
-Use `hex.slice(0, 2)`, `hex.slice(2, 4)`, `hex.slice(4, 6)`. Folds naturally into the `hexToRgb`
-extraction above.
-
-#### Verification
-
-Same parse results; `colorRing.test.ts` passes.
-
----
-
 ### [P2][naming] `relativeLuminance` computes perceived brightness (BT.601 luma), not relative luminance
 
 **File(s):** `web/src/lib/colorRing.ts:1-14` — pinned at SHA f934d43
