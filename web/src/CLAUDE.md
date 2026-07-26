@@ -17,7 +17,7 @@ Where things live (full file-by-file map: `architecture` skill):
   `appearance.svelte.ts`, `network.svelte.ts`, `fullscreen.svelte.ts`). `install.svelte.ts` is the
   one exception: its one-shot `beforeinstallprompt` listener must be eager (a deferred listener
   could miss an event that fires before hydration), but its state seeding stays behind
-  `initInstallPrompt()`, called from `+page.svelte`'s `onMount` — kept split for now to avoid
+  `initInstallPrompt()`, called from `lib/boot/webOnlyServices.ts` — kept split for now to avoid
   touching its well-tested surface, not because the seeding itself needs to be deferred. Shared
   derived values are exposed as plain getter functions that recompute per call (`resolvedTheme()` in
   `appearance.svelte.ts`, `activeStrokeSize()` in `strokeWidth.svelte.ts`), never module-level

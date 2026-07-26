@@ -19,7 +19,7 @@
   import { isNative } from '$lib/platform';
   import { applyTheme } from '$lib/theme';
   import { applyDeviceOrientationPreference } from '$lib/orientation';
-  import { scheduleIdle } from '$lib/idle';
+  import { mountBootHiddenOverlays } from '$lib/boot/bootHiddenOverlays';
   import { installWakeLock } from '$lib/boot/wakeLock';
   import { installContextMenuGuard } from '$lib/boot/contextMenuGuard';
   import { hydratePersistedState } from '$lib/boot/persistedState';
@@ -54,11 +54,7 @@
     if (!isNative()) registerDeferredServiceWorker();
   });
 
-  // The boot-hidden overlays (see bootHiddenOverlays.ts) load and mount at idle
-  // so the ~470 ms first-load hydration long task doesn't pay for subtrees that
-  // are invisible until a tap or a few strokes later. One overlay per idle
-  // callback: mounting them all at once just relocates a long task to idle,
-  // where it would jank a stroke already in progress.
+  // Filled one at a time by the idle mount pump (see boot/bootHiddenOverlays.ts).
   let overlays = $state<Component[]>([]);
 
   // The Parent Center dialog is the one overlay too heavy even for an idle
@@ -73,32 +69,6 @@
   });
 
   onMount(() => {
-    // The cancel handle scheduleIdle returns can't reach the async import().then
-    // continuation below, so a `stopped` flag guards the recursive mount from
-    // running after unmount.
-    let stopped = false;
-    scheduleIdle(() => {
-      import('$lib/components/bootHiddenOverlays').then((module) => {
-        ParentCenter = module.ParentCenter;
-        const queue = [
-          module.ColorPicker,
-          module.ColoringBook,
-          module.AiImagePrompt,
-          module.AiImageResult,
-          module.InstallBanner,
-        ];
-        const mountNext = () => {
-          if (stopped) return;
-          overlays = [...overlays, queue[overlays.length]];
-          if (overlays.length < queue.length) scheduleIdle(mountNext);
-        };
-        mountNext();
-      });
-    });
-    return () => (stopped = true);
-  });
-
-  onMount(() => {
     captureAiAccessTokenFromUrl();
     // The app.html head script already stamped data-theme before first paint;
     // this re-stamps it as a fallback if that inline script was blocked. The
@@ -107,7 +77,15 @@
     applyTheme(settings.theme);
     hydratePersistedState();
 
-    const teardowns = [installContextMenuGuard(), installWakeLock(), initWebOnlyServices()];
+    const teardowns = [
+      mountBootHiddenOverlays(
+        (overlay) => (ParentCenter = overlay),
+        (overlay) => (overlays = [...overlays, overlay])
+      ),
+      installContextMenuGuard(),
+      installWakeLock(),
+      initWebOnlyServices(),
+    ];
     return () => teardowns.forEach((teardown) => teardown());
   });
 </script>
