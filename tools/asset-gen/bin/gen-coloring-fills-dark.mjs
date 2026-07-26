@@ -183,33 +183,42 @@ const samples = parsePositiveInt(values.samples, '--samples', 1);
 // Per-page tuning resolves in the page loop — defaults, then the page's
 // fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
 function nightSettings(v, source) {
-  const s = {
-    baseTemp: parseTemperature(v.temperature, '--temperature', 0.6, source),
-    maxAttempts: parsePositiveInt(v['max-attempts'], '--max-attempts', 3, source),
-    driftThreshold: parseNonNegative(
+  const leverSettings = {
+    temperature: parseTemperature(v.temperature, '--temperature', 0.6, source),
+    'max-attempts': parsePositiveInt(v['max-attempts'], '--max-attempts', 3, source),
+    'drift-threshold': parseNonNegative(
       v['drift-threshold'],
       '--drift-threshold',
       DRIFT_THRESHOLD_DEFAULT,
       source
     ),
-    nightLumaMax: parseNonNegative(
+    'night-luma-max': parseNonNegative(
       v['night-luma-max'],
       '--night-luma-max',
       NIGHT_BG_LUMA_MAX_DEFAULT,
       source
     ),
-    lineWhiteMin: parseNonNegative(
+    'line-white-min': parseNonNegative(
       v['line-white-min'],
       '--line-white-min',
       LINE_WHITE_MIN_DEFAULT,
       source
     ),
-    dilateLines: v['dilate-lines'] === undefined ? 0 : Number(v['dilate-lines']),
+    'dilate-lines': v['dilate-lines'] === undefined ? 0 : Number(v['dilate-lines']),
     notes: v.notes,
   };
-  if (!(Number.isInteger(s.dilateLines) && s.dilateLines >= 0))
+  if (!(Number.isInteger(leverSettings['dilate-lines']) && leverSettings['dilate-lines'] >= 0))
     fail(`--dilate-lines must be a non-negative integer${source ? ` (${source})` : ''}`);
-  return s;
+  return {
+    baseTemp: leverSettings.temperature,
+    maxAttempts: leverSettings['max-attempts'],
+    driftThreshold: leverSettings['drift-threshold'],
+    nightLumaMax: leverSettings['night-luma-max'],
+    lineWhiteMin: leverSettings['line-white-min'],
+    dilateLines: leverSettings['dilate-lines'],
+    notes: leverSettings.notes,
+    leverSettings,
+  };
 }
 nightSettings(values);
 const ai = makeClient({ optional: values['dry-run'] });
@@ -330,15 +339,7 @@ for (const page of pages) {
         levers,
         fromRegistry,
         cliValues: values,
-        settings: {
-          temperature: cfg.baseTemp,
-          'max-attempts': cfg.maxAttempts,
-          'drift-threshold': cfg.driftThreshold,
-          'night-luma-max': cfg.nightLumaMax,
-          'line-white-min': cfg.lineWhiteMin,
-          'dilate-lines': cfg.dilateLines,
-          notes: cfg.notes,
-        },
+        settings: cfg.leverSettings,
       })
     );
   if (values['dry-run']) continue;

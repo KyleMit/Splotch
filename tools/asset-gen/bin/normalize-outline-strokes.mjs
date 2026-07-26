@@ -78,15 +78,21 @@ const ai = makeClient({ optional: values['dry-run'] });
 // Per-page tuning resolves in the page loop — defaults, then the page's
 // fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
 function normalizeSettings(v, source) {
-  const s = {
-    baseTemp: parseTemperature(v.temperature, '--temperature', 0.3, source),
-    maxAttempts: parsePositiveInt(v['max-attempts'], '--max-attempts', 4, source),
+  const leverSettings = {
+    temperature: parseTemperature(v.temperature, '--temperature', 0.3, source),
+    'max-attempts': parsePositiveInt(v['max-attempts'], '--max-attempts', 4, source),
     notes: v.notes,
   };
-  s.instruction = s.notes
-    ? `${NORMALIZE_INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${s.notes}`
+  const instruction = leverSettings.notes
+    ? `${NORMALIZE_INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${leverSettings.notes}`
     : NORMALIZE_INSTRUCTION;
-  return s;
+  return {
+    baseTemp: leverSettings.temperature,
+    maxAttempts: leverSettings['max-attempts'],
+    notes: leverSettings.notes,
+    instruction,
+    leverSettings,
+  };
 }
 normalizeSettings(values);
 
@@ -188,11 +194,7 @@ for (const arg of positionals) {
         levers,
         fromRegistry,
         cliValues: values,
-        settings: {
-          temperature: cfg.baseTemp,
-          'max-attempts': cfg.maxAttempts,
-          notes: cfg.notes,
-        },
+        settings: cfg.leverSettings,
       })
     );
   if (values['dry-run']) continue;

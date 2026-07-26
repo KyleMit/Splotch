@@ -30,32 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P3][maintainability] `describeLevers` settings object rebuilt by hand in three generators
-
-**File(s):** `gen-coloring-fills-dark.mjs:354-371`; `gen-coloring-chalk.mjs:327-342`;
-`normalize-outline-strokes.mjs:202-215` — pinned at SHA f934d43
-
-#### Problem
-
-Each generator manually maps its `cfg` back into the flag-keyed object `describeLevers` expects
-(`{ temperature: cfg.baseTemp, 'max-attempts': cfg.maxAttempts, … }`). The `cfg` was itself built
-from those same flag keys moments earlier (in `nightSettings`/`chalkSettings`/`normalizeSettings`),
-so the code round-trips key→field→key by hand, and a new lever must be added in three synchronized
-spots (the settings builder, the `describeLevers` mapping, the validation).
-
-#### Proposed solution
-
-Have the settings builders keep (or expose) the flag-keyed shape, e.g. return `{ settings, flags }`
-where `flags` is already keyed for `describeLevers`, so the call site passes `settings: cfg.flags`
-with no manual remap.
-
-#### Verification
-
-`--dry-run` lever reports are identical for a page with registry entries; adding a hypothetical
-lever touches one object.
-
----
-
 ### [P4][dead-code] `export` on generator functions that are never imported
 
 **File(s):** `gen-coloring-fills.mjs:75` (`export async function generateColoredPage`);

@@ -213,16 +213,16 @@ const ai = makeClient({ optional: values['dry-run'] || values.rescore });
 // Per-page tuning resolves in the page loop — defaults, then the page's
 // fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
 function chalkSettings(v, source) {
-  const s = {
-    baseTemp: parseTemperature(v.temperature, '--temperature', 0.35, source),
-    maxAttempts: parsePositiveInt(v['max-attempts'], '--max-attempts', 4, source),
-    inventedMax: parseNonNegative(
+  const leverSettings = {
+    temperature: parseTemperature(v.temperature, '--temperature', 0.35, source),
+    'max-attempts': parsePositiveInt(v['max-attempts'], '--max-attempts', 4, source),
+    'invented-max': parseNonNegative(
       v['invented-max'],
       '--invented-max',
       INVENTED_MAX_DEFAULT,
       source
     ),
-    whiteFracMax: parseNonNegative(
+    'white-frac-max': parseNonNegative(
       v['white-frac-max'],
       '--white-frac-max',
       WHITE_FRAC_MAX_DEFAULT,
@@ -230,10 +230,18 @@ function chalkSettings(v, source) {
     ),
     notes: v.notes,
   };
-  s.instruction = s.notes
-    ? `${CHALK_INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${s.notes}`
+  const instruction = leverSettings.notes
+    ? `${CHALK_INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${leverSettings.notes}`
     : CHALK_INSTRUCTION;
-  return s;
+  return {
+    baseTemp: leverSettings.temperature,
+    maxAttempts: leverSettings['max-attempts'],
+    inventedMax: leverSettings['invented-max'],
+    whiteFracMax: leverSettings['white-frac-max'],
+    notes: leverSettings.notes,
+    instruction,
+    leverSettings,
+  };
 }
 chalkSettings(values);
 
@@ -318,13 +326,7 @@ for (const page of pages) {
         levers,
         fromRegistry,
         cliValues: values,
-        settings: {
-          temperature: cfg.baseTemp,
-          'max-attempts': cfg.maxAttempts,
-          'invented-max': cfg.inventedMax,
-          'white-frac-max': cfg.whiteFracMax,
-          notes: cfg.notes,
-        },
+        settings: cfg.leverSettings,
       })
     );
   if (values['dry-run']) continue;
