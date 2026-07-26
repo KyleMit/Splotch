@@ -22,53 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P1][consistency] Unify the two error-response shapes across the API surface
-
-**File(s):** `web/src/lib/server/http.ts:9-15,22-27`;
-`web/src/routes/api/generate-image/+server.ts:17-19,71,72,92,111,143`;
-`web/src/lib/server/generationAuthorization.ts:32,60`;
-`web/src/routes/api/report/+server.ts:73,78,89,104`;
-`web/src/routes/api/verify-access-code/+server.ts:26,30`;
-`web/src/routes/api/verify-key/+server.ts:20,24` — pinned at SHA f934d43
-
-#### Problem
-
-Endpoints emit two incompatible JSON error shapes with no rule for which:
-
-* **`{ ok: false, error }`** — `throttled()`, `verify-access-code`, `verify-key`, `report`.
-* **SvelteKit `{ message }`** — every `throw error(...)` in
-  `generate-image`/`generationAuthorization` (403, 413, 415, 422, 502, 500) and `readJsonBody`'s
-  `throw error(400, 'Expected a JSON body')`.
-
-The same endpoint can return both: in `report`, a malformed body yields
-`{ message: 'Expected a JSON body' }` (400) while a missing `kind` yields
-`{ ok: false, error: 'Please choose bug or feature.' }` (400). A client can't parse a 400 from
-`report` without sniffing the shape. The API skill (SKILL.md:31) even advertises "clients surface
-the `error` field directly," which is false for every `error()`-thrown response.
-
-#### Proposed solution
-
-Add a single error-builder beside `throttled()` in `http.ts`, e.g.:
-
-```ts
-export function fail(status: number, error: string, headers?: HeadersInit): Response {
-  return json({ ok: false, error }, { status, headers });
-}
-```
-
-Replace the client-facing `throw error(400|413|415|422|502|500, msg)` calls (and `readJsonBody`'s
-throw, returning the parsed value or a `fail(400, ...)` sentinel) with `fail(...)` so every JSON
-error is `{ ok, error }`. Note `readAiImageResponse` reads `.text()` so it tolerates the change;
-`aiCredential`/`report` clients already expect `{ ok, error }`.
-
-#### Verification
-
-`grep -rn "throw error(" web/src/routes/api web/src/lib/server` returns only genuinely-unexpected
-5xx (which should hit `handleError`). Add a test asserting every documented failure body has
-`{ ok:false, error:string }`. Run `npm run test:api:smoke`.
-
----
-
 ### [P2][duplication] Move content-type parsing into a shared `http.ts` helper
 
 **File(s):** `web/src/routes/api/generate-image/+server.ts:33-34` (`contentTypeOf`) and
