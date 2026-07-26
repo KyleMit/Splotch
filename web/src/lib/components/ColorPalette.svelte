@@ -320,8 +320,9 @@
      trim rank, so it is never hidden.
 
      Every threshold below is derived arithmetically; design/trimGeometry.ts is
-     the executable form of all four ladders, and trimGeometry.test.ts asserts
-     it still produces exactly the values written here.
+     the executable form of all four ladders, and trimGeometry.test.ts parses
+     this whole style block back out — swatch sizes and gaps as well as the
+     thresholds — and asserts the module still produces exactly these values.
 
      PORTRAIT — palette is a full-width row (55px swatches, 8px gaps, 10px side
      padding) plus the always-present gradient. k core swatches + gradient fit

@@ -216,9 +216,10 @@
      drop order r2,r4,r6,r8,r3,r7(,c5) keeps an even spread across whichever
      ramp that axis holds — shades stay light→dark, families stay a rainbow —
      and never drops r1/c1/r9/c9, the endpoints. Both ladders below are derived
-     arithmetically; design/trimGeometry.ts is their executable form, and
-     trimGeometry.test.ts asserts it still produces exactly the values written
-     here (including each step's hand-tuned buffer). */
+     arithmetically; design/trimGeometry.ts is their executable form — geometry,
+     formulas and step tables, the two hand-tightened steps included — and
+     trimGeometry.test.ts parses this whole style block back out and asserts the
+     module still produces exactly the values written here. */
   @media (orientation: landscape) {
     .grid.portrait {
       display: none;

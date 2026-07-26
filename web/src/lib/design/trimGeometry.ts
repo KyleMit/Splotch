@@ -1,10 +1,10 @@
 // Executable form of the responsive-trim ladders in ColorPalette.svelte and
 // ColorPicker.svelte (ADR-0048). Those components trim swatches/rows/columns
 // with pure CSS, so every breakpoint is a hand-evaluated arithmetic result
-// baked into a `@media` rule. The formulas live here so a geometry change is
-// re-derivable rather than re-guessable, and trimGeometry.test.ts pins each
-// ladder against the literals actually committed in the two `<style>` blocks —
-// a geometry edit that isn't matched by a CSS edit fails there.
+// baked into a `@media` rule. This module holds the geometry, the formulas and
+// the step tables — the whole ladder — so a size change is re-derivable rather
+// than re-guessable, and trimGeometry.test.ts parses both `<style>` blocks and
+// asserts the committed CSS still matches what these functions produce.
 
 // A `max-*` breakpoint has to sit just below the threshold at which the layout
 // still fits, so the ladders encode `threshold - 0.02` (e.g. 588 → 587.98).
@@ -44,6 +44,26 @@ function stackExtentPx(
   return items * swatchPx + (items - 1) * gapPx + paddingPx;
 }
 
+/**
+ * Swatch counts the landscape single column is sized for, tallest first. Below
+ * the last one a third swatch would have to go, so the layout falls back to the
+ * roomier two-column grid instead of trimming further — which is why the trim
+ * rules are floored at that count's height.
+ */
+export const LANDSCAPE_SINGLE_COLUMN_LADDER = [8, 7, 6] as const;
+
+/**
+ * Column slots the three bonus colors reveal into. The core seven plus the
+ * gradient swatch fill slots 1–8, so the bonuses start at 9.
+ */
+export const LANDSCAPE_BONUS_REVEAL_LADDER = [9, 10, 11] as const;
+
+/** Row counts the landscape two-column grid trims through, tallest first. */
+export const LANDSCAPE_TWO_COLUMN_LADDER = [4, 3, 2, 1] as const;
+
+/** Core swatch counts the portrait row trims through, widest first. */
+export const PORTRAIT_LADDER = [7, 6, 5, 4, 3, 2, 1] as const;
+
 /** Height at which a landscape single column still holds `swatches`. */
 export function landscapeSingleColumnMinHeightPx(
   swatches: number,
@@ -52,42 +72,56 @@ export function landscapeSingleColumnMinHeightPx(
   return stackExtentPx(swatches, geometry);
 }
 
-/**
- * Height at which the single column opens its `slot`-th position. Same family
- * as the trim ladder above — the core seven plus the gradient fill slots 1–8,
- * so the three bonus colors reveal at slots 9–11.
- */
-export function landscapeBonusRevealMinHeightPx(
-  slot: number,
+/** Height below which the single column falls back to the two-column grid. */
+export function landscapeSingleColumnFloorPx(
   geometry: PaletteStackGeometry = PALETTE_COLUMN_GEOMETRY
 ): number {
-  return landscapeSingleColumnMinHeightPx(slot, geometry);
-}
-
-/** Height below which the landscape two-column grid loses a row of two. */
-export function landscapeTwoColumnMaxHeightPx(
-  rows: number,
-  geometry: PaletteStackGeometry = PALETTE_COLUMN_GEOMETRY
-): number {
-  return justBelowPx(stackExtentPx(rows, geometry));
+  return landscapeSingleColumnMinHeightPx(LANDSCAPE_SINGLE_COLUMN_LADDER.at(-1)!, geometry);
 }
 
 /**
- * Width below which the portrait row loses a core swatch. The always-present
- * gradient swatch occupies one slot on top of the `coreSwatches` counted here.
+ * Heights below which the single column loses another swatch. One step shorter
+ * than the ladder: its last entry is the floor above, not a trim.
  */
-export function portraitMaxWidthPx(
-  coreSwatches: number,
-  geometry: PaletteStackGeometry = PALETTE_ROW_GEOMETRY
-): number {
-  return justBelowPx(stackExtentPx(coreSwatches + 1, geometry));
+export function landscapeSingleColumnTrimLadderPx(
+  geometry: PaletteStackGeometry = PALETTE_COLUMN_GEOMETRY
+): number[] {
+  return LANDSCAPE_SINGLE_COLUMN_LADDER.slice(0, -1).map((swatches) =>
+    justBelowPx(landscapeSingleColumnMinHeightPx(swatches, geometry))
+  );
+}
+
+/** Heights at which the single column opens each bonus color's slot. */
+export function landscapeBonusRevealLadderPx(
+  geometry: PaletteStackGeometry = PALETTE_COLUMN_GEOMETRY
+): number[] {
+  return LANDSCAPE_BONUS_REVEAL_LADDER.map((slot) =>
+    landscapeSingleColumnMinHeightPx(slot, geometry)
+  );
+}
+
+/** Heights below which the landscape two-column grid loses a row of two. */
+export function landscapeTwoColumnLadderPx(
+  geometry: PaletteStackGeometry = PALETTE_COLUMN_GEOMETRY
+): number[] {
+  return LANDSCAPE_TWO_COLUMN_LADDER.map((rows) => justBelowPx(stackExtentPx(rows, geometry)));
+}
+
+/**
+ * Widths below which the portrait row loses a core swatch. The always-present
+ * gradient swatch occupies one slot on top of the core count.
+ */
+export function portraitLadderPx(geometry: PaletteStackGeometry = PALETTE_ROW_GEOMETRY): number[] {
+  return PORTRAIT_LADDER.map((coreSwatches) =>
+    justBelowPx(stackExtentPx(coreSwatches + 1, geometry))
+  );
 }
 
 // ── ColorPicker ────────────────────────────────────────────────────────────
 // The hexagon honeycomb overlaps its rows and indents alternating ones, so the
 // two axes need different extents. Both are then divided by the 90vh/90vw cap
-// the grid is sized against, which is why the ladder lands off-pixel and every
-// step carries a hand-tuned whole-pixel buffer.
+// the grid is sized against, which lands the raw minimum off-pixel — so each
+// step rounds up, and the tables below carry the two hand-tightened exceptions.
 
 export interface HexGridGeometry {
   /** Full hexagon height; later rows overlap and only add `rowPitchPx`. */
@@ -111,29 +145,88 @@ export const HEX_GRID_GEOMETRY: HexGridGeometry = {
   viewportFraction: 0.9,
 };
 
-/**
- * Height below which the honeycomb drops to fewer than `rows`. `bufferPx` is
- * the hand-tuned slack each encoded step leaves above the geometric minimum;
- * it is negative where a step was tightened below it instead.
- */
-export function hexGridRowMaxHeightPx(
-  rows: number,
-  bufferPx: number,
-  geometry: HexGridGeometry = HEX_GRID_GEOMETRY
-): number {
-  const contentPx = geometry.firstRowPx + geometry.rowPitchPx * (rows - 1) + geometry.paddingPx;
-  return justBelowPx(Math.ceil(contentPx / geometry.viewportFraction) + bufferPx);
+interface HexGridLadderRule {
+  /** The raw minimum is rounded up to a multiple of this before slack. */
+  roundToPx: number;
+  /** Slack past the rounded minimum, counted in `roundToPx` units. */
+  slackSteps: number;
 }
 
-/**
- * Width below which the honeycomb drops to fewer than `columns`. `bufferPx`
- * carries the same hand-tuned slack as the row ladder.
- */
-export function hexGridColumnMaxWidthPx(
-  columns: number,
-  bufferPx: number,
+export interface HexGridStep {
+  /** Rows (or columns) still shown above this breakpoint. */
+  count: number;
+  /** Overrides the ladder's default slack for a hand-tightened step. */
+  slackSteps?: number;
+}
+
+// Rows land on whole pixels with no slack…
+const HEX_GRID_ROW_RULE: HexGridLadderRule = { roundToPx: 1, slackSteps: 0 };
+
+export const HEX_GRID_ROW_LADDER: readonly HexGridStep[] = [
+  // Nine rows need 565.56px of viewport; this step is tightened down to 565
+  // rather than up to 566, so the honeycomb overruns the 90vh cap by half a
+  // pixel — invisible, and the picker clips it (overflow: hidden) anyway.
+  { count: 9, slackSteps: -1 },
+  { count: 8 },
+  { count: 7 },
+  { count: 6 },
+  { count: 5 },
+  { count: 4 },
+];
+
+// …while columns round to 5px and then take one more 5px step, keeping the
+// wider ladder on round numbers with a little breathing room.
+const HEX_GRID_COLUMN_RULE: HexGridLadderRule = { roundToPx: 5, slackSteps: 1 };
+
+export const HEX_GRID_COLUMN_LADDER: readonly HexGridStep[] = [
+  { count: 9 },
+  { count: 8 },
+  { count: 7 },
+  { count: 6 },
+  { count: 5 },
+  // Four columns need 336.67px, and this step stops at the first multiple of 5
+  // above that (340) instead of the second (345) its neighbours take — 3.3px of
+  // slack rather than 5–8.3px. The narrowest steps are the ones a small phone
+  // actually lands on, so the tighter fit buys one more column there.
+  { count: 4, slackSteps: 0 },
+  { count: 3 },
+];
+
+function hexGridBreakpointPx(
+  contentPx: number,
+  rule: HexGridLadderRule,
+  step: HexGridStep,
+  viewportFraction: number
+): number {
+  const minViewportPx = contentPx / viewportFraction;
+  const roundedPx = Math.ceil(minViewportPx / rule.roundToPx) * rule.roundToPx;
+  const slackSteps = step.slackSteps ?? rule.slackSteps;
+  return justBelowPx(roundedPx + slackSteps * rule.roundToPx);
+}
+
+/** Height below which the honeycomb drops below `step.count` rows. */
+export function hexGridRowMaxHeightPx(
+  step: HexGridStep,
   geometry: HexGridGeometry = HEX_GRID_GEOMETRY
 ): number {
-  const contentPx = geometry.columnPitchPx * columns + geometry.rowOffsetPx + geometry.paddingPx;
-  return justBelowPx(Math.ceil(contentPx / geometry.viewportFraction) + bufferPx);
+  const contentPx =
+    geometry.firstRowPx + geometry.rowPitchPx * (step.count - 1) + geometry.paddingPx;
+  return hexGridBreakpointPx(contentPx, HEX_GRID_ROW_RULE, step, geometry.viewportFraction);
+}
+
+/** Width below which the honeycomb drops below `step.count` columns. */
+export function hexGridColumnMaxWidthPx(
+  step: HexGridStep,
+  geometry: HexGridGeometry = HEX_GRID_GEOMETRY
+): number {
+  const contentPx = geometry.columnPitchPx * step.count + geometry.rowOffsetPx + geometry.paddingPx;
+  return hexGridBreakpointPx(contentPx, HEX_GRID_COLUMN_RULE, step, geometry.viewportFraction);
+}
+
+export function hexGridRowLadderPx(geometry: HexGridGeometry = HEX_GRID_GEOMETRY): number[] {
+  return HEX_GRID_ROW_LADDER.map((step) => hexGridRowMaxHeightPx(step, geometry));
+}
+
+export function hexGridColumnLadderPx(geometry: HexGridGeometry = HEX_GRID_GEOMETRY): number[] {
+  return HEX_GRID_COLUMN_LADDER.map((step) => hexGridColumnMaxWidthPx(step, geometry));
 }
