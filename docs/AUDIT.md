@@ -22,39 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P3][duplication] `saveSecret` / `loadSecret` / `clearSecret` triplicate the native-vs-web dispatch
-
-**File(s):** `web/src/lib/secureStorage.ts:121-159` — pinned at SHA f934d43
-
-#### Problem
-
-All three functions share the identical skeleton: browser guard, `__IS_CAPACITOR__ && isNative()`
-branch, `getPlugin()` + `SecureStorage.<op>` on native, `web<Op>` on web. The only per-function
-difference is which method runs. Three copies of the plugin-load + branch means a change to the
-native seam (e.g. a plugin API rename) touches three sites.
-
-#### Proposed solution
-
-A single backend selector:
-
-```ts
-type SecureBackend = {
-  set(name: string, value: string): Promise<void>;
-  get(name: string): Promise<string | null>;
-  remove(name: string): Promise<void>;
-};
-async function backend(): Promise<SecureBackend> {/* returns native or web impl */}
-```
-
-`saveSecret`/`loadSecret`/`clearSecret` keep only their guard + error policy and delegate to
-`(await backend()).set/get/remove`.
-
-#### Verification
-
-`secureStorage.test.ts` round-trip, clear, and race tests pass unchanged.
-
----
-
 ### [P3][error-handling] `loadSecret` and `webLoad` collapse every failure into `null` — a decrypt/plugin error is indistinguishable from "no key stored"
 
 **File(s):** `web/src/lib/secureStorage.ts:97-108` (`webLoad`), `131-144` (`loadSecret`) — pinned at

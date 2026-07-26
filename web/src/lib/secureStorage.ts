@@ -141,30 +141,45 @@ async function webClear(name: string) {
   // re-entered secret reuse the same sandboxed key object.
 }
 
-/** Persist a named secret to the platform's secure store. */
-// The literal __IS_CAPACITOR__ guards (here and below) make the native paths
-// compile-time dead on web so Rollup drops the secure-storage plugin chunk;
-// isNative() alone is a runtime check it can't tree-shake.
-async function saveSecret(name: string, value: string) {
-  if (!browser || !value) return;
+interface SecureBackend {
+  save(name: string, value: string): Promise<void>;
+  load(name: string): Promise<string | null>;
+  clear(name: string): Promise<void>;
+}
+
+// The literal __IS_CAPACITOR__ guard makes the native path compile-time dead
+// on web so Rollup drops the secure-storage plugin chunk; isNative() alone is
+// a runtime check it can't tree-shake.
+async function selectBackend(): Promise<SecureBackend> {
   if (__IS_CAPACITOR__ && isNative()) {
     const { SecureStorage } = await getPlugin();
-    await SecureStorage.set(name, value);
-  } else {
-    await webSave(name, value);
+    return {
+      save: (name, value) => SecureStorage.set(name, value),
+      load: async (name) => {
+        const value = await SecureStorage.get(name);
+        return typeof value === 'string' ? value : null;
+      },
+      clear: async (name) => {
+        await SecureStorage.remove(name);
+      },
+    };
   }
+  return { save: webSave, load: webLoad, clear: webClear };
+}
+
+/** Persist a named secret to the platform's secure store. */
+async function saveSecret(name: string, value: string) {
+  if (!browser || !value) return;
+  const backend = await selectBackend();
+  await backend.save(name, value);
 }
 
 /** Read a named secret back, or null if none is stored. Never throws. */
 async function loadSecret(name: string) {
   if (!browser) return null;
   try {
-    if (__IS_CAPACITOR__ && isNative()) {
-      const { SecureStorage } = await getPlugin();
-      const value = await SecureStorage.get(name);
-      return typeof value === 'string' ? value : null;
-    }
-    return await webLoad(name);
+    const backend = await selectBackend();
+    return await backend.load(name);
   } catch {
     return null;
   }
@@ -174,12 +189,8 @@ async function loadSecret(name: string) {
 async function clearSecret(name: string) {
   if (!browser) return;
   try {
-    if (__IS_CAPACITOR__ && isNative()) {
-      const { SecureStorage } = await getPlugin();
-      await SecureStorage.remove(name);
-    } else {
-      await webClear(name);
-    }
+    const backend = await selectBackend();
+    await backend.clear(name);
   } catch {
     // best-effort
   }
