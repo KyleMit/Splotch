@@ -28,33 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P3][performance] `measureSafeAreaInsets()` creates + appends + reflows a probe on every resize/orientation event
-
-**File(s):** `web/src/lib/safeArea.ts:16-37`; caller
-`web/src/lib/state/layout.svelte.ts:55-64,68-78` — pinned at SHA f934d43
-
-#### Problem
-
-Each call does `createElement` → `appendChild` → `getBoundingClientRect` (a forced synchronous
-layout) → `remove`. `layout.svelte.ts` calls it from `syncViewport`, which is wired to `resize`,
-`orientationchange`, and `visibilitychange`. `resize` can fire many times per second during a
-drag/rotate animation, so every burst churns DOM nodes and forces a reflow mid-frame — exactly the
-kind of jank the `profiling` skill warns about.
-
-#### Proposed solution
-
-Reuse one persistent hidden probe element (create lazily, keep it in the body, never remove it) so
-each measurement is just a `getBoundingClientRect` read; or debounce/rAF-coalesce `syncViewport`'s
-`resize` handling. The probe can stay `visibility:hidden;pointer-events:none` permanently at zero
-cost.
-
-#### Verification
-
-Profile a rotate/resize with the `profiling` harness before/after; assert no forced-reflow spike
-from `safeArea`. Insets still resolve correctly on a notched device.
-
----
-
 ### [P3][type-safety] `playDrawSound`'s param is a loose inline type named `movementData` — should share the engine's `DrawSoundData`
 
 **File(s):** `web/src/lib/audio/drawingSound.ts:57`, `80`; `web/src/lib/drawing/engine.ts:96-98`
