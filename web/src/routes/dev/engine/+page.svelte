@@ -27,7 +27,7 @@
   // The Playwright engine spec reaches the harness through these window globals.
   interface EngineHarnessWindow {
     __engineState: { canUndo: boolean; canvasEmpty: boolean };
-    __engine: Record<string, unknown>;
+    __engine: ReturnType<typeof buildEngineApi>;
     __engineReady: boolean;
   }
   const win = window as unknown as Window & EngineHarnessWindow;
@@ -48,16 +48,12 @@
     setStrokeWidth(8);
   }
 
-  onMount(() => {
-    wireEngine();
-
-    win.__engineState = { canUndo: false, canvasEmpty: true };
-
-    // Expose the real engine API + a few read helpers. The spec drives strokes
-    // with real Playwright pointer input on the canvas; these are for the
-    // imperative operations the app invokes from buttons (undo/clear) and for
-    // reading the resulting bitmap.
-    win.__engine = {
+  // Expose the real engine API + a few read helpers. The spec drives strokes
+  // with real Playwright pointer input on the canvas; these are for the
+  // imperative operations the app invokes from buttons (undo/clear) and for
+  // reading the resulting bitmap.
+  function buildEngineApi() {
+    return {
       setColor,
       setStrokeWidth,
       setEraserMode,
@@ -230,7 +226,14 @@
         }
       },
     };
+  }
 
+  onMount(() => {
+    wireEngine();
+
+    win.__engineState = { canUndo: false, canvasEmpty: true };
+
+    win.__engine = buildEngineApi();
     win.__engineReady = true;
   });
 
