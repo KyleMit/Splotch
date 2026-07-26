@@ -30,33 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P2][duplication] Extract the `pageRel(path)` derivation repeated in seven files
-
-**File(s):** `relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '').replace(/\\/g, '/')` (or
-the two-step variant) at gen-coloring-fills.mjs:224-226, gen-coloring-fills-dark.mjs:347-349,
-gen-coloring-chalk.mjs:320-322, audit-golden.mjs:58-60, review-orb-eyes.mjs:39-41, plus the
-`\\`-less variants audit-fill-eyes.mjs:38, audit-outline-solidity.mjs:27,
-check-coloring-drift.mjs:51 — pinned at SHA f934d43
-
-#### Problem
-
-Turning a resolved outline path back into a category/page key (`nature/ant-wide`) is done ad hoc in
-nine places, and inconsistently: some strip the Windows backslash (`.replace(/\\/g,'/')`), some
-don't — a latent cross-platform bug given ADR-0017 requires macOS+Linux parity and forward-slash
-keys.
-
-#### Proposed solution
-
-Export `pageRelFromOutline(path)` from `lib/paths.mjs` (it already owns `COLORING_DIR`):
-`relative(COLORING_DIR, path).replace(/\.outline\.webp$/, '').replaceAll('\\', '/')`. Replace all
-nine call sites.
-
-#### Verification
-
-`grep -rn "replace(/\\\\.outline" bin/` returns only the lib. Audits print identical page keys.
-
----
-
 ### [P2][duplication] Extract the "score against chalk when forked, else pen" source-selection
 
 **File(s):** `audit-golden.mjs:101-103`; `audit-invented-shapes.mjs:121-123`;
