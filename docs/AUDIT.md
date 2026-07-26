@@ -22,48 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P2][error-handling] `lazyIdbDatabase` memoizes a rejected open promise forever — one transient IndexedDB failure disables persistence for the whole session
-
-**File(s):** `web/src/lib/idb.ts:9-21` (`lazyIdbDatabase`) — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-let dbPromise: Promise<import('idb').IDBPDatabase> | null = null;
-return () => {
-  if (!dbPromise) {
-    dbPromise = import('idb').then(({ openDB }) => openDB(...));
-  }
-  return dbPromise;
-};
-```
-
-`if (!dbPromise)` treats a *rejected* promise as present (a rejected promise is truthy), so a
-one-time `openDB` failure — a transient error, a locked DB during an upgrade, a private-mode hiccup
-— is cached and every later call replays the same rejection. This contradicts the deliberate
-recover-on-rejection pattern used everywhere else in the same storage layer:
-`secureStorage.ts:60-63` nulls `masterKeyPromise` on catch, and `settings.svelte.ts:302-313` nulls
-`folderSaveModule` on a failed import. `idb.ts` is the shared foundation for both `secureStorage`
-and `folderSave`, so this is the least resilient link backing the most.
-
-#### Proposed solution
-
-Null the memo on rejection so the next call retries:
-
-```ts
-dbPromise = import('idb')
-  .then(({ openDB }) => openDB(dbName, version, { upgrade(db) { … } }))
-  .catch((err) => { dbPromise = null; throw err; });
-```
-
-#### Verification
-
-Unit test: make the mocked `openDB` reject once then succeed; assert the second `getDb()` call
-resolves. Mirrors the existing "a failed creation is not memoized" test in
-`secureStorage.test.ts:117-123`.
-
----
-
 ### [P2][complexity] `hydrateDurableStorage` bundles concurrency orchestration, two-way reconciliation, and store-notification in one function
 
 **File(s):** `web/src/lib/storage.ts:169-201` (`hydrateDurableStorage`) — pinned at SHA f934d43

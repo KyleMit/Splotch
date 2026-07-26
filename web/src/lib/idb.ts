@@ -9,13 +9,18 @@ export function lazyIdbDatabase(
   let dbPromise: Promise<import('idb').IDBPDatabase> | null = null;
   return () => {
     if (!dbPromise) {
-      dbPromise = import('idb').then(({ openDB }) =>
-        openDB(dbName, version, {
-          upgrade(db) {
-            if (!db.objectStoreNames.contains(storeName)) db.createObjectStore(storeName);
-          },
-        })
-      );
+      dbPromise = import('idb')
+        .then(({ openDB }) =>
+          openDB(dbName, version, {
+            upgrade(db) {
+              if (!db.objectStoreNames.contains(storeName)) db.createObjectStore(storeName);
+            },
+          })
+        )
+        .catch((error) => {
+          dbPromise = null;
+          throw error;
+        });
     }
     return dbPromise;
   };
