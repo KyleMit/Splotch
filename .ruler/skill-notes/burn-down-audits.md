@@ -650,6 +650,48 @@ Two smaller things from the same run, both recorded because they generalise:
   findings a broad refactor will obsolete later entries, and the drop path handles it without
   supervision. Nobody needs to pre-prune the backlog for self-collision.
 
+### A drop got the verdict right and the reason wrong — the same day the pattern above went well (2026-07-26)
+
+Sixth cloud run. The verifier dropped
+`[P4][maintainability] scheduleReset returns an id that no
+caller uses` as invalid, reasoning
+*"that's false at HEAD (and was already false at the pinned SHA f934d43 — the code is unchanged in
+this regard)."* Checked directly against the pin: it's wrong. `git show f934d43:…` shows the hold
+timer was a bare `setTimeout(...)` at the pin — no caller captured `scheduleReset`'s return value,
+so the finding was accurate when written. It was made false by a fix *earlier in this same run*
+(rerouting the hold timer through `scheduleReset` so `destroy()` could cancel it individually), not
+by anything true at the pin.
+
+The **verdict was still correct** — applying the finding at HEAD would have broken that early
+cancellation, re-introducing the exact bug a mutation-tested fix had just closed — so no work was
+lost. Only the stated reason was false, and that matters because **the drop commit is the only
+surviving record of a permanently deleted finding.** "Always invalid" and "this run obsoleted it"
+are different claims a later triager needs told apart, and this run's own good example above — the
+onMount/wake-lock drop, which named the obsoleting commit correctly and unprompted — proves the
+prompt already produces the right answer sometimes. That argues for making it mandatory rather than
+redesigning anything: `verifier.md` now requires an INVALID verdict to say which case it is, and to
+name the fixing commit when it's the second. See `Verified negative results` above for the case this
+sits beside, and note two of this run's six drops (this one and a `lint:tokens`-scope-exclusion
+drop) independently confirm that **the drop count is not a quality score** — some drops mean
+"wrong", others mean "right and not worth it," and the log row's single number collapses that
+distinction.
+
+### A HALT with an environment cause, not a model one (2026-07-26)
+
+Same run. Three consecutive deferrals (`implementation failed`, `verifier unavailable` ×2) halted
+the run at finding 46. All three `.err` logs carried the identical string:
+`this workspace has not been trusted` — a container event had reset `hasTrustDialogAccepted` to
+`false` for the project in `/root/.claude.json` between one finding's successful verify and its own
+impl attempt, and every `claude -p` subprocess launched afterward errored immediately
+(`is_error: true, total_cost_usd: 0, terminal_reason: "api_error"`) regardless of role. The driver's
+deferral labels were the correct ones available to it — the schema has no way to say "the role never
+got to run" versus "the role judged the work" — but they read exactly like the benign, documented
+halt shape (three unlucky findings) unless someone opens the `.err` files. Confirmed still broken at
+wrap-up; fixing `/root/.claude.json` is outside the repo and outside a supervising agent's default
+permission scope (blocked by the session's own auto-mode classifier), so it was flagged to the human
+operator rather than worked around. Added to the skill: check the `.err` files for a shared
+non-model error string before assuming a HALT is the ordinary case.
+
 ## Rejected, and why
 
 Proposals that were considered on their merits and turned down. Each is here so it does not get
@@ -840,3 +882,4 @@ the stale timing table for free.
 | 2026-07-25 | —        | Cloud cutover: minted `--session-id`, no `gh`, push every finding         |
 | 2026-07-25 | f389dd39 | Delete backlog entries by title — the canary destroyed 3 findings in 5    |
 | 2026-07-26 | 049d5e35 | Stop the verifier naming `npm test` — it discarded a finished, green fix  |
+| 2026-07-26 | —        | Verifier must name which kind of "stale" on INVALID; HALT env-cause note  |
