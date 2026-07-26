@@ -22,33 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P2][maintainability] Magic thresholds/factors in `getRingColor` (0.2, 38, 0.9) are unnamed
-
-**File(s):** `web/src/lib/colorRing.ts:37-40` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-const shift = relativeLuminance(color) < 0.2
-  ? (v: number) => Math.min(255, Math.round(v + 38))
-  : (v: number) => Math.max(0, Math.round(v * 0.9));
-```
-
-`0.2` (dark cutoff), `38` (lighten step), and `0.9` (darken factor) are the whole behavior of the
-ring color and are undocumented magic numbers embedded mid-expression. The "~10% darker" intent
-lives only in the file-header comment, far from the `0.9`.
-
-#### Proposed solution
-
-Name them: `const DARK_SWATCH_LUMINANCE = 0.2;`, `const LIGHTEN_STEP = 38;`,
-`const DARKEN_FACTOR = 0.9;` at module top. The two shift closures then read self-documentingly.
-
-#### Verification
-
-`colorRing.test.ts` unchanged and green (it hard-codes the `+38` and `×0.9` results).
-
----
-
 ### [P2][maintainability] Deprecated `String.prototype.substr` used for channel slicing
 
 **File(s):** `web/src/lib/colorRing.ts:10-12, 33-35` — pinned at SHA f934d43

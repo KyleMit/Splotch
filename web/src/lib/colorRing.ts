@@ -25,6 +25,10 @@ export function isLightColor(color: string): boolean {
   return relativeLuminance(color) >= 0.5;
 }
 
+const DARK_SWATCH_LUMINANCE = 0.2;
+const LIGHTEN_STEP = 38;
+const DARKEN_FACTOR = 0.9;
+
 // Compute a selection-ring color for a swatch: ~10% darker than the swatch so
 // the ring reads as a contrasting outline — but for very dark swatches (e.g.
 // black) darkening is invisible, so we lighten instead. Pure function, kept out
@@ -33,9 +37,9 @@ export function getRingColor(color: string): string {
   const { r, g, b } = hexToRgb(color);
 
   const shift =
-    relativeLuminance(color) < 0.2
-      ? (v: number) => Math.min(255, Math.round(v + 38))
-      : (v: number) => Math.max(0, Math.round(v * 0.9));
+    relativeLuminance(color) < DARK_SWATCH_LUMINANCE
+      ? (v: number) => Math.min(255, Math.round(v + LIGHTEN_STEP))
+      : (v: number) => Math.max(0, Math.round(v * DARKEN_FACTOR));
 
   const toHex = (v: number) => v.toString(16).padStart(2, '0');
   return `#${toHex(shift(r))}${toHex(shift(g))}${toHex(shift(b))}`;
