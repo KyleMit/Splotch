@@ -30,46 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P1][duplication] Extract the keep-best-of-N retry ladder shared by all five generators
-
-**File(s):** `gen-coloring-fills.mjs:170-219` (`passes`/`rank`/`renderClean`);
-`gen-coloring-fills-dark.mjs:253-325` (`generateCleanTake`); `gen-coloring-chalk.mjs:296-411`
-(`passes`/`rank` + attempt loop); `gen-coloring-outlines-fresh.mjs:152-219`;
-`normalize-outline-strokes.mjs:151-297` — pinned at SHA f934d43
-
-#### Problem
-
-Every generator implements the same control structure: a `passes(cand)` predicate, a `rank(cand)`
-tie-breaker, then a loop `for (attempt = 0..maxAttempts)` computing
-`const temperature = Math.min(2, base + attempt * 0.15)` (0.1 in fresh, `(attempt-1)*0.15` in dark),
-generating, scoring, `if (!best || rank(cand) > rank(best)) best = cand;` and
-`if (passes(cand)) break;`. The `Math.min(2, base + attempt*0.15)` clamp alone is copy-pasted in
-five files (confirmed at fills:186, dark:271, chalk:400, fresh:164, normalize:270). This is the #1
-structural pattern in the directory and is reimplemented each time with subtle drift (dark tracks
-`bestAccept` vs `best`; the increment differs).
-
-#### Proposed solution
-
-Add `lib/attempt-ladder.mjs`:
-
-```
-export function ladderTemperature(base, attempt, step = 0.15) { return Math.min(2, base + attempt * step); }
-export async function keepBestOfN({ maxAttempts, baseTemp, step, render, score, passes, rank })
-  // loops, tracks best by rank, breaks on passes, returns { best, attemptsRun }
-```
-
-The generators supply their own `render`/`score`/`passes`/`rank` closures. dark's two-tier
-accept/fallback can be modeled by having `rank` fold acceptability in (as chalk/fills already do),
-or by an optional `accept` predicate.
-
-#### Verification
-
-Unit-test `ladderTemperature`. Re-run `gen:coloring-fills -- <page>` and confirm the same attempt
-count and scores print; diff a golden freeze (`npm run gen:coloring-golden:diff`) shows no
-regression.
-
----
-
 ### [P2][duplication] Centralize the `MODEL`, `WEBP_QUALITY`, and timeout constants
 
 **File(s):** `MODEL = 'gemini-3.1-flash-image'` at gen-coloring-fills.mjs:47,
