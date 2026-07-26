@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { ERROR_LOG_PREFIX } from '$lib/errorLog';
+  import { QUICKSAND_FONT_FAMILY } from '$lib/fonts';
   // Import the package's CSS entry explicitly: the bare specifier resolves to
   // index.css via the package's exports map, but only a path ending in `.css`
   // matches Vite's ambient `*.css` module type (so svelte-check stays happy).
@@ -21,7 +22,7 @@
   // system fallback for a beat. Warm it in the background at boot so it's ready.
   onMount(() => {
     if ('fonts' in document) {
-      document.fonts.load('1em "Quicksand Variable"').catch(() => {});
+      document.fonts.load(`1em "${QUICKSAND_FONT_FAMILY}"`).catch(() => {});
     }
   });
 </script>
