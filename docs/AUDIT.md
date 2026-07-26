@@ -22,47 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P2][type-safety] Share request/response contract types between routes and client callers
-
-**File(s):** `web/src/lib/aiCredential.ts:11-18` (`VerifyResponse`/`VerifyCredentialResult`);
-`web/src/routes/api/verify-access-code/+server.ts:32`;
-`web/src/routes/api/verify-key/+server.ts:28`; `web/src/routes/api/report/+server.ts:101`;
-`web/src/lib/drawing/aiImageResponse.ts:1-5` — pinned at SHA f934d43
-
-#### Problem
-
-Every endpoint's response shape is re-declared, loosely, on the client with no compile-time link to
-the server. `aiCredential.ts` hand-writes
-`type VerifyResponse = { ok?: boolean; error?: string; accessCode?: string }`, while the server
-returns `{ ok: true, accessCode }` / `{ ok: false, error }` — nothing enforces they agree. If the
-server drops `accessCode` or renames `error`, the client silently reads `undefined`. Same for
-`report` (no client type at all) and generate-image.
-
-#### Proposed solution
-
-Define the wire contracts once in a shared, client-safe module (e.g. `web/src/lib/apiTypes.ts` — no
-server imports):
-
-```ts
-export type VerifyAccessCodeResponse = { ok: true; accessCode: string } | {
-  ok: false;
-  error: string;
-};
-export type VerifyKeyResponse = { ok: true } | { ok: false; error: string };
-export type ReportResponse = { ok: true; url: string } | { ok: false; error: string };
-export type ApiError = { ok: false; error: string };
-```
-
-Have each route annotate its return (`json<VerifyAccessCodeResponse>(...)` or a typed helper) and
-the client import the same types.
-
-#### Verification
-
-`tsc`/`npm run check` fails if a route's returned object diverges from the shared type. Add a
-type-level test importing both.
-
----
-
 ### [P3][maintainability] Centralize the credential header names shared by route, CORS, and client
 
 **File(s):** `web/src/routes/api/generate-image/+server.ts:30-31`

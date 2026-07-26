@@ -1570,3 +1570,71 @@ Implemented the shared zero-copy raw-body reader, migrated both endpoints, and a
 byte-limit and UTF-8 coverage. The required unit gate remains red because two pre-existing untracked
 test files contain 13 unrelated failing assertions; I left them untouched, so no commit should be
 created.
+
+### [P2][type-safety] Share request/response contract types between routes and client callers
+
+**File(s):** `web/src/lib/aiCredential.ts:11-18` (`VerifyResponse`/`VerifyCredentialResult`);
+`web/src/routes/api/verify-access-code/+server.ts:32`;
+`web/src/routes/api/verify-key/+server.ts:28`; `web/src/routes/api/report/+server.ts:101`;
+`web/src/lib/drawing/aiImageResponse.ts:1-5` — pinned at SHA f934d43
+
+#### Problem
+
+Every endpoint's response shape is re-declared, loosely, on the client with no compile-time link to
+the server. `aiCredential.ts` hand-writes
+`type VerifyResponse = { ok?: boolean; error?: string; accessCode?: string }`, while the server
+returns `{ ok: true, accessCode }` / `{ ok: false, error }` — nothing enforces they agree. If the
+server drops `accessCode` or renames `error`, the client silently reads `undefined`. Same for
+`report` (no client type at all) and generate-image.
+
+#### Proposed solution
+
+Define the wire contracts once in a shared, client-safe module (e.g. `web/src/lib/apiTypes.ts` — no
+server imports):
+
+```ts
+export type VerifyAccessCodeResponse = { ok: true; accessCode: string } | {
+  ok: false;
+  error: string;
+};
+export type VerifyKeyResponse = { ok: true } | { ok: false; error: string };
+export type ReportResponse = { ok: true; url: string } | { ok: false; error: string };
+export type ApiError = { ok: false; error: string };
+```
+
+Have each route annotate its return (`json<VerifyAccessCodeResponse>(...)` or a typed helper) and
+the client import the same types.
+
+#### Verification
+
+`tsc`/`npm run check` fails if a route's returned object diverges from the shared type. Add a
+type-level test importing both.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `generate-image/+server.ts` and `drawing/aiImageResponse.ts` remain entirely unlinked: the binary
+  success and 422/429/error wire semantics are still independently encoded, so server changes can
+  compile while silently breaking the client, leaving the original generate-image portion
+  unresolved.
+
+#### What was tried
+
+1. Added shared discriminated JSON response contracts and applied them to both client parsers, all
+   specified route payloads, and the common throttling response. Defensive parsing, status checks,
+   and the report honeypot’s optional URL behavior remain unchanged.
+2. Applied repository Prettier formatting to the five flagged shared-contract files so the
+   implementation conforms to the required code style without behavioral changes.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-type-safety-share-request-response-contract-types-between-routes-and.patch`
+(2 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-type-safety-share-request-response-contract-types-between-routes-and.patch`.
