@@ -22,42 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P2][complexity] Split the long generate-image POST handler into named stages
-
-**File(s):** `web/src/routes/api/generate-image/+server.ts:98-152` (`POST`) — pinned at SHA f934d43
-
-#### Problem
-
-The handler runs five distinct responsibilities in one 54-line body: read request shape (99),
-authorize (101-106), read+validate image (108-113), build prompt (117), branch usage logging
-(121-133), call provider and shape response (137-151). The usage-logging branch inline in the
-handler (121-133), with a `platform?.context?.waitUntil?.` detail and a separate BYOK `console.log`,
-is especially out of place — it's audit plumbing sitting in the middle of the request pipeline.
-
-#### Proposed solution
-
-Extract the usage side-effect into one helper and keep the handler as a readable pipeline:
-
-```ts
-function recordGenerationUsage(
-  auth: GenerationAuthorization,
-  style: string | null,
-  prompt: string,
-  platform,
-): void;
-```
-
-so `POST` reads:
-`readGenerationRequest → authorizeGenerationRequest → readAndValidateImage → buildPromptForStyle → recordGenerationUsage → aiProvider.generateImage → shapeResponse`.
-Consider an `validateImage(mimeType, bytes)` helper for lines 108-113.
-
-#### Verification
-
-Handler drops to well under a screen; each helper is independently unit-testable.
-`npm run test:api:smoke` covers the auth gate; add/keep a generate-image handler test.
-
----
-
 ### [P2][consistency] Unify how failure responses are constructed (json vs error vs raw Response)
 
 **File(s):** `web/src/routes/api/csp-report/+server.ts:109,117,128,135`;

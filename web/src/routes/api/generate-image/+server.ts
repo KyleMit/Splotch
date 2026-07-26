@@ -100,7 +100,7 @@ function recordGenerationUsage(
   authorization: GenerationAuthorization,
   style: string | null,
   finalPrompt: string,
-  platform?: App.Platform,
+  platform?: App.Platform
 ): void {
   // Only the managed tokens are worth a per-token tally (to spot one going
   // rogue). BYOK requests run on the parent's own quota, so just log them.
