@@ -739,6 +739,36 @@ test('a persisted-open drawer, with a control toggled off, is correct at first p
   await expect(page.locator('#eraserButton')).toBeHidden();
 });
 
+test('a corrupt default-on setting stays enabled before and after hydration', async ({ page }) => {
+  await page.addInitScript(
+    ({ eraserEnabled }) => {
+      localStorage.setItem(eraserEnabled, 'garbage');
+      const toggleAttribute = HTMLElement.prototype.toggleAttribute;
+      HTMLElement.prototype.toggleAttribute = function (name, force) {
+        if (this === document.documentElement && name === 'data-off-eraser') {
+          (window as Window & { preHydrationEraserOff?: boolean }).preHydrationEraserOff ??= force;
+        }
+        return toggleAttribute.call(this, name, force);
+      };
+    },
+    { eraserEnabled: STORAGE_KEYS.eraserEnabled }
+  );
+  await page.goto('/');
+
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as Window & { preHydrationEraserOff?: boolean }).preHydrationEraserOff
+      )
+    )
+    .toBe(false);
+
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  await openDrawer(page);
+  await openBrushMenu(page);
+  await expect(page.locator('#eraserButton')).toBeVisible();
+});
+
 // The brush choice is a persisted user setting (default pen; the eraser is
 // deliberately excluded). The head script in app.html stamps [data-brush] on
 // <html> before paint so the Brush Button wears the right face with no flash.

@@ -22,40 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P4][error-handling] `readBool` honors the fallback only for a *missing* key, not a *corrupt* value — inconsistent with `readInt`
-
-**File(s):** `web/src/lib/storage.ts:96-104` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-const raw = localStorage.getItem(key);
-if (raw === null) return fallback;
-return raw === 'true';
-```
-
-A garbage value (`'1'`, `'yes'`, a half-written string) yields `false`, not the caller's `fallback`.
-`readInt` (lines 144-153) deliberately falls back on unparseable/out-of-range values; `readBool`
-does not, so the two helpers disagree on how to treat corruption. For a setting whose default is
-`true`, a corrupt value flips it off rather than to the intended default.
-
-#### Proposed solution
-
-Treat any non-`'true'`/`'false'` value as absent:
-
-```ts
-if (raw === 'true') return true;
-if (raw === 'false') return false;
-return fallback;
-```
-
-#### Verification
-
-Unit test: `localStorage.setItem('k','garbage'); expect(readBool('k', true)).toBe(true)` — currently
-returns `false`.
-
----
-
 ### [P4][naming] `safeLocalStorage` / `safeRead` are an asymmetric name pair for a symmetric read/write guard
 
 **File(s):** `web/src/lib/storage.ts:44-53, 60-70` — pinned at SHA f934d43

@@ -100,8 +100,9 @@ export function readBool(key: StorageKey, fallback: boolean): boolean {
   if (!browser) return fallback;
   return safeRead(() => {
     const raw = localStorage.getItem(key);
-    if (raw === null) return fallback;
-    return raw === 'true';
+    if (raw === 'true') return true;
+    if (raw === 'false') return false;
+    return fallback;
   }, fallback);
 }
 

@@ -60,6 +60,12 @@ describe('readBool / writeBool', () => {
     expect(readBool(STORAGE_KEYS.saveOnDelete, true)).toBe(true);
     expect(readBool(STORAGE_KEYS.saveOnDelete, false)).toBe(false);
   });
+
+  it('returns the fallback when the stored value is corrupt', () => {
+    localStorage.setItem(STORAGE_KEYS.saveOnDelete, 'garbage');
+    expect(readBool(STORAGE_KEYS.saveOnDelete, true)).toBe(true);
+    expect(readBool(STORAGE_KEYS.saveOnDelete, false)).toBe(false);
+  });
 });
 
 describe('readString / writeString', () => {
