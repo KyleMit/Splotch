@@ -30,49 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P1][duplication] Extract the six near-identical Gemini `generateContent` wrappers into `lib/gemini.mjs`
-
-**File(s):** `tools/asset-gen/bin/gen-coloring-fills.mjs:75-97` (`generateColoredPage`);
-`gen-coloring-fills-dark.mjs:119-141` (`generateDarkPage`); `gen-coloring-chalk.mjs:253-278`
-(`drawChalk`); `normalize-outline-strokes.mjs:111-136` (`editLineArt`);
-`gen-coloring-outlines-fresh.mjs:84-97` (`generateOutline`); `gen-style-covers.mjs:29-52`
-(`generateStyledImage`) — pinned at SHA f934d43
-
-#### Problem
-
-Every generator hand-rolls the same call: build
-`contents: [{ role:'user', parts:[{inlineData:{mimeType, data: Buffer.from(...).toString('base64')}}, {text: prompt}] }]`,
-set
-`config: { abortSignal: AbortSignal.timeout(120_000), ...(temperature === undefined ? {} : { temperature }) }`,
-then `classifyGeminiResponse(response)` and
-`if (classified.kind !== 'image') throw new Error(\`${classified.kind}:
-${classified.reason}\`)`. Six copies differ only in the prompt, the webp quality, and (fresh) an`imageConfig.aspectRatio`/ text-only contents. This is the single largest duplicated block in the directory, and the`120_000`
-timeout plus the base64 dance is repeated verbatim each time.
-
-#### Proposed solution
-
-Add `lib/gemini.mjs`:
-
-```
-export const IMAGE_MODEL = 'gemini-3.1-flash-image';
-export const GENERATE_TIMEOUT_MS = 120_000;
-export function makeClient() // reads GEMINI_API_KEY, throws via fail if absent
-export async function generateImage(ai, { imageBytes, mimeType, prompt, temperature, aspectRatio })
-  // builds contents (text-only when imageBytes omitted), applies timeout + optional temperature/imageConfig,
-  // classifies, returns { bytes, mimeType } or throws the refusal reason
-```
-
-Each bin then calls `generateImage(ai, { imageBytes, mimeType, prompt: FILL_PROMPT, temperature })`.
-Keep the per-script prompt constants; only the transport moves.
-
-#### Verification
-
-`grep -c 'AbortSignal.timeout' bin/*.mjs` drops from 6 to 0; `grep -rl classifyGeminiResponse bin/`
-shows only imports of the new helper. Re-run `npm run gen:style-covers -- --style Crayon` (or any
-generator with a key) and confirm identical output bytes.
-
----
-
 ### [P1][duplication] Extract the keep-best-of-N retry ladder shared by all five generators
 
 **File(s):** `gen-coloring-fills.mjs:170-219` (`passes`/`rank`/`renderClean`);
