@@ -24,35 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P4][type-safety] Save-Data `connection` type is cast inline instead of shared
-
-**File(s):** `web/src/lib/pwa/updates.ts:62-65`; duplicated shape in `updates.test.ts:344-352` —
-pinned at SHA f934d43
-
-#### Problem
-
-```ts
-const { connection } = navigator as Navigator & { connection?: { saveData?: boolean } };
-```
-
-The `NetworkInformation` shape is declared ad-hoc at the use site, and the test re-declares the same
-shape when stubbing `navigator.connection`. The non-standard API has no shared type, so the two
-definitions can drift and neither is discoverable.
-
-#### Proposed solution
-
-Add a minimal `interface NetworkInformation { saveData?: boolean }` and
-`interface Navigator { connection?: NetworkInformation }` augmentation in `app.d.ts` (same pattern
-as the File System Access API already there). The cast becomes
-`navigator.connection?.saveData === true`.
-
-#### Verification
-
-`npm run check`; `updates.test.ts` Save-Data cases (`skips registration when Save-Data is on`, etc.)
-pass unchanged.
-
----
-
 ### [P4][maintainability] `'/sw.js'` and `'/version.json'` paths are magic strings scattered across module and tests
 
 **File(s):** `web/src/lib/pwa/updates.ts:75,147` — pinned at SHA f934d43

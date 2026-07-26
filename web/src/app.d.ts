@@ -47,6 +47,14 @@ declare global {
     userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
   }
 
+  interface NetworkInformation {
+    saveData?: boolean;
+  }
+
+  interface Navigator {
+    connection?: NetworkInformation;
+  }
+
   interface WindowEventMap {
     beforeinstallprompt: BeforeInstallPromptEvent;
     appinstalled: Event;

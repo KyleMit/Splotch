@@ -356,7 +356,7 @@ describe('deferred service worker registration', () => {
       configurable: true,
     });
     return () => {
-      delete (navigator as { connection?: unknown }).connection;
+      delete navigator.connection;
     };
   }
 
@@ -373,7 +373,7 @@ describe('deferred service worker registration', () => {
   });
 
   afterEach(() => {
-    delete (navigator as { connection?: unknown }).connection;
+    delete navigator.connection;
     globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
     (import.meta.env as Record<string, unknown>).DEV = true;

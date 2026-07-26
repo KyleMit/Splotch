@@ -46,8 +46,7 @@ function serviceWorkerSupported() {
 }
 
 function saveDataEnabled() {
-  const { connection } = navigator as Navigator & { connection?: { saveData?: boolean } };
-  return connection?.saveData === true;
+  return navigator.connection?.saveData === true;
 }
 
 export function createPWAUpdates() {
