@@ -7,30 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P4][maintainability] CORS allowed-methods/headers are inline magic strings that must track the actual `/api` surface
-
-**File(s):** `web/src/hooks.server.ts:57-67` — pinned at SHA f934d43
-
-#### Problem
-
-`corsHeaders()` hardcodes `'GET, POST, DELETE, OPTIONS'` and
-`'Content-Type, Authorization, X-Access-Token, X-Api-Key'`. These are the public CORS contract for
-every `/api` route, but they live as bare strings with no link to the endpoints or auth headers they
-enable; adding an endpoint method or a new auth header requires remembering to edit this literal,
-and there's no test asserting the smoke-tested endpoints are covered.
-
-#### Proposed solution
-
-Hoist to named module constants (`CORS_METHODS`, `CORS_HEADERS`) with a comment tying each header to
-its consumer (already partially present), and consider asserting in `test:api:smoke` that the
-methods list covers the endpoints it exercises.
-
-#### Verification
-
-`npm run test:api:smoke` green; the CORS contract is defined once as named constants.
-
----
-
 ### [P4][consistency] The engine harness uses `onDestroy` + a top-level `window` read, against the repo's `$effect`-cleanup convention for teardown
 
 **File(s):** `web/src/routes/dev/engine/+page.svelte:33, 237-239` — pinned at SHA f934d43
