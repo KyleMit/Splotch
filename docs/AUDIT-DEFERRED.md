@@ -1308,3 +1308,33 @@ The rolled-back draft is kept at
 (1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p5-readability-error-svelte-and-both-handleerror-hooks-produce-a-message.patch`.
+
+### [P3][maintainability] Hexagon geometry constants are scattered and coupled to a JS comment
+
+**File(s):** `web/src/lib/components/ColorPicker.svelte:372-377` (CSS) and `:53-58` (JS comment) —
+pinned at SHA f934d43
+
+#### Problem
+
+The hexagon is `width: 60px; height: 69px; /* height = width * 1.15 */`, and the snap logic's
+comment (line 55) asserts "a hexagon's farthest edge point is ~35px from its center" and picks
+`HEX_SNAP_RADIUS = 40` accordingly. The `35`/`40` in JS depend on the `60/69` in CSS, but the
+coupling is only prose — resizing the hexagon in CSS silently makes the snap radius wrong with no
+failing check.
+
+#### Proposed solution
+
+Define hex width/height as CSS custom properties (`--hex-w: 60px; --hex-h: 69px`) and derive
+`HEX_SNAP_RADIUS` from a documented relation (e.g. read `--hex-w` or centralize the number next to
+the size). At minimum move the geometry note to one place both sides cite.
+
+#### Verification
+
+Snap still resolves gap-hits in the E2E picker drag test; changing `--hex-w` visibly scales hexagons
+via the single source.
+
+---
+
+#### Why it was deferred
+
+implementation failed
