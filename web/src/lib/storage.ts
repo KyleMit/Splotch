@@ -94,7 +94,7 @@ async function runWithDurablePreferences<T>(
 // Fire-and-forget durable mirror. Never throws into the caller — a failed
 // durable write just means we fall back to the localStorage copy.
 function mirror(key: StorageKey, value: string) {
-  void runWithDurablePreferences((Preferences) => Preferences.set({ key, value: String(value) }));
+  void runWithDurablePreferences((Preferences) => Preferences.set({ key, value }));
 }
 
 export function readBool(key: StorageKey, fallback: boolean): boolean {

@@ -22,30 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P4][architecture] `mirror` wraps an already-`string` value in `String(value)` — dead defensive cast
-
-**File(s):** `web/src/lib/storage.ts:88-92` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-function mirror(key: string, value: string) {
-  … Preferences.set({ key, value: String(value) })
-```
-
-`value` is typed `string`; `String(value)` can never change it. It's a leftover from a looser
-signature and reads as if the parameter might not be a string, which is misleading.
-
-#### Proposed solution
-
-Drop `String(...)`: `Preferences.set({ key, value })`.
-
-#### Verification
-
-`npm run check`; `storage.test.ts` mirror test (lines 154-160) passes.
-
----
-
 ### [P4][architecture] `requestPersistentStorage` lives in `secureStorage` but is a generic IndexedDB-persistence concern
 
 **File(s):** `web/src/lib/secureStorage.ts:174-182` — pinned at SHA f934d43
