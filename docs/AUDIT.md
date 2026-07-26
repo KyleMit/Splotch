@@ -26,32 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P4][readability] Stale migration comment references a `.js` module that no longer exists
-
-**File(s):** `web/src/lib/state/coloringBook.svelte.ts:1-3` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-// Re-exported here so existing `$lib/state/coloringBook.svelte.js` imports
-// keep working.
-```
-
-The comment justifies the re-export by a `.js` import path from a prior migration. If no source
-still imports the `.js` path (the codebase is TS-only per CLAUDE.md), the rationale is historical
-noise that misleads a reader into thinking a JS consumer exists.
-
-#### Proposed solution
-
-Verify no `.svelte.js` import remains; if none, reword to state the real reason (this rune module is
-the app-facing surface that re-exports the rune-free catalog), or drop the sentence.
-
-#### Verification
-
-Grep `coloringBook.svelte.js` across the repo → if zero hits, the comment is stale.
-
----
-
 ### [P4][design-tokens] Magic breakpoints and modal max-width are unshared literals
 
 **File(s):** `web/src/lib/components/ColoringBook.svelte:183,341` — pinned at SHA f934d43
