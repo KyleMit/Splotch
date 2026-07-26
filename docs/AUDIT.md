@@ -26,43 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P2][maintainability] The state field set is hand-enumerated in four places that must stay in lockstep
-
-**File(s):** `web/src/lib/state/coloringBook.svelte.ts:15-55` — pinned at SHA f934d43
-
-#### Problem
-
-The same five fields are written out four times: the `ColoringBookState` interface (15-31), the
-`$state({...})` initializer (33-39), every-field assignment in `setOverlayPage` (41-47), and
-every-field null-out in `clearOverlay` (49-55):
-
-```ts
-export function clearOverlay() {
-  coloringBookState.overlayUrl = null;
-  coloringBookState.chalkUrl = null;
-  coloringBookState.colorSheetUrl = null;
-  coloringBookState.nightSheetUrl = null;
-  coloringBookState.overlayPage = null;
-}
-```
-
-Adding or removing a tracked URL means editing all four; forgetting `clearOverlay` leaves a stale
-URL after a clear. This is the same denormalization pressure as the P1 architecture finding, and
-mostly disappears if the URLs become derived. Absent that, the reset is duplicated boilerplate.
-
-#### Proposed solution
-
-Define a single `EMPTY_STATE` constant and reset with
-`Object.assign(coloringBookState, EMPTY_STATE)` in `clearOverlay`, initialize the `$state` from the
-same constant, so the field list has one authoritative definition. (Preferred: fold the four URLs
-into `$derived` per the architecture finding, leaving only `{ overlayPage, orientation }` to reset.)
-
-#### Verification
-
-`coloringBook.svelte.test.ts:30-38` (clearOverlay nulls all five) still passes.
-
----
-
 ### [P2][complexity] `bookAssetPaths` inlines four labeled `flatMap` blocks that read as named sub-lists
 
 **File(s):** `web/src/lib/state/books.ts:288-323` (`bookAssetPaths`) — pinned at SHA f934d43
