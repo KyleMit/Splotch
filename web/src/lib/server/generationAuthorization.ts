@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
+import { config } from './config';
 import { throttled } from './http';
 import { peekRateLimit, rateLimit } from './rateLimit';
 import {
@@ -45,7 +45,7 @@ export async function authorizeGenerationRequest(input: {
     if (generation.limited) return throttled(generation.retryAfter);
     return {
       usingByok: false,
-      effectiveKey: env.GEMINI_API_KEY,
+      effectiveKey: config.geminiApiKey(),
       managedToken: input.token,
     };
   }

@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import { config } from './config';
 
 // Server-only seam for the one thing we do with GitHub: open an issue from an
 // in-app feedback report. Isolated here (mirroring the AI provider seam,
@@ -7,12 +7,12 @@ import { env } from '$env/dynamic/private';
 const GITHUB_API = 'https://api.github.com';
 
 function targetRepo(): string {
-  return env.GITHUB_ISSUE_REPO?.trim() || 'KyleMit/Splotch';
+  return config.githubIssueRepo();
 }
 
 /** Whether a token is configured — the endpoint uses this to fail gracefully. */
 export function isReportingConfigured(): boolean {
-  return Boolean(env.GITHUB_ISSUE_TOKEN);
+  return Boolean(config.githubIssueToken());
 }
 
 /**
@@ -53,7 +53,7 @@ export interface CreateIssueInput {
 export async function createIssue(
   input: CreateIssueInput
 ): Promise<{ url: string; number: number }> {
-  const token = env.GITHUB_ISSUE_TOKEN;
+  const token = config.githubIssueToken();
   if (!token) throw new Error('GITHUB_ISSUE_TOKEN is not configured');
 
   const res = await fetch(`${GITHUB_API}/repos/${targetRepo()}/issues`, {

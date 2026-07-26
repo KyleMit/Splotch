@@ -22,41 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P3][maintainability] Route all env-var access through a typed, named accessor
-
-**File(s):** `web/src/lib/server/generationAuthorization.ts:43` (`GEMINI_API_KEY`);
-`web/src/lib/server/github.ts:10,15,56` (`GITHUB_ISSUE_REPO`, `GITHUB_ISSUE_TOKEN`) — pinned at SHA
-f934d43 (admin's `ADMIN_ACCESS_TOKEN`/`ALLOWED_TOKENS_LIST` are out of scope)
-
-#### Problem
-
-Environment variable names are bare string properties on `env` scattered per-module
-(`env.GEMINI_API_KEY`, `env.GITHUB_ISSUE_TOKEN`, `env.GITHUB_ISSUE_REPO`). There's no one place that
-enumerates the server's required/optional config, no typo protection (`env.GEMINI_API_KEY` vs a
-mistyped `GEMINI_APIKEY` both compile to `string | undefined`), and no discoverability of "what must
-be configured for the API to work."
-
-#### Proposed solution
-
-Add `web/src/lib/server/config.ts` that reads `$env/dynamic/private` once and exposes typed getters:
-
-```ts
-export const config = {
-  geminiApiKey: () => env.GEMINI_API_KEY,
-  githubIssueToken: () => env.GITHUB_ISSUE_TOKEN,
-  githubIssueRepo: () => env.GITHUB_ISSUE_REPO?.trim() || 'KyleMit/Splotch',
-};
-```
-
-Modules import `config` instead of touching `env` directly.
-
-#### Verification
-
-`grep -rn "\$env/dynamic/private" web/src/lib/server` shows only `config.ts` (plus admin, out of
-scope). `npm run check` passes.
-
----
-
 ### [P3][maintainability] Centralize HTTP status codes used across the API
 
 **File(s):** `web/src/routes/api/generate-image/+server.ts:16,71,72,85,91,92,111,143`;
