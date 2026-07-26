@@ -75,7 +75,36 @@ export interface Book {
 
 export const PLATFORMS = { WEB: 'web', MOBILE: 'mobile' } as const;
 
+const COLORING_ROOT = '/coloring';
+const ORIENTATION_SLUGS: Record<BookOrientation, string> = {
+  portrait: 'tall',
+  landscape: 'wide',
+};
+const ASSET_SUFFIXES = {
+  outline: '.outline.webp',
+  light: '.light.webp',
+  night: '.night.webp',
+  chalk: '.chalk.webp',
+  thumb: '.thumb.webp',
+  chalkThumb: '.chalk.thumb.webp',
+} as const;
+
 const ALL_ORIENTATIONS: BookOrientation[] = ['portrait', 'landscape'];
+
+type PageAssetVariant = 'outline' | 'light' | 'night' | 'chalk';
+
+function pageAssetPath(
+  bookId: string,
+  pageId: string,
+  orientation: BookOrientation,
+  variant: PageAssetVariant
+): string {
+  return `${COLORING_ROOT}/${bookId}/${pageId}-${ORIENTATION_SLUGS[orientation]}${ASSET_SUFFIXES[variant]}`;
+}
+
+function coverPath(bookId: string): string {
+  return `${COLORING_ROOT}/${bookId}/cover${ASSET_SUFFIXES.outline}`;
+}
 
 // A page ships night fills + chalk outlines for BOTH orientations by default —
 // the norm once a category is fully processed. Pass the SUBTRACTIVE exceptions
@@ -98,23 +127,25 @@ function page(
   const night = ALL_ORIENTATIONS.filter((o) => !nightExcept.includes(o));
   const chalk = ALL_ORIENTATIONS.filter((o) => !chalkExcept.includes(o));
   const nightImages: Partial<Record<BookOrientation, string>> = {};
-  if (night.includes('portrait')) nightImages.portrait = `/coloring/${book}/${id}-tall.night.webp`;
+  if (night.includes('portrait'))
+    nightImages.portrait = pageAssetPath(book, id, 'portrait', 'night');
   if (night.includes('landscape'))
-    nightImages.landscape = `/coloring/${book}/${id}-wide.night.webp`;
+    nightImages.landscape = pageAssetPath(book, id, 'landscape', 'night');
   const chalkImages: Partial<Record<BookOrientation, string>> = {};
-  if (chalk.includes('portrait')) chalkImages.portrait = `/coloring/${book}/${id}-tall.chalk.webp`;
+  if (chalk.includes('portrait'))
+    chalkImages.portrait = pageAssetPath(book, id, 'portrait', 'chalk');
   if (chalk.includes('landscape'))
-    chalkImages.landscape = `/coloring/${book}/${id}-wide.chalk.webp`;
+    chalkImages.landscape = pageAssetPath(book, id, 'landscape', 'chalk');
   return {
     id,
     name,
     images: {
-      portrait: `/coloring/${book}/${id}-tall.outline.webp`,
-      landscape: `/coloring/${book}/${id}-wide.outline.webp`,
+      portrait: pageAssetPath(book, id, 'portrait', 'outline'),
+      landscape: pageAssetPath(book, id, 'landscape', 'outline'),
     },
     colorImages: {
-      portrait: `/coloring/${book}/${id}-tall.light.webp`,
-      landscape: `/coloring/${book}/${id}-wide.light.webp`,
+      portrait: pageAssetPath(book, id, 'portrait', 'light'),
+      landscape: pageAssetPath(book, id, 'landscape', 'light'),
     },
     nightImages,
     chalkImages,
@@ -126,7 +157,7 @@ export const BOOKS: Book[] = [
     id: 'farm',
     name: 'Farm',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/farm/cover.outline.webp',
+    cover: coverPath('farm'),
     pages: [
       page('farm', 'cat', 'Cat'),
       page('farm', 'cow', 'Cow'),
@@ -140,7 +171,7 @@ export const BOOKS: Book[] = [
     id: 'dinosaur',
     name: 'Dinosaurs',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/dinosaur/cover.outline.webp',
+    cover: coverPath('dinosaur'),
     pages: [
       page('dinosaur', 'brachiosaurus', 'Brachiosaurus'),
       page('dinosaur', 'pterodactyl', 'Pterodactyl'),
@@ -154,7 +185,7 @@ export const BOOKS: Book[] = [
     id: 'creatures',
     name: 'Creatures',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/creatures/cover.outline.webp',
+    cover: coverPath('creatures'),
     pages: [
       page('creatures', 'dragon', 'Dragon'),
       page('creatures', 'fairy', 'Fairy'),
@@ -168,7 +199,7 @@ export const BOOKS: Book[] = [
     id: 'nature',
     name: 'Nature',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/nature/cover.outline.webp',
+    cover: coverPath('nature'),
     pages: [
       page('nature', 'ant', 'Ant'),
       page('nature', 'bee', 'Bee'),
@@ -182,7 +213,7 @@ export const BOOKS: Book[] = [
     id: 'objects',
     name: 'Objects',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/objects/cover.outline.webp',
+    cover: coverPath('objects'),
     pages: [
       page('objects', 'apple', 'Apple'),
       page('objects', 'balloon', 'Balloon'),
@@ -196,7 +227,7 @@ export const BOOKS: Book[] = [
     id: 'shapes',
     name: 'Shapes',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/shapes/cover.outline.webp',
+    cover: coverPath('shapes'),
     pages: [
       page('shapes', 'circle', 'Circle'),
       page('shapes', 'heart', 'Heart'),
@@ -210,7 +241,7 @@ export const BOOKS: Book[] = [
     id: 'space',
     name: 'Space',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/space/cover.outline.webp',
+    cover: coverPath('space'),
     pages: [
       page('space', 'astronaut', 'Astronaut'),
       page('space', 'meteor', 'Meteor'),
@@ -224,7 +255,7 @@ export const BOOKS: Book[] = [
     id: 'vehicles',
     name: 'Vehicles',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/vehicles/cover.outline.webp',
+    cover: coverPath('vehicles'),
     pages: [
       page('vehicles', 'excavator', 'Excavator'),
       page('vehicles', 'fire', 'Fire Truck'),
@@ -262,12 +293,16 @@ export function pageChalkImage(page: ColoringPage, orientation: BookOrientation)
 
 /** Grid-thumbnail path for a picker-facing line-art image (`x.outline.webp` -> `x.thumb.webp`). */
 export function thumbPath(src: string): string {
-  return src.replace(/\.outline\.webp$/, '.thumb.webp');
+  return src.endsWith(ASSET_SUFFIXES.outline)
+    ? `${src.slice(0, -ASSET_SUFFIXES.outline.length)}${ASSET_SUFFIXES.thumb}`
+    : src;
 }
 
 /** Grid-thumbnail path for a chalk outline (`x.chalk.webp` -> `x.chalk.thumb.webp`). */
 export function chalkThumbPath(src: string): string {
-  return src.replace(/\.chalk\.webp$/, '.chalk.thumb.webp');
+  return src.endsWith(ASSET_SUFFIXES.chalk)
+    ? `${src.slice(0, -ASSET_SUFFIXES.chalk.length)}${ASSET_SUFFIXES.chalkThumb}`
+    : src;
 }
 
 /** Picker-tile thumbnail for a page, theme-aware: dark mode shows the CHALK

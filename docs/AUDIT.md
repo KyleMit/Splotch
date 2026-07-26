@@ -26,67 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P1][maintainability] Asset filename grammar (suffixes + portrait→tall / landscape→wide) is scattered as string literals with no single mapping
-
-**File(s):** `web/src/lib/state/books.ts:100-118` (`page()`), `264-271`
-(`thumbPath`/`chalkThumbPath`) — pinned at SHA f934d43
-
-#### Problem
-
-The whole asset naming convention documented in the 44-line header exists only as inline literals
-repeated across the module:
-
-```ts
-portrait: `/coloring/${book}/${id}-tall.outline.webp`,
-landscape: `/coloring/${book}/${id}-wide.outline.webp`,
-...
-if (night.includes('portrait')) nightImages.portrait = `/coloring/${book}/${id}-tall.night.webp`;
-```
-
-The `portrait ⇒ "tall"`, `landscape ⇒ "wide"` mapping is hardcoded eight times inside `page()`; the
-suffixes `.outline.webp`/`.light.webp`/`.night.webp`/`.chalk.webp`/`.thumb.webp`/`.chalk.thumb.webp`
-are spread across `page()`, `thumbPath`, and `chalkThumbPath`. Renaming any asset variant (or the
-`/coloring/` root) means hunting down every literal, and there is nothing greppable that says
-"orientation slug." `thumbPath` and `chalkThumbPath` encode the same suffix knowledge as regexes
-independently of `page()`.
-
-#### Proposed solution
-
-Introduce named constants/maps at the top of the module and build every path through one helper:
-
-```ts
-const COLORING_ROOT = '/coloring';
-const ORIENTATION_SLUG: Record<BookOrientation, 'tall' | 'wide'> = {
-  portrait: 'tall',
-  landscape: 'wide',
-};
-const VARIANT_SUFFIX = {
-  outline: 'outline.webp',
-  light: 'light.webp',
-  night: 'night.webp',
-  chalk: 'chalk.webp',
-  thumb: 'thumb.webp',
-  chalkThumb: 'chalk.thumb.webp',
-} as const;
-function assetPath(
-  book: string,
-  id: string,
-  o: BookOrientation,
-  v: keyof typeof VARIANT_SUFFIX,
-): string;
-```
-
-`thumbPath`/`chalkThumbPath` then derive from the same `VARIANT_SUFFIX` table instead of standalone
-regexes.
-
-#### Verification
-
-`books.test.ts`/`coloringBook.svelte.test.ts` (which assert exact literal paths) still pass — proves
-the generated strings are byte-identical. Grep for `-tall.` / `-wide.` returns only the constant
-definitions.
-
----
-
 ### [P2][duplication] `page()` builds `nightImages` and `chalkImages` with two copy-pasted filter+branch blocks
 
 **File(s):** `web/src/lib/state/books.ts:92-122` (`page()`) — pinned at SHA f934d43
