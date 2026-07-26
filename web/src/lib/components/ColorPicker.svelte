@@ -1,10 +1,10 @@
 <script lang="ts">
   import { colorPicker } from '$lib/state/ui.svelte';
-  import { pickCustomColor, colors } from '$lib/state/colors.svelte';
+  import { pickCustomColor, colors, isWhite } from '$lib/state/colors.svelte';
   import { releaseAllPointers } from '$lib/drawing/engine';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
-  import { PORTRAIT_ROWS, LANDSCAPE_ROWS } from '$lib/hexPickerLayout';
+  import { PORTRAIT_ROWS, LANDSCAPE_ROWS, PICKER_DIM_BORDER } from '$lib/hexPickerLayout';
 
   // Both grid arrangements are rendered; CSS media queries pick one per
   // orientation and progressively trim it (see the trim ladders in the style
@@ -152,8 +152,8 @@
               <button
                 class="hexagon c{c + 1}"
                 class:hover={hoveredHex === hex}
-                class:border={hex === '#ffffff'}
-                class:border-dim={hex === '#1A1F24'}
+                class:border={isWhite(hex)}
+                class:border-dim={hex === PICKER_DIM_BORDER}
                 class:selected={colors.customColor.toLowerCase() === hex.toLowerCase()}
                 style="--color: {hex};"
                 data-color={hex}
@@ -191,6 +191,7 @@
     display: inline-flex;
     padding: 16px;
     margin-top: 15px;
+    --hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   }
 
   .grid {
@@ -215,7 +216,11 @@
      2nd row/column from the light/red end) and shared by both grids: the
      drop order r2,r4,r6,r8,r3,r7(,c5) keeps an even spread across whichever
      ramp that axis holds — shades stay light→dark, families stay a rainbow —
-     and never drops r1/c1/r9/c9, the endpoints. */
+     and never drops r1/c1/r9/c9, the endpoints. Both ladders below are derived
+     arithmetically; design/trimGeometry.ts is their executable form — geometry,
+     formulas and step tables, the two hand-tightened steps included — and
+     trimGeometry.test.ts parses this whole style block back out and asserts the
+     module still produces exactly the values written here. */
   @media (orientation: landscape) {
     .grid.portrait {
       display: none;
@@ -229,7 +234,9 @@
 
   /* HEIGHT — r rows fit while 90vh ≥ 51·r + 50 (69px first row + 51px row
      pitch + 32px padding; measured 509px at 9 rows), so the ladder steps at
-     ≈ (51r + 50) / 0.9 with a few px of buffer. Hidden rows still count for
+     (51r + 50) / 0.9 rounded up to the whole pixel, no slack — except the
+     9-row step, tightened 1px below that minimum (HEX_GRID_ROW_RULE and its
+     one exception in HEX_GRID_ROW_LADDER). Hidden rows still count for
      :nth-child, so the base even-row rule can't drive the honeycomb offset;
      instead every step restates which rows carry the 31px offset so it
      alternates by VISIBLE position — that's what keeps a trimmed grid
@@ -331,8 +338,11 @@
 
   /* WIDTH — c columns fit while 90vw ≥ 60·c + 63 (60px column pitch + 31px
      row offset + 32px padding; measured 603px at 9 columns), stepping at
-     ≈ (60c + 63) / 0.9 + buffer. Every row loses the same positions, so
-     column trims never need offset bookkeeping. Floor: 2 columns (c1 + c9). */
+     (60c + 63) / 0.9 rounded up to the next 5px and then one 5px step further
+     — except the 4-column step, which stops at that first multiple of 5
+     (HEX_GRID_COLUMN_RULE and its one exception in HEX_GRID_COLUMN_LADDER).
+     Every row loses the same positions, so column trims never need offset
+     bookkeeping. Floor: 2 columns (c1 + c9). */
   @media (max-width: 674.98px) {
     .c2 {
       display: none;
@@ -374,7 +384,7 @@
     width: 60px;
     height: 69px; /* For a regular hexagon, height = width * 1.15 */
     flex-shrink: 0;
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    clip-path: var(--hex-clip);
     padding: 0;
     border: none;
     background: transparent;
@@ -389,7 +399,7 @@
     position: absolute;
     inset: 0;
     background-color: var(--color, #007bff);
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    clip-path: var(--hex-clip);
     transition:
       inset 0.1s ease,
       filter 0.1s ease;

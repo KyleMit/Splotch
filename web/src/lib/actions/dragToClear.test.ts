@@ -17,6 +17,12 @@ function pointerEvent(type: string, pointerId: number, clientX = 0, clientY = 0)
   return e;
 }
 
+function transitionEndEvent(propertyName: string) {
+  const e = new Event('transitionend', { bubbles: true });
+  Object.defineProperty(e, 'propertyName', { value: propertyName });
+  return e;
+}
+
 const acceptRadius = () => Math.min(window.innerWidth, window.innerHeight) * 0.4;
 const clearProgress = () => document.documentElement.style.getPropertyValue('--clear-progress');
 
@@ -60,6 +66,79 @@ describe('dragToClear pointer identity', () => {
     node.dispatchEvent(pointerEvent('pointerup', 1, far, 100));
 
     expect(options.onClear).toHaveBeenCalledTimes(1);
+  });
+
+  it('plays the commit exit animation through its class stages and back to rest', () => {
+    vi.useFakeTimers();
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+    const far = 100 + acceptRadius() + 10;
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    vi.advanceTimersByTime(16);
+    node.dispatchEvent(pointerEvent('pointermove', 1, far, 100));
+    node.dispatchEvent(pointerEvent('pointerup', 1, far, 100));
+
+    expect(options.onClear).toHaveBeenCalledTimes(1);
+    expect(node.classList.contains('clearing')).toBe(true);
+    expect(node.classList.contains('dragging')).toBe(true);
+    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(true);
+    expect(stopDrawSound).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(300);
+
+    expect(stopDrawSound).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(300);
+
+    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(false);
+    expect(options.containerEl.style.transform).toBe('');
+    expect(node.classList.contains('dragging')).toBe(false);
+    expect(node.classList.contains('clearing-done')).toBe(true);
+    expect(options.containerEl.classList.contains('dragging-active')).toBe(true);
+
+    vi.advanceTimersByTime(50);
+
+    expect(options.containerEl.classList.contains('dragging-active')).toBe(false);
+    expect(node.classList.contains('clearing')).toBe(false);
+    expect(node.classList.contains('clearing-done')).toBe(false);
+    expect(node.classList.contains('clearing-return')).toBe(true);
+
+    // An icon's own margin transition bubbles to the button; only the button's
+    // own opacity marks the return leg as done.
+    const icon = node.appendChild(document.createElement('span'));
+    icon.dispatchEvent(transitionEndEvent('margin-right'));
+    node.dispatchEvent(transitionEndEvent('transform'));
+
+    expect(node.classList.contains('clearing-return')).toBe(true);
+
+    node.dispatchEvent(transitionEndEvent('opacity'));
+
+    expect(node.classList.contains('clearing-return')).toBe(false);
+  });
+
+  it('restores a button caught mid-exit when the next drag is cancelled', () => {
+    vi.useFakeTimers();
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+    const far = 100 + acceptRadius() + 10;
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    node.dispatchEvent(pointerEvent('pointermove', 1, far, 100));
+    node.dispatchEvent(pointerEvent('pointerup', 1, far, 100));
+
+    expect(node.classList.contains('clearing')).toBe(true);
+
+    // The exit is still playing — a fresh drag can start immediately, and
+    // cancelling it must not leave the button faded out.
+    node.dispatchEvent(pointerEvent('pointerdown', 2, 100, 100));
+    node.dispatchEvent(pointerEvent('pointercancel', 2, 100, 100));
+
+    expect(node.classList.contains('clearing')).toBe(false);
+    expect(node.classList.contains('clearing-done')).toBe(false);
+    expect(node.classList.contains('clearing-return')).toBe(false);
+    expect(node.classList.contains('dragging')).toBe(false);
+    expect(options.containerEl.classList.contains('dragging-active')).toBe(false);
   });
 
   it('ignores moves and releases from a different pointer', () => {
@@ -133,9 +212,9 @@ describe('dragToClear pointer identity', () => {
     expect(options.containerEl.style.transform).toBe('');
     expect(node.classList.contains('dragging')).toBe(false);
     expect(node.classList.contains('delete-ready')).toBe(false);
-    expect(node.style.transition).toBe('');
-    expect(node.style.opacity).toBe('');
-    expect(node.style.transform).toBe('');
+    expect(node.classList.contains('clearing')).toBe(false);
+    expect(node.classList.contains('clearing-done')).toBe(false);
+    expect(node.classList.contains('clearing-return')).toBe(false);
     expect(options.acceptZoneEl.classList.contains('visible')).toBe(false);
     expect(options.acceptZoneEl.classList.contains('threshold-reached')).toBe(false);
     expect(options.clearPreviewEl.classList.contains('committed')).toBe(false);
@@ -146,5 +225,80 @@ describe('dragToClear pointer identity', () => {
 
     expect(options.acceptZoneEl.style.display).toBe('none');
     expect(options.acceptZoneEl.classList.contains('visible')).toBe(false);
+  });
+
+  it('resets shared visual state when destroyed mid-drag', () => {
+    const { node, options, action } = setup();
+    const far = 100 + acceptRadius() + 10;
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    node.dispatchEvent(pointerEvent('pointermove', 1, far, 100));
+
+    expect(clearProgress()).toBe('1');
+
+    action.destroy();
+
+    expect(clearProgress()).toBe('0');
+    expect(options.containerEl.classList.contains('dragging-active')).toBe(false);
+    expect(options.containerEl.style.transform).toBe('');
+    expect(node.classList.contains('dragging')).toBe(false);
+    expect(node.classList.contains('delete-ready')).toBe(false);
+    expect(options.acceptZoneEl.classList.contains('visible')).toBe(false);
+    expect(options.acceptZoneEl.classList.contains('threshold-reached')).toBe(false);
+    expect(options.acceptZoneEl.style.display).toBe('none');
+  });
+});
+
+describe('dragToClear hold-to-show-tutorial timer', () => {
+  let cleanup: (() => void) | null = null;
+  afterEach(() => {
+    cleanup?.();
+    cleanup = null;
+    vi.useRealTimers();
+    vi.clearAllMocks();
+    document.documentElement.style.removeProperty('--clear-progress');
+  });
+
+  it('shows the tutorial when the pointer is held still for the hold duration', () => {
+    vi.useFakeTimers();
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+
+    vi.advanceTimersByTime(499);
+
+    expect(options.onTutorialShow).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+
+    expect(options.onTutorialShow).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels the hold when the pointer moves past the movement threshold', () => {
+    vi.useFakeTimers();
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    node.dispatchEvent(pointerEvent('pointermove', 1, 160, 100));
+
+    expect(options.onTutorialDismiss).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(1000);
+
+    expect(options.onTutorialShow).not.toHaveBeenCalled();
+  });
+
+  it('cancels a pending hold when the action is destroyed mid-hold', () => {
+    vi.useFakeTimers();
+    const { node, options, action } = setup();
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    action.destroy();
+
+    vi.advanceTimersByTime(1000);
+
+    expect(options.onTutorialShow).not.toHaveBeenCalled();
   });
 });

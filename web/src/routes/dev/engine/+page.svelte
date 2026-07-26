@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import {
     initDrawingCanvas,
     setColor,
@@ -27,9 +27,10 @@
   // The Playwright engine spec reaches the harness through these window globals.
   interface EngineHarnessWindow {
     __engineState: { canUndo: boolean; canvasEmpty: boolean };
-    __engine: Record<string, unknown>;
+    __engine: ReturnType<typeof buildEngineApi>;
     __engineReady: boolean;
   }
+  // ssr = false in +page.ts is what makes this top-level window read safe (see the comment there).
   const win = window as unknown as Window & EngineHarnessWindow;
 
   // Mirrors how the app wires the engine (see DrawingCanvas.svelte), but routes
@@ -48,16 +49,15 @@
     setStrokeWidth(8);
   }
 
-  onMount(() => {
-    wireEngine();
-
-    win.__engineState = { canUndo: false, canvasEmpty: true };
-
-    // Expose the real engine API + a few read helpers. The spec drives strokes
-    // with real Playwright pointer input on the canvas; these are for the
-    // imperative operations the app invokes from buttons (undo/clear) and for
-    // reading the resulting bitmap.
-    win.__engine = {
+  // Expose the real engine API + a few read helpers. The spec drives strokes
+  // with real Playwright pointer input on the canvas; these are for the
+  // imperative operations the app invokes from buttons (undo/clear) and for
+  // reading the resulting bitmap.
+  // Annotated against the ambient Window.__engine contract (web/tests/global.d.ts)
+  // that the Playwright specs compile against, so a harness member that drifts
+  // from that spec-facing contract errors here instead of type-checking silently.
+  function buildEngineApi(): Window['__engine'] {
+    return {
       setColor,
       setStrokeWidth,
       setEraserMode,
@@ -230,12 +230,19 @@
         }
       },
     };
+  }
 
+  onMount(() => {
+    wireEngine();
+
+    win.__engineState = { canUndo: false, canvasEmpty: true };
+
+    win.__engine = buildEngineApi();
     win.__engineReady = true;
   });
 
-  onDestroy(() => {
-    engine?.teardown();
+  $effect(() => {
+    return () => engine?.teardown();
   });
 </script>
 

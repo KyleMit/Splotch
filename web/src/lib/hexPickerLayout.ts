@@ -15,6 +15,10 @@ export interface ColorFamily {
   shades: string[];
 }
 
+// The darkest grey shade: near-black enough that ColorPicker gives its swatch a
+// dimmed keyline instead of the white one.
+export const PICKER_DIM_BORDER = '#1A1F24';
+
 // Rainbow order. Column/row trimming samples positions evenly (endpoints
 // last to go), so this order doubles as the guarantee that any trimmed
 // subset still reads as a rainbow.
@@ -142,7 +146,7 @@ export const COLOR_FAMILIES: ColorFamily[] = [
       '#455A64',
       '#37474F',
       '#263238',
-      '#1A1F24',
+      PICKER_DIM_BORDER,
     ],
   },
 ];

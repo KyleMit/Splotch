@@ -34,7 +34,10 @@
   // zoom, or iOS callout. Every other route is a normal document; the drawing
   // page is the override, so it sets the flag app.css keys off and clears it when
   // the user navigates away (client-side nav to /privacy etc.). The app.html boot
-  // script seeds the same flag for first paint.
+  // script re-types the same route as a `'/'` literal to seed the flag for first
+  // paint (it can't import `DRAWING_ROUTE` from `lib/boot/appSurfaceRoute.ts` —
+  // it's vanilla JS in a template file); `app.html.test.ts` asserts that literal
+  // matches the constant.
   $effect(() => {
     document.documentElement.setAttribute('data-app-surface', '');
     return () => document.documentElement.removeAttribute('data-app-surface');
@@ -62,9 +65,9 @@
   // dialog's modalDialog $effect shows it as soon as it lands. The corner
   // button that opens it (ParentHelpButton) stays eagerly mounted above.
   let ParentCenter = $state<Component | null>(null);
-  let parentCenterWanted = $state(false);
+  let parentCenterEverOpened = $state(false);
   $effect(() => {
-    if (parentCenter.open) parentCenterWanted = true;
+    if (parentCenter.open) parentCenterEverOpened = true;
   });
 
   onMount(() => {
@@ -102,6 +105,6 @@
 {#each overlays as Overlay (Overlay)}
   <Overlay />
 {/each}
-{#if ParentCenter && parentCenterWanted}
+{#if ParentCenter && parentCenterEverOpened}
   <ParentCenter />
 {/if}

@@ -11,6 +11,7 @@ declare global {
       setColor(color: string): void;
       setStrokeWidth(width: number): void;
       setEraserMode(active: boolean): void;
+      setMagicMode(active: boolean): void;
       setSafeAreaInsets(insets: { top: number; right: number; bottom: number; left: number }): void;
       // Resolves when the queued restore has settled (a deep entry decodes
       // from its blob asynchronously) — page.evaluate awaits it.

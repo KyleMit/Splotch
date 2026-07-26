@@ -2,8 +2,9 @@
 // importing settings.svelte.ts for the clamp constants runs that module's
 // load-time localStorage reads, so the file has to stay on the happy-dom
 // default (.claude/rules/testing.md).
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
 import {
   ACTION_BUTTON_SCALE_DEFAULT,
   ACTION_BUTTON_SCALE_MAX,
@@ -63,6 +64,12 @@ function bootLiteral(pattern: RegExp): number {
   return Number(match![1]);
 }
 
+function bootStringLiteral(pattern: RegExp): string {
+  const match = bootScript.match(pattern);
+  expect(match, `app.html's boot script matches ${pattern}`).not.toBeNull();
+  return match![1];
+}
+
 describe("app.html's boot script mirrors the state modules", () => {
   const bootKeys = [...new Set([...bootScript.matchAll(/'(splotch-[\w-]+)'/g)].map((m) => m[1]))];
   // `\s*` between the tokens so a prettier reflow of a long `on(...)` call
@@ -108,5 +115,34 @@ describe("app.html's boot script mirrors the state modules", () => {
     expect(bootLiteral(/scaleRaw == null \? (\d+)/)).toBe(ACTION_BUTTON_SCALE_DEFAULT);
     expect(bootLiteral(/isNaN\(pct\)\) pct = (\d+)/)).toBe(ACTION_BUTTON_SCALE_DEFAULT);
     expect(bootLiteral(/pct !== (\d+)/)).toBe(ACTION_BUTTON_SCALE_DEFAULT);
+  });
+
+  it('seeds data-app-surface for DRAWING_ROUTE', () => {
+    expect(
+      bootStringLiteral(/toggleAttribute\('data-app-surface', location\.pathname === '([^']*)'\)/)
+    ).toBe(DRAWING_ROUTE);
+  });
+
+  // Catches the other half of the divergence app.html's literal can't see:
+  // DRAWING_ROUTE naming a route whose +page.svelte is no longer the drawing
+  // page, e.g. because the drawing page moved to /draw and a landing page
+  // took over '/'. Asserting mere existence would still pass in that
+  // scenario (routes/+page.svelte still exists — it's just the wrong page
+  // now), so this reads the file and requires it to actually own the
+  // data-app-surface set/clear effect.
+  it('DRAWING_ROUTE resolves to the +page.svelte that owns data-app-surface', () => {
+    const routeSegment = DRAWING_ROUTE.replace(/^\/|\/$/g, '');
+    const pagePath = new URL(
+      `./routes/${routeSegment ? `${routeSegment}/` : ''}+page.svelte`,
+      import.meta.url
+    );
+    expect(existsSync(pagePath), `expected a +page.svelte for route '${DRAWING_ROUTE}'`).toBe(true);
+
+    const pageSource = readFileSync(pagePath, 'utf8');
+    expect(
+      pageSource,
+      `expected the +page.svelte at '${DRAWING_ROUTE}' to set/clear data-app-surface`
+    ).toMatch(/setAttribute\('data-app-surface', ''\)/);
+    expect(pageSource).toMatch(/removeAttribute\('data-app-surface'\)/);
   });
 });

@@ -371,6 +371,20 @@ this is only about SHAs.)
   the finding is deferred `reviewer unavailable`, never "failed adversarial review". Three
   *consecutive* deferrals halt the run — that shape means something systemic (auth, disk, a red
   tree), not three unlucky findings.
+
+  **One systemic cause confirmed live (2026-07-26): lost workspace trust.** A container event
+  mid-run reset `hasTrustDialogAccepted` to `false` for the project in `/root/.claude.json`, and
+  every `claude -p` subprocess launched after that point errored immediately regardless of role —
+  each `.err` log showed the identical `this workspace has not been trusted` warning, and the
+  envelope was `is_error: true, total_cost_usd: 0, iterations: [], terminal_reason: "api_error"`.
+  The driver still labeled these `implementation failed` / `verifier unavailable`, because that is
+  the correct label from its point of view — nothing in the schema distinguishes "the role judged
+  the work" from "the role never got to run." **Before treating a HALT as three unlucky findings,
+  check the `.err` files for the failed iterations** (`.audit-work/logs/iter*.err`) — a shared,
+  non-model error string across all three is the tell. If it's this cause specifically, confirm
+  `projects["<repo-path>"].hasTrustDialogAccepted` in `/root/.claude.json` (that file lives outside
+  the repo and outside a supervising agent's usual permission scope — this may need the human
+  operator) before relaunching, or the resumed run halts on the identical pattern immediately.
 * **Watch CI, not just the run log.** With no local full-suite gate, a red CI run on the draft PR is
   the only signal that one finding broke something another finding's targeted specs don't cover.
   Check it when you drain comments; treat a red run as a reason to pause and diagnose rather than

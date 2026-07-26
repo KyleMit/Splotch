@@ -16,6 +16,9 @@ import { getActiveOverlayImage } from './overlay';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import type { StyleName } from '$lib/ai/styles';
 
+export const AI_SAFETY_REFUSAL_MESSAGE = "Let's try drawing something else!";
+export const AI_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
+
 const UPLOAD_WEBP_QUALITY = 0.85;
 const FIRST_SERVER_ERROR_STATUS = 500;
 
@@ -166,7 +169,7 @@ function buildRequest(
 function applyResponse(runId: number, response: AiImageResponse): 'committed' | 'failed' {
   switch (response.kind) {
     case 'safety':
-      failAiGeneration(runId, "Let's try drawing something else!", 'safety');
+      failAiGeneration(runId, AI_SAFETY_REFUSAL_MESSAGE, 'safety');
       return 'failed';
     case 'throttled':
       failAiGeneration(runId, undefined, 'retry');
@@ -228,7 +231,7 @@ export async function generateAiImage({
     const timedOut = err instanceof DOMException && err.name === 'AbortError';
     failAiGeneration(
       runId,
-      timedOut ? "That's taking too long — please try again." : undefined,
+      timedOut ? AI_TIMEOUT_MESSAGE : undefined,
       timedOut ? 'retry' : 'generic'
     );
     console.error(err);

@@ -6,12 +6,10 @@
 // everything is clamped to the preview's own bounds — the drawing surface stays
 // locked.
 
-import { SvelteMap } from 'svelte/reactivity';
+import { createSpreadTracker, type Point } from './spreadTracker.svelte';
+import { capturePointer, releasePointer } from './pointerCapture';
 
-export interface Point {
-  x: number;
-  y: number;
-}
+export type { Point };
 
 // Applied as `translate(x, y) scale(scale)` with a top-left transform origin, so
 // a content point `c` maps to surface point `scale * c + (x, y)`.
@@ -63,15 +61,11 @@ function centroid(points: Point[]): Point {
   return { x: x / points.length, y: y / points.length };
 }
 
-function spread(a: Point, b: Point): number {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
 // A DOM-free gesture accumulator: feed it pointer positions (in surface-local
 // coordinates) and read back the clamped transform. The Svelte action wires real
 // PointerEvents to it; tests drive it with synthetic points.
 export function createPinchZoom(getBounds: () => Bounds) {
-  const pointers = new SvelteMap<number, Point>();
+  const tracker = createSpreadTracker();
   let transform: Transform = { ...IDENTITY_TRANSFORM };
   // Snapshot at the start of each gesture segment (whenever a finger lands or
   // lifts) so scaling and panning stay relative to that instant — no jumps when
@@ -79,7 +73,7 @@ export function createPinchZoom(getBounds: () => Bounds) {
   let base: { transform: Transform; centroid: Point; spread: number; count: number } | null = null;
 
   function rebase() {
-    const pts = [...pointers.values()];
+    const pts = tracker.points();
     if (pts.length === 0) {
       base = null;
       return;
@@ -87,20 +81,20 @@ export function createPinchZoom(getBounds: () => Bounds) {
     base = {
       transform: { ...transform },
       centroid: centroid(pts),
-      spread: pts.length >= 2 ? spread(pts[0], pts[1]) : 0,
+      spread: tracker.spread(),
       count: pts.length,
     };
   }
 
   function recompute() {
     if (!base) return;
-    const pts = [...pointers.values()];
+    const pts = tracker.points();
     if (pts.length === 0) return;
 
     const now = centroid(pts);
     let scale = base.transform.scale;
     if (base.count >= 2 && pts.length >= 2 && base.spread > 0) {
-      scale = clampScale(base.transform.scale * (spread(pts[0], pts[1]) / base.spread));
+      scale = clampScale(base.transform.scale * (tracker.spread() / base.spread));
     }
 
     // Hold the content point that sat under the gesture's start centroid beneath
@@ -118,26 +112,25 @@ export function createPinchZoom(getBounds: () => Bounds) {
       return transform;
     },
     get pointerCount() {
-      return pointers.size;
+      return tracker.pointerCount;
     },
     get isZoomed() {
       return transform.scale > MIN_SCALE;
     },
     down(id: number, p: Point) {
-      pointers.set(id, p);
+      tracker.down(id, p);
       rebase();
     },
     move(id: number, p: Point) {
-      if (!pointers.has(id)) return;
-      pointers.set(id, p);
+      if (!tracker.move(id, p)) return;
       recompute();
     },
     up(id: number) {
-      if (!pointers.delete(id)) return;
+      if (!tracker.up(id)) return;
       rebase();
     },
     reset() {
-      pointers.clear();
+      tracker.clear();
       base = null;
       transform = { ...IDENTITY_TRANSFORM };
     },
@@ -201,9 +194,7 @@ export function pinchZoom(node: HTMLElement, getOptions: () => PinchZoomOptions)
     if (!getOptions().enabled) return;
     if (zoom.pointerCount === 0) rect = node.getBoundingClientRect();
     zoom.down(e.pointerId, local(e));
-    try {
-      node.setPointerCapture(e.pointerId);
-    } catch {}
+    capturePointer(node, e.pointerId);
     if (engaged()) e.preventDefault();
   }
 
@@ -218,11 +209,10 @@ export function pinchZoom(node: HTMLElement, getOptions: () => PinchZoomOptions)
     }
   }
 
+  // Deliberately unguarded by `enabled` — a pointer down while enabled still needs its capture released here if `enabled` flips false before it lifts.
   function onPointerUp(e: PointerEvent) {
     zoom.up(e.pointerId);
-    try {
-      node.releasePointerCapture(e.pointerId);
-    } catch {}
+    releasePointer(node, e.pointerId);
     apply(getOptions().target);
     if (zoom.pointerCount === 0) rect = null;
   }

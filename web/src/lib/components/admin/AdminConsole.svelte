@@ -336,7 +336,7 @@
     max-width: 640px;
     margin: 0 auto;
     padding: clamp(20px, 5vw, 48px) 16px 64px;
-    font-family: 'Quicksand Variable', 'Quicksand', sans-serif;
+    font-family: var(--font-family);
     color: #333;
   }
 

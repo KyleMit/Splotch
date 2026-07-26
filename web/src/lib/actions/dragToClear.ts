@@ -1,6 +1,7 @@
 import { releaseAllPointers } from '$lib/drawing/engine';
 import { stopDrawSound } from '$lib/audio/drawingSound';
 import { impactThreshold } from '$lib/haptics';
+import { capturePointer, releasePointer } from './pointerCapture';
 
 // Drag-to-clear gesture constants.
 export const ACCEPT_RADIUS_FACTOR = 0.4;
@@ -8,6 +9,15 @@ const HOLD_DURATION = 500;
 const MOVEMENT_THRESHOLD = 50;
 const MULTI_CLICK_WINDOW = 1000;
 const MULTI_CLICK_THRESHOLD = 3;
+const ACCEPT_ZONE_HIDE_DELAY = 250;
+const DRAW_SOUND_STOP_DELAY = 300;
+const PAGE_TURN_DURATION = 600;
+const EXIT_RETURN_DELAY = 650;
+
+function suppress(e: Event) {
+  e.preventDefault();
+  e.stopPropagation();
+}
 
 export interface DragToClearOptions {
   containerEl: HTMLDivElement;
@@ -23,7 +33,6 @@ export interface DragToClearOptions {
 }
 
 export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToClearOptions) {
-  let isDragging = false;
   let activePointerId: number | null = null;
   let startPointerX = 0;
   let startPointerY = 0;
@@ -51,51 +60,34 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     return Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
   }
 
-  function onPointerDown(e: PointerEvent) {
-    if (isDragging) return;
+  function dragDistance(clientX: number, clientY: number): number {
+    return Math.hypot(clientX - startPointerX, clientY - startPointerY);
+  }
 
-    const o = getOptions();
-    const now = Date.now();
+  // True when the tap completed a multi-tap run and showed the tutorial, in which
+  // case the caller must not start a drag.
+  function registerTap(now: number, o: DragToClearOptions): boolean {
     if (now - lastClickTime < MULTI_CLICK_WINDOW) {
       clickCount++;
       if (clickCount >= MULTI_CLICK_THRESHOLD) {
         o.onTutorialShow();
         clickCount = 0;
-        return;
+        return true;
       }
     } else {
       clickCount = 1;
     }
     lastClickTime = now;
+    return false;
+  }
 
-    const clientX = e.clientX;
-    const clientY = e.clientY;
-    holdStartX = clientX;
-    holdStartY = clientY;
-    holdTimer = setTimeout(o.onTutorialShow, HOLD_DURATION);
+  function armAcceptZone(
+    o: DragToClearOptions,
+    center: { x: number; y: number },
+    radius: number
+  ): void {
+    homeButtonCenter = center;
 
-    isDragging = true;
-    activePointerId = e.pointerId;
-    try {
-      node.setPointerCapture(e.pointerId);
-    } catch {}
-    startPointerX = clientX;
-    startPointerY = clientY;
-    clearReady = false;
-    document.documentElement.style.setProperty('--clear-progress', '0');
-
-    releaseAllPointers();
-
-    const rect = node.getBoundingClientRect();
-    homeButtonCenter = {
-      x: (rect.left + rect.right) / 2,
-      y: (rect.top + rect.bottom) / 2,
-    };
-
-    o.containerEl.classList.add('dragging-active');
-    node.classList.add('dragging');
-
-    const radius = getAcceptRadius();
     o.acceptZoneEl.style.left = `${homeButtonCenter.x - radius}px`;
     o.acceptZoneEl.style.top = `${homeButtonCenter.y - radius}px`;
     o.acceptZoneEl.style.width = `${radius * 2}px`;
@@ -105,15 +97,47 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       acceptZoneFrame = null;
       o.acceptZoneEl.classList.add('visible');
     });
+  }
+
+  function onPointerDown(e: PointerEvent) {
+    if (activePointerId !== null) return;
+
+    const o = getOptions();
+    if (registerTap(Date.now(), o)) return;
+
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    holdStartX = clientX;
+    holdStartY = clientY;
+    holdTimer = scheduleReset(o.onTutorialShow, HOLD_DURATION);
+
+    activePointerId = e.pointerId;
+    capturePointer(node, e.pointerId);
+    startPointerX = clientX;
+    startPointerY = clientY;
+    clearReady = false;
+    document.documentElement.style.setProperty('--clear-progress', '0');
+
+    releaseAllPointers();
+
+    const rect = node.getBoundingClientRect();
+    const center = {
+      x: rect.x + rect.width / 2,
+      y: rect.y + rect.height / 2,
+    };
+
+    o.containerEl.classList.add('dragging-active');
+    node.classList.add('dragging');
+
+    armAcceptZone(o, center, getAcceptRadius());
 
     o.onDragStart?.();
 
-    e.preventDefault();
-    e.stopPropagation();
+    suppress(e);
   }
 
   function onPointerMove(e: PointerEvent) {
-    if (!isDragging || e.pointerId !== activePointerId) return;
+    if (activePointerId === null || e.pointerId !== activePointerId) return;
 
     const o = getOptions();
     const clientX = e.clientX;
@@ -122,7 +146,8 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const deltaX = Math.abs(clientX - holdStartX);
     const deltaY = Math.abs(clientY - holdStartY);
     if (deltaX > MOVEMENT_THRESHOLD || deltaY > MOVEMENT_THRESHOLD) {
-      if (holdTimer) {
+      if (holdTimer !== null) {
+        resetTimers.delete(holdTimer);
         clearTimeout(holdTimer);
         holdTimer = null;
       }
@@ -134,7 +159,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const dy = clientY - startPointerY;
     o.containerEl.style.transform = `translate(${dx}px, ${dy}px)`;
 
-    const distance = Math.sqrt(dx * dx + dy * dy);
+    const distance = dragDistance(clientX, clientY);
     const threshold = getAcceptRadius();
 
     // Continuous 0→1 drag progress drives the radial paper wash that previews
@@ -158,12 +183,12 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       clearReady = false;
     }
 
-    e.preventDefault();
-    e.stopPropagation();
+    suppress(e);
   }
 
   function finishDrag(o: DragToClearOptions, pointerId: number) {
-    if (holdTimer) {
+    if (holdTimer !== null) {
+      resetTimers.delete(holdTimer);
       clearTimeout(holdTimer);
       holdTimer = null;
     }
@@ -171,17 +196,14 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       cancelAnimationFrame(acceptZoneFrame);
       acceptZoneFrame = null;
     }
-    isDragging = false;
     activePointerId = null;
-    try {
-      node.releasePointerCapture(pointerId);
-    } catch {}
+    releasePointer(node, pointerId);
 
     o.acceptZoneEl.classList.remove('visible');
     o.acceptZoneEl.classList.remove('threshold-reached');
     scheduleReset(() => {
-      if (!isDragging) o.acceptZoneEl.style.display = 'none';
-    }, 250);
+      if (activePointerId === null) o.acceptZoneEl.style.display = 'none';
+    }, ACCEPT_ZONE_HIDE_DELAY);
 
     clearReady = false;
     o.clearPreviewEl.classList.remove('committed');
@@ -190,16 +212,55 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     node.classList.remove('delete-ready');
   }
 
+  function resetDragVisuals(o: DragToClearOptions) {
+    o.containerEl.classList.remove('dragging-active');
+    o.containerEl.style.transform = '';
+    node.classList.remove('dragging');
+  }
+
+  // Commit exit choreography: the button's fade/shrink and the page-turn ripple
+  // live in ClearButton.svelte's CSS; the delays below only hand the classes over
+  // at each stage.
+  function playClearExit(node: HTMLButtonElement, o: DragToClearOptions): void {
+    node.classList.add('clearing');
+    o.pageTurnOverlayEl.classList.add('animating');
+
+    scheduleReset(() => {
+      stopDrawSound();
+    }, DRAW_SOUND_STOP_DELAY);
+
+    scheduleReset(() => {
+      o.pageTurnOverlayEl.classList.remove('animating');
+      o.containerEl.style.transform = '';
+      node.classList.remove('dragging');
+      node.classList.add('clearing-done');
+    }, PAGE_TURN_DURATION);
+
+    scheduleReset(() => {
+      o.containerEl.classList.remove('dragging-active');
+      node.classList.remove('clearing', 'clearing-done');
+      node.classList.add('clearing-return');
+    }, EXIT_RETURN_DELAY);
+  }
+
+  // The return leg's easing is the only reason .clearing-return exists, so it
+  // comes off when that transition ends — reading the duration off the animation
+  // itself rather than re-encoding ClearButton.svelte's timing here. The icons
+  // transition their own margin and bubble, hence the target/property filter.
+  function onTransitionEnd(e: TransitionEvent) {
+    if (e.target === node && e.propertyName === 'opacity') {
+      node.classList.remove('clearing-return');
+    }
+  }
+
   function onPointerUp(e: PointerEvent) {
-    if (!isDragging || e.pointerId !== activePointerId) return;
+    if (activePointerId === null || e.pointerId !== activePointerId) return;
 
     const o = getOptions();
 
     const clientX = e.clientX;
     const clientY = e.clientY;
-    const dx = clientX - startPointerX;
-    const dy = clientY - startPointerY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+    const distance = dragDistance(clientX, clientY);
     const threshold = getAcceptRadius();
 
     finishDrag(o, e.pointerId);
@@ -208,75 +269,55 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       o.onTutorialDismiss();
       o.onClear();
 
-      node.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-      node.style.opacity = '0';
-      node.style.transform = 'scale(0.8)';
-
-      o.pageTurnOverlayEl.classList.add('animating');
-
-      scheduleReset(() => {
-        stopDrawSound();
-      }, 300);
-
-      scheduleReset(() => {
-        o.pageTurnOverlayEl.classList.remove('animating');
-
-        o.containerEl.style.transform = '';
-        node.classList.remove('dragging');
-        node.style.transition = 'none';
-        node.style.transform = 'scale(0.8)';
-
-        scheduleReset(() => {
-          o.containerEl.classList.remove('dragging-active');
-          node.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-          node.style.opacity = '1';
-          node.style.transform = '';
-        }, 50);
-      }, 600);
+      playClearExit(node, o);
     } else {
-      o.containerEl.classList.remove('dragging-active');
-      o.containerEl.style.transform = '';
-      node.classList.remove('dragging');
+      resetDragVisuals(o);
     }
 
     o.onDragEnd?.();
 
-    e.preventDefault();
-    e.stopPropagation();
+    suppress(e);
   }
 
   function onPointerCancel(e: PointerEvent) {
-    if (!isDragging || e.pointerId !== activePointerId) return;
+    if (activePointerId === null || e.pointerId !== activePointerId) return;
 
     const o = getOptions();
     finishDrag(o, e.pointerId);
 
-    o.containerEl.classList.remove('dragging-active');
-    o.containerEl.style.transform = '';
-    node.classList.remove('dragging');
-    node.style.transition = '';
-    node.style.opacity = '';
-    node.style.transform = '';
+    resetDragVisuals(o);
+    // A fresh drag can start while a previous commit's exit is still playing,
+    // so cancelling has to put the button back on screen rather than leave it
+    // mid-fade until that exit's timers catch up.
+    node.classList.remove('clearing', 'clearing-done', 'clearing-return');
     o.pageTurnOverlayEl.classList.remove('animating');
     stopDrawSound();
     o.onDragEnd?.();
 
-    e.preventDefault();
-    e.stopPropagation();
+    suppress(e);
   }
 
   node.addEventListener('pointerdown', onPointerDown);
   node.addEventListener('pointermove', onPointerMove);
   node.addEventListener('pointerup', onPointerUp);
   node.addEventListener('pointercancel', onPointerCancel);
+  node.addEventListener('transitionend', onTransitionEnd);
 
   return {
     destroy() {
+      if (activePointerId !== null) {
+        const o = getOptions();
+        finishDrag(o, activePointerId);
+        resetDragVisuals(o);
+        // finishDrag only hides the zone on a delayed timer, and the resetTimers
+        // sweep below cancels it before it can fire.
+        o.acceptZoneEl.style.display = 'none';
+      }
       node.removeEventListener('pointerdown', onPointerDown);
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);
       node.removeEventListener('pointercancel', onPointerCancel);
-      if (holdTimer) clearTimeout(holdTimer);
+      node.removeEventListener('transitionend', onTransitionEnd);
       if (acceptZoneFrame !== null) cancelAnimationFrame(acceptZoneFrame);
       for (const id of resetTimers) clearTimeout(id);
       resetTimers.clear();

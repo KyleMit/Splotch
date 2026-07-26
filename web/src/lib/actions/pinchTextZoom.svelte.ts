@@ -1,3 +1,6 @@
+import { createSpreadTracker } from './spreadTracker.svelte';
+import { capturePointer, releasePointer } from './pointerCapture';
+
 export const MIN_TEXT_ZOOM = 1;
 export const MAX_TEXT_ZOOM = 3;
 
@@ -36,11 +39,7 @@ export interface PinchTextZoomOptions {
 // The argument is a *getter* read inside a $effect (like `pinchZoom`), so the
 // runes it touches — `enabled`, `resetKey`, the bound `target` — stay reactive.
 export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoomOptions) {
-  // Imperative pointer tracking, read only inside the event handlers (spread /
-  // rebase / reset) — never from a rune — so a plain Map is intended and a
-  // reactive SvelteMap would be dead weight.
-  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- imperative pointer map, not reactive state
-  const points = new Map<number, { x: number; y: number }>();
+  const tracker = createSpreadTracker();
   let zoom = MIN_TEXT_ZOOM;
   // Snapshot at the moment the pinch becomes two-fingered, so scaling is relative
   // to that instant and never jumps as fingers are added or lifted.
@@ -53,19 +52,13 @@ export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoom
   // the one trailing click it produces (the ghost-click guard from svelte.md).
   let pinchedRecently = false;
 
-  function spread(): number {
-    const [a, b] = [...points.values()];
-    if (!a || !b) return 0;
-    return Math.hypot(a.x - b.x, a.y - b.y);
-  }
-
   function apply() {
     const target = getOptions().target;
     if (target) target.style.zoom = zoom === MIN_TEXT_ZOOM ? '' : String(zoom);
   }
 
   function reset() {
-    points.clear();
+    tracker.clear();
     zoom = MIN_TEXT_ZOOM;
     baseZoom = MIN_TEXT_ZOOM;
     baseSpread = 0;
@@ -76,41 +69,36 @@ export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoom
   // finger doesn't warp the running zoom.
   function rebase() {
     baseZoom = zoom;
-    baseSpread = spread();
+    baseSpread = tracker.spread();
   }
 
   function onPointerDown(e: PointerEvent) {
     if (!getOptions().enabled || e.pointerType !== 'touch') return;
     // A fresh gesture (first finger down) clears any stale pinch flag, so a
     // pinch that produced no click doesn't swallow a later legitimate tap.
-    if (points.size === 0) pinchedRecently = false;
-    points.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (points.size === 2) {
+    if (tracker.pointerCount === 0) pinchedRecently = false;
+    tracker.down(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (tracker.pointerCount === 2) {
       pinchedRecently = true;
       rebase();
-      try {
-        node.setPointerCapture(e.pointerId);
-      } catch {}
+      capturePointer(node, e.pointerId);
     }
   }
 
   function onPointerMove(e: PointerEvent) {
-    if (!points.has(e.pointerId)) return;
-    points.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (!tracker.move(e.pointerId, { x: e.clientX, y: e.clientY })) return;
     // Only a genuine two-finger pinch drives the zoom; a lone finger falls
     // through to the browser's native scroll.
-    if (points.size < 2) return;
-    zoom = nextTextZoom(baseZoom, baseSpread, spread());
+    if (tracker.pointerCount < 2) return;
+    zoom = nextTextZoom(baseZoom, baseSpread, tracker.spread());
     apply();
     e.preventDefault();
   }
 
   function onPointerUp(e: PointerEvent) {
-    if (!points.delete(e.pointerId)) return;
-    try {
-      node.releasePointerCapture(e.pointerId);
-    } catch {}
-    if (points.size >= 2) rebase();
+    if (!tracker.up(e.pointerId)) return;
+    releasePointer(node, e.pointerId);
+    if (tracker.pointerCount >= 2) rebase();
   }
 
   // Capture phase so it fires before the target's own click handler and can

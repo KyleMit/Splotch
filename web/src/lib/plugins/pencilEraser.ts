@@ -37,10 +37,14 @@ export function initPencilEraser(): () => void {
   let handle: PluginListenerHandle | undefined;
   let removed = false;
 
-  PencilEraser.addListener('doubleTap', handleDoubleTap).then((h) => {
-    if (removed) h.remove();
-    else handle = h;
-  });
+  PencilEraser.addListener('doubleTap', handleDoubleTap)
+    .then((h) => {
+      if (removed) h.remove();
+      else handle = h;
+    })
+    .catch((err) => {
+      console.error('PencilEraser.addListener failed', err);
+    });
 
   return () => {
     removed = true;
