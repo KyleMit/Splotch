@@ -22,42 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P1][maintainability] Hand-computed responsive-trim ladders are a brittle wall of magic numbers
-
-**File(s):** `web/src/lib/components/ColorPalette.svelte:271-433` (trim media queries) and
-`web/src/lib/components/ColorPicker.svelte:210-370` (row/column trim ladders) — pinned at SHA
-f934d43
-
-#### Problem
-
-Both components encode their responsive behavior as long hand-derived media-query tables whose
-thresholds are computed in prose comments from geometry constants, e.g. `.color-palette` "A single
-column holds N swatches when height ≥ 72·N + 12 (60px swatch + 12px gap, 24px padding)" then seven
-`@media … max-width: 515.98px / 452.98px / …` steps, and ColorPicker's "r rows fit while 90vh ≥
-51·r + 50 … stepping at ≈ (51r + 50) / 0.9". Every breakpoint (`515.98`, `452.98`, `674.98`,
-`564.98`, …) is a manually evaluated formula. Changing a single input — swatch size `60px`, gap
-`12px`, hexagon pitch `51px` — silently invalidates ~15-20 breakpoints that must all be re-derived
-by hand, and nothing verifies the arithmetic. This is the single largest maintenance hazard in the
-section.
-
-#### Proposed solution
-
-The CSS-only, no-JS-measurement approach is deliberate (ADR-0048) and shouldn't be abandoned, but
-the ladder should be *generated*, not hand-maintained. Extract the geometry inputs (swatch size,
-gap, padding, row pitch, `0.9` viewport factor) into named constants in a small `.ts` module and
-emit the media-query blocks through the existing `gen:*` token/codegen pipeline (same pattern as
-`gen:tokens`), so a size change regenerates every threshold. At minimum, add a unit-tested pure
-function `trimBreakpoints(count, {swatch, gap, padding})` that returns the ladder, and reference its
-output in a checked-in comment so drift is catchable.
-
-#### Verification
-
-`npm run gen:*` reproduces the current `.98px` thresholds exactly (byte-diff against this SHA); a
-Vitest for `trimBreakpoints` pins the sequence. Manually bump `swatch` and confirm every media query
-updates.
-
----
-
 ### [P2][duplication] Hex-normalize-and-parse logic is duplicated between `relativeLuminance` and `getRingColor`
 
 **File(s):** `web/src/lib/colorRing.ts:3-14` and `:26-44` — pinned at SHA f934d43

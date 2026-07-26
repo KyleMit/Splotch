@@ -233,7 +233,9 @@
 
   /* HEIGHT — r rows fit while 90vh ≥ 51·r + 50 (69px first row + 51px row
      pitch + 32px padding; measured 509px at 9 rows), so the ladder steps at
-     ≈ (51r + 50) / 0.9 with a few px of buffer. Hidden rows still count for
+     (51r + 50) / 0.9 rounded up to the whole pixel, no slack — except the
+     9-row step, tightened 1px below that minimum (HEX_GRID_ROW_RULE and its
+     one exception in HEX_GRID_ROW_LADDER). Hidden rows still count for
      :nth-child, so the base even-row rule can't drive the honeycomb offset;
      instead every step restates which rows carry the 31px offset so it
      alternates by VISIBLE position — that's what keeps a trimmed grid
@@ -335,8 +337,11 @@
 
   /* WIDTH — c columns fit while 90vw ≥ 60·c + 63 (60px column pitch + 31px
      row offset + 32px padding; measured 603px at 9 columns), stepping at
-     ≈ (60c + 63) / 0.9 + buffer. Every row loses the same positions, so
-     column trims never need offset bookkeeping. Floor: 2 columns (c1 + c9). */
+     (60c + 63) / 0.9 rounded up to the next 5px and then one 5px step further
+     — except the 4-column step, which stops at that first multiple of 5
+     (HEX_GRID_COLUMN_RULE and its one exception in HEX_GRID_COLUMN_LADDER).
+     Every row loses the same positions, so column trims never need offset
+     bookkeeping. Floor: 2 columns (c1 + c9). */
   @media (max-width: 674.98px) {
     .c2 {
       display: none;

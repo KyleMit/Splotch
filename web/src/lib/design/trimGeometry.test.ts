@@ -161,7 +161,9 @@ describe('ColorPicker', () => {
   const columnTrim = rules.filter((rule) => has(rule, 'max-width'));
 
   it('classifies every @media rule, so no ladder is silently skipped', () => {
-    expect(rowTrim.length + columnTrim.length).toBe(thresholdRules(rules).length);
+    const classified = [...rowTrim, ...columnTrim];
+    expect(new Set(classified).size).toBe(classified.length);
+    expect(classified).toHaveLength(thresholdRules(rules).length);
   });
 
   it('restates the honeycomb geometry', () => {
