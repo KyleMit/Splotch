@@ -65,15 +65,23 @@ function bootLiteral(pattern: RegExp): number {
 
 describe("app.html's boot script mirrors the state modules", () => {
   const bootKeys = [...new Set([...bootScript.matchAll(/'(splotch-[\w-]+)'/g)].map((m) => m[1]))];
-  const bootBoolDefaults = [...bootScript.matchAll(/on\('(splotch-[\w-]+)', (true|false)\)/g)].map(
-    (m) => [m[1], m[2] === 'true'] as const
-  );
+  // `\s*` between the tokens so a prettier reflow of a long `on(...)` call
+  // across lines still parses — several sit close to the 100-char printWidth.
+  const bootBoolDefaults = [
+    ...bootScript.matchAll(/\bon\(\s*'(splotch-[\w-]+)',\s*(true|false)\s*\)/g),
+  ].map((m) => [m[1], m[2] === 'true'] as const);
 
   it('parses keys and boolean defaults out of both sides', () => {
     expect(bootKeys.length).toBeGreaterThan(0);
-    expect(bootBoolDefaults.length).toBeGreaterThan(0);
     expect(sourceOfTruthKeys.size).toBeGreaterThan(0);
     expect(boolDefaults.size).toBeGreaterThan(0);
+
+    // Fail closed: the per-key guards below are generated from what the pair
+    // regex matched, so an `on()` call it can't parse would drop that key's
+    // default from the suite silently instead of failing.
+    const onCalls = [...bootScript.matchAll(/\bon\(/g)].length;
+    expect(onCalls).toBeGreaterThan(0);
+    expect(bootBoolDefaults.length).toBe(onCalls);
   });
 
   // Containment, not equality: plenty of persisted keys have no first-paint

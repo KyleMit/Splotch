@@ -9,39 +9,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P1][maintainability] The `app.html` pre-paint boot script re-hardcodes every persisted `localStorage` key, the boolean-setting list, and the scale clamp — kept in sync only by a comment
-
-**File(s):** `web/src/app.html:75-121` (inline boot IIFE); mirrors
-`web/src/lib/state/settings.svelte.ts:14-122` — pinned at SHA f934d43
-
-#### Problem
-
-The first-paint script duplicates, as vanilla-JS string literals, the exact keys and bounds that
-`settings.svelte.ts` defines as named constants: `splotch-action-button-scale`,
-`splotch-advanced-controls`, `splotch-drawer-open`, `splotch-stroke-width-control`,
-`splotch-eraser-enabled`, `splotch-coloring-book-enabled`, `splotch-screenshot-enabled`,
-`splotch-undo-button-enabled`, `splotch-brush-type`, `splotch-theme`, plus the `70`/`130`/`100`
-clamp (settings exports these as `ACTION_BUTTON_SCALE_MIN/MAX/DEFAULT`). The only guard is the
-comment "keep them in sync." A rename or added `BOOL_SETTINGS` entry in the TS module silently
-breaks first-paint for returning users with no compile-time or test failure — the script just stamps
-the wrong (or no) attribute and the UI flashes a default before hydration corrects it.
-
-#### Proposed solution
-
-Since `app.html` can't import TS, close the gap with a test rather than trusting the comment: add a
-unit test that reads `app.html`, extracts the `splotch-*` string literals and the numeric clamp from
-the boot IIFE, and asserts each key exists in `settings.svelte.ts`'s constant set and the bounds
-equal `ACTION_BUTTON_SCALE_MIN/MAX`. (This mirrors the existing `securityHeaders.test.ts` guard that
-keeps the `netlify.toml` header copy honest — ADR-0073.) Optionally generate the key list into a
-placeholder the template substitutes at build time.
-
-#### Verification
-
-New test fails if you rename a key in `settings.svelte.ts` without updating `app.html`. `npm test`
-green with both in sync.
-
----
-
 ### [P2][complexity] The overlay idle-mount pump (recursive `mountNext` + `stopped` flag + queue-by-length) is intricate inline logic that belongs in a named helper
 
 **File(s):** `web/src/routes/+page.svelte:80-104` (app shell) — pinned at SHA f934d43
