@@ -15,7 +15,8 @@ subagents, edit `docs/AUDIT.md` directly, or mix unrelated work into the branch.
 * PR: [#551](https://github.com/KyleMit/Splotch/pull/551) (draft)
 * Start point: e8bb26563df15f5c4c1ef7181affe198be6185f5e
 * Backlog at start: 362 remaining of 511 total
-* Run state: preflight passed; five-fix canary not yet run
+* Run state: first canary segment halted after one fix, three drops, and three consecutive
+  implementation deferrals; rollback cleanup repaired and verified; canary relaunch pending
 * Gate overrides:
   * `CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check'`
   * `TEST_CMD='npm run test:unit && npm run test:scripts'`
@@ -55,10 +56,22 @@ subagents, edit `docs/AUDIT.md` directly, or mix unrelated work into the branch.
 * Passed the exact Codex preflight with origin, authentication, backlog parsing, and build gates
   green.
 * Opened draft PR [#551](https://github.com/KyleMit/Splotch/pull/551).
+* First canary segment:
+  * Fixed one finding after one adversarial repair round.
+  * Dropped three invalid or already-fixed findings.
+  * Deferred three findings after implementation failures.
+  * Halted at the three-consecutive-deferral threshold with 355 findings remaining.
+* Diagnosed one recurring mechanical cause: untracked tests from the first failed role contaminated
+  the next two unit runs because `git reset --hard` does not remove untracked files.
+* Committed and pushed 20c121b1, which removes only current-role untracked residue during rollback,
+  treats untracked files as dirty in preflight/resume, and adds regression coverage.
+* Verified the repair with the untracked-only preflight probe, the repository quality gate, 728 app
+  unit tests, and 96 script tests.
 
 ## Risks & next 3 steps
 
-1. Commit and push this updated checkpoint, then run and inspect the five-fix foreground canary.
+1. Commit and push this updated checkpoint, rerun preflight, then resume and inspect the five-fix
+   foreground canary.
 2. Require canary CI green and drain its pending per-commit comments.
 3. Inspect cost and launch the durable full-run command above under active supervision.
 
