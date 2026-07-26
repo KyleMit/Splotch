@@ -79,7 +79,8 @@ describe('Codex invocation', () => {
     const instructions = codexRoleInstructions('implement');
     expect(instructions).toContain('Do not run Playwright');
     expect(instructions).toContain('outside this nested sandbox');
-    expect(instructions).toContain('Commit when');
+    expect(instructions).toContain('Do not run `git add`');
+    expect(instructions).toContain('return `success=true` with an empty');
     expect(codexRoleInstructions('review')).toBe('');
   });
 });

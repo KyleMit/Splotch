@@ -47,10 +47,12 @@ import {
   git,
   gitOk,
   gitOut,
+  implementationCommitMessage,
   launchCommand,
   logLine,
   LOGS,
   PROMPTS,
+  protectedImplementationPaths,
   renderDeferralNotes,
   resolveImplSha,
   runCmd,
@@ -170,6 +172,50 @@ const agentStep = (options) =>
     sleep,
     ...options,
   });
+
+function changedImplementationPaths() {
+  const outputs = [
+    gitOut('diff', '--name-only'),
+    gitOut('diff', '--cached', '--name-only'),
+    gitOut('ls-files', '--others', '--exclude-standard'),
+  ];
+  return [...new Set(outputs.flatMap((output) => output.split('\n').filter(Boolean)))];
+}
+
+function commitCodexImplementation({ title, baseSha, round = 0 }) {
+  if (AGENT_RUNNER !== 'codex' || gitOut('rev-parse', 'HEAD') !== baseSha) return '';
+
+  const paths = changedImplementationPaths();
+  if (paths.length === 0) {
+    logLine('  Codex returned success without worktree changes');
+    return '';
+  }
+
+  const protectedPaths = protectedImplementationPaths(paths);
+  if (protectedPaths.length) {
+    logLine(`  Codex changed protected audit state: ${protectedPaths.join(', ')}`);
+    return '';
+  }
+
+  const add = git('add', '-A', '--', ...paths);
+  if (add.status !== 0) {
+    logLine(
+      `  driver could not stage Codex changes: ${(add.stderr ?? '').trim() || 'git add failed'}`
+    );
+    return '';
+  }
+  const commit = git('commit', '-q', '-m', implementationCommitMessage(title, round));
+  if (commit.status !== 0) {
+    logLine(
+      `  driver could not commit Codex changes: ${(commit.stderr ?? '').trim() || 'git commit failed'}`
+    );
+    return '';
+  }
+
+  const sha = gitOut('rev-parse', 'HEAD');
+  logLine(`  driver committed Codex worktree ${sha.slice(0, 12)}`);
+  return sha;
+}
 
 // ---- deferral ---------------------------------------------------------------
 const DEFERRED_FILE = 'docs/AUDIT-DEFERRED.md';
@@ -487,10 +533,15 @@ while (done < MAX_ISSUES) {
   // driver-minted Claude id or Codex's `thread.started` id. Addressing by
   // session id rather than by agent name makes hundreds of iterations safe.
   const implSession = impl.sessionId ?? '';
-  const reportedSha = impl.structured.sha ?? '';
+  const reportedSha = AGENT_RUNNER === 'codex' ? '' : (impl.structured.sha ?? '');
+  const headAfterImpl = impl.structured.success === true ? gitOut('rev-parse', 'HEAD') : '';
+  const driverSha =
+    impl.ok && impl.structured.success === true && headAfterImpl === baseSha
+      ? commitCodexImplementation({ title, baseSha })
+      : '';
   let sha = resolveImplSha({
     reported: reportedSha,
-    head: impl.structured.success === true ? gitOut('rev-parse', 'HEAD') : '',
+    head: driverSha || headAfterImpl,
     baseSha,
   });
   if (sha && !reportedSha) logLine(`  implementer omitted its sha — recovered ${sha.slice(0, 12)}`);
@@ -605,7 +656,10 @@ while (done < MAX_ISSUES) {
 
     impl = await agentStep({
       tag: `${tag}.fix${round}`,
-      prompt: `The following must be addressed on commit ${sha}. Address every point and commit.\n\n${feedback}`,
+      prompt:
+        AGENT_RUNNER === 'codex'
+          ? `The following must be addressed on commit ${sha}. Address every point, run the permitted non-listener checks, and leave the resulting worktree changes for the driver to commit.\n\n${feedback}`
+          : `The following must be addressed on commit ${sha}. Address every point and commit.\n\n${feedback}`,
       systemPromptFile: join(PROMPTS, 'implementer.md'),
       model: implModel,
       effort: EFFORT_IMPL,
@@ -629,9 +683,15 @@ while (done < MAX_ISSUES) {
     // original baseSha: HEAD is already past baseSha from the previous round, so
     // comparing to that would resolve a round that committed nothing back to the
     // same rejected sha and re-review it unchanged.
+    const reportedFixSha = AGENT_RUNNER === 'codex' ? '' : (impl.structured.sha ?? '');
+    const headAfterFix = impl.structured.success === true ? gitOut('rev-parse', 'HEAD') : '';
+    const driverFixSha =
+      impl.structured.success === true && headAfterFix === sha
+        ? commitCodexImplementation({ title, baseSha: sha, round })
+        : '';
     const newSha = resolveImplSha({
-      reported: impl.structured.sha ?? '',
-      head: impl.structured.success === true ? gitOut('rev-parse', 'HEAD') : '',
+      reported: reportedFixSha,
+      head: driverFixSha || headAfterFix,
       baseSha: sha,
     });
     if (!newSha) {

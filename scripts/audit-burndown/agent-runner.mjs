@@ -32,17 +32,20 @@ const CODEX_SANDBOX = {
 const CODEX_ROLE_INSTRUCTIONS = {
   implement: `## Codex runner boundary
 
-This role runs inside a nested workspace-write sandbox that cannot bind a localhost listener. The
-driver runs every verifier-selected Playwright spec outside this nested sandbox after you commit
-and before adversarial review.
+This role runs inside a nested workspace-write sandbox that cannot bind a localhost listener or
+write Git metadata. The driver runs every verifier-selected Playwright spec and creates the commit
+outside this nested sandbox before adversarial review.
 
 * Do not run Playwright, an E2E command, or a dev/preview server, even when the brief lists it.
 * Run the remaining acceptance commands that do not open a listener: type-check, unit tests, and
   scoped lint.
-* Commit when the implementation and those non-listener checks pass. Do not report failure or
-  refuse to commit merely because E2E was deliberately left to the driver.
+* Do not run \`git add\`, \`git commit\`, reset, restore, or otherwise mutate Git state. Leave the
+  completed changes in the worktree.
+* When the implementation and non-listener checks pass, return \`success=true\` with an empty
+  \`sha\`. Do not report failure merely because E2E and the commit belong to the driver.
 
-The driver will roll the commit back if its E2E gate fails.`,
+The driver stages exactly your changed paths, rejects protected audit-state edits, commits, and
+rolls the commit back if a deterministic gate fails.`,
 };
 
 export function normalizeAgentRunner(value) {
