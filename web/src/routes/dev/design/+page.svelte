@@ -289,6 +289,13 @@
     -webkit-user-select: text;
   }
 
+  /* Breadcrumb pins its current crumb to #666 for the light-only /admin host;
+     this page is themed (and its toggle flips to dark, where #666 is 3.1:1).
+     --text-mid is the same #666 in light theme, so only dark changes. */
+  .styleguide :global(.crumb-current) {
+    color: var(--text-mid);
+  }
+
   header p,
   section > p {
     max-width: 60ch;

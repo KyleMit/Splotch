@@ -9,36 +9,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P3][architecture] The `/dev/*` harnesses have no index and inconsistent chrome — only `ai-timer` has a Breadcrumb; there is no discoverable landing page
-
-**File(s):** `web/src/routes/dev/ai-timer/+page.svelte:92`,
-`web/src/routes/dev/design/+page.svelte:48-67`, `web/src/routes/dev/engine/+page.svelte:242-246` —
-pinned at SHA f934d43
-
-#### Problem
-
-There is no `/dev` route listing the harnesses, so their existence is only discoverable by reading
-`+page.ts` files or knowing the URLs. Their navigation is also inconsistent: `ai-timer` renders
-`<Breadcrumb current="AI Timer" />`, `design` has a bespoke `<header>` with no link back to the app
-or to sibling harnesses, and `engine` is a bare fixed canvas (defensible — it's a Playwright target
-— but a maintainer landing there has no way out). A new contributor can't answer "what dev tools
-exist" without grepping.
-
-#### Proposed solution
-
-Add `web/src/routes/dev/+page.svelte` (gated by the same `requireDevHarness()` in its `+page.ts`)
-that links to `/dev/design`, `/dev/engine`, `/dev/ai-timer` with one-line descriptions, and give
-`design` the shared `<Breadcrumb current="Design tokens" />` for consistency with `ai-timer` (leave
-`engine` bare and note why in a comment, since it's an automated harness). Register the index in the
-`architecture` skill's route table.
-
-#### Verification
-
-Visiting `/dev` in `vite dev` lists all harnesses; each page has a consistent way home; the route
-still 404s in production (`requireDevHarness`). `npm run check` green.
-
----
-
 ### [P3][maintainability] `ai-timer` comments reference `.js` filenames for modules that are `.ts`, contradicting the TypeScript-everywhere convention
 
 **File(s):** `web/src/routes/dev/ai-timer/+page.svelte:20-22` — pinned at SHA f934d43

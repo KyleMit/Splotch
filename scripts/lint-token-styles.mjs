@@ -36,7 +36,9 @@ const BASELINE = new Map(
     'lib/components/admin/InviteMenu.svelte': 4,
     // Light-only page, same reasoning as /admin.
     'routes/privacy/+page.svelte': 8,
-    // Deliberate constants: contrast-pinned #666 on hardcoded-light host pages.
+    // Deliberate constant: #666 is contrast-pinned for the one light-only host
+    // (/admin), where --text-mid's dark value would be 1.9:1. Themed hosts (the
+    // /dev harnesses) override it — see the note on .crumb-current.
     'lib/components/Breadcrumb.svelte': 1,
     // Photographic stage/polaroid whites + the #9559cd download-button hover
     // (≠ --brand-hover #9961d1; converging it is a visible change).
