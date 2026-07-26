@@ -9,38 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P2][duplication] Fold the duplicated post-drag cleanup in `onPointerCancel` / `onPointerUp` else-branch into one helper
-
-**File(s):** `web/src/lib/actions/dragToClear.ts:236-266` — pinned at SHA f934d43
-
-#### Problem
-
-The non-commit exit is spelled out twice. `onPointerUp`'s else branch:
-
-```ts
-o.containerEl.classList.remove('dragging-active');
-o.containerEl.style.transform = '';
-node.classList.remove('dragging');
-```
-
-and `onPointerCancel` repeats those three plus a few more resets. `finishDrag` already exists as the
-shared teardown, but these container/node resets live outside it, so the "undo the visible drag"
-logic is split between `finishDrag` and each caller.
-
-#### Proposed solution
-
-Move the container/node visual reset (`dragging-active`, `containerEl.style.transform`,
-`node.classList` and `node.style` clearing) into `finishDrag` (or a new `resetDragVisuals(o)` it
-calls), so both the cancel path and the non-commit up path call one function. The commit path, which
-animates instead, stays separate.
-
-#### Verification
-
-The `cancels a drag past the accept radius…` test asserts the full reset; keep it green.
-`npm run test:unit -- dragToClear`.
-
----
-
 ### [P2][architecture] Unify the three near-identical ghost-click guards
 
 **File(s):** `web/src/lib/actions/modalDialog.svelte.ts:82-88` (`onClick`),

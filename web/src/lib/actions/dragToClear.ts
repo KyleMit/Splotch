@@ -213,6 +213,12 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     node.classList.remove('delete-ready');
   }
 
+  function resetDragVisuals(o: DragToClearOptions) {
+    o.containerEl.classList.remove('dragging-active');
+    o.containerEl.style.transform = '';
+    node.classList.remove('dragging');
+  }
+
   // Commit exit choreography: the button's fade/shrink and the page-turn ripple
   // live in ClearButton.svelte's CSS; the delays below only hand the classes over
   // at each stage.
@@ -266,9 +272,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
       playClearExit(node, o);
     } else {
-      o.containerEl.classList.remove('dragging-active');
-      o.containerEl.style.transform = '';
-      node.classList.remove('dragging');
+      resetDragVisuals(o);
     }
 
     o.onDragEnd?.();
@@ -283,9 +287,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const o = getOptions();
     finishDrag(o, e.pointerId);
 
-    o.containerEl.classList.remove('dragging-active');
-    o.containerEl.style.transform = '';
-    node.classList.remove('dragging');
+    resetDragVisuals(o);
     // A fresh drag can start while a previous commit's exit is still playing,
     // so cancelling has to put the button back on screen rather than leave it
     // mid-fade until that exit's timers catch up.
