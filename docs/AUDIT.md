@@ -7,35 +7,6 @@
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P4][naming] `alignToSource`'s edge-strength cutoff `60` is an unnamed inline literal
-
-**File(s):** `tools/asset-gen/lib/align-to-source.mjs:47` — pinned at SHA f934d43
-
-#### Problem
-
-```js
-if (srcE[i] > 60) {
-  idx.push(i);
-  wt.push(srcE[i]);
-}
-```
-
-The gradient-magnitude threshold that decides which source pixels are "edges worth correlating" is a
-bare `60`, sitting in a module whose other tuning values (`ALIGN_MAX`, `ALIGN_W`) *are* named
-constants. It reads as noise next to them.
-
-#### Proposed solution
-
-`const EDGE_MIN = 60; // min |gradient| to treat a source pixel as a registration edge` alongside
-the existing constants at the top.
-
-#### Verification
-
-No behavior change; `grep "EDGE_MIN" lib/align-to-source.mjs` confirms extraction. Any align unit
-test still passes.
-
----
-
 ### [P4][maintainability] Windows backslash-normalization is sprinkled across three modules despite Windows support being dropped
 
 **File(s):** `tools/asset-gen/lib/punch-fill.mjs:99` (`.replace(/\\/g,'/')`), `page-notes.mjs:39`
