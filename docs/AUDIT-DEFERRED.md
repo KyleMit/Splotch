@@ -3100,3 +3100,57 @@ The rolled-back draft is kept at
 (1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-architecture-utils-mjs-is-a-grab-bag-mixing-generic-playwright-releas.patch`.
+
+### [P2][duplication] The `/dev/engine` readiness `beforeEach` and state readers are duplicated verbatim across engine and multitouch specs
+
+**File(s):** `web/tests/engine.spec.ts:24-40`, `web/tests/multitouch.spec.ts:15-55` — pinned at SHA
+f934d43
+
+#### Problem
+
+`multitouch.spec.ts:46-55` copies the `engine.spec.ts:27-40` `beforeEach` navigate-and-poll block
+character-for-character (both even carry the same explanatory comment). The `count` reader is
+defined identically in both (`engine.spec.ts:25`, `multitouch.spec.ts:15`), and `state`/`alphaAt`
+overlap. `grep "__engineReady === true"` shows the poll logic living in three files (`engine`,
+`multitouch`, `global-setup`). Any change to how the harness signals readiness (e.g. a new
+`__engineReady` gate) must be edited in lockstep in multiple places.
+
+#### Proposed solution
+
+Create `web/tests/engine-harness.ts` exporting `gotoEngine(page)` (the navigate + poll `beforeEach`
+body), plus `count(page)`, `state(page)`, `alphaAt(page, x, y)`, `pixelAlpha(page, x, y)`. Both
+specs import them; `beforeEach(({ page }) => gotoEngine(page))` replaces both inline blocks. Keep it
+out of `helpers.ts` since it depends on the dev-harness `window.__engine` globals (which
+`helpers.ts` must stay free of per its WebKit-portability note).
+
+#### Verification
+
+`grep -c "__engineReady" web/tests/*.spec.ts` returns 0 (only in `engine-harness.ts` and
+`global-setup.ts`). `npm run test:e2e -- engine.spec.ts multitouch.spec.ts` green.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* The reader extraction is incomplete: `multitouch.spec.ts:16` still defines its own `alphaAt`, and
+  lines 62, 68, and 75 bypass the shared `state` reader. Export the pixel-alpha reader from
+  `engine-harness.ts` and use it together with `state` in the multitouch spec so the dev-harness
+  readers are actually centralized.
+
+#### What was tried
+
+Updated the multitouch spec to import the shared `count` helper and register the engine harness’s
+existing readiness hook, removing both local duplicates while retaining `alphaAt` and all assertions
+unchanged.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-duplication-the-dev-engine-readiness-beforeeach-and-state-readers-are.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-duplication-the-dev-engine-readiness-beforeeach-and-state-readers-are.patch`.
