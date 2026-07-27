@@ -1,8 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { SIZE_PX, replayInPage } from '../perf/replay-scenario.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
 const analyzePath = join(repoRoot, 'scripts', 'perf', 'analyze.mjs');
@@ -16,6 +17,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   rmSync(fixtureDir, { recursive: true, force: true });
 });
 
@@ -103,5 +105,27 @@ describe('performance CLI input failures', () => {
       [`--recording=${path}`],
       `Replay recording has no events array: ${path}`
     );
+  });
+
+  it('replays every recorded size level at the app stroke width', async () => {
+    const canvas = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 1, height: 1 }) };
+    const engine = { setStrokeWidth: vi.fn() };
+    vi.stubGlobal('document', { querySelector: () => canvas });
+    vi.stubGlobal('window', { __engine: engine });
+    vi.stubGlobal('requestAnimationFrame', (callback) => callback());
+
+    await replayInPage({
+      events: [1, 2, 3, 4, 5].map((value) => ({ kind: 'action', name: 'size', value })),
+      recCanvas: { w: 1, h: 1 },
+      sizePx: SIZE_PX,
+      turbo: true,
+      maxIdleGapMs: 0,
+    });
+
+    expect(engine.setStrokeWidth).toHaveBeenNthCalledWith(1, 2);
+    expect(engine.setStrokeWidth).toHaveBeenNthCalledWith(2, 4);
+    expect(engine.setStrokeWidth).toHaveBeenNthCalledWith(3, 8);
+    expect(engine.setStrokeWidth).toHaveBeenNthCalledWith(4, 14);
+    expect(engine.setStrokeWidth).toHaveBeenNthCalledWith(5, 22);
   });
 });

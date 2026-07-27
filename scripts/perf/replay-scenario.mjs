@@ -15,7 +15,7 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { chromiumExecutablePath, fail, runMain, sleep } from '../lib/utils.mjs';
+import { chromiumExecutablePath, fail, isMain, runMain, sleep } from '../lib/utils.mjs';
 import { resolveThrottle } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace, injectObservers, readObservers, heapBytes } from './capture.mjs';
@@ -26,7 +26,7 @@ import { warnIfNoPerfMarks } from './warnings.mjs';
 
 // Mirrors SIZE_TO_PX in web/src/lib/state/strokeWidth.svelte.ts; this Node script
 // cannot import the app's Svelte rune module.
-const SIZE_PX = { 1: 2, 2: 4, 3: 8, 4: 14, 5: 22 };
+export const SIZE_PX = { 1: 2, 2: 4, 3: 8, 4: 14, 5: 22 };
 const MAX_IDLE_GAP_MS = 250;
 
 const args = process.argv.slice(2);
@@ -40,14 +40,13 @@ const turbo = args.includes('--turbo');
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
 
-if (!recordingPath) {
-  console.error(
-    'Usage: npm run perf:replay -- --recording=<recording.json> [--turbo] [--throttle=N]'
-  );
-  process.exit(1);
-}
-
 async function main() {
+  if (!recordingPath) {
+    console.error(
+      'Usage: npm run perf:replay -- --recording=<recording.json> [--turbo] [--throttle=N]'
+    );
+    process.exit(1);
+  }
   let contents;
   try {
     contents = readFileSync(recordingPath, 'utf8');
@@ -167,7 +166,7 @@ async function main() {
 // (synthetic events don't coalesce → one move = one engine op, matching the live
 // device) and maps UI actions onto the engine API. Real-time pacing uses the
 // recorded timestamps (capped) so frame cadence matches actual drawing.
-function replayInPage({ events, recCanvas, sizePx, turbo, maxIdleGapMs }) {
+export function replayInPage({ events, recCanvas, sizePx, turbo, maxIdleGapMs }) {
   const canvas = document.querySelector('#engineCanvas');
   const r = canvas.getBoundingClientRect();
   const sx = r.width / (recCanvas.w || r.width);
@@ -328,4 +327,4 @@ function renderReplayReport({ settings, replayed, debug, summary }) {
   return out.join('\n');
 }
 
-runMain(main);
+if (isMain(import.meta.url)) runMain(main);

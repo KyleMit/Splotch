@@ -9,38 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P4][maintainability] Undocumented magic in the recorder: `ALPHA_STRIDE = 4 * 61` and the `SIZE_PX` map
-
-**File(s):** `scripts/perf/ipad-recorder.js:128`, `scripts/perf/replay-scenario.mjs:25` — pinned at
-SHA f934d43
-
-#### Problem
-
-`ipad-recorder.js:128` declares `const ALPHA_STRIDE = 4 * 61;` used to stride the canvas
-`getImageData` alpha scan. The `4` (RGBA) is clear but the `61` (a prime, presumably to avoid
-aliasing with pixel-row periodicity) is unexplained — a reader can't tell whether the stride is
-load-bearing or arbitrary, and changing it silently changes every recorded `probe.alpha` magnitude
-(breaking comparisons against older recordings). Separately, `replay-scenario.mjs:25`
-`const SIZE_PX = { 1: 4, 2: 8, 3: 14, 4: 22, 5: 32 }` duplicates the app's stroke-size mapping with
-only a comment ("Approximate … override here if the real mapping is ever needed") and no pointer to
-the app source of truth, so it rots when the app's size ramp changes.
-
-#### Proposed solution
-
-Add a one-line WHY comment to `ALPHA_STRIDE` (prime stride to decorrelate from pixel-row stride;
-magnitude is relative-only) and name the `4`. For `SIZE_PX`, cite the app constant it approximates
-(e.g. `web/src/lib/state/…`) in the comment so a future editor knows where the real mapping lives.
-
-#### Verification
-
-The constants carry a rationale a reviewer can check; `SIZE_PX` comment names a real file that still
-defines the size ramp.
-
-Note: the `4 * 61` decorrelation stride is a plausible intent but unverified against the pixel-row
-width; treat the WHY comment as the deliverable, not a stride change.
-
----
-
 ### [P4][complexity] `analyze.mjs` makes five separate full passes over the event array
 
 **File(s):** `scripts/perf/analyze.mjs:97-155,161-217,225-302` — pinned at SHA f934d43
