@@ -13,39 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P2][duplication] The inline `fire()` PointerEvent dispatcher is re-declared ~7 times with divergent signatures
-
-**File(s):** `web/tests/engine.spec.ts:335, 400, 434, 1232`, `web/tests/flows.spec.ts:411`,
-`web/tests/ai-timer.spec.ts:59`, `web/tests/parent-zoom.spec.ts:48` — pinned at SHA f934d43
-
-#### Problem
-
-A local `const fire = (…) => target.dispatchEvent(new PointerEvent(…))` closure is written inside
-`page.evaluate` seven times. The signatures are gratuitously inconsistent: `engine.spec.ts:335` is
-`(type, x, y, buttons)`, `engine.spec.ts:400` is `(target, type, x, y, buttons)`,
-`ai-timer.spec.ts:59` is `(name, id, x, y)`, `parent-zoom.spec.ts:48` is `(name, id, x, y)` with
-`pointerType` closed over. Each hand-rolls the same `PointerEvent` option bag
-(`bubbles: true, cancelable: true`, etc.). A reader must re-parse the argument order every time, and
-a fix to (say) add `pressure` handling touches seven blocks.
-
-#### Proposed solution
-
-Because these run inside `page.evaluate`, they can't import a Node-side helper directly, but the
-option-bag construction can be centralized as a stringifiable factory injected via
-`page.addInitScript`, or — simpler — standardize on one signature
-`fire(target, type, {id, x, y, buttons, pointerType})` and paste that one canonical form (a single
-documented shape) so at least the divergence stops. Given the `evaluate` boundary, the pragmatic win
-is: define the synthetic-pointer sequences (merged-pen-stream, hover-only, pinch-spread) as named
-exported string-builders used across engine/flows, since those anatomies (finding: the pen-merge
-tests) are themselves duplicated.
-
-#### Verification
-
-`grep -c "const fire = " web/tests/*.spec.ts` drops materially; the remaining declarations share one
-signature. Synthetic-pointer tests still pass under `--repeat-each=10`.
-
----
-
 ### [P2][duplication] Canvas pixel-scanning readers duplicate getImageData boilerplate across ~10 functions with no shared module
 
 **File(s):** `web/tests/helpers.ts:25-34` (firstOpaquePixel), `web/tests/flows.spec.ts:158-195`
