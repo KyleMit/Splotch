@@ -9,36 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P3][error-handling] Give `loadInputs` and the replay/webinspector loaders friendly failures on missing/malformed input
-
-**File(s):** `scripts/perf/analyze.mjs:79-92,503-518`, `scripts/perf/replay-scenario.mjs:53,91`,
-`scripts/perf/analyze-webinspector.mjs:37` — pinned at SHA f934d43
-
-#### Problem
-
-`analyze.mjs:80` calls `statSync(target)` on the raw CLI arg — a nonexistent path throws a raw
-`ENOENT` stack, not the usage message the function otherwise prints for a missing arg.
-`JSON.parse(readFileSync(tracePath …))` (line 83) throws an unhelpful `SyntaxError` on a truncated
-trace. `analyze-webinspector.mjs:37` does `JSON.parse(readFileSync(path)).recording` — a
-valid-JSON-but-wrong-shape file yields `Cannot read properties of undefined (reading 'markers')`
-downstream. `replay-scenario.mjs:53` parses the recording and immediately dereferences
-`recording.events.length` (line 91) with no check that `events` is an array.
-
-#### Proposed solution
-
-In `loadInputs`, wrap `statSync`/`JSON.parse` and rethrow with context:
-`Trace not found / not valid JSON: ${tracePath}`. In `analyze-webinspector.mjs`, assert `rec` exists
-(`if (!rec) fail('Not a Web Inspector export: no .recording')`). In `replay-scenario.mjs`, validate
-`Array.isArray(recording.events)` after parse and `fail()` with the file path otherwise. Use
-`fail()` from `scripts/lib/utils.mjs`.
-
-#### Verification
-
-`node scripts/perf/analyze.mjs /nope` prints a one-line "not found" instead of a stack; a `{}`
-recording file yields a clear "no events array" message.
-
----
-
 ### [P3][type-safety] `jsSelfTime` keys functions by tab-joined string, then splits on tab
 
 **File(s):** `scripts/perf/analyze.mjs:161-197` (`jsSelfTime`) — pinned at SHA f934d43
