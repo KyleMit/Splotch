@@ -5,6 +5,9 @@ structure stands, but scripts now target **macOS and Linux only** (Windows dev s
 so the Windows branches described below (`isWindows`, `where`, `.cmd`/`.bat` shims, `gradlew.bat`)
 were removed. **Date:** 2026-06
 
+**Amended 2026-07-27:** command discovery now uses POSIX `sh` + `command -v`, stateless stroke
+geometry lives outside the Playwright driver, and Vite lifecycle handling has its own shared module.
+
 ## Context
 
 The `scripts/` folder grew to eleven standalone `.mjs` files that each re-derived the same
@@ -31,18 +34,24 @@ All automation scripts in `scripts/` are Node `.mjs` files that must run on macO
 boilerplate lives in purpose-named modules under `scripts/lib/`, and each script reads imperatively
 top-to-bottom with only its own domain logic inline:
 
-* `scripts/lib/utils.mjs` — generic helpers: `ROOT`, `sleep`, `fail`, `run`/`capture` (spawn the
-  executable with an argument array directly, preserving literal arguments while the OS resolves
-  commands through `PATH`), `sh` (the explicit escape hatch for deliberate shell command lines),
-  `hasCommand` (`which`), `parseFrontmatter`, `writeFileDeep`, and `compareSemverDesc`.
-* `scripts/lib/android.mjs` — per-platform Android SDK resolution: `ANDROID_HOME` (env override —
-  `ANDROID_HOME` or `ANDROID_SDK_ROOT` — else `%LOCALAPPDATA%\Android\Sdk` / `~/Library/Android/sdk`
-  / `~/Android/Sdk`), `ADB`/`EMULATOR` binary paths, `AVD_NAME`, and the Maestro location.
+* `scripts/lib/utils.mjs` — generic helpers: repo-root and main-entry resolution, environment and
+  CLI argument handling, `run`/`capture` (spawn the executable with an argument array directly,
+  preserving literal arguments while the OS resolves commands through `PATH`), `sh` (the explicit
+  escape hatch for deliberate shell command lines), OS opening, Chromium resolution, command
+  discovery through POSIX `sh` + `command -v`, strict flat-frontmatter parsing, file writes, and
+  semver/run-ID utilities.
+* `scripts/lib/android.mjs` — macOS/Linux Android SDK resolution: `ANDROID_HOME` or
+  `ANDROID_SDK_ROOT`, then `~/Library/Android/sdk` or `~/Android/Sdk`; plus `ADB`/`EMULATOR` binary
+  paths, `AVD_NAME`, and the Maestro location.
 * `scripts/lib/app-driver.mjs` — Playwright helpers for scripts that drive the live app
   (`store-shots.mjs`, `gen-large-image.mjs`): `ensureDevServer` (reuses an already-running server on
   the port, else spawns `node_modules/vite/bin/vite.js` directly — no shell — so killing the whole
   process group works reliably), `openAppPage`, and the UI gestures (`pickColor`, `setStrokeSize`,
-  `drawStroke`, `expandDrawer`, `dismissMenu`) plus point generators.
+  `drawStroke`, `expandDrawer`, `dismissMenu`).
+* `scripts/lib/stroke-geometry.mjs` — dependency-free point generators shared by browser-driving
+  scripts and the performance scenario without importing Playwright.
+* `scripts/lib/vite-server.mjs` — group-safe Vite lifecycle and stale-port cleanup, including the
+  visible-output cloud-tunnel variant.
 * `scripts/lib/book-assets.mjs` — coloring-book distribution helpers, including the script-side
   `webOnlyBooks` complement of `booksForPlatform('mobile')` in `web/src/lib/state/books.ts`.
 
