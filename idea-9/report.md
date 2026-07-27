@@ -1,8 +1,7 @@
 # Idea #9 — Tall↔wide palette coherence for the same subject
 
 Status: OPEN — no tall↔wide hue-signature scorer exists at HEAD; cross-orientation palette coherence
-is still un-enforced (../../docs/gemini-3.1-migration.md) and remains an area:asset-gen backlog
-item.
+is still un-enforced (../../docs/gemini-3.1-migration.md).
 
 **Verdict: WORKED** — both halves landed. (1) The offline inventory exists: a subject-level
 hue-signature scorer ranked all 46 tall/wide pairs in both modes and the worst offenders are

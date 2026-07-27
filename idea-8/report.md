@@ -1,7 +1,7 @@
 # Idea #8 — Light↔night palette coherence
 
 Status: OPEN — no light↔night hue-coherence scorer exists at HEAD; palette coherence is still
-un-enforced (../../docs/gemini-3.1-migration.md) and remains an area:asset-gen backlog item.
+un-enforced (../../docs/gemini-3.1-migration.md).
 
 **Verdict: WORKED** (both halves validated: the offline region-hue scorer ranks the catalog and
 correctly flags the known offenders; multi-image conditioning produced a gate-passing,
