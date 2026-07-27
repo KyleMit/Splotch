@@ -1,4 +1,5 @@
 import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
@@ -55,7 +56,7 @@ const APP_VERSION = isCapacitor ? PKG_VERSION : webVersion(PKG_VERSION);
 // hosted endpoint. On the web this stays empty and the relative path is used.
 const NATIVE_API_BASE = isCapacitor ? 'https://splotch.art' : '';
 
-export default {
+export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
@@ -80,7 +81,13 @@ export default {
   // Profiling builds (PERF_MARKS=true) keep function names through minification
   // so the trace's CPU-sampler self-time is readable instead of mangled (`ci`).
   // No effect on shipping builds.
-  ...(perfMarks ? { esbuild: { keepNames: true } } : {}),
+  ...(perfMarks
+    ? {
+        esbuild: { keepNames: true } as import('vite').ESBuildOptions & {
+          keepNames: boolean;
+        },
+      }
+    : {}),
   plugins: [
     sveltekit(),
     // Emit a version.json on every build so the running app can detect
@@ -94,7 +101,7 @@ export default {
           source: JSON.stringify({ version: APP_VERSION }),
         });
       },
-    } satisfies import('vite').Plugin,
+    },
     ...(isCapacitor
       ? []
       : [
@@ -143,4 +150,4 @@ export default {
           }),
         ]),
   ],
-};
+});
