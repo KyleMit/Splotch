@@ -17,32 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P4][duplication] The DeviceLock "Parent Center" rationale comment is duplicated verbatim across Java and Swift
-
-**File(s):** `android/app/src/main/java/art/splotch/app/DeviceLockPlugin.java:12-15`,
-`ios/App/App/DeviceLockPlugin.swift:5-6` (native plugins) — pinned at SHA f934d43
-
-#### Problem
-
-Both plugins carry the same hand-maintained sentence explaining the feature ("Surfaces whether …
-lock is … engaged so the Parent Center can confirm the lock is on (green check) and swap its
-'enable' steps for 'unpin'/'exit' steps."). The shared user-facing behavior lives in two
-implementation comments that must be edited in lockstep to stay accurate; there is no single place
-that documents the DeviceLock contract (JS name `DeviceLock`, method `isLocked` → `{locked}`).
-
-#### Proposed solution
-
-Document the cross-platform DeviceLock contract once — in the web-side plugin interface/TypeScript
-definition that calls `DeviceLock.isLocked()`, or in the `mobile`/`architecture` skill — and reduce
-the two native comments to a pointer plus platform-specific notes (Android lock-task state vs. iOS
-Guided Access).
-
-#### Verification
-
-The behavioral description exists in exactly one canonical location; the native files reference it.
-
----
-
 ### [P4][dead-config] `AppDelegate.swift` is wall-to-wall empty template lifecycle stubs
 
 **File(s):** `ios/App/App/AppDelegate.swift:14-34` (iOS app delegate) — pinned at SHA f934d43
