@@ -43,7 +43,7 @@ const throttle = resolveThrottle(args, 4);
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
 
-async function main() {
+export async function runMountProfile() {
   const outDir = profilePath('mount', deviceName, throttle.tag);
   mkdirSync(outDir, { recursive: true });
 
@@ -127,4 +127,4 @@ async function main() {
   }
 }
 
-if (isMain(import.meta.url)) runMain(main);
+if (isMain(import.meta.url)) runMain(runMountProfile);

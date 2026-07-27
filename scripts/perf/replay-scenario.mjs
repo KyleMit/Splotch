@@ -40,7 +40,7 @@ const turbo = args.includes('--turbo');
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
 
-async function main() {
+export async function runReplayScenario() {
   if (!recordingPath) {
     console.error(
       'Usage: npm run perf:replay -- --recording=<recording.json> [--turbo] [--throttle=N]'
@@ -327,4 +327,4 @@ function renderReplayReport({ settings, replayed, debug, summary }) {
   return out.join('\n');
 }
 
-if (isMain(import.meta.url)) runMain(main);
+if (isMain(import.meta.url)) runMain(runReplayScenario);

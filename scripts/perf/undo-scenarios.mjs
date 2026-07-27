@@ -417,7 +417,7 @@ function buildUndoSettings({ throttle, build, geom, t0 }) {
   };
 }
 
-export async function main() {
+export async function runUndoScenarios() {
   // /dev/engine is gated by PUBLIC_ENABLE_DEV_HARNESS ($env/dynamic/public, read
   // at runtime), so the preview server spawned by buildAndPreview must inherit it.
   process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
@@ -617,5 +617,5 @@ function renderUndoReport({ settings, scenarios }) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  runMain(main);
+  runMain(runUndoScenarios);
 }

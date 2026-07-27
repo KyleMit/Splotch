@@ -28,7 +28,7 @@ const throttle = resolveThrottle(args, 4);
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
 
-async function main() {
+export async function runWebScenario() {
   warnIfNoPerfMarks('npm run perf:web');
 
   const outDir = profilePath('web', deviceName, throttle.tag);
@@ -71,4 +71,4 @@ async function main() {
   }
 }
 
-if (isMain(import.meta.url)) runMain(main);
+if (isMain(import.meta.url)) runMain(runWebScenario);

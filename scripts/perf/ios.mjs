@@ -28,7 +28,7 @@ const device = resolveDevice(deviceName);
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
 
-async function main() {
+export async function runIosProfile() {
   warnIfNoPerfMarks('npm run perf:ios');
 
   const outDir = profilePath('ios-webkit', deviceName);
@@ -63,4 +63,4 @@ async function main() {
   }
 }
 
-if (isMain(import.meta.url)) runMain(main);
+if (isMain(import.meta.url)) runMain(runIosProfile);

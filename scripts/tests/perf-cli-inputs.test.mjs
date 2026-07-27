@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { SIZE_PX, replayInPage } from '../perf/replay-scenario.mjs';
 
+const state = vi.hoisted(() => ({ directEntry: false, runMain: vi.fn() }));
 const chromium = vi.hoisted(() => ({ connectOverCDP: vi.fn() }));
 
 vi.mock('@playwright/test', () => ({ chromium }));
@@ -16,7 +17,7 @@ vi.mock('node:child_process', async (importOriginal) => {
 
 vi.mock('../lib/utils.mjs', async (importOriginal) => {
   const actual = await importOriginal();
-  return { ...actual, runMain: vi.fn() };
+  return { ...actual, isMain: () => state.directEntry, runMain: state.runMain };
 });
 
 const repoRoot = join(import.meta.dirname, '..', '..');
@@ -27,10 +28,13 @@ const replayPath = join(repoRoot, 'scripts', 'perf', 'replay-scenario.mjs');
 let fixtureDir;
 
 beforeEach(() => {
+  state.directEntry = false;
+  state.runMain.mockClear();
   fixtureDir = mkdtempSync(join(tmpdir(), 'splotch-perf-cli-'));
 });
 
 afterEach(() => {
+  state.directEntry = false;
   vi.unstubAllGlobals();
   rmSync(fixtureDir, { recursive: true, force: true });
 });
@@ -144,15 +148,32 @@ describe('performance CLI input failures', () => {
   });
 
   it('imports the Android profiler without starting its driver', async () => {
-    const { runMain } = await import('../lib/utils.mjs');
     spawnSync.mockClear();
     chromium.connectOverCDP.mockClear();
-    runMain.mockClear();
 
     await import('../perf/android.mjs');
 
     expect(spawnSync).not.toHaveBeenCalled();
     expect(chromium.connectOverCDP).not.toHaveBeenCalled();
-    expect(runMain).not.toHaveBeenCalled();
+    expect(state.runMain).not.toHaveBeenCalled();
+  });
+
+  it('starts each guarded profiler when invoked directly', async () => {
+    const drivers = [
+      ['../perf/scenario.mjs', 'runWebScenario'],
+      ['../perf/mount.mjs', 'runMountProfile'],
+      ['../perf/ios.mjs', 'runIosProfile'],
+      ['../perf/android.mjs', 'runAndroidProfile'],
+    ];
+    state.directEntry = true;
+
+    for (const [path, entry] of drivers) {
+      vi.resetModules();
+      state.runMain.mockClear();
+      const module = await import(path);
+
+      expect(module[entry]).toBeTypeOf('function');
+      expect(state.runMain).toHaveBeenCalledExactlyOnceWith(module[entry]);
+    }
   });
 });

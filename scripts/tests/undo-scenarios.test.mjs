@@ -94,8 +94,8 @@ describe('undo scenario profiling', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { main } = await import('../perf/undo-scenarios.mjs');
-    await main();
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    await runUndoScenarios();
 
     const jsonPath = join(fixtureDir, 'undo-scenarios.json');
     const markdownPath = join(fixtureDir, 'undo-scenarios.md');

@@ -9,35 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P4][naming] Entry-point `main` functions aren't exported, hurting grepability/testability
-
-**File(s):** `scripts/perf/scenario.mjs:34`, `scripts/perf/mount.mjs:49`, `scripts/perf/ios.mjs:35`,
-`scripts/perf/android.mjs:79`, `scripts/perf/undo-scenarios.mjs:306`,
-`scripts/perf/replay-scenario.mjs:45` — pinned at SHA f934d43
-
-#### Problem
-
-Every driver defines a bare, unexported `async function main()` invoked by the `main().catch(...)`
-epilogue. `analyze.mjs` alone gates its `main()` behind the
-`import.meta.url === pathToFileURL(process.argv[1]).href` guard (line 518) and exports
-`analyze`/`renderReport` for reuse; the drivers do neither, so importing one for a test (or reusing
-`getWebviewPage`/`findWebviewSocket` from android.mjs) forces a full run. The identical local name
-`main` across six files also means a symbol search can't distinguish them.
-
-#### Proposed solution
-
-Apply the `analyze.mjs` pattern uniformly: adopt the shared `runMain(main)` (see P2) which can
-incorporate the `import.meta` "run only if invoked directly" guard, and export the reusable pieces
-(e.g. `export { findWebviewSocket, readWebviewSocket }` from android.mjs) so a smoke test or another
-script can import them without launching a browser.
-
-#### Verification
-
-Importing `android.mjs` in a test does not start adb/Playwright; each entry still runs standalone
-via `npm run perf:*`.
-
----
-
 ### [P4][error-handling] `getWebviewPage`/`findWebviewSocket` use unlabeled retry magic and a fragile URL heuristic
 
 **File(s):** `scripts/perf/android.mjs:42-77` — pinned at SHA f934d43

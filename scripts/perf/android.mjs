@@ -77,7 +77,7 @@ export async function getWebviewPage(browser) {
   throw new Error('No WebView page exposed over CDP');
 }
 
-async function main() {
+export async function runAndroidProfile() {
   requireDevice();
 
   if (build) {
@@ -125,4 +125,4 @@ async function main() {
   }
 }
 
-if (isMain(import.meta.url)) runMain(main);
+if (isMain(import.meta.url)) runMain(runAndroidProfile);
