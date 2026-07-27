@@ -21,40 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P2][duplication] The Maestro CLI install step is duplicated verbatim between the Android and iOS workflows
-
-**File(s):** `.github/workflows/android-deploy.yml:62-65`, `.github/workflows/ios-deploy.yml:35-38`
-— pinned at SHA f934d43
-
-#### Problem
-
-Both workflows contain the identical block:
-
-```yaml
-- name: Install Maestro CLI
-  run: |
-    curl -fsSL "https://get.maestro.mobile.dev" | bash
-    echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
-```
-
-The `testing` skill even documents a footgun here (`get.maestro.mobile.dev`, not `get.maestro.dev`).
-Duplicating a curl-pipe-bash installer across two files means a URL fix or a version pin lands in
-one and is forgotten in the other. It's also unpinned — every run installs whatever Maestro is
-latest.
-
-#### Proposed solution
-
-Extract to a composite action `.github/actions/install-maestro/action.yml` used by both jobs.
-Consider pinning a Maestro version there for reproducibility. This also gives the URL-footgun
-comment a single home.
-
-#### Verification
-
-Both tag workflows still run the Maestro smoke; `grep -rn "get.maestro" .github/workflows` returns
-nothing (moved into the composite action).
-
----
-
 ### [P2][duplication] The "Upload Maestro report" artifact step is near-identical across the two native workflows
 
 **File(s):** `.github/workflows/android-deploy.yml:82-89`, `.github/workflows/ios-deploy.yml:47-54`

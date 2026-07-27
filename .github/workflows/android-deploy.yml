@@ -52,10 +52,7 @@ jobs:
       - name: Build debug APK
         run: npm run android:apk
 
-      - name: Install Maestro CLI
-        run: |
-          curl -fsSL "https://get.maestro.mobile.dev" | bash
-          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      - uses: ./.github/actions/install-maestro
 
       - name: Run smoke test on emulator
         uses: reactivecircus/android-emulator-runner@v2
