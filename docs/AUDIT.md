@@ -21,36 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P4][maintainability] `ALLOWED_TOKENS_LIST` hard-codes retry-indexed values tightly coupled to `retries: 2` in a different file
-
-**File(s):** `.github/workflows/test.yml:143` — pinned at SHA f934d43
-
-#### Problem
-
-```yaml
-ALLOWED_TOKENS_LIST: daycare-club,daycare-club-retry1,daycare-club-retry2
-```
-
-The `-retry1`/`-retry2` suffixes exist solely because `web/playwright.config.ts` sets `retries: 2`
-in CI (one token per attempt, per the comment). This is an invisible cross-file coupling: bump
-retries to 3 and the burst spec's third attempt has no allowlisted token, producing a confusing
-rate-limit failure with no signal pointing back here. The magic list lives in a workflow env, far
-from the config that dictates its length.
-
-#### Proposed solution
-
-Derive the token list from the retry count in one place — e.g. generate it in `playwright.config.ts`
-(or a shared constant the spec and config both read) so the list length tracks `retries`
-automatically, or add a comment at the `retries` definition pointing at this env. At minimum,
-cross-reference both sides so a future retry bump updates the token list.
-
-#### Verification
-
-Changing `retries` in `playwright.config.ts` no longer requires a manual edit here (or a
-lint/comment flags the coupling); the rate-limit burst spec passes on every retry attempt.
-
----
-
 ### [P4][consistency] `upload-artifact` steps disagree on `if-no-files-found` handling
 
 **File(s):** `.github/workflows/test.yml:151-157` (no `if-no-files-found`) vs
