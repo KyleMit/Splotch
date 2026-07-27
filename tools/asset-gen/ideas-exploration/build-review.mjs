@@ -59,6 +59,13 @@ async function build() {
     }
   }
 
+  if (ideas.length !== dirs.length) {
+    console.error(
+      `only parsed ${ideas.length} of ${dirs.length} idea-* directories — see the "bad meta.json" errors above`
+    );
+    process.exit(1);
+  }
+
   const rows = ideas
     .map(({ meta }) => {
       const v = VERDICT_META[meta.verdict] ?? { label: meta.verdict, cls: '' };

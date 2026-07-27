@@ -11,32 +11,6 @@
 
 ## Source: Code audit — tools/asset-gen · ideas-exploration (R&D scratch)
 
-### [P4][maintainability] `build-review.mjs` silently drops any idea whose `meta.json` fails to parse
-
-**File(s):** `tools/asset-gen/ideas-exploration/build-review.mjs` (lines 52–60, 117–119) — pinned at
-SHA f934d43
-
-#### Problem
-
-The one maintained tool in this folder logs a bad `meta.json` to stderr and continues (`ideas.push`
-skipped), so a parse error silently produces a dashboard missing that idea while `console.log` still
-reports "wrote … (N ideas)". `done` (line 117) is derived from whatever survived, and the header
-hardcodes "of 25" — so a dropped idea shows as "24 of 25" with no error surfaced to the viewer. All
-25 `meta.json` files parse and share an identical key set today, so this is latent, not active.
-
-#### Proposed solution
-
-Since 25 is the known fixed count of a frozen set, have `build()` assert `ideas.length === 25` (or
-compare against the `idea-*` directory count) and exit non-zero on mismatch, so a future edit that
-breaks a `meta.json` fails loudly rather than quietly shrinking the dashboard.
-
-#### Verification
-
-Temporarily corrupt one `meta.json`, run `node build-review.mjs`, and confirm it now errors instead
-of writing a 24-idea page.
-
----
-
 ### [P4][organization] Absolute machine paths (`/home/user/Splotch/…`) baked into committed JSON evidence
 
 **File(s):** `tools/asset-gen/ideas-exploration/idea-14/warp-both.json`, and any other committed
