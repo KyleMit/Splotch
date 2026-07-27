@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Claude Code on the web — environment Setup script (committed; see docs/CLOUD/Claude.md, ADR-0021).
 #
 # The env-config "Setup script" field can't be version-controlled, so keep it a one-liner

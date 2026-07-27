@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 # Cloud (Claude Code on the web) only — a local session already runs on a branch

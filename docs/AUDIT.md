@@ -19,31 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P3][consistency] Claude cloud `setup.sh` uses `#!/bin/bash` while the Codex scripts use `#!/usr/bin/env bash`
-
-**File(s):** `.claude/cloud/setup.sh:1`, `.claude/hooks/*.sh:1`, `.codex/cloud/setup.sh:1`,
-`.codex/cloud/maintenance.sh:1` — pinned at SHA f934d43
-
-#### Problem
-
-The `.claude` shell files use `#!/bin/bash`; the `.codex` files use `#!/usr/bin/env bash`. Both are
-reasonable, but the split is arbitrary and undocumented. `#!/usr/bin/env bash` is the more portable
-choice (macOS ships an ancient `/bin/bash` 3.2; a Homebrew bash lands on PATH), and ADR-0017
-requires scripts to run on both macOS and Linux, so the env form is the better house style to
-standardize on.
-
-#### Proposed solution
-
-Pick one shebang convention repo-wide for these hand-authored shell scripts (prefer
-`#!/usr/bin/env bash`) and apply it to all six files.
-
-#### Verification
-
-`head -1 .claude/hooks/*.sh .claude/cloud/setup.sh .codex/cloud/*.sh` shows a mix today; after the
-change all lines match.
-
----
-
 ### [P3][consistency] Claude `setup.sh` swallows every step with `|| echo` but, unlike the Codex scripts, never summarizes what was skipped
 
 **File(s):** `.claude/cloud/setup.sh:22-45` vs `.codex/cloud/setup.sh:14-59` — pinned at SHA f934d43
