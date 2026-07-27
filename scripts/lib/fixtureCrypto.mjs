@@ -7,7 +7,7 @@
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
-import { fail } from './utils.mjs';
+import { fail, requireEnv } from './utils.mjs';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
@@ -24,13 +24,10 @@ try {
 }
 
 function getKey() {
-  const secret = process.env.REDTEAM_FIXTURE_KEY;
-  if (!secret) {
-    fail(
-      'Missing REDTEAM_FIXTURE_KEY. Set it in .env (see .env.example) or export it\n' +
-        'before encrypting/decrypting the red-team fixtures.'
-    );
-  }
+  const secret = requireEnv(
+    'REDTEAM_FIXTURE_KEY',
+    'set it in .env (see .env.example) or export it'
+  );
   // A fixed salt keeps the key stable across machines that share the secret —
   // the passphrase is the entropy; this is at-rest obfuscation for a test
   // corpus, not key-management for production secrets.

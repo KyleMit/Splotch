@@ -26,33 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P2][consistency] Missing-API-key guard written three different ways
-
-**File(s):** `scripts/redteam-run.mjs:278` (`fail(...)`), `scripts/model-eval-run.mjs:138-141`
-(`console.error`+`process.exit(1)`), `scripts/model-eval-gen-inputs.mjs:57-60`
-(`console.error`+`process.exit(1)`) — pinned at SHA f934d43
-
-#### Problem
-
-Three scripts guard `GEMINI_API_KEY`, each with a different idiom and message shape — one uses the
-shared `fail()` helper, two hand-roll `console.error` + `process.exit(1)`. The same inconsistency
-appears for other required env (`REDTEAM_FIXTURE_KEY`, `ADMIN_ACCESS_TOKEN`, `TUNNEL_AUTH` in
-`cloud-tunnel.mjs:22-32` with its own `die()`). Readers get inconsistent exit codes and message
-formats for the identical "required env missing" case.
-
-#### Proposed solution
-
-Add `export const requireEnv = (name, hint) => { if (!process.env[name]) fail(`Missing ${name}${hint
-? `— ${hint}` : ''}`); return process.env[name]; };` to `lib/utils.mjs`. Replace the ad-hoc guards
-(including `cloud-tunnel`'s `die`) with it.
-
-#### Verification
-
-Unset `GEMINI_API_KEY` and run `npm run model-eval` / `npm run redteam`: both exit non-zero with the
-same message shape. `grep -rn "Missing GEMINI" scripts/` shows uniform wording.
-
----
-
 ### [P3][duplication] Gradle-wrapper path resolved in two places
 
 **File(s):** `scripts/gradle.mjs:15-17` and `scripts/android-emulator-smoke.mjs:78-79` — pinned at
