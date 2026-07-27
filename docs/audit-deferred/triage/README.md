@@ -26,9 +26,9 @@ rationale.
 | 9  | `p5-readability-confetti-mask.md`                 | Duplicated 6-line mask gradient in AiConfetti               | P5  | C03     | FIX |
 | 10 | `p5-type-safety-ai-image-result-cast.md`          | `AiImageResult` casts in event handlers                     | P5  | C03     | FIX |
 | 11 | `p1-consistency-state-naming.md`                  | Unify exported `$state` object naming                       | P1  | C04     | pending |
-| 12 | `p1-duplication-segmented-control.md`             | Shared segmented-control primitive (3 copies with drift)    | P1  | C05     | pending |
-| 13 | `p3-duplication-setting-spacing-rule.md`          | `.setting + .setting` rule copied into three sections       | P3  | C05     | pending |
-| 14 | `p4-accessibility-segmented-aria.md`              | Segmented controls use inconsistent ARIA semantics          | P4  | C05     | pending |
+| 12 | `p1-duplication-segmented-control.md`             | Shared segmented-control primitive (3 copies with drift)    | P1  | C05     | FIX — Segmented primitive |
+| 13 | `p3-duplication-setting-spacing-rule.md`          | `.setting + .setting` rule copied into three sections       | P3  | C05     | FIX — hoist to ParentCenter |
+| 14 | `p4-accessibility-segmented-aria.md`              | Segmented controls use inconsistent ARIA semantics          | P4  | C05     | FIX — folded into #12 |
 | 15 | `p1-duplication-ink-keyline.md`                   | White/dark ink keyline CSS triplicated                      | P1  | C04     | pending |
 | 16 | `p3-accessibility-clear-button-keyboard.md`       | Clearing the canvas is pointer-only                         | P3  | C03     | OPTIONS — lean: keyboard click path |
 | 17 | `p2-duplication-icon-glob-exclusion.md`           | Icon glob + `splotchy` exclusion repeated three places      | P2  | C07     | pending |
