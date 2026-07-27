@@ -21,33 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P3][maintainability] `label-to-todo.sh` caps project items and fields at `first: 100` with no pagination
-
-**File(s):** `.github/scripts/label-to-todo.sh:23` (`projectItems(first: 100)`), `:37`
-(`fields(first: 100)`), `:47`? — pinned at SHA f934d43
-
-#### Problem
-
-The GraphQL query fetches the issue's `projectItems(first: 100)` and the project's
-`fields(first:
-100)` with no pagination. If the issue is already in more than 100 projects
-(unlikely) or, more plausibly, the project grows many single-select fields, the `Status` field or
-the existing item can fall outside the first page and the script will silently "add it now"
-(line 118) as a duplicate or fail to find the field. It's a latent correctness edge on an otherwise
-careful script.
-
-#### Proposed solution
-
-For a single-owner project this is low-risk, so at minimum add a comment documenting the 100-item
-assumption. If robustness matters, page the `fields` connection or query the field by name directly.
-
-#### Verification
-
-Confirm the target project has <100 fields; add a comment or paginate. Trigger the `reviewed` label
-on a test issue and confirm it moves to ToDo.
-
----
-
 ### [P3][consistency] Concurrency control is applied unevenly — only two of seven workflows declare a group
 
 **File(s):** `.github/workflows/test.yml:8-10` (cancel), `pages.yml:24-26` (no-cancel),
