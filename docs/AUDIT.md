@@ -15,37 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P4][readability] `playwright.config.ts` browser-fallback logic uses a bare magic index and three silent empty catches
-
-**File(s):** `web/playwright.config.ts:15-49` (`chromiumExecutablePath`, `webkitAvailable`) — pinned
-at SHA f934d43
-
-#### Problem
-
-```ts
-.filter((d) => /^chromium-\d+$/.test(d))
-.sort((a, b) => Number(b.slice(9)) - Number(a.slice(9)));   // line 23
-```
-
-`9` is the unexplained length of the `"chromium-"` prefix (a classic off-by-one hazard if the prefix
-ever changes). The function also has three bare `} catch {}` blocks (lines 19, 31, 44) that swallow
-all errors with no comment on why silence is correct — a reader can't tell intentional-fallback from
-accidental error-hiding. This is dense environment-probing logic sitting in a config file.
-
-#### Proposed solution
-
-Replace `slice(9)` with a captured regex group (`d.match(/^chromium-(\d+)$/)?.[1]`) or a named
-`const PREFIX = 'chromium-'` so intent is explicit. Add a short comment on each empty catch
-("missing/unreadable path → fall through to next candidate"). Consider extracting both helpers to a
-`scripts/` module so they can be unit-tested independently of Playwright.
-
-#### Verification
-
-Run E2E on a checkout where `chromium.executablePath()` is missing but a `chromium-<rev>` dir
-exists; confirm the resolved path still selects the highest revision.
-
----
-
 ### [P4][documentation] Temporal wording in config comments will age ("now", "is now TypeScript")
 
 **File(s):** `web/tsconfig.json:5-6` and `web/vite.config.ts:16` — pinned at SHA f934d43

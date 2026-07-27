@@ -28,8 +28,7 @@ function chromiumExecutablePath(): string | undefined {
     const builds = readdirSync(base)
       .filter((d) => /^chromium-\d+$/.test(d))
       .sort(
-        (a, b) =>
-          Number(b.slice(chromiumPrefix.length)) - Number(a.slice(chromiumPrefix.length)),
+        (a, b) => Number(b.slice(chromiumPrefix.length)) - Number(a.slice(chromiumPrefix.length))
       );
     for (const build of builds) {
       for (const sub of ['chrome-linux', 'chrome-linux64']) {
