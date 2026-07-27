@@ -21,33 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P3][security] Third-party actions are pinned to mutable major tags, not commit SHAs
-
-**File(s):** `.github/workflows/android-deploy.yml:68`
-(`reactivecircus/android-emulator-runner@v2`), `.github/workflows/label-sync.yml:26`
-(`crazy-max/ghaction-github-labeler@v5`), plus every `actions/*@vN` — pinned at SHA f934d43
-
-#### Problem
-
-All actions — first-party (`actions/checkout@v7`, `actions/setup-node@v6`, `actions/cache@v6`,
-`actions/upload-artifact@v7`) and third-party (`reactivecircus/android-emulator-runner@v2`,
-`crazy-max/ghaction-github-labeler@v5`) — are pinned to floating major-version tags. A tag is
-mutable: a compromised or repointed tag executes new code in CI with the workflow's token (see the
-missing-`permissions` finding for how much that token can do). Third-party actions like the
-emulator-runner and the labeler are the higher-risk cases.
-
-#### Proposed solution
-
-Pin actions to full commit SHAs with a trailing `# vX.Y.Z` comment, and let Dependabot (next
-finding) propose bumps. At minimum, SHA-pin the two third-party actions.
-
-#### Verification
-
-`grep -rnE "uses: .+@v[0-9]+$" .github/workflows` returns only first-party actions you consciously
-choose to leave on tags; third-party uses show a 40-char SHA.
-
----
-
 ### [P3][dead-config] No `dependabot.yml` — nothing keeps the pinned actions or npm deps updated
 
 **File(s):** `.github/` (absent `dependabot.yml`) — pinned at SHA f934d43
