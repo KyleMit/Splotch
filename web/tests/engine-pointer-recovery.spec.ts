@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { state } from './engine-harness';
-import { COLOR_CHANGE_DEBOUNCE_SETTLE_MS } from './helpers';
+import { COLOR_CHANGE_DEBOUNCE_SETTLE_MS, touchEventPrevented } from './helpers';
 
 test('a pointer resumed far away after an idle gap does not draw a connecting line', async ({
   page,
@@ -213,20 +213,10 @@ test('a pen drag that started with a delivered pointerdown on UI never paints', 
 test('the canvas cancels its touch stream so iPadOS Scribble releases pen strokes', async ({
   page,
 }) => {
-  const prevented = await page.evaluate(() => {
-    const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
-    return ['touchstart', 'touchmove'].map((type) => {
-      const touch = new Touch({ identifier: 1, target: canvas, clientX: 50, clientY: 50 });
-      const e = new TouchEvent(type, {
-        touches: [touch],
-        changedTouches: [touch],
-        cancelable: true,
-        bubbles: true,
-      });
-      canvas.dispatchEvent(e);
-      return e.defaultPrevented;
-    });
-  });
+  const prevented = await Promise.all([
+    touchEventPrevented(page, '#engineCanvas', 'touchstart'),
+    touchEventPrevented(page, '#engineCanvas', 'touchmove'),
+  ]);
   expect(prevented).toEqual([true, true]);
 });
 

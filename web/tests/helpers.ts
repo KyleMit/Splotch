@@ -31,6 +31,36 @@ export function swatch(page: Page, color: string) {
   return page.locator(`button.color-swatch[data-color="${color}"]`);
 }
 
+export function touchEventPrevented(
+  page: Page,
+  selector: string,
+  type: 'touchstart' | 'touchmove',
+  stylus = false
+): Promise<boolean> {
+  return page.evaluate(
+    ({ selector, type, stylus }) => {
+      const target = document.querySelector(selector) as HTMLElement;
+      if (stylus) {
+        const event = new Event(type, { cancelable: true, bubbles: true });
+        Object.defineProperty(event, 'changedTouches', { value: [{ touchType: 'stylus' }] });
+        target.dispatchEvent(event);
+        return event.defaultPrevented;
+      }
+
+      const touch = new Touch({ identifier: 1, target, clientX: 10, clientY: 10 });
+      const event = new TouchEvent(type, {
+        touches: [touch],
+        changedTouches: [touch],
+        cancelable: true,
+        bubbles: true,
+      });
+      target.dispatchEvent(event);
+      return event.defaultPrevented;
+    },
+    { selector, type, stylus }
+  );
+}
+
 /** Navigate to the app and wait for hydration: the canvas mounts on the client,
  *  so once it's visible the app has hydrated. */
 export async function gotoApp(page: Page, path = '/') {

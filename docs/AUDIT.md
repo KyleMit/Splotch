@@ -13,31 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P4][test-quality] Scribble-guard `evaluate` probes are duplicated between engine and flows and could share one fixture
-
-**File(s):** `web/tests/flows.spec.ts:463-500` (fingerPrevented / stylusTouchStartPrevented),
-`web/tests/engine.spec.ts:461-479` (Scribble touch-cancel probe) — pinned at SHA f934d43
-
-#### Problem
-
-Both files build synthetic `TouchEvent`/stubbed-`changedTouches` probes to assert the Scribble
-guard's `preventDefault` behavior. `flows.spec.ts:492-500` and `engine.spec.ts:464-476` construct
-the same touch-event scaffolding independently. The pattern (dispatch a cancelable touch and read
-`defaultPrevented`) is a reusable primitive.
-
-#### Proposed solution
-
-Extract `touchStartPrevented(page, selector, { touchType })` into `helpers.ts` (no CDP, WebKit-safe)
-covering both the real-`Touch` finger case and the stubbed-`changedTouches` stylus case. Both specs
-import it.
-
-#### Verification
-
-`grep -rn "changedTouches" web/tests/*.spec.ts` shows one helper.
-`npm run test:e2e -- flows.spec.ts engine.spec.ts -g Scribble` green.
-
----
-
 ### [P4][test-quality] Tests reach deep into engine internals via the harness, coupling specs to implementation details
 
 **File(s):** `web/tests/global.d.ts:6-66` (the `window.__engine` surface), consumed throughout

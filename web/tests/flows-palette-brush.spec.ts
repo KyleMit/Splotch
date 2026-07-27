@@ -11,6 +11,7 @@ import {
   retryOpen,
   swatch,
   TEST_PALETTE,
+  touchEventPrevented,
   type Rgba,
 } from './helpers';
 
@@ -326,18 +327,11 @@ test('the palette leaves finger touch taps uncancelled (Scribble guard scope)', 
 }) => {
   await gotoApp(page);
 
-  const fingerPrevented = await swatch(page, TEST_PALETTE.blue).evaluate((paletteSwatch) => {
-    const selectedSwatch = paletteSwatch as HTMLElement;
-    const touch = new Touch({ identifier: 1, target: selectedSwatch, clientX: 10, clientY: 10 });
-    const e = new TouchEvent('touchstart', {
-      touches: [touch],
-      changedTouches: [touch],
-      cancelable: true,
-      bubbles: true,
-    });
-    selectedSwatch.dispatchEvent(e);
-    return e.defaultPrevented;
-  });
+  const fingerPrevented = await touchEventPrevented(
+    page,
+    `button.color-swatch[data-color="${TEST_PALETTE.blue}"]`,
+    'touchstart'
+  );
 
   expect(fingerPrevented).toBe(false);
 });
@@ -348,16 +342,6 @@ test('the palette leaves finger touch taps uncancelled (Scribble guard scope)', 
 // ATTACHED to each surface a pen taps right before drawing — the gap that
 // shipped the picker unguarded. The real Scribble swallowing needs trusted
 // on-device input (ADR-0038), so guard attachment is the automatable proxy.
-function stylusTouchStartPrevented(page: Page, selector: string): Promise<boolean> {
-  return page.evaluate((sel) => {
-    const target = document.querySelector(sel) as HTMLElement;
-    const e = new Event('touchstart', { cancelable: true, bubbles: true });
-    Object.defineProperty(e, 'changedTouches', { value: [{ touchType: 'stylus' }] });
-    target.dispatchEvent(e);
-    return e.defaultPrevented;
-  }, selector);
-}
-
 test('a stylus tap on a color-picker hexagon has its touch stream cancelled (Scribble guard)', async ({
   page,
 }) => {
@@ -369,7 +353,7 @@ test('a stylus tap on a color-picker hexagon has its touch stream cancelled (Scr
     await expect(page.locator('#color-picker')).toBeVisible({ timeout: 1000 });
   }).toPass({ timeout: 10_000 });
 
-  expect(await stylusTouchStartPrevented(page, '#color-picker .hexagon')).toBe(true);
+  expect(await touchEventPrevented(page, '#color-picker .hexagon', 'touchstart', true)).toBe(true);
 });
 
 test('a stylus tap on an action button has its touch stream cancelled (Scribble guard)', async ({
@@ -378,7 +362,7 @@ test('a stylus tap on an action button has its touch stream cancelled (Scribble 
   await gotoApp(page);
   await openDrawer(page);
 
-  expect(await stylusTouchStartPrevented(page, '#brushButton')).toBe(true);
+  expect(await touchEventPrevented(page, '#brushButton', 'touchstart', true)).toBe(true);
 });
 
 // On iPadOS the guard's cancelled touchstart suppresses the tap's synthesized
