@@ -148,38 +148,23 @@ function buildHalf(pair, cell, theme, imgsP) {
   frame.appendChild(canvas);
   frame.appendChild(vl);
   const cap = document.createElement('figcaption');
-  const nm = document.createElement('span');
-  nm.className = 'name';
-  nm.textContent = cell.id + '-' + cell.orient;
-  cap.appendChild(nm);
+  const chip = (cls, text) => {
+    const s = document.createElement('span');
+    s.className = cls;
+    s.textContent = text;
+    cap.appendChild(s);
+    return s;
+  };
+  chip('name', cell.id + '-' + cell.orient);
   if (theme === 'light' && cell.keep != null) {
-    const k = document.createElement('span');
-    k.className = 'keep ' + keepClass(cell.keep);
-    k.textContent = 'outline ' + cell.keep.toFixed(1) + '%';
-    cap.appendChild(k);
+    chip('keep ' + keepClass(cell.keep), 'outline ' + cell.keep.toFixed(1) + '%');
   }
-  if (theme === 'dark' && !cell.night) {
-    const note = document.createElement('span');
-    note.className = 'note';
-    note.textContent = 'no night fill';
-    cap.appendChild(note);
-  }
-  if (theme === 'dark' && !cell.chalk) {
-    const note = document.createElement('span');
-    note.className = 'note';
-    note.textContent = 'no chalk (inverted pen)';
-    cap.appendChild(note);
-  }
+  if (theme === 'dark' && !cell.night) chip('note', 'no night fill');
+  if (theme === 'dark' && !cell.chalk) chip('note', 'no chalk (inverted pen)');
   if (theme === 'dark' ? cell.nightRaw : cell.lightRaw) {
-    const note = document.createElement('span');
-    note.className = 'note';
-    note.textContent = 'raw fill (pre-fork fallback)';
-    cap.appendChild(note);
+    chip('note', 'raw fill (pre-fork fallback)');
   }
-  const pill = document.createElement('span');
-  pill.className = 'pill ' + (theme === 'dark' ? 'night' : 'light');
-  pill.textContent = theme === 'dark' ? 'NIGHT' : 'LIGHT';
-  cap.appendChild(pill);
+  chip('pill ' + (theme === 'dark' ? 'night' : 'light'), theme === 'dark' ? 'NIGHT' : 'LIGHT');
   fig.appendChild(frame);
   fig.appendChild(cap);
   pair.appendChild(fig);

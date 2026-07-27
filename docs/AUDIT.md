@@ -9,44 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P3][duplication] `buildHalf` repeats the same "create span, set class + text, append" block five times
-
-**File(s):**
-`tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js:136-204`
-(function), esp. 152-179 (note spans) — pinned at SHA f934d43
-
-#### Problem
-
-`buildHalf` is a 68-line DOM builder in which the caption chips are hand-assembled by near-identical
-five-line blocks:
-
-```js
-const note = document.createElement('span');
-note.className = 'note';
-note.textContent = 'no night fill';
-cap.appendChild(note);
-```
-
-repeated verbatim for "no night fill" (159-163), "no chalk (inverted pen)" (164-169), "raw fill
-(pre-fork fallback)" (170-175), plus structurally-identical variants for the keep chip (152-157) and
-the NIGHT/LIGHT pill (176-179). The boilerplate buries the actual branching logic (which notes apply
-to which theme).
-
-#### Proposed solution
-
-Extract
-`const chip = (cls, text) => { const s = document.createElement('span'); s.className = cls; s.textContent = text; cap.appendChild(s); };`
-and collapse the body to guarded one-liners:
-`if (theme === 'dark' && !cell.night) chip('note', 'no night fill');`. Cuts the function roughly in
-half and makes the note conditions scannable.
-
-#### Verification
-
-Regenerate a proof sheet and confirm the caption chips (keep %, notes, NIGHT/LIGHT pill) still
-render identically in both halves.
-
----
-
 ### [P3][maintainability] `legacy/retouch-line-art.mjs` documents a wrong invocation path and pins a superseded model
 
 **File(s):** `tools/asset-gen/legacy/retouch-line-art.mjs:25-28` (usage), `:40` (model) — pinned at
