@@ -61,6 +61,11 @@ function webkitAvailable(): boolean {
 }
 
 const slowMo = Number(process.env.SLOWMO) || 0;
+const ciRetries = 2;
+const ciAllowedTokens = Array.from(
+  { length: ciRetries + 1 },
+  (_, retry) => (retry === 0 ? 'daycare-club' : `daycare-club-retry${retry}`)
+).join(',');
 
 export default defineConfig({
   ...commonPlaywrightConfig,
@@ -70,7 +75,7 @@ export default defineConfig({
   // ~58s for the suite.
   workers: '100%',
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? ciRetries : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     ...commonPlaywrightConfig.use,
@@ -102,6 +107,10 @@ export default defineConfig({
   ],
   webServer: {
     ...commonWebServer,
+    env: {
+      ...commonWebServer.env,
+      ...(process.env.CI ? { ALLOWED_TOKENS_LIST: ciAllowedTokens } : {}),
+    },
     // Exercise the production artifact (service worker, adapter output,
     // minification) instead of the dev server. PUBLIC_ENABLE_DEV_HARNESS unlocks
     // the /dev/* test harnesses in the built app (404 otherwise); it's never set

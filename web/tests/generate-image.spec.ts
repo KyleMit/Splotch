@@ -105,13 +105,11 @@ test('throttles a managed token hammered in a burst', async ({ request }, testIn
   //
   // The limiter window is per token, lasts 60s, and rejected hits don't extend
   // it — so a full window doesn't clear until 60s after the burst. A CI retry
-  // (retries: 2) starts inside that still-full window, so it would see the very
-  // first request 429 and fail deterministically. Give each attempt its own
-  // token (the retry ones are allowlisted alongside daycare-club in test.yml) so
-  // every attempt gets a fresh window. Local runs never retry, so testInfo.retry
-  // is always 0 there — they only ever need daycare-club.
-  const tokens = ['daycare-club', 'daycare-club-retry1', 'daycare-club-retry2'];
-  const token = tokens[testInfo.retry] ?? tokens[tokens.length - 1];
+  // starts inside that still-full window, so it would see the very first request
+  // 429 and fail deterministically. Give each attempt its own token so every
+  // attempt gets a fresh window. Local runs never retry, so testInfo.retry is
+  // always 0 there — they only ever need daycare-club.
+  const token = testInfo.retry === 0 ? 'daycare-club' : `daycare-club-retry${testInfo.retry}`;
 
   const statuses: number[] = [];
   for (let i = 0; i < GENERATE_LIMIT; i++) {

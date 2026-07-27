@@ -130,12 +130,6 @@ jobs:
           # cache or edited install line fails loudly instead of silently
           # dropping WebKit coverage.
           REQUIRE_WEBKIT: 1
-          # The generate-image rate-limit spec drives the managed-token path,
-          # which requires the token to be allowlisted. Locally this comes from
-          # .env (git-ignored); supply the same non-secret test tokens in CI.
-          # The burst spec picks a token by testInfo.retry so each CI retry
-          # (retries: 2) gets a fresh 60s limiter window — hence one per attempt.
-          ALLOWED_TOKENS_LIST: daycare-club,daycare-club-retry1,daycare-club-retry2
 
       # The gen:* generators drive the live app through scripts/lib/app-driver.mjs
       # and never run elsewhere in CI, so this smoke keeps that module from rotting
