@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import {
@@ -31,7 +31,7 @@ function expectFailure(parse, raw, name, fallback, source, message) {
 }
 
 describe('parsePositiveInt', () => {
-  test('returns the fallback for an omitted value and parses positive integer strings', () => {
+  it('returns the fallback for an omitted value and parses positive integer strings', () => {
     expect(parsePositiveInt(undefined, '--samples', 3)).toBe(3);
     expect(parsePositiveInt('1', '--samples', 3)).toBe(1);
     expect(parsePositiveInt('12', '--samples', 3)).toBe(12);
@@ -50,7 +50,7 @@ describe('parsePositiveInt', () => {
 });
 
 describe('parseTemperature', () => {
-  test('returns the fallback and accepts numeric strings at both bounds', () => {
+  it('returns the fallback and accepts numeric strings at both bounds', () => {
     expect(parseTemperature(undefined, '--temperature', 0.5)).toBe(0.5);
     expect(parseTemperature(undefined, '--temperature', undefined)).toBeUndefined();
     expect(parseTemperature('0', '--temperature', 0.5)).toBe(0);
@@ -71,7 +71,7 @@ describe('parseTemperature', () => {
 });
 
 describe('parseNonNegative', () => {
-  test('returns the fallback and accepts non-negative numeric strings', () => {
+  it('returns the fallback and accepts non-negative numeric strings', () => {
     expect(parseNonNegative(undefined, '--threshold', 2)).toBe(2);
     expect(parseNonNegative('0', '--threshold', 2)).toBe(0);
     expect(parseNonNegative('1.5', '--threshold', 2)).toBe(1.5);
@@ -90,7 +90,7 @@ describe('parseNonNegative', () => {
 });
 
 describe('parsePngToWebpOptions', () => {
-  test('uses defaults and environment compatibility fallbacks', () => {
+  it('uses defaults and environment compatibility fallbacks', () => {
     expect(parsePngToWebpOptions([], {})).toEqual({ quality: 80, lossless: false });
     expect(parsePngToWebpOptions([], { QUALITY: '90', LOSSLESS: '1' })).toEqual({
       quality: 90,
@@ -98,7 +98,7 @@ describe('parsePngToWebpOptions', () => {
     });
   });
 
-  test('parses flags with precedence over environment fallbacks', () => {
+  it('parses flags with precedence over environment fallbacks', () => {
     expect(
       parsePngToWebpOptions(['--quality', '95', '--lossless'], {
         QUALITY: '70',
@@ -107,7 +107,7 @@ describe('parsePngToWebpOptions', () => {
     ).toEqual({ quality: 95, lossless: true });
   });
 
-  test('rejects an invalid environment quality fallback', () => {
+  it('rejects an invalid environment quality fallback', () => {
     expect(() => parsePngToWebpOptions([], { QUALITY: 'invalid' })).toThrow('process exited');
     expect(error).toHaveBeenCalledWith('--quality must be a non-negative number, got "invalid"');
     expect(exit).toHaveBeenCalledWith(1);
@@ -115,7 +115,7 @@ describe('parsePngToWebpOptions', () => {
 });
 
 describe('makeClient', () => {
-  test('fails with the canonical diagnostic when the key is required but absent', () => {
+  it('fails with the canonical diagnostic when the key is required but absent', () => {
     vi.stubEnv('GEMINI_API_KEY', undefined);
 
     expect(() => makeClient()).toThrow('process exited');
@@ -123,7 +123,7 @@ describe('makeClient', () => {
     expect(exit).toHaveBeenCalledWith(1);
   });
 
-  test('returns null when the key is optional and absent', () => {
+  it('returns null when the key is optional and absent', () => {
     vi.stubEnv('GEMINI_API_KEY', undefined);
 
     expect(makeClient({ optional: true })).toBeNull();

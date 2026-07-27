@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -167,7 +167,7 @@ afterEach(async () => {
   await rm(state.roots.root, { recursive: true, force: true });
 });
 
-test('coloring drift reports a corrupt fill, continues, and exits non-zero', async () => {
+it('coloring drift reports a corrupt fill, continues, and exits non-zero', async () => {
   state.pages = [await addPage('bad', { corruptFill: true }), await addPage('good')];
 
   await runCli('check-coloring-drift.mjs');
@@ -177,7 +177,7 @@ test('coloring drift reports a corrupt fill, continues, and exits non-zero', asy
   expect(process.exitCode).toBe(1);
 });
 
-test('coloring drift only renders requested overlays for failed pages', async () => {
+it('coloring drift only renders requested overlays for failed pages', async () => {
   state.pages = [await addPage('bad', { drifted: true }), await addPage('good')];
 
   await runCli('check-coloring-drift.mjs', '--overlay');
@@ -188,7 +188,7 @@ test('coloring drift only renders requested overlays for failed pages', async ()
   expect(state.overlayRequests).toBe(1);
 });
 
-test('fill eyes reports a corrupt fill, continues, and exits non-zero', async () => {
+it('fill eyes reports a corrupt fill, continues, and exits non-zero', async () => {
   state.pages = [await addPage('bad', { corruptFill: true }), await addPage('good')];
 
   await runCli('audit-fill-eyes.mjs');
@@ -198,7 +198,7 @@ test('fill eyes reports a corrupt fill, continues, and exits non-zero', async ()
   expect(process.exitCode).toBe(1);
 });
 
-test('outline solidity reports a corrupt outline, continues, and exits non-zero', async () => {
+it('outline solidity reports a corrupt outline, continues, and exits non-zero', async () => {
   state.pages = [await addPage('bad', { corruptOutline: true }), await addPage('good')];
 
   await runCli('audit-outline-solidity.mjs');
@@ -208,7 +208,7 @@ test('outline solidity reports a corrupt outline, continues, and exits non-zero'
   expect(process.exitCode).toBe(1);
 });
 
-test('golden diff reports a corrupt outline, retains successful pages, and exits non-zero', async () => {
+it('golden diff reports a corrupt outline, retains successful pages, and exits non-zero', async () => {
   await addPage('bad', { corruptOutline: true });
   await addPage('good');
   await writeFile(
@@ -225,7 +225,7 @@ test('golden diff reports a corrupt outline, retains successful pages, and exits
   expect(process.exitCode).toBe(1);
 });
 
-test('golden freeze preserves the baseline when any page errors', async () => {
+it('golden freeze preserves the baseline when any page errors', async () => {
   await addPage('bad', { corruptOutline: true });
   await addPage('good');
   const goldenPath = join(state.roots.assetGen, 'golden/golden-scores.json');

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -132,7 +132,7 @@ afterEach(async () => {
   await rm(state.roots.root, { recursive: true, force: true });
 });
 
-test('retains failed candidates in scratch and leaves every page unshipped', async () => {
+it('retains failed candidates in scratch and leaves every page unshipped', async () => {
   await addPage('first-tall');
   await addPage('second-tall');
   state.gateResults = [...exhaustPage(), true];
@@ -164,7 +164,7 @@ test('retains failed candidates in scratch and leaves every page unshipped', asy
   expect(state.overlayRequests).toBe(2);
 });
 
-test('does not ship a passing candidate without apply', async () => {
+it('does not ship a passing candidate without apply', async () => {
   await addPage('page-tall');
   state.gateResults = [true];
 
@@ -178,7 +178,7 @@ test('does not ship a passing candidate without apply', async () => {
   );
 });
 
-test('surfaces sample drift for review without failing the run', async () => {
+it('surfaces sample drift for review without failing the run', async () => {
   await addPage('page-tall');
   state.gateResults = [...exhaustPage(), ...exhaustPage()]; // both samples miss every gate
 
@@ -203,7 +203,7 @@ test('surfaces sample drift for review without failing the run', async () => {
   );
 });
 
-test('fails closed when a single review render misses every gate', async () => {
+it('fails closed when a single review render misses every gate', async () => {
   await addPage('page-tall');
   state.gateResults = exhaustPage(); // the one candidate misses every gate
 
@@ -223,7 +223,7 @@ test('fails closed when a single review render misses every gate', async () => {
   );
 });
 
-test('ships both raw and punched outputs when a candidate passes with apply', async () => {
+it('ships both raw and punched outputs when a candidate passes with apply', async () => {
   await addPage('page-tall');
   state.gateResults = [true];
 
