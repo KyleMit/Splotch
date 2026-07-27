@@ -1,10 +1,12 @@
 // cSpell:ignore SLOWMO
 import { existsSync, readdirSync } from 'node:fs';
 import { chromium, defineConfig, devices, webkit } from '@playwright/test';
-import { ADMIN_ACCESS_TOKEN } from './tests/admin-helpers';
-
-const PORT = 4173;
-const baseURL = `http://localhost:${PORT}`;
+import {
+  commonPlaywrightConfig,
+  commonWebServer,
+  playwrightPort,
+  productionPreviewCommand,
+} from './playwright.shared';
 
 // Cloud sessions cache Chromium under PLAYWRIGHT_BROWSERS_PATH, but the pinned
 // revision can drift from what playwright-core resolves (e.g. the env installed
@@ -52,9 +54,7 @@ function webkitAvailable(): boolean {
 const slowMo = Number(process.env.SLOWMO) || 0;
 
 export default defineConfig({
-  testDir: './tests',
-  globalSetup: './tests/global-setup.ts',
-  fullyParallel: true,
+  ...commonPlaywrightConfig,
   // Use all cores everywhere. Playwright otherwise defaults to ~50% of logical
   // cores, leaving half the machine idle even though every spec is
   // parallel-safe — on a 4-core box that's the difference between ~90s and
@@ -64,7 +64,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL,
+    ...commonPlaywrightConfig.use,
     trace: 'on-first-retry',
   },
   // launchOptions live per-project: the Chromium executable-path fallback must
@@ -92,21 +92,15 @@ export default defineConfig({
       : []),
   ],
   webServer: {
+    ...commonWebServer,
     // Exercise the production artifact (service worker, adapter output,
     // minification) instead of the dev server. `vite preview` defaults to 4173,
-    // matching PORT above. PUBLIC_ENABLE_DEV_HARNESS unlocks the /dev/* test
+    // matching the shared port. PUBLIC_ENABLE_DEV_HARNESS unlocks the /dev/* test
     // harnesses in the built app (404 otherwise); it's never set in the Netlify
     // deploy. Set DEV_SERVER=1 for fast local iteration against `vite dev`.
     command: process.env.DEV_SERVER
-      ? `npx vite dev --port ${PORT}`
-      : `npx vite build && npx vite preview --port ${PORT}`,
-    url: baseURL,
+      ? `npx vite dev --port ${playwrightPort}`
+      : productionPreviewCommand,
     reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
-    // ADMIN_ACCESS_TOKEN is the known secret the shared admin test helper provides
-    // to tests/admin.spec.ts and tests/a11y.spec.ts.
-    // Token mutations land in the in-memory fallback (no Netlify Blobs here),
-    // so they reset with the server and never touch real data.
-    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true', ADMIN_ACCESS_TOKEN },
   },
 });
