@@ -11,27 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P4][maintainability] `median`/`mean` are generic stats buried in the report module
-
-**File(s):** `scripts/lib/model-eval-report.mjs:55-62` (`median`, `mean`) — pinned at SHA f934d43
-
-#### Problem
-
-Two reusable numeric reducers are private to the report file. `mean` silently `Math.round`s (a
-reporting choice, not a general mean) while `median` doesn't — a subtle inconsistency for anyone
-reusing them. The perf scripts under `scripts/perf/` compute similar aggregates independently.
-
-#### Proposed solution
-
-Move raw `median`/`mean` to a `lib/stats.mjs`; keep the rounding at the call site in the report
-(`Math.round(mean(...))`) so the helper stays honest and reusable.
-
-#### Verification
-
-Report numbers unchanged; `grep -rn "function mean" scripts` shows one definition.
-
----
-
 ### [P4][readability] `card()` entry-existence check reaches up-and-back-down through the type dir
 
 **File(s):** `scripts/lib/scrapbook-index.mjs:143-148` (`card`) — pinned at SHA f934d43
