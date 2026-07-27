@@ -35,41 +35,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — scrapbook · run-artifact code
 
-### [P3][correctness] Deep-linking via `hashchange` (or back/forward) leaves `document.title` stale
-
-**File(s):** `scrapbook/coloring-book-proof-sheets/index.html:214-229`, `:240` (hand-authored hub) —
-pinned at SHA f934d43
-
-#### Problem
-
-`show(i, skipHash)` updates the tab title only inside the non-skip branch:
-
-```js
-if (!skipHash) {
-  if (location.hash.replace(/^#/, '') !== cat.id) location.hash = cat.id;
-  document.title = 'Splotch proof sheets — ' + cat.name; // only here
-}
-```
-
-The `hashchange` listener calls `show(indexFromHash(), true)` (line 240) with `skipHash = true`, so
-navigating by editing the URL hash, or using browser back/forward between categories, swaps the
-iframe but never updates `document.title`. The visible page changes while the tab caption stays on
-whatever category was last selected by click. The bug exists because the flag conflates two
-unrelated concerns (see next finding).
-
-#### Proposed solution
-
-Move `document.title = …` out of the `if (!skipHash)` block so it runs on every category switch
-regardless of how it was triggered. Keep only the `location.hash` write gated by the flag.
-
-#### Verification
-
-Load the hub, click "Farm", then edit the URL to `#space` (or press Back). Observe the tab title
-stays "…Farm" before the fix; after moving the assignment out, the title tracks the shown category
-on every path.
-
----
-
 ### [P4][readability] `skipHash` boolean is a control-flag that silently gates two behaviours
 
 **File(s):** `scrapbook/coloring-book-proof-sheets/index.html:214-229` (hand-authored hub) — pinned

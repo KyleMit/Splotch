@@ -224,8 +224,8 @@
         buttons[cat.id].scrollIntoView({ block: 'nearest', inline: 'center' });
         if (!skipHash) {
           if (location.hash.replace(/^#/, '') !== cat.id) location.hash = cat.id;
-          document.title = 'Splotch proof sheets — ' + cat.name;
         }
+        document.title = 'Splotch proof sheets — ' + cat.name;
       }
 
       document.getElementById('prev').addEventListener('click', function () { show(current - 1); });
