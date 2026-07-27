@@ -17,7 +17,6 @@ const TRACE_CATEGORIES = [
 ];
 
 const LONG_FRAME_MS = 32;
-export const LONG_TASK_MS = 50;
 
 export async function startTrace(cdp) {
   const events = [];

@@ -26,6 +26,7 @@ import { warnIfNoPerfMarks } from './warnings.mjs';
 // The app's "Size N" picker → engine px. Approximate (the recorder only sees the
 // label); override here if the real mapping is ever needed for fidelity.
 const SIZE_PX = { 1: 4, 2: 8, 3: 14, 4: 22, 5: 32 };
+const MAX_IDLE_GAP_MS = 250;
 
 const args = process.argv.slice(2);
 const flag = (name, def) => {
@@ -94,6 +95,7 @@ async function main() {
       recCanvas: cssCanvas,
       sizePx: SIZE_PX,
       turbo,
+      maxIdleGapMs: MAX_IDLE_GAP_MS,
     });
 
     const debug = await page.evaluate(() =>
@@ -147,7 +149,7 @@ async function main() {
 // (synthetic events don't coalesce → one move = one engine op, matching the live
 // device) and maps UI actions onto the engine API. Real-time pacing uses the
 // recorded timestamps (capped) so frame cadence matches actual drawing.
-function replayInPage({ events, recCanvas, sizePx, turbo }) {
+function replayInPage({ events, recCanvas, sizePx, turbo, maxIdleGapMs }) {
   const canvas = document.querySelector('#engineCanvas');
   const r = canvas.getBoundingClientRect();
   const sx = r.width / (recCanvas.w || r.width);
@@ -198,7 +200,7 @@ function replayInPage({ events, recCanvas, sizePx, turbo }) {
   return (async () => {
     for (const e of events) {
       if (!turbo) {
-        const dt = Math.min(Math.max(0, e.t - prevT), 250); // cap long idle gaps
+        const dt = Math.min(Math.max(0, e.t - prevT), maxIdleGapMs); // cap long idle gaps
         if (dt > 0) await sleep(dt);
         prevT = e.t;
       }

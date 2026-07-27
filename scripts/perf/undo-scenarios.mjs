@@ -139,6 +139,7 @@ function multiFingerGesture(gi, width, height, perFinger = MULTI_OPS_PER_FINGER)
 // Two strokes past MAX_UNDO_DEPTH, so every scenario fills the snapshot
 // stack AND exercises the depth-cap shift path.
 const MAX_UNDO_DEPTH = 20;
+const MAX_UNDO_STEPS = 60;
 const STROKES = Number(flag('strokes', String(MAX_UNDO_DEPTH + 2)));
 
 function buildScenarios(width, height) {
@@ -243,10 +244,10 @@ async function drawStrokes(page, strokes, crayon = false) {
 // measure to land before firing the next — otherwise the loop outruns the
 // restore queue and the phase window misses the tail steps.
 async function undoAll(page) {
-  return page.evaluate(async () => {
+  return page.evaluate(async (maxUndoSteps) => {
     const completed = () => performance.getEntriesByName('engine.undo', 'measure').length;
     let steps = 0;
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < maxUndoSteps; i++) {
       if (!window.__engineState.canUndo) break;
       const before = completed();
       window.__engine.undo();
@@ -260,7 +261,7 @@ async function undoAll(page) {
       await new Promise((r) => requestAnimationFrame(r));
     }
     return steps;
-  });
+  }, MAX_UNDO_STEPS);
 }
 
 const undoDebug = (page) =>

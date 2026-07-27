@@ -9,38 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P3][maintainability] Promote scattered magic thresholds to named constants
-
-**File(s):** `scripts/perf/capture.mjs:73` (`> 32`), `scripts/perf/mount.mjs:113,114` (`- 50`,
-`> 50 ms`), `scripts/perf/session.mjs:91` (`i < 12`), `scripts/perf/undo-scenarios.mjs:138,245`
-(`'22'`, `i < 60`), `scripts/perf/replay-scenario.mjs:208` (`250`) — pinned at SHA f934d43
-
-#### Problem
-
-Key thresholds are inline literals with the meaning only in prose comments or nowhere:
-
-* `capture.mjs:73` `intervals.filter((d) => d > 32)` — the long-frame budget (33 ms ≈ 30 fps) as a
-  bare `32`, while `analyze.mjs` names its sibling `LONG_TASK_US`.
-* `mount.mjs:113` `Math.max(0, t.duration - 50)` and the `>50 ms` label reimplement the 50 ms
-  long-task floor that `analyze.mjs:57` already names `LONG_TASK_US`.
-* `session.mjs:91` `for (let i = 0; i < 12; i++)` — an undo-click cap with no name.
-* `undo-scenarios.mjs:138` `STROKES = 22` is explained ("two past the depth-20 cap") but the `20`
-  (`MAX_UNDO_DEPTH`) it depends on is never a constant, so the `22` and the `+2` intent are
-  unchecked against the engine.
-
-#### Proposed solution
-
-Introduce `LONG_FRAME_MS = 32` (capture.mjs), reuse a shared `LONG_TASK_MS = 50` in mount.mjs,
-`MAX_UNDO_CLICKS = 12` (session.mjs), and in undo-scenarios make the depth relationship explicit:
-`const MAX_UNDO_DEPTH = 20; const STROKES = Number(flag('strokes', String(MAX_UNDO_DEPTH + 2)));`.
-
-#### Verification
-
-`grep -n "> 32" scripts/perf/capture.mjs` and `grep -n "duration - 50" scripts/perf/mount.mjs`
-return nothing; frame/long-task counts are unchanged on a re-run.
-
----
-
 ### [P3][error-handling] Give `loadInputs` and the replay/webinspector loaders friendly failures on missing/malformed input
 
 **File(s):** `scripts/perf/analyze.mjs:79-92,503-518`, `scripts/perf/replay-scenario.mjs:53,91`,

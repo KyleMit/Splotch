@@ -12,6 +12,7 @@
 import { readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { LONG_TASK_MS } from './thresholds.mjs';
 import { toMiB } from './units.mjs';
 
 const US_PER_MS = 1000;
@@ -55,7 +56,7 @@ const PAINTING = new Set([
   'DrawFrame',
 ]);
 
-const LONG_TASK_US = 50 * US_PER_MS;
+const LONG_TASK_US = LONG_TASK_MS * US_PER_MS;
 
 // Symbols that exist only because of profiling/driving, not in the shipped app:
 // the injected rAF FPS sampler, the user-timing API the PERF_MARKS calls hit

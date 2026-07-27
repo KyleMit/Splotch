@@ -14,9 +14,10 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 import { chromiumExecutablePath, runMain } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
-import { LONG_TASK_MS, startTrace, stopTrace } from './capture.mjs';
+import { startTrace, stopTrace } from './capture.mjs';
 import { resolveDevice } from './devices.mjs';
 import { profilePath, throttleTag } from './paths.mjs';
+import { LONG_TASK_MS } from './thresholds.mjs';
 
 // Lighthouse's "Slow 4G" throttle: 150 ms RTT, 1.6 Mbps down / 750 Kbps up.
 const SLOW_4G = {
