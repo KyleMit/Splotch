@@ -21,28 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P5][dead-config] `label-sync` comment references toggling `dry-run` that is already off
-
-**File(s):** `.github/workflows/label-sync.yml:7-8` and `:28-30` — pinned at SHA f934d43
-
-#### Problem
-
-The header comment says "flip dry-run off / skip-delete as needed for a full sync," but the workflow
-already sets `dry-run: false` (line 29). The comment describes a state that doesn't match the
-config, so a reader has to reconcile "flip it off" against "it's already off." Minor staleness on an
-otherwise well-documented file.
-
-#### Proposed solution
-
-Reword to reflect reality: dry-run is off (it does apply changes); the knob left conservative is
-`skip-delete: true` (won't prune hand-made labels) — flip that to `false` for a full reconcile.
-
-#### Verification
-
-The comment matches the actual `dry-run`/`skip-delete` values.
-
----
-
 ### [P5][consistency] Repo owner casing is inconsistent across `.github` URLs (`kylemit` vs `KyleMit`)
 
 **File(s):** `.github/ISSUE_TEMPLATE/config.yml:7` (`github.com/kylemit/splotch/...`),
