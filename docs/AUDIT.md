@@ -21,31 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P4][consistency] `upload-artifact` steps disagree on `if-no-files-found` handling
-
-**File(s):** `.github/workflows/test.yml:151-157` (no `if-no-files-found`) vs
-`android-deploy.yml:82-89` and `ios-deploy.yml:47-54` (`if-no-files-found: ignore`) — pinned at SHA
-f934d43
-
-#### Problem
-
-The Playwright report upload omits `if-no-files-found`, so it defaults to `warn` and emits an
-annotation when `web/playwright-report/` is empty (e.g. a build that failed before Playwright ran).
-The two Maestro uploads set `if-no-files-found: ignore`. No stated reason for the difference — it's
-just inconsistency that produces noisy warnings on some failed runs.
-
-#### Proposed solution
-
-Decide one policy. A missing Playwright report on a passing-up-to-that-point run is worth a warning,
-so `warn` may be intentional — if so, add a comment. Otherwise set all three to the same value.
-
-#### Verification
-
-All three `upload-artifact` steps set `if-no-files-found` explicitly (or a comment explains the
-default); a run that produces no report doesn't emit an unexplained warning.
-
----
-
 ### [P4][naming] Redundant workflow/job naming: workflow "Tests" contains a job named "Tests"
 
 **File(s):** `.github/workflows/test.yml:1` (`name: Tests`), `:84-85` (job `test`, `name: Tests`) —
