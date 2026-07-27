@@ -217,6 +217,25 @@ you can be bothered (and always at wrap-up), drain the store:
 the loop is at-least-once. A duplicate comment is a triviality; a silently dropped one is the
 reviewer's only written catch, gone.
 
+**Never hand-type the sha into `done`.** It wants the full 40 characters, and the one you have in
+front of you is usually the 12-char form from the rendered heading. It rejects a mismatch
+(`no pending record matching …`) rather than dropping the wrong record — correct, but you have then
+spent a round trip. Read it back from `next` instead, which also makes the drain a two-command loop
+you can repeat verbatim for a hundred findings:
+
+```bash
+node scripts/audit-burndown/backfill-comments.mjs next            # 1. read; post the body via MCP
+S=$(node scripts/audit-burndown/backfill-comments.mjs next | head -1 | awk '{print $2}')
+node scripts/audit-burndown/backfill-comments.mjs done "$S"       # 2. only after the post succeeds
+```
+
+**Budget for this: draining is the single largest consumer of the supervising context window.**
+Every comment passes through it twice — once read from `next`, once written into the MCP call — at
+roughly 1–3k tokens each. Over a few hundred findings that is the whole window several times over,
+so plan on repeated compaction (which is lossless here) rather than treating it as overhead you can
+avoid. Add supervisor commentary only where you actually verified something; narrating every clean
+fix doubles the cost for nothing.
+
 `npm run audit:status` prints the unposted count, and `audit:preflight` warns about a non-empty
 store, so an undrained backlog of comments is visible rather than discovered at closeout.
 
@@ -325,6 +344,15 @@ this is only about SHAs.)
    run. Sanity-check the **wall-clock** as well as the dollars: per-issue elapsed × the backlog is
    what decides whether this is one overnight run or a multi-day campaign needing a live session for
    each relaunch. At ~9 min/finding a 468-finding backlog is ~70 hours, not a night.
+
+   **Quote that projection as a range, and re-derive it once the run leaves the canary's section.**
+   `docs/AUDIT.md` is ordered by `## Source:` area, so a canary samples one area's difficulty rather
+   than the backlog's. Priority weighting does not rescue this: a 2026-07-27 run weighted its
+   estimate by the P1–P5 mix, projected ~40 hours, and then sustained 4–6 min/finding — a 3×
+   overestimate — because the `scripts/` sections that followed were mostly mechanical dedups that
+   cleared review first time, P1s included. Round count, not priority, is what actually sets elapsed
+   time, and round count is a property of the *area*. Report the first hour's observed rate as the
+   real number and treat the pre-run figure as an order of magnitude.
 9. `npm run audit:burndown:overnight -- 600`.
 
 ## While it runs
@@ -385,10 +413,53 @@ this is only about SHAs.)
   `projects["<repo-path>"].hasTrustDialogAccepted` in `/root/.claude.json` (that file lives outside
   the repo and outside a supervising agent's usual permission scope — this may need the human
   operator) before relaunching, or the resumed run halts on the identical pattern immediately.
+
+  **The trust string on its own is NOT the tell — diff it against a role that succeeded.** A
+  2026-07-27 run carried
+  `Ignoring N permissions.allow entries from .claude/settings.json: this
+  workspace has not been trusted`
+  in **every** `.err`, for eight hours, while 47 findings landed green. It is routine noise in a
+  cloud container: the subprocess still runs, it just ignores the project's pre-approved permission
+  list. Reading it as the documented failure — as the paragraph above invites — misdiagnoses a
+  healthy run.
+
+  What actually distinguishes them is the *envelope*, and the cheapest check is a byte comparison
+  against a role from the same iteration that worked:
+
+  ```bash
+  cmp -s .audit-work/logs/iter0019.verify.err .audit-work/logs/iter0019.impl.err && echo "same → noise"
+  node -e "const j=require('$PWD/.audit-work/logs/iter0019.impl.json');
+    console.log(j.is_error, j.total_cost_usd, j.terminal_reason)"
+  ```
+
+  Genuine trust loss is `total_cost_usd: 0` with `terminal_reason: "api_error"` and an empty
+  `iterations` — the role never ran. The 2026-07-27 failure was `$1.43` spent with
+  `terminal_reason: "aborted_streaming"`: a transient stream abort mid-work, retried normally by
+  `RETRIES`, and nothing to do with trust. **Non-zero spend means the role ran** — whatever the
+  `.err` says.
 * **Watch CI, not just the run log.** With no local full-suite gate, a red CI run on the draft PR is
   the only signal that one finding broke something another finding's targeted specs don't cover.
   Check it when you drain comments; treat a red run as a reason to pause and diagnose rather than
   something to sweep up at the end, because every finding after it lands on a broken base.
+
+  **Checking it is expensive if you do it the obvious way.** `mcp__github__actions_list` embeds a
+  full repository object per run, so even `per_page: 1` returns tens of thousands of characters and
+  a realistic page returns hundreds of thousands — enough to be truncated to a file, and to cost
+  more context than everything else the check is for. It also grows as the branch accumulates runs.
+  The tool truncates to a path; parse that instead of reading it:
+
+  ```bash
+  python3 -c "
+  import json,glob,os
+  p=max(glob.glob('/root/.claude/projects/*/*/tool-results/mcp-github-actions_list-*.txt'),key=os.path.getmtime)
+  for r in json.load(open(p))['workflow_runs'][:8]:
+      print(r['run_number'], r['head_sha'][:12], r['status'], r.get('conclusion','(pending)'))"
+  ```
+
+  Read `cancelled` as normal rather than as failure: `test.yml` sets
+  `concurrency: cancel-in-progress`, so a push landing before the previous suite finishes cancels
+  it. What matters is that no run reports `failure`, and that the **final** push is green — a
+  cancelled intermediate commit is covered by any later green run that contains it.
 * **The container can vanish mid-run** — reclaimed for inactivity, with no signal and no chance to
   flush. Nothing local prevents that; pushing every finding is what makes it survivable. When you
   come back to a dead container, everything that mattered is on `origin` and the run relaunches
@@ -544,6 +615,23 @@ the comment store, add the `docs/AUDIT-LOG.md` row, tidy any emptied `## Source:
 the PR ready (`mcp__github__update_pull_request` with `draft: false`). The backlog may still hold
 findings — that's expected; wrap-up ships what's done and closes the run out.
 
+**STOP does not guarantee the in-flight finding lands, and the residue is yours to clear.** The
+driver also checks it between retry attempts, so a role that hits a transient failure right after
+you set STOP exits mid-finding instead: no `DONE`, no `DEFERRED`, no `finished:` line, and the
+implementer's half-done work left uncommitted in the tree. That is a clean state, not a crash — the
+finding's `docs/AUDIT.md` entry was never removed, so it is intact and simply re-processed on the
+next run. **Discard the residue rather than committing it** (it is unreviewed and ungated):
+
+```bash
+git reset -q --hard HEAD          # tracked edits from the abandoned finding
+git status --porcelain            # then delete any untracked files it created
+```
+
+Check `git status` for untracked files specifically — a finding that added a new module leaves it
+behind, and `reset --hard` will not remove it. Before any of this, confirm you are not holding
+uncommitted work of your own (`git rev-list --count origin/<branch>..HEAD` and a `git status` read);
+the reset is indiscriminate.
+
 ### No verb — pausing on your own initiative
 
 The four verbs above are user-initiated, but the user is usually away, and a run that is quietly
@@ -619,13 +707,22 @@ state in the conversation:
   something specific. Watch for every terminal *and* degraded state, so silence really does mean
   "healthy and working":
   ```bash
-  tail -f -n 0 .audit-work/logs/run.log | grep -E --line-buffered \
+  tail -F -n 0 .audit-work/logs/run.log | grep -E --line-buffered \
     "HALT|hit a cap|red at batch|red on the final|push failed|no impl session|DEFERRED|finished:|iter"
   ```
   `push failed` matters as much as a halt: the run keeps committing perfectly well against a remote
   it cannot reach, and every commit it makes after that is unprotected. `no impl session` means a
   fix round lost the resume handoff and re-derived the change from review text — one such line is
   tolerable, a pattern of them means the session minting is broken again.
+
+  **Use `tail -F`, not `tail -f`, and never arm the monitor in the same breath as the launch.** On a
+  first launch `run.log` does not exist for a second or two, and lowercase `-f` exits 1 immediately
+  on a missing file — the monitor reports a script failure and you have no watcher at all, which is
+  the exact silence you armed it to prevent. Capital `-F` retries instead. Either way, wait for the
+  file before arming:
+  ```bash
+  until [ -f .audit-work/logs/run.log ]; do sleep 1; done
+  ```
 
   Whatever you arm, **confirm it is actually armed after every relaunch**, and stop the previous one
   first. This is not hypothetical bookkeeping: a `Monitor` clamps to a 30-minute timeout no matter
@@ -778,12 +875,44 @@ Notes from real runs — set these before a large run rather than discovering th
     looked at was rolled back and filed under "failed adversarial review", which is a lie to whoever
     triages `docs/AUDIT-DEFERRED.md` later. It now defers as `reviewer unavailable`, and the log
     reports the real fix-round count instead of a hardcoded "2".
+  * The lint gate ran `eslint` on **paths the fix had deleted or renamed away** (2026-07-27, fixed
+    in 40d641b). `git diff --name-only` reports what a commit *touched*, so a rename contributes its
+    rename-from path and a delete its old path; `eslint` exits 2 on a path that no longer exists, so
+    the gate went red on a fix containing no lint violation — and unrecoverably, since no edit can
+    bring a deleted path back. One correct rename-only fix burned three fix rounds against an
+    unsatisfiable gate, drove the implementer into editing the driver's own source trying to satisfy
+    it, and was then rolled back and filed as `fix introduced a lint violation`. `lintablePaths()`
+    in `lib.mjs` now filters to paths that still exist. Deletes had never exposed it because the
+    fixes that deleted things removed `.json` and `.webp`, which are not lintable extensions.
 
-  Two rules fall out. **An optional field in a role schema is a silent work-discard risk** — where
+  Three rules fall out. **An optional field in a role schema is a silent work-discard risk** — where
   an observable side effect exists (a commit, a file, a branch), check the side effect, because it
   cannot forget; reserve the envelope for what only the model knows. And **when a role fails to run,
   say so in the deferral reason.** Rolling back unreviewed work is right; calling it rejected is
   not. A deferral reason is read months later by someone deciding whether to re-stage the finding.
+  And third: **a gate must only assert things a fix can still act on.** A gate that can never go
+  green converts every fix round into wasted spend and then blames the model for the result — which
+  is why the tell is a *repeated* `round N: gates red` naming the same file. One red gate is a
+  finding to fix; the same gate red three rounds running is a gate to fix.
+* **A supervisor flagging a fix as "under-scoped" should read the finding's own
+  `#### Proposed solution` and `#### Verification` first, not its headline.** Findings routinely
+  offer alternatives ("either gitignore it, **or** mark it generated") and set acceptance
+  accordingly, so a fix that looks like it dodged the headline may have satisfied the stated
+  criterion exactly. Recover the original from the commit that consumed it:
+  `git show <sha> -- docs/AUDIT.md | grep '^-' | sed 's/^-//'`. This nearly produced a wrong public
+  flag on a correct fix in the 2026-07-27 run — and the mirror-image case is real too, where a fix
+  satisfies mis-scoped criteria while missing what the finding asked for, so read it in both
+  directions.
+* **Implementers run acceptance commands that rewrite committed artifacts, and the churn outlives
+  the finding.** A 2026-07-27 run left 22 dirty files — 21 regenerated store screenshots from a
+  `gen:shots` acceptance check, plus `scrapbook/index.html` mtime dates from `scrapbook:index`. Both
+  implementers correctly kept them out of their commits and said so, but nothing cleans them: they
+  sit in the tree until some later implementer sweeps them in with a `git add -A`, or a rollback's
+  `git reset --hard` silently discards them. **Do not revert them mid-run** — editing tracked files
+  races the driver's own commit and reset. Note them, check whether they are cosmetic (regenerated
+  release artifacts usually are, when no app source changed), and clean them at closeout. Worth a
+  glance at `git status` whenever you drain, precisely because the disclosure lives only in a fix
+  summary you might not read.
 * **Scope every `run.log` grep to the current run.** `run.log` accumulates across runs and iteration
   numbers restart at `iter0001` each time, so a bare `grep iter0008` silently matches a different
   finding from hours ago. Anchor on the run's start line:
@@ -807,7 +936,26 @@ Notes from real runs — set these before a large run rather than discovering th
   it unchanged just buys the same failure again.
 * When the backlog is fully drained, `docs/AUDIT.md` should be deleted per
   `.claude/audit-conventions.md` (a partial run may also leave emptied `## Source:` sections — tidy
-  them in a final commit).
+  them in a final commit). Find them by counting `###` entries per section rather than by eye — the
+  file is ~19k lines and an emptied heading looks identical to a populated one:
+
+  ```bash
+  python3 -c "
+  import sys
+  cur=None;cnt=0
+  for l in open('docs/AUDIT.md'):
+      if l.startswith('## '):
+          if cur and cur.startswith('## Source:') and cnt==0: print('EMPTY:',cur.strip())
+          cur=l;cnt=0
+      elif l.startswith('### '): cnt+=1
+  if cur and cur.startswith('## Source:') and cnt==0: print('EMPTY:',cur.strip())"
+  ```
+
+  **A cleared section may also strand its `## Summary`.** The producer writes one narrative summary
+  per audit pass, and once that pass's findings are all consumed the summary describes work that no
+  longer exists — worse, it then sits directly above the *next* `## Source:` heading and reads as if
+  it summarized that one. Remove it with the headings it belonged to (check the opening sentence
+  names that area), and re-run `pop.mjs --count` afterwards to prove the entry count is unchanged.
 * Drain the comment store before marking the PR ready — `next` / post / `done` until empty, and
   `capture` first if any fix landed without a record. Running `capture` **after** the drain is safe
   and worth doing as a completeness check: `done` records each posted sha, so capture reports
@@ -835,8 +983,10 @@ Notes from real runs — set these before a large run rather than discovering th
   changes can land two or three commits, so commits-with-an-`Audit:`-trailer over-reports fixes.
   Ignore `audit:status`'s `of <total>` denominator here; it is derived from `completed.log` (which
   is gitignored, container-local, and accumulates across runs) plus a cumulative deferred file, so
-  it drifts by a finding or two and is not an auditable figure. `remaining` is the trustworthy
-  number.
+  it drifts by a finding or two and is not an auditable figure. Its `completed` counter drifts for
+  the same reason and from the same file — a 2026-07-27 session read `completed 16` while git said
+  15. **`remaining` is the only number on that screen worth quoting**; everything else is a progress
+  indicator, not an audit.
 
   **A run that was killed never printed `finished:`, so reconstruct the counts from git and check
   the arithmetic closes.** Deferrals and drops are one commit each and exact; fixes are whatever is

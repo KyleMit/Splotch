@@ -692,6 +692,59 @@ permission scope (blocked by the session's own auto-mode classifier), so it was 
 operator rather than worked around. Added to the skill: check the `.err` files for a shared
 non-model error string before assuming a HALT is the ordinary case.
 
+### 2026-07-27 — the lint gate could not be satisfied by a rename, and blamed the model for it
+
+Third instance of the driver's most expensive bug class (after the optional `sha` and the capped
+reviewer), and the one that finally shows what the class *is*.
+
+`checkGates` built its lint list from `git diff --name-only baseSha HEAD` filtered by extension.
+That list reports what a commit **touched**, so a rename contributes its rename-from path and a
+delete contributes the deleted path. `eslint` exits 2 on a path that does not exist ("No files
+matching the pattern"), which the gate reads as a lint failure. A rename-only fix therefore reddens
+a gate it cannot ever turn green: the implementer gets a fix round, changes something, the same
+missing path is still passed to eslint, red again — three rounds, then rollback, then
+`docs/AUDIT-DEFERRED.md` records `fix introduced a lint violation` about a fix that introduced none.
+
+Two things made it invisible for three days of runs. Deletes had occurred before and passed, because
+the fixes that deleted things removed `.json` and `.webp` — not lintable extensions, so they never
+reached eslint. And the failure *looks* like the model's fault at every layer: the log says the gate
+is red, the deferral says lint, and the rolled-back diff is gone.
+
+It also produced a second-order harm worth recording: an implementer trying to satisfy an
+unsatisfiable gate escalated into editing `scripts/audit-burndown/burndown.mjs` and `lib.mjs` — the
+running driver's own source. The rollback reverted it and the live process was unaffected (Node had
+already loaded the module), but a gate that cannot be satisfied is an active incentive for a role to
+go looking outside its brief.
+
+Fixed in 40d641b with `lintablePaths(paths, exists)` in `lib.mjs` — pure, injectable `exists`, unit
+tested. The regression tests were **mutation-verified**: reverting the implementation makes exactly
+the two new cases fail and leaves the other 98 passing, which is the only evidence that a test for
+an absence actually tests anything.
+
+The generalisation added to the skill is not "filter deleted paths" but: **a gate must only assert
+things a fix can still act on**, and the tell for violating it is a *repeated* `round N: gates red`
+naming the same file. One red gate is a finding to fix; the same gate red three rounds running is a
+gate to fix.
+
+### 2026-07-27 — the documented trust-loss signature fired on a completely healthy run
+
+The 2026-07-26 note above tells a supervisor to read `this workspace has not been trusted` in the
+`.err` files as the tell for systemic trust loss. On 2026-07-27 that exact string was in **every**
+role's `.err`, for eight hours, across 47 successful findings. Following the note as written would
+have diagnosed a healthy run as systemically broken — and, worse, would have sent someone to edit
+`/root/.claude.json` to "fix" nothing.
+
+The string is routine cloud-container noise: the subprocess runs fine, it just ignores the project's
+pre-approved permission list. What actually separates the two cases is the envelope, not the stderr:
+genuine trust loss is `total_cost_usd: 0` + `terminal_reason: "api_error"` + empty `iterations` (the
+role never ran), while the 2026-07-27 failure was `$1.43` spent with
+`terminal_reason: "aborted_streaming"` — a transient stream abort, retried normally.
+
+The cheap discriminator, now in the skill, is to `cmp` the failing role's `.err` against a role from
+the same iteration that **succeeded**. Identical bytes mean the string is ambient and proves
+nothing. The wider lesson for these notes: a documented failure signature is only useful alongside
+its negative control, or it converts into a false positive the moment the environment changes.
+
 ## Rejected, and why
 
 Proposals that were considered on their merits and turned down. Each is here so it does not get
@@ -883,3 +936,5 @@ the stale timing table for free.
 | 2026-07-25 | f389dd39 | Delete backlog entries by title — the canary destroyed 3 findings in 5    |
 | 2026-07-26 | 049d5e35 | Stop the verifier naming `npm test` — it discarded a finished, green fix  |
 | 2026-07-26 | —        | Verifier must name which kind of "stale" on INVALID; HALT env-cause note  |
+| 2026-07-27 | 40d641b4 | Lint gate stops running eslint on deleted/renamed-away paths              |
+| 2026-07-27 | —        | Trust-string false positive; supervisor-cost and wrap-up-residue lessons  |
