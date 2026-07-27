@@ -19,43 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P2][error-handling] `session-start.sh` final `svelte-kit sync` is unguarded under `set -e`, contradicting the hook's best-effort intent
-
-**File(s):** `.claude/hooks/session-start.sh:2,30-33,42` — pinned at SHA f934d43
-
-#### Problem
-
-The hook opens with `set -euo pipefail` (line 2) and deliberately wraps the fragile `npm install`
-step in a fallback so a failed lifecycle script "doesn't kill this hook silently, leaving the
-session with no deps at all" (lines 25-33). But the final step is bare:
-
-```bash
-node scripts/web.mjs svelte-kit sync   # line 42 — no || guard
-```
-
-Under `set -e`, if `svelte-kit sync` exits non-zero (e.g. a transient generate failure, or a partial
-`node_modules` from the `--ignore-scripts` fallback path just above), the whole SessionStart hook
-exits non-zero. That is inconsistent with the philosophy the file itself states two steps earlier,
-and with the sibling `.codex/cloud/*.sh` scripts, which `|| warn` every step. A missing
-`.svelte-kit` types dir degrades `npm run check`/`dev` but shouldn't abort session startup.
-
-#### Proposed solution
-
-Guard the final command so a failure is surfaced but non-fatal, matching the npm-install treatment:
-
-```bash
-node scripts/web.mjs svelte-kit sync \
-  || echo "session-start.sh: svelte-kit sync failed — run 'node scripts/web.mjs svelte-kit sync' before 'npm run check'"
-```
-
-#### Verification
-
-Temporarily make `scripts/web.mjs` exit non-zero (or point it at a bad subcommand), run
-`CLAUDE_CODE_REMOTE=true CLAUDE_PROJECT_DIR=$PWD bash .claude/hooks/session-start.sh; echo "exit=$?"`,
-and confirm the hook currently exits non-zero; after the fix it prints the warning and exits 0.
-
----
-
 ### [P2][duplication] The npm@11 pin (logic + multi-line rationale) is copy-pasted across four shell files and has already drifted
 
 **File(s):** `.claude/hooks/session-start.sh:12-19`, `.claude/cloud/setup.sh:14-23`,
