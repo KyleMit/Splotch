@@ -11,31 +11,6 @@
 
 ## Source: Code audit — tools/asset-gen · ideas-exploration (R&D scratch)
 
-### [P3][discoverability] `report.md` files carry no back-reference to their outcome (landed / open issue) or to the live code
-
-**File(s):** all `tools/asset-gen/ideas-exploration/idea-*/report.md` — pinned at SHA f934d43
-
-#### Problem
-
-`grep -li 'graduated|now live|landed in|promoted to'` across all 25 reports returns nothing. Each
-report is a self-contained narrative of what was tried, but has no header line stating the final
-disposition — whether it shipped (and where), was superseded, or remains an open `area:asset-gen`
-issue. Combined with the stale README (P1), a reader has to reverse-engineer each idea's real-world
-status by cross-referencing `bin/`/`lib/` and `docs/gemini-3.1-migration.md` themselves.
-
-#### Proposed solution
-
-Add a one-line status banner to the top of each `report.md`:
-`Status: LANDED as bin/audit-golden.mjs (see docs/gemini-3.1-migration.md)` /
-`Status: OPEN — area:asset-gen #NNN` / `Status: NOT PROMOTED`. This is the per-file complement to
-the README status column and survives README churn.
-
-#### Verification
-
-Every `report.md` opens with a `Status:` line; the LANDED ones name a file that exists at this SHA.
-
----
-
 ### [P3][architecture] Ad-hoc scoring/audit logic in exploration scripts was only partially extracted into `lib/` — some remains duplicated per-idea
 
 **File(s):** `tools/asset-gen/ideas-exploration/idea-8/code/score-hue-coherence.mjs`,
