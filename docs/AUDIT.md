@@ -19,37 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P4][dead-config] `node --check` / `node --input-type=module -e` allows have no repo consumer and are undocumented
-
-**File(s):** `.claude/settings.json:39-40` — pinned at SHA f934d43
-
-#### Problem
-
-```json
-"Bash(node --check *)",
-"Bash(node --input-type=module -e *)",
-```
-
-Neither pattern appears in any script, hook, or skill
-(`grep -rn "node --check\|input-type=module"
-.claude .ruler scripts` returns only `settings.json`).
-They're presumably for ad-hoc syntax checks / one-liners Claude runs, which is legitimate, but as
-unexplained standalone allows they read like possibly-stale entries. `node --input-type=module -e *`
-in particular grants arbitrary module evaluation, which is broad.
-
-#### Proposed solution
-
-If these support a real ad-hoc workflow, keep them but add them to the permission-policy note
-proposed above so their purpose is on record; if they're leftovers, remove them. Consider whether
-arbitrary `-e` evaluation should be auto-allowed at all.
-
-#### Verification
-
-Confirm no committed tooling depends on these; decide keep-and-document vs. remove and confirm no
-workflow regresses.
-
----
-
 ### [P4][documentation] `Read(//tmp/**)` uses non-obvious double-slash absolute-path syntax with no explanation
 
 **File(s):** `.claude/settings.json:77` — pinned at SHA f934d43
