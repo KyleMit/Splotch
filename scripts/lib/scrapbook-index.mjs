@@ -89,7 +89,7 @@ const REGISTRY = {
       'Every icon shipped in the app, rendered at size and split into the colorful spot illustrations and the monochrome UI glyphs that follow the current text color.',
     entry: 'icons/index.html',
     kind: 'Reference sheet',
-    count: null,
+    count: () => null,
   },
 };
 
@@ -144,7 +144,7 @@ export function collectionsMissingEntry(scrapbookDir) {
 function card(type, meta, scrapbookDir) {
   const dir = join(scrapbookDir, type);
   const files = readdirSync(dir);
-  const countLabel = typeof meta.count === 'function' ? meta.count(files) : null;
+  const countLabel = meta.count(files);
   const updated = fmtDate(latestMtime(dir));
   const entryExists = existsSync(join(scrapbookDir, meta.entry));
   if (!entryExists) return fallbackCard(type, dir);

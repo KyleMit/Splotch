@@ -11,28 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P4][naming] `REGISTRY.icons.count` is `null` while siblings use `() => null` — inconsistent contract
-
-**File(s):** `scripts/lib/scrapbook-index.mjs:91` (and `55`, `68`, `77`) — pinned at SHA f934d43
-
-#### Problem
-
-Every registry entry's `count` is a function except `icons`, where it's the bare value `null`.
-`card()` only survives this via a `typeof meta.count === 'function'` guard — but the type of a
-registry field silently varying (function vs null) is a loose contract that invites a future
-`meta.count(files)` call to crash.
-
-#### Proposed solution
-
-Make `count` always a function: `count: () => null` for `icons`, matching `model-eval`. Then
-`card()` can call it unconditionally.
-
-#### Verification
-
-All four entries have `count: (files?) => …`; index renders identically.
-
----
-
 ### [P4][maintainability] Smoke reporter keeps pass/fail tally in module-global mutable state
 
 **File(s):** `scripts/lib/smoke.mjs:5-26` (`passed`, `failed`, `summarize`) — pinned at SHA f934d43
