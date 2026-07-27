@@ -3223,3 +3223,75 @@ The rolled-back draft is kept at
 (3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-duplication-crayon-brush-tests-re-derive-point-generators-and-region.patch`.
+
+### [P2][test-quality] A single Parent-Center test asserts ~six distinct behaviors across 60 lines
+
+**File(s):** `web/tests/flows.spec.ts:853-914` ('parent center shows quick toggles on a landscape
+phone') — pinned at SHA f934d43
+
+#### Problem
+
+This one test verifies: (1) compact class renders, (2) quick toggles present / hub+sidebar absent,
+(3) the orientation-lock cell occupies the last slot, (4) the advanced-controls quick toggle drives
+its setting, (5) the portrait/landscape lock selector cycles through select→move→release→re-select
+(four sub-assertions), and (6) rotating to portrait carries the setting into the full hub. A failure
+in the lock-cycle sub-flow reports as a failure of "shows quick toggles," obscuring which behavior
+broke, and the test cannot be run in isolation for the rotation-carry concern.
+
+#### Proposed solution
+
+Split into: `'landscape phone renders compact quick toggles'` (assertions 1-3),
+`'a quick toggle drives the persisted setting'` (4+6 rotation-carry), and
+`'the orientation lock selector cycles portrait/landscape/off'` (5). Share a
+`openParentCenterCompact(page)` fixture that sets the 852×390 viewport and opens the modal.
+
+#### Verification
+
+Three focused tests each fail with a title that names the broken behavior.
+`npm run test:e2e -- flows.spec.ts -g "quick toggle"` green.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* `web/tests/flows-parent-center.spec.ts:150`: The selector-cycle test still rotates to portrait and
+  verifies the lock in the full Appearance hub, so a rotation-carry failure is misleadingly reported
+  as “the orientation lock selector cycles portrait/landscape/off.” Move the rotation/full-hub
+  assertions into the persisted-setting test (or a separately titled focused test) so this test
+  covers only the selector cycle requested by the original finding.
+* `openParentCenterCompact` asserts the compact class, so a compact-rendering regression fails every
+  focused test during setup instead of only the test whose title names that behavior. Keep the
+  helper limited to viewport/navigation/modal setup and assert the class in
+  `landscape phone renders compact quick toggles`.
+* `the orientation lock selection persists in the full portrait Parent Center` double-clicks an
+  already-active Portrait control without checking the intermediate off state, so a completely
+  broken/no-op Portrait click handler still passes. Confirm the state changes before re-selecting
+  Portrait and performing the rotation check.
+* `web/tests/flows-parent-center.spec.ts:143` ends the orientation-cycle test before re-selecting
+  Portrait, while the separate test at line 150 only exercises Portrait→off→Portrait; restore the
+  original Portrait→Landscape→off→Portrait sequence so regressions dependent on the prior landscape
+  state remain covered.
+
+#### What was tried
+
+1. Split the landscape-phone Parent Center flow into focused rendering, persisted-toggle, and
+   orientation-lock tests backed by a shared compact opener that preserves the existing retry path.
+   This keeps the original coverage while making failures targetable by behavior.
+2. Moved the rotation/full-hub assertions into a separately titled orientation-lock persistence
+   test. The selector-cycle test now ends after verifying the unlocked state, so its failures
+   reflect only portrait/landscape/off cycling.
+3. Moved the compact-class assertion from shared setup into the rendering-focused test, preventing
+   unrelated focused tests from failing on that concern. The orientation persistence test now
+   verifies Portrait turns off before re-selecting it and checking the value after rotation.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-test-quality-a-single-parent-center-test-asserts-six-distinct-behavio.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-test-quality-a-single-parent-center-test-asserts-six-distinct-behavio.patch`.

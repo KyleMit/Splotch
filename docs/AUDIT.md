@@ -13,34 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P2][test-quality] A single Parent-Center test asserts ~six distinct behaviors across 60 lines
-
-**File(s):** `web/tests/flows.spec.ts:853-914` ('parent center shows quick toggles on a landscape
-phone') — pinned at SHA f934d43
-
-#### Problem
-
-This one test verifies: (1) compact class renders, (2) quick toggles present / hub+sidebar absent,
-(3) the orientation-lock cell occupies the last slot, (4) the advanced-controls quick toggle drives
-its setting, (5) the portrait/landscape lock selector cycles through select→move→release→re-select
-(four sub-assertions), and (6) rotating to portrait carries the setting into the full hub. A failure
-in the lock-cycle sub-flow reports as a failure of "shows quick toggles," obscuring which behavior
-broke, and the test cannot be run in isolation for the rotation-carry concern.
-
-#### Proposed solution
-
-Split into: `'landscape phone renders compact quick toggles'` (assertions 1-3),
-`'a quick toggle drives the persisted setting'` (4+6 rotation-carry), and
-`'the orientation lock selector cycles portrait/landscape/off'` (5). Share a
-`openParentCenterCompact(page)` fixture that sets the 852×390 viewport and opens the modal.
-
-#### Verification
-
-Three focused tests each fail with a title that names the broken behavior.
-`npm run test:e2e -- flows.spec.ts -g "quick toggle"` green.
-
----
-
 ### [P2][flakiness] generate-image.spec.ts relies on implicit declaration-order execution and shared limiter buckets
 
 **File(s):** `web/tests/generate-image.spec.ts:11-14, 105-154` — pinned at SHA f934d43
