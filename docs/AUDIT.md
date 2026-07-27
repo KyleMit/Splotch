@@ -9,35 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P3][type-safety] `jsSelfTime` keys functions by tab-joined string, then splits on tab
-
-**File(s):** `scripts/perf/analyze.mjs:161-197` (`jsSelfTime`) — pinned at SHA f934d43
-
-#### Problem
-
-Self-time is aggregated by building `const key =` ${name}\t${loc}`` (line 185) and later recovered
-with `const [name, loc] = key.split('\t')` (line 190). If a `functionName` from the CPU profile ever
-contains a tab (or the split yields more than two parts), the name/location are silently mis-split.
-The contract on the parsed V8 profile is also loose: `profile.nodes`, `profile.samples`,
-`e.args?.data?.timeDeltas` are read positionally (`samples[i]` ↔ `deltas[i]`) with only
-`Math.max(0, deltas[i] || 0)` guarding a length mismatch, so a short `timeDeltas` array under-counts
-without warning.
-
-#### Proposed solution
-
-Key by a composite object instead of a delimited string: accumulate into `Map<id, {name, loc, us}>`
-keyed by the callFrame identity, or use a `Map` of `Map`. Avoids the round-trip entirely. Add a
-guard that `samples.length === deltas.length` (or note the divergence in the summary) so a malformed
-chunk is visible rather than silently truncated.
-
-#### Verification
-
-Re-run `perf:analyze` on the committed baseline trace in `scrapbook/perf/2026-07-22-draw-profile/`
-and confirm the top-self-time table is unchanged; a synthetic node name containing `\t` no longer
-corrupts the row.
-
----
-
 ### [P3][maintainability] `HARNESS_SYMBOLS` name-matching can silently drop real app functions
 
 **File(s):** `scripts/perf/analyze.mjs:63-77,194` — pinned at SHA f934d43

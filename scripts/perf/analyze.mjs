@@ -184,9 +184,14 @@ function jsSelfTime(events) {
     }
     const samples = profile.samples || [];
     const deltas = e.args?.data?.timeDeltas || [];
+    if (samples.length !== deltas.length) {
+      throw new Error(
+        `Malformed CPU profile: ${e.name} has ${samples.length} samples but ${deltas.length} time deltas`
+      );
+    }
     for (let i = 0; i < samples.length; i++) {
       const id = samples[i];
-      const dt = Math.max(0, deltas[i] || 0);
+      const dt = Math.max(0, deltas[i]);
       selfUs.set(id, (selfUs.get(id) || 0) + dt);
     }
   }
@@ -196,14 +201,13 @@ function jsSelfTime(events) {
     if (!f) continue;
     const name = f.functionName || '(anonymous)';
     const loc = f.url ? `${f.url.split('/').pop()}:${(f.lineNumber ?? 0) + 1}` : '';
-    const key = `${name}\t${loc}`;
-    byFn.set(key, (byFn.get(key) || 0) + us);
+    const key = JSON.stringify([name, loc]);
+    const entry = byFn.get(key) || { name, location: loc, us: 0 };
+    entry.us += us;
+    byFn.set(key, entry);
   }
-  return [...byFn.entries()]
-    .map(([key, us]) => {
-      const [name, loc] = key.split('\t');
-      return { name, location: loc, selfMs: us / US_PER_MS };
-    })
+  return [...byFn.values()]
+    .map(({ name, location, us }) => ({ name, location, selfMs: us / US_PER_MS }))
     .filter((f) => f.name !== '(idle)' && f.name !== '(program)')
     .filter((f) => !HARNESS_SYMBOLS.has(f.name.toLowerCase()))
     .sort((a, b) => b.selfMs - a.selfMs)
