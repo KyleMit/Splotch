@@ -1,6 +1,7 @@
 // cSpell:ignore SLOWMO
 import { existsSync, readdirSync } from 'node:fs';
 import { chromium, defineConfig, devices, webkit } from '@playwright/test';
+import { ADMIN_ACCESS_TOKEN } from './tests/admin-helpers';
 
 const PORT = 4173;
 const baseURL = `http://localhost:${PORT}`;
@@ -102,9 +103,10 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
-    // ADMIN_ACCESS_TOKEN is the known secret tests/admin.spec.ts signs in with.
+    // ADMIN_ACCESS_TOKEN is the known secret the shared admin test helper provides
+    // to tests/admin.spec.ts and tests/a11y.spec.ts.
     // Token mutations land in the in-memory fallback (no Netlify Blobs here),
     // so they reset with the server and never touch real data.
-    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true', ADMIN_ACCESS_TOKEN: 'test-admin-secret' },
+    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true', ADMIN_ACCESS_TOKEN },
   },
 });
