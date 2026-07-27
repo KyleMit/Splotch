@@ -41,3 +41,7 @@ export function fail(message) {
   console.error(message);
   process.exit(1);
 }
+
+export function toPosix(rel) {
+  return rel.replaceAll('\\', '/');
+}

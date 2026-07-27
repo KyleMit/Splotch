@@ -27,6 +27,9 @@ vi.mock('../lib/paths.mjs', () => ({
   fail(message) {
     throw new Error(message);
   },
+  toPosix(rel) {
+    return rel.replaceAll('\\', '/');
+  },
 }));
 vi.mock('../lib/page-notes.mjs', () => ({ pageLevers: () => null, describeLevers: () => '' }));
 vi.mock('../lib/align-to-source.mjs', () => ({

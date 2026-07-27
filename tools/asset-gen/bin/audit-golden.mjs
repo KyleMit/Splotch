@@ -31,6 +31,7 @@ import {
   FILL_SRC_DIR,
   fail,
   resolveNightLineArt,
+  toPosix,
 } from '../lib/paths.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from '../lib/solid-regions.mjs';
@@ -61,9 +62,7 @@ const round = (v, digits) => {
 
 // Score one page: the pen outline always, the raw fills when committed.
 async function scorePage(outlinePath) {
-  const rel = relative(COLORING_DIR, outlinePath)
-    .replace(/\.outline\.webp$/, '')
-    .replace(/\\/g, '/');
+  const rel = toPosix(relative(COLORING_DIR, outlinePath).replace(/\.outline\.webp$/, ''));
   const pen = await readFile(outlinePath);
 
   const solidity = await scoreSolidity(pen);
@@ -155,9 +154,7 @@ async function scoreCatalog() {
           const [rel, entry] = await scorePage(path);
           results.set(rel, entry);
         } catch (error) {
-          const rel = relative(COLORING_DIR, path)
-            .replace(/\.outline\.webp$/, '')
-            .replace(/\\/g, '/');
+          const rel = toPosix(relative(COLORING_DIR, path).replace(/\.outline\.webp$/, ''));
           console.error(
             `${rel}  ERROR (${error instanceof Error ? error.message : String(error)})`
           );

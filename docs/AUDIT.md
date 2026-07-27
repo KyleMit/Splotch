@@ -7,31 +7,6 @@
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P4][maintainability] Windows backslash-normalization is sprinkled across three modules despite Windows support being dropped
-
-**File(s):** `tools/asset-gen/lib/punch-fill.mjs:99` (`.replace(/\\/g,'/')`), `page-notes.mjs:39`
-(`.replaceAll('\\','/')`), `outline-targets.mjs:18-20` (`normalizeTarget`) — pinned at SHA f934d43
-
-#### Problem
-
-Three modules defensively convert `\` → `/` in relative paths. Per the repo CLAUDE.md, ADR-0062
-dropped Windows dev support (macOS/Linux only), so `path.relative`/CLI args never contain backslash
-separators. The conversions are dead defensiveness that adds noise and implies a portability
-contract the project no longer honors.
-
-#### Proposed solution
-
-Either remove the backslash handling (cleanest, matches ADR-0062) or, if kept for pasted-path
-robustness, centralize it as one `toPosix(rel)` helper in `lib/paths.mjs` rather than three private
-variants.
-
-#### Verification
-
-`tests/outline-targets.test.mjs` still passes on POSIX inputs; `grep -rn "\\\\\\\\" lib/` shows at
-most one shared helper.
-
----
-
 ### [P4][dead-code] `GOLDEN_METRICS` is exported but consumed only inside its own module
 
 **File(s):** `tools/asset-gen/lib/golden-catalog.mjs:18-41` — pinned at SHA f934d43

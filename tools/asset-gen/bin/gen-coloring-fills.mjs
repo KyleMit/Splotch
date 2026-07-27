@@ -34,7 +34,14 @@ import { parseArgs } from 'node:util';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
 import sharp from 'sharp';
-import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
+import {
+  REPO_ROOT,
+  COLORING_DIR,
+  FILL_SRC_DIR,
+  SAMPLES_DIR,
+  fail,
+  toPosix,
+} from '../lib/paths.mjs';
 import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
@@ -196,9 +203,7 @@ async function renderClean(source, width, height, slot) {
 let failures = 0;
 const passingCandidates = [];
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page)
-    .replace(/\.outline\.webp$/, '')
-    .replace(/\\/g, '/');
+  const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
   // The registry's "light" entries are informational only for now — this
   // generator has no --notes / gate-override flags to merge, so a page's
   // review/why/motifs notes are printed but nothing is auto-applied

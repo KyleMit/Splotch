@@ -30,6 +30,7 @@ import {
   SAMPLES_DIR,
   fail,
   resolveNightLineArt,
+  toPosix,
 } from '../lib/paths.mjs';
 import {
   detectInventedShapes,
@@ -94,7 +95,7 @@ async function targetsUnder(sub = '') {
   const cwd = sub ? join(FILL_SRC_DIR, sub) : FILL_SRC_DIR;
   const out = [];
   for await (const entry of glob('**/*.{light,night}.raw.webp', { cwd })) {
-    const rel = join(sub, entry).replace(/\\/g, '/');
+    const rel = toPosix(join(sub, entry));
     const m = rel.match(/^(.+)\.(light|night)\.raw\.webp$/);
     out.push({ fillPath: join(FILL_SRC_DIR, rel), page: m[1], theme: m[2] });
   }

@@ -29,6 +29,9 @@ vi.mock('../lib/paths.mjs', () => ({
     throw new Error(message);
   },
   resolveNightLineArt: async () => ({ source: null, chalk: null }),
+  toPosix(rel) {
+    return rel.replaceAll('\\', '/');
+  },
 }));
 
 vi.mock('../lib/outline-targets.mjs', () => ({

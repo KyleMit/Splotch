@@ -54,7 +54,14 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import sharp from 'sharp';
-import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+import {
+  REPO_ROOT,
+  COLORING_DIR,
+  FILL_SRC_DIR,
+  SAMPLES_DARK_DIR,
+  fail,
+  toPosix,
+} from '../lib/paths.mjs';
 import { parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
@@ -316,9 +323,7 @@ const pages = await resolveOutlineTargets(positionals, {
 
 let failures = 0;
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page)
-    .replace(/\.outline\.webp$/, '')
-    .replace(/\\/g, '/');
+  const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
   // Resolve this page's levers: defaults < fill-src/<cat>/notes.json < CLI.
   const levers = pageLevers(rel, 'chalk');
   const { merged, fromRegistry } = mergeFlags(values, levers);

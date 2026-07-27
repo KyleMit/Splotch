@@ -14,7 +14,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
-import { COLORING_DIR, FILL_SRC_DIR, REPO_ROOT, fail } from '../lib/paths.mjs';
+import { COLORING_DIR, FILL_SRC_DIR, REPO_ROOT, fail, toPosix } from '../lib/paths.mjs';
 import { compositeNight } from '../lib/night-composite.mjs';
 import { scoreCompositeEyes } from '../lib/composite-eye.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
@@ -36,9 +36,7 @@ const pages = await resolveOutlineTargets(positionals, {
 
 const cards = [];
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page)
-    .replace(/\.outline\.webp$/, '')
-    .replace(/\\/g, '/');
+  const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
   const lightPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
   const nightPath = join(FILL_SRC_DIR, `${rel}.night.raw.webp`);
   const chalkPath = page.replace(/\.outline\.webp$/, '.chalk.webp');
