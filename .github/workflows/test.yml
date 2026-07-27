@@ -107,11 +107,10 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          # "-webkit" marks the cache generation that includes the WebKit
-          # binary — an older chromium-only cache would silently skip the
-          # WebKit smoke project (playwright.config.ts drops it when the
-          # binary is absent).
-          key: playwright-${{ runner.os }}-webkit-${{ steps.playwright-version.outputs.version }}
+          # PW_BROWSERS marks the cache generation's browser coverage — a
+          # cache without WebKit would silently skip the WebKit smoke project
+          # (playwright.config.ts drops it when the binary is absent).
+          key: playwright-${{ runner.os }}-${{ env.PW_BROWSERS }}-${{ steps.playwright-version.outputs.version }}
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'

@@ -21,35 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P4][duplication] The `chromium webkit` browser list is repeated across the two Playwright install steps
-
-**File(s):** `.github/workflows/test.yml:122` (install `chromium webkit`), `:128` (install-deps
-`chromium webkit`) — pinned at SHA f934d43
-
-#### Problem
-
-```yaml
-- run: npx playwright install --with-deps chromium webkit   # cache miss
-- run: npx playwright install-deps chromium webkit           # cache hit
-```
-
-The browser set `chromium webkit` is hard-coded in two mutually-exclusive steps. Adding a browser
-(e.g. firefox) or dropping WebKit means editing both, and the cache-key comment on line 118 is a
-third place that encodes the same WebKit assumption. Easy to update one and desync coverage.
-
-#### Proposed solution
-
-Hoist the browser list into a job-level `env: PW_BROWSERS: "chromium webkit"` and reference
-`${{ env.PW_BROWSERS }}` in both steps, so the set is defined once. (Or collapse the two steps —
-`install-deps` on a cache hit and `install --with-deps` on a miss — behind a small script.)
-
-#### Verification
-
-`grep -c "chromium webkit" .github/workflows/test.yml` drops to one definition; CI still installs
-and runs both browser projects with `REQUIRE_WEBKIT: 1`.
-
----
-
 ### [P4][maintainability] `ALLOWED_TOKENS_LIST` hard-codes retry-indexed values tightly coupled to `retries: 2` in a different file
 
 **File(s):** `.github/workflows/test.yml:143` — pinned at SHA f934d43
