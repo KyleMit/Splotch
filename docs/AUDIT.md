@@ -17,29 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P5][documentation] `ExportOptions.plist` lacks a pointer to who consumes it and when teamID matters
-
-**File(s):** `ios/App/ExportOptions.plist:11-15` (iOS export config) — pinned at SHA f934d43
-
-#### Problem
-
-The file carries a commented-out `teamID` block with decent inline guidance, but nothing says which
-command consumes `ExportOptions.plist` (`xcodebuild -exportArchive` / the `build` skill's IPA lane)
-or that `method = app-store-connect` requires an authenticated App Store Connect session. A newcomer
-finds a bare plist with no breadcrumb to the release flow it belongs to. The commented `teamID` also
-duplicates a value that, if ever needed, would then live here *and* in signing config.
-
-#### Proposed solution
-
-Add a leading comment naming the consumer (the export/archive step in the `build`/`release` tooling)
-and linking to the `mobile`/`ios` release checklist, so the plist is self-locating.
-
-#### Verification
-
-The plist header points a reader to the release lane; no behavior change.
-
----
-
 ### [P5][naming] Example-test package `com.getcapacitor.myapp` misrepresents ownership
 
 **File(s):** `android/app/src/androidTest/java/com/getcapacitor/myapp/`,
