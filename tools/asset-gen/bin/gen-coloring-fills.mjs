@@ -33,6 +33,7 @@
 import { parseArgs } from 'node:util';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import {
   REPO_ROOT,
@@ -56,6 +57,17 @@ import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSaf
 
 const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 90;
+
+// How `run` reports the one failure mode a caller can act on: some renders were
+// rejected, none shipped. Carries the count so callers assert on the number
+// rather than on the message's wording.
+export class RenderFailuresError extends Error {
+  constructor(failed) {
+    super(`${failed} render(s) failed.`);
+    this.name = 'RenderFailuresError';
+    this.failed = failed;
+  }
+}
 
 // Generate one flat-colored version of a coloring page. Returns raw image bytes
 // + mime type, or throws with the refusal/empty reason.
@@ -251,7 +263,7 @@ export async function run(argv) {
     }
   }
 
-  if (failures) fail(`${failures} render(s) failed.`);
+  if (failures) throw new RenderFailuresError(failures);
   const shipped = [];
   if (values.apply) {
     for (const { rel, colored } of passingCandidates) {
@@ -269,7 +281,7 @@ export async function run(argv) {
   return { failed: failures, shipped };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   run(process.argv.slice(2)).catch((err) => {
     console.error(err instanceof Error ? err.message : err);
     process.exitCode = 1;

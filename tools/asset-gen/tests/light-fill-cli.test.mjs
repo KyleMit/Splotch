@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
 import { MAX_ATTEMPTS } from '../lib/cli.mjs';
-import { run } from '../bin/gen-coloring-fills.mjs';
+import { run, RenderFailuresError } from '../bin/gen-coloring-fills.mjs';
 
 // One page's worth of gate misses — enough to exhaust every retry and fail it.
 const exhaustPage = () => Array(MAX_ATTEMPTS).fill(false);
@@ -137,9 +137,11 @@ test('retains failed candidates in scratch and leaves every page unshipped', asy
   await addPage('second-tall');
   state.gateResults = [...exhaustPage(), true];
 
-  await expect(run(['test/first-tall', 'test/second-tall', '--apply'])).rejects.toBeInstanceOf(
-    Error
-  );
+  // Exactly the one gate-exhausted page counts as failed; the passing page is
+  // simply left unshipped because the run as a whole failed closed.
+  const err = await run(['test/first-tall', 'test/second-tall', '--apply']).catch((e) => e);
+  expect(err).toBeInstanceOf(RenderFailuresError);
+  expect(err.failed).toBe(1);
 
   expect(await readFile(join(state.roots.fillSrc, 'test/first-tall.light.raw.webp'), 'utf8')).toBe(
     'known-raw-first-tall'
@@ -207,7 +209,9 @@ test('fails closed when a single review render misses every gate', async () => {
 
   // A single render (no --samples) is not review-exploration: gate exhaustion must
   // exit nonzero rather than silently pass, even without --apply.
-  await expect(run(['test/page-tall'])).rejects.toBeInstanceOf(Error);
+  const err = await run(['test/page-tall']).catch((e) => e);
+  expect(err).toBeInstanceOf(RenderFailuresError);
+  expect(err.failed).toBe(1);
 
   // Every retry was spent before the run gave up.
   expect(state.gateResults).toHaveLength(0);
