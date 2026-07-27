@@ -5,6 +5,7 @@
 
 import { join } from 'node:path';
 import { homedir } from 'node:os';
+import { ROOT } from './utils.mjs';
 
 export const AVD_NAME = 'Pixel_7_Pro_API_33';
 
@@ -17,3 +18,14 @@ export const ANDROID_HOME =
 
 export const ADB = join(ANDROID_HOME, 'platform-tools', 'adb');
 export const EMULATOR = join(ANDROID_HOME, 'emulator', 'emulator');
+
+export const RELEASE_BUNDLE_DIR = join(
+  ROOT,
+  'android',
+  'app',
+  'build',
+  'outputs',
+  'bundle',
+  'release'
+);
+export const RELEASE_AAB = join(RELEASE_BUNDLE_DIR, 'app-release.aab');
