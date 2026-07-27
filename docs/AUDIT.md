@@ -15,44 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P2][consistency] Production origin `https://splotch.art` and the Capacitor origins are hardcoded string literals scattered across configs
-
-**File(s):** `web/vite.config.ts:55` (`NATIVE_API_BASE`) and `web/svelte.config.js:40`
-(`csrf.trustedOrigins`) — pinned at SHA f934d43
-
-#### Problem
-
-The app's own origin and the two native WebView origins appear as bare literals in separate files:
-
-```ts
-// vite.config.ts:55
-const NATIVE_API_BASE = isCapacitor ? 'https://splotch.art' : '';
-```
-
-```js
-// svelte.config.js:40
-csrf: { trustedOrigins: ['https://localhost', 'capacitor://localhost'] },
-```
-
-`https://splotch.art` also recurs in the root `netlify.toml` HSTS/CSP commentary and (per the `api`
-skill) in the server CORS allow-list. There is no named constant, so a domain change or an added
-native origin requires finding every literal by memory. A newcomer searching "where is the API
-origin configured" finds several disconnected spots.
-
-#### Proposed solution
-
-Define these as named constants in one shared module (e.g. `web/build/origins.ts`: `PROD_ORIGIN`,
-`CAPACITOR_ORIGINS`) and import them into both configs. Reference the same constants from the server
-CORS code so the allow-list and the native base URL cannot disagree.
-
-#### Verification
-
-`git grep -n "splotch.art\|capacitor://localhost"` under `web/` should collapse to a single
-definition site plus imports. Build both web and `CAPACITOR=true` targets and confirm
-`__NATIVE_API_BASE__` and CSRF origins are unchanged.
-
----
-
 ### [P3][duplication] `playwright.config.ts` and `playwright.webkit-scratch.config.ts` duplicate the whole webServer/PORT/env setup
 
 **File(s):** `web/playwright.webkit-scratch.config.ts:6-27` vs `web/playwright.config.ts:5-6,93-109`
