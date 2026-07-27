@@ -71,7 +71,7 @@ test('selecting a palette color activates it and paints in that color', async ({
 
   const px = await firstOpaquePixel(page);
   expect(px).not.toBeNull();
-  // #62A2E9 is blue-dominant — the painted pixel should be more blue than red.
+  // The selected blue is blue-dominant, so the painted pixel should be more blue than red.
   expect(px![2]).toBeGreaterThan(px![0]);
 });
 
@@ -306,7 +306,7 @@ test('a pen stroke shortly after a pen tap on a swatch still paints', async ({ p
   });
 
   expect(painted).not.toBeNull();
-  // #62A2E9 is blue-dominant — the stroke painted in the just-picked color.
+  // The selected blue is blue-dominant, so the stroke painted in the just-picked color.
   expect(painted![2]).toBeGreaterThan(painted![0]);
 });
 

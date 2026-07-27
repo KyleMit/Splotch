@@ -1,25 +1,22 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 import { COLOR_FAMILIES } from '../src/lib/hexPickerLayout';
-import { BLACK_INK, PALETTE_COLORS } from '../src/lib/palette';
 
 // Shared E2E helpers used across specs. Keep this module WebKit-portable — no
 // CDP sessions or dev-harness routes — because webkit-smoke.spec.ts imports it
 // (see web/tests/CLAUDE.md).
 
-const paletteColor = (label: string) => PALETTE_COLORS.find((color) => color.label === label)!.hex;
-
 export const TEST_PALETTE = {
-  purple: paletteColor('Purple'),
-  blue: paletteColor('Blue'),
-  teal: paletteColor('Teal'),
-  green: paletteColor('Green'),
-  yellow: paletteColor('Yellow'),
-  orange: paletteColor('Orange'),
-  brown: paletteColor('Brown'),
-  red: paletteColor('Red'),
-  pink: paletteColor('Pink'),
-  black: BLACK_INK,
+  purple: '#AB71E1',
+  blue: '#62A2E9',
+  teal: '#4FC4C0',
+  green: '#8CC864',
+  yellow: '#F9D24F',
+  orange: '#F89C45',
+  brown: '#B5835A',
+  red: '#EC534E',
+  pink: '#F47CB0',
+  black: '#0a0b10',
 };
 
 export const PICKER_GREEN = COLOR_FAMILIES.find((family) => family.name === 'greens')!.shades[4];
