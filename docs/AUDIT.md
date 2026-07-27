@@ -17,40 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P3][dead-config] pbxproj injects a `COCOAPODS` compile flag, but the project uses SPM not CocoaPods
-
-**File(s):** `ios/App/App.xcodeproj/project.pbxproj:319` (Xcode build settings) — pinned at SHA
-f934d43
-
-#### Problem
-
-The Debug config sets:
-
-```
-OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
-```
-
-The `-DCOCOAPODS` conditional-compilation flag is a CocoaPods artifact, but this project migrated to
-Swift Package Manager (the `mobile`/`ios` guidance explicitly says "SPM not CocoaPods", `.gitignore`
-ignores `App/Pods`, and dependencies come from `CapApp-SPM/Package.swift`). Any `#if COCOAPODS`
-branch in a dependency would now compile down the wrong (Pods) path in Debug, and the flag misleads
-anyone reading the build settings into thinking Pods are in play.
-
-#### Proposed solution
-
-Drop the `\"-D\" \"COCOAPODS\"` tokens from `OTHER_SWIFT_FLAGS` (leaving
-`"$(inherited) \"-DDEBUG\""`, or just `$(inherited)` since
-`SWIFT_ACTIVE_COMPILATION_CONDITIONS =
-DEBUG` already defines DEBUG).
-
-#### Verification
-
-Clean-build the Debug scheme; it compiles with no CocoaPods define.
-`grep COCOAPODS
-ios/App/App.xcodeproj/project.pbxproj` returns nothing.
-
----
-
 ### [P3][consistency] PencilEraserPlugin comment claims iOS 15 deployment target; it is actually 16.4
 
 **File(s):** `ios/App/App/PencilEraserPlugin.swift:27-28` (iOS plugin) — pinned at SHA f934d43
