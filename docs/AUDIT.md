@@ -19,49 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P2][dead-config] Overly broad allow rules grant destructive commands without a prompt
-
-**File(s):** `.claude/settings.json:48,59,54,62-64` (permissions.allow) — pinned at SHA f934d43
-
-#### Problem
-
-Several allow-list entries are read-only in intent but permit destructive or file-writing operations
-with no confirmation:
-
-```json
-"Bash(git rm *)",     // line 48 — deletes tracked files, no prompt
-"Bash(sed *)",        // line 59 — `sed -i` rewrites files in place
-"Bash(find *)",       // line 54 — `find . -delete` / `-exec rm` deletes
-"Bash(curl -s * http://localhost:*)",  // line 62 — the middle `*` matches `-o /path`, letting curl write arbitrary files
-```
-
-The surrounding block (lines 50-60) is clearly meant to be the "safe read-only tools" group (`grep`,
-`ls`, `cat`, `head`, `tail`, `wc`, `echo`, `jq`), but `sed *`, `find *`, and `git rm *` are filed
-alongside them despite each having a well-known destructive mode. `Bash(git rm *)` in particular is
-a standalone destructive git command sitting in the git group; the rest of that group (`git status`,
-`git log`, `git diff`, `git show`, `git branch`, `git stash list`) is all read-only.
-
-#### Proposed solution
-
-Tighten each to its read-only shape, or drop it from the auto-allow list so the operator confirms:
-
-* Remove `Bash(git rm *)` — deletions should prompt.
-* Replace `Bash(sed *)` with the actual usage pattern if any (Claude rarely needs `sed` given
-  Edit/Grep tools; consider removing it entirely — the repo convention discourages
-  `sed`/`cat`/`echo` in favor of dedicated tools).
-* Replace `Bash(find *)` with a narrower form, or remove; `Glob`/`Grep` tools cover discovery.
-* Narrow the curl entries to a fixed flag prefix, e.g. `Bash(curl -s http://localhost:*)` and
-  `Bash(curl -s -i http://localhost:*)`, so the wildcard can't inject `-o`.
-
-#### Verification
-
-For each entry, in a scratch clone run the destructive form (`git rm README.md`, `sed -i s/a/b/ f`,
-`find . -name x -delete`) and confirm Claude currently executes it without a permission prompt;
-after tightening, confirm the destructive form now prompts while the intended read-only use still
-passes.
-
----
-
 ### [P2][error-handling] `session-start.sh` final `svelte-kit sync` is unguarded under `set -e`, contradicting the hook's best-effort intent
 
 **File(s):** `.claude/hooks/session-start.sh:2,30-33,42` — pinned at SHA f934d43

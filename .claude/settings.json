@@ -76,10 +76,6 @@
       "Bash(echo *)",
       "Bash(jq *)",
 
-      "Bash(curl -s http://localhost:*)",
-      "Bash(curl -s -i http://localhost:*)",
-      "Bash(curl -s -o /dev/null http://localhost:*)",
-
       "Bash(adb *)",
       "Bash(xcrun simctl *)",
       "Bash(xcode-select -p)",
