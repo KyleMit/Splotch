@@ -17,36 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P3][dead-config] iOS requires the obsolete `armv7` capability on a 64-bit-only (iOS 16.4) app
-
-**File(s):** `ios/App/App/Info.plist:35-38` (iOS Info.plist) — pinned at SHA f934d43
-
-#### Problem
-
-```xml
-<key>UIRequiredDeviceCapabilities</key>
-<array>
-    <string>armv7</string>
-</array>
-```
-
-`armv7` is the 32-bit ARM instruction set. The project's `IPHONEOS_DEPLOYMENT_TARGET` is `16.4`
-(pbxproj) and SPM `platforms: [.iOS(.v16)]`; iOS 11+ dropped all 32-bit devices, so every device
-that can install this app is `arm64`. Requiring `armv7` is stale template cruft — at best a no-op,
-at worst it advertises a false capability. It should read `arm64` (or the key should be omitted).
-
-#### Proposed solution
-
-Change the required capability from `armv7` to `arm64`, or remove the `UIRequiredDeviceCapabilities`
-key entirely (the deployment target already constrains eligible devices).
-
-#### Verification
-
-Archive/validate the app; App Store Connect accepts the build and device eligibility is unchanged
-(arm64-only).
-
----
-
 ### [P3][dead-config] pbxproj injects a `COCOAPODS` compile flag, but the project uses SPM not CocoaPods
 
 **File(s):** `ios/App/App.xcodeproj/project.pbxproj:319` (Xcode build settings) — pinned at SHA
