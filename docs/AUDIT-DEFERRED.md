@@ -2893,3 +2893,70 @@ The rolled-back draft is kept at
 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p4-consistency-check-flag-parsing-done-ad-hoc-in-every-gate-script.patch`.
+
+### [P1][duplication] Extract the copy-pasted CLI `flag()`/`args` parser shared by every perf entry script
+
+**File(s):** `scripts/perf/scenario.mjs:23-32`, `scripts/perf/mount.mjs:38-47`,
+`scripts/perf/ios.mjs:25-33`, `scripts/perf/undo-scenarios.mjs:39-46`,
+`scripts/perf/replay-scenario.mjs:27-36` (module-scope arg parsing) — pinned at SHA f934d43
+
+#### Problem
+
+The exact same argument-parsing helper is defined five times:
+
+```js
+const args = process.argv.slice(2);
+const flag = (name, def) => {
+  const hit = args.find((a) => a.startsWith(`--${name}=`));
+  return hit ? hit.split('=')[1] : def;
+};
+```
+
+Each site then re-derives the same flags by hand — `--no-throttle`, `--throttle`, `--no-build`,
+`--device`, `--port` — with subtle divergence (e.g. `throttle` defaults to `'4'` in
+scenario/mount/undo but `'0'` in replay; ios omits throttle entirely). Any fix to arg handling (e.g.
+`--throttle` with no `=`, or a typo'd flag warning) has to be made in five places, and the drift is
+already visible.
+
+#### Proposed solution
+
+Add `scripts/perf/args.mjs` exporting a parser, e.g.
+`export function parsePerfArgs(argv = process.argv.slice(2))` returning
+`{ flag, has, device, throttle, port, build }` with the shared defaults, and
+`export const flag = (name, def, argv) => …` for the raw case. Have each entry import it instead of
+re-declaring. Keep `HZ`/`long-seconds`/`scenarios`/`recording` (script-specific flags) reading
+through the returned `flag`.
+
+#### Verification
+
+`grep -rn "const flag = (name, def)" scripts/perf` returns zero after the change; run
+`npm run perf:web -- --no-build --device=tablet` and
+`npm run perf:undo -- --scenarios=mixed --no-throttle` and confirm identical flag behavior.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `scripts/perf/args.mjs` only centralizes value lookup; the entry scripts still duplicate
+  `process.argv.slice(2)` and the common `--no-throttle`, `--no-build`, `--device`, `--throttle`,
+  and `--port` derivations. Move these into a shared `parsePerfArgs` result while preserving each
+  script’s throttle default and optional flags, so common parsing changes and unknown-flag
+  validation no longer require edits across every entry point.
+
+#### What was tried
+
+Extracted the duplicated raw flag lookup into `scripts/perf/args.mjs` and updated all five profiling
+entry points to pass their local argv explicitly. Existing per-script defaults and boolean flag
+behavior remain unchanged.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p1-duplication-extract-the-copy-pasted-cli-flag-args-parser-shared-by-ev.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p1-duplication-extract-the-copy-pasted-cli-flag-args-parser-shared-by-ev.patch`.
