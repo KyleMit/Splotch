@@ -15,33 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P4][documentation] Temporal wording in config comments will age ("now", "is now TypeScript")
-
-**File(s):** `web/tsconfig.json:5-6` and `web/vite.config.ts:16` — pinned at SHA f934d43
-
-#### Problem
-
-```jsonc
-// All of src/ is now TypeScript. Config files ... are unaffected by this.  (tsconfig.json:5)
-```
-
-Comments phrased as "now" / "is now" describe a transition rather than a stable state; a year on,
-"now" is meaningless and the reader can't tell whether it still holds. The tsconfig comment's real
-intent is "`allowJs: false` — src is TS-only." Similar transitional phrasing appears in the version
-comment block.
-
-#### Proposed solution
-
-Reword to timeless statements of the invariant:
-`// src/ is TypeScript-only; allowJs:false enforces it. Root config/build scripts live outside src/ and are exempt.`
-Prefer describing the rule, not the migration.
-
-#### Verification
-
-Review; no behavior change. `npm run check` still passes.
-
----
-
 ### [P5][documentation] Misleading "matching PORT above" comment on the Playwright webServer
 
 **File(s):** `web/playwright.config.ts:93-101` (webServer command) — pinned at SHA f934d43
