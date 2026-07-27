@@ -27,13 +27,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: npm
-
       # Capacitor 8 needs a JDK 21 toolchain (the bundled JBR 17 / java 17 fails
       # AGP's JdkImageTransform). See the android-build-toolchain notes.
       - name: Set up JDK 21
@@ -48,8 +41,9 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Install dependencies
-        run: npm ci
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-node
 
       # Build the *debug* APK: it's auto-signed with the debug key (installable
       # with no production secrets) and `cap:sync` still bakes the production web

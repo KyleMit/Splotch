@@ -21,43 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P2][duplication] The checkout + setup-node@24 + `npm ci` preamble is copy-pasted across five jobs
-
-**File(s):** `.github/workflows/test.yml:18-26` and `:89-97`,
-`.github/workflows/android-deploy.yml:27-49`, `.github/workflows/ios-deploy.yml:25-33`,
-`.github/workflows/blobs-smoke.yml:34-38` — pinned at SHA f934d43
-
-#### Problem
-
-Six jobs repeat some subset of this identical block:
-
-```yaml
-- uses: actions/checkout@v7
-- uses: actions/setup-node@v6
-  with:
-    node-version: 24
-    cache: npm
-- name: Install dependencies
-  run: npm ci
-```
-
-Any change (node version, cache strategy, adding `always-auth`, pinning to a SHA) must be edited in
-five places and is already drifting (see the node-version and checkout-version findings below).
-
-#### Proposed solution
-
-Extract a composite action, e.g. `.github/actions/setup/action.yml`, that runs checkout +
-setup-node + `npm ci`, with an input like `install: true|false` (so `blobs-smoke.yml`, which
-deliberately skips `npm ci`, can pass `install: false`). Each job becomes
-`- uses: ./.github/actions/setup`. Centralizes the node version and cache config in one file.
-
-#### Verification
-
-`grep -rc "actions/setup-node" .github/workflows` drops to the composite action only; all workflows
-still install deps and pass CI.
-
----
-
 ### [P2][versioning] Node version `24` is hard-coded in five places with no single source of truth (and disagrees with the docs)
 
 **File(s):** `.github/workflows/test.yml:22` and `:93`, `.github/workflows/android-deploy.yml:31`,

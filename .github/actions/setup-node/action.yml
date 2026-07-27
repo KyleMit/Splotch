@@ -1,0 +1,26 @@
+name: Set up Node
+description: Set up the repository's Node version and optional npm dependencies
+
+inputs:
+  cache:
+    description: Enable the npm cache
+    required: false
+    default: 'true'
+  install:
+    description: Install npm dependencies
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v6
+      with:
+        node-version: 24
+        cache: ${{ inputs.cache == 'true' && 'npm' || '' }}
+        package-manager-cache: ${{ inputs.cache }}
+
+    - name: Install dependencies
+      if: inputs.install == 'true'
+      shell: bash
+      run: npm ci
