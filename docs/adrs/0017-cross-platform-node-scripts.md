@@ -31,10 +31,10 @@ All automation scripts in `scripts/` are Node `.mjs` files that must run on macO
 boilerplate lives in three modules under `scripts/lib/`, and each script reads imperatively
 top-to-bottom with only its own domain logic inline:
 
-* `scripts/lib/utils.mjs` — generic helpers: `ROOT`, `sleep`, `fail`, `run`/`capture` (spawn
-  **through the shell** so PATH shims like `npm`, `npx`, `gh`, and `sdkmanager` resolve, with args
-  quoted), `hasCommand` (`which`), `parseFrontmatter`, `writeFileDeep`, `compareSemverDesc`,
-  `webOnlyBooks`.
+* `scripts/lib/utils.mjs` — generic helpers: `ROOT`, `sleep`, `fail`, `run`/`capture` (spawn the
+  executable with an argument array directly, preserving literal arguments while the OS resolves
+  commands through `PATH`), `sh` (the explicit escape hatch for deliberate shell command lines),
+  `hasCommand` (`which`), `parseFrontmatter`, `writeFileDeep`, `compareSemverDesc`, `webOnlyBooks`.
 * `scripts/lib/android.mjs` — per-platform Android SDK resolution: `ANDROID_HOME` (env override —
   `ANDROID_HOME` or `ANDROID_SDK_ROOT` — else `%LOCALAPPDATA%\Android\Sdk` / `~/Library/Android/sdk`
   / `~/Android/Sdk`), `ADB`/`EMULATOR` binary paths, `AVD_NAME`, and the Maestro location.
@@ -46,9 +46,9 @@ top-to-bottom with only its own domain logic inline:
 
 Non-obvious invariants:
 
-* `run()`/`capture()` exit the process on failure — scripts stay imperative with no try/catch. The
-  one exception is `android-emulator-smoke.mjs`, which keeps a local async `sh()` because a failed
-  build must still reach the `finally` block that kills the emulator.
+* `run()`/`capture()` exit the process on failure — scripts stay imperative with no try/catch.
+  Cleanup-sensitive flows use the rejecting async `sh()` helper so a failed shell command still
+  reaches the caller's `finally` block.
 * Platform branching belongs in `scripts/lib/` (paths, executable names, fix instructions), not
   scattered through individual scripts.
 * `local.properties` is written with forward slashes — backslashes are escape characters in Java
@@ -64,7 +64,7 @@ Non-obvious invariants:
   `.cmd`-shim and quoting pitfalls.
 * − Scripts are no longer copy-paste self-contained; moving one elsewhere means bringing
   `scripts/lib/` along.
-* − `run()` exiting the process makes it unsuitable for cleanup-sensitive flows; authors must notice
-  and use an async local runner (as the smoke test does).
-* − Shell-mediated spawning means argument quoting is centralized but still shell-dialect-sensitive;
-  exotic arguments (embedded quotes) would need care.
+* − `run()` exiting the process makes it unsuitable for cleanup-sensitive flows; those callers must
+  use the rejecting async `sh()` helper.
+* − Deliberate shell syntax is confined to `sh()` command lines, which remain
+  shell-dialect-sensitive and require callers to handle their own quoting.

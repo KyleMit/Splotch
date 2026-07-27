@@ -11,38 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P2][cross-platform] `quoteArg` wraps args in double quotes without escaping `$`, backtick, `\`, or embedded `"`
-
-**File(s):** `scripts/lib/utils.mjs:20-37` (`quoteArg`, `shellJoin`, `run`) — pinned at SHA f934d43
-
-#### Problem
-
-Every `run()`/`capture()` command is joined into a shell string and executed with `shell: true`.
-Non-word args are "quoted" by wrapping in double quotes only:
-
-```js
-const quoteArg = (arg) => (/^[\w./:=-]+$/.test(arg) ? arg : `"${arg}"`);
-```
-
-Inside double quotes the shell still expands `$VAR`, `$(...)`, backticks, and processes `\`; an arg
-containing any of those is mis-executed, and an arg containing a literal `"` breaks the quoting
-entirely (splitting the command). Args flowing in from filenames, AVD names, or `input` prompts can
-carry these. It is both a correctness bug and a shell-injection surface.
-
-#### Proposed solution
-
-Prefer avoiding the shell: pass `cmd` + `args` array to `spawnSync` with `shell: false` where PATH
-resolution isn't needed. Where the shell is genuinely required for PATH shims, single-quote and
-escape: `` `'${arg.replace(/'/g, `'\\''`)}'` ``. Single quotes suppress all expansion; the replace
-handles embedded single quotes.
-
-#### Verification
-
-`run('node', ['-e', 'console.log(process.argv[1])', 'a$(echo hi)b'])` should print the literal
-string, not `ahib`. Add a unit test around `shellJoin` for `$`, backtick, `"`, and space.
-
----
-
 ### [P2][duplication] Dark-theme token blocks in `CHROME_CSS` are duplicated and have already drifted
 
 **File(s):** `scripts/lib/scrapbook-chrome.mjs:51-85` (`@media (prefers-color-scheme:dark)` vs
