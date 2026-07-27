@@ -70,10 +70,6 @@ jobs:
             npm run test:android:device
 
       - name: Upload Maestro report
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-maestro-report
         with:
           name: maestro-report
-          path: ~/.maestro/tests/
-          retention-days: 7
-          if-no-files-found: ignore
