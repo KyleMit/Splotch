@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const { getStoreMock } = vi.hoisted(() => ({ getStoreMock: vi.fn() }));
 vi.mock('@netlify/blobs', () => ({ getStore: getStoreMock }));
 
-import { recordTokenUsage, getUsage, type TokenUsage } from './usage';
+import { recordByokUsage, recordTokenUsage, getUsage, type TokenUsage } from './usage';
 
 const usageOf = (count: number): TokenUsage => ({
   count,
@@ -26,6 +26,21 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, 'log').mockImplementation(() => {});
   vi.spyOn(console, 'warn').mockImplementation(() => {});
+});
+
+describe('recordByokUsage', () => {
+  it('logs the structured usage fields without accessing Blobs', () => {
+    recordByokUsage('crayon', 'make it "bright"');
+
+    expect(console.log).toHaveBeenCalledTimes(1);
+    const message = vi.mocked(console.log).mock.calls[0][0];
+    expect(message).toMatch(
+      /^\[ai-usage\] token=byok style=crayon prompt="make it \\"bright\\"" at=/
+    );
+    const timestamp = message.slice(message.lastIndexOf(' at=') + 4);
+    expect(new Date(timestamp).toISOString()).toBe(timestamp);
+    expect(getStoreMock).not.toHaveBeenCalled();
+  });
 });
 
 describe('recordTokenUsage', () => {

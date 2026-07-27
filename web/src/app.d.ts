@@ -41,6 +41,25 @@ declare global {
   // overlap with the partial built-in types.
   type FileSystemPermissionMode = 'read' | 'readwrite';
 
+  // Chromium-only event; not in the default TS DOM lib.
+  interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+  }
+
+  interface NetworkInformation {
+    saveData?: boolean;
+  }
+
+  interface Navigator {
+    connection?: NetworkInformation;
+  }
+
+  interface WindowEventMap {
+    beforeinstallprompt: BeforeInstallPromptEvent;
+    appinstalled: Event;
+  }
+
   interface Window {
     showDirectoryPicker(options?: {
       mode?: FileSystemPermissionMode;

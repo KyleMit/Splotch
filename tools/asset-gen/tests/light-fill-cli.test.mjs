@@ -4,7 +4,12 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
 
-const state = vi.hoisted(() => ({ roots: null, candidate: null, gateResults: [] }));
+const state = vi.hoisted(() => ({
+  roots: null,
+  candidate: null,
+  gateResults: [],
+  overlayRequests: 0,
+}));
 
 vi.mock('../lib/paths.mjs', () => ({
   get REPO_ROOT() {
@@ -30,14 +35,24 @@ vi.mock('../lib/align-to-source.mjs', () => ({
 vi.mock('../lib/outline-match.mjs', () => ({
   KEEP_THRESHOLD: 0.92,
   LOCAL_KEEP_THRESHOLD: 0.8,
-  outlineMatch: async () => {
+  outlineMatch: async (_source, _filled, { overlay = false } = {}) => {
+    if (overlay) {
+      state.overlayRequests++;
+      return {
+        keep: 1,
+        drift: 0,
+        localKeep: 1,
+        worstTile: null,
+        overlay: state.candidate,
+      };
+    }
     const passes = state.gateResults.shift();
     return {
       keep: passes ? 0.99 : 0.5,
       drift: passes ? 0.01 : 0.5,
       localKeep: passes ? 0.95 : 0.4,
       worstTile: null,
-      overlay: state.candidate,
+      overlay: null,
     };
   },
 }));
@@ -103,6 +118,7 @@ beforeEach(async () => {
     .webp()
     .toBuffer();
   state.gateResults = [];
+  state.overlayRequests = 0;
   process.env.GEMINI_API_KEY = 'test';
   vi.spyOn(console, 'log').mockImplementation(() => {});
   vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -143,6 +159,7 @@ test('retains failed candidates in scratch and leaves every page unshipped', asy
   await expect(
     readFile(join(state.roots.samples, 'test/second-tall/sample-1.webp'))
   ).resolves.toBeTruthy();
+  expect(state.overlayRequests).toBe(2);
 });
 
 test('does not ship a passing candidate without apply', async () => {

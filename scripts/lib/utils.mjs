@@ -140,8 +140,7 @@ export function compareSemverDesc(a, b) {
   return 0;
 }
 
-// Books whose `platforms` field omits 'mobile' (absent means web + mobile).
+// Books whose required `platforms` field omits 'mobile'.
 // strip-native-assets.mjs deletes these from native builds; check-assets.mjs
 // cross-checks this filter against booksForPlatform() in src/lib/state/books.ts.
-export const webOnlyBooks = (books) =>
-  books.filter((book) => !(book.platforms ?? ['web', 'mobile']).includes('mobile'));
+export const webOnlyBooks = (books) => books.filter((book) => !book.platforms.includes('mobile'));

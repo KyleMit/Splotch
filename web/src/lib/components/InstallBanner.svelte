@@ -4,13 +4,18 @@
   import Icon from './Icon.svelte';
   import SplotchyIcon from './SplotchyIcon.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
-  import { install, promptInstall, dismissInstall } from '$lib/state/install.svelte';
+  import {
+    install,
+    promptInstall,
+    dismissInstall,
+    armInstallAutoClear,
+    autoDismissInstallIfDue,
+  } from '$lib/state/install.svelte';
   import { PARENT_HELP_BUTTON_ID } from '$lib/state/ui.svelte';
 
   // The banner sits above the corner controls (actions toggle, Parent Help), so
   // it must not linger: once the child has kept drawing past it, clear it and
   // hand off to the Parent Center setup guide with a short parting message.
-  const STROKES_BEFORE_AUTO_CLEAR = 5;
   const PARTING_MESSAGE_MS = 4000;
 
   // Shared motion vocabulary for the banner's enter/exit transitions.
@@ -26,8 +31,7 @@
   let showHint = $state(false);
   let busy = $state(false);
   let parting = $state(false);
-  let shownAtStroke: number | null = null;
-  let exitIntoParentButton = false;
+  let exitIntoParentButton = $state(false);
 
   // Wait until the child has actually drawn a little, so the prompt feels earned
   // and never competes with the very first finger-on-screen moment.
@@ -40,13 +44,12 @@
 
   $effect(() => {
     if (!visible || parting) return;
-    shownAtStroke ??= canvasState.strokeCount;
+    armInstallAutoClear();
     // A parent mid-interaction (reading the expanded hint, native dialog up)
     // outranks the countdown — only auto-clear an ignored banner.
     if (showHint || busy) return;
-    if (canvasState.strokeCount < shownAtStroke + STROKES_BEFORE_AUTO_CLEAR) return;
+    if (!autoDismissInstallIfDue()) return;
     parting = true;
-    dismissInstall();
     setTimeout(() => {
       exitIntoParentButton = true;
       parting = false;

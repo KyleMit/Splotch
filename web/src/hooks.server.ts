@@ -1,6 +1,7 @@
 import { building } from '$app/environment';
 import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
+import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
 import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
 import { SECURITY_HEADERS } from '$lib/server/securityHeaders';
 
@@ -17,7 +18,7 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
   // Authorization: admin bearer sessions. X-Access-Token / X-Api-Key: the
   // generate-image credentials (secrets kept out of the query string).
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Access-Token, X-Api-Key',
+  'Access-Control-Allow-Headers': `Content-Type, Authorization, ${ACCESS_TOKEN_HEADER}, ${API_KEY_HEADER}`,
   // Let native clients cache the preflight for a day instead of paying an
   // extra OPTIONS round trip on every cross-origin JSON request.
   'Access-Control-Max-Age': '86400',

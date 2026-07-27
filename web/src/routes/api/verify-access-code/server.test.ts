@@ -10,10 +10,12 @@ const { isAllowedToken, peekRateLimit, rateLimit } = vi.hoisted(() => ({
 vi.mock('$lib/server/tokens', () => ({ isAllowedToken }));
 vi.mock('$lib/server/rateLimit', () => ({ peekRateLimit, rateLimit }));
 
+import { verifyAccessCodeBucket } from '$lib/server/rateLimitKeys';
+import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
 import { POST } from './+server';
 
 const address = '203.0.113.5';
-const key = `verify-access-code:${address}`;
+const key = verifyAccessCodeBucket(address);
 
 function post(body: unknown) {
   const request = new Request('http://localhost/api/verify-access-code', {
@@ -40,7 +42,7 @@ describe('POST /api/verify-access-code', () => {
 
     expect(response.status).toBe(429);
     expect(response.headers.get('Retry-After')).toBe('12');
-    expect(peekRateLimit).toHaveBeenCalledWith(key);
+    expect(peekRateLimit).toHaveBeenCalledWith(key, rateLimitPolicy.verifyAccessCode);
     expect(isAllowedToken).not.toHaveBeenCalled();
     expect(rateLimit).not.toHaveBeenCalled();
   });
@@ -55,10 +57,10 @@ describe('POST /api/verify-access-code', () => {
       ok: false,
       error: 'That access code was not recognized.',
     });
-    expect(peekRateLimit).toHaveBeenCalledWith(key);
+    expect(peekRateLimit).toHaveBeenCalledWith(key, rateLimitPolicy.verifyAccessCode);
     expect(isAllowedToken).toHaveBeenCalledWith('wrong-guess');
     expect(rateLimit).toHaveBeenCalledOnce();
-    expect(rateLimit).toHaveBeenCalledWith(key);
+    expect(rateLimit).toHaveBeenCalledWith(key, rateLimitPolicy.verifyAccessCode);
   });
 
   it('keeps a successful verification out of the shared bucket', async () => {
@@ -66,7 +68,7 @@ describe('POST /api/verify-access-code', () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ ok: true, accessCode: 'sunny-meadow' });
-    expect(peekRateLimit).toHaveBeenCalledWith(key);
+    expect(peekRateLimit).toHaveBeenCalledWith(key, rateLimitPolicy.verifyAccessCode);
     expect(rateLimit).not.toHaveBeenCalled();
   });
 

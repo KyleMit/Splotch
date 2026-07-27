@@ -98,6 +98,13 @@ export function protectedImplementationPaths(paths, auditPath = auditFile()) {
   );
 }
 
+export function removeNewUntrackedPaths(baseline, current, removePath) {
+  const kept = new Set(baseline);
+  const added = current.filter((path) => !kept.has(path));
+  for (const path of added) removePath(path);
+  return added;
+}
+
 // Every env knob that changes how a run behaves, and is therefore part of that
 // run's relaunch command. ONE list with two consumers, deliberately: overnight.mjs
 // bakes these into the detached job's command line, and burndown.mjs records them

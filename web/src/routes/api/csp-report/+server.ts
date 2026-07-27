@@ -1,4 +1,6 @@
 import { rateLimit } from '$lib/server/rateLimit';
+import { cspReportBucket } from '$lib/server/rateLimitKeys';
+import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
 import { throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
@@ -27,52 +29,59 @@ interface CspViolation {
   sample: string;
 }
 
-function str(value: unknown): string {
+interface ReportingApiEntry {
+  type: 'csp-violation';
+  body: Record<string, unknown>;
+  url?: unknown;
+}
+
+function cappedString(value: unknown): string {
   return typeof value === 'string' ? value.slice(0, MAX_FIELD_LENGTH) : '';
 }
 
-function num(value: unknown): number | null {
+function finiteNumberOrNull(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 function fromReportUriPayload(report: Record<string, unknown>): CspViolation {
   return {
-    documentURL: str(report['document-uri']),
-    blockedURL: str(report['blocked-uri']),
-    directive: str(report['effective-directive']) || str(report['violated-directive']),
-    disposition: str(report['disposition']) || 'enforce',
-    sourceFile: str(report['source-file']),
-    line: num(report['line-number']),
-    column: num(report['column-number']),
-    sample: str(report['script-sample']),
+    documentURL: cappedString(report['document-uri']),
+    blockedURL: cappedString(report['blocked-uri']),
+    directive:
+      cappedString(report['effective-directive']) || cappedString(report['violated-directive']),
+    disposition: cappedString(report['disposition']) || 'enforce',
+    sourceFile: cappedString(report['source-file']),
+    line: finiteNumberOrNull(report['line-number']),
+    column: finiteNumberOrNull(report['column-number']),
+    sample: cappedString(report['script-sample']),
   };
 }
 
 function fromReportingApiPayload(body: Record<string, unknown>, url: unknown): CspViolation {
   return {
-    documentURL: str(body.documentURL) || str(url),
-    blockedURL: str(body.blockedURL),
-    directive: str(body.effectiveDirective),
-    disposition: str(body.disposition) || 'enforce',
-    sourceFile: str(body.sourceFile),
-    line: num(body.lineNumber),
-    column: num(body.columnNumber),
-    sample: str(body.sample),
+    documentURL: cappedString(body.documentURL) || cappedString(url),
+    blockedURL: cappedString(body.blockedURL),
+    directive: cappedString(body.effectiveDirective),
+    disposition: cappedString(body.disposition) || 'enforce',
+    sourceFile: cappedString(body.sourceFile),
+    line: finiteNumberOrNull(body.lineNumber),
+    column: finiteNumberOrNull(body.columnNumber),
+    sample: cappedString(body.sample),
   };
+}
+
+function isReportingApiEntry(item: unknown): item is ReportingApiEntry {
+  if (typeof item !== 'object' || item === null) return false;
+
+  const entry = item as Record<string, unknown>;
+  return entry.type === 'csp-violation' && typeof entry.body === 'object' && entry.body !== null;
 }
 
 function extractViolations(payload: unknown): CspViolation[] {
   if (Array.isArray(payload)) {
     return payload
-      .filter(
-        (item): item is Record<string, unknown> =>
-          typeof item === 'object' &&
-          item !== null &&
-          (item as Record<string, unknown>).type === 'csp-violation' &&
-          typeof (item as Record<string, unknown>).body === 'object' &&
-          (item as Record<string, unknown>).body !== null
-      )
-      .map((item) => fromReportingApiPayload(item.body as Record<string, unknown>, item.url));
+      .filter(isReportingApiEntry)
+      .map((entry) => fromReportingApiPayload(entry.body, entry.url));
   }
   if (typeof payload === 'object' && payload !== null) {
     const report = (payload as Record<string, unknown>)['csp-report'];
@@ -95,10 +104,10 @@ function extractViolations(payload: unknown): CspViolation[] {
  * how many reports inside it were usable.
  */
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-  const { limited, retryAfter } = rateLimit(`csp-report:${getClientAddress()}`, {
-    limit: 10,
-    windowMs: 60_000,
-  });
+  const { limited, retryAfter } = rateLimit(
+    cspReportBucket(getClientAddress()),
+    rateLimitPolicy.cspReport
+  );
   if (limited) return throttled(retryAfter);
 
   const contentType = (request.headers.get('content-type') ?? '')

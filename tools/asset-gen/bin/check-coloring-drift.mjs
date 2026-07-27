@@ -46,21 +46,28 @@ const overlayDir = join(SAMPLES_DIR, 'drift');
 if (values.overlay) await mkdir(overlayDir, { recursive: true });
 
 const rows = [];
+let errors = 0;
 for (const page of pages) {
   const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
   const fill = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
   if (!existsSync(fill)) continue; // no fill generated for this page yet
-  const [source, filled] = await Promise.all([readFile(page), readFile(fill)]);
-  const { keep, localKeep, worstTile, overlay } = await outlineMatch(source, filled);
-  const failed = keep < KEEP_THRESHOLD || localKeep < LOCAL_KEEP_THRESHOLD;
-  rows.push({ rel, keep, localKeep, worstTile, failed });
-  if (values.overlay && failed) {
-    const out = join(overlayDir, `${rel.replace(/\//g, '-')}.overlay.png`);
-    await writeFile(out, overlay);
+  try {
+    const [source, filled] = await Promise.all([readFile(page), readFile(fill)]);
+    const { keep, localKeep, worstTile } = await outlineMatch(source, filled);
+    const failed = keep < KEEP_THRESHOLD || localKeep < LOCAL_KEEP_THRESHOLD;
+    rows.push({ rel, keep, localKeep, worstTile, failed });
+    if (values.overlay && failed) {
+      const { overlay } = await outlineMatch(source, filled, { overlay: true });
+      const out = join(overlayDir, `${rel.replace(/\//g, '-')}.overlay.png`);
+      await writeFile(out, overlay);
+    }
+  } catch (error) {
+    console.error(`${rel}  ERROR (${error instanceof Error ? error.message : String(error)})`);
+    errors++;
   }
 }
 
-if (!rows.length) fail('No colored fills found for the given pages.');
+if (!rows.length && !errors) fail('No colored fills found for the given pages.');
 
 // Worst first, so drift is at the top.
 rows.sort((a, b) => a.localKeep - b.localKeep);
@@ -88,3 +95,4 @@ if (bad.length) {
   );
   process.exitCode = 1;
 }
+if (errors) process.exitCode = 1;

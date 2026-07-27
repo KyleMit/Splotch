@@ -48,12 +48,34 @@ export function isAndroidBrowser(): boolean {
   return browser && /android/i.test(navigator.userAgent || '');
 }
 
+// Best-effort friendly OS name from a user-agent string. Pure display sugar — on
+// the web the raw UA is sent alongside it, so a miss here loses nothing.
+export function osLabelFromUserAgent(ua: string): string {
+  if (!ua) return '';
+  const android = ua.match(/Android ([0-9.]+)/);
+  if (android) return `Android ${android[1]}`;
+  const ios = ua.match(/(?:iPhone|iPad|iPod).*?OS ([0-9_]+)/);
+  if (ios) return `iOS ${ios[1].replace(/_/g, '.')}`;
+  const mac = ua.match(/Mac OS X ([0-9_]+)/);
+  if (mac) return `macOS ${mac[1].replace(/_/g, '.')}`;
+  if (/Windows NT 10/.test(ua)) return 'Windows 10/11';
+  const win = ua.match(/Windows NT ([0-9.]+)/);
+  if (win) return `Windows (NT ${win[1]})`;
+  if (/CrOS/.test(ua)) return 'ChromeOS';
+  if (/Linux/.test(ua)) return 'Linux';
+  return '';
+}
+
 export type Platform = 'android' | 'ios' | 'web';
 
 export function getPlatform(): Platform {
   if (!browser) return 'web';
-  return (globalThis.Capacitor?.getPlatform?.() ?? 'web') as Platform;
+  const platform = globalThis.Capacitor?.getPlatform?.();
+  return platform === 'android' || platform === 'ios' ? platform : 'web';
 }
+
+// This boundary implements the tablet-class heuristic documented by supportsOrientationLock().
+const TABLET_MIN_SIDE_PX = 600;
 
 /**
  * Whether the app may force its own device orientation.
@@ -90,5 +112,5 @@ export function getPlatform(): Platform {
 export function supportsOrientationLock(): boolean {
   if (!browser) return false;
   if (!isNative()) return true;
-  return Math.min(window.screen.width, window.screen.height) < 600;
+  return Math.min(window.screen.width, window.screen.height) < TABLET_MIN_SIDE_PX;
 }

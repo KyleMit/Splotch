@@ -12,7 +12,7 @@
 // an explicit setting change (settings.theme) update it from one reactive path,
 // with no separate matchMedia listener for the meta.
 import { settings } from './settings.svelte';
-import { resolveTheme, updateThemeColorMeta } from '../theme';
+import { resolveTheme, type ResolvedTheme, updateThemeColorMeta } from '../theme';
 
 const systemQuery =
   typeof matchMedia !== 'undefined' ? matchMedia('(prefers-color-scheme: dark)') : null;
@@ -23,7 +23,7 @@ systemQuery?.addEventListener('change', (e) => {
   appearance.systemDark = e.matches;
 });
 
-export function resolvedTheme(): 'light' | 'dark' {
+export function resolvedTheme(): ResolvedTheme {
   return resolveTheme(settings.theme, appearance.systemDark);
 }
 

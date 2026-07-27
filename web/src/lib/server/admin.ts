@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { rateLimit } from './rateLimit';
+import { rateLimitPolicy } from './rateLimitPolicy';
 import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 
 // Shared admin-auth core used by both front doors into token management:
@@ -64,7 +65,7 @@ export type AdminLoginAttempt =
  * whether or not `verify` is reached.
  */
 export function beginAdminLogin(ip: string): AdminLoginAttempt {
-  const { limited, retryAfter } = rateLimit(ADMIN_LOGIN_BUCKET(ip));
+  const { limited, retryAfter } = rateLimit(ADMIN_LOGIN_BUCKET(ip), rateLimitPolicy.adminLogin);
   if (limited) return { ok: false, status: 429, retryAfter };
   return {
     ok: true,

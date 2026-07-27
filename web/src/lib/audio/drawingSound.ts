@@ -1,8 +1,9 @@
-import { settings } from '$lib/state/settings.svelte';
+import { settings, SOUND_VOLUME_DEFAULT } from '$lib/state/settings.svelte';
+import type { DrawSoundData } from '$lib/drawing/engine';
 
 const SOUND_URLS = ['/sounds/pencil-1.mp3', '/sounds/pencil-2.mp3', '/sounds/pencil-3.mp3'];
 
-const SOUND_VOLUME = 0.2;
+const BASE_SCRATCH_GAIN = 0.2;
 // Pointer speed (canvas px/ms) at which the scratch reaches full volume. Slow
 // strokes scale down linearly toward silence instead of hard-pausing at a
 // threshold like the old HTMLAudioElement implementation did.
@@ -13,11 +14,10 @@ const STOP_RAMP_S = 0.03;
 let audioContext: AudioContext | null = null;
 let buffers: AudioBuffer[] | null = null;
 let loadStarted = false;
-let currentSource: AudioBufferSourceNode | null = null;
-let currentGain: GainNode | null = null;
+let currentPlayback: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
 
 function volumeMultiplier() {
-  return Math.max(0, Math.min(settings.soundVolume, 100)) / 50;
+  return settings.soundVolume / SOUND_VOLUME_DEFAULT;
 }
 
 function ensureContext(): AudioContext | null {
@@ -54,44 +54,47 @@ export function preloadDrawSounds() {
     });
 }
 
-export function playDrawSound(movementData: { speed?: number } = {}) {
+export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
   if (!settings.soundEnabled) return;
-  preloadDrawSounds();
+  if (isStrokeStart) preloadDrawSounds();
   const ctx = audioContext;
   if (!ctx || !buffers) return;
 
-  if (!currentSource) {
+  if (!currentPlayback) {
     // Stroke start runs from pointerdown, satisfying the autoplay gesture
     // requirement for resuming the context.
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
 
     const buffer = buffers[Math.floor(Math.random() * buffers.length)];
-    currentGain = ctx.createGain();
-    currentGain.gain.value = 0;
-    currentGain.connect(ctx.destination);
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    gain.connect(ctx.destination);
 
-    currentSource = ctx.createBufferSource();
-    currentSource.buffer = buffer;
-    currentSource.loop = true;
-    currentSource.connect(currentGain);
-    currentSource.start(0, Math.random() * buffer.duration);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.connect(gain);
+    source.start(0, Math.random() * buffer.duration);
+    currentPlayback = { source, gain };
   }
 
-  const { speed = 0 } = movementData;
-  const target = SOUND_VOLUME * volumeMultiplier() * Math.min(speed / FULL_VOLUME_SPEED, 1);
-  rampGainTo(currentGain!.gain, target, ctx.currentTime, GAIN_RAMP_S);
+  const target = BASE_SCRATCH_GAIN * volumeMultiplier() * Math.min(speed / FULL_VOLUME_SPEED, 1);
+  rampGainTo(currentPlayback.gain.gain, target, ctx.currentTime, GAIN_RAMP_S);
 }
 
 export function stopDrawSound() {
-  if (currentSource && currentGain && audioContext) {
+  const playback = currentPlayback;
+  if (playback && audioContext) {
     const now = audioContext.currentTime;
-    rampGainTo(currentGain.gain, 0, now, STOP_RAMP_S);
-    currentSource.stop(now + STOP_RAMP_S);
-    const gain = currentGain;
-    currentSource.onended = () => gain.disconnect();
+    const { source, gain } = playback;
+    rampGainTo(gain.gain, 0, now, STOP_RAMP_S);
+    source.stop(now + STOP_RAMP_S);
+    source.onended = () => {
+      source.disconnect();
+      gain.disconnect();
+    };
   }
-  currentSource = null;
-  currentGain = null;
+  currentPlayback = null;
 }
 
 // Ramping (instead of setting the value directly) avoids audible clicks; the

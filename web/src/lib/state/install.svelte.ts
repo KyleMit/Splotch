@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { isAndroidBrowser, isIosDevice, isNative, isStandalone } from '$lib/platform';
 import { STORAGE_KEYS, readBool, writeBool } from '$lib/storage';
+import { canvasState } from './canvas.svelte';
 
 // "Add to Home Screen" / PWA install, surfaced as a friendly parent-facing prompt.
 //
@@ -13,12 +14,6 @@ import { STORAGE_KEYS, readBool, writeBool } from '$lib/storage';
 //
 // Inside the native Capacitor shell the app is already "installed", so the whole
 // feature is inert there.
-
-// Chromium-only event; not in the default TS DOM lib.
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
-}
 
 // How (if at all) we can offer install on this device/browser right now:
 //   'oneTap'  — Chromium fired beforeinstallprompt; tap = native install dialog.
@@ -41,6 +36,9 @@ export const install = $state({
 
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 let initialized = false;
+let installAutoClearArmedAt: number | null = null;
+
+const STROKES_BEFORE_AUTO_CLEAR = 5;
 
 function isIosSafari() {
   if (!isIosDevice()) return false;
@@ -86,7 +84,7 @@ if (browser && !isNative()) {
   window.addEventListener('beforeinstallprompt', (e) => {
     // Stop Chrome's default mini-infobar — we own the timing and presentation.
     e.preventDefault();
-    deferredPrompt = e as BeforeInstallPromptEvent;
+    deferredPrompt = e;
     // The browser only fires this when the app is NOT currently installed, so
     // it outranks a stale persisted flag (installed once, later uninstalled —
     // localStorage survives a PWA uninstall).
@@ -158,4 +156,19 @@ export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unava
 export function dismissInstall() {
   install.dismissed = true;
   writeBool(STORAGE_KEYS.installDismissed, true);
+}
+
+export function armInstallAutoClear() {
+  installAutoClearArmedAt ??= canvasState.strokeCount;
+}
+
+export function autoDismissInstallIfDue(): boolean {
+  if (
+    installAutoClearArmedAt === null ||
+    canvasState.strokeCount < installAutoClearArmedAt + STROKES_BEFORE_AUTO_CLEAR
+  ) {
+    return false;
+  }
+  dismissInstall();
+  return true;
 }

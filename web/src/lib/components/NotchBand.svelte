@@ -5,7 +5,7 @@
   import { computeNotchBandState } from '$lib/notchBand';
   import { layout } from '$lib/state/layout.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { PAPER_COLORS } from '$lib/theme';
+  import { PAPER_COLORS, setThemeColorMeta } from '$lib/theme';
 
   // Measured env(safe-area-inset-*), in CSS px — we need the number (not just
   // the CSS value) to tell a real notch from a bezel. The top and both sides
@@ -29,8 +29,7 @@
   // Web: keep <meta name="theme-color"> in sync — the only mechanism that tints
   // the Android web status bar; a harmless no-op on iOS and native builds.
   $effect(() => {
-    if (typeof document === 'undefined') return;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', band.themeColor);
+    setThemeColorMeta(band.themeColor);
   });
 
   // Native: flip the system clock/battery icons light or dark for contrast.

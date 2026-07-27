@@ -1,7 +1,7 @@
 // Coloring-book catalog - the single source of truth for which books exist and
-// where each one is allowed to ship. This file is intentionally plain JS (no
-// Svelte runes) so it can be imported both by the app and by Node build scripts
-// (see scripts/strip-native-assets.mjs).
+// where each one is allowed to ship. This file is intentionally rune-free (and
+// is not a `.svelte.ts` module) so it can be imported both by the app and by
+// Node build scripts (see scripts/strip-native-assets.mjs).
 //
 // Image storage format:
 //   static/coloring/{book}/cover.outline.webp         cover line art, 1:1
@@ -41,7 +41,8 @@
 //   ['web']            -> web only          (hidden + assets stripped on native)
 //   ['mobile']         -> native only       (hidden on web)
 //   ['web', 'mobile']  -> ships everywhere  ("both")
-// Omitting the field is treated as ships-everywhere.
+
+import type { ResolvedTheme } from '../theme';
 
 // Distribution platforms a book may ship on - distinct from the runtime
 // platform in platform.ts (which also has 'ios'/'android').
@@ -68,14 +69,56 @@ export interface ColoringPage {
 export interface Book {
   id: string;
   name: string;
-  platforms?: BookPlatform[];
+  platforms: BookPlatform[];
   cover: string;
   pages: ColoringPage[];
 }
 
-export const PLATFORMS = { WEB: 'web', MOBILE: 'mobile' } as const;
+const COLORING_ROOT = '/coloring';
+const ORIENTATION_SLUGS: Record<BookOrientation, string> = {
+  portrait: 'tall',
+  landscape: 'wide',
+};
+const ASSET_SUFFIXES = {
+  outline: '.outline.webp',
+  light: '.light.webp',
+  night: '.night.webp',
+  chalk: '.chalk.webp',
+  thumb: '.thumb.webp',
+  chalkThumb: '.chalk.thumb.webp',
+} as const;
 
 const ALL_ORIENTATIONS: BookOrientation[] = ['portrait', 'landscape'];
+
+type PageAssetVariant = 'outline' | 'light' | 'night' | 'chalk';
+
+function pageAssetPath(
+  bookId: string,
+  pageId: string,
+  orientation: BookOrientation,
+  variant: PageAssetVariant
+): string {
+  return `${COLORING_ROOT}/${bookId}/${pageId}-${ORIENTATION_SLUGS[orientation]}${ASSET_SUFFIXES[variant]}`;
+}
+
+function optionalPageAssetPaths(
+  bookId: string,
+  pageId: string,
+  exceptions: BookOrientation[],
+  variant: Extract<PageAssetVariant, 'night' | 'chalk'>
+): Partial<Record<BookOrientation, string>> {
+  const paths: Partial<Record<BookOrientation, string>> = {};
+  for (const orientation of ALL_ORIENTATIONS) {
+    if (!exceptions.includes(orientation)) {
+      paths[orientation] = pageAssetPath(bookId, pageId, orientation, variant);
+    }
+  }
+  return paths;
+}
+
+function coverPath(bookId: string): string {
+  return `${COLORING_ROOT}/${bookId}/cover${ASSET_SUFFIXES.outline}`;
+}
 
 // A page ships night fills + chalk outlines for BOTH orientations by default —
 // the norm once a category is fully processed. Pass the SUBTRACTIVE exceptions
@@ -95,29 +138,19 @@ function page(
   name: string,
   { nightExcept = [], chalkExcept = [] }: PageExceptions = {}
 ): ColoringPage {
-  const night = ALL_ORIENTATIONS.filter((o) => !nightExcept.includes(o));
-  const chalk = ALL_ORIENTATIONS.filter((o) => !chalkExcept.includes(o));
-  const nightImages: Partial<Record<BookOrientation, string>> = {};
-  if (night.includes('portrait')) nightImages.portrait = `/coloring/${book}/${id}-tall.night.webp`;
-  if (night.includes('landscape'))
-    nightImages.landscape = `/coloring/${book}/${id}-wide.night.webp`;
-  const chalkImages: Partial<Record<BookOrientation, string>> = {};
-  if (chalk.includes('portrait')) chalkImages.portrait = `/coloring/${book}/${id}-tall.chalk.webp`;
-  if (chalk.includes('landscape'))
-    chalkImages.landscape = `/coloring/${book}/${id}-wide.chalk.webp`;
   return {
     id,
     name,
     images: {
-      portrait: `/coloring/${book}/${id}-tall.outline.webp`,
-      landscape: `/coloring/${book}/${id}-wide.outline.webp`,
+      portrait: pageAssetPath(book, id, 'portrait', 'outline'),
+      landscape: pageAssetPath(book, id, 'landscape', 'outline'),
     },
     colorImages: {
-      portrait: `/coloring/${book}/${id}-tall.light.webp`,
-      landscape: `/coloring/${book}/${id}-wide.light.webp`,
+      portrait: pageAssetPath(book, id, 'portrait', 'light'),
+      landscape: pageAssetPath(book, id, 'landscape', 'light'),
     },
-    nightImages,
-    chalkImages,
+    nightImages: optionalPageAssetPaths(book, id, nightExcept, 'night'),
+    chalkImages: optionalPageAssetPaths(book, id, chalkExcept, 'chalk'),
   };
 }
 
@@ -126,7 +159,7 @@ export const BOOKS: Book[] = [
     id: 'farm',
     name: 'Farm',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/farm/cover.outline.webp',
+    cover: coverPath('farm'),
     pages: [
       page('farm', 'cat', 'Cat'),
       page('farm', 'cow', 'Cow'),
@@ -140,7 +173,7 @@ export const BOOKS: Book[] = [
     id: 'dinosaur',
     name: 'Dinosaurs',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/dinosaur/cover.outline.webp',
+    cover: coverPath('dinosaur'),
     pages: [
       page('dinosaur', 'brachiosaurus', 'Brachiosaurus'),
       page('dinosaur', 'pterodactyl', 'Pterodactyl'),
@@ -154,7 +187,7 @@ export const BOOKS: Book[] = [
     id: 'creatures',
     name: 'Creatures',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/creatures/cover.outline.webp',
+    cover: coverPath('creatures'),
     pages: [
       page('creatures', 'dragon', 'Dragon'),
       page('creatures', 'fairy', 'Fairy'),
@@ -168,7 +201,7 @@ export const BOOKS: Book[] = [
     id: 'nature',
     name: 'Nature',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/nature/cover.outline.webp',
+    cover: coverPath('nature'),
     pages: [
       page('nature', 'ant', 'Ant'),
       page('nature', 'bee', 'Bee'),
@@ -182,7 +215,7 @@ export const BOOKS: Book[] = [
     id: 'objects',
     name: 'Objects',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/objects/cover.outline.webp',
+    cover: coverPath('objects'),
     pages: [
       page('objects', 'apple', 'Apple'),
       page('objects', 'balloon', 'Balloon'),
@@ -196,7 +229,7 @@ export const BOOKS: Book[] = [
     id: 'shapes',
     name: 'Shapes',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/shapes/cover.outline.webp',
+    cover: coverPath('shapes'),
     pages: [
       page('shapes', 'circle', 'Circle'),
       page('shapes', 'heart', 'Heart'),
@@ -210,7 +243,7 @@ export const BOOKS: Book[] = [
     id: 'space',
     name: 'Space',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/space/cover.outline.webp',
+    cover: coverPath('space'),
     pages: [
       page('space', 'astronaut', 'Astronaut'),
       page('space', 'meteor', 'Meteor'),
@@ -224,7 +257,7 @@ export const BOOKS: Book[] = [
     id: 'vehicles',
     name: 'Vehicles',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/vehicles/cover.outline.webp',
+    cover: coverPath('vehicles'),
     pages: [
       page('vehicles', 'excavator', 'Excavator'),
       page('vehicles', 'fire', 'Fire Truck'),
@@ -238,7 +271,7 @@ export const BOOKS: Book[] = [
 
 /** Books allowed on the given platform ('web' | 'mobile'). */
 export function booksForPlatform(platform: BookPlatform): Book[] {
-  return BOOKS.filter((book) => (book.platforms ?? ['web', 'mobile']).includes(platform));
+  return BOOKS.filter((book) => book.platforms.includes(platform));
 }
 
 export function pageImage(page: ColoringPage, orientation: BookOrientation): string {
@@ -262,12 +295,16 @@ export function pageChalkImage(page: ColoringPage, orientation: BookOrientation)
 
 /** Grid-thumbnail path for a picker-facing line-art image (`x.outline.webp` -> `x.thumb.webp`). */
 export function thumbPath(src: string): string {
-  return src.replace(/\.outline\.webp$/, '.thumb.webp');
+  return src.endsWith(ASSET_SUFFIXES.outline)
+    ? `${src.slice(0, -ASSET_SUFFIXES.outline.length)}${ASSET_SUFFIXES.thumb}`
+    : src;
 }
 
 /** Grid-thumbnail path for a chalk outline (`x.chalk.webp` -> `x.chalk.thumb.webp`). */
 export function chalkThumbPath(src: string): string {
-  return src.replace(/\.chalk\.webp$/, '.chalk.thumb.webp');
+  return src.endsWith(ASSET_SUFFIXES.chalk)
+    ? `${src.slice(0, -ASSET_SUFFIXES.chalk.length)}${ASSET_SUFFIXES.chalkThumb}`
+    : src;
 }
 
 /** Picker-tile thumbnail for a page, theme-aware: dark mode shows the CHALK
@@ -279,7 +316,7 @@ export function chalkThumbPath(src: string): string {
 export function pageThumb(
   page: ColoringPage,
   orientation: BookOrientation,
-  theme: 'light' | 'dark'
+  theme: ResolvedTheme
 ): string {
   const chalk = theme === 'dark' ? page.chalkImages[orientation] : undefined;
   return chalk ? chalkThumbPath(chalk) : thumbPath(page.images[orientation]);
@@ -301,16 +338,12 @@ export function bookAssetPaths(book: Book): string[] {
   // Night fills exist only for processed orientations (ADR-0052) — no thumbnail,
   // same as the light fills.
   const nightFills = book.pages.flatMap((page) =>
-    (['portrait', 'landscape'] as BookOrientation[])
-      .map((o) => page.nightImages[o])
-      .filter((p): p is string => !!p)
+    ALL_ORIENTATIONS.map((o) => page.nightImages[o]).filter((p): p is string => !!p)
   );
   // Chalk outlines exist only for forked orientations — the full-screen overlay
   // and the picker tile (via its .chalk.thumb sibling) swap to them in dark mode.
   const chalkOutlines = book.pages.flatMap((page) =>
-    (['portrait', 'landscape'] as BookOrientation[])
-      .map((o) => page.chalkImages[o])
-      .filter((p): p is string => !!p)
+    ALL_ORIENTATIONS.map((o) => page.chalkImages[o]).filter((p): p is string => !!p)
   );
   return [
     ...lineArt,

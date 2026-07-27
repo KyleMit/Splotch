@@ -12,10 +12,13 @@ vi.mock('$env/dynamic/private', () => ({ env: envState }));
 vi.mock('./tokens', () => ({ isAllowedToken }));
 vi.mock('./rateLimit', () => ({ peekRateLimit, rateLimit }));
 
+import { authorizeGenerationRequest } from './generationAuthorization';
 import {
-  authorizeGenerationRequest,
-  requireEffectiveGenerationKey,
-} from './generationAuthorization';
+  generateImageBucket,
+  generateImageByokBucket,
+  verifyAccessCodeBucket,
+} from './rateLimitKeys';
+import { rateLimitPolicy } from './rateLimitPolicy';
 
 const managedInput = {
   apiKey: null,
@@ -52,10 +55,16 @@ describe('authorizeGenerationRequest', () => {
       body: { message: 'Invalid access token' },
     });
 
-    expect(peekRateLimit).toHaveBeenCalledWith('verify-access-code:203.0.113.5');
+    expect(peekRateLimit).toHaveBeenCalledWith(
+      verifyAccessCodeBucket('203.0.113.5'),
+      rateLimitPolicy.verifyAccessCode
+    );
     expect(isAllowedToken).toHaveBeenCalledWith('daycare-club');
     expect(rateLimit).toHaveBeenCalledOnce();
-    expect(rateLimit).toHaveBeenCalledWith('verify-access-code:203.0.113.5');
+    expect(rateLimit).toHaveBeenCalledWith(
+      verifyAccessCodeBucket('203.0.113.5'),
+      rateLimitPolicy.verifyAccessCode
+    );
   });
 
   it('keeps a valid managed token out of the shared verification budget', async () => {
@@ -67,7 +76,7 @@ describe('authorizeGenerationRequest', () => {
       managedToken: 'daycare-club',
     });
     expect(rateLimit).toHaveBeenCalledOnce();
-    expect(rateLimit).toHaveBeenCalledWith('generate-image:daycare-club', {
+    expect(rateLimit).toHaveBeenCalledWith(generateImageBucket('daycare-club'), {
       limit: 15,
       windowMs: 60_000,
     });
@@ -82,7 +91,7 @@ describe('authorizeGenerationRequest', () => {
     const response = result as Response;
     expect(response.status).toBe(429);
     expect(response.headers.get('Retry-After')).toBe('9');
-    expect(rateLimit).toHaveBeenCalledWith('generate-image:daycare-club', {
+    expect(rateLimit).toHaveBeenCalledWith(generateImageBucket('daycare-club'), {
       limit: 15,
       windowMs: 60_000,
     });
@@ -103,20 +112,16 @@ describe('authorizeGenerationRequest', () => {
     expect(response.headers.get('Retry-After')).toBe('7');
     expect(peekRateLimit).not.toHaveBeenCalled();
     expect(isAllowedToken).not.toHaveBeenCalled();
-    expect(rateLimit).toHaveBeenCalledWith('generate-image-byok:198.51.100.8', {
+    expect(rateLimit).toHaveBeenCalledWith(generateImageByokBucket('198.51.100.8'), {
       limit: 30,
       windowMs: 60_000,
     });
   });
-});
 
-describe('requireEffectiveGenerationKey', () => {
   it('rejects a valid managed request when no server key is configured', async () => {
     envState.GEMINI_API_KEY = undefined;
-    const authorization = await authorizeGenerationRequest(managedInput);
-    if (authorization instanceof Response) throw new Error('Expected an authorization');
 
-    expect(() => requireEffectiveGenerationKey(authorization)).toThrowError(
+    await expect(authorizeGenerationRequest(managedInput)).rejects.toThrowError(
       expect.objectContaining({
         status: 500,
         body: { message: 'Server is missing GEMINI_API_KEY' },

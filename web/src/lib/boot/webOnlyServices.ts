@@ -1,4 +1,4 @@
-import { initPWAUpdates } from '$lib/pwa/updates';
+import { pwaUpdates } from '$lib/pwa/updates';
 import { initInstallPrompt } from '$lib/state/install.svelte';
 
 // The service worker only exists in the web build; the native apps bundle their
@@ -6,7 +6,7 @@ import { initInstallPrompt } from '$lib/state/install.svelte';
 // is likewise web-only (the native app is already installed).
 export function initWebOnlyServices(): () => void {
   if (__IS_CAPACITOR__) return () => {};
-  const teardownPWAUpdates = initPWAUpdates();
+  const teardownPWAUpdates = pwaUpdates.initPWAUpdates();
   initInstallPrompt();
   return () => teardownPWAUpdates?.();
 }

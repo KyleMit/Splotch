@@ -18,6 +18,7 @@ import { COLORING_DIR, FILL_SRC_DIR, REPO_ROOT, fail } from '../lib/paths.mjs';
 import { compositeNight } from '../lib/night-composite.mjs';
 import { scoreCompositeEyes } from '../lib/composite-eye.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+import { bytesToDataUri } from '../lib/data-uri.mjs';
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -33,7 +34,6 @@ const pages = await resolveOutlineTargets(positionals, {
   onMissing: (target) => fail(`no page or category "${target}" under ${COLORING_DIR}`),
 });
 
-const b64 = (buf) => `data:image/png;base64,${buf.toString('base64')}`;
 const cards = [];
 for (const page of pages) {
   const rel = relative(COLORING_DIR, page)
@@ -47,7 +47,7 @@ for (const page of pages) {
   const r = await scoreCompositeEyes(comp, await readFile(lightPath), await readFile(page));
   if (r.passes) continue;
   const meta = await sharp(comp).metadata();
-  const full = b64(await sharp(comp).resize(320).png().toBuffer());
+  const full = bytesToDataUri(await sharp(comp).resize(320).png().toBuffer(), 'image/png');
   const crops = [];
   for (const p of r.pupils.filter((q) => q.blankOrb)) {
     const cx = Math.round(p.x * meta.width);
@@ -65,7 +65,7 @@ for (const page of pages) {
       .resize(200, 200, { kernel: 'nearest' })
       .png()
       .toBuffer();
-    crops.push({ img: b64(crop), coreDark: p.coreDarkFrac });
+    crops.push({ img: bytesToDataUri(crop, 'image/png'), coreDark: p.coreDarkFrac });
   }
   cards.push({ rel, full, crops });
 }

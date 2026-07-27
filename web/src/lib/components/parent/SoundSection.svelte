@@ -8,7 +8,7 @@
     setSoundVolume,
     SOUND_VOLUME_DEFAULT,
   } from '$lib/state/settings.svelte';
-  import { playDrawSound, stopDrawSound } from '$lib/audio/drawingSound';
+  import { playDrawSound, preloadDrawSounds, stopDrawSound } from '$lib/audio/drawingSound';
   import { SECTION_SLIDE } from './sections';
 
   const PREVIEW_SPEED = 0.45;
@@ -18,13 +18,15 @@
   // the parent hears the level they're setting.
   function previewVolume() {
     if (!settings.soundEnabled || !previewingVolume) return;
-    playDrawSound({ speed: PREVIEW_SPEED });
+    playDrawSound({ speed: PREVIEW_SPEED, isStrokeStart: false });
   }
 
   function onVolumeActive(active: boolean) {
     previewingVolume = active;
-    if (active) previewVolume();
-    else stopDrawSound();
+    if (active) {
+      preloadDrawSounds();
+      previewVolume();
+    } else stopDrawSound();
   }
 
   function onVolumeInput(value: number) {

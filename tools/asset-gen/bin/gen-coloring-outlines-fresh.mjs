@@ -23,22 +23,20 @@ import { parseArgs } from 'node:util';
 import { writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
-import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
+import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import { makeClient } from '../lib/gemini.mjs';
 import { scoreSolidity } from '../lib/solid-regions.mjs';
-import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
+import { scoreEyeRings, scoreEyes } from '../lib/eye-fill.mjs';
+import { FRESH_STYLE_PROMPT } from '../lib/prompts.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 90;
-
-const STYLE_PROMPT = `Draw ONE page of a toddler coloring book (for age 2+), in this exact style:
-
-- Clean black pen OUTLINES on a pure white background. Medium, even line weight throughout — like a thick felt-tip pen. No shading, no grey, no color, no hatching, no texture, no text, letters, or numbers, and no border frame around the page.
-- Simple, rounded, chunky cartoon shapes with very little detail. Big friendly forms a two-year-old can color. Generous white margins around the drawing.
-- EVERY shape is a closed thin-line outline that can be colored in. There must be NO solid black filled areas anywhere on the page.
-- If the drawing has a face: each eye is a white eyeball outlined with a thin line, containing ONE outlined pupil circle (drawn as a thin ring, NOT filled black) with ONE small round catchlight circle inside it. Add a simple smiling mouth and thin eyebrow strokes. Never fill a pupil solid black.
-- Background elements stay sparse and simple (for example a couple of puffy outlined clouds, small grass tufts, a simple flower) so the page stays easy to color.`;
+const BORDER_WHITE_LEVEL = 235;
+// Lightweight fraction gate, intentionally independent of the registration mask resolution.
+const INK_SCAN_SIZE = 360;
+const INK_DARK = 150;
 
 const args = parseArgs({
   allowPositionals: true,
@@ -58,7 +56,7 @@ if (!pageRel || !args.values.scene) {
     'usage: gen:coloring-outlines:fresh -- <category/page-orient> --scene "…" [--eyes] [--apply] [--max-attempts N] [-t F] [--notes "…"]'
   );
 }
-if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
+const ai = makeClient();
 
 const orient = pageRel.endsWith('-wide') ? 'wide' : pageRel.endsWith('-tall') ? 'tall' : null;
 if (!orient) fail(`page "${pageRel}" must end in -tall or -wide`);
@@ -67,19 +65,14 @@ const [W, H] = wide ? [1536, 1024] : [1024, 1536];
 const aspect = wide ? '3:2' : '2:3';
 const orientWord = wide ? 'LANDSCAPE (wider than tall)' : 'PORTRAIT (taller than wide)';
 
-const maxAttempts = Number(args.values['max-attempts'] ?? 5);
-if (!(Number.isInteger(maxAttempts) && maxAttempts >= 1))
-  fail('--max-attempts must be a positive integer');
-const baseTemp = args.values.temperature === undefined ? 1.0 : Number(args.values.temperature);
-if (!(baseTemp >= 0 && baseTemp <= 2)) fail('--temperature must be between 0 and 2');
+const maxAttempts = parsePositiveInt(args.values['max-attempts'], '--max-attempts', 5);
+const baseTemp = parseTemperature(args.values.temperature, '--temperature', 1.0);
 
-const prompt = `${STYLE_PROMPT}
+const prompt = `${FRESH_STYLE_PROMPT}
 
 The page is ${orientWord}, ${aspect} aspect ratio.
 
 THE SCENE: ${args.values.scene}${args.values.notes ? `\n\nADDITIONAL INSTRUCTIONS: ${args.values.notes}` : ''}`;
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 async function generateOutline(temperature) {
   const response = await ai.models.generateContent({
@@ -121,7 +114,7 @@ async function borderWhiteFraction(buf) {
     for (let x = 0; x < info.width; x++) {
       if (!edgeRow && x >= margin && x < info.width - margin) continue;
       total++;
-      if (data[(y * info.width + x) * ch] >= 235) white++;
+      if (data[(y * info.width + x) * ch] >= BORDER_WHITE_LEVEL) white++;
     }
   }
   return white / total;
@@ -131,13 +124,13 @@ async function borderWhiteFraction(buf) {
 // regardless of the other gates.
 async function inkFraction(buf) {
   const { data, info } = await sharp(buf)
-    .resize(360, 360, { fit: 'fill' })
+    .resize(INK_SCAN_SIZE, INK_SCAN_SIZE, { fit: 'fill' })
     .raw()
     .toBuffer({ resolveWithObject: true });
   const ch = info.channels;
   let dark = 0;
   const n = info.width * info.height;
-  for (let i = 0; i < data.length; i += ch) if (data[i] < 150) dark++;
+  for (let i = 0; i < data.length; i += ch) if (data[i] < INK_DARK) dark++;
   return dark / n;
 }
 
@@ -173,10 +166,12 @@ for (let attempt = 0; attempt < maxAttempts; attempt++) {
     continue;
   }
 
-  const [solidity, rings, cores, borderWhite, ink] = await Promise.all([
+  const eyeScores = args.values.eyes
+    ? scoreEyes(pen)
+    : scoreEyeRings(pen).then((rings) => ({ rings, cores: null }));
+  const [solidity, { rings, cores }, borderWhite, ink] = await Promise.all([
     scoreSolidity(pen),
-    scoreEyeRings(pen),
-    args.values.eyes ? findEyeCores(pen) : Promise.resolve(null),
+    eyeScores,
     borderWhiteFraction(pen),
     inkFraction(pen),
   ]);

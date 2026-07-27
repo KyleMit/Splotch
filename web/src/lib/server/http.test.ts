@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { readJsonBody, throttled } from './http';
+import { asRecord, readJsonBody, throttled } from './http';
 
 function jsonRequest(body: string) {
   return new Request('http://localhost/api/test', {
@@ -15,6 +15,13 @@ describe('readJsonBody', () => {
     expect(await readJsonBody(jsonRequest('{"code":"sunny-meadow"}'))).toEqual({
       code: 'sunny-meadow',
     });
+  });
+
+  it('returns a valid array body without treating it as an object', async () => {
+    const body = await readJsonBody(jsonRequest('["sunny-meadow"]'));
+
+    expect(body).toEqual(['sunny-meadow']);
+    expect(asRecord(body)).toBeNull();
   });
 
   it('throws a 400 HttpError for a malformed body', async () => {

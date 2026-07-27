@@ -1402,3 +1402,936 @@ references `swatchEls` (`rg swatchEls`).
 #### Why it was deferred
 
 verifier unavailable
+
+### [P1][consistency] Unify the two error-response shapes across the API surface
+
+**File(s):** `web/src/lib/server/http.ts:9-15,22-27`;
+`web/src/routes/api/generate-image/+server.ts:17-19,71,72,92,111,143`;
+`web/src/lib/server/generationAuthorization.ts:32,60`;
+`web/src/routes/api/report/+server.ts:73,78,89,104`;
+`web/src/routes/api/verify-access-code/+server.ts:26,30`;
+`web/src/routes/api/verify-key/+server.ts:20,24` — pinned at SHA f934d43
+
+#### Problem
+
+Endpoints emit two incompatible JSON error shapes with no rule for which:
+
+* **`{ ok: false, error }`** — `throttled()`, `verify-access-code`, `verify-key`, `report`.
+* **SvelteKit `{ message }`** — every `throw error(...)` in
+  `generate-image`/`generationAuthorization` (403, 413, 415, 422, 502, 500) and `readJsonBody`'s
+  `throw error(400, 'Expected a JSON body')`.
+
+The same endpoint can return both: in `report`, a malformed body yields
+`{ message: 'Expected a JSON body' }` (400) while a missing `kind` yields
+`{ ok: false, error: 'Please choose bug or feature.' }` (400). A client can't parse a 400 from
+`report` without sniffing the shape. The API skill (SKILL.md:31) even advertises "clients surface
+the `error` field directly," which is false for every `error()`-thrown response.
+
+#### Proposed solution
+
+Add a single error-builder beside `throttled()` in `http.ts`, e.g.:
+
+```ts
+export function fail(status: number, error: string, headers?: HeadersInit): Response {
+  return json({ ok: false, error }, { status, headers });
+}
+```
+
+Replace the client-facing `throw error(400|413|415|422|502|500, msg)` calls (and `readJsonBody`'s
+throw, returning the parsed value or a `fail(400, ...)` sentinel) with `fail(...)` so every JSON
+error is `{ ok, error }`. Note `readAiImageResponse` reads `.text()` so it tolerates the change;
+`aiCredential`/`report` clients already expect `{ ok, error }`.
+
+#### Verification
+
+`grep -rn "throw error(" web/src/routes/api web/src/lib/server` returns only genuinely-unexpected
+5xx (which should hit `handleError`). Add a test asserting every documented failure body has
+`{ ok:false, error:string }`. Run `npm run test:api:smoke`.
+
+---
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+Implemented the normalized API failures and verified the code, but Ruler regeneration could not
+update `.agents/skills/api/SKILL.md` because the nested sandbox denies writes under `.agents`. The
+source and `.claude` copy are updated; the `.agents` copy remains stale, so the scoped change is
+incomplete.
+
+### [P2][duplication] Move content-type parsing into a shared `http.ts` helper
+
+**File(s):** `web/src/routes/api/generate-image/+server.ts:33-34` (`contentTypeOf`) and
+`web/src/routes/api/csp-report/+server.ts:104-107` — pinned at SHA f934d43
+
+#### Problem
+
+The exact "strip params, trim, lowercase the Content-Type" logic is written twice:
+
+```ts
+// generate-image:33
+const contentTypeOf = (request: Request) =>
+  (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+// csp-report:104
+const contentType = (request.headers.get('content-type') ?? '')
+  .split(';')[0].trim().toLowerCase();
+```
+
+Both endpoints branch on Content-Type for correctness (multipart vs raw; allowed telemetry formats).
+Divergence here is a real behavioral bug risk, and the pattern is a natural shared helper next to
+`readJsonBody`.
+
+#### Proposed solution
+
+Add to `http.ts`:
+
+```ts
+export function contentType(request: Request): string {
+  return (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+}
+```
+
+Use it in both routes (generate-image both for the multipart branch and the raw mimeType at line
+93).
+
+#### Verification
+
+`grep -rn "split(';')\[0\]" web/src/routes` returns nothing after. `npm run test:api:smoke` covers
+csp-report's two formats + 415.
+
+---
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+Implemented the shared content-type normalizer and updated both routes with focused passing tests.
+Verification cannot complete because `npm run test:unit` fails in two pre-existing, unrelated
+untracked test files; I left them untouched and made no commit.
+
+### [P2][duplication] Extract the oversized-body guard shared by generate-image and csp-report
+
+**File(s):** `web/src/routes/api/generate-image/+server.ts:83-92` and
+`web/src/routes/api/csp-report/+server.ts:114-122` — pinned at SHA f934d43
+
+#### Problem
+
+Both endpoints implement the same two-stage cap — reject on declared `Content-Length` first, then
+re-check the actual byte length after reading — with the same subtle reasoning (a code-unit length
+check would under-count multibyte payloads):
+
+```ts
+// generate-image
+const declaredLength = Number(request.headers.get('content-length'));
+if (Number.isFinite(declaredLength) && declaredLength > MAX_IMAGE_BYTES) throw error(413, ...);
+const bytes = Buffer.from(await request.arrayBuffer());
+if (bytes.byteLength > MAX_IMAGE_BYTES) throw error(413, ...);
+// csp-report
+const declaredLength = Number(request.headers.get('content-length'));
+if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) return new Response(null,{status:413});
+const raw = await request.text();
+if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) return new Response(null,{status:413});
+```
+
+Two copies of a security-relevant limit; a fix to one (e.g. handling chunked encoding) won't reach
+the other.
+
+#### Proposed solution
+
+Add helpers to `http.ts`:
+
+```ts
+export function declaredLengthExceeds(request: Request, maxBytes: number): boolean;
+export async function readCappedBuffer(request: Request, maxBytes: number): Promise<Buffer>; // throws error(413)
+export async function readCappedText(request: Request, maxBytes: number): Promise<string>; // throws error(413)
+```
+
+Route `generate-image`'s raw branch through `readCappedBuffer` and csp-report through
+`readCappedText`.
+
+#### Verification
+
+Unit test each helper with declared-vs-actual mismatch and a multibyte payload.
+`npm run test:api:smoke` exercises csp-report's cap.
+
+---
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+Implemented the shared zero-copy raw-body reader, migrated both endpoints, and added focused
+byte-limit and UTF-8 coverage. The required unit gate remains red because two pre-existing untracked
+test files contain 13 unrelated failing assertions; I left them untouched, so no commit should be
+created.
+
+### [P2][type-safety] Share request/response contract types between routes and client callers
+
+**File(s):** `web/src/lib/aiCredential.ts:11-18` (`VerifyResponse`/`VerifyCredentialResult`);
+`web/src/routes/api/verify-access-code/+server.ts:32`;
+`web/src/routes/api/verify-key/+server.ts:28`; `web/src/routes/api/report/+server.ts:101`;
+`web/src/lib/drawing/aiImageResponse.ts:1-5` — pinned at SHA f934d43
+
+#### Problem
+
+Every endpoint's response shape is re-declared, loosely, on the client with no compile-time link to
+the server. `aiCredential.ts` hand-writes
+`type VerifyResponse = { ok?: boolean; error?: string; accessCode?: string }`, while the server
+returns `{ ok: true, accessCode }` / `{ ok: false, error }` — nothing enforces they agree. If the
+server drops `accessCode` or renames `error`, the client silently reads `undefined`. Same for
+`report` (no client type at all) and generate-image.
+
+#### Proposed solution
+
+Define the wire contracts once in a shared, client-safe module (e.g. `web/src/lib/apiTypes.ts` — no
+server imports):
+
+```ts
+export type VerifyAccessCodeResponse = { ok: true; accessCode: string } | {
+  ok: false;
+  error: string;
+};
+export type VerifyKeyResponse = { ok: true } | { ok: false; error: string };
+export type ReportResponse = { ok: true; url: string } | { ok: false; error: string };
+export type ApiError = { ok: false; error: string };
+```
+
+Have each route annotate its return (`json<VerifyAccessCodeResponse>(...)` or a typed helper) and
+the client import the same types.
+
+#### Verification
+
+`tsc`/`npm run check` fails if a route's returned object diverges from the shared type. Add a
+type-level test importing both.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `generate-image/+server.ts` and `drawing/aiImageResponse.ts` remain entirely unlinked: the binary
+  success and 422/429/error wire semantics are still independently encoded, so server changes can
+  compile while silently breaking the client, leaving the original generate-image portion
+  unresolved.
+
+#### What was tried
+
+1. Added shared discriminated JSON response contracts and applied them to both client parsers, all
+   specified route payloads, and the common throttling response. Defensive parsing, status checks,
+   and the report honeypot’s optional URL behavior remain unchanged.
+2. Applied repository Prettier formatting to the five flagged shared-contract files so the
+   implementation conforms to the required code style without behavioral changes.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-type-safety-share-request-response-contract-types-between-routes-and.patch`
+(2 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-type-safety-share-request-response-contract-types-between-routes-and.patch`.
+
+### [P2][platform-branching] Install-prompt module branches on `isNative()` at runtime where it could be a build-time exclusion
+
+**File(s):** `web/src/lib/state/install.svelte.ts:82-120` (module-load listeners +
+`initInstallPrompt`); `web/src/routes/+page.svelte:164-167` — pinned at SHA f934d43
+
+#### Problem
+
+The entire install feature is dead in the native build (the Capacitor shell is "already installed"),
+yet it ships in the native bundle and is gated purely at runtime:
+
+```ts
+if (browser && !isNative()) {
+  window.addEventListener('beforeinstallprompt', (e) => { ... });
+  window.addEventListener('appinstalled', markInstalled);
+}
+```
+
+plus `initInstallPrompt()` re-checks `isNative()` (line 104) and the caller *also* guards
+`if (!isNative())` (`+page.svelte:164`). CLAUDE.md states: "The `CAPACITOR=true` env var … is the
+single signal for all web-vs-native branching. Do not add runtime platform branches that could be
+build-time branches instead." `isNative()` cannot tree-shake; `__IS_CAPACITOR__` (the literal
+declared in `app.d.ts:24`) can, letting Rollup drop the whole module from the native bundle.
+
+#### Proposed solution
+
+Guard the module-load side effects and `initInstallPrompt`'s early return on the compile-time
+literal instead of `isNative()`: `if (browser && !__IS_CAPACITOR__)`. Then the triple-guarding
+(`+page.svelte` caller, `initInstallPrompt`, listener block) collapses to one build-time branch and
+the native bundle drops the code. Same treatment for the `updates.ts` PWA module (see next finding).
+
+#### Verification
+
+`CAPACITOR=true npm run build:cap` then grep the native bundle for `beforeinstallprompt` /
+`splotch-install-dismissed` — should be absent. Web build + `install.svelte.test.ts` still pass
+(tests already stub `isNative`; swap to a `__IS_CAPACITOR__` define in vitest.config or keep the
+runtime `isNative` fallback inside the build-time branch).
+
+---
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+I added the requested build-literal guards, but the brief’s verification note is mistaken: Vitest
+defines `__IS_CAPACITOR__` as true, making 15 web install-state tests inert before mocked
+`isNative()` is reached. Fixing the gate requires an out-of-scope test-config change, so the exact
+scoped implementation remains uncommitted.
+
+### [P4][duplication] Reload-side-effect pair (`refreshState = 'idle'; window.location.reload()`) is repeated across three lifecycle paths
+
+**File(s):** `web/src/lib/pwa/updates.ts:164-166,184-186` — pinned at SHA f934d43
+
+#### Problem
+
+The "commit the reload" step appears in the `'deferred'` guard (164-166) and in `onControllerChange`
+(184-186):
+
+```ts
+refreshState = 'idle';
+window.location.reload();
+```
+
+plus the inverse "defer instead" pair (`refreshState = 'deferred'; return;`) at 181-183. The reload
+discipline (always reset state before reloading) is a rule enforced by copy-paste; a future path
+that reloads without resetting would strand the state machine.
+
+#### Proposed solution
+
+Extract `function reloadForUpdate() { refreshState = 'idle'; window.location.reload(); }` and
+`function deferReload() { refreshState = 'deferred'; }`, and call them from all paths. The invariant
+becomes a single definition.
+
+#### Verification
+
+`updates.test.ts` reload-count assertions (e.g. `toHaveBeenCalledTimes(1)`) still hold.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* The `updateReload = 'owed'` deferral transition remains inline in `onControllerChange`, so the
+  original finding’s requested centralization of both lifecycle outcomes is incomplete; extract and
+  call a `deferReload()` helper alongside `reloadForUpdate()`.
+
+#### What was tried
+
+The duplicated reset-and-reload transition is now one private helper, used by both empty-canvas
+update paths.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p4-duplication-reload-side-effect-pair-refreshstate-idle-window-location.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p4-duplication-reload-side-effect-pair-refreshstate-idle-window-location.patch`.
+
+### [P1][duplication] Book id is re-typed as a string argument on every `page()` call, silently generating asset paths on mismatch
+
+**File(s):** `web/src/lib/state/books.ts:92-122` (`page()` factory) and `124-237` (`BOOKS`) — pinned
+at SHA f934d43
+
+#### Problem
+
+`page()` takes the book id as its first positional arg, so every entry repeats the enclosing book's
+`id` as a bare string:
+
+```ts
+{ id: 'farm', name: 'Farm', ... pages: [
+    page('farm', 'cat', 'Cat'),
+    page('farm', 'cow', 'Cow'),   // 'farm' repeated 6× per book, 48× total
+```
+
+The book id lives in two independent places (`Book.id` and each `page(book, …)` call) that must
+agree by hand. `page('farm', …)`, `id`, `name`, and the exceptions object are all
+strings/loosely-typed positionals, so a copy-paste slip (`page('farm', …)` pasted into the
+`dinosaur` block) compiles cleanly and silently emits `/coloring/farm/...` paths under the Dinosaurs
+book. Nothing in the type system ties a page to its book.
+
+#### Proposed solution
+
+Bind the book id once. Give `page()` a curried/closure form per book, e.g. a
+`defineBook(id, name, platforms, pages: (p) => …)` builder where the inner `page(id, name, opts)`
+closes over the book id, or a `book('farm','Farm', ['cat','cow',…])` helper that maps ids→pages.
+Then `Book.id` is the single source and `page` can't reference a foreign book. Signature sketch:
+
+```ts
+function defineBook(
+  id: string,
+  name: string,
+  platforms: BookPlatform[],
+  pages: Array<[id: string, name: string, opts?: PageExceptions]>,
+): Book;
+```
+
+#### Verification
+
+`npm run test:unit -- books` still green; add a test asserting every `page.images.portrait` in a
+book starts with `/coloring/${book.id}/`. Grep confirms the book id literal now appears once per
+book, not per page.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* Update `tools/asset-gen/docs/pipeline.md:334-337`: it still instructs contributors to call the
+  obsolete three-argument `page('nature', 'ant', 'Ant', ...)` signature, which no longer compiles
+  now that the book ID is bound by `book()` and the inner page helper accepts only the page ID,
+  name, and exceptions.
+* `tools/asset-gen/legacy/night-fills.md` still describes its ship/wire instructions as accurate but
+  tells users to call `page('farm', 'cat', 'Cat')`; update that live catalog-wiring guidance to the
+  new book-bound `page('cat', 'Cat')` signature.
+* `tools/asset-gen/legacy/night-fills.md:22` still presents the removed three-argument
+  `page('nature', 'ant', 'Ant', …)` signature as current ship/wire guidance; update it to the
+  book-bound `page('ant', 'Ant', …)` form.
+
+#### What was tried
+
+1. Bound each coloring-page factory to its enclosing book ID and derived the cover from that same
+   ID, eliminating cross-book path mismatches while preserving catalog values. Added a table-driven
+   invariant covering every generated image variant for every page.
+2. Updated the asset-pipeline runbook to describe the book-bound page helper and use its current
+   two-argument form, with page exceptions correctly shown as the optional third argument.
+3. Updated the legacy night-fill shipping guidance to identify the page helper as book-bound and use
+   `page('cat', 'Cat')`, matching the current catalog API.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p1-duplication-book-id-is-re-typed-as-a-string-argument-on-every-page-ca.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p1-duplication-book-id-is-re-typed-as-a-string-argument-on-every-page-ca.patch`.
+
+### [P2][design-tokens] Spacing and font sizes are raw px while colors/radii/durations use tokens
+
+**File(s):** `web/src/lib/components/ColoringBook.svelte:190,194-198,206-228,254-269,341-372` —
+pinned at SHA f934d43
+
+#### Problem
+
+The stylesheet correctly tokenizes color (`var(--surface-2)`, `var(--brand)`), radius
+(`var(--radius-md)`), and motion (`var(--duration-*)`), but hardcodes every spacing and type value
+even though `--space-1…8` and `--font-size-xs…3xl` exist:
+
+```ts
+.coloring-book-content { padding: 32px; }
+.coloring-book-content h2 { margin: 0 0 20px 0; font-size: 24px; }
+.coloring-book-header { gap: 12px; margin-bottom: 20px; }
+.coloring-back-button { width: 36px; height: 36px; padding: 8px; }
+.coloring-grid { gap: 12px; }
+```
+
+`--font-size-md` is used for the tile label (line 369), proving the tokens are in scope — so the raw
+`font-size: 24px` on the h2 and the 8/12/20/32px spacing are inconsistent with the design system the
+same file otherwise follows.
+
+#### Proposed solution
+
+Map each raw value to the nearest `--space-*` / `--font-size-*` token (e.g.
+`padding: var(--space-8)` for 32px, `font-size: var(--font-size-2xl)` for the h2,
+`gap: var(--space-3)` for 12px). Where an exact token doesn't exist, that's a signal to reconcile
+with the design skill's scale rather than invent a px value.
+
+#### Verification
+
+`/dev/design` styleguide + visual diff of the picker before/after; values should be visually
+unchanged if tokens are chosen to match.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `ColoringBook.svelte` still retains the original raw `font-size: 24px` at line 196 and raw padding
+  values `28px`, `18px`, and `6px` at lines 330, 343, and 364. Reconcile all of these with the
+  design-system type and spacing scales; leaving values without exact matches as literals does not
+  resolve the original finding.
+
+#### What was tried
+
+Replaced the exact spacing-scale matches in `ColoringBook.svelte` with their existing CSS custom
+properties, including compound shorthands. Preserved computed dimensions, the 24px heading size, and
+all unresolved raw spacing values so the layout remains pixel-identical.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-design-tokens-spacing-and-font-sizes-are-raw-px-while-colors-radii-du.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-design-tokens-spacing-and-font-sizes-are-raw-px-while-colors-radii-du.patch`.
+
+### [P4][design-tokens] Hardcoded brand RGB `171,113,225` fallback will silently drift from `--brand`
+
+**File(s):** `web/src/lib/components/ColoringBook.svelte:296-298` — pinned at SHA f934d43
+
+#### Problem
+
+```ts
+box-shadow: 0 4px 12px rgba(171, 113, 225, 0.25);
+box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 25%, transparent);
+```
+
+The rgba line is the documented pre-`color-mix` fallback (same pattern as the label at 365-368), so
+it's intentional — but it bakes `--brand`'s literal RGB into the component. If the brand token is
+retuned, this fallback keeps the old color on browsers that hit it, and nothing links the two. The
+`4px`/`12px` offsets are also raw.
+
+#### Proposed solution
+
+If the compat floor still needs a color-mix fallback (per `docs/COMPATIBILITY.md`), centralize a
+`--brand-shadow` token (or a `--brand-rgb` triple) so the literal lives once beside `--brand`;
+otherwise drop the fallback if the floor now supports `color-mix` unconditionally. Tokenize the
+offsets against the elevation scale.
+
+#### Verification
+
+Check `docs/COMPATIBILITY.md` for whether the color-mix fallback is still required at the current
+floor; visual diff of tile hover shadow.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `web/src/lib/components/ColoringBook.svelte:293` still hardcodes the `4px` offset and `12px` blur
+  that the original finding explicitly requires tokenizing against the elevation/spacing scale.
+* Update `docs/COMPATIBILITY.md` and the brand-shadow comment in `web/src/lib/design/tokens.ts`:
+  both still claim every `color-mix()` site has a preceding rgba fallback, which this removal makes
+  false.
+
+#### What was tried
+
+Removed the obsolete hard-coded RGBA hover-shadow fallback so the tile shadow now derives solely
+from the themed brand color.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p4-design-tokens-hardcoded-brand-rgb-171-113-225-fallback-will-silently.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p4-design-tokens-hardcoded-brand-rgb-171-113-225-fallback-will-silently.patch`.
+
+### [P2][architecture] Scatter of platform/device utilities across `lib/` root hurts grepability — group under one folder
+
+**File(s):** `web/src/lib/platform.ts`, `deviceInfo.ts`, `deviceReport.ts`, `orientation.ts`,
+`safeArea.ts`, `haptics.ts`, `notchBand.ts` (whole files) — pinned at SHA f934d43
+
+#### Problem
+
+Seven closely-related "what device / platform am I on and how do I adapt to it" modules sit loose in
+the `lib/` root, interleaved with unrelated utilities (`idle.ts`, `latestRequest.ts`, `storage.ts`,
+`imagePrefetch.ts`, …). They form a natural cluster — `deviceInfo.ts` imports `platform.ts`;
+`orientation.ts` imports `platform.ts`; `notchBand.ts` imports `platform`'s `Platform` type;
+`safeArea.ts` feeds `notchBand`/`layout`; `haptics.ts` imports `platform.ts`. Someone trying to
+answer "where does the app detect iOS / read insets / lock rotation?" has to already know each
+filename. The task brief flags grepability/discoverability as a primary theme and this is its
+clearest instance.
+
+#### Proposed solution
+
+Move the platform/device cluster into a `web/src/lib/platform/` (or `device/`) barrel:
+`platform/detect.ts` (current `platform.ts`), `platform/deviceInfo.ts`, `platform/deviceReport.ts`,
+`platform/orientation.ts`, `platform/safeArea.ts`, `platform/haptics.ts`, `platform/notchBand.ts`,
+plus an `index.ts` re-export. Update the `architecture` skill's file map and the `$lib/...` import
+paths. Colocated tests move with their modules. This is a pure move (no behavior change); ignore the
+one-time churn per the brief.
+
+#### Verification
+
+`npm run check` + `npm test` green after the move; `git grep "from '\$lib/platform'"` and friends
+resolve; the `architecture` skill map lists the new folder.
+
+---
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+Moved the platform/device cluster, rewired consumers and tests, and updated the architecture source
+plus its writable mirror. The required Codex architecture mirror remains stale because
+`npm run ruler:apply` cannot write `.agents/skills` in this sandbox, so the requested
+generated-output portion is incomplete.
+
+### [P2][duplication] `Orientation = 'portrait' | 'landscape'` is redeclared in ~8 places
+
+**File(s):** `web/src/lib/notchBand.ts:38`, `web/src/lib/state/layout.svelte.ts:4`,
+`web/src/lib/orientation.ts:5` (`OrientationLockType`), plus inline copies in
+`web/src/lib/state/books.ts:49`, `state/canvas.svelte.ts:18`, `drawing/engine.ts:258`,
+`components/ParentCenter.svelte:60`, `tests/global.d.ts:48` — pinned at SHA f934d43
+
+#### Problem
+
+The literal union `'portrait' | 'landscape'` is defined independently as `Orientation` in
+`notchBand.ts` and `layout.svelte.ts`, as `OrientationLockType` in `orientation.ts`, as
+`BookOrientation` in `books.ts`, and inlined anonymously in at least four more spots. `notchBand.ts`
+even imports `Platform` from `platform.ts` but redefines `Orientation` locally instead of sharing
+one. Any change (e.g. adding a `'square'`/`'auto'` case) touches every copy, and there's no single
+grep target for "the orientation type."
+
+#### Proposed solution
+
+Export one canonical `export type Orientation = 'portrait' | 'landscape'` from the platform module
+(naturally alongside `Platform` in `platform.ts` / the proposed `platform/detect.ts`), and have
+`layout.svelte.ts`, `notchBand.ts`, `orientation.ts` (`OrientationLockType = Orientation`),
+`books.ts`, `engine.ts`, `canvas.svelte.ts`, and `ParentCenter.svelte` import it. Keep
+semantically-distinct aliases (e.g. `BookOrientation`) as `type BookOrientation = Orientation` if
+the name adds meaning.
+
+#### Verification
+
+`git grep "'portrait' | 'landscape'"` returns only the single definition (plus deliberate value
+literals); `npm run check` passes.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `docs/audit-deferred/p2-complexity-effect-bodies-use-bare-member-access-statements-purely-to.patch`
+  still redeclares `OrientationLockType = 'portrait' | 'landscape'` and imports the now-removed
+  `Orientation` export from `layout.svelte.ts`; update this reapplicable draft to use the canonical
+  type from `platform.ts`.
+
+#### What was tried
+
+Added the canonical `Orientation` union to `platform.ts` and converted all eight consumers to
+type-only imports. Semantic aliases remain where they clarify locking and coloring-book roles, while
+duplicate module-level exports were removed.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-duplication-orientation-portrait-landscape-is-redeclared-in-8-places.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-duplication-orientation-portrait-landscape-is-redeclared-in-8-places.patch`.
+
+### [P1][duplication] Extract the six near-identical Gemini `generateContent` wrappers into `lib/gemini.mjs`
+
+**File(s):** `tools/asset-gen/bin/gen-coloring-fills.mjs:75-97` (`generateColoredPage`);
+`gen-coloring-fills-dark.mjs:119-141` (`generateDarkPage`); `gen-coloring-chalk.mjs:253-278`
+(`drawChalk`); `normalize-outline-strokes.mjs:111-136` (`editLineArt`);
+`gen-coloring-outlines-fresh.mjs:84-97` (`generateOutline`); `gen-style-covers.mjs:29-52`
+(`generateStyledImage`) — pinned at SHA f934d43
+
+#### Problem
+
+Every generator hand-rolls the same call: build
+`contents: [{ role:'user', parts:[{inlineData:{mimeType, data: Buffer.from(...).toString('base64')}}, {text: prompt}] }]`,
+set
+`config: { abortSignal: AbortSignal.timeout(120_000), ...(temperature === undefined ? {} : { temperature }) }`,
+then `classifyGeminiResponse(response)` and
+`if (classified.kind !== 'image') throw new Error(\`${classified.kind}:
+${classified.reason}\`)`. Six copies differ only in the prompt, the webp quality, and (fresh) an`imageConfig.aspectRatio`/ text-only contents. This is the single largest duplicated block in the directory, and the`120_000`
+timeout plus the base64 dance is repeated verbatim each time.
+
+#### Proposed solution
+
+Add `lib/gemini.mjs`:
+
+```
+export const IMAGE_MODEL = 'gemini-3.1-flash-image';
+export const GENERATE_TIMEOUT_MS = 120_000;
+export function makeClient() // reads GEMINI_API_KEY, throws via fail if absent
+export async function generateImage(ai, { imageBytes, mimeType, prompt, temperature, aspectRatio })
+  // builds contents (text-only when imageBytes omitted), applies timeout + optional temperature/imageConfig,
+  // classifies, returns { bytes, mimeType } or throws the refusal reason
+```
+
+Each bin then calls `generateImage(ai, { imageBytes, mimeType, prompt: FILL_PROMPT, temperature })`.
+Keep the per-script prompt constants; only the transport moves.
+
+#### Verification
+
+`grep -c 'AbortSignal.timeout' bin/*.mjs` drops from 6 to 0; `grep -rl classifyGeminiResponse bin/`
+shows only imports of the new helper. Re-run `npm run gen:style-covers -- --style Crayon` (or any
+generator with a key) and confirm identical output bytes.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `tools/asset-gen/lib/gemini.mjs` omits the requested `makeClient()` abstraction, leaving all six
+  generators to import `GoogleGenAI` and hand-roll API-key/client construction. Add the shared
+  client factory and migrate the generators while preserving the dry-run/rescore paths that
+  intentionally permit a null client.
+* `tools/asset-gen/lib/gemini.mjs` implements `makeClient(apiKey)` as an unchecked constructor
+  instead of the required `makeClient()` that reads `GEMINI_API_KEY` and rejects a missing key,
+  leaving environment-key plumbing duplicated across all six bins and permitting
+  `GoogleGenAI({ apiKey: undefined })`. Move key lookup and validation into the helper while
+  preserving the dry-run/rescore paths that intentionally create no client.
+
+#### What was tried
+
+1. Centralized the six asset generators’ Gemini image transport in a shared helper while preserving
+   each wrapper’s prompts, request options, response handling, and no-key CLI behavior. Added mocked
+   contract coverage for conditioned and text-only requests, optional configuration, decoded image
+   responses, and classified errors.
+2. Added a shared `makeClient()` factory and migrated all six generators so `@google/genai`
+   construction is centralized. Existing CLI-level key checks remain intact, and dark fill, chalk,
+   and normalize still conditionally retain a null client for no-key dry-run/rescore paths.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p1-duplication-extract-the-six-near-identical-gemini-generatecontent-wra.patch`
+(2 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p1-duplication-extract-the-six-near-identical-gemini-generatecontent-wra.patch`.
+
+### [P2][duplication] Centralize the `MODEL`, `WEBP_QUALITY`, and timeout constants
+
+**File(s):** `MODEL = 'gemini-3.1-flash-image'` at gen-coloring-fills.mjs:47,
+gen-coloring-fills-dark.mjs:76, gen-coloring-chalk.mjs:69, normalize-outline-strokes.mjs:52,
+gen-coloring-outlines-fresh.mjs:32, gen-style-covers.mjs:21; `WEBP_QUALITY` at fills:48 (90),
+dark:78 (90), chalk:70 (92), normalize:53 (92), fresh:33 (90), covers:24 (75) — pinned at SHA
+f934d43
+
+#### Problem
+
+The model id is duplicated in six files. When the catalog migrates models again (there is already a
+`docs/gemini-3.1-migration.md` run record for exactly this), all six must change in lockstep — a
+grep-and-replace hazard, and nothing enforces they stay equal. `WEBP_QUALITY` is likewise scattered
+with two different values (90 vs 92) and no named rationale for the split.
+
+#### Proposed solution
+
+Export `IMAGE_MODEL` and encode settings from `lib/gemini.mjs` (or a small `lib/encode.mjs`): e.g.
+`export const LINE_ART_WEBP_QUALITY = 92; export const FILL_WEBP_QUALITY = 90;` with a one-line WHY
+for why line art wants the higher quality. Import everywhere.
+
+#### Verification
+
+`grep -rn "gemini-3.1-flash-image" bin/` returns zero after refactor (only the lib defines it).
+Golden diff stays clean (quality values unchanged, just named).
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* `WEBP_QUALITY` remains locally defined in `gen-coloring-chalk.mjs`,
+  `normalize-outline-strokes.mjs`, `gen-coloring-outlines-fresh.mjs`, and `gen-style-covers.mjs`,
+  leaving four of the six listed encode settings scattered and still providing no shared rationale
+  for the quality split. Export appropriately named shared constants for the remaining 92, 90, and
+  75 settings and import them in every listed generator.
+* `tools/asset-gen/lib/gemini.mjs` still repeats the 90 and 92 values across per-script constants
+  without documenting why chalk/normalized outlines require higher quality than fills/fresh
+  outlines, leaving the original finding’s missing rationale unresolved; add the requested one-line
+  WHY or encode shared semantic quality categories where appropriate.
+
+#### What was tried
+
+1. Centralized the asset pipeline’s Gemini image model and timeout in a shared module used by all
+   six generators. The light and dark fill generators now also share their existing WebP quality
+   setting, while every output-specific quality value remains unchanged.
+2. Applied Prettier’s canonical wrapping to the dark-fill WebP encoding expression, removing the
+   formatting-gate failure without changing behavior.
+3. Centralized the chalk, normalized-outline, fresh-outline, and style-cover WebP qualities under
+   explicit output-specific exports. Every listed generator now gets its encode setting from the
+   shared Gemini settings module while preserving the existing values.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-duplication-centralize-the-model-webp-quality-and-timeout-constants.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-duplication-centralize-the-model-webp-quality-and-timeout-constants.patch`.
+
+### [P2][duplication] Background flood-fill is written twice in lib (and a third time in bin)
+
+**File(s):** `tools/asset-gen/lib/night-scores.mjs:57-83` (`scoreNightness`) and
+`tools/asset-gen/lib/invented-shapes.mjs:55-82` (`detectInventedShapes`) — pinned at SHA f934d43
+
+#### Problem
+
+Both modules flood the open background from the border through source-light pixels with the same
+`push(x,y)` closure, the same four border-seeding loops, and the same `while(stack.length)`
+pop-and-spread. `invented-shapes.mjs:14` even documents the copy: "the same machinery as
+scoreNightness." `bin/gen-coloring-chalk.mjs:113` reimplements it a third time. Three copies of a
+border flood-fill, each with its own `SRC_LIGHT`/`NIGHT_SRC_LIGHT` constant (both 170).
+
+#### Proposed solution
+
+Extract `export function floodBackground(gray, w, h, lightThreshold)` → `Uint8Array` into
+`lib/pixels.mjs` (or a new `lib/regions.mjs`). Both scorers call it; `invented-shapes` keeps its own
+`cand` post-filter. Fold the two `170` constants into one exported `BG_LIGHT_THRESHOLD`.
+
+#### Verification
+
+`tests/night-scores.test.mjs` and `tests/invented-shapes.test.mjs` still pass; the `bgFrac`/`bgLuma`
+outputs are unchanged on fixtures.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `tools/asset-gen/bin/gen-coloring-chalk.mjs:117` still contains the third border flood-fill copy
+  identified by the original finding; refactor `openBackground` onto the shared region-flood
+  implementation while preserving its binary-mask semantics.
+
+#### What was tried
+
+Extracted the shared border-seeded grayscale flood fill into `regions.mjs` and routed both quality
+gates through it, ensuring they use one background threshold while preserving their existing
+pixel-selection semantics.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-duplication-background-flood-fill-is-written-twice-in-lib-and-a-third.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-duplication-background-flood-fill-is-written-twice-in-lib-and-a-third.patch`.
+
+### [P3][complexity] `scoreCompositeEyes` is a 100-line function with an inline pupil-shape validator
+
+**File(s):** `tools/asset-gen/lib/composite-eye.mjs:158-259` — pinned at SHA f934d43
+
+#### Problem
+
+Inside the `for (const ref of refs)` loop, three distinct rejection stages are inlined: bounding-box
+fill + aspect ratio (194-206), a Set-based erosion survival test (211-232), and centroid +
+disc-stats measurement (235-243). The blob-is-a-pupil decision spans ~50 lines mixed with the
+measurement, and the erosion here is a fourth ad-hoc morphology implementation.
+
+#### Proposed solution
+
+Extract `function isPupilDisc(blob, w, h)` → boolean (the bbox-fill, aspect, and erosion checks,
+194-232, reusing `erodeMask` from `morphology.mjs`) and `function blobCentroid(blob, w)`. The loop
+body reduces to: grow blob → `if (!isPupilDisc) continue` → measure disc → push.
+
+#### Verification
+
+`tests/composite-eye.test.mjs` (calibrated on stego/horse/17-overflag fixtures) passes;
+`coreDarkFrac`/`blankOrb` verdicts identical.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `isPupilDisc` in `tools/asset-gen/lib/composite-eye.mjs:161` still contains the same Set-based
+  erosion loop, leaving the fourth ad-hoc morphology implementation that the original finding
+  explicitly required removing; build the blob mask and reuse `erodeMask` from `morphology.mjs`
+  while preserving the calibrated fixture verdicts.
+
+#### What was tried
+
+Extracted module-private `isPupilDisc` and `blobCentroid` helpers from the scoring loop while
+preserving the exact cross-kernel erosion and measurements. Fixture verdicts and `coreDarkFrac`
+outputs remain identical to HEAD.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p3-complexity-scorecompositeeyes-is-a-100-line-function-with-an-inline-p.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p3-complexity-scorecompositeeyes-is-a-100-line-function-with-an-inline-p.patch`.
+
+### [P3][architecture] `fail()` (console.error + process.exit) lives in `paths.mjs`, unrelated to path resolution
+
+**File(s):** `tools/asset-gen/lib/paths.mjs:29-32` — pinned at SHA f934d43
+
+#### Problem
+
+`paths.mjs` is documented as "path + tree resolution," but it also exports a CLI-exit helper
+`fail(message)`. Nine bin scripts import it *from paths*
+(`import { …, fail } from '../lib/paths.mjs'`), coupling a process-terminating side-effect to the
+pure path-constants module and making `paths.mjs` un-importable in a context that shouldn't be
+allowed to `process.exit`.
+
+#### Proposed solution
+
+Move `fail` to a `lib/cli.mjs` (or `lib/log.mjs`). Update the nine bin imports. Keep `paths.mjs`
+side-effect-free (pure constants).
+
+#### Verification
+
+`grep -rn "fail" lib/paths.mjs` returns nothing; bin scripts still exit(1) on bad input (existing
+CLI tests like `tests/light-fill-cli.test.mjs`, `tests/outline-targets.test.mjs` pass).
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* `tools/asset-gen/legacy/retouch-line-art.mjs:37` still imports `fail` from `../lib/paths.mjs`;
+  `legacy/README.md` explicitly says this tool is kept runnable, but it now fails at module loading
+  because `paths.mjs` no longer exports `fail`.
+* `tools/asset-gen/tests/light-fill-cli.test.mjs:14-30` and
+  `tools/asset-gen/tests/audit-cli.test.mjs:12-32` still expose `fail` from their mocked
+  `paths.mjs`; after callers moved to `cli.mjs`, that stub is dead and light-fill failure cases
+  invoke the real `process.exit(1)`. Mock `fail` from `cli.mjs` instead (and remove the stale paths
+  exports) so `npm run test:asset-gen` retains isolated failure-path coverage.
+
+#### What was tried
+
+1. Moved `fail` into the asset generator’s CLI helper and updated every active script and Gemini
+   helper to import it there, leaving path utilities focused on path/tree resolution. Error messages
+   and status-1 termination remain unchanged.
+2. Applied Prettier’s required single-line formatting to the shortened path imports in the two audit
+   scripts, resolving the driver’s format gate without changing behavior.
+3. Updated the runnable legacy retouch tool to import `fail` from the CLI helper while retaining its
+   path imports from `paths.mjs`, restoring module loading and existing CLI failure behavior.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p3-architecture-fail-console-error-process-exit-lives-in-paths-mjs-unrel.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p3-architecture-fail-console-error-process-exit-lives-in-paths-mjs-unrel.patch`.

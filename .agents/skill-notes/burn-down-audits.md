@@ -72,6 +72,14 @@ could then call the finding already fixed and drop it without ever gating or rev
 rewinds the entire contiguous implementation and repair chain, and reprocesses the finding. It halts
 instead of rewriting if that incomplete chain was somehow published.
 
+The next canary exposed the mirror-image rollback gap for untracked files. A failed implementer
+added two new test files and returned `success=false`; `git reset --hard` restored tracked source
+but left those tests in the worktree. They failed the next two implementers' full unit runs,
+producing three consecutive deferrals from one contaminated base. The driver now snapshots
+pre-existing untracked paths before implementation and removes only paths introduced by that
+implementation after a rollback. Preflight treats untracked files as dirty, while `RESUME=1` removes
+all untracked crash residue under its existing discard contract.
+
 ## Diagnostics and review input
 
 A deterministic gate failure must carry a bounded, ANSI-free output tail into the resumed
@@ -145,3 +153,4 @@ the other.
 | 2026-07-26 | Rewind clean incomplete implementation chains during crash recovery     |
 | 2026-07-26 | Add per-finding formatting and independent CI checkpoints               |
 | 2026-07-26 | Move both provider packages to direct, independent maintenance          |
+| 2026-07-26 | Remove failed-role untracked files without deleting pre-existing paths  |

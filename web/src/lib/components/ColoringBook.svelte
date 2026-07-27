@@ -5,6 +5,8 @@
     booksForPlatform,
     coloringBookState,
     setOverlayPage,
+    setOverlayOrientation,
+    overlayUrl,
     clearOverlay,
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
@@ -30,7 +32,7 @@
   const orientation = $derived(canvasState.paperOrientation ?? layout.orientation);
 
   // Warm the cover thumbnails once at idle so the very first open of the picker
-  // paints instantly instead of fetching eight full covers on demand.
+  // paints instantly instead of fetching every book's cover thumbnail on demand.
   $effect(() => scheduleIdle(() => prefetchImages(books.map((book) => thumbPath(book.cover)))));
 
   // Pressing/hovering a book tile warms that book's page thumbs before the
@@ -48,9 +50,7 @@
   // paper re-adopts the viewport — i.e. only on rotations with a blank canvas;
   // a locked paper keeps `orientation` (and so the art) unchanged.
   $effect(() => {
-    if (coloringBookState.overlayPage) {
-      setOverlayPage(coloringBookState.overlayPage, orientation);
-    }
+    setOverlayOrientation(orientation);
   });
 
   // The other orientation's art is what a blank-canvas rotation will swap to;
@@ -86,16 +86,12 @@
     node.addEventListener('pointermove', onMove);
     return { destroy: () => node.removeEventListener('pointermove', onMove) };
   }
-  function selectBook(book: Book) {
+  function showView(book: Book | null) {
     activeBook = book;
     hoverArmed = false;
   }
-  function goToBooks() {
-    activeBook = null;
-    hoverArmed = false;
-  }
 
-  const overlayActive = $derived(!!coloringBookState.overlayUrl);
+  const overlayActive = $derived(!!overlayUrl());
 </script>
 
 <dialog
@@ -105,8 +101,8 @@
     open: coloringBook.open,
     origin: coloringBook.origin,
     onRequestClose: coloringBook.hide,
-    onOpen: goToBooks,
-    onClose: goToBooks,
+    onOpen: () => showView(null),
+    onClose: () => showView(null),
   })}
 >
   <div class="coloring-book-content" class:hover-armed={hoverArmed} use:armHoverOnMouseMove>
@@ -138,7 +134,7 @@
               class="coloring-tile coloring-book-tile"
               type="button"
               aria-label="{book.name} coloring book"
-              onclick={() => selectBook(book)}
+              onclick={() => showView(book)}
               onpointerenter={() => prefetchBookPages(book)}
               onpointerdown={() => prefetchBookPages(book)}
             >
@@ -151,7 +147,7 @@
     {:else}
       <div class="coloring-book-view">
         <div class="coloring-book-header">
-          <button class="coloring-back-button" aria-label="Back" onclick={goToBooks}>
+          <button class="coloring-back-button" aria-label="Back" onclick={() => showView(null)}>
             <Icon name="chevron-left" class="coloring-back-icon" />
           </button>
           <h2>{activeBook.name}</h2>
@@ -261,11 +257,12 @@
   }
 
   .coloring-pages-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    --page-cols: 2;
+    grid-template-columns: repeat(var(--page-cols), minmax(0, 1fr));
   }
 
   .coloring-pages-grid.portrait-pages {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    --page-cols: 3;
   }
 
   /* Tiles are little paper cards that preview each page/cover's line art, and
@@ -347,12 +344,8 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .coloring-pages-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     .coloring-pages-grid.portrait-pages {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      --page-cols: 2;
     }
   }
 

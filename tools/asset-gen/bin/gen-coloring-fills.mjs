@@ -34,45 +34,25 @@ import { parseArgs } from 'node:util';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
 import sharp from 'sharp';
-import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
+import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import { makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { scoreEyeFill, judgeLightEyes } from '../lib/eye-fill.mjs';
 import { punchFill } from '../lib/punch-fill.mjs';
+import { FILL_PROMPT } from '../lib/prompts.mjs';
+import { formatCandidateLine } from '../lib/report.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 90;
 
-// The single prompt used for every page — no per-page tailoring. It leans hard
-// on "do not touch the lines" because the whole point is a pixel-faithful fill.
-const FILL_PROMPT = `You are given a black-and-white coloring-book page for a toddler. Color it in neatly, exactly like a completed page in a coloring book.
-
-ABSOLUTE RULES — the colored image must line up perfectly on top of the original:
-- Keep every black outline exactly where it is. Do not move, redraw, thicken, thin, smooth, or erase a single line. The black line art must be pixel-for-pixel identical to the original.
-- Do not add any new lines, outlines, details, decorations, patterns, textures, letters, or objects. Only add color to the empty white areas that are already there.
-- Do not crop, zoom, rotate, shift, or resize the picture. Keep the exact same composition, framing, and margins.
-
-COLORING STYLE:
-- Fill each region with one solid, flat, even color. No gradients, no shading, no highlights, no shadows, no extra outlines around the fills, no crayon or paint texture.
-- Choose simple, cheerful, natural colors that suit each part of the picture.
-- EYES: fill each outlined pupil solid BLACK, leave the small catchlight circle inside it pure white, and keep the surrounding eyeball white or a very pale tint — a classic lively cartoon eye.
-- Stay inside the lines; every fill should butt right up against the black outline without covering it.
-
-FILL EVERYTHING — no blank white:
-- Every enclosed region must be filled with a color, including the whole background and sky. No area may be left as plain white paper, because a blank area would look uncolored.
-- Things that are normally white must still get a soft tint instead of pure white: color clouds, snow, the moon, teeth, white fur or white clothing a pale cream or very light pastel; color a plain background a light color (for example a soft sky blue behind an outdoor scene, or a gentle cream/pastel behind a single object).
-- The ONLY places allowed to stay pure white are tiny highlights, such as a small glint in an eye or a little shine dot.
-
-The result must look like the identical line drawing, fully colored in with clean flat colors and no blank white gaps.`;
-
 // Generate one flat-colored version of a coloring page. Returns raw image bytes
-// + mime type, or throws with the refusal/empty reason. Kept free of file/CLI
-// concerns so it can be reused (batch, samples, or eventually in-app).
-export async function generateColoredPage(ai, { imageBytes, mimeType, temperature }) {
+// + mime type, or throws with the refusal/empty reason.
+async function generateColoredPage(ai, { imageBytes, mimeType, temperature }) {
   const response = await ai.models.generateContent({
     model: MODEL,
     contents: [
@@ -100,9 +80,11 @@ export async function generateColoredPage(ai, { imageBytes, mimeType, temperatur
 // blank areas the child's coloring would leave looking untouched. Tiny highlights
 // (eye glints, shine) stay well under the reject threshold.
 const WHITE_LEVEL = 248;
+// Lightweight fraction gate, intentionally independent of the registration mask resolution.
+const WHITE_SCAN_SIZE = 360;
 async function whiteFraction(buf) {
   const { data, info } = await sharp(buf)
-    .resize(360, 360, { fit: 'fill' })
+    .resize(WHITE_SCAN_SIZE, WHITE_SCAN_SIZE, { fit: 'fill' })
     .raw()
     .toBuffer({ resolveWithObject: true });
   const ch = info.channels;
@@ -123,16 +105,10 @@ const { values, positionals } = parseArgs({
   },
 });
 
-const samples = values.samples === undefined ? 1 : Number(values.samples);
-if (!(Number.isInteger(samples) && samples >= 1)) {
-  fail(`--samples must be a positive integer, got "${values.samples}"`);
-}
+const samples = parsePositiveInt(values.samples, '--samples', 1);
 if (values.apply && samples > 1) fail('--apply cannot be combined with --samples greater than 1.');
-const baseTemp = values.temperature === undefined ? undefined : Number(values.temperature);
-if (baseTemp !== undefined && !(baseTemp >= 0 && baseTemp <= 2)) {
-  fail(`--temperature must be a number between 0 and 2, got "${values.temperature}"`);
-}
-if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
+const baseTemp = parseTemperature(values.temperature, '--temperature', undefined);
+const ai = makeClient();
 
 const pages = await resolveOutlineTargets(positionals, {
   includeCovers: false,
@@ -142,7 +118,6 @@ const pages = await resolveOutlineTargets(positionals, {
   onMissing: 'defer',
 });
 const sampleMode = samples > 1;
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // A candidate is only usable if it holds the original outline — globally AND in
 // every region — and leaves no big blank-white area. Below any bar the fill either
@@ -195,7 +170,7 @@ async function renderClean(source, width, height, slot) {
     const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
     const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
-    const [{ keep, drift, localKeep, worstTile, overlay }, white, eyeScore] = await Promise.all([
+    const [{ keep, drift, localKeep, worstTile }, white, eyeScore] = await Promise.all([
       outlineMatch(source, colored),
       whiteFraction(colored),
       scoreEyeFill(colored, source),
@@ -206,7 +181,6 @@ async function renderClean(source, width, height, slot) {
       drift,
       localKeep,
       worstTile,
-      overlay,
       white,
       eyesOk: judgeLightEyes(eyeScore).passes,
       shift: { dx, dy },
@@ -215,7 +189,8 @@ async function renderClean(source, width, height, slot) {
     if (!best || rank(cand) > rank(best)) best = cand;
     if (passes(cand)) break;
   }
-  return best;
+  const { overlay } = await outlineMatch(source, best.colored, { overlay: true });
+  return { ...best, overlay };
 }
 
 let failures = 0;
@@ -240,15 +215,12 @@ for (const page of pages) {
     try {
       const cand = await renderClean(source, width, height, i);
       const { colored, keep, localKeep, overlay, white, shift, attempt } = cand;
-      const tries = attempt > 0 ? `  (${attempt + 1} tries)` : '';
-      const nudge = shift.dx || shift.dy ? `  shift ${shift.dx},${shift.dy}` : '';
       const warn = [];
       if (keep < KEEP_THRESHOLD) warn.push('drifting');
       if (localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
       if (white > WHITE_THRESHOLD) warn.push('white');
       if (!cand.eyesOk) warn.push('flat eyes');
-      const flag = warn.length ? `  ⚠ ${warn.join(' + ')}` : '';
-      const score = `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%${nudge}`;
+      const score = `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%`;
 
       const dir = join(SAMPLES_DIR, rel);
       await mkdir(dir, { recursive: true });
@@ -260,7 +232,9 @@ for (const page of pages) {
       // candidates routinely miss a gate while exploring palettes, so a gate miss
       // there must not fail the run. A thrown error below always counts.
       else if (!sampleMode) failures++;
-      console.log(`${score}${tries}${flag}  -> ${relative(REPO_ROOT, out)}`);
+      console.log(
+        formatCandidateLine({ stats: score, warnings: warn, attempt, shift, outPath: out })
+      );
     } catch (err) {
       failures++;
       console.log(`FAILED (${err instanceof Error ? err.message : err})`);

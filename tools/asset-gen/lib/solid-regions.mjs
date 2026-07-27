@@ -17,10 +17,12 @@
 // connected surviving component — is the gate signal: a pupil reads in the
 // hundreds of px, stroke junctions and antialiasing residue in the tens.
 import sharp from 'sharp';
+import { dilateMask, erodeMask } from './morphology.mjs';
+import { OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
 
 // Same ink bar as the punch mask (lib/punch-fill.mjs OUTLINE_LUMA_THRESHOLD),
 // so "solid" is judged on exactly the pixels the punch would cut.
-export const SOLID_LUMA_THRESHOLD = 150;
+export const SOLID_LUMA_THRESHOLD = OUTLINE_LUMA_THRESHOLD;
 
 // Bounds for the erosion radius. The radius is derived per page from the
 // MEASURED stroke width (see strokeWidthP90) rather than fixed: a fixed r=8
@@ -42,47 +44,6 @@ export const OPEN_RADIUS_MAX = 8;
 //     103 total interior px vs 0-4 on truly thin-stroke pages).
 export const SOLID_BLOB_MAX = 100;
 export const SOLID_INTERIOR_MAX = 60;
-
-function erode(mask, w, h, r) {
-  const tmp = new Uint8Array(w * h);
-  const out = new Uint8Array(w * h);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let on = 1;
-      for (let dx = -r; dx <= r; dx++) {
-        const xx = x + dx;
-        if (xx < 0 || xx >= w || !mask[y * w + xx]) {
-          on = 0;
-          break;
-        }
-      }
-      tmp[y * w + x] = on;
-    }
-  }
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let on = 1;
-      for (let dy = -r; dy <= r; dy++) {
-        const yy = y + dy;
-        if (yy < 0 || yy >= h || !tmp[yy * w + x]) {
-          on = 0;
-          break;
-        }
-      }
-      out[y * w + x] = on;
-    }
-  }
-  return out;
-}
-
-function dilate(mask, w, h, r) {
-  const inv = new Uint8Array(mask.length);
-  for (let i = 0; i < mask.length; i++) inv[i] = mask[i] ? 0 : 1;
-  const eroded = erode(inv, w, h, r);
-  const out = new Uint8Array(mask.length);
-  for (let i = 0; i < mask.length; i++) out[i] = eroded[i] ? 0 : 1;
-  return out;
-}
 
 // 90th-percentile stroke width in px: two-pass chamfer distance-to-light over
 // the ink mask, doubled. The p90 (not median) captures junction thickness, so
@@ -178,8 +139,8 @@ export async function scoreSolidity(outlineBuf, { openRadius } = {}) {
   const strokeW = strokeWidthP90(dark, w, h);
   const r =
     openRadius ?? Math.min(OPEN_RADIUS_MAX, Math.max(OPEN_RADIUS_MIN, Math.ceil(strokeW / 2) + 2));
-  const interior = erode(dark, w, h, r);
-  const grown = dilate(interior, w, h, r);
+  const interior = erodeMask(dark, w, h, r);
+  const grown = dilateMask(interior, w, h, r, 1);
   const solid = new Uint8Array(w * h);
   let interiorPx = 0;
   let solidPx = 0;
@@ -221,7 +182,7 @@ export async function whitenSolidRegions(outlineBuf, solidity) {
     height: h,
     masks: { solid },
   } = solidity;
-  const core = erode(solid, w, h, SOLID_RIM_WIDTH);
+  const core = erodeMask(solid, w, h, SOLID_RIM_WIDTH);
   const { data } = await sharp(outlineBuf)
     .removeAlpha()
     .raw()

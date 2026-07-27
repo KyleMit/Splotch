@@ -55,6 +55,7 @@ import {
   LOGS,
   PROMPTS,
   protectedImplementationPaths,
+  removeNewUntrackedPaths,
   renderDeferralNotes,
   resolveImplSha,
   runCmd,
@@ -176,13 +177,31 @@ const agentStep = (options) =>
     ...options,
   });
 
+function untrackedImplementationPaths() {
+  return gitOut('ls-files', '--others', '--exclude-standard').split('\n').filter(Boolean);
+}
+
 function changedImplementationPaths() {
   const outputs = [
     gitOut('diff', '--name-only'),
     gitOut('diff', '--cached', '--name-only'),
-    gitOut('ls-files', '--others', '--exclude-standard'),
+    untrackedImplementationPaths().join('\n'),
   ];
   return [...new Set(outputs.flatMap((output) => output.split('\n').filter(Boolean)))];
+}
+
+function restoreWorktree(baseSha, untrackedBaseline, label) {
+  if (git('reset', '-q', '--hard', baseSha).status !== 0)
+    halt(`could not restore ${label} worktree to ${baseSha}`);
+  const removed = removeNewUntrackedPaths(
+    untrackedBaseline,
+    untrackedImplementationPaths(),
+    (path) => rmSync(path, { force: true })
+  );
+  if (removed.length)
+    logLine(
+      `  removed ${removed.length} untracked ${label} file${removed.length === 1 ? '' : 's'}`
+    );
 }
 
 function commitCodexImplementation({ title, baseSha, round = 0 }) {
@@ -374,10 +393,11 @@ if (hasRemote && !gitOk('merge', '--ff-only', `origin/${BRANCH}`))
 // fix's commit — so resetting to HEAD loses no accepted work; that one finding is
 // simply re-processed. Gated behind RESUME so a bare canary run in a dirty repo
 // still halts rather than discarding real uncommitted work.
-if (!gitOk('diff', '--quiet') || !gitOk('diff', '--cached', '--quiet')) {
+const startupUntracked = untrackedImplementationPaths();
+if (!gitOk('diff', '--quiet') || !gitOk('diff', '--cached', '--quiet') || startupUntracked.length) {
   if (!RESUME) halt('working tree is dirty (set RESUME=1 to discard crash residue and resume)');
   logLine('  RESUME: dirty tree from an interrupted run — resetting to HEAD');
-  if (git('reset', '-q', '--hard', 'HEAD').status !== 0) halt('could not reset crash residue');
+  restoreWorktree('HEAD', [], 'crash-residue');
 }
 if (RESUME) {
   const headSha = gitOut('rev-parse', 'HEAD');
@@ -549,6 +569,7 @@ while (done < MAX_ISSUES) {
   if (e2eSpecs.length) logLine(`  E2E gate: ${e2eSpecs.join(' ')}`);
 
   const baseSha = gitOut('rev-parse', 'HEAD');
+  const untrackedBeforeImpl = untrackedImplementationPaths();
 
   // ---- 3. IMPLEMENT ---------------------------------------------------------
   // Impl-model tiering: P4/P5 findings are the mechanical tail (dead code,
@@ -594,7 +615,7 @@ while (done < MAX_ISSUES) {
     // because a brief that cannot be executed (a proposed fix that does not
     // compile, a stale brief) reads as a model failure until you see the reason.
     const tried = [(impl.structured.summary ?? '').trim()].filter(Boolean);
-    git('reset', '-q', '--hard', baseSha);
+    restoreWorktree(baseSha, untrackedBeforeImpl, 'implementation');
     defer(title, 'implementation failed', { tried });
     continue;
   }
@@ -769,7 +790,7 @@ while (done < MAX_ISSUES) {
     const draftCommits = draftPatch
       ? gitOut('rev-list', '--count', `${baseSha}..${sha}`).trim()
       : 0;
-    git('reset', '-q', '--hard', baseSha);
+    restoreWorktree(baseSha, untrackedBeforeImpl, 'implementation');
     defer(title, reason, {
       catches: reviewCatches,
       tried: fixSummaries,
