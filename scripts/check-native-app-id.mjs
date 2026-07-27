@@ -22,6 +22,43 @@ function xcodeBundleIdentifier(source, configuration) {
   }
 }
 
+const skillChecks = ['.ruler/skills', '.claude/skills', '.agents/skills'].flatMap((root) => [
+  {
+    path: `${root}/profiling/SKILL.md`,
+    values: [
+      ['documented Android launch target', /`am start -n ([A-Za-z0-9._-]+)\/\.MainActivity`/],
+    ],
+  },
+  {
+    path: `${root}/testing/SKILL.md`,
+    values: [['documented Maestro appId', /^appId:\s*([^\s#]+)\s*$/m]],
+  },
+  {
+    path: `${root}/mobile/android.md`,
+    values: [
+      ['installed-package troubleshooting target', /a copy of `([^`]+)`\s*$/m],
+      [
+        'documented adb uninstall target',
+        /^\s*adb -s <serial> uninstall ([^\s#]+)\s+# <serial> from adb:devices$/m,
+      ],
+      ['release-checklist app ID', /^\* \[x\] App ID `([^`]+)`, name/m],
+    ],
+  },
+  {
+    path: `${root}/mobile/ios.md`,
+    values: [
+      ['release-checklist bundle ID', /^\* \[x\] Bundle ID `([^`]+)`, display name/m],
+      ['App Store Connect bundle ID', /bundle ID `([^`]+)`, SKU `splotch`/],
+    ],
+  },
+  {
+    path: `${root}/mobile/native.md`,
+    values: [
+      ['documented fastlane bundle ID', /iOS bundle ID `([^`]+)`, the Android package name/],
+    ],
+  },
+]);
+
 const checks = [
   {
     path: 'android/app/build.gradle',
@@ -60,6 +97,7 @@ const checks = [
     path: '.maestro/smoke.yaml',
     values: [['appId', /^appId:\s*([^\s#]+)\s*$/m]],
   },
+  ...skillChecks,
 ];
 
 const errors = [];

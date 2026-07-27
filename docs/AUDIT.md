@@ -17,44 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P2][single-source-of-truth] The app id `art.splotch.app` is hardcoded in six+ native files
-
-**File(s):** `capacitor.config.json:2`, `android/app/build.gradle:12,25`,
-`android/app/src/main/res/values/strings.xml:5-6`, `ios/App/App.xcodeproj/project.pbxproj:320,341`
-(native identity) — pinned at SHA f934d43
-
-#### Problem
-
-The bundle identifier is repeated as a literal string in at least six places with no single source:
-
-* `capacitor.config.json` → `"appId": "art.splotch.app"`
-* `android/app/build.gradle` → `namespace = "art.splotch.app"` **and**
-  `applicationId
-  "art.splotch.app"`
-* `android/app/src/main/res/values/strings.xml` → `package_name` **and** `custom_url_scheme`, both
-  `art.splotch.app`
-* `ios/.../project.pbxproj` → `PRODUCT_BUNDLE_IDENTIFIER = art.splotch.app` (Debug **and** Release)
-
-`capacitor.config.json` already declares `appId`, which is conceptually the source of truth, yet the
-native files each repeat the literal rather than deriving it. A rename (or a build-variant suffix
-like `.dev`) requires a coordinated edit across three languages, and there is no test asserting the
-copies agree. Note `strings.xml` even repeats it twice for two different keys.
-
-#### Proposed solution
-
-At minimum, document the canonical location (`capacitor.config.json.appId`) and add a check (a
-Vitest/asset-pipeline assertion or a `scripts/` guard) that all native copies equal it. Where the
-build system allows, derive instead of duplicate — e.g. Android `namespace`/`applicationId` can
-share a single `ext` value, and `strings.xml`'s `package_name`/`custom_url_scheme` can be generated.
-
-#### Verification
-
-Grep the tree for `art.splotch.app`; every occurrence should trace back to one declared value or be
-covered by an equality assertion. Change the id in one place in a scratch branch and confirm the
-guard flags the drift.
-
----
-
 ### [P2][dead-config] Capacitor template smoke-tests assert the wrong package and would fail if run
 
 **File(s):**
