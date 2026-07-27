@@ -15,44 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P3][duplication] `playwright.config.ts` and `playwright.webkit-scratch.config.ts` duplicate the whole webServer/PORT/env setup
-
-**File(s):** `web/playwright.webkit-scratch.config.ts:6-27` vs `web/playwright.config.ts:5-6,93-109`
-(shared config) — pinned at SHA f934d43
-
-#### Problem
-
-The scratch config copy-pastes `PORT = 4173`, `baseURL`, `testDir`, `globalSetup`, the
-`vite build && vite preview` command, `timeout: 180_000`, and the
-`{ PUBLIC_ENABLE_DEV_HARNESS, ADMIN_ACCESS_TOKEN: 'test-admin-secret' }` env verbatim from the main
-config:
-
-```ts
-// webkit-scratch:22-26
-command: `npx vite build && npx vite preview --port ${PORT}`,
-...
-env: { PUBLIC_ENABLE_DEV_HARNESS: 'true', ADMIN_ACCESS_TOKEN: 'test-admin-secret' },
-```
-
-If the port, the secret, the harness flag, or the webServer command changes in the main config, the
-scratch config silently rots. The magic secret `'test-admin-secret'` is duplicated in two files (and
-is coupled to `.claude/rules/testing.md`).
-
-#### Proposed solution
-
-Extract the shared pieces (PORT, baseURL, globalSetup, webServer command/env/timeout) into a small
-`web/playwright.shared.ts` and have both configs import and spread them, overriding only what
-differs (the scratch config's `projects` and `reuseExistingServer`). Define `ADMIN_ACCESS_TOKEN`
-test value and the harness env as named exports there.
-
-#### Verification
-
-Change PORT in the shared module and confirm both configs pick it up. Run
-`node scripts/web.mjs playwright test -c playwright.webkit-scratch.config.ts` and the normal
-`npm run test:e2e` and confirm both still boot the server.
-
----
-
 ### [P3][consistency] `vite.config.ts` exports an untyped plain object instead of using `defineConfig`
 
 **File(s):** `web/vite.config.ts:57` (`export default { ... }`) — pinned at SHA f934d43
