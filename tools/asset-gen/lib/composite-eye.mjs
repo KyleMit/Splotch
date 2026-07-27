@@ -34,6 +34,7 @@
 // coreDarkFrac < CORE_DARK_FRAC_MIN ⇔ blank orb. See tools/asset-gen/tests.
 import sharp from 'sharp';
 import { BAND_BLIND_INK_FRAC, scoreEyeFill, STRONG_LIGHT_SIDE } from './eye-fill.mjs';
+import { median } from './stats.mjs';
 
 // A pupil check is anchored only at a CONFIRMED eye, using the same light-fill
 // oracle judgeNightEyes trusts — so shape blanket-checks and segment dots (which
@@ -141,9 +142,8 @@ function discStats(g, w, h, cx, cy, R) {
     for (let x = Math.max(0, cx - R); x <= Math.min(w - 1, cx + R); x++)
       if ((x - cx) ** 2 + (y - cy) ** 2 <= R2) vals.push(g[y * w + x]);
   if (!vals.length) return { median: 255, whiteFrac: 1, darkFrac: 0 };
-  vals.sort((a, b) => a - b);
   return {
-    median: vals[vals.length >> 1],
+    median: median(vals),
     whiteFrac: vals.filter((v) => v > WHITE).length / vals.length,
     darkFrac: vals.filter((v) => v < DARK).length / vals.length,
   };

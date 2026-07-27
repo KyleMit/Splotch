@@ -7,33 +7,6 @@
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P4][duplication] Percentile/median selection is reimplemented inline in every scorer
-
-**File(s):** `tools/asset-gen/lib/eye-fill.mjs:186-190,287-288`, `night-scores.mjs:95`,
-`night-halo.mjs:88`, `solid-regions.mjs:121`, `invented-shapes.mjs:111` — pinned at SHA f934d43
-
-#### Problem
-
-The pattern "sort then index a fraction" recurs everywhere with slightly different spellings:
-`vals[vals.length >> 1]` (median), `vals[Math.floor(vals.length * 0.9)]` (p90),
-`vals[Math.floor(vals.length * 0.15)]` (p15), `deltas[Math.floor(f*(deltas.length-1))]`
-(night-halo's variant subtracts 1). The inconsistency (`>>1` vs `*0.5`, `len` vs `len-1`) is itself
-a bug surface, and `invented-shapes.mjs:111` hides it in a comma-operator one-liner:
-`const med = (a) => (a.sort((x,y)=>x-y), a[a.length>>1]);`.
-
-#### Proposed solution
-
-Add `export function quantile(vals, f)` and `median(vals)` to a shared `lib/stats.mjs` (sort a copy,
-index consistently). Replace the inline selectors. Decide one convention for the index
-(`Math.floor(f*(n-1))`) and apply uniformly.
-
-#### Verification
-
-Unit-test `quantile` directly; re-run all scorer tests — any that shift reveal a pre-existing
-off-by-one the consolidation now makes visible/consistent.
-
----
-
 ### [P5][maintainability] "Median" via `>>1` is the upper-middle element, and luma definitions differ between modules that compare against shared thresholds
 
 **File(s):** `tools/asset-gen/lib/composite-eye.mjs:80-88` (`grayResized`, sharp `.grayscale()`) vs
