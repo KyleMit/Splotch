@@ -17,40 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P2][dead-config] Stray `</content></invoke>` tokens leaked into a shipped Play Store changelog
-
-**File(s):** `fastlane/metadata/android/en-US/changelogs/4.txt:15-18` (fastlane metadata) — pinned
-at SHA f934d43
-
-#### Problem
-
-The end of the v4 Android changelog contains leftover tool/markup tokens that were never meant to
-ship:
-
-```
-• App updates no longer leave stale content.
-  </content>
-  </invoke>
-```
-
-`fastlane supply` uploads these `.txt` files verbatim as the Google Play "What's new" text, so this
-release's store listing literally shows `</content>` and `</invoke>` to parents. It is a copy-paste
-artifact from an AI/editor session that escaped review. Every other changelog ends cleanly; only
-`4.txt` is polluted.
-
-#### Proposed solution
-
-Delete the two trailing lines (`</content>` and `</invoke>`) so the file ends at "…no longer leave
-stale content." Add a lightweight guard so this can't recur — e.g. a test or lint step that fails if
-any `fastlane/metadata/**/*.txt` contains `<` / `>` markup tokens.
-
-#### Verification
-
-`grep -RnE '</?(content|invoke|parameter)' fastlane/metadata` returns nothing after the fix. Confirm
-the changelog reads as clean prose end-to-end.
-
----
-
 ### [P2][single-source-of-truth] The app id `art.splotch.app` is hardcoded in six+ native files
 
 **File(s):** `capacitor.config.json:2`, `android/app/build.gradle:12,25`,
