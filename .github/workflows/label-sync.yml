@@ -17,6 +17,11 @@ on:
 permissions:
   issues: write
 
+# Serialize label reconciliations without cancelling an in-flight mutation.
+concurrency:
+  group: label-sync
+  cancel-in-progress: false
+
 jobs:
   sync:
     name: Reconcile labels from .github/labels.yml

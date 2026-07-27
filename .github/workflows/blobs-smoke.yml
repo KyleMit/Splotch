@@ -24,6 +24,11 @@ on:
 permissions:
   contents: read
 
+# Serialize smokes against the same deploy instead of cancelling, so an in-flight round-trip can clean up.
+concurrency:
+  group: blobs-smoke-${{ github.event.inputs.url || github.event.deployment_status.environment_url }}
+  cancel-in-progress: false
+
 jobs:
   smoke:
     name: Netlify Blobs persistence

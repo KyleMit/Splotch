@@ -21,33 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P3][consistency] Concurrency control is applied unevenly — only two of seven workflows declare a group
-
-**File(s):** `.github/workflows/test.yml:8-10` (cancel), `pages.yml:24-26` (no-cancel),
-`label-to-todo.yml:12-14` (cancel); absent in `android-deploy.yml`, `ios-deploy.yml`,
-`blobs-smoke.yml`, `label-sync.yml` — pinned at SHA f934d43
-
-#### Problem
-
-`test`, `pages`, and `label-to-todo` set `concurrency`; the other four don't. `label-sync.yml` can
-double-run if two `labels.yml` pushes land close together (two labelers racing the same label set),
-and `blobs-smoke` can run overlapping instances across rapid `deployment_status` events. There's no
-documented rationale for which workflows opt in.
-
-#### Proposed solution
-
-Add a `concurrency` group to `label-sync` (`group: label-sync`, `cancel-in-progress: false` — don't
-cancel a partial reconcile) and to `blobs-smoke` keyed on the deploy URL. Leave the tag-triggered
-native smokes without cancel (each tag is a distinct release). Add a one-line comment on each
-explaining the cancel/no-cancel choice, mirroring `pages.yml`'s existing comment.
-
-#### Verification
-
-Each workflow either has a `concurrency` block with a rationale comment or is intentionally exempt;
-two quick label pushes no longer run two overlapping `label-sync` jobs.
-
----
-
 ### [P4][duplication] The `chromium webkit` browser list is repeated across the two Playwright install steps
 
 **File(s):** `.github/workflows/test.yml:122` (install `chromium webkit`), `:128` (install-deps
