@@ -15,50 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P1][duplication] Browser-support floor is duplicated across `vite.config.ts` and root `browserslist` with only a comment enforcing sync
-
-**File(s):** `web/vite.config.ts:72-78` (build target) — pinned at SHA f934d43; cross-references
-`package.json:304-310` (browserslist)
-
-#### Problem
-
-The supported-browser floor is hand-maintained in two places that must stay identical:
-
-```ts
-// web/vite.config.ts:78
-build: { target: ['chrome111', 'edge111', 'firefox114', 'safari16.4', 'ios16.4'] },
-```
-
-```json
-// package.json:305-309
-"chrome >= 111", "edge >= 111", "firefox >= 114", "safari >= 16.4", "ios_saf >= 16.4"
-```
-
-The only thing keeping them in sync is the prose comment ("Keep in sync with `browserslist`… both
-are documented in docs/COMPATIBILITY.md"). Drift here is not cosmetic: esbuild's `target` governs
-which JS/CSS syntax is down-leveled, so if someone bumps `browserslist` (e.g. via
-`npm run update:browserslist`) but not this array, the bundle can ship syntax the declared floor
-can't run. The comment also encodes a hard INVARIANT (ios/safari ≥ native
-`IPHONEOS_DEPLOYMENT_TARGET`) that nothing checks. Three separate sources of truth (this array,
-browserslist, the Xcode target) are coupled only by comments.
-
-#### Proposed solution
-
-Derive the esbuild `target` array from `browserslist` programmatically rather than restating it.
-Either (a) read the root `package.json` `browserslist` field in `vite.config.ts` and map
-`"chrome >= 111"` → `"chrome111"`, or (b) use a small helper (e.g. `browserslist-to-esbuild`) so the
-single source is the `browserslist` field. If a runtime dependency is undesirable, add a cheap
-assertion test (or a `scripts/` check wired into `npm run check`) that parses both and fails on
-mismatch, plus a check that the safari/ios floor ≥ the Xcode `IPHONEOS_DEPLOYMENT_TARGET`.
-
-#### Verification
-
-Bump one entry in `browserslist` only and confirm the build (or a new sync test) fails. After the
-fix, `npm run build` should produce identical `target` behavior; grep `git grep -n "16.4"` should
-show one authoritative definition, not three uncoordinated ones.
-
----
-
 ### [P2][duplication] The `define` compile-time constants are restated in `vite.config.ts` and `vitest.config.ts` and have already drifted
 
 **File(s):** `web/vite.config.ts:65-71` and `web/vitest.config.ts:11-19` (define blocks) — pinned at

@@ -3295,3 +3295,80 @@ The rolled-back draft is kept at
 (3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-test-quality-a-single-parent-center-test-asserts-six-distinct-behavio.patch`.
+
+### [P1][duplication] Browser-support floor is duplicated across `vite.config.ts` and root `browserslist` with only a comment enforcing sync
+
+**File(s):** `web/vite.config.ts:72-78` (build target) — pinned at SHA f934d43; cross-references
+`package.json:304-310` (browserslist)
+
+#### Problem
+
+The supported-browser floor is hand-maintained in two places that must stay identical:
+
+```ts
+// web/vite.config.ts:78
+build: { target: ['chrome111', 'edge111', 'firefox114', 'safari16.4', 'ios16.4'] },
+```
+
+```json
+// package.json:305-309
+"chrome >= 111", "edge >= 111", "firefox >= 114", "safari >= 16.4", "ios_saf >= 16.4"
+```
+
+The only thing keeping them in sync is the prose comment ("Keep in sync with `browserslist`… both
+are documented in docs/COMPATIBILITY.md"). Drift here is not cosmetic: esbuild's `target` governs
+which JS/CSS syntax is down-leveled, so if someone bumps `browserslist` (e.g. via
+`npm run update:browserslist`) but not this array, the bundle can ship syntax the declared floor
+can't run. The comment also encodes a hard INVARIANT (ios/safari ≥ native
+`IPHONEOS_DEPLOYMENT_TARGET`) that nothing checks. Three separate sources of truth (this array,
+browserslist, the Xcode target) are coupled only by comments.
+
+#### Proposed solution
+
+Derive the esbuild `target` array from `browserslist` programmatically rather than restating it.
+Either (a) read the root `package.json` `browserslist` field in `vite.config.ts` and map
+`"chrome >= 111"` → `"chrome111"`, or (b) use a small helper (e.g. `browserslist-to-esbuild`) so the
+single source is the `browserslist` field. If a runtime dependency is undesirable, add a cheap
+assertion test (or a `scripts/` check wired into `npm run check`) that parses both and fails on
+mismatch, plus a check that the safari/ios floor ≥ the Xcode `IPHONEOS_DEPLOYMENT_TARGET`.
+
+#### Verification
+
+Bump one entry in `browserslist` only and confirm the build (or a new sync test) fails. After the
+fix, `npm run build` should produce identical `target` behavior; grep `git grep -n "16.4"` should
+show one authoritative definition, not three uncoordinated ones.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `web/src/viteConfig.test.ts` enforces the native-safety inequality backward: an `ios_saf >= 17`
+  target passes against an iOS 16.4 deployment target even though esbuild may then emit syntax
+  unavailable on installable 16.4 devices. Compare each web target as less than or equal to the
+  native target, and correct the reversed `>=` invariant in `web/vite.config.ts` and
+  `docs/COMPATIBILITY.md`.
+* `.ruler/skills/mobile/ios.md:13` still states the opposite invariant—native iOS must stay ≤ the
+  web target—contradicting the corrected safety rule and directing future changes toward unsafe web
+  targets; update this source and regenerate its `.agents`/`.claude` copies.
+
+#### What was tried
+
+1. Root browserslist now drives Vite’s build targets through an explicit mapper that rejects
+   unsupported syntax. A focused unit invariant compares both Safari/iOS web floors with every Xcode
+   deployment target, while compatibility documentation reflects the canonical/derived relationship
+   without changing any floor.
+2. Corrected the native safety invariant so derived Safari and iOS esbuild targets cannot be newer
+   than any Xcode deployment target. The focused assertion and the corresponding config and
+   compatibility wording now consistently enforce that direction.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p1-duplication-browser-support-floor-is-duplicated-across-vite-config-ts.patch`
+(2 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p1-duplication-browser-support-floor-is-duplicated-across-vite-config-ts.patch`.
