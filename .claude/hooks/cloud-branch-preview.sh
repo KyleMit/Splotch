@@ -12,11 +12,12 @@ fi
 cat <<'EOF'
 Cloud-session workflow (Claude Code on the web):
 
-1. After the first substantive request, work on a fresh `feat/<feature>` branch.
+1. After the first substantive request, work on a fresh `feat/<feature>` branch,
+   defaulting to the latest `origin/main`.
 2. In restricted preview mode, a plain `feat/*` branch has no preview; do not
    claim or invent one.
-3. Only when a live preview is needed, create and push a temporary `feature/*`
-   branch from the working branch, then switch back.
+3. In restricted preview mode, when a live preview is needed, create and push a
+   temporary `feature/*` branch from the working branch, then switch back.
 
 See docs/CLOUD/Claude.md, "Per-session branch + Netlify preview" and "Two
 preview modes — check which one is active", for the full process, current mode,

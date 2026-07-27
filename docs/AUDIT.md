@@ -19,31 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P3][duplication] `cloud-branch-preview.sh` restates ~37 lines of the branching/preview convention already in `docs/CLOUD/Claude.md`
-
-**File(s):** `.claude/hooks/cloud-branch-preview.sh:12-49` — pinned at SHA f934d43
-
-#### Problem
-
-The heredoc (lines 13-49) is a full prose walkthrough of the cloud branching workflow, preview
-modes, and slug-URL derivation — content that the file itself says lives in `docs/CLOUD/Claude.md`
-("See docs/CLOUD/Claude.md", lines 7, 24). Two hand-maintained copies of the same multi-step
-procedure will drift; the hook is the copy most likely to go unnoticed when the doc is updated.
-
-#### Proposed solution
-
-Trim the injected text to the actionable essentials the model needs at session start (branch off
-`origin/main` as `feat/<feature>`; restricted mode → no preview for plain `feat/*`; how to get a
-`feature/*` preview on demand) and defer the full explanation to the doc via a single pointer. Keep
-injected context lean — it costs tokens every cloud session.
-
-#### Verification
-
-Compare the heredoc against `docs/CLOUD/Claude.md`'s "Two preview modes" section for overlap; after
-trimming, the operational steps exist in one authoritative place with the hook citing it.
-
----
-
 ### [P3][consistency] Claude cloud `setup.sh` uses `#!/bin/bash` while the Codex scripts use `#!/usr/bin/env bash`
 
 **File(s):** `.claude/cloud/setup.sh:1`, `.claude/hooks/*.sh:1`, `.codex/cloud/setup.sh:1`,
