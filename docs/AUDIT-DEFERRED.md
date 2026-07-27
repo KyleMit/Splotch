@@ -3045,3 +3045,58 @@ The rolled-back draft is kept at
 (3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-cross-platform-bumpandroidgradle-bumpiospbxproj-regexes-are-unanchore.patch`.
+
+### [P2][architecture] `utils.mjs` is a grab-bag mixing generic, Playwright, release, and app-domain concerns
+
+**File(s):** `scripts/lib/utils.mjs:1-148` (whole file) — pinned at SHA f934d43
+
+#### Problem
+
+The header says "Generic helpers … App-specific logic stays in the script that owns it," but the
+file holds at least five unrelated responsibilities: process runners (`run`/`sh`/`capture`/`fail`),
+network polling (`waitForUrl`), Playwright binary resolution (`chromiumExecutablePath`),
+command/tool discovery (`hasCommand`, `maestroPath`, `maestroInstalled`), release/markdown parsing
+(`parseFrontmatter`, `compareSemverDesc`, `writeFileDeep`), and outright app-domain logic
+(`webOnlyBooks`). A change to any one drags an unrelated import graph; `perf/` scripts importing
+`sleep` pull in `scrypt`-free but still Playwright- and Maestro-flavoured code. This is the
+"grab-bag `utils`" the audit brief calls out.
+
+#### Proposed solution
+
+Split by concern: `lib/proc.mjs` (`run`/`sh`/`capture`/`fail`/`sleep`/`hasCommand`), `lib/net.mjs`
+(`waitForUrl`), `lib/playwright.mjs` (`chromiumExecutablePath`), `lib/maestro.mjs` (Maestro paths —
+or fold into `android.mjs`'s sibling), `lib/frontmatter.mjs` (`parseFrontmatter`,
+`compareSemverDesc`). Re-export from a thin `utils.mjs` barrel for one migration cycle, then update
+imports.
+
+#### Verification
+
+`npm test` (unit + driver:smoke) green; each new module has a single-sentence header describing one
+responsibility.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* Deleting `scripts/lib/utils.mjs` leaves active guidance pointing to a nonexistent module in
+  `scripts/.ruler/AGENTS.md`, `.ruler/skills/testing/SKILL.md`, `.ruler/skills/fix-audits/SKILL.md`,
+  and `docs/adrs/0017-cross-platform-node-scripts.md`; update these authoritative sources and
+  regenerate their mirrors to reference the new concern-specific modules.
+
+#### What was tried
+
+Split the generic script helpers into responsibility-specific modules and migrated every executable
+and test caller to the narrowest import while preserving command-runner semantics. Moved mobile book
+filtering into a narrowly named asset helper shared only by asset validation and native packaging.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-architecture-utils-mjs-is-a-grab-bag-mixing-generic-playwright-releas.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-architecture-utils-mjs-is-a-grab-bag-mixing-generic-playwright-releas.patch`.
