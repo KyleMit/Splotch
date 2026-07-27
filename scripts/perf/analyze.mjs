@@ -105,6 +105,32 @@ function loadInputs(target) {
   return { dir, events, metrics };
 }
 
+function classifyEvents(events) {
+  const userTimingEvents = [];
+  const runTasks = [];
+  const commits = [];
+  const profiles = [];
+  const bucketEvents = [];
+  const nestedEvents = [];
+  for (const e of events) {
+    if (e.cat?.includes('blink.user_timing')) userTimingEvents.push(e);
+    if (e.name === 'ProfileChunk' || e.name === 'Profile') profiles.push(e);
+    if (e.ph !== 'X' || typeof e.dur !== 'number') continue;
+    if (e.name === 'RunTask') runTasks.push(e);
+    if (e.name === 'Commit') commits.push(e);
+    if (
+      e.name === 'RunTask' ||
+      SCRIPTING.has(e.name) ||
+      RENDERING.has(e.name) ||
+      PAINTING.has(e.name)
+    ) {
+      bucketEvents.push(e);
+    }
+    if (e.dur >= US_PER_MS && !CONTAINER_EVENTS.has(e.name)) nestedEvents.push(e);
+  }
+  return { userTimingEvents, runTasks, commits, profiles, bucketEvents, nestedEvents };
+}
+
 // performance.measure() lands in blink.user_timing either as a complete event
 // (ph 'X', has dur) or as an async begin/end pair (ph 'b'/'e', matched by name).
 // Aggregate both shapes by measure name → count / total / avg / max (ms).
@@ -119,7 +145,6 @@ function userTimingMeasures(events) {
     byName.set(name, m);
   };
   for (const e of events) {
-    if (!e.cat || !e.cat.includes('blink.user_timing')) continue;
     if (e.ph === 'X' && typeof e.dur === 'number') add(e.name, e.dur);
     else if (e.ph === 'b') open.set(`${e.name}/${e.id}`, e.ts);
     else if (e.ph === 'e') {
@@ -148,7 +173,6 @@ function categoryBreakdown(events) {
     runTask = 0;
   const longTasks = [];
   for (const e of events) {
-    if (e.ph !== 'X' || typeof e.dur !== 'number') continue;
     if (e.name === 'RunTask') {
       runTask += e.dur;
       if (e.dur >= LONG_TASK_US) longTasks.push(e.dur / US_PER_MS);
@@ -180,7 +204,6 @@ function jsSelfTime(events) {
   const nodes = new Map();
   const selfUs = new Map();
   for (const e of events) {
-    if (e.name !== 'ProfileChunk' && e.name !== 'Profile') continue;
     const profile = e.args?.data?.cpuProfile;
     if (!profile) continue;
     for (const n of profile.nodes || []) {
@@ -225,7 +248,6 @@ function phaseWindows(events) {
   const windows = [];
   const open = new Map();
   for (const e of events) {
-    if (!e.cat || !e.cat.includes('blink.user_timing')) continue;
     if (!e.name.startsWith('phase:')) continue;
     const label = e.name.replace(/^phase:/, '');
     if (e.ph === 'X' && typeof e.dur === 'number') {
@@ -245,13 +267,7 @@ function phaseWindows(events) {
 // raster/damage push of the (high-DPR) canvas, the dominant on-device drawing
 // cost per ADR-0015. Wall-clock is dominated by the scenario's pacing sleeps,
 // so busy time is the real per-phase cost signal.
-function perPhase(events, windows) {
-  const tasks = events
-    .filter((e) => e.name === 'RunTask' && e.ph === 'X' && typeof e.dur === 'number')
-    .map((e) => ({ ts: e.ts, dur: e.dur }));
-  const commits = events
-    .filter((e) => e.name === 'Commit' && e.ph === 'X' && typeof e.dur === 'number')
-    .map((e) => ({ ts: e.ts, dur: e.dur }));
+function perPhase(tasks, commits, windows) {
   return windows.map((w) => {
     let busyUs = 0;
     let longTasks = 0;
@@ -291,22 +307,12 @@ const CONTAINER_EVENTS = new Set(['RunTask', 'ThreadControllerImpl::RunTask']);
 // in and its dominant nested timeline events — so "which phase janked" (the
 // per-phase table) becomes "what the jank actually was" (a compositor Commit, a
 // pointerup dispatch, a blob decode) without hand-walking the trace.
-function attributeLongTasks(events, windows, limit = 12) {
-  const tasks = events
-    .filter(
-      (e) =>
-        e.name === 'RunTask' && e.ph === 'X' && typeof e.dur === 'number' && e.dur >= LONG_TASK_US
-    )
+function attributeLongTasks(runTasks, nested, windows, limit = 12) {
+  const tasks = runTasks
+    .filter((e) => e.dur >= LONG_TASK_US)
     .sort((a, b) => b.dur - a.dur)
     .slice(0, limit);
   if (tasks.length === 0) return [];
-  const nested = events.filter(
-    (e) =>
-      e.ph === 'X' &&
-      typeof e.dur === 'number' &&
-      e.dur >= 1 * US_PER_MS &&
-      !CONTAINER_EVENTS.has(e.name)
-  );
   return tasks
     .map((t) => {
       const phase = windows.find((w) => t.ts >= w.startUs && t.ts < w.endUs);
@@ -325,16 +331,18 @@ function attributeLongTasks(events, windows, limit = 12) {
 }
 
 export function analyze(events, metrics = {}) {
-  const measures = userTimingMeasures(events);
-  const windows = phaseWindows(events);
-  const breakdown = categoryBreakdown(events);
+  const { userTimingEvents, runTasks, commits, profiles, bucketEvents, nestedEvents } =
+    classifyEvents(events);
+  const measures = userTimingMeasures(userTimingEvents);
+  const windows = phaseWindows(userTimingEvents);
+  const breakdown = categoryBreakdown(bucketEvents);
   return {
     settings: metrics.settings || {},
     breakdown,
     engineHotPaths: measures.filter((m) => m.name.startsWith('engine.')),
-    phases: perPhase(events, windows),
-    longTaskAttribution: attributeLongTasks(events, windows),
-    topSelfTime: jsSelfTime(events),
+    phases: perPhase(runTasks, commits, windows),
+    longTaskAttribution: attributeLongTasks(runTasks, nestedEvents, windows),
+    topSelfTime: jsSelfTime(profiles),
     frames: metrics.frames || null,
     longTasks: Object.hasOwn(metrics, 'longTasks')
       ? {

@@ -9,34 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P4][complexity] `analyze.mjs` makes five separate full passes over the event array
-
-**File(s):** `scripts/perf/analyze.mjs:97-155,161-217,225-302` — pinned at SHA f934d43
-
-#### Problem
-
-`userTimingMeasures`, `categoryBreakdown`, `jsSelfTime`, `phaseWindows`, `perPhase`, and
-`attributeLongTasks` each iterate the entire `events` array independently, and
-`perPhase`/`attributeLongTasks` additionally re-`filter` events into `tasks`/`commits`/`nested`
-sub-arrays (lines 226-231, 272-286) then loop again per window (O(events × windows)). For a large
-Android trace this is several redundant O(n) scans plus an O(n×w) attribution. Beyond cost, it hurts
-readability: the "what is a RunTask, a Commit, a phase" classification is re-expressed in each
-function rather than derived once.
-
-#### Proposed solution
-
-Do one classifying pass that partitions events into
-`{ userTimings, runTasks, commits, profileChunks, buckets }`, then have the summarizers consume
-those pre-filtered arrays. This also removes the repeated
-`e.ph === 'X' && typeof e.dur === 'number'` predicate copied into five functions.
-
-#### Verification
-
-`analyze` output on the committed baseline trace is byte-identical; a `console.time` around
-`analyze()` shows fewer full scans (single classify pass).
-
----
-
 ### [P4][naming] Entry-point `main` functions aren't exported, hurting grepability/testability
 
 **File(s):** `scripts/perf/scenario.mjs:34`, `scripts/perf/mount.mjs:49`, `scripts/perf/ios.mjs:35`,
