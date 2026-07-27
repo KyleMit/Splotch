@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parent Center — section activity dot (design prototype)</title>
+<style>
+  @font-face {
+    font-family: 'Quicksand Variable';
+    src: url('assets/quicksand-latin-wght-normal.woff2') format('woff2-variations');
+    font-weight: 300 700;
+    font-display: swap;
+  }
+  :root {
+    --brand: #ab71e1;
+    --brand-hover: #9961d1;
+    --brand-wash: #ede7f6;
+    --brand-wash-hover: #e3d7f5;
+    --brand-text: #7c50bb;
+    /* tokens.css --brand-tint-filter: tints a black glyph to the brand purple */
+    --brand-tint-filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
+    --faint-tint-filter: invert(80%);
+    --surface: #ffffff;
+    --surface-2: #f4f2f7;
+    --surface-hover: #edeaf2;
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --dot: 8px;
+    --dot-sm: 7px;
+    --fade: 0.2s;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #f0eee9;
+    font-family: 'Quicksand Variable', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #1a1a1a;
+  }
+  button { font-family: inherit; }
+  .page { padding: 36px 44px 48px; display: flex; flex-direction: column; gap: 24px; }
+  .intro { max-width: 920px; display: flex; flex-direction: column; gap: 12px; }
+  .intro h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  .intro p { margin: 0; font-size: 13.5px; line-height: 1.55; color: rgba(0,0,0,.6); max-width: 860px; }
+  .intro a { color: var(--brand-text); }
+  .controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+  .btn-primary, .btn-secondary {
+    border: none; cursor: pointer; padding: 10px 18px; border-radius: 999px;
+    font-size: 13.5px; font-weight: 600;
+  }
+  .btn-primary { background: var(--brand); color: #fff; }
+  .btn-primary:hover { background: var(--brand-hover); }
+  .btn-secondary { background: var(--brand-wash); color: var(--brand-text); }
+  .btn-secondary:hover { background: var(--brand-wash-hover); }
+  .controls .hint { font-size: 12px; color: rgba(0,0,0,.45); font-weight: 500; }
+  .frames { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+
+  .device { flex: none; border-radius: 28px; position: relative; overflow: hidden;
+    background: linear-gradient(165deg, #e9e6ef 0%, #dcd7e4 100%);
+    box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .device.phone { width: 390px; height: 724px; }
+  .device.tablet { width: 1024px; height: 724px; border-radius: 24px; }
+  .palette { position: absolute; display: flex; gap: 10px; filter: blur(5px); opacity: .7; }
+  .device.phone .palette { top: 18px; left: 18px; }
+  .device.tablet .palette { top: 22px; left: 20px; flex-direction: column; gap: 14px; }
+  .palette span { width: 34px; height: 34px; border-radius: 50%; }
+  .device.tablet .palette span { width: 42px; height: 42px; }
+  .center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal { background: var(--surface); border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,.3);
+    display: flex; flex-direction: column; overflow: hidden; position: relative; }
+  .device.phone .modal { width: 359px; height: 660px; }
+  .device.tablet .modal { width: 860px; height: 560px; }
+  .close-btn { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border-radius: 50%;
+    background: #fff; border: 1px solid #e0e0e0; box-shadow: 0 2px 6px rgba(0,0,0,.12);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; padding: 0; }
+  .close-btn img { width: 18px; height: 18px; opacity: .75; }
+  .modal header { flex: none; display: flex; align-items: center; gap: 12px; padding: 24px 64px 16px 20px; }
+  .device.tablet .modal header { padding: 28px 68px 18px 32px; }
+  .modal h2 { margin: 0; font-size: 24px; font-weight: 600; color: #333; }
+  .modal header.sub h2 { font-size: 20px; }
+  .back-btn { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+    margin-left: -8px; border: none; border-radius: 50%; background: #f8f8f8; cursor: pointer; flex: none; padding: 0; }
+  .back-btn img { width: 22px; height: 22px; filter: var(--brand-tint-filter); }
+
+  /* ── Phone hub ── */
+  .pc-scroll { flex: 1; min-height: 0; overflow: auto; padding: 0 20px 24px; }
+  .hub-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .hub-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px; border: none;
+    border-radius: var(--radius-lg); background: var(--surface-2); cursor: pointer; text-align: left; }
+  .hub-row:hover { background: var(--surface-hover); }
+  .hub-icon { position: relative; display: flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--brand-wash); flex: none; }
+  .hub-icon img { width: 22px; height: 22px; display: block; }
+  .hub-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+  .hub-title { font-size: 16px; font-weight: 600; color: #333; }
+  .hub-subtitle { font-size: 13px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hub-chevron { width: 18px; height: 18px; flex: none; filter: var(--faint-tint-filter); }
+  .placeholder { padding: 12px 16px; background: var(--surface-2); border-radius: 14px; min-height: 180px;
+    display: flex; align-items: center; justify-content: center;
+    background-image: repeating-linear-gradient(45deg, rgba(124,80,187,.05) 0 10px, transparent 10px 20px); }
+  .placeholder span { font: 500 12px 'Courier New', monospace; color: var(--brand-text); }
+
+  /* ── Tablet two-pane ── */
+  .pc-split { flex: 1; min-height: 0; display: flex; gap: 8px; padding: 0 24px 24px; }
+  .pc-nav { flex: none; width: 232px; display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+  .pc-nav-item { position: relative; display: flex; align-items: center; gap: 12px; width: 100%;
+    padding: 12px 14px; border: none; border-radius: var(--radius-md); background: transparent;
+    color: #666; font-size: 15px; font-weight: 600; cursor: pointer; text-align: left;
+    /* Purple lands only after the dot's fade completes (see spec: tablet sequencing). */
+    transition: background 0.15s ease var(--fade), color 0.15s ease var(--fade); }
+  .pc-nav-item:not(.active):hover { background: var(--surface-hover); color: #333; }
+  .pc-nav-item.active { background: var(--brand); color: #fff; }
+  .nav-icon-wrap { position: relative; display: flex; flex: none; }
+  .nav-icon-wrap img { width: 20px; height: 20px; display: block; }
+  .pc-nav-item.active .nav-icon-wrap img.mono { filter: brightness(0) invert(1); transition: filter 0s step-end var(--fade); }
+  .pc-pane { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 4px 8px 4px 16px; }
+  .pc-pane h3 { margin: 0 0 20px; font-size: 22px; font-weight: 600; color: #333; }
+  .pc-pane .placeholder { min-height: 220px; }
+
+  /* ── The activity dot (chosen: icon badge) ── */
+  .dot { width: var(--dot); height: var(--dot); border-radius: 50%; background: var(--brand);
+    position: absolute; top: -3px; right: -3px; opacity: 0; transition: opacity var(--fade) ease;
+    box-shadow: 0 0 0 2px var(--surface-2); }
+  .pc-nav .dot { width: var(--dot-sm); height: var(--dot-sm); top: -4px; right: -4px;
+    box-shadow: 0 0 0 2px var(--surface); }
+  .dotted .dot { opacity: 1; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  img.mono { filter: var(--brand-tint-filter); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="intro">
+    <h1>Parent Center — section activity dot <span style="font-weight:500;color:rgba(0,0,0,.5)">· design prototype (chosen: icon badge)</span></h1>
+    <p>
+      A static purple dot marks sections a parent has never opened, or whose content changed since
+      their last visit. Opening a section clears its dot with a ~200ms fade — no counts, no pulsing,
+      no toasts. Shells recreated from <code>ParentCenter.svelte</code> + <code>tokens.css</code>;
+      icons are the repo's own. Seeded state: <em>Controls&nbsp;&amp;&nbsp;Buttons</em>,
+      <em>AI&nbsp;Art</em>, <em>What's&nbsp;New</em> dotted. Dotted rows carry visually-hidden
+      "new" text in their accessible name. See splotch issue
+      <a href="https://github.com/KyleMit/Splotch/issues/557">#557</a>.
+    </p>
+    <div class="controls">
+      <button class="btn-primary" onclick="proto.resetFirstRun()">Reset: first run</button>
+      <button class="btn-secondary" onclick="proto.simulateRelease()">Simulate new release (re-dot What's New)</button>
+      <span class="hint">On the tablet, the default-displayed section counts as seen the moment the modal opens.</span>
+    </div>
+  </div>
+
+  <div class="frames">
+    <div class="device phone">
+      <div class="palette">
+        <span style="background:#7c3fd1"></span><span style="background:#2f6fbd"></span>
+        <span style="background:#4a9a4e"></span><span style="background:#c9b23a"></span>
+        <span style="background:#1c1c1c"></span>
+      </div>
+      <div class="center"><div class="modal" id="phoneModal"></div></div>
+    </div>
+    <div class="device tablet">
+      <div class="palette">
+        <span style="background:#7c3fd1"></span><span style="background:#2f6fbd"></span>
+        <span style="background:#2b8a80"></span><span style="background:#4a9a4e"></span>
+        <span style="background:#c9b23a"></span><span style="background:#c2571f"></span>
+      </div>
+      <div class="center"><div class="modal" id="tabletModal"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SECTIONS = [
+  { id: 'appearance', label: 'Appearance & Display', sub: 'System · rotation locked · portrait', icon: 'theme-auto', mono: true },
+  { id: 'sound', label: 'Sound', sub: 'Drawing sounds on · 50%', icon: 'volume-on', mono: true },
+  { id: 'saving', label: 'Saving', sub: 'Auto-save off', icon: 'download', mono: true },
+  { id: 'controls', label: 'Controls & Buttons', sub: 'Advanced controls on', icon: 'dashboard-customize', mono: true },
+  { id: 'ai', label: 'AI Art', sub: 'Not set up', icon: 'wand-stars', mono: false },
+  { id: 'setup', label: 'Setup Guide', sub: 'Install & lock the app', icon: 'pin', mono: true },
+  { id: 'whatsnew', label: "What's New", title: 'Updates', sub: "See what's changed", icon: 'magic-brush', mono: false },
+  { id: 'feedback', label: 'Submit Feedback', sub: 'Report a bug or share an idea', icon: 'more-horiz', mono: true },
+  { id: 'about', label: 'About', sub: 'Version 1.3.0', icon: 'splotchy', mono: false },
+];
+const SEEDED = { controls: true, ai: true, whatsnew: true };
+
+const state = {
+  phone: { dots: { ...SEEDED }, view: 'hub' },
+  tablet: { dots: { ...SEEDED }, active: 'appearance' },
+};
+
+function iconImg(s, cls) {
+  return `<img class="${s.mono ? 'mono' : ''} ${cls || ''}" src="assets/icons/${s.icon}.svg" alt="">`;
+}
+
+function renderPhone() {
+  const el = document.getElementById('phoneModal');
+  const { dots, view } = state.phone;
+  if (view === 'hub') {
+    el.innerHTML = `
+      <button class="close-btn" aria-label="Close"><img src="assets/icons/close.svg" alt=""></button>
+      <header><h2>Parent Center</h2></header>
+      <div class="pc-scroll"><ul class="hub-list">
+        ${SECTIONS.map((s) => `
+          <li><button class="hub-row ${dots[s.id] ? 'dotted' : ''}" data-id="${s.id}" onclick="proto.openPhone('${s.id}')">
+            <span class="hub-icon">${iconImg(s)}<span class="dot"></span></span>
+            <span class="hub-text">
+              <span class="hub-title">${s.label}</span>
+              <span class="hub-subtitle">${s.sub}</span>
+            </span>
+            <img class="hub-chevron" src="assets/icons/chevron-right.svg" alt="">
+            ${dots[s.id] ? '<span class="sr-only">new</span>' : ''}
+          </button></li>`).join('')}
+      </ul></div>`;
+  } else {
+    const s = SECTIONS.find((x) => x.id === view);
+    el.innerHTML = `
+      <button class="close-btn" aria-label="Close"><img src="assets/icons/close.svg" alt=""></button>
+      <header class="sub">
+        <button class="back-btn" aria-label="Back" onclick="proto.backToHub()"><img src="assets/icons/chevron-left.svg" alt=""></button>
+        <h2>${s.title || s.label}</h2>
+      </header>
+      <div class="pc-scroll"><div class="placeholder"><span>${s.title || s.label} — section content placeholder</span></div></div>`;
+  }
+}
+
+function renderTablet() {
+  const el = document.getElementById('tabletModal');
+  const { dots, active } = state.tablet;
+  const activeMeta = SECTIONS.find((x) => x.id === active);
+  el.innerHTML = `
+    <button class="close-btn" aria-label="Close"><img src="assets/icons/close.svg" alt=""></button>
+    <header><h2>Parent Center</h2></header>
+    <div class="pc-split">
+      <nav class="pc-nav" aria-label="Parent Center sections">
+        ${SECTIONS.map((s) => `
+          <button class="pc-nav-item ${s.id === active ? 'active' : ''} ${dots[s.id] ? 'dotted' : ''}"
+                  data-id="${s.id}" onclick="proto.openTablet('${s.id}')">
+            <span class="nav-icon-wrap">${iconImg(s)}<span class="dot"></span></span>
+            <span style="flex:1;min-width:0">${s.label}</span>
+            ${dots[s.id] ? '<span class="sr-only">new</span>' : ''}
+          </button>`).join('')}
+      </nav>
+      <div class="pc-pane">
+        <h3>${activeMeta.title || activeMeta.label}</h3>
+        <div class="placeholder"><span>${activeMeta.title || activeMeta.label} — section content placeholder</span></div>
+      </div>
+    </div>`;
+}
+
+const proto = {
+  openPhone(id) {
+    delete state.phone.dots[id];
+    state.phone.view = id;
+    renderPhone();
+  },
+  backToHub() {
+    state.phone.view = 'hub';
+    renderPhone();
+  },
+  openTablet(id) {
+    // Clear the dot in place first so its fade plays; the .active background
+    // transition carries a matching delay, so purple lands after the fade.
+    const btn = document.querySelector(`#tabletModal .pc-nav-item[data-id="${id}"]`);
+    if (btn) btn.classList.remove('dotted');
+    delete state.tablet.dots[id];
+    state.tablet.active = id;
+    setTimeout(renderTablet, 220);
+  },
+  resetFirstRun() {
+    state.phone = { dots: Object.fromEntries(SECTIONS.map((s) => [s.id, true])), view: 'hub' };
+    // Tablet: the default pane displays the first section on open, which marks
+    // it seen immediately — so first run shows 8 dots there, not 9.
+    const tabletDots = Object.fromEntries(SECTIONS.map((s) => [s.id, true]));
+    delete tabletDots.appearance;
+    state.tablet = { dots: tabletDots, active: 'appearance' };
+    renderPhone();
+    renderTablet();
+  },
+  simulateRelease() {
+    state.phone.dots.whatsnew = true;
+    state.tablet.dots.whatsnew = true;
+    renderPhone();
+    renderTablet();
+  },
+  // Hook for scripted screenshots.
+  set(phone, tablet) {
+    if (phone) state.phone = phone;
+    if (tablet) state.tablet = tablet;
+    renderPhone();
+    renderTablet();
+  },
+};
+window.proto = proto;
+renderPhone();
+renderTablet();
+</script>
+</body>
+</html>
