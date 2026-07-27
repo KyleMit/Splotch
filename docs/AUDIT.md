@@ -17,37 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P3][dead-config] Unused `AppTheme.NoActionBar` style
-
-**File(s):** `android/app/src/main/res/values/styles.xml:12-16` (Android theme) — pinned at SHA
-f934d43
-
-#### Problem
-
-`styles.xml` defines three themes: `AppTheme`, `AppTheme.NoActionBar`, and
-`AppTheme.NoActionBarLaunch`. The manifest only references `@style/AppTheme` (application) and
-`@style/AppTheme.NoActionBarLaunch` (activity). `AppTheme.NoActionBar` is never referenced anywhere
-in the tree — leftover Capacitor template boilerplate.
-
-```xml
-<style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
-    ...
-</style>
-```
-
-Dead resource that invites confusion about which theme is "the" app theme.
-
-#### Proposed solution
-
-Remove the `AppTheme.NoActionBar` style block (verify no `res/` or manifest reference first).
-
-#### Verification
-
-`grep -rn 'NoActionBar\b' android/app/src` shows only `NoActionBarLaunch` remains; the app builds
-and looks identical.
-
----
-
 ### [P3][dead-config] Unused `activity_main.xml` layout — BridgeActivity never inflates it
 
 **File(s):** `android/app/src/main/res/layout/activity_main.xml:1-12` (Android layout) — pinned at
