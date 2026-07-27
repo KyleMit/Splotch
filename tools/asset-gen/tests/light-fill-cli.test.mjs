@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
 import { MAX_ATTEMPTS } from '../lib/cli.mjs';
+import { run } from '../bin/gen-coloring-fills.mjs';
 
 // One page's worth of gate misses — enough to exhaust every retry and fail it.
 const exhaustPage = () => Array(MAX_ATTEMPTS).fill(false);
@@ -88,7 +89,6 @@ vi.mock('../../../web/src/lib/server/ai/geminiSafety.ts', () => ({
   }),
 }));
 
-const originalArgv = process.argv;
 const originalKey = process.env.GEMINI_API_KEY;
 
 async function addPage(name) {
@@ -103,12 +103,6 @@ async function addPage(name) {
   await writeFile(join(dir, `${name}.outline.webp`), source);
   await writeFile(join(state.roots.fillSrc, `test/${name}.light.raw.webp`), `known-raw-${name}`);
   await writeFile(join(dir, `${name}.light.webp`), `known-shipped-${name}`);
-}
-
-async function runCli(...args) {
-  process.argv = ['node', 'gen-coloring-fills.mjs', ...args];
-  vi.resetModules();
-  return import('../bin/gen-coloring-fills.mjs');
 }
 
 beforeEach(async () => {
@@ -132,7 +126,6 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  process.argv = originalArgv;
   if (originalKey === undefined) delete process.env.GEMINI_API_KEY;
   else process.env.GEMINI_API_KEY = originalKey;
   vi.restoreAllMocks();
@@ -144,8 +137,8 @@ test('retains failed candidates in scratch and leaves every page unshipped', asy
   await addPage('second-tall');
   state.gateResults = [...exhaustPage(), true];
 
-  await expect(runCli('test/first-tall', 'test/second-tall', '--apply')).rejects.toThrow(
-    '1 render(s) failed.'
+  await expect(run(['test/first-tall', 'test/second-tall', '--apply'])).rejects.toBeInstanceOf(
+    Error
   );
 
   expect(await readFile(join(state.roots.fillSrc, 'test/first-tall.light.raw.webp'), 'utf8')).toBe(
@@ -173,7 +166,7 @@ test('does not ship a passing candidate without apply', async () => {
   await addPage('page-tall');
   state.gateResults = [true];
 
-  await runCli('test/page-tall');
+  expect(await run(['test/page-tall'])).toEqual({ failed: 0, shipped: [] });
 
   expect(await readFile(join(state.roots.fillSrc, 'test/page-tall.light.raw.webp'), 'utf8')).toBe(
     'known-raw-page-tall'
@@ -189,7 +182,7 @@ test('surfaces sample drift for review without failing the run', async () => {
 
   // A multi-sample run is review-only (--apply is rejected with --samples > 1), so
   // gate misses while exploring palettes must not exit nonzero.
-  await expect(runCli('test/page-tall', '--samples', '2')).resolves.toBeTruthy();
+  expect(await run(['test/page-tall', '--samples', '2'])).toEqual({ failed: 0, shipped: [] });
 
   // Both candidates land in scratch for the reviewer...
   await expect(
@@ -214,8 +207,10 @@ test('fails closed when a single review render misses every gate', async () => {
 
   // A single render (no --samples) is not review-exploration: gate exhaustion must
   // exit nonzero rather than silently pass, even without --apply.
-  await expect(runCli('test/page-tall')).rejects.toThrow('1 render(s) failed.');
+  await expect(run(['test/page-tall'])).rejects.toBeInstanceOf(Error);
 
+  // Every retry was spent before the run gave up.
+  expect(state.gateResults).toHaveLength(0);
   expect(await readFile(join(state.roots.fillSrc, 'test/page-tall.light.raw.webp'), 'utf8')).toBe(
     'known-raw-page-tall'
   );
@@ -228,7 +223,10 @@ test('ships both raw and punched outputs when a candidate passes with apply', as
   await addPage('page-tall');
   state.gateResults = [true];
 
-  await runCli('test/page-tall', '--apply');
+  expect(await run(['test/page-tall', '--apply'])).toEqual({
+    failed: 0,
+    shipped: [{ rel: 'test/page-tall' }],
+  });
 
   const raw = await readFile(join(state.roots.fillSrc, 'test/page-tall.light.raw.webp'));
   const shipped = await readFile(join(state.roots.coloring, 'test/page-tall.light.webp'));
