@@ -145,7 +145,8 @@ export function chromiumExecutablePath(chromium) {
   return undefined;
 }
 
-export const hasCommand = (cmd) => spawnSync('which', [cmd], { stdio: 'ignore' }).status === 0;
+export const hasCommand = (cmd) =>
+  spawnSync('sh', ['-c', 'command -v "$1"', 'sh', cmd], { stdio: 'ignore' }).status === 0;
 
 // Maestro's default install location when it isn't on PATH (the curl installer
 // drops it in ~/.maestro/bin).
