@@ -29,8 +29,8 @@ screened chalk over dark paper). `chalk`/`night` overrides let a strip column po
 candidates in `.coloring-samples-dark/`, which is how the before/after comparison was produced. This
 is effectively the `--motif bubbles` contact-sheet mode the idea sketched, as a standalone tool.
 
-Two registries are canonical and the rest were dropped: `motif-registry.json` is the five-motif
-survey behind every `before-*-strip.webp`, and `motif-registry-final.json` is the validated end
+Two registries are canonical and the rest were dropped: `code/motif-registry.json` is the five-motif
+survey behind every `before-*-strip.webp`, and `code/motif-registry-final.json` is the validated end
 state (candidate chalk **plus** regenerated night fill) behind `after-bubbles-strip.webp`.
 
 ### 3. Sibling-asymmetry heuristic (one-liner over the inventory)
