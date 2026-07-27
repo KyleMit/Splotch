@@ -1,8 +1,30 @@
-# Handoff — audit burndown (236 findings)
+# Handoff — audit burndown (183 findings remaining)
 
 > 2026-07-27 · branch `claude/burn-down-audit-skill-hidj17` · PR
-> [#552](https://github.com/KyleMit/Splotch/pull/552) · Bulk-burn the 236-finding `docs/AUDIT.md`
-> backlog with the `burn-down-audits` driver.
+> [#552](https://github.com/KyleMit/Splotch/pull/552) · Resume the bulk burndown of `docs/AUDIT.md`
+> — 236 → 183 done, PR marked ready, relaunch to continue.
+
+## Current state — wrapped up, resumable
+
+Wrapped on request after **47 fixed · 4 deferred · 2 dropped** (backlog 236 → 183). PR 552 is out of
+draft; the branch is pushed and the working tree is clean. **Nothing is in flight** — relaunch with
+the command below to continue, or open a fresh PR from the same branch.
+
+Reconciled from git rather than a `finished:` line, because run 2 was stopped mid-finding:
+
+```
+deferred=4  dropped=2  consumed=53  =>  fixed=47      236 - 53 = 183 = pop.mjs --count ✓
+```
+
+The last finding (`[P3][naming] Brand palette hex values hardcoded in generators`) was abandoned
+mid-implementation when a transient `aborted_streaming` hit the implementer and the STOP file took
+effect during the retry backoff. Its entry was never removed, so it is **intact in the backlog** and
+will simply be re-processed. Its partial, unreviewed work was discarded.
+
+> One diagnostic trap worth knowing: every role's `.err` log carries
+> `this workspace has not been trusted`, which the skill lists as the signature of a systemic
+> trust-loss failure. Here it is **benign noise** — byte-identical in a role that succeeded minutes
+> earlier. Always compare a failing role's `.err` against a *successful* one before believing it.
 
 ## Objective & non-goals
 
@@ -143,6 +165,28 @@ script naming across idea dirs`) is **mislabelled** — its fix was
 correct and was destroyed by this bug, not rejected on merit. Re-stage it; the saved
 `docs/audit-deferred/*.patch` should apply. It is the only deferral of the four that is not a
 genuine verdict.
+
+## Owed follow-ups (nothing blocking)
+
+* **Re-stage the mislabelled deferral.** `[P3][naming] Inconsistent script naming across idea dirs`
+  in `docs/AUDIT-DEFERRED.md` reads `fix introduced a lint violation`, which is **false** — its fix
+  was correct and was destroyed by the driver bug fixed in 40d641b. Its saved
+  `docs/audit-deferred/*.patch` should apply. The other three deferrals are genuine verdicts.
+* **Exercise what CI cannot reach.** Three fixes are code-motion changes in tiers CI excludes, so
+  they rest on reading rather than a run: b1f327620958 (Maestro smoke runners, Android + iOS),
+  e0b9e7b221f4 (Gradle wrapper path constants), d685bdca3929 (the `blobs-smoke.mjs` half of the
+  admin-client extraction — needs a live deploy + admin secret). Worth a device run and a
+  `blobs:smoke` before relying on them.
+* **Two judgement calls left in place**, each a one-hunk revert if you disagree: 9efee0d724fc bumped
+  a `MODEL` pin in `tools/asset-gen/legacy/` (fine if that tree is a maintained template, wrong if
+  it is a frozen record), and 8a364faca967 documented `keepClass`'s 99/96 buckets as *intentionally*
+  stricter than the 92% ship gate — the finding only asked whether they were.
+* **`662c908ea936` is half-done.** It fixed the dashboard's stale subtitle/footer but left
+  `build-review.mjs:121` and `:212` still emitting `IDEAS.md burn-down` in the `<title>`/`<h1>` —
+  the same defect the finding names. A two-line follow-up.
+* **Consider naming `crayon-brush-samples/` exempt** in `tools/asset-gen/CLAUDE.md`. Its licence to
+  import from repo-root `scripts/lib/` lives only in that subdirectory's README, and it was read as
+  a boundary violation twice during this run.
 
 ## Closeout tasks
 

@@ -5,25 +5,6 @@
 > then deletes this file. `/fix-audits` burns down those issues. Never treat this file as a
 > long-lived backlog.
 
-## Source: Code audit — tools/asset-gen · lib (pipeline core)
-
-## Source: Code audit — tools/asset-gen · tests / samples / legacy
-
-## Source: Code audit — tools/asset-gen · ideas-exploration (R&D scratch)
-
-## Summary
-
-`tools/asset-gen/ideas-exploration/` is unusually well-documented for scratch — a consistent
-`meta.json` schema across all 25 ideas, per-idea `report.md`, and a self-contained dashboard. It
-earns its place in the repo as a frozen R&D record. The dominant problem is **staleness of
-disposition**: the burn-down succeeded and ~20 of 25 ideas shipped into `bin/`/`lib/`, but the
-README, the reports, and the generated dashboard all still read as an open backlog awaiting
-promotion (P1×2, P2, P3 discoverability). The second theme is **weight**: a committed 5.2 MB
-regenerable HTML, a 2.4 MB raw JSON dump, and full-res images misfiled in `code/` dirs push the
-folder to 66 MB (P2×2, P3). Highest-value fixes: add a graduation/status column to the README
-scoreboard and a `Status:` banner to each report, and prune the regenerable/intermediate large
-files. No code was changed — report only.
-
 ## Source: Code audit — scripts · root build/dev drivers
 
 ### [P3][naming] Brand palette hex values hardcoded in generators, duplicating the source of truth
