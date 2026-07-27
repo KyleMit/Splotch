@@ -17,6 +17,12 @@ export function fail(message) {
   process.exit(1);
 }
 
+export function requireEnv(name, hint) {
+  const value = process.env[name];
+  if (!value) fail(`Missing ${name}${hint ? ` — ${hint}` : ''}`);
+  return value;
+}
+
 export function argFlag(name, fallback) {
   const prefix = `--${name}=`;
   return process.argv.find((a) => a.startsWith(prefix))?.slice(prefix.length) ?? fallback;

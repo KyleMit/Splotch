@@ -11,25 +11,16 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, waitForUrl } from './lib/utils.mjs';
+import { ROOT, requireEnv, waitForUrl } from './lib/utils.mjs';
 
 const TUNNEL_HOST = process.env.TUNNEL_HOST || 'splotch-tunnel-kyle.fly.dev';
-const TUNNEL_AUTH = process.env.TUNNEL_AUTH;
+const TUNNEL_AUTH = requireEnv(
+  'TUNNEL_AUTH',
+  'must match the Fly relay AUTH secret — set it in the Claude Code env config (see .claude/cloud/environment.example)'
+);
 const PORT = 5173;
 const REMOTE_PORT = 9000;
 const PUBLIC_URL = `https://${TUNNEL_HOST}`;
-
-function die(msg) {
-  console.error(`\n✗ ${msg}`);
-  process.exit(1);
-}
-
-if (!TUNNEL_AUTH) {
-  die(
-    'TUNNEL_AUTH is not set. It must match the Fly relay AUTH secret — set it in the\n' +
-      '  Claude Code env config (see .claude/cloud/environment.example).'
-  );
-}
 
 function resolveChisel() {
   if (process.env.CHISEL_BIN) return process.env.CHISEL_BIN;

@@ -31,7 +31,7 @@ import {
   imageDims,
   imageFormat,
 } from './lib/model-eval.mjs';
-import { chromiumExecutablePath, runId as makeRunId } from './lib/utils.mjs';
+import { chromiumExecutablePath, requireEnv, runId as makeRunId } from './lib/utils.mjs';
 import { buildReport } from './lib/model-eval-report.mjs';
 
 const BASE = join(ROOT, 'web/tests/model-eval');
@@ -133,10 +133,7 @@ async function main() {
   if (process.env.REPORT_FROM) return reportOnly(process.env.REPORT_FROM);
   assertProductionConfig();
   console.log('✓ prompt + system instruction match the app source');
-  if (!process.env.GEMINI_API_KEY) {
-    console.error('Missing GEMINI_API_KEY (set it in .env or export it).');
-    process.exit(1);
-  }
+  requireEnv('GEMINI_API_KEY', 'set it in .env or export it');
   if (!existsSync(IN)) {
     console.error(`No inputs at ${IN}. Run: npm run model-eval:fixtures`);
     process.exit(1);

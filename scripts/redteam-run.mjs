@@ -18,7 +18,7 @@
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ROOT, fail, openInOS, waitForUrl, runId as makeRunId } from './lib/utils.mjs';
+import { ROOT, fail, openInOS, requireEnv, waitForUrl, runId as makeRunId } from './lib/utils.mjs';
 import { spawnViteServer } from './lib/vite-server.mjs';
 import { decryptDir } from './lib/fixtureCrypto.mjs';
 import { buildReport, verdict } from './lib/redteam-report.mjs';
@@ -93,7 +93,7 @@ async function sendCase(c) {
 }
 
 async function main() {
-  if (!process.env.GEMINI_API_KEY) fail('Missing GEMINI_API_KEY (set it in .env or export it).');
+  requireEnv('GEMINI_API_KEY', 'set it in .env or export it');
 
   const all = discoverCases();
   if (all.length === 0) {
