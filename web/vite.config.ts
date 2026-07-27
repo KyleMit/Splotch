@@ -14,6 +14,9 @@ const isCapacitor = process.env.CAPACITOR === 'true';
 // by default so the marks never ship: with the literal `false` the guarded
 // blocks — and their mark-name strings — dead-code-eliminate from the bundle.
 const perfMarks = process.env.PERF_MARKS === 'true';
+const profilingEsbuildOptions: import('vite').ESBuildOptions & {
+  keepNames: boolean;
+} = { keepNames: true };
 
 // package.json (at the repo root, one dir up from web/) holds the canonical
 // major.minor, bumped by scripts/release.mjs. Native keeps that exact version —
@@ -83,9 +86,7 @@ export default defineConfig({
   // No effect on shipping builds.
   ...(perfMarks
     ? {
-        esbuild: { keepNames: true } as import('vite').ESBuildOptions & {
-          keepNames: boolean;
-        },
+        esbuild: profilingEsbuildOptions,
       }
     : {}),
   plugins: [

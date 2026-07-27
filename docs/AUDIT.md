@@ -15,40 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P3][consistency] `vite.config.ts` exports an untyped plain object instead of using `defineConfig`
-
-**File(s):** `web/vite.config.ts:57` (`export default { ... }`) — pinned at SHA f934d43
-
-#### Problem
-
-`vitest.config.ts:9` and both Playwright configs use `defineConfig(...)`, but `vite.config.ts`
-exports a bare object literal:
-
-```ts
-export default {
-  server: { ... },
-  build: { ... },
-  ...
-};
-```
-
-Only one nested plugin is typed (`satisfies import('vite').Plugin`, line 96); the top-level object
-has no `UserConfig` type, so typos in keys (`buld`, `plugin`), invalid option values, or a mistyped
-`build.target` entry are not caught by `svelte-check`. This is an inconsistency across sibling
-configs and loses the editor autocomplete every other config file here enjoys.
-
-#### Proposed solution
-
-Import `defineConfig` from `vite` and wrap the export: `export default defineConfig({ ... })`. This
-types the whole object and lets the inline `satisfies` on the plugin be dropped.
-
-#### Verification
-
-Introduce a deliberately invalid option (e.g. `build: { targett: [...] }`) and confirm
-`npm run check` now flags it. Confirm `npm run build` output is byte-identical.
-
----
-
 ### [P3][maintainability] Git-based version derivation is ~35 lines of imperative logic embedded in `vite.config.ts` and is untestable there
 
 **File(s):** `web/vite.config.ts:16-49` (`git`, `webVersion`, `PKG_VERSION`) — pinned at SHA f934d43
