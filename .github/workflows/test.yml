@@ -82,6 +82,8 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      PW_BROWSERS: chromium webkit
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -113,13 +115,13 @@ jobs:
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium webkit
+        run: npx playwright install --with-deps ${{ env.PW_BROWSERS }}
 
       # The browser binaries cache, but the apt packages don't — install-deps
       # is still required on a cache hit.
       - name: Install Playwright system deps
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium webkit
+        run: npx playwright install-deps ${{ env.PW_BROWSERS }}
 
       - name: Run e2e tests
         run: npm run test:e2e
