@@ -102,6 +102,13 @@ export function isBlueDominant(px: Rgba) {
   return px[2] > px[0];
 }
 
-export function isRedDominant(px: Rgba) {
-  return px[3] > 200 && px[0] > 200 && px[1] < 120 && px[2] < 120;
+export function hasRedDominantPixel(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] > 200 && data[i] > 200 && data[i + 1] < 120 && data[i + 2] < 120) return true;
+    }
+    return false;
+  });
 }

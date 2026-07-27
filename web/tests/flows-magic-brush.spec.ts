@@ -5,10 +5,9 @@ import {
   COLOR_CHANGE_DEBOUNCE_SETTLE_MS,
   draw,
   gotoApp,
-  isRedDominant,
+  hasRedDominantPixel,
   swatch,
   TEST_PALETTE,
-  type Rgba,
 } from './helpers';
 
 import { applyFarmPage, openBrushMenu, openDrawer, pickBrush } from './flows-harness';
@@ -88,20 +87,6 @@ function distinctOpaqueColors(page: Page, bits = 4): Promise<number> {
     }
     return seen.size;
   }, bits);
-}
-
-async function hasRedPaintPixel(page: Page): Promise<boolean> {
-  const candidates = await page.evaluate((): Rgba[] => {
-    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-    const pixels: Rgba[] = [];
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i + 3] === 0) continue;
-      pixels.push([data[i], data[i + 1], data[i + 2], data[i + 3]]);
-    }
-    return pixels;
-  });
-  return candidates.some(isRedDominant);
 }
 
 test('the magic brush is always available and paints the coloring page colors', async ({
@@ -456,5 +441,5 @@ test('the eraser removes magic-brush strokes and later colors override them', as
     { x: 200, y: 240 },
     { x: 400, y: 240 },
   ]);
-  expect(await hasRedPaintPixel(page)).toBe(true);
+  expect(await hasRedDominantPixel(page)).toBe(true);
 });
