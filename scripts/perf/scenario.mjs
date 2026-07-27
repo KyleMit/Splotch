@@ -13,12 +13,7 @@ import { join } from 'node:path';
 import { ROOT, chromiumExecutablePath, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { driveSession } from './session.mjs';
-
-const DEVICES = {
-  phone: { width: 412, height: 915, deviceScaleFactor: 2.6 },
-  tablet: { width: 1024, height: 1366, deviceScaleFactor: 2 },
-  desktop: { width: 1280, height: 800, deviceScaleFactor: 1 },
-};
+import { resolveDevice } from './devices.mjs';
 
 const args = process.argv.slice(2);
 const flag = (name, def) => {
@@ -26,7 +21,7 @@ const flag = (name, def) => {
   return hit ? hit.split('=')[1] : def;
 };
 const deviceName = flag('device', 'phone');
-const device = DEVICES[deviceName] || DEVICES.phone;
+const device = resolveDevice(deviceName);
 const throttle = args.includes('--no-throttle') ? 1 : Number(flag('throttle', '4'));
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');

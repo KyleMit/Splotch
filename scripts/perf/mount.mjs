@@ -16,12 +16,7 @@ import { chromium } from '@playwright/test';
 import { ROOT, chromiumExecutablePath } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace } from './capture.mjs';
-
-const DEVICES = {
-  phone: { width: 412, height: 915, deviceScaleFactor: 2.6 },
-  tablet: { width: 1024, height: 1366, deviceScaleFactor: 2 },
-  desktop: { width: 1280, height: 800, deviceScaleFactor: 1 },
-};
+import { resolveDevice } from './devices.mjs';
 
 // Lighthouse's "Slow 4G" throttle: 150 ms RTT, 1.6 Mbps down / 750 Kbps up.
 const SLOW_4G = {
@@ -41,7 +36,7 @@ const flag = (name, def) => {
   return hit ? hit.split('=')[1] : def;
 };
 const deviceName = flag('device', 'phone');
-const device = DEVICES[deviceName] || DEVICES.phone;
+const device = resolveDevice(deviceName);
 const throttle = args.includes('--no-throttle') ? 1 : Number(flag('throttle', '4'));
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');

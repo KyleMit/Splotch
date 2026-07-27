@@ -28,14 +28,13 @@ import {
   markPhase,
 } from './capture.mjs';
 import { analyze, renderReport } from './analyze.mjs';
+import { IPAD_PRO } from './devices.mjs';
 
 // The deployment target we actually worry about: a 12.9" iPad Pro in portrait —
 // 1024×1366 CSS pt. iPads report devicePixelRatio 2 and the engine caps
 // renderScale at min(dpr, 2) = 2, so the backing store is 2048×2732 and the
 // square paper/snapshot raster is 2732² ≈ 29.9 MB each — the real per-raster
 // cost on that device (the hot tier holds 2 of them + the paper).
-const DEVICE = { width: 1024, height: 1366, deviceScaleFactor: 2, label: 'ipad-pro-12.9' };
-
 const args = process.argv.slice(2);
 const flag = (name, def) => {
   const hit = args.find((a) => a.startsWith(`--${name}=`));
@@ -326,12 +325,12 @@ async function main() {
   const t0 = Date.now();
   try {
     const ctx = await browser.newContext({
-      viewport: { width: DEVICE.width, height: DEVICE.height },
-      deviceScaleFactor: DEVICE.deviceScaleFactor,
+      viewport: { width: IPAD_PRO.width, height: IPAD_PRO.height },
+      deviceScaleFactor: IPAD_PRO.deviceScaleFactor,
       hasTouch: true,
     });
     const page = await ctx.newPage();
-    await resetEngine(page, base, DEVICE.width, DEVICE.height);
+    await resetEngine(page, base, IPAD_PRO.width, IPAD_PRO.height);
 
     const cdp = await ctx.newCDPSession(page);
     if (throttle > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle });
@@ -341,7 +340,7 @@ async function main() {
     const events = await startTrace(cdp);
     // --scenarios=key1,key2 runs a subset (fast iteration on one question).
     const only = flag('scenarios', '');
-    let scenarios = buildScenarios(DEVICE.width, DEVICE.height);
+    let scenarios = buildScenarios(IPAD_PRO.width, IPAD_PRO.height);
     if (only) {
       const keys = only.split(',');
       scenarios = scenarios.filter((sc) => keys.includes(sc.key));
@@ -351,7 +350,7 @@ async function main() {
 
     for (const sc of scenarios) {
       console.log(`\n▶ ${sc.label}`);
-      await resetEngine(page, base, DEVICE.width, DEVICE.height);
+      await resetEngine(page, base, IPAD_PRO.width, IPAD_PRO.height);
       // Reload drops the rAF FPS sampler injected before the trace; re-inject so
       // frame health still reflects this scenario.
       await injectObservers(page);
@@ -439,8 +438,8 @@ async function main() {
     // analyzer, plus the bespoke per-scenario undo summary.
     const settings = {
       target: 'web/dev-engine (headless Chromium — not WebKit/real GPU)',
-      device: DEVICE.label,
-      viewport: DEVICE,
+      device: IPAD_PRO.label,
+      viewport: IPAD_PRO,
       throttle: throttle > 1 ? throttle : 0,
       refreshHz: HZ,
       frameBudgetMs: 1000 / HZ,
