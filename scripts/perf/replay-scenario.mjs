@@ -24,9 +24,9 @@ import { profilePath } from './paths.mjs';
 import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 
-// The app's "Size N" picker → engine px. Approximate (the recorder only sees the
-// label); override here if the real mapping is ever needed for fidelity.
-const SIZE_PX = { 1: 4, 2: 8, 3: 14, 4: 22, 5: 32 };
+// Mirrors SIZE_TO_PX in web/src/lib/state/strokeWidth.svelte.ts; this Node script
+// cannot import the app's Svelte rune module.
+const SIZE_PX = { 1: 2, 2: 4, 3: 8, 4: 14, 5: 22 };
 const MAX_IDLE_GAP_MS = 250;
 
 const args = process.argv.slice(2);
