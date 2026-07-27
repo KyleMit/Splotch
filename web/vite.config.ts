@@ -144,7 +144,7 @@ export default defineConfig({
                   handler: 'NetworkFirst',
                   options: {
                     cacheName: 'pages',
-                    // After five seconds stalled navigations use the cached page
+                    // After five seconds stalled navigations with a cached page use it
                     // instead of leaving a child waiting for a load that may not finish.
                     networkTimeoutSeconds: 5,
                   },

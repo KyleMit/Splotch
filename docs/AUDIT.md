@@ -15,34 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P4][documentation] Undocumented magic values in the PWA/webServer config (networkTimeoutSeconds, timeout, BUILD_TIME slice)
-
-**File(s):** `web/vite.config.ts:27,137` and `web/playwright.config.ts:104` — pinned at SHA f934d43
-
-#### Problem
-
-Several load-bearing numbers have no WHY comment, which is exactly the case the project convention
-says warrants one:
-
-* `web/vite.config.ts:137` `networkTimeoutSeconds: 5` — the NetworkFirst fallback window for
-  navigation requests; nothing explains why 5s (vs the child waiting on a stalled network).
-* `web/vite.config.ts:27` `new Date().toISOString().slice(0, 16)` — `16` is the magic length that
-  trims to `YYYY-MM-DDTHH:MM`; the comment above explains BUILD_TIME's purpose but not the slice.
-* `web/playwright.config.ts:104` `timeout: 180_000` — the webServer boot budget (build + preview);
-  no rationale for 3 minutes, and it's duplicated in the scratch config.
-
-#### Proposed solution
-
-Add one-line rationale comments (or named constants like `NAV_NETWORK_TIMEOUT_SECONDS`,
-`WEBSERVER_BOOT_TIMEOUT_MS`). For the BUILD_TIME slice, a named helper or a comment
-`// slice(0,16) → "YYYY-MM-DD HH:MM"` suffices.
-
-#### Verification
-
-Review confirms each magic number now carries either a name or a WHY. No behavior change.
-
----
-
 ### [P4][consistency] `.env.example` mixes placeholder conventions and has a redundant/misleading entry
 
 **File(s):** `web/.env.example:11-13,41` — pinned at SHA f934d43
