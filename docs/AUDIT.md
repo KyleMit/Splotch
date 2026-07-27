@@ -26,33 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P3][consistency] Two different "am I the main module?" idioms
-
-**File(s):** `scripts/gha-versions.mjs:192` (`fileURLToPath(import.meta.url) === process.argv[1]`)
-vs `scripts/lint-token-styles.mjs:121` (`import.meta.url === pathToFileURL(process.argv[1]).href`) —
-pinned at SHA f934d43
-
-#### Problem
-
-Both scripts export helpers for unit tests and guard their CLI entry, but each converts URL↔path in
-the opposite direction to compare. Two idioms for one check makes the pattern harder to copy
-correctly into the next testable script (and the guards are subtly different if `process.argv[1]` is
-undefined).
-
-#### Proposed solution
-
-Add
-`export const isMain = (url) => Boolean(process.argv[1]) && pathToFileURL(process.argv[1]).href === url;`
-to `lib/utils.mjs`; call `if (isMain(import.meta.url)) main();` in both scripts (and any future
-testable one).
-
-#### Verification
-
-`npm run deps:gha` and `npm run lint:tokens` still run; the corresponding unit tests
-(`lint-token-styles.test.ts`) still import the helpers without triggering the CLI.
-
----
-
 ### [P3][duplication] Admin-API client duplicated between the two smoke tests
 
 **File(s):** `scripts/api-smoke.mjs:26-106` and `scripts/blobs-smoke.mjs:44-135` — pinned at SHA

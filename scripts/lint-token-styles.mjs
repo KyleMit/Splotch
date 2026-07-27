@@ -20,7 +20,7 @@
 import { readFileSync } from 'node:fs';
 import { readdirSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { isMain } from './lib/utils.mjs';
 
 // file (relative to web/src) → allowed raw-hex count, with the reason.
 const BASELINE = new Map(
@@ -128,6 +128,6 @@ async function main() {
   console.log(`Raw-hex token lint passed (${BASELINE.size} allowlisted files).`);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMain(import.meta.url)) {
   await main();
 }

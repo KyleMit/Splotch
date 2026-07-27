@@ -6,9 +6,14 @@ import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+// Whether the calling module is the entry point — pass it `import.meta.url`.
+// Lets a script export helpers for tests without running its CLI on import.
+export const isMain = (url) =>
+  Boolean(process.argv[1]) && pathToFileURL(process.argv[1]).href === url;
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
