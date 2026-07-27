@@ -13,36 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P3][maintainability] Viewport dimensions and interaction timeouts are unnamed magic numbers repeated across specs
-
-**File(s):** `web/tests/flows.spec.ts:743, 771-776, 827, 854, 903, 930, 1615, 1630`; timeouts
-`10_000`/`1500`/`1000`/`3000` throughout `flows.spec.ts`, `ai-timer.spec.ts:15,30`,
-`parent-zoom.spec.ts`, `webkit-smoke.spec.ts` — pinned at SHA f934d43
-
-#### Problem
-
-Breakpoint-sensitive viewport sizes appear as bare literals with the meaning only in prose:
-`460×852` (phone portrait, lines 743, 827), `852×390` (landscape phone, 854), `390×852` (portrait
-rotate-target, 903), `740×360` (short landscape, 776), `900×600`/`600×900` (rotation pair,
-1615/1630). The retry timeout `10_000` and settle `1500`/`1000` are re-typed at nearly every
-`retryOpen`/`toPass` call. A newcomer can't tell which `460` is "just below the tablet breakpoint"
-(load-bearing) versus arbitrary, and moving a CSS breakpoint requires hunting bare numbers.
-
-#### Proposed solution
-
-Add a `web/tests/viewports.ts` with named presets (`PHONE_PORTRAIT = { width: 460, height: 852 }`,
-`LANDSCAPE_PHONE`, `SHORT_LANDSCAPE`, …) tied by comment to the CSS breakpoints they probe, and an
-`OPEN_TIMEOUT`/`SETTLE_TIMEOUT` constants pair. `palette-trim.spec.ts` and `picker-trim.spec.ts`
-already parameterize viewport tables (`PORTRAIT`/`LANDSCAPE`/`CASES`) — extend that discipline to
-`flows.spec.ts`.
-
-#### Verification
-
-`page.setViewportSize({ width: 460` no longer appears as a bare literal in flows.
-`npm run test:e2e -- flows.spec.ts` green.
-
----
-
 ### [P3][test-quality] page.spec.ts hand-parses PNG IHDR bytes — fragile and unexplained magic offsets
 
 **File(s):** `web/tests/page.spec.ts:111-119` — pinned at SHA f934d43
