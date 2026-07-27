@@ -13,31 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P3][maintainability] The 1×1 PNG base64 buffer is duplicated across three test surfaces
-
-**File(s):** `web/tests/flows.spec.ts:1033-1036`, `web/tests/generate-image.spec.ts:17-20` — pinned
-at SHA f934d43
-
-#### Problem
-
-The identical base64 string
-`'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='`
-is decoded into a `Buffer` in both `flows.spec.ts` (as the mocked generate-image response) and
-`generate-image.spec.ts` (as `TINY_PNG`). A test-fixtures module should own this once.
-
-#### Proposed solution
-
-Add `web/tests/fixtures.ts` exporting `TINY_PNG_BASE64` and `tinyPngBuffer()`. Import in both specs.
-This also gives a home for the `web/tests/artifacts/*.jpeg` fixtures referenced by the ai-timer
-harness.
-
-#### Verification
-
-`grep -rn "iVBORw0KGgo" web/tests/*.spec.ts` returns nothing; both specs import the fixture.
-`npm run test:e2e -- generate-image.spec.ts flows.spec.ts -g "AI"` green.
-
----
-
 ### [P3][duplication] `ADMIN_KEY = 'test-admin-secret'` is redeclared in two specs instead of shared
 
 **File(s):** `web/tests/admin.spec.ts:12`, `web/tests/a11y.spec.ts:13` — pinned at SHA f934d43
