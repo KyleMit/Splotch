@@ -51,12 +51,18 @@ Other commands:
 
 | Command                             | Purpose                                                       |
 | ----------------------------------- | ------------------------------------------------------------- |
-| `npm run audit:status`              | Remaining/completed counts, run state, current call, comments |
-| `npm run audit:cost`                | Codex tokens by role and projected remaining usage            |
+| `npm run audit:status`              | Campaign-wide counts, run state, current call, comments       |
+| `npm run audit:cost`                | All retained Codex logs by role and projected remaining usage |
 | `npm run audit:watch`               | Follow `run.log`; add `-- --dash` for a refreshing summary    |
+| `pop.mjs --count`                   | Count remaining findings without loading the backlog          |
+| `pop.mjs --peek N`                  | Print finding N without changing the backlog                  |
 | `backfill-comments.mjs next`        | Print next pending fix comment                                |
 | `backfill-comments.mjs done <sha>`  | Mark it posted, only after the GitHub call succeeds           |
 | `backfill-comments.mjs capture ...` | Rebuild missing records from logs and commits                 |
+
+`pop.mjs` also supports no argument to print the first finding and `--delete` to print and remove
+it. The driver owns deletion. It has no `--help` or source-pruning mode; do not probe unsupported
+flags or manually compensate by editing the backlog.
 
 The important environment knobs are:
 
@@ -132,8 +138,12 @@ must reach origin before an ephemeral environment can be reclaimed.
 1. Confirm no driver is active. Read process matches rather than trusting a count:
 
    ```bash
-   pgrep -af '^node scripts/audit-burndown/burndown.mjs'
+   pgrep -fl 'scripts/audit-burndown/(overnight|burndown)\.mjs'
    ```
+
+   Run the lookup outside the workspace sandbox. `pgrep -af` is GNU-shaped and can print only a PID
+   on macOS; use `pgrep -fl`, then confirm a match with `ps -p <pid> -o pid=,ppid=,etime=,command=`
+   when needed.
 
 2. Choose a fresh continuation branch from current `main`; do not reuse a historical burndown
    branch. Put the exact command, branch, gate overrides, `PR: pending`, initial backlog count,
@@ -188,7 +198,8 @@ must reach origin before an ephemeral environment can be reclaimed.
    unit tests and the committed resume probe remain green.
 
 9. Check CI on the canary's final push and require green before a full run. Then run
-   `npm run audit:cost` and sanity-check both wall-clock and tokens.
+   `npm run audit:cost` and sanity-check both wall-clock and tokens. Its scope is every retained
+   role envelope under `.audit-work/logs`, not necessarily this continuation alone.
 
 10. Launch the full run with the exact durable command:
 
@@ -203,7 +214,9 @@ must reach origin before an ephemeral environment can be reclaimed.
 
     `MAX_HANDLED` counts every terminal outcome—fixed, dropped, or deferred—rather than only
     accepted fixes. The detached driver exits cleanly after five outcomes so it cannot outrun the
-    required CI and comment checkpoint while the supervising conversation is between turns.
+    required CI and comment checkpoint while the supervising conversation is between turns. Record
+    the segment start and 20-minute deadline when launching; the handled ceiling does not replace
+    the time ceiling.
 
 ## Supervision
 
@@ -218,6 +231,10 @@ Treat CI supervision as independent from comment posting:
 
 * After each pushed `DONE`, or at least every two minutes, inspect the newest completed Quality job.
   Track the last Quality-green SHA and the last fully-green SHA.
+* Prefer a compact `gh pr checks <pr> --json name,state,link,bucket,event,workflow` poll every 30–60
+  seconds. Reserve a streaming workflow watch or full job log for a near-terminal run or a failure
+  diagnosis; repeatedly printing the unchanged job matrix consumes supervision context without
+  adding evidence.
 * Treat `cancelled` as inconclusive, not as a regression. A newer push can cancel a healthy run.
   Treat `failure` as red even when a newer run is queued or cancelled.
 * On any failed job, create `.audit-work/STOP` immediately, let the in-flight finding finish, and
@@ -226,9 +243,9 @@ Treat CI supervision as independent from comment posting:
 * `MAX_HANDLED=5` is the mechanical ceiling for each detached full-run segment. When it exits,
   require one workflow on the exact branch HEAD to finish fully green and drain every pending
   comment before relaunching. Never remove the boundary from a supervised run.
-* Twenty minutes is still a manual ceiling because the driver cannot stop a role mid-finding. Create
-  `STOP` when the ceiling is reached, let the current finding finish, then apply the same exact-head
-  checkpoint.
+* Twenty minutes is still a manual ceiling because the driver cannot stop a role mid-finding. At the
+  recorded deadline create `STOP` immediately, let the current finding finish, then apply the same
+  exact-head checkpoint. Do not reset the deadline because a role or fix round is still active.
 * Do not send a final response while the driver or a nested Codex role is active. A running burndown
   is ongoing work: give user-requested status in commentary, continue supervision, and yield only
   after the bounded segment has stopped. An explicit request to leave the process unattended is a
@@ -241,7 +258,7 @@ finding is normally under 15 minutes; 15–25 minutes merits one later recheck; 
 diagnosis. Priority and fix rounds skew this: a P1 with two rounds can be healthy at 25 minutes.
 
 ```bash
-pgrep -af 'scripts/audit-burndown/(overnight|burndown)\.mjs'
+pgrep -fl 'scripts/audit-burndown/(overnight|burndown)\.mjs'
 ```
 
 For a liveness recheck, compare role-envelope counts—not HEAD or `run.log`, which the supervisor
@@ -265,7 +282,10 @@ startup failure.
 ## Control messages
 
 * **status** — run `npm run audit:status` plus the detached process check; do not touch `STOP`.
-  Report the facts in commentary and keep supervising until the current bounded segment stops.
+  Report `initial backlog - current remaining` as handled by this continuation and use only scoped
+  post-baseline terminal events for its fixed/dropped/deferred split. Label the command's
+  completed/deferred counters as campaign-wide; never present them as this run's outcomes. Keep
+  supervising until the current bounded segment stops.
 * **pause** — `touch .audit-work/STOP`; let the in-flight finding finish, wait for the driver to
   exit, push, drain comments, update the checkpoint, and leave `STOP` present.
 * **resume / continue** — verify no driver exists, remove `STOP`, relaunch the exact checkpoint
@@ -291,8 +311,10 @@ commit SHA in backticks in GitHub text; bare SHAs auto-link. Escape any `#`-numb
 intentional issue/PR reference.
 
 Drain at every handled-count/CI checkpoint and do not relaunch with pending records. If an older run
-left a large queue, post through the connector in batches of at most ten while preserving the `next`
-→ successful post → `done` ordering for each record.
+left a large queue, post through the connector in batches of at most ten. When orchestration is
+available, perform each batch in one execution cell to avoid round-tripping every body through the
+supervising conversation. Preserve `next` → confirmed successful post → `done` for every record, and
+abort the batch immediately on a connector error.
 
 Iteration filenames restart at `iter0001` and drops can reuse a number within one run. Correlate by
 the timestamped `run.log` line and file mtime, not by the number alone.
@@ -323,7 +345,9 @@ committed handoff across machines.
    reconcile any gap from terminal `DONE`/`INVALID`/`DEFERRED` events in that same scoped log. Do
    not use historical lines, the cumulative deferred list, or commit count: one finding can have
    several fix commits.
-5. Tidy empty `## Source:` sections; delete `docs/AUDIT.md` only when the backlog is empty.
+5. Verify the remaining count with `pop.mjs --count`. The driver owns individual deletion, and the
+   helper has no safe source-pruning mode, so do not directly tidy empty `## Source:` sections while
+   findings remain. Delete `docs/AUDIT.md` only when the count is zero.
 6. Add the `burn-down-audits` row to `docs/AUDIT-LOG.md` with fixed/deferred/dropped counts and the
    PR link.
 7. Run `npm run format:check`, the relevant quality checks, and the full test suite. Listener-based

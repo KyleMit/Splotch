@@ -152,6 +152,36 @@ number before its first commit created the PR's diff, and closeout never explici
 tracked documentation changes. The workflow now uses a `PR: pending` checkpoint followed by a
 PR-number checkpoint, and commits/pushes one final closeout diff before exact-head CI.
 
+## PR 554 supervision retrospective
+
+The merged continuation handled 55 findings: 38 fixed, 13 dropped, and 4 deferred. Its scoped
+`run.log` events reconciled exactly against the backlog delta, every posted fix comment was
+accounted for, exact-head CI was green, and the full local suite passed. The role isolation,
+adversarial review loop, five-outcome segment boundary, checkpoint handoff, and clean `STOP`
+behavior all worked as intended. In particular, the final wrap request allowed the in-flight finding
+to finish without launching another one.
+
+The remaining friction was supervisory rather than correctness-related:
+
+* On macOS, `pgrep -af` sometimes returned only a PID, while the sandboxed status command could not
+  see the unrestricted detached process at all. `pgrep -fl` plus a targeted `ps` check is the
+  portable liveness recipe.
+* Streaming `gh run watch` repeatedly rendered the full unchanged job matrix. Compact PR-check
+  polling preserves the exact-head evidence while using much less conversation context.
+* `audit:status` reports campaign-wide completed and deferred totals, and `audit:cost` reads every
+  retained role envelope. The continuation's own outcome counts must come from its initial backlog
+  and `run.log` baseline, not from either cumulative command.
+* The 20-minute segment ceiling was easy to miss once a long finding entered review or repair.
+  Recording the deadline at launch makes `STOP` a concrete timed action instead of a remembered
+  guideline.
+* A large comment queue was safe but expensive to drain through one connector round trip per body.
+  Batches of at most ten can share one orchestration cell while retaining the at-least-once `next` →
+  post → `done` ordering.
+* `pop.mjs --help` is not supported and falls through to printing the first finding. The helper also
+  cannot prune empty source sections, so the previous closeout instruction to tidy them contradicted
+  the prohibition on direct backlog edits. The runbook now lists the supported modes and removes
+  that unsafe cleanup step.
+
 ## Provider ownership
 
 The complete Codex package and this note are maintained directly:
@@ -191,3 +221,4 @@ the other.
 | 2026-07-26 | Move both provider packages to direct, independent maintenance          |
 | 2026-07-26 | Remove failed-role untracked files without deleting pre-existing paths  |
 | 2026-07-27 | Bound detached segments by handled outcomes and make handoff explicit   |
+| 2026-07-27 | Make supervision portable, scoped, timed, and low-noise after PR 554    |
