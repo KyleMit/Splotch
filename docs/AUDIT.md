@@ -9,37 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P5][readability] Typo "PIXEL GEOMTRY" in the synthetic-fixtures rationale comment
-
-**File(s):** `tools/asset-gen/tests/fixtures/synthetic.mjs:4` — pinned at SHA f934d43
-
-#### Problem
-
-```js
-// gates score PIXEL GEOMTRY (solid-region area, ring-nesting depth, ...
-```
-
-"GEOMTRY" → "GEOMETRY". This comment is the load-bearing explanation for *why* the whole fixture
-file is synthetic rather than recovered assets, so it's read often; the typo in an emphasized
-all-caps phrase is more visible than most.
-
-#### Proposed solution
-
-Fix to `PIXEL GEOMETRY`.
-
-#### Verification
-
-`grep -n GEOMTRY tools/asset-gen/tests/fixtures/synthetic.mjs` returns nothing.
-
----
-
-**Note on `legacy/` scope:** the subtree is *not* orphaned dead code — `legacy/README.md`
-deliberately archives it as retired-technique history, and the root/asset-gen `CLAUDE.md` documents
-it as a kept reference ("borrow from legacy, don't follow it"). `retouch-line-art.mjs` is
-unreferenced by any live code path or npm alias (confirmed via grep), which is consistent with that
-intent. So the only actionable legacy finding is the stale header path + model constant above, not
-deletion.
-
 ## Source: Code audit — tools/asset-gen · ideas-exploration (R&D scratch)
 
 ### [P1][discoverability] README scoreboard and "do first" list are stale — most ideas already graduated into the live pipeline, but nothing here says so
