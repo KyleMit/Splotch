@@ -13,30 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P4][readability] multitouch STROKES/SAMPLES rely on positional index coupling between two separate arrays
-
-**File(s):** `web/tests/multitouch.spec.ts:31-44` — pinned at SHA f934d43
-
-#### Problem
-
-`STROKES[3]` (pointer 4, leftward) is verified by `SAMPLES[3]` (`{ x: 90, y: 190 }` "on pointer 4's
-leftward path"). The correspondence is maintained only by array position and comments; inserting a
-stroke without inserting its sample at the same index silently mis-pairs the assertion (a sample
-could land on the wrong line and still be opaque, passing vacuously).
-
-#### Proposed solution
-
-Merge into one array of `{ stroke, sample }` objects so each line and its verification point are
-lexically adjacent and cannot drift:
-`const LINES = [{ stroke: horizontalStroke(1,50,40,260), sample: {x:150,y:50} }, …]`, then
-`multiStrokeSync(LINES.map(l => l.stroke))` and loop `LINES.map(l => l.sample)`.
-
-#### Verification
-
-`npm run test:e2e -- multitouch.spec.ts` green; the pairing is now structurally enforced.
-
----
-
 ### [P4][test-quality] Scribble-guard `evaluate` probes are duplicated between engine and flows and could share one fixture
 
 **File(s):** `web/tests/flows.spec.ts:463-500` (fingerPrevented / stylusTouchStartPrevented),

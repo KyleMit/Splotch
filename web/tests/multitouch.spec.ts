@@ -58,14 +58,14 @@ test('five simultaneous touch pointers each paint an independent line', async ({
 
   await page.evaluate(
     (strokes) => window.__engine.multiStrokeSync(strokes),
-    LINES.map(({ stroke }) => stroke),
+    LINES.map(({ stroke }) => stroke)
   );
 
   // Every line painted: its midpoint pixel is opaque.
   for (const { sample } of LINES) {
     expect(
       await alphaAt(page, sample.x, sample.y),
-      `expected paint at (${sample.x}, ${sample.y})`,
+      `expected paint at (${sample.x}, ${sample.y})`
     ).toBeGreaterThan(0);
   }
 
@@ -81,7 +81,7 @@ test('five simultaneous touch pointers each paint an independent line', async ({
 test('a five-pointer gesture snapshots once and undoes as a single unit', async ({ page }) => {
   await page.evaluate(
     (strokes) => window.__engine.multiStrokeSync(strokes),
-    LINES.map(({ stroke }) => stroke),
+    LINES.map(({ stroke }) => stroke)
   );
   expect(await count(page)).toBeGreaterThan(0);
   expect((await page.evaluate(() => window.__engineState)).canUndo).toBe(true);
@@ -108,7 +108,7 @@ test('a pinch/spread across five pointers does not zoom or scale the canvas', as
 
   await page.evaluate(
     (strokes) => window.__engine.multiStrokeSync(strokes),
-    LINES.map(({ stroke }) => stroke),
+    LINES.map(({ stroke }) => stroke)
   );
 
   const boxAfter = await canvas.boundingBox();
@@ -132,7 +132,7 @@ test('a pinch/spread across five pointers does not zoom or scale the canvas', as
   for (const { sample } of LINES) {
     expect(
       await alphaAt(page, sample.x, sample.y),
-      `expected paint at (${sample.x}, ${sample.y})`,
+      `expected paint at (${sample.x}, ${sample.y})`
     ).toBeGreaterThan(0);
   }
 });
