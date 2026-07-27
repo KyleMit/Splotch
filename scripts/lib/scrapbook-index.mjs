@@ -130,7 +130,7 @@ function pagesUnder(dir, rel, out = []) {
 }
 
 // Top-level collection dirs that would produce no card — no linkable .html/.md
-// page anywhere beneath (registry types always render a card). When non-empty the
+// page anywhere beneath. When non-empty the
 // index's "N collections" chip would exceed the cards it shows; the scrapbook:check
 // guard fails on it so nothing published silently vanishes from the index.
 export function collectionsMissingEntry(scrapbookDir) {
@@ -138,17 +138,18 @@ export function collectionsMissingEntry(scrapbookDir) {
     .filter((e) => e.isDirectory() && !SCAFFOLDING.has(e.name))
     .map((e) => e.name)
     .sort()
-    .filter((t) => !REGISTRY[t] && pagesUnder(join(scrapbookDir, t), t).length === 0);
+    .filter((t) => pagesUnder(join(scrapbookDir, t), t).length === 0);
 }
 
-function card(type, meta, dir) {
+function card(type, meta, scrapbookDir) {
+  const dir = join(scrapbookDir, type);
   const files = readdirSync(dir);
   const countLabel = typeof meta.count === 'function' ? meta.count(files) : null;
   const updated = fmtDate(latestMtime(dir));
-  const entryExists = existsSync(join(dir, '..', meta.entry));
-  const href = entryExists ? meta.entry : `${type}/${files.find((f) => f.endsWith('.html')) ?? ''}`;
+  const entryExists = existsSync(join(scrapbookDir, meta.entry));
+  if (!entryExists) return fallbackCard(type, dir);
   return `<article class="card" style="--hue:var(--c-${meta.hue})">
-      <a class="card-hit" href="${esc(href)}" aria-label="${esc(meta.title)}"></a>
+      <a class="card-hit" href="${esc(meta.entry)}" aria-label="${esc(meta.title)}"></a>
       <div class="card-top"></div>
       <div class="card-body">
         <div class="card-emoji" aria-hidden="true">${inlineIcon(meta.icon)}</div>
@@ -200,7 +201,7 @@ export function buildScrapbookIndex(scrapbookDir) {
   const unknown = typeDirs.filter((t) => !REGISTRY[t]);
 
   const cards = [
-    ...known.map((t) => card(t, REGISTRY[t], join(scrapbookDir, t))),
+    ...known.map((t) => card(t, REGISTRY[t], scrapbookDir)),
     ...unknown.map((t) => fallbackCard(t, join(scrapbookDir, t))),
   ].filter(Boolean);
 

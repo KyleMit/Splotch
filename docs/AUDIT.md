@@ -11,34 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P4][readability] `card()` entry-existence check reaches up-and-back-down through the type dir
-
-**File(s):** `scripts/lib/scrapbook-index.mjs:143-148` (`card`) — pinned at SHA f934d43
-
-#### Problem
-
-```js
-const entryExists = existsSync(join(dir, '..', meta.entry));
-const href = entryExists ? meta.entry : `${type}/${files.find((f) => f.endsWith('.html')) ?? ''}`;
-```
-
-`dir` is `<scrapbook>/<type>`, and `meta.entry` already starts with `<type>/…`, so the check climbs
-to `<scrapbook>` then descends again — correct but confusing, and the fallback silently yields
-`type/` (trailing slash, no file) when no HTML exists, producing a dead card link.
-
-#### Proposed solution
-
-Compute against the scrapbook root directly: pass `scrapbookDir` into `card()` and use
-`existsSync(join(scrapbookDir, meta.entry))`. Guard the fallback so a card with no resolvable page
-is dropped (or routed through `fallbackCard`) rather than linking to `type/`.
-
-#### Verification
-
-Point `meta.entry` at a missing file in a fixture scrapbook; the generated card either links to a
-real page or is omitted, never to `type/`.
-
----
-
 ### [P4][naming] `REGISTRY.icons.count` is `null` while siblings use `() => null` — inconsistent contract
 
 **File(s):** `scripts/lib/scrapbook-index.mjs:91` (and `55`, `68`, `77`) — pinned at SHA f934d43
