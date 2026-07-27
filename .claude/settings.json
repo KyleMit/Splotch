@@ -54,7 +54,6 @@
       "Bash(npm install)",
       "Bash(npm install *)",
       "Bash(npx *)",
-      "Bash(node scripts/*)",
       "Bash(node scripts/**)",
       "Bash(node --check *)",
       "Bash(node --input-type=module -e *)",

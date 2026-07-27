@@ -19,32 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P3][dead-config] `Bash(node scripts/*)` is fully redundant with `Bash(node scripts/**)`
-
-**File(s):** `.claude/settings.json:37-38` — pinned at SHA f934d43
-
-#### Problem
-
-```json
-"Bash(node scripts/*)",
-"Bash(node scripts/**)",
-```
-
-In gitignore-style matching `**` matches across path separators, so `scripts/**` already matches
-everything `scripts/*` does (and more, e.g. `scripts/sub/x.mjs`). The `scripts/*` entry adds
-nothing.
-
-#### Proposed solution
-
-Delete line 37; keep only `Bash(node scripts/**)`.
-
-#### Verification
-
-Confirm `node scripts/sub/anything.mjs` is still auto-allowed with only the `**` entry present, and
-that removing line 37 changes no observable permission behavior.
-
----
-
 ### [P3][dead-config] `Bash(afplay *)` is a dead (and macOS-only) permission with no consumer in the repo
 
 **File(s):** `.claude/settings.json:72` — pinned at SHA f934d43
