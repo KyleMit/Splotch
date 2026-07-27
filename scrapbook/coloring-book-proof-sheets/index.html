@@ -211,7 +211,7 @@
         return i === -1 ? 0 : i;
       }
 
-      function show(i, skipHash) {
+      function show(i, skipHash, initialLoad) {
         i = (i + CATEGORIES.length) % CATEGORIES.length;
         if (i === current) return;
         current = i;
@@ -223,7 +223,10 @@
         });
         buttons[cat.id].scrollIntoView({ block: 'nearest', inline: 'center' });
         if (!skipHash) {
-          if (location.hash.replace(/^#/, '') !== cat.id) location.hash = cat.id;
+          if (location.hash.replace(/^#/, '') !== cat.id) {
+            if (initialLoad) history.replaceState(null, '', '#' + cat.id);
+            else location.hash = cat.id;
+          }
         }
         document.title = 'Splotch proof sheets — ' + cat.name;
       }
@@ -239,7 +242,7 @@
 
       window.addEventListener('hashchange', function () { show(indexFromHash(), true); });
 
-      show(indexFromHash());
+      show(indexFromHash(), false, true);
     </script>
   </body>
 </html>
