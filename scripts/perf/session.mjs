@@ -31,6 +31,7 @@ import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
 
 // Brand palette (src/lib/state/colors.svelte) — the swatches the harness clicks.
 const COLORS = ['#EC534E', '#F89C45', '#F9D24F', '#8CC864', '#62A2E9', '#AB71E1'];
+const MAX_UNDO_CLICKS = 12;
 
 async function beat(page, label, fn) {
   process.stdout.write(`  • ${label}… `);
@@ -88,7 +89,7 @@ async function multiFingerDraw(page, fingers = 5, steps = 48) {
 }
 
 async function undoToEmpty(page) {
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < MAX_UNDO_CLICKS; i++) {
     const btn = page.locator('#undoButton');
     if ((await btn.count()) === 0 || (await btn.isDisabled())) break;
     await btn.click();

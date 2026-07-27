@@ -138,7 +138,8 @@ function multiFingerGesture(gi, width, height, perFinger = MULTI_OPS_PER_FINGER)
 
 // Two strokes past MAX_UNDO_DEPTH, so every scenario fills the snapshot
 // stack AND exercises the depth-cap shift path.
-const STROKES = Number(flag('strokes', '22'));
+const MAX_UNDO_DEPTH = 20;
+const STROKES = Number(flag('strokes', String(MAX_UNDO_DEPTH + 2)));
 
 function buildScenarios(width, height) {
   const longs = Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6, width, height));

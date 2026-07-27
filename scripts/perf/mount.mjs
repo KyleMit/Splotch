@@ -14,7 +14,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 import { chromiumExecutablePath, runMain } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
-import { startTrace, stopTrace } from './capture.mjs';
+import { LONG_TASK_MS, startTrace, stopTrace } from './capture.mjs';
 import { resolveDevice } from './devices.mjs';
 import { profilePath, throttleTag } from './paths.mjs';
 
@@ -103,8 +103,13 @@ async function main() {
     writeFileSync(join(outDir, 'trace.json'), JSON.stringify({ traceEvents: events }));
     writeFileSync(join(outDir, 'mount-summary.json'), JSON.stringify(summary, null, 2));
 
-    const blocking = summary.longTasks.reduce((sum, t) => sum + Math.max(0, t.duration - 50), 0);
-    console.log(`Long tasks (>50 ms): ${summary.longTasks.length}, blocking time ~${blocking} ms`);
+    const blocking = summary.longTasks.reduce(
+      (sum, t) => sum + Math.max(0, t.duration - LONG_TASK_MS),
+      0
+    );
+    console.log(
+      `Long tasks (>${LONG_TASK_MS} ms): ${summary.longTasks.length}, blocking time ~${blocking} ms`
+    );
     for (const t of summary.longTasks) {
       console.log(`  at ${t.start.toFixed(0)} ms for ${t.duration.toFixed(0)} ms`);
     }
