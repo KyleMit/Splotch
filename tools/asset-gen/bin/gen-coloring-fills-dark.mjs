@@ -64,10 +64,7 @@ import { alignToSource } from '../lib/align-to-source.mjs';
 // Drift / night-mood / line-color scoring is shared with audit-golden.mjs so the
 // committed raws can be re-scored offline with the exact generation-time math.
 import {
-  prepareSourceScore,
-  scoreDrift,
-  scoreNightness,
-  scoreLineColor,
+  scoreNightFillGates,
   DRIFT_THRESHOLD_DEFAULT,
   NIGHT_BG_LUMA_MAX_DEFAULT,
   LINE_WHITE_MIN_DEFAULT,
@@ -266,10 +263,7 @@ async function generateCleanTake({
     // Edges are polarity-agnostic, so align the colored output to the ink-on-white
     // line-art source (chalk when forked, else pen) to undo the model's nudge.
     const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
-    const preparedSource = await prepareSourceScore(source);
-    const drift = await scoreDrift(aligned, source, preparedSource);
-    const night = await scoreNightness(aligned, source);
-    const line = await scoreLineColor(aligned, source, preparedSource);
+    const { drift, night, line } = await scoreNightFillGates(aligned, source);
     // Eye cores always come from the PEN outline (the chalk's solid sclera has
     // no nested rings to find); with a chalk the measured pixels are the
     // simulated final composite rather than the raw fill.

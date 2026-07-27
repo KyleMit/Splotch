@@ -11,6 +11,7 @@ import sharp from 'sharp';
 import { describe, it, expect, vi } from 'vitest';
 import {
   prepareSourceScore,
+  scoreNightFillGates,
   scoreNightness,
   scoreDrift,
   scoreLineColor,
@@ -67,19 +68,19 @@ describe('scoreLineColor — the outlines must stay white', () => {
   });
 });
 
-it('shares one 512px source preparation between drift and line-color scoring', async () => {
+it('scores a candidate with one shared 512px source preparation', async () => {
   const source = await nightSource();
   const fill = await nightFillGood();
-  vi.mocked(sharp).mockClear();
-
   const preparedSource = await prepareSourceScore(source);
-  const drift = await scoreDrift(fill, source, preparedSource);
-  const line = await scoreLineColor(fill, source, preparedSource);
-
   expect(preparedSource.info.width).toBe(OUTLINE_MASK_SIZE);
   expect(preparedSource.info.height).toBe(OUTLINE_MASK_SIZE);
-  expect(sharp.mock.calls.filter(([input]) => input === source)).toHaveLength(1);
+
+  vi.mocked(sharp).mockClear();
+  const { drift, night, line } = await scoreNightFillGates(fill, source);
+
+  expect(sharp.mock.calls.filter(([input]) => input === source)).toHaveLength(2);
   expect(drift.ratio).toBeLessThanOrEqual(DRIFT_THRESHOLD_DEFAULT);
+  expect(night.bgLuma).toBeLessThan(NIGHT_BG_LUMA_MAX_DEFAULT);
   expect(line.lineWhite).toBeGreaterThanOrEqual(LINE_WHITE_MIN_DEFAULT);
 });
 

@@ -191,3 +191,11 @@ export async function scoreLineColor(fillBuf, sourceBuf, preparedSource) {
   maxes.sort((a, b) => a - b);
   return { lineWhite: maxes[maxes.length >> 1] };
 }
+
+export async function scoreNightFillGates(fillBuf, sourceBuf) {
+  const preparedSource = await prepareSourceScore(sourceBuf);
+  const drift = await scoreDrift(fillBuf, sourceBuf, preparedSource);
+  const night = await scoreNightness(fillBuf, sourceBuf);
+  const line = await scoreLineColor(fillBuf, sourceBuf, preparedSource);
+  return { drift, night, line };
+}

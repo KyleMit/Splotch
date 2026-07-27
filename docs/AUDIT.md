@@ -32,32 +32,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P3][performance] Every night scorer independently decodes and resizes the same source buffer
-
-**File(s):** `tools/asset-gen/lib/night-scores.mjs:44-53,99-108,164-173` (three scorers) plus
-`outline-match.mjs:42-47`, `eye-fill.mjs` — pinned at SHA f934d43
-
-#### Problem
-
-`scoreNightness` resizes source to width 384, `scoreDrift` to 512, `scoreLineColor` to 512,
-`outlineMatch` to 512×512, `scoreEyeFill` decodes at native. When the dark-fill gate runs all of
-them on one candidate (`bin/gen-coloring-fills-dark.mjs`), the same source webp is decoded from
-scratch 4-5 times, and `scoreDrift`+`scoreLineColor` both resize source to 512 independently.
-`sharp` decode+resize is the dominant cost per gate.
-
-#### Proposed solution
-
-Since two scorers already share the 512 working width, have the gate decode the source once to a raw
-512 grayscale plane and pass it in (an optional `preDecoded` arg keeps the "buffers-in for offline
-re-scoring" contract). Unify `DRIFT_W`/`LINE_W`/`MASK_W` (all 512) into one `WORK_W`.
-
-#### Verification
-
-Instrument `sharp()` call count per candidate in `gen-coloring-fills-dark`; assert the source is
-decoded at 512 once. Golden scores unchanged.
-
----
-
 ### [P3][architecture] `fail()` (console.error + process.exit) lives in `paths.mjs`, unrelated to path resolution
 
 **File(s):** `tools/asset-gen/lib/paths.mjs:29-32` — pinned at SHA f934d43
