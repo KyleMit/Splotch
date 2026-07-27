@@ -26,34 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P1][complexity] `model-eval-fixtures.mjs` embeds an 80-line browser program as a template string
-
-**File(s):** `scripts/model-eval-fixtures.mjs:333-415` (`PAGE_JS`) — pinned at SHA f934d43
-
-#### Problem
-
-The entire in-page canvas renderer — `paper`, `crayon`, `strokePaths`, `drawOutline`, `revealFill`,
-`revealGradient`, the `SCENES` map, `renderFixture` — lives inside one giant backtick string
-assigned to `PAGE_JS` and injected via `page.evaluate(PAGE_JS)`. It's ~80 lines of dense JavaScript
-with no syntax highlighting, no linting, no type checking, and no editor help; a typo surfaces only
-as a runtime `pageerror`. It also silently duplicates the node-side RNG (`makeRng`/`jit`, lines
-31-38) as page-side `rnd`/`jit` (lines 337-338) with the same LCG constants.
-
-#### Proposed solution
-
-Move the renderer to a real committed asset, e.g. `scripts/lib/model-eval-fixture-renderer.js`
-(plain browser JS), and load it with `await page.addScriptTag({ path: rendererPath })` instead of
-`page.evaluate(PAGE_JS)`. Now it lints/highlights like normal code. Optionally share one seeded-RNG
-definition by injecting it the same way rather than maintaining two copies.
-
-#### Verification
-
-`npm run model-eval:fixtures` regenerates the corpus; diff a couple of output PNGs against the
-pre-change versions to confirm byte-identical rendering. Confirm the file is picked up by
-Prettier/eslint (no longer a string).
-
----
-
 ### [P1][complexity] `api-smoke.mjs` is one 320-line `run()` with ~24 inline fetch/check blocks
 
 **File(s):** `scripts/api-smoke.mjs:25-346` (`run`) — pinned at SHA f934d43
