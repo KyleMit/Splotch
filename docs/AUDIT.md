@@ -17,42 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P2][dead-config] Capacitor template smoke-tests assert the wrong package and would fail if run
-
-**File(s):**
-`android/app/src/androidTest/java/com/getcapacitor/myapp/ExampleInstrumentedTest.java:24`,
-`android/app/src/test/java/com/getcapacitor/myapp/ExampleUnitTest.java:12-18` (Android tests) —
-pinned at SHA f934d43
-
-#### Problem
-
-Both files are unmodified Capacitor scaffolding left in the app package `com.getcapacitor.myapp`
-(not `art.splotch.app`). `ExampleUnitTest` only asserts `2 + 2 == 4`. `ExampleInstrumentedTest`
-asserts:
-
-```java
-assertEquals("com.getcapacitor.app", appContext.getPackageName());
-```
-
-The real package is `art.splotch.app`, so this instrumented test is guaranteed to **fail** if it is
-ever executed — it is stale boilerplate that only survives because the native test tasks aren't run
-in CI (the repo's testing strategy uses Maestro smoke tests instead — see the `testing` skill).
-Their presence is misleading: a newcomer running `./gradlew test`/`connectedCheck` gets a red build
-from dead sample code, and the wrong `com.getcapacitor.myapp` package clutters `git grep`.
-
-#### Proposed solution
-
-Delete both `ExampleUnitTest.java` and `ExampleInstrumentedTest.java` (and the empty
-`com/getcapacitor/myapp` dirs). If any native JVM test is genuinely wanted, add a real one under
-`art/splotch/app` asserting the correct package id.
-
-#### Verification
-
-`git rm` the files; `./gradlew :app:testDebugUnitTest` still succeeds (nothing to run) and no source
-references `com.getcapacitor.myapp`.
-
----
-
 ### [P3][dead-config] google-services / Firebase scaffolding is wired up but the app has no push
 
 **File(s):** `android/build.gradle:11`, `android/app/build.gradle:70-77` (Android Gradle) — pinned
