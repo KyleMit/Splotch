@@ -125,7 +125,11 @@
   // stroke ends. A later probe LOWER than an earlier one (without erasing or
   // clearing) means something wiped painted pixels.
   const probeTimers = new Set();
-  const ALPHA_STRIDE = 4 * 61;
+  // Cheap strided alpha probe; its magnitude is relative only within a recording.
+  // The prime pixel stride decorrelates samples from pixel-row periodicity.
+  const CHANNELS_PER_PIXEL = 4;
+  const PIXEL_SAMPLE_STRIDE = 61;
+  const ALPHA_STRIDE = CHANNELS_PER_PIXEL * PIXEL_SAMPLE_STRIDE;
   const alphaCount = () => {
     try {
       const c = canvas.getContext('2d');

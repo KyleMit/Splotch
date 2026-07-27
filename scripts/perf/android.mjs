@@ -12,13 +12,18 @@
 // (the default flow rebuilds + reinstalls it).
 
 import { spawnSync } from 'node:child_process';
-import { join } from 'node:path';
 import { chromium } from '@playwright/test';
-import { ROOT, sleep, run, fail } from '../lib/utils.mjs';
+import { sleep, pollUntil, run, fail, isMain, runMain } from '../lib/utils.mjs';
 import { driveSession } from './session.mjs';
+import { profilePath } from './paths.mjs';
+import { warnIfNoPerfMarks } from './warnings.mjs';
 
 const APP_ID = 'art.splotch.app';
 const CDP_PORT = 9222;
+const WEBVIEW_SOCKET_TIMEOUT_MS = 25_000;
+const WEBVIEW_SOCKET_POLL_INTERVAL_MS = 1_000;
+const WEBVIEW_PAGE_TIMEOUT_MS = 10_000;
+const WEBVIEW_PAGE_POLL_INTERVAL_MS = 500;
 
 const args = process.argv.slice(2);
 const build = !args.includes('--no-build');
@@ -39,7 +44,7 @@ function requireDevice() {
 
 // The WebView exposes its DevTools over an abstract unix socket named
 // webview_devtools_remote_<pid>. Prefer the app's own pid; fall back to any.
-function readWebviewSocket() {
+export function readWebviewSocket() {
   const pid = (adb(['shell', 'pidof', APP_ID]).stdout || '').trim().split(/\s+/)[0];
   const unix = adb(['shell', 'cat', '/proc/net/unix']).stdout || '';
   const sockets = unix
@@ -54,37 +59,30 @@ function readWebviewSocket() {
 
 // A freshly (re)installed app can take several seconds to cold-start its
 // WebView and register the socket, so poll instead of a single fixed wait.
-async function findWebviewSocket(timeoutMs = 25_000) {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    const socket = readWebviewSocket();
-    if (socket) return socket;
-    if (Date.now() > deadline) return null;
-    await sleep(1000);
-  }
+export async function findWebviewSocket(timeoutMs = WEBVIEW_SOCKET_TIMEOUT_MS) {
+  return pollUntil(readWebviewSocket, timeoutMs, WEBVIEW_SOCKET_POLL_INTERVAL_MS);
 }
 
-async function getWebviewPage(browser) {
+export async function getWebviewPage(browser) {
   // The WebView's page may take a moment to register after launch.
-  for (let i = 0; i < 20; i++) {
-    const ctx = browser.contexts()[0];
-    const pages = ctx ? ctx.pages() : [];
-    const page = pages.find((p) => !p.url().startsWith('about:')) || pages[0];
-    if (page) return page;
-    await sleep(500);
-  }
-  throw new Error('No WebView page exposed over CDP');
+  const page = await pollUntil(
+    () => {
+      const ctx = browser.contexts()[0];
+      const pages = ctx ? ctx.pages() : [];
+      return pages.find((candidate) => !candidate.url().startsWith('about:'));
+    },
+    WEBVIEW_PAGE_TIMEOUT_MS,
+    WEBVIEW_PAGE_POLL_INTERVAL_MS
+  );
+  if (!page) throw new Error('No navigated WebView page was exposed over CDP');
+  return page;
 }
 
-async function main() {
+export async function runAndroidProfile() {
   requireDevice();
 
   if (build) {
-    if (process.env.PERF_MARKS !== 'true') {
-      console.warn(
-        '! PERF_MARKS is not "true" — rebuild may omit engine.* marks. Use `npm run perf:android`.'
-      );
-    }
+    warnIfNoPerfMarks('npm run perf:android');
     // cap:sync (build:cap, inheriting PERF_MARKS) + gradle installDebug.
     run('npm', ['run', 'android:run']);
   }
@@ -111,8 +109,7 @@ async function main() {
     const cdp = await page.context().newCDPSession(page);
     const model = (adb(['shell', 'getprop', 'ro.product.model']).stdout || 'device').trim();
 
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const outDir = join(ROOT, 'perf-profiles', `${stamp}-android-${model.replace(/\s+/g, '_')}`);
+    const outDir = profilePath('android', model.replace(/\s+/g, '_'));
 
     await driveSession(page, cdp, {
       outDir,
@@ -129,7 +126,4 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (isMain(import.meta.url)) runMain(runAndroidProfile);

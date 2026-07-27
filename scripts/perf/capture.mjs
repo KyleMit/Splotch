@@ -16,6 +16,8 @@ const TRACE_CATEGORIES = [
   'toplevel',
 ];
 
+const LONG_FRAME_MS = 32;
+
 export async function startTrace(cdp) {
   const events = [];
   cdp.on('Tracing.dataCollected', (payload) => {
@@ -63,14 +65,14 @@ export async function injectObservers(page) {
 }
 
 export async function readObservers(page) {
-  return page.evaluate(() => {
+  return page.evaluate((longFrameMs) => {
     const w = window;
     if (w.__perf?.raf) cancelAnimationFrame(w.__perf.raf);
     const stamps = w.__perf?.frameStamps || [];
     const intervals = [];
     for (let i = 1; i < stamps.length; i++) intervals.push(stamps[i] - stamps[i - 1]);
     const span = stamps.length > 1 ? stamps[stamps.length - 1] - stamps[0] : 0;
-    const longFrames = intervals.filter((d) => d > 32).length;
+    const longFrames = intervals.filter((d) => d > longFrameMs).length;
     return {
       longTasks: w.__perf?.longTasks || [],
       frames: {
@@ -81,7 +83,7 @@ export async function readObservers(page) {
       },
       heapBytes: performance.memory?.usedJSHeapSize ?? null,
     };
-  });
+  }, LONG_FRAME_MS);
 }
 
 export async function heapBytes(page) {

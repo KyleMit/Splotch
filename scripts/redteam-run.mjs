@@ -123,8 +123,10 @@ async function main() {
 
   console.log('Starting throwaway dev server…');
   const { stop } = spawnViteServer(PORT, {
-    ALLOWED_TOKENS_LIST: TOKEN,
-    PUBLIC_ENABLE_DEV_HARNESS: 'true',
+    env: {
+      ALLOWED_TOKENS_LIST: TOKEN,
+      PUBLIC_ENABLE_DEV_HARNESS: 'true',
+    },
   });
 
   const results = [];

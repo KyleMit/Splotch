@@ -18,12 +18,7 @@
 import { readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 import sharp from 'sharp';
-
-export const esc = (s) =>
-  String(s ?? '').replace(
-    /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
-  );
+import { esc } from './html.mjs';
 
 // The brand crayon strip — the app's 7 palette hues. `size` picks a preset:
 // "lg" for the masthead, "sm" for the footer.

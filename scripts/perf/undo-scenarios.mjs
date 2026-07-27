@@ -17,7 +17,9 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, chromiumExecutablePath, sleep } from '../lib/utils.mjs';
+import { pathToFileURL } from 'node:url';
+import { chromiumExecutablePath, runMain, sleep } from '../lib/utils.mjs';
+import { resolveThrottle } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import {
   startTrace,
@@ -27,23 +29,26 @@ import {
   heapBytes,
   markPhase,
 } from './capture.mjs';
-import { analyze, renderReport } from './analyze.mjs';
+import { IPAD_PRO } from './devices.mjs';
+import { profilePath } from './paths.mjs';
+import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
+import { toMiB } from './units.mjs';
+import { warnIfNoPerfMarks } from './warnings.mjs';
 
 // The deployment target we actually worry about: a 12.9" iPad Pro in portrait —
 // 1024×1366 CSS pt. iPads report devicePixelRatio 2 and the engine caps
 // renderScale at min(dpr, 2) = 2, so the backing store is 2048×2732 and the
 // square paper/snapshot raster is 2732² ≈ 29.9 MB each — the real per-raster
 // cost on that device (the hot tier holds 2 of them + the paper).
-const DEVICE = { width: 1024, height: 1366, deviceScaleFactor: 2, label: 'ipad-pro-12.9' };
-
 const args = process.argv.slice(2);
 const flag = (name, def) => {
   const hit = args.find((a) => a.startsWith(`--${name}=`));
   return hit ? hit.split('=')[1] : def;
 };
-const throttle = args.includes('--no-throttle') ? 1 : Number(flag('throttle', '4'));
+const throttle = resolveThrottle(args, 4);
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
+const COLD_TIER_TIMEOUT_MS = Number(flag('cold-tier-timeout-ms', '10000'));
 
 // Op volume = refresh rate × stroke duration. A 120 Hz ProMotion iPad Pro
 // captures ~120 ops/second, so a sustained multi-second scribble is
@@ -135,7 +140,9 @@ function multiFingerGesture(gi, width, height, perFinger = MULTI_OPS_PER_FINGER)
 
 // Two strokes past MAX_UNDO_DEPTH, so every scenario fills the snapshot
 // stack AND exercises the depth-cap shift path.
-const STROKES = Number(flag('strokes', '22'));
+const MAX_UNDO_DEPTH = 20;
+const MAX_UNDO_STEPS = 60;
+const STROKES = Number(flag('strokes', String(MAX_UNDO_DEPTH + 2)));
 
 function buildScenarios(width, height) {
   const longs = Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6, width, height));
@@ -239,10 +246,10 @@ async function drawStrokes(page, strokes, crayon = false) {
 // measure to land before firing the next — otherwise the loop outruns the
 // restore queue and the phase window misses the tail steps.
 async function undoAll(page) {
-  return page.evaluate(async () => {
+  return page.evaluate(async (maxUndoSteps) => {
     const completed = () => performance.getEntriesByName('engine.undo', 'measure').length;
     let steps = 0;
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < maxUndoSteps; i++) {
       if (!window.__engineState.canUndo) break;
       const before = completed();
       window.__engine.undo();
@@ -256,7 +263,7 @@ async function undoAll(page) {
       await new Promise((r) => requestAnimationFrame(r));
     }
     return steps;
-  });
+  }, MAX_UNDO_STEPS);
 }
 
 const undoDebug = (page) =>
@@ -303,19 +310,120 @@ async function rasterGeometry(page) {
   });
 }
 
-async function main() {
+export async function runUndoScenario(
+  page,
+  base,
+  sc,
+  geom,
+  coldTierTimeoutMs = COLD_TIER_TIMEOUT_MS
+) {
+  console.log(`\n▶ ${sc.label}`);
+  await resetEngine(page, base, IPAD_PRO.width, IPAD_PRO.height);
+  // Reload drops the rAF FPS sampler injected before the trace; re-inject so
+  // frame health still reflects this scenario.
+  await injectObservers(page);
+
+  const drawStart = await now(page);
+  await markPhase(page, `${sc.key}-draw`, () => drawStrokes(page, sc.strokes, !!sc.crayon));
+  const drawEnd = await now(page);
+
+  const debug = await settleColdTier(page, coldTierTimeoutMs);
+  const heapAfterDraw = await heapBytes(page);
+
+  const undoStart = await now(page);
+  let steps = 0;
+  await markPhase(page, `${sc.key}-undo`, async () => {
+    steps = await undoAll(page);
+  });
+  const undoEnd = await now(page);
+  const heapAfterUndo = await heapBytes(page);
+
+  const drawMarks = await engineMeasuresIn(page, drawStart, drawEnd);
+  const undoMarks = await engineMeasuresIn(page, undoStart, undoEnd);
+
+  const draw = drawMarks['engine.draw'] || { count: 0, total: 0, max: 0 };
+  // engine.commit wraps the whole stroke-end pipeline (paper copy → fold),
+  // so its max is the pointerup hitch the user feels. engine.snapshot
+  // isolates the paper copy inside it.
+  const commit = drawMarks['engine.commit'] || { count: 0, total: 0, max: 0 };
+  const snapshot = drawMarks['engine.snapshot'] || { count: 0, total: 0, max: 0 };
+  const undoM = undoMarks['engine.undo'] || { count: 0, total: 0, max: 0 };
+
+  // History raster memory the way it actually lives — off the JS heap, in
+  // canvas backing stores: live snapshot patches + the paper, plus the
+  // encoded blobs. rasterBytes is the patches' real pixel cost (dirty-rect
+  // snapshots, ADR-0069); liveRasters × full-raster is the fallback for a
+  // build that predates it.
+  const historyRasterMB =
+    debug == null
+      ? null
+      : toMiB(
+          (debug.rasterBytes ?? debug.liveRasters * geom.bytesPerRaster) +
+            geom.bytesPerRaster +
+            debug.blobBytes
+        );
+
+  const result = {
+    key: sc.key,
+    label: sc.label,
+    strokes: sc.strokes.length,
+    crayon: !!sc.crayon,
+    debug,
+    undoSteps: steps,
+    draw: {
+      ops: draw.count,
+      totalMs: draw.total,
+      commitMs: commit.total,
+      commitMaxMs: commit.max,
+      snapshotMs: snapshot.total,
+      snapshotMaxMs: snapshot.max,
+    },
+    undo: {
+      steps: undoM.count,
+      totalMs: undoM.total,
+      avgMs: undoM.count ? undoM.total / undoM.count : 0,
+      maxMs: undoM.max,
+    },
+    heap: {
+      afterDrawMB: heapAfterDraw ? toMiB(heapAfterDraw) : null,
+      afterUndoMB: heapAfterUndo ? toMiB(heapAfterUndo) : null,
+    },
+    historyRasterMB,
+  };
+  console.log(
+    `  snapshots=${debug?.snapshots ?? 'n/a'} liveRasters=${debug?.liveRasters ?? 'n/a'} ` +
+      `blobKB=${debug ? Math.round(debug.blobBytes / 1024) : 'n/a'} | ` +
+      `commit max ${commit.max.toFixed(1)}ms (copy max ${snapshot.max.toFixed(1)}ms) | ` +
+      `undo ${undoM.count} steps ` +
+      `avg ${(undoM.count ? undoM.total / undoM.count : 0).toFixed(1)}ms max ${undoM.max.toFixed(1)}ms`
+  );
+  return result;
+}
+
+function buildUndoSettings({ throttle, build, geom, t0 }) {
+  return {
+    target: 'web/dev-engine (headless Chromium — not WebKit/real GPU)',
+    device: IPAD_PRO.label,
+    viewport: IPAD_PRO,
+    throttle: throttle.forSettings,
+    refreshHz: HZ,
+    frameBudgetMs: 1000 / HZ,
+    longOps: LONG_OPS,
+    buildMode: build ? 'production-preview' : 'production-preview (reused build)',
+    captureMode: 'cdp-trace',
+    raster: { ...geom, mbPerRaster: toMiB(geom.bytesPerRaster) },
+    startedAt: new Date(t0).toISOString(),
+    durationMs: Date.now() - t0,
+  };
+}
+
+export async function runUndoScenarios() {
   // /dev/engine is gated by PUBLIC_ENABLE_DEV_HARNESS ($env/dynamic/public, read
   // at runtime), so the preview server spawned by buildAndPreview must inherit it.
   process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
-  if (process.env.PERF_MARKS !== 'true') {
-    console.warn(
-      '! PERF_MARKS is not "true" — engine.* marks will be absent. Use `npm run perf:undo`.'
-    );
-  }
+  warnIfNoPerfMarks('npm run perf:undo');
 
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const throttleTag = throttle > 1 ? `${throttle}x` : 'raw';
-  const outDir = join(ROOT, 'perf-profiles', `${stamp}-undo-scenarios-${throttleTag}`);
+  const outDir = profilePath('undo-scenarios', throttle.tag);
   mkdirSync(outDir, { recursive: true });
 
   const { base, stop } = await buildAndPreview(port, { build });
@@ -326,22 +434,24 @@ async function main() {
   const t0 = Date.now();
   try {
     const ctx = await browser.newContext({
-      viewport: { width: DEVICE.width, height: DEVICE.height },
-      deviceScaleFactor: DEVICE.deviceScaleFactor,
+      viewport: { width: IPAD_PRO.width, height: IPAD_PRO.height },
+      deviceScaleFactor: IPAD_PRO.deviceScaleFactor,
       hasTouch: true,
     });
     const page = await ctx.newPage();
-    await resetEngine(page, base, DEVICE.width, DEVICE.height);
+    await resetEngine(page, base, IPAD_PRO.width, IPAD_PRO.height);
 
     const cdp = await ctx.newCDPSession(page);
-    if (throttle > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle });
+    if (throttle.active) {
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle.rate });
+    }
 
     await injectObservers(page);
     const geom = await rasterGeometry(page);
     const events = await startTrace(cdp);
     // --scenarios=key1,key2 runs a subset (fast iteration on one question).
     const only = flag('scenarios', '');
-    let scenarios = buildScenarios(DEVICE.width, DEVICE.height);
+    let scenarios = buildScenarios(IPAD_PRO.width, IPAD_PRO.height);
     if (only) {
       const keys = only.split(',');
       scenarios = scenarios.filter((sc) => keys.includes(sc.key));
@@ -350,119 +460,40 @@ async function main() {
     const results = [];
 
     for (const sc of scenarios) {
-      console.log(`\n▶ ${sc.label}`);
-      await resetEngine(page, base, DEVICE.width, DEVICE.height);
-      // Reload drops the rAF FPS sampler injected before the trace; re-inject so
-      // frame health still reflects this scenario.
-      await injectObservers(page);
-
-      const drawStart = await now(page);
-      await markPhase(page, `${sc.key}-draw`, () => drawStrokes(page, sc.strokes, !!sc.crayon));
-      const drawEnd = await now(page);
-
-      const debug = await settleColdTier(page);
-      const heapAfterDraw = await heapBytes(page);
-
-      const undoStart = await now(page);
-      let steps = 0;
-      await markPhase(page, `${sc.key}-undo`, async () => {
-        steps = await undoAll(page);
-      });
-      const undoEnd = await now(page);
-      const heapAfterUndo = await heapBytes(page);
-
-      const drawMarks = await engineMeasuresIn(page, drawStart, drawEnd);
-      const undoMarks = await engineMeasuresIn(page, undoStart, undoEnd);
-
-      const draw = drawMarks['engine.draw'] || { count: 0, total: 0, max: 0 };
-      // engine.commit wraps the whole stroke-end pipeline (paper copy → fold),
-      // so its max is the pointerup hitch the user feels. engine.snapshot
-      // isolates the paper copy inside it.
-      const commit = drawMarks['engine.commit'] || { count: 0, total: 0, max: 0 };
-      const snapshot = drawMarks['engine.snapshot'] || { count: 0, total: 0, max: 0 };
-      const undoM = undoMarks['engine.undo'] || { count: 0, total: 0, max: 0 };
-
-      // History raster memory the way it actually lives — off the JS heap, in
-      // canvas backing stores: live snapshot patches + the paper, plus the
-      // encoded blobs. rasterBytes is the patches' real pixel cost (dirty-rect
-      // snapshots, ADR-0069); liveRasters × full-raster is the fallback for a
-      // build that predates it.
-      const historyRasterMB =
-        debug == null
-          ? null
-          : ((debug.rasterBytes ?? debug.liveRasters * geom.bytesPerRaster) +
-              geom.bytesPerRaster +
-              debug.blobBytes) /
-            1048576;
-
-      results.push({
-        key: sc.key,
-        label: sc.label,
-        strokes: sc.strokes.length,
-        crayon: !!sc.crayon,
-        debug,
-        undoSteps: steps,
-        draw: {
-          ops: draw.count,
-          totalMs: draw.total,
-          commitMs: commit.total,
-          commitMaxMs: commit.max,
-          snapshotMs: snapshot.total,
-          snapshotMaxMs: snapshot.max,
-        },
-        undo: {
-          steps: undoM.count,
-          totalMs: undoM.total,
-          avgMs: undoM.count ? undoM.total / undoM.count : 0,
-          maxMs: undoM.max,
-        },
-        heap: {
-          afterDrawMB: heapAfterDraw ? heapAfterDraw / 1048576 : null,
-          afterUndoMB: heapAfterUndo ? heapAfterUndo / 1048576 : null,
-        },
-        historyRasterMB,
-      });
-      console.log(
-        `  snapshots=${debug?.snapshots ?? 'n/a'} liveRasters=${debug?.liveRasters ?? 'n/a'} ` +
-          `blobKB=${debug ? Math.round(debug.blobBytes / 1024) : 'n/a'} | ` +
-          `commit max ${commit.max.toFixed(1)}ms (copy max ${snapshot.max.toFixed(1)}ms) | ` +
-          `undo ${undoM.count} steps ` +
-          `avg ${(undoM.count ? undoM.total / undoM.count : 0).toFixed(1)}ms max ${undoM.max.toFixed(1)}ms`
-      );
+      try {
+        results.push(await runUndoScenario(page, base, sc, geom));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`Skipping undo scenario ${sc.key}: ${message}`);
+        results.push({
+          key: sc.key,
+          label: sc.label,
+          strokes: sc.strokes.length,
+          crayon: !!sc.crayon,
+          skipped: true,
+          error: message,
+        });
+      }
     }
 
     const obs = await readObservers(page);
     await stopTrace(cdp);
-    await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
 
     // Standard trace artifacts (engine hot paths, frame health) via the shared
     // analyzer, plus the bespoke per-scenario undo summary.
-    const settings = {
-      target: 'web/dev-engine (headless Chromium — not WebKit/real GPU)',
-      device: DEVICE.label,
-      viewport: DEVICE,
-      throttle: throttle > 1 ? throttle : 0,
-      refreshHz: HZ,
-      frameBudgetMs: 1000 / HZ,
-      longOps: LONG_OPS,
-      buildMode: build ? 'production-preview' : 'production-preview (reused build)',
-      captureMode: 'cdp-trace',
-      raster: { ...geom, mbPerRaster: geom.bytesPerRaster / 1048576 },
-      startedAt: new Date(t0).toISOString(),
-      durationMs: Date.now() - t0,
-    };
-    const metrics = {
+    const settings = buildUndoSettings({ throttle, build, geom, t0 });
+    await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
+    const metrics = buildMetrics({
       settings,
-      longTasks: obs.longTasks,
-      frames: obs.frames,
-      heap: { beforeBytes: 0, afterBytes: obs.heapBytes ?? 0 },
-    };
-    writeFileSync(join(outDir, 'trace.json'), JSON.stringify({ traceEvents: events }));
-    writeFileSync(join(outDir, 'metrics.json'), JSON.stringify(metrics, null, 2));
-
-    const summary = analyze(events, metrics);
-    writeFileSync(join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
-    writeFileSync(join(outDir, 'report.md'), renderReport(summary));
+      obs,
+      heapBefore: 0,
+      heapAfter: obs.heapBytes,
+    });
+    writeProfileArtifacts({
+      outDir,
+      traceEvents: events,
+      metrics,
+    });
 
     const undoSummary = { settings, scenarios: results };
     writeFileSync(join(outDir, 'undo-scenarios.json'), JSON.stringify(undoSummary, null, 2));
@@ -505,12 +536,18 @@ function renderUndoReport({ settings, scenarios }) {
       `commit and undo costs below don't depend on pacing.\n`
   );
   out.push('## Snapshot stack after drawing (getUndoDebug)\n');
-  out.push('| Scenario | Strokes | Snapshots | Live rasters | Blob bytes | Pending commands |');
-  out.push('| --- | --- | --- | --- | --- | --- |');
+  out.push(
+    '| Scenario | Strokes | Status / reason | Snapshots | Live rasters | Blob bytes | Pending commands |'
+  );
+  out.push('| --- | --- | --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
+    if (s.skipped) {
+      out.push(`| ${s.label} | ${s.strokes} | Skipped: ${s.error} | n/a | n/a | n/a | n/a |`);
+      continue;
+    }
     const blobKB = s.debug ? Math.round((s.debug.blobBytes ?? 0) / 1024) : 'n/a';
     out.push(
-      `| ${s.label} | ${s.strokes} | ${s.debug?.snapshots ?? 'n/a'} | ` +
+      `| ${s.label} | ${s.strokes} | Completed | ${s.debug?.snapshots ?? 'n/a'} | ` +
         `${s.debug?.liveRasters ?? 'n/a'} | ${blobKB} KB | ${s.debug?.pendingCommands ?? 'n/a'} |`
     );
   }
@@ -524,6 +561,10 @@ function renderUndoReport({ settings, scenarios }) {
   );
   out.push('| --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
+    if (s.skipped) {
+      out.push(`| ${s.label} | n/a | n/a | n/a | **n/a** |`);
+      continue;
+    }
     out.push(
       `| ${s.label} | ${s.draw.ops} | ${f1(s.draw.totalMs)} ms | ` +
         `${f1(s.draw.snapshotMaxMs)} ms | **${f1(s.draw.commitMaxMs)} ms** |`
@@ -533,6 +574,10 @@ function renderUndoReport({ settings, scenarios }) {
   out.push('| Scenario | Undo steps | Total | Avg / step | Max step |');
   out.push('| --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
+    if (s.skipped) {
+      out.push(`| ${s.label} | n/a | n/a | n/a | n/a |`);
+      continue;
+    }
     out.push(
       `| ${s.label} | ${s.undo.steps} | ${f1(s.undo.totalMs)} ms | ` +
         `${f1(s.undo.avgMs)} ms | ${f1(s.undo.maxMs)} ms |`
@@ -541,7 +586,7 @@ function renderUndoReport({ settings, scenarios }) {
   const r = settings.raster;
   out.push('\n## History raster memory (the real undo cost — off the JS heap)\n');
   out.push(
-    `Each square raster is ${r?.side}×${r?.side} → **${f1(r?.mbPerRaster)} MB**. ` +
+    `Each square raster is ${r?.side}×${r?.side} → **${f1(r?.mbPerRaster)} MiB**. ` +
       `Canvas backing stores are **not** counted by performance.memory, so the JS-heap ` +
       `table below stays flat regardless of history — the raster figure is the one that ` +
       `matters. Resident rasters = live snapshots + the paper, plus the encoded blob bytes.\n`
@@ -549,21 +594,28 @@ function renderUndoReport({ settings, scenarios }) {
   out.push('| Scenario | Rasters resident | Blob bytes | History memory |');
   out.push('| --- | --- | --- | --- |');
   for (const s of scenarios) {
+    if (s.skipped) {
+      out.push(`| ${s.label} | n/a | n/a | n/a |`);
+      continue;
+    }
     const rasters = s.debug == null ? 'n/a' : `${s.debug.liveRasters} + 1`;
     const blobKB = s.debug ? Math.round((s.debug.blobBytes ?? 0) / 1024) : 'n/a';
-    out.push(`| ${s.label} | ${rasters} | ${blobKB} KB | ${f1(s.historyRasterMB)} MB |`);
+    out.push(`| ${s.label} | ${rasters} | ${blobKB} KB | ${f1(s.historyRasterMB)} MiB |`);
   }
   out.push('\n## JS heap (performance.memory — excludes canvas pixels; coarse, GC-dependent)\n');
   out.push('| Scenario | After draw (history resident) | After undo-to-empty |');
   out.push('| --- | --- | --- |');
   for (const s of scenarios) {
-    out.push(`| ${s.label} | ${f1(s.heap.afterDrawMB)} MB | ${f1(s.heap.afterUndoMB)} MB |`);
+    if (s.skipped) {
+      out.push(`| ${s.label} | n/a | n/a |`);
+      continue;
+    }
+    out.push(`| ${s.label} | ${f1(s.heap.afterDrawMB)} MiB | ${f1(s.heap.afterUndoMB)} MiB |`);
   }
   out.push('\n---\nSee the `profiling` skill and ADR-0066 for how to read these.\n');
   return out.join('\n');
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  runMain(runUndoScenarios);
+}

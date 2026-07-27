@@ -15,7 +15,8 @@ import { readdirSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ROOT } from './lib/utils.mjs';
-import { esc, chromeStyle, masthead, siteFooter } from './lib/scrapbook-chrome.mjs';
+import { esc } from './lib/html.mjs';
+import { chromeStyle, masthead, siteFooter } from './lib/scrapbook-chrome.mjs';
 import { isSpot } from './lib/iconChroma.mjs';
 
 const ICONS_DIR = join(ROOT, 'web/src/lib/icons');

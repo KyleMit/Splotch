@@ -15,14 +15,19 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { ROOT, chromiumExecutablePath, sleep } from '../lib/utils.mjs';
+import { chromiumExecutablePath, fail, isMain, runMain, sleep } from '../lib/utils.mjs';
+import { resolveThrottle } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace, injectObservers, readObservers, heapBytes } from './capture.mjs';
-import { analyze, renderReport } from './analyze.mjs';
+import { IPAD_PRO } from './devices.mjs';
+import { profilePath } from './paths.mjs';
+import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
+import { warnIfNoPerfMarks } from './warnings.mjs';
 
-// The app's "Size N" picker → engine px. Approximate (the recorder only sees the
-// label); override here if the real mapping is ever needed for fidelity.
-const SIZE_PX = { 1: 4, 2: 8, 3: 14, 4: 22, 5: 32 };
+// Mirrors SIZE_TO_PX in web/src/lib/state/strokeWidth.svelte.ts; this Node script
+// cannot import the app's Svelte rune module.
+export const SIZE_PX = { 1: 2, 2: 4, 3: 8, 4: 14, 5: 22 };
+const MAX_IDLE_GAP_MS = 250;
 
 const args = process.argv.slice(2);
 const flag = (name, def) => {
@@ -30,35 +35,44 @@ const flag = (name, def) => {
   return hit ? hit.split('=')[1] : def;
 };
 const recordingPath = flag('recording', null);
-const throttle = args.includes('--no-throttle') ? 1 : Number(flag('throttle', '0'));
+const throttle = resolveThrottle(args, 0);
 const turbo = args.includes('--turbo');
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
 
-if (!recordingPath) {
-  console.error(
-    'Usage: npm run perf:replay -- --recording=<recording.json> [--turbo] [--throttle=N]'
-  );
-  process.exit(1);
-}
-
-async function main() {
-  process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
-  if (process.env.PERF_MARKS !== 'true') {
-    console.warn(
-      '! PERF_MARKS is not "true" — engine.* marks will be absent. Use `npm run perf:replay`.'
+export async function runReplayScenario() {
+  if (!recordingPath) {
+    console.error(
+      'Usage: npm run perf:replay -- --recording=<recording.json> [--turbo] [--throttle=N]'
     );
+    process.exit(1);
+  }
+  let contents;
+  try {
+    contents = readFileSync(recordingPath, 'utf8');
+  } catch {
+    fail(`Replay recording not found or unreadable: ${recordingPath}`);
+  }
+  let recording;
+  try {
+    recording = JSON.parse(contents);
+  } catch {
+    fail(`Replay recording is not valid JSON: ${recordingPath}`);
+  }
+  if (!Array.isArray(recording?.events)) {
+    fail(`Replay recording has no events array: ${recordingPath}`);
   }
 
-  const recording = JSON.parse(readFileSync(recordingPath, 'utf8'));
+  process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
+  warnIfNoPerfMarks('npm run perf:replay');
+
   const meta = recording.meta || {};
-  const vp = meta.viewport || { w: 1024, h: 1366 };
-  const dsf = Math.max(1, Math.round(meta.dpr || 2));
+  const vp = meta.viewport || { w: IPAD_PRO.width, h: IPAD_PRO.height };
+  const dsf = Math.max(1, Math.round(meta.dpr || IPAD_PRO.deviceScaleFactor));
   const cssCanvas = meta.canvas || vp;
 
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const tag = basename(recordingPath).replace(/\.json$/, '');
-  const outDir = join(ROOT, 'perf-profiles', `${stamp}-replay-${tag}`);
+  const outDir = profilePath('replay', tag);
   mkdirSync(outDir, { recursive: true });
 
   const { base, stop } = await buildAndPreview(port, { build });
@@ -81,7 +95,9 @@ async function main() {
     await sleep(150);
 
     const cdp = await ctx.newCDPSession(page);
-    if (throttle > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle });
+    if (throttle.active) {
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle.rate });
+    }
 
     await injectObservers(page);
     const heapBefore = await heapBytes(page);
@@ -96,6 +112,7 @@ async function main() {
       recCanvas: cssCanvas,
       sizePx: SIZE_PX,
       turbo,
+      maxIdleGapMs: MAX_IDLE_GAP_MS,
     });
 
     const debug = await page.evaluate(() =>
@@ -110,7 +127,7 @@ async function main() {
       target: 'web/dev-engine (replay of real device input)',
       device: `recorded ${vp.w}×${vp.h} @ dpr ${meta.dpr}`,
       viewport: { width: vp.w, height: vp.h, deviceScaleFactor: dsf },
-      throttle: throttle > 1 ? throttle : 0,
+      throttle: throttle.forSettings,
       buildMode: build ? 'production-preview' : 'production-preview (reused build)',
       captureMode: 'cdp-trace',
       recording: {
@@ -122,18 +139,13 @@ async function main() {
       startedAt: new Date(t0).toISOString(),
       durationMs: Date.now() - t0,
     };
-    const metrics = {
+    const metrics = buildMetrics({
       settings,
-      longTasks: obs.longTasks,
-      frames: obs.frames,
-      heap: { beforeBytes: heapBefore ?? 0, afterBytes: heapAfter ?? obs.heapBytes ?? 0 },
-    };
-    writeFileSync(join(outDir, 'trace.json'), JSON.stringify({ traceEvents: events }));
-    writeFileSync(join(outDir, 'metrics.json'), JSON.stringify(metrics, null, 2));
-
-    const summary = analyze(events, metrics);
-    writeFileSync(join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
-    writeFileSync(join(outDir, 'report.md'), renderReport(summary));
+      obs,
+      heapBefore,
+      heapAfter,
+    });
+    const { summary } = writeProfileArtifacts({ outDir, traceEvents: events, metrics });
 
     const md = renderReplayReport({ settings, replayed, debug, summary });
     writeFileSync(join(outDir, 'replay-summary.md'), md);
@@ -154,7 +166,7 @@ async function main() {
 // (synthetic events don't coalesce → one move = one engine op, matching the live
 // device) and maps UI actions onto the engine API. Real-time pacing uses the
 // recorded timestamps (capped) so frame cadence matches actual drawing.
-function replayInPage({ events, recCanvas, sizePx, turbo }) {
+export function replayInPage({ events, recCanvas, sizePx, turbo, maxIdleGapMs }) {
   const canvas = document.querySelector('#engineCanvas');
   const r = canvas.getBoundingClientRect();
   const sx = r.width / (recCanvas.w || r.width);
@@ -205,7 +217,7 @@ function replayInPage({ events, recCanvas, sizePx, turbo }) {
   return (async () => {
     for (const e of events) {
       if (!turbo) {
-        const dt = Math.min(Math.max(0, e.t - prevT), 250); // cap long idle gaps
+        const dt = Math.min(Math.max(0, e.t - prevT), maxIdleGapMs); // cap long idle gaps
         if (dt > 0) await sleep(dt);
         prevT = e.t;
       }
@@ -315,7 +327,4 @@ function renderReplayReport({ settings, replayed, debug, summary }) {
   return out.join('\n');
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (isMain(import.meta.url)) runMain(runReplayScenario);

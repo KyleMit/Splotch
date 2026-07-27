@@ -27,6 +27,7 @@
 // deferred off the main thread).
 
 import { readFileSync } from 'node:fs';
+import { fail } from '../lib/utils.mjs';
 
 const path = process.argv[2];
 if (!path) {
@@ -34,7 +35,22 @@ if (!path) {
   process.exit(1);
 }
 
-const rec = JSON.parse(readFileSync(path, 'utf8')).recording;
+let contents;
+try {
+  contents = readFileSync(path, 'utf8');
+} catch {
+  fail(`Web Inspector export not found or unreadable: ${path}`);
+}
+let parsed;
+try {
+  parsed = JSON.parse(contents);
+} catch {
+  fail(`Web Inspector export is not valid JSON: ${path}`);
+}
+const rec = parsed?.recording;
+if (!rec || typeof rec !== 'object' || Array.isArray(rec)) {
+  fail(`${path} is not a Web Inspector export (no .recording)`);
+}
 const markers = rec.markers || [];
 const spans = (rec.records || [])
   .filter((r) => typeof r.startTime === 'number' && typeof r.endTime === 'number')

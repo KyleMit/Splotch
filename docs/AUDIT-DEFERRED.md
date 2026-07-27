@@ -2830,3 +2830,273 @@ The rolled-back draft is kept at
 (3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p3-naming-inconsistent-script-naming-across-idea-dirs-idea-n-prefix-vs-d.patch`.
+
+### [P4][consistency] `--check`/flag parsing done ad hoc in every gate script
+
+**File(s):** `scripts/gen-tokens.mjs:69`, `scripts/image-audit.mjs:37`,
+`scripts/publish-scrapbook.mjs:37,47`, `scripts/gha-versions.mjs:108-110` — pinned at SHA f934d43
+
+#### Problem
+
+Each script re-implements flag detection inline: `process.argv.includes('--check')`,
+`args[0] === '--index-only'`, `args.includes('--check-latest')`, `--json`, etc. It's fine at one
+flag each, but there's no shared convention, so `--check` means "CI drift gate" in three scripts
+with three separate parses, and a reader can't predict how a given script reads its args.
+
+#### Proposed solution
+
+A minimal shared `parseFlags(argv, names)` (or adopt `node:util` `parseArgs`) in `lib/utils.mjs`,
+returning `{ flags, positionals }`. Not worth a heavy CLI framework, but one helper standardizes the
+`--check` gate idiom the repo uses repeatedly.
+
+#### Verification
+
+Each gate (`gen:tokens:check`, `img:audit:check`, `scrapbook:check`, `deps:gha --check-latest`)
+still behaves identically. Consistent parsing visible in a grep.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* `scripts/publish-scrapbook.mjs:38,48` still selects both modes with the original ad hoc
+  `args[0] === '--…'` checks; the parsed booleans are only redundant conjuncts. Make the shared
+  parsing path own mode selection while preserving the existing first-argument-only behavior.
+* The live `check:assets:manifest` gate still parses `--check` ad hoc with
+  `process.argv.includes('--check')` in `tools/asset-gen/bin/gen-asset-manifest.mjs:59`; migrate it
+  to the shared flag convention so the original repository-wide gate consistency problem is fully
+  resolved.
+* `tools/asset-gen/lib/paths.mjs` duplicates `parseFlags` byte-for-byte, leaving two independently
+  maintained flag parsers and perpetuating the original consistency defect; use asset-gen’s existing
+  `node:util` `parseArgs` convention for `gen-asset-manifest.mjs`, or provide one genuinely shared
+  implementation.
+* No test covers `parseFlags` or the required ordered combinations of `gha-versions` flags, so the
+  acceptance-critical parsing behavior is not enforced by the green suite; add focused coverage for
+  combined/reordered flags and positional preservation.
+
+#### What was tried
+
+1. Added a shared flag parser and routed the four assigned scripts through it while preserving their
+   existing CLI dispatch behavior.
+2. Moved scrapbook mode selection fully into `parseFlags` by parsing only the first CLI token,
+   preserving its first-argument-only contract.
+3. Migrated the asset-manifest drift gate to the asset pipeline’s shared `parseFlags` convention
+   while preserving its self-contained module boundary.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p4-consistency-check-flag-parsing-done-ad-hoc-in-every-gate-script.patch` (3
+commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p4-consistency-check-flag-parsing-done-ad-hoc-in-every-gate-script.patch`.
+
+### [P1][duplication] Extract the copy-pasted CLI `flag()`/`args` parser shared by every perf entry script
+
+**File(s):** `scripts/perf/scenario.mjs:23-32`, `scripts/perf/mount.mjs:38-47`,
+`scripts/perf/ios.mjs:25-33`, `scripts/perf/undo-scenarios.mjs:39-46`,
+`scripts/perf/replay-scenario.mjs:27-36` (module-scope arg parsing) — pinned at SHA f934d43
+
+#### Problem
+
+The exact same argument-parsing helper is defined five times:
+
+```js
+const args = process.argv.slice(2);
+const flag = (name, def) => {
+  const hit = args.find((a) => a.startsWith(`--${name}=`));
+  return hit ? hit.split('=')[1] : def;
+};
+```
+
+Each site then re-derives the same flags by hand — `--no-throttle`, `--throttle`, `--no-build`,
+`--device`, `--port` — with subtle divergence (e.g. `throttle` defaults to `'4'` in
+scenario/mount/undo but `'0'` in replay; ios omits throttle entirely). Any fix to arg handling (e.g.
+`--throttle` with no `=`, or a typo'd flag warning) has to be made in five places, and the drift is
+already visible.
+
+#### Proposed solution
+
+Add `scripts/perf/args.mjs` exporting a parser, e.g.
+`export function parsePerfArgs(argv = process.argv.slice(2))` returning
+`{ flag, has, device, throttle, port, build }` with the shared defaults, and
+`export const flag = (name, def, argv) => …` for the raw case. Have each entry import it instead of
+re-declaring. Keep `HZ`/`long-seconds`/`scenarios`/`recording` (script-specific flags) reading
+through the returned `flag`.
+
+#### Verification
+
+`grep -rn "const flag = (name, def)" scripts/perf` returns zero after the change; run
+`npm run perf:web -- --no-build --device=tablet` and
+`npm run perf:undo -- --scenarios=mixed --no-throttle` and confirm identical flag behavior.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `scripts/perf/args.mjs` only centralizes value lookup; the entry scripts still duplicate
+  `process.argv.slice(2)` and the common `--no-throttle`, `--no-build`, `--device`, `--throttle`,
+  and `--port` derivations. Move these into a shared `parsePerfArgs` result while preserving each
+  script’s throttle default and optional flags, so common parsing changes and unknown-flag
+  validation no longer require edits across every entry point.
+
+#### What was tried
+
+Extracted the duplicated raw flag lookup into `scripts/perf/args.mjs` and updated all five profiling
+entry points to pass their local argv explicitly. Existing per-script defaults and boolean flag
+behavior remain unchanged.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p1-duplication-extract-the-copy-pasted-cli-flag-args-parser-shared-by-ev.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p1-duplication-extract-the-copy-pasted-cli-flag-args-parser-shared-by-ev.patch`.
+
+### [P2][cross-platform] `bumpAndroidGradle` / `bumpIosPbxproj` regexes are unanchored and global — they corrupt sibling lines
+
+**File(s):** `scripts/lib/native-version.mjs:28-53` (`bumpAndroidGradle`, `bumpIosPbxproj`) — pinned
+at SHA f934d43
+
+#### Problem
+
+The version bumpers match with bare, greedy, global regexes:
+
+```js
+.replace(/versionName.*/g, `versionName "${version}"`)
+.replace(/versionCode.*/g, `versionCode ${versionCode}`);
+```
+
+`versionName.*` also matches a `versionNameSuffix ".debug"` line (it starts with `versionName`) and
+any comment mentioning `versionName`, and `/g` rewrites *every* match — silently clobbering those
+lines with `versionName "x.y.z"`. Same hazard for `versionCode` vs `versionCodeOverride`, and for
+the iOS `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` variants. The header comment claims
+byte-identical output "matching the upstream behaviour on files that carry the pair once," but
+nothing guarantees the project files stay single-occurrence, and a future Gradle edit that adds a
+suffix would produce a corrupt build file with no error.
+
+#### Proposed solution
+
+Anchor to the assignment and preserve indentation, e.g. `/^(\s*)versionName\s+".*"/m` →
+`` `$1versionName "${version}"` `` and `/^(\s*)versionCode\s+\d+/m`. Drop `/g` in favour of
+asserting exactly one match (the guard checks already require presence; extend them to reject >1).
+For pbxproj keep `MARKETING_VERSION =` but require the trailing `;`:
+`/MARKETING_VERSION = [^;]*;/g`.
+
+#### Verification
+
+Add a fixture `build.gradle` containing both `versionName "0.0.1"` and `versionNameSuffix ".debug"`;
+assert only the `versionName` line changes. Existing release flow (`npm run release` dry path) still
+produces the same diff on the real files.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* `scripts/lib/native-version.mjs:24-25,42-43` require the assignment to occupy the entire line, so
+  valid Android or iOS assignments followed by an inline comment are rejected or skipped instead of
+  being updated while preserving the comment.
+* The anchored patterns still match indented assignment-shaped text inside `/* ... */` comments;
+  Android then reports a false duplicate and iOS rewrites the commented text. Exclude block-comment
+  contents and add coverage for them.
+* `scripts/lib/native-version.mjs` anchors the iOS patterns to whole lines, so valid compact pbxproj
+  dictionaries such as `buildSettings = { MARKETING_VERSION = 1.2.3; ... };` are silently skipped
+  while other configurations are updated; match each semicolon-terminated assignment wherever it
+  appears in the build-settings dictionary.
+* `maskBlockCommentContents` treats `/*` inside a `//` comment as the start of a block comment,
+  potentially masking all following assignments and making an otherwise valid Gradle file fail the
+  bump; block-comment masking must respect line comments.
+* `scripts/lib/native-version.mjs:23-47,98-105` is not string-aware: a valid Gradle string
+  containing `/*` can mask the real assignments and fail the bump, while a quoted pbxproj value
+  containing `{ MARKETING_VERSION = ...;` is treated as an assignment and rewritten. Exclude comment
+  delimiters and assignment-shaped text inside string literals, with coverage for both cases.
+
+#### What was tried
+
+1. Tightened native version matching to complete indented assignments, preserving indentation while
+   rejecting ambiguous Android fields and retaining multi-configuration iOS updates. Added focused
+   regression coverage proving sibling identifiers, comments, and embedded setting substrings remain
+   unchanged.
+2. Updated native-version transforms to retain inline comment suffixes verbatim and mask
+   block-comment contents before assignment detection, preventing false Android ambiguity and
+   commented iOS rewrites. Expanded regression fixtures for both comment forms and stable multi-line
+   replacement.
+3. Updated iOS version matching to recognize dictionary entries after line starts, `{`, or `;`,
+   including multiple settings on compact lines without touching unrelated substrings. Reworked
+   comment masking to track line and block comments independently, so `/*` inside `//` cannot hide
+   later Android assignments.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-cross-platform-bumpandroidgradle-bumpiospbxproj-regexes-are-unanchore.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-cross-platform-bumpandroidgradle-bumpiospbxproj-regexes-are-unanchore.patch`.
+
+### [P2][architecture] `utils.mjs` is a grab-bag mixing generic, Playwright, release, and app-domain concerns
+
+**File(s):** `scripts/lib/utils.mjs:1-148` (whole file) — pinned at SHA f934d43
+
+#### Problem
+
+The header says "Generic helpers … App-specific logic stays in the script that owns it," but the
+file holds at least five unrelated responsibilities: process runners (`run`/`sh`/`capture`/`fail`),
+network polling (`waitForUrl`), Playwright binary resolution (`chromiumExecutablePath`),
+command/tool discovery (`hasCommand`, `maestroPath`, `maestroInstalled`), release/markdown parsing
+(`parseFrontmatter`, `compareSemverDesc`, `writeFileDeep`), and outright app-domain logic
+(`webOnlyBooks`). A change to any one drags an unrelated import graph; `perf/` scripts importing
+`sleep` pull in `scrypt`-free but still Playwright- and Maestro-flavoured code. This is the
+"grab-bag `utils`" the audit brief calls out.
+
+#### Proposed solution
+
+Split by concern: `lib/proc.mjs` (`run`/`sh`/`capture`/`fail`/`sleep`/`hasCommand`), `lib/net.mjs`
+(`waitForUrl`), `lib/playwright.mjs` (`chromiumExecutablePath`), `lib/maestro.mjs` (Maestro paths —
+or fold into `android.mjs`'s sibling), `lib/frontmatter.mjs` (`parseFrontmatter`,
+`compareSemverDesc`). Re-export from a thin `utils.mjs` barrel for one migration cycle, then update
+imports.
+
+#### Verification
+
+`npm test` (unit + driver:smoke) green; each new module has a single-sentence header describing one
+responsibility.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* Deleting `scripts/lib/utils.mjs` leaves active guidance pointing to a nonexistent module in
+  `scripts/.ruler/AGENTS.md`, `.ruler/skills/testing/SKILL.md`, `.ruler/skills/fix-audits/SKILL.md`,
+  and `docs/adrs/0017-cross-platform-node-scripts.md`; update these authoritative sources and
+  regenerate their mirrors to reference the new concern-specific modules.
+
+#### What was tried
+
+Split the generic script helpers into responsibility-specific modules and migrated every executable
+and test caller to the narrowest import while preserving command-runner semantics. Moved mobile book
+filtering into a narrowly named asset helper shared only by asset validation and native packaging.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-architecture-utils-mjs-is-a-grab-bag-mixing-generic-playwright-releas.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-architecture-utils-mjs-is-a-grab-bag-mixing-generic-playwright-releas.patch`.

@@ -5,6 +5,9 @@ structure stands, but scripts now target **macOS and Linux only** (Windows dev s
 so the Windows branches described below (`isWindows`, `where`, `.cmd`/`.bat` shims, `gradlew.bat`)
 were removed. **Date:** 2026-06
 
+**Amended 2026-07-27:** command discovery now uses POSIX `sh` + `command -v`, stateless stroke
+geometry lives outside the Playwright driver, and Vite lifecycle handling has its own shared module.
+
 ## Context
 
 The `scripts/` folder grew to eleven standalone `.mjs` files that each re-derived the same
@@ -28,27 +31,35 @@ Two alternatives were considered when simplifying:
 ## Decision
 
 All automation scripts in `scripts/` are Node `.mjs` files that must run on macOS and Linux. Shared
-boilerplate lives in three modules under `scripts/lib/`, and each script reads imperatively
+boilerplate lives in purpose-named modules under `scripts/lib/`, and each script reads imperatively
 top-to-bottom with only its own domain logic inline:
 
-* `scripts/lib/utils.mjs` — generic helpers: `ROOT`, `sleep`, `fail`, `run`/`capture` (spawn
-  **through the shell** so PATH shims like `npm`, `npx`, `gh`, and `sdkmanager` resolve, with args
-  quoted), `hasCommand` (`which`), `parseFrontmatter`, `writeFileDeep`, `compareSemverDesc`,
-  `webOnlyBooks`.
-* `scripts/lib/android.mjs` — per-platform Android SDK resolution: `ANDROID_HOME` (env override —
-  `ANDROID_HOME` or `ANDROID_SDK_ROOT` — else `%LOCALAPPDATA%\Android\Sdk` / `~/Library/Android/sdk`
-  / `~/Android/Sdk`), `ADB`/`EMULATOR` binary paths, `AVD_NAME`, and the Maestro location.
+* `scripts/lib/utils.mjs` — generic helpers: repo-root and main-entry resolution, environment and
+  CLI argument handling, `run`/`capture` (spawn the executable with an argument array directly,
+  preserving literal arguments while the OS resolves commands through `PATH`), `sh` (the explicit
+  escape hatch for deliberate shell command lines), OS opening, Chromium resolution, command
+  discovery through POSIX `sh` + `command -v`, strict flat-frontmatter parsing, file writes, and
+  semver/run-ID utilities.
+* `scripts/lib/android.mjs` — macOS/Linux Android SDK resolution: `ANDROID_HOME` or
+  `ANDROID_SDK_ROOT`, then `~/Library/Android/sdk` or `~/Android/Sdk`; plus `ADB`/`EMULATOR` binary
+  paths, `AVD_NAME`, and the Maestro location.
 * `scripts/lib/app-driver.mjs` — Playwright helpers for scripts that drive the live app
   (`store-shots.mjs`, `gen-large-image.mjs`): `ensureDevServer` (reuses an already-running server on
   the port, else spawns `node_modules/vite/bin/vite.js` directly — no shell — so killing the whole
   process group works reliably), `openAppPage`, and the UI gestures (`pickColor`, `setStrokeSize`,
-  `drawStroke`, `expandDrawer`, `dismissMenu`) plus point generators.
+  `drawStroke`, `expandDrawer`, `dismissMenu`).
+* `scripts/lib/stroke-geometry.mjs` — dependency-free point generators shared by browser-driving
+  scripts and the performance scenario without importing Playwright.
+* `scripts/lib/vite-server.mjs` — group-safe Vite lifecycle and stale-port cleanup, including the
+  visible-output cloud-tunnel variant.
+* `scripts/lib/book-assets.mjs` — coloring-book distribution helpers, including the script-side
+  `webOnlyBooks` complement of `booksForPlatform('mobile')` in `web/src/lib/state/books.ts`.
 
 Non-obvious invariants:
 
-* `run()`/`capture()` exit the process on failure — scripts stay imperative with no try/catch. The
-  one exception is `android-emulator-smoke.mjs`, which keeps a local async `sh()` because a failed
-  build must still reach the `finally` block that kills the emulator.
+* `run()`/`capture()` exit the process on failure — scripts stay imperative with no try/catch.
+  Cleanup-sensitive flows use the rejecting async `sh()` helper so a failed shell command still
+  reaches the caller's `finally` block.
 * Platform branching belongs in `scripts/lib/` (paths, executable names, fix instructions), not
   scattered through individual scripts.
 * `local.properties` is written with forward slashes — backslashes are escape characters in Java
@@ -64,7 +75,7 @@ Non-obvious invariants:
   `.cmd`-shim and quoting pitfalls.
 * − Scripts are no longer copy-paste self-contained; moving one elsewhere means bringing
   `scripts/lib/` along.
-* − `run()` exiting the process makes it unsuitable for cleanup-sensitive flows; authors must notice
-  and use an async local runner (as the smoke test does).
-* − Shell-mediated spawning means argument quoting is centralized but still shell-dialect-sensitive;
-  exotic arguments (embedded quotes) would need care.
+* − `run()` exiting the process makes it unsuitable for cleanup-sensitive flows; those callers must
+  use the rejecting async `sh()` helper.
+* − Deliberate shell syntax is confined to `sh()` command lines, which remain
+  shell-dialect-sensitive and require callers to handle their own quoting.
