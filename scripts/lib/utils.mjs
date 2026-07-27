@@ -169,9 +169,11 @@ export function parseFrontmatter(raw) {
   const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
   if (!match) return null;
   const meta = {};
-  for (const line of match[1].split(/\r?\n/)) {
+  for (const [index, line] of match[1].split(/\r?\n/).entries()) {
+    if (!line.trim()) continue;
     const m = line.match(/^([A-Za-z]\w*):\s*(.*)$/);
-    if (m) meta[m[1]] = m[2].trim();
+    if (!m) throw new Error(`Malformed frontmatter line ${index + 1}: ${line}`);
+    meta[m[1]] = m[2].trim();
   }
   return { frontmatter: match[1], meta, body: match[2].trim() };
 }
