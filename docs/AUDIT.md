@@ -11,29 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P4][complexity] `imageDims` JPEG scanner is a dense loop of unnamed byte offsets
-
-**File(s):** `scripts/lib/model-eval.mjs:143-160` (`imageDims`) — pinned at SHA f934d43
-
-#### Problem
-
-The JPEG branch walks segment markers with bare literals (`buf.readUInt16BE(i + 7)`, `i + 5`, the
-`0xc0..0xcf` SOF range minus `0xc4/0xc8/0xcc`) and no explanation of what offsets 5/7 are
-(height/width within an SOFn segment). It reads as magic; a reviewer can't tell correct from
-off-by-one.
-
-#### Proposed solution
-
-Name the constants (`const SOF_HEIGHT_OFFSET = 5, SOF_WIDTH_OFFSET = 7`) or add a one-line WHY
-comment ("SOFn payload: [precision][height u16][width u16]"). Optionally extract `readJpegSize(buf)`
-/ `readPngSize(buf)` so `imageDims` reads as a dispatch.
-
-#### Verification
-
-Add a unit test feeding a known 640×480 JPEG and PNG header; assert `"640x480"`.
-
----
-
 ### [P4][duplication] PNG/JPEG magic-byte sniff is repeated in `imageDims` and `imageFormat`
 
 **File(s):** `scripts/lib/model-eval.mjs:143-167` (`imageDims`, `imageFormat`) — pinned at SHA

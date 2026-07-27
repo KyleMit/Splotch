@@ -129,6 +129,8 @@ export function imageDims(buf) {
   if (!buf || buf.length < 24) return null;
   if (buf[0] === 0x89 && buf[1] === 0x50) return `${buf.readUInt32BE(16)}x${buf.readUInt32BE(20)}`;
   if (buf[0] === 0xff && buf[1] === 0xd8) {
+    const JPEG_SOF_HEIGHT_OFFSET = 5;
+    const JPEG_SOF_WIDTH_OFFSET = 7;
     let i = 2;
     while (i < buf.length) {
       if (buf[i] !== 0xff) {
@@ -136,8 +138,9 @@ export function imageDims(buf) {
         continue;
       }
       const m = buf[i + 1];
+      // SOFn is [marker][length u16][precision][height u16][width u16]; C4/C8/CC are non-SOF.
       if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc)
-        return `${buf.readUInt16BE(i + 7)}x${buf.readUInt16BE(i + 5)}`;
+        return `${buf.readUInt16BE(i + JPEG_SOF_WIDTH_OFFSET)}x${buf.readUInt16BE(i + JPEG_SOF_HEIGHT_OFFSET)}`;
       i += 2 + buf.readUInt16BE(i + 2);
     }
   }
