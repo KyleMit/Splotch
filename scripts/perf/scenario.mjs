@@ -14,6 +14,7 @@ import { buildAndPreview } from './preview.mjs';
 import { driveSession } from './session.mjs';
 import { resolveDevice } from './devices.mjs';
 import { profilePath, throttleTag } from './paths.mjs';
+import { warnIfNoPerfMarks } from './warnings.mjs';
 
 const args = process.argv.slice(2);
 const flag = (name, def) => {
@@ -27,11 +28,7 @@ const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
 
 async function main() {
-  if (process.env.PERF_MARKS !== 'true') {
-    console.warn(
-      '! PERF_MARKS is not "true" — engine.* marks will be absent. Use `npm run perf:web`.'
-    );
-  }
+  warnIfNoPerfMarks('npm run perf:web');
 
   const outDir = profilePath('web', deviceName, throttleTag(throttle));
 

@@ -21,6 +21,7 @@ import { startTrace, stopTrace, injectObservers, readObservers, heapBytes } from
 import { analyze, renderReport } from './analyze.mjs';
 import { IPAD_PRO } from './devices.mjs';
 import { profilePath } from './paths.mjs';
+import { warnIfNoPerfMarks } from './warnings.mjs';
 
 // The app's "Size N" picker → engine px. Approximate (the recorder only sees the
 // label); override here if the real mapping is ever needed for fidelity.
@@ -46,11 +47,7 @@ if (!recordingPath) {
 
 async function main() {
   process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
-  if (process.env.PERF_MARKS !== 'true') {
-    console.warn(
-      '! PERF_MARKS is not "true" — engine.* marks will be absent. Use `npm run perf:replay`.'
-    );
-  }
+  warnIfNoPerfMarks('npm run perf:replay');
 
   const recording = JSON.parse(readFileSync(recordingPath, 'utf8'));
   const meta = recording.meta || {};

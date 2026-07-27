@@ -16,6 +16,7 @@ import { chromium } from '@playwright/test';
 import { sleep, run, fail, runMain } from '../lib/utils.mjs';
 import { driveSession } from './session.mjs';
 import { profilePath } from './paths.mjs';
+import { warnIfNoPerfMarks } from './warnings.mjs';
 
 const APP_ID = 'art.splotch.app';
 const CDP_PORT = 9222;
@@ -80,11 +81,7 @@ async function main() {
   requireDevice();
 
   if (build) {
-    if (process.env.PERF_MARKS !== 'true') {
-      console.warn(
-        '! PERF_MARKS is not "true" — rebuild may omit engine.* marks. Use `npm run perf:android`.'
-      );
-    }
+    warnIfNoPerfMarks('npm run perf:android');
     // cap:sync (build:cap, inheriting PERF_MARKS) + gradle installDebug.
     run('npm', ['run', 'android:run']);
   }

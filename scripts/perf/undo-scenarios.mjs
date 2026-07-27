@@ -31,6 +31,7 @@ import { analyze, renderReport } from './analyze.mjs';
 import { IPAD_PRO } from './devices.mjs';
 import { profilePath, throttleTag } from './paths.mjs';
 import { writeProfileArtifacts } from './session.mjs';
+import { warnIfNoPerfMarks } from './warnings.mjs';
 
 // The deployment target we actually worry about: a 12.9" iPad Pro in portrait —
 // 1024×1366 CSS pt. iPads report devicePixelRatio 2 and the engine caps
@@ -408,11 +409,7 @@ async function main() {
   // /dev/engine is gated by PUBLIC_ENABLE_DEV_HARNESS ($env/dynamic/public, read
   // at runtime), so the preview server spawned by buildAndPreview must inherit it.
   process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
-  if (process.env.PERF_MARKS !== 'true') {
-    console.warn(
-      '! PERF_MARKS is not "true" — engine.* marks will be absent. Use `npm run perf:undo`.'
-    );
-  }
+  warnIfNoPerfMarks('npm run perf:undo');
 
   const outDir = profilePath('undo-scenarios', throttleTag(throttle));
   mkdirSync(outDir, { recursive: true });

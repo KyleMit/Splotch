@@ -9,41 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P2][duplication] Factor out the PERF_MARKS-missing warning (five near-identical copies)
-
-**File(s):** `scripts/perf/scenario.mjs:35-39`, `scripts/perf/ios.mjs:36-40`,
-`scripts/perf/android.mjs:83-87`, `scripts/perf/undo-scenarios.mjs:310-314`,
-`scripts/perf/replay-scenario.mjs:47-51` — pinned at SHA f934d43
-
-#### Problem
-
-The same guard is pasted five times, differing only in the suggested command:
-
-```js
-if (process.env.PERF_MARKS !== 'true') {
-  console.warn(
-    '! PERF_MARKS is not "true" — engine.* marks will be absent. Use `npm run perf:web`.',
-  );
-}
-```
-
-The wording drifts between "will be absent" and "rebuild may omit engine.* marks" (android), so the
-messages are inconsistent for the same condition.
-
-#### Proposed solution
-
-Add
-`export function warnIfNoPerfMarks(command) { if (process.env.PERF_MARKS !== 'true') console.warn(`!
-PERF_MARKS is not "true" — engine.* marks will be absent. Use \`${command}\`.`); }` to
-`scripts/perf/args.mjs` and call `warnIfNoPerfMarks('npm run perf:web')` etc.
-
-#### Verification
-
-`grep -rn "PERF_MARKS is not" scripts/perf` returns one hit (the helper); running any command
-without `PERF_MARKS=true` still prints one warning.
-
----
-
 ### [P2][duplication] Unify the three copies of the async `undoAll` drain loop
 
 **File(s):** `scripts/perf/undo-scenarios.mjs:241-260` (`undoAll`),
