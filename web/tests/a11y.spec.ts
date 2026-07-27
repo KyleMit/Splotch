@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { openParentCenter } from './helpers';
 
 // Axe-core scans for the adult-facing surfaces (issue #458): /privacy, /admin
 // (both auth states), and the Parent Center dialog. The toddler-facing canvas
@@ -65,13 +66,7 @@ test('/admin logged in has no serious accessibility violations', async ({ page }
 test('the Parent Center has no serious accessibility violations', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#drawingCanvas')).toBeVisible();
-  const modal = page.locator('#parentHelpModal');
-  await expect(async () => {
-    if (!(await modal.isVisible().catch(() => false))) {
-      await page.getByRole('button', { name: 'Parent Center' }).click({ timeout: 3000 });
-    }
-    await expect(modal).toBeVisible({ timeout: 1500 });
-  }).toPass({ timeout: 10_000 });
+  await openParentCenter(page);
 
   await expectNoSeriousViolations(page, '#parentHelpModal');
 });

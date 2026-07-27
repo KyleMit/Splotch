@@ -13,51 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P1][duplication] Extract the retry-to-open dialog pattern into a shared helper — it is reimplemented four times
-
-**File(s):** `web/tests/flows.spec.ts:27-60` (retryOpen/openParentCenter),
-`web/tests/parent-zoom.spec.ts:12-20` (openParentCenter), `web/tests/a11y.spec.ts:68-76` (inline),
-`web/tests/webkit-smoke.spec.ts:35-42` (inline) — pinned at SHA f934d43
-
-#### Problem
-
-The "click a lazily-wired control, retry until its sentinel is visible, skip the click when already
-open" primitive exists as `retryOpen` in `flows.spec.ts:27-36` but is **not shared**.
-`openParentCenter` alone is re-written independently in four files. The three copies outside
-`flows.spec.ts` are structurally identical:
-
-```ts
-// parent-zoom.spec.ts, a11y.spec.ts, webkit-smoke.spec.ts all repeat:
-await expect(async () => {
-  if (!(await modal.isVisible().catch(() => false))) {
-    await page.getByRole('button', { name: 'Parent Center' }).click({ timeout: 3000 });
-  }
-  await expect(modal).toBeVisible({ timeout: 1500 });
-}).toPass({ timeout: 10_000 });
-```
-
-Grep confirms `isVisible().catch(() => false)` appears in four spec files. The flake-resistance
-contract (ADR-0049 idle-mount handling) is thus maintained in four places; a fix to the retry shape
-must be made four times, and a newcomer adding a fifth dialog copy-pastes the incantation rather
-than calling a named helper.
-
-#### Proposed solution
-
-Move `retryOpen(ready, open, opts?)` and `openParentCenter(page)` into `web/tests/helpers.ts`
-(already the WebKit-portable shared module — it contains no CDP, so `webkit-smoke.spec.ts` can
-import it). Have all four specs import `openParentCenter`; delete the three inline copies and the
-`flows.spec.ts` local definition. Keep
-`openDrawer`/`openStrokeMenu`/`openBrushMenu`/`openColoringDialog` as one-liners over the shared
-`retryOpen`, also moved to `helpers.ts`.
-
-#### Verification
-
-`grep -rn "isVisible().catch" web/tests` returns only `helpers.ts` after the change. Run
-`npm run test:e2e -- parent-zoom.spec.ts a11y.spec.ts webkit-smoke.spec.ts flows.spec.ts --repeat-each=10`
-to confirm the shared helper holds under contention.
-
----
-
 ### [P1][complexity] Split the two mega-spec files (engine 1980 LOC, flows 1636 LOC) by feature area
 
 **File(s):** `web/tests/engine.spec.ts:1-1980`, `web/tests/flows.spec.ts:1-1636` — pinned at SHA

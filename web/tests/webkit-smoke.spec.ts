@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { draw, firstOpaquePixel, gotoApp } from './helpers';
+import { draw, firstOpaquePixel, gotoApp, openParentCenter } from './helpers';
 
 // WebKit critical-path smoke — the only spec the `webkit` project runs (see
 // playwright.config.ts). The rest of the E2E suite is Chromium-only, but
@@ -31,13 +31,7 @@ test('a pointer stroke puts ink on the canvas', async ({ page }) => {
 
 test('the Parent Center dialog opens and closes', async ({ page }) => {
   await gotoApp(page);
-  const modal = page.locator('#parentHelpModal');
-  await expect(async () => {
-    if (!(await modal.isVisible().catch(() => false))) {
-      await page.getByRole('button', { name: 'Parent Center' }).click({ timeout: 3000 });
-    }
-    await expect(modal).toBeVisible({ timeout: 1500 });
-  }).toPass({ timeout: 10_000 });
+  const modal = await openParentCenter(page);
   await modal.getByRole('button', { name: 'Close' }).click();
   await expect(modal).not.toBeVisible();
 });

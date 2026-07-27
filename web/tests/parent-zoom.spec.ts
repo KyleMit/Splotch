@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openParentCenter } from './helpers';
 
 // Tier-2 accessibility (ADR-0076): a low-vision parent can pinch to enlarge the
 // Parent Center's reading content, while the drawing page itself stays
@@ -8,16 +9,6 @@ import { expect, test, type Page } from '@playwright/test';
 // fingers enlarge and reset, that ONE finger is never intercepted (so native
 // scrolling survives — the invariant the whole design rests on), that a
 // non-touch pointer is ignored, and that navigating away resets the zoom.
-
-async function openParentCenter(page: Page) {
-  const modal = page.locator('#parentHelpModal');
-  await expect(async () => {
-    if (!(await modal.isVisible().catch(() => false))) {
-      await page.getByRole('button', { name: 'Parent Center' }).click({ timeout: 3000 });
-    }
-    await expect(modal).toBeVisible({ timeout: 1500 });
-  }).toPass({ timeout: 10_000 });
-}
 
 // Read the inline CSS `zoom` the action sets (blank/absent ⇒ normal size ⇒ 1).
 async function paneZoom(page: Page): Promise<number> {

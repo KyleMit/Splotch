@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 // Shared E2E helpers used across specs. Keep this module WebKit-portable — no
 // CDP sessions or dev-harness routes — because webkit-smoke.spec.ts imports it
@@ -9,6 +9,35 @@ import { expect, type Page } from '@playwright/test';
 export async function gotoApp(page: Page, path = '/') {
   await page.goto(path);
   await expect(page.locator('#drawingCanvas')).toBeVisible();
+}
+
+// Open an overlay/flyout/dialog robustly and leave it open. Several of these
+// controls idle-mount (ADR-0049) or reposition on the first frame, so the first
+// click can land before the handler is wired and be dropped; a flyout toggle
+// must also not be re-clicked when it's already open (that would toggle it
+// shut). Retry the whole open until `ready` — the control's presence sentinel —
+// is visible, skipping the click whenever it already is. `open` owns the click
+// (and its own per-click timeout); `settle` is the per-attempt wait for `ready`.
+export async function retryOpen(
+  ready: Locator,
+  open: () => Promise<void>,
+  { timeout = 10_000, settle = 1500 }: { timeout?: number; settle?: number } = {}
+) {
+  await expect(async () => {
+    if (!(await ready.isVisible().catch(() => false))) await open();
+    await expect(ready).toBeVisible({ timeout: settle });
+  }).toPass({ timeout });
+}
+
+// Open the Parent Center robustly and return its modal locator. It idle-mounts
+// on first open (ADR-0049), so the first click can be lost before its handler is
+// wired — retryOpen rides that out and skips the click when it's already open.
+export async function openParentCenter(page: Page) {
+  const modal = page.locator('#parentHelpModal');
+  await retryOpen(modal, () =>
+    page.getByRole('button', { name: 'Parent Center' }).click({ timeout: 3000 })
+  );
+  return modal;
 }
 
 /** Drag a stroke through canvas-relative points with real mouse input. */

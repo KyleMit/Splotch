@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
-import { draw, firstOpaquePixel, gotoApp } from './helpers';
+import { draw, firstOpaquePixel, gotoApp, openParentCenter, retryOpen } from './helpers';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
 // Svelte component wiring (palette, action drawer, tool/stroke state, AI fetch,
@@ -18,24 +18,6 @@ import { draw, firstOpaquePixel, gotoApp } from './helpers';
 // window rather than a tight one — see issue #498.
 const MAGIC_REVEAL_TIMEOUT = 15_000;
 
-// Open an overlay/flyout/dialog robustly and leave it open. Several of these
-// controls idle-mount (ADR-0049) or reposition on the first frame, so the first
-// click can land before the handler is wired and be dropped; a flyout toggle
-// must also not be re-clicked when it's already open (that would toggle it
-// shut). Retry the whole open until `ready` — the control's presence sentinel —
-// is visible, skipping the click whenever it already is. `open` owns the click
-// (and its own per-click timeout); `settle` is the per-attempt wait for `ready`.
-async function retryOpen(
-  ready: Locator,
-  open: () => Promise<void>,
-  { timeout = 10_000, settle = 1500 }: { timeout?: number; settle?: number } = {}
-) {
-  await expect(async () => {
-    if (!(await ready.isVisible().catch(() => false))) await open();
-    await expect(ready).toBeVisible({ timeout: settle });
-  }).toPass({ timeout });
-}
-
 // The action drawer is collapsed by default (drawerOpen=false), so its buttons
 // (brush menu, undo, screenshot, AI, coloring) aren't rendered until the chevron
 // is tapped. The chevron also snaps next to the palette once its width is
@@ -47,17 +29,6 @@ async function openDrawer(page: Page) {
     () => page.locator('button[aria-label="Expand controls"]').click({ timeout: 3000 }),
     { timeout: 20_000 }
   );
-}
-
-// Open the Parent Center robustly and return its modal locator. It idle-mounts
-// on first open (ADR-0049), so the first click can be lost before its handler is
-// wired — retryOpen rides that out and skips the click when it's already open.
-async function openParentCenter(page: Page) {
-  const modal = page.locator('#parentHelpModal');
-  await retryOpen(modal, () =>
-    page.getByRole('button', { name: 'Parent Center' }).click({ timeout: 3000 })
-  );
-  return modal;
 }
 
 async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
