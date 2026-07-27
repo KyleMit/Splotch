@@ -24,6 +24,7 @@ import {
   incompleteAuditCommitPlan,
   implementationCommitMessage,
   launchCommand,
+  lintablePaths,
   protectedImplementationPaths,
   removeNewUntrackedPaths,
   renderDeferralNotes,
@@ -281,6 +282,36 @@ describe('Codex driver-owned commits', () => {
         'docs/audit-deferred/rejected.patch',
       ])
     ).toEqual(['docs/AUDIT.md', 'docs/AUDIT-DEFERRED.md', 'docs/audit-deferred/rejected.patch']);
+  });
+});
+
+describe('lint gate file selection', () => {
+  const present = (kept) => (path) => kept.includes(path);
+
+  it('keeps lintable source files that still exist', () => {
+    const paths = ['web/src/a.ts', 'web/src/B.svelte', 'scripts/c.mjs', 'scripts/d.cjs', 'e.js'];
+    expect(lintablePaths(paths, present(paths))).toEqual(paths);
+  });
+
+  it('drops non-lintable extensions', () => {
+    expect(
+      lintablePaths(['docs/AUDIT.md', 'a/b.json', 'a/c.webp', 'web/src/d.ts'], () => true)
+    ).toEqual(['web/src/d.ts']);
+  });
+
+  // A rename reports both sides; only the destination is on disk. Passing the
+  // rename-from path to eslint exits 2 and reddens the gate unrecoverably.
+  it('drops the rename-from path so a rename-only fix can pass the gate', () => {
+    expect(
+      lintablePaths(
+        ['idea/code/tmp-rects.mjs', 'idea/code/rects.mjs'],
+        present(['idea/code/rects.mjs'])
+      )
+    ).toEqual(['idea/code/rects.mjs']);
+  });
+
+  it('drops deleted files, leaving nothing to lint for a delete-only fix', () => {
+    expect(lintablePaths(['idea/code/gone.mjs'], () => false)).toEqual([]);
   });
 });
 

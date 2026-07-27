@@ -98,6 +98,22 @@ export function protectedImplementationPaths(paths, auditPath = auditFile()) {
   );
 }
 
+// Which of a fix's changed files the lint gate can actually run on.
+//
+// `git diff --name-only` reports the paths a commit *touched*, which includes
+// the ones it deleted and the rename-from side of a rename. eslint exits 2 on a
+// path that no longer exists ("No files matching the pattern"), so passing that
+// list through verbatim makes the gate red on a fix that introduced no lint
+// violation at all — and unrecoverably so, since no edit the implementer can
+// make will bring the deleted path back. A 2026-07-27 run lost a correct
+// rename-only fix that way: three fix rounds against an unsatisfiable gate,
+// then a rollback filed as "fix introduced a lint violation", which is a lie to
+// whoever triages docs/AUDIT-DEFERRED.md later. Deletions of .json/.webp never
+// exposed it because those extensions are not lintable to begin with.
+export function lintablePaths(paths, exists) {
+  return paths.filter((path) => /\.(ts|svelte|mjs|cjs|js)$/.test(path) && exists(path));
+}
+
 export function removeNewUntrackedPaths(baseline, current, removePath) {
   const kept = new Set(baseline);
   const added = current.filter((path) => !kept.has(path));
