@@ -118,10 +118,10 @@ least-drifted take that reads as night AND keeps white outlines; it warns (`⚠ 
     enough. A pin-dot glare → featureless white blob (mermaid's original bug); an iris ring → a
     bright ring that muddies it; two glares → two pupils.
   * **To fix a broken eye, retouch the LINE ART to the canonical form** with
-    `tools/asset-gen/retouch-line-art.mjs` (its default instruction is exactly this recipe: solid
-    pupil + one clear glare, no iris — enlarge a too-small glare). Do NOT "open the eye into an
-    outlined iris" — that was tried on the mermaid and made it a dark socket. After retouching the
-    outline, regenerate the WHOLE related suite from it (light `.light.webp` + night fill +
+    `tools/asset-gen/legacy/retouch-line-art.mjs` (its default instruction is exactly this recipe:
+    solid pupil + one clear glare, no iris — enlarge a too-small glare). Do NOT "open the eye into
+    an outlined iris" — that was tried on the mermaid and made it a dark socket. After retouching
+    the outline, regenerate the WHOLE related suite from it (light `.light.webp` + night fill +
     thumbnails, both orientations) and re-check the contact sheet **Combined** view in BOTH light
     and dark. Solid-pupil eyes are the normal cute eye in light mode too, so the same fix serves
     both.
@@ -169,13 +169,13 @@ images.
 ### Retouching the base line art (hard sections)
 
 When a "particularly hard section" of a page can't be rescued downstream — the eyes gotcha above is
-the canonical case — edit the base line art itself with `tools/asset-gen/retouch-line-art.mjs`
-(Gemini image edit; writes candidates to `.coloring-samples-dark/retouch/`, never touches shipped
-assets):
+the canonical case — edit the base line art itself with
+`tools/asset-gen/legacy/retouch-line-art.mjs` (Gemini image edit; writes candidates to
+`.coloring-samples-dark/retouch/`, never touches shipped assets):
 
 ```bash
 node --experimental-strip-types --disable-warning=ExperimentalWarning \
-  tools/asset-gen/retouch-line-art.mjs creatures/mermaid-tall creatures/mermaid-wide --samples 2
+  tools/asset-gen/legacy/retouch-line-art.mjs creatures/mermaid-tall creatures/mermaid-wide --samples 2
 ```
 
 The default instruction normalizes eyes to the canonical **solid pupil + one clear glare, no iris**

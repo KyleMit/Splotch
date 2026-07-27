@@ -9,46 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P3][maintainability] `legacy/retouch-line-art.mjs` documents a wrong invocation path and pins a superseded model
-
-**File(s):** `tools/asset-gen/legacy/retouch-line-art.mjs:25-28` (usage), `:40` (model) — pinned at
-SHA f934d43
-
-#### Problem
-
-The header's own usage line omits the `legacy/` segment the file was moved into:
-
-```js
-//   node --experimental-strip-types --disable-warning=ExperimentalWarning \
-//     tools/asset-gen/retouch-line-art.mjs <cat/page-orient...> ...
-```
-
-The real path is `tools/asset-gen/legacy/retouch-line-art.mjs` (the sibling `legacy/README.md:15`
-gets it right, so the two disagree). The `legacy/night-fills.md` runbook repeats the same wrong
-path. Separately, this "kept runnable as a template" tool pins `MODEL = 'gemini-2.5-flash-image'`
-(line 40) while the live pipeline and even the neighboring scratch generator
-(`crayon-brush-samples/gen.mjs:19`) moved to `gemini-3.1-flash-image` — anyone who takes the file up
-on its "still a handy template" offer runs it against a stale model.
-
-#### Problem matters because
-
-The whole reason the file was kept (not deleted) is to be an accurate one-off template; a template
-with a copy-paste path that doesn't resolve and an obsolete model constant fails at its only
-remaining job.
-
-#### Proposed solution
-
-Fix the header path to `tools/asset-gen/legacy/retouch-line-art.mjs`, and either bump `MODEL` to the
-current `gemini-3.1-flash-image` or add one explicit line stating the model is intentionally frozen
-at 2.5 for era fidelity. Whichever the maintainer intends, make it deliberate rather than stale.
-
-#### Verification
-
-Copy the header's invocation verbatim and confirm Node resolves the file.
-`grep -rn "gemini-2.5" tools/asset-gen/` to see whether any live path still pins it.
-
----
-
 ### [P3][complexity] `render()` and `buildHalf()` are long, multi-branch functions carrying the proof sheet's whole draw model
 
 **File(s):**

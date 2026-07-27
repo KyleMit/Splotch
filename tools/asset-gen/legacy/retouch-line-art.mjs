@@ -23,7 +23,7 @@
 // contact sheet's Combined view in BOTH light and dark. See ./night-fills.md (legacy).
 //
 //   node --experimental-strip-types --disable-warning=ExperimentalWarning \
-//     tools/asset-gen/retouch-line-art.mjs <cat/page-orient...> [--instruction "..."] [--samples N] [-t F]
+//     tools/asset-gen/legacy/retouch-line-art.mjs <cat/page-orient...> [--instruction "..."] [--samples N] [-t F]
 //
 //   creatures/mermaid-tall creatures/mermaid-wide   two pages
 //   --samples 3                                       3 candidates each (pick the best)
@@ -37,7 +37,7 @@ import { GoogleGenAI } from '@google/genai';
 import { COLORING_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
-const MODEL = 'gemini-2.5-flash-image';
+const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 92;
 const OUT_DIR = join(SAMPLES_DARK_DIR, 'retouch');
 
