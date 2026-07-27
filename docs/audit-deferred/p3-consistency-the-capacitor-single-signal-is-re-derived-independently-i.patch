@@ -36,7 +36,7 @@ index bc560295..34674ba0 100644
  import adapterStatic from '@sveltejs/adapter-static';
  import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 +import { isCapacitor } from './build/platform.mjs';
- 
+
  // The web app ships to Netlify (SSR + the /api/generate-image function and the
  // /admin token console). The native apps bundle a fully static export instead,
  // so when CAPACITOR=true we swap in adapter-static. The server-only routes
@@ -57,7 +57,7 @@ index b338ffcc..b9e271b8 100644
  import { execSync } from 'node:child_process';
 +import { isCapacitor } from './build/platform.mjs';
  import { buildDefines } from './defines';
- 
+
  // The native apps bundle a static export and never use a service worker (the
  // shell and all assets are already on-device), so skip the PWA plugin there.
 -const isCapacitor = process.env.CAPACITOR === 'true';

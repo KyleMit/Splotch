@@ -54,6 +54,7 @@ import {
   lintablePaths,
   logLine,
   LOGS,
+  normalizeDraftPatch,
   PROMPTS,
   protectedImplementationPaths,
   reachedHandledLimit,
@@ -280,7 +281,7 @@ function defer(title, why, notes = {}) {
   const patchPath = draftPatch.trim() ? uniqueDraftPath(title) : '';
   if (patchPath) {
     mkdirSync(DRAFT_DIR, { recursive: true });
-    writeFileSync(patchPath, draftPatch.replace(/\n*$/, '\n'));
+    writeFileSync(patchPath, normalizeDraftPatch(draftPatch));
   }
   const existing = existsSync(DEFERRED_FILE)
     ? readFileSync(DEFERRED_FILE, 'utf8')

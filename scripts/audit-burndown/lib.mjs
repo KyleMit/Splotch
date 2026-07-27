@@ -230,6 +230,14 @@ export function draftPatchPath(title, dir = DRAFT_DIR) {
   return `${dir}/${slug || 'untitled'}.patch`;
 }
 
+// Unified diffs encode an empty context row as one space, which becomes trailing
+// whitespace when the patch itself is tracked. Git accepts the same row empty.
+export function normalizeDraftPatch(patch) {
+  return String(patch ?? '')
+    .replace(/^[\t ]+$/gm, '')
+    .replace(/\n*$/, '\n');
+}
+
 // What someone triaging docs/AUDIT-DEFERRED.md months later needs and cannot
 // reconstruct: which objection actually stopped the fix, what was already
 // tried, and where the rejected draft went. All three are in the driver's hands

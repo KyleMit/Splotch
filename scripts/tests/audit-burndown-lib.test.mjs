@@ -25,6 +25,7 @@ import {
   implementationCommitMessage,
   launchCommand,
   lintablePaths,
+  normalizeDraftPatch,
   protectedImplementationPaths,
   reachedHandledLimit,
   removeNewUntrackedPaths,
@@ -612,6 +613,16 @@ describe('draftPatchPath', () => {
 
   it('falls back to a placeholder rather than producing a dotfile', () => {
     expect(draftPatchPath('!!!')).toBe('docs/audit-deferred/untitled.patch');
+  });
+});
+
+describe('normalizeDraftPatch', () => {
+  it('removes whitespace-only context rows without changing substantive patch lines', () => {
+    const patch = ['diff --git a/a b/a', ' unchanged', ' ', '+added  ', '', ''].join('\n');
+
+    expect(normalizeDraftPatch(patch)).toBe(
+      ['diff --git a/a b/a', ' unchanged', '', '+added  ', ''].join('\n')
+    );
   });
 });
 
