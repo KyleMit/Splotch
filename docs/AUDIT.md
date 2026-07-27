@@ -9,37 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P4][naming] `build-sheet.mjs` documents a spurious `--experimental-strip-types` invocation it doesn't need
-
-**File(s):** `tools/asset-gen/crayon-brush-samples/build-sheet.mjs:6` (header usage) — pinned at SHA
-f934d43
-
-#### Problem
-
-```js
-//   node --experimental-strip-types --disable-warning=ExperimentalWarning build-sheet.mjs
-```
-
-Those flags exist only to let Node import TypeScript. `build-sheet.mjs` imports
-`scrapbook-chrome.mjs` and `./samples.mjs` — both plain ESM, no `.ts` anywhere. The flags are
-cargo-culted from the sibling `gen.mjs:5`, which genuinely needs them (it imports
-`geminiSafety.ts`). A reader copying the documented command runs `build-sheet.mjs` with meaningless
-flags and may assume it depends on TS tooling it doesn't.
-
-#### Proposed solution
-
-Change the header to `node build-sheet.mjs [--artifact=<path>]`. Audit the other crayon scripts:
-`capture-current.mjs` and `build-compare-sheet.mjs` likewise import no TS and should document a
-plain `node …` invocation; only `gen.mjs` keeps the strip-types flags.
-
-#### Verification
-
-`node tools/asset-gen/crayon-brush-samples/build-sheet.mjs` (with an `out/` dir present) runs
-without the flags. `grep -l "geminiSafety.ts\|\.ts'" tools/asset-gen/crayon-brush-samples/*.mjs`
-shows only `gen.mjs` importing TS.
-
----
-
 ### [P4][naming] `keepClass` uses unexplained 99/96 buckets that disagree with the actual keep gate
 
 **File(s):**
