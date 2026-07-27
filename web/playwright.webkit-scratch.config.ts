@@ -2,6 +2,7 @@
 // bugs. Not part of `npm test` — invoke explicitly with
 //   node scripts/web.mjs playwright test -c playwright.webkit-scratch.config.ts -g "<test>"
 import { defineConfig, devices } from '@playwright/test';
+import { ADMIN_ACCESS_TOKEN } from './tests/admin-helpers';
 
 const PORT = 4173;
 const baseURL = `http://localhost:${PORT}`;
@@ -23,6 +24,6 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: true,
     timeout: 180_000,
-    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true', ADMIN_ACCESS_TOKEN: 'test-admin-secret' },
+    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true', ADMIN_ACCESS_TOKEN },
   },
 });

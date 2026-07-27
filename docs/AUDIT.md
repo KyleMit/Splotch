@@ -13,32 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P3][duplication] `ADMIN_KEY = 'test-admin-secret'` is redeclared in two specs instead of shared
-
-**File(s):** `web/tests/admin.spec.ts:12`, `web/tests/a11y.spec.ts:13` — pinned at SHA f934d43
-
-#### Problem
-
-Both specs hardcode `const ADMIN_KEY = 'test-admin-secret'` with the same "set in
-playwright.config.ts webServer.env" comment. The value is actually authored in
-`playwright.config.ts` (`ADMIN_ACCESS_TOKEN=test-admin-secret`). Three copies of the same secret
-literal must be kept in sync; a change to the config value silently breaks whichever spec wasn't
-updated.
-
-#### Proposed solution
-
-Export `ADMIN_KEY` from a shared `web/tests/admin-helpers.ts` (which could also host the duplicated
-`signIn`-style login used by both `admin.spec.ts:14-19` and `a11y.spec.ts:47-52`), or read it from
-`process.env.ADMIN_ACCESS_TOKEN` with the literal as a fallback so the config remains the single
-source.
-
-#### Verification
-
-`grep -rn "test-admin-secret" web/tests` returns one definition.
-`npm run test:e2e -- admin.spec.ts a11y.spec.ts` green.
-
----
-
 ### [P3][readability] Blue/red-dominance pixel assertions hide their intent behind index math repeated across tests
 
 **File(s):** `web/tests/flows.spec.ts:217, 453-454, 1542-1549`, `web/tests/helpers.ts:25-34` —
