@@ -19,7 +19,7 @@
 // Gemini-authored inputs (prefix `gen`) are added separately by
 // scripts/model-eval-gen-inputs.mjs and are not touched here.
 
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 import { readFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, PALETTE, PAPER } from './lib/model-eval.mjs';

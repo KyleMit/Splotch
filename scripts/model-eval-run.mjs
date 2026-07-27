@@ -14,7 +14,7 @@
 // at 1 for clean latency numbers), OUT_TAG (suffix on the run dir), SKIP_REPORT.
 
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';

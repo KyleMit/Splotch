@@ -26,33 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P2][consistency] Playwright imported from two different packages
-
-**File(s):** `scripts/model-eval-run.mjs:17`, `scripts/model-eval-gen-inputs.mjs:13`,
-`scripts/model-eval-fixtures.mjs:22` (`from 'playwright'`) vs `scripts/driver-smoke.mjs:10`,
-`scripts/gen-large-image.mjs:14`, `scripts/store-shots.mjs:12` (`from '@playwright/test'`) — pinned
-at SHA f934d43
-
-#### Problem
-
-Half the browser-driving scripts import `chromium` from `playwright`, the other half from
-`@playwright/test`. They resolve to the same runtime, but the split is arbitrary, invites confusion
-about which package is the dependency, and pairs with the CHROMIUM_PATH inconsistency above (the
-`playwright` importers are exactly the ones using the brittle path). It also matters for the
-inverted deps rule (ADR-0070): whichever package the web build doesn't need should be consistent.
-
-#### Proposed solution
-
-Pick one import specifier for all script-side Chromium launches (align with whatever
-`web/playwright.config.ts` and the deps split intend) and apply it across all six scripts.
-
-#### Verification
-
-`grep -rn "import { chromium }" scripts/` shows a single specifier. Run `npm run test:driver:smoke`
-and `npm run model-eval:fixtures`.
-
----
-
 ### [P2][architecture] Red-team HTML report built inline; model-eval's equivalent was extracted to lib
 
 **File(s):** `scripts/redteam-run.mjs:113-263`

@@ -10,7 +10,7 @@
 // Requires GEMINI_API_KEY. Uses gemini-3.1-flash-image as the author.
 
 import { GoogleGenAI } from '@google/genai';
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, PALETTE, PAPER } from './lib/model-eval.mjs';
