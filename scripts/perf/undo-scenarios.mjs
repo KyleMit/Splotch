@@ -16,6 +16,7 @@
 
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromiumExecutablePath, runMain, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
@@ -27,10 +28,9 @@ import {
   heapBytes,
   markPhase,
 } from './capture.mjs';
-import { analyze, renderReport } from './analyze.mjs';
 import { IPAD_PRO } from './devices.mjs';
 import { profilePath, throttleTag } from './paths.mjs';
-import { writeProfileArtifacts } from './session.mjs';
+import { writeProfileArtifacts } from './profile-artifacts.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 
 // The deployment target we actually worry about: a 12.9" iPad Pro in portrait —
@@ -455,18 +455,17 @@ async function main() {
     // Standard trace artifacts (engine hot paths, frame health) via the shared
     // analyzer, plus the bespoke per-scenario undo summary.
     const settings = buildUndoSettings({ throttle, build, geom, t0 });
-    await writeProfileArtifacts({
-      page,
+    await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
+    const metrics = {
+      settings,
+      longTasks: obs.longTasks,
+      frames: obs.frames,
+      heap: { beforeBytes: 0, afterBytes: obs.heapBytes ?? 0 },
+    };
+    writeProfileArtifacts({
       outDir,
       traceEvents: events,
-      createMetrics: () => ({
-        settings,
-        longTasks: obs.longTasks,
-        frames: obs.frames,
-        heap: { beforeBytes: 0, afterBytes: obs.heapBytes ?? 0 },
-      }),
-      createSummary: (metrics) => analyze(events, metrics),
-      createReport: (summary) => renderReport(summary),
+      metrics,
     });
 
     const undoSummary = { settings, scenarios: results };

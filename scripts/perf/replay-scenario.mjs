@@ -14,13 +14,13 @@
 
 import { chromium } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename } from 'node:path';
+import { basename, join } from 'node:path';
 import { chromiumExecutablePath, runMain, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace, injectObservers, readObservers, heapBytes } from './capture.mjs';
-import { analyze, renderReport } from './analyze.mjs';
 import { IPAD_PRO } from './devices.mjs';
 import { profilePath } from './paths.mjs';
+import { writeProfileArtifacts } from './profile-artifacts.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 
 // The app's "Size N" picker → engine px. Approximate (the recorder only sees the
@@ -126,12 +126,7 @@ async function main() {
       frames: obs.frames,
       heap: { beforeBytes: heapBefore ?? 0, afterBytes: heapAfter ?? obs.heapBytes ?? 0 },
     };
-    writeFileSync(join(outDir, 'trace.json'), JSON.stringify({ traceEvents: events }));
-    writeFileSync(join(outDir, 'metrics.json'), JSON.stringify(metrics, null, 2));
-
-    const summary = analyze(events, metrics);
-    writeFileSync(join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
-    writeFileSync(join(outDir, 'report.md'), renderReport(summary));
+    const { summary } = writeProfileArtifacts({ outDir, traceEvents: events, metrics });
 
     const md = renderReplayReport({ settings, replayed, debug, summary });
     writeFileSync(join(outDir, 'replay-summary.md'), md);
