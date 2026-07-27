@@ -45,11 +45,6 @@ export const PAPER = {
   night: { fill: '#211f29', margin: '#1a1922' },
 };
 
-// Pre-installed Chromium in the cloud env; overridable for local dev where
-// Playwright's own download is present.
-export const CHROMIUM_PATH =
-  process.env.PLAYWRIGHT_CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-
 // --- Production request config -------------------------------------------------
 // The base prompt lives in web/src/lib/ai/prompt.ts and the system instruction +
 // safety settings in web/src/lib/server/ai/gemini.ts. We copy them here and assert

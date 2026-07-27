@@ -22,7 +22,8 @@
 import { chromium } from 'playwright';
 import { readFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, PALETTE, PAPER, CHROMIUM_PATH } from './lib/model-eval.mjs';
+import { ROOT, PALETTE, PAPER } from './lib/model-eval.mjs';
+import { chromiumExecutablePath } from './lib/utils.mjs';
 
 const OUT = join(ROOT, 'web/tests/model-eval/inputs');
 const COLORING = join(ROOT, 'web/static/coloring');
@@ -420,7 +421,7 @@ async function main() {
   for (const f of readdirSync(OUT))
     if (f.endsWith('.png') && !f.startsWith('gen__')) rmSync(join(OUT, f));
 
-  const browser = await chromium.launch({ executablePath: CHROMIUM_PATH });
+  const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
   const page = await browser.newPage();
   page.on('pageerror', (e) => console.error('  page error:', e.message));
   if (process.env.DEBUG_SAMPLE) page.on('console', (m) => console.log('  [page]', m.text()));

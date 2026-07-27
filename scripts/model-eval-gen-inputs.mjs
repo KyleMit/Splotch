@@ -13,7 +13,8 @@ import { GoogleGenAI } from '@google/genai';
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, PALETTE, PAPER, CHROMIUM_PATH } from './lib/model-eval.mjs';
+import { ROOT, PALETTE, PAPER } from './lib/model-eval.mjs';
+import { chromiumExecutablePath } from './lib/utils.mjs';
 
 const OUT = join(ROOT, 'web/tests/model-eval/inputs');
 const AUTHOR_MODEL = 'gemini-3.1-flash-image';
@@ -60,7 +61,7 @@ async function main() {
   }
   mkdirSync(OUT, { recursive: true });
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  const browser = await chromium.launch({ executablePath: CHROMIUM_PATH });
+  const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
   const page = await browser.newPage();
 
   for (const p of PROMPTS) {

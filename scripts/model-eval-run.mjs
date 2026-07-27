@@ -21,7 +21,6 @@ import { pathToFileURL } from 'node:url';
 import {
   ROOT,
   MODELS,
-  CHROMIUM_PATH,
   DEFAULT_PROMPT,
   SAFETY_SYSTEM_INSTRUCTION,
   assertProductionConfig,
@@ -32,6 +31,7 @@ import {
   imageDims,
   imageFormat,
 } from './lib/model-eval.mjs';
+import { chromiumExecutablePath } from './lib/utils.mjs';
 import { buildReport } from './lib/model-eval-report.mjs';
 
 const BASE = join(ROOT, 'web/tests/model-eval');
@@ -114,7 +114,7 @@ async function reportOnly(dir) {
   const verdictHtml = process.env.VERDICT_FILE
     ? readFileSync(process.env.VERDICT_FILE, 'utf8')
     : undefined;
-  const browser = await chromium.launch({ executablePath: CHROMIUM_PATH });
+  const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
   try {
     const htmlPath = await buildReport({
       runId: data.runId,
@@ -249,7 +249,7 @@ async function main() {
   );
 
   if (!process.env.SKIP_REPORT) {
-    const browser = await chromium.launch({ executablePath: CHROMIUM_PATH });
+    const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
     try {
       const htmlPath = await buildReport({
         runId: effRunId,

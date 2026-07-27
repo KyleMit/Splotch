@@ -26,47 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P1][maintainability] Two competing Chromium-path mechanisms — one brittle and hardcoded
-
-**File(s):** `scripts/lib/model-eval.mjs:50-51` (CHROMIUM_PATH) vs `scripts/lib/utils.mjs:82-100`
-(chromiumExecutablePath); consumed by `scripts/model-eval-run.mjs:117,252`,
-`scripts/model-eval-gen-inputs.mjs:63`, `scripts/model-eval-fixtures.mjs:423` vs
-`scripts/driver-smoke.mjs:68`, `scripts/gen-large-image.mjs:108`, `scripts/store-shots.mjs:122` —
-pinned at SHA f934d43
-
-#### Problem
-
-The repo has two ways to point Playwright at Chromium. The robust one,
-`chromiumExecutablePath(chromium)`, self-heals when the pinned browser revision drifts (its own
-comment documents exactly this failure: "the env installed 1223 while this Playwright wants 1228").
-The model-eval scripts instead import a hardcoded constant:
-
-```js
-export const CHROMIUM_PATH = process.env.PLAYWRIGHT_CHROMIUM_PATH
-  || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-```
-
-That pins a single revision (`chromium-1194`) and a single sub-dir (`chrome-linux`, never
-`chrome-linux64`) — the precise brittleness `chromiumExecutablePath` was written to fix. When the
-browser bumps, every `model-eval*` script breaks with "Executable doesn't exist" while the smoke/gen
-scripts keep working, and a reader can't tell why two scripts resolve Chromium differently.
-
-#### Proposed solution
-
-Delete `CHROMIUM_PATH` from `lib/model-eval.mjs` and have all five model-eval call sites use
-`chromiumExecutablePath(chromium)` from `lib/utils.mjs`, matching the other browser-driving scripts.
-Keep `PLAYWRIGHT_CHROMIUM_PATH` support by folding it into the existing `PLAYWRIGHT_CHROMIUM`
-override in `chromiumExecutablePath` (or aliasing it).
-
-#### Verification
-
-`grep -rn CHROMIUM_PATH scripts/` returns nothing after the change; run
-`npm run model-eval:fixtures` (no network needed for fixtures) and confirm the browser launches.
-Simulate drift by pointing `PLAYWRIGHT_BROWSERS_PATH` at a dir with a different `chromium-<n>` and
-confirm both model-eval and driver-smoke still resolve a binary.
-
----
-
 ### [P1][duplication] Release-bundle `.aab` path hardcoded three times
 
 **File(s):** `scripts/release.mjs:155-164` (aab), `scripts/android-verify.mjs:17-26` (AAB),
