@@ -50,8 +50,8 @@ around it improved since the pin:
    exactly as easily as it bypasses today's reset list, so the stated drift protection is mostly
    illusory; it also adds a level of indirection to nine straight-line lines.
 3. **Restructure into a single `$state` session object** so one assignment truly resets everything.
-   The only variant with real enforcement, but it rewrites every reference in the page and template —
-   far too much churn for a P4 on the native admin twin.
+   The only variant with real enforcement, but it rewrites every reference in the page and template
+   — far too much churn for a P4 on the native admin twin.
 
 ## Recommendation
 

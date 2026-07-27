@@ -44,10 +44,10 @@ rationale.
 | 27 | `p3-maintainability-hexagon-geometry.md`          | Hexagon geometry constants scattered, coupled to a comment  | P3  | C10     | FIX — narrowed to snap radius |
 | 28 | `p3-performance-get-ring-color.md`                | `getRingColor` recomputed 2-3× per active swatch            | P3  | C10     | DROP — resolved on main |
 | 29 | `p3-performance-swatch-refs.md`                   | Every swatch element captured into `$state`                 | P3  | C10     | FIX — reframed as readability |
-| 30 | `p1-consistency-api-error-shapes.md`              | Unify the two error-response shapes across the API          | P1  | C11     | pending |
-| 31 | `p2-duplication-content-type-parsing.md`          | Content-type parsing into a shared `http.ts` helper         | P2  | C11     | pending |
-| 32 | `p2-duplication-oversized-body-guard.md`          | Oversized-body guard shared by two endpoints                | P2  | C11     | pending |
-| 33 | `p2-type-safety-api-contract-types.md`            | Share request/response contract types routes ↔ clients      | P2  | C11     | pending |
+| 30 | `p1-consistency-api-error-shapes.md`              | Unify the two error-response shapes across the API          | P1  | C11     | FIX — fail() + apiHandler() |
+| 31 | `p2-duplication-content-type-parsing.md`          | Content-type parsing into a shared `http.ts` helper         | P2  | C11     | FIX — contentTypeOf() |
+| 32 | `p2-duplication-oversized-body-guard.md`          | Oversized-body guard shared by two endpoints                | P2  | C11     | FIX — readBodyWithinLimit() |
+| 33 | `p2-type-safety-api-contract-types.md`            | Share request/response contract types routes ↔ clients      | P2  | C11     | OPTIONS — lean: shared module |
 | 34 | `p2-platform-branching-install-prompt.md`         | Install-prompt runtime `isNative()` branch                  | P2  | C12     | pending |
 | 35 | `p4-duplication-reload-pair.md`                   | Reload-side-effect pair repeated across three paths         | P4  | C12     | pending |
 | 36 | `p1-duplication-book-page-ids.md`                 | Book id re-typed on every `page()` call                     | P1  | C13     | pending |
