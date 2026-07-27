@@ -40,18 +40,11 @@ export function argFlag(name, fallback) {
   return process.argv.find((a) => a.startsWith(prefix))?.slice(prefix.length) ?? fallback;
 }
 
-// Commands go through the shell so PATH shims (npm, npx, gh, sdkmanager)
-// resolve — which means args that aren't plain words need quoting.
-const quoteArg = (arg) => (/^[\w./:=-]+$/.test(arg) ? arg : `"${arg}"`);
-const shellJoin = (cmd, args) => [cmd, ...args.map(quoteArg)].join(' ');
-
 // Run a command with live output; exits the script with the command's exit
 // code if it fails. Pass `input` to answer interactive prompts.
 export function run(cmd, args = [], { input, cwd = ROOT, echo = true } = {}) {
-  const full = shellJoin(cmd, args);
-  if (echo) console.log(`$ ${full}`);
-  const result = spawnSync(full, {
-    shell: true,
+  if (echo) console.log('$', cmd, ...args);
+  const result = spawnSync(cmd, args, {
     cwd,
     input,
     stdio: input === undefined ? 'inherit' : ['pipe', 'inherit', 'inherit'],
@@ -117,7 +110,7 @@ export async function pollUntil(callback, timeoutMs, intervalMs) {
 
 // Run a command and return its stdout; exits the script if it fails.
 export function capture(cmd, args = [], { cwd = ROOT } = {}) {
-  const result = spawnSync(shellJoin(cmd, args), { shell: true, cwd, encoding: 'utf8' });
+  const result = spawnSync(cmd, args, { cwd, encoding: 'utf8' });
   if (result.status !== 0) fail(`${cmd} failed (exit ${result.status})\n${result.stderr ?? ''}`);
   return result.stdout ?? '';
 }
