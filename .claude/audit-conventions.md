@@ -159,8 +159,9 @@ they're fixed.
 
 Every audit skill also runs **automatically** on a schedule, via Claude Code Routines — scheduled
 triggers that each open a fresh cloud session and drive the audit end to end with no user present.
-This section is the source of truth for that automation: if a routine is added, retired, or
-rescheduled, update this table in the same change.
+This table is a manually maintained mirror of the Claude Routines configuration; the Routines
+backend is authoritative, and the repository does not automatically reconcile the listed cron
+values. If a routine is added, retired, or rescheduled, update this table in the same change.
 
 ### The schedule
 

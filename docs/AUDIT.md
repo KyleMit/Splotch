@@ -19,33 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P3][maintenance] The audit-routine cron schedule table can silently drift from the actual Claude Routines with no automated check
-
-**File(s):** `.claude/audit-conventions.md:150-172` — pinned at SHA f934d43
-
-#### Problem
-
-The "Scheduled runs (Claude Routines)" section declares itself "the source of truth for that
-automation" and holds a six-row cron table (lines 161-168) plus the instruction "if a routine is
-added, retired, or rescheduled, update this table in the same change." But the actual triggers live
-in the Routines backend, not in the repo, so nothing enforces that the table matches reality —
-unlike the `ruler:check` / `dprint check` gates that guard other generated/formatted content. A
-rescheduled or deleted routine leaves this table wrong with no CI signal.
-
-#### Proposed solution
-
-Acknowledge the limitation explicitly (a note that this table is manually mirrored and can drift),
-or add a lightweight reconciliation step — e.g. a documented periodic `list_triggers` cross-check,
-or folding the cadence into the routines' own definitions so the doc points at them rather than
-restating cron strings.
-
-#### Verification
-
-Confirm no script or CI job references this table's cron values; decide on a mirroring note or a
-check and confirm the doc no longer claims unenforced "source of truth" status without a caveat.
-
----
-
 ### [P4][documentation] `settings.json` permission groups are unlabeled and unreferenced from any doc
 
 **File(s):** `.claude/settings.json:29-78` — pinned at SHA f934d43
