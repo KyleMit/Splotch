@@ -56,11 +56,9 @@ gate would land its output in the fix commit). A finding editing `.ruler/**` mus
 
 ## Unverified assumptions
 
-* That the canary's commits contain no behavior smuggled inside a refactor — must be read by hand, a
-  green gate cannot show this.
-* That every fix commit deletes **exactly one** `###` entry from `docs/AUDIT.md`.
-* That the `--resume` handoff fires on fix rounds (implementer references its own prior work rather
-  than re-deriving from review text).
+All three of the original assumptions were **tested against the canary and confirmed** — see below.
+What remains unverified is only whether they keep holding on the P1–P3 findings, which run on Opus
+rather than the cheap tier and are where the canary gave no signal.
 
 ## Done & verified
 
@@ -68,13 +66,51 @@ gate would land its output in the fix commit). A finding editing `.ruler/**` mus
 * Every gate script above run at base and passing (exit 0), so a red gate mid-run is attributable to
   a finding rather than pre-existing.
 
+### Canary — 5 fixed, 0 dropped, 0 deferred, 28 min, $8.48
+
+| sha          | finding                            | P  | rounds | elapsed |
+| ------------ | ---------------------------------- | -- | ------ | ------- |
+| a193d1f7cd64 | Scorer JSDoc typedefs              | P4 | 1      | 8.7 min |
+| 6ddec6cd3a54 | `ringBands` incremental dilation   | P4 | 0      | 4.1 min |
+| cb3a25dceee3 | Hotspot tile constants / key pack  | P4 | 0      | 4.2 min |
+| dcfd789a9cf6 | `alignToSource` edge cutoff const  | P4 | 0      | 4.2 min |
+| afb1601f21f1 | Centralize backslash normalization | P4 | 0      | 6.9 min |
+
+* **Entry accounting exact.** Each fix commit deleted exactly one `###` entry (the one intermediate
+  fix-round commit deleted zero, as designed). Identity closes: 236 − 5 = 231 = `pop.mjs --count`.
+* **Resume handoff confirmed** on iter0001. impl left `bandStats`/`hotspots` as bare `object[]`;
+  review rejected exactly that; fix1's summary says "replacing the bare `object[]` placeholders" —
+  it is continuing its own edit, not re-deriving from review text.
+* **No behavior smuggled inside a refactor.** Checked by hand, and the two risky ones were
+  differential-tested rather than taken on the reviewer's word:
+  * `ringBands` — 4320 cases (grids 1×1…40×31, densities 0→1, maxD 1–5, forced boundary-touching): 0
+    mismatches. Safe because `dilateMask` is separable *box* morphology, so radius-*d* decomposes
+    into *d* radius-1 passes; this would **not** hold for a Euclidean disc structuring element.
+  * Hotspot key repack (number → `"col,row"` string) — the risk is tie-breaking, since the sort
+    compares counts only and ties fall back to `Map` insertion order. 600 randomized cases with
+    deliberate tie pressure + an explicit all-ties case: 0 mismatches.
+  * The 13-site backslash dedup preserved operation ordering in *both* directions (strip-then-
+    normalize sites and the one normalize-then-strip site), and the deleted `normalizeTarget` was
+    byte-identical to the new `toPosix`. Its two test-file edits are additions to a
+    `vi.mock('../lib/paths.mjs')` factory — a required stub, not a bent assertion.
+* **CI green** on every completed canary push (runs 1424–1427); none were cancelled, because each
+  finding took longer than a CI run.
+
+### Wall-clock projection — this is a multi-day campaign, not one night
+
+The canary was **all P4 on the `sonnet` minor tier**, so its 5.6 min/finding badly flatters the
+rest. Remaining mix: P1 16 · P2 55 · P3 78 · P4 67 · P5 15 = 231, so 64% run on Opus at
+`EFFORT_IMPL=high`. Against the skill's published per-shape timings that is **~40 hours**. Plan for
+repeated container reclamation and a live session per relaunch; the run resumes cleanly from
+`origin` every time.
+
 ## Risks & next 3 steps
 
 1. ~~Open the draft PR.~~ Done — PR 552, draft. Per-commit comments go here; CI runs on every push.
-2. Canary (`MAX_ISSUES=5`), then audit it: read the diff, count deleted entries per commit, confirm
-   a resume round fired, **confirm CI is green** before the full launch.
-3. Launch the full run; re-arm the `run.log` monitor every ~30 min (Monitor clamps to 30 min
-   regardless of the timeout requested) and drain the comment store as it fills.
+2. ~~Canary + audit.~~ Done and clean — see **Canary** above. All 5 comments posted; store drained.
+3. **Run the loop until the backlog is drained**, relaunching after each container reclamation with
+   the command above. Re-arm the `run.log` monitor every ~30 min (Monitor clamps to 30 min no matter
+   what timeout is requested), drain the comment store as it fills, and watch CI on PR 552.
 
 Risks: the container is ephemeral and `.audit-work/` dies with it, so drain PR comments as you go;
 CI is the *only* full-suite gate in this configuration, so a red run means pause and diagnose, not
