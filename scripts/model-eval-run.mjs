@@ -31,7 +31,7 @@ import {
   imageDims,
   imageFormat,
 } from './lib/model-eval.mjs';
-import { chromiumExecutablePath } from './lib/utils.mjs';
+import { chromiumExecutablePath, runId as makeRunId } from './lib/utils.mjs';
 import { buildReport } from './lib/model-eval-report.mjs';
 
 const BASE = join(ROOT, 'web/tests/model-eval');
@@ -44,9 +44,7 @@ const FILTER = process.env.FILTER || '';
 // already produced an image, so existing outputs are preserved as-is.
 const RESUME = process.env.RESUME || '';
 // A fixed, filesystem-safe run id. Date.now() is fine in plain Node; kept simple.
-const runId =
-  new Date().toISOString().replace(/[:.]/g, '-') +
-  (process.env.OUT_TAG ? `-${process.env.OUT_TAG}` : '');
+const runId = makeRunId(process.env.OUT_TAG);
 const OUT = join(BASE, 'output', runId);
 
 const SAFETY = safetySettings(HarmCategory, HarmBlockThreshold);

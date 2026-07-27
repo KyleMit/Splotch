@@ -19,7 +19,7 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ROOT, fail, waitForUrl } from './lib/utils.mjs';
+import { ROOT, fail, waitForUrl, runId as makeRunId } from './lib/utils.mjs';
 import { spawnViteServer } from './lib/vite-server.mjs';
 import { decryptDir } from './lib/fixtureCrypto.mjs';
 
@@ -30,7 +30,7 @@ const TOKEN = 'redteam-token';
 const BASE_DIR = join(ROOT, 'web', 'tests', 'redteam');
 const ENCRYPTED = join(BASE_DIR, 'encrypted');
 const DECRYPTED = join(BASE_DIR, 'decrypted');
-const runId = new Date().toISOString().replace(/[:.]/g, '-');
+const runId = makeRunId();
 const OUT_DIR = join(BASE_DIR, 'output', runId);
 
 // The fixture's filename prefix is the single source of truth for its category:

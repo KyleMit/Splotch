@@ -26,35 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P2][duplication] Run-id timestamp format duplicated across report scripts
-
-**File(s):** `scripts/redteam-run.mjs:33`, `scripts/model-eval-run.mjs:47-49` — pinned at SHA
-f934d43
-
-#### Problem
-
-Both scripts mint a filesystem-safe run id the same way:
-
-```js
-new Date().toISOString().replace(/[:.]/g, '-'); // redteam-run
-new Date().toISOString().replace(/[:.]/g, '-') + (OUT_TAG ? `-${OUT_TAG}` : ''); // model-eval-run
-```
-
-Same regex, same intent, independently maintained.
-
-#### Proposed solution
-
-Add
-`export const runId = (tag) => new Date().toISOString().replace(/[:.]/g, '-') + (tag ?`-${tag}`: '');`
-to `scripts/lib/utils.mjs` and use it in both scripts.
-
-#### Verification
-
-`grep -rn "replace(/\[:.\]/g" scripts/` shows only the helper. Run both scripts (or the
-fixture/report-only paths) and confirm output dirs are still named `2026-...`.
-
----
-
 ### [P2][duplication] OS "open a file" logic implemented twice, differently
 
 **File(s):** `scripts/open-path.mjs:16` and `scripts/redteam-run.mjs:266-275` (`openInBrowser`) —

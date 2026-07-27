@@ -147,6 +147,12 @@ export function compareSemverDesc(a, b) {
   return 0;
 }
 
+// Filesystem-safe run id: an ISO timestamp with ':' and '.' replaced by '-',
+// optionally suffixed with a tag (e.g. OUT_TAG).
+export function runId(tag) {
+  return new Date().toISOString().replace(/[:.]/g, '-') + (tag ? `-${tag}` : '');
+}
+
 // Books whose required `platforms` field omits 'mobile'.
 // strip-native-assets.mjs deletes these from native builds; check-assets.mjs
 // cross-checks this filter against booksForPlatform() in src/lib/state/books.ts.
