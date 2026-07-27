@@ -20,12 +20,12 @@ exact-head CI supervision, or change tracked files while the driver is active.
 * Initial backlog: 128 findings, measured with `node scripts/audit-burndown/pop.mjs --count`.
 * Historical `run.log` baseline: 1,548 lines. Reconcile only later `finished:` and terminal-event
   lines.
-* Run state: canary and eleven bounded segments green; no driver process is active and no `STOP`
+* Run state: canary and fourteen bounded segments green; no driver process is active and no `STOP`
   file is present.
-* Current backlog: 63 findings after 39 fixes, 18 invalid drops, and 8 deferrals in this
+* Current backlog: 48 findings after 53 fixes, 19 invalid drops, and 8 deferrals in this
   continuation.
-* Last fully green SHA: `8556403f20bca572cfbda29f8e6d70e56736b2e6` in workflow run
-  [30305216689](https://github.com/KyleMit/Splotch/actions/runs/30305216689).
+* Last fully green SHA: `6c74e219ca5c7b3c7d6857f7ed94d98e6698efe8` in workflow run
+  [30309839162](https://github.com/KyleMit/Splotch/actions/runs/30309839162).
 
 | SHA      | What                                                        |
 | -------- | ----------------------------------------------------------- |
@@ -43,6 +43,9 @@ exact-head CI supervision, or change tracked files while the driver is active.
 | 4a878f54 | Segment 9: 1 fixed, 3 dropped, 1 deferred, 73 remain        |
 | aaaf7995 | Segment 10: 3 fixed, 2 dropped, 0 deferred, 68 remain       |
 | 8556403f | Segment 11: 3 fixed, 1 dropped, 1 deferred, 63 remain       |
+| fc8cf7cf | Segment 12: 5 fixed, 0 dropped, 0 deferred, 58 remain       |
+| 1f5b18c5 | Segment 13: 4 fixed, 1 dropped, 0 deferred, 53 remain       |
+| 6c74e219 | Segment 14: 5 fixed, 0 dropped, 0 deferred, 48 remain       |
 
 Supervisor-authored follow-ups: `2eab584c` restored an efficient in-browser pixel scan, `6f6e85f0`
 normalized a deferred patch, and `f7420c42` fixed that recurring patch-writer defect with a
@@ -92,7 +95,7 @@ npm run audit:burndown:overnight -- 600
 
 ## Unverified assumptions
 
-* The remaining 63 findings have not yet been exercised.
+* The remaining 48 findings have not yet been exercised.
 
 ## Done & verified
 
@@ -112,7 +115,7 @@ npm run audit:burndown:overnight -- 600
 * All five fix comments posted on PR [#561](https://github.com/KyleMit/Splotch/pull/561); capture
   found no missing or pending records.
 * Exact-head CI on `3648a752593ba5a19bd72a8437c863deee912a23`: Quality and Tests green.
-* Eleven bounded `MAX_HANDLED=5` segments completed with exact-head CI green and all comments
+* Fourteen bounded `MAX_HANDLED=5` segments completed with exact-head CI green and all comments
   drained at every checkpoint.
 * Supervisor inspection caught an inefficient reviewed red-pixel scan; follow-up commit `2eab584c`
   restored the original in-browser early exit, passed focused E2E and full CI, and was disclosed in
@@ -124,13 +127,17 @@ npm run audit:burndown:overnight -- 600
 * Segment 9 native verification: `npm run android:apk` passed all 243 Gradle tasks.
 * Segment 10 native verification: `npm run ios:build` passed.
 * Segment 11 verification: JSON and shell syntax passed, as did all 141 script tests.
-* `npm run audit:cost`: no capped or errored calls; retained-log projection is about $16.79 for the
-  remaining 63 findings.
+* Segment 12 verification: shell syntax and all 143 script tests passed.
+* Segment 13 verification: shell and JSON syntax and all 145 script tests passed.
+* Segment 14 verification: Ruler drift checks and all 146 script tests passed; exact-head CI also
+  exercised the new composite setup action.
+* `npm run audit:cost`: no capped or errored calls; retained-log projection is about $12.79 for the
+  remaining 48 findings.
 
 ## Risks & next 3 steps
 
 1. Commit and push this continuation checkpoint and require exact-head CI green.
-2. Launch segment 12 with `MAX_HANDLED=5`, record its start and 20-minute deadline, then supervise
+2. Launch segment 15 with `MAX_HANDLED=5`, record its start and 20-minute deadline, then supervise
    it until stopped.
 3. Require exact-head CI green, drain all comments, inspect the segment diff, and repeat bounded
    segments until the backlog is exhausted or the user asks to pause.
