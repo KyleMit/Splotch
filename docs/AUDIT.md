@@ -11,31 +11,6 @@
 
 ## Source: Code audit — tools/asset-gen · ideas-exploration (R&D scratch)
 
-### [P3][duplication] idea-2 ships three near-identical `motif-registry*.json` with no note on which is canonical
-
-**File(s):** `tools/asset-gen/ideas-exploration/idea-2/code/motif-registry.json`,
-`motif-registry-after.json`, `motif-registry-final.json` (also `idea-2/motif-registry-after.json`,
-`motif-registry-final.json` at idea root) — pinned at SHA f934d43
-
-#### Problem
-
-idea-2 carries three registry snapshots under `code/` (md5-distinct: `…dc9`, `…327`, `…4cf`) plus
-two more at the idea root, with names — `registry` / `-after` / `-final` — that imply an edit
-sequence but don't say which one a reader should trust or which fed the final result. It's the kind
-of "keep every intermediate" scratch accretion that makes the experiment hard to re-follow.
-
-#### Proposed solution
-
-Keep the one that represents the validated end state (presumably `-final`), delete or clearly label
-the intermediates, and have `report.md` name the canonical file in one sentence.
-
-#### Verification
-
-`ls idea-2/code/motif-registry*.json` shows a single canonical file (or clearly-suffixed
-before/after pair explicitly referenced by the report).
-
----
-
 ### [P3][naming] Inconsistent script naming across idea dirs — `idea{N}-` prefix vs descriptive vs `tmp-`
 
 **File(s):** e.g. `idea-11/code/idea11-*.mjs`, `idea-12/code/idea12-*.mjs`,
