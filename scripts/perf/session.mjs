@@ -177,7 +177,7 @@ function buildMetrics({ settings, useTrace, t0, obs, heapBefore, heapAfter }) {
   };
 }
 
-async function writeProfileArtifacts({
+export async function writeProfileArtifacts({
   page,
   outDir,
   traceEvents,

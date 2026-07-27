@@ -29,6 +29,7 @@ import {
 } from './capture.mjs';
 import { analyze, renderReport } from './analyze.mjs';
 import { IPAD_PRO } from './devices.mjs';
+import { writeProfileArtifacts } from './session.mjs';
 
 // The deployment target we actually worry about: a 12.9" iPad Pro in portrait —
 // 1024×1366 CSS pt. iPads report devicePixelRatio 2 and the engine caps
@@ -302,6 +303,106 @@ async function rasterGeometry(page) {
   });
 }
 
+async function runUndoScenario(page, base, sc, geom) {
+  console.log(`\n▶ ${sc.label}`);
+  await resetEngine(page, base, IPAD_PRO.width, IPAD_PRO.height);
+  // Reload drops the rAF FPS sampler injected before the trace; re-inject so
+  // frame health still reflects this scenario.
+  await injectObservers(page);
+
+  const drawStart = await now(page);
+  await markPhase(page, `${sc.key}-draw`, () => drawStrokes(page, sc.strokes, !!sc.crayon));
+  const drawEnd = await now(page);
+
+  const debug = await settleColdTier(page);
+  const heapAfterDraw = await heapBytes(page);
+
+  const undoStart = await now(page);
+  let steps = 0;
+  await markPhase(page, `${sc.key}-undo`, async () => {
+    steps = await undoAll(page);
+  });
+  const undoEnd = await now(page);
+  const heapAfterUndo = await heapBytes(page);
+
+  const drawMarks = await engineMeasuresIn(page, drawStart, drawEnd);
+  const undoMarks = await engineMeasuresIn(page, undoStart, undoEnd);
+
+  const draw = drawMarks['engine.draw'] || { count: 0, total: 0, max: 0 };
+  // engine.commit wraps the whole stroke-end pipeline (paper copy → fold),
+  // so its max is the pointerup hitch the user feels. engine.snapshot
+  // isolates the paper copy inside it.
+  const commit = drawMarks['engine.commit'] || { count: 0, total: 0, max: 0 };
+  const snapshot = drawMarks['engine.snapshot'] || { count: 0, total: 0, max: 0 };
+  const undoM = undoMarks['engine.undo'] || { count: 0, total: 0, max: 0 };
+
+  // History raster memory the way it actually lives — off the JS heap, in
+  // canvas backing stores: live snapshot patches + the paper, plus the
+  // encoded blobs. rasterBytes is the patches' real pixel cost (dirty-rect
+  // snapshots, ADR-0069); liveRasters × full-raster is the fallback for a
+  // build that predates it.
+  const historyRasterMB =
+    debug == null
+      ? null
+      : ((debug.rasterBytes ?? debug.liveRasters * geom.bytesPerRaster) +
+          geom.bytesPerRaster +
+          debug.blobBytes) /
+        1048576;
+
+  const result = {
+    key: sc.key,
+    label: sc.label,
+    strokes: sc.strokes.length,
+    crayon: !!sc.crayon,
+    debug,
+    undoSteps: steps,
+    draw: {
+      ops: draw.count,
+      totalMs: draw.total,
+      commitMs: commit.total,
+      commitMaxMs: commit.max,
+      snapshotMs: snapshot.total,
+      snapshotMaxMs: snapshot.max,
+    },
+    undo: {
+      steps: undoM.count,
+      totalMs: undoM.total,
+      avgMs: undoM.count ? undoM.total / undoM.count : 0,
+      maxMs: undoM.max,
+    },
+    heap: {
+      afterDrawMB: heapAfterDraw ? heapAfterDraw / 1048576 : null,
+      afterUndoMB: heapAfterUndo ? heapAfterUndo / 1048576 : null,
+    },
+    historyRasterMB,
+  };
+  console.log(
+    `  snapshots=${debug?.snapshots ?? 'n/a'} liveRasters=${debug?.liveRasters ?? 'n/a'} ` +
+      `blobKB=${debug ? Math.round(debug.blobBytes / 1024) : 'n/a'} | ` +
+      `commit max ${commit.max.toFixed(1)}ms (copy max ${snapshot.max.toFixed(1)}ms) | ` +
+      `undo ${undoM.count} steps ` +
+      `avg ${(undoM.count ? undoM.total / undoM.count : 0).toFixed(1)}ms max ${undoM.max.toFixed(1)}ms`
+  );
+  return result;
+}
+
+function buildUndoSettings({ throttle, build, geom, t0 }) {
+  return {
+    target: 'web/dev-engine (headless Chromium — not WebKit/real GPU)',
+    device: IPAD_PRO.label,
+    viewport: IPAD_PRO,
+    throttle: throttle > 1 ? throttle : 0,
+    refreshHz: HZ,
+    frameBudgetMs: 1000 / HZ,
+    longOps: LONG_OPS,
+    buildMode: build ? 'production-preview' : 'production-preview (reused build)',
+    captureMode: 'cdp-trace',
+    raster: { ...geom, mbPerRaster: geom.bytesPerRaster / 1048576 },
+    startedAt: new Date(t0).toISOString(),
+    durationMs: Date.now() - t0,
+  };
+}
+
 async function main() {
   // /dev/engine is gated by PUBLIC_ENABLE_DEV_HARNESS ($env/dynamic/public, read
   // at runtime), so the preview server spawned by buildAndPreview must inherit it.
@@ -349,119 +450,28 @@ async function main() {
     const results = [];
 
     for (const sc of scenarios) {
-      console.log(`\n▶ ${sc.label}`);
-      await resetEngine(page, base, IPAD_PRO.width, IPAD_PRO.height);
-      // Reload drops the rAF FPS sampler injected before the trace; re-inject so
-      // frame health still reflects this scenario.
-      await injectObservers(page);
-
-      const drawStart = await now(page);
-      await markPhase(page, `${sc.key}-draw`, () => drawStrokes(page, sc.strokes, !!sc.crayon));
-      const drawEnd = await now(page);
-
-      const debug = await settleColdTier(page);
-      const heapAfterDraw = await heapBytes(page);
-
-      const undoStart = await now(page);
-      let steps = 0;
-      await markPhase(page, `${sc.key}-undo`, async () => {
-        steps = await undoAll(page);
-      });
-      const undoEnd = await now(page);
-      const heapAfterUndo = await heapBytes(page);
-
-      const drawMarks = await engineMeasuresIn(page, drawStart, drawEnd);
-      const undoMarks = await engineMeasuresIn(page, undoStart, undoEnd);
-
-      const draw = drawMarks['engine.draw'] || { count: 0, total: 0, max: 0 };
-      // engine.commit wraps the whole stroke-end pipeline (paper copy → fold),
-      // so its max is the pointerup hitch the user feels. engine.snapshot
-      // isolates the paper copy inside it.
-      const commit = drawMarks['engine.commit'] || { count: 0, total: 0, max: 0 };
-      const snapshot = drawMarks['engine.snapshot'] || { count: 0, total: 0, max: 0 };
-      const undoM = undoMarks['engine.undo'] || { count: 0, total: 0, max: 0 };
-
-      // History raster memory the way it actually lives — off the JS heap, in
-      // canvas backing stores: live snapshot patches + the paper, plus the
-      // encoded blobs. rasterBytes is the patches' real pixel cost (dirty-rect
-      // snapshots, ADR-0069); liveRasters × full-raster is the fallback for a
-      // build that predates it.
-      const historyRasterMB =
-        debug == null
-          ? null
-          : ((debug.rasterBytes ?? debug.liveRasters * geom.bytesPerRaster) +
-              geom.bytesPerRaster +
-              debug.blobBytes) /
-            1048576;
-
-      results.push({
-        key: sc.key,
-        label: sc.label,
-        strokes: sc.strokes.length,
-        crayon: !!sc.crayon,
-        debug,
-        undoSteps: steps,
-        draw: {
-          ops: draw.count,
-          totalMs: draw.total,
-          commitMs: commit.total,
-          commitMaxMs: commit.max,
-          snapshotMs: snapshot.total,
-          snapshotMaxMs: snapshot.max,
-        },
-        undo: {
-          steps: undoM.count,
-          totalMs: undoM.total,
-          avgMs: undoM.count ? undoM.total / undoM.count : 0,
-          maxMs: undoM.max,
-        },
-        heap: {
-          afterDrawMB: heapAfterDraw ? heapAfterDraw / 1048576 : null,
-          afterUndoMB: heapAfterUndo ? heapAfterUndo / 1048576 : null,
-        },
-        historyRasterMB,
-      });
-      console.log(
-        `  snapshots=${debug?.snapshots ?? 'n/a'} liveRasters=${debug?.liveRasters ?? 'n/a'} ` +
-          `blobKB=${debug ? Math.round(debug.blobBytes / 1024) : 'n/a'} | ` +
-          `commit max ${commit.max.toFixed(1)}ms (copy max ${snapshot.max.toFixed(1)}ms) | ` +
-          `undo ${undoM.count} steps ` +
-          `avg ${(undoM.count ? undoM.total / undoM.count : 0).toFixed(1)}ms max ${undoM.max.toFixed(1)}ms`
-      );
+      results.push(await runUndoScenario(page, base, sc, geom));
     }
 
     const obs = await readObservers(page);
     await stopTrace(cdp);
-    await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
 
     // Standard trace artifacts (engine hot paths, frame health) via the shared
     // analyzer, plus the bespoke per-scenario undo summary.
-    const settings = {
-      target: 'web/dev-engine (headless Chromium — not WebKit/real GPU)',
-      device: IPAD_PRO.label,
-      viewport: IPAD_PRO,
-      throttle: throttle > 1 ? throttle : 0,
-      refreshHz: HZ,
-      frameBudgetMs: 1000 / HZ,
-      longOps: LONG_OPS,
-      buildMode: build ? 'production-preview' : 'production-preview (reused build)',
-      captureMode: 'cdp-trace',
-      raster: { ...geom, mbPerRaster: geom.bytesPerRaster / 1048576 },
-      startedAt: new Date(t0).toISOString(),
-      durationMs: Date.now() - t0,
-    };
-    const metrics = {
-      settings,
-      longTasks: obs.longTasks,
-      frames: obs.frames,
-      heap: { beforeBytes: 0, afterBytes: obs.heapBytes ?? 0 },
-    };
-    writeFileSync(join(outDir, 'trace.json'), JSON.stringify({ traceEvents: events }));
-    writeFileSync(join(outDir, 'metrics.json'), JSON.stringify(metrics, null, 2));
-
-    const summary = analyze(events, metrics);
-    writeFileSync(join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
-    writeFileSync(join(outDir, 'report.md'), renderReport(summary));
+    const settings = buildUndoSettings({ throttle, build, geom, t0 });
+    await writeProfileArtifacts({
+      page,
+      outDir,
+      traceEvents: events,
+      createMetrics: () => ({
+        settings,
+        longTasks: obs.longTasks,
+        frames: obs.frames,
+        heap: { beforeBytes: 0, afterBytes: obs.heapBytes ?? 0 },
+      }),
+      createSummary: (metrics) => analyze(events, metrics),
+      createReport: (summary) => renderReport(summary),
+    });
 
     const undoSummary = { settings, scenarios: results };
     writeFileSync(join(outDir, 'undo-scenarios.json'), JSON.stringify(undoSummary, null, 2));
