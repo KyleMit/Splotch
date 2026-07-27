@@ -11,45 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P1][architecture] Two competing Chromium-resolution mechanisms; the model-eval one is a brittle hardcoded path
-
-**File(s):** `scripts/lib/model-eval.mjs:50-51` (`CHROMIUM_PATH`) vs `scripts/lib/utils.mjs:82-100`
-(`chromiumExecutablePath`) — pinned at SHA f934d43
-
-#### Problem
-
-Two helpers resolve the Playwright Chromium binary, and they disagree. `utils.mjs` has a
-self-healing resolver whose whole reason to exist (per its own comment) is that "the pinned revision
-can drift from what playwright-core resolves … `chromium.launch()` fails with 'Executable doesn't
-exist'":
-
-```js
-export const CHROMIUM_PATH = process.env.PLAYWRIGHT_CHROMIUM_PATH
-  || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-```
-
-The model-eval scripts (`model-eval-run.mjs`, `model-eval-fixtures.mjs`,
-`model-eval-gen-inputs.mjs`) launch with this hardcoded `chromium-1194` path, while
-`store-shots.mjs` and `driver-smoke.mjs` use the resilient `chromiumExecutablePath(chromium)`. The
-hardcoded revision (`1194`) is exactly the drift the other helper was written to survive — so the
-model-eval harness breaks the moment the cloud env installs a different Chromium build, which the
-comment in `utils.mjs` says already happens.
-
-#### Proposed solution
-
-Delete `CHROMIUM_PATH` from `model-eval.mjs`. Have the three model-eval consumers import
-`chromiumExecutablePath` from `utils.mjs` and launch with
-`chromium.launch({ executablePath: chromiumExecutablePath(chromium) })` like the other browser
-scripts. If a hard override is still wanted, `chromiumExecutablePath` already honours
-`PLAYWRIGHT_CHROMIUM`.
-
-#### Verification
-
-`grep -rn CHROMIUM_PATH scripts/` returns nothing after the change; run `npm run model-eval:*` in an
-env whose installed Chromium revision ≠ 1194 and confirm launch succeeds (it fails today).
-
----
-
 ### [P2][cross-platform] `bumpAndroidGradle` / `bumpIosPbxproj` regexes are unanchored and global — they corrupt sibling lines
 
 **File(s):** `scripts/lib/native-version.mjs:28-53` (`bumpAndroidGradle`, `bumpIosPbxproj`) — pinned
