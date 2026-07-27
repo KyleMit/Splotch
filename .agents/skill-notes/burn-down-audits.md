@@ -4,7 +4,7 @@ Design history and open questions for the Codex implementation of the `burn-down
 note belongs only to the directly maintained Codex package under `.agents/`; it is not a shared
 contract with the Claude Code implementation.
 
-Current as of **2026-07-26**. The Codex runner was validated with direct CLI probes and a live
+Current as of **2026-07-27**. The Codex runner was validated with direct CLI probes and a live
 canary before its runbook was separated from the Claude Code skill.
 
 ## Invariants
@@ -116,6 +116,42 @@ The earned rules are:
 * Track separate last-Quality-green and last-fully-green SHAs, and force a terminal full-CI
   checkpoint periodically so continuous pushes cannot starve the full-suite backstop forever.
 
+## Supervision boundary earned by the second full run
+
+The next Codex continuation proved that a documented checkpoint is not a checkpoint if the detached
+driver can keep pushing after the supervising turn ends. The runbook required exact-head CI after
+five handled findings, but the supervisor returned a final response with the overnight PID still
+active. By the next status requests the driver had handled dozens more findings, and the pending
+comment queue eventually reached 56 records. The code remained healthy and final CI passed, but the
+supervisor had silently given up the independent CI and comment cadence it promised.
+
+The driver now accepts `MAX_HANDLED`, which counts fixed, dropped, and deferred outcomes and exits
+cleanly at the boundary. Codex full-run segments use five. The supervisor must drain comments,
+require exact-head CI, and explicitly relaunch; it must not send a final response while a driver or
+nested role remains active. The separate 20-minute ceiling remains manual because stopping a live
+role would discard work.
+
+Two related observability gaps surfaced:
+
+* `npm run audit:status` ran inside the workspace sandbox and labeled the detached unrestricted
+  child `idle`, while an unrestricted `pgrep` confirmed it was alive. Status counters remain useful,
+  but process liveness needs the outer process check.
+* `run.log` retained historical branches, and a three-consecutive-deferral halt omitted a
+  `finished:` line. A continuation handoff now records both the initial backlog and log-line
+  baseline; closeout scopes summaries to that range and proves the outcome sum against the backlog
+  delta.
+
+Closeout itself was sound but exposed avoidable friction: the accumulated connector queue took 56
+serial posts to drain, and the stale canary PR body had to be replaced after final CI. Comment debt
+is now a hard relaunch blocker at every handled checkpoint, connector drains are bounded in batches,
+and final PR-body replacement is an explicit closeout step. The full local Playwright run also
+reconfirmed that the supervising workspace sandbox cannot bind the preview port; closeout treats
+`listen EPERM` as a permission boundary and reruns the unchanged gate with local-server permission.
+A fresh-context forward-test then caught two ordering gaps: the handoff could not contain a PR
+number before its first commit created the PR's diff, and closeout never explicitly committed its
+tracked documentation changes. The workflow now uses a `PR: pending` checkpoint followed by a
+PR-number checkpoint, and commits/pushes one final closeout diff before exact-head CI.
+
 ## Provider ownership
 
 The complete Codex package and this note are maintained directly:
@@ -154,3 +190,4 @@ the other.
 | 2026-07-26 | Add per-finding formatting and independent CI checkpoints               |
 | 2026-07-26 | Move both provider packages to direct, independent maintenance          |
 | 2026-07-26 | Remove failed-role untracked files without deleting pre-existing paths  |
+| 2026-07-27 | Bound detached segments by handled outcomes and make handoff explicit   |

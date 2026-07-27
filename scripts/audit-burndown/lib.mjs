@@ -133,6 +133,7 @@ export function removeNewUntrackedPaths(baseline, current, removePath) {
 export const LAUNCH_KNOBS = [
   'RESUME',
   'AGENT_RUNNER',
+  'MAX_HANDLED',
   'PUSH_EVERY',
   'BRANCH',
   'AUDIT_FILE',
@@ -163,6 +164,11 @@ export const shellQuote = (value) => `'${String(value).replace(/'/g, `'\\''`)}'`
 // means a 5-finding canary, and a command reading `-- 600` would relaunch a run
 // 120× longer under a heading promising "this exact run".
 export const DEFAULT_MAX_ISSUES = 5;
+
+export function reachedHandledLimit({ fixed = 0, dropped = 0, deferred = 0, maxHandled = 0 } = {}) {
+  const limit = Number(maxHandled);
+  return Number.isFinite(limit) && limit > 0 && fixed + dropped + deferred >= limit;
+}
 
 // The command that relaunches this exact run, reconstructed from the driver's own
 // environment. It cannot be recovered from the process list: overnight.mjs launches
