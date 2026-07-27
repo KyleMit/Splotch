@@ -1,0 +1,75 @@
+name: Bug Report
+description: Report a problem with Splotch
+title: "[BUG] "
+labels:
+  - type:bug
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Describe the problem
+      description: Tell us clearly what is not working.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Tell us the smallest sequence of actions that shows the problem.
+      placeholder: |
+        1. Go to '...'
+        2. Tap on '...'
+        3. Draw '...'
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What should happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: What actually happens?
+    validations:
+      required: true
+  - type: textarea
+    id: device-browser-context
+    attributes:
+      label: Device and browser context
+      description: Include the device model, OS version, and browser or app version.
+      placeholder: iPhone 13, iOS 17.2, Safari 17.2
+    validations:
+      required: true
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: Operating system family
+      options:
+        - iOS
+        - Android
+        - macOS
+        - Windows
+        - Linux
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: pwa-installation
+    attributes:
+      label: Installed as a PWA
+      options:
+        - "Yes"
+        - "No"
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Tell us whether this happens every time, and attach screenshots or recordings if helpful.

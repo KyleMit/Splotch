@@ -21,32 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P5][maintainability] Issue templates use legacy Markdown format instead of validated Issue Forms
-
-**File(s):** `.github/ISSUE_TEMPLATE/bug_report.md`, `feature_request.md`, `task.md` — pinned at SHA
-f934d43
-
-#### Problem
-
-All three templates are the old Markdown-with-front-matter format. Their prompts (Steps to
-Reproduce, Device Information, checkboxes) are free text a reporter can delete wholesale, so nothing
-is enforced — combined with the P1 label mismatch, an issue can arrive with no structure and a wrong
-label. GitHub Issue Forms (`.yml`) enforce required fields, dropdowns (e.g. device OS, target-user),
-and reliably-applied labels.
-
-#### Proposed solution
-
-Convert to Issue Forms (`bug_report.yml`, `feature_request.yml`) with `required:` fields and
-`labels:` set to the correct `type:*` taxonomy values. This solves the P1 label bug and the
-structure gap together. Keep `task.md`/`blank` for free-form chores if desired.
-
-#### Verification
-
-Opening a bug via the form requires the key fields and applies `type:bug`; `config.yml`
-`blank_issues_enabled` still allows an escape hatch.
-
----
-
 ## Summary
 
 23 findings. The two P1s are correctness/security: issue templates apply labels outside the
