@@ -13,7 +13,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
-import { sleep, run, fail, runMain } from '../lib/utils.mjs';
+import { sleep, run, fail, isMain, runMain } from '../lib/utils.mjs';
 import { driveSession } from './session.mjs';
 import { profilePath } from './paths.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
@@ -40,7 +40,7 @@ function requireDevice() {
 
 // The WebView exposes its DevTools over an abstract unix socket named
 // webview_devtools_remote_<pid>. Prefer the app's own pid; fall back to any.
-function readWebviewSocket() {
+export function readWebviewSocket() {
   const pid = (adb(['shell', 'pidof', APP_ID]).stdout || '').trim().split(/\s+/)[0];
   const unix = adb(['shell', 'cat', '/proc/net/unix']).stdout || '';
   const sockets = unix
@@ -55,7 +55,7 @@ function readWebviewSocket() {
 
 // A freshly (re)installed app can take several seconds to cold-start its
 // WebView and register the socket, so poll instead of a single fixed wait.
-async function findWebviewSocket(timeoutMs = 25_000) {
+export async function findWebviewSocket(timeoutMs = 25_000) {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     const socket = readWebviewSocket();
@@ -65,7 +65,7 @@ async function findWebviewSocket(timeoutMs = 25_000) {
   }
 }
 
-async function getWebviewPage(browser) {
+export async function getWebviewPage(browser) {
   // The WebView's page may take a moment to register after launch.
   for (let i = 0; i < 20; i++) {
     const ctx = browser.contexts()[0];
@@ -125,4 +125,4 @@ async function main() {
   }
 }
 
-runMain(main);
+if (isMain(import.meta.url)) runMain(main);

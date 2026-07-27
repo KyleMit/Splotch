@@ -5,6 +5,20 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { SIZE_PX, replayInPage } from '../perf/replay-scenario.mjs';
 
+const chromium = vi.hoisted(() => ({ connectOverCDP: vi.fn() }));
+
+vi.mock('@playwright/test', () => ({ chromium }));
+
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, spawnSync: vi.fn(actual.spawnSync) };
+});
+
+vi.mock('../lib/utils.mjs', async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, runMain: vi.fn() };
+});
+
 const repoRoot = join(import.meta.dirname, '..', '..');
 const analyzePath = join(repoRoot, 'scripts', 'perf', 'analyze.mjs');
 const webInspectorPath = join(repoRoot, 'scripts', 'perf', 'analyze-webinspector.mjs');
@@ -127,5 +141,18 @@ describe('performance CLI input failures', () => {
     expect(engine.setStrokeWidth).toHaveBeenNthCalledWith(3, 8);
     expect(engine.setStrokeWidth).toHaveBeenNthCalledWith(4, 14);
     expect(engine.setStrokeWidth).toHaveBeenNthCalledWith(5, 22);
+  });
+
+  it('imports the Android profiler without starting its driver', async () => {
+    const { runMain } = await import('../lib/utils.mjs');
+    spawnSync.mockClear();
+    chromium.connectOverCDP.mockClear();
+    runMain.mockClear();
+
+    await import('../perf/android.mjs');
+
+    expect(spawnSync).not.toHaveBeenCalled();
+    expect(chromium.connectOverCDP).not.toHaveBeenCalled();
+    expect(runMain).not.toHaveBeenCalled();
   });
 });

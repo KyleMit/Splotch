@@ -9,7 +9,7 @@
 // regressions, but absolute frame numbers want the Android path (android.mjs).
 
 import { chromium } from '@playwright/test';
-import { chromiumExecutablePath, runMain, sleep } from '../lib/utils.mjs';
+import { chromiumExecutablePath, isMain, runMain, sleep } from '../lib/utils.mjs';
 import { resolveThrottle } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { driveSession } from './session.mjs';
@@ -71,4 +71,4 @@ async function main() {
   }
 }
 
-runMain(main);
+if (isMain(import.meta.url)) runMain(main);

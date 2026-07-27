@@ -12,7 +12,7 @@
 
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { chromium } from '@playwright/test';
-import { chromiumExecutablePath, runMain } from '../lib/utils.mjs';
+import { chromiumExecutablePath, isMain, runMain } from '../lib/utils.mjs';
 import { resolveThrottle } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace } from './capture.mjs';
@@ -127,4 +127,4 @@ async function main() {
   }
 }
 
-runMain(main);
+if (isMain(import.meta.url)) runMain(main);
