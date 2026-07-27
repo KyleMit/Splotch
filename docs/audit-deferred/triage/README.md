@@ -41,9 +41,9 @@ rationale.
 | 24 | `p4-duplication-sign-out-locally.md`              | Native page reimplements session-state bookkeeping          | P4  | C08     | pending |
 | 25 | `p2-complexity-effect-dependency-registration.md` | `$effect` bare member-access dependency registration        | P2  | C09     | pending |
 | 26 | `p5-readability-error-message-unused.md`          | `+error.svelte`/`handleError` produce unused `{ message }`  | P5  | C09     | pending |
-| 27 | `p3-maintainability-hexagon-geometry.md`          | Hexagon geometry constants scattered, coupled to a comment  | P3  | C10     | pending |
-| 28 | `p3-performance-get-ring-color.md`                | `getRingColor` recomputed 2-3× per active swatch            | P3  | C10     | pending |
-| 29 | `p3-performance-swatch-refs.md`                   | Every swatch element captured into `$state`                 | P3  | C10     | pending |
+| 27 | `p3-maintainability-hexagon-geometry.md`          | Hexagon geometry constants scattered, coupled to a comment  | P3  | C10     | FIX — narrowed to snap radius |
+| 28 | `p3-performance-get-ring-color.md`                | `getRingColor` recomputed 2-3× per active swatch            | P3  | C10     | DROP — resolved on main |
+| 29 | `p3-performance-swatch-refs.md`                   | Every swatch element captured into `$state`                 | P3  | C10     | FIX — reframed as readability |
 | 30 | `p1-consistency-api-error-shapes.md`              | Unify the two error-response shapes across the API          | P1  | C11     | pending |
 | 31 | `p2-duplication-content-type-parsing.md`          | Content-type parsing into a shared `http.ts` helper         | P2  | C11     | pending |
 | 32 | `p2-duplication-oversized-body-guard.md`          | Oversized-body guard shared by two endpoints                | P2  | C11     | pending |
