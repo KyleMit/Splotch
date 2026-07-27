@@ -50,11 +50,7 @@ jobs:
       # bundle, so the WebView boot path under test is the real one. (`adb install`
       # takes an APK — never the .aab, which the original sample got wrong.)
       - name: Build debug APK
-        run: |
-          npm run cap:sync
-          cd android
-          chmod +x gradlew
-          ./gradlew :app:assembleDebug
+        run: npm run android:apk
 
       - name: Install Maestro CLI
         run: |

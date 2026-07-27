@@ -21,44 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P2][maintainability] CI rebuilds the debug APK inline instead of calling the committed `android:apk` script
-
-**File(s):** `.github/workflows/android-deploy.yml:55-61` (Build debug APK) — pinned at SHA f934d43
-
-#### Problem
-
-The step reimplements, in inline shell, exactly what an npm script already does:
-
-```yaml
-- name: Build debug APK
-  run: |
-    npm run cap:sync
-    cd android
-    chmod +x gradlew
-    ./gradlew :app:assembleDebug
-```
-
-`package.json` defines
-`"android:apk": "npm run cap:sync && node scripts/gradle.mjs :app:assembleDebug"`, and
-`scripts/gradle.mjs`'s header explicitly exists "to keep the npm scripts free of an inline
-`cd android && ./gradlew` shell dance" (ADR-0017). CI bypasses both the script and the helper,
-duplicating logic and directly violating the repo convention that the Gradle wrapper is invoked via
-a Node helper, never inline `cd android && ./gradlew`. If the build command changes (task name,
-extra flags), the script and this workflow drift.
-
-#### Proposed solution
-
-Replace the whole step with `run: npm run android:apk`. If the debug artifact path is needed later,
-it is deterministic (`android/app/build/outputs/apk/debug/app-debug.apk`, already referenced at line
-77). Drop the manual `chmod +x gradlew` — `gradle.mjs` spawns the wrapper by absolute path.
-
-#### Verification
-
-`npm run android:apk` locally produces the same APK; the tag workflow still installs and smokes it.
-`grep -rn "gradlew" .github/workflows` returns nothing.
-
----
-
 ### [P2][consistency] `actions/checkout` pinned to `@v4` in one workflow and `@v7` in every other
 
 **File(s):** `.github/workflows/label-sync.yml:25` (`actions/checkout@v4`) vs
