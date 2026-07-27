@@ -2278,3 +2278,60 @@ The rolled-back draft is kept at
 (1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p3-complexity-scorecompositeeyes-is-a-100-line-function-with-an-inline-p.patch`.
+
+### [P3][architecture] `fail()` (console.error + process.exit) lives in `paths.mjs`, unrelated to path resolution
+
+**File(s):** `tools/asset-gen/lib/paths.mjs:29-32` — pinned at SHA f934d43
+
+#### Problem
+
+`paths.mjs` is documented as "path + tree resolution," but it also exports a CLI-exit helper
+`fail(message)`. Nine bin scripts import it *from paths*
+(`import { …, fail } from '../lib/paths.mjs'`), coupling a process-terminating side-effect to the
+pure path-constants module and making `paths.mjs` un-importable in a context that shouldn't be
+allowed to `process.exit`.
+
+#### Proposed solution
+
+Move `fail` to a `lib/cli.mjs` (or `lib/log.mjs`). Update the nine bin imports. Keep `paths.mjs`
+side-effect-free (pure constants).
+
+#### Verification
+
+`grep -rn "fail" lib/paths.mjs` returns nothing; bin scripts still exit(1) on bad input (existing
+CLI tests like `tests/light-fill-cli.test.mjs`, `tests/outline-targets.test.mjs` pass).
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* `tools/asset-gen/legacy/retouch-line-art.mjs:37` still imports `fail` from `../lib/paths.mjs`;
+  `legacy/README.md` explicitly says this tool is kept runnable, but it now fails at module loading
+  because `paths.mjs` no longer exports `fail`.
+* `tools/asset-gen/tests/light-fill-cli.test.mjs:14-30` and
+  `tools/asset-gen/tests/audit-cli.test.mjs:12-32` still expose `fail` from their mocked
+  `paths.mjs`; after callers moved to `cli.mjs`, that stub is dead and light-fill failure cases
+  invoke the real `process.exit(1)`. Mock `fail` from `cli.mjs` instead (and remove the stale paths
+  exports) so `npm run test:asset-gen` retains isolated failure-path coverage.
+
+#### What was tried
+
+1. Moved `fail` into the asset generator’s CLI helper and updated every active script and Gemini
+   helper to import it there, leaving path utilities focused on path/tree resolution. Error messages
+   and status-1 termination remain unchanged.
+2. Applied Prettier’s required single-line formatting to the shortened path imports in the two audit
+   scripts, resolving the driver’s format gate without changing behavior.
+3. Updated the runnable legacy retouch tool to import `fail` from the CLI helper while retaining its
+   path imports from `paths.mjs`, restoring module loading and existing CLI failure behavior.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p3-architecture-fail-console-error-process-exit-lives-in-paths-mjs-unrel.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p3-architecture-fail-console-error-process-exit-lives-in-paths-mjs-unrel.patch`.

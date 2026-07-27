@@ -32,30 +32,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P3][architecture] `fail()` (console.error + process.exit) lives in `paths.mjs`, unrelated to path resolution
-
-**File(s):** `tools/asset-gen/lib/paths.mjs:29-32` — pinned at SHA f934d43
-
-#### Problem
-
-`paths.mjs` is documented as "path + tree resolution," but it also exports a CLI-exit helper
-`fail(message)`. Nine bin scripts import it *from paths*
-(`import { …, fail } from '../lib/paths.mjs'`), coupling a process-terminating side-effect to the
-pure path-constants module and making `paths.mjs` un-importable in a context that shouldn't be
-allowed to `process.exit`.
-
-#### Proposed solution
-
-Move `fail` to a `lib/cli.mjs` (or `lib/log.mjs`). Update the nine bin imports. Keep `paths.mjs`
-side-effect-free (pure constants).
-
-#### Verification
-
-`grep -rn "fail" lib/paths.mjs` returns nothing; bin scripts still exit(1) on bad input (existing
-CLI tests like `tests/light-fill-cli.test.mjs`, `tests/outline-targets.test.mjs` pass).
-
----
-
 ### [P4][type-safety] Scorer return shapes are undocumented ad-hoc objects with no JSDoc typedefs
 
 **File(s):** `tools/asset-gen/lib/eye-fill.mjs:295-304`, `composite-eye.mjs:245-253`,
