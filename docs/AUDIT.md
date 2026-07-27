@@ -11,30 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P4][maintainability] `esc` is re-implemented in the asset-gen proof sheet with no shared source
-
-**File(s):** `scripts/lib/scrapbook-chrome.mjs:15-19` (`esc`) — pinned at SHA f934d43
-
-#### Problem
-
-`scrapbook-chrome.mjs` is documented as "the single source of truth for the scrapbook look," and
-`tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs` re-implements HTML escaping independently
-(the header even notes it "may not import across that boundary" and mirrors tokens "by eye"). The
-escaper is small, but a security-relevant helper mirrored by eye across a module boundary is a
-latent XSS-consistency risk in the committed Pages output.
-
-#### Proposed solution
-
-Not fixable inside `scripts/lib` alone given the boundary, but worth surfacing: extract `esc` (and
-the crayon token set) into a tiny dependency-free module both trees may import, or add a test
-asserting the two escapers agree on a shared vector list. Track as a cross-boundary follow-up.
-
-#### Verification
-
-A shared escaping test over `&<>"'` passes for both generators.
-
----
-
 ## Source: Code audit — web/tests · E2E + integration specs
 
 ### [P1][duplication] Extract the retry-to-open dialog pattern into a shared helper — it is reimplemented four times
