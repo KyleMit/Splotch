@@ -11,39 +11,6 @@
 
 ## Source: Code audit — tools/asset-gen · ideas-exploration (R&D scratch)
 
-### [P3][architecture] Ad-hoc scoring/audit logic in exploration scripts was only partially extracted into `lib/` — some remains duplicated per-idea
-
-**File(s):** `tools/asset-gen/ideas-exploration/idea-8/code/score-hue-coherence.mjs`,
-`idea-9/code/score-orient-coherence.mjs`, `idea-3/code/chalk-fill-disagreement.mjs`,
-`idea-14/code/analyze-warp.mjs` + `warp-scan.mjs` — pinned at SHA f934d43
-
-#### Problem
-
-The burn-down's biggest architectural win was extracting scoring gates into reusable libs (idea-23 →
-`lib/night-scores.mjs`, idea-7 → `lib/night-halo.mjs`, idea-13 → `lib/invented-shapes.mjs`). But
-several scorers that the README's cross-cutting learnings call out as real signal never graduated:
-the hue-coherence scorer (idea-8, "ranks catalog"), the tall↔wide orientation-coherence scorer
-(idea-9), the chalk/fill disagreement scorer (idea-3, "a dozen new flags"), and the
-warp-registration scorer (idea-14, "4 genuinely warped pages"). Their logic — bgLuma, region-mean,
-hue-angle math — is reimplemented inline in each script rather than sharing `lib/` primitives, and
-there's no live `bin/audit-*` for these four failure classes despite each surfacing confirmed
-shipped defects.
-
-#### Proposed solution
-
-This is a promotion decision, not a rename: for each of the four, either file/confirm an
-`area:asset-gen` issue to extract it into `lib/` + a `bin/audit-*.mjs` (mirroring how idea-7/13/23
-landed), or record in the report why it was deliberately not promoted. At minimum, note in the
-README status column that these four are the un-promoted scorers so they don't get silently
-forgotten.
-
-#### Verification
-
-Each of idea-3/8/9/14 has an explicit disposition (open issue link or "not promoted, because…") in
-its report; any promoted scorer appears under `bin/audit-*` + `lib/`.
-
----
-
 ### [P4][maintainability] `build-review.mjs` silently drops any idea whose `meta.json` fails to parse
 
 **File(s):** `tools/asset-gen/ideas-exploration/build-review.mjs` (lines 52–60, 117–119) — pinned at
