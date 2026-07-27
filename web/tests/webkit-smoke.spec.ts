@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { draw, firstOpaquePixel, gotoApp, openParentCenter } from './helpers';
+import { draw, firstOpaquePixel, gotoApp, openParentCenter, PICKER_GREEN } from './helpers';
 
 // WebKit critical-path smoke — the only spec the `webkit` project runs (see
 // playwright.config.ts). The rest of the E2E suite is Chromium-only, but
@@ -43,7 +43,7 @@ test('the Color Picker dialog opens and commits a color', async ({ page }) => {
   await page.getByRole('button', { name: 'Custom Color' }).click();
   const dialog = page.locator('#color-picker');
   await expect(dialog).toBeVisible();
-  const green = dialog.locator('.grid.landscape .hexagon[data-color="#2ECC71"]');
+  const green = dialog.locator(`.grid.landscape .hexagon[data-color="${PICKER_GREEN}"]`);
   await green.click();
   await expect(dialog).not.toBeVisible();
   await expect(page.getByRole('button', { name: 'Custom Color' })).toHaveClass(/active/);

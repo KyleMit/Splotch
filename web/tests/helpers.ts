@@ -1,8 +1,33 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { COLOR_FAMILIES } from '../src/lib/hexPickerLayout';
+import { BLACK_INK, PALETTE_COLORS } from '../src/lib/palette';
+
 // Shared E2E helpers used across specs. Keep this module WebKit-portable — no
 // CDP sessions or dev-harness routes — because webkit-smoke.spec.ts imports it
 // (see web/tests/CLAUDE.md).
+
+const paletteColor = (label: string) => PALETTE_COLORS.find((color) => color.label === label)!.hex;
+
+export const TEST_PALETTE = {
+  purple: paletteColor('Purple'),
+  blue: paletteColor('Blue'),
+  teal: paletteColor('Teal'),
+  green: paletteColor('Green'),
+  yellow: paletteColor('Yellow'),
+  orange: paletteColor('Orange'),
+  brown: paletteColor('Brown'),
+  red: paletteColor('Red'),
+  pink: paletteColor('Pink'),
+  black: BLACK_INK,
+};
+
+export const PICKER_GREEN = COLOR_FAMILIES.find((family) => family.name === 'greens')!.shades[4];
+export const CUSTOM_SWATCH_COLOR = 'custom';
+
+export function swatch(page: Page, color: string) {
+  return page.locator(`button.color-swatch[data-color="${color}"]`);
+}
 
 /** Navigate to the app and wait for hydration: the canvas mounts on the client,
  *  so once it's visible the app has hydrated. */

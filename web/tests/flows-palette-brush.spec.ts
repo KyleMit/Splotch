@@ -1,6 +1,15 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { draw, firstOpaquePixel, gotoApp, retryOpen } from './helpers';
+import {
+  CUSTOM_SWATCH_COLOR,
+  draw,
+  firstOpaquePixel,
+  gotoApp,
+  PICKER_GREEN,
+  retryOpen,
+  swatch,
+  TEST_PALETTE,
+} from './helpers';
 
 import { openBrushMenu, openDrawer, pickBrush } from './flows-harness';
 
@@ -48,7 +57,7 @@ function canvasInkStats(
 test('selecting a palette color activates it and paints in that color', async ({ page }) => {
   await gotoApp(page);
 
-  const blue = page.locator('button.color-swatch[data-color="#62A2E9"]');
+  const blue = swatch(page, TEST_PALETTE.blue);
   await expect(async () => {
     await blue.click({ timeout: 1000 });
     await expect(blue).toHaveClass(/active/, { timeout: 1000 });
@@ -68,7 +77,7 @@ test('selecting a palette color activates it and paints in that color', async ({
 
 test('the crayon brush lays textured strokes that build up in the full app', async ({ page }) => {
   await gotoApp(page);
-  await expect(page.locator('button.color-swatch[data-color="#AB71E1"]')).toHaveClass(/active/);
+  await expect(swatch(page, TEST_PALETTE.purple)).toHaveClass(/active/);
   await openDrawer(page);
   await pickBrush(page, '#crayonBrushButton');
 
@@ -96,7 +105,7 @@ test('the crayon brush lays textured strokes that build up in the full app', asy
 // buildup asserted above.
 test('the default pen lays solid ink with no crayon buildup', async ({ page }) => {
   await gotoApp(page);
-  await expect(page.locator('button.color-swatch[data-color="#AB71E1"]')).toHaveClass(/active/);
+  await expect(swatch(page, TEST_PALETTE.purple)).toHaveClass(/active/);
 
   const line = Array.from({ length: 15 }, (_, index) => ({ x: 240 + index * 20, y: 320 }));
   const region = { x: 220, y: 280, width: 320, height: 80 };
@@ -204,7 +213,7 @@ test('palette colors and custom hexagons activate from the keyboard', async ({ p
 
   // Space both selects the hexagon and closes the picker; the retry rides out a
   // dropped keydown, then the dialog closes once the selection lands.
-  const green = dialog.locator('.grid.landscape .hexagon[data-color="#2ECC71"]');
+  const green = dialog.locator(`.grid.landscape .hexagon[data-color="${PICKER_GREEN}"]`);
   await activateWithKey(green, 'Space', /selected/);
   await expect(dialog).not.toBeVisible();
 });
@@ -250,11 +259,9 @@ test('pointer exploration still snaps a hexagon gap and commits the highlighted 
 test('a pen stroke shortly after a pen tap on a swatch still paints', async ({ page }) => {
   await gotoApp(page);
 
-  const painted = await page.evaluate(async () => {
+  const painted = await swatch(page, TEST_PALETTE.blue).evaluate(async (paletteSwatch) => {
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-    const swatch = document.querySelector(
-      'button.color-swatch[data-color="#62A2E9"]'
-    ) as HTMLElement;
+    const selectedSwatch = paletteSwatch as HTMLElement;
     const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
     const rect = canvas.getBoundingClientRect();
     const fire = (target: Element, type: string, x: number, y: number, buttons: number) =>
@@ -271,13 +278,13 @@ test('a pen stroke shortly after a pen tap on a swatch still paints', async ({ p
         })
       );
 
-    const s = swatch.getBoundingClientRect();
+    const s = selectedSwatch.getBoundingClientRect();
     const sx = s.left + s.width / 2;
     const sy = s.top + s.height / 2;
-    fire(swatch, 'pointerdown', sx, sy, 1);
+    fire(selectedSwatch, 'pointerdown', sx, sy, 1);
     await sleep(45);
-    fire(swatch, 'pointerup', sx, sy, 0);
-    swatch.dispatchEvent(
+    fire(selectedSwatch, 'pointerup', sx, sy, 0);
+    selectedSwatch.dispatchEvent(
       new MouseEvent('click', { bubbles: true, cancelable: true, clientX: sx, clientY: sy })
     );
 
@@ -314,18 +321,16 @@ test('the palette leaves finger touch taps uncancelled (Scribble guard scope)', 
 }) => {
   await gotoApp(page);
 
-  const fingerPrevented = await page.evaluate(() => {
-    const swatch = document.querySelector(
-      'button.color-swatch[data-color="#62A2E9"]'
-    ) as HTMLElement;
-    const touch = new Touch({ identifier: 1, target: swatch, clientX: 10, clientY: 10 });
+  const fingerPrevented = await swatch(page, TEST_PALETTE.blue).evaluate((paletteSwatch) => {
+    const selectedSwatch = paletteSwatch as HTMLElement;
+    const touch = new Touch({ identifier: 1, target: selectedSwatch, clientX: 10, clientY: 10 });
     const e = new TouchEvent('touchstart', {
       touches: [touch],
       changedTouches: [touch],
       cancelable: true,
       bubbles: true,
     });
-    swatch.dispatchEvent(e);
+    selectedSwatch.dispatchEvent(e);
     return e.defaultPrevented;
   });
 
@@ -353,7 +358,7 @@ test('a stylus tap on a color-picker hexagon has its touch stream cancelled (Scr
 }) => {
   await gotoApp(page);
 
-  const customSwatch = page.locator('button.color-swatch[data-color="custom"]');
+  const customSwatch = swatch(page, CUSTOM_SWATCH_COLOR);
   await expect(async () => {
     await customSwatch.click({ timeout: 1000 });
     await expect(page.locator('#color-picker')).toBeVisible({ timeout: 1000 });
@@ -403,7 +408,7 @@ test('picking a color exits eraser mode', async ({ page }) => {
 
   // Tapping a swatch should switch back to the ink brush (selectInkBrush in
   // handleSwatchUp).
-  await page.locator('button.color-swatch[data-color="#EC534E"]').click();
+  await swatch(page, TEST_PALETTE.red).click();
   await expect(eraser).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('#drawingCanvas')).not.toHaveClass(/erasing/);
 });

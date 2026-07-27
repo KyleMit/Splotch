@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { draw, gotoApp } from './helpers';
+import { draw, gotoApp, swatch, TEST_PALETTE } from './helpers';
 
 import { applyFarmPage, openBrushMenu, openDrawer, pickBrush } from './flows-harness';
 
@@ -165,9 +165,8 @@ test('a palette press mid-stroke removes the live brush ring', async ({ page }) 
   // The second finger pressing a swatch, dispatched synthetically — one real
   // mouse can't press two places at once. handlePaletteDown fires on
   // pointerdown and calls releaseAllPointers().
-  await page.evaluate(() => {
-    const swatch = document.querySelector('button.color-swatch[data-color="#62A2E9"]')!;
-    swatch.dispatchEvent(
+  await swatch(page, TEST_PALETTE.blue).evaluate((selectedSwatch) => {
+    selectedSwatch.dispatchEvent(
       new PointerEvent('pointerdown', {
         pointerId: 77,
         pointerType: 'touch',
@@ -433,7 +432,7 @@ test('the eraser removes magic-brush strokes and later colors override them', as
   // single palette color on top, and confirm that flat color is present.
   await pickBrush(page, '#magicBrushButton'); // re-select magic (clears eraser)
   await draw(page, line);
-  const red = page.locator('.color-swatch[data-color="#EC534E"]');
+  const red = swatch(page, TEST_PALETTE.red);
   await red.click();
   await page.waitForTimeout(150); // color-change debounce
   // Crosses the magic diagonal (~x=300, y=240), so it paints on top of it.
