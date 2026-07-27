@@ -21,6 +21,7 @@
 import sharp from 'sharp';
 import { dilateMask } from './morphology.mjs';
 import { OUTLINE_INK_CUTOFF } from './outline-match.mjs';
+import { median } from './stats.mjs';
 
 // Geometry constants are inherited unchanged from scoreDrift/scoreNightness
 // (lib/night-scores.mjs) so this detector sees the same picture the gates do; the
@@ -78,7 +79,6 @@ function medianCandidateColor(fill, candidates) {
     gs.push(fill[i * 3 + 1]);
     bs.push(fill[i * 3 + 2]);
   }
-  const median = (values) => (values.sort((a, b) => a - b), values[values.length >> 1]);
   return [median(rs), median(gs), median(bs)];
 }
 

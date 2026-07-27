@@ -1,5 +1,8 @@
 # Idea #8 — Light↔night palette coherence
 
+Status: OPEN — no light↔night hue-coherence scorer exists at HEAD; palette coherence is still
+un-enforced (../../docs/gemini-3.1-migration.md).
+
 **Verdict: WORKED** (both halves validated: the offline region-hue scorer ranks the catalog and
 correctly flags the known offenders; multi-image conditioning produced a gate-passing,
 palette-coherent night fill for the canonical case `nature/ant-wide` — with one crucial twist: the
@@ -110,8 +113,6 @@ night". Passes the ≤ 100 gate, but a batch adopting this should watch nightnes
 * `after-night-conditioned.webp` — call-8 conditioned take, all gates passing: palette-coherent
   night.
 * `failure-night-blacklines.webp` — calls 1–3 failure mode: perfect palette, black outlines.
-* `code/ant-wide.night.conditioned.fullres.webp` — the full-resolution gate-passing take (would
-  still need human contact-sheet review + punch before shipping).
 
 ## What was NOT done (budget)
 

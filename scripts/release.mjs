@@ -20,6 +20,7 @@ import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'no
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { ROOT, fail, run, capture, parseFrontmatter } from './lib/utils.mjs';
+import { RELEASE_AAB } from './lib/android.mjs';
 import { setAndroidVersion, setIosVersion } from './lib/native-version.mjs';
 
 const args = process.argv.slice(2);
@@ -152,18 +153,8 @@ const ghArgs = [
   '--notes-file',
   notesPath,
 ];
-const aab = join(
-  ROOT,
-  'android',
-  'app',
-  'build',
-  'outputs',
-  'bundle',
-  'release',
-  'app-release.aab'
-);
-if (existsSync(aab)) {
-  ghArgs.push(aab);
+if (existsSync(RELEASE_AAB)) {
+  ghArgs.push(RELEASE_AAB);
   console.log('Attaching built release bundle: app-release.aab');
 } else {
   console.log('(no app-release.aab found — run `npm run android:bundle` first to attach it)');

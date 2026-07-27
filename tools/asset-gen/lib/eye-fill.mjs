@@ -21,6 +21,7 @@
 // detected eye core aren't gated.
 import sharp from 'sharp';
 import { OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
+import { quantile } from './stats.mjs';
 
 // Pass bars, shared by the generation gates and the raw-fill auditor: of the
 // eye core and its surrounding band, the lighter side must be genuinely light,
@@ -223,8 +224,7 @@ export async function scoreEyes(sourceBuf) {
 
 function median(vals) {
   if (!vals.length) return null;
-  vals.sort((x, y) => x - y);
-  return vals[vals.length >> 1];
+  return quantile(vals, 0.5);
 }
 
 function coreLuma(luma, w, core, label) {
@@ -312,6 +312,23 @@ function judgeLively(coreLuma, bandDark, bandLight) {
 // Which cores are REAL eyes (vs a ladybug's shell spots or a caterpillar's
 // segment dots, which nest the same way but are legitimately flat) is decided
 // by cross-referencing fills, not by anatomy — see judgeNightEyes.
+/**
+ * @typedef {object} EyeCoreScore
+ * @property {number} x
+ * @property {number} y
+ * @property {number} coreLuma
+ * @property {number} bandDark
+ * @property {number} bandLight
+ * @property {number} contrast
+ * @property {boolean} lively
+ * @property {number} annulusInkFrac
+ */
+/**
+ * @typedef {object} EyeFillScore
+ * @property {number} eyes
+ * @property {EyeCoreScore[]} cores
+ */
+/** @returns {Promise<EyeFillScore>} */
 export async function scoreEyeFill(fillBuf, sourceBuf) {
   const { cores, label, ink, w, h } = await findEyeCores(sourceBuf);
   if (!cores.length) return { eyes: 0, cores: [] };
@@ -334,12 +351,11 @@ export async function scoreEyeFill(fillBuf, sourceBuf) {
     const { bandVals, annulusInkFrac } = sampleAnnulus(luma, ink, label, w, h, core, cx, cy, r);
     if (bandVals.length < MIN_BAND_SAMPLES) continue;
 
-    bandVals.sort((a, b) => a - b);
     // p15/p85, not min/max or quartiles: the contrasting element can be a
     // sliver (the pupil paint around a big catchlight), but a handful of
     // stray pixels shouldn't fake one.
-    const bandDark = bandVals[Math.floor(bandVals.length * 0.15)];
-    const bandLight = bandVals[Math.floor(bandVals.length * 0.85)];
+    const bandDark = quantile(bandVals, 0.15);
+    const bandLight = quantile(bandVals, 0.85);
     const lively = judgeLively(measuredCoreLuma, bandDark, bandLight);
     measured.push({
       x: Math.round(cx),

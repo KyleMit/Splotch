@@ -6,15 +6,31 @@ import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+// Whether the calling module is the entry point — pass it `import.meta.url`.
+// Lets a script export helpers for tests without running its CLI on import.
+export const isMain = (url) =>
+  Boolean(process.argv[1]) && pathToFileURL(process.argv[1]).href === url;
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function fail(message) {
   console.error(message);
   process.exit(1);
+}
+
+export function requireEnv(name, hint) {
+  const value = process.env[name];
+  if (!value) fail(`Missing ${name}${hint ? ` — ${hint}` : ''}`);
+  return value;
+}
+
+export function argFlag(name, fallback) {
+  const prefix = `--${name}=`;
+  return process.argv.find((a) => a.startsWith(prefix))?.slice(prefix.length) ?? fallback;
 }
 
 // Commands go through the shell so PATH shims (npm, npx, gh, sdkmanager)
@@ -49,6 +65,23 @@ export function sh(command, cwd = ROOT) {
   });
 }
 
+// Hand a path or URL to the OS opener (ADR-0017): `open` on macOS, `xdg-open`
+// on Linux. Blocking by default (a failure exits the script via run()); pass
+// `detached` for a best-effort open that returns false instead of failing.
+export function openInOS(target, { detached = false } = {}) {
+  const [cmd, args] = process.platform === 'darwin' ? ['open', [target]] : ['xdg-open', [target]];
+  if (!detached) {
+    run(cmd, args);
+    return true;
+  }
+  try {
+    spawn(cmd, args, { detached: true, stdio: 'ignore' }).unref();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Poll a URL until `ready(res)` (plain HTTP reachability by default) or throw
 // at the deadline.
 export async function waitForUrl(url, timeoutMs, ready = (res) => res.ok) {
@@ -76,11 +109,13 @@ export function capture(cmd, args = [], { cwd = ROOT } = {}) {
 // 1223 while this Playwright wants 1228), so `chromium.launch()` fails with
 // "Executable doesn't exist". Mirror the self-heal in web/playwright.config.ts:
 // if the resolved binary is missing, fall back to any Chromium under the
-// browsers path. `PLAYWRIGHT_CHROMIUM` overrides; returning undefined lets
-// Playwright use its own (correct) binary. Pass the `chromium` browser type in
-// so this module doesn't import @playwright/test for scripts that never use it.
+// browsers path. `PLAYWRIGHT_CHROMIUM` (or its alias `PLAYWRIGHT_CHROMIUM_PATH`)
+// overrides; returning undefined lets Playwright use its own (correct) binary.
+// Pass the `chromium` browser type in so this module doesn't import
+// @playwright/test for scripts that never use it.
 export function chromiumExecutablePath(chromium) {
-  if (process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
+  if (process.env.PLAYWRIGHT_CHROMIUM || process.env.PLAYWRIGHT_CHROMIUM_PATH)
+    return process.env.PLAYWRIGHT_CHROMIUM || process.env.PLAYWRIGHT_CHROMIUM_PATH;
   try {
     if (existsSync(chromium.executablePath())) return undefined;
   } catch {}
@@ -138,6 +173,12 @@ export function compareSemverDesc(a, b) {
     if ((pb[i] || 0) !== (pa[i] || 0)) return (pb[i] || 0) - (pa[i] || 0);
   }
   return 0;
+}
+
+// Filesystem-safe run id: an ISO timestamp with ':' and '.' replaced by '-',
+// optionally suffixed with a tag (e.g. OUT_TAG).
+export function runId(tag) {
+  return new Date().toISOString().replace(/[:.]/g, '-') + (tag ? `-${tag}` : '');
 }
 
 // Books whose required `platforms` field omits 'mobile'.

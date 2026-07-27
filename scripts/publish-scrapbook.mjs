@@ -96,9 +96,8 @@ function main() {
   cpSync(srcPath, destPath, { recursive: true });
   writeIndex();
 
-  const url =
-    PAGES_BASE + rel.split('\\').join('/') + (statSync(destPath).isDirectory() ? '/' : '');
-  console.log(`Published ${source} → scrapbook/${rel.split('\\').join('/')}`);
+  const url = PAGES_BASE + rel + (statSync(destPath).isDirectory() ? '/' : '');
+  console.log(`Published ${source} → scrapbook/${rel}`);
   console.log(`Live (after Pages deploy): ${url}`);
   console.log(`Index: ${PAGES_BASE}`);
   console.log('Commit & push to publish; the Pages deploy runs on merge to main.');

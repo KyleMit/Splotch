@@ -1,0 +1,234 @@
+diff --git a/tools/asset-gen/ideas-exploration/idea-10/code/LANDED.md b/tools/asset-gen/ideas-exploration/idea-10/code/LANDED.md
+new file mode 100644
+index 0000000..8a55bbd
+--- /dev/null
++++ b/tools/asset-gen/ideas-exploration/idea-10/code/LANDED.md
+@@ -0,0 +1,9 @@
++# Landed
++
++This directory is a frozen 2026-07 exploration snapshot. Its code has since graduated into
++`tools/asset-gen/lib/page-notes.mjs` and has drifted from it — do not edit or copy from here; edit
++the live file.
++
++The same holds for the eight `registry/<cat>.notes.json` files: they are frozen copies of the live
++per-category registries at `tools/asset-gen/fill-src/<cat>/notes.json`, which have since gained
++entries these copies do not carry.
+diff --git a/tools/asset-gen/ideas-exploration/idea-10/report.md b/tools/asset-gen/ideas-exploration/idea-10/report.md
+index 98671b6..a88d09f 100644
+--- a/tools/asset-gen/ideas-exploration/idea-10/report.md
++++ b/tools/asset-gen/ideas-exploration/idea-10/report.md
+@@ -1,5 +1,9 @@
+ # Idea #10 — Per-page notes registry so regens don't rediscover levers
+ 
++**Landed as:** `tools/asset-gen/lib/page-notes.mjs`, and the `code/registry/<cat>.notes.json` files
++as `tools/asset-gen/fill-src/<cat>/notes.json` — this `code/` snapshot is a frozen, drifted
++ancestor; treat the live files as authoritative.
++
+ **Verdict: WORKED.** The registry was mined from real history (28 entries across all 8 categories),
+ the read path was implemented in the two lever-heavy generators (`gen-coloring-fills-dark.mjs`,
+ `gen-coloring-chalk.mjs`) with a `--dry-run` provenance mode, CLI-wins merging was demonstrated, and
+diff --git a/tools/asset-gen/ideas-exploration/idea-11/code/LANDED.md b/tools/asset-gen/ideas-exploration/idea-11/code/LANDED.md
+new file mode 100644
+index 0000000..12bc95c
+--- /dev/null
++++ b/tools/asset-gen/ideas-exploration/idea-11/code/LANDED.md
+@@ -0,0 +1,5 @@
++# Landed
++
++This directory is a frozen 2026-07 exploration snapshot. `whiten-pen-solids-keep-reference.patch` is
++live in `tools/asset-gen/bin/gen-coloring-chalk.mjs` (the `keepReference` path), which has moved on
++since — do not re-apply the patch or copy from here; edit the live file.
+diff --git a/tools/asset-gen/ideas-exploration/idea-11/report.md b/tools/asset-gen/ideas-exploration/idea-11/report.md
+index 28ec03e..e15b282 100644
+--- a/tools/asset-gen/ideas-exploration/idea-11/report.md
++++ b/tools/asset-gen/ideas-exploration/idea-11/report.md
+@@ -1,5 +1,8 @@
+ # Idea #11 — Whiten pen solids out of the chalk keep reference
+ 
++**Landed as:** `tools/asset-gen/bin/gen-coloring-chalk.mjs` (the `keepReference` path) — the patch
++in this `code/` dir has since been applied and moved on; treat the live file as authoritative.
++
+ **Verdict: WORKED.** The gate blind spot is real, the fix is a ~10-line change to
+ `tools/asset-gen/gen-coloring-chalk.mjs` reusing existing `lib/solid-regions.mjs` machinery, and
+ offline re-scoring of the whole 94-page catalog validates it with zero regressions. A live regen of
+diff --git a/tools/asset-gen/ideas-exploration/idea-12/code/LANDED.md b/tools/asset-gen/ideas-exploration/idea-12/code/LANDED.md
+new file mode 100644
+index 0000000..3c00321
+--- /dev/null
++++ b/tools/asset-gen/ideas-exploration/idea-12/code/LANDED.md
+@@ -0,0 +1,6 @@
++# Landed
++
++This directory is a frozen 2026-07 exploration snapshot. `fix-eye-judge.patch` is live in
++`tools/asset-gen/lib/eye-fill.mjs` — `judgeNightEyes` with the `BAND_BLIND_INK_FRAC` and
++`CHALK_WHITE_MIN` suppressions — which has moved on since. Do not re-apply the patch or copy from
++here; edit the live file.
+diff --git a/tools/asset-gen/ideas-exploration/idea-12/report.md b/tools/asset-gen/ideas-exploration/idea-12/report.md
+index d3d43fa..21e23cb 100644
+--- a/tools/asset-gen/ideas-exploration/idea-12/report.md
++++ b/tools/asset-gen/ideas-exploration/idea-12/report.md
+@@ -1,5 +1,9 @@
+ # Idea #12 — Eye detector: side profiles and non-face cores
+ 
++**Landed as:** `tools/asset-gen/lib/eye-fill.mjs` (`judgeNightEyes` and its `BAND_BLIND_INK_FRAC` /
++`CHALK_WHITE_MIN` suppressions) — the patch in this `code/` dir has since been applied and moved on;
++treat the live file as authoritative.
++
+ **Verdict: WORKED.** Two small, principled suppressions in `judgeNightEyes` clear **all five**
+ night-side false-flags in the catalog (duck-wide, monster-wide ×7, rover-wide, fire-tall,
+ train-wide) while retaining every true fail (caterpillar-wide ×2, ladybug-wide ×2, snail-wide) and
+diff --git a/tools/asset-gen/ideas-exploration/idea-13/code/LANDED.md b/tools/asset-gen/ideas-exploration/idea-13/code/LANDED.md
+new file mode 100644
+index 0000000..7438994
+--- /dev/null
++++ b/tools/asset-gen/ideas-exploration/idea-13/code/LANDED.md
+@@ -0,0 +1,6 @@
++# Landed
++
++This directory is a frozen 2026-07 exploration snapshot. Its code has since graduated into
++`tools/asset-gen/lib/invented-shapes.mjs` (the `detectInventedShapes` detector) and
++`tools/asset-gen/bin/audit-invented-shapes.mjs` (the CLI), and has drifted from both — do not edit
++or copy from here; edit the live files.
+diff --git a/tools/asset-gen/ideas-exploration/idea-13/report.md b/tools/asset-gen/ideas-exploration/idea-13/report.md
+index 8946d03..acb5540 100644
+--- a/tools/asset-gen/ideas-exploration/idea-13/report.md
++++ b/tools/asset-gen/ideas-exploration/idea-13/report.md
+@@ -1,5 +1,9 @@
+ # Idea 13 — Gate colored-shape invention on the open background
+ 
++**Landed as:** `tools/asset-gen/lib/invented-shapes.mjs` (the `detectInventedShapes` detector) and
++`tools/asset-gen/bin/audit-invented-shapes.mjs` (the CLI) — this `code/` snapshot is a frozen,
++drifted ancestor; treat the live files as authoritative.
++
+ **Verdict: WORKED.** The detector was built, validated in both directions, and the catalog sweep
+ answered the idea's open question: colored-shape invention **did ship** — 11 of the 94 night raws
+ carry confirmed invented shapes that no existing gate could have caught (23 blobs total). Zero
+diff --git a/tools/asset-gen/ideas-exploration/idea-19/code/LANDED.md b/tools/asset-gen/ideas-exploration/idea-19/code/LANDED.md
+new file mode 100644
+index 0000000..ee576ff
+--- /dev/null
++++ b/tools/asset-gen/ideas-exploration/idea-19/code/LANDED.md
+@@ -0,0 +1,6 @@
++# Landed
++
++This directory is a frozen 2026-07 exploration snapshot. `idea-19-chalk-thumbs.patch` is live in
++`tools/asset-gen/bin/gen-coloring-thumbs.mjs` and `web/src/lib/state/books.ts` (`chalkThumbPath`),
++both of which have moved on since — do not re-apply the patch or copy from here; edit the live
++files.
+diff --git a/tools/asset-gen/ideas-exploration/idea-19/report.md b/tools/asset-gen/ideas-exploration/idea-19/report.md
+index 4cc2abc..8eee4ab 100644
+--- a/tools/asset-gen/ideas-exploration/idea-19/report.md
++++ b/tools/asset-gen/ideas-exploration/idea-19/report.md
+@@ -1,5 +1,9 @@
+ # Idea 19 — Chalk covers + dark-mode thumbnails
+ 
++**Landed as:** `tools/asset-gen/bin/gen-coloring-thumbs.mjs` and `web/src/lib/state/books.ts`
++(`chalkThumbPath`) — the patch in this `code/` dir has since been applied and moved on; treat the
++live files as authoritative.
++
+ **Verdict: WORKED** (pages, end-to-end, verified in the real running app). The cover half is a
+ documented gap: no cover has a chalk asset, so cover tiles cannot swap yet — but generating cover
+ chalks turns out to need *zero* tooling changes, just 8 Gemini calls.
+diff --git a/tools/asset-gen/ideas-exploration/idea-23/code/LANDED.md b/tools/asset-gen/ideas-exploration/idea-23/code/LANDED.md
+new file mode 100644
+index 0000000..62be13e
+--- /dev/null
++++ b/tools/asset-gen/ideas-exploration/idea-23/code/LANDED.md
+@@ -0,0 +1,7 @@
++# Landed
++
++This directory is a frozen 2026-07 exploration snapshot. `golden-tooling.patch` created what are now
++`tools/asset-gen/lib/night-scores.mjs` (where the extracted `scoreNightness` is maintained) and
++`tools/asset-gen/bin/audit-golden.mjs`; `golden-scores-snapshot.patch` created what is now
++`tools/asset-gen/golden/golden-scores.json`. All three have moved on since — do not re-apply these
++patches or copy from here; edit the live files.
+diff --git a/tools/asset-gen/ideas-exploration/idea-23/report.md b/tools/asset-gen/ideas-exploration/idea-23/report.md
+index 733c43a..eb3a0e6 100644
+--- a/tools/asset-gen/ideas-exploration/idea-23/report.md
++++ b/tools/asset-gen/ideas-exploration/idea-23/report.md
+@@ -1,5 +1,9 @@
+ # Idea #23 — Golden-set regression fixtures
+ 
++**Landed as:** `tools/asset-gen/lib/night-scores.mjs`, `tools/asset-gen/bin/audit-golden.mjs`, and
++`tools/asset-gen/golden/golden-scores.json` — the patches in this `code/` dir created those files,
++which have since moved on; treat the live files as authoritative.
++
+ **Verdict: WORKED.** Built end-to-end, fully offline (0 Gemini calls): a freeze tool that snapshots
+ every cheap audit score for all 102 catalog line-arts (94 tall/wide pages + 8 covers) into one
+ committed JSON, and a diff tool that re-scores and exits non-zero on regressions. No-op diff is
+diff --git a/tools/asset-gen/ideas-exploration/idea-25/code/LANDED.md b/tools/asset-gen/ideas-exploration/idea-25/code/LANDED.md
+new file mode 100644
+index 0000000..a60b894
+--- /dev/null
++++ b/tools/asset-gen/ideas-exploration/idea-25/code/LANDED.md
+@@ -0,0 +1,5 @@
++# Landed
++
++This directory is a frozen 2026-07 exploration snapshot. Its code has since graduated into
++`tools/asset-gen/bin/gen-asset-manifest.mjs` and has drifted from it — do not edit or copy from
++here; edit the live file.
+diff --git a/tools/asset-gen/ideas-exploration/idea-25/report.md b/tools/asset-gen/ideas-exploration/idea-25/report.md
+index 00eea46..702c477 100644
+--- a/tools/asset-gen/ideas-exploration/idea-25/report.md
++++ b/tools/asset-gen/ideas-exploration/idea-25/report.md
+@@ -1,5 +1,8 @@
+ # Idea #25 — Light-mode byte-stability check in CI
+ 
++**Landed as:** `tools/asset-gen/bin/gen-asset-manifest.mjs` — this `code/` snapshot is a frozen,
++drifted ancestor; treat the live file as authoritative.
++
+ **Verdict: WORKED** — implemented end-to-end, validated in both directions, 0 Gemini calls, fully
+ offline.
+ 
+diff --git a/tools/asset-gen/ideas-exploration/idea-4/code/LANDED.md b/tools/asset-gen/ideas-exploration/idea-4/code/LANDED.md
+new file mode 100644
+index 0000000..e115a4f
+--- /dev/null
++++ b/tools/asset-gen/ideas-exploration/idea-4/code/LANDED.md
+@@ -0,0 +1,6 @@
++# Landed
++
++This directory is a frozen 2026-07 exploration snapshot. The `scoreNightness` scorer copied into
++`measure-night-bgluma.mjs` (and `normalize-night-sky.mjs`) is now maintained in
++`tools/asset-gen/lib/night-scores.mjs` and has drifted from these copies — do not edit or copy from
++here; edit the live file.
+diff --git a/tools/asset-gen/ideas-exploration/idea-4/report.md b/tools/asset-gen/ideas-exploration/idea-4/report.md
+index 68ed584..6696a16 100644
+--- a/tools/asset-gen/ideas-exploration/idea-4/report.md
++++ b/tools/asset-gen/ideas-exploration/idea-4/report.md
+@@ -1,5 +1,9 @@
+ # Idea #4 — Night-sky brightness varies ~4× across the catalog
+ 
++**Landed as:** the `scoreNightness` copied into this `code/` snapshot is now maintained in
++`tools/asset-gen/lib/night-scores.mjs` — treat the live file as authoritative; the snapshot is a
++frozen, drifted ancestor.
++
+ **Verdict: WORKED.** The spread is confirmed (16.5 → 65.3 across all 94 night raws), and **approach
+ (b) — deterministic post-normalization — works end-to-end**: it hits the target bgLuma exactly,
+ produces no visible edge artifacts, leaves enclosed regions and white lines byte-untouched, and
+diff --git a/tools/asset-gen/ideas-exploration/idea-7/code/LANDED.md b/tools/asset-gen/ideas-exploration/idea-7/code/LANDED.md
+new file mode 100644
+index 0000000..c462b7e
+--- /dev/null
++++ b/tools/asset-gen/ideas-exploration/idea-7/code/LANDED.md
+@@ -0,0 +1,6 @@
++# Landed
++
++This directory is a frozen 2026-07 exploration snapshot. Its code has since graduated into
++`tools/asset-gen/lib/night-halo.mjs` (the scoring core — `auditPage`/`ringBands`/`bleedUnderMask`
++became `scoreNightHalo` and its helpers) and `tools/asset-gen/bin/audit-night-halo.mjs` (the CLI),
++and has drifted from both — do not edit or copy from here; edit the live files.
+diff --git a/tools/asset-gen/ideas-exploration/idea-7/report.md b/tools/asset-gen/ideas-exploration/idea-7/report.md
+index d442e4b..6165064 100644
+--- a/tools/asset-gen/ideas-exploration/idea-7/report.md
++++ b/tools/asset-gen/ideas-exploration/idea-7/report.md
+@@ -1,5 +1,9 @@
+ # Idea #7 — Catalog-wide residual dark halo audit after the punch
+ 
++**Landed as:** `tools/asset-gen/lib/night-halo.mjs` (the scoring core) and
++`tools/asset-gen/bin/audit-night-halo.mjs` (the CLI) — this `code/` snapshot is a frozen, drifted
++ancestor; treat the live files as authoritative.
++
+ **Verdict: WORKED.** The auditor runs fully offline over all 94 shipped night fills in ~48 s, ranks
+ pages by a rim-darkness score, produces zoomed hotspot crops for human review, and works as a
+ byte-stable regression gate (a simulated punch change — idea #1's rim-erase — moves exactly the 4

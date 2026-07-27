@@ -12,18 +12,8 @@
 
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { ROOT, fail } from './lib/utils.mjs';
-
-const AAB = join(
-  ROOT,
-  'android',
-  'app',
-  'build',
-  'outputs',
-  'bundle',
-  'release',
-  'app-release.aab'
-);
+import { fail } from './lib/utils.mjs';
+import { RELEASE_AAB } from './lib/android.mjs';
 
 if (!process.env.JAVA_HOME)
   fail('[android-verify] JAVA_HOME is not set — cannot locate jarsigner.');
@@ -34,7 +24,7 @@ const {
   stderr = '',
   status,
   error,
-} = spawnSync(jarsigner, ['-verify', AAB], { encoding: 'utf8' });
+} = spawnSync(jarsigner, ['-verify', RELEASE_AAB], { encoding: 'utf8' });
 if (error) fail(`[android-verify] failed to run jarsigner: ${error.message}`);
 
 const output = stdout + stderr;

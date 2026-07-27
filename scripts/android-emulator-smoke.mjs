@@ -3,17 +3,17 @@
 // emulator down — even if the test fails. This is `npm run test:android`.
 //
 // It's just emulator-lifecycle glue: Maestro does the actual assertions
-// (.maestro/smoke.yaml). For a faster inner loop against an emulator you keep
-// running yourself, use `npm run test:android:device`.
+// (the shared flow in lib/native-smoke.mjs). For a faster inner loop against an
+// emulator you keep running yourself, use `npm run test:android:device`.
 //
 // Assumes the standard local setup (see `npm run android:setup`): the
 // Pixel_7_Pro_API_33 AVD, the SDK in its default location, Maestro installed.
 
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { join } from 'node:path';
-import { ROOT, sleep, sh, maestroPath } from './lib/utils.mjs';
-import { ADB, EMULATOR, AVD_NAME } from './lib/android.mjs';
+import { sleep, sh } from './lib/utils.mjs';
+import { ADB, EMULATOR, AVD_NAME, ANDROID_DIR, GRADLEW } from './lib/android.mjs';
+import { runMaestroSmoke } from './lib/native-smoke.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -75,9 +75,8 @@ console.log(`Emulator booted: ${serial}`);
 // 4. Build + install, run the flow, and always tear the emulator down.
 try {
   await sh('npm run cap:sync');
-  const gradlew = join(ROOT, 'android', 'gradlew');
-  await sh(`"${gradlew}" :app:installDebug`, join(ROOT, 'android'));
-  await sh(`"${maestroPath()}" test .maestro/smoke.yaml`);
+  await sh(`"${GRADLEW}" :app:installDebug`, ANDROID_DIR);
+  await runMaestroSmoke();
 } finally {
   console.log(`Shutting down ${serial}`);
   await execFileAsync(ADB, ['-s', serial, 'emu', 'kill']);

@@ -107,7 +107,7 @@
     "android:run:device": "npm run cap:sync && ANDROID_SERIAL=R5CY128YMGF node scripts/gradle.mjs :app:installDebug",
     "android:bundle": "npm run cap:sync && node scripts/gradle.mjs :app:bundleRelease",
     "android:verify": "node scripts/android-verify.mjs",
-    "android:open": "node scripts/open-path.mjs android/app/build/outputs/bundle/release",
+    "android:open": "node scripts/android-open.mjs",
     "android:clean": "node scripts/gradle.mjs clean",
     "ios:build": "npm run cap:sync && cd ios/App && xcodebuild -scheme App -configuration Debug -destination \"generic/platform=iOS Simulator\" -derivedDataPath build build",
     "ios:run": "npm run cap:sync && cap run ios",

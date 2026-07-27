@@ -24,7 +24,8 @@
 
 import { randomUUID } from 'node:crypto';
 import { sleep } from './lib/utils.mjs';
-import { check, fatal, summarize, json } from './lib/smoke.mjs';
+import { check, fatal, summarize } from './lib/smoke.mjs';
+import { adminClient } from './lib/adminClient.mjs';
 
 const BASE = (process.argv[2] ?? process.env.BLOBS_SMOKE_URL ?? '').replace(/\/$/, '');
 const ADMIN_SECRET = process.env.ADMIN_ACCESS_TOKEN ?? '';
@@ -41,37 +42,16 @@ if (!BASE || !ADMIN_SECRET) {
   process.exit(2);
 }
 
-async function post(path, headers, body) {
-  return fetch(`${BASE}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...headers },
-    body: JSON.stringify(body),
-  });
-}
+const admin = adminClient(BASE);
 
-async function del(path, headers, body) {
-  return fetch(`${BASE}${path}`, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', ...headers },
-    body: JSON.stringify(body),
-  });
-}
-
-// Exchange the admin secret for a bearer session, retrying through the per-IP
-// rate limiter that guards the login oracle (a re-run within the window can 429).
+// Exchange the admin secret for a bearer session, riding out the per-IP rate
+// limiter that guards the login oracle (a re-run within the window can 429).
 async function login() {
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const res = await post('/api/admin/login', {}, { key: ADMIN_SECRET });
-    if (res.status === 200) return (await json(res))?.session;
-    if (res.status === 429) {
-      const wait = Number(res.headers.get('retry-after') ?? 2);
-      console.log(`  … login rate-limited, waiting ${wait}s`);
-      await sleep((wait + 1) * 1000);
-      continue;
-    }
+  const { res, body } = await admin.login(ADMIN_SECRET, { retryOn429: true });
+  if (res.status !== 200) {
     throw new Error(`login failed: ${res.status} (check ADMIN_ACCESS_TOKEN matches the deploy)`);
   }
-  throw new Error('login kept hitting the rate limiter');
+  return body?.session;
 }
 
 let session;
@@ -85,8 +65,7 @@ async function run() {
 
   // The core assertion: a deployed function with a working Blobs context reports
   // persistent:true. V1-function regression (no NETLIFY_BLOBS_CONTEXT) → false.
-  const list = await fetch(`${BASE}/api/admin/tokens`, { headers: auth });
-  const listBody = await json(list);
+  const { res: list, body: listBody } = await admin.listTokens(auth);
   check(
     'GET tokens → 200 snapshot',
     list.status === 200 && listBody?.ok === true,
@@ -100,8 +79,7 @@ async function run() {
 
   // Round-trip a real write through Blobs, then confirm it reads back (with a
   // little patience for eventual consistency across replicas).
-  const add = await post('/api/admin/tokens', auth, { token: probe });
-  const addBody = await json(add);
+  const { res: add, body: addBody } = await admin.addToken(auth, probe);
   check(
     'POST adds the probe token',
     add.status === 200 && addBody?.tokens?.includes(probe),
@@ -116,7 +94,7 @@ async function run() {
   let readBack = false;
   for (let attempt = 0; attempt < 6 && !readBack; attempt++) {
     if (attempt) await sleep(1000);
-    const after = await json(await fetch(`${BASE}/api/admin/tokens`, { headers: auth }));
+    const { body: after } = await admin.listTokens(auth);
     readBack = Boolean(after?.tokens?.includes(probe));
   }
   check(
@@ -126,8 +104,7 @@ async function run() {
   );
 
   // Cleanup: remove the probe so the shared site-wide store stays clean.
-  const removed = await del('/api/admin/tokens', auth, { token: probe });
-  const removedBody = await json(removed);
+  const { res: removed, body: removedBody } = await admin.delToken(auth, probe);
   check(
     'DELETE removes the probe token',
     removed.status === 200 && !removedBody?.tokens?.includes(probe),
@@ -144,9 +121,7 @@ try {
   // Best-effort cleanup if we got far enough to add the probe (idempotent, so
   // a re-delete after the in-run cleanup is harmless).
   if (session && probe) {
-    await del('/api/admin/tokens', { Authorization: `Bearer ${session}` }, { token: probe }).catch(
-      () => {}
-    );
+    await admin.delToken({ Authorization: `Bearer ${session}` }, probe).catch(() => {});
   }
 }
 

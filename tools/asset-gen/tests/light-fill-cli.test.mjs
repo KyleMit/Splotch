@@ -1,8 +1,13 @@
-import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
+import { MAX_ATTEMPTS } from '../lib/cli.mjs';
+import { run, RenderFailuresError } from '../bin/gen-coloring-fills.mjs';
+
+// One page's worth of gate misses — enough to exhaust every retry and fail it.
+const exhaustPage = () => Array(MAX_ATTEMPTS).fill(false);
 
 const state = vi.hoisted(() => ({
   roots: null,
@@ -26,6 +31,9 @@ vi.mock('../lib/paths.mjs', () => ({
   },
   fail(message) {
     throw new Error(message);
+  },
+  toPosix(rel) {
+    return rel.replaceAll('\\', '/');
   },
 }));
 vi.mock('../lib/page-notes.mjs', () => ({ pageLevers: () => null, describeLevers: () => '' }));
@@ -81,7 +89,6 @@ vi.mock('../../../web/src/lib/server/ai/geminiSafety.ts', () => ({
   }),
 }));
 
-const originalArgv = process.argv;
 const originalKey = process.env.GEMINI_API_KEY;
 
 async function addPage(name) {
@@ -96,12 +103,6 @@ async function addPage(name) {
   await writeFile(join(dir, `${name}.outline.webp`), source);
   await writeFile(join(state.roots.fillSrc, `test/${name}.light.raw.webp`), `known-raw-${name}`);
   await writeFile(join(dir, `${name}.light.webp`), `known-shipped-${name}`);
-}
-
-async function runCli(...args) {
-  process.argv = ['node', 'gen-coloring-fills.mjs', ...args];
-  vi.resetModules();
-  return import('../bin/gen-coloring-fills.mjs');
 }
 
 beforeEach(async () => {
@@ -125,21 +126,22 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  process.argv = originalArgv;
   if (originalKey === undefined) delete process.env.GEMINI_API_KEY;
   else process.env.GEMINI_API_KEY = originalKey;
   vi.restoreAllMocks();
   await rm(state.roots.root, { recursive: true, force: true });
 });
 
-test('retains failed candidates in scratch and leaves every page unshipped', async () => {
+it('retains failed candidates in scratch and leaves every page unshipped', async () => {
   await addPage('first-tall');
   await addPage('second-tall');
-  state.gateResults = [false, false, false, false, false, true];
+  state.gateResults = [...exhaustPage(), true];
 
-  await expect(runCli('test/first-tall', 'test/second-tall', '--apply')).rejects.toThrow(
-    '1 render(s) failed.'
-  );
+  // Exactly the one gate-exhausted page counts as failed; the passing page is
+  // simply left unshipped because the run as a whole failed closed.
+  const err = await run(['test/first-tall', 'test/second-tall', '--apply']).catch((e) => e);
+  expect(err).toBeInstanceOf(RenderFailuresError);
+  expect(err.failed).toBe(1);
 
   expect(await readFile(join(state.roots.fillSrc, 'test/first-tall.light.raw.webp'), 'utf8')).toBe(
     'known-raw-first-tall'
@@ -162,11 +164,11 @@ test('retains failed candidates in scratch and leaves every page unshipped', asy
   expect(state.overlayRequests).toBe(2);
 });
 
-test('does not ship a passing candidate without apply', async () => {
+it('does not ship a passing candidate without apply', async () => {
   await addPage('page-tall');
   state.gateResults = [true];
 
-  await runCli('test/page-tall');
+  expect(await run(['test/page-tall'])).toEqual({ failed: 0, shipped: [] });
 
   expect(await readFile(join(state.roots.fillSrc, 'test/page-tall.light.raw.webp'), 'utf8')).toBe(
     'known-raw-page-tall'
@@ -176,13 +178,13 @@ test('does not ship a passing candidate without apply', async () => {
   );
 });
 
-test('surfaces sample drift for review without failing the run', async () => {
+it('surfaces sample drift for review without failing the run', async () => {
   await addPage('page-tall');
-  state.gateResults = []; // every attempt misses a gate
+  state.gateResults = [...exhaustPage(), ...exhaustPage()]; // both samples miss every gate
 
   // A multi-sample run is review-only (--apply is rejected with --samples > 1), so
   // gate misses while exploring palettes must not exit nonzero.
-  await expect(runCli('test/page-tall', '--samples', '2')).resolves.toBeTruthy();
+  expect(await run(['test/page-tall', '--samples', '2'])).toEqual({ failed: 0, shipped: [] });
 
   // Both candidates land in scratch for the reviewer...
   await expect(
@@ -201,14 +203,18 @@ test('surfaces sample drift for review without failing the run', async () => {
   );
 });
 
-test('fails closed when a single review render misses every gate', async () => {
+it('fails closed when a single review render misses every gate', async () => {
   await addPage('page-tall');
-  state.gateResults = []; // the one candidate misses every gate
+  state.gateResults = exhaustPage(); // the one candidate misses every gate
 
   // A single render (no --samples) is not review-exploration: gate exhaustion must
   // exit nonzero rather than silently pass, even without --apply.
-  await expect(runCli('test/page-tall')).rejects.toThrow('1 render(s) failed.');
+  const err = await run(['test/page-tall']).catch((e) => e);
+  expect(err).toBeInstanceOf(RenderFailuresError);
+  expect(err.failed).toBe(1);
 
+  // Every retry was spent before the run gave up.
+  expect(state.gateResults).toHaveLength(0);
   expect(await readFile(join(state.roots.fillSrc, 'test/page-tall.light.raw.webp'), 'utf8')).toBe(
     'known-raw-page-tall'
   );
@@ -217,11 +223,14 @@ test('fails closed when a single review render misses every gate', async () => {
   );
 });
 
-test('ships both raw and punched outputs when a candidate passes with apply', async () => {
+it('ships both raw and punched outputs when a candidate passes with apply', async () => {
   await addPage('page-tall');
   state.gateResults = [true];
 
-  await runCli('test/page-tall', '--apply');
+  expect(await run(['test/page-tall', '--apply'])).toEqual({
+    failed: 0,
+    shipped: [{ rel: 'test/page-tall' }],
+  });
 
   const raw = await readFile(join(state.roots.fillSrc, 'test/page-tall.light.raw.webp'));
   const shipped = await readFile(join(state.roots.coloring, 'test/page-tall.light.webp'));

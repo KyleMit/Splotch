@@ -1,5 +1,9 @@
 # Idea #6 — Pen normalization + light-fill regen for dead eyes
 
+Status: NOT PROMOTED — the catalog-wide pen-normalization rollout never ran;
+../../docs/fresh-outline-regen.md made a fresh pen redraw the first-choice fix, keeping
+../../bin/normalize-outline-strokes.mjs as second choice.
+
 **Verdict: WORKED.** Validated end-to-end on two pages (`objects/teddy-tall`,
 `vehicles/police-tall`) with 6 Gemini calls (cap was 8). Both pages' light-side eye-audit FAILs
 cleared, registration held at 100%/100%, and night/chalk assets were empirically proven untouched

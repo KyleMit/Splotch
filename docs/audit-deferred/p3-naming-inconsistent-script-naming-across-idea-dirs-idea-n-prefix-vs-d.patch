@@ -1,0 +1,224 @@
+diff --git a/.claude/skills/burn-down-audits/SKILL.md b/.claude/skills/burn-down-audits/SKILL.md
+index 5789e7d..40a55a0 100644
+--- a/.claude/skills/burn-down-audits/SKILL.md
++++ b/.claude/skills/burn-down-audits/SKILL.md
+@@ -96,7 +96,7 @@ BRANCH=audit/burndown
+ CHECK_CMD='npm run check'      # per-finding type-check gate
+ TEST_CMD='npm run test:unit'   # per-finding fast-test gate (see the layered gate below)
+ E2E_CMD='npm run test:e2e -- --retries=1'  # per-finding targeted E2E (retry past flakes), UI findings only
+-LINT_CMD='npx eslint'          # per-finding lint gate, on the fix's changed files
++LINT_CMD='npx eslint --no-error-on-unmatched-pattern'  # per-finding lint gate, on the fix's changed files
+ PUSH_TEST_CMD=''      # local full-suite gate before a push — OFF; CI on the draft PR is the backstop
+ COMMENT_STORE=.audit-work/pending-comments.jsonl   # per-commit comment records awaiting your MCP post
+ MAX_DEFERRALS=3       # consecutive deferrals before halting
+@@ -125,7 +125,11 @@ as possible:
+   a type-check is a different axis from eslint: a fix can pass `CHECK_CMD` yet ship a stray `any`
+   (`@typescript-eslint/no-explicit-any`) or a raw `Map` in a `.svelte.ts`
+   (`prefer-svelte-reactivity`) — both slipped an early run onto the branch and reddened CI's Quality
+-  (lint) job.
++  (lint) job. It lints only the changed paths that still exist, **and** passes
++  `--no-error-on-unmatched-pattern`: eslint hard-errors on a path that doesn't exist ("No files
++  matching the pattern"), which is exactly what a fix that deletes a file leaves in its own diff, so
++  every deletion-only fix was unconditionally red. Both layers are kept — the filter is the fix, the
++  flag is the backstop.
+ * **UI-touching findings only**, at the same point, the driver also runs `E2E_CMD` against the
+   Playwright spec(s) the verifier named for that finding (its `e2e_specs`). This catches a
+   behavioural regression *before it commits*, attributed to the one finding that caused it, without
+@@ -696,6 +700,14 @@ you did not post before the container went, you write from the commit diffs or n
+ 
+ Notes from real runs — set these before a large run rather than discovering them at 3am:
+ 
++* **A fix to the driver's own code does nothing until the driver restarts.** `burndown.mjs` and its
++  imports are loaded once, when the run starts; editing them mid-run leaves the live process on the
++  old code. This is not hypothetical: a run hit the deleted-path lint bug above, the implementer
++  fixed it correctly and committed, and the *same* gate went red again on the next round — the
++  driver was still executing the pre-fix module, so it kept feeding eslint the deleted paths, and no
++  commit could have made it green. If a gate bug is failing findings, stop the run
++  (`touch .audit-work/STOP`) and relaunch with `RESUME=1`; otherwise every finding of that shape
++  burns its review rounds and defers.
+ * **Verify is the slowest role and the main halt risk.** It reads a lot of code to confirm a finding
+   at HEAD (~150s median on this repo) and occasionally needs more than $1. The old
+   `BUDGET_VERIFY=1.00` clipped complex findings (`error_max_budget_usd` → deferral), and a cluster of
+diff --git a/scripts/audit-burndown/burndown.mjs b/scripts/audit-burndown/burndown.mjs
+index 0c40aaa..b362026 100644
+--- a/scripts/audit-burndown/burndown.mjs
++++ b/scripts/audit-burndown/burndown.mjs
+@@ -51,6 +51,7 @@ import {
+   incompleteAuditCommitPlan,
+   implementationCommitMessage,
+   launchCommand,
++  lintablePaths,
+   logLine,
+   LOGS,
+   PROMPTS,
+@@ -81,7 +82,11 @@ const BRANCH = process.env.BRANCH ?? 'audit/burndown';
+ const CHECK_CMD = process.env.CHECK_CMD ?? 'npm run check'; // type-check gate, every finding
+ const TEST_CMD = process.env.TEST_CMD ?? 'npm run test:unit'; // fast-test gate, every finding
+ const E2E_CMD = process.env.E2E_CMD ?? 'npm run test:e2e -- --retries=1'; // targeted E2E (retry past transient flakes), UI-touching findings only
+-const LINT_CMD = process.env.LINT_CMD ?? 'npx eslint'; // per-finding lint gate, on the fix's changed files
++// Per-finding lint gate, on the fix's changed files. The flag is load-bearing:
++// eslint hard-errors on a path that doesn't exist, which is exactly what a fix
++// that deletes a file leaves in its own diff (see lintablePaths, which filters
++// them out too — belt and braces, because either layer alone has failed).
++const LINT_CMD = process.env.LINT_CMD ?? 'npx eslint --no-error-on-unmatched-pattern';
+ // Local full-suite gate before a push — OFF by default. Every push lands on the
+ // draft PR, whose CI runs the whole suite anyway, in parallel, without sitting
+ // on the critical path of the next finding. Running it locally too would cost
+@@ -345,9 +350,7 @@ function gateFailure(baseSha, specs) {
+ 
+   // Lint is a separate axis from the type-check: a fix can satisfy CHECK_CMD yet
+   // ship a stray `any` or a raw Map in a .svelte.ts and redden CI's Quality job.
+-  const lintable = gitOut('diff', '--name-only', baseSha, 'HEAD')
+-    .split('\n')
+-    .filter((f) => /\.(ts|svelte|mjs|cjs|js)$/.test(f));
++  const lintable = lintablePaths(gitOut('diff', '--name-only', baseSha, 'HEAD'));
+   if (lintable.length) {
+     const lintFailure = runGate(
+       `${LINT_CMD} ${lintable.join(' ')}`,
+diff --git a/scripts/audit-burndown/lib.mjs b/scripts/audit-burndown/lib.mjs
+index 36ab071..b3a3321 100644
+--- a/scripts/audit-burndown/lib.mjs
++++ b/scripts/audit-burndown/lib.mjs
+@@ -98,6 +98,17 @@ export function protectedImplementationPaths(paths, auditPath = auditFile()) {
+   );
+ }
+ 
++// The lint gate's file list, from a `git diff --name-only` body. A path the fix
++// deleted is still in that diff, and eslint hard-errors ("No files matching the
++// pattern") on one that no longer exists — so passing deletions through made
++// every deletion-only fix unconditionally red, however clean the fix was.
++export function lintablePaths(diffOutput, exists = existsSync) {
++  return diffOutput
++    .split('\n')
++    .map((path) => path.trim())
++    .filter((path) => /\.(ts|svelte|mjs|cjs|js)$/.test(path) && exists(path));
++}
++
+ export function removeNewUntrackedPaths(baseline, current, removePath) {
+   const kept = new Set(baseline);
+   const added = current.filter((path) => !kept.has(path));
+diff --git a/scripts/tests/audit-burndown-lib.test.mjs b/scripts/tests/audit-burndown-lib.test.mjs
+index 9b93d16..1ed43ee 100644
+--- a/scripts/tests/audit-burndown-lib.test.mjs
++++ b/scripts/tests/audit-burndown-lib.test.mjs
+@@ -24,6 +24,7 @@ import {
+   incompleteAuditCommitPlan,
+   implementationCommitMessage,
+   launchCommand,
++  lintablePaths,
+   protectedImplementationPaths,
+   removeNewUntrackedPaths,
+   renderDeferralNotes,
+@@ -303,6 +304,25 @@ describe('failed implementation cleanup', () => {
+   });
+ });
+ 
++describe('lint gate file list', () => {
++  const diff = [
++    'web/src/lib/a.ts',
++    'web/src/lib/B.svelte',
++    'docs/AUDIT.md',
++    'scripts/gone.mjs',
++    'web/static/logo.webp',
++  ].join('\n');
++  const exists = (path) => path !== 'scripts/gone.mjs';
++
++  it('keeps the lintable source files a fix still has on disk', () => {
++    expect(lintablePaths(diff, exists)).toEqual(['web/src/lib/a.ts', 'web/src/lib/B.svelte']);
++  });
++
++  it('drops paths the fix deleted, which eslint would hard-error on', () => {
++    expect(lintablePaths('scripts/gone.mjs\nweb/src/also-gone.ts', () => false)).toEqual([]);
++  });
++});
++
+ describe('incomplete audit commit recovery', () => {
+   const title = '[P3][maintainability] Name the shared ring width';
+   const otherTitle = '[P4][readability] Rename the palette helper';
+diff --git a/tools/asset-gen/ideas-exploration/README.md b/tools/asset-gen/ideas-exploration/README.md
+index 1c748aa..4916914 100644
+--- a/tools/asset-gen/ideas-exploration/README.md
++++ b/tools/asset-gen/ideas-exploration/README.md
+@@ -140,6 +140,10 @@ ideas-exploration/
+                            idea-23/25 carry golden-scores/manifest snapshots)
+ ```
+ 
++Some `code/*.mjs` filenames carry an `idea{N}` prefix or suffix (`idea11-*.mjs`, `*-idea17.mjs`)
++while others are plainly descriptive (`analyze-rim.mjs`). That is incidental — each idea's subagent
++named its own scratch scripts — not a convention to imitate when adding files to this frozen tree.
++
+ Session context: run by 25 sequential Claude subagents on branch
+ `claude/asset-gen-ideas-subagents-gkycf1`; ~90 Gemini image calls total across the session. The repo
+ tree was verified pristine (`git status --porcelain` empty) after every idea.
+diff --git a/tools/asset-gen/ideas-exploration/idea-21/code/tmp-rects.mjs b/tools/asset-gen/ideas-exploration/idea-21/code/tmp-rects.mjs
+deleted file mode 100644
+index 394aa60..0000000
+--- a/tools/asset-gen/ideas-exploration/idea-21/code/tmp-rects.mjs
++++ /dev/null
+@@ -1,28 +0,0 @@
+-// TEMP (idea-21 experiment): dump tile rects from a rendered sheet. Delete me.
+-import { chromium } from 'playwright';
+-import { pathToFileURL } from 'node:url';
+-
+-const [file] = process.argv.slice(2);
+-const browser = await chromium.launch({
+-  executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+-  args: ['--no-sandbox'],
+-});
+-const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+-await page.goto(pathToFileURL(file).href);
+-await page.waitForTimeout(2500);
+-const rects = await page.evaluate(() =>
+-  [...document.querySelectorAll('figure.half')].map((f) => {
+-    const r = f.querySelector('canvas').getBoundingClientRect();
+-    return {
+-      name: f.querySelector('.name')?.textContent,
+-      tag: f.querySelector('.tag')?.textContent ?? null,
+-      theme: f.querySelector('.pill')?.textContent,
+-      x: r.x + window.scrollX,
+-      y: r.y + window.scrollY,
+-      w: r.width,
+-      h: r.height,
+-    };
+-  })
+-);
+-console.log(JSON.stringify(rects));
+-await browser.close();
+diff --git a/tools/asset-gen/ideas-exploration/idea-21/code/tmp-shoot-sheet.mjs b/tools/asset-gen/ideas-exploration/idea-21/code/tmp-shoot-sheet.mjs
+deleted file mode 100644
+index d7be468..0000000
+--- a/tools/asset-gen/ideas-exploration/idea-21/code/tmp-shoot-sheet.mjs
++++ /dev/null
+@@ -1,32 +0,0 @@
+-// TEMP (idea-21 experiment): screenshot a contact sheet HTML file. Delete me.
+-import { chromium } from 'playwright';
+-import { pathToFileURL } from 'node:url';
+-
+-const [file, out, clipSpec] = process.argv.slice(2);
+-const browser = await chromium.launch({
+-  executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+-  args: ['--no-sandbox'],
+-});
+-const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+-const errors = [];
+-page.on('pageerror', (e) => errors.push(String(e)));
+-page.on('console', (m) => {
+-  if (m.type() === 'error') errors.push(m.text());
+-});
+-await page.goto(pathToFileURL(file).href);
+-await page.waitForTimeout(2500);
+-if (clipSpec) {
+-  const [x, y, w, h] = clipSpec.split(',').map(Number);
+-  await page.screenshot({ path: out, clip: { x, y, width: w, height: h } });
+-} else {
+-  await page.screenshot({ path: out, fullPage: true });
+-}
+-const meta = await page.evaluate(() => ({
+-  pairs: document.querySelectorAll('.pair').length,
+-  canvases: document.querySelectorAll('canvas').length,
+-  drawn: [...document.querySelectorAll('canvas')].filter((c) => c.width > 0).length,
+-  tags: [...document.querySelectorAll('.tag')].slice(0, 4).map((t) => t.textContent),
+-  notes: [...document.querySelectorAll('.note')].map((n) => n.textContent).slice(0, 6),
+-}));
+-console.log(JSON.stringify({ meta, errors }, null, 2));
+-await browser.close();

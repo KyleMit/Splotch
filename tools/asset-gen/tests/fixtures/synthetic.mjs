@@ -1,7 +1,7 @@
 // Synthetic fixtures for the quality-gate unit tests.
 //
 // Why synthetic instead of recovered pre-fix regressions: the deterministic
-// gates score PIXEL GEOMTRY (solid-region area, ring-nesting depth, outline
+// gates score PIXEL GEOMETRY (solid-region area, ring-nesting depth, outline
 // registration, eye-core contrast), so a hand-drawn shape exercises the same
 // code path a shipped regression did — while giving two properties a recovered
 // asset can't: (1) no dependency on an old commit still reproducing its bug, and

@@ -1,5 +1,8 @@
 # Idea #14 — Local-warp registration check (the shimmer suspect)
 
+Status: OPEN — no local-warp audit exists at HEAD; the shipped worst-tile keep gate (≥ 80%,
+../../docs/pipeline.md) is too coarse to flag local warp.
+
 **Verdict: WORKED.** The per-tile displacement scorer was built, run over all 188 committed raws (94
 night + 94 light), and it found genuine local warp on shipped pages — including one visible
 double-feature in the final dark-mode composite. The headline hypothesis, however, is **refuted**:
@@ -118,6 +121,7 @@ fill redraws against the chalk, and tiny background features are the ones it re-
   `lib/paths.mjs` + root `sharp`). `node tools/asset-gen/warp-scan.mjs --theme both --out DIR`
 * `code/warp-viz.mjs` — heatmap + worst-tile crops + night-composite crop for one page
 * `code/analyze-warp.mjs` — ranking + hypothesis test over the scan JSON
-* `warp-both.json` — full per-tile displacement fields for all 188 raws
+* `warp-both.json` — full per-tile displacement fields for all 188 raws. Not committed (2.4 MB raw
+  intermediate); regenerate with `code/warp-scan.mjs --theme both --out DIR`
 * `viz/` — 32 evidence images (heatmaps, tile crops red=source-only / cyan=fill-only /
   black=aligned, composites)

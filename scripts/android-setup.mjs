@@ -76,7 +76,7 @@ if (avds.includes(AVD_NAME)) {
 
 const localProps = join(ROOT, 'android', 'local.properties');
 if (!existsSync(localProps)) {
-  writeFileSync(localProps, `sdk.dir=${ANDROID_HOME.replaceAll('\\', '/')}\n`);
+  writeFileSync(localProps, `sdk.dir=${ANDROID_HOME}\n`);
   console.log(`[android-setup] Wrote android/local.properties (sdk.dir=${ANDROID_HOME})`);
 }
 

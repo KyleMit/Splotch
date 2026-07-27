@@ -20,7 +20,7 @@ import { parseArgs } from 'node:util';
 import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
-import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, fail } from '../lib/paths.mjs';
+import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, fail, toPosix } from '../lib/paths.mjs';
 import { punchFill } from '../lib/punch-fill.mjs';
 
 // Resolve args to raw fills (default: all). An arg is a category ("nature") or a
@@ -37,7 +37,7 @@ async function resolveArg(arg) {
   if (existsSync(asDir) && statSync(asDir).isDirectory()) return rawsUnder(arg);
   const page = await rawsUnder(dirname(arg));
   const matches = page.filter((p) => {
-    const rel = relative(FILL_SRC_DIR, p).replace(/\\/g, '/');
+    const rel = toPosix(relative(FILL_SRC_DIR, p));
     return rel.startsWith(`${arg}.`);
   });
   if (!matches.length)

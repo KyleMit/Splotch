@@ -3,9 +3,12 @@
 // so nothing here is string-interpolated at build time — this file is plain, lintable
 // JS that reads its inputs from that global. See ../docs/coloring-book-proof-sheet.md
 // for the layer model.
-const { cells: CELLS, source: SOURCE } = window.__COLORING_BOOK_PROOF_SHEET__;
+const {
+  cells: CELLS,
+  source: SOURCE,
+  outlineLuma: OUTLINE_LUMA,
+} = window.__COLORING_BOOK_PROOF_SHEET__;
 const RENDER_MAX = 640;
-const OUTLINE_LUMA = 150; // asset-gen's punch threshold (lib/punch-fill.mjs)
 const PAPER = { dark: '#211f29', light: '#fcfbf8' };
 const BLEND = { dark: 'screen', light: 'multiply' };
 const INVERT = { dark: true, light: false };
@@ -129,8 +132,12 @@ function renderAll() {
   for (const t of tiles) render(t);
 }
 
+// Review buckets are deliberately stricter than the KEEP_THRESHOLD ship gate (92%,
+// lib/outline-match.mjs) — a page can pass the pipeline gate and still show yellow/red here.
+const KEEP_GOOD = 99;
+const KEEP_OK = 96;
 function keepClass(keep) {
-  return keep >= 99 ? 'good' : keep >= 96 ? 'ok' : 'warn';
+  return keep >= KEEP_GOOD ? 'good' : keep >= KEEP_OK ? 'ok' : 'warn';
 }
 
 function buildHalf(pair, cell, theme, imgsP) {
@@ -145,38 +152,23 @@ function buildHalf(pair, cell, theme, imgsP) {
   frame.appendChild(canvas);
   frame.appendChild(vl);
   const cap = document.createElement('figcaption');
-  const nm = document.createElement('span');
-  nm.className = 'name';
-  nm.textContent = cell.id + '-' + cell.orient;
-  cap.appendChild(nm);
+  const chip = (cls, text) => {
+    const s = document.createElement('span');
+    s.className = cls;
+    s.textContent = text;
+    cap.appendChild(s);
+    return s;
+  };
+  chip('name', cell.id + '-' + cell.orient);
   if (theme === 'light' && cell.keep != null) {
-    const k = document.createElement('span');
-    k.className = 'keep ' + keepClass(cell.keep);
-    k.textContent = 'outline ' + cell.keep.toFixed(1) + '%';
-    cap.appendChild(k);
+    chip('keep ' + keepClass(cell.keep), 'outline ' + cell.keep.toFixed(1) + '%');
   }
-  if (theme === 'dark' && !cell.night) {
-    const note = document.createElement('span');
-    note.className = 'note';
-    note.textContent = 'no night fill';
-    cap.appendChild(note);
-  }
-  if (theme === 'dark' && !cell.chalk) {
-    const note = document.createElement('span');
-    note.className = 'note';
-    note.textContent = 'no chalk (inverted pen)';
-    cap.appendChild(note);
-  }
+  if (theme === 'dark' && !cell.night) chip('note', 'no night fill');
+  if (theme === 'dark' && !cell.chalk) chip('note', 'no chalk (inverted pen)');
   if (theme === 'dark' ? cell.nightRaw : cell.lightRaw) {
-    const note = document.createElement('span');
-    note.className = 'note';
-    note.textContent = 'raw fill (pre-fork fallback)';
-    cap.appendChild(note);
+    chip('note', 'raw fill (pre-fork fallback)');
   }
-  const pill = document.createElement('span');
-  pill.className = 'pill ' + (theme === 'dark' ? 'night' : 'light');
-  pill.textContent = theme === 'dark' ? 'NIGHT' : 'LIGHT';
-  cap.appendChild(pill);
+  chip('pill ' + (theme === 'dark' ? 'night' : 'light'), theme === 'dark' ? 'NIGHT' : 'LIGHT');
   fig.appendChild(frame);
   fig.appendChild(cap);
   pair.appendChild(fig);

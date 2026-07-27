@@ -33,9 +33,17 @@
 import { parseArgs } from 'node:util';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
-import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
-import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import {
+  REPO_ROOT,
+  COLORING_DIR,
+  FILL_SRC_DIR,
+  SAMPLES_DIR,
+  fail,
+  toPosix,
+} from '../lib/paths.mjs';
+import { MAX_ATTEMPTS, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, describeLevers } from '../lib/page-notes.mjs';
@@ -49,6 +57,17 @@ import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSaf
 
 const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 90;
+
+// How `run` reports the one failure mode a caller can act on: some renders were
+// rejected, none shipped. Carries the count so callers assert on the number
+// rather than on the message's wording.
+export class RenderFailuresError extends Error {
+  constructor(failed) {
+    super(`${failed} render(s) failed.`);
+    this.name = 'RenderFailuresError';
+    this.failed = failed;
+  }
+}
 
 // Generate one flat-colored version of a coloring page. Returns raw image bytes
 // + mime type, or throws with the refusal/empty reason.
@@ -96,29 +115,6 @@ async function whiteFraction(buf) {
   return white / n;
 }
 
-const { values, positionals } = parseArgs({
-  allowPositionals: true,
-  options: {
-    apply: { type: 'boolean' },
-    samples: { type: 'string', short: 'n' },
-    temperature: { type: 'string', short: 't' },
-  },
-});
-
-const samples = parsePositiveInt(values.samples, '--samples', 1);
-if (values.apply && samples > 1) fail('--apply cannot be combined with --samples greater than 1.');
-const baseTemp = parseTemperature(values.temperature, '--temperature', undefined);
-const ai = makeClient();
-
-const pages = await resolveOutlineTargets(positionals, {
-  includeCovers: false,
-  explicitFiles: true,
-  sort: 'per-target',
-  defaultAll: true,
-  onMissing: 'defer',
-});
-const sampleMode = samples > 1;
-
 // A candidate is only usable if it holds the original outline — globally AND in
 // every region — and leaves no big blank-white area. Below any bar the fill either
 // drifted off its outline or reads as half-uncolored, so reject and retry.
@@ -129,15 +125,6 @@ const sampleMode = samples > 1;
 // 92% bar) while its flower tile was 34% — the drift the child sees. Gating the
 // worst tile is what catches that; the global bar alone never could.
 const WHITE_THRESHOLD = 0.05; // >5% pure white ⇒ blank areas left uncolored
-const MAX_ATTEMPTS = 5;
-
-// Colouring variety comes from sampling; the hard constraint is fidelity. Spread
-// the per-slot temperature just enough for different palettes, and nudge it on a
-// retry to escape a bad draw. Slot 0 (or single batch render) stays coolest.
-function baseTempForSlot(i) {
-  if (baseTemp !== undefined) return baseTemp;
-  return samples === 1 ? 0.55 : 0.55 + i * 0.12;
-}
 
 // A candidate clears if it holds the outline globally AND in its worst tile,
 // isn't mostly blank white, and painted the eyes (at least one nested eye core
@@ -152,106 +139,154 @@ const passes = (c) =>
 const rank = (c) =>
   (passes(c) ? 1000 : 0) + c.localKeep * 200 + (c.eyesOk ? 150 : 0) + (1 - c.white) * 100 + c.keep;
 
-// Generate, size-match, re-register onto the source outline, and score one
-// candidate; retry until it passes both gates, keeping the best attempt if none
-// fully do. Returns the winning colored bytes, its scores, and its overlay.
-async function renderClean(source, width, height, slot) {
-  let best = null;
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const temperature = Math.min(2, baseTempForSlot(slot) + attempt * 0.15);
-    const { bytes } = await generateColoredPage(ai, {
-      imageBytes: source,
-      mimeType: 'image/webp',
-      temperature,
-    });
-    // Force the colored fill back to the source's exact pixel dimensions, then
-    // undo any few-pixel nudge so it registers 1:1 against the outline page.
-    const resized = await sharp(bytes).resize(width, height, { fit: 'fill' }).png().toBuffer();
-    const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
-    const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
+export async function run(argv) {
+  const { values, positionals } = parseArgs({
+    args: argv,
+    allowPositionals: true,
+    options: {
+      apply: { type: 'boolean' },
+      samples: { type: 'string', short: 'n' },
+      temperature: { type: 'string', short: 't' },
+    },
+  });
 
-    const [{ keep, drift, localKeep, worstTile }, white, eyeScore] = await Promise.all([
-      outlineMatch(source, colored),
-      whiteFraction(colored),
-      scoreEyeFill(colored, source),
-    ]);
-    const cand = {
-      colored,
-      keep,
-      drift,
-      localKeep,
-      worstTile,
-      white,
-      eyesOk: judgeLightEyes(eyeScore).passes,
-      shift: { dx, dy },
-      attempt,
-    };
-    if (!best || rank(cand) > rank(best)) best = cand;
-    if (passes(cand)) break;
+  const samples = parsePositiveInt(values.samples, '--samples', 1);
+  if (values.apply && samples > 1)
+    fail('--apply cannot be combined with --samples greater than 1.');
+  const baseTemp = parseTemperature(values.temperature, '--temperature', undefined);
+  const ai = makeClient();
+
+  const pages = await resolveOutlineTargets(positionals, {
+    includeCovers: false,
+    explicitFiles: true,
+    sort: 'per-target',
+    defaultAll: true,
+    onMissing: 'defer',
+  });
+  const sampleMode = samples > 1;
+
+  // Colouring variety comes from sampling; the hard constraint is fidelity. Spread
+  // the per-slot temperature just enough for different palettes, and nudge it on a
+  // retry to escape a bad draw. Slot 0 (or single batch render) stays coolest.
+  function baseTempForSlot(i) {
+    if (baseTemp !== undefined) return baseTemp;
+    return samples === 1 ? 0.55 : 0.55 + i * 0.12;
   }
-  const { overlay } = await outlineMatch(source, best.colored, { overlay: true });
-  return { ...best, overlay };
-}
 
-let failures = 0;
-const passingCandidates = [];
-for (const page of pages) {
-  const rel = relative(COLORING_DIR, page)
-    .replace(/\.outline\.webp$/, '')
-    .replace(/\\/g, '/');
-  // The registry's "light" entries are informational only for now — this
-  // generator has no --notes / gate-override flags to merge, so a page's
-  // review/why/motifs notes are printed but nothing is auto-applied
-  // (lib/page-notes.mjs documents the reserved key).
-  const levers = pageLevers(rel, 'light');
-  if (levers)
-    console.log(describeLevers({ rel, levers, fromRegistry: [], cliValues: values, settings: {} }));
-  const source = await readFile(page);
-  const { width, height } = await sharp(source).metadata();
+  // Generate, size-match, re-register onto the source outline, and score one
+  // candidate; retry until it passes both gates, keeping the best attempt if none
+  // fully do. Returns the winning colored bytes, its scores, and its overlay.
+  async function renderClean(source, width, height, slot) {
+    let best = null;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const temperature = Math.min(2, baseTempForSlot(slot) + attempt * 0.15);
+      const { bytes } = await generateColoredPage(ai, {
+        imageBytes: source,
+        mimeType: 'image/webp',
+        temperature,
+      });
+      // Force the colored fill back to the source's exact pixel dimensions, then
+      // undo any few-pixel nudge so it registers 1:1 against the outline page.
+      const resized = await sharp(bytes).resize(width, height, { fit: 'fill' }).png().toBuffer();
+      const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
+      const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
-  for (let i = 0; i < samples; i++) {
-    const label = sampleMode ? `${rel}  sample ${i + 1}/${samples}` : rel;
-    process.stdout.write(`${label} ... `);
-    try {
-      const cand = await renderClean(source, width, height, i);
-      const { colored, keep, localKeep, overlay, white, shift, attempt } = cand;
-      const warn = [];
-      if (keep < KEEP_THRESHOLD) warn.push('drifting');
-      if (localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
-      if (white > WHITE_THRESHOLD) warn.push('white');
-      if (!cand.eyesOk) warn.push('flat eyes');
-      const score = `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%`;
+      const [{ keep, drift, localKeep, worstTile }, white, eyeScore] = await Promise.all([
+        outlineMatch(source, colored),
+        whiteFraction(colored),
+        scoreEyeFill(colored, source),
+      ]);
+      const cand = {
+        colored,
+        keep,
+        drift,
+        localKeep,
+        worstTile,
+        white,
+        eyesOk: judgeLightEyes(eyeScore).passes,
+        shift: { dx, dy },
+        attempt,
+      };
+      if (!best || rank(cand) > rank(best)) best = cand;
+      if (passes(cand)) break;
+    }
+    const { overlay } = await outlineMatch(source, best.colored, { overlay: true });
+    return { ...best, overlay };
+  }
 
-      const dir = join(SAMPLES_DIR, rel);
-      await mkdir(dir, { recursive: true });
-      const out = join(dir, `sample-${i + 1}.webp`);
-      await writeFile(out, colored);
-      await sharp(overlay).toFile(join(dir, `sample-${i + 1}.overlay.png`));
-      if (passes(cand)) passingCandidates.push({ rel, colored });
-      // Multi-sample runs are review-only (--apply is rejected above): individual
-      // candidates routinely miss a gate while exploring palettes, so a gate miss
-      // there must not fail the run. A thrown error below always counts.
-      else if (!sampleMode) failures++;
+  let failures = 0;
+  const passingCandidates = [];
+  for (const page of pages) {
+    const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
+    // The registry's "light" entries are informational only for now — this
+    // generator has no --notes / gate-override flags to merge, so a page's
+    // review/why/motifs notes are printed but nothing is auto-applied
+    // (lib/page-notes.mjs documents the reserved key).
+    const levers = pageLevers(rel, 'light');
+    if (levers)
       console.log(
-        formatCandidateLine({ stats: score, warnings: warn, attempt, shift, outPath: out })
+        describeLevers({ rel, levers, fromRegistry: [], cliValues: values, settings: {} })
       );
-    } catch (err) {
-      failures++;
-      console.log(`FAILED (${err instanceof Error ? err.message : err})`);
+    const source = await readFile(page);
+    const { width, height } = await sharp(source).metadata();
+
+    for (let i = 0; i < samples; i++) {
+      const label = sampleMode ? `${rel}  sample ${i + 1}/${samples}` : rel;
+      process.stdout.write(`${label} ... `);
+      try {
+        const cand = await renderClean(source, width, height, i);
+        const { colored, keep, localKeep, overlay, white, shift, attempt } = cand;
+        const warn = [];
+        if (keep < KEEP_THRESHOLD) warn.push('drifting');
+        if (localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
+        if (white > WHITE_THRESHOLD) warn.push('white');
+        if (!cand.eyesOk) warn.push('flat eyes');
+        const score = `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%`;
+
+        const dir = join(SAMPLES_DIR, rel);
+        await mkdir(dir, { recursive: true });
+        const out = join(dir, `sample-${i + 1}.webp`);
+        await writeFile(out, colored);
+        await sharp(overlay).toFile(join(dir, `sample-${i + 1}.overlay.png`));
+        if (passes(cand)) passingCandidates.push({ rel, colored });
+        // Multi-sample runs are review-only (--apply is rejected above): individual
+        // candidates routinely miss a gate while exploring palettes, so a gate miss
+        // there must not fail the run. A thrown error below always counts.
+        else if (!sampleMode) failures++;
+        console.log(
+          formatCandidateLine({ stats: score, warnings: warn, attempt, shift, outPath: out })
+        );
+      } catch (err) {
+        failures++;
+        console.log(`FAILED (${err instanceof Error ? err.message : err})`);
+      }
     }
   }
+
+  if (failures) throw new RenderFailuresError(failures);
+  const shipped = [];
+  if (values.apply) {
+    for (const { rel, colored } of passingCandidates) {
+      const rawOut = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
+      await mkdir(dirname(rawOut), { recursive: true });
+      await writeFile(rawOut, colored);
+      const { out } = await punchFill(rawOut);
+      shipped.push({ rel });
+      console.log(`  ✓ applied -> ${relative(REPO_ROOT, out)}`);
+    }
+  } else if (!sampleMode) {
+    console.log('Review the candidate, then re-run with --apply to ship it.');
+  }
+  console.log('Done.');
+  return { failed: failures, shipped };
 }
 
-if (failures) fail(`${failures} render(s) failed.`);
-if (values.apply) {
-  for (const { rel, colored } of passingCandidates) {
-    const rawOut = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
-    await mkdir(dirname(rawOut), { recursive: true });
-    await writeFile(rawOut, colored);
-    const { out } = await punchFill(rawOut);
-    console.log(`  ✓ applied -> ${relative(REPO_ROOT, out)}`);
-  }
-} else if (!sampleMode) {
-  console.log('Review the candidate, then re-run with --apply to ship it.');
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  run(process.argv.slice(2)).catch((err) => {
+    // A RenderFailuresError is the expected "some renders were rejected" exit and
+    // its message says everything; anything else is a bug, so print the error whole
+    // to keep the stack.
+    console.error(err instanceof RenderFailuresError ? err.message : err);
+    process.exitCode = 1;
+  });
 }
-console.log('Done.');

@@ -55,6 +55,7 @@ import {
   SAMPLES_DARK_DIR,
   fail,
   resolveNightLineArt,
+  toPosix,
 } from '../lib/paths.mjs';
 import { parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { makeClient } from '../lib/gemini.mjs';
@@ -321,9 +322,7 @@ if (values.wide) pages = pages.filter((p) => p.includes('-wide'));
 
 let failures = 0;
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page)
-    .replace(/\.outline\.webp$/, '')
-    .replace(/\\/g, '/');
+  const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
   // Resolve this page's levers: defaults < fill-src/<cat>/notes.json < CLI.
   const levers = pageLevers(rel, 'night');
   const { merged, fromRegistry } = mergeFlags(values, levers);

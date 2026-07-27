@@ -1,5 +1,7 @@
 # Idea 13 — Gate colored-shape invention on the open background
 
+Status: LANDED as ../../bin/audit-invented-shapes.mjs (detector in ../../lib/invented-shapes.mjs).
+
 **Verdict: WORKED.** The detector was built, validated in both directions, and the catalog sweep
 answered the idea's open question: colored-shape invention **did ship** — 11 of the 94 night raws
 carry confirmed invented shapes that no existing gate could have caught (23 blobs total). Zero

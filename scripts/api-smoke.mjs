@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto';
 import { spawnViteServer } from './lib/vite-server.mjs';
 import { waitForUrl } from './lib/utils.mjs';
 import { check, fatal, summarize, json } from './lib/smoke.mjs';
+import { adminClient } from './lib/adminClient.mjs';
 // Type-stripped at runtime (the npm script passes --experimental-strip-types)
 // so the absence assertions below name the same headers the hook stamps — a new
 // security header is covered here the moment it's added to that module.
@@ -27,26 +28,26 @@ const TINY_PNG = Buffer.from(
   'base64'
 );
 
-async function run() {
-  // --- admin/login ---
-  const wrong = await fetch(`${BASE}/api/admin/login`, {
+const postJson = (base, path, body, headers = {}) =>
+  fetch(`${base}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key: 'definitely-wrong' }),
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(body),
   });
-  const wrongBody = await json(wrong);
+
+const authHeader = (session) => ({ Authorization: `Bearer ${session}` });
+
+// Returns the admin `auth` header plus the unauthenticated /api/* response, which
+// the CORS suite re-reads instead of spending another request.
+async function checkAdminAuth(admin) {
+  const { res: wrong, body: wrongBody } = await admin.login('definitely-wrong');
   check(
     'login with wrong key → 403 {ok:false}',
     wrong.status === 403 && wrongBody?.ok === false,
     `got ${wrong.status}`
   );
 
-  const good = await fetch(`${BASE}/api/admin/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key: ADMIN_SECRET }),
-  });
-  const goodBody = await json(good);
+  const { res: good, body: goodBody } = await admin.login(ADMIN_SECRET);
   const session = goodBody?.session;
   check(
     'login with correct key → 200 {ok:true, session:<64-hex>}',
@@ -54,18 +55,17 @@ async function run() {
     `got ${good.status}`
   );
 
-  const auth = { Authorization: `Bearer ${session}` };
-
-  // --- admin/tokens auth gate ---
-  const noAuth = await fetch(`${BASE}/api/admin/tokens`);
+  const { res: noAuth } = await admin.listTokens({});
   check('tokens without auth → 401', noAuth.status === 401, `got ${noAuth.status}`);
 
-  const badAuth = await fetch(`${BASE}/api/admin/tokens`, {
-    headers: { Authorization: 'Bearer deadbeef' },
-  });
+  const { res: badAuth } = await admin.listTokens(authHeader('deadbeef'));
   check('tokens with bad bearer → 401', badAuth.status === 401, `got ${badAuth.status}`);
 
-  // --- CORS contract (hooks.server.ts `handleCors`, ADR-0007) ---
+  return { auth: authHeader(session), noAuth };
+}
+
+// --- CORS contract (hooks.server.ts `handleCors`, ADR-0007) ---
+async function checkCorsContract(base, noAuth) {
   // The native WebViews call /api/* from a foreign origin, so the preflight is
   // answered before any route logic and every /api/* response carries the CORS
   // set. Neither may carry the SSR security headers: `handleSecurityHeaders`
@@ -85,7 +85,7 @@ async function run() {
 
   // OPTIONS returns before `resolve()`, so this spends no rate-limit budget —
   // which is what lets it sit ahead of the burst checks further down.
-  const preflight = await fetch(`${BASE}/api/generate-image`, { method: 'OPTIONS' });
+  const preflight = await fetch(`${base}/api/generate-image`, { method: 'OPTIONS' });
   check(
     'OPTIONS /api/* → 204 with the CORS set and no security headers',
     preflight.status === 204 &&
@@ -102,10 +102,10 @@ async function run() {
     wrongCors(noAuth).length === 0 && leakedSecurity(noAuth).length === 0,
     `wrong ${JSON.stringify(wrongCors(noAuth))}, leaked ${JSON.stringify(leakedSecurity(noAuth))}`
   );
+}
 
-  // --- tokens snapshot + mutations ---
-  const list = await fetch(`${BASE}/api/admin/tokens`, { headers: auth });
-  const listBody = await json(list);
+async function checkTokensCrud(admin, auth) {
+  const { res: list, body: listBody } = await admin.listTokens(auth);
   check(
     'tokens GET → 200 {ok, tokens[], invites[]}',
     list.status === 200 &&
@@ -124,35 +124,25 @@ async function run() {
   );
 
   const newToken = `smoke-${Date.now()}`;
-  const add = await fetch(`${BASE}/api/admin/tokens`, {
-    method: 'POST',
-    headers: { ...auth, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token: newToken }),
-  });
-  const addBody = await json(add);
+  const { res: add, body: addBody } = await admin.addToken(auth, newToken);
   check(
     'tokens POST adds a token',
     add.status === 200 && addBody?.tokens?.includes(newToken),
     `got ${add.status}`
   );
 
-  const del = await fetch(`${BASE}/api/admin/tokens`, {
-    method: 'DELETE',
-    headers: { ...auth, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token: newToken }),
-  });
-  const delBody = await json(del);
+  const { res: del, body: delBody } = await admin.delToken(auth, newToken);
   check(
     'tokens DELETE removes the token',
     del.status === 200 && !delBody?.tokens?.includes(newToken),
     `got ${del.status}`
   );
+}
 
-  // --- public oracle: verify-access-code against the seeded allowlist ---
-  const code = await fetch(`${BASE}/api/verify-access-code`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code: 'almost-certainly-not-a-real-code' }),
+// --- public oracle: verify-access-code against the seeded allowlist ---
+async function checkVerifyAccessCode(base) {
+  const code = await postJson(base, '/api/verify-access-code', {
+    code: 'almost-certainly-not-a-real-code',
   });
   const codeBody = await json(code);
   check(
@@ -161,26 +151,19 @@ async function run() {
     `got ${code.status} ${JSON.stringify(codeBody)}`
   );
 
-  const goodCode = await fetch(`${BASE}/api/verify-access-code`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code: 'alpha' }),
-  });
+  const goodCode = await postJson(base, '/api/verify-access-code', { code: 'alpha' });
   const goodCodeBody = await json(goodCode);
   check(
     'verify-access-code valid → 200 {ok:true, accessCode}',
     goodCode.status === 200 && goodCodeBody?.ok === true && goodCodeBody?.accessCode === 'alpha',
     `got ${goodCode.status} ${JSON.stringify(goodCodeBody)}`
   );
+}
 
-  // --- report: validation + honeypot + graceful-unconfigured (no GITHUB token
-  // in the smoke env, so no real issue is ever created) ---
-  const report = (payload) =>
-    fetch(`${BASE}/api/report`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+// --- report: validation + honeypot + graceful-unconfigured (no GITHUB token
+// in the smoke env, so no real issue is ever created) ---
+async function checkReport(base) {
+  const report = (payload) => postJson(base, '/api/report', payload);
 
   const emptyReport = await report({ kind: 'bug', message: '   ' });
   const emptyReportBody = await json(emptyReport);
@@ -224,10 +207,12 @@ async function run() {
     reportLimited !== null && Boolean(reportLimited.headers.get('retry-after')),
     reportLimited ? 'saw 429' : 'never saw a 429'
   );
+}
 
-  // --- csp-report: both browser payload formats, caps, and its own bucket ---
+// --- csp-report: both browser payload formats, caps, and its own bucket ---
+async function checkCspReport(base) {
   const cspReport = (body, contentType) =>
-    fetch(`${BASE}/api/csp-report`, {
+    fetch(`${base}/api/csp-report`, {
       method: 'POST',
       headers: { 'Content-Type': contentType },
       body,
@@ -235,7 +220,7 @@ async function run() {
 
   const reportUriPayload = JSON.stringify({
     'csp-report': {
-      'document-uri': `${BASE}/`,
+      'document-uri': `${base}/`,
       'blocked-uri': 'https://evil.example/x.js',
       'effective-directive': 'script-src',
       disposition: 'enforce',
@@ -251,8 +236,8 @@ async function run() {
   const reportingApiPayload = JSON.stringify([
     {
       type: 'csp-violation',
-      url: `${BASE}/`,
-      body: { documentURL: `${BASE}/`, blockedURL: 'inline', effectiveDirective: 'style-src-attr' },
+      url: `${base}/`,
+      body: { documentURL: `${base}/`, blockedURL: 'inline', effectiveDirective: 'style-src-attr' },
     },
   ]);
   const modernFormat = await cspReport(reportingApiPayload, 'application/reports+json');
@@ -293,8 +278,10 @@ async function run() {
     cspLimited !== null && Boolean(cspLimited.headers.get('retry-after')),
     cspLimited ? 'saw 429' : 'never saw a 429'
   );
+}
 
-  // --- generate-image auth gate (every case rejected before the model call) ---
+// --- generate-image auth gate (every case rejected before the model call) ---
+async function checkGenerateImage(base) {
   // The contract is a raw image body: credentials ride in headers (secrets stay
   // out of the query string), the style enum is a query param, the body is the
   // image bytes. `image: null` sends no body — the valid-token-but-no-image case.
@@ -303,7 +290,7 @@ async function run() {
     if (token) headers['X-Access-Token'] = token;
     if (apiKey) headers['X-Api-Key'] = apiKey;
     if (image) headers['Content-Type'] = 'image/png';
-    return fetch(`${BASE}/api/generate-image`, {
+    return fetch(`${base}/api/generate-image`, {
       method: 'POST',
       headers,
       body: image ?? undefined,
@@ -333,7 +320,7 @@ async function run() {
     const form = new FormData();
     if (token) form.set('token', token);
     form.set('image', new Blob([TINY_PNG], { type: mimeType }), 'drawing');
-    return fetch(`${BASE}/api/generate-image`, { method: 'POST', body: form });
+    return fetch(`${base}/api/generate-image`, { method: 'POST', body: form });
   };
 
   const legacyBadToken = await legacyMultipart({
@@ -352,17 +339,15 @@ async function run() {
     legacyValidToken.status === 415,
     `got ${legacyValidToken.status}`
   );
+}
 
-  // --- standard 429 contract (throttled() in src/lib/server/http.ts) ---
+// --- standard 429 contract (throttled() in src/lib/server/http.ts) ---
+async function checkThrottling(base) {
   // The per-IP limit is 10/min; burst past it and assert the shared shape:
   // JSON {ok:false, error} plus a Retry-After header.
   let limited = null;
   for (let i = 0; i < 12 && !limited; i++) {
-    const res = await fetch(`${BASE}/api/verify-access-code`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: 'burst-to-the-limit' }),
-    });
+    const res = await postJson(base, '/api/verify-access-code', { code: 'burst-to-the-limit' });
     if (res.status === 429) limited = res;
   }
   const limitedBody = limited ? await json(limited) : null;
@@ -377,7 +362,10 @@ async function run() {
 
   // Invalid-token guesses at generate-image draw on the same per-IP bucket the
   // burst above just exhausted, so the token oracle must answer 429, not 403.
-  const throttledGuess = await genRequest({ token: 'another-bad-guess' });
+  const throttledGuess = await fetch(`${base}/api/generate-image`, {
+    method: 'POST',
+    headers: { 'X-Access-Token': 'another-bad-guess' },
+  });
   const throttledGuessBody = await json(throttledGuess);
   check(
     'generate-image invalid token while limited → shared 429',
@@ -386,6 +374,21 @@ async function run() {
       Boolean(throttledGuess.headers.get('retry-after')),
     `got ${throttledGuess.status}`
   );
+}
+
+// The per-route rate-limit buckets make this order load-bearing: each burst
+// spends its own bucket, and checkThrottling must run last so the closing
+// generate-image guess lands on an already-exhausted shared per-IP budget.
+async function run() {
+  const admin = adminClient(BASE);
+  const { auth, noAuth } = await checkAdminAuth(admin);
+  await checkCorsContract(BASE, noAuth);
+  await checkTokensCrud(admin, auth);
+  await checkVerifyAccessCode(BASE);
+  await checkReport(BASE);
+  await checkCspReport(BASE);
+  await checkGenerateImage(BASE);
+  await checkThrottling(BASE);
 }
 
 let stop;

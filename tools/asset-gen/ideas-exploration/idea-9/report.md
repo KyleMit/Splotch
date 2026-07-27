@@ -1,5 +1,8 @@
 # Idea #9 — Tall↔wide palette coherence for the same subject
 
+Status: OPEN — no tall↔wide hue-signature scorer exists at HEAD; cross-orientation palette coherence
+is still un-enforced (../../docs/gemini-3.1-migration.md).
+
 **Verdict: WORKED** — both halves landed. (1) The offline inventory exists: a subject-level
 hue-signature scorer ranked all 46 tall/wide pairs in both modes and the worst offenders are
 visually confirmed real (blue vs pink rectangle, green vs teal-with-orange-horns dragon, blue vs
@@ -127,8 +130,6 @@ semi-automate with a per-page notes file.
   multi-image, `--palette-text` text plan; needs `--experimental-strip-types` for the geminiSafety
   import).
 * `code/make-pair-image.mjs` — side-by-side pair builder.
-* `code/dragon-wide.light.conditioned.fullres.webp` — the full-res winning take (would still need
-  human contact-sheet review + punch before shipping).
 
 ## What was NOT done (budget/scope)
 

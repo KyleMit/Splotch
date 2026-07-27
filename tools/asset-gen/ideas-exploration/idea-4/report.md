@@ -1,5 +1,9 @@
 # Idea #4 — Night-sky brightness varies ~4× across the catalog
 
+Status: NOT PROMOTED — neither proposal shipped (no deterministic sky normalizer, no tightened ≤50
+gate); the 3.1 wave narrowed the spread to bgLuma 18–48 (../../docs/gemini-3.1-migration.md) and the
+mood gate default sits at 60 (`NIGHT_BG_LUMA_MAX_DEFAULT`, ../../lib/night-scores.mjs).
+
 **Verdict: WORKED.** The spread is confirmed (16.5 → 65.3 across all 94 night raws), and **approach
 (b) — deterministic post-normalization — works end-to-end**: it hits the target bgLuma exactly,
 produces no visible edge artifacts, leaves enclosed regions and white lines byte-untouched, and

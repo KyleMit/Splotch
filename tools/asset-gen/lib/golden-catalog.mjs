@@ -15,7 +15,7 @@ export async function scoreGoldenNightEyes(composite, lightRaw, pen, lightEyes, 
   };
 }
 
-export const GOLDEN_METRICS = {
+const GOLDEN_METRICS = {
   'outline.darkPx': { noise: 0, worse: null },
   'outline.interiorPx': { noise: 15, worse: 'up' },
   'outline.solidPx': { noise: 30, worse: null },

@@ -77,6 +77,15 @@ function nearby(mask, i, r) {
 //   overlay   = requested PNG showing ONLY genuine mismatches: source ink that
 //               drifted = red, candidate ink far from any source line (invented
 //               detail / dark fill) = blue, everything aligned = near-black.
+/**
+ * @typedef {object} OutlineMatchScore
+ * @property {number} keep
+ * @property {number} drift
+ * @property {number} localKeep
+ * @property {{ x: number, y: number, keep: number } | null} worstTile
+ * @property {Buffer | null} overlay
+ */
+/** @returns {Promise<OutlineMatchScore>} */
 export async function outlineMatch(sourceBuf, filledBuf, { overlay = false } = {}) {
   const src = await darkMask(sourceBuf);
   const fill = await darkMask(filledBuf);

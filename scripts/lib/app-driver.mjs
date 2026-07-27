@@ -105,6 +105,33 @@ export async function dismissMenu(page) {
   await sleep(200);
 }
 
+export async function openColoringBook(page) {
+  await page.locator('#coloringBookButton').click();
+}
+
+export async function pickBook(page, name) {
+  await page.locator(`button[aria-label="${name} coloring book"]`).click();
+}
+
+// Every page tile in a book shares one aria-label, so open the first of them.
+export async function pickPage(page, name) {
+  await page.locator(`button[aria-label="${name} coloring page"]`).first().click();
+}
+
+// The overlay <img> only gets .overlay-ready once the page art has decoded, so
+// it's the signal that a picked coloring page is actually painted.
+export async function waitForColoringOverlay(page) {
+  await page.waitForSelector('#coloringOverlay.overlay-ready');
+}
+
+export async function openColorPicker(page) {
+  await page.locator('.color-swatch[data-color="custom"]').click();
+}
+
+export async function openParentCenter(page) {
+  await page.locator('#parentHelpButton').click();
+}
+
 // --- point generators ------------------------------------------------------
 
 export function circlePts(cx, cy, r, turns = 1, n = 48) {

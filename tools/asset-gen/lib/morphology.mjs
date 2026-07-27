@@ -1,9 +1,12 @@
-// Separable box morphology on 0/1 masks, shared by the drift scorer
-// (gen-coloring-fills-dark.mjs) and the chalk-outline generator
-// (gen-coloring-chalk.mjs). dilate = a pixel is set if ANY neighbor within r is
-// set; erode = set only if ALL neighbors within r are set. An erode-then-dilate
-// (opening) removes structures thinner than ~2r while preserving solid blobs —
-// the trick both callers use to tell thin strokes from deliberate solid regions.
+// Morphology and distance-transform helpers on 0/1 masks, shared by the drift
+// scorer (gen-coloring-fills-dark.mjs), the chalk-outline generator
+// (gen-coloring-chalk.mjs), and the solid-region scorer (solid-regions.mjs).
+//
+// Separable box morphology: dilate = a pixel is set if ANY neighbor within r
+// is set; erode = set only if ALL neighbors within r are set. An
+// erode-then-dilate (opening) removes structures thinner than ~2r while
+// preserving solid blobs — the trick both callers use to tell thin strokes
+// from deliberate solid regions.
 function morph(mask, w, h, r, dilate, outOfBounds) {
   const hit = dilate ? 1 : 0; // dilate stops on the first set; erode stops on first unset
   const tmp = new Uint8Array(w * h);
@@ -41,3 +44,36 @@ function morph(mask, w, h, r, dilate, outOfBounds) {
 export const dilateMask = (mask, w, h, r, outOfBounds = 0) =>
   morph(mask, w, h, r, true, outOfBounds);
 export const erodeMask = (mask, w, h, r) => morph(mask, w, h, r, false, 0);
+
+// Two-pass chamfer distance-to-light transform: for each mask pixel, its
+// approximate distance to the nearest unset (non-mask) pixel, using edge
+// weight 1 and diagonal weight 1.414 (√2). Unset pixels are distance 0.
+export function chamferDistance(mask, w, h) {
+  const d = new Float32Array(w * h);
+  for (let i = 0; i < d.length; i++) d[i] = mask[i] ? Infinity : 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (!d[i]) continue;
+      let m = d[i];
+      if (x > 0) m = Math.min(m, d[i - 1] + 1);
+      if (y > 0) m = Math.min(m, d[i - w] + 1);
+      if (x > 0 && y > 0) m = Math.min(m, d[i - w - 1] + 1.414);
+      if (x < w - 1 && y > 0) m = Math.min(m, d[i - w + 1] + 1.414);
+      d[i] = m;
+    }
+  }
+  for (let y = h - 1; y >= 0; y--) {
+    for (let x = w - 1; x >= 0; x--) {
+      const i = y * w + x;
+      if (!d[i]) continue;
+      let m = d[i];
+      if (x < w - 1) m = Math.min(m, d[i + 1] + 1);
+      if (y < h - 1) m = Math.min(m, d[i + w] + 1);
+      if (x < w - 1 && y < h - 1) m = Math.min(m, d[i + w + 1] + 1.414);
+      if (x > 0 && y < h - 1) m = Math.min(m, d[i + w - 1] + 1.414);
+      d[i] = m;
+    }
+  }
+  return d;
+}

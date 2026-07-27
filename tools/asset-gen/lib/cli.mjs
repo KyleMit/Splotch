@@ -15,6 +15,13 @@ export function parsePngToWebpOptions(args = process.argv.slice(2), env = proces
   };
 }
 
+// How many times a gated generate-and-score loop re-rolls a candidate before it
+// gives up and keeps the best attempt. It sits with the other shared CLI knobs
+// rather than inside bin/gen-coloring-fills.mjs — the only loop using it today —
+// because the retry budget is a pipeline-level tuning value: the generator, its
+// tests, and any future gated loop all read it from one place.
+export const MAX_ATTEMPTS = 5;
+
 export function parsePositiveInt(raw, name, fallback, source) {
   if (raw === undefined) return fallback;
   const value = Number(raw);

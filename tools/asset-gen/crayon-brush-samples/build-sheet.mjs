@@ -3,14 +3,21 @@
 // are inlined as base64 so the page renders in the sandbox and on GitHub Pages
 // with no external files.
 //
-//   node --experimental-strip-types --disable-warning=ExperimentalWarning build-sheet.mjs
+//   node build-sheet.mjs [--artifact=<path>]
 //
 // Writes ./out/index.html. Promote with the scrapbook:publish flow when happy.
 
-import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { readdir, writeFile } from 'node:fs/promises';
 import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromeStyle, masthead, page, siteFooter } from '../../../scripts/lib/scrapbook-chrome.mjs';
+import {
+  chromeStyle,
+  inlineImage,
+  masthead,
+  page,
+  siteFooter,
+} from '../../../scripts/lib/scrapbook-chrome.mjs';
+import { argFlag } from '../../../scripts/lib/utils.mjs';
 import { SAMPLES } from './samples.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -62,11 +69,6 @@ const files = new Map(
     .map((f) => [f.replace(extname(f), ''), f])
 );
 
-async function dataUri(file) {
-  const buf = await readFile(join(OUT, file));
-  return `data:${MIME[extname(file).toLowerCase()]};base64,${buf.toString('base64')}`;
-}
-
 const cards = [];
 let present = 0;
 for (const [prefix, heading, blurb] of STAGES) {
@@ -76,7 +78,7 @@ for (const [prefix, heading, blurb] of STAGES) {
     const file = files.get(spec.id);
     if (!file) continue;
     present++;
-    const uri = await dataUri(file);
+    const uri = await inlineImage(join(OUT, file));
     items.push(
       `<figure class="sample">
         <a href="${file}" class="shot"><img loading="lazy" src="${uri}" alt="${spec.label}"/></a>
@@ -130,9 +132,7 @@ console.log(`Wrote ${join(OUT, 'index.html')} with ${present} samples.`);
 // <head>/<body> skeleton. Written wherever --artifact points (a scratchpad
 // path); not committed. The chrome CSS already carries data-theme overrides,
 // so the Artifact viewer's light/dark toggle works.
-const artifactOut = process.argv
-  .find((a) => a.startsWith('--artifact='))
-  ?.slice('--artifact='.length);
+const artifactOut = argFlag('artifact', undefined);
 if (artifactOut) {
   // The hosted Artifact has no sibling files, so the "open full image" links
   // would 404 — drop the anchors (the images are inlined and full-res anyway).

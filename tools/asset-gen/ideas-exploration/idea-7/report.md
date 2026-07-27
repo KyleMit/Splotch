@@ -1,5 +1,7 @@
 # Idea #7 — Catalog-wide residual dark halo audit after the punch
 
+Status: LANDED as ../../bin/audit-night-halo.mjs (`npm run gen:coloring-fills:audit:halo`).
+
 **Verdict: WORKED.** The auditor runs fully offline over all 94 shipped night fills in ~48 s, ranks
 pages by a rim-darkness score, produces zoomed hotspot crops for human review, and works as a
 byte-stable regression gate (a simulated punch change — idea #1's rim-erase — moves exactly the 4

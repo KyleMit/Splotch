@@ -51,6 +51,7 @@ import {
   incompleteAuditCommitPlan,
   implementationCommitMessage,
   launchCommand,
+  lintablePaths,
   logLine,
   LOGS,
   PROMPTS,
@@ -345,9 +346,10 @@ function gateFailure(baseSha, specs) {
 
   // Lint is a separate axis from the type-check: a fix can satisfy CHECK_CMD yet
   // ship a stray `any` or a raw Map in a .svelte.ts and redden CI's Quality job.
-  const lintable = gitOut('diff', '--name-only', baseSha, 'HEAD')
-    .split('\n')
-    .filter((f) => /\.(ts|svelte|mjs|cjs|js)$/.test(f));
+  const lintable = lintablePaths(
+    gitOut('diff', '--name-only', baseSha, 'HEAD').split('\n'),
+    existsSync
+  );
   if (lintable.length) {
     const lintFailure = runGate(
       `${LINT_CMD} ${lintable.join(' ')}`,
