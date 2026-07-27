@@ -66,6 +66,18 @@ function ringBands(mask, w, h, maxD) {
 // Core scorer: the night raw fill, the line art it was punched against (chalk if
 // forked, else pen), and the shipped night fill. Returns the halo statistics; the
 // caller adds page-label and lineWhite context.
+/**
+ * @typedef {object} HaloScore
+ * @property {number} w
+ * @property {number} h
+ * @property {number} haloScore
+ * @property {number} rawScore
+ * @property {number} haloPx12
+ * @property {number} rimPx12
+ * @property {object[]} bandStats
+ * @property {object[]} hotspots
+ */
+/** @returns {Promise<HaloScore>} */
 export async function scoreNightHalo(rawBuf, lineArtBuf, shippedBuf) {
   const { rgb: rawRgb, width: w, height: h } = await loadRgb(rawBuf);
   const mask = await punchMask(lineArtBuf, w, h);

@@ -312,6 +312,23 @@ function judgeLively(coreLuma, bandDark, bandLight) {
 // Which cores are REAL eyes (vs a ladybug's shell spots or a caterpillar's
 // segment dots, which nest the same way but are legitimately flat) is decided
 // by cross-referencing fills, not by anatomy — see judgeNightEyes.
+/**
+ * @typedef {object} EyeCoreScore
+ * @property {number} x
+ * @property {number} y
+ * @property {number} coreLuma
+ * @property {number} bandDark
+ * @property {number} bandLight
+ * @property {number} contrast
+ * @property {boolean} lively
+ * @property {number} annulusInkFrac
+ */
+/**
+ * @typedef {object} EyeFillScore
+ * @property {number} eyes
+ * @property {EyeCoreScore[]} cores
+ */
+/** @returns {Promise<EyeFillScore>} */
 export async function scoreEyeFill(fillBuf, sourceBuf) {
   const { cores, label, ink, w, h } = await findEyeCores(sourceBuf);
   if (!cores.length) return { eyes: 0, cores: [] };

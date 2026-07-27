@@ -153,6 +153,24 @@ function discStats(g, w, h, cx, cy, R) {
 // render (compositeNight), `lightBuf` the committed light raw, `penBuf` the pen
 // outline that locates the eyes. Returns one entry per confirmed pupil plus a
 // verdict; pages with no confirmed eye aren't gated (passes: true).
+/**
+ * @typedef {object} PupilScore
+ * @property {number} x
+ * @property {number} y
+ * @property {number} px
+ * @property {number} median
+ * @property {number} whiteFrac
+ * @property {number} coreDarkFrac
+ * @property {boolean} blankOrb
+ */
+/**
+ * @typedef {object} CompositeEyeScore
+ * @property {PupilScore[]} pupils
+ * @property {boolean} passes
+ * @property {PupilScore | null} worst
+ * @property {number} failed
+ */
+/** @returns {Promise<CompositeEyeScore>} */
 export async function scoreCompositeEyes(compBuf, lightBuf, penBuf) {
   // Scope: ONLY the band-blind solid-pen eyes judgeNightEyes skips outright — a
   // bright catchlight core ringed by the solid-ink pupil (annulusInkFrac high).
