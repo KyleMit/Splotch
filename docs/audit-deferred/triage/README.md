@@ -31,9 +31,9 @@ rationale.
 | 14 | `p4-accessibility-segmented-aria.md`              | Segmented controls use inconsistent ARIA semantics          | P4  | C05     | FIX — folded into #12 |
 | 15 | `p1-duplication-ink-keyline.md`                   | White/dark ink keyline CSS triplicated                      | P1  | C04     | FIX — app.css utility pair |
 | 16 | `p3-accessibility-clear-button-keyboard.md`       | Clearing the canvas is pointer-only                         | P3  | C03     | OPTIONS — lean: keyboard click path |
-| 17 | `p2-duplication-icon-glob-exclusion.md`           | Icon glob + `splotchy` exclusion repeated three places      | P2  | C07     | pending |
-| 18 | `p3-maintainability-color-icons-allowlist.md`     | `COLOR_ICONS` hand-maintained allowlist mixes two concepts  | P3  | C07     | pending |
-| 19 | `p4-consistency-icon-types-reexport.md`           | `iconTypes.ts` imports and re-exports `IconName`            | P4  | C07     | pending |
+| 17 | `p2-duplication-icon-glob-exclusion.md`           | Icon glob + `splotchy` exclusion repeated three places      | P2  | C07     | FIX — patch + 2 review one-liners |
+| 18 | `p3-maintainability-color-icons-allowlist.md`     | `COLOR_ICONS` hand-maintained allowlist mixes two concepts  | P3  | C07     | OPTIONS — lean: build-time gen |
+| 19 | `p4-consistency-icon-types-reexport.md`           | `iconTypes.ts` imports and re-exports `IconName`            | P4  | C07     | FIX — delete dead re-export |
 | 20 | `p2-type-safety-native-admin-guards.md`           | Native page hand-rolls server response type guards          | P2  | C08     | pending |
 | 21 | `p2-duplication-invite-actions.md`                | Per-invite action groups triplicated markup                 | P2  | C08     | pending |
 | 22 | `p2-complexity-read-store.md`                     | `readStore` bundles five responsibilities                   | P2  | C08     | pending |
