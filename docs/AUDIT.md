@@ -26,42 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P2][dead-code] Windows backslash path conversions are vestigial after ADR-0062
-
-**File(s):** `scripts/generate-icon-names.mjs:14`, `scripts/image-audit.mjs:39`,
-`scripts/publish-scrapbook.mjs:100-101`, `scripts/android-setup.mjs:79` — pinned at SHA f934d43
-
-#### Problem
-
-Several scripts still normalize Windows separators although Windows dev support was dropped
-(ADR-0062) and `scripts/CLAUDE.md` states scripts run only on macOS/Linux, where
-`globSync`/`relative` never emit backslashes:
-
-```js
-.replace(/\\/g, '/')                       // generate-icon-names
-const posix = (p) => relative(ROOT, p).split('\\').join('/');   // image-audit
-rel.split('\\').join('/')                  // publish-scrapbook (×2)
-ANDROID_HOME.replaceAll('\\', '/')         // android-setup local.properties
-```
-
-These are unreachable no-ops that imply a platform matrix the project no longer supports, and they
-mildly obscure the real logic.
-
-#### Proposed solution
-
-Remove the backslash handling. In `image-audit.mjs` reduce `posix` to `relative(ROOT, p)`. In
-`publish-scrapbook.mjs` drop the `.split('\\').join('/')`. Keep a one-line note only where a path is
-written into a file that a human might open on any OS if genuinely warranted (`android-setup`
-local.properties) — but per ADR-0062 it can go too.
-
-#### Verification
-
-`grep -rn "\\\\\\\\" scripts/*.mjs` (excluding legitimate regex escapes) is clean. Run
-`npm run gen:icons`, `npm run img:audit`, `npm run scrapbook:index`, `npm run android:setup` and
-confirm identical output.
-
----
-
 ### [P2][consistency] Missing-API-key guard written three different ways
 
 **File(s):** `scripts/redteam-run.mjs:278` (`fail(...)`), `scripts/model-eval-run.mjs:138-141`

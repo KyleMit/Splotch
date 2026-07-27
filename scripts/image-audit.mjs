@@ -36,12 +36,10 @@ const SVGO_CONFIG = { multipass: true, plugins: ['preset-default'] };
 
 const check = process.argv.includes('--check');
 
-const posix = (p) => relative(ROOT, p).split('\\').join('/');
-
 const files = globSync('web/**/*.svg', { cwd: ROOT })
   .map((p) => `${ROOT}/${p}`)
   .filter((p) => {
-    const rel = posix(p);
+    const rel = relative(ROOT, p);
     return (
       !rel.includes('/node_modules/') &&
       !rel.includes('/.svelte-kit/') &&
@@ -61,7 +59,7 @@ let changedCount = 0;
 let savedTotal = 0;
 
 for (const file of files) {
-  const rel = posix(file);
+  const rel = relative(ROOT, file);
   const before = readFileSync(file, 'utf8');
   const after = optimize(before, { ...SVGO_CONFIG, path: file }).data;
 
