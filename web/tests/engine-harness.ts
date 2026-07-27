@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { dragStroke } from './helpers';
 
 // Engine-level tests. These drive the real imperative drawing engine through
 // the /dev/engine harness (see src/routes/dev/engine), which mounts a real
@@ -12,13 +13,7 @@ export async function drawStroke(
   box: { x: number; y: number } | null,
   points: { x: number; y: number }[]
 ) {
-  if (!box) throw new Error('canvas has no bounding box');
-  await page.mouse.move(box.x + points[0].x, box.y + points[0].y);
-  await page.mouse.down();
-  for (const p of points.slice(1)) {
-    await page.mouse.move(box.x + p.x, box.y + p.y);
-  }
-  await page.mouse.up();
+  await dragStroke(page, box, points);
 }
 
 export const state = (page: Page) => page.evaluate(() => window.__engineState);

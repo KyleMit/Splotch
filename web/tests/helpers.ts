@@ -40,14 +40,23 @@ export async function openParentCenter(page: Page) {
   return modal;
 }
 
-/** Drag a stroke through canvas-relative points with real mouse input. */
-export async function draw(page: Page, points: { x: number; y: number }[]) {
-  const box = await page.locator('#drawingCanvas').boundingBox();
+/** Drag a stroke through the given canvas-space points using real mouse input. */
+export async function dragStroke(
+  page: Page,
+  box: { x: number; y: number } | null,
+  points: { x: number; y: number }[]
+) {
   if (!box) throw new Error('canvas has no bounding box');
   await page.mouse.move(box.x + points[0].x, box.y + points[0].y);
   await page.mouse.down();
   for (const p of points.slice(1)) await page.mouse.move(box.x + p.x, box.y + p.y);
   await page.mouse.up();
+}
+
+/** Drag a stroke through canvas-relative points with real mouse input. */
+export async function draw(page: Page, points: { x: number; y: number }[]) {
+  const box = await page.locator('#drawingCanvas').boundingBox();
+  await dragStroke(page, box, points);
 }
 
 /** First non-transparent pixel on the canvas as [r,g,b,a], or null if blank. */

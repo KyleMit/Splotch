@@ -13,34 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P2][duplication] `helpers.ts:draw` and `engine.spec.ts:drawStroke` are two near-identical mouse-stroke drivers
-
-**File(s):** `web/tests/helpers.ts:15-22` (draw), `web/tests/engine.spec.ts:10-22` (drawStroke) —
-pinned at SHA f934d43
-
-#### Problem
-
-`draw(page, points)` in `helpers.ts` and `drawStroke(page, box, points)` in `engine.spec.ts` do the
-same thing — move to `points[0]`, `mouse.down()`, iterate `mouse.move`, `mouse.up()`. The only
-difference is that `draw` resolves the canvas box itself from `#drawingCanvas` while `drawStroke`
-takes a pre-fetched box (and targets `#engineCanvas`). Two copies of the pointer-drag loop drift
-independently (`draw` uses `points.slice(1)` in a `for…of`; `drawStroke` uses the same but they are
-maintained separately).
-
-#### Proposed solution
-
-Parameterize a single `dragStroke(page, points, { canvas = '#drawingCanvas' } = {})` in `helpers.ts`
-that resolves the box internally, and have the engine harness pass `{ canvas: '#engineCanvas' }`.
-Delete `engine.spec.ts:drawStroke`; callers that pre-fetched `box` only did so to reuse it across
-the same test, which `dragStroke` can do internally per call.
-
-#### Verification
-
-`grep -rn "mouse.down()" web/tests` shows the loop in one helper only (plus intentional low-level
-synthetic-event tests). `npm run test:e2e -- engine.spec.ts` green.
-
----
-
 ### [P2][duplication] The inline `fire()` PointerEvent dispatcher is re-declared ~7 times with divergent signatures
 
 **File(s):** `web/tests/engine.spec.ts:335, 400, 434, 1232`, `web/tests/flows.spec.ts:411`,
