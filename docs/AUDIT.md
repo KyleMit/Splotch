@@ -19,31 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P4][documentation] `session-start.sh` and `cloud-branch-preview.sh` aren't discoverable from the primary config/instruction files
-
-**File(s):** `.claude/settings.json:14-27`, `CLAUDE.md` (config section) — pinned at SHA f934d43
-
-#### Problem
-
-CLAUDE.md documents the PostToolUse `format-edited-file.sh` hook by name but never mentions the two
-SessionStart hooks. They are described in `docs/CLOUD/Claude.md`, but a contributor reading the main
-instructions or `settings.json` has no in-place signal that two scripts run at every session start
-(one of which injects a whole workflow prompt into context). The `settings.json` registration is
-just two bare command paths (lines 19, 23) with no comment (JSON limitation).
-
-#### Proposed solution
-
-Add a one-line mention of the SessionStart hooks (and their `CLAUDE_CODE_REMOTE` guard) to the
-config-overview area that already names `format-edited-file.sh`, pointing at `docs/CLOUD/Claude.md`
-for detail, so all three hooks are discoverable from one place.
-
-#### Verification
-
-From CLAUDE.md alone a reader can enumerate all registered hooks and find where each is documented;
-confirm the SessionStart pair is now referenced.
-
----
-
 ## Source: Code audit — .github CI workflows
 
 ### [P1][consistency] Issue templates apply labels (`bug`, `enhancement`) that don't exist in the declarative taxonomy

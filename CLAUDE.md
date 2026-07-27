@@ -117,7 +117,9 @@ one-line entry in the `scripts-info` block of `package.json`.
   ADR-0057). The `format-edited-file.sh` PostToolUse hook auto-formats each file you edit through
   the right one, but if you write Markdown any other way (or aren't sure), run
   `npm run format:check` before you commit — CI's `dprint check` fails on unwrapped Markdown, and
-  that's the most common reason a fresh PR is red.
+  that's the most common reason a fresh PR is red. The cloud-only `session-start.sh` and
+  `cloud-branch-preview.sh` SessionStart hooks run only when `CLAUDE_CODE_REMOTE=true`; see
+  `docs/CLOUD/Claude.md` for details.
 
 <!-- Source: .ruler/github.md -->
 
