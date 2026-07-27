@@ -11,33 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P3][duplication] `ROOT` is defined identically in two lib modules
-
-**File(s):** `scripts/lib/utils.mjs:11` and `scripts/lib/model-eval.mjs:12` — pinned at SHA f934d43
-
-#### Problem
-
-Both files compute the repo root the same way:
-
-```js
-export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-```
-
-`model-eval.mjs` re-exports its own `ROOT`, and consumers import `ROOT` from *either* module
-(`store-shots.mjs` from utils, `model-eval-*` from model-eval), so there are two "canonical" roots
-that only coincidentally agree. If either file moves depth, they diverge.
-
-#### Proposed solution
-
-`model-eval.mjs` should `import { ROOT } from './utils.mjs'` and re-export if needed, rather than
-recomputing. One definition.
-
-#### Verification
-
-`grep -rn "fileURLToPath(import.meta.url)" scripts/lib` returns a single site.
-
----
-
 ### [P3][architecture] `spawnViteServer` doesn't cover the dev-with-visible-output case, so `cloud-tunnel.mjs` re-implements it and can orphan vite
 
 **File(s):** `scripts/lib/vite-server.mjs:29-56` (`spawnViteServer`) — pinned at SHA f934d43

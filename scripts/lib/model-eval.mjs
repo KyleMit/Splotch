@@ -6,12 +6,12 @@
 // web/tests/model-eval/README.md.
 
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { themes } from '../../web/src/lib/design/tokens.ts';
 import { PALETTE_COLORS } from '../../web/src/lib/palette.ts';
+import { ROOT } from './utils.mjs';
 
-export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+export { ROOT };
 
 // The two models under comparison: the live production model and the candidate.
 export const MODELS = [
