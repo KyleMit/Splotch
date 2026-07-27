@@ -9,36 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P4][type-safety] Inconsistent null-guarding of `getUndoDebug()` fields
-
-**File(s):** `scripts/perf/undo-scenarios.mjs:393,396,511,553`,
-`scripts/perf/replay-scenario.mjs:299-301`, `scripts/perf/ipad-console-driver.js:204,209` — pinned
-at SHA f934d43
-
-#### Problem
-
-The `getUndoDebug()` shape is dereferenced with mixed guarding within the same file.
-`undo-scenarios.mjs:393` reads `debug.rasterBytes ?? debug.liveRasters * geom.bytesPerRaster` and
-`+ debug.blobBytes` (no `?? 0`), while the render pass at line 511/553 uses
-`s.debug?.blobBytes ?? 0` and `Math.round((s.debug.blobBytes ?? 0) / 1024)`. So the compute path
-assumes `blobBytes` is always present but the render path defends against it being absent —
-contradictory contracts on one object. A build that predates `blobBytes` (the very case the `??`
-guards imply exists) would produce `NaN` history-MB from line 396 while the table cell reads `0`.
-
-#### Proposed solution
-
-Normalize `getUndoDebug()` once at the boundary:
-`const debug = normalizeUndoDebug(await undoDebug(page))` returning a fully-defaulted shape
-(`{ snapshots: 0, liveRasters: 0, blobBytes: 0, rasterBytes: null, pendingCommands: 0 }`), then drop
-the ad-hoc `?? 0`/`?.` downstream. Define the shape once so both the compute and render paths agree.
-
-#### Verification
-
-Run `perf:undo` against a build whose `getUndoDebug` omits `blobBytes` (stub it) and confirm
-`historyRasterMB` is a number, not `NaN`, and matches the table.
-
----
-
 ### [P4][maintainability] Undocumented magic in the recorder: `ALPHA_STRIDE = 4 * 61` and the `SIZE_PX` map
 
 **File(s):** `scripts/perf/ipad-recorder.js:128`, `scripts/perf/replay-scenario.mjs:25` — pinned at
