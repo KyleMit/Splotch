@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto';
 import { spawnViteServer } from './lib/vite-server.mjs';
 import { waitForUrl } from './lib/utils.mjs';
 import { check, fatal, summarize, json } from './lib/smoke.mjs';
+import { adminClient } from './lib/adminClient.mjs';
 // Type-stripped at runtime (the npm script passes --experimental-strip-types)
 // so the absence assertions below name the same headers the hook stamps — a new
 // security header is covered here the moment it's added to that module.
@@ -38,17 +39,15 @@ const authHeader = (session) => ({ Authorization: `Bearer ${session}` });
 
 // Returns the admin `auth` header plus the unauthenticated /api/* response, which
 // the CORS suite re-reads instead of spending another request.
-async function checkAdminAuth(base) {
-  const wrong = await postJson(base, '/api/admin/login', { key: 'definitely-wrong' });
-  const wrongBody = await json(wrong);
+async function checkAdminAuth(admin) {
+  const { res: wrong, body: wrongBody } = await admin.login('definitely-wrong');
   check(
     'login with wrong key → 403 {ok:false}',
     wrong.status === 403 && wrongBody?.ok === false,
     `got ${wrong.status}`
   );
 
-  const good = await postJson(base, '/api/admin/login', { key: ADMIN_SECRET });
-  const goodBody = await json(good);
+  const { res: good, body: goodBody } = await admin.login(ADMIN_SECRET);
   const session = goodBody?.session;
   check(
     'login with correct key → 200 {ok:true, session:<64-hex>}',
@@ -56,10 +55,10 @@ async function checkAdminAuth(base) {
     `got ${good.status}`
   );
 
-  const noAuth = await fetch(`${base}/api/admin/tokens`);
+  const { res: noAuth } = await admin.listTokens({});
   check('tokens without auth → 401', noAuth.status === 401, `got ${noAuth.status}`);
 
-  const badAuth = await fetch(`${base}/api/admin/tokens`, { headers: authHeader('deadbeef') });
+  const { res: badAuth } = await admin.listTokens(authHeader('deadbeef'));
   check('tokens with bad bearer → 401', badAuth.status === 401, `got ${badAuth.status}`);
 
   return { auth: authHeader(session), noAuth };
@@ -105,9 +104,8 @@ async function checkCorsContract(base, noAuth) {
   );
 }
 
-async function checkTokensCrud(base, auth) {
-  const list = await fetch(`${base}/api/admin/tokens`, { headers: auth });
-  const listBody = await json(list);
+async function checkTokensCrud(admin, auth) {
+  const { res: list, body: listBody } = await admin.listTokens(auth);
   check(
     'tokens GET → 200 {ok, tokens[], invites[]}',
     list.status === 200 &&
@@ -126,20 +124,14 @@ async function checkTokensCrud(base, auth) {
   );
 
   const newToken = `smoke-${Date.now()}`;
-  const add = await postJson(base, '/api/admin/tokens', { token: newToken }, auth);
-  const addBody = await json(add);
+  const { res: add, body: addBody } = await admin.addToken(auth, newToken);
   check(
     'tokens POST adds a token',
     add.status === 200 && addBody?.tokens?.includes(newToken),
     `got ${add.status}`
   );
 
-  const del = await fetch(`${base}/api/admin/tokens`, {
-    method: 'DELETE',
-    headers: { ...auth, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token: newToken }),
-  });
-  const delBody = await json(del);
+  const { res: del, body: delBody } = await admin.delToken(auth, newToken);
   check(
     'tokens DELETE removes the token',
     del.status === 200 && !delBody?.tokens?.includes(newToken),
@@ -388,9 +380,10 @@ async function checkThrottling(base) {
 // spends its own bucket, and checkThrottling must run last so the closing
 // generate-image guess lands on an already-exhausted shared per-IP budget.
 async function run() {
-  const { auth, noAuth } = await checkAdminAuth(BASE);
+  const admin = adminClient(BASE);
+  const { auth, noAuth } = await checkAdminAuth(admin);
   await checkCorsContract(BASE, noAuth);
-  await checkTokensCrud(BASE, auth);
+  await checkTokensCrud(admin, auth);
   await checkVerifyAccessCode(BASE);
   await checkReport(BASE);
   await checkCspReport(BASE);

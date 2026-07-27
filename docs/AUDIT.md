@@ -26,31 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P3][duplication] Admin-API client duplicated between the two smoke tests
-
-**File(s):** `scripts/api-smoke.mjs:26-106` and `scripts/blobs-smoke.mjs:44-135` — pinned at SHA
-f934d43
-
-#### Problem
-
-Both smoke tests hit the identical admin surface — `POST /api/admin/login` → `{session}`, then
-`GET/POST/DELETE /api/admin/tokens` with a `Bearer` header — and each reimplements the request
-plumbing (`blobs-smoke` has `post()`/`del()`/`login()`; `api-smoke` inlines the same calls). The
-login-and-get-session dance and the tokens JSON shapes are maintained twice.
-
-#### Proposed solution
-
-Extract a tiny client to `lib/`, e.g. `adminClient(base)` returning
-`{ login(secret), listTokens(auth), addToken(auth, t), delToken(auth, t) }`. Both smoke scripts
-build their assertions on top of it; the retry-through-429 login in `blobs-smoke` can be a flag.
-
-#### Verification
-
-`npm run test:api:smoke` and (against a deploy) `npm run test:blobs:smoke` produce the same
-assertions; the shared client is exercised by both.
-
----
-
 ### [P3][maintainability] `store-shots.mjs` uses raw app selectors that bypass the rot-guarded driver
 
 **File(s):** `scripts/store-shots.mjs:148,150,164,166,179,189` — pinned at SHA f934d43

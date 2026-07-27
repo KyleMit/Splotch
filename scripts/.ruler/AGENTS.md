@@ -14,7 +14,8 @@
   for polling a URL until ready) plus the Maestro location; `vite-server.mjs` spawns a throwaway
   vite dev/preview server in a detached process group so `stop()` can't orphan the vite grandchild;
   `smoke.mjs` has the `check()`/`fatal()`/`summarize()` pass-fail reporter shared by the smoke
-  tests. Check there before writing new glue.
+  tests, and `adminClient.mjs` the `/api/admin` login + token-CRUD request plumbing they both drive.
+  Check there before writing new glue.
 * TypeScript-flavored scripts run via `node --experimental-strip-types` (see the `check:assets` npm
   script).
 * Env vars in npm scripts are set inline (`VAR=value cmd`) — no `cross-env`, since scripts run only
