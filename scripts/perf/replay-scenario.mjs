@@ -16,6 +16,7 @@ import { chromium } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { chromiumExecutablePath, fail, runMain, sleep } from '../lib/utils.mjs';
+import { resolveThrottle } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace, injectObservers, readObservers, heapBytes } from './capture.mjs';
 import { IPAD_PRO } from './devices.mjs';
@@ -34,7 +35,7 @@ const flag = (name, def) => {
   return hit ? hit.split('=')[1] : def;
 };
 const recordingPath = flag('recording', null);
-const throttle = args.includes('--no-throttle') ? 1 : Number(flag('throttle', '0'));
+const throttle = resolveThrottle(args, 0);
 const turbo = args.includes('--turbo');
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
@@ -72,7 +73,7 @@ async function main() {
   const cssCanvas = meta.canvas || vp;
 
   const tag = basename(recordingPath).replace(/\.json$/, '');
-  const outDir = profilePath('replay', tag);
+  const outDir = profilePath('replay', tag, throttle.tag);
   mkdirSync(outDir, { recursive: true });
 
   const { base, stop } = await buildAndPreview(port, { build });
@@ -95,7 +96,9 @@ async function main() {
     await sleep(150);
 
     const cdp = await ctx.newCDPSession(page);
-    if (throttle > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle });
+    if (throttle.active) {
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle.rate });
+    }
 
     await injectObservers(page);
     const heapBefore = await heapBytes(page);
@@ -125,7 +128,7 @@ async function main() {
       target: 'web/dev-engine (replay of real device input)',
       device: `recorded ${vp.w}×${vp.h} @ dpr ${meta.dpr}`,
       viewport: { width: vp.w, height: vp.h, deviceScaleFactor: dsf },
-      throttle: throttle > 1 ? throttle : 0,
+      throttle: throttle.forSettings,
       buildMode: build ? 'production-preview' : 'production-preview (reused build)',
       captureMode: 'cdp-trace',
       recording: {

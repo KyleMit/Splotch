@@ -10,10 +10,11 @@
 
 import { chromium } from '@playwright/test';
 import { chromiumExecutablePath, runMain, sleep } from '../lib/utils.mjs';
+import { resolveThrottle } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { driveSession } from './session.mjs';
 import { resolveDevice } from './devices.mjs';
-import { profilePath, throttleTag } from './paths.mjs';
+import { profilePath } from './paths.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 
 const args = process.argv.slice(2);
@@ -23,14 +24,14 @@ const flag = (name, def) => {
 };
 const deviceName = flag('device', 'phone');
 const device = resolveDevice(deviceName);
-const throttle = args.includes('--no-throttle') ? 1 : Number(flag('throttle', '4'));
+const throttle = resolveThrottle(args, 4);
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
 
 async function main() {
   warnIfNoPerfMarks('npm run perf:web');
 
-  const outDir = profilePath('web', deviceName, throttleTag(throttle));
+  const outDir = profilePath('web', deviceName, throttle.tag);
 
   const { base, stop } = await buildAndPreview(port, { build });
   const browser = await chromium.launch({
@@ -50,7 +51,9 @@ async function main() {
     await sleep(400);
 
     const cdp = await ctx.newCDPSession(page);
-    if (throttle > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle });
+    if (throttle.active) {
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle.rate });
+    }
 
     await driveSession(page, cdp, {
       outDir,
@@ -58,7 +61,7 @@ async function main() {
         target: 'web',
         device: deviceName,
         viewport: device,
-        throttle: throttle > 1 ? throttle : 0,
+        throttle: throttle.forSettings,
         buildMode: build ? 'production-preview' : 'production-preview (reused build)',
       },
     });

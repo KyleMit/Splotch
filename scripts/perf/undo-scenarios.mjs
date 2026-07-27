@@ -19,6 +19,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromiumExecutablePath, runMain, sleep } from '../lib/utils.mjs';
+import { resolveThrottle } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import {
   startTrace,
@@ -29,7 +30,7 @@ import {
   markPhase,
 } from './capture.mjs';
 import { IPAD_PRO } from './devices.mjs';
-import { profilePath, throttleTag } from './paths.mjs';
+import { profilePath } from './paths.mjs';
 import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
 import { toMiB } from './units.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
@@ -44,7 +45,7 @@ const flag = (name, def) => {
   const hit = args.find((a) => a.startsWith(`--${name}=`));
   return hit ? hit.split('=')[1] : def;
 };
-const throttle = args.includes('--no-throttle') ? 1 : Number(flag('throttle', '4'));
+const throttle = resolveThrottle(args, 4);
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
 
@@ -397,7 +398,7 @@ function buildUndoSettings({ throttle, build, geom, t0 }) {
     target: 'web/dev-engine (headless Chromium — not WebKit/real GPU)',
     device: IPAD_PRO.label,
     viewport: IPAD_PRO,
-    throttle: throttle > 1 ? throttle : 0,
+    throttle: throttle.forSettings,
     refreshHz: HZ,
     frameBudgetMs: 1000 / HZ,
     longOps: LONG_OPS,
@@ -415,7 +416,7 @@ async function main() {
   process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
   warnIfNoPerfMarks('npm run perf:undo');
 
-  const outDir = profilePath('undo-scenarios', throttleTag(throttle));
+  const outDir = profilePath('undo-scenarios', throttle.tag);
   mkdirSync(outDir, { recursive: true });
 
   const { base, stop } = await buildAndPreview(port, { build });
@@ -434,7 +435,9 @@ async function main() {
     await resetEngine(page, base, IPAD_PRO.width, IPAD_PRO.height);
 
     const cdp = await ctx.newCDPSession(page);
-    if (throttle > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle });
+    if (throttle.active) {
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle.rate });
+    }
 
     await injectObservers(page);
     const geom = await rasterGeometry(page);
