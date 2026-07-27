@@ -13,37 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P3][readability] Helper functions are scattered between tests throughout flows.spec.ts instead of grouped
-
-**File(s):** `web/tests/flows.spec.ts:328-333` (activateWithKey), `492-500`
-(stylusTouchStartPrevented), `1075-1081` (openColoringDialog), `1105-1117` (applyFarmPage),
-`1166-1180` (distinctOpaqueColors), `1331-1344, 1371-1380, 1408-1417, 1498-1506` (pixel readers) —
-pinned at SHA f934d43
-
-#### Problem
-
-Unlike the disciplined "── helpers ──" banner at the top (`flows.spec.ts:10-195`), many helpers are
-defined lower down, immediately before the first test that uses them, interleaved with tests.
-`openColoringDialog` sits at line 1075 (between the AI test and the coloring tests);
-`distinctOpaqueColors` at 1166 (after the magic-brush test that references it via `drawMagicReveal`
-at line 130, ~1000 lines earlier). Grepping for a helper definition is unpredictable, and a reader
-scrolling sees `function` declarations breaking up the test narrative. `drawMagicReveal` (line 126)
-forward-references `distinctOpaqueColors` (line 1166), so the file cannot be read top-to-bottom.
-
-#### Proposed solution
-
-When splitting the file (P1 finding above), move each area's helpers to the top of its new spec, or
-into the shared `canvas-pixels.ts`/`helpers.ts` modules. If the file stays monolithic short-term,
-hoist all `function`/`const … =>` helpers into the existing top-of-file helpers section so tests
-read as an uninterrupted sequence.
-
-#### Verification
-
-All `function`/helper `const` declarations precede the first `test(` in each spec.
-`npm run test:e2e` green.
-
----
-
 ### [P3][maintainability] Viewport dimensions and interaction timeouts are unnamed magic numbers repeated across specs
 
 **File(s):** `web/tests/flows.spec.ts:743, 771-776, 827, 854, 903, 930, 1615, 1630`; timeouts
