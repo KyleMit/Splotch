@@ -11,42 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P2][duplication] Dark-theme token blocks in `CHROME_CSS` are duplicated and have already drifted
-
-**File(s):** `scripts/lib/scrapbook-chrome.mjs:51-85` (`@media (prefers-color-scheme:dark)` vs
-`:root[data-theme=dark]`) — pinned at SHA f934d43
-
-#### Problem
-
-The dark palette is written twice — once in the media query, once in `:root[data-theme=dark]` — and
-the two copies disagree:
-
-| token           | `@media dark` (L53-55) | `[data-theme=dark]` (L77-79) |
-| --------------- | ---------------------- | ---------------------------- |
-| `--card`        | `#1d1f27`              | `#1c1e24`                    |
-| `--card-2`      | `#181a20`              | `#191b20`                    |
-| `--muted`       | `#a8a4af`              | `#a19da8`                    |
-| `--hair`        | `#34373f`              | `#2b2e36`                    |
-| `--hair-strong` | `#464a55`              | `#3a3e48`                    |
-| `--faint`       | `#807d89`              | `#797682`                    |
-
-So a viewer in OS-dark sees different chrome than one who hit the explicit dark toggle. The light
-palette is likewise triplicated (`:root` L34-49, `:root[data-theme=light]` L64-73) but there
-identical — pure copy risk. This is a single-source-of-truth failure the drift already proves.
-
-#### Proposed solution
-
-Define each palette once as a JS object (`const LIGHT = {...}; const DARK = {...}`) and generate the
-three selector blocks from a `vars(obj)` serialiser, so `:root`, the media query, and both
-`[data-theme]` selectors emit byte-identical declarations. Decide the intended dark values once.
-
-#### Verification
-
-After refactor, `grep -c '#1d1f27\|#1c1e24' scripts/lib/scrapbook-chrome.mjs` shows a single
-canonical value; render `/scrapbook` in OS-dark and via the toggle and confirm the chrome matches.
-
----
-
 ### [P2][maintainability] `PALETTE` / `PAPER` are copied from app source with no drift assertion, unlike the prompts
 
 **File(s):** `scripts/lib/model-eval.mjs:29-46` (`PALETTE`, `PAPER`) and `77-85`
