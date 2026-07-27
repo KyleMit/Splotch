@@ -48,6 +48,7 @@ const flag = (name, def) => {
 const throttle = resolveThrottle(args, 4);
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
+const COLD_TIER_TIMEOUT_MS = Number(flag('cold-tier-timeout-ms', '10000'));
 
 // Op volume = refresh rate × stroke duration. A 120 Hz ProMotion iPad Pro
 // captures ~120 ops/second, so a sustained multi-second scribble is
@@ -309,7 +310,13 @@ async function rasterGeometry(page) {
   });
 }
 
-export async function runUndoScenario(page, base, sc, geom) {
+export async function runUndoScenario(
+  page,
+  base,
+  sc,
+  geom,
+  coldTierTimeoutMs = COLD_TIER_TIMEOUT_MS
+) {
   console.log(`\n▶ ${sc.label}`);
   await resetEngine(page, base, IPAD_PRO.width, IPAD_PRO.height);
   // Reload drops the rAF FPS sampler injected before the trace; re-inject so
@@ -320,7 +327,7 @@ export async function runUndoScenario(page, base, sc, geom) {
   await markPhase(page, `${sc.key}-draw`, () => drawStrokes(page, sc.strokes, !!sc.crayon));
   const drawEnd = await now(page);
 
-  const debug = await settleColdTier(page);
+  const debug = await settleColdTier(page, coldTierTimeoutMs);
   const heapAfterDraw = await heapBytes(page);
 
   const undoStart = await now(page);
@@ -453,7 +460,20 @@ async function main() {
     const results = [];
 
     for (const sc of scenarios) {
-      results.push(await runUndoScenario(page, base, sc, geom));
+      try {
+        results.push(await runUndoScenario(page, base, sc, geom));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`Skipping undo scenario ${sc.key}: ${message}`);
+        results.push({
+          key: sc.key,
+          label: sc.label,
+          strokes: sc.strokes.length,
+          crayon: !!sc.crayon,
+          skipped: true,
+          error: message,
+        });
+      }
     }
 
     const obs = await readObservers(page);
@@ -516,12 +536,18 @@ function renderUndoReport({ settings, scenarios }) {
       `commit and undo costs below don't depend on pacing.\n`
   );
   out.push('## Snapshot stack after drawing (getUndoDebug)\n');
-  out.push('| Scenario | Strokes | Snapshots | Live rasters | Blob bytes | Pending commands |');
-  out.push('| --- | --- | --- | --- | --- | --- |');
+  out.push(
+    '| Scenario | Strokes | Status / reason | Snapshots | Live rasters | Blob bytes | Pending commands |'
+  );
+  out.push('| --- | --- | --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
+    if (s.skipped) {
+      out.push(`| ${s.label} | ${s.strokes} | Skipped: ${s.error} | n/a | n/a | n/a | n/a |`);
+      continue;
+    }
     const blobKB = s.debug ? Math.round((s.debug.blobBytes ?? 0) / 1024) : 'n/a';
     out.push(
-      `| ${s.label} | ${s.strokes} | ${s.debug?.snapshots ?? 'n/a'} | ` +
+      `| ${s.label} | ${s.strokes} | Completed | ${s.debug?.snapshots ?? 'n/a'} | ` +
         `${s.debug?.liveRasters ?? 'n/a'} | ${blobKB} KB | ${s.debug?.pendingCommands ?? 'n/a'} |`
     );
   }
@@ -535,6 +561,10 @@ function renderUndoReport({ settings, scenarios }) {
   );
   out.push('| --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
+    if (s.skipped) {
+      out.push(`| ${s.label} | n/a | n/a | n/a | **n/a** |`);
+      continue;
+    }
     out.push(
       `| ${s.label} | ${s.draw.ops} | ${f1(s.draw.totalMs)} ms | ` +
         `${f1(s.draw.snapshotMaxMs)} ms | **${f1(s.draw.commitMaxMs)} ms** |`
@@ -544,6 +574,10 @@ function renderUndoReport({ settings, scenarios }) {
   out.push('| Scenario | Undo steps | Total | Avg / step | Max step |');
   out.push('| --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
+    if (s.skipped) {
+      out.push(`| ${s.label} | n/a | n/a | n/a | n/a |`);
+      continue;
+    }
     out.push(
       `| ${s.label} | ${s.undo.steps} | ${f1(s.undo.totalMs)} ms | ` +
         `${f1(s.undo.avgMs)} ms | ${f1(s.undo.maxMs)} ms |`
@@ -560,6 +594,10 @@ function renderUndoReport({ settings, scenarios }) {
   out.push('| Scenario | Rasters resident | Blob bytes | History memory |');
   out.push('| --- | --- | --- | --- |');
   for (const s of scenarios) {
+    if (s.skipped) {
+      out.push(`| ${s.label} | n/a | n/a | n/a |`);
+      continue;
+    }
     const rasters = s.debug == null ? 'n/a' : `${s.debug.liveRasters} + 1`;
     const blobKB = s.debug ? Math.round((s.debug.blobBytes ?? 0) / 1024) : 'n/a';
     out.push(`| ${s.label} | ${rasters} | ${blobKB} KB | ${f1(s.historyRasterMB)} MiB |`);
@@ -568,6 +606,10 @@ function renderUndoReport({ settings, scenarios }) {
   out.push('| Scenario | After draw (history resident) | After undo-to-empty |');
   out.push('| --- | --- | --- |');
   for (const s of scenarios) {
+    if (s.skipped) {
+      out.push(`| ${s.label} | n/a | n/a |`);
+      continue;
+    }
     out.push(`| ${s.label} | ${f1(s.heap.afterDrawMB)} MiB | ${f1(s.heap.afterUndoMB)} MiB |`);
   }
   out.push('\n---\nSee the `profiling` skill and ADR-0066 for how to read these.\n');
