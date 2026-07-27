@@ -1,5 +1,8 @@
 # Idea 18 — Deterministic fills: model picks the palette, code paints
 
+Status: OPEN — the deterministic segment/plan/paint path was not promoted; fills are still
+model-painted (../../bin/gen-coloring-fills.mjs) and this remains an area:asset-gen backlog item.
+
 **Verdict: WORKED** (end-to-end on all three pages, including the "hard" mermaid). Registration is
 100.0% keep / 100.0% localKeep by construction on all six fills (bar: 92 / 80) — the entire
 drift/registration failure class vanishes, and light and night stay perfectly coherent because both
