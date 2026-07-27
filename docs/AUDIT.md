@@ -9,38 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P3][duplication] The `--flag=value` `arg()` parser is copy-pasted across the crayon-sample scripts, and `build-sheet` re-inlines it
-
-**File(s):** `tools/asset-gen/crayon-brush-samples/build-compare-sheet.mjs:20-21`,
-`capture-current.mjs:21-22`, `build-sheet.mjs:133-135` — pinned at SHA f934d43
-
-#### Problem
-
-Two files carry a byte-identical helper:
-
-```js
-const arg = (name, fallback) =>
-  process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
-```
-
-`build-sheet.mjs` then parses `--artifact=` a *third* way inline
-(`process.argv.find(a => a.startsWith('--artifact='))?.slice('--artifact='.length)`), so the same
-folder resolves the same flag three different ways. The `name.length + 3` in the shared copy is
-itself an unexplained magic offset (`--` + `=` = 3 chars).
-
-#### Proposed solution
-
-Add a small `argFlag(name, fallback)` to `scripts/lib/scrapbook-chrome.mjs` (already imported by all
-three) or a sibling `scripts/lib/args.mjs`, computing the prefix once (`const p = \`--${name}=\`;
-…slice(p.length)`) so the offset is derived, not magic. Route all three call sites through it.
-
-#### Verification
-
-`grep -rn "startsWith(\`--\${name}"
-tools/asset-gen/crayon-brush-samples/`returns no local definitions; each script still honors`--renders=`,`--out=`,`--artifact=`.
-
----
-
 ### [P3][duplication] `buildHalf` repeats the same "create span, set class + text, append" block five times
 
 **File(s):**

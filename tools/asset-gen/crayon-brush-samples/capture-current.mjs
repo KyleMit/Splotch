@@ -16,13 +16,11 @@ import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { chromiumExecutablePath } from '../../../scripts/lib/utils.mjs';
+import { argFlag, chromiumExecutablePath } from '../../../scripts/lib/utils.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const arg = (name, fallback) =>
-  process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
-const baseURL = arg('url', 'http://localhost:4188');
-const OUT = arg('out', join(HERE, '../../../screenshots/crayon-current'));
+const baseURL = argFlag('url', 'http://localhost:4188');
+const OUT = argFlag('out', join(HERE, '../../../screenshots/crayon-current'));
 
 const W = 560;
 const H = 420;

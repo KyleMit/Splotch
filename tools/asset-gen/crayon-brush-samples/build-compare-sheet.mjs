@@ -14,12 +14,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { chromeStyle, masthead, page, siteFooter } from '../../../scripts/lib/scrapbook-chrome.mjs';
+import { argFlag } from '../../../scripts/lib/utils.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REF = join(HERE, '../../../scrapbook/crayon-brush-samples');
-const arg = (name, fallback) =>
-  process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
-const RENDERS = arg('renders', join(HERE, '../../../screenshots/crayon-current'));
+const RENDERS = argFlag('renders', join(HERE, '../../../screenshots/crayon-current'));
 const OUT = join(REF, 'vs-current.html');
 
 // Renders are 2x-DSF PNGs; refs are committed webp. Downsize both to a
@@ -153,7 +152,7 @@ await writeFile(
 );
 console.log(`Wrote ${OUT}`);
 
-const artifactOut = arg('artifact', null);
+const artifactOut = argFlag('artifact', null);
 if (artifactOut) {
   await writeFile(artifactOut, `${chromeStyle(extraCss)}\n${body}`);
   console.log(`Wrote Artifact fragment ${artifactOut}.`);

@@ -11,6 +11,7 @@ import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromeStyle, masthead, page, siteFooter } from '../../../scripts/lib/scrapbook-chrome.mjs';
+import { argFlag } from '../../../scripts/lib/utils.mjs';
 import { SAMPLES } from './samples.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -130,9 +131,7 @@ console.log(`Wrote ${join(OUT, 'index.html')} with ${present} samples.`);
 // <head>/<body> skeleton. Written wherever --artifact points (a scratchpad
 // path); not committed. The chrome CSS already carries data-theme overrides,
 // so the Artifact viewer's light/dark toggle works.
-const artifactOut = process.argv
-  .find((a) => a.startsWith('--artifact='))
-  ?.slice('--artifact='.length);
+const artifactOut = argFlag('artifact', undefined);
 if (artifactOut) {
   // The hosted Artifact has no sibling files, so the "open full image" links
   // would 404 — drop the anchors (the images are inlined and full-res anyway).

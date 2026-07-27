@@ -17,6 +17,11 @@ export function fail(message) {
   process.exit(1);
 }
 
+export function argFlag(name, fallback) {
+  const prefix = `--${name}=`;
+  return process.argv.find((a) => a.startsWith(prefix))?.slice(prefix.length) ?? fallback;
+}
+
 // Commands go through the shell so PATH shims (npm, npx, gh, sdkmanager)
 // resolve — which means args that aren't plain words need quoting.
 const quoteArg = (arg) => (/^[\w./:=-]+$/.test(arg) ? arg : `"${arg}"`);
