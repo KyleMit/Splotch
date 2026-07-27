@@ -15,34 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P5][consistency] `PORT`/`baseURL` naming and `defineConfig` usage differ between the two Playwright configs and the reporter shape is inconsistent
-
-**File(s):** `web/playwright.config.ts:64` vs `web/playwright.webkit-scratch.config.ts:13`
-(reporter) — pinned at SHA f934d43
-
-#### Problem
-
-The two Playwright configs, which are otherwise near-identical, differ in small unexplained ways
-beyond their intended purpose: the main config's `reporter: [['list'], ['html', { open: 'never' }]]`
-vs the scratch config's `reporter: [['list']]` (reasonable, but undocumented), and
-`reuseExistingServer: !process.env.CI` vs a flat `true`. Combined with the duplication flagged
-above, a maintainer can't quickly tell which differences are intentional (scratch = local-only, no
-HTML report) versus accidental drift.
-
-#### Proposed solution
-
-Once the shared base is extracted (see the P3 duplication finding), the scratch config should
-express only its *intentional* deltas (webkit-only project, list-only reporter, always reuse server)
-as explicit overrides on top of the shared config, making every difference a deliberate, visible
-line.
-
-#### Verification
-
-Diff the two effective resolved configs after refactor; every difference should map to a documented
-scratch-mode override.
-
----
-
 ### [P5][dead-config] `vitest.config.ts` omits `__PERF_MARKS__`, silently relying on a `typeof` guard in source
 
 **File(s):** `web/vitest.config.ts:11-19` (define) — pinned at SHA f934d43; consumer
