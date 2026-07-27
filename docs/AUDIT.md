@@ -11,33 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P4][maintainability] iconChroma hue thresholds are unnamed magic numbers
-
-**File(s):** `scripts/lib/iconChroma.mjs:30-33` (`isHue`) — pinned at SHA f934d43
-
-#### Problem
-
-```js
-return c.s >= 0.35 && c.l >= 0.14 && c.l <= 0.93;
-```
-
-`0.35`, `0.14`, `0.93` are the classification boundary between a "spot" (colorful) icon and a
-monochrome glyph — the single most important tuning knob in the file, shared with the `COLOR_ICONS`
-guard test — yet they're bare literals. Because this classifier must not drift from the Svelte test,
-the thresholds deserve to be named and, ideally, exported so the test asserts against the same
-constants.
-
-#### Proposed solution
-
-`const MIN_SATURATION = 0.35, MIN_LIGHTNESS = 0.14, MAX_LIGHTNESS = 0.93;` (export them; have
-`iconChroma.d.mts` type them). The `.svelte.test.ts` can then import rather than re-encode.
-
-#### Verification
-
-`npm run check` + the Icon guard test pass with identical classification.
-
----
-
 ### [P4][architecture] Point generators live inside the Playwright app-driver module
 
 **File(s):** `scripts/lib/app-driver.mjs:108-136` (`circlePts`, `arcPts`, `zigzag`) — pinned at SHA
