@@ -35,31 +35,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — scrapbook · run-artifact code
 
-### [P4][readability] `skipHash` boolean is a control-flag that silently gates two behaviours
-
-**File(s):** `scrapbook/coloring-book-proof-sheets/index.html:214-229` (hand-authored hub) — pinned
-at SHA f934d43
-
-#### Problem
-
-The parameter is named for one job (skip writing the hash) but the `if (!skipHash)` block also owns
-the `document.title` update. A reader reasonably assumes `skipHash` only suppresses the URL write,
-which is exactly how the stale-title bug (previous finding) slipped in. Bundling "should I write the
-hash?" and "should I update the title?" under one negated flag is a classic control-coupling smell.
-
-#### Proposed solution
-
-Split the concerns: always update the iframe, tab state, and title; take a separate,
-positively-named argument (e.g. `writeHash = true`) that governs only the `location.hash`
-assignment. The two callers that pass `true` today (`hashchange`) become `writeHash = false`.
-
-#### Verification
-
-Re-read `show()`: each side effect should be unconditional except the hash write. Confirm both
-callers still behave (click writes hash; hashchange does not re-write it and loop).
-
----
-
 ### [P4][correctness] Initial load rewrites the URL to `#farm` and pushes a history entry
 
 **File(s):** `scrapbook/coloring-book-proof-sheets/index.html:226`, `:242` (hand-authored hub) —
