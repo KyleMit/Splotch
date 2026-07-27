@@ -70,6 +70,7 @@ jobs:
             npm run test:android:device
 
       - name: Upload Maestro report
+        if: ${{ !cancelled() }}
         uses: ./.github/actions/upload-maestro-report
         with:
           name: maestro-report

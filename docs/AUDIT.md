@@ -21,30 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P2][duplication] The "Upload Maestro report" artifact step is near-identical across the two native workflows
-
-**File(s):** `.github/workflows/android-deploy.yml:82-89`, `.github/workflows/ios-deploy.yml:47-54`
-— pinned at SHA f934d43
-
-#### Problem
-
-Both jobs end with the same upload-artifact step; only the artifact `name` (`maestro-report` vs
-`maestro-ios-report`) differs. Path (`~/.maestro/tests/`), `retention-days: 7`,
-`if-no-files-found: ignore`, and the `if: ${{ !cancelled() }}` guard are duplicated. Drift risk on
-retention/path changes.
-
-#### Proposed solution
-
-Fold into the same composite action as the Maestro install (or a dedicated `upload-maestro-report`
-composite) taking the artifact name as an input. Retention and path then live once.
-
-#### Verification
-
-Both workflows still upload their report artifact with distinct names; the retention/path values
-exist in a single file.
-
----
-
 ### [P2][maintainability] Missing `timeout-minutes` on the two label-automation jobs — a hung `gh api` call runs for the 6-hour default
 
 **File(s):** `.github/workflows/label-sync.yml:22-26` (sync job),
