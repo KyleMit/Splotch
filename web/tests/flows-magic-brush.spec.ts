@@ -1,6 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { COLOR_CHANGE_DEBOUNCE_SETTLE_MS, draw, gotoApp, swatch, TEST_PALETTE } from './helpers';
+import {
+  COLOR_CHANGE_DEBOUNCE_SETTLE_MS,
+  draw,
+  gotoApp,
+  isRedDominant,
+  swatch,
+  TEST_PALETTE,
+  type Rgba,
+} from './helpers';
 
 import { applyFarmPage, openBrushMenu, openDrawer, pickBrush } from './flows-harness';
 
@@ -81,15 +89,18 @@ function distinctOpaqueColors(page: Page, bits = 4): Promise<number> {
   }, bits);
 }
 
-function hasRedPaintPixel(page: Page): Promise<boolean> {
-  return page.evaluate(() => {
+async function hasRedPaintPixel(page: Page): Promise<boolean> {
+  const candidates = await page.evaluate((): Rgba[] => {
     const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
     const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+    const pixels: Rgba[] = [];
     for (let i = 0; i < data.length; i += 4) {
-      if (data[i + 3] > 200 && data[i] > 200 && data[i + 1] < 120 && data[i + 2] < 120) return true;
+      if (data[i + 3] === 0) continue;
+      pixels.push([data[i], data[i + 1], data[i + 2], data[i + 3]]);
     }
-    return false;
+    return pixels;
   });
+  return candidates.some(isRedDominant);
 }
 
 test('the magic brush is always available and paints the coloring page colors', async ({

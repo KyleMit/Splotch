@@ -13,33 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P3][readability] Blue/red-dominance pixel assertions hide their intent behind index math repeated across tests
-
-**File(s):** `web/tests/flows.spec.ts:217, 453-454, 1542-1549`, `web/tests/helpers.ts:25-34` —
-pinned at SHA f934d43
-
-#### Problem
-
-The idiom `expect(px![2]).toBeGreaterThan(px![0])` (blue channel > red channel ⇒ "painted blue")
-recurs with an explanatory comment each time (`flows.spec.ts:217` "`#62A2E9` is blue-dominant — the
-painted pixel should be more blue than red"). The red-detection at `flows.spec.ts:1542-1549` inlines
-`data[i]>200 && data[i+1]<120 && data[i+2]<120`. The reader must decode raw `[r,g,b,a]` index
-arithmetic to understand what color is being asserted, and `firstOpaquePixel` returns an untyped
-`number[]` (not a named `Rgba` tuple), so nothing prevents an off-by-one channel index.
-
-#### Proposed solution
-
-In `helpers.ts`, type the return as `type Rgba = [number, number, number, number]` and add
-predicates `isBlueDominant(px: Rgba)`, `isRedDominant(px: Rgba)`. Replace the index comparisons and
-inline red-scans with named predicates. Assertions read `expect(isBlueDominant(px!)).toBe(true)`.
-
-#### Verification
-
-`grep -rn "px!\[2\]" web/tests` returns nothing.
-`npm run test:e2e -- flows.spec.ts webkit-smoke.spec.ts` green.
-
----
-
 ### [P3][maintainability] CDP viewport-rotation setup is duplicated in flows.spec.ts and diverges from the engine harness's rotation approach
 
 **File(s):** `web/tests/flows.spec.ts:1142-1149, 1435-1442` — pinned at SHA f934d43

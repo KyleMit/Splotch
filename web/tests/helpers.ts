@@ -101,3 +101,7 @@ export function firstOpaquePixel(page: Page): Promise<Rgba | null> {
 export function isBlueDominant(px: Rgba) {
   return px[2] > px[0];
 }
+
+export function isRedDominant(px: Rgba) {
+  return px[3] > 200 && px[0] > 200 && px[1] < 120 && px[2] < 120;
+}
