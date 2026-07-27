@@ -12,6 +12,10 @@
 //
 // Pure string builders: no DOM, no network. GitHub Pages serves the result as-is.
 
+import { readFile } from 'node:fs/promises';
+import { extname } from 'node:path';
+import sharp from 'sharp';
+
 export const esc = (s) =>
   String(s ?? '').replace(
     /[&<>"']/g,
@@ -262,6 +266,27 @@ export function siteFooter({ home = 'index.html' } = {}) {
     <p>Committed run outputs from the Splotch generators — see <code>scrapbook/README.md</code>. · <a href="https://github.com/KyleMit/Splotch">GitHub</a> · <a href="${esc(home)}">All collections</a></p>
   </div>
 </footer>`;
+}
+
+const MIME = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+};
+
+// Inlines an image file as a data: URI. Pass `width` to downscale + re-encode as
+// webp (quality 78); omit it to pass the file through as-is, MIME-mapped by extension.
+export async function inlineImage(path, { width } = {}) {
+  if (width) {
+    const buf = await sharp(path)
+      .resize({ width, withoutEnlargement: true })
+      .webp({ quality: 78 })
+      .toBuffer();
+    return `data:image/webp;base64,${buf.toString('base64')}`;
+  }
+  const buf = await readFile(path);
+  return `data:${MIME[extname(path).toLowerCase()]};base64,${buf.toString('base64')}`;
 }
 
 // Full self-contained HTML document wrapper for the pages this module fully owns

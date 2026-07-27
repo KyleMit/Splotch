@@ -12,24 +12,19 @@
 import { writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import sharp from 'sharp';
-import { chromeStyle, masthead, page, siteFooter } from '../../../scripts/lib/scrapbook-chrome.mjs';
+import {
+  chromeStyle,
+  inlineImage,
+  masthead,
+  page,
+  siteFooter,
+} from '../../../scripts/lib/scrapbook-chrome.mjs';
 import { argFlag } from '../../../scripts/lib/utils.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REF = join(HERE, '../../../scrapbook/crayon-brush-samples');
 const RENDERS = argFlag('renders', join(HERE, '../../../screenshots/crayon-current'));
 const OUT = join(REF, 'vs-current.html');
-
-// Renders are 2x-DSF PNGs; refs are committed webp. Downsize both to a
-// consistent inline size so the sheet stays in contact-sheet territory.
-async function uri(path, width = 760) {
-  const buf = await sharp(path)
-    .resize({ width, withoutEnlargement: true })
-    .webp({ quality: 78 })
-    .toBuffer();
-  return `data:image/webp;base64,${buf.toString('base64')}`;
-}
 
 const SCENES = [
   {
@@ -81,8 +76,8 @@ const MACROS = [
 
 const sections = [];
 for (const s of SCENES) {
-  const ref = await uri(join(REF, `${s.id}.webp`));
-  const cur = await uri(join(RENDERS, `${s.id}.png`));
+  const ref = await inlineImage(join(REF, `${s.id}.webp`), { width: 760 });
+  const cur = await inlineImage(join(RENDERS, `${s.id}.png`), { width: 760 });
   sections.push(`<section class="scene">
     <h2>${s.title}</h2>
     <div class="pair">
@@ -93,7 +88,7 @@ for (const s of SCENES) {
   </section>`);
 }
 for (const m of MACROS) {
-  const img = await uri(join(REF, `${m.id}.webp`), 1024);
+  const img = await inlineImage(join(REF, `${m.id}.webp`), { width: 1024 });
   sections.push(`<section class="scene">
     <h2>${m.title}</h2>
     <figure class="wide"><img loading="lazy" src="${img}" alt="${m.title}"/><figcaption>Real crayon macro (reference)</figcaption></figure>

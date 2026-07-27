@@ -7,10 +7,16 @@
 //
 // Writes ./out/index.html. Promote with the scrapbook:publish flow when happy.
 
-import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { readdir, writeFile } from 'node:fs/promises';
 import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromeStyle, masthead, page, siteFooter } from '../../../scripts/lib/scrapbook-chrome.mjs';
+import {
+  chromeStyle,
+  inlineImage,
+  masthead,
+  page,
+  siteFooter,
+} from '../../../scripts/lib/scrapbook-chrome.mjs';
 import { argFlag } from '../../../scripts/lib/utils.mjs';
 import { SAMPLES } from './samples.mjs';
 
@@ -63,11 +69,6 @@ const files = new Map(
     .map((f) => [f.replace(extname(f), ''), f])
 );
 
-async function dataUri(file) {
-  const buf = await readFile(join(OUT, file));
-  return `data:${MIME[extname(file).toLowerCase()]};base64,${buf.toString('base64')}`;
-}
-
 const cards = [];
 let present = 0;
 for (const [prefix, heading, blurb] of STAGES) {
@@ -77,7 +78,7 @@ for (const [prefix, heading, blurb] of STAGES) {
     const file = files.get(spec.id);
     if (!file) continue;
     present++;
-    const uri = await dataUri(file);
+    const uri = await inlineImage(join(OUT, file));
     items.push(
       `<figure class="sample">
         <a href="${file}" class="shot"><img loading="lazy" src="${uri}" alt="${spec.label}"/></a>
