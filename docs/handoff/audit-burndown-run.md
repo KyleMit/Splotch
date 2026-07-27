@@ -1,7 +1,8 @@
 # Handoff — audit burndown run
 
-> 2026-07-27 · branch `audit/burndown-20260727` · burn down the staged audit backlog with supervised
-> Codex roles
+> 2026-07-27 · branch `audit/burndown-20260727` · PR
+> [#554](https://github.com/KyleMit/Splotch/pull/554) · burn down the staged audit backlog with
+> supervised Codex roles
 
 ## Objective & non-goals
 
@@ -15,16 +16,17 @@ head CI supervision, or change tracked files while the driver is active.
 
 * Branch: `audit/burndown-20260727`, created from `main` at
   `63b94e91fcd1ab6d01aaf94b0b8c240098559006`.
-* PR: pending.
+* PR: [#554](https://github.com/KyleMit/Splotch/pull/554), draft.
 * Initial backlog: 183 findings, measured with `node scripts/audit-burndown/pop.mjs --count`.
 * Historical `run.log` baseline: 1,206 lines. Reconcile only later `finished:` and terminal-event
   lines.
 * Run state: initialized; no driver process is active. A historical `.audit-work/STOP` is present
   and must be cleared only by the launch/resume path.
 
-| SHA     | What                                 |
-| ------- | ------------------------------------ |
-| pending | Initial checkpoint and launch packet |
+| SHA      | What                                 |
+| -------- | ------------------------------------ |
+| 7d6320a5 | Initial checkpoint and launch packet |
+| pending  | Record draft PR and green preflight  |
 
 Files touched so far: `docs/handoff/audit-burndown-run.md`.
 
@@ -68,11 +70,8 @@ npm run audit:burndown:overnight -- 600
 
 ## Unverified assumptions
 
-* `npm run audit:preflight` has not yet verified Codex login, origin reachability, the configured
-  runner, branch, gates, and parsed backlog.
 * The canary has not yet established that the remaining findings can pass deterministic gates,
   adversarial review, push, exact-head CI, and comment backfill on this branch.
-* No new draft PR exists until the initial checkpoint is pushed.
 
 ## Done & verified
 
@@ -83,14 +82,17 @@ npm run audit:burndown:overnight -- 600
 * Worktree was clean before this handoff was added.
 * Initial backlog count and historical log baseline were measured without reading `docs/AUDIT.md`
   directly.
+* `npm run audit:preflight`: passed with Codex CLI 0.145.0 logged in, runner `codex`, branch
+  `audit/burndown-20260727`, origin reachable, 183 findings parsed, and the complete configured
+  build gate green.
+* Draft PR [#554](https://github.com/KyleMit/Splotch/pull/554) is open against `main`.
 
 ## Risks & next 3 steps
 
-1. Commit and push this initial checkpoint, run the exact preflight, and require every check green.
-2. Open a draft PR, replace `PR: pending` with its link, commit and push that checkpoint, then run
-   the five-fix foreground canary.
-3. Inspect every canary diff and deletion count, confirm any fix-round thread resume, require
-   exact-head CI green, drain pending comments, review cost, then start one bounded full segment.
+1. Commit and push this PR/preflight checkpoint, then run the five-fix foreground canary.
+2. Inspect every canary diff and deletion count and confirm any fix-round thread resume.
+3. Require exact-head CI green, drain pending comments, review cost, then start one bounded full
+   segment.
 
 Closeout must stop all driver and nested Codex processes; prove local `HEAD` equals the remote;
 capture and drain all comments; reconcile the 1,206-line run baseline; tidy the backlog; add the
