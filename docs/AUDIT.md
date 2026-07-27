@@ -11,37 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P3][duplication] Missing `openInFileManager` helper — the open/xdg-open branch is duplicated
-
-**File(s):** `scripts/lib/*` (absent) vs `scripts/open-path.mjs:16` and
-`scripts/redteam-run.mjs:268` — pinned at SHA f934d43
-
-#### Problem
-
-The macOS-vs-Linux opener branch that `scripts/CLAUDE.md` explicitly says should live "behind a
-branch in `scripts/lib/`" is instead written twice in consumers:
-
-```js
-// open-path.mjs
-run(process.platform === 'darwin' ? 'open' : 'xdg-open', [path]);
-// redteam-run.mjs:268
-const [cmd, args] = process.platform === 'darwin' ? ['open', [file]] : ['xdg-open', [file]];
-```
-
-This is exactly the kind of platform difference the lib exists to centralise, and it is duplicated.
-
-#### Proposed solution
-
-Add to `utils.mjs` (or a `lib/opener.mjs`):
-`export const openInOs = (target) => run(process.platform === 'darwin' ? 'open' : 'xdg-open', [target]);`.
-Both consumers call it.
-
-#### Verification
-
-`grep -rn "xdg-open" scripts/` matches only the new helper.
-
----
-
 ### [P3][duplication] `ROOT` is defined identically in two lib modules
 
 **File(s):** `scripts/lib/utils.mjs:11` and `scripts/lib/model-eval.mjs:12` — pinned at SHA f934d43
