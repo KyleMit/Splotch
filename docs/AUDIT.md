@@ -21,37 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P1][security] Test/deploy/smoke workflows declare no `permissions:` block — they run with the default (write-capable) token
-
-**File(s):** `.github/workflows/test.yml:1-11`, `.github/workflows/android-deploy.yml:10-17`,
-`.github/workflows/ios-deploy.yml:11-18`, `.github/workflows/blobs-smoke.yml:14-24` — pinned at SHA
-f934d43
-
-#### Problem
-
-`pages.yml` (18-22), `label-sync.yml` (17-18), and `label-to-todo.yml` (9-10) each scope their
-`GITHUB_TOKEN` with an explicit `permissions:` block. The four remaining workflows — `test.yml`,
-`android-deploy.yml`, `ios-deploy.yml`, `blobs-smoke.yml` — declare **none**, so they inherit the
-repository/org default, which for many repos is the legacy read-write token. These workflows run
-untrusted PR code (`test.yml` triggers on `pull_request`), download and execute a piped installer
-(`curl … | bash` for Maestro), and handle `secrets.ADMIN_ACCESS_TOKEN` (`blobs-smoke.yml`). A
-compromised dependency or action step would have write access to contents, issues, and more.
-
-#### Proposed solution
-
-Add a least-privilege top-level `permissions:` block to each. `test.yml`, `android-deploy.yml`, and
-`ios-deploy.yml` only need `contents: read`. `blobs-smoke.yml` needs `contents: read`. Set the
-default org-wide to read-only as defense in depth. This also makes "what can this workflow touch"
-grepable and consistent with the other three workflows.
-
-#### Verification
-
-Every workflow file contains a `permissions:` block;
-`grep -L "permissions:" .github/workflows/*.yml` returns nothing. Re-run a PR build to confirm no
-step needs a write scope that was removed.
-
----
-
 ### [P2][duplication] The checkout + setup-node@24 + `npm ci` preamble is copy-pasted across five jobs
 
 **File(s):** `.github/workflows/test.yml:18-26` and `:89-97`,
