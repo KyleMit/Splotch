@@ -54,7 +54,7 @@ function ringBands(mask, w, h, maxD) {
   const bands = [];
   let prev = mask;
   for (let d = 1; d <= maxD; d++) {
-    const grown = dilateMask(mask, w, h, d);
+    const grown = dilateMask(prev, w, h, 1);
     const band = [];
     for (let p = 0; p < w * h; p++) if (grown[p] && !prev[p]) band.push(p);
     bands.push(band);

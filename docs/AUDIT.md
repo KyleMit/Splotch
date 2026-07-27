@@ -7,36 +7,6 @@
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P4][performance] `ringBands` recomputes the dilation from the base mask at r=1,2,3 instead of growing incrementally
-
-**File(s):** `tools/asset-gen/lib/night-halo.mjs:53-64` — pinned at SHA f934d43
-
-#### Problem
-
-```js
-for (let d = 1; d <= maxD; d++) {
-  const grown = dilateMask(mask, w, h, d);   // full radius-d dilation from scratch
-  …
-  prev = grown;
-}
-```
-
-Each iteration runs a fresh separable dilation of radius `d` over the whole page; the r=3 pass
-redoes the work of r=1 and r=2. Three full-page morphological passes where one incremental
-single-pixel dilation per ring (reusing `prev`) would do.
-
-#### Proposed solution
-
-Grow one ring at a time: `grown = dilateMask(prev, w, h, 1)` inside the loop (radius-1 each step),
-so total work is 3 radius-1 passes instead of radius-1+2+3.
-
-#### Verification
-
-`tests/night-halo.test.mjs` band pixel counts unchanged (radius-d from base == d successive radius-1
-dilations for box morphology).
-
----
-
 ### [P4][naming] Hotspot tile geometry uses bare `64` and a `*1000` key-packing with no named constants
 
 **File(s):** `tools/asset-gen/lib/night-halo.mjs:111-125` — pinned at SHA f934d43
