@@ -11,30 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P4][naming] `chromiumExecutablePath` uses `slice(9)` and a duplicated `/opt/pw-browsers` literal
-
-**File(s):** `scripts/lib/utils.mjs:87-98` (`chromiumExecutablePath`) and
-`scripts/lib/model-eval.mjs:51` — pinned at SHA f934d43
-
-#### Problem
-
-`Number(b.slice(9))` strips the literal `"chromium-"` (9 chars) — a magic length tied to a string
-that appears nowhere near it, so a rename of the prefix breaks the sort silently. The browsers-path
-default `'/opt/pw-browsers'` is also hardcoded here and again as the `chromium-1194` prefix in
-`model-eval.mjs`, two independent copies of the same cloud path.
-
-#### Proposed solution
-
-`const PREFIX = 'chromium-'; Number(b.slice(PREFIX.length))`, and
-`const DEFAULT_BROWSERS_PATH = '/opt/pw-browsers'` exported once and reused (also removes the
-`model-eval` copy once that file adopts `chromiumExecutablePath` per the P1 finding).
-
-#### Verification
-
-`grep -rn "/opt/pw-browsers" scripts/lib` → one definition; sort still orders revisions descending.
-
----
-
 ### [P4][maintainability] iconChroma hue thresholds are unnamed magic numbers
 
 **File(s):** `scripts/lib/iconChroma.mjs:30-33` (`isHue`) — pinned at SHA f934d43
