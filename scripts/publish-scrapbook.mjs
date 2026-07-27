@@ -14,6 +14,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { ROOT, fail } from './lib/utils.mjs';
 import {
   buildScrapbookIndex,
+  coloringBookProofSheetHubProblems,
   collectionsMissingEntry,
   OWNER,
   REPO,
@@ -51,6 +52,15 @@ function main() {
         'Scrapbook collections with no reachable entry page (counted in the index but shown as no card):\n' +
           missing.map((m) => `  - scrapbook/${m}/`).join('\n') +
           '\nAdd an .html entry page or an .md report, or remove the empty dir. See scrapbook/README.md.'
+      );
+    }
+    const proofSheetProblems = coloringBookProofSheetHubProblems(
+      join(SCRAPBOOK_DIR, 'coloring-book-proof-sheets')
+    );
+    if (proofSheetProblems.length) {
+      fail(
+        'Coloring-book proof-sheet hub is out of sync:\n' +
+          proofSheetProblems.map((problem) => `  - ${problem}`).join('\n')
       );
     }
     // Structural freshness: a collection added/removed without re-running

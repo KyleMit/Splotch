@@ -141,6 +141,44 @@ export function collectionsMissingEntry(scrapbookDir) {
     .filter((t) => pagesUnder(join(scrapbookDir, t), t).length === 0);
 }
 
+export function coloringBookProofSheetHubProblems(proofSheetsDir) {
+  const hub = readFileSync(join(proofSheetsDir, 'index.html'), 'utf8');
+  const categoriesSource = hub.match(/var CATEGORIES = \[([\s\S]*?)\];/)[1];
+  const categories = [...categoriesSource.matchAll(/\{\s*id:\s*'([^']+)'[^}]*pages:\s*(\d+)/g)].map(
+    ([, id, pages]) => ({ id, pages: Number(pages) })
+  );
+  const sheetIds = readdirSync(proofSheetsDir)
+    .filter((name) => name.endsWith('.html') && name !== 'index.html')
+    .map((name) => name.slice(0, -'.html'.length))
+    .sort();
+  const categoryIds = categories.map(({ id }) => id);
+  const problems = [
+    ...sheetIds
+      .filter((id) => !categoryIds.includes(id))
+      .map((id) => `Sibling proof sheet ${id}.html has no matching hub category.`),
+    ...categoryIds
+      .filter((id) => !sheetIds.includes(id))
+      .map((id) => `Hub category "${id}" has no sibling proof sheet ${id}.html.`),
+  ];
+
+  for (const { id, pages } of categories) {
+    if (!sheetIds.includes(id)) continue;
+    const sheet = readFileSync(join(proofSheetsDir, `${id}.html`), 'utf8');
+    const marker = 'window.__COLORING_BOOK_PROOF_SHEET__ = ';
+    const dataStart = sheet.indexOf(marker) + marker.length;
+    const dataEnd = sheet.indexOf(';</script>', dataStart);
+    const cellCount = JSON.parse(sheet.slice(dataStart, dataEnd)).cells.length;
+    const sheetPages = cellCount / 2;
+    if (pages !== sheetPages) {
+      problems.push(
+        `Hub category "${id}" declares ${pages} pages, but ${id}.html contains ${cellCount} cells (${sheetPages} pages).`
+      );
+    }
+  }
+
+  return problems;
+}
+
 function card(type, meta, scrapbookDir) {
   const dir = join(scrapbookDir, type);
   const files = readdirSync(dir);

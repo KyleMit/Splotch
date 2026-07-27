@@ -2,7 +2,11 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, describe, expect, it } from 'vitest';
-import { buildScrapbookIndex, collectionsMissingEntry } from '../lib/scrapbook-index.mjs';
+import {
+  buildScrapbookIndex,
+  coloringBookProofSheetHubProblems,
+  collectionsMissingEntry,
+} from '../lib/scrapbook-index.mjs';
 
 const fixtures = [];
 
@@ -10,6 +14,23 @@ function fixture() {
   const dir = mkdtempSync(join(tmpdir(), 'splotch-scrapbook-index-'));
   fixtures.push(dir);
   return dir;
+}
+
+function writeProofSheetCollection(dir, categories, sheets) {
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(
+    join(dir, 'index.html'),
+    `<script>var CATEGORIES = [${categories
+      .map(({ id, pages }) => `{ id: '${id}', name: '${id}', pages: ${pages} }`)
+      .join(',')}];</script>`
+  );
+  for (const [id, pages] of Object.entries(sheets)) {
+    const cells = Array.from({ length: pages * 2 }, () => ({}));
+    writeFileSync(
+      join(dir, `${id}.html`),
+      `<script>window.__COLORING_BOOK_PROOF_SHEET__ = ${JSON.stringify({ cells })};</script>`
+    );
+  }
 }
 
 afterEach(() => {
@@ -46,5 +67,31 @@ describe('scrapbook index', () => {
     mkdirSync(join(scrapbookDir, 'model-eval'));
 
     expect(collectionsMissingEntry(scrapbookDir)).toEqual(['model-eval']);
+  });
+
+  it('reports sibling sheets missing from or extra in the proof-sheet hub', () => {
+    const proofSheetsDir = fixture();
+    writeProofSheetCollection(
+      proofSheetsDir,
+      [
+        { id: 'farm', pages: 1 },
+        { id: 'extra', pages: 1 },
+      ],
+      { farm: 1, missing: 1 }
+    );
+
+    expect(coloringBookProofSheetHubProblems(proofSheetsDir)).toEqual([
+      'Sibling proof sheet missing.html has no matching hub category.',
+      'Hub category "extra" has no sibling proof sheet extra.html.',
+    ]);
+  });
+
+  it('reports a stale proof-sheet hub page count', () => {
+    const proofSheetsDir = fixture();
+    writeProofSheetCollection(proofSheetsDir, [{ id: 'farm', pages: 1 }], { farm: 2 });
+
+    expect(coloringBookProofSheetHubProblems(proofSheetsDir)).toEqual([
+      'Hub category "farm" declares 1 pages, but farm.html contains 4 cells (2 pages).',
+    ]);
   });
 });
