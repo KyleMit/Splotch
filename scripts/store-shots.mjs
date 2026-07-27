@@ -126,6 +126,9 @@ async function colorInLines(page, box) {
 // No DOM signal is surfaced for these dialog animations, so they stay timed.
 const MENU_TRANSITION_MS = 450; // coloring-book dialog sliding open
 const PAGE_GRID_TRANSITION_MS = 400; // a book's page grid animating in
+// Scene 2 makes that same grid the subject of its shot, so it waits out the
+// transition with a margin — tuning the transition carries the shot along.
+const PAGE_GRID_SETTLE_MS = PAGE_GRID_TRANSITION_MS + 100;
 const SCREENSHOT_SETTLE_MS = 500; // last entrance animation before the capture
 
 // Each scene opens its own page, drives the app, captures one screenshot and
@@ -149,7 +152,7 @@ async function sceneColoringBook(browser, base, device, dir) {
   await openColoringBook(page);
   await sleep(MENU_TRANSITION_MS);
   await pickBook(page, 'Farm');
-  await sleep(SCREENSHOT_SETTLE_MS);
+  await sleep(PAGE_GRID_SETTLE_MS);
   await shot(page, `${dir}/02-coloring-book.png`);
   await ctx.close();
 }

@@ -5,7 +5,8 @@
 // a stale probe/selector after an app-markup change stays broken until someone
 // hand-runs a generator. This boots the real app once and exercises the driver's
 // entry path — openAppPage + expandDrawer + pickColor + setStrokeSize + drawStroke
-// + the coloring-book path (openColoringBook + pickBook + pickPage) — asserting
+// + the coloring-book path (openColoringBook + pickBook + pickPage +
+// waitForColoringOverlay) — asserting
 // each step matches current markup, then tears the server down.
 
 import { chromium } from '@playwright/test';
@@ -22,6 +23,7 @@ import {
   openColoringBook,
   pickBook,
   pickPage,
+  waitForColoringOverlay,
 } from './lib/app-driver.mjs';
 
 const PORT = Number(process.env.SMOKE_PORT ?? 4173);
@@ -66,7 +68,7 @@ async function run(browser, base) {
   await pickBook(page, 'Farm');
   await sleep(400);
   await pickPage(page, 'Farm');
-  await sleep(700);
+  await waitForColoringOverlay(page);
   check(
     'openColoringBook + pickBook + pickPage apply a Farm page overlay',
     await page.locator('#coloringOverlay').isVisible()

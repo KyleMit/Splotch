@@ -26,33 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P3][complexity] `store-shots.mjs` five scenes inline in a loop with magic waits
-
-**File(s):** `scripts/store-shots.mjs:130-195` (scene loop), sleeps at `150,152,164,167,182,190` —
-pinned at SHA f934d43
-
-#### Problem
-
-The per-target loop body is five anonymous `{ … }` blocks (draw / coloring-book / color-page /
-color-picker / parent-center), each opening a page, doing UI steps, screenshotting, and closing —
-interleaved with bare `sleep(450)`, `sleep(500)`, `sleep(400)`, `sleep(700)` whose values are
-unexplained "wait for animation/overlay" guesses. It's hard to run or reason about one scene, and
-the magic delays are the kind of thing that flakes.
-
-#### Proposed solution
-
-Extract each scene to a named async function `sceneFreeDraw(browser, base, device, dir)`, …, and
-drive them from a small array so the loop reads as `for (const scene of SCENES) await scene(...)`.
-Replace magic sleeps with explicit waits (`page.waitForSelector`, `waitForFunction` on the overlay
-image) or named constants (`OVERLAY_LOAD_MS`) with a comment.
-
-#### Verification
-
-`npm run gen:shots` regenerates all `store-assets/screenshots/**` files; visually compare a couple.
-Each scene function is independently callable for debugging.
-
----
-
 ### [P3][naming] Brand palette hex values hardcoded in generators, duplicating the source of truth
 
 **File(s):** `scripts/store-shots.mjs:41-49` (`C`), `scripts/gen-large-image.mjs:42-49`
