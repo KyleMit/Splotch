@@ -19,42 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P2][duplication] The npm@11 pin (logic + multi-line rationale) is copy-pasted across four shell files and has already drifted
-
-**File(s):** `.claude/hooks/session-start.sh:12-19`, `.claude/cloud/setup.sh:14-23`,
-`.codex/cloud/setup.sh:37-44`, `.codex/cloud/maintenance.sh:29-33` — pinned at SHA f934d43
-
-#### Problem
-
-The same decision — pin npm to 11 because `package-lock.json` is authored by npm 11 and other majors
-dirty the tree on optional-peer entries — is re-explained at length in four places, with the command
-`npx -y npm@11 install -g npm@11` repeated in three of them. The prose has already drifted:
-
-* `.claude/cloud/setup.sh:15` says "the container image ships npm 10"
-* `.codex/cloud/setup.sh:38` says "the Codex image ships npm 11.4.2"
-* `session-start.sh:15-19` gives yet a third framing ("npm 10 and 11 disagree on optional-peer
-  entries")
-
-Four copies of a rationale means four places to update when the npm story changes, and they are
-already telling slightly different stories.
-
-#### Proposed solution
-
-Collapse the rationale to one canonical home (it partly lives in `docs/CLOUD/Claude.md` /
-`docs/CLOUD/Codex.md` already) and have each script carry a one-line comment plus a doc pointer
-instead of the full paragraph, e.g.
-`# Pin npm@11 to match package-lock.json's authoring major — see docs/CLOUD/Codex.md.` The command
-itself can't be factored into a shared sourced file (the cloud scripts are pasted into web dialogs
-and must be standalone), so keep the command inline but stop duplicating the multi-line explanation.
-
-#### Verification
-
-`grep -rn "optional-peer\|npm@11 install -g npm@11" .claude .codex` currently returns the rationale
-in four files; after the change each file has a single-line comment and the long explanation exists
-in exactly one doc.
-
----
-
 ### [P2][consistency] Codex `setup.sh` and `maintenance.sh` are ~90% identical and have already diverged in ways that look accidental
 
 **File(s):** `.codex/cloud/setup.sh:46-51`, `.codex/cloud/maintenance.sh:35-40` — pinned at SHA
