@@ -395,8 +395,10 @@ let stop;
 try {
   console.log('Starting test dev server…');
   ({ stop } = spawnViteServer(PORT, {
-    ADMIN_ACCESS_TOKEN: ADMIN_SECRET,
-    ALLOWED_TOKENS_LIST: SEED_TOKENS,
+    env: {
+      ADMIN_ACCESS_TOKEN: ADMIN_SECRET,
+      ALLOWED_TOKENS_LIST: SEED_TOKENS,
+    },
   }));
 
   await waitForUrl(`${BASE}/api/admin/tokens`, 45_000, (res) => res.status === 401);

@@ -22,7 +22,7 @@ export async function buildAndPreview(port, { build = true, timeout = 90_000 } =
 
   const base = `http://localhost:${port}/`;
   console.log('Starting preview server…');
-  const { stop } = spawnViteServer(port, {}, 'preview');
+  const { stop } = spawnViteServer(port, { command: 'preview' });
 
   try {
     await waitForUrl(base, timeout);

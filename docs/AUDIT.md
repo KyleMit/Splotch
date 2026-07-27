@@ -11,33 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P3][architecture] `spawnViteServer` doesn't cover the dev-with-visible-output case, so `cloud-tunnel.mjs` re-implements it and can orphan vite
-
-**File(s):** `scripts/lib/vite-server.mjs:29-56` (`spawnViteServer`) — pinned at SHA f934d43
-
-#### Problem
-
-`spawnViteServer` exists specifically to run vite in a detached group so `stop()` can't orphan the
-esbuild grandchild — but it hardcodes `stdio: ['ignore','ignore','inherit']` and only merges `env`.
-`cloud-tunnel.mjs:63` needs stdout inherited and a `TUNNEL_HOST` env, so it hand-rolls
-`spawn('npx', ['vite','dev',...])` — reintroducing the exact npx-wrapper + non-detached shape the
-helper warns against ("wrapper spawns (`npx vite`) would add another layer … a plain child.kill()
-can orphan the process that holds the port"). The one consumer that most needs the anti-orphan
-guarantee bypasses it.
-
-#### Proposed solution
-
-Widen `spawnViteServer(port, { env, command, stdout })` to accept a stdout mode
-(`'ignore' | 'inherit'`), then have `cloud-tunnel.mjs` use it. Its `stop()`/detached-group logic
-then covers the tunnel path too.
-
-#### Verification
-
-`cloud-tunnel.mjs` no longer imports `spawn` directly; Ctrl-C during a tunnel leaves no vite/esbuild
-process (`pgrep -f vite` empty after exit).
-
----
-
 ### [P3][cross-platform] `freePort` depends on `lsof`, which is not present on many Linux/CI hosts
 
 **File(s):** `scripts/lib/vite-server.mjs:15-27` (`freePort`) — pinned at SHA f934d43

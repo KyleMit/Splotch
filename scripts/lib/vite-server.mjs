@@ -26,12 +26,12 @@ export function freePort(port) {
   }
 }
 
-export function spawnViteServer(port, env = {}, command = 'dev') {
+export function spawnViteServer(port, { env = {}, command = 'dev', stdout = 'ignore' } = {}) {
   const vite = join(ROOT, 'node_modules', 'vite', 'bin', 'vite.js');
   const server = spawn(process.execPath, [vite, command, '--port', String(port), '--strictPort'], {
     cwd: join(ROOT, 'web'),
     env: { ...process.env, ...env },
-    stdio: ['ignore', 'ignore', 'inherit'],
+    stdio: ['ignore', stdout, 'inherit'],
     detached: true,
   });
 
