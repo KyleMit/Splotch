@@ -14,6 +14,12 @@ import { ROOT } from './utils.mjs';
 // and we never reuse a stale server from a previous run.
 export function freePort(port) {
   const out = spawnSync('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
+  if (out.error) {
+    console.warn(
+      `Unable to clear a stale listener on port ${port} automatically because lsof could not be launched. Stop it before retrying.`,
+    );
+    return;
+  }
   for (const pid of (out.stdout || '')
     .split('\n')
     .map((s) => s.trim())
