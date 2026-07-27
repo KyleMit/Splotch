@@ -9,33 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P4][duplication] The comp/light/pen fixture-loading trio is duplicated between two eye test suites
-
-**File(s):** `tools/asset-gen/tests/composite-eye.test.mjs:24-33` (`FIXTURES` + `score`),
-`tools/asset-gen/tests/golden-catalog.test.mjs:8-20` (`FIXTURES` + `scoreFixture`) — pinned at SHA
-f934d43
-
-#### Problem
-
-Both suites compute the same
-`FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures/composite-eye')` and both open
-the identical `${name}.comp/.light/.pen.webp` trio with a `Promise.all([readFile…])` before scoring.
-The read boilerplate (the load, not the scoring) is copy-pasted; a change to the fixture layout
-(e.g. adding a `.chalk` sidecar) touches two files.
-
-#### Proposed solution
-
-Add `tests/fixtures/composite-eye/load.mjs` exporting
-`loadTrio(name) => Promise<{comp, light, pen}>` (and the `FIXTURES` dir constant). Both suites
-import it and layer their own scoring on top.
-
-#### Verification
-
-Both suites still pass; `grep -rn "fixtures/composite-eye')" tools/asset-gen/tests/*.test.mjs` shows
-the path defined once.
-
----
-
 ### [P4][naming] `build-sheet.mjs` documents a spurious `--experimental-strip-types` invocation it doesn't need
 
 **File(s):** `tools/asset-gen/crayon-brush-samples/build-sheet.mjs:6` (header usage) — pinned at SHA

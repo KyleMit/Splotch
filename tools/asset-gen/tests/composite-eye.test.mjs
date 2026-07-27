@@ -17,18 +17,12 @@
 // tools/asset-gen/.coloring-samples/orb-fixtures/build-fixtures.mjs.
 import { describe, it, expect } from 'vitest';
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { scoreCompositeEyes, CORE_DARK_FRAC_MIN } from '../lib/composite-eye.mjs';
-
-const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures/composite-eye');
+import { FIXTURES, loadTrio } from './fixtures/composite-eye/load.mjs';
 
 async function score(name) {
-  const [comp, light, pen] = await Promise.all([
-    readFile(join(FIXTURES, `${name}.comp.webp`)),
-    readFile(join(FIXTURES, `${name}.light.webp`)),
-    readFile(join(FIXTURES, `${name}.pen.webp`)),
-  ]);
+  const { comp, light, pen } = await loadTrio(name);
   return scoreCompositeEyes(comp, light, pen);
 }
 
