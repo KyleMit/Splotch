@@ -9,36 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P3][naming] Rename obscure `beat` and consolidate the terse formatter helpers
-
-**File(s):** `scripts/perf/session.mjs:35-43` (`beat`), `scripts/perf/analyze.mjs:326` (`ms`),
-`scripts/perf/undo-scenarios.mjs:480` (`f1`), `scripts/perf/replay-scenario.mjs:278` (`f1`),
-`scripts/perf/analyze-webinspector.mjs:59-68` (`stat`,`q`,`fmt`),
-`scripts/perf/ipad-console-driver.js:93` (`agg`) — pinned at SHA f934d43
-
-#### Problem
-
-`beat(page, label, fn)` is the scenario-step runner but the name carries no meaning ("beat" of
-what?) — `runPhase`/`step` would be self-documenting, especially since it wraps `markPhase`.
-Meanwhile the number formatter is re-invented per file:
-`ms = (n) => n == null ? 'n/a' :`${n.toFixed(1)} ms`` in analyze,
-`f1 = (n) => n == null ? 'n/a' : n.toFixed(1)` twice (undo + replay), and `fmt`/`stat`/`q` in the
-webinspector analyzer. Three files ship the same "null → n/a, else fixed(1)" logic under three
-names.
-
-#### Proposed solution
-
-Rename `beat` → `runPhase` (or `step`). Export `f1`/`ms` from a shared `report-fmt.mjs`
-(`export const f1 = …; export const ms = (n) => n == null ? 'n/a' :`${f1(n)} ms`;`) and import in
-analyze/undo/replay. The console snippet keeps its own copy (can't import).
-
-#### Verification
-
-`grep -rn "const f1 =" scripts/perf` collapses to one non-snippet definition; reports render
-identical numbers.
-
----
-
 ### [P3][maintainability] Encapsulate the scattered "effective throttle" idiom
 
 **File(s):** `scripts/perf/scenario.mjs:30,42,71`, `scripts/perf/mount.mjs:45,51,85`,
