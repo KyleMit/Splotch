@@ -186,6 +186,45 @@ async function sceneParentCenter(browser, base, device, dir) {
 }
 sceneParentCenter.label = '05-parent-center';
 
+function featureGraphicHtml(iconB64) {
+  return `<!doctype html><html><head><meta charset="utf-8">
+  <style>
+    @font-face { font-family:'QS'; src: local('Quicksand'); }
+    * { margin:0; box-sizing:border-box; }
+    html,body { width:1024px; height:500px; overflow:hidden; }
+    body {
+      display:flex; align-items:center; gap:54px; padding:0 86px;
+      font-family:'Quicksand','Segoe UI',sans-serif;
+      background: radial-gradient(circle at 20% 20%, #fff 0%, #fdf7ff 45%, #f3f0ff 100%);
+      position:relative;
+    }
+    .dots { position:absolute; inset:0; }
+    .dot { position:absolute; border-radius:50%; opacity:.85; }
+    .icon { width:300px; height:300px; flex:0 0 auto; filter: drop-shadow(0 14px 30px rgba(120,80,180,.25)); }
+    .copy { z-index:2; }
+    .name { font-size:128px; font-weight:700; letter-spacing:-2px;
+      background:linear-gradient(90deg,${C.red},${C.orange},${C.yellow},${C.green},${C.blue},${C.purple});
+      -webkit-background-clip:text; background-clip:text; color:transparent; line-height:1; }
+    .tag { font-size:38px; font-weight:600; color:#5a4a6b; margin-top:18px; }
+    .sub { font-size:24px; font-weight:500; color:#9385a3; margin-top:14px; }
+  </style></head>
+  <body>
+    <div class="dots">
+      <span class="dot" style="width:42px;height:42px;background:${C.yellow};top:48px;left:560px"></span>
+      <span class="dot" style="width:26px;height:26px;background:${C.green};top:120px;left:930px"></span>
+      <span class="dot" style="width:34px;height:34px;background:${C.blue};bottom:70px;left:520px"></span>
+      <span class="dot" style="width:20px;height:20px;background:${C.red};bottom:120px;left:880px"></span>
+      <span class="dot" style="width:30px;height:30px;background:${C.purple};top:60px;left:60px"></span>
+    </div>
+    <img class="icon" src="data:image/png;base64,${iconB64}">
+    <div class="copy">
+      <div class="name">Splotch</div>
+      <div class="tag">Doodle, color &amp; create</div>
+      <div class="sub">A calm, ad-free drawing app made for little hands</div>
+    </div>
+  </body></html>`;
+}
+
 const SCENES = [
   sceneFreeDraw,
   sceneColoringBook,
@@ -231,42 +270,3 @@ try {
   stop();
 }
 console.log('ALL DONE');
-
-function featureGraphicHtml(iconB64) {
-  return `<!doctype html><html><head><meta charset="utf-8">
-  <style>
-    @font-face { font-family:'QS'; src: local('Quicksand'); }
-    * { margin:0; box-sizing:border-box; }
-    html,body { width:1024px; height:500px; overflow:hidden; }
-    body {
-      display:flex; align-items:center; gap:54px; padding:0 86px;
-      font-family:'Quicksand','Segoe UI',sans-serif;
-      background: radial-gradient(circle at 20% 20%, #fff 0%, #fdf7ff 45%, #f3f0ff 100%);
-      position:relative;
-    }
-    .dots { position:absolute; inset:0; }
-    .dot { position:absolute; border-radius:50%; opacity:.85; }
-    .icon { width:300px; height:300px; flex:0 0 auto; filter: drop-shadow(0 14px 30px rgba(120,80,180,.25)); }
-    .copy { z-index:2; }
-    .name { font-size:128px; font-weight:700; letter-spacing:-2px;
-      background:linear-gradient(90deg,${C.red},${C.orange},${C.yellow},${C.green},${C.blue},${C.purple});
-      -webkit-background-clip:text; background-clip:text; color:transparent; line-height:1; }
-    .tag { font-size:38px; font-weight:600; color:#5a4a6b; margin-top:18px; }
-    .sub { font-size:24px; font-weight:500; color:#9385a3; margin-top:14px; }
-  </style></head>
-  <body>
-    <div class="dots">
-      <span class="dot" style="width:42px;height:42px;background:${C.yellow};top:48px;left:560px"></span>
-      <span class="dot" style="width:26px;height:26px;background:${C.green};top:120px;left:930px"></span>
-      <span class="dot" style="width:34px;height:34px;background:${C.blue};bottom:70px;left:520px"></span>
-      <span class="dot" style="width:20px;height:20px;background:${C.red};bottom:120px;left:880px"></span>
-      <span class="dot" style="width:30px;height:30px;background:${C.purple};top:60px;left:60px"></span>
-    </div>
-    <img class="icon" src="data:image/png;base64,${iconB64}">
-    <div class="copy">
-      <div class="name">Splotch</div>
-      <div class="tag">Doodle, color &amp; create</div>
-      <div class="sub">A calm, ad-free drawing app made for little hands</div>
-    </div>
-  </body></html>`;
-}

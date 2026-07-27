@@ -7,29 +7,6 @@
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P5][readability] `featureGraphicHtml` used before its declaration
-
-**File(s):** `scripts/store-shots.mjs:205` (call) and `:218-255` (declaration) — pinned at SHA
-f934d43
-
-#### Problem
-
-The feature-graphic block calls `featureGraphicHtml(iconB64)` at line 205, but the function is
-declared at line 218 — after the top-level `await browser.close()` and the `ALL DONE` log. It works
-only because `function` declarations hoist; reading top-to-bottom, the helper appears to be defined
-after the script has finished.
-
-#### Proposed solution
-
-Move `featureGraphicHtml` (and the `shot`/`drawScene`/`colorInLines` helpers if reorganizing) above
-the top-level orchestration, so definitions precede use.
-
-#### Verification
-
-`npm run gen:shots` still writes `feature-graphic.png`; purely a source-ordering change.
-
----
-
 ### [P5][duplication] Generic regex-escape helper defined locally
 
 **File(s):** `scripts/gen-icons-sheet.mjs:35` (`escapeRe`) — pinned at SHA f934d43
