@@ -1,3 +1,4 @@
+// Deliberately Debug-only; Release leaves this unset, so the Info.plist substitution is empty.
 CAPACITOR_DEBUG = true
 
 // Optional personal signing overrides (DEVELOPMENT_TEAM) — untracked, see .gitignore.

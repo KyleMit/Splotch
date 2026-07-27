@@ -17,33 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P4][consistency] `Info.plist` `CAPACITOR_DEBUG` resolves to empty in Release with no explanation
-
-**File(s):** `ios/App/App/Info.plist:5-6`, `ios/debug.xcconfig:1`,
-`ios/App/App.xcodeproj/project.pbxproj:307,199` (iOS config) — pinned at SHA f934d43
-
-#### Problem
-
-`Info.plist` embeds `<key>CAPACITOR_DEBUG</key><string>$(CAPACITOR_DEBUG)</string>`. The
-`CAPACITOR_DEBUG = true` value comes from `debug.xcconfig`, which is set as the
-`baseConfigurationReference` **only** on the two Debug configs (pbxproj lines 199 and 307). The
-Release configs have no base xcconfig, so `$(CAPACITOR_DEBUG)` expands to an empty string in shipped
-builds. That is almost certainly intended (debug flag off in Release), but nothing states it, and
-the asymmetry (xcconfig wired to Debug only) is easy to misread as a mistake or to break by
-"helpfully" adding the base config to Release.
-
-#### Proposed solution
-
-Add a one-line comment in `debug.xcconfig` (or the `ios` skill) explaining that `CAPACITOR_DEBUG` is
-deliberately Debug-only and expands empty in Release, so the intent is discoverable.
-
-#### Verification
-
-Archive a Release build and confirm `CAPACITOR_DEBUG` is empty; the documented intent matches
-behavior.
-
----
-
 ### [P5][documentation] `ExportOptions.plist` lacks a pointer to who consumes it and when teamID matters
 
 **File(s):** `ios/App/ExportOptions.plist:11-15` (iOS export config) — pinned at SHA f934d43
