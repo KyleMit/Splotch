@@ -11,35 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P4][maintainability] Smoke reporter keeps pass/fail tally in module-global mutable state
-
-**File(s):** `scripts/lib/smoke.mjs:5-26` (`passed`, `failed`, `summarize`) — pinned at SHA f934d43
-
-#### Problem
-
-```js
-let passed = 0;
-let failed = 0;
-```
-
-The tally is module-level singleton state, so two smoke suites imported into one process share a
-counter, and `summarize()` calls `process.exit()` — a library function that terminates the process,
-preventing composition. Fine for today's one-suite-per-process usage, but a hidden constraint no
-signature communicates.
-
-#### Proposed solution
-
-Expose a `createReporter()` factory returning `{ check, fatal, summarize }` over closed-over
-counters, and have `summarize()` return the exit code (let the caller `process.exit`). Keep the
-current module-level exports as a default reporter for back-compat.
-
-#### Verification
-
-Two reporters in one script keep independent counts; `api-smoke`/`blobs-smoke` still exit non-zero
-on failure.
-
----
-
 ### [P4][readability] `parseFrontmatter` silently drops non-`[A-Za-z]`-leading keys and never signals malformed lines
 
 **File(s):** `scripts/lib/utils.mjs:118-127` (`parseFrontmatter`) — pinned at SHA f934d43
