@@ -7,35 +7,6 @@
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P5][duplication] Generic regex-escape helper defined locally
-
-**File(s):** `scripts/gen-icons-sheet.mjs:35` (`escapeRe`) — pinned at SHA f934d43
-
-#### Problem
-
-`const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');` is a standard "escape a string
-for use in a RegExp" utility defined ad hoc in one script. It's the kind of helper that gets
-re-pasted; if a second script needs it, it'll be copied.
-
-#### Proposed solution
-
-If/when a second consumer appears, promote it to `lib/utils.mjs` as `escapeRegExp`. Low priority
-while it has a single user — flagged so it's centralized rather than copied next time.
-
-#### Verification
-
-`npm run gen:icons-sheet` still produces the gallery with correct color remapping.
-
----
-
-**Summary of highest-value themes:** the strongest wins are the cross-script duplication findings
-that map onto the repo's own stated conventions — the brittle `CHROMIUM_PATH` vs
-`chromiumExecutablePath` split (P1), the `.aab`/gradlew/palette/opener path constants that
-`lib/android.mjs` and `scripts/CLAUDE.md` already say should be centralized (P1-P3), and the two
-long procedural scripts (`api-smoke.mjs`, `model-eval-fixtures.mjs`'s embedded browser program) that
-resist reading and testing. No dead *scripts* were found — every `.mjs` maps to a `package.json`
-entry — but there is dead Windows-path *code* (P2) left over from ADR-0062.
-
 ## Source: Code audit — scripts · perf profiling harness
 
 ### [P1][duplication] Extract the copy-pasted CLI `flag()`/`args` parser shared by every perf entry script
