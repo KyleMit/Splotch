@@ -283,7 +283,10 @@ export async function run(argv) {
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   run(process.argv.slice(2)).catch((err) => {
-    console.error(err instanceof Error ? err.message : err);
+    // A RenderFailuresError is the expected "some renders were rejected" exit and
+    // its message says everything; anything else is a bug, so print the error whole
+    // to keep the stack.
+    console.error(err instanceof RenderFailuresError ? err.message : err);
     process.exitCode = 1;
   });
 }

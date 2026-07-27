@@ -9,46 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P2][architecture] `light-fill-cli` tests exercise the CLI through import side effects and match error strings, making them brittle
-
-**File(s):** `tools/asset-gen/tests/light-fill-cli.test.mjs:86-90,124,193` (`runCli` + error
-assertions) — pinned at SHA f934d43
-
-#### Problem
-
-The suite runs the CLI by mutating `process.argv`, calling `vi.resetModules()`, and dynamically
-`import()`-ing `bin/gen-coloring-fills.mjs` purely for its top-level side effects:
-
-```js
-async function runCli(...args) {
-  process.argv = ['node', 'gen-coloring-fills.mjs', ...args];
-  vi.resetModules();
-  return import('../bin/gen-coloring-fills.mjs');
-}
-```
-
-Failure is then asserted by string-matching a thrown message:
-`.rejects.toThrow('1 render(s) failed.')` (lines 124, 193). This couples the test to (a) the module
-having no idempotent entry point — eleven `vi.mock` calls plus `vi.resetModules` are needed to
-re-run it — and (b) the exact prose of a log/throw string that is not a stable contract. A reworded
-error message ("1 page failed to render.") silently fails the suite even when behavior is correct.
-
-#### Proposed solution
-
-Have `bin/gen-coloring-fills.mjs` export an `async function run(argv)` that returns a structured
-result (`{ failed: number, shipped: [...] }`) and throws a typed error, with the
-`if (isMainModule) run(process.argv)` guard calling it. Tests then call `run([...])` directly and
-assert on `result.failed === 1` rather than a message string, dropping the `resetModules`/`argv`
-dance.
-
-#### Verification
-
-The tests no longer reference `process.argv` or `import('../bin/...')`;
-`grep -n "toThrow('1 render" tools/asset-gen/tests/light-fill-cli.test.mjs` returns nothing. Suite
-still passes.
-
----
-
 ### [P2][duplication] Proof-sheet client hardcodes `OUTLINE_LUMA = 150`, duplicating the punch threshold that can drift out from under it
 
 **File(s):**
