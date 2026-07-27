@@ -109,8 +109,8 @@ npx @capacitor/assets generate --ios
       CocoaPods (ADR-0020).
 * [x] Bundle ID `art.splotch.app`, display name **Splotch** (`ios/App/App.xcodeproj`, `Info.plist`).
 * [x] Version `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` match Android's
-      `versionName`/`versionCode` — `scripts/release.mjs` bumps both via `capacitor-set-version`;
-      never edit them by hand.
+      `versionName`/`versionCode` — `scripts/release.mjs` bumps both via
+      `scripts/lib/native-version.mjs`; never edit them by hand.
 * [x] `NSPhotoLibraryAddUsageDescription` in `Info.plist` (gallery save uses iOS add-only photo
       permission — the code never reads the library on iOS).
 * [x] `ITSAppUsesNonExemptEncryption = false` in `Info.plist` (HTTPS only), so TestFlight uploads
