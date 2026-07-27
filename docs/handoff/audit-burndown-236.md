@@ -1,7 +1,8 @@
 # Handoff — audit burndown (236 findings)
 
-> 2026-07-27 · branch `claude/burn-down-audit-skill-hidj17` · PR (pending — record below) ·
-> Bulk-burn the 236-finding `docs/AUDIT.md` backlog with the `burn-down-audits` driver.
+> 2026-07-27 · branch `claude/burn-down-audit-skill-hidj17` · PR
+> [#552](https://github.com/KyleMit/Splotch/pull/552) · Bulk-burn the 236-finding `docs/AUDIT.md`
+> backlog with the `burn-down-audits` driver.
 
 ## Objective & non-goals
 
@@ -69,8 +70,7 @@ gate would land its output in the fix commit). A finding editing `.ruler/**` mus
 
 ## Risks & next 3 steps
 
-1. Open the draft PR (`draft: true`, head = this branch) and **record its number in this file** —
-   without it the per-commit comments have nowhere to go and CI never runs.
+1. ~~Open the draft PR.~~ Done — PR 552, draft. Per-commit comments go here; CI runs on every push.
 2. Canary (`MAX_ISSUES=5`), then audit it: read the diff, count deleted entries per commit, confirm
    a resume round fired, **confirm CI is green** before the full launch.
 3. Launch the full run; re-arm the `run.log` monitor every ~30 min (Monitor clamps to 30 min
