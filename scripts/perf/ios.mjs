@@ -11,7 +11,7 @@
 // `npm run perf:analyze` (see the `profiling` skill).
 
 import { webkit } from '@playwright/test';
-import { sleep } from '../lib/utils.mjs';
+import { runMain, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { driveSession } from './session.mjs';
 import { resolveDevice } from './devices.mjs';
@@ -66,7 +66,4 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+runMain(main);

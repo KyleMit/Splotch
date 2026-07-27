@@ -13,7 +13,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
-import { sleep, run, fail } from '../lib/utils.mjs';
+import { sleep, run, fail, runMain } from '../lib/utils.mjs';
 import { driveSession } from './session.mjs';
 import { profilePath } from './paths.mjs';
 
@@ -128,7 +128,4 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+runMain(main);

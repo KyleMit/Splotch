@@ -15,7 +15,7 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename } from 'node:path';
-import { chromiumExecutablePath, sleep } from '../lib/utils.mjs';
+import { chromiumExecutablePath, runMain, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace, injectObservers, readObservers, heapBytes } from './capture.mjs';
 import { analyze, renderReport } from './analyze.mjs';
@@ -316,7 +316,4 @@ function renderReplayReport({ settings, replayed, debug, summary }) {
   return out.join('\n');
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+runMain(main);

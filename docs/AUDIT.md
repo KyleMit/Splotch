@@ -9,41 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P2][duplication] Replace the copy-pasted `main().catch` bootstrap with a shared runner
-
-**File(s):** `scripts/perf/scenario.mjs:81-84`, `scripts/perf/mount.mjs:128-131`,
-`scripts/perf/ios.mjs:75-78`, `scripts/perf/android.mjs:132-135`,
-`scripts/perf/undo-scenarios.mjs:566-569`, `scripts/perf/replay-scenario.mjs:318-321` — pinned at
-SHA f934d43
-
-#### Problem
-
-Six identical epilogues:
-
-```js
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
-```
-
-`scripts/lib/utils.mjs` already centralizes `fail()`/`run()`; there is no reason each perf entry
-hand-rolls its top-level rejection handling. A future improvement (stack trimming, exit-code
-conventions, always calling `stop()`) would have to touch six files.
-
-#### Proposed solution
-
-Add
-`export function runMain(main) { main().catch((err) => { console.error(err); process.exit(1); }); }`
-to `scripts/lib/utils.mjs`, and end each entry with `runMain(main);`.
-
-#### Verification
-
-`grep -rn "main().catch" scripts/perf` returns zero; a forced throw inside any `main` still exits
-non-zero.
-
----
-
 ### [P2][duplication] Factor out the PERF_MARKS-missing warning (five near-identical copies)
 
 **File(s):** `scripts/perf/scenario.mjs:35-39`, `scripts/perf/ios.mjs:36-40`,

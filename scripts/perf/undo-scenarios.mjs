@@ -17,7 +17,7 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { chromiumExecutablePath, sleep } from '../lib/utils.mjs';
+import { chromiumExecutablePath, runMain, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import {
   startTrace,
@@ -572,8 +572,5 @@ function renderUndoReport({ settings, scenarios }) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
+  runMain(main);
 }

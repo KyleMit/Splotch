@@ -15,6 +15,13 @@ export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const isMain = (url) =>
   Boolean(process.argv[1]) && pathToFileURL(process.argv[1]).href === url;
 
+export function runMain(main) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function fail(message) {

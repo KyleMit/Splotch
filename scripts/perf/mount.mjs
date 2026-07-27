@@ -12,7 +12,7 @@
 
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { chromium } from '@playwright/test';
-import { chromiumExecutablePath } from '../lib/utils.mjs';
+import { chromiumExecutablePath, runMain } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace } from './capture.mjs';
 import { resolveDevice } from './devices.mjs';
@@ -118,7 +118,4 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+runMain(main);
