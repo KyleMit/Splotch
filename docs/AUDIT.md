@@ -9,35 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P3][maintainability] `HARNESS_SYMBOLS` name-matching can silently drop real app functions
-
-**File(s):** `scripts/perf/analyze.mjs:63-77,194` — pinned at SHA f934d43
-
-#### Problem
-
-The self-time table excludes any function whose lowercased name is in `HARNESS_SYMBOLS`, which
-includes generic tokens like `mark`, `measure`, `query`, `evaluate`, `serialize`, `computebox`. In a
-minified production build (the profiled target), an app function minified to — or legitimately named
-— `query`/`mark`/`measure` would be dropped from the report as "harness overhead," hiding a real
-hotspot. The exclusion is name-only with no url/source discrimination, and the skill doc even warns
-readers that driver plumbing "that isn't in HARNESS_SYMBOLS yet … can still appear," acknowledging
-the list is a fragile denylist.
-
-#### Proposed solution
-
-Where possible, discriminate by `callFrame.url` (harness symbols come from Playwright's injected
-context / no app URL) rather than by bare name, or narrow the denylist to the fully-qualified
-injected names (`__perfframetick` is already unambiguous; `mark`/`measure` are not). At minimum,
-keep the excluded rows in `summary.json` under a separate `excludedSelfTime` array so a suspicious
-drop is auditable.
-
-#### Verification
-
-Confirm an app function named `query` in `web/src/` (if any) still appears; excluded entries are
-recoverable from `summary.json`.
-
----
-
 ### [P3][naming] Rename obscure `beat` and consolidate the terse formatter helpers
 
 **File(s):** `scripts/perf/session.mjs:35-43` (`beat`), `scripts/perf/analyze.mjs:326` (`ms`),

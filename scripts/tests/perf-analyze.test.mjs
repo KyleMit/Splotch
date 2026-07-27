@@ -45,6 +45,49 @@ describe('performance profile analysis', () => {
     ]);
   });
 
+  it('preserves harness-named call frames with an app URL', () => {
+    const events = [
+      profileChunk({
+        nodes: [
+          {
+            id: 1,
+            callFrame: {
+              functionName: 'query',
+              url: 'https://splotch.art/app.js',
+              lineNumber: 4,
+            },
+          },
+        ],
+        samples: [1],
+        timeDeltas: [2500],
+      }),
+    ];
+
+    expect(analyze(events).topSelfTime).toEqual([
+      { name: 'query', location: 'app.js:5', selfMs: 2.5 },
+    ]);
+  });
+
+  it('excludes harness-named call frames without a URL', () => {
+    const events = [
+      profileChunk({
+        nodes: [
+          {
+            id: 1,
+            callFrame: {
+              functionName: 'query',
+              lineNumber: 4,
+            },
+          },
+        ],
+        samples: [1],
+        timeDeltas: [2500],
+      }),
+    ];
+
+    expect(analyze(events).topSelfTime).toEqual([]);
+  });
+
   it('rejects a profile chunk with mismatched sample and delta counts', () => {
     const events = [
       profileChunk({
