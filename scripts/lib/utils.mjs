@@ -191,8 +191,3 @@ export function compareSemverDesc(a, b) {
 export function runId(tag) {
   return new Date().toISOString().replace(/[:.]/g, '-') + (tag ? `-${tag}` : '');
 }
-
-// Books whose required `platforms` field omits 'mobile'.
-// strip-native-assets.mjs deletes these from native builds; check-assets.mjs
-// cross-checks this filter against booksForPlatform() in src/lib/state/books.ts.
-export const webOnlyBooks = (books) => books.filter((book) => !book.platforms.includes('mobile'));
