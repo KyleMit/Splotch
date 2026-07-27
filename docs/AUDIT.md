@@ -9,34 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P2][maintainability] Name the bytes→MiB conversion (`1048576` literal appears 10×)
-
-**File(s):** `scripts/perf/analyze.mjs:485,489,490,493`,
-`scripts/perf/undo-scenarios.mjs:396,420,421,450,458`,
-`scripts/perf/ipad-console-driver.js:41,204,205` — pinned at SHA f934d43
-
-#### Problem
-
-The magic constant `1048576` is scattered across the harness for byte→MB math, e.g.
-`debug.blobBytes / 1048576`, `(s.heap.afterBytes - s.heap.beforeBytes) / 1048576`,
-`geom.bytesPerRaster / 1048576`. Nothing names it "bytes per MiB"; a reader has to recognize 2^20,
-and the unit label ("MB" vs "MiB") is applied inconsistently in the reports while the divisor is
-binary.
-
-#### Proposed solution
-
-Add `export const BYTES_PER_MIB = 1024 * 1024;` and
-`export const toMiB = (bytes) => bytes / BYTES_PER_MIB;` to `scripts/perf/args.mjs` (importable by
-the `.mjs` files). Replace the Node-side occurrences; the browser snippet (`ipad-console-driver.js`)
-can define a local `const MIB = 1024*1024` at the top since it can't import.
-
-#### Verification
-
-`grep -rn "1048576" scripts/perf` returns only the console-snippet local (or zero); `perf:undo`
-history-MB figures are unchanged.
-
----
-
 ### [P2][duplication] The undo-scenario stroke generators + `agg` are re-implemented in the console driver
 
 **File(s):** `scripts/perf/undo-scenarios.mjs:69-134,194-210` vs

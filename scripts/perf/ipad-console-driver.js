@@ -214,7 +214,7 @@
       'undo avg ms': un.avg,
       'undo p95 ms': un.p95,
       'undo max ms': un.max,
-      'history MB': +historyMB.toFixed(0),
+      'history MiB': +historyMB.toFixed(0),
     };
   }
 
