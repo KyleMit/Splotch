@@ -9,38 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P4][naming] `keepClass` uses unexplained 99/96 buckets that disagree with the actual keep gate
-
-**File(s):**
-`tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js:132-134` —
-pinned at SHA f934d43
-
-#### Problem
-
-```js
-function keepClass(keep) {
-  return keep >= 99 ? 'good' : keep >= 96 ? 'ok' : 'warn';
-}
-```
-
-The two magic thresholds have no named constant or comment, and they silently disagree with the
-pipeline's real bar: `KEEP_THRESHOLD = 0.92` (92%) in `lib/outline-match.mjs:38`. A page that
-*passed* the gate at 93% renders as a red `warn` chip in the proof sheet, which reads as a failure
-to a reviewer. Whether that stricter review bar is intentional is undocumented.
-
-#### Proposed solution
-
-Name the thresholds (`const KEEP_GOOD = 99, KEEP_OK = 96;`) with a one-line comment explaining they
-are *review* buckets deliberately stricter than the 92% ship gate — or align/inject them from the
-pipeline constant if they were meant to match. Either way, make the relationship explicit.
-
-#### Verification
-
-Regenerate a proof sheet for a category with a low-90s keep score and confirm the chip color matches
-the documented intent.
-
----
-
 ### [P4][naming] `outline-targets` test still frames backslash handling as "Windows-style" after Windows support was dropped
 
 **File(s):** `tools/asset-gen/tests/outline-targets.test.mjs:115-122` — pinned at SHA f934d43
