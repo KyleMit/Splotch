@@ -17,7 +17,7 @@
 // connected surviving component — is the gate signal: a pupil reads in the
 // hundreds of px, stroke junctions and antialiasing residue in the tens.
 import sharp from 'sharp';
-import { dilateMask, erodeMask } from './morphology.mjs';
+import { chamferDistance, dilateMask, erodeMask } from './morphology.mjs';
 import { OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
 import { quantile } from './stats.mjs';
 
@@ -45,38 +45,6 @@ export const OPEN_RADIUS_MAX = 8;
 //     103 total interior px vs 0-4 on truly thin-stroke pages).
 export const SOLID_BLOB_MAX = 100;
 export const SOLID_INTERIOR_MAX = 60;
-
-// Two-pass chamfer distance-to-light transform: for each ink (mask) pixel,
-// the approximate distance to the nearest non-ink pixel.
-function chamferDistance(mask, w, h) {
-  const d = new Float32Array(w * h);
-  for (let i = 0; i < d.length; i++) d[i] = mask[i] ? Infinity : 0;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = y * w + x;
-      if (!d[i]) continue;
-      let m = d[i];
-      if (x > 0) m = Math.min(m, d[i - 1] + 1);
-      if (y > 0) m = Math.min(m, d[i - w] + 1);
-      if (x > 0 && y > 0) m = Math.min(m, d[i - w - 1] + 1.414);
-      if (x < w - 1 && y > 0) m = Math.min(m, d[i - w + 1] + 1.414);
-      d[i] = m;
-    }
-  }
-  for (let y = h - 1; y >= 0; y--) {
-    for (let x = w - 1; x >= 0; x--) {
-      const i = y * w + x;
-      if (!d[i]) continue;
-      let m = d[i];
-      if (x < w - 1) m = Math.min(m, d[i + 1] + 1);
-      if (y < h - 1) m = Math.min(m, d[i + w] + 1);
-      if (x < w - 1 && y < h - 1) m = Math.min(m, d[i + w + 1] + 1.414);
-      if (x > 0 && y < h - 1) m = Math.min(m, d[i + w - 1] + 1.414);
-      d[i] = m;
-    }
-  }
-  return d;
-}
 
 // 90th-percentile stroke width in px: 2x the chamfer distance-to-light over
 // the ink mask. The p90 (not median) captures junction thickness, so the

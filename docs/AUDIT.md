@@ -7,30 +7,6 @@
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P5][readability] `strokeWidthP90`'s two-pass chamfer distance transform is dense and unnamed
-
-**File(s):** `tools/asset-gen/lib/solid-regions.mjs:90-122` — pinned at SHA f934d43
-
-#### Problem
-
-`strokeWidthP90` inlines a full forward+backward chamfer distance transform (the `1`/`1.414`
-neighbor weights, two 20-line directional sweeps) then a p90 selection, all in one function whose
-name advertises only the percentile. The distance-transform machinery is reusable image math buried
-as a private implementation detail with no separation between "compute distance-to-light" and "take
-2×p90."
-
-#### Proposed solution
-
-Extract `function chamferDistance(mask, w, h)` → `Float32Array` (the two sweeps) and let
-`strokeWidthP90` call it and apply `2 * quantile(dists, 0.9)` (reusing the shared `quantile`). Names
-the two concepts separately and makes the distance transform available to other morphology-adjacent
-code.
-
-#### Verification
-
-`tests/solid-regions.test.mjs` `strokeWidth` values unchanged; the extracted `chamferDistance` can
-get a direct unit test.
-
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
 ### [P2][duplication] `capture-current.mjs` reimplements the shared `chromiumExecutablePath` helper instead of importing it
