@@ -9,50 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P2][duplication] Unify the three copies of the async `undoAll` drain loop
-
-**File(s):** `scripts/perf/undo-scenarios.mjs:241-260` (`undoAll`),
-`scripts/perf/replay-scenario.mjs:260-272` (undo-drain block in `replayInPage`),
-`scripts/perf/ipad-console-driver.js:112-127` (`undoAll`) — pinned at SHA f934d43
-
-#### Problem
-
-All three implement the same "click undo, wait for the `engine.undo` measure to land, cap the stall"
-pattern with the same magic `5000` ms stall cap and `60`-iteration ceiling:
-
-```js
-for (let i = 0; i < 60; i++) {
-  if (!window.__engineState.canUndo) break;
-  const before = completed();
-  window.__engine.undo();
-  const t0 = performance.now();
-  while (completed() === before && performance.now() - t0 < 5000) {
-    await new Promise((r) => requestAnimationFrame(r));
-  }
-  ...
-}
-```
-
-The comments explaining *why* the wait exists (async blob-decode restores outrunning the loop) are
-duplicated too. A bug in the drain logic must be fixed in three engines (two Node in-page evaluates,
-one console snippet).
-
-#### Proposed solution
-
-The console snippet is a standalone paste (can't import), but the two `page.evaluate` sites in
-`undo-scenarios.mjs`/`replay-scenario.mjs` can share a single in-page function string. Extract
-`export const UNDO_DRAIN_FN = function () { … }` (or a `pageFns.mjs` exporting the source) with
-named constants `UNDO_STEP_STALL_MS = 5000` / `MAX_UNDO_STEPS = 60`, injected via `page.evaluate`.
-Keep the console-driver copy but add a `// keep in sync with undo-scenarios.mjs UNDO_DRAIN_FN`
-marker.
-
-#### Verification
-
-Both `perf:undo` and `perf:replay` drain history identically (compare `undoSteps`/`undos` counts
-before and after); the two Node sites reference one source.
-
----
-
 ### [P2][duplication] Extract a shared `writeProfileArtifacts` for the trace/metrics/summary/report quartet
 
 **File(s):** `scripts/perf/session.mjs:190-207`, `scripts/perf/undo-scenarios.mjs:460-465`,
