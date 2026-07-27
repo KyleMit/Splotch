@@ -15,7 +15,7 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { chromiumExecutablePath, runMain, sleep } from '../lib/utils.mjs';
+import { chromiumExecutablePath, fail, runMain, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace, injectObservers, readObservers, heapBytes } from './capture.mjs';
 import { IPAD_PRO } from './devices.mjs';
@@ -47,10 +47,25 @@ if (!recordingPath) {
 }
 
 async function main() {
+  let contents;
+  try {
+    contents = readFileSync(recordingPath, 'utf8');
+  } catch {
+    fail(`Replay recording not found or unreadable: ${recordingPath}`);
+  }
+  let recording;
+  try {
+    recording = JSON.parse(contents);
+  } catch {
+    fail(`Replay recording is not valid JSON: ${recordingPath}`);
+  }
+  if (!Array.isArray(recording?.events)) {
+    fail(`Replay recording has no events array: ${recordingPath}`);
+  }
+
   process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
   warnIfNoPerfMarks('npm run perf:replay');
 
-  const recording = JSON.parse(readFileSync(recordingPath, 'utf8'));
   const meta = recording.meta || {};
   const vp = meta.viewport || { w: IPAD_PRO.width, h: IPAD_PRO.height };
   const dsf = Math.max(1, Math.round(meta.dpr || IPAD_PRO.deviceScaleFactor));

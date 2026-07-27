@@ -12,6 +12,7 @@
 import { readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { fail } from '../lib/utils.mjs';
 import { LONG_TASK_MS } from './thresholds.mjs';
 import { toMiB } from './units.mjs';
 
@@ -79,10 +80,21 @@ const HARNESS_SYMBOLS = new Set([
 ]);
 
 function loadInputs(target) {
-  const isDir = statSync(target).isDirectory();
-  const tracePath = isDir ? join(target, 'trace.json') : target;
+  let tracePath = target;
+  let traceJson;
+  try {
+    if (statSync(target).isDirectory()) tracePath = join(target, 'trace.json');
+    traceJson = readFileSync(tracePath, 'utf8');
+  } catch {
+    fail(`Trace not found: ${tracePath}`);
+  }
+  let trace;
+  try {
+    trace = JSON.parse(traceJson);
+  } catch {
+    fail(`Trace is not valid JSON: ${tracePath}`);
+  }
   const dir = dirname(tracePath);
-  const trace = JSON.parse(readFileSync(tracePath, 'utf8'));
   const events = Array.isArray(trace) ? trace : trace.traceEvents || [];
   let metrics = {};
   try {
