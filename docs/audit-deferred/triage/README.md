@@ -39,8 +39,8 @@ rationale.
 | 22 | `p2-complexity-read-store.md`                     | `readStore` bundles five responsibilities                   | P2  | C08     | pending |
 | 23 | `p4-maintainability-session-cookie-opts.md`       | Session cookie name/scope/max-age scattered inline          | P4  | C08     | pending |
 | 24 | `p4-duplication-sign-out-locally.md`              | Native page reimplements session-state bookkeeping          | P4  | C08     | pending |
-| 25 | `p2-complexity-effect-dependency-registration.md` | `$effect` bare member-access dependency registration        | P2  | C09     | pending |
-| 26 | `p5-readability-error-message-unused.md`          | `+error.svelte`/`handleError` produce unused `{ message }`  | P5  | C09     | pending |
+| 25 | `p2-complexity-effect-dependency-registration.md` | `$effect` bare member-access dependency registration        | P2  | C09     | FIX — trimmed draft, load-bearing reads |
+| 26 | `p5-readability-error-message-unused.md`          | `+error.svelte`/`handleError` produce unused `{ message }`  | P5  | C09     | FIX — comment-only, premise false |
 | 27 | `p3-maintainability-hexagon-geometry.md`          | Hexagon geometry constants scattered, coupled to a comment  | P3  | C10     | FIX — narrowed to snap radius |
 | 28 | `p3-performance-get-ring-color.md`                | `getRingColor` recomputed 2-3× per active swatch            | P3  | C10     | DROP — resolved on main |
 | 29 | `p3-performance-swatch-refs.md`                   | Every swatch element captured into `$state`                 | P3  | C10     | FIX — reframed as readability |
