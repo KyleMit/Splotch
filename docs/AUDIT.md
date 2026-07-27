@@ -19,40 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P2][consistency] Codex `setup.sh` and `maintenance.sh` are ~90% identical and have already diverged in ways that look accidental
-
-**File(s):** `.codex/cloud/setup.sh:46-51`, `.codex/cloud/maintenance.sh:35-40` — pinned at SHA
-f934d43
-
-#### Problem
-
-The two Codex scripts share the same header, `warn()` helper, npm pin, `npm ci`, Playwright install,
-and `svelte-kit sync` — but the shared steps differ in ways that read as drift, not intent:
-
-* `setup.sh:48` runs `playwright install --with-deps chromium`; `maintenance.sh:37` runs
-  `playwright install chromium` (no `--with-deps`). If the OS deps are needed at setup they're
-  presumably still needed after a maintenance refresh on a rebuilt container.
-* `setup.sh:27-33` runs a Node-version check (`major !== 22 || minor < 12`); `maintenance.sh` has no
-  equivalent, so a maintenance run on a bumped image silently skips the guard.
-
-Nothing in the comments explains why maintenance intentionally omits `--with-deps` or the Node
-check, so a reader can't tell whether the difference is deliberate.
-
-#### Proposed solution
-
-Either (a) make the shared steps identical unless a divergence is intentional and commented, or (b)
-if they must stay separate UI-pasted scripts, add a one-line comment at each divergence stating why
-(e.g. "`--with-deps` omitted — maintenance runs on an image that already has the apt deps"). Align
-the Playwright flag and decide whether the Node check belongs in both.
-
-#### Verification
-
-`diff <(sed -n '26,60p' .codex/cloud/setup.sh) <(sed -n '26,49p' .codex/cloud/maintenance.sh)` shows
-the current divergences; after the fix each remaining difference is either removed or has an
-adjacent comment justifying it.
-
----
-
 ### [P3][dead-config] `Bash(node scripts/*)` is fully redundant with `Bash(node scripts/**)`
 
 **File(s):** `.claude/settings.json:37-38` — pinned at SHA f934d43
