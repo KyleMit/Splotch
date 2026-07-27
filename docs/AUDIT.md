@@ -11,36 +11,6 @@
 
 ## Source: Code audit — tools/asset-gen · ideas-exploration (R&D scratch)
 
-### [P2][organization] Committed 5.2 MB `ideas-review.html` is fully regenerable from `build-review.mjs` + the `meta.json` files
-
-**File(s):** `tools/asset-gen/ideas-exploration/ideas-review.html` (5.2 MB) — pinned at SHA f934d43
-
-#### Problem
-
-`ideas-review.html` is a build product: `build-review.mjs` re-derives it from every
-`idea-N/meta.json` plus the evidence webp/png (which are themselves already committed). The 5.2 MB
-HTML re-encodes all those images as inline base64 — a second copy of already-committed assets — and,
-as the previous finding shows, it goes stale the moment `build-review.mjs`'s hardcoded strings
-change. It is the biggest single file in the section.
-
-#### Proposed solution
-
-Decide explicitly, and record the decision in the README: either (a) gitignore `ideas-review.html`
-and document `node build-review.mjs` as the one-step regen (the README already documents the command
-at line 20–21), accepting a build step before viewing; or (b) keep it committed for zero-friction
-browser viewing but add a note that it is generated — do not hand-edit — and treat it as needing a
-regen whenever `build-review.mjs` or any `meta.json` changes. Given the folder is frozen, (b) with a
-stale-output guard, or (a), are both defensible; the current state (committed, silently stale) is
-the worst of both.
-
-#### Verification
-
-Either `.gitignore` lists `ideas-exploration/ideas-review.html` and it's untracked, or the
-README/file header states it is generated and it matches a fresh `node build-review.mjs` run
-(byte-diff modulo the image re-encode).
-
----
-
 ### [P3][organization] Full-resolution `.webp` outputs committed *inside* `code/` directories (idea-8, idea-9)
 
 **File(s):**
