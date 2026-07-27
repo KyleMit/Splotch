@@ -9,48 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P2][duplication] `capture-current.mjs` reimplements the shared `chromiumExecutablePath` helper instead of importing it
-
-**File(s):** `tools/asset-gen/crayon-brush-samples/capture-current.mjs:26-46` (Chromium resolver) —
-pinned at SHA f934d43
-
-#### Problem
-
-The file already imports from `scripts/lib/` (line 16, `scrapbook-chrome.mjs`), yet it hand-rolls a
-20-line copy of the exact Playwright-Chromium fallback that already exists as an exported helper in
-`scripts/lib/utils.mjs:82` (`chromiumExecutablePath(chromium)`), whose body is a near-identical
-`readdirSync(base).filter(/^chromium-\d+$/)…` walk over `/opt/pw-browsers`. The local copy even
-carries the same explanatory comment ("Cloud sessions cache a Chromium whose revision can drift…").
-Two copies of cloud-environment plumbing drift independently — when the pinned-browser logic changes
-(as it has before per the comment referencing `web/playwright.config.ts`), this copy is silently
-left behind.
-
-```js
-function chromiumExecutablePath() {
-  if (process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
-  try { if (existsSync(chromium.executablePath())) return undefined; } catch {}
-  const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
-  ...
-```
-
-Note the two variants have already diverged: `utils.mjs` takes `chromium` as a parameter (it lives
-in a browser-agnostic lib); the local copy closes over the module-level `chromium` import and also
-honors `PLAYWRIGHT_CHROMIUM` — the drift this finding warns about is already visible.
-
-#### Proposed solution
-
-Import `chromiumExecutablePath` from `scripts/lib/utils.mjs` and pass the `chromium` browser type:
-`executablePath: chromiumExecutablePath(chromium)`. If the `PLAYWRIGHT_CHROMIUM` env override is
-worth keeping, add it to the shared helper so every caller benefits. Delete lines 26-46.
-
-#### Verification
-
-`grep -n "PLAYWRIGHT_BROWSERS_PATH" tools/asset-gen/crayon-brush-samples/capture-current.mjs`
-returns nothing after the fix. Run `node capture-current.mjs` against a running `/dev/engine`
-harness and confirm it still launches and screenshots.
-
----
-
 ### [P2][test-quality] `light-fill-cli` gate-result arrays are magic sequences silently coupled to `MAX_ATTEMPTS = 5`
 
 **File(s):** `tools/asset-gen/tests/light-fill-cli.test.mjs:122,150,164,189` (per-test
