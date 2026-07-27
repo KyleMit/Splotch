@@ -124,11 +124,14 @@ export function costOf(model, usage) {
   return (inp * rt.inPerM + text * rt.textOutPerM + img * rt.imgOutPerM) / 1e6;
 }
 
+const isPng = (buf) => buf[0] === 0x89 && buf[1] === 0x50;
+const isJpeg = (buf) => buf[0] === 0xff && buf[1] === 0xd8;
+
 // Dimensions of a PNG or JPEG buffer, for the report's format table.
 export function imageDims(buf) {
   if (!buf || buf.length < 24) return null;
-  if (buf[0] === 0x89 && buf[1] === 0x50) return `${buf.readUInt32BE(16)}x${buf.readUInt32BE(20)}`;
-  if (buf[0] === 0xff && buf[1] === 0xd8) {
+  if (isPng(buf)) return `${buf.readUInt32BE(16)}x${buf.readUInt32BE(20)}`;
+  if (isJpeg(buf)) {
     const JPEG_SOF_HEIGHT_OFFSET = 5;
     const JPEG_SOF_WIDTH_OFFSET = 7;
     let i = 2;
@@ -149,7 +152,7 @@ export function imageDims(buf) {
 
 export function imageFormat(buf) {
   if (!buf) return null;
-  if (buf[0] === 0x89 && buf[1] === 0x50) return 'png';
-  if (buf[0] === 0xff && buf[1] === 0xd8) return 'jpeg';
+  if (isPng(buf)) return 'png';
+  if (isJpeg(buf)) return 'jpeg';
   return 'other';
 }

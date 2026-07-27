@@ -11,34 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P4][duplication] PNG/JPEG magic-byte sniff is repeated in `imageDims` and `imageFormat`
-
-**File(s):** `scripts/lib/model-eval.mjs:143-167` (`imageDims`, `imageFormat`) — pinned at SHA
-f934d43
-
-#### Problem
-
-Both functions open with the same signature checks:
-
-```js
-if (buf[0] === 0x89 && buf[1] === 0x50) // png
-if (buf[0] === 0xff && buf[1] === 0xd8) // jpeg
-```
-
-The magic pairs are duplicated with no shared `isPng`/`isJpeg`, so a format added in one place can
-be forgotten in the other.
-
-#### Proposed solution
-
-`const isPng = (b) => b?.[0] === 0x89 && b?.[1] === 0x50;` and
-`const isJpeg = (b) => b?.[0] === 0xff && b?.[1] === 0xd8;`, used by both.
-
-#### Verification
-
-Both functions reference the shared predicates; existing report format table unchanged.
-
----
-
 ### [P4][naming] `chromiumExecutablePath` uses `slice(9)` and a duplicated `/opt/pw-browsers` literal
 
 **File(s):** `scripts/lib/utils.mjs:87-98` (`chromiumExecutablePath`) and
