@@ -20,12 +20,12 @@ exact-head CI supervision, or change tracked files while the driver is active.
 * Initial backlog: 128 findings, measured with `node scripts/audit-burndown/pop.mjs --count`.
 * Historical `run.log` baseline: 1,548 lines. Reconcile only later `finished:` and terminal-event
   lines.
-* Run state: canary and three bounded segments green; no driver process is active and no `STOP` file
+* Run state: canary and five bounded segments green; no driver process is active and no `STOP` file
   is present.
-* Current backlog: 101 findings after 14 fixes, 9 invalid drops, and 4 deferrals in this
+* Current backlog: 92 findings after 20 fixes, 10 invalid drops, and 6 deferrals in this
   continuation.
-* Last fully green SHA: `ff0b8a83bc44880c5073f068fbb0028a975d8366` in workflow run
-  [30290731529](https://github.com/KyleMit/Splotch/actions/runs/30290731529).
+* Last fully green SHA: `f7420c42aaa04a73067fdefc706ff93e82cf43e8` in workflow run
+  [30295669440](https://github.com/KyleMit/Splotch/actions/runs/30295669440).
 
 | SHA      | What                                                        |
 | -------- | ----------------------------------------------------------- |
@@ -35,8 +35,12 @@ exact-head CI supervision, or change tracked files while the driver is active.
 | b8cc5a2f | Segment 1: 4 fixed, 1 dropped, 0 deferred, 111 remain       |
 | d3b546f0 | Segment 2: 3 fixed, 2 dropped, 0 deferred, 106 remain       |
 | ff0b8a83 | Segment 3: 2 fixed, 2 dropped, 1 deferred, 101 remain       |
+| 6f6e85f0 | Segment 4: 2 fixed, 1 dropped, 1 deferred, 97 remain        |
+| f7420c42 | Segment 5: 4 fixed, 0 dropped, 1 deferred, 92 remain        |
 
-Files touched so far: `docs/handoff/audit-burndown-run.md`.
+Supervisor-authored follow-ups: `2eab584c` restored an efficient in-browser pixel scan, `6f6e85f0`
+normalized a deferred patch, and `f7420c42` fixed that recurring patch-writer defect with a
+regression test.
 
 ## Decisions made (and why)
 
@@ -45,6 +49,8 @@ Files touched so far: `docs/handoff/audit-burndown-run.md`.
 * Keep `PUSH_EVERY=1`, an empty `PUSH_TEST_CMD`, and `MAX_HANDLED=5`; CI and GitHub comment
   checkpoints remain mandatory between bounded segments.
 * Use the repository-specific deterministic gates and the default GPT-5.6 Codex role mapping.
+* Normalize only whitespace-only unified-diff context rows when saving deferred drafts; substantive
+  patch lines retain their bytes, and focused script coverage locks the behavior.
 
 ## Exact commands
 
@@ -78,7 +84,7 @@ npm run audit:burndown:overnight -- 600
 
 ## Unverified assumptions
 
-* The remaining 101 findings have not yet been exercised.
+* The remaining 92 findings have not yet been exercised.
 
 ## Done & verified
 
@@ -98,18 +104,20 @@ npm run audit:burndown:overnight -- 600
 * All five fix comments posted on PR [#561](https://github.com/KyleMit/Splotch/pull/561); capture
   found no missing or pending records.
 * Exact-head CI on `3648a752593ba5a19bd72a8437c863deee912a23`: Quality and Tests green.
-* Three bounded `MAX_HANDLED=5` segments completed with exact-head CI green and all comments drained
+* Five bounded `MAX_HANDLED=5` segments completed with exact-head CI green and all comments drained
   at every checkpoint.
 * Supervisor inspection caught an inefficient reviewed red-pixel scan; follow-up commit `2eab584c`
   restored the original in-browser early exit, passed focused E2E and full CI, and was disclosed in
   the corresponding PR comment.
-* `npm run audit:cost`: no capped or errored calls; retained-log projection is about $26.91 for the
-  remaining 101 findings.
+* Two deferred patches exposed the same whitespace-only context-row defect. `f7420c42` fixes the
+  patch writer and adds focused coverage; all 139 script tests and exact-head CI pass.
+* `npm run audit:cost`: no capped or errored calls; retained-log projection is about $24.51 for the
+  remaining 92 findings.
 
 ## Risks & next 3 steps
 
 1. Commit and push this continuation checkpoint and require exact-head CI green.
-2. Launch segment 4 with `MAX_HANDLED=5`, record its start and 20-minute deadline, then supervise it
+2. Launch segment 6 with `MAX_HANDLED=5`, record its start and 20-minute deadline, then supervise it
    until stopped.
 3. Require exact-head CI green, drain all comments, inspect the segment diff, and repeat bounded
    segments until the backlog is exhausted or the user asks to pause.
