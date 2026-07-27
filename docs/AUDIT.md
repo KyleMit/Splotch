@@ -11,32 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P3][naming] `hasCommand` uses `which`, whose absence is silently treated as "command missing"
-
-**File(s):** `scripts/lib/utils.mjs:102` (`hasCommand`) — pinned at SHA f934d43
-
-#### Problem
-
-```js
-export const hasCommand = (cmd) => spawnSync('which', [cmd], { stdio: 'ignore' }).status === 0;
-```
-
-If `which` itself isn't installed (some minimal Linux images ship without it), `spawnSync` errors
-and `.status` is `null !== 0`, so *every* command probe reports "missing" — cascading into
-misleading "install X" failures in `android-setup.mjs`/`check-netlify-cli.mjs`. The POSIX-guaranteed
-builtin is `command -v`.
-
-#### Proposed solution
-
-`spawnSync('sh', ['-c',`command -v ${cmd}`], { stdio: 'ignore' }).status === 0` (guard `cmd` against
-spaces), or check both. `command -v` is a shell builtin, always present.
-
-#### Verification
-
-On an image without `which`, `hasCommand('node')` returns true.
-
----
-
 ### [P4][complexity] `imageDims` JPEG scanner is a dense loop of unnamed byte offsets
 
 **File(s):** `scripts/lib/model-eval.mjs:143-160` (`imageDims`) — pinned at SHA f934d43

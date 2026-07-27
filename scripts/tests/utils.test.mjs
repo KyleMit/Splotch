@@ -1,6 +1,9 @@
 import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, symlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { capture } from '../lib/utils.mjs';
+import { capture, hasCommand } from '../lib/utils.mjs';
 
 const argumentsToPreserve = [
   '$HOME',
@@ -13,6 +16,23 @@ const argumentPrinter = 'process.stdout.write(JSON.stringify(process.argv.slice(
 const utilsUrl = new URL('../lib/utils.mjs', import.meta.url).href;
 
 describe('command helpers', () => {
+  it('detects commands without which on PATH', () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'splotch-has-command-'));
+    const originalPath = process.env.PATH;
+
+    try {
+      symlinkSync('/bin/sh', join(fixtureDir, 'sh'));
+      symlinkSync(process.execPath, join(fixtureDir, 'node'));
+      process.env.PATH = fixtureDir;
+
+      expect(hasCommand('node')).toBe(true);
+      expect(hasCommand('missing-command')).toBe(false);
+    } finally {
+      process.env.PATH = originalPath;
+      rmSync(fixtureDir, { recursive: true, force: true });
+    }
+  });
+
   it('passes capture arguments to the child unchanged', () => {
     const output = capture(process.execPath, ['-e', argumentPrinter, ...argumentsToPreserve]);
 
