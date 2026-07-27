@@ -11,32 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P3][architecture] Three command runners with inconsistent contracts and error behaviour
-
-**File(s):** `scripts/lib/utils.mjs:27-72` (`run`, `sh`, `capture`) — pinned at SHA f934d43
-
-#### Problem
-
-`run(cmd, args[], opts)` takes an argv array and `process.exit()`s on failure;
-`capture(cmd, args[], opts)` also takes an array and `process.exit()`s; but `sh(command, cwd)` takes
-a *pre-joined string* and *rejects* instead of exiting. So callers must remember which runner takes
-an array vs a string, and which aborts the process vs throws — a foot-gun the brief flags as
-"loose/inconsistent helper signatures." The array-vs-string split also means `sh` bypasses
-`quoteArg` entirely, so the two families quote differently.
-
-#### Proposed solution
-
-Unify on one signature `exec(cmd, args[], { cwd, input, echo, mode })` where `mode` is
-`'exit' | 'throw' | 'capture'`, or at minimum make all three take `(cmd, args[])` and document the
-exit-vs-throw axis in one place. Have `sh` accept an argv array and share `shellJoin`.
-
-#### Verification
-
-Signatures line up across the three; consumers compile; `test:driver:smoke` and the smoke suite
-pass.
-
----
-
 ### [P3][duplication] Missing `openInFileManager` helper — the open/xdg-open branch is duplicated
 
 **File(s):** `scripts/lib/*` (absent) vs `scripts/open-path.mjs:16` and
