@@ -4,6 +4,13 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
 
+// Mirrors MAX_ATTEMPTS in ../bin/gen-coloring-fills.mjs. It can't be imported:
+// that module does its work at import time, so pulling it in outside runCli's
+// controlled process.argv/mock setup runs the whole CLI.
+const MAX_ATTEMPTS = 5;
+// One page's worth of gate misses — enough to exhaust every retry and fail it.
+const exhaustPage = () => Array(MAX_ATTEMPTS).fill(false);
+
 const state = vi.hoisted(() => ({
   roots: null,
   candidate: null,
@@ -138,7 +145,7 @@ afterEach(async () => {
 test('retains failed candidates in scratch and leaves every page unshipped', async () => {
   await addPage('first-tall');
   await addPage('second-tall');
-  state.gateResults = [false, false, false, false, false, true];
+  state.gateResults = [...exhaustPage(), true];
 
   await expect(runCli('test/first-tall', 'test/second-tall', '--apply')).rejects.toThrow(
     '1 render(s) failed.'
@@ -181,7 +188,7 @@ test('does not ship a passing candidate without apply', async () => {
 
 test('surfaces sample drift for review without failing the run', async () => {
   await addPage('page-tall');
-  state.gateResults = []; // every attempt misses a gate
+  state.gateResults = [...exhaustPage(), ...exhaustPage()]; // both samples miss every gate
 
   // A multi-sample run is review-only (--apply is rejected with --samples > 1), so
   // gate misses while exploring palettes must not exit nonzero.
@@ -206,7 +213,7 @@ test('surfaces sample drift for review without failing the run', async () => {
 
 test('fails closed when a single review render misses every gate', async () => {
   await addPage('page-tall');
-  state.gateResults = []; // the one candidate misses every gate
+  state.gateResults = exhaustPage(); // the one candidate misses every gate
 
   // A single render (no --samples) is not review-exploration: gate exhaustion must
   // exit nonzero rather than silently pass, even without --apply.
