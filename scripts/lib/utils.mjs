@@ -104,6 +104,18 @@ export async function waitForUrl(url, timeoutMs, ready = (res) => res.ok) {
   throw new Error(`${url} did not become ready within ${timeoutMs}ms`);
 }
 
+export async function pollUntil(callback, timeoutMs, intervalMs) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const value = await callback();
+    if (value) return value;
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return null;
+    await sleep(Math.min(intervalMs, remaining));
+    if (Date.now() >= deadline) return null;
+  }
+}
+
 // Run a command and return its stdout; exits the script if it fails.
 export function capture(cmd, args = [], { cwd = ROOT } = {}) {
   const result = spawnSync(shellJoin(cmd, args), { shell: true, cwd, encoding: 'utf8' });

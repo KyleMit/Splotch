@@ -35,6 +35,7 @@ beforeEach(() => {
 
 afterEach(() => {
   state.directEntry = false;
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   rmSync(fixtureDir, { recursive: true, force: true });
 });
@@ -156,6 +157,31 @@ describe('performance CLI input failures', () => {
     expect(spawnSync).not.toHaveBeenCalled();
     expect(chromium.connectOverCDP).not.toHaveBeenCalled();
     expect(state.runMain).not.toHaveBeenCalled();
+  });
+
+  it('selects a navigated WebView page over an about page', async () => {
+    const { getWebviewPage } = await import('../perf/android.mjs');
+    const aboutPage = { url: vi.fn(() => 'about:blank') };
+    const navigatedPage = { url: vi.fn(() => 'https://splotch.art/') };
+    const context = { pages: vi.fn(() => [aboutPage, navigatedPage]) };
+    const browser = { contexts: vi.fn(() => [context]) };
+
+    await expect(getWebviewPage(browser)).resolves.toBe(navigatedPage);
+    expect(context.pages).toHaveBeenCalledOnce();
+  });
+
+  it('reports when CDP exposes only about pages', async () => {
+    vi.useFakeTimers();
+    const { getWebviewPage } = await import('../perf/android.mjs');
+    const context = { pages: vi.fn(() => [{ url: () => 'about:blank' }]) };
+    const browser = { contexts: vi.fn(() => [context]) };
+    const page = getWebviewPage(browser);
+    const rejection = expect(page).rejects.toThrow('No navigated WebView page was exposed over CDP');
+
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    await rejection;
+    expect(context.pages).toHaveBeenCalledTimes(20);
   });
 
   it('starts each guarded profiler when invoked directly', async () => {
