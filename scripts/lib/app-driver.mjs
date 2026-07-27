@@ -5,6 +5,24 @@
 import { sleep, waitForUrl } from './utils.mjs';
 import { spawnViteServer } from './vite-server.mjs';
 
+const DRAWING_CANVAS_SELECTOR = '#drawingCanvas';
+const DRAWER_TOGGLE_SELECTOR = '.drawer-toggle';
+const COLORING_BOOK_BUTTON_SELECTOR = '#coloringBookButton';
+const COLOR_SWATCH_SELECTOR = (color) => `.color-swatch[data-color="${color}"]`;
+const STROKE_WIDTH_BUTTON_SELECTOR = '#strokeWidthButton';
+const STROKE_SIZE_BUTTON_SELECTOR = (size) => `button[aria-label="Size ${size}"]`;
+const COLORING_BOOK_SELECTOR = (name) => `button[aria-label="${name} coloring book"]`;
+const COLORING_PAGE_SELECTOR = (name) => `button[aria-label="${name} coloring page"]`;
+const COLORING_OVERLAY_READY_SELECTOR = '#coloringOverlay.overlay-ready';
+const PARENT_HELP_BUTTON_SELECTOR = '#parentHelpButton';
+
+const APP_STARTUP_SETTLE_DELAY_MS = 400;
+const DRAWER_TRANSITION_DELAY_MS = 350;
+const POST_COLOR_CHANGE_DELAY_MS = 220;
+const STROKE_MENU_TRANSITION_DELAY_MS = 150;
+const STROKE_COMPLETION_DELAY_MS = 40;
+const MENU_DISMISSAL_DELAY_MS = 200;
+
 const isUp = async (url) => {
   try {
     return (await fetch(url)).ok;
@@ -46,21 +64,21 @@ export async function openAppPage(browser, base, device) {
   });
   const page = await ctx.newPage();
   await page.goto(base, { waitUntil: 'networkidle' });
-  await page.waitForSelector('#drawingCanvas');
-  await sleep(400);
+  await page.waitForSelector(DRAWING_CANVAS_SELECTOR);
+  await sleep(APP_STARTUP_SETTLE_DELAY_MS);
   return { ctx, page };
 }
 
-export const canvasBox = (page) => page.locator('#drawingCanvas').boundingBox();
+export const canvasBox = (page) => page.locator(DRAWING_CANVAS_SELECTOR).boundingBox();
 
 // The action drawer (brush menu / coloring book / camera / undo) starts collapsed.
 // Its buttons stay in the DOM always (ADR-0040) — open/closed is CSS-only, so
 // probe visibility (a closed drawer hides them) rather than presence.
 export async function expandDrawer(page) {
-  const toggle = page.locator('.drawer-toggle');
-  if ((await toggle.count()) && !(await page.locator('#coloringBookButton').isVisible())) {
+  const toggle = page.locator(DRAWER_TOGGLE_SELECTOR);
+  if ((await toggle.count()) && !(await page.locator(COLORING_BOOK_BUTTON_SELECTOR).isVisible())) {
     await toggle.click();
-    await sleep(350);
+    await sleep(DRAWER_TRANSITION_DELAY_MS);
   }
 }
 
@@ -68,22 +86,22 @@ export async function expandDrawer(page) {
 // the drawing engine enforces before it starts a new stroke. Returns false if
 // the swatch isn't shown at this viewport width.
 export async function pickColor(page, hex) {
-  const swatch = page.locator(`.color-swatch[data-color="${hex}"]`);
+  const swatch = page.locator(COLOR_SWATCH_SELECTOR(hex));
   if ((await swatch.count()) && (await swatch.first().isVisible())) {
     await swatch.first().click({ force: true });
-    await sleep(220);
+    await sleep(POST_COLOR_CHANGE_DELAY_MS);
     return true;
   }
   return false;
 }
 
 export async function setStrokeSize(page, size) {
-  const btn = page.locator('#strokeWidthButton');
+  const btn = page.locator(STROKE_WIDTH_BUTTON_SELECTOR);
   if (!(await btn.count())) return;
   await btn.click();
-  await sleep(150);
-  await page.locator(`button[aria-label="Size ${size}"]`).click();
-  await sleep(150);
+  await sleep(STROKE_MENU_TRANSITION_DELAY_MS);
+  await page.locator(STROKE_SIZE_BUTTON_SELECTOR(size)).click();
+  await sleep(STROKE_MENU_TRANSITION_DELAY_MS);
 }
 
 // Draw one freehand stroke through a list of {x,y} canvas-relative points.
@@ -96,40 +114,40 @@ export async function drawStroke(page, box, pts) {
     await page.mouse.move(abs[i].x, abs[i].y, { steps: 6 });
   }
   await page.mouse.up();
-  await sleep(40);
+  await sleep(STROKE_COMPLETION_DELAY_MS);
 }
 
 // Click an empty canvas corner to close any open menu before a screenshot.
 export async function dismissMenu(page) {
-  await page.locator('#drawingCanvas').click({ position: { x: 5, y: 5 } });
-  await sleep(200);
+  await page.locator(DRAWING_CANVAS_SELECTOR).click({ position: { x: 5, y: 5 } });
+  await sleep(MENU_DISMISSAL_DELAY_MS);
 }
 
 export async function openColoringBook(page) {
-  await page.locator('#coloringBookButton').click();
+  await page.locator(COLORING_BOOK_BUTTON_SELECTOR).click();
 }
 
 export async function pickBook(page, name) {
-  await page.locator(`button[aria-label="${name} coloring book"]`).click();
+  await page.locator(COLORING_BOOK_SELECTOR(name)).click();
 }
 
 // Every page tile in a book shares one aria-label, so open the first of them.
 export async function pickPage(page, name) {
-  await page.locator(`button[aria-label="${name} coloring page"]`).first().click();
+  await page.locator(COLORING_PAGE_SELECTOR(name)).first().click();
 }
 
 // The overlay <img> only gets .overlay-ready once the page art has decoded, so
 // it's the signal that a picked coloring page is actually painted.
 export async function waitForColoringOverlay(page) {
-  await page.waitForSelector('#coloringOverlay.overlay-ready');
+  await page.waitForSelector(COLORING_OVERLAY_READY_SELECTOR);
 }
 
 export async function openColorPicker(page) {
-  await page.locator('.color-swatch[data-color="custom"]').click();
+  await page.locator(COLOR_SWATCH_SELECTOR('custom')).click();
 }
 
 export async function openParentCenter(page) {
-  await page.locator('#parentHelpButton').click();
+  await page.locator(PARENT_HELP_BUTTON_SELECTOR).click();
 }
 
 // --- point generators ------------------------------------------------------

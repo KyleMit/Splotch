@@ -11,34 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P3][maintainability] App-driver selectors and timing constants are scattered string/number literals
-
-**File(s):** `scripts/lib/app-driver.mjs:49-106` (selectors + `sleep(...)` calls) — pinned at SHA
-f934d43
-
-#### Problem
-
-The module `scripts/CLAUDE.md` warns "rots silently when app markup, element IDs, or show/hide
-mechanics change" — yet the element IDs are inline literals spread across functions
-(`'#drawingCanvas'`, `'.drawer-toggle'`, `'#coloringBookButton'`, `'#strokeWidthButton'`,
-`.color-swatch[data-color=...]`) and every gesture ends in a bare `await sleep(400)` / `350` / `220`
-/ `150` / `40` / `200`. There is no single place to update an ID after a markup change, and the
-sleep durations (several tied to real app guards, e.g. the "100ms post-color-change guard") are
-undocumented magic numbers. This directly worsens the rot the CLAUDE.md flags.
-
-#### Proposed solution
-
-Hoist a
-`const SEL = { canvas: '#drawingCanvas', drawerToggle: '.drawer-toggle', coloringBook: '#coloringBookButton', strokeButton: '#strokeWidthButton' }`
-and named timing constants (`COLOR_CHANGE_GUARD_MS = 220`, `DRAWER_ANIM_MS = 350`, …) at the top,
-referenced everywhere. One edit site per selector.
-
-#### Verification
-
-`grep -c "#drawingCanvas" scripts/lib/app-driver.mjs` → 1; `npm run test:driver:smoke` passes.
-
----
-
 ### [P3][naming] `hasCommand` uses `which`, whose absence is silently treated as "command missing"
 
 **File(s):** `scripts/lib/utils.mjs:102` (`hasCommand`) — pinned at SHA f934d43
