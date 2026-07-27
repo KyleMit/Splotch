@@ -29,6 +29,7 @@ const profilingEsbuildOptions: import('vite').ESBuildOptions & {
 // we fall back to major.minor.0+<sha> — still unique per commit, never a stale
 // bare version. BUILD_TIME is kept separately for debugging.
 const PKG_VERSION = JSON.parse(readFileSync('../package.json', 'utf8')).version;
+// Deliberately expose the build time as minute-resolution YYYY-MM-DD HH:MM.
 const BUILD_TIME = new Date().toISOString().slice(0, 16).replace('T', ' ');
 
 function git(args: string): string {
@@ -143,6 +144,8 @@ export default defineConfig({
                   handler: 'NetworkFirst',
                   options: {
                     cacheName: 'pages',
+                    // After five seconds stalled navigations use the cached page
+                    // instead of leaving a child waiting for a load that may not finish.
                     networkTimeoutSeconds: 5,
                   },
                 },

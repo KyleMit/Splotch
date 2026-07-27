@@ -11,10 +11,11 @@ export const commonPlaywrightConfig = {
 };
 
 export const productionPreviewCommand = `npx vite build && npx vite preview --port ${playwrightPort}`;
+const PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET = 180_000;
 
 export const commonWebServer = {
   url: playwrightBaseURL,
-  timeout: 180_000,
+  timeout: PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET,
   // ADMIN_ACCESS_TOKEN is the known secret the shared admin test helper provides
   // to tests/admin.spec.ts and tests/a11y.spec.ts.
   // Token mutations land in the in-memory fallback (no Netlify Blobs here),
