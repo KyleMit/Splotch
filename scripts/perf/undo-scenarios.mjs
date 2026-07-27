@@ -17,6 +17,7 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { ROOT, chromiumExecutablePath, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import {
@@ -303,7 +304,7 @@ async function rasterGeometry(page) {
   });
 }
 
-async function runUndoScenario(page, base, sc, geom) {
+export async function runUndoScenario(page, base, sc, geom) {
   console.log(`\n▶ ${sc.label}`);
   await resetEngine(page, base, IPAD_PRO.width, IPAD_PRO.height);
   // Reload drops the rAF FPS sampler injected before the trace; re-inject so
@@ -572,7 +573,9 @@ function renderUndoReport({ settings, scenarios }) {
   return out.join('\n');
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

@@ -9,40 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P1][complexity] Break up `undo-scenarios.mjs main()` (170 lines) into per-scenario + artifact stages
-
-**File(s):** `scripts/perf/undo-scenarios.mjs:306-478` (`main`) — pinned at SHA f934d43
-
-#### Problem
-
-`main()` runs env setup, browser launch, trace start, the full scenario loop (352-432) with dense
-inline metric extraction, then ~40 lines of settings/metrics/artifact assembly (440-473). Inside the
-loop, one block (374-424) pulls `engine.draw/commit/snapshot/undo` measures, computes
-`historyRasterMB`, and pushes a 25-field result object — that's a distinct unit ("measure one
-scenario") wedged inside the driver. The reader cannot see the scenario lifecycle without also
-parsing trace-artifact bookkeeping.
-
-#### Proposed solution
-
-Extract:
-
-* `async function runUndoScenario(page, base, sc, geom)` → resets engine, marks draw/undo phases,
-  settles cold tier, returns the `results.push(...)` object (354-424).
-* `function buildUndoSettings({ throttle, build, geom, t0 })` → the `settings` object (440-453).
-* reuse the shared `writeProfileArtifacts` helper for
-  `trace.json`/`metrics.json`/`summary.json`/`report.md`, leaving only the bespoke
-  `undo-scenarios.{json,md}` writes here.
-
-`main` becomes: launch → `for (sc of scenarios) results.push(await runUndoScenario(...))` → write
-artifacts.
-
-#### Verification
-
-`npm run perf:undo -- --no-build --scenarios=short-marks` emits the same `undo-scenarios.json`
-fields; `runUndoScenario` is independently callable and contains no `writeFileSync`.
-
----
-
 ### [P2][duplication] Collapse the repeated output-dir / timestamp / throttle-tag construction
 
 **File(s):** `scripts/perf/scenario.mjs:41-43`, `scripts/perf/mount.mjs:50-52`,
