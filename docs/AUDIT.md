@@ -15,43 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P4][maintainability] Port `5173` is coupled across `vite.config.ts` and `web/netlify.toml` as bare literals
-
-**File(s):** `web/vite.config.ts:59` (`port: 5173`) and `web/netlify.toml:25` (`targetPort = 5173`)
-— pinned at SHA f934d43
-
-#### Problem
-
-The dev proxy target and the Vite dev port must match, but both are unnamed literals in different
-files/formats:
-
-```ts
-server: { port: 5173, strictPort: true, ... }   // vite.config.ts:59
-```
-
-```toml
-targetPort = 5173                                 // web/netlify.toml:25
-```
-
-`5173` is also hardcoded in several root `package.json` scripts (`dev:kill`, `adb:reverse`,
-`android:live`). With `strictPort: true`, a change to one side without the other makes
-`npm run dev:netlify` fail to proxy. Nothing links them; grepping `5173` returns many disconnected
-hits.
-
-#### Proposed solution
-
-This is inherently cross-format (TOML can't import a TS constant), so the pragmatic fix is a
-cross-reference comment on each (`# must match vite server.port (web/vite.config.ts)` /
-`// dev port; mirrored in web/netlify.toml targetPort and dev:* scripts`). If stronger coupling is
-wanted, drive the Vite port from an env var that `scripts/web.mjs` and netlify.toml share.
-
-#### Verification
-
-Change the Vite port and confirm the added comments point a maintainer to every mirror.
-`npm run dev:netlify` proxies correctly when both match.
-
----
-
 ### [P4][readability] `playwright.config.ts` browser-fallback logic uses a bare magic index and three silent empty catches
 
 **File(s):** `web/playwright.config.ts:15-49` (`chromiumExecutablePath`, `webkitAvailable`) — pinned

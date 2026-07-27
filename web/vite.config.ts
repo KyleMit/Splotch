@@ -62,6 +62,8 @@ const NATIVE_API_BASE = isCapacitor ? 'https://splotch.art' : '';
 
 export default defineConfig({
   server: {
+    // Keep with web/netlify.toml's [dev].targetPort and Vite dev-port consumers:
+    // scripts/cloud-tunnel.mjs and root dev:kill/live-reload/ADB scripts must all update together.
     port: 5173,
     strictPort: true,
     // Allow a phone-preview reverse tunnel (e.g. chisel) to forward in under its
