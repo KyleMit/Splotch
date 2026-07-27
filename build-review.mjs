@@ -210,7 +210,7 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 3rem; }
 </style>
 <main>
   <h1>Splotch asset-gen — IDEAS.md burn-down</h1>
-  <p class="subtitle">One subagent per idea from <code>tools/asset-gen/IDEAS.md</code>, run sequentially. Each attempted the proposed approach, recorded what worked and what didn't, and reverted all repo changes before exiting. ${done} of 25 ideas explored so far.</p>
+  <p class="subtitle">One subagent per idea from the image-quality backlog, whose still-open items now live in GitHub issues labeled <code>area:asset-gen</code>, run sequentially. Each attempted the proposed approach, recorded what worked and what didn't, and reverted all repo changes before exiting. All ${done} of 25 ideas explored.</p>
   <div class="tally">
     <span class="chip v-worked">${counts.WORKED} worked</span>
     <span class="chip v-partial">${counts.PARTIAL} partial</span>
@@ -221,7 +221,7 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 3rem; }
     <tbody>${rows}</tbody>
   </table></div>
   ${sections.join('\n')}
-  <footer>Generated from per-idea reports in the session scratchpad. Repo state was reverted to baseline (8e471b8) after every attempt — nothing here is committed.</footer>
+  <footer>Generated from per-idea reports in the session scratchpad. Repo state was reverted to baseline (8e471b8) after each attempt, before the next one began — so nothing from the experiments is live in the pipeline. This folder itself, including this page, is a committed frozen record.</footer>
 </main>`;
 
   writeFileSync(OUT, html.replace(/[\uFFFD\uD800-\uDFFF]/g, ''));
