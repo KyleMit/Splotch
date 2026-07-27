@@ -9,32 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P4][error-handling] A single scenario's `settleColdTier` timeout aborts the whole undo run
-
-**File(s):** `scripts/perf/undo-scenarios.mjs:275-291,352-432` — pinned at SHA f934d43
-
-#### Problem
-
-`settleColdTier` throws when the cold tier never settles (line 282). It's called inside the scenario
-loop (line 363) with no per-scenario try/catch, so one flaky scenario (a slow blob encode on a
-loaded CI box) throws straight out of the `for (const sc of scenarios)` loop and skips artifact
-writing for every scenario — including the ones that already completed. A multi-minute run is lost
-to one late tier settle.
-
-#### Proposed solution
-
-Wrap each scenario body in try/catch: on failure, log `console.warn(`[${sc.key}] skipped:
-${err.message}`)` and push a partial/`null`-flagged result (mirroring how `beat` in session.mjs
-already downgrades a failed step to "skipped"), so surviving scenarios still write artifacts. Keep
-the throw's diagnostic message.
-
-#### Verification
-
-Force a short `settleColdTier` timeout (small `timeoutMs`) and confirm the run still writes
-`undo-scenarios.json` with the other scenarios present and the failed one marked skipped.
-
----
-
 ### [P4][type-safety] Inconsistent null-guarding of `getUndoDebug()` fields
 
 **File(s):** `scripts/perf/undo-scenarios.mjs:393,396,511,553`,

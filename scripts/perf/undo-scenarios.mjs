@@ -417,7 +417,7 @@ function buildUndoSettings({ throttle, build, geom, t0 }) {
   };
 }
 
-async function main() {
+export async function main() {
   // /dev/engine is gated by PUBLIC_ENABLE_DEV_HARNESS ($env/dynamic/public, read
   // at runtime), so the preview server spawned by buildAndPreview must inherit it.
   process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
