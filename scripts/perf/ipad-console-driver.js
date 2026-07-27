@@ -38,7 +38,8 @@
   const H = window.innerHeight;
   const c = document.querySelector('#engineCanvas');
   const side = Math.max(c.width, c.height);
-  const mbPerRaster = (side * side * 4) / 1048576;
+  const MIB = 1024 * 1024;
+  const mbPerRaster = (side * side * 4) / MIB;
 
   const longSquiggle = (row, pts = HZ * 10) => {
     const x0 = M,
@@ -200,9 +201,8 @@
     // rasterBytes is the live patches' real pixel cost (dirty-rect snapshots,
     // ADR-0069); the liveRasters × full-raster product is the fallback for a
     // build that predates it. The +1 raster is the paper itself.
-    const liveMB =
-      dbg.rasterBytes != null ? dbg.rasterBytes / 1048576 : dbg.liveRasters * mbPerRaster;
-    const historyMB = liveMB + mbPerRaster + dbg.blobBytes / 1048576;
+    const liveMB = dbg.rasterBytes != null ? dbg.rasterBytes / MIB : dbg.liveRasters * mbPerRaster;
+    const historyMB = liveMB + mbPerRaster + dbg.blobBytes / MIB;
     return {
       scenario: label,
       snapshots: dbg.snapshots ?? 0,
@@ -250,13 +250,13 @@
   }
 
   console.log(
-    `Device raster ${side}×${side} = ${mbPerRaster.toFixed(1)} MB/raster · ` +
+    `Device raster ${side}×${side} = ${mbPerRaster.toFixed(1)} MiB/raster · ` +
       `120 Hz frame budget 8.3 ms · NOTE WebKit clamps perf.now() to ~1 ms`
   );
   console.table(rows);
   console.log(
     'Gates (ADR-0066): undo p95 < 50 ms · commit hitch (engine.commit max) ≈ one ' +
-      '120 Hz frame ≈ 8.3 ms · history ≲ 150 MB · no dropped frames while blobs ' +
+      '120 Hz frame ≈ 8.3 ms · history ≲ 150 MiB · no dropped frames while blobs ' +
       'encode. Inside a commit, "snap copy" is engine.snapshot (the paper copy ' +
       'alone) and "fold" is engine.fold (rendering the committed ops) — a hot ' +
       'commit attributes to one of those. Watch a Web Inspector Timeline for a ' +

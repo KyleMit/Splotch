@@ -12,6 +12,7 @@
 import { readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { toMiB } from './units.mjs';
 
 const US_PER_MS = 1000;
 
@@ -481,14 +482,14 @@ export function renderReport(s) {
 
   out.push('\n## Memory\n');
   if (s.heap && s.heap.afterBytes) {
-    const delta = (s.heap.afterBytes - s.heap.beforeBytes) / 1048576;
+    const delta = toMiB(s.heap.afterBytes - s.heap.beforeBytes);
     out.push(
       table(
         ['Metric', 'Value'],
         [
-          ['JS heap before', `${(s.heap.beforeBytes / 1048576).toFixed(1)} MB`],
-          ['JS heap after', `${(s.heap.afterBytes / 1048576).toFixed(1)} MB`],
-          ['Delta', `${delta.toFixed(1)} MB`],
+          ['JS heap before', `${toMiB(s.heap.beforeBytes).toFixed(1)} MiB`],
+          ['JS heap after', `${toMiB(s.heap.afterBytes).toFixed(1)} MiB`],
+          ['Delta', `${delta.toFixed(1)} MiB`],
         ]
       )
     );

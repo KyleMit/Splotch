@@ -31,6 +31,7 @@ import {
 import { IPAD_PRO } from './devices.mjs';
 import { profilePath, throttleTag } from './paths.mjs';
 import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
+import { toMiB } from './units.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 
 // The deployment target we actually worry about: a 12.9" iPad Pro in portrait —
@@ -346,10 +347,11 @@ export async function runUndoScenario(page, base, sc, geom) {
   const historyRasterMB =
     debug == null
       ? null
-      : ((debug.rasterBytes ?? debug.liveRasters * geom.bytesPerRaster) +
-          geom.bytesPerRaster +
-          debug.blobBytes) /
-        1048576;
+      : toMiB(
+          (debug.rasterBytes ?? debug.liveRasters * geom.bytesPerRaster) +
+            geom.bytesPerRaster +
+            debug.blobBytes
+        );
 
   const result = {
     key: sc.key,
@@ -373,8 +375,8 @@ export async function runUndoScenario(page, base, sc, geom) {
       maxMs: undoM.max,
     },
     heap: {
-      afterDrawMB: heapAfterDraw ? heapAfterDraw / 1048576 : null,
-      afterUndoMB: heapAfterUndo ? heapAfterUndo / 1048576 : null,
+      afterDrawMB: heapAfterDraw ? toMiB(heapAfterDraw) : null,
+      afterUndoMB: heapAfterUndo ? toMiB(heapAfterUndo) : null,
     },
     historyRasterMB,
   };
@@ -399,7 +401,7 @@ function buildUndoSettings({ throttle, build, geom, t0 }) {
     longOps: LONG_OPS,
     buildMode: build ? 'production-preview' : 'production-preview (reused build)',
     captureMode: 'cdp-trace',
-    raster: { ...geom, mbPerRaster: geom.bytesPerRaster / 1048576 },
+    raster: { ...geom, mbPerRaster: toMiB(geom.bytesPerRaster) },
     startedAt: new Date(t0).toISOString(),
     durationMs: Date.now() - t0,
   };
@@ -545,7 +547,7 @@ function renderUndoReport({ settings, scenarios }) {
   const r = settings.raster;
   out.push('\n## History raster memory (the real undo cost — off the JS heap)\n');
   out.push(
-    `Each square raster is ${r?.side}×${r?.side} → **${f1(r?.mbPerRaster)} MB**. ` +
+    `Each square raster is ${r?.side}×${r?.side} → **${f1(r?.mbPerRaster)} MiB**. ` +
       `Canvas backing stores are **not** counted by performance.memory, so the JS-heap ` +
       `table below stays flat regardless of history — the raster figure is the one that ` +
       `matters. Resident rasters = live snapshots + the paper, plus the encoded blob bytes.\n`
@@ -555,13 +557,13 @@ function renderUndoReport({ settings, scenarios }) {
   for (const s of scenarios) {
     const rasters = s.debug == null ? 'n/a' : `${s.debug.liveRasters} + 1`;
     const blobKB = s.debug ? Math.round((s.debug.blobBytes ?? 0) / 1024) : 'n/a';
-    out.push(`| ${s.label} | ${rasters} | ${blobKB} KB | ${f1(s.historyRasterMB)} MB |`);
+    out.push(`| ${s.label} | ${rasters} | ${blobKB} KB | ${f1(s.historyRasterMB)} MiB |`);
   }
   out.push('\n## JS heap (performance.memory — excludes canvas pixels; coarse, GC-dependent)\n');
   out.push('| Scenario | After draw (history resident) | After undo-to-empty |');
   out.push('| --- | --- | --- |');
   for (const s of scenarios) {
-    out.push(`| ${s.label} | ${f1(s.heap.afterDrawMB)} MB | ${f1(s.heap.afterUndoMB)} MB |`);
+    out.push(`| ${s.label} | ${f1(s.heap.afterDrawMB)} MiB | ${f1(s.heap.afterUndoMB)} MiB |`);
   }
   out.push('\n---\nSee the `profiling` skill and ADR-0066 for how to read these.\n');
   return out.join('\n');
