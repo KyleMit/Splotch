@@ -13,35 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P3][test-quality] page.spec.ts hand-parses PNG IHDR bytes — fragile and unexplained magic offsets
-
-**File(s):** `web/tests/page.spec.ts:111-119` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-expect(png.readUInt32BE(16)).toBe(declaredWidth);
-expect(png.readUInt32BE(20)).toBe(declaredHeight);
-```
-
-The offsets `16`/`20` are the PNG IHDR width/height fields; the comment explains, but any
-non-standard chunk ordering or a future WebP OG image would read garbage and assert a confusing
-mismatch rather than "not a PNG." The test also silently assumes `/large-image.png` is a PNG.
-
-#### Proposed solution
-
-Guard the magic bytes first: assert `png.subarray(0,8)` equals the PNG signature
-(`\x89PNG\r\n\x1a\n`) before reading IHDR, and extract a small
-`pngDimensions(buffer): {width, height}` helper into `web/tests/fixtures.ts` so the offset
-arithmetic is named and reusable. Fail loudly ("not a PNG") if the signature check fails.
-
-#### Verification
-
-Corrupt the signature locally and confirm a clear failure message;
-`npm run test:e2e -- page.spec.ts` green.
-
----
-
 ### [P4][readability] multitouch STROKES/SAMPLES rely on positional index coupling between two separate arrays
 
 **File(s):** `web/tests/multitouch.spec.ts:31-44` — pinned at SHA f934d43
