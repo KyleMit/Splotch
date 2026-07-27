@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { rotateViewportViaCdp } from './cdp';
 import {
   COLOR_CHANGE_DEBOUNCE_SETTLE_MS,
   draw,
@@ -355,14 +356,7 @@ test('the magic brush paints the rotation-lock letterbox margin', async ({ page 
     { x: 400, y: 260 },
   ]);
 
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send('Emulation.setDeviceMetricsOverride', {
-    width: 720,
-    height: 1280,
-    deviceScaleFactor: 1,
-    mobile: true,
-    screenOrientation: { type: 'portraitPrimary', angle: 90 },
-  });
+  await rotateViewportViaCdp(page, { width: 720, height: 1280, angle: 90 });
   // The wide paper stays, lifted into the letterboxed sheet with top/bottom margins.
   await expect(page.locator('.paper-sheet.paper-lifted')).toBeVisible();
 

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 
+import { rotateViewportViaCdp } from './cdp';
 import { draw, gotoApp } from './helpers';
 
 import { applyFarmPage, openColoringDialog, openDrawer } from './flows-harness';
@@ -50,14 +51,7 @@ test('rotating with ink keeps the same coloring page art until the canvas is bla
     { x: 400, y: 260 },
   ]);
 
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send('Emulation.setDeviceMetricsOverride', {
-    width: 720,
-    height: 1280,
-    deviceScaleFactor: 1,
-    mobile: true,
-    screenOrientation: { type: 'portraitPrimary', angle: 90 },
-  });
+  await rotateViewportViaCdp(page, { width: 720, height: 1280, angle: 90 });
 
   // The ink locks the paper: the wide art stays applied, lifted into the
   // letterboxed paper sheet instead of being swapped for the tall variant.

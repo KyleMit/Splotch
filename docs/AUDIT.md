@@ -13,34 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P3][maintainability] CDP viewport-rotation setup is duplicated in flows.spec.ts and diverges from the engine harness's rotation approach
-
-**File(s):** `web/tests/flows.spec.ts:1142-1149, 1435-1442` — pinned at SHA f934d43
-
-#### Problem
-
-The exact
-`cdp.send('Emulation.setDeviceMetricsOverride', { width: 720, height: 1280, deviceScaleFactor: 1, mobile: true, screenOrientation: { type: 'portraitPrimary', angle: 90 } })`
-block is pasted in two coloring-book rotation tests. Separately, `engine.spec.ts:870-878` rotates
-via a harness override (`setScreenAngleOverride` + `resizeTo`) — so the codebase has two unrelated
-"rotate the viewport" mechanisms with no shared naming, making it non-obvious which to reach for.
-
-#### Proposed solution
-
-Extract `rotateViewportViaCdp(page, { width, height, angle })` into `helpers.ts` (CDP is
-Chromium-only, but `helpers.ts` is imported by webkit-smoke only for CDP-free functions — keep the
-CDP helper in a separate `web/tests/cdp.ts` to preserve the WebKit-portability boundary noted in
-`web/tests/CLAUDE.md`). Use it in both flows tests. Add a one-line comment cross-referencing the
-engine harness's `setScreenAngleOverride` so the two rotation paths are discoverable from each
-other.
-
-#### Verification
-
-`grep -c "setDeviceMetricsOverride" web/tests/*.spec.ts` shows one definition.
-`npm run test:e2e -- flows.spec.ts -g rotat` green.
-
----
-
 ### [P3][readability] Helper functions are scattered between tests throughout flows.spec.ts instead of grouped
 
 **File(s):** `web/tests/flows.spec.ts:328-333` (activateWithKey), `492-500`
