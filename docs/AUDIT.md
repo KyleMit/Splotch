@@ -15,35 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P5][documentation] Misleading "matching PORT above" comment on the Playwright webServer
-
-**File(s):** `web/playwright.config.ts:93-101` (webServer command) — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-// ... `vite preview` defaults to 4173, matching PORT above.
-...
-: `npx vite build && npx vite preview --port ${PORT}`,
-```
-
-The comment leans on `vite preview`'s *default* being 4173 "matching PORT above," but the command
-actually passes `--port ${PORT}` explicitly — so the default is irrelevant and the note misleads a
-reader into thinking the port coincidence is load-bearing (it isn't; the explicit flag governs). It
-plants a false coupling to Vite's default that a Vite upgrade changing the default would appear to
-threaten but wouldn't.
-
-#### Proposed solution
-
-Drop the "defaults to 4173, matching PORT above" clause; the `--port ${PORT}` flag is
-self-documenting. If keeping context, say "served on PORT via the explicit `--port` flag."
-
-#### Verification
-
-Read-through; run `npm run test:e2e` to confirm the server still binds 4173.
-
----
-
 ### [P5][consistency] `PORT`/`baseURL` naming and `defineConfig` usage differ between the two Playwright configs and the reporter shape is inconsistent
 
 **File(s):** `web/playwright.config.ts:64` vs `web/playwright.webkit-scratch.config.ts:13`
