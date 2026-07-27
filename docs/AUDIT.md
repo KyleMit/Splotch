@@ -17,52 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P3][dead-config] google-services / Firebase scaffolding is wired up but the app has no push
-
-**File(s):** `android/build.gradle:11`, `android/app/build.gradle:70-77` (Android Gradle) — pinned
-at SHA f934d43
-
-#### Problem
-
-The root build script adds the Google Services classpath:
-
-```groovy
-classpath 'com.google.gms:google-services:4.4.4'
-```
-
-and the app script conditionally applies the plugin, logging about push notifications:
-
-```groovy
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
-    }
-} catch(Exception e) {
-    logger.info("google-services.json not found, ... Push Notifications won't work")
-}
-```
-
-Splotch is an offline-first, privacy-first kids' app: there is **no** push plugin in the Capacitor
-plugin set (secure-storage, media, device, filesystem, haptics, network, preferences,
-screen-orientation, status-bar), no `google-services.json` (not tracked, not in `.gitignore`'s
-active list), and no messaging permission in the manifest. This is dead Capacitor template
-scaffolding that pulls in a Google dependency and implies a push capability the app deliberately
-doesn't have — a real concern for a Families-policy app whose data posture is scrutinized.
-
-#### Proposed solution
-
-Remove the `com.google.gms:google-services` classpath from `android/build.gradle` and the
-`google-services.json` try/apply block from `android/app/build.gradle`. If push is ever added, wire
-it back deliberately (and document it in the `mobile` skill's compliance checklist).
-
-#### Verification
-
-`grep -rin 'google.services\|google-services\|firebase' android` returns nothing; a release build
-(`bundleRelease`) still succeeds.
-
----
-
 ### [P3][dead-config] iOS requires the obsolete `armv7` capability on a 64-bit-only (iOS 16.4) app
 
 **File(s):** `ios/App/App/Info.plist:35-38` (iOS Info.plist) — pinned at SHA f934d43
