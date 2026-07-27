@@ -7,33 +7,6 @@
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P4][consistency] Smoke/dev port numbers scattered as bare literals
-
-**File(s):** `scripts/api-smoke.mjs:14` (5199), `scripts/redteam-run.mjs:26` (5198),
-`scripts/driver-smoke.mjs:23` (4173), `scripts/gen-large-image.mjs:32` /
-`scripts/store-shots.mjs:31` (4173), `scripts/cloud-tunnel.mjs:18` (5173), `scripts/blobs-smoke.mjs`
-(n/a) — pinned at SHA f934d43
-
-#### Problem
-
-Throwaway-server ports are hardcoded per script (`5199`, `5198`, `4173`, `5173`) with
-`Number(process.env.SMOKE_PORT ?? …)` wrappers duplicated. The distinct values are deliberate
-(collision avoidance) but undocumented, so nothing stops a future script from reusing `4173` while
-`store-shots` is running, and the `Number(env ?? default)` boilerplate repeats.
-
-#### Proposed solution
-
-Centralize the port registry (and a `port(name, fallback)` env helper) in `lib/`, or at least add a
-one-line comment table of which script owns which port. Low urgency but improves grepability and
-prevents accidental collisions.
-
-#### Verification
-
-`grep -rn "SMOKE_PORT\|4173\|519" scripts/` maps every port to a named owner. Smoke scripts still
-boot on their ports.
-
----
-
 ### [P5][readability] `featureGraphicHtml` used before its declaration
 
 **File(s):** `scripts/store-shots.mjs:205` (call) and `:218-255` (declaration) — pinned at SHA
