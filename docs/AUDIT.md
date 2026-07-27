@@ -13,35 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P3][maintainability] The color-change debounce sleep `waitForTimeout(150)` is an unnamed, duplicated magic number
-
-**File(s):** `web/tests/flows.spec.ts:208, 1536` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-await page.waitForTimeout(150); // clear the post-color-change draw debounce
-```
-
-appears twice with the same literal `150`. The engine's actual debounce is `< 100ms` (documented in
-`engine.spec.ts:277` "same synchronous tick … < 100ms"). The `150` is a hand-picked margin over that
-threshold; if the engine's `requiredDelay` changes, these two sleeps must be found and updated by
-hand, and there is no single source tying the test constant to the engine constant.
-
-#### Proposed solution
-
-Define `const COLOR_CHANGE_DEBOUNCE_MS = 150;` at the top of `flows.spec.ts` (or in `helpers.ts`)
-with a comment linking it to the engine's `requiredDelay`, and use it in both places. This is a
-legitimate "idle past a known threshold" sleep per the testing rules, so keeping it as a sleep is
-fine — only the magic number and duplication are the issue.
-
-#### Verification
-
-`grep -n "waitForTimeout(150)" web/tests` returns nothing; both call sites reference the named
-constant.
-
----
-
 ### [P3][maintainability] The 1×1 PNG base64 buffer is duplicated across three test surfaces
 
 **File(s):** `web/tests/flows.spec.ts:1033-1036`, `web/tests/generate-image.spec.ts:17-20` — pinned

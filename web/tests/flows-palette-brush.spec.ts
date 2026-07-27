@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import {
+  COLOR_CHANGE_DEBOUNCE_SETTLE_MS,
   CUSTOM_SWATCH_COLOR,
   draw,
   firstOpaquePixel,
@@ -63,7 +64,7 @@ test('selecting a palette color activates it and paints in that color', async ({
     await expect(blue).toHaveClass(/active/, { timeout: 1000 });
   }).toPass({ timeout: 10_000 });
 
-  await page.waitForTimeout(150); // clear the post-color-change draw debounce
+  await page.waitForTimeout(COLOR_CHANGE_DEBOUNCE_SETTLE_MS); // clear the post-color-change draw debounce
   await draw(page, [
     { x: 120, y: 120 },
     { x: 260, y: 120 },

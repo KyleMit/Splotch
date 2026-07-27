@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { state } from './engine-harness';
+import { COLOR_CHANGE_DEBOUNCE_SETTLE_MS } from './helpers';
 
 test('a pointer resumed far away after an idle gap does not draw a connecting line', async ({
   page,
@@ -42,7 +43,7 @@ test('a color change debounces the immediately-following touch/mouse stroke', as
   expect((await state(page)).canvasEmpty).toBe(true);
 
   // Past the 100ms window, the same stroke paints.
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(COLOR_CHANGE_DEBOUNCE_SETTLE_MS);
   const painted = await page.evaluate(() => {
     window.__engine.strokeSync(
       [

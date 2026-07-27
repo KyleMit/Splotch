@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { draw, gotoApp, swatch, TEST_PALETTE } from './helpers';
+import { COLOR_CHANGE_DEBOUNCE_SETTLE_MS, draw, gotoApp, swatch, TEST_PALETTE } from './helpers';
 
 import { applyFarmPage, openBrushMenu, openDrawer, pickBrush } from './flows-harness';
 
@@ -434,7 +434,7 @@ test('the eraser removes magic-brush strokes and later colors override them', as
   await draw(page, line);
   const red = swatch(page, TEST_PALETTE.red);
   await red.click();
-  await page.waitForTimeout(150); // color-change debounce
+  await page.waitForTimeout(COLOR_CHANGE_DEBOUNCE_SETTLE_MS); // color-change debounce
   // Crosses the magic diagonal (~x=300, y=240), so it paints on top of it.
   await draw(page, [
     { x: 200, y: 240 },

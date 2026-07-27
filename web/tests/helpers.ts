@@ -22,6 +22,9 @@ export const TEST_PALETTE = {
 export const PICKER_GREEN = COLOR_FAMILIES.find((family) => family.name === 'greens')!.shades[4];
 export const CUSTOM_SWATCH_COLOR = 'custom';
 
+// Must remain greater than the engine's COLOR_CHANGE_DEBOUNCE_MS (100).
+export const COLOR_CHANGE_DEBOUNCE_SETTLE_MS = 150;
+
 export function swatch(page: Page, color: string) {
   return page.locator(`button.color-swatch[data-color="${color}"]`);
 }
