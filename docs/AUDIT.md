@@ -7,29 +7,6 @@
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P3][duplication] HTML-escaping helper reimplemented per script
-
-**File(s):** `scripts/redteam-run.mjs:113-117` (`esc`) vs `scripts/lib/scrapbook-chrome.mjs` (`esc`,
-imported by `gen-icons-sheet.mjs:18`) and `lib/model-eval-report.mjs` — pinned at SHA f934d43
-
-#### Problem
-
-Every script that emits HTML needs the same `& < > "` escape. `gen-icons-sheet` imports `esc` from
-`lib/scrapbook-chrome.mjs`; `redteam-run` hand-rolls its own `esc`; the model-eval report presumably
-has a third. Three copies of one trivial-but-security-relevant function.
-
-#### Proposed solution
-
-Promote a single `esc()` to `lib/utils.mjs` (or a `lib/html.mjs`) and import it everywhere HTML is
-generated, retiring the per-file copies.
-
-#### Verification
-
-`grep -rn "replace(/\[&<>" scripts/` shows one definition. Regenerate the redteam and icon-sheet
-HTML and confirm identical escaping.
-
----
-
 ### [P4][complexity] `release.mjs` is a 150-line top-level procedure
 
 **File(s):** `scripts/release.mjs:25-176` — pinned at SHA f934d43

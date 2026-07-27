@@ -12,7 +12,8 @@
 import { readdirSync, statSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './utils.mjs';
-import { esc, chromeStyle, masthead, siteFooter } from './scrapbook-chrome.mjs';
+import { esc } from './html.mjs';
+import { chromeStyle, masthead, siteFooter } from './scrapbook-chrome.mjs';
 
 // Not scrapbook entries — the index's own scaffolding.
 const SCAFFOLDING = new Set(['index.html', 'README.md', '.nojekyll', '.gitkeep']);
