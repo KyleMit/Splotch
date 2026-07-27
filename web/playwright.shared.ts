@@ -10,8 +10,7 @@ export const commonPlaywrightConfig = {
   use: { baseURL: playwrightBaseURL },
 };
 
-export const productionPreviewCommand =
-  `npx vite build && npx vite preview --port ${playwrightPort}`;
+export const productionPreviewCommand = `npx vite build && npx vite preview --port ${playwrightPort}`;
 
 export const commonWebServer = {
   url: playwrightBaseURL,
