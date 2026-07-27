@@ -34,11 +34,11 @@ rationale.
 | 17 | `p2-duplication-icon-glob-exclusion.md`           | Icon glob + `splotchy` exclusion repeated three places      | P2  | C07     | FIX — patch + 2 review one-liners |
 | 18 | `p3-maintainability-color-icons-allowlist.md`     | `COLOR_ICONS` hand-maintained allowlist mixes two concepts  | P3  | C07     | OPTIONS — lean: build-time gen |
 | 19 | `p4-consistency-icon-types-reexport.md`           | `iconTypes.ts` imports and re-exports `IconName`            | P4  | C07     | FIX — delete dead re-export |
-| 20 | `p2-type-safety-native-admin-guards.md`           | Native page hand-rolls server response type guards          | P2  | C08     | pending |
-| 21 | `p2-duplication-invite-actions.md`                | Per-invite action groups triplicated markup                 | P2  | C08     | pending |
-| 22 | `p2-complexity-read-store.md`                     | `readStore` bundles five responsibilities                   | P2  | C08     | pending |
-| 23 | `p4-maintainability-session-cookie-opts.md`       | Session cookie name/scope/max-age scattered inline          | P4  | C08     | pending |
-| 24 | `p4-duplication-sign-out-locally.md`              | Native page reimplements session-state bookkeeping          | P4  | C08     | pending |
+| 20 | `p2-type-safety-native-admin-guards.md`           | Native page hand-rolls server response type guards          | P2  | C08     | FIX — hand-port draft + real 409 string |
+| 21 | `p2-duplication-invite-actions.md`                | Per-invite action groups triplicated markup                 | P2  | C08     | DROP — overtaken on main |
+| 22 | `p2-complexity-read-store.md`                     | `readStore` bundles five responsibilities                   | P2  | C08     | FIX — extract confirmSeedRaceWinner |
+| 23 | `p4-maintainability-session-cookie-opts.md`       | Session cookie name/scope/max-age scattered inline          | P4  | C08     | DROP — already centralized |
+| 24 | `p4-duplication-sign-out-locally.md`              | Native page reimplements session-state bookkeeping          | P4  | C08     | DROP — no real enforcement gain |
 | 25 | `p2-complexity-effect-dependency-registration.md` | `$effect` bare member-access dependency registration        | P2  | C09     | FIX — trimmed draft, load-bearing reads |
 | 26 | `p5-readability-error-message-unused.md`          | `+error.svelte`/`handleError` produce unused `{ message }`  | P5  | C09     | FIX — comment-only, premise false |
 | 27 | `p3-maintainability-hexagon-geometry.md`          | Hexagon geometry constants scattered, coupled to a comment  | P3  | C10     | FIX — narrowed to snap radius |
