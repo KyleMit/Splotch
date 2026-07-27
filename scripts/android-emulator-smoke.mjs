@@ -11,9 +11,8 @@
 
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { join } from 'node:path';
-import { ROOT, sleep, sh } from './lib/utils.mjs';
-import { ADB, EMULATOR, AVD_NAME } from './lib/android.mjs';
+import { sleep, sh } from './lib/utils.mjs';
+import { ADB, EMULATOR, AVD_NAME, ANDROID_DIR, GRADLEW } from './lib/android.mjs';
 import { runMaestroSmoke } from './lib/native-smoke.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -76,8 +75,7 @@ console.log(`Emulator booted: ${serial}`);
 // 4. Build + install, run the flow, and always tear the emulator down.
 try {
   await sh('npm run cap:sync');
-  const gradlew = join(ROOT, 'android', 'gradlew');
-  await sh(`"${gradlew}" :app:installDebug`, join(ROOT, 'android'));
+  await sh(`"${GRADLEW}" :app:installDebug`, ANDROID_DIR);
   await runMaestroSmoke();
 } finally {
   console.log(`Shutting down ${serial}`);

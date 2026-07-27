@@ -26,36 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P3][duplication] Gradle-wrapper path resolved in two places
-
-**File(s):** `scripts/gradle.mjs:15-17` and `scripts/android-emulator-smoke.mjs:78-79` — pinned at
-SHA f934d43
-
-#### Problem
-
-`gradle.mjs` is the canonical Gradle-wrapper runner, yet `android-emulator-smoke.mjs` re-derives the
-wrapper path and shell-quotes it by hand:
-
-```js
-const gradlew = join(ROOT, 'android', 'gradlew');
-await sh(`"${gradlew}" :app:installDebug`, join(ROOT, 'android'));
-```
-
-The `android/gradlew` location and the `android/` cwd are now knowledge in two files.
-
-#### Proposed solution
-
-Export `GRADLEW` and `ANDROID_DIR` from `lib/android.mjs` and reuse them in both `gradle.mjs` and
-the smoke runner. (The smoke runner needs the rejecting `sh()` rather than exiting `run()`, so it
-can't call `gradle.mjs` directly, but it can share the path constants.)
-
-#### Verification
-
-`grep -rn "'gradlew'" scripts/` shows only the constant. Run `npm run android:apk` and
-`npm run test:android`.
-
----
-
 ### [P3][consistency] Two different "am I the main module?" idioms
 
 **File(s):** `scripts/gha-versions.mjs:192` (`fileURLToPath(import.meta.url) === process.argv[1]`)
