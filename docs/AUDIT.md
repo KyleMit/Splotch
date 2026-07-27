@@ -15,32 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P3][documentation] Stale/incorrect comment: `vitest-setup.ts` says "jsdom" but the environment is happy-dom
-
-**File(s):** `web/vitest-setup.ts:3-5` (comment) — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-// The storage + state layers gate browser-only work behind `browser` from
-// `$app/environment`. Under vitest (jsdom) we always want the browser code
-```
-
-The Vitest environment is `happy-dom` (`vitest.config.ts:21`), and both `.claude/rules/testing.md`
-and ADR-0009 explicitly state the suite uses happy-dom, "not jsdom." A newcomer reading this setup
-file is told the wrong DOM implementation — exactly the sort of detail (happy-dom vs jsdom API gaps)
-that matters when debugging a test-only DOM failure.
-
-#### Proposed solution
-
-Replace "(jsdom)" with "(happy-dom)". Optionally cite ADR-0009 for why.
-
-#### Verification
-
-`git grep -in jsdom web/` returns nothing after the fix (confirm no other stale references).
-
----
-
 ### [P4][documentation] Undocumented magic values in the PWA/webServer config (networkTimeoutSeconds, timeout, BUILD_TIME slice)
 
 **File(s):** `web/vite.config.ts:27,137` and `web/playwright.config.ts:104` — pinned at SHA f934d43
