@@ -104,6 +104,7 @@ export async function dragStroke(
   points: { x: number; y: number }[]
 ) {
   if (!box) throw new Error('canvas has no bounding box');
+  if (points.length === 0) throw new Error('cannot draw a stroke without points');
   await page.mouse.move(box.x + points[0].x, box.y + points[0].y);
   await page.mouse.down();
   for (const p of points.slice(1)) await page.mouse.move(box.x + p.x, box.y + p.y);
