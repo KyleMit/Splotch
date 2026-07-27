@@ -17,28 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P5][naming] Example-test package `com.getcapacitor.myapp` misrepresents ownership
-
-**File(s):** `android/app/src/androidTest/java/com/getcapacitor/myapp/`,
-`android/app/src/test/java/com/getcapacitor/myapp/` (Android test packages) — pinned at SHA f934d43
-
-#### Problem
-
-Even setting aside that these tests are dead (see the P2 finding), the directory/package name
-`com.getcapacitor.myapp` places project files under the Capacitor framework's namespace rather than
-`art.splotch.app`. It's inconsistent with every other source file in the app and pollutes package
-search. This is subsumed by the delete recommended above, but flagged separately in case any native
-test is retained rather than removed.
-
-#### Proposed solution
-
-If any native test survives cleanup, move it to `art/splotch/app` so test code shares the app's
-package namespace.
-
-#### Verification
-
-No tracked source or test lives under `com/getcapacitor/` after cleanup.
-
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
 ### [P2][dead-config] Overly broad allow rules grant destructive commands without a prompt
