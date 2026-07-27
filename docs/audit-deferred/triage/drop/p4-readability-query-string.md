@@ -32,7 +32,7 @@ const endpoint = apiUrl('/api/generate-image')
   + (style ? `?style=${encodeURIComponent(style)}` : '');
 ```
 
-The C02 anchor refactor (see `p2-complexity-generate-ai-image.md`) already merged without this
+The C02 anchor refactor (see `drop/p2-complexity-generate-ai-image.md`) already merged without this
 change, so the "falls out of the same extraction" opportunity is gone. What remains is one
 correctly-encoded single-param URL in a 14-line function whose header comment already explains the
 design (secrets ride in headers; the non-secret style enum is the query param). `style` is a

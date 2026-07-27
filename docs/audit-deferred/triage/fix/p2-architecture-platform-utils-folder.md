@@ -78,11 +78,11 @@ Verification: `npm run check`, `npm test`, and `npm run
 ruler:check` green — the last one is
 precisely the gate the failed attempt could not satisfy.
 
-Sequencing within C12: land the Orientation-type patch (see `p2-duplication-orientation-type.md`)
-**before** this move — that draft patches `web/src/lib/platform.ts` by path and stops applying once
-the file is renamed. This move then carries the canonical `Orientation` export along into
-`platform/index.ts` with no further edits, and the `$lib/platform` import specifier in all its
-consumers survives unchanged.
+Sequencing within C12: land the Orientation-type patch (see
+`fix/p2-duplication-orientation-type.md`) **before** this move — that draft patches
+`web/src/lib/platform.ts` by path and stops applying once the file is renamed. This move then
+carries the canonical `Orientation` export along into `platform/index.ts` with no further edits, and
+the `$lib/platform` import specifier in all its consumers survives unchanged.
 
 ## Suggested next step
 

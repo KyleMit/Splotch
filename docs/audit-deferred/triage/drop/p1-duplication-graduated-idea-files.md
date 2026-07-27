@@ -72,7 +72,7 @@ live `lib/` files themselves.
 If more granularity is ever wanted, the cheap move is enriching the two thin Status lines (idea-7
 adding `../../lib/night-halo.mjs`, idea-23 adding `../../lib/night-scores.mjs`) — a two-line edit
 that can ride along with the README fix recommended in
-`p1-discoverability-asset-gen-readme-stale.md`, not a re-staged finding of its own.
+`fix/p1-discoverability-asset-gen-readme-stale.md`, not a re-staged finding of its own.
 
 ## Suggested next step
 

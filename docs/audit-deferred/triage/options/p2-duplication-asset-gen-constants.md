@@ -40,8 +40,8 @@ fresh:34-35, covers:22/25, normalize:55-56). The patch no longer applies: it cre
 Two facts sharpen the decision:
 
 * `MODEL` and the `120_000` timeout are referenced **only inside the six generateContent wrappers**
-  — the `generateImage` extraction recommended in `p1-duplication-gemini-wrappers.md` deletes them
-  from every bin as a side effect.
+  — the `generateImage` extraction recommended in `fix/p1-duplication-gemini-wrappers.md` deletes
+  them from every bin as a side effect.
 * `WEBP_QUALITY` is referenced in `sharp(...).webp({ quality })` **encode** calls scattered through
   each bin (chalk uses it four times), not in the transport — so it does not centralize for free,
   and `lib/gemini.mjs` (transport) is the wrong home for it anyway.

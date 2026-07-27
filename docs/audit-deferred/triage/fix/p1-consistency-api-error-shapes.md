@@ -117,8 +117,8 @@ already exercises (403 invalid token, 400 missing image, malformed-body 400, adm
 `{ ok: false, error: string }`.
 
 Sequencing within C11: land this first — the contract-types finding
-(`p2-type-safety-api-contract-types.md`) wants an `ApiError = { ok: false; error: string }` type
-that is only truthful once this ships. Findings 2 and 3 (helper extractions) are independent.
+(`options/p2-type-safety-api-contract-types.md`) wants an `ApiError = { ok: false; error: string }`
+type that is only truthful once this ships. Findings 2 and 3 (helper extractions) are independent.
 
 ## Suggested next step
 

@@ -67,4 +67,4 @@ Controls sections — stacked rows keep their 6px gap, CompactShell's grid is un
 ## Suggested next step
 
 Re-stage in docs/AUDIT.md as-is (a five-minute, zero-risk cleanup). Independent of the Segmented
-primitive work in `p1-duplication-segmented-control.md` — can land first or separately.
+primitive work in `fix/p1-duplication-segmented-control.md` — can land first or separately.

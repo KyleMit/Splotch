@@ -82,10 +82,10 @@ Verification per the original brief: `git grep "'portrait' | 'landscape'"` retur
 driver's gates).
 
 Sequencing within C12: land this **before** the platform-folder move
-(`p2-architecture-platform-utils-folder.md`) — the draft patches `web/src/lib/platform.ts` by path
-and stops applying once that file becomes `platform/index.ts`. The move then carries the canonical
-type along, and every `from '$lib/platform'` import this patch adds survives the move unchanged, so
-the two land coherently in this order with no rework.
+(`fix/p2-architecture-platform-utils-folder.md`) — the draft patches `web/src/lib/platform.ts` by
+path and stops applying once that file becomes `platform/index.ts`. The move then carries the
+canonical type along, and every `from '$lib/platform'` import this patch adds survives the move
+unchanged, so the two land coherently in this order with no rework.
 
 ## Suggested next step
 

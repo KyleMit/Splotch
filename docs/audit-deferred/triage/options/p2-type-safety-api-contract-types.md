@@ -44,7 +44,7 @@ but is still hand-written and all-optional; `ReportForm.svelte` still inlines it
 `rateLimitPolicy` arguments). The `apiContracts.ts`, `aiCredential.ts`, `ReportForm.svelte`, and
 `http.ts` hunks still apply, so the draft remains a useful starting point, not scrap.
 
-Constraint from finding 1 (`p1-consistency-api-error-shapes.md`): until that lands, the shared
+Constraint from finding 1 (`fix/p1-consistency-api-error-shapes.md`): until that lands, the shared
 `ApiErrorResponse = { ok: false; error: string }` is *false* for `readJsonBody`'s 400 and all of
 generate-image's thrown errors (they are `{ message }` on the wire today). Sequence this after it.
 

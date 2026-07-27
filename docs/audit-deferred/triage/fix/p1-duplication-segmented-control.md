@@ -10,7 +10,7 @@ patch:** none
 
 **FIX — clear winner.** Extract `web/src/lib/components/design/Segmented.svelte` beside
 `Button.svelte`, styled once from tokens, with a `variant` for the active treatment and a `mode`
-prop carrying the ARIA decision from the companion doc `p4-accessibility-segmented-aria.md`. The
+prop carrying the ARIA decision from the companion doc `fix/p4-accessibility-segmented-aria.md`. The
 design skill's own rule — "Extract a new primitive at the third duplicate" — was written for exactly
 this case, and its Button table already names these three controls as the pickers Button must not
 absorb.
@@ -81,7 +81,7 @@ Add `web/src/lib/components/design/Segmented.svelte`:
     onSelect, // (value: string) => void — toggle mode call sites handle deselect themselves
     label, // aria-label for the container
     variant = 'raised', // 'raised' (theme, orientation) | 'filled' (report-kind)
-    mode = 'radio', // 'radio' | 'toggle' — see p4-accessibility-segmented-aria.md
+    mode = 'radio', // 'radio' | 'toggle' — see fix/p4-accessibility-segmented-aria.md
   } = $props();
 </script>
 ```
@@ -107,5 +107,5 @@ update Button's "not for pickers" row to point at Segmented.
 
 Re-stage in docs/AUDIT.md (or file as a `type:audit` issue) with the updated file/line references
 above — the ParentCenter citations are stale, the control is in `CompactShell.svelte` now. Implement
-together with `p4-accessibility-segmented-aria.md` (the `mode` prop is its decision);
-`p3-duplication-setting-spacing-rule.md` is independent and can land separately.
+together with `fix/p4-accessibility-segmented-aria.md` (the `mode` prop is its decision);
+`fix/p3-duplication-setting-spacing-rule.md` is independent and can land separately.

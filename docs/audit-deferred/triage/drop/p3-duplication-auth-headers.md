@@ -30,7 +30,7 @@ Implemented at HEAD, in the exact proposed shape:
   `export const ACCESS_TOKEN_HEADER = 'X-Access-Token'; export const API_KEY_HEADER = 'X-Api-Key';`
 * `web/src/lib/drawing/aiImage.ts:13,158-159` — the client imports both constants; the
   BYOK-vs-managed selection lives in the extracted `buildRequest` function (see the C02 companion
-  doc `p2-complexity-generate-ai-image.md`).
+  doc `drop/p2-complexity-generate-ai-image.md`).
 * `web/src/hooks.server.ts:4,21` — the CORS `Access-Control-Allow-Headers` value is now a template
   literal over the same constants.
 * `web/src/routes/api/generate-image/+server.ts:4,76-77` — the endpoint reads the incoming headers

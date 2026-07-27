@@ -7,7 +7,7 @@ pinned at SHA f934d43 **Draft patch:** none
 
 ## Verdict
 
-**FIX — clear winner.** The Segmented primitive (see `p1-duplication-segmented-control.md`)
+**FIX — clear winner.** The Segmented primitive (see `fix/p1-duplication-segmented-control.md`)
 standardizes on **`radiogroup`/`radio` with roving tabindex and arrow-key selection for mandatory
 single-select** (`mode: 'radio'` — theme picker, report-kind picker), and **`role="group"` of
 `aria-pressed` toggle buttons for the deselectable case** (`mode: 'toggle'` — the orientation pair).
@@ -60,7 +60,7 @@ deselectable — tapping the active side releases the rotation lock back to free
 ## Recommendation
 
 Encode the decision in the primitive's `mode` prop, per the sketch in
-`p1-duplication-segmented-control.md`:
+`fix/p1-duplication-segmented-control.md`:
 
 * `mode: 'radio'` (theme, report-kind): container `role="radiogroup"` + `aria-label`; options
   `role="radio"`, `aria-checked`, roving `tabindex` (selected option — or first, when none — is `0`,

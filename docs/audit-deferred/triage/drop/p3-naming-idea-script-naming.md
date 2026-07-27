@@ -67,8 +67,8 @@ the names the exploration gave them.
 * The one salvageable line from the draft — the README note that per-file naming is incidental
   ("each idea's subagent named its own scratch scripts — not a convention to imitate") — is worth at
   most one sentence, and the README rewrite recommended in
-  `p1-discoverability-asset-gen-readme-stale.md` can carry it if the maintainer likes it. It does
-  not justify a finding of its own.
+  `fix/p1-discoverability-asset-gen-readme-stale.md` can carry it if the maintainer likes it. It
+  does not justify a finding of its own.
 
 If the maintainer still wants the `LINT_CMD --no-error-on-unmatched-pattern` second defense layer
 for the burndown driver, harvest that hunk from the draft patch as a separate driver improvement —
