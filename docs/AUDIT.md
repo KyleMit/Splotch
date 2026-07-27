@@ -11,34 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P2][maintainability] `PALETTE` / `PAPER` are copied from app source with no drift assertion, unlike the prompts
-
-**File(s):** `scripts/lib/model-eval.mjs:29-46` (`PALETTE`, `PAPER`) and `77-85`
-(`assertProductionConfig`) — pinned at SHA f934d43
-
-#### Problem
-
-The harness copies four things from the app to "measure what production actually sends":
-`DEFAULT_PROMPT`, `SAFETY_SYSTEM_INSTRUCTION`, `PALETTE`, and `PAPER`. Only the first two are
-guarded — `assertProductionConfig()` reads the app source and throws on drift. `PALETTE` (a
-comment-claimed mirror of `web/src/lib/state/colors.svelte.ts`) and `PAPER` (`web/src/app.css`) are
-unverified, so a palette or paper-color change in the app silently makes the eval inputs unfaithful
-while every guard stays green. The comment even names the exact source files, implying the same
-drift risk was recognised but only half-covered.
-
-#### Proposed solution
-
-Extend `assertProductionConfig()` (or add `assertPaletteConfig()`) to parse the hexes out of
-`colors.svelte.ts` / `app.css` and assert set-equality with `PALETTE`/`PAPER`, throwing with the
-offending file name like the prompt checks do.
-
-#### Verification
-
-Change one palette hex in `colors.svelte.ts`, run any `model-eval:*` script, confirm it now throws;
-revert and it passes.
-
----
-
 ### [P2][architecture] `utils.mjs` is a grab-bag mixing generic, Playwright, release, and app-domain concerns
 
 **File(s):** `scripts/lib/utils.mjs:1-148` (whole file) — pinned at SHA f934d43

@@ -8,6 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { themes } from '../../web/src/lib/design/tokens.ts';
 import { PALETTE_COLORS } from '../../web/src/lib/palette.ts';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -28,10 +29,10 @@ export const RATES = {
 // The only colors a child can lay down with the pen, so faithful inputs must use them.
 export const PALETTE = PALETTE_COLORS.map(({ hex, label }) => ({ hex, label }));
 
-// Paper colors from web/src/app.css (--paper / --paper-margin), light + night.
+// Paper colors from the app's design-token source of truth, light + night.
 export const PAPER = {
-  light: { fill: '#fcfbf8', margin: '#f1efeb' },
-  night: { fill: '#211f29', margin: '#1a1922' },
+  light: { fill: themes.light.paper, margin: themes.light.paperMargin },
+  night: { fill: themes.dark.paper, margin: themes.dark.paperMargin },
 };
 
 // --- Production request config -------------------------------------------------
