@@ -17,38 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P4][documentation] `android:allowBackup="true"` is unexplained for a privacy-first kids app
-
-**File(s):** `android/app/src/main/AndroidManifest.xml:4` (Android manifest) — pinned at SHA f934d43
-
-#### Problem
-
-```xml
-android:allowBackup="true"
-```
-
-This is the template default and is the one manifest attribute with a real privacy dimension:
-`allowBackup=true` lets Android Auto Backup copy the app's data (including anything the
-secure-storage / preferences plugins persist) to the user's Google account. Every other manifest
-entry here carries a rationale comment (INTERNET, ACCESS_NETWORK_STATE, WRITE_EXTERNAL_STORAGE), but
-this security-relevant flag has none. For a Families-policy app, whether child-created content and
-any stored state should leave the device is a deliberate decision, not a default to inherit
-silently.
-
-#### Proposed solution
-
-Decide intentionally and document it: either keep `allowBackup="true"` with a comment stating that
-only non-sensitive local drawing state is backed up, or set it to `false` (and/or add
-`fullBackupContent`/`dataExtractionRules`) if child content should never leave the device. Note the
-choice in the `mobile` skill's kids-compliance checklist.
-
-#### Verification
-
-Manifest reflects an explicit, commented decision; if changed to `false`, `adb backup` produces no
-app data.
-
----
-
 ### [P4][maintainability] FileProvider paths expose entire external + cache roots with template names
 
 **File(s):** `android/app/src/main/res/xml/file_paths.xml:2-5` (Android FileProvider) — pinned at
