@@ -1,0 +1,189 @@
+diff --git a/web/buildVersion.ts b/web/buildVersion.ts
+new file mode 100644
+index 00000000..03cb4ac0
+--- /dev/null
++++ b/web/buildVersion.ts
+@@ -0,0 +1,62 @@
++import { execSync } from 'node:child_process';
++import { readFileSync } from 'node:fs';
++
++const GIT_DESCRIBE_SUFFIX = /-(\d+)-g[0-9a-f]+$/;
++
++type Git = (args: string) => string | undefined;
++
++function gitDescribeCommitCount(gitDescribe: string | undefined): string | undefined {
++  return gitDescribe?.match(GIT_DESCRIBE_SUFFIX)?.[1];
++}
++
++export function deriveWebVersion({
++  packageVersion,
++  runGit,
++}: {
++  packageVersion: string;
++  runGit: Git;
++}): string {
++  const [major, minor] = packageVersion.split('.');
++  const gitDescribe = runGit('describe --tags --long --match "v*"');
++  const commitCount = gitDescribeCommitCount(gitDescribe);
++
++  if (commitCount !== undefined) return `${major}.${minor}.${commitCount}`;
++  const shortSha = runGit('rev-parse --short HEAD');
++  if (shortSha) return `${major}.${minor}.0+${shortSha}`;
++  return packageVersion;
++}
++
++function git(args: string): string | undefined {
++  try {
++    return execSync(`git ${args}`, { stdio: ['ignore', 'pipe', 'ignore'] })
++      .toString()
++      .trim();
++  } catch {
++    return undefined;
++  }
++}
++
++function readPackageVersion(): string {
++  return (JSON.parse(readFileSync('../package.json', 'utf8')) as { version: string }).version;
++}
++
++function currentBuildTime(): string {
++  return new Date().toISOString().slice(0, 16).replace('T', ' ');
++}
++
++export function buildMetadata({
++  isCapacitor,
++  packageVersion = readPackageVersion(),
++  buildTime = currentBuildTime(),
++  runGit = git,
++}: {
++  isCapacitor: boolean;
++  packageVersion?: string;
++  buildTime?: string;
++  runGit?: Git;
++}): { appVersion: string; buildTime: string } {
++  return {
++    appVersion: isCapacitor ? packageVersion : deriveWebVersion({ packageVersion, runGit }),
++    buildTime,
++  };
++}
+diff --git a/web/src/lib/buildVersion.test.ts b/web/src/lib/buildVersion.test.ts
+new file mode 100644
+index 00000000..b411423f
+--- /dev/null
++++ b/web/src/lib/buildVersion.test.ts
+@@ -0,0 +1,66 @@
++// @vitest-environment node
++import { describe, expect, it, vi } from 'vitest';
++import { buildMetadata, deriveWebVersion } from '../../buildVersion';
++
++describe('deriveWebVersion', () => {
++  it('uses the commit count without asking for the short SHA', () => {
++    const runGit = vi.fn().mockReturnValue('v1.2.0-45-gabc1234');
++
++    expect(
++      deriveWebVersion({
++        packageVersion: '1.2.0',
++        runGit,
++      })
++    ).toBe('1.2.45');
++    expect(runGit).toHaveBeenCalledOnce();
++    expect(runGit).toHaveBeenCalledWith('describe --tags --long --match "v*"');
++  });
++
++  it.each([undefined, 'v1.2.0'])(
++    'uses the short SHA when describe metadata is missing or unusable',
++    (gitDescribe) => {
++      const runGit = vi.fn().mockReturnValueOnce(gitDescribe).mockReturnValueOnce('abc1234');
++
++      expect(
++        deriveWebVersion({
++          packageVersion: '1.2.0',
++          runGit,
++        })
++      ).toBe('1.2.0+abc1234');
++      expect(runGit).toHaveBeenNthCalledWith(1, 'describe --tags --long --match "v*"');
++      expect(runGit).toHaveBeenNthCalledWith(2, 'rev-parse --short HEAD');
++    }
++  );
++
++  it('uses the package version when git is unavailable', () => {
++    const runGit = vi.fn().mockReturnValue(undefined);
++
++    expect(
++      deriveWebVersion({
++        packageVersion: '1.2.7',
++        runGit,
++      })
++    ).toBe('1.2.7');
++    expect(runGit).toHaveBeenNthCalledWith(1, 'describe --tags --long --match "v*"');
++    expect(runGit).toHaveBeenNthCalledWith(2, 'rev-parse --short HEAD');
++  });
++});
++
++describe('buildMetadata', () => {
++  it('uses the exact package version for native builds without calling git', () => {
++    const runGit = vi.fn();
++
++    expect(
++      buildMetadata({
++        isCapacitor: true,
++        packageVersion: '1.2.7',
++        buildTime: '2026-07-27 14:30',
++        runGit,
++      })
++    ).toEqual({
++      appVersion: '1.2.7',
++      buildTime: '2026-07-27 14:30',
++    });
++    expect(runGit).not.toHaveBeenCalled();
++  });
++});
+diff --git a/web/vite.config.ts b/web/vite.config.ts
+index b338ffcc..f847f8d6 100644
+--- a/web/vite.config.ts
++++ b/web/vite.config.ts
+@@ -1,9 +1,8 @@
+ import { sveltekit } from '@sveltejs/kit/vite';
+ import { defineConfig } from 'vite';
+ import { VitePWA } from 'vite-plugin-pwa';
+-import { readFileSync } from 'node:fs';
+-import { execSync } from 'node:child_process';
+ import { buildDefines } from './defines';
++import { buildMetadata } from './buildVersion';
+ 
+ // The native apps bundle a static export and never use a service worker (the
+ // shell and all assets are already on-device), so skip the PWA plugin there.
+@@ -28,32 +27,7 @@ const profilingEsbuildOptions: import('vite').ESBuildOptions & {
+ // deferred), so `git describe` works on prod. If history/tags are ever missing
+ // we fall back to major.minor.0+<sha> — still unique per commit, never a stale
+ // bare version. BUILD_TIME is kept separately for debugging.
+-const PKG_VERSION = JSON.parse(readFileSync('../package.json', 'utf8')).version;
+-const BUILD_TIME = new Date().toISOString().slice(0, 16).replace('T', ' ');
+-
+-function git(args: string): string {
+-  return execSync(`git ${args}`, { stdio: ['ignore', 'pipe', 'ignore'] })
+-    .toString()
+-    .trim();
+-}
+-
+-function webVersion(pkg: string): string {
+-  const [major, minor] = pkg.split('.');
+-  try {
+-    // e.g. "v1.2.0-45-gabc1234" — 45 commits since the last release tag.
+-    const match = git('describe --tags --long --match "v*"').match(/-(\d+)-g[0-9a-f]+$/);
+-    if (match) return `${major}.${minor}.${match[1]}`;
+-  } catch {
+-    // no reachable tag — fall through to the SHA-based marker
+-  }
+-  try {
+-    return `${major}.${minor}.0+${git('rev-parse --short HEAD')}`;
+-  } catch {
+-    return pkg;
+-  }
+-}
+-
+-const APP_VERSION = isCapacitor ? PKG_VERSION : webVersion(PKG_VERSION);
++const { appVersion: APP_VERSION, buildTime: BUILD_TIME } = buildMetadata({ isCapacitor });
+ 
+ // On a native device there is no local server, so the AI button must call the
+ // hosted endpoint. On the web this stays empty and the relative path is used.

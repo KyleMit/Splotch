@@ -3372,3 +3372,83 @@ The rolled-back draft is kept at
 (2 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p1-duplication-browser-support-floor-is-duplicated-across-vite-config-ts.patch`.
+
+### [P3][maintainability] Git-based version derivation is ~35 lines of imperative logic embedded in `vite.config.ts` and is untestable there
+
+**File(s):** `web/vite.config.ts:16-49` (`git`, `webVersion`, `PKG_VERSION`) — pinned at SHA f934d43
+
+#### Problem
+
+The config file carries non-trivial branching logic — `git describe` parsing with a regex, a
+two-level try/catch fallback chain, and version-string assembly:
+
+```ts
+function webVersion(pkg: string): string {
+  const [major, minor] = pkg.split('.');
+  try {
+    const match = git('describe --tags --long --match "v*"').match(/-(\d+)-g[0-9a-f]+$/);
+    if (match) return `${major}.${minor}.${match[1]}`;
+  } catch { ... }
+  try { return `${major}.${minor}.0+${git('rev-parse --short HEAD')}`; }
+  catch { return pkg; }
+}
+```
+
+This encodes the ADR-0030 versioning contract but lives inside a config module, so it cannot be
+unit-tested and mixes "what the build is" with "how versions are computed." The regex and fallback
+semantics are exactly the kind of logic that should have tests.
+
+#### Proposed solution
+
+Move `git`, `webVersion`, and the `PKG_VERSION`/`BUILD_TIME` derivation to a `scripts/` helper (e.g.
+`scripts/web-version.mjs` or `web/build/version.ts`) exporting pure functions (take the
+`git describe` output as an argument so it's mockable). `vite.config.ts` imports and calls it. Add a
+Vitest spec covering the tag-present, no-tag, and no-git branches.
+
+#### Verification
+
+New unit test passes for all three branches. `npm run build` on a checkout with tags still yields
+`major.minor.<n>`; on a shallow/tagless checkout yields `major.minor.0+<sha>`.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* `web/build/version.ts` is ignored by the repository-wide `build/` rule and is absent from commit
+  74145884, so both new imports fail in a clean checkout; commit the helper at a non-ignored path
+  (or explicitly include it).
+* `web/vite.config.ts:32-50` still owns `PKG_VERSION`/`BUILD_TIME`, the `execSync` wrapper, and the
+  describe-to-SHA fallback orchestration, so the original imperative derivation remains embedded and
+  untested while only its final string formatting was extracted. Move the complete derivation into
+  the helper and test the fallback orchestration, leaving the Vite config to consume the derived
+  values.
+* `netlify.toml:12` still says `git describe` runs in `web/vite.config.ts`; update it to point to
+  `web/buildVersion.ts`, where the tag-fetch dependency now lives.
+* ADR-0030 still states that version derivation branches inside `web/vite.config.ts`, but the branch
+  now occurs in `buildMetadata` in `web/buildVersion.ts`; update the active ADR to reflect the
+  extracted implementation.
+
+#### What was tried
+
+1. Extracted git-version parsing into a pure helper and kept `vite.config.ts` responsible for lazily
+   gathering git inputs, with focused coverage for all three fallbacks. The required
+   `web/build/version.ts` path is an ignored build-output directory that native builds may clear,
+   but I implemented it exactly as specified.
+2. Moved the version helper to the non-ignored `web/buildVersion.ts` path and updated both imports,
+   ensuring clean checkouts include and resolve the extracted logic.
+3. Moved package-version loading, build-time creation, git execution, and lazy describe-to-SHA
+   orchestration into `buildVersion.ts`, leaving Vite to consume returned metadata. Expanded tests
+   to verify git command order, lazy SHA lookup, no-git fallback, and native builds avoiding git
+   entirely.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p3-maintainability-git-based-version-derivation-is-35-lines-of-imperativ.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p3-maintainability-git-based-version-derivation-is-35-lines-of-imperativ.patch`.

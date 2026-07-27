@@ -15,45 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P3][maintainability] Git-based version derivation is ~35 lines of imperative logic embedded in `vite.config.ts` and is untestable there
-
-**File(s):** `web/vite.config.ts:16-49` (`git`, `webVersion`, `PKG_VERSION`) — pinned at SHA f934d43
-
-#### Problem
-
-The config file carries non-trivial branching logic — `git describe` parsing with a regex, a
-two-level try/catch fallback chain, and version-string assembly:
-
-```ts
-function webVersion(pkg: string): string {
-  const [major, minor] = pkg.split('.');
-  try {
-    const match = git('describe --tags --long --match "v*"').match(/-(\d+)-g[0-9a-f]+$/);
-    if (match) return `${major}.${minor}.${match[1]}`;
-  } catch { ... }
-  try { return `${major}.${minor}.0+${git('rev-parse --short HEAD')}`; }
-  catch { return pkg; }
-}
-```
-
-This encodes the ADR-0030 versioning contract but lives inside a config module, so it cannot be
-unit-tested and mixes "what the build is" with "how versions are computed." The regex and fallback
-semantics are exactly the kind of logic that should have tests.
-
-#### Proposed solution
-
-Move `git`, `webVersion`, and the `PKG_VERSION`/`BUILD_TIME` derivation to a `scripts/` helper (e.g.
-`scripts/web-version.mjs` or `web/build/version.ts`) exporting pure functions (take the
-`git describe` output as an argument so it's mockable). `vite.config.ts` imports and calls it. Add a
-Vitest spec covering the tag-present, no-tag, and no-git branches.
-
-#### Verification
-
-New unit test passes for all three branches. `npm run build` on a checkout with tags still yields
-`major.minor.<n>`; on a shallow/tagless checkout yields `major.minor.0+<sha>`.
-
----
-
 ### [P3][consistency] The `CAPACITOR` "single signal" is re-derived independently in every config with a repeated literal comparison
 
 **File(s):** `web/vite.config.ts:8`, `web/svelte.config.js:10`, `web/vitest.config.ts:18`
