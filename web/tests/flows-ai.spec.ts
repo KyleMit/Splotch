@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
+import { tinyPngBuffer } from './fixtures';
 import { draw, gotoApp } from './helpers';
 
 import { openDrawer } from './flows-harness';
@@ -15,10 +16,7 @@ test('the AI button posts the drawing and reveals the generated result', async (
     STORAGE_KEYS.aiCustomizationEnabled
   );
 
-  const png = Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-    'base64'
-  );
+  const png = tinyPngBuffer();
   let postedImage = false;
   await page.route('**/api/generate-image', async (route) => {
     const req = route.request();
