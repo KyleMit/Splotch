@@ -21,33 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P2][versioning] Node version `24` is hard-coded in five places with no single source of truth (and disagrees with the docs)
-
-**File(s):** `.github/workflows/test.yml:22` and `:93`, `.github/workflows/android-deploy.yml:31`,
-`.github/workflows/ios-deploy.yml:29`, `.github/workflows/blobs-smoke.yml:38` — pinned at SHA
-f934d43
-
-#### Problem
-
-`node-version: 24` is a magic constant repeated five times. There is no `.nvmrc`, and `package.json`
-`engines` isn't consulted (`node-version-file:` is unused). Bumping Node means editing five lines
-and hoping none is missed. It also **conflicts with the documented floor**: the `testing` skill and
-`mobile` skill state "Node ≥ 22" / "Node ≥ 22 … JDK 21", so CI silently runs a version different
-from what the docs promise contributors.
-
-#### Proposed solution
-
-Add a `.nvmrc` (or `.node-version`) at the repo root as the single source, and switch every
-`setup-node` to `node-version-file: .nvmrc` (folded into the composite action above). Reconcile the
-docs to name the exact CI version. Local dev, CI, and docs then read one number.
-
-#### Verification
-
-`grep -rn "node-version" .github/workflows` shows only `node-version-file`; `cat .nvmrc` is the one
-place the version lives. `nvm use` in a fresh checkout selects it.
-
----
-
 ### [P2][maintainability] CI rebuilds the debug APK inline instead of calling the committed `android:apk` script
 
 **File(s):** `.github/workflows/android-deploy.yml:55-61` (Build debug APK) — pinned at SHA f934d43
