@@ -73,7 +73,7 @@ async function main() {
   const cssCanvas = meta.canvas || vp;
 
   const tag = basename(recordingPath).replace(/\.json$/, '');
-  const outDir = profilePath('replay', tag, throttle.tag);
+  const outDir = profilePath('replay', tag);
   mkdirSync(outDir, { recursive: true });
 
   const { base, stop } = await buildAndPreview(port, { build });

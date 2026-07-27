@@ -9,36 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P3][maintainability] Encapsulate the scattered "effective throttle" idiom
-
-**File(s):** `scripts/perf/scenario.mjs:30,42,71`, `scripts/perf/mount.mjs:45,51,85`,
-`scripts/perf/undo-scenarios.mjs:44,317,337,444`, `scripts/perf/replay-scenario.mjs:33,84,113` —
-pinned at SHA f934d43
-
-#### Problem
-
-The concept "a throttle > 1 is real; 1 or 0 means none" is expressed three different ways at every
-site: the tag `throttle > 1 ?`${throttle}x`: 'raw'`, the settings value
-`throttle > 1 ? throttle : 0`, and the CDP guard
-`if (throttle > 1) await cdp.send('Emulation.setCPUThrottlingRate', …)`. Because the raw default
-differs (`'4'` vs replay's `'0'`) and `args.includes('--no-throttle') ? 1 : …` normalizes to 1, the
-"is it throttled" test `> 1` is duplicated four+ times per file and easy to get subtly wrong (e.g.
-someone writing `>= 1`).
-
-#### Proposed solution
-
-Parse throttle once into a small value object:
-`const throttle = resolveThrottle(args); // { rate, active, tag, forSettings }` where
-`active = rate > 1`. Replace the three idioms with `throttle.active`, `throttle.tag`,
-`throttle.forSettings`. Put `resolveThrottle` in `args.mjs`.
-
-#### Verification
-
-`grep -rn "throttle > 1" scripts/perf` returns zero; `perf:web` (4×) and `perf:web:raw` still tag
-output dirs `4x`/`raw` and set the CPU rate correctly.
-
----
-
 ### [P4][dead-code] `breakdown.longTasksFromTrace` is computed but never surfaced
 
 **File(s):** `scripts/perf/analyze.mjs:130-155,304-324,335-501` — pinned at SHA f934d43
