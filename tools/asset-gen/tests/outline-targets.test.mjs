@@ -112,7 +112,7 @@ test('supports no-op defaults and both existing sort policies', async () => {
   ]);
 });
 
-test('normalizes Windows-style target separators', async () => {
+test('normalizes backslash separators in target args', async () => {
   await expect(resolveOutlineTargets(['nature\\ant-tall'], options())).resolves.toEqual([
     join(root, 'nature/ant-tall.outline.webp'),
   ]);

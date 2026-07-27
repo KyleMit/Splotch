@@ -9,36 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P4][naming] `outline-targets` test still frames backslash handling as "Windows-style" after Windows support was dropped
-
-**File(s):** `tools/asset-gen/tests/outline-targets.test.mjs:115-122` — pinned at SHA f934d43
-
-#### Problem
-
-```js
-test('normalizes Windows-style target separators', async () => {
-  await expect(resolveOutlineTargets(['nature\\ant-tall'], options())).resolves.toEqual([...]);
-```
-
-Per the root `CLAUDE.md`, Windows dev support was dropped (ADR-0062). The behavior under test —
-normalizing a backslash a user typed into a target argument — may still be desirable, but naming it
-"Windows-style separators" now points at a platform the project no longer supports, misleading a
-reader into thinking this guards a live cross-platform concern.
-
-#### Proposed solution
-
-If backslash normalization is still wanted, rename the test to describe the actual contract
-("normalizes backslash separators in target args") and drop the Windows framing. If it was only
-there for Windows, consider whether the case (and the normalization code it guards in
-`lib/outline-targets.mjs`) is now dead.
-
-#### Verification
-
-Confirm with the maintainer whether backslash targets are still a supported input; rename or delete
-accordingly. The assertion behavior is unaffected by a rename.
-
----
-
 ### [P5][readability] Inconsistent `test(` vs `it(` across the pipeline test suite
 
 **File(s):** `tools/asset-gen/tests/light-fill-cli.test.mjs`,
