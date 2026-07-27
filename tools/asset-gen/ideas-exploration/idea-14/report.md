@@ -118,6 +118,7 @@ fill redraws against the chalk, and tiny background features are the ones it re-
   `lib/paths.mjs` + root `sharp`). `node tools/asset-gen/warp-scan.mjs --theme both --out DIR`
 * `code/warp-viz.mjs` — heatmap + worst-tile crops + night-composite crop for one page
 * `code/analyze-warp.mjs` — ranking + hypothesis test over the scan JSON
-* `warp-both.json` — full per-tile displacement fields for all 188 raws
+* `warp-both.json` — full per-tile displacement fields for all 188 raws. Not committed (2.4 MB raw
+  intermediate); regenerate with `code/warp-scan.mjs --theme both --out DIR`
 * `viz/` — 32 evidence images (heatmaps, tile crops red=source-only / cyan=fill-only /
   black=aligned, composites)

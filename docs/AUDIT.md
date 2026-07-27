@@ -11,36 +11,6 @@
 
 ## Source: Code audit — tools/asset-gen · ideas-exploration (R&D scratch)
 
-### [P2][organization] 2.4 MB `idea-14/warp-both.json` is a raw per-tile coordinate dump that dwarfs its report — prune or summarize
-
-**File(s):** `tools/asset-gen/ideas-exploration/idea-14/warp-both.json` (2.4 MB) — pinned at SHA
-f934d43
-
-#### Problem
-
-`warp-both.json` is a 2.4 MB intermediate scan dump — per-page, per-theme, per-tile grid data with
-absolute machine paths (`/home/user/Splotch/…`). It is the single largest non-image file in the
-folder and accounts for most of the ~198k lines of JSON here. It is a regenerable intermediate of
-`warp-scan.mjs`, not evidence a reviewer reads; the report's conclusion ("4 genuinely warped pages")
-is a handful of page names. Committing it bloats the repo and embeds absolute paths that are
-meaningless on any other machine.
-
-#### Proposed solution
-
-Delete `warp-both.json` (it regenerates from `idea-14/code/warp-scan.mjs`), or replace it with a
-small `warp-summary.json` holding only the 4 flagged pages + scores. Same treatment merits a look
-for the other large raw dumps: `idea-7/scores-baseline.json` + `scores-rimerase.json` (~92 KB each),
-`idea-3/disagreement*.json` (~85 KB), `idea-2/whitened-inventory.json` (69 KB) — keep the ones a
-reviewer actually consults, drop pure intermediates.
-
-#### Verification
-
-`find ideas-exploration -name '*.json' ! -name meta.json -printf '%s %p\n' | sort -rn | head` no
-longer shows a multi-MB file; `du -sh ideas-exploration` drops meaningfully from 66 MB. Confirm
-`warp-both.json` is not referenced by any `report.md` or `meta.json` before deleting.
-
----
-
 ### [P2][organization] Committed 5.2 MB `ideas-review.html` is fully regenerable from `build-review.mjs` + the `meta.json` files
 
 **File(s):** `tools/asset-gen/ideas-exploration/ideas-review.html` (5.2 MB) — pinned at SHA f934d43
