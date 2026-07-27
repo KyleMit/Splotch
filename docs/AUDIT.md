@@ -26,39 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P2][duplication] Maestro smoke flow duplicated across Android and iOS runners
-
-**File(s):** `scripts/android-emulator-smoke.mjs:77-80` and `scripts/ios-simulator-smoke.mjs:57-63`
-— pinned at SHA f934d43
-
-#### Problem
-
-Both device runners hardcode the same three-step flow with the same literal flow path:
-
-```js
-await sh('npm run cap:sync');
-// …platform-specific build/install…
-await sh(`"${maestroPath()}" [--device …] test .maestro/smoke.yaml`);
-```
-
-The `cap:sync` step, the `.maestro/smoke.yaml` path, and the maestro invocation shape are
-copy-pasted; a change to the flow file name or a `cap:sync` prerequisite must be edited in two
-files.
-
-#### Proposed solution
-
-Add `export const SMOKE_FLOW = '.maestro/smoke.yaml';` and a helper like
-`runMaestroSmoke({ device } = {})` (does `sh('npm run cap:sync')` is arguably per-platform, but at
-minimum share the flow constant + the maestro command builder) to `lib/smoke.mjs` or a new
-`lib/native-smoke.mjs`. Both runners call it after their platform-specific install step.
-
-#### Verification
-
-`grep -rn "smoke.yaml" scripts/*.mjs` shows the constant only. Run `npm run test:android` (and
-`test:ios` on a Mac) to confirm the flow still executes.
-
----
-
 ### [P2][dead-code] Windows backslash path conversions are vestigial after ADR-0062
 
 **File(s):** `scripts/generate-icon-names.mjs:14`, `scripts/image-audit.mjs:39`,
