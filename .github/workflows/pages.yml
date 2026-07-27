@@ -1,6 +1,6 @@
 # Publishes the committed /scrapbook folder to GitHub Pages (ADR-0059) so the
 # kept run outputs — contact sheets, Lighthouse reports, model & prompt tests —
-# render live at https://kylemit.github.io/Splotch/. The committed folder is the
+# render live at https://KyleMit.github.io/Splotch/. The committed folder is the
 # source of truth; this just mirrors it. Classic branch-source Pages can only
 # serve root or /docs, so the Actions path is what lets us serve /scrapbook.
 #

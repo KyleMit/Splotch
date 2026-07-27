@@ -21,32 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P5][consistency] Repo owner casing is inconsistent across `.github` URLs (`kylemit` vs `KyleMit`)
-
-**File(s):** `.github/ISSUE_TEMPLATE/config.yml:7` (`github.com/kylemit/splotch/...`),
-`.github/workflows/pages.yml:3` (`kylemit.github.io/Splotch/`),
-`.github/workflows/label-to-todo.yml:24` and `:26` (`KyleMit`) — pinned at SHA f934d43
-
-#### Problem
-
-The owner is written `kylemit` in the issue-template contact link and the Pages comment, but
-`KyleMit` in `label-to-todo.yml` (both the comment URL and `PROJECT_OWNER: KyleMit`). GitHub
-redirects are case-insensitive so nothing breaks, but the inconsistency is a papercut and, for
-`PROJECT_OWNER`, the GraphQL `repositoryOwner(login:)` lookup is a value that should match the
-canonical casing exactly to avoid a surprise if lookups ever tighten.
-
-#### Proposed solution
-
-Pick the canonical casing (the account displays as `KyleMit`) and normalize all `.github` references
-to it, including the `config.yml` contact link and the `pages.yml` comment.
-
-#### Verification
-
-`grep -rin "kylemit" .github` shows one consistent casing; the `label-to-todo` GraphQL owner lookup
-still resolves.
-
----
-
 ### [P5][maintainability] Issue templates use legacy Markdown format instead of validated Issue Forms
 
 **File(s):** `.github/ISSUE_TEMPLATE/bug_report.md`, `feature_request.md`, `task.md` — pinned at SHA
