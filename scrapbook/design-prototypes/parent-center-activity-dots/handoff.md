@@ -7,10 +7,10 @@ Parent Center shells; **variant B — "icon badge" — is the chosen direction.*
 [`index.html`](./index.html) is an interactive rebuild of that prototype using the repo's own icons
 and Quicksand font: click any section to open it and watch its dot clear; "Reset: first run" dots
 everything; "Simulate new release" re-dots What's New. The screenshots in `assets/shots/` are
-captured from it. (The original design-session export bundled a `.dc.html` that depends on a
-private runtime and shipped mislabeled screenshots — including a dot on the active purple row,
-which the spec below explicitly rules out — so the prototype was rebuilt faithfully from its
-embedded template and state logic, and the states re-captured.)
+captured from it. (The original design-session export bundled a `.dc.html` that depends on a private
+runtime and shipped mislabeled screenshots — including a dot on the active purple row, which the
+spec below explicitly rules out — so the prototype was rebuilt faithfully from its embedded template
+and state logic, and the states re-captured.)
 
 ## The dot — exact spec
 
@@ -20,8 +20,10 @@ embedded template and state logic, and the states re-captured.)
   ring color is the surface the icon sits on: `var(--surface-2)` on phone hub rows, `var(--surface)`
   on the tablet sidebar. Use the tokens, not hex, so dark mode works.
 * **Position:** absolutely positioned at the icon container's top-right corner.
-  * Phone: the 44×44 `--brand-wash` tile (`border-radius: var(--radius-md)`), dot at `top:-3px; right:-3px`.
-  * Tablet: wrap the 20×20 `.pc-nav-icon` in a `position:relative` span, dot at `top:-4px; right:-4px`.
+  * Phone: the 44×44 `--brand-wash` tile (`border-radius: var(--radius-md)`), dot at
+    `top:-3px; right:-3px`.
+  * Tablet: wrap the 20×20 `.pc-nav-icon` in a `position:relative` span, dot at
+    `top:-4px; right:-4px`.
 * **Shape:** perfect circle, `border-radius:50%`, no border, no shadow beyond the ring.
 * **Fade-out:** `opacity 1 → 0`, `transition: opacity var(--duration-base) ease` (~200ms). Keep the
   dot element mounted (opacity 0) so the fade can play; dots never fade *in* — new ones appear
@@ -33,7 +35,8 @@ embedded template and state logic, and the states re-captured.)
 * **Opening a section clears its dot** synchronously in the same click, on both shells.
 * **Tablet sequencing:** the dot finishes fading *before* the solid purple active background lands.
   Apply dot-clear + active change in one state update, but give the nav item's background/color
-  transition a delay equal to the fade: `transition: background 0.15s ease 0.2s, color 0.15s ease 0.2s`.
+  transition a delay equal to the fade:
+  `transition: background 0.15s ease 0.2s, color 0.15s ease 0.2s`.
 * **Tablet default pane counts as seen:** the first section's content is on screen the moment the
   modal opens, so it is marked seen immediately — first run shows 8 dots there, not 9.
 * **Phone first run shows all 9** — accepted as inviting; they melt away one by one.
@@ -60,10 +63,22 @@ embedded template and state logic, and the states re-captured.)
 * No counts, numbers, pulses, sounds, or toasts anywhere.
 * No re-dotting on releases except What's New.
 
-## Screenshots (`assets/shots/`)
+## Screenshots
 
-1. `01-phone-hub-seeded.png` — phone hub, mixed state: Controls & Buttons, AI Art, What's New dotted.
-2. `02-tablet-sidebar-seeded.png` — tablet, same three dotted, Appearance active (seen, no dot).
-3. `03-phone-hub-first-run.png` — first run on phone: all 9 dotted.
-4. `04-tablet-first-run.png` — first run on tablet: default-displayed Appearance auto-seen, 8 dotted.
-5. `05-tablet-after-opening-ai-art.png` — after selecting AI Art: dot cleared, purple active row landed.
+**Seeded state** — Controls & Buttons, AI Art, What's New dotted:
+
+| Phone hub                                                                     | Tablet sidebar                                                                          |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| ![Phone hub with three dotted sections](assets/shots/01-phone-hub-seeded.png) | ![Tablet sidebar with three dotted sections](assets/shots/02-tablet-sidebar-seeded.png) |
+
+**First run** — phone dots all 9; the tablet's default-displayed section counts as seen on open, so
+it shows 8:
+
+| Phone hub                                                                                 | Tablet sidebar                                                                                                   |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| ![Phone hub first run, all nine sections dotted](assets/shots/03-phone-hub-first-run.png) | ![Tablet first run, eight sections dotted, active Appearance already seen](assets/shots/04-tablet-first-run.png) |
+
+**After opening AI Art** — its dot cleared before the purple active row landed; the other dots
+remain:
+
+![Tablet after selecting AI Art: dot gone, row active, other dots remain](assets/shots/05-tablet-after-opening-ai-art.png)
