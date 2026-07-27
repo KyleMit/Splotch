@@ -48,13 +48,13 @@ rationale.
 | 31 | `p2-duplication-content-type-parsing.md`          | Content-type parsing into a shared `http.ts` helper         | P2  | C11     | FIX — contentTypeOf() |
 | 32 | `p2-duplication-oversized-body-guard.md`          | Oversized-body guard shared by two endpoints                | P2  | C11     | FIX — readBodyWithinLimit() |
 | 33 | `p2-type-safety-api-contract-types.md`            | Share request/response contract types routes ↔ clients      | P2  | C11     | OPTIONS — lean: shared module |
-| 34 | `p2-platform-branching-install-prompt.md`         | Install-prompt runtime `isNative()` branch                  | P2  | C12     | pending |
-| 35 | `p4-duplication-reload-pair.md`                   | Reload-side-effect pair repeated across three paths         | P4  | C12     | pending |
+| 34 | `p2-platform-branching-install-prompt.md`         | Install-prompt runtime `isNative()` branch                  | P2  | C12     | FIX — composite build-time guard |
+| 35 | `p4-duplication-reload-pair.md`                   | Reload-side-effect pair repeated across three paths         | P4  | C12     | FIX — apply draft + deferReload() |
 | 36 | `p1-duplication-book-page-ids.md`                 | Book id re-typed on every `page()` call                     | P1  | C13     | pending |
 | 37 | `p2-design-tokens-spacing-font-px.md`             | Spacing/font sizes raw px while colors/radii use tokens     | P2  | C14     | pending |
 | 38 | `p4-design-tokens-brand-rgb-fallback.md`          | Hardcoded brand RGB fallback drifts from `--brand`          | P4  | C14     | pending |
-| 39 | `p2-architecture-platform-utils-folder.md`        | Platform/device utilities scattered across `lib/` root      | P2  | C12     | pending |
-| 40 | `p2-duplication-orientation-type.md`              | `Orientation` type redeclared in ~8 places                  | P2  | C12     | pending |
+| 39 | `p2-architecture-platform-utils-folder.md`        | Platform/device utilities scattered across `lib/` root      | P2  | C12     | FIX — lib/platform/ move, after #40 |
+| 40 | `p2-duplication-orientation-type.md`              | `Orientation` type redeclared in ~8 places                  | P2  | C12     | FIX — apply draft, before #39 |
 | 41 | `p1-duplication-gemini-wrappers.md`               | Six near-identical Gemini `generateContent` wrappers        | P1  | C15     | pending |
 | 42 | `p2-duplication-asset-gen-constants.md`           | Centralize `MODEL`/`WEBP_QUALITY`/timeout constants         | P2  | C15     | pending |
 | 43 | `p2-duplication-flood-fill.md`                    | Background flood-fill written twice in lib (+ once in bin)  | P2  | C15     | pending |
