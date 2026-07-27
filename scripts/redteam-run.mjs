@@ -15,11 +15,10 @@
 //   npm run redteam -- block-gun # only fixtures whose id matches (iterate on one)
 //   npm run redteam -- gun text  # several patterns; substring match, case-insensitive
 
-import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ROOT, fail, waitForUrl, runId as makeRunId } from './lib/utils.mjs';
+import { ROOT, fail, openInOS, waitForUrl, runId as makeRunId } from './lib/utils.mjs';
 import { spawnViteServer } from './lib/vite-server.mjs';
 import { decryptDir } from './lib/fixtureCrypto.mjs';
 
@@ -262,18 +261,6 @@ function writeReport(results) {
   return htmlPath;
 }
 
-// Open a file in the OS default browser (best-effort).
-function openInBrowser(file) {
-  if (process.env.REDTEAM_NO_OPEN) return false;
-  const [cmd, args] = process.platform === 'darwin' ? ['open', [file]] : ['xdg-open', [file]];
-  try {
-    spawn(cmd, args, { detached: true, stdio: 'ignore' }).unref();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 async function main() {
   if (!process.env.GEMINI_API_KEY) fail('Missing GEMINI_API_KEY (set it in .env or export it).');
 
@@ -335,7 +322,7 @@ async function main() {
   console.log(`\nReview report (input → output, safe cases then block cases):`);
   console.log(`  ${link}`);
 
-  const opened = openInBrowser(htmlPath);
+  const opened = process.env.REDTEAM_NO_OPEN ? false : openInOS(htmlPath, { detached: true });
   console.log(
     opened
       ? '\nOpening it in your default browser…'

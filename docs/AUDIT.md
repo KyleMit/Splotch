@@ -26,37 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P2][duplication] OS "open a file" logic implemented twice, differently
-
-**File(s):** `scripts/open-path.mjs:16` and `scripts/redteam-run.mjs:266-275` (`openInBrowser`) —
-pinned at SHA f934d43
-
-#### Problem
-
-The `darwin ? open : xdg-open` branch — which `scripts/CLAUDE.md` explicitly says belongs "behind a
-branch in `scripts/lib/`" — appears in two places with divergent behavior: `open-path.mjs` runs it
-through `run()` (blocking, exits on failure), while `redteam-run.mjs` re-derives the same branch and
-spawns detached+unref best-effort:
-
-```js
-const [cmd, args] = process.platform === 'darwin' ? ['open', [file]] : ['xdg-open', [file]];
-```
-
-The platform knowledge is duplicated and will drift.
-
-#### Proposed solution
-
-Add one helper to `lib/utils.mjs`, e.g. `openInОS(target, { detached = false } = {})` that owns the
-`open`/`xdg-open` selection and both spawn modes. `open-path.mjs` calls it blocking;
-`redteam-run.mjs` calls it detached. Single source for the opener.
-
-#### Verification
-
-`grep -rn "xdg-open" scripts/` shows only the helper. Run `npm run android:open` (reveals a folder)
-and `npm run redteam` end (opens the report) on Linux and macOS.
-
----
-
 ### [P2][consistency] Playwright imported from two different packages
 
 **File(s):** `scripts/model-eval-run.mjs:17`, `scripts/model-eval-gen-inputs.mjs:13`,

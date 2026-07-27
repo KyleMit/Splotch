@@ -54,6 +54,23 @@ export function sh(command, cwd = ROOT) {
   });
 }
 
+// Hand a path or URL to the OS opener (ADR-0017): `open` on macOS, `xdg-open`
+// on Linux. Blocking by default (a failure exits the script via run()); pass
+// `detached` for a best-effort open that returns false instead of failing.
+export function openInOS(target, { detached = false } = {}) {
+  const [cmd, args] = process.platform === 'darwin' ? ['open', [target]] : ['xdg-open', [target]];
+  if (!detached) {
+    run(cmd, args);
+    return true;
+  }
+  try {
+    spawn(cmd, args, { detached: true, stdio: 'ignore' }).unref();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Poll a URL until `ready(res)` (plain HTTP reachability by default) or throw
 // at the deadline.
 export async function waitForUrl(url, timeoutMs, ready = (res) => res.ok) {
