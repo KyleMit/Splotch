@@ -13,26 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P4][naming] `engine.spec.js` referenced in a comment but the file is `.ts`
-
-**File(s):** `web/tests/flows.spec.ts:6` — pinned at SHA f934d43
-
-#### Problem
-
-The header comment reads "the engine-level spec (engine.spec.js) deliberately bypasses" — but the
-file is `engine.spec.ts` (TypeScript everywhere, per CLAUDE.md). A reader grepping for
-`engine.spec.js` finds nothing; the stale `.js` reference predates the TS migration.
-
-#### Proposed solution
-
-Change `engine.spec.js` to `engine.spec.ts` in the comment.
-
-#### Verification
-
-`grep -rn "\.spec\.js" web/tests` returns nothing.
-
----
-
 ### [P4][maintainability] Duplicated undo-cap-of-20 test exists in two forms without cross-reference
 
 **File(s):** `web/tests/engine.spec.ts:110-134` ('the undo stack caps at 20') and
