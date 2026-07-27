@@ -19,39 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P4][dead-config] `npm install *` auto-allows installing arbitrary packages without a prompt
-
-**File(s):** `.claude/settings.json:31,33-35` — pinned at SHA f934d43
-
-#### Problem
-
-```json
-"Bash(npm run *)",
-"Bash(npm test*)",
-"Bash(npm ci)",
-"Bash(npm install)",
-"Bash(npm install *)",
-```
-
-`Bash(npm install *)` lets any `npm install <pkg>` run with no confirmation — arbitrary package
-addition (a supply-chain surface) is auto-approved. Given the repo's careful `dependencies` vs
-`devDependencies` policy (ADR-0070) where getting a package's placement wrong breaks the Netlify
-deploy, silently auto-installing arbitrary packages is a poor default; a human should at least see
-the package name.
-
-#### Proposed solution
-
-Consider dropping `Bash(npm install *)` (keep bare `Bash(npm install)` for lockfile-driven installs
-and `Bash(npm ci)`), so adding a new dependency prompts. If unattended installs are needed for the
-cloud audit routines, scope them there rather than in the shared allow list.
-
-#### Verification
-
-Confirm `npm install some-package` currently runs without a prompt; after removal confirm it prompts
-while `npm install` / `npm ci` still pass.
-
----
-
 ### [P4][documentation] `session-start.sh` and `cloud-branch-preview.sh` aren't discoverable from the primary config/instruction files
 
 **File(s):** `.claude/settings.json:14-27`, `CLAUDE.md` (config section) — pinned at SHA f934d43
