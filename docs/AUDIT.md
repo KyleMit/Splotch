@@ -21,31 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P2][consistency] `actions/checkout` pinned to `@v4` in one workflow and `@v7` in every other
-
-**File(s):** `.github/workflows/label-sync.yml:25` (`actions/checkout@v4`) vs
-`.github/workflows/test.yml:18`, `android-deploy.yml:27`, `ios-deploy.yml:25`, `blobs-smoke.yml:34`,
-`pages.yml:37`, `label-to-todo.yml:34` (all `@v7`) — pinned at SHA f934d43
-
-#### Problem
-
-Six workflows are on `actions/checkout@v7`; `label-sync.yml` alone is stuck on `@v4`. This is stale
-drift — nothing about label sync needs the older major. Inconsistent pins make "what version do we
-run" un-grepable and mean a security advisory or Node-runtime bump has to be tracked per-file.
-
-#### Proposed solution
-
-Bump `label-sync.yml` to `actions/checkout@v7` (or, better, pin all of them to a single SHA and let
-the composite action own it — see the duplication finding). Sweep for any other lagging pins at the
-same time.
-
-#### Verification
-
-`grep -rn "actions/checkout@" .github` shows a single version everywhere. Re-run `label-sync` via
-`workflow_dispatch` and confirm it still reconciles labels.
-
----
-
 ### [P2][duplication] The Maestro CLI install step is duplicated verbatim between the Android and iOS workflows
 
 **File(s):** `.github/workflows/android-deploy.yml:62-65`, `.github/workflows/ios-deploy.yml:35-38`
