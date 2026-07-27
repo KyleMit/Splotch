@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { count } from './engine-harness';
+import { TEST_PALETTE } from './helpers';
 
 // --- Crayon brush (ADR-0065) ------------------------------------------------
 
@@ -148,7 +149,7 @@ test('crossing crayon colours mix subtractively — blue over yellow goes green'
   // blue wax's full green channel and drops only its blue channel toward the
   // yellow's, so the crossing crosses into GREEN-dominance (g > b) at the
   // shipped strength while blue over bare paper stays pure.
-  const r = await page.evaluate(() => {
+  const r = await page.evaluate((blue) => {
     const E = window.__engine;
     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
     const g = cv.getContext('2d')!;
@@ -165,7 +166,7 @@ test('crossing crayon colours mix subtractively — blue over yellow goes green'
     E.setStrokeWidth(36);
     E.setColor('#f7d64b'); // yellow underlay (247, 214, 75)
     E.strokeSync(seg(cx - 150, cy, cx + 150, cy), 'pen');
-    E.setColor('#62A2E9'); // blue over it (98, 162, 233)
+    E.setColor(blue); // blue over it (98, 162, 233)
     E.strokeSync(seg(cx, cy - 120, cx, cy + 120), 'pen');
     // Sample the crossing square. Blue wax mixed by the yellow beneath lands
     // at ≈ (98, 162, 0.45·233 + 0.55·75 ≈ 146) — green channel above blue,
@@ -183,7 +184,7 @@ test('crossing crayon colours mix subtractively — blue over yellow goes green'
       if (gg > bb) greenLean++;
     }
     return { wax, mixed, greenLean };
-  });
+  }, TEST_PALETTE.blue);
   expect(r.wax).toBeGreaterThan(100);
   // The yellow beneath genuinely mixes into the blue wax — a zero-mix
   // regression leaves every blue texel at b ≈ 233, far above the window…

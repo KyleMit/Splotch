@@ -13,36 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P2][maintainability] Color hex literals are magic strings in flows.spec.ts while palette-trim.spec.ts already has a named palette map
-
-**File(s):** `web/tests/flows.spec.ts:200, 221, 250, 267(purple), 507, 557, 1267, 1534`, vs the
-canonical map in `web/tests/palette-trim.spec.ts:9-22` — pinned at SHA f934d43
-
-#### Problem
-
-`palette-trim.spec.ts:9-22` defines a clean
-`C = { purple: '#AB71E1', blue: '#62A2E9', red: '#EC534E', … }`. But `flows.spec.ts` hardcodes the
-same hexes as bare strings scattered through selectors and comments: `data-color="#62A2E9"` (blue,
-appears 5×), `data-color="#AB71E1"` (purple), `data-color="#EC534E"` (red), and the comment-decoded
-intent "`#62A2E9` is blue-dominant" is repeated at lines 217, 453. `webkit-smoke.spec.ts:50`
-hardcodes `#2ECC71`. If a palette color changes, these silently rot (the selector just stops
-matching, and the test fails opaquely).
-
-#### Proposed solution
-
-Promote the `C` map (and the `data-color="custom"` sentinel) into `web/tests/helpers.ts` as
-`PALETTE`, and export a `swatch(page, color)` locator factory
-(`page.locator(\`button.color-swatch[data-color="${color}"]\`)`). Replace the literals in`flows.spec.ts`,`webkit-smoke.spec.ts`, and`palette-trim.spec.ts`(which imports the same map). Add a named`isBlueDominant(px)`/`isRedDominant(px)`to replace the`px![2]
-
-> px![0]` idiom (see separate finding).
-
-#### Verification
-
-`grep -rn "#62A2E9\|#EC534E\|#AB71E1" web/tests/*.spec.ts` returns only `helpers.ts`. Selectors
-still resolve; `npm run test:e2e -- flows.spec.ts webkit-smoke.spec.ts palette-trim.spec.ts` green.
-
----
-
 ### [P2][test-quality] A single Parent-Center test asserts ~six distinct behaviors across 60 lines
 
 **File(s):** `web/tests/flows.spec.ts:853-914` ('parent center shows quick toggles on a landscape
