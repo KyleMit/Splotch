@@ -13,39 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P2][duplication] Canvas pixel-scanning readers duplicate getImageData boilerplate across ~10 functions with no shared module
-
-**File(s):** `web/tests/helpers.ts:25-34` (firstOpaquePixel), `web/tests/flows.spec.ts:158-195`
-(canvasInkStats), `1166-1180` (distinctOpaqueColors), `1331-1344` (revealedNearBlackFraction),
-`1371-1380` (opaquePixelsInLeftBand), `1408-1417` (opaquePixelsInTopBand), `1498-1506`
-(opaqueCount), plus inline blocks at `flows.spec.ts:300-317, 542-549, 1542-1549` and
-`engine.spec.ts:1586-1600, 1792-1801` — pinned at SHA f934d43
-
-#### Problem
-
-At least ten functions plus several inline `page.evaluate` blocks each re-open the canvas,
-`getContext('2d')`, call `getImageData`, and loop `for (let i = …; i < data.length; i += 4)`
-counting alpha/opaque pixels. `opaqueCount` (1498), `opaquePixelsInLeftBand` (1371), and
-`opaquePixelsInTopBand` (1408) differ only in the region rectangle and the `> 200` threshold.
-`distinctOpaqueColors` and `revealedNearBlackFraction` share the same `data[i+3] < 200 continue`
-scaffold. The alpha-threshold constant (`200`, `128`, `8`, `220`) is a magic number re-chosen per
-function. This is the single largest source of near-duplicate code in the suite.
-
-#### Proposed solution
-
-Add `web/tests/canvas-pixels.ts` exporting `scanCanvas(page, {canvasId, region?, alphaMin?})`
-returning `{ opaqueCount, distinctColors, nearBlackFraction, meanRgb }`, plus thin wrappers
-`opaqueCount`, `opaquePixelsInBand(page, edge, frac)`. Name the thresholds (`STRONG_ALPHA = 200`,
-`FAINT_ALPHA = 8`). Replace the per-test pixel readers and the inline blocks. Because the reader
-runs in-page, pass the canvasId and region as `evaluate` args (the existing pattern).
-
-#### Verification
-
-`grep -c "getImageData" web/tests/*.spec.ts` collapses to the shared module plus a handful of
-genuinely bespoke crayon samplers. Pixel-count assertions unchanged; `npm run test:e2e` green.
-
----
-
 ### [P2][duplication] Crayon-brush tests re-derive point generators and region samplers inline in every test
 
 **File(s):** `web/tests/engine.spec.ts:1309-1354` (crayonScene line/region), `1393-1428`,
