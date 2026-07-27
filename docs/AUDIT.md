@@ -19,34 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P4][documentation] `settings.json` permission groups are unlabeled and unreferenced from any doc
-
-**File(s):** `.claude/settings.json:29-78` — pinned at SHA f934d43
-
-#### Problem
-
-The allow list is visually grouped by blank lines (npm/node, git, read-only tools, curl-localhost,
-mobile toolchain, skills, reads) but JSON can't carry comments, so the grouping intent is implicit,
-and no doc explains what is auto-allowed or why. CLAUDE.md documents the hooks and rules but says
-nothing about the permission policy, so a newcomer wondering "why did that command not prompt?" has
-no pointer. The mobile-toolchain group in particular (`adb`, `xcrun simctl`, `xcode-select`,
-`xcodebuild`, `pod`, `ruby`, lines 66-72) is non-obvious without the `mobile` skill context.
-
-#### Proposed solution
-
-Add a short "Auto-allowed commands" note to the appropriate doc (e.g. `docs/CONTRIBUTING.md` or a
-line in CLAUDE.md's config section) pointing at `.claude/settings.json` and summarizing the intent
-of each group, so the policy is discoverable and reviewable. Optionally split truly
-environment-specific entries (the Apple-only mobile tools) into `settings.local.json` if they aren't
-needed by all contributors.
-
-#### Verification
-
-A newcomer can locate the permission policy from the docs without opening `settings.json` blind;
-confirm each group's purpose is stated somewhere in prose.
-
----
-
 ### [P4][dead-config] `node --check` / `node --input-type=module -e` allows have no repo consumer and are undocumented
 
 **File(s):** `.claude/settings.json:39-40` — pinned at SHA f934d43
