@@ -11,30 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P4][readability] `parseFrontmatter` silently drops non-`[A-Za-z]`-leading keys and never signals malformed lines
-
-**File(s):** `scripts/lib/utils.mjs:118-127` (`parseFrontmatter`) — pinned at SHA f934d43
-
-#### Problem
-
-The key regex `^([A-Za-z]\w*):\s*(.*)$` silently ignores any frontmatter line it can't parse (e.g. a
-key with a leading digit or a `-`, or a genuinely malformed line). A release author who mistypes a
-key gets no error — the value just vanishes and downstream `meta.foo` is `undefined`. The comment
-says "flat — we never need nested YAML," which is fine, but the silent-skip behaviour is
-undocumented and bug-prone for the release pipeline that depends on it.
-
-#### Proposed solution
-
-Either broaden the key charset to match real frontmatter keys, or collect unparsed non-blank lines
-and expose them (or throw) so a typo surfaces. At minimum document the flat-key constraint in the
-comment.
-
-#### Verification
-
-Feed frontmatter with a mistyped key; the parser reports it rather than silently omitting.
-
----
-
 ### [P4][maintainability] `esc` is re-implemented in the asset-gen proof sheet with no shared source
 
 **File(s):** `scripts/lib/scrapbook-chrome.mjs:15-19` (`esc`) — pinned at SHA f934d43

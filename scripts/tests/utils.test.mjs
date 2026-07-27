@@ -72,7 +72,9 @@ describe('command helpers', () => {
 
 describe('parseFrontmatter', () => {
   it('parses flat keys and ignores blank lines', () => {
-    expect(parseFrontmatter('---\nversion: 1.3.1\n \nandroidVersionCode: 7\n---\nRelease notes')).toEqual({
+    expect(
+      parseFrontmatter('---\nversion: 1.3.1\n \nandroidVersionCode: 7\n---\nRelease notes')
+    ).toEqual({
       frontmatter: 'version: 1.3.1\n \nandroidVersionCode: 7',
       meta: { version: '1.3.1', androidVersionCode: '7' },
       body: 'Release notes',
