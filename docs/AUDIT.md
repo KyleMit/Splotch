@@ -11,50 +11,6 @@
 
 ## Source: Code audit — tools/asset-gen · ideas-exploration (R&D scratch)
 
-### [P1][discoverability] README scoreboard and "do first" list are stale — most ideas already graduated into the live pipeline, but nothing here says so
-
-**File(s):** `tools/asset-gen/ideas-exploration/README.md` (lines 28–75, the scoreboard + "What a
-follow-up session should probably do first") — pinned at SHA f934d43
-
-#### Problem
-
-The README presents all 25 ideas as an open backlog "intended for a follow-up session to review and
-decide what to promote," with a prioritized list of patches to "land." But that follow-up already
-happened: at least ~20 of the 25 have shipped into `tools/asset-gen/bin/` and `lib/`. Concrete
-evidence at this SHA:
-
-* idea-7 → `bin/audit-night-halo.mjs` + `lib/night-halo.mjs`
-* idea-13 → `bin/audit-invented-shapes.mjs` + `lib/invented-shapes.mjs`
-* idea-23 → `bin/audit-golden.mjs` + `lib/golden-catalog.mjs` + `lib/night-scores.mjs`
-* idea-25 → `bin/gen-asset-manifest.mjs`
-* idea-10 → `lib/page-notes.mjs`
-* idea-12 → `bin/audit-fill-eyes.mjs`
-* idea-6 → `bin/audit-outline-solidity.mjs`, `bin/normalize-outline-strokes.mjs`
-* idea-22 → `lib/night-composite.mjs`
-* idea-17 → became the default model, documented in `tools/asset-gen/docs/gemini-3.1-migration.md`
-* idea-11, idea-4, idea-19, idea-21, idea-24 → all recorded as landed in
-  `docs/gemini-3.1-migration.md`
-
-A newcomer reading this README today would re-do work that is already done. The document reads as a
-live TODO but is actually a historical record whose recommendations were all executed.
-
-#### Proposed solution
-
-Add a **Status** column to the scoreboard table (lines 30–56): one of `LANDED → <path>` /
-`SUPERSEDED` / `NOT PROMOTED`, with the graduated ideas pointing at their live `bin/`/`lib/` file or
-the `gemini-3.1-migration.md` run record. Replace the "What a follow-up session should probably do
-first" section (lines 58–75) with a short "What landed" retrospective, or delete it and defer to
-`area:asset-gen` GitHub issues for anything still open. `docs/gemini-3.1-migration.md` already has
-the landing facts — cross-link it from this README.
-
-#### Verification
-
-For each idea claimed LANDED, confirm the named `bin/`/`lib/` file exists at this SHA (it does — see
-the `ls bin/ lib/` output) and that `docs/gemini-3.1-migration.md` names the idea number. Confirm no
-scoreboard row still implies pending work that has in fact shipped.
-
----
-
 ### [P1][duplication] Graduated `idea-N/code/*.mjs` files are now drifted ancestors of live `bin/`/`lib/` files, with no pointer marking them frozen
 
 **File(s):** `tools/asset-gen/ideas-exploration/idea-25/code/gen-asset-manifest.mjs`,

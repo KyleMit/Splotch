@@ -2459,3 +2459,146 @@ The rolled-back draft is kept at
 (3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p5-maintainability-median-via-1-is-the-upper-middle-element-and-luma-def.patch`.
+
+### [P1][discoverability] README scoreboard and "do first" list are stale — most ideas already graduated into the live pipeline, but nothing here says so
+
+**File(s):** `tools/asset-gen/ideas-exploration/README.md` (lines 28–75, the scoreboard + "What a
+follow-up session should probably do first") — pinned at SHA f934d43
+
+#### Problem
+
+The README presents all 25 ideas as an open backlog "intended for a follow-up session to review and
+decide what to promote," with a prioritized list of patches to "land." But that follow-up already
+happened: at least ~20 of the 25 have shipped into `tools/asset-gen/bin/` and `lib/`. Concrete
+evidence at this SHA:
+
+* idea-7 → `bin/audit-night-halo.mjs` + `lib/night-halo.mjs`
+* idea-13 → `bin/audit-invented-shapes.mjs` + `lib/invented-shapes.mjs`
+* idea-23 → `bin/audit-golden.mjs` + `lib/golden-catalog.mjs` + `lib/night-scores.mjs`
+* idea-25 → `bin/gen-asset-manifest.mjs`
+* idea-10 → `lib/page-notes.mjs`
+* idea-12 → `bin/audit-fill-eyes.mjs`
+* idea-6 → `bin/audit-outline-solidity.mjs`, `bin/normalize-outline-strokes.mjs`
+* idea-22 → `lib/night-composite.mjs`
+* idea-17 → became the default model, documented in `tools/asset-gen/docs/gemini-3.1-migration.md`
+* idea-11, idea-4, idea-19, idea-21, idea-24 → all recorded as landed in
+  `docs/gemini-3.1-migration.md`
+
+A newcomer reading this README today would re-do work that is already done. The document reads as a
+live TODO but is actually a historical record whose recommendations were all executed.
+
+#### Proposed solution
+
+Add a **Status** column to the scoreboard table (lines 30–56): one of `LANDED → <path>` /
+`SUPERSEDED` / `NOT PROMOTED`, with the graduated ideas pointing at their live `bin/`/`lib/` file or
+the `gemini-3.1-migration.md` run record. Replace the "What a follow-up session should probably do
+first" section (lines 58–75) with a short "What landed" retrospective, or delete it and defer to
+`area:asset-gen` GitHub issues for anything still open. `docs/gemini-3.1-migration.md` already has
+the landing facts — cross-link it from this README.
+
+#### Verification
+
+For each idea claimed LANDED, confirm the named `bin/`/`lib/` file exists at this SHA (it does — see
+the `ls bin/ lib/` output) and that `docs/gemini-3.1-migration.md` names the idea number. Confirm no
+scoreboard row still implies pending work that has in fact shipped.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* `tools/asset-gen/ideas-exploration/README.md` lines 10–12 still say "nothing from these
+  experiments is live in the pipeline. This folder is the complete record, intended for a follow-up
+  session to review and decide what to promote" — the exact framing the finding names as stale, left
+  untouched and now contradicting the new Status column two sections below. Rewrite that intro
+  sentence to say the promotion pass happened and point at the `Status` column /
+  `../docs/gemini-3.1-migration.md`.
+* Scoreboard row #4 claims `LANDED → ../lib/night-scores.mjs`, but that file carries only the gate
+  constant `NIGHT_BG_LUMA_MAX_DEFAULT`; idea-4's deterministic background-luma normalization never
+  landed as code — the spread was closed by regenerating the catalog, per
+  `../docs/gemini-3.1-migration.md`. Point row #4 at the migration run record, and fix the
+  corresponding "What landed" sentence, which is currently an incomplete clause ("…at
+  `--night-luma-max 60`, since the code default (`../lib/night-scores.mjs`, shipped range 18–48).")
+  — the migration doc's fact is that 60 replaced a then-default of 100 and was later made the code
+  default.
+* `tools/asset-gen/ideas-exploration/README.md` row 6 claims
+  `LANDED → ../bin/normalize-outline-strokes.mjs, ../bin/audit-outline-solidity.mjs`, but both tools
+  pre-date the exploration (idea-6/report.md runs the existing
+  `npm run gen:coloring-outlines:normalize` at pristine baseline 8e471b8) and
+  `docs/gemini-3.1-migration.md` lists IDEAS #6 under "Outstanding issues after the wave" — "The
+  durable fix remains pen normalization + light regen", 39 light-side flat-eye flags still open.
+  Mark idea-6 as not promoted (still open) and drop "the pen normalizer and its solidity audit
+  (**#6**)" from the "What landed" paragraph — as written it tells a reader the exact work the
+  migration doc says is still pending is already done.
+* `README.md` row 22 claims `LANDED → ../lib/night-composite.mjs`, but idea-22's deliverable was the
+  `gen:coloring-composite` CLI (`bin/gen-coloring-composite.mjs` + root npm script), which exists
+  nowhere in the repo; `lib/night-composite.mjs` pre-existed the idea — idea-22/report.md validates
+  its output "byte-for-byte against the ad hoc `lib/night-composite.mjs` usage". Reclassify idea-22
+  as not promoted and remove "the night composite every eye judgment now runs on (**#22**)" from the
+  "What landed" paragraph.
+* Fixing rows 6 and 22 invalidates the derived counts: the intro's "sixteen of the 25 ideas were
+  promoted" becomes fourteen, and "The nine `NOT PROMOTED` ideas" becomes eleven — update both, and
+  add #6 and #22 to that closing paragraph's grouping (both are validated-but-unwired work, not
+  rejections).
+* `tools/asset-gen/.ruler/AGENTS.md` (lines ~124-125, and its generated `CLAUDE.md`/`AGENTS.md`)
+  still says of this folder "24 of 25 ideas were validated there, and several carry finished
+  patches/assets waiting to be promoted" — that is the primary pointer into the README this fix just
+  corrected, and it is the same stale claim. Update the `.ruler/` source and run
+  `npm run ruler:apply`.
+* Rows 1 and 5 are marked `LANDED → ../docs/gemini-3.1-migration.md`, but neither idea's approach
+  shipped — the migration doc records the model swap making re-inking and the flat pupils go away
+  with "no dedicated patch", which the README's own prose then says. Use the finding's `SUPERSEDED`
+  status for those two (and note it in the legend) so `LANDED` keeps meaning "this idea's work is in
+  the pipeline".
+* `tools/asset-gen/ideas-exploration/README.md`, "What landed" paragraph: "**#22**'s deliverable was
+  a `gen:coloring-composite` CLI, which was never built" is factually wrong and contradicts the same
+  idea's Outcome cell ("gen:coloring-composite built") and `idea-22/report.md` — the CLI *was* built
+  during the exploration and its re-appliable patch sits at
+  `idea-22/code/gen-coloring-composite.patch`; it was simply never promoted. Reword to say it was
+  built but never wired into the pipeline, and name the patch, so a reader doesn't re-implement it
+  from scratch.
+* `tools/asset-gen/ideas-exploration/README.md`, idea-24 Status cell: the path
+  `web/static/coloring/{shapes/heart,objects/umbrella}-{tall,wide}.*` is repo-root-relative while
+  every other Status path in the column is relative to this README (`../bin/…`, `../lib/…`), so it
+  doesn't resolve from the file it sits in — make it `../../../web/static/coloring/…`.
+
+#### What was tried
+
+1. Added a Status column to the ideas-exploration scoreboard recording, per idea, the live
+   `bin/`/`lib/` file, run record, or shipped asset it became (16 LANDED) versus the 9 that were
+   never wired into the pipeline, each verified to exist at HEAD. Replaced the imperative "do first"
+   list with a "What landed" retrospective that cross-links `docs/gemini-3.1-migration.md` and
+   points anything still open at `area:asset-gen` issues, so the frozen snapshot no longer reads as
+   a live TODO for already-shipped work.
+2. Addressed both review points on ecab9b5f2d57. The intro no longer claims nothing from the
+   exploration is live or that the folder awaits a promotion pass — it now states the pass happened,
+   sixteen of 25 ideas were promoted, points at the Status column, and links
+   ../docs/gemini-3.1-migration.md. Scoreboard row #4 was retargeted from ../lib/night-scores.mjs
+   (which carries only the gate constant) to the migration run record, and the corresponding "What
+   landed" clause is now a complete sentence saying idea-4's deterministic renormalizer never
+   shipped: the spread was closed by regenerating the catalog at --night-luma-max 60 in place of the
+   then-default 100, since made the code default, moving shipped bgLuma from 16–66 to 18–48. Also
+   trimmed the now-duplicative "What landed" opening paragraph to one line. npm run format:check
+   passes.
+3. Addressed all five review points on aee784611f04. Rows 6 and 22 are now NOT PROMOTED — verified
+   idea-6 ran the pre-existing gen:coloring-outlines:normalize (and the migration doc still lists
+   IDEAS #6 as outstanding), and idea-22's gen-coloring-composite CLI exists nowhere while
+   lib/night-composite.mjs pre-dated the idea; both were dropped from the "What landed" paragraph
+   and described in the closing paragraph as validated-but-unwired. Rows 1 and 5 (plus row 4, the
+   identical case the README's own prose already describes) use the finding's SUPERSEDED status, now
+   documented in a three-entry legend, so LANDED means only "this idea's work is in the pipeline".
+   Derived counts updated: fourteen resolved (eleven landed, three superseded), eleven not promoted,
+   totalling 25. The stale pointer in tools/asset-gen/.ruler/AGENTS.md was rewritten to send readers
+   to the Status column, and CLAUDE.md/AGENTS.md were regenerated with npm run ruler:apply.
+   ruler:check, format:check, and test:unit all pass.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p1-discoverability-readme-scoreboard-and-do-first-list-are-stale-most-id.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p1-discoverability-readme-scoreboard-and-do-first-list-are-stale-most-id.patch`.
