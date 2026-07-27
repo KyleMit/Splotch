@@ -11,41 +11,6 @@
 
 ## Source: Code audit — tools/asset-gen · ideas-exploration (R&D scratch)
 
-### [P2][dead-code] `build-review.mjs` output claims "nothing here is committed" and references the deleted `IDEAS.md` — both false now
-
-**File(s):** `tools/asset-gen/ideas-exploration/build-review.mjs` (lines 213, 224) — pinned at SHA
-f934d43
-
-#### Problem
-
-The generated dashboard (the primary review surface per the README and parent `CLAUDE.md`) prints
-two stale claims baked into `build-review.mjs`:
-
-* Line 213 subtitle: "One subagent per idea from `tools/asset-gen/IDEAS.md`…" and "${done} of 25
-  ideas explored **so far**" — `IDEAS.md` no longer exists (moved to `area:asset-gen` GitHub issues,
-  per the README's own header note), and "so far" implies in-progress when all 25 are done.
-* Line 224 footer: "Repo state was reverted to baseline (8e471b8) after every attempt — **nothing
-  here is committed**." The entire folder is committed; this line is now self-contradicting.
-
-The committed `ideas-review.html` embeds these strings verbatim (`grep` confirms "nothing here is
-committed" and one `tools/asset-gen/IDEAS.md` reference in the HTML), so anyone opening the
-dashboard sees the false claims.
-
-#### Proposed solution
-
-Update the subtitle to describe the burn-down as complete and historical (drop "so far", point at
-`area:asset-gen` issues instead of `IDEAS.md`), and rewrite the footer to say the folder is a
-committed frozen record whose per-attempt repo state was reverted. Then regenerate
-`ideas-review.html` with `node build-review.mjs`.
-
-#### Verification
-
-After editing and regenerating, `grep -a 'nothing here is committed' ideas-review.html` returns
-nothing and `grep -a 'IDEAS.md' ideas-review.html` returns nothing (or only a deliberate historical
-mention).
-
----
-
 ### [P2][organization] 2.4 MB `idea-14/warp-both.json` is a raw per-tile coordinate dump that dwarfs its report — prune or summarize
 
 **File(s):** `tools/asset-gen/ideas-exploration/idea-14/warp-both.json` (2.4 MB) — pinned at SHA
