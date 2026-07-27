@@ -183,7 +183,7 @@ describe('performance CLI input failures', () => {
     await vi.advanceTimersByTimeAsync(10_000);
 
     await rejection;
-    expect(context.pages).toHaveBeenCalledTimes(20);
+    expect(context.pages).toHaveBeenCalledTimes(21);
   });
 
   it('starts each guarded profiler when invoked directly', async () => {

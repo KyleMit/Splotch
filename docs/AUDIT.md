@@ -9,32 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P4][error-handling] `getWebviewPage`/`findWebviewSocket` use unlabeled retry magic and a fragile URL heuristic
-
-**File(s):** `scripts/perf/android.mjs:42-77` — pinned at SHA f934d43
-
-#### Problem
-
-`getWebviewPage` loops `for (let i = 0; i < 20; i++)` with a hardcoded `sleep(500)` and picks the
-page via `pages.find((p) => !p.url().startsWith('about:')) || pages[0]` — the `20`/`500` (a 10 s
-budget) are unnamed, and the `about:` filter silently falls back to `pages[0]` when every page is
-`about:` (e.g. the WebView still booting), so it can hand `driveSession` a not-yet-navigated page
-that then fails later at `waitForSelector('#drawingCanvas')` with a less clear error.
-`findWebviewSocket` (25 s) and `getWebviewPage` (10 s) also express the same "poll with deadline"
-pattern two different ways (deadline timestamp vs iteration count).
-
-#### Proposed solution
-
-Name the constants (`WEBVIEW_PAGE_TIMEOUT_MS`, `WEBVIEW_POLL_MS`) and reuse a single
-`pollUntil(fn, { timeoutMs, intervalMs })` helper (a sibling of `waitForUrl` in
-`scripts/lib/utils.mjs`) for both the socket and page waits. Have `getWebviewPage` reject with a
-clear message when only `about:` pages exist at deadline rather than returning a blank page.
-
-#### Verification
-
-With no app foregrounded, `perf:android` fails with "No navigated WebView page" at the page-wait
-step, not a downstream selector timeout; the poll budgets are named.
-
 ## Source: Code audit — scripts · lib shared helpers
 
 ### [P1][architecture] Two competing Chromium-resolution mechanisms; the model-eval one is a brittle hardcoded path

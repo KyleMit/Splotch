@@ -112,7 +112,6 @@ export async function pollUntil(callback, timeoutMs, intervalMs) {
     const remaining = deadline - Date.now();
     if (remaining <= 0) return null;
     await sleep(Math.min(intervalMs, remaining));
-    if (Date.now() >= deadline) return null;
   }
 }
 
