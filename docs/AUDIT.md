@@ -11,32 +11,6 @@
 
 ## Source: Code audit — tools/asset-gen · ideas-exploration (R&D scratch)
 
-### [P3][organization] Full-resolution `.webp` outputs committed *inside* `code/` directories (idea-8, idea-9)
-
-**File(s):**
-`tools/asset-gen/ideas-exploration/idea-8/code/ant-wide.night.conditioned.fullres.webp`,
-`idea-9/code/dragon-wide.light.conditioned.fullres.webp` — pinned at SHA f934d43
-
-#### Problem
-
-Every other idea keeps evidence images at the idea root and downsized (≤560 px per the README layout
-contract at line 135), and reserves `code/` for scripts, patches, and small JSON. These two
-full-resolution generated images live inside `code/`, breaking the "code/ holds code" convention and
-smuggling large binaries past the ≤560 px evidence norm. They read as leftover generation output
-that was never moved or downsized.
-
-#### Proposed solution
-
-Move them up to their idea root alongside the other evidence and downsize to the ≤560 px convention
-(or drop them if the report's other evidence already makes the point), so `code/` contains only
-scripts/patches/registries.
-
-#### Verification
-
-`find ideas-exploration -path '*/code/*' \( -name '*.webp' -o -name '*.png' \)` returns nothing.
-
----
-
 ### [P3][duplication] idea-2 ships three near-identical `motif-registry*.json` with no note on which is canonical
 
 **File(s):** `tools/asset-gen/ideas-exploration/idea-2/code/motif-registry.json`,

@@ -110,8 +110,6 @@ night". Passes the ≤ 100 gate, but a batch adopting this should watch nightnes
 * `after-night-conditioned.webp` — call-8 conditioned take, all gates passing: palette-coherent
   night.
 * `failure-night-blacklines.webp` — calls 1–3 failure mode: perfect palette, black outlines.
-* `code/ant-wide.night.conditioned.fullres.webp` — the full-resolution gate-passing take (would
-  still need human contact-sheet review + punch before shipping).
 
 ## What was NOT done (budget)
 
