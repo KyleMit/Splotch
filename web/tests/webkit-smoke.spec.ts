@@ -7,10 +7,12 @@ import { draw, firstOpaquePixel, gotoApp, openParentCenter } from './helpers';
 // this tiny subset proves the core toddler path — boot, draw a stroke, open
 // the Parent Center and Color Picker dialogs — works on the WebKit engine.
 //
-// Keep it small and WebKit-portable: no CDP sessions (viewport rotation and
-// touch synthesis in flows.spec.ts are Chromium-only), no dev-harness routes,
-// no pixel-perfect assertions that depend on Chromium's rasterizer. The shared
-// helpers imported above are held to the same WebKit-portable bar.
+// Keep it small and WebKit-portable: no CDP sessions (the viewport-rotation
+// coverage in flows-coloring-book.spec.ts and flows-magic-brush.spec.ts is
+// Chromium-only), no synthetic-touch cases from flows-palette-brush.spec.ts,
+// no dev-harness routes, no pixel-perfect assertions that depend on Chromium's
+// rasterizer. The shared helpers imported above are held to the same
+// WebKit-portable bar.
 
 test('the app boots: canvas, palette, and Parent Center button render', async ({ page }) => {
   await gotoApp(page);

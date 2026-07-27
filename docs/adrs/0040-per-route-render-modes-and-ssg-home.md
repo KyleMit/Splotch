@@ -124,8 +124,8 @@ returning visits actually consume the benefit.
   button-scale clamp from `settings.svelte.ts` (it runs in `<head>` before `<body>` exists, so it
   can only stamp `<html>` — it can't import the source of truth or touch the buttons directly). Both
   files call this out; a mismatch would silently mis-seed until hydration corrects it. The
-  `data-drawer-open`/`data-off-*` publish path is covered by an E2E test (`flows.spec.ts`,
-  "persisted-open drawer … at first paint").
+  `data-drawer-open`/`data-off-*` publish path is covered by an E2E test
+  (`flows-undo-persistence.spec.ts`, "persisted-open drawer … at first paint").
 * **−** The drawer moved from a Svelte `{#if}` + `slide` to always-rendered markup gated by CSS
   (grid accordion + delayed `visibility`). More CSS mechanism, and the buttons are always in the DOM
   — but inert when closed, so no a11y/interaction cost.

@@ -68,6 +68,6 @@ pen), kept live by the panel's publish effect. The Parent Center's existing Eras
 * The pen is recovered with zero new rendering code — `renderOp()`'s fallback branch *is* the pen;
   the work was state, UI, and persistence.
 * E2E specs and perf scripts that clicked `#eraserButton` / `#magicBrushButton` directly must open
-  the Brush Menu first (`pickBrush` helper in `flows.spec.ts`); the entry ids are preserved.
+  the Brush Menu first (`pickBrush` helper in `flows-harness.ts`); the entry ids are preserved.
 * A future brush type is one `BRUSH_OPTIONS` entry (icon + id + label) plus its engine mode — no
   layout math changes, since the menu absorbs it.

@@ -13,39 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P1][complexity] Split the two mega-spec files (engine 1980 LOC, flows 1636 LOC) by feature area
-
-**File(s):** `web/tests/engine.spec.ts:1-1980`, `web/tests/flows.spec.ts:1-1636` — pinned at SHA
-f934d43
-
-#### Problem
-
-`engine.spec.ts` is 1980 lines and `flows.spec.ts` is 1636 lines. Each bundles many unrelated
-feature areas into one file. `engine.spec.ts` covers: basic strokes/undo, undo-cap, clear, eraser,
-pen-merge recovery, edge-swipe guards, rotation/paper-view (its own section banner at line 858),
-backgrounded re-entry (line 1113), teardown/re-init (line 1191), the crayon brush (line 1299), and
-the snapshot memory tier (line 1715). `flows.spec.ts` covers palette, brushes, scribble-guard, undo
-gating, persistence, Parent Center layouts, AI key flow, AI generation, coloring book, magic brush,
-and brush ring. A reader looking for "the rotation tests" or "the coloring-book tests" must scroll a
-2000-line file, and helper functions are interleaved between tests throughout (see the pixel-reader
-finding below).
-
-#### Proposed solution
-
-Split along the section banners the files already contain. For engine: `engine-undo.spec.ts`,
-`engine-eraser.spec.ts`, `engine-pointer-recovery.spec.ts`, `engine-rotation.spec.ts`,
-`engine-crayon.spec.ts`, `engine-snapshot-tier.spec.ts`, sharing a new `engine-harness.ts` (see next
-finding). For flows: `flows-palette.spec.ts`, `flows-parent-center.spec.ts`, `flows-ai.spec.ts`,
-`flows-coloring.spec.ts`, `flows-magic-brush.spec.ts`. This also lets Playwright's 4 workers
-parallelize across files rather than serializing the big two.
-
-#### Verification
-
-`npm test` green; `wc -l web/tests/*.spec.ts` shows no file over ~500 LOC. Grepping a feature name
-(e.g. `rotation`) points to one file.
-
----
-
 ### [P2][duplication] The `/dev/engine` readiness `beforeEach` and state readers are duplicated verbatim across engine and multitouch specs
 
 **File(s):** `web/tests/engine.spec.ts:24-40`, `web/tests/multitouch.spec.ts:15-55` — pinned at SHA

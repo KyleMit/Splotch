@@ -275,7 +275,7 @@ const undoDebug = (page) =>
 // transiently reports hundreds of MB of a healthy tier (nondeterministically,
 // against the ≲150 MB gate) and the undo phase would measure live-raster
 // restores instead of the blob decodes it exists to validate. Mirror the E2E
-// spec (engine.spec.ts): poll until only the hot window still holds rasters
+// spec (engine-snapshot-tier.spec.ts): poll until only the hot window still holds rasters
 // — a raster is only dropped after its blob lands and validates, so
 // liveRasters ≤ MAX_HOT_RASTERS means every below-window entry is encoded.
 const MAX_HOT_RASTERS = 2;
