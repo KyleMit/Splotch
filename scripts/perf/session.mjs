@@ -177,12 +177,23 @@ function buildMetrics({ settings, useTrace, t0, obs, heapBefore, heapAfter }) {
   };
 }
 
-async function writeProfileArtifacts({ page, outDir, traceEvents, metrics, summary, report }) {
+async function writeProfileArtifacts({
+  page,
+  outDir,
+  traceEvents,
+  createMetrics,
+  createSummary,
+  createReport,
+}) {
   await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
   writeFileSync(join(outDir, 'trace.json'), JSON.stringify({ traceEvents }));
+  const metrics = createMetrics();
   writeFileSync(join(outDir, 'metrics.json'), JSON.stringify(metrics, null, 2));
+  const summary = createSummary(metrics);
+  const report = createReport(summary);
   writeFileSync(join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
   writeFileSync(join(outDir, 'report.md'), report);
+  return { summary, report };
 }
 
 // Drive the full scenario against a ready page (canvas already loaded) with the
@@ -211,10 +222,14 @@ export async function driveSession(page, cdp, { outDir, settings }) {
   const traceEvents = useTrace ? events : await collectMeasures(page);
   if (useTrace) await stopTrace(cdp);
 
-  const metrics = buildMetrics({ settings, useTrace, t0, obs, heapBefore, heapAfter });
-  const summary = analyze(traceEvents, metrics);
-  const report = renderReport(summary);
-  await writeProfileArtifacts({ page, outDir, traceEvents, metrics, summary, report });
+  const { summary, report } = await writeProfileArtifacts({
+    page,
+    outDir,
+    traceEvents,
+    createMetrics: () => buildMetrics({ settings, useTrace, t0, obs, heapBefore, heapAfter }),
+    createSummary: (metrics) => analyze(traceEvents, metrics),
+    createReport: (summary) => renderReport(summary),
+  });
 
   console.log(`\n${report}\n`);
   console.log(`Artifacts: ${outDir}`);

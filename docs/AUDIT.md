@@ -9,42 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P1][complexity] Split the 90-line `driveSession` orchestrator into named stages
-
-**File(s):** `scripts/perf/session.mjs:122-212` (`driveSession`) — pinned at SHA f934d43
-
-#### Problem
-
-`driveSession` does everything in one function: `mkdirSync`, observer injection, heap sampling,
-trace start, the entire nine-`beat` interaction script with inline drawing-coordinate math (lines
-138-181), observer/heap read, screenshot, then assembling and writing four artifact files
-(`trace.json`, `metrics.json`, `summary.json`, `report.md`) and logging. The interaction
-choreography (what a "toddler session" *is*) is tangled with capture plumbing and artifact I/O, so
-you cannot read the scenario without wading through trace mechanics, and the drawing constants
-(`box.width * 0.15`, `arcPts(... 0, Math.PI)`, etc.) are buried mid-function.
-
-#### Proposed solution
-
-Extract three named stages that `driveSession` calls in sequence:
-
-* `async function runToddlerSession(page, box)` — the nine `beat(...)` calls (138-181), owning the
-  scenario shape only.
-* `function buildMetrics({ settings, useTrace, t0, obs, heapBefore, heapAfter })` → the `metrics`
-  object (191-201).
-* `function writeProfileArtifacts(outDir, { traceEvents, metrics, summary, report })` → the four
-  `writeFileSync` calls + screenshot (188-207).
-
-`driveSession` then reads as: setup → `runToddlerSession` → read observers →
-`writeProfileArtifacts`. See the shared-artifact-writer finding (P2) for reusing the writer across
-undo/replay.
-
-#### Verification
-
-`npm run perf:web -- --no-build` produces the same four files with identical structure; the
-extracted `runToddlerSession` has no reference to `cdp`/`writeFileSync`.
-
----
-
 ### [P1][complexity] Break up `undo-scenarios.mjs main()` (170 lines) into per-scenario + artifact stages
 
 **File(s):** `scripts/perf/undo-scenarios.mjs:306-478` (`main`) — pinned at SHA f934d43
