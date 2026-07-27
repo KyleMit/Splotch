@@ -15,32 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P5][dead-config] `vitest.config.ts` omits `__PERF_MARKS__`, silently relying on a `typeof` guard in source
-
-**File(s):** `web/vitest.config.ts:11-19` (define) — pinned at SHA f934d43; consumer
-`web/src/lib/drawing/perf.ts:5`
-
-#### Problem
-
-Unlike the four other `__*__` defines, `__PERF_MARKS__` is absent from the Vitest `define`. It only
-avoids a `ReferenceError` under test because `perf.ts:5` reads it as
-`typeof __PERF_MARKS__ !== 'undefined' && __PERF_MARKS__`. So the config relies on a defensive guard
-in application source rather than declaring the constant — an implicit coupling that will bite the
-moment any test imports a module referencing `__PERF_MARKS__` bare. (Overlaps the P2 define-drift
-finding; called out separately because the fix is a one-liner even if the broader refactor is
-deferred.)
-
-#### Proposed solution
-
-Add `__PERF_MARKS__: JSON.stringify(false)` to the Vitest `define` block so all five compile-time
-globals are declared in every config, and the `typeof` guard in `perf.ts` becomes
-belt-and-suspenders rather than required.
-
-#### Verification
-
-Add a test importing a module that references `__PERF_MARKS__` directly; it should pass without the
-guard. `npm run test:unit` stays green.
-
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
 ### [P2][dead-config] Stray `</content></invoke>` tokens leaked into a shipped Play Store changelog
