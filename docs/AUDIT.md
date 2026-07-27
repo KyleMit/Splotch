@@ -9,37 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P2][duplication] The undo-scenario stroke generators + `agg` are re-implemented in the console driver
-
-**File(s):** `scripts/perf/undo-scenarios.mjs:69-134,194-210` vs
-`scripts/perf/ipad-console-driver.js:43-107` — pinned at SHA f934d43
-
-#### Problem
-
-`longSquiggle`, `scribble`, `multiFingerGesture`/`multiGesture`, and the engine-measure aggregator
-(`engineMeasuresIn` / `agg`) are near-identical between the Node harness and the pasteable console
-driver, down to the `sweeps = 8`, `Math.PI * 12`, `amp = (H - 2*M)/14`, and `MARGIN/M = 160`
-constants. The two are meant to run "the same scenarios" (the console driver's comment even says
-so), but nothing enforces it — the shapes have already diverged slightly (`undo-scenarios`
-parameterizes `points`; the console driver hardcodes `HZ * 10`). A change to the canonical scenario
-shape silently desyncs on-device numbers from CI numbers.
-
-#### Proposed solution
-
-Author the scenario-shape functions once as a plain string module
-(`scripts/perf/scenario-shapes.js`) with a header saying it's dual-use (imported by
-`undo-scenarios.mjs`, and its body pasted into the console driver's build step or documented as the
-source of truth). At minimum add cross-reference
-`// canonical source: scripts/perf/undo-scenarios.mjs longSquiggle` comments and the shared
-constants (`SWEEPS`, `MARGIN`) so drift is auditable.
-
-#### Verification
-
-Diff the generated point arrays for `longSquiggle(0)` between the two files at the same `pts`; they
-must match. A shape edit updates both.
-
----
-
 ### [P3][maintainability] Promote scattered magic thresholds to named constants
 
 **File(s):** `scripts/perf/capture.mjs:73` (`> 32`), `scripts/perf/mount.mjs:113,114` (`- 50`,
