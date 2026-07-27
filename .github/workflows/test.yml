@@ -98,7 +98,7 @@ jobs:
 
       - name: Resolve Playwright version
         id: playwright-version
-        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
+        run: node scripts/playwright-version.mjs >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
         id: playwright-cache

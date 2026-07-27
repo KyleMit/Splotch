@@ -21,37 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P3][maintainability] Playwright version is resolved by a brittle inline `node -p` reaching into `package-lock.json` internals
-
-**File(s):** `.github/workflows/test.yml:105-107` (Resolve Playwright version) — pinned at SHA
-f934d43
-
-#### Problem
-
-```yaml
-run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
-```
-
-This nests double-quotes inside a `run:` string, hard-codes the lockfile's internal
-`packages['node_modules/…']` key shape (a lockfile-v3 detail that changed across npm majors), and is
-the sole consumer of a value used only to build the cache key. Any lockfile-format change or an
-added quoting layer breaks it silently (cache key becomes `playwright-…-` with an empty version,
-quietly disabling the WebKit-aware cache).
-
-#### Proposed solution
-
-Move the resolution into a committed helper (e.g. `scripts/playwright-version.mjs`) that reads the
-installed `@playwright/test/package.json` version and prints it, called as
-`node scripts/playwright-version.mjs >> "$GITHUB_OUTPUT"`. Testable and robust to lockfile-format
-churn.
-
-#### Verification
-
-`node scripts/playwright-version.mjs` prints the same version the inline expression does; the cache
-key in a CI run contains a non-empty version.
-
----
-
 ### [P3][consistency] Android emulator API level is a second source of truth for the `Pixel_7_Pro_API_33` AVD
 
 **File(s):** `.github/workflows/android-deploy.yml:70-74` (`api-level: 33`, `target: google_apis`,
