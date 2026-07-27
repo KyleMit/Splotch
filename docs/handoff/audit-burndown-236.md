@@ -116,6 +116,34 @@ Risks: the container is ephemeral and `.audit-work/` dies with it, so drain PR c
 CI is the *only* full-suite gate in this configuration, so a red run means pause and diagnose, not
 sweep up later.
 
+## Driver bug found and fixed mid-run (2026-07-27, 40d641b)
+
+The run was **paused deliberately** at 05:33 and relaunched after fixing a real driver defect. Do
+not treat the pause as a crash.
+
+**Symptom.** iter0027 (a rename-only naming fix) burned three fix rounds against a lint gate that
+could never go green, escalated into the implementer editing the driver's own
+`scripts/audit-burndown/*.mjs` trying to satisfy it, then had a complete fix rolled back and filed
+in `docs/AUDIT-DEFERRED.md` as `fix introduced a lint violation`.
+
+**Cause.** `burndown.mjs` built the lint list from `git diff --name-only`, which reports the paths a
+commit *touched* — including deletions and the rename-from side of a rename.
+`npx eslint <missing
+path>` exits **2**, so the gate read red on a fix with no lint violation at
+all, unrecoverably (no edit brings a deleted path back). Earlier delete-fixes escaped it only
+because they removed `.json` and `.webp`, which are not lintable extensions.
+
+**Fix.** `lintablePaths(paths, exists)` in `lib.mjs` now filters to paths that still exist;
+`burndown.mjs` passes `existsSync`. Regression tests cover the rename-from and delete-only cases —
+both verified to **fail** against the previous behavior (mutation-tested) while the other 98 pass.
+
+**Owed follow-up:** the iter0027 deferral in `docs/AUDIT-DEFERRED.md`
+(`[P3][naming] Inconsistent
+script naming across idea dirs`) is **mislabelled** — its fix was
+correct and was destroyed by this bug, not rejected on merit. Re-stage it; the saved
+`docs/audit-deferred/*.patch` should apply. It is the only deferral of the four that is not a
+genuine verdict.
+
 ## Closeout tasks
 
 * Drain `.audit-work/pending-comments.jsonl` (`backfill-comments.mjs next` → post → `done <sha>`),
