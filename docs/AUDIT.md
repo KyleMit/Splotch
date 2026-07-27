@@ -17,42 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P4][maintainability] App-local iOS plugins were added via hand-crafted sequential pbxproj UUIDs
-
-**File(s):** `ios/App/App.xcodeproj/project.pbxproj:14-16,28-30,168-170` (Xcode project) — pinned at
-SHA f934d43
-
-#### Problem
-
-The three app-local Swift sources (`DeviceLockPlugin`, `MainViewController`, `PencilEraserPlugin`)
-were registered by hand-editing the pbxproj with obviously synthetic, sequential object IDs:
-
-```
-DE1CE10C0000000000000001 /* DeviceLockPlugin.swift in Sources */ ...
-DE1CE10C0000000000000005 /* MainViewController.swift in Sources */ ...
-DE1CE10C0000000000000007 /* PencilEraserPlugin.swift in Sources */ ...
-```
-
-Xcode normally emits random 24-hex UUIDs; these zero-padded counters signal a manual/scripted edit.
-That's workable but fragile: it isn't obvious to a newcomer that these files are wired in by hand
-(not by Xcode's UI or `cap sync`), and a future `cap` project regeneration could clobber them
-silently. There's no comment or doc noting that these three files must be re-added if the project is
-regenerated.
-
-#### Proposed solution
-
-Add a short note (in the `ios` skill or a comment where the plugins are registered in
-`MainViewController.swift`) stating that these app-local sources are wired into the pbxproj by hand
-and must be re-added after any Capacitor project regeneration. Optionally regenerate the refs
-through Xcode so they carry normal UUIDs.
-
-#### Verification
-
-The manual-wiring caveat is documented where a contributor regenerating the iOS project would see
-it; a fresh checkout still builds all three sources into the App target.
-
----
-
 ### [P4][consistency] `Info.plist` `CAPACITOR_DEBUG` resolves to empty in Release with no explanation
 
 **File(s):** `ios/App/App/Info.plist:5-6`, `ios/debug.xcconfig:1`,
