@@ -17,35 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P3][single-source-of-truth] Version (`5` / `1.3.0`) duplicated across gradle and four pbxproj settings with no in-file pointer
-
-**File(s):** `android/app/build.gradle:28-29`,
-`ios/App/App.xcodeproj/project.pbxproj:311,318,333,340` (native version) — pinned at SHA f934d43
-
-#### Problem
-
-`versionCode 5` / `versionName "1.3.0"` (Android) are mirrored by `CURRENT_PROJECT_VERSION = 5` and
-`MARKETING_VERSION = 1.3.0` in **both** the Debug and Release pbxproj configs (four literals). The
-`android/CLAUDE.md` notes these are set by `capacitor-set-version` during `npm run release`, so the
-source of truth is really `package.json`, but none of the native files say so — a contributor
-opening `build.gradle` or the pbxproj sees a hand-editable literal with no breadcrumb, and the
-`android/CLAUDE.md` warning ("Don't hand-edit versionCode/versionName") has no iOS counterpart in
-the `mobile`/`ios` guidance.
-
-#### Proposed solution
-
-Add a short comment at each native version literal pointing to the canonical source and the
-`capacitor-set-version` flow (or reference it from the `ios` skill as the `android` one does). The
-two duplicated pbxproj configs could also be hoisted into an `.xcconfig` so `MARKETING_VERSION`/
-`CURRENT_PROJECT_VERSION` are declared once instead of per-config.
-
-#### Verification
-
-Run `npm run release` in a scratch branch; confirm all four pbxproj values and the two gradle values
-move together, and that the new comments/pointers match reality.
-
----
-
 ### [P4][documentation] `android:allowBackup="true"` is unexplained for a privacy-first kids app
 
 **File(s):** `android/app/src/main/AndroidManifest.xml:4` (Android manifest) — pinned at SHA f934d43
