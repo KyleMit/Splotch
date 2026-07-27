@@ -150,7 +150,7 @@ index b338ffcc..f847f8d6 100644
 -import { execSync } from 'node:child_process';
  import { buildDefines } from './defines';
 +import { buildMetadata } from './buildVersion';
- 
+
  // The native apps bundle a static export and never use a service worker (the
  // shell and all assets are already on-device), so skip the PWA plugin there.
 @@ -28,32 +27,7 @@ const profilingEsbuildOptions: import('vite').ESBuildOptions & {
@@ -184,6 +184,6 @@ index b338ffcc..f847f8d6 100644
 -
 -const APP_VERSION = isCapacitor ? PKG_VERSION : webVersion(PKG_VERSION);
 +const { appVersion: APP_VERSION, buildTime: BUILD_TIME } = buildMetadata({ isCapacitor });
- 
+
  // On a native device there is no local server, so the AI button must call the
  // hosted endpoint. On the web this stays empty and the relative path is used.
