@@ -22,7 +22,7 @@ export const TEST_PALETTE = {
 export const PICKER_GREEN = COLOR_FAMILIES.find((family) => family.name === 'greens')!.shades[4];
 export const CUSTOM_SWATCH_COLOR = 'custom';
 
-export type Rgba = [number, number, number, number];
+export type Rgba = readonly [number, number, number, number];
 
 // Must remain greater than the engine's COLOR_CHANGE_DEBOUNCE_MS (100).
 export const COLOR_CHANGE_DEBOUNCE_SETTLE_MS = 150;

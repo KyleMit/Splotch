@@ -13,36 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P4][readability] `firstOpaquePixel` and `draw` in helpers.ts lack input guards and precise types
-
-**File(s):** `web/tests/helpers.ts:15-34` — pinned at SHA f934d43
-
-#### Problem
-
-`draw(page, points)` indexes `points[0]` (line 18) with no guard for an empty array — an empty
-`points` throws an unhelpful `undefined` deref rather than a clear "draw called with no points."
-`firstOpaquePixel` returns `Promise<number[] | null>` — an untyped array where callers rely on
-positional channels (`px![2]`), so a caller reading the wrong index gets no type help.
-
-#### Proposed solution
-
-Add `if (points.length === 0) throw new Error('draw requires at least one point');` and type the
-pixel reader as `Promise<Rgba | null>` with `type Rgba = readonly [number, number, number, number]`.
-Pairs with the `isBlueDominant` predicate finding.
-
-#### Verification
-
-`npm run check` passes with the tighter type; `npm run test:e2e` green.
-
----
-
-That is 26 findings. The two structural themes worth prioritizing: (1) there is no shared test-utils
-layer beyond the thin `helpers.ts` — the engine harness readers, dialog-open retries, pixel
-scanners, palette constants, and synthetic-pointer builders all want extraction into
-`engine-harness.ts` / `canvas-pixels.ts` / `fixtures.ts` modules; and (2) `engine.spec.ts` (1980
-LOC) and `flows.spec.ts` (1636 LOC) should be split by the feature banners they already contain,
-which also unlocks better parallelism and grepability.
-
 ## Source: Code audit — web · build/test configuration
 
 ### [P1][duplication] Browser-support floor is duplicated across `vite.config.ts` and root `browserslist` with only a comment enforcing sync
