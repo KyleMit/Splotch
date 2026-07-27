@@ -1,5 +1,8 @@
 # Idea #10 — Per-page notes registry so regens don't rediscover levers
 
+Status: LANDED as ../../lib/page-notes.mjs — the registries live in ../../fill-src/<cat>/notes.json
+and the generators auto-apply them.
+
 **Verdict: WORKED.** The registry was mined from real history (28 entries across all 8 categories),
 the read path was implemented in the two lever-heavy generators (`gen-coloring-fills-dark.mjs`,
 `gen-coloring-chalk.mjs`) with a `--dry-run` provenance mode, CLI-wins merging was demonstrated, and

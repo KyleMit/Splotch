@@ -1,5 +1,8 @@
 # Idea #4 — Night-sky brightness varies ~4× across the catalog
 
+Status: LANDED — the tightened night mood gate is the code default (`NIGHT_BG_LUMA_MAX_DEFAULT = 60`
+in ../../lib/night-scores.mjs); the deterministic sky normalizer was not promoted.
+
 **Verdict: WORKED.** The spread is confirmed (16.5 → 65.3 across all 94 night raws), and **approach
 (b) — deterministic post-normalization — works end-to-end**: it hits the target bgLuma exactly,
 produces no visible edge artifacts, leaves enclosed regions and white lines byte-untouched, and

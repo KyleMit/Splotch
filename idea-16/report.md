@@ -1,5 +1,8 @@
 # Idea #16 — Night fill as a recolor edit of the light raw (bake-off report)
 
+Status: NOT PROMOTED — the recolor-edit night path was not adopted; night fills still generate
+against the chalk (../../bin/gen-coloring-fills-dark.mjs).
+
 **Verdict: PARTIAL.** The recolor-edit path decisively wins registration, line polarity, and
 light↔night palette coherence — but it consistently loses the thing night fills exist for: the
 *mood*. Every take came back 20–40 luma brighter than the shipped night with grey-slate skies and

@@ -1,5 +1,9 @@
 # Idea #2 — Whitened-motif inconsistency across sibling pages
 
+Status: LANDED — sibling-motif facts now live in the per-page notes registry (`motifs` in
+../../lib/page-notes.mjs, e.g. ../../fill-src/dinosaur/notes.json); the offline motif-review scripts
+were not promoted.
+
 **Verdict: WORKED.** The offline motif-review machinery was built and surfaced more inconsistencies
 than IDEAS.md listed, and the proposed fix — re-chalk the outlier with a `--notes` naming the
 sibling's treatment — converged to the sibling's thin-ring treatment on the **first Gemini

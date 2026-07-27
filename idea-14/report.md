@@ -1,5 +1,8 @@
 # Idea #14 — Local-warp registration check (the shimmer suspect)
 
+Status: OPEN — no local-warp audit exists at HEAD; the registration gates still catch only global
+shifts (../../docs/pipeline.md) and this remains an area:asset-gen backlog item.
+
 **Verdict: WORKED.** The per-tile displacement scorer was built, run over all 188 committed raws (94
 night + 94 light), and it found genuine local warp on shipped pages — including one visible
 double-feature in the final dark-mode composite. The headline hypothesis, however, is **refuted**:

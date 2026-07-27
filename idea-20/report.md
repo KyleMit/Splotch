@@ -1,5 +1,8 @@
 # Idea 20 — Upscale / resolution audit vs device DPR
 
+Status: NOT PROMOTED — the audit answered its question in place: 1024×1536 stands and the
+deterministic upscale path was rejected on evidence.
+
 **Verdict: WORKED** (as an audit — the question is answered empirically; the deterministic upscale
 path was tested and rejected on evidence).
 

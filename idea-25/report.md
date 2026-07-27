@@ -1,5 +1,8 @@
 # Idea #25 — Light-mode byte-stability check in CI
 
+Status: LANDED as ../../bin/gen-asset-manifest.mjs with ../../golden/asset-manifest.sha256, verified
+in CI by `check:assets:manifest`.
+
 **Verdict: WORKED** — implemented end-to-end, validated in both directions, 0 Gemini calls, fully
 offline.
 

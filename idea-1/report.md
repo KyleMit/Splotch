@@ -1,5 +1,8 @@
 # Idea #1 — Dark-bodied subjects re-ink their outlines dark
 
+Status: NOT PROMOTED — the rim-erase punch extension was never lifted into ../../lib/punch-fill.mjs;
+the re-inking class was closed by the 3.1 model swap instead (../../docs/gemini-3.1-migration.md).
+
 **Verdict: WORKED** (approach (a), refined to an inpaint rule with a near-black protection floor and
 a lineW page gate). Approach (c) partially works but has collateral damage at r≥2; approach (b)
 whitens the lines but redraws fills and is not a surgical fix.

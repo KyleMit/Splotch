@@ -1,5 +1,9 @@
 # Idea 22 — Composite view as a first-class tool
 
+Status: LANDED — the composite view is the Combined layer of
+../../bin/gen-coloring-book-proof-sheet.mjs (../../docs/coloring-book-proof-sheet.md); the
+standalone `gen:coloring-composite` CLI was not promoted.
+
 **Verdict: WORKED.** `gen:coloring-composite` implemented end-to-end, fully offline (0 Gemini
 calls), validated byte-for-byte against the ad hoc `lib/night-composite.mjs` usage, and demonstrated
 on the real gate-override case.

@@ -1,5 +1,8 @@
 # Idea #23 — Golden-set regression fixtures
 
+Status: LANDED as ../../bin/audit-golden.mjs with the frozen scores in
+../../golden/golden-scores.json.
+
 **Verdict: WORKED.** Built end-to-end, fully offline (0 Gemini calls): a freeze tool that snapshots
 every cheap audit score for all 102 catalog line-arts (94 tall/wide pages + 8 covers) into one
 committed JSON, and a diff tool that re-scores and exits non-zero on regressions. No-op diff is

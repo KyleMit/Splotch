@@ -1,5 +1,8 @@
 # Idea #12 — Eye detector: side profiles and non-face cores
 
+Status: LANDED — both suppressions are in `judgeNightEyes` (../../lib/eye-fill.mjs); the 3.1 wave
+shipped with them (../../docs/gemini-3.1-migration.md).
+
 **Verdict: WORKED.** Two small, principled suppressions in `judgeNightEyes` clear **all five**
 night-side false-flags in the catalog (duck-wide, monster-wide ×7, rover-wide, fire-tall,
 train-wide) while retaining every true fail (caterpillar-wide ×2, ladybug-wide ×2, snail-wide) and

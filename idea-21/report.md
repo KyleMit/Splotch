@@ -1,5 +1,8 @@
 # Idea 21 — Before/after contact sheet from git history
 
+Status: LANDED — `--source git:<ref>` is a mode of ../../bin/gen-coloring-book-proof-sheet.mjs
+(../../docs/coloring-book-proof-sheet.md).
+
 **Verdict: WORKED.** `--source git:<ref>` and `--compare git:<ref>` were implemented in
 `gen-contact-sheet.mjs` end-to-end, fully offline (0 Gemini calls), validated on real historical
 refs for both suggested targets (`farm`, `creatures/owl-tall`), with normal

@@ -1,5 +1,8 @@
 # Idea #24 — Complete the orphan pages: heart-wide + umbrella-tall
 
+Status: LANDED — heart-wide and umbrella-tall ship in web/static/coloring/ and are cataloged in
+web/src/lib/state/books.ts.
+
 **Verdict: WORKED.** Both orphan pages were completed end-to-end — new pen outlines authored, full
 standard suites generated with every stock gate passing, both pages wired into `books.ts`, and
 `check:assets` + `svelte-check` + 353 unit tests all green — in **12 Gemini image calls** (hard cap

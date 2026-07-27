@@ -1,5 +1,8 @@
 # Idea #3 — Chalk whites the night fill disagrees with
 
+Status: OPEN — no chalk↔fill disagreement scorer exists at HEAD; the gap is still the one
+../../docs/pipeline.md documents, and remains an area:asset-gen backlog item.
+
 **Verdict: WORKED.** The scorer was built exactly as proposed, runs fully offline in ~50 s over the
 whole catalog (70 pages with chalk + night raw + whitened regions), zero Gemini calls, and its
 ranking is essentially all true positives — the three IDEAS.md pages behave as predicted (with one
