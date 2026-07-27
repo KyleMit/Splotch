@@ -19,34 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P4][documentation] `Read(//tmp/**)` uses non-obvious double-slash absolute-path syntax with no explanation
-
-**File(s):** `.claude/settings.json:77` — pinned at SHA f934d43
-
-#### Problem
-
-```json
-"Read(//tmp/**)"
-```
-
-The leading `//` is Claude Code's syntax for a filesystem-absolute path (so this grants reads under
-`/tmp`, where the session scratchpad lives), but it reads like a typo (`/tmp` double-slashed) to
-anyone not steeped in the permission grammar. A reviewer could "fix" it to `/tmp/**` and change its
-meaning. It's the only absolute-path entry in the file and carries no context.
-
-#### Proposed solution
-
-Leave the syntax as-is (it's correct) but cover it in the permission-policy doc note, or if the
-project prefers, verify whether the intended path is the session scratchpad specifically and scope
-it tighter than all of `/tmp`.
-
-#### Verification
-
-Confirm `Read(//tmp/**)` currently permits reading `/tmp/...` files and that `Read(/tmp/**)` would
-not (validating the `//` is load-bearing), then ensure the distinction is documented.
-
----
-
 ### [P4][dead-config] `npm install *` auto-allows installing arbitrary packages without a prompt
 
 **File(s):** `.claude/settings.json:31,33-35` — pinned at SHA f934d43
