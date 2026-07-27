@@ -19,33 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P3][consistency] Claude `setup.sh` swallows every step with `|| echo` but, unlike the Codex scripts, never summarizes what was skipped
-
-**File(s):** `.claude/cloud/setup.sh:22-45` vs `.codex/cloud/setup.sh:14-59` — pinned at SHA f934d43
-
-#### Problem
-
-Both cloud setups are best-effort (`set -uo pipefail`, no `-e`). The Codex scripts accumulate a
-`warnings=()` array and print a "finished with N warning(s)" summary at the end (`setup.sh:53-60`),
-so a partially-provisioned environment is obvious in the log. The Claude `setup.sh` instead prints a
-one-off `echo` at each failing step (lines 23, 35, 44) with no roll-up, so a session that had npm,
-Playwright, and chisel all fail scatters three lines through a long log with nothing tying them
-together. Two setup scripts solving the same "best-effort with visible failures" problem in two
-different shapes is avoidable inconsistency.
-
-#### Proposed solution
-
-Adopt the Codex `warn()`/summary pattern in `.claude/cloud/setup.sh` (or, conversely, agree the
-inline-echo style is sufficient and simplify the Codex scripts) so both cloud setups report failures
-the same way.
-
-#### Verification
-
-Force all three optional installs to fail and run each setup script; confirm today only Codex emits
-a consolidated summary, and after the change both do.
-
----
-
 ### [P3][maintenance] Claude `setup.sh` hard-codes a Playwright fallback version that duplicates `package.json` and diverges from the Codex approach
 
 **File(s):** `.claude/cloud/setup.sh:33-34` — pinned at SHA f934d43
