@@ -11,35 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P3][architecture] `webOnlyBooks` is app-domain logic sitting in the "generic helpers" file
-
-**File(s):** `scripts/lib/utils.mjs:143-147` (`webOnlyBooks`) — pinned at SHA f934d43
-
-#### Problem
-
-```js
-export const webOnlyBooks = (books) =>
-  books.filter((book) => !(book.platforms ?? ['web', 'mobile']).includes('mobile'));
-```
-
-This encodes the app's book-platform filtering rule (mirroring `booksForPlatform()` in
-`src/lib/state/books.ts`) and directly contradicts the file's own header ("App-specific logic stays
-in the script that owns it"). Only two scripts use it (`check-assets.mjs`,
-`strip-native-assets.mjs`), both native-asset concerns.
-
-#### Proposed solution
-
-Move it to a purpose-named module, e.g. `scripts/lib/native-assets.mjs` alongside where the strip
-logic conceptually lives, or export it from a shared books helper. Keep the cross-check comment
-pointing at `books.ts`.
-
-#### Verification
-
-`grep -rn webOnlyBooks scripts/` shows both consumers importing from the new location;
-`npm run check:assets` still passes.
-
----
-
 ### [P3][architecture] Three command runners with inconsistent contracts and error behaviour
 
 **File(s):** `scripts/lib/utils.mjs:27-72` (`run`, `sh`, `capture`) — pinned at SHA f934d43

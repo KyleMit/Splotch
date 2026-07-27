@@ -28,13 +28,13 @@ Two alternatives were considered when simplifying:
 ## Decision
 
 All automation scripts in `scripts/` are Node `.mjs` files that must run on macOS and Linux. Shared
-boilerplate lives in three modules under `scripts/lib/`, and each script reads imperatively
+boilerplate lives in purpose-named modules under `scripts/lib/`, and each script reads imperatively
 top-to-bottom with only its own domain logic inline:
 
 * `scripts/lib/utils.mjs` — generic helpers: `ROOT`, `sleep`, `fail`, `run`/`capture` (spawn the
   executable with an argument array directly, preserving literal arguments while the OS resolves
   commands through `PATH`), `sh` (the explicit escape hatch for deliberate shell command lines),
-  `hasCommand` (`which`), `parseFrontmatter`, `writeFileDeep`, `compareSemverDesc`, `webOnlyBooks`.
+  `hasCommand` (`which`), `parseFrontmatter`, `writeFileDeep`, and `compareSemverDesc`.
 * `scripts/lib/android.mjs` — per-platform Android SDK resolution: `ANDROID_HOME` (env override —
   `ANDROID_HOME` or `ANDROID_SDK_ROOT` — else `%LOCALAPPDATA%\Android\Sdk` / `~/Library/Android/sdk`
   / `~/Android/Sdk`), `ADB`/`EMULATOR` binary paths, `AVD_NAME`, and the Maestro location.
@@ -43,6 +43,8 @@ top-to-bottom with only its own domain logic inline:
   the port, else spawns `node_modules/vite/bin/vite.js` directly — no shell — so killing the whole
   process group works reliably), `openAppPage`, and the UI gestures (`pickColor`, `setStrokeSize`,
   `drawStroke`, `expandDrawer`, `dismissMenu`) plus point generators.
+* `scripts/lib/book-assets.mjs` — coloring-book distribution helpers, including the script-side
+  `webOnlyBooks` complement of `booksForPlatform('mobile')` in `web/src/lib/state/books.ts`.
 
 Non-obvious invariants:
 
