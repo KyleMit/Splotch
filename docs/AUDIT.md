@@ -9,40 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P4][test-quality] `composite-eye` hardcodes fixture-name arrays and a `length === 5` that duplicate `manifest.json`
-
-**File(s):** `tools/asset-gen/tests/composite-eye.test.mjs:42,56,89` — pinned at SHA f934d43
-
-#### Problem
-
-The suite loads `manifest.json` (which already lists all five fixtures with `expectBlankOrb` flags
-and `worstCoreDarkFrac` values), yet the true-positive and over-flag cases are driven by literal
-arrays hardcoded in the test:
-
-```js
-for (const name of ['stegosaurus-tall', 'horse-tall']) { ... }        // line 42
-for (const name of ['unicorn-tall', 'owl-tall', 'square-tall']) {...} // line 56
-```
-
-and the manifest check asserts a magic `expect(manifest.length).toBe(5)` (line 89). Add a sixth
-fixture and you must update the manifest, the two arrays, and the count — three places that silently
-disagree until someone notices. The manifest is the source of truth but isn't used to drive the
-parametrized cases.
-
-#### Proposed solution
-
-Derive the two loops from the manifest: `manifest.filter(e => e.expectBlankOrb)` and
-`manifest.filter(e => !e.expectBlankOrb)`. Drop the magic `5` (or assert against `manifest.length`
-dynamically elsewhere). The manifest's `worstCoreDarkFrac` values can also feed the margin
-assertions instead of recomputing.
-
-#### Verification
-
-Add a dummy manifest entry (with fixtures) and confirm the parametrized tests pick it up without
-editing the test body.
-
----
-
 ### [P4][duplication] The comp/light/pen fixture-loading trio is duplicated between two eye test suites
 
 **File(s):** `tools/asset-gen/tests/composite-eye.test.mjs:24-33` (`FIXTURES` + `score`),
