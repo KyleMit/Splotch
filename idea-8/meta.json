@@ -41,7 +41,6 @@
   ],
   "code": [
     { "title": "Region-hue coherence scorer (offline audit + --night-file single-take scoring)", "file": "code/score-hue-coherence.mjs" },
-    { "title": "Conditioned night generator (temp variant of gen-coloring-fills-dark.mjs, second-image palette reference)", "file": "code/gen-coloring-fills-dark-cond.mjs" },
-    { "title": "Full-res gate-passing conditioned take for ant-wide", "file": "code/ant-wide.night.conditioned.fullres.webp" }
+    { "title": "Conditioned night generator (temp variant of gen-coloring-fills-dark.mjs, second-image palette reference)", "file": "code/gen-coloring-fills-dark-cond.mjs" }
   ]
 }

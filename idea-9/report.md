@@ -127,8 +127,6 @@ semi-automate with a per-page notes file.
   multi-image, `--palette-text` text plan; needs `--experimental-strip-types` for the geminiSafety
   import).
 * `code/make-pair-image.mjs` — side-by-side pair builder.
-* `code/dragon-wide.light.conditioned.fullres.webp` — the full-res winning take (would still need
-  human contact-sheet review + punch before shipping).
 
 ## What was NOT done (budget/scope)
 
