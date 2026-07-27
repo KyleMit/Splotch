@@ -22,6 +22,11 @@ import {
   setStrokeSize,
   drawStroke,
   dismissMenu,
+  openColoringBook,
+  pickBook,
+  pickPage,
+  openColorPicker,
+  openParentCenter,
   circlePts,
   arcPts,
   zigzag,
@@ -145,9 +150,9 @@ try {
     {
       const { ctx, page } = await openAppPage(browser, base, t.device);
       await expandDrawer(page);
-      await page.locator('#coloringBookButton').click();
+      await openColoringBook(page);
       await sleep(450);
-      await page.locator('button[aria-label="Farm coloring book"]').click();
+      await pickBook(page, 'Farm');
       await sleep(500);
       await shot(page, `${t.dir}/02-coloring-book.png`);
       await ctx.close();
@@ -159,11 +164,11 @@ try {
       const { ctx, page } = await openAppPage(browser, base, t.device);
       await expandDrawer(page);
       await setStrokeSize(page, 5);
-      await page.locator('#coloringBookButton').click();
+      await openColoringBook(page);
       await sleep(450);
-      await page.locator('button[aria-label="Farm coloring book"]').click();
+      await pickBook(page, 'Farm');
       await sleep(400);
-      await page.locator('button[aria-label="Farm coloring page"]').first().click();
+      await pickPage(page, 'Farm');
       await sleep(700); // wait for overlay image to load
       const box = await canvasBox(page);
       await colorInLines(page, box);
@@ -176,7 +181,7 @@ try {
     // SCENE 4 — rainbow color picker
     {
       const { ctx, page } = await openAppPage(browser, base, t.device);
-      await page.locator('.color-swatch[data-color="custom"]').click();
+      await openColorPicker(page);
       await sleep(500);
       await shot(page, `${t.dir}/04-color-picker.png`);
       await ctx.close();
@@ -186,7 +191,7 @@ try {
     // SCENE 5 — Parent Center (settings / trust)
     {
       const { ctx, page } = await openAppPage(browser, base, t.device);
-      await page.locator('#parentHelpButton').click();
+      await openParentCenter(page);
       await sleep(500);
       await shot(page, `${t.dir}/05-parent-center.png`);
       await ctx.close();

@@ -26,35 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P3][maintainability] `store-shots.mjs` uses raw app selectors that bypass the rot-guarded driver
-
-**File(s):** `scripts/store-shots.mjs:148,150,164,166,179,189` — pinned at SHA f934d43
-
-#### Problem
-
-`scripts/CLAUDE.md` explains that `app-driver.mjs` is the selector-facing layer, guarded against
-markup rot by `test:driver:smoke`. But `store-shots.mjs` reaches into the DOM with its own raw
-locators — `#coloringBookButton`, `button[aria-label="Farm coloring book"]`,
-`button[aria-label="Farm coloring page"]`, `.color-swatch[data-color="custom"]`, `#parentHelpButton`
-— that the driver doesn't own and the smoke test never touches. When that markup changes,
-`gen:shots` silently breaks exactly the way the driver rot-guard was built to prevent, but for
-selectors it can't see.
-
-#### Proposed solution
-
-Add driver functions for these interactions (`openColoringBook(page)`, `pickBook(page, name)`,
-`pickPage(page, name)`, `openColorPicker(page)`, `openParentCenter(page)`) to `lib/app-driver.mjs`,
-and have `store-shots.mjs` call them. Then extend `driver-smoke.mjs` to exercise at least the
-coloring-book entry so CI catches the rot.
-
-#### Verification
-
-`grep -n "aria-label\|color-swatch\|Button'" scripts/store-shots.mjs` shows no raw locators.
-`npm run test:driver:smoke` passes and now covers the coloring-book path; `npm run gen:shots` still
-produces all five scenes.
-
----
-
 ### [P3][complexity] `store-shots.mjs` five scenes inline in a loop with magic waits
 
 **File(s):** `scripts/store-shots.mjs:130-195` (scene loop), sleeps at `150,152,164,167,182,190` —

@@ -5,10 +5,11 @@
 // a stale probe/selector after an app-markup change stays broken until someone
 // hand-runs a generator. This boots the real app once and exercises the driver's
 // entry path — openAppPage + expandDrawer + pickColor + setStrokeSize + drawStroke
-// — asserting each step matches current markup, then tears the server down.
+// + the coloring-book path (openColoringBook + pickBook + pickPage) — asserting
+// each step matches current markup, then tears the server down.
 
 import { chromium } from '@playwright/test';
-import { chromiumExecutablePath } from './lib/utils.mjs';
+import { chromiumExecutablePath, sleep } from './lib/utils.mjs';
 import { check, fatal, summarize } from './lib/smoke.mjs';
 import {
   ensureDevServer,
@@ -18,6 +19,9 @@ import {
   pickColor,
   setStrokeSize,
   drawStroke,
+  openColoringBook,
+  pickBook,
+  pickPage,
 } from './lib/app-driver.mjs';
 
 const PORT = Number(process.env.SMOKE_PORT ?? 4173);
@@ -56,6 +60,17 @@ async function run(browser, base) {
     return false;
   });
   check('drawStroke lays ink on the canvas', painted);
+
+  await openColoringBook(page);
+  await sleep(450);
+  await pickBook(page, 'Farm');
+  await sleep(400);
+  await pickPage(page, 'Farm');
+  await sleep(700);
+  check(
+    'openColoringBook + pickBook + pickPage apply a Farm page overlay',
+    await page.locator('#coloringOverlay').isVisible()
+  );
 
   await ctx.close();
 }
