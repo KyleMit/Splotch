@@ -21,6 +21,7 @@
 import sharp from 'sharp';
 import { dilateMask } from './morphology.mjs';
 import { bleedUnderMask, OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
+import { quantile } from './stats.mjs';
 
 export const DELTA_RIM = 40; // rimΔ above this = much darker than the true local fill
 export const REF_DILATE = 4; // reference punch clears any plausible rim (bands 1..3 + slack)
@@ -113,8 +114,8 @@ export async function scoreNightHalo(rawBuf, lineArtBuf, shippedBuf) {
   };
 
   const bandStats = bands.map((band, i) => {
-    const deltas = band.map(deltaAt).sort((a, b) => a - b);
-    const q = (f) => deltas[Math.floor(f * (deltas.length - 1))] ?? NaN;
+    const deltas = band.map(deltaAt);
+    const q = (f) => quantile(deltas, f) ?? NaN;
     return {
       d: i + 1,
       n: deltas.length,

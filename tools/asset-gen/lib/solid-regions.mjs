@@ -19,6 +19,7 @@
 import sharp from 'sharp';
 import { dilateMask, erodeMask } from './morphology.mjs';
 import { OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
+import { quantile } from './stats.mjs';
 
 // Same ink bar as the punch mask (lib/punch-fill.mjs OUTLINE_LUMA_THRESHOLD),
 // so "solid" is judged on exactly the pixels the punch would cut.
@@ -78,8 +79,7 @@ function strokeWidthP90(mask, w, h) {
   const vals = [];
   for (let i = 0; i < d.length; i++) if (mask[i]) vals.push(d[i]);
   if (!vals.length) return 0;
-  vals.sort((a, b) => a - b);
-  return 2 * vals[Math.floor(vals.length * 0.9)];
+  return 2 * quantile(vals, 0.9);
 }
 
 function largestComponent(mask, w, h) {

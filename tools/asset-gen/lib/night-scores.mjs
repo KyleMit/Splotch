@@ -10,6 +10,7 @@
 import sharp from 'sharp';
 import { dilateMask, erodeMask } from './morphology.mjs';
 import { OUTLINE_INK_CUTOFF, OUTLINE_MASK_SIZE } from './outline-match.mjs';
+import { median } from './stats.mjs';
 
 // --- Drift detection ----------------------------------------------------------
 // A night fill's white pixels are outlines; the model has drifted when it draws a
@@ -98,8 +99,7 @@ export async function scoreNightness(fillBuf, sourceBuf) {
   }
   // Too little open background to judge (e.g. a full-bleed subject): treat as fine.
   if (lumas.length < n * NIGHT_MIN_BG_FRAC) return { bgLuma: 0, bgFrac: lumas.length / n };
-  lumas.sort((a, b) => a - b);
-  return { bgLuma: lumas[lumas.length >> 1], bgFrac: lumas.length / n };
+  return { bgLuma: median(lumas), bgFrac: lumas.length / n };
 }
 
 export async function scoreDrift(fillBuf, sourceBuf, preparedSource) {
@@ -188,8 +188,7 @@ export async function scoreLineColor(fillBuf, sourceBuf, preparedSource) {
     }
   }
   if (!maxes.length) return { lineWhite: 255 };
-  maxes.sort((a, b) => a - b);
-  return { lineWhite: maxes[maxes.length >> 1] };
+  return { lineWhite: median(maxes) };
 }
 
 export async function scoreNightFillGates(fillBuf, sourceBuf) {
