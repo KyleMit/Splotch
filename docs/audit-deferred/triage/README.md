@@ -15,11 +15,11 @@ rationale.
 
 | #  | Decision doc                                      | Finding                                                     | Pri | Cluster | Status  |
 | -- | ------------------------------------------------- | ----------------------------------------------------------- | --- | ------- | ------- |
-| 1  | `p2-duplication-glaze-stamp.md`                   | Two-blit subtractive glaze stamp duplicated                 | P2  | C01     | pending |
+| 1  | `p2-duplication-glaze-stamp.md`                   | Two-blit subtractive glaze stamp duplicated                 | P2  | C01     | FIX — callback-based stamp |
 | 2  | `p2-complexity-generate-ai-image.md`              | `generateAiImage` bundles six concerns                      | P2  | C02     | DROP — resolved on main |
-| 3  | `p3-duplication-crayon-buffer-alloc.md`           | Crayon-buffer allocate-or-resize written three times        | P3  | C01     | pending |
-| 4  | `p3-maintainability-overlay-css.md`               | Engine overlay CSS duplicates `.crayon-overlay` styles      | P3  | C01     | pending |
-| 5  | `p4-maintainability-overlay-struct.md`            | Group crayon-overlay module variables into one struct       | P4  | C01     | pending |
+| 3  | `p3-duplication-crayon-buffer-alloc.md`           | Crayon-buffer allocate-or-resize written three times        | P3  | C01     | OPTIONS — lean: minimal helper |
+| 4  | `p3-maintainability-overlay-css.md`               | Engine overlay CSS duplicates `.crayon-overlay` styles      | P3  | C01     | OPTIONS — lean: app.css single source |
+| 5  | `p4-maintainability-overlay-struct.md`            | Group crayon-overlay module variables into one struct       | P4  | C01     | FIX — rider on #4 |
 | 6  | `p3-duplication-auth-headers.md`                  | Credential-header assembly hard-codes header names          | P3  | C02     | DROP — resolved on main |
 | 7  | `p4-readability-query-string.md`                  | Manual query-string concatenation for generate-image        | P4  | C02     | DROP — not worth it |
 | 8  | `p4-readability-webp-guard.md`                    | WebP-upload guard predicate in `encodeWebpUpload`           | P4  | C02     | DROP — not worth it |
