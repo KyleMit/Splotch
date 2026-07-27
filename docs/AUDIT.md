@@ -19,39 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P3][maintenance] Claude `setup.sh` hard-codes a Playwright fallback version that duplicates `package.json` and diverges from the Codex approach
-
-**File(s):** `.claude/cloud/setup.sh:33-34` — pinned at SHA f934d43
-
-#### Problem
-
-```bash
-PW_VERSION="$(node -p "require('./package.json').devDependencies['@playwright/test'].replace(/^[^0-9]*/, '')" 2>/dev/null || true)"
-npx --yes "playwright@${PW_VERSION:-1.61.1}" install --with-deps chromium
-```
-
-The literal fallback `1.61.1` duplicates the version already pinned in `package.json`
-(`"@playwright/test": "^1.61.1"`). When the dependency is bumped, this fallback silently goes stale
-— exactly the "hard-coded version drifts silently" failure the comment two lines up warns about. The
-Codex scripts avoid the literal entirely by delegating to `node scripts/web.mjs playwright install`,
-which resolves the installed version. Two cloud setups derive the Playwright version two different
-ways, one of which reintroduces the drift the other eliminates.
-
-#### Proposed solution
-
-Prefer the Codex approach (`node scripts/web.mjs playwright install --with-deps chromium`) so the
-version is always the resolved one and no literal exists to drift; or if the explicit
-`npx
-playwright@<version>` is needed for the CDN allowlist reason, drop the literal fallback and
-fail loudly when the version can't be derived rather than pinning a number that will rot.
-
-#### Verification
-
-Bump `@playwright/test` in `package.json` and re-read the script: the derived path stays correct
-while the `1.61.1` fallback does not; confirm the chosen fix leaves no literal version to maintain.
-
----
-
 ### [P3][maintenance] The audit-routine cron schedule table can silently drift from the actual Claude Routines with no automated check
 
 **File(s):** `.claude/audit-conventions.md:150-172` — pinned at SHA f934d43
