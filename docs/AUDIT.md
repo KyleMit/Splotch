@@ -7,30 +7,6 @@
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P4][complexity] `release.mjs` is a 150-line top-level procedure
-
-**File(s):** `scripts/release.mjs:25-176` — pinned at SHA f934d43
-
-#### Problem
-
-The whole release flow runs at module top level in numbered comment sections (resolve versionCode,
-bump versions, regenerate, cleanliness guard, commit+tag, publish). It's readable thanks to the
-comments, but it's untestable and can't be reasoned about in pieces; the stray-file guard (96-123)
-in particular is meaty logic embedded mid-script.
-
-#### Proposed solution
-
-Decompose into named functions — `resolveVersionCode(releaseFile)`, `bumpVersions(version, code)`,
-`assertOnlyReleasePaths()`, `commitAndTag(version)`, `publish(version, body)` — invoked from a small
-`main()`. The stray-path filter becomes an independently testable pure function.
-
-#### Verification
-
-`node scripts/release.mjs <ver> --dry-run` produces the same file changes as before; `--no-publish`
-still commits+tags locally. Behavior-preserving refactor.
-
----
-
 ### [P4][consistency] `--check`/flag parsing done ad hoc in every gate script
 
 **File(s):** `scripts/gen-tokens.mjs:69`, `scripts/image-audit.mjs:37`,

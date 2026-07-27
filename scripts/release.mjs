@@ -64,9 +64,7 @@ function parseReleaseArgs(args) {
 function releasePath(version) {
   const file = join(ROOT, 'releases', `${version}.md`);
   if (!existsSync(file)) {
-    fail(
-      `Missing ${file}\nCreate the notes first (or run the /release command), then re-run.`
-    );
+    fail(`Missing ${file}\nCreate the notes first (or run the /release command), then re-run.`);
   }
   return file;
 }
