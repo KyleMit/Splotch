@@ -19,81 +19,10 @@
 import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { ROOT, fail, run, capture, parseFrontmatter } from './lib/utils.mjs';
+import { ROOT, fail, run, capture, isMain, parseFrontmatter } from './lib/utils.mjs';
 import { RELEASE_AAB } from './lib/android.mjs';
 import { setAndroidVersion, setIosVersion } from './lib/native-version.mjs';
 
-const args = process.argv.slice(2);
-const version = args.find((a) => !a.startsWith('-'));
-const dryRun = args.includes('--dry-run');
-const noPublish = args.includes('--no-publish');
-
-if (!version || !/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(version)) {
-  fail(
-    'Usage: node scripts/release.mjs <semver> [--no-publish] [--dry-run]\n  <semver> must look like 1.2.0'
-  );
-}
-
-const releaseFile = join(ROOT, 'releases', `${version}.md`);
-if (!existsSync(releaseFile)) {
-  fail(
-    `Missing ${releaseFile}\nCreate the notes first (or run the /release command), then re-run.`
-  );
-}
-
-// --- 1. resolve the Android versionCode ----------------------------------
-
-const gradle = readFileSync(join(ROOT, 'android', 'app', 'build.gradle'), 'utf8');
-const currentCode = Number(gradle.match(/versionCode\s+(\d+)/)?.[1] ?? 0);
-
-// Reuse the code already pinned in the release file if present (idempotent
-// re-runs); otherwise assign the next monotonic integer and pin it.
-const parsed = parseFrontmatter(readFileSync(releaseFile, 'utf8'));
-if (!parsed) fail(`${releaseFile}: malformed frontmatter`);
-let { frontmatter, body } = parsed;
-const pinned = Number(parsed.meta.androidVersionCode);
-const versionCode = Number.isInteger(pinned) ? pinned : currentCode + 1;
-
-if (!Number.isInteger(pinned)) {
-  frontmatter = /androidVersionCode:/.test(frontmatter)
-    ? frontmatter.replace(/androidVersionCode:.*/i, `androidVersionCode: ${versionCode}`)
-    : `${frontmatter}\nandroidVersionCode: ${versionCode}`;
-  writeFileSync(releaseFile, `---\n${frontmatter.trim()}\n---\n${body}\n`);
-  console.log(`Pinned androidVersionCode: ${versionCode} in ${version}.md`);
-}
-
-console.log(`\nReleasing v${version} (versionCode ${versionCode})\n`);
-
-// --- 2. bump versions ----------------------------------------------------
-
-// Native (Android always; iOS once the project has been added).
-setAndroidVersion(ROOT, version, versionCode);
-console.log(`Set Android versionName ${version} / versionCode ${versionCode}`);
-if (existsSync(join(ROOT, 'ios'))) {
-  setIosVersion(ROOT, version, versionCode);
-  console.log(`Set iOS MARKETING_VERSION ${version} / CURRENT_PROJECT_VERSION ${versionCode}`);
-} else {
-  console.log('(no ios/ project yet — skipping iOS version bump)');
-}
-
-// Canonical semver lives in package.json.
-run('npm', ['version', version, '--no-git-tag-version', '--allow-same-version']);
-
-// --- 3. regenerate derived artifacts -------------------------------------
-
-run('node', [join('scripts', 'generate-releases.mjs')]);
-
-if (dryRun) {
-  console.log('\n--dry-run: files updated, no git actions taken.');
-  process.exit(0);
-}
-
-// --- 4. commit + tag -----------------------------------------------------
-
-// Cleanliness guard: by this point everything dirty in the tree should be a
-// file the release itself just rewrote (version bumps + generated artifacts).
-// Anything else is a stray edit that `git add -A` would silently sweep into the
-// release commit — abort so it can't ride along unnoticed.
 const RELEASE_PATHS = [
   'package.json',
   'package-lock.json',
@@ -103,65 +32,155 @@ const RELEASE_PATHS = [
   'fastlane/',
   'releases/',
 ];
-const isReleasePath = (p) =>
-  RELEASE_PATHS.some((allowed) => (allowed.endsWith('/') ? p.startsWith(allowed) : p === allowed));
 
-const stray = capture('git', ['status', '--porcelain'])
-  .split(/\r?\n/)
-  .filter(Boolean)
-  .map((line) => line.slice(3)) // strip the "XY " status columns
-  .map((p) => (p.includes(' -> ') ? p.split(' -> ')[1] : p)) // rename: keep the new path
-  .map((p) => p.replace(/^"(.*)"$/, '$1')) // unquote paths git escapes
-  .filter((p) => !isReleasePath(p));
+const isReleasePath = (path) =>
+  RELEASE_PATHS.some((allowed) =>
+    allowed.endsWith('/') ? path.startsWith(allowed) : path === allowed
+  );
 
-if (stray.length) {
-  fail(
-    `\nWorking tree has changes outside the release artifacts:\n` +
-      stray.map((p) => `  ${p}`).join('\n') +
-      '\n\nCommit, stash, or revert them before releasing — otherwise `git add -A`\n' +
-      'would sweep them into the release commit.'
+export const findStrayReleasePaths = (status) =>
+  status
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => line.slice(3))
+    .map((path) => (path.includes(' -> ') ? path.split(' -> ')[1] : path))
+    .map((path) => path.replace(/^"(.*)"$/, '$1'))
+    .filter((path) => !isReleasePath(path));
+
+function parseReleaseArgs(args) {
+  const version = args.find((arg) => !arg.startsWith('-'));
+  if (!version || !/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(version)) {
+    fail(
+      'Usage: node scripts/release.mjs <semver> [--no-publish] [--dry-run]\n  <semver> must look like 1.2.0'
+    );
+  }
+  return {
+    version,
+    dryRun: args.includes('--dry-run'),
+    noPublish: args.includes('--no-publish'),
+  };
+}
+
+function releasePath(version) {
+  const file = join(ROOT, 'releases', `${version}.md`);
+  if (!existsSync(file)) {
+    fail(
+      `Missing ${file}\nCreate the notes first (or run the /release command), then re-run.`
+    );
+  }
+  return file;
+}
+
+function resolveVersionCode(releaseFile, version) {
+  const gradle = readFileSync(join(ROOT, 'android', 'app', 'build.gradle'), 'utf8');
+  const currentCode = Number(gradle.match(/versionCode\s+(\d+)/)?.[1] ?? 0);
+  const parsed = parseFrontmatter(readFileSync(releaseFile, 'utf8'));
+  if (!parsed) fail(`${releaseFile}: malformed frontmatter`);
+  let { frontmatter, body } = parsed;
+  const pinned = Number(parsed.meta.androidVersionCode);
+  const versionCode = Number.isInteger(pinned) ? pinned : currentCode + 1;
+
+  if (!Number.isInteger(pinned)) {
+    frontmatter = /androidVersionCode:/.test(frontmatter)
+      ? frontmatter.replace(/androidVersionCode:.*/i, `androidVersionCode: ${versionCode}`)
+      : `${frontmatter}\nandroidVersionCode: ${versionCode}`;
+    writeFileSync(releaseFile, `---\n${frontmatter.trim()}\n---\n${body}\n`);
+    console.log(`Pinned androidVersionCode: ${versionCode} in ${version}.md`);
+  }
+
+  return { body, versionCode };
+}
+
+function bumpVersions(version, versionCode) {
+  setAndroidVersion(ROOT, version, versionCode);
+  console.log(`Set Android versionName ${version} / versionCode ${versionCode}`);
+  if (existsSync(join(ROOT, 'ios'))) {
+    setIosVersion(ROOT, version, versionCode);
+    console.log(`Set iOS MARKETING_VERSION ${version} / CURRENT_PROJECT_VERSION ${versionCode}`);
+  } else {
+    console.log('(no ios/ project yet — skipping iOS version bump)');
+  }
+  run('npm', ['version', version, '--no-git-tag-version', '--allow-same-version']);
+}
+
+function generateArtifacts() {
+  run('node', [join('scripts', 'generate-releases.mjs')]);
+}
+
+function assertOnlyReleasePaths() {
+  const stray = findStrayReleasePaths(capture('git', ['status', '--porcelain']));
+  if (stray.length) {
+    fail(
+      `\nWorking tree has changes outside the release artifacts:\n` +
+        stray.map((path) => `  ${path}`).join('\n') +
+        '\n\nCommit, stash, or revert them before releasing — otherwise `git add -A`\n' +
+        'would sweep them into the release commit.'
+    );
+  }
+}
+
+function commitAndTag(version) {
+  run('git', ['add', '-A']);
+  run('git', ['commit', '-m', `release: v${version}`]);
+  run('git', ['tag', `v${version}`]);
+}
+
+function publish(version, body) {
+  run('git', ['push']);
+  run('git', ['push', 'origin', `v${version}`]);
+
+  const notesDir = mkdtempSync(join(tmpdir(), 'splotch-rel-'));
+  const notesPath = join(notesDir, 'notes.md');
+  writeFileSync(notesPath, body + '\n');
+
+  const ghArgs = [
+    'release',
+    'create',
+    `v${version}`,
+    '--title',
+    `v${version}`,
+    '--notes-file',
+    notesPath,
+  ];
+  if (existsSync(RELEASE_AAB)) {
+    ghArgs.push(RELEASE_AAB);
+    console.log('Attaching built release bundle: app-release.aab');
+  } else {
+    console.log('(no app-release.aab found — run `npm run android:bundle` first to attach it)');
+  }
+  run('gh', ghArgs);
+  rmSync(notesDir, { recursive: true, force: true });
+
+  console.log(
+    `\n✓ Released v${version}: https://github.com/KyleMit/Splotch/releases/tag/v${version}`
   );
 }
 
-run('git', ['add', '-A']);
-run('git', ['commit', '-m', `release: v${version}`]);
-run('git', ['tag', `v${version}`]);
+export function main(args = process.argv.slice(2)) {
+  const { version, dryRun, noPublish } = parseReleaseArgs(args);
+  const { body, versionCode } = resolveVersionCode(releasePath(version), version);
 
-if (noPublish) {
-  console.log(`\n--no-publish: committed and tagged v${version} locally.`);
-  console.log(`Push and publish when ready:`);
-  console.log(`  git push && git push origin v${version}`);
-  console.log(`  gh release create v${version} --title "v${version}" --notes-file <body>`);
-  process.exit(0);
+  console.log(`\nReleasing v${version} (versionCode ${versionCode})\n`);
+  bumpVersions(version, versionCode);
+  generateArtifacts();
+
+  if (dryRun) {
+    console.log('\n--dry-run: files updated, no git actions taken.');
+    return;
+  }
+
+  assertOnlyReleasePaths();
+  commitAndTag(version);
+
+  if (noPublish) {
+    console.log(`\n--no-publish: committed and tagged v${version} locally.`);
+    console.log(`Push and publish when ready:`);
+    console.log(`  git push && git push origin v${version}`);
+    console.log(`  gh release create v${version} --title "v${version}" --notes-file <body>`);
+    return;
+  }
+
+  publish(version, body);
 }
 
-// --- 5. publish: push + GitHub release -----------------------------------
-
-run('git', ['push']);
-run('git', ['push', 'origin', `v${version}`]);
-
-const notesDir = mkdtempSync(join(tmpdir(), 'splotch-rel-'));
-const notesPath = join(notesDir, 'notes.md');
-writeFileSync(notesPath, body + '\n');
-
-const ghArgs = [
-  'release',
-  'create',
-  `v${version}`,
-  '--title',
-  `v${version}`,
-  '--notes-file',
-  notesPath,
-];
-if (existsSync(RELEASE_AAB)) {
-  ghArgs.push(RELEASE_AAB);
-  console.log('Attaching built release bundle: app-release.aab');
-} else {
-  console.log('(no app-release.aab found — run `npm run android:bundle` first to attach it)');
-}
-run('gh', ghArgs);
-rmSync(notesDir, { recursive: true, force: true });
-
-console.log(
-  `\n✓ Released v${version}: https://github.com/KyleMit/Splotch/releases/tag/v${version}`
-);
+if (isMain(import.meta.url)) main();
