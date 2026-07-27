@@ -19,7 +19,7 @@
     "prebuild:cap": "node scripts/web.mjs svelte-kit sync && npm run gen:icons && npm run gen:releases",
     "build:cap": "CAPACITOR=true node scripts/web.mjs vite build && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/strip-native-assets.mjs",
     "preview": "node scripts/web.mjs vite preview",
-    "precheck": "node scripts/web.mjs svelte-kit sync",
+    "precheck": "node scripts/check-native-app-id.mjs && node scripts/web.mjs svelte-kit sync",
     "check": "node scripts/web.mjs svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "node scripts/web.mjs svelte-check --tsconfig ./tsconfig.json --watch",
     "check:assets": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/check-assets.mjs",
