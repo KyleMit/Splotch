@@ -20,7 +20,7 @@ import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace, injectObservers, readObservers, heapBytes } from './capture.mjs';
 import { IPAD_PRO } from './devices.mjs';
 import { profilePath } from './paths.mjs';
-import { writeProfileArtifacts } from './profile-artifacts.mjs';
+import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 
 // The app's "Size N" picker → engine px. Approximate (the recorder only sees the
@@ -120,12 +120,12 @@ async function main() {
       startedAt: new Date(t0).toISOString(),
       durationMs: Date.now() - t0,
     };
-    const metrics = {
+    const metrics = buildMetrics({
       settings,
-      longTasks: obs.longTasks,
-      frames: obs.frames,
-      heap: { beforeBytes: heapBefore ?? 0, afterBytes: heapAfter ?? obs.heapBytes ?? 0 },
-    };
+      obs,
+      heapBefore,
+      heapAfter,
+    });
     const { summary } = writeProfileArtifacts({ outDir, traceEvents: events, metrics });
 
     const md = renderReplayReport({ settings, replayed, debug, summary });

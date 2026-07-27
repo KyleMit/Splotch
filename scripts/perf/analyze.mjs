@@ -500,6 +500,13 @@ export function renderReport(s) {
   return out.join('\n');
 }
 
+export function writeAnalysisArtifacts({ outDir, summary }) {
+  const report = renderReport(summary);
+  writeFileSync(join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
+  writeFileSync(join(outDir, 'report.md'), report);
+  return report;
+}
+
 function main() {
   const target = process.argv[2];
   if (!target) {
@@ -508,9 +515,7 @@ function main() {
   }
   const { dir, events, metrics } = loadInputs(target);
   const summary = analyze(events, metrics);
-  const report = renderReport(summary);
-  writeFileSync(join(dir, 'summary.json'), JSON.stringify(summary, null, 2));
-  writeFileSync(join(dir, 'report.md'), report);
+  const report = writeAnalysisArtifacts({ outDir: dir, summary });
   console.log(report);
   console.log(`\nWrote ${join(dir, 'summary.json')} and ${join(dir, 'report.md')}`);
 }

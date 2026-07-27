@@ -9,42 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P2][duplication] Extract a shared `writeProfileArtifacts` for the trace/metrics/summary/report quartet
-
-**File(s):** `scripts/perf/session.mjs:190-207`, `scripts/perf/undo-scenarios.mjs:460-465`,
-`scripts/perf/replay-scenario.mjs:131-136` — pinned at SHA f934d43
-
-#### Problem
-
-Three drivers assemble and write the same four files with the same shapes:
-
-```js
-writeFileSync(join(outDir, 'trace.json'), JSON.stringify({ traceEvents }));
-writeFileSync(join(outDir, 'metrics.json'), JSON.stringify(metrics, null, 2));
-const summary = analyze(traceEvents, metrics);
-writeFileSync(join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
-writeFileSync(join(outDir, 'report.md'), renderReport(summary));
-```
-
-Plus each builds the
-`metrics = { settings, longTasks: obs.longTasks, frames: obs.frames, heap: {...} }` object
-identically (session 191-201, undo 454-459, replay 125-130). The `analyze`+`renderReport`+write
-sequence is exactly what `analyze.mjs`'s own `main()` (lines 509-515) also does, a fourth copy.
-
-#### Proposed solution
-
-Add to `analyze.mjs` (or a `report-io.mjs`):
-`export function writeAnalysisArtifacts(outDir, traceEvents, metrics) { const summary = analyze(traceEvents, metrics); writeFileSync(join(outDir,'trace.json'), …); …; return { summary, report }; }`
-and `export function buildMetrics({ settings, obs, heapBefore, heapAfter })`. Call from all four
-sites.
-
-#### Verification
-
-`grep -rn "renderReport(summary)" scripts/perf` collapses to the helper; each command's four files
-are byte-compatible in structure.
-
----
-
 ### [P2][maintainability] Name the bytes→MiB conversion (`1048576` literal appears 10×)
 
 **File(s):** `scripts/perf/analyze.mjs:485,489,490,493`,

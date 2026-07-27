@@ -30,7 +30,7 @@ import {
 } from './capture.mjs';
 import { IPAD_PRO } from './devices.mjs';
 import { profilePath, throttleTag } from './paths.mjs';
-import { writeProfileArtifacts } from './profile-artifacts.mjs';
+import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 
 // The deployment target we actually worry about: a 12.9" iPad Pro in portrait —
@@ -456,12 +456,12 @@ async function main() {
     // analyzer, plus the bespoke per-scenario undo summary.
     const settings = buildUndoSettings({ throttle, build, geom, t0 });
     await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
-    const metrics = {
+    const metrics = buildMetrics({
       settings,
-      longTasks: obs.longTasks,
-      frames: obs.frames,
-      heap: { beforeBytes: 0, afterBytes: obs.heapBytes ?? 0 },
-    };
+      obs,
+      heapBefore: 0,
+      heapAfter: obs.heapBytes,
+    });
     writeProfileArtifacts({
       outDir,
       traceEvents: events,

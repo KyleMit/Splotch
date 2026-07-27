@@ -27,7 +27,7 @@ import {
   heapBytes,
   markPhase,
 } from './capture.mjs';
-import { writeProfileArtifacts } from './profile-artifacts.mjs';
+import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
 
 // Brand palette (src/lib/state/colors.svelte) — the swatches the harness clicks.
 const COLORS = ['#EC534E', '#F89C45', '#F9D24F', '#8CC864', '#62A2E9', '#AB71E1'];
@@ -163,20 +163,6 @@ async function runToddlerSession(page, box) {
   await beat(page, 'clear', () => clearDrag(page));
 }
 
-function buildMetrics({ settings, useTrace, t0, obs, heapBefore, heapAfter }) {
-  return {
-    settings: {
-      ...settings,
-      captureMode: useTrace ? 'cdp-trace' : 'user-timing',
-      startedAt: new Date(t0).toISOString(),
-      durationMs: Date.now() - t0,
-    },
-    longTasks: obs.longTasks,
-    frames: obs.frames,
-    heap: { beforeBytes: heapBefore ?? 0, afterBytes: heapAfter ?? obs.heapBytes ?? 0 },
-  };
-}
-
 // Drive the full scenario against a ready page (canvas already loaded) with the
 // given CDP session, capture a trace + metrics, and write the profile artifacts
 // to outDir. `settings` is merged into metrics.json (target/device/throttle/…).
@@ -204,7 +190,17 @@ export async function driveSession(page, cdp, { outDir, settings }) {
   if (useTrace) await stopTrace(cdp);
 
   await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
-  const metrics = buildMetrics({ settings, useTrace, t0, obs, heapBefore, heapAfter });
+  const metrics = buildMetrics({
+    settings: {
+      ...settings,
+      captureMode: useTrace ? 'cdp-trace' : 'user-timing',
+      startedAt: new Date(t0).toISOString(),
+      durationMs: Date.now() - t0,
+    },
+    obs,
+    heapBefore,
+    heapAfter,
+  });
   const { summary, report } = writeProfileArtifacts({
     outDir,
     traceEvents,
