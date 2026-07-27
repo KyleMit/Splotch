@@ -131,10 +131,11 @@ export function chromiumExecutablePath(chromium) {
     if (existsSync(chromium.executablePath())) return undefined;
   } catch {}
   const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
+  const chromiumPrefix = 'chromium-';
   try {
     const builds = readdirSync(base)
       .filter((d) => /^chromium-\d+$/.test(d))
-      .sort((a, b) => Number(b.slice(9)) - Number(a.slice(9)));
+      .sort((a, b) => Number(b.slice(chromiumPrefix.length)) - Number(a.slice(chromiumPrefix.length)));
     for (const build of builds) {
       for (const sub of ['chrome-linux', 'chrome-linux64']) {
         const p = join(base, build, sub, 'chrome');
