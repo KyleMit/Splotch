@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analyze } from '../perf/analyze.mjs';
+import { analyze, renderReport } from '../perf/analyze.mjs';
 
 function profileChunk({ nodes, samples, timeDeltas }) {
   return {
@@ -109,5 +109,40 @@ describe('performance profile analysis', () => {
     expect(() => analyze(events)).toThrow(
       'Malformed CPU profile: ProfileChunk has 2 samples but 1 time deltas'
     );
+  });
+
+  it('falls back to trace long tasks when runtime metrics are absent', () => {
+    const summary = analyze([
+      { name: 'RunTask', ph: 'X', dur: 80_000 },
+      { name: 'RunTask', ph: 'X', dur: 60_000 },
+      { name: 'RunTask', ph: 'X', dur: 40_000 },
+    ]);
+
+    expect(summary.longTasks).toEqual({ count: 2, totalMs: 140, longestMs: 80 });
+    expect(renderReport(summary)).toContain('| Long tasks (>50 ms) | Value |');
+    expect(renderReport(summary)).toContain('| Count | 2 |');
+    expect(renderReport(summary)).toContain('| Total | 140.0 ms |');
+    expect(renderReport(summary)).toContain('| Longest | 80.0 ms |');
+  });
+
+  it('prefers runtime long-task metrics over trace long tasks', () => {
+    const summary = analyze(
+      [
+        { name: 'RunTask', ph: 'X', dur: 80_000 },
+        { name: 'RunTask', ph: 'X', dur: 60_000 },
+      ],
+      { longTasks: [{ duration: 55 }] }
+    );
+
+    expect(summary.longTasks).toEqual({ count: 1, totalMs: 55, longestMs: 55 });
+    expect(renderReport(summary)).toContain('| Count | 1 |');
+    expect(renderReport(summary)).toContain('| Total | 55.0 ms |');
+    expect(renderReport(summary)).toContain('| Longest | 55.0 ms |');
+  });
+
+  it('keeps an empty runtime long-task metric authoritative', () => {
+    const summary = analyze([{ name: 'RunTask', ph: 'X', dur: 80_000 }], { longTasks: [] });
+
+    expect(summary.longTasks).toEqual({ count: 0, totalMs: 0, longestMs: 0 });
   });
 });

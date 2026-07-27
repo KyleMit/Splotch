@@ -164,7 +164,11 @@ function categoryBreakdown(events) {
     scriptingMs: scripting / US_PER_MS,
     renderingMs: rendering / US_PER_MS,
     paintingMs: painting / US_PER_MS,
-    longTasksFromTrace: { count: longTasks.length, longestMs: longTasks[0] || 0 },
+    longTasksFromTrace: {
+      count: longTasks.length,
+      totalMs: longTasks.reduce((total, duration) => total + duration, 0),
+      longestMs: longTasks[0] || 0,
+    },
   };
 }
 
@@ -323,21 +327,22 @@ function attributeLongTasks(events, windows, limit = 12) {
 export function analyze(events, metrics = {}) {
   const measures = userTimingMeasures(events);
   const windows = phaseWindows(events);
+  const breakdown = categoryBreakdown(events);
   return {
     settings: metrics.settings || {},
-    breakdown: categoryBreakdown(events),
+    breakdown,
     engineHotPaths: measures.filter((m) => m.name.startsWith('engine.')),
     phases: perPhase(events, windows),
     longTaskAttribution: attributeLongTasks(events, windows),
     topSelfTime: jsSelfTime(events),
     frames: metrics.frames || null,
-    longTasks: metrics.longTasks
+    longTasks: Object.hasOwn(metrics, 'longTasks')
       ? {
           count: metrics.longTasks.length,
           totalMs: metrics.longTasks.reduce((s, t) => s + t.duration, 0),
           longestMs: metrics.longTasks.reduce((m, t) => Math.max(m, t.duration), 0),
         }
-      : null,
+      : breakdown.longTasksFromTrace,
     heap: metrics.heap || null,
   };
 }

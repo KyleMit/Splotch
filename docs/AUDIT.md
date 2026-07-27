@@ -9,34 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P4][dead-code] `breakdown.longTasksFromTrace` is computed but never surfaced
-
-**File(s):** `scripts/perf/analyze.mjs:130-155,304-324,335-501` — pinned at SHA f934d43
-
-#### Problem
-
-`categoryBreakdown` computes `longTasksFromTrace: { count, longestMs }` (line 153) and `analyze()`
-includes it in the returned `breakdown` object. But `renderReport` reads only
-`b.mainThreadBusyMs/scriptingMs/renderingMs/paintingMs` (lines 393-398) and the long-task section
-uses `s.longTasks` from `metrics.json` instead (line 368). So `longTasksFromTrace` lands only in
-`summary.json`, redundant with `metrics.longTasks`, and no consumer reads it (`grep` confirms one
-definition, zero reads). It's dead weight that also invites confusion about which long-task count is
-authoritative.
-
-#### Proposed solution
-
-Either surface it (use `longTasksFromTrace` as the fallback in the Frame-health section when
-`metrics.longTasks` is absent — useful for bare exported traces) or drop it from
-`categoryBreakdown`'s return. Given the mount/webinspector paths lack `metrics.longTasks`, surfacing
-it as a documented fallback is the higher-value fix.
-
-#### Verification
-
-`grep -rn "longTasksFromTrace" scripts/perf` shows it either consumed in `renderReport` or removed;
-`summary.json` no longer carries an unread field.
-
----
-
 ### [P4][error-handling] A single scenario's `settleColdTier` timeout aborts the whole undo run
 
 **File(s):** `scripts/perf/undo-scenarios.mjs:275-291,352-432` — pinned at SHA f934d43
