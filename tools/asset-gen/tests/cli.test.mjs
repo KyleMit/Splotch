@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import {
@@ -37,7 +37,7 @@ describe('parsePositiveInt', () => {
     expect(parsePositiveInt('12', '--samples', 3)).toBe(12);
   });
 
-  test.each(['nope', '0', '-1', '1.5'])('rejects invalid positive integers: %s', (raw) => {
+  it.each(['nope', '0', '-1', '1.5'])('rejects invalid positive integers: %s', (raw) => {
     expectFailure(
       parsePositiveInt,
       raw,
@@ -58,7 +58,7 @@ describe('parseTemperature', () => {
     expect(parseTemperature('2', '--temperature', 0.5)).toBe(2);
   });
 
-  test.each(['nope', '-0.1', '2.1'])('rejects invalid temperatures: %s', (raw) => {
+  it.each(['nope', '-0.1', '2.1'])('rejects invalid temperatures: %s', (raw) => {
     expectFailure(
       parseTemperature,
       raw,
@@ -77,7 +77,7 @@ describe('parseNonNegative', () => {
     expect(parseNonNegative('1.5', '--threshold', 2)).toBe(1.5);
   });
 
-  test.each(['nope', '-0.1'])('rejects invalid non-negative numbers: %s', (raw) => {
+  it.each(['nope', '-0.1'])('rejects invalid non-negative numbers: %s', (raw) => {
     expectFailure(
       parseNonNegative,
       raw,
@@ -203,7 +203,7 @@ const commandCases = [
   ],
 ];
 
-test.each(commandCases)('%s uses the canonical numeric diagnostic', (script, args, expected) => {
+it.each(commandCases)('%s uses the canonical numeric diagnostic', (script, args, expected) => {
   const result = spawnSync(
     process.execPath,
     ['--experimental-strip-types', join(import.meta.dirname, '..', 'bin', script), ...args],
@@ -236,18 +236,15 @@ const offlineCommandCases = [
   ],
 ];
 
-test.each(offlineCommandCases)(
-  '%s keeps its offline mode key-optional',
-  (script, args, expected) => {
-    const env = { ...process.env, NODE_NO_WARNINGS: '1' };
-    delete env.GEMINI_API_KEY;
-    const result = spawnSync(
-      process.execPath,
-      ['--experimental-strip-types', join(import.meta.dirname, '..', 'bin', script), ...args],
-      { encoding: 'utf8', env }
-    );
+it.each(offlineCommandCases)('%s keeps its offline mode key-optional', (script, args, expected) => {
+  const env = { ...process.env, NODE_NO_WARNINGS: '1' };
+  delete env.GEMINI_API_KEY;
+  const result = spawnSync(
+    process.execPath,
+    ['--experimental-strip-types', join(import.meta.dirname, '..', 'bin', script), ...args],
+    { encoding: 'utf8', env }
+  );
 
-    expect(result.status).toBe(1);
-    expect(result.stderr.trim()).toBe(expected);
-  }
-);
+  expect(result.status).toBe(1);
+  expect(result.stderr.trim()).toBe(expected);
+});

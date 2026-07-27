@@ -9,31 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P5][readability] Inconsistent `test(` vs `it(` across the pipeline test suite
-
-**File(s):** `tools/asset-gen/tests/light-fill-cli.test.mjs`,
-`tools/asset-gen/tests/outline-targets.test.mjs` (use `test`) vs the other 11 suites (use `it`) —
-pinned at SHA f934d43
-
-#### Problem
-
-Eleven of the thirteen `.test.mjs` files use `it(...)`; only `light-fill-cli.test.mjs` and
-`outline-targets.test.mjs` use `test(...)`. Both are valid Vitest aliases, but the split is
-arbitrary — it tracks nothing meaningful (both styles cover CLI and gate tests) and adds a small
-grep/consistency tax when scanning the suite.
-
-#### Proposed solution
-
-Pick one (the `it(...)` majority) and convert the two outliers, or codify the choice in the testing
-rule so it's a decision rather than an accident.
-
-#### Verification
-
-`grep -c "\btest(" tools/asset-gen/tests/*.test.mjs` shows zero after conversion (or a documented,
-uniform choice).
-
----
-
 ### [P5][readability] Typo "PIXEL GEOMTRY" in the synthetic-fixtures rationale comment
 
 **File(s):** `tools/asset-gen/tests/fixtures/synthetic.mjs:4` — pinned at SHA f934d43
