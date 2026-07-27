@@ -17,32 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P3][duplication] Android changelog 5 and the iOS release notes are byte-identical, maintained by hand in two files
-
-**File(s):** `fastlane/metadata/android/en-US/changelogs/5.txt`,
-`fastlane/metadata/en-US/release_notes.txt` (fastlane metadata) — pinned at SHA f934d43
-
-#### Problem
-
-`changelogs/5.txt` (Android) and `en-US/release_notes.txt` (iOS) contain the exact same "What's new"
-copy for the current release, but live in two separate files with no shared source. The next release
-requires editing both by hand and keeping them in sync; the `4.txt` markup-leak bug above shows how
-easily one copy drifts or gets corrupted without the other noticing. There is no note explaining the
-relationship or which file is authoritative.
-
-#### Proposed solution
-
-Either generate the per-platform files from one source (e.g. the `release` skill/script writes both
-from a single release-notes input), or document in the fastlane metadata dir that the current
-release's Android `N.txt` and iOS `release_notes.txt` must match, backed by an equality check.
-
-#### Verification
-
-`diff fastlane/metadata/android/en-US/changelogs/5.txt fastlane/metadata/en-US/release_notes.txt` is
-empty and stays empty via generation or a guard.
-
----
-
 ### [P3][single-source-of-truth] Version (`5` / `1.3.0`) duplicated across gradle and four pbxproj settings with no in-file pointer
 
 **File(s):** `android/app/build.gradle:28-29`,
