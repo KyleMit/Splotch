@@ -9,35 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P3][complexity] `render()` and `buildHalf()` are long, multi-branch functions carrying the proof sheet's whole draw model
-
-**File(s):**
-`tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js:84-125`
-(`render`), `136-204` (`buildHalf`) — pinned at SHA f934d43
-
-#### Problem
-
-`render` (42 lines) interleaves reference-image selection, canvas sizing, a `color`-view early
-return, the paper fill, and a nested `combined`-view punch-vs-draw-as-is decision (lines 112-122)
-whose condition (`SOURCE === 'samples' || tile.rawFill`) re-encodes the same rawFill logic that
-`buildHalf` computes separately at line 187. `buildHalf` mixes synchronous DOM scaffolding with an
-async `imgsP.then` that pushes tiles and wires a click handler. Both are the kind of function where
-a reader must hold the entire layer/theme/view matrix in their head at once.
-
-#### Proposed solution
-
-Extract the view branches of `render` into `drawColorView(ctx, tile, w, h)` and
-`drawCombinedView(ctx, tile, w, h)`; hoist the "does this fill need punching" test into one named
-predicate `needsPunch(tile)` used by both `render` and `buildHalf` so the rule lives once. Split
-`buildHalf` into `buildCaption(cell, theme)` (sync) and `attachTile(...)` (the async wiring).
-
-#### Verification
-
-Regenerate a proof sheet, click through outline/color/combined on both a shipped-fill and a
-samples-mode cell, and confirm the punch-vs-as-is behavior is unchanged.
-
----
-
 ### [P4][duplication] Two base64 image-inliners (`uri` / `dataUri`) do the same job under different names
 
 **File(s):** `tools/asset-gen/crayon-brush-samples/build-compare-sheet.mjs:27-33` (`uri`),
