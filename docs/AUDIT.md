@@ -11,31 +11,6 @@
 
 ## Source: Code audit — tools/asset-gen · ideas-exploration (R&D scratch)
 
-### [P4][organization] Absolute machine paths (`/home/user/Splotch/…`) baked into committed JSON evidence
-
-**File(s):** `tools/asset-gen/ideas-exploration/idea-14/warp-both.json`, and any other committed
-intermediate JSON capturing `source`/`fill` paths — pinned at SHA f934d43
-
-#### Problem
-
-`warp-both.json` (and likely other scan dumps) records absolute paths like
-`/home/user/Splotch/web/static/coloring/creatures/dragon-tall.outline.webp`. These are
-environment-specific, meaningless on another contributor's machine, and a minor privacy/portability
-smell in committed evidence.
-
-#### Proposed solution
-
-Largely subsumed by the P2 prune of `warp-both.json`. For any intermediate JSON that is kept, store
-repo-relative paths (strip `REPO_ROOT`) — and prefer keeping only summarized evidence over full
-path-laden dumps.
-
-#### Verification
-
-`grep -rl '/home/user/' ideas-exploration --include=*.json` returns nothing (or only files
-explicitly retained with a documented reason).
-
----
-
 ## Summary
 
 `tools/asset-gen/ideas-exploration/` is unusually well-documented for scratch — a consistent
