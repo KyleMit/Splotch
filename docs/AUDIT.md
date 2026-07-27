@@ -7,33 +7,6 @@
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P4][type-safety] Scorer return shapes are undocumented ad-hoc objects with no JSDoc typedefs
-
-**File(s):** `tools/asset-gen/lib/eye-fill.mjs:295-304`, `composite-eye.mjs:245-253`,
-`night-halo.mjs:127-136`, `outline-match.mjs:132` — pinned at SHA f934d43
-
-#### Problem
-
-These `.mjs` modules return richly-structured objects (`scoreEyeFill` →
-`{ eyes, cores: [{ x, y, coreLuma, bandDark, bandLight, contrast, lively, annulusInkFrac }] }`) that
-downstream code and `golden-catalog.mjs` index by convention (`pupil.coreDarkFrac`,
-`lightCore.annulusInkFrac`). Nothing declares these shapes, so a renamed field or a `null` vs `0`
-mismatch (e.g. `judgeNightEyes` reading `nightCore.contrast`) is caught only at runtime, and callers
-can't discover the contract without reading the whole function.
-
-#### Proposed solution
-
-Add JSDoc `@typedef` blocks for the core result shapes (`EyeCoreScore`, `PupilScore`, `HaloScore`)
-at the top of each module and annotate the exported functions with `@returns`. `svelte-check`/`tsc`
-in the repo's checkJs mode would then validate the golden-catalog indexing.
-
-#### Verification
-
-`npm run check` (if it covers `tools/asset-gen`) surfaces any mismatched field access; editors
-autocomplete the fields.
-
----
-
 ### [P4][performance] `ringBands` recomputes the dilation from the base mask at r=1,2,3 instead of growing incrementally
 
 **File(s):** `tools/asset-gen/lib/night-halo.mjs:53-64` — pinned at SHA f934d43

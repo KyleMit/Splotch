@@ -67,6 +67,22 @@ function ringBands(mask, w, h, maxD) {
 // forked, else pen), and the shipped night fill. Returns the halo statistics; the
 // caller adds page-label and lineWhite context.
 /**
+ * @typedef {object} HaloBandStat
+ * @property {number} d
+ * @property {number} n
+ * @property {number} med
+ * @property {number} p90
+ * @property {number} p99
+ * @property {number} rimShare
+ * @property {number} haloShare
+ */
+/**
+ * @typedef {object} HaloHotspot
+ * @property {number} left
+ * @property {number} top
+ * @property {number} haloPx
+ */
+/**
  * @typedef {object} HaloScore
  * @property {number} w
  * @property {number} h
@@ -74,8 +90,8 @@ function ringBands(mask, w, h, maxD) {
  * @property {number} rawScore
  * @property {number} haloPx12
  * @property {number} rimPx12
- * @property {object[]} bandStats
- * @property {object[]} hotspots
+ * @property {HaloBandStat[]} bandStats
+ * @property {HaloHotspot[]} hotspots
  */
 /** @returns {Promise<HaloScore>} */
 export async function scoreNightHalo(rawBuf, lineArtBuf, shippedBuf) {
