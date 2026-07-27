@@ -7,34 +7,6 @@
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P4][naming] Hotspot tile geometry uses bare `64` and a `*1000` key-packing with no named constants
-
-**File(s):** `tools/asset-gen/lib/night-halo.mjs:111-125` — pinned at SHA f934d43
-
-#### Problem
-
-```js
-const k = Math.floor(Math.floor(p / w) / 64) * 1000 + Math.floor((p % w) / 64);
-…
-left: (k % 1000) * 64,
-top: Math.floor(k / 1000) * 64,
-```
-
-`64` (tile size) and `1000` (row-stride packing multiplier) are magic literals repeated across pack
-and unpack. The `*1000` scheme also silently breaks if a page ever exceeds 1000 tile-columns
-(64000px). Nothing names or bounds this.
-
-#### Proposed solution
-
-`const HOTSPOT_TILE_PX = 64;` and use a `Map` keyed on `` `${col},${row}` `` (or a documented
-`col * COLS_STRIDE + row` with an assertion), eliminating the fragile decimal packing.
-
-#### Verification
-
-`tests/night-halo.test.mjs` hotspot coordinates unchanged on fixtures.
-
----
-
 ### [P4][naming] `alignToSource`'s edge-strength cutoff `60` is an unnamed inline literal
 
 **File(s):** `tools/asset-gen/lib/align-to-source.mjs:47` — pinned at SHA f934d43

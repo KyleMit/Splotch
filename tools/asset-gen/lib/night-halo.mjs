@@ -27,6 +27,7 @@ export const REF_DILATE = 4; // reference punch clears any plausible rim (bands 
 export const MAX_BAND = 3; // hotspots count halo px out to this ring; the score uses 1..2
 export const HALO_DARK = 145; // the mid-dark penumbra window: a visible halo pixel is
 export const HALO_PROTECT_BLACK = 55; // luma in [55, 145) — legit near-black ink sits below
+export const HOTSPOT_TILE_PX = 64; // hotspot tiling grain
 
 async function loadRgb(buf) {
   const { data, info } = await sharp(buf).removeAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -133,24 +134,25 @@ export async function scoreNightHalo(rawBuf, lineArtBuf, shippedBuf) {
   const haloScore = +((100 * halo12) / (n12 || 1)).toFixed(3);
   const rawScore = +((100 * rim12) / (n12 || 1)).toFixed(3);
 
-  // hotspots: 64px tiles ranked by count of band-1..3 halo px — page-level share
+  // hotspots: tiles ranked by count of band-1..3 halo px — page-level share
   // dilutes a localized failure (train-wide's is ~6 face tiles), so an audit
   // consumer should look at both columns
   const counts = new Map();
   for (const band of bands)
     for (const p of band) {
       if (!isHalo(p)) continue;
-      const k = Math.floor(Math.floor(p / w) / 64) * 1000 + Math.floor((p % w) / 64);
+      const col = Math.floor((p % w) / HOTSPOT_TILE_PX);
+      const row = Math.floor(Math.floor(p / w) / HOTSPOT_TILE_PX);
+      const k = `${col},${row}`;
       counts.set(k, (counts.get(k) || 0) + 1);
     }
   const hotspots = [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
-    .map(([k, n]) => ({
-      left: (k % 1000) * 64,
-      top: Math.floor(k / 1000) * 64,
-      haloPx: n,
-    }));
+    .map(([k, n]) => {
+      const [col, row] = k.split(',').map(Number);
+      return { left: col * HOTSPOT_TILE_PX, top: row * HOTSPOT_TILE_PX, haloPx: n };
+    });
 
   return {
     w,
