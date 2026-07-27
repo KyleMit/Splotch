@@ -26,33 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P2][architecture] Red-team HTML report built inline; model-eval's equivalent was extracted to lib
-
-**File(s):** `scripts/redteam-run.mjs:113-263`
-(`esc`/`dataUri`/`outputCell`/`rowHtml`/`sectionHtml`/`writeReport`) vs
-`scripts/lib/model-eval-report.mjs` — pinned at SHA f934d43
-
-#### Problem
-
-`model-eval-run.mjs` cleanly delegates report generation to `lib/model-eval-report.mjs`
-(`buildReport(...)`), keeping the runner about running. The sibling `redteam-run.mjs` instead
-carries ~150 lines of report machinery — inline HTML, a full `<style>` block, escaping, data-URI
-embedding — mixed into the runner. Two near-identical tools diverge in structure, and the redteam
-runner is much harder to read as a result.
-
-#### Proposed solution
-
-Extract the report code into `scripts/lib/redteam-report.mjs` exporting
-`buildReport({ runId, outDir, results })`, mirroring `model-eval-report.mjs`. `redteam-run.mjs`
-shrinks to orchestration + calling it.
-
-#### Verification
-
-`npm run redteam` (or a stubbed run) still writes `report.html`/`report.json`; diff the HTML against
-a pre-change run to confirm identical output.
-
----
-
 ### [P2][duplication] Maestro smoke flow duplicated across Android and iOS runners
 
 **File(s):** `scripts/android-emulator-smoke.mjs:77-80` and `scripts/ios-simulator-smoke.mjs:57-63`
