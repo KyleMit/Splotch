@@ -9,11 +9,11 @@
 // regressions, but absolute frame numbers want the Android path (android.mjs).
 
 import { chromium } from '@playwright/test';
-import { join } from 'node:path';
-import { ROOT, chromiumExecutablePath, sleep } from '../lib/utils.mjs';
+import { chromiumExecutablePath, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { driveSession } from './session.mjs';
 import { resolveDevice } from './devices.mjs';
+import { profilePath, throttleTag } from './paths.mjs';
 
 const args = process.argv.slice(2);
 const flag = (name, def) => {
@@ -33,9 +33,7 @@ async function main() {
     );
   }
 
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const throttleTag = throttle > 1 ? `${throttle}x` : 'raw';
-  const outDir = join(ROOT, 'perf-profiles', `${stamp}-web-${deviceName}-${throttleTag}`);
+  const outDir = profilePath('web', deviceName, throttleTag(throttle));
 
   const { base, stop } = await buildAndPreview(port, { build });
   const browser = await chromium.launch({

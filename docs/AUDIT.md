@@ -9,42 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P2][duplication] Collapse the repeated output-dir / timestamp / throttle-tag construction
-
-**File(s):** `scripts/perf/scenario.mjs:41-43`, `scripts/perf/mount.mjs:50-52`,
-`scripts/perf/ios.mjs:42-43`, `scripts/perf/android.mjs:114-115`,
-`scripts/perf/undo-scenarios.mjs:316-318`, `scripts/perf/replay-scenario.mjs:59-61` — pinned at SHA
-f934d43
-
-#### Problem
-
-Every entry rebuilds the profile directory the same way:
-
-```js
-const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-const throttleTag = throttle > 1 ? `${throttle}x` : 'raw';
-const outDir = join(ROOT, 'perf-profiles', `${stamp}-web-${deviceName}-${throttleTag}`);
-```
-
-The `stamp` regex appears in all six files, and the `throttleTag` triplet in three. The
-`perf-profiles/` path root is likewise hardcoded six times, so relocating the output root (or
-changing the timestamp format the analyzer parses out of the suffix) is a six-file edit.
-
-#### Proposed solution
-
-Add to `scripts/perf/args.mjs` (or a `paths.mjs`):
-`export const profileStamp = () => new Date().toISOString().replace(/[:.]/g, '-')`,
-`export const throttleTag = (t) => (t > 1 ?`${t}x`: 'raw')`, and
-`export const profileDir = (...suffixParts) => join(ROOT, 'perf-profiles', [profileStamp(), ...suffixParts].join('-'))`.
-Replace the six sites.
-
-#### Verification
-
-`grep -rn "toISOString().replace" scripts/perf` returns one hit; each command still writes to
-`perf-profiles/<timestamp>-<target>-…`.
-
----
-
 ### [P2][duplication] Replace the copy-pasted `main().catch` bootstrap with a shared runner
 
 **File(s):** `scripts/perf/scenario.mjs:81-84`, `scripts/perf/mount.mjs:128-131`,

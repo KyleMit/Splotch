@@ -16,9 +16,8 @@
 
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ROOT, chromiumExecutablePath, sleep } from '../lib/utils.mjs';
+import { chromiumExecutablePath, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import {
   startTrace,
@@ -30,6 +29,7 @@ import {
 } from './capture.mjs';
 import { analyze, renderReport } from './analyze.mjs';
 import { IPAD_PRO } from './devices.mjs';
+import { profilePath, throttleTag } from './paths.mjs';
 import { writeProfileArtifacts } from './session.mjs';
 
 // The deployment target we actually worry about: a 12.9" iPad Pro in portrait —
@@ -414,9 +414,7 @@ async function main() {
     );
   }
 
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const throttleTag = throttle > 1 ? `${throttle}x` : 'raw';
-  const outDir = join(ROOT, 'perf-profiles', `${stamp}-undo-scenarios-${throttleTag}`);
+  const outDir = profilePath('undo-scenarios', throttleTag(throttle));
   mkdirSync(outDir, { recursive: true });
 
   const { base, stop } = await buildAndPreview(port, { build });

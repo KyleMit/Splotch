@@ -11,11 +11,11 @@
 // `npm run perf:analyze` (see the `profiling` skill).
 
 import { webkit } from '@playwright/test';
-import { join } from 'node:path';
-import { ROOT, sleep } from '../lib/utils.mjs';
+import { sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { driveSession } from './session.mjs';
 import { resolveDevice } from './devices.mjs';
+import { profilePath } from './paths.mjs';
 
 const args = process.argv.slice(2);
 const flag = (name, def) => {
@@ -34,8 +34,7 @@ async function main() {
     );
   }
 
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const outDir = join(ROOT, 'perf-profiles', `${stamp}-ios-webkit-${deviceName}`);
+  const outDir = profilePath('ios-webkit', deviceName);
 
   const { base, stop } = await buildAndPreview(port, { build });
   const browser = await webkit.launch({ headless: true });

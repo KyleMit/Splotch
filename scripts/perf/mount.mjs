@@ -11,12 +11,12 @@
 // user-timing measures the page recorded.
 
 import { writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { chromium } from '@playwright/test';
-import { ROOT, chromiumExecutablePath } from '../lib/utils.mjs';
+import { chromiumExecutablePath } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace } from './capture.mjs';
 import { resolveDevice } from './devices.mjs';
+import { profilePath, throttleTag } from './paths.mjs';
 
 // Lighthouse's "Slow 4G" throttle: 150 ms RTT, 1.6 Mbps down / 750 Kbps up.
 const SLOW_4G = {
@@ -42,9 +42,7 @@ const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
 
 async function main() {
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const throttleTag = throttle > 1 ? `${throttle}x` : 'raw';
-  const outDir = join(ROOT, 'perf-profiles', `${stamp}-mount-${deviceName}-${throttleTag}`);
+  const outDir = profilePath('mount', deviceName, throttleTag(throttle));
   mkdirSync(outDir, { recursive: true });
 
   const { base, stop } = await buildAndPreview(port, { build });

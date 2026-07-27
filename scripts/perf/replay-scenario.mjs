@@ -14,12 +14,13 @@
 
 import { chromium } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, join } from 'node:path';
-import { ROOT, chromiumExecutablePath, sleep } from '../lib/utils.mjs';
+import { basename } from 'node:path';
+import { chromiumExecutablePath, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace, injectObservers, readObservers, heapBytes } from './capture.mjs';
 import { analyze, renderReport } from './analyze.mjs';
 import { IPAD_PRO } from './devices.mjs';
+import { profilePath } from './paths.mjs';
 
 // The app's "Size N" picker → engine px. Approximate (the recorder only sees the
 // label); override here if the real mapping is ever needed for fidelity.
@@ -57,9 +58,8 @@ async function main() {
   const dsf = Math.max(1, Math.round(meta.dpr || IPAD_PRO.deviceScaleFactor));
   const cssCanvas = meta.canvas || vp;
 
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const tag = basename(recordingPath).replace(/\.json$/, '');
-  const outDir = join(ROOT, 'perf-profiles', `${stamp}-replay-${tag}`);
+  const outDir = profilePath('replay', tag);
   mkdirSync(outDir, { recursive: true });
 
   const { base, stop } = await buildAndPreview(port, { build });

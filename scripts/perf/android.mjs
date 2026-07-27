@@ -12,10 +12,10 @@
 // (the default flow rebuilds + reinstalls it).
 
 import { spawnSync } from 'node:child_process';
-import { join } from 'node:path';
 import { chromium } from '@playwright/test';
-import { ROOT, sleep, run, fail } from '../lib/utils.mjs';
+import { sleep, run, fail } from '../lib/utils.mjs';
 import { driveSession } from './session.mjs';
+import { profilePath } from './paths.mjs';
 
 const APP_ID = 'art.splotch.app';
 const CDP_PORT = 9222;
@@ -111,8 +111,7 @@ async function main() {
     const cdp = await page.context().newCDPSession(page);
     const model = (adb(['shell', 'getprop', 'ro.product.model']).stdout || 'device').trim();
 
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const outDir = join(ROOT, 'perf-profiles', `${stamp}-android-${model.replace(/\s+/g, '_')}`);
+    const outDir = profilePath('android', model.replace(/\s+/g, '_'));
 
     await driveSession(page, cdp, {
       outDir,
