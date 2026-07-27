@@ -21,30 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P2][maintainability] Missing `timeout-minutes` on the two label-automation jobs — a hung `gh api` call runs for the 6-hour default
-
-**File(s):** `.github/workflows/label-sync.yml:22-26` (sync job),
-`.github/workflows/label-to-todo.yml:17-31` (move-to-todo job) — pinned at SHA f934d43
-
-#### Problem
-
-Every other job in the repo sets a `timeout-minutes` (test 10/15, android/ios 40, blobs 5, pages 5).
-The `sync` job in `label-sync.yml` and the `move-to-todo` job in `label-to-todo.yml` set none, so a
-stuck GraphQL call (rate-limit, network hang) in `label-to-todo.sh` or the labeler action can burn
-up to the 360-minute default per run, and `label-to-todo` fires on every `issues: labeled` event.
-
-#### Proposed solution
-
-Add `timeout-minutes: 5` (generous for a couple of `gh api` calls) to both jobs. Makes the timeout
-convention uniform across all workflows.
-
-#### Verification
-
-`grep -L "timeout-minutes" .github/workflows/*.yml` returns nothing meaningful; force a
-`workflow_dispatch` of label-sync and confirm it completes well under the limit.
-
----
-
 ### [P3][security] Third-party actions are pinned to mutable major tags, not commit SHAs
 
 **File(s):** `.github/workflows/android-deploy.yml:68`

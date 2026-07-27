@@ -21,6 +21,7 @@ jobs:
   sync:
     name: Reconcile labels from .github/labels.yml
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
       - uses: crazy-max/ghaction-github-labeler@v5

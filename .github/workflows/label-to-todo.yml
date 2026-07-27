@@ -17,6 +17,7 @@ jobs:
   move-to-todo:
     if: github.event.label.name == 'reviewed'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     env:
       GH_TOKEN: ${{ secrets.PROJECT_PAT }}
