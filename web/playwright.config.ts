@@ -19,19 +19,27 @@ function chromiumExecutablePath(): string | undefined {
   if (process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
   try {
     if (existsSync(chromium.executablePath())) return undefined; // pinned build present
-  } catch {}
+  } catch {
+    // An absent or unreadable browser path should fall through to discovery.
+  }
   const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
+  const chromiumPrefix = 'chromium-';
   try {
     const builds = readdirSync(base)
       .filter((d) => /^chromium-\d+$/.test(d))
-      .sort((a, b) => Number(b.slice(9)) - Number(a.slice(9)));
+      .sort(
+        (a, b) =>
+          Number(b.slice(chromiumPrefix.length)) - Number(a.slice(chromiumPrefix.length)),
+      );
     for (const build of builds) {
       for (const sub of ['chrome-linux', 'chrome-linux64']) {
         const p = `${base}/${build}/${sub}/chrome`;
         if (existsSync(p)) return p;
       }
     }
-  } catch {}
+  } catch {
+    // An absent or unreadable browser path should fall through to Playwright.
+  }
   return undefined;
 }
 
@@ -44,7 +52,9 @@ function chromiumExecutablePath(): string | undefined {
 function webkitAvailable(): boolean {
   try {
     if (existsSync(webkit.executablePath())) return true;
-  } catch {}
+  } catch {
+    // An absent or unreadable browser path means WebKit is unavailable unless required.
+  }
   if (process.env.REQUIRE_WEBKIT) {
     throw new Error('REQUIRE_WEBKIT is set but the WebKit binary is not installed');
   }
