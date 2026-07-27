@@ -46,10 +46,9 @@ export const OPEN_RADIUS_MAX = 8;
 export const SOLID_BLOB_MAX = 100;
 export const SOLID_INTERIOR_MAX = 60;
 
-// 90th-percentile stroke width in px: two-pass chamfer distance-to-light over
-// the ink mask, doubled. The p90 (not median) captures junction thickness, so
-// the opening radius clears crossings without a blob-sized safety margin.
-function strokeWidthP90(mask, w, h) {
+// Two-pass chamfer distance-to-light transform: for each ink (mask) pixel,
+// the approximate distance to the nearest non-ink pixel.
+function chamferDistance(mask, w, h) {
   const d = new Float32Array(w * h);
   for (let i = 0; i < d.length; i++) d[i] = mask[i] ? Infinity : 0;
   for (let y = 0; y < h; y++) {
@@ -76,6 +75,14 @@ function strokeWidthP90(mask, w, h) {
       d[i] = m;
     }
   }
+  return d;
+}
+
+// 90th-percentile stroke width in px: 2x the chamfer distance-to-light over
+// the ink mask. The p90 (not median) captures junction thickness, so the
+// opening radius clears crossings without a blob-sized safety margin.
+function strokeWidthP90(mask, w, h) {
+  const d = chamferDistance(mask, w, h);
   const vals = [];
   for (let i = 0; i < d.length; i++) if (mask[i]) vals.push(d[i]);
   if (!vals.length) return 0;
