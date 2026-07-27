@@ -11,35 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P3][cross-platform] `freePort` depends on `lsof`, which is not present on many Linux/CI hosts
-
-**File(s):** `scripts/lib/vite-server.mjs:15-27` (`freePort`) — pinned at SHA f934d43
-
-#### Problem
-
-```js
-const out = spawnSync('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
-```
-
-`lsof` ships by default on macOS but is frequently absent on minimal Linux containers (Debian/Alpine
-CI images). When missing, `spawnSync` returns an error result, `out.stdout` is undefined → the
-function silently no-ops, and any stale server then trips vite's `--strictPort`. The "best-effort"
-comment hides a platform gap the repo's macOS+Linux contract cares about.
-
-#### Proposed solution
-
-Fall back to a portable probe when `lsof` is unavailable — e.g. try `fuser -k ${port}/tcp` or
-`ss -ltnp` on Linux, or detect the missing binary via `hasCommand('lsof')` and warn. Simplest robust
-option: attempt a connect to the port in Node and, if listening, log that a manual kill is needed
-rather than silently continuing.
-
-#### Verification
-
-On a container without `lsof`, `freePort(5173)` with a stale server should either free it or emit a
-clear message, not silently no-op.
-
----
-
 ### [P3][maintainability] App-driver selectors and timing constants are scattered string/number literals
 
 **File(s):** `scripts/lib/app-driver.mjs:49-106` (selectors + `sleep(...)` calls) — pinned at SHA

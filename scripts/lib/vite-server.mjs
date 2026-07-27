@@ -16,7 +16,7 @@ export function freePort(port) {
   const out = spawnSync('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
   if (out.error) {
     console.warn(
-      `Unable to clear a stale listener on port ${port} automatically because lsof could not be launched. Stop it before retrying.`
+      `Unable to check or clear port ${port} automatically because lsof could not be launched. If the port is in use, stop its listener before retrying.`
     );
     return;
   }
