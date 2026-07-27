@@ -21,37 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P4][naming] Redundant workflow/job naming: workflow "Tests" contains a job named "Tests"
-
-**File(s):** `.github/workflows/test.yml:1` (`name: Tests`), `:84-85` (job `test`, `name: Tests`) —
-pinned at SHA f934d43
-
-#### Problem
-
-The workflow is named `Tests` and its second job is also displayed as `Tests`, so the GitHub checks
-list shows `Tests / Tests` alongside `Tests / Quality`. The `test.yml` file actually runs a
-`quality` gate (type-check, lint, format, SVG/ruler/token/asset/scrapbook drift, `npm audit`) plus
-the test suites — the filename and workflow name undersell that it's the whole push/PR gate.
-`Tests / Tests` is a poor, un-scannable check name.
-
-#### Problem grepability
-
-Someone searching required-status-check config for "the CI gate" sees `Tests / Quality` and
-`Tests / Tests` and can't tell what the second covers (unit + asset + E2E + driver smoke).
-
-#### Proposed solution
-
-Rename the second job's display name to something distinct (`Unit & E2E`, `Test suites`), or rename
-the workflow to `CI` so the checks read `CI / Quality` and `CI / Tests`. Keep the filename or rename
-to `ci.yml` for grepability.
-
-#### Verification
-
-The GitHub checks list shows two distinctly-named jobs; branch-protection required checks still
-resolve.
-
----
-
 ### [P5][dead-config] `label-sync` comment references toggling `dry-run` that is already off
 
 **File(s):** `.github/workflows/label-sync.yml:7-8` and `:28-30` — pinned at SHA f934d43
