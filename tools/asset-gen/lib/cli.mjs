@@ -15,6 +15,12 @@ export function parsePngToWebpOptions(args = process.argv.slice(2), env = proces
   };
 }
 
+// How many times a gated generate-and-score loop re-rolls a candidate before it
+// gives up and keeps the best attempt. It lives here rather than in the generator
+// that uses it so tests can read the real budget: a bin/ entry point does its work
+// at import time, so importing a constant out of one runs the whole CLI.
+export const MAX_ATTEMPTS = 5;
+
 export function parsePositiveInt(raw, name, fallback, source) {
   if (raw === undefined) return fallback;
   const value = Number(raw);

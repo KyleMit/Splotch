@@ -3,11 +3,8 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
+import { MAX_ATTEMPTS } from '../lib/cli.mjs';
 
-// Mirrors MAX_ATTEMPTS in ../bin/gen-coloring-fills.mjs. It can't be imported:
-// that module does its work at import time, so pulling it in outside runCli's
-// controlled process.argv/mock setup runs the whole CLI.
-const MAX_ATTEMPTS = 5;
 // One page's worth of gate misses — enough to exhaust every retry and fail it.
 const exhaustPage = () => Array(MAX_ATTEMPTS).fill(false);
 

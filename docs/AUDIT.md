@@ -9,44 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P2][test-quality] `light-fill-cli` gate-result arrays are magic sequences silently coupled to `MAX_ATTEMPTS = 5`
-
-**File(s):** `tools/asset-gen/tests/light-fill-cli.test.mjs:122,150,164,189` (per-test
-`state.gateResults`) — pinned at SHA f934d43
-
-#### Problem
-
-The mock outline-match gate (lines 30-43) `shift()`s from a shared queue `state.gateResults`; each
-test seeds that queue with a bare boolean array whose length silently encodes the CLI's retry count:
-
-```js
-state.gateResults = [false, false, false, false, false, true]; // line 122
-```
-
-That is exactly `MAX_ATTEMPTS` (5, defined at `bin/gen-coloring-fills.mjs:157`) failures for
-`first-tall` followed by one pass for `second-tall`. Nothing in the test names or explains the count
-of five — a reader must cross-reference the CLI's retry constant to understand why six entries
-produce "1 failed". Other tests use `state.gateResults = []` (lines 164, 189) with a
-`// every attempt misses a gate` comment, relying on `shift()` on an empty array returning
-`undefined` (falsy). If `MAX_ATTEMPTS` changes to 4 or 6, line 122's array is wrong and the test
-breaks or, worse, passes for the wrong reason (page 2 consuming a `false` meant for page 1's
-attempts).
-
-#### Proposed solution
-
-Import `MAX_ATTEMPTS` from the CLI (or have the CLI export it) and build the sequences
-programmatically: `Array(MAX_ATTEMPTS).fill(false)` for an exhausted page, `.concat([true])` for a
-following pass. Add a helper `const allFail = () => Array(MAX_ATTEMPTS).fill(false)` so intent is
-named. The empty-array "misses every gate" cases should use the same named helper rather than
-relying on `undefined`.
-
-#### Verification
-
-Temporarily change `MAX_ATTEMPTS` in the CLI and confirm the tests still pass (they should, once the
-arrays are derived from it) rather than breaking on a hardcoded length.
-
----
-
 ### [P2][architecture] `light-fill-cli` tests exercise the CLI through import side effects and match error strings, making them brittle
 
 **File(s):** `tools/asset-gen/tests/light-fill-cli.test.mjs:86-90,124,193` (`runCli` + error

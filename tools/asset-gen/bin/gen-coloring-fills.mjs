@@ -42,7 +42,7 @@ import {
   fail,
   toPosix,
 } from '../lib/paths.mjs';
-import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import { MAX_ATTEMPTS, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, describeLevers } from '../lib/page-notes.mjs';
@@ -136,7 +136,6 @@ const sampleMode = samples > 1;
 // 92% bar) while its flower tile was 34% — the drift the child sees. Gating the
 // worst tile is what catches that; the global bar alone never could.
 const WHITE_THRESHOLD = 0.05; // >5% pure white ⇒ blank areas left uncolored
-const MAX_ATTEMPTS = 5;
 
 // Colouring variety comes from sampling; the hard constraint is fidelity. Spread
 // the per-slot temperature just enough for different palettes, and nudge it on a
