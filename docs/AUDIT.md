@@ -7,31 +7,6 @@
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P4][consistency] `--check`/flag parsing done ad hoc in every gate script
-
-**File(s):** `scripts/gen-tokens.mjs:69`, `scripts/image-audit.mjs:37`,
-`scripts/publish-scrapbook.mjs:37,47`, `scripts/gha-versions.mjs:108-110` — pinned at SHA f934d43
-
-#### Problem
-
-Each script re-implements flag detection inline: `process.argv.includes('--check')`,
-`args[0] === '--index-only'`, `args.includes('--check-latest')`, `--json`, etc. It's fine at one
-flag each, but there's no shared convention, so `--check` means "CI drift gate" in three scripts
-with three separate parses, and a reader can't predict how a given script reads its args.
-
-#### Proposed solution
-
-A minimal shared `parseFlags(argv, names)` (or adopt `node:util` `parseArgs`) in `lib/utils.mjs`,
-returning `{ flags, positionals }`. Not worth a heavy CLI framework, but one helper standardizes the
-`--check` gate idiom the repo uses repeatedly.
-
-#### Verification
-
-Each gate (`gen:tokens:check`, `img:audit:check`, `scrapbook:check`, `deps:gha --check-latest`)
-still behaves identically. Consistent parsing visible in a grep.
-
----
-
 ### [P4][consistency] Smoke/dev port numbers scattered as bare literals
 
 **File(s):** `scripts/api-smoke.mjs:14` (5199), `scripts/redteam-run.mjs:26` (5198),

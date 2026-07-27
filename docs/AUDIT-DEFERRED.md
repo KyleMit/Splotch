@@ -2830,3 +2830,66 @@ The rolled-back draft is kept at
 (3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p3-naming-inconsistent-script-naming-across-idea-dirs-idea-n-prefix-vs-d.patch`.
+
+### [P4][consistency] `--check`/flag parsing done ad hoc in every gate script
+
+**File(s):** `scripts/gen-tokens.mjs:69`, `scripts/image-audit.mjs:37`,
+`scripts/publish-scrapbook.mjs:37,47`, `scripts/gha-versions.mjs:108-110` — pinned at SHA f934d43
+
+#### Problem
+
+Each script re-implements flag detection inline: `process.argv.includes('--check')`,
+`args[0] === '--index-only'`, `args.includes('--check-latest')`, `--json`, etc. It's fine at one
+flag each, but there's no shared convention, so `--check` means "CI drift gate" in three scripts
+with three separate parses, and a reader can't predict how a given script reads its args.
+
+#### Proposed solution
+
+A minimal shared `parseFlags(argv, names)` (or adopt `node:util` `parseArgs`) in `lib/utils.mjs`,
+returning `{ flags, positionals }`. Not worth a heavy CLI framework, but one helper standardizes the
+`--check` gate idiom the repo uses repeatedly.
+
+#### Verification
+
+Each gate (`gen:tokens:check`, `img:audit:check`, `scrapbook:check`, `deps:gha --check-latest`)
+still behaves identically. Consistent parsing visible in a grep.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* `scripts/publish-scrapbook.mjs:38,48` still selects both modes with the original ad hoc
+  `args[0] === '--…'` checks; the parsed booleans are only redundant conjuncts. Make the shared
+  parsing path own mode selection while preserving the existing first-argument-only behavior.
+* The live `check:assets:manifest` gate still parses `--check` ad hoc with
+  `process.argv.includes('--check')` in `tools/asset-gen/bin/gen-asset-manifest.mjs:59`; migrate it
+  to the shared flag convention so the original repository-wide gate consistency problem is fully
+  resolved.
+* `tools/asset-gen/lib/paths.mjs` duplicates `parseFlags` byte-for-byte, leaving two independently
+  maintained flag parsers and perpetuating the original consistency defect; use asset-gen’s existing
+  `node:util` `parseArgs` convention for `gen-asset-manifest.mjs`, or provide one genuinely shared
+  implementation.
+* No test covers `parseFlags` or the required ordered combinations of `gha-versions` flags, so the
+  acceptance-critical parsing behavior is not enforced by the green suite; add focused coverage for
+  combined/reordered flags and positional preservation.
+
+#### What was tried
+
+1. Added a shared flag parser and routed the four assigned scripts through it while preserving their
+   existing CLI dispatch behavior.
+2. Moved scrapbook mode selection fully into `parseFlags` by parsing only the first CLI token,
+   preserving its first-argument-only contract.
+3. Migrated the asset-manifest drift gate to the asset pipeline’s shared `parseFlags` convention
+   while preserving its self-contained module boundary.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p4-consistency-check-flag-parsing-done-ad-hoc-in-every-gate-script.patch` (3
+commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p4-consistency-check-flag-parsing-done-ad-hoc-in-every-gate-script.patch`.
