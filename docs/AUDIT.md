@@ -13,33 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P4][maintainability] Duplicated undo-cap-of-20 test exists in two forms without cross-reference
-
-**File(s):** `web/tests/engine.spec.ts:110-134` ('the undo stack caps at 20') and
-`web/tests/engine.spec.ts:1722-1755` ('depth caps at 20 and deep entries restore from encoded
-blobs') — pinned at SHA f934d43
-
-#### Problem
-
-Two tests both draw 22 strokes and assert the stack caps at 20 (`engine.spec.ts:116` and `1723` use
-the identical `for (let i = 0; i < 22; i++) … y = 14 + i * 12` loop and the same 30/270
-x-coordinates). The first checks the cap via `canUndo` iteration; the second checks the memory-tier
-demotion. The shared 22-stroke setup is copy-pasted, and neither references the other, so a reader
-can't tell they're deliberately complementary vs. accidentally redundant.
-
-#### Proposed solution
-
-Extract the `draw22Strokes(page)` (or `drawNStrokes(page, n)`) setup into the engine harness, use it
-in both, and add a one-line comment in each pointing to the other ("cap behavior; see also the tier
-test at …"). Confirms the redundancy is intentional and DRYs the fixture.
-
-#### Verification
-
-`grep -c "i < 22" web/tests/engine.spec.ts` drops to reference the shared helper.
-`npm run test:e2e -- engine.spec.ts -g "caps at 20"` green.
-
----
-
 ### [P4][readability] `firstOpaquePixel` and `draw` in helpers.ts lack input guards and precise types
 
 **File(s):** `web/tests/helpers.ts:15-34` — pinned at SHA f934d43
