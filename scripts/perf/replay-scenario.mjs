@@ -19,6 +19,7 @@ import { ROOT, chromiumExecutablePath, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace, injectObservers, readObservers, heapBytes } from './capture.mjs';
 import { analyze, renderReport } from './analyze.mjs';
+import { IPAD_PRO } from './devices.mjs';
 
 // The app's "Size N" picker → engine px. Approximate (the recorder only sees the
 // label); override here if the real mapping is ever needed for fidelity.
@@ -52,8 +53,8 @@ async function main() {
 
   const recording = JSON.parse(readFileSync(recordingPath, 'utf8'));
   const meta = recording.meta || {};
-  const vp = meta.viewport || { w: 1024, h: 1366 };
-  const dsf = Math.max(1, Math.round(meta.dpr || 2));
+  const vp = meta.viewport || { w: IPAD_PRO.width, h: IPAD_PRO.height };
+  const dsf = Math.max(1, Math.round(meta.dpr || IPAD_PRO.deviceScaleFactor));
   const cssCanvas = meta.canvas || vp;
 
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');

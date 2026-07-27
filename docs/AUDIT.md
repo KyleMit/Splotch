@@ -9,43 +9,6 @@
 
 ## Source: Code audit — scripts · perf profiling harness
 
-### [P1][duplication] De-duplicate the `DEVICES` viewport map (triplicated verbatim)
-
-**File(s):** `scripts/perf/scenario.mjs:17-21`, `scripts/perf/mount.mjs:20-24`,
-`scripts/perf/ios.mjs:19-23` — pinned at SHA f934d43
-
-#### Problem
-
-The identical device table is copied into three entry files:
-
-```js
-const DEVICES = {
-  phone: { width: 412, height: 915, deviceScaleFactor: 2.6 },
-  tablet: { width: 1024, height: 1366, deviceScaleFactor: 2 },
-  desktop: { width: 1280, height: 800, deviceScaleFactor: 1 },
-};
-```
-
-`undo-scenarios.mjs:37` and `replay-scenario.mjs:55` hardcode their own `1024×1366 @ dsf 2` variants
-of the same "iPad Pro" device separately again. If the phone viewport (the primary throttled-phone
-approximation) is ever retuned, three-to-five files must change in lockstep or the targets silently
-diverge.
-
-#### Proposed solution
-
-Move the map to `scripts/perf/devices.mjs`: `export const DEVICES = { phone, tablet, desktop }` plus
-`export const IPAD_PRO = { width: 1024, height: 1366, deviceScaleFactor: 2, label: 'ipad-pro-12.9' }`.
-Import in all five. Optionally
-`export const resolveDevice = (name) => DEVICES[name] || DEVICES.phone` to also fold in the
-`DEVICES[deviceName] || DEVICES.phone` fallback repeated in scenario/mount/ios.
-
-#### Verification
-
-`grep -rn "width: 412" scripts/perf` returns one hit after the change; `npm run perf:web`,
-`perf:mount`, `perf:ios` still produce the same `viewport` in their `metrics.json`/`settings`.
-
----
-
 ### [P1][complexity] Split the 90-line `driveSession` orchestrator into named stages
 
 **File(s):** `scripts/perf/session.mjs:122-212` (`driveSession`) — pinned at SHA f934d43
