@@ -17,40 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P3][dead-config] Unused `activity_main.xml` layout — BridgeActivity never inflates it
-
-**File(s):** `android/app/src/main/res/layout/activity_main.xml:1-12` (Android layout) — pinned at
-SHA f934d43
-
-#### Problem
-
-This layout defines a `CoordinatorLayout` wrapping a bare `<WebView/>`:
-
-```xml
-<androidx.coordinatorlayout.widget.CoordinatorLayout ...>
-    <WebView android:layout_width="match_parent" android:layout_height="match_parent" />
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
-```
-
-`MainActivity extends BridgeActivity`, which builds and manages its own Capacitor `WebView` in code
-and never calls `setContentView(R.layout.activity_main)`. The layout is unused Capacitor template
-scaffolding. Its presence is the only reason the `androidx.coordinatorlayout` dependency in
-`app/build.gradle:59` appears "used", so it also masks a possibly-removable dependency.
-
-#### Proposed solution
-
-Delete `activity_main.xml`. Check whether `androidx.coordinatorlayout:coordinatorlayout` is then
-still needed (Capacitor's bridge layout may pull it transitively); if not, drop that
-`implementation` line and its `variables.gradle` version entry.
-
-#### Verification
-
-Build and launch on device — the canvas renders unchanged.
-`grep -rn 'activity_main\|R.layout'
-android/app/src` returns nothing.
-
----
-
 ### [P3][duplication] Android changelog 5 and the iOS release notes are byte-identical, maintained by hand in two files
 
 **File(s):** `fastlane/metadata/android/en-US/changelogs/5.txt`,
