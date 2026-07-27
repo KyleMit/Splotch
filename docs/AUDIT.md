@@ -13,37 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P4][test-quality] Tests reach deep into engine internals via the harness, coupling specs to implementation details
-
-**File(s):** `web/tests/global.d.ts:6-66` (the `window.__engine` surface), consumed throughout
-`web/tests/engine.spec.ts` (e.g. `getUndoDebug` at 673, 699, 1739; `inkBounds` at 751, 910;
-`pixelAt` pervasively) — pinned at SHA f934d43
-
-#### Problem
-
-The `window.__engine` harness exposes 25+ methods including internals like `getUndoDebug()`
-(`{ snapshots, liveRasters, blobBytes, pendingCommands }`) and `getCrayonParams()`. Tests like
-`engine.spec.ts:1918-1978` assert on `liveRasters`/`blobBytes` tier counts — implementation details
-of the snapshot memory tier (ADR-0066). If the tiering strategy is refactored (e.g. a third tier),
-these tests fail even when user-visible undo behavior is unchanged. Some coupling is inherent to an
-engine harness, but the memory-tier assertions test the mechanism, not the behavior.
-
-#### Proposed solution
-
-Keep behavior-level tests (undo restores the right pixels) and clearly segregate the tier-internals
-tests into a `engine-snapshot-tier.spec.ts` (per the split finding) with a header comment stating
-they intentionally assert internal invariants and are expected to change with ADR-0066 refactors —
-so a future maintainer knows these are white-box by design and doesn't mistake a churn failure for a
-regression. Consider trimming `pendingCommands`/`getCrayonParams` from `global.d.ts` if no spec
-reads them (grep to confirm).
-
-#### Verification
-
-`grep -rn "pendingCommands\|getCrayonParams" web/tests/*.spec.ts` — if zero, remove from the harness
-type. Tier tests carry the white-box header.
-
----
-
 ### [P4][naming] `engine.spec.js` referenced in a comment but the file is `.ts`
 
 **File(s):** `web/tests/flows.spec.ts:6` — pinned at SHA f934d43

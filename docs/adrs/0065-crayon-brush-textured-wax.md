@@ -177,9 +177,9 @@ body, and added slow body-density variation for waxy pressure unevenness.
 
 Following the `setSimplifyParams` precedent (ADR-0036), the crayon is dev-selectable and its
 variants A/B-able through the `/dev/engine` harness, gated by `PUBLIC_ENABLE_DEV_HARNESS`:
-`setCrayonMode` toggles the brush and `setCrayonParams`/`getCrayonParams` override the
-tooth/coverage/pass knobs at runtime, so **one preview build sweeps every variant** and the winner
-ships as the `CRAYON_DEFAULTS`. Production never calls the setter.
+`setCrayonMode` toggles the brush and `setCrayonParams` overrides the tooth/coverage/pass knobs at
+runtime, so **one preview build sweeps every variant** and the winner ships as the
+`CRAYON_DEFAULTS`. Production never calls the setter.
 
 ## Consequences
 

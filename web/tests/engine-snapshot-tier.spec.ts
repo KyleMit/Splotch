@@ -4,8 +4,10 @@ import { count, state } from './engine-harness';
 
 // --- The snapshot memory tier (ADR-0066) --------------------------------------
 //
-// Undo restores pre-stroke canvas snapshots (see undoHistory.ts). A restore can
-// be asynchronous — deep entries decode from an encoded blob — so undo() returns
+// Storage-tier count and byte assertions below are intentional white-box
+// invariants of ADR-0066; revise them with any snapshot-tier redesign. Undo
+// restores pre-stroke canvas snapshots (see undoHistory.ts). A restore can be
+// asynchronous — deep entries decode from an encoded blob — so undo() returns
 // its queue promise (page.evaluate awaits it) and assertions that race the
 // encode tier poll for the settled state.
 
