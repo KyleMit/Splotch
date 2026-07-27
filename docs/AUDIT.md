@@ -17,36 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P4][maintainability] FileProvider paths expose entire external + cache roots with template names
-
-**File(s):** `android/app/src/main/res/xml/file_paths.xml:2-5` (Android FileProvider) — pinned at
-SHA f934d43
-
-#### Problem
-
-```xml
-<external-path name="my_images" path="." />
-<cache-path name="my_cache_images" path="." />
-```
-
-`path="."` grants the FileProvider access to the **whole** external-files root and the **whole**
-cache dir, and the entry names (`my_images`, `my_cache_images`) are unmodified Capacitor sample
-names. Scoping a content provider to the entire root is broader than a "save one screenshot to the
-gallery" flow needs, and the generic names give no hint of what actually shares files. This is the
-provider referenced by `AndroidManifest.xml:23-29`.
-
-#### Proposed solution
-
-Narrow the shared paths to the specific subdirectory the media/filesystem export uses (e.g. a
-`shared_images/` subpath) and rename the entries to something descriptive (`shared_drawings`). If
-the wide scope is genuinely required by `@capacitor-community/media`, add a comment saying so.
-
-#### Verification
-
-Save-to-gallery / share still works on device; the provider no longer exposes unrelated files.
-
----
-
 ### [P4][duplication] The DeviceLock "Parent Center" rationale comment is duplicated verbatim across Java and Swift
 
 **File(s):** `android/app/src/main/java/art/splotch/app/DeviceLockPlugin.java:12-15`,
