@@ -7,29 +7,6 @@
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P4][dead-code] `GOLDEN_METRICS` is exported but consumed only inside its own module
-
-**File(s):** `tools/asset-gen/lib/golden-catalog.mjs:18-41` — pinned at SHA f934d43
-
-#### Problem
-
-`GOLDEN_METRICS` is `export const`, but the only reader is `diffGoldenPage` in the same file (line
-70). A repo-wide grep shows no external import (`audit-golden.mjs` imports `GOLDEN_VERDICTS` and
-`diffGoldenPage`, not `GOLDEN_METRICS`). The `export` overstates the module's public surface and
-invites a future caller to depend on an internal table.
-
-#### Proposed solution
-
-Drop `export` from `GOLDEN_METRICS` (keep it module-private) unless a test needs it — in which case
-leave a one-line comment noting the test as the only external consumer.
-
-#### Verification
-
-`grep -rn "GOLDEN_METRICS" bin/ tests/` — if empty, remove the export;
-`tests/golden-catalog.test.mjs` still passes.
-
----
-
 ### [P4][duplication] Percentile/median selection is reimplemented inline in every scorer
 
 **File(s):** `tools/asset-gen/lib/eye-fill.mjs:186-190,287-288`, `night-scores.mjs:95`,
