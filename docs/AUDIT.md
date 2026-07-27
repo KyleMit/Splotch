@@ -26,34 +26,6 @@ files. No code was changed — report only.
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P1][complexity] `api-smoke.mjs` is one 320-line `run()` with ~24 inline fetch/check blocks
-
-**File(s):** `scripts/api-smoke.mjs:25-346` (`run`) — pinned at SHA f934d43
-
-#### Problem
-
-`run()` is a single function that sequentially exercises admin login, the tokens auth gate, tokens
-CRUD, verify-access-code, report (validation/honeypot/unconfigured/throttle), csp-report (five
-formats + throttle), generate-image (raw + legacy multipart), and the shared 429 contract — all as
-flat inline `await fetch(...)` + `check(...)` pairs. There are no section functions, so a reader
-can't run/skim one contract in isolation, and shared request shapes (the JSON POST, the bearer
-header) are re-typed at every call.
-
-#### Proposed solution
-
-Split into named async suites called from `run()`: `checkAdminAuth(base)`,
-`checkTokensCrud(base, auth)`, `checkVerifyAccessCode`, `checkReport`, `checkCspReport`,
-`checkGenerateImage`, `checkThrottling`. Hoist the repeated request helpers
-(`postJson(path, {headers, body})`, `authHeader(session)`) to the top or to `lib/`. Each suite still
-calls the shared `check()`/`fatal()` reporter, so totals are unaffected.
-
-#### Verification
-
-`npm run test:api:smoke` prints the same pass/fail tally and exit code as before. The section
-functions make it possible to comment one out and see only that block skipped.
-
----
-
 ### [P2][duplication] Run-id timestamp format duplicated across report scripts
 
 **File(s):** `scripts/redteam-run.mjs:33`, `scripts/model-eval-run.mjs:47-49` — pinned at SHA
