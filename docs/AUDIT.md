@@ -5,31 +5,6 @@
 > then deletes this file. `/fix-audits` burns down those issues. Never treat this file as a
 > long-lived backlog.
 
-## Source: Code audit — Gestures / Svelte actions / native plugins
-
-## Summary
-
-22 findings across the gesture actions and native plugins. The concentration is in
-**`dragToClear.ts`** (10 findings) — an 285-line action carrying a JS-choreographed exit animation,
-two magic-number sets, a too-long `onPointerDown`, duplicated distance/cleanup logic, and redundant
-drag-state — and in **cross-action duplication**: `pinchTextZoom` re-rolls the `createPinchZoom`
-accumulator, three actions each hand-roll the same ghost-click guard, and six copies of the
-empty-catch `setPointerCapture` idiom. `launchGuard` has doubled pruning logic and unused option
-surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.svelte.ts`, and
-`modalDialog.svelte.ts` are largely clean (only minor notes). No code was changed — report only.
-
-## Source: Code audit — Storage / persistence
-
-## Source: Code audit — Server / API backend
-
-## Source: Code audit — PWA / service worker
-
-## Source: Code audit — Coloring books
-
-## Source: Code audit — Misc lib utilities + Audio
-
-## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
-
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
 ### [P4][type-safety] Scorer return shapes are undocumented ad-hoc objects with no JSDoc typedefs
