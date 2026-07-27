@@ -27,8 +27,8 @@ Cloud-session workflow (Claude Code on the web) — follow this for every sessio
      - Restricted: PR previews off; branch previews build ONLY for feature/*
        branches. Every other branch (including feat/* and claude/*) is pushed
        but NOT deployed, so it has no preview URL.
-   CURRENT MODE: restricted (as of 2026-07-09). Assume a plain `feat/*` push
-   produces NO live preview.
+   Before deciding whether a pushed branch has a preview, consult the "Current
+   mode" callout in docs/CLOUD/Claude.md.
 
 3. Hand back a preview URL only when one exists. A branch preview auto-deploys
    to https://<slug>--splotchy.netlify.app, where <slug> is the branch name with

@@ -19,38 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P3][maintenance] `cloud-branch-preview.sh` embeds a dated, mutable "CURRENT MODE" fact that is injected into every cloud session
-
-**File(s):** `.claude/hooks/cloud-branch-preview.sh:24-31` — pinned at SHA f934d43
-
-#### Problem
-
-The heredoc hard-codes a Netlify preview-mode fact with a date:
-
-```
-CURRENT MODE: restricted (as of 2026-07-09). Assume a plain `feat/*` push
-produces NO live preview.
-```
-
-This is exactly the kind of fast-moving operational state that goes stale silently: if the site
-flips back to "Full" mode, every cloud session is told the wrong thing until someone remembers this
-string lives inside a shell hook (not in a doc, not in config). Embedding a `(as of DATE)` marker in
-a script is a smell that the value doesn't belong in the script.
-
-#### Proposed solution
-
-Move the current-mode fact to a single source of truth (a line in `docs/CLOUD/Claude.md`, which the
-heredoc already cites) and have the hook reference it rather than restating it, or read it from an
-env var set on the cloud environment. At minimum, add a comment reminding editors that the mode
-string must be updated here when Netlify config changes.
-
-#### Verification
-
-Confirm the mode currently appears verbatim only in this hook; after the change the authoritative
-value lives in one place and the hook points at it.
-
----
-
 ### [P3][duplication] `cloud-branch-preview.sh` restates ~37 lines of the branching/preview convention already in `docs/CLOUD/Claude.md`
 
 **File(s):** `.claude/hooks/cloud-branch-preview.sh:12-49` — pinned at SHA f934d43
