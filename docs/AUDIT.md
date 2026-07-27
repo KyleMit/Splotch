@@ -11,44 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P2][cross-platform] `bumpAndroidGradle` / `bumpIosPbxproj` regexes are unanchored and global — they corrupt sibling lines
-
-**File(s):** `scripts/lib/native-version.mjs:28-53` (`bumpAndroidGradle`, `bumpIosPbxproj`) — pinned
-at SHA f934d43
-
-#### Problem
-
-The version bumpers match with bare, greedy, global regexes:
-
-```js
-.replace(/versionName.*/g, `versionName "${version}"`)
-.replace(/versionCode.*/g, `versionCode ${versionCode}`);
-```
-
-`versionName.*` also matches a `versionNameSuffix ".debug"` line (it starts with `versionName`) and
-any comment mentioning `versionName`, and `/g` rewrites *every* match — silently clobbering those
-lines with `versionName "x.y.z"`. Same hazard for `versionCode` vs `versionCodeOverride`, and for
-the iOS `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` variants. The header comment claims
-byte-identical output "matching the upstream behaviour on files that carry the pair once," but
-nothing guarantees the project files stay single-occurrence, and a future Gradle edit that adds a
-suffix would produce a corrupt build file with no error.
-
-#### Proposed solution
-
-Anchor to the assignment and preserve indentation, e.g. `/^(\s*)versionName\s+".*"/m` →
-`` `$1versionName "${version}"` `` and `/^(\s*)versionCode\s+\d+/m`. Drop `/g` in favour of
-asserting exactly one match (the guard checks already require presence; extend them to reject >1).
-For pbxproj keep `MARKETING_VERSION =` but require the trailing `;`:
-`/MARKETING_VERSION = [^;]*;/g`.
-
-#### Verification
-
-Add a fixture `build.gradle` containing both `versionName "0.0.1"` and `versionNameSuffix ".debug"`;
-assert only the `versionName` line changes. Existing release flow (`npm run release` dry path) still
-produces the same diff on the real files.
-
----
-
 ### [P2][cross-platform] `quoteArg` wraps args in double quotes without escaping `$`, backtick, `\`, or embedded `"`
 
 **File(s):** `scripts/lib/utils.mjs:20-37` (`quoteArg`, `shellJoin`, `run`) — pinned at SHA f934d43

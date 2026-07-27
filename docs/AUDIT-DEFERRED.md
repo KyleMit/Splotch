@@ -2960,3 +2960,88 @@ The rolled-back draft is kept at
 (1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p1-duplication-extract-the-copy-pasted-cli-flag-args-parser-shared-by-ev.patch`.
+
+### [P2][cross-platform] `bumpAndroidGradle` / `bumpIosPbxproj` regexes are unanchored and global — they corrupt sibling lines
+
+**File(s):** `scripts/lib/native-version.mjs:28-53` (`bumpAndroidGradle`, `bumpIosPbxproj`) — pinned
+at SHA f934d43
+
+#### Problem
+
+The version bumpers match with bare, greedy, global regexes:
+
+```js
+.replace(/versionName.*/g, `versionName "${version}"`)
+.replace(/versionCode.*/g, `versionCode ${versionCode}`);
+```
+
+`versionName.*` also matches a `versionNameSuffix ".debug"` line (it starts with `versionName`) and
+any comment mentioning `versionName`, and `/g` rewrites *every* match — silently clobbering those
+lines with `versionName "x.y.z"`. Same hazard for `versionCode` vs `versionCodeOverride`, and for
+the iOS `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` variants. The header comment claims
+byte-identical output "matching the upstream behaviour on files that carry the pair once," but
+nothing guarantees the project files stay single-occurrence, and a future Gradle edit that adds a
+suffix would produce a corrupt build file with no error.
+
+#### Proposed solution
+
+Anchor to the assignment and preserve indentation, e.g. `/^(\s*)versionName\s+".*"/m` →
+`` `$1versionName "${version}"` `` and `/^(\s*)versionCode\s+\d+/m`. Drop `/g` in favour of
+asserting exactly one match (the guard checks already require presence; extend them to reject >1).
+For pbxproj keep `MARKETING_VERSION =` but require the trailing `;`:
+`/MARKETING_VERSION = [^;]*;/g`.
+
+#### Verification
+
+Add a fixture `build.gradle` containing both `versionName "0.0.1"` and `versionNameSuffix ".debug"`;
+assert only the `versionName` line changes. Existing release flow (`npm run release` dry path) still
+produces the same diff on the real files.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* `scripts/lib/native-version.mjs:24-25,42-43` require the assignment to occupy the entire line, so
+  valid Android or iOS assignments followed by an inline comment are rejected or skipped instead of
+  being updated while preserving the comment.
+* The anchored patterns still match indented assignment-shaped text inside `/* ... */` comments;
+  Android then reports a false duplicate and iOS rewrites the commented text. Exclude block-comment
+  contents and add coverage for them.
+* `scripts/lib/native-version.mjs` anchors the iOS patterns to whole lines, so valid compact pbxproj
+  dictionaries such as `buildSettings = { MARKETING_VERSION = 1.2.3; ... };` are silently skipped
+  while other configurations are updated; match each semicolon-terminated assignment wherever it
+  appears in the build-settings dictionary.
+* `maskBlockCommentContents` treats `/*` inside a `//` comment as the start of a block comment,
+  potentially masking all following assignments and making an otherwise valid Gradle file fail the
+  bump; block-comment masking must respect line comments.
+* `scripts/lib/native-version.mjs:23-47,98-105` is not string-aware: a valid Gradle string
+  containing `/*` can mask the real assignments and fail the bump, while a quoted pbxproj value
+  containing `{ MARKETING_VERSION = ...;` is treated as an assignment and rewritten. Exclude comment
+  delimiters and assignment-shaped text inside string literals, with coverage for both cases.
+
+#### What was tried
+
+1. Tightened native version matching to complete indented assignments, preserving indentation while
+   rejecting ambiguous Android fields and retaining multi-configuration iOS updates. Added focused
+   regression coverage proving sibling identifiers, comments, and embedded setting substrings remain
+   unchanged.
+2. Updated native-version transforms to retain inline comment suffixes verbatim and mask
+   block-comment contents before assignment detection, preventing false Android ambiguity and
+   commented iOS rewrites. Expanded regression fixtures for both comment forms and stable multi-line
+   replacement.
+3. Updated iOS version matching to recognize dictionary entries after line starts, `{`, or `;`,
+   including multiple settings on compact lines without touching unrelated substrings. Reworked
+   comment masking to track line and block comments independently, so `/*` inside `//` cannot hide
+   later Android assignments.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-cross-platform-bumpandroidgradle-bumpiospbxproj-regexes-are-unanchore.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-cross-platform-bumpandroidgradle-bumpiospbxproj-regexes-are-unanchore.patch`.
