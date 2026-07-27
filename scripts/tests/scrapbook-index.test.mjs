@@ -24,8 +24,8 @@ function writeProofSheetCollection(dir, categories, sheets) {
       .map(({ id, pages }) => `{ id: '${id}', name: '${id}', pages: ${pages} }`)
       .join(',')}];</script>`
   );
-  for (const [id, pages] of Object.entries(sheets)) {
-    const cells = Array.from({ length: pages * 2 }, () => ({}));
+  for (const [id, pageIds] of Object.entries(sheets)) {
+    const cells = pageIds.map((pageId) => ({ id: pageId }));
     writeFileSync(
       join(dir, `${id}.html`),
       `<script>window.__COLORING_BOOK_PROOF_SHEET__ = ${JSON.stringify({ cells })};</script>`
@@ -77,7 +77,7 @@ describe('scrapbook index', () => {
         { id: 'farm', pages: 1 },
         { id: 'extra', pages: 1 },
       ],
-      { farm: 1, missing: 1 }
+      { farm: ['barn', 'barn'], missing: ['missing', 'missing'] }
     );
 
     expect(coloringBookProofSheetHubProblems(proofSheetsDir)).toEqual([
@@ -88,10 +88,29 @@ describe('scrapbook index', () => {
 
   it('reports a stale proof-sheet hub page count', () => {
     const proofSheetsDir = fixture();
-    writeProofSheetCollection(proofSheetsDir, [{ id: 'farm', pages: 1 }], { farm: 2 });
+    writeProofSheetCollection(proofSheetsDir, [{ id: 'farm', pages: 1 }], {
+      farm: ['barn', 'barn', 'tractor', 'tractor'],
+    });
 
     expect(coloringBookProofSheetHubProblems(proofSheetsDir)).toEqual([
-      'Hub category "farm" declares 1 pages, but farm.html contains 4 cells (2 pages).',
+      'Hub category "farm" declares 1 pages, but farm.html contains 2 distinct page IDs across 4 cells.',
     ]);
+  });
+
+  it('counts distinct page IDs across git and focused proof sheets', () => {
+    const proofSheetsDir = fixture();
+    writeProofSheetCollection(
+      proofSheetsDir,
+      [
+        { id: 'git', pages: 2 },
+        { id: 'focused', pages: 1 },
+      ],
+      {
+        git: ['barn', 'barn', 'barn', 'barn', 'tractor', 'tractor', 'tractor', 'tractor'],
+        focused: ['barn'],
+      }
+    );
+
+    expect(coloringBookProofSheetHubProblems(proofSheetsDir)).toEqual([]);
   });
 });

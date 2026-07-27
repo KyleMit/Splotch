@@ -167,11 +167,11 @@ export function coloringBookProofSheetHubProblems(proofSheetsDir) {
     const marker = 'window.__COLORING_BOOK_PROOF_SHEET__ = ';
     const dataStart = sheet.indexOf(marker) + marker.length;
     const dataEnd = sheet.indexOf(';</script>', dataStart);
-    const cellCount = JSON.parse(sheet.slice(dataStart, dataEnd)).cells.length;
-    const sheetPages = cellCount / 2;
+    const cells = JSON.parse(sheet.slice(dataStart, dataEnd)).cells;
+    const sheetPages = new Set(cells.map((cell) => cell.id)).size;
     if (pages !== sheetPages) {
       problems.push(
-        `Hub category "${id}" declares ${pages} pages, but ${id}.html contains ${cellCount} cells (${sheetPages} pages).`
+        `Hub category "${id}" declares ${pages} pages, but ${id}.html contains ${sheetPages} distinct page IDs across ${cells.length} cells.`
       );
     }
   }

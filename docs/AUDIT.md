@@ -35,57 +35,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — scrapbook · run-artifact code
 
-### [P2][duplication] Hub `CATEGORIES` registry + per-category page counts duplicate the generator's source of truth with no drift guard
-
-**File(s):** `scrapbook/coloring-book-proof-sheets/index.html:182-191`, `:220` (hand-authored hub) —
-pinned at SHA f934d43
-
-#### Problem
-
-The hub hardcodes the full category list and page counts:
-
-```js
-var CATEGORIES = [
-  { id: 'farm', name: 'Farm', pages: 6 },
-  { id: 'dinosaur', name: 'Dinosaurs', pages: 6 },
-  ...{ id: 'vehicles', name: 'Vehicles', pages: 6 },
-];
-```
-
-and renders `'Category ' + (i + 1) + ' of ' + CATEGORIES.length + ' · ' + cat.pages + ' pages'`
-(line 220). Every value here is a copy of state that actually lives in the proof-sheet generator
-(`tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs`) and in the sibling `*.html` sheets.
-Nothing keeps them in lockstep:
-
-* `npm run scrapbook:check` only verifies each *collection dir* resolves to one entry page
-  (`collectionsMissingEntry`) and that the top-level `index.html` is fresh — it never looks inside
-  the hub. Adding a new category sheet (e.g. a future `bugs.html`) leaves the hub silently omitting
-  it; the sheet is reachable by URL but invisible in the tab strip.
-* A page-count change (say `farm` drops from 6 to 5 pages) makes the "· 6 pages" label lie, with no
-  test to catch it.
-
-This is the single highest-drift spot in the whole section: it is the only committed page with a
-hardcoded mirror of generator data and no automated reconciliation.
-
-#### Proposed solution
-
-Prefer eliminating the copy: have the proof-sheet generator (or a small `scrapbook:index`-adjacent
-step) emit the `CATEGORIES` array — or the whole hub — from the same manifest it uses to build the
-sheets, so id/name/pages have one source. If the hub must stay hand-authored, add a check (extend
-`scrapbook:check`) that (a) every `coloring-book-proof-sheets/*.html` sheet except `index.html`
-appears as a `CATEGORIES` entry and vice-versa, and (b) each `pages` value matches the sheet's
-actual page count. At minimum, drop the `pages` field if it can't be verified — a wrong count is
-worse than no count.
-
-#### Verification
-
-Add a ninth category sheet without editing the hub and confirm today it does not appear in the tabs
-and no check fails; after the fix, either the tab appears automatically or `scrapbook:check` fails
-with a clear message. For the count: edit a sheet's page count and confirm the guard flags the stale
-`pages` value.
-
----
-
 ### [P3][correctness] Deep-linking via `hashchange` (or back/forward) leaves `document.title` stale
 
 **File(s):** `scrapbook/coloring-book-proof-sheets/index.html:214-229`, `:240` (hand-authored hub) —
