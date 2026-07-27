@@ -35,34 +35,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — scrapbook · run-artifact code
 
-### [P4][correctness] Initial load rewrites the URL to `#farm` and pushes a history entry
-
-**File(s):** `scrapbook/coloring-book-proof-sheets/index.html:226`, `:242` (hand-authored hub) —
-pinned at SHA f934d43
-
-#### Problem
-
-On first load with no hash, `show(indexFromHash())` runs with `indexFromHash()` returning `0`, and
-because `skipHash` is falsy it executes `location.hash = cat.id` (line 226) since `'' !== 'farm'`.
-So opening the bare hub URL immediately mutates the address bar to `…/index.html#farm` and, because
-assigning `location.hash` creates a new history entry, adds a spurious Back-button stop before the
-page the user actually arrived from. The shareable/canonical URL a visitor copies also silently
-gains a `#farm` they didn't choose.
-
-#### Proposed solution
-
-For the canonicalisation-on-load case use `history.replaceState(null, '', '#' + cat.id)` instead of
-assigning `location.hash`, so the hash is normalised without a new history entry. (User-initiated
-tab clicks can keep pushing entries if per-category back/forward is desired — that's a deliberate
-choice to make explicitly.)
-
-#### Verification
-
-Open the hub from another page, then press Back: today it returns to `#farm`-less state (an extra
-stop) rather than the previous page. After the fix, Back leaves the hub directly.
-
----
-
 ### [P3][maintainability] Hub palette renames the shared chrome tokens, defeating the "keep in sync by eye" note
 
 **File(s):** `scrapbook/coloring-book-proof-sheets/index.html:8-43` (hand-authored hub) — pinned at
