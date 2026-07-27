@@ -30,8 +30,11 @@ candidates in `.coloring-samples-dark/`, which is how the before/after compariso
 is effectively the `--motif bubbles` contact-sheet mode the idea sketched, as a standalone tool.
 
 Two registries are canonical and the rest were dropped: `code/motif-registry.json` is the five-motif
-survey behind every `before-*-strip.webp`, and `code/motif-registry-final.json` is the validated end
-state (candidate chalk **plus** regenerated night fill) behind `after-bubbles-strip.webp`.
+survey behind every `before-*-strip.webp`, and `code/motif-registry-final.json` carries the two
+bubbles-fix blocks — `bubbles-after` (candidate chalk over the *old* night raw, rendering
+`strips/motif-bubbles-after.png`) and `bubbles-final`, the validated end state with the regenerated
+night fill behind `after-bubbles-strip.webp`. Each block renders as `strips/motif-<block>.png` via
+`node code/motif-strip.mjs <registry.json> strips/`.
 
 ### 3. Sibling-asymmetry heuristic (one-liner over the inventory)
 
@@ -90,7 +93,8 @@ No `--apply` — the candidate stayed in `.coloring-samples-dark/chalk/`. The no
 identity ("BUBBLES, not eyes"), the exact target treatment, and the sibling. Low temperature (0.25)
 for faithfulness, per the documented lever ladder.
 
-**The coupled night-fill regen is mandatory, and the strip proves why**: compositing the *existing*
+**The coupled night-fill regen is mandatory, and `strips/motif-bubbles-after.png` proves why** (the
+`bubbles-after` block of `code/motif-registry-final.json` re-renders it): compositing the *existing*
 night raw under the new chalk shows the fill's own white donut bleeding through as a pale grey ring
 — the old fill was generated against the donut chalk and paints white where the new chalk no longer
 masks it. So the experiment continued end-to-end: the candidate chalk was temporarily copied over
