@@ -61,9 +61,9 @@ rationale.
 | 44 | `p3-complexity-score-composite-eyes.md`           | `scoreCompositeEyes` 100-line function w/ inline validator  | P3  | C15     | pending |
 | 45 | `p3-architecture-fail-in-paths.md`                | `fail()` lives in `paths.mjs`, unrelated to path resolution | P3  | C15     | pending |
 | 46 | `p5-maintainability-median-luma.md`               | "Median" via `>>1` + luma definitions differ across modules | P5  | C15     | pending |
-| 47 | `p1-discoverability-asset-gen-readme-stale.md`    | README scoreboard / "do first" list stale                   | P1  | C16     | pending |
-| 48 | `p1-duplication-graduated-idea-files.md`          | Graduated `idea-N/code` files are drifted frozen ancestors  | P1  | C16     | pending |
-| 49 | `p3-naming-idea-script-naming.md`                 | Inconsistent script naming across idea dirs                 | P3  | C16     | pending |
+| 47 | `p1-discoverability-asset-gen-readme-stale.md`    | README scoreboard / "do first" list stale                   | P1  | C16     | FIX — rewrite from Status lines |
+| 48 | `p1-duplication-graduated-idea-files.md`          | Graduated `idea-N/code` files are drifted frozen ancestors  | P1  | C16     | DROP — resolved on main |
+| 49 | `p3-naming-idea-script-naming.md`                 | Inconsistent script naming across idea dirs                 | P3  | C16     | DROP — frozen archive |
 
 ## Clusters
 
