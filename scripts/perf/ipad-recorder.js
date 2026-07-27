@@ -126,6 +126,7 @@
   // clearing) means something wiped painted pixels.
   const probeTimers = new Set();
   // Cheap strided alpha probe; its magnitude is relative only within a recording.
+  // The prime pixel stride decorrelates samples from pixel-row periodicity.
   const CHANNELS_PER_PIXEL = 4;
   const PIXEL_SAMPLE_STRIDE = 61;
   const ALPHA_STRIDE = CHANNELS_PER_PIXEL * PIXEL_SAMPLE_STRIDE;
