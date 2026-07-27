@@ -44,8 +44,12 @@ npx -y npm@11 install -g npm@11 \
 # needing the fallback at all.
 # Needs cdn.playwright.dev + playwright.download.prss.microsoft.com on the allowlist.
 PW_VERSION="$(node -p "require('./package.json').devDependencies['@playwright/test'].replace(/^[^0-9]*/, '')" 2>/dev/null || true)"
-npx --yes "playwright@${PW_VERSION:-1.61.1}" install --with-deps chromium \
-  || warn "playwright browser install skipped — allowlist cdn.playwright.dev?"
+if [[ "$PW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  npx --yes "playwright@${PW_VERSION}" install --with-deps chromium \
+    || warn "playwright browser install skipped — allowlist cdn.playwright.dev?"
+else
+  warn "playwright browser install skipped — could not derive a numeric @playwright/test version from package.json"
+fi
 
 # Phone-preview reverse-tunnel client (ADR-0021). Cached into the snapshot at a persisted
 # path so later sessions skip the download. Pinned to the version docs/CLOUD/Claude.md references.
