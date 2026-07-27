@@ -23,9 +23,8 @@ public class PencilEraserPlugin: CAPPlugin, CAPBridgedPlugin, UIPencilInteractio
         view.addInteraction(interaction)
     }
 
-    // The classic delegate callback is the only one available down to iOS 15 (the project's
-    // deployment target); it still fires on newer iPadOS, so we always interpret a tap as
-    // "toggle eraser" regardless of the user's system preferredTapAction.
+    // Deliberately handle every delegate tap ourselves so the plugin always emits "doubleTap" and
+    // the web layer toggles the eraser instead of honoring UIPencilInteraction.preferredTapAction.
     public func pencilInteractionDidTap(_ interaction: UIPencilInteraction) {
         notifyListeners("doubleTap", data: [:])
     }
