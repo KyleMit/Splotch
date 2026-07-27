@@ -81,7 +81,6 @@
       "Bash(xcodebuild -version)",
       "Bash(pod --version)",
       "Bash(ruby --version)",
-      "Bash(afplay *)",
 
       "Skill(update-config)",
       "Skill(update-config:*)",

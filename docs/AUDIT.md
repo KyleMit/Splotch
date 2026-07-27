@@ -19,37 +19,6 @@
 
 ## Source: Code audit — .claude / .codex config (hooks, rules, settings)
 
-### [P3][dead-config] `Bash(afplay *)` is a dead (and macOS-only) permission with no consumer in the repo
-
-**File(s):** `.claude/settings.json:72` — pinned at SHA f934d43
-
-#### Problem
-
-`afplay` is macOS's audio player. A repo-wide grep finds it only in `settings.json` — no hook,
-skill, script, or `.ruler` source invokes it:
-
-```
-$ grep -rn "afplay" .claude .ruler scripts
-.claude/settings.json:72:      "Bash(afplay *)",
-```
-
-It looks like a leftover from a since-removed notification/Stop-hook sound. It also can't work on
-the Linux dev/cloud environments the project supports (ADR-0017). Dead config in the allow list
-makes the real, load-bearing entries harder to audit.
-
-#### Proposed solution
-
-Remove line 72. If a completion sound is still wanted, wire it through a Stop hook and a
-cross-platform helper (per ADR-0017's "platform tools via Node helpers" rule), then re-add a scoped
-permission for that helper.
-
-#### Verification
-
-`grep -rn afplay` returns only `settings.json` today; after removal it returns nothing and no
-workflow regresses (nothing invoked it).
-
----
-
 ### [P3][maintenance] `cloud-branch-preview.sh` embeds a dated, mutable "CURRENT MODE" fact that is injected into every cloud session
 
 **File(s):** `.claude/hooks/cloud-branch-preview.sh:24-31` — pinned at SHA f934d43
