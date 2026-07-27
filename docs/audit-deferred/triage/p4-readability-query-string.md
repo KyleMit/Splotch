@@ -15,8 +15,8 @@ ride on.
 
 The endpoint URL is built by hand-concatenating `?style=` with a conditional and a manual
 `encodeURIComponent`. It works, but it's string surgery that breaks the moment a second query param
-is added, and it mixes "is there a style" branching into the URL literal. Proposed
-`const params = style ?`?${new URLSearchParams({ style })}`: ''`.
+is added, and it mixes "is there a style" branching into the URL literal. Proposed building the
+query with `new URLSearchParams({ style })` (empty string when no style).
 
 ## Why it was deferred
 

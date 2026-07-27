@@ -16,21 +16,21 @@ rationale.
 | #  | Decision doc                                      | Finding                                                     | Pri | Cluster | Status  |
 | -- | ------------------------------------------------- | ----------------------------------------------------------- | --- | ------- | ------- |
 | 1  | `p2-duplication-glaze-stamp.md`                   | Two-blit subtractive glaze stamp duplicated                 | P2  | C01     | pending |
-| 2  | `p2-complexity-generate-ai-image.md`              | `generateAiImage` bundles six concerns                      | P2  | C02     | pending |
+| 2  | `p2-complexity-generate-ai-image.md`              | `generateAiImage` bundles six concerns                      | P2  | C02     | DROP — resolved on main |
 | 3  | `p3-duplication-crayon-buffer-alloc.md`           | Crayon-buffer allocate-or-resize written three times        | P3  | C01     | pending |
 | 4  | `p3-maintainability-overlay-css.md`               | Engine overlay CSS duplicates `.crayon-overlay` styles      | P3  | C01     | pending |
 | 5  | `p4-maintainability-overlay-struct.md`            | Group crayon-overlay module variables into one struct       | P4  | C01     | pending |
-| 6  | `p3-duplication-auth-headers.md`                  | Credential-header assembly hard-codes header names          | P3  | C02     | pending |
-| 7  | `p4-readability-query-string.md`                  | Manual query-string concatenation for generate-image        | P4  | C02     | pending |
-| 8  | `p4-readability-webp-guard.md`                    | WebP-upload guard predicate in `encodeWebpUpload`           | P4  | C02     | pending |
-| 9  | `p5-readability-confetti-mask.md`                 | Duplicated 6-line mask gradient in AiConfetti               | P5  | C03     | pending |
-| 10 | `p5-type-safety-ai-image-result-cast.md`          | `AiImageResult` casts in event handlers                     | P5  | C03     | pending |
+| 6  | `p3-duplication-auth-headers.md`                  | Credential-header assembly hard-codes header names          | P3  | C02     | DROP — resolved on main |
+| 7  | `p4-readability-query-string.md`                  | Manual query-string concatenation for generate-image        | P4  | C02     | DROP — not worth it |
+| 8  | `p4-readability-webp-guard.md`                    | WebP-upload guard predicate in `encodeWebpUpload`           | P4  | C02     | DROP — not worth it |
+| 9  | `p5-readability-confetti-mask.md`                 | Duplicated 6-line mask gradient in AiConfetti               | P5  | C03     | FIX |
+| 10 | `p5-type-safety-ai-image-result-cast.md`          | `AiImageResult` casts in event handlers                     | P5  | C03     | FIX |
 | 11 | `p1-consistency-state-naming.md`                  | Unify exported `$state` object naming                       | P1  | C04     | pending |
 | 12 | `p1-duplication-segmented-control.md`             | Shared segmented-control primitive (3 copies with drift)    | P1  | C05     | pending |
 | 13 | `p3-duplication-setting-spacing-rule.md`          | `.setting + .setting` rule copied into three sections       | P3  | C05     | pending |
 | 14 | `p4-accessibility-segmented-aria.md`              | Segmented controls use inconsistent ARIA semantics          | P4  | C05     | pending |
 | 15 | `p1-duplication-ink-keyline.md`                   | White/dark ink keyline CSS triplicated                      | P1  | C04     | pending |
-| 16 | `p3-accessibility-clear-button-keyboard.md`       | Clearing the canvas is pointer-only                         | P3  | C03     | pending |
+| 16 | `p3-accessibility-clear-button-keyboard.md`       | Clearing the canvas is pointer-only                         | P3  | C03     | OPTIONS — lean: keyboard click path |
 | 17 | `p2-duplication-icon-glob-exclusion.md`           | Icon glob + `splotchy` exclusion repeated three places      | P2  | C07     | pending |
 | 18 | `p3-maintainability-color-icons-allowlist.md`     | `COLOR_ICONS` hand-maintained allowlist mixes two concepts  | P3  | C07     | pending |
 | 19 | `p4-consistency-icon-types-reexport.md`           | `iconTypes.ts` imports and re-exports `IconName`            | P4  | C07     | pending |
