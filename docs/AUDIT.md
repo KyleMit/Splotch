@@ -21,27 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P3][dead-config] No `dependabot.yml` — nothing keeps the pinned actions or npm deps updated
-
-**File(s):** `.github/` (absent `dependabot.yml`) — pinned at SHA f934d43
-
-#### Problem
-
-There is no `.github/dependabot.yml`. Combined with the tag-pinned (or, if SHA-pinned, frozen)
-actions above and the hand-maintained npm tree, action and dependency updates are entirely manual.
-Security patches to `android-emulator-runner`, `checkout`, etc. land only if someone notices.
-
-#### Proposed solution
-
-Add `.github/dependabot.yml` with a `github-actions` ecosystem (weekly) and, if desired, an `npm`
-ecosystem scoped to the root `package.json`. Group patch/minor action bumps to keep PR noise down.
-
-#### Verification
-
-File exists and validates; Dependabot opens its first "bump actions" PR on the next scheduled run.
-
----
-
 ### [P3][maintainability] Playwright version is resolved by a brittle inline `node -p` reaching into `package-lock.json` internals
 
 **File(s):** `.github/workflows/test.yml:105-107` (Resolve Playwright version) — pinned at SHA
