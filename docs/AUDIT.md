@@ -17,37 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P3][consistency] PencilEraserPlugin comment claims iOS 15 deployment target; it is actually 16.4
-
-**File(s):** `ios/App/App/PencilEraserPlugin.swift:27-28` (iOS plugin) — pinned at SHA f934d43
-
-#### Problem
-
-```swift
-// The classic delegate callback is the only one available down to iOS 15 (the project's
-// deployment target); it still fires on newer iPadOS, so we always interpret a tap as
-```
-
-The project's deployment target is **16.4** (`IPHONEOS_DEPLOYMENT_TARGET = 16.4` in all four pbxproj
-configs; `Package.swift` pins `.iOS(.v16)`). The comment's "(the project's deployment target)" is
-factually wrong and, since the newer `preferredTapAction` API is available from iOS 16, the stated
-rationale for using only the classic callback no longer holds as written. A future contributor
-trusting this comment could make the wrong availability decision.
-
-#### Proposed solution
-
-Correct the parenthetical to iOS 16.4 (or remove the "project's deployment target" clause) and, if
-the classic callback is still deliberately preferred over `preferredTapAction`, restate the actual
-reason (it fires reliably regardless of the user's system tap-action preference — which the next
-sentence already says).
-
-#### Verification
-
-Confirm against the pbxproj/Package.swift target; the comment's version matches the real deployment
-target.
-
----
-
 ### [P3][dead-config] Unused `AppTheme.NoActionBar` style
 
 **File(s):** `android/app/src/main/res/values/styles.xml:12-16` (Android theme) — pinned at SHA

@@ -46,10 +46,10 @@ attach a **UIKit interaction to the web view**:
 * **iOS** — `ios/App/App/PencilEraserPlugin.swift`, an `@objc` `CAPPlugin` + `CAPBridgedPlugin`
   (with empty `pluginMethods` — it has no callable methods) that also conforms to
   `UIPencilInteractionDelegate`. Its `attach(to:)` installs a `UIPencilInteraction` on a view;
-  `pencilInteractionDidTap(_:)` calls `notifyListeners("doubleTap", …)`. We use the classic delegate
-  callback because it is the only one available down to the iOS 15 deployment target (it still
-  fires, deprecated, on newer iPadOS). As ADR-0027 established, **Capacitor 8 does not auto-discover
-  plugin classes**, so `MainViewController.swift` (`capacitorDidLoad()`) both
+  `pencilInteractionDidTap(_:)` calls `notifyListeners("doubleTap", …)`. The iOS 16.4 deployment
+  target supports this callback; the delegate deliberately emits `doubleTap` for every tap instead
+  of honoring `UIPencilInteraction.preferredTapAction`. As ADR-0027 established, **Capacitor 8 does
+  not auto-discover plugin classes**, so `MainViewController.swift` (`capacitorDidLoad()`) both
   `registerPluginInstance(…)`s it *and* calls `attach(to: bridge?.webView)`. The instance is held
   strongly by the VC because `UIPencilInteraction.delegate` is weak. Added to the App target's
   Compile Sources by hand (`project.pbxproj`), mirroring `AppDelegate.swift`; no `Package.swift`
