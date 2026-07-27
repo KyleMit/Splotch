@@ -21,46 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P1][consistency] Issue templates apply labels (`bug`, `enhancement`) that don't exist in the declarative taxonomy
-
-**File(s):** `.github/ISSUE_TEMPLATE/bug_report.md:5`, `.github/ISSUE_TEMPLATE/feature_request.md:5`
-— pinned at SHA f934d43
-
-#### Problem
-
-`bug_report.md` sets `labels: bug` and `feature_request.md` sets `labels: enhancement`:
-
-```yaml
-# bug_report.md
-labels: bug
-# feature_request.md
-labels: enhancement
-```
-
-But the single source of truth for labels, `.github/labels.yml`, defines **`type:bug`** and
-**`type:feature`** — there is no `bug` or `enhancement` label in the taxonomy (lines 7-30). Since
-`label-sync.yml` runs with `skip-delete: true`, GitHub's default `bug`/`enhancement` labels are
-never pruned, so every issue opened through these templates lands with an off-taxonomy label. This
-directly undermines the automation and skills keyed on `type:*` (`docs/ISSUE-WORKFLOW.md`,
-`burn-down-backlog`, `vet-audits`, the `reviewed`→ToDo move) — a bug filed via the template is not
-`type:bug`, so `area:*`/`type:*` filtering silently misses it. The `task.md` template (`labels: ''`)
-is at least honest about carrying no label, but leaves the same gap.
-
-#### Proposed solution
-
-Change the template front-matter to the real taxonomy labels: `labels: type:bug` and
-`labels: type:feature` (multiple allowed, e.g. `type:bug, needs-triage`). Preset `task.md` to
-`labels: type:chore`. Optionally add the two GitHub defaults as explicit entries in `labels.yml` and
-flip `skip-delete` for a one-time prune — but aligning the templates to `type:*` is the correct fix.
-
-#### Verification
-
-`grep -R "^labels:" .github/ISSUE_TEMPLATE` and confirm every value appears as a `name:` in
-`.github/labels.yml`. Open a test issue from each template and confirm the applied label matches the
-taxonomy.
-
----
-
 ### [P1][security] Test/deploy/smoke workflows declare no `permissions:` block — they run with the default (write-capable) token
 
 **File(s):** `.github/workflows/test.yml:1-11`, `.github/workflows/android-deploy.yml:10-17`,

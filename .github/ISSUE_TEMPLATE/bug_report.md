@@ -2,7 +2,7 @@
 name: Bug Report
 about: Report a problem with Splotch
 title: '[BUG] '
-labels: bug
+labels: type:bug
 assignees: ''
 ---
 

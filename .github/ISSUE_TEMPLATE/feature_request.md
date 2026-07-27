@@ -2,7 +2,7 @@
 name: Feature Request
 about: Suggest an idea for Splotch
 title: '[FEATURE] '
-labels: enhancement
+labels: type:feature
 assignees: ''
 ---
 
