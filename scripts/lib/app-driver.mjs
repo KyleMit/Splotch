@@ -118,6 +118,12 @@ export async function pickPage(page, name) {
   await page.locator(`button[aria-label="${name} coloring page"]`).first().click();
 }
 
+// The overlay <img> only gets .overlay-ready once the page art has decoded, so
+// it's the signal that a picked coloring page is actually painted.
+export async function waitForColoringOverlay(page) {
+  await page.waitForSelector('#coloringOverlay.overlay-ready');
+}
+
 export async function openColorPicker(page) {
   await page.locator('.color-swatch[data-color="custom"]').click();
 }

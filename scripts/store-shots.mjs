@@ -25,6 +25,7 @@ import {
   openColoringBook,
   pickBook,
   pickPage,
+  waitForColoringOverlay,
   openColorPicker,
   openParentCenter,
   circlePts,
@@ -122,6 +123,82 @@ async function colorInLines(page, box) {
   await scribble(C.blue, W * 0.65, H * 0.4, W * 0.08, H * 0.07);
 }
 
+// No DOM signal is surfaced for these dialog animations, so they stay timed.
+const MENU_TRANSITION_MS = 450; // coloring-book dialog sliding open
+const PAGE_GRID_TRANSITION_MS = 400; // a book's page grid animating in
+const SCREENSHOT_SETTLE_MS = 500; // last entrance animation before the capture
+
+// Each scene opens its own page, drives the app, captures one screenshot and
+// closes — so a single scene can be run on its own while iterating on it.
+
+async function sceneFreeDraw(browser, base, device, dir) {
+  const { ctx, page } = await openAppPage(browser, base, device);
+  await expandDrawer(page);
+  await setStrokeSize(page, 4);
+  const box = await canvasBox(page);
+  await drawScene(page, box);
+  await dismissMenu(page);
+  await shot(page, `${dir}/01-draw.png`);
+  await ctx.close();
+}
+sceneFreeDraw.label = '01-draw';
+
+async function sceneColoringBook(browser, base, device, dir) {
+  const { ctx, page } = await openAppPage(browser, base, device);
+  await expandDrawer(page);
+  await openColoringBook(page);
+  await sleep(MENU_TRANSITION_MS);
+  await pickBook(page, 'Farm');
+  await sleep(SCREENSHOT_SETTLE_MS);
+  await shot(page, `${dir}/02-coloring-book.png`);
+  await ctx.close();
+}
+sceneColoringBook.label = '02-coloring-book';
+
+async function sceneColorPage(browser, base, device, dir) {
+  const { ctx, page } = await openAppPage(browser, base, device);
+  await expandDrawer(page);
+  await setStrokeSize(page, 5);
+  await openColoringBook(page);
+  await sleep(MENU_TRANSITION_MS);
+  await pickBook(page, 'Farm');
+  await sleep(PAGE_GRID_TRANSITION_MS);
+  await pickPage(page, 'Farm');
+  await waitForColoringOverlay(page);
+  const box = await canvasBox(page);
+  await colorInLines(page, box);
+  await dismissMenu(page);
+  await shot(page, `${dir}/03-color-page.png`);
+  await ctx.close();
+}
+sceneColorPage.label = '03-color-page';
+
+async function sceneColorPicker(browser, base, device, dir) {
+  const { ctx, page } = await openAppPage(browser, base, device);
+  await openColorPicker(page);
+  await sleep(SCREENSHOT_SETTLE_MS);
+  await shot(page, `${dir}/04-color-picker.png`);
+  await ctx.close();
+}
+sceneColorPicker.label = '04-color-picker';
+
+async function sceneParentCenter(browser, base, device, dir) {
+  const { ctx, page } = await openAppPage(browser, base, device);
+  await openParentCenter(page);
+  await sleep(SCREENSHOT_SETTLE_MS);
+  await shot(page, `${dir}/05-parent-center.png`);
+  await ctx.close();
+}
+sceneParentCenter.label = '05-parent-center';
+
+const SCENES = [
+  sceneFreeDraw,
+  sceneColoringBook,
+  sceneColorPage,
+  sceneColorPicker,
+  sceneParentCenter,
+];
+
 const { base, stop } = await ensureDevServer(PORT);
 try {
   const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
@@ -133,69 +210,9 @@ try {
   ];
 
   for (const t of targets) {
-    // SCENE 1 — free drawing
-    {
-      const { ctx, page } = await openAppPage(browser, base, t.device);
-      await expandDrawer(page);
-      await setStrokeSize(page, 4);
-      const box = await canvasBox(page);
-      await drawScene(page, box);
-      await dismissMenu(page);
-      await shot(page, `${t.dir}/01-draw.png`);
-      await ctx.close();
-      console.log(`${t.name} 01-draw done`);
-    }
-
-    // SCENE 2 — coloring book (Farm pages grid)
-    {
-      const { ctx, page } = await openAppPage(browser, base, t.device);
-      await expandDrawer(page);
-      await openColoringBook(page);
-      await sleep(450);
-      await pickBook(page, 'Farm');
-      await sleep(500);
-      await shot(page, `${t.dir}/02-coloring-book.png`);
-      await ctx.close();
-      console.log(`${t.name} 02-coloring-book done`);
-    }
-
-    // SCENE 3 — coloring a page within the lines
-    {
-      const { ctx, page } = await openAppPage(browser, base, t.device);
-      await expandDrawer(page);
-      await setStrokeSize(page, 5);
-      await openColoringBook(page);
-      await sleep(450);
-      await pickBook(page, 'Farm');
-      await sleep(400);
-      await pickPage(page, 'Farm');
-      await sleep(700); // wait for overlay image to load
-      const box = await canvasBox(page);
-      await colorInLines(page, box);
-      await dismissMenu(page);
-      await shot(page, `${t.dir}/03-color-page.png`);
-      await ctx.close();
-      console.log(`${t.name} 03-color-page done`);
-    }
-
-    // SCENE 4 — rainbow color picker
-    {
-      const { ctx, page } = await openAppPage(browser, base, t.device);
-      await openColorPicker(page);
-      await sleep(500);
-      await shot(page, `${t.dir}/04-color-picker.png`);
-      await ctx.close();
-      console.log(`${t.name} 04-color-picker done`);
-    }
-
-    // SCENE 5 — Parent Center (settings / trust)
-    {
-      const { ctx, page } = await openAppPage(browser, base, t.device);
-      await openParentCenter(page);
-      await sleep(500);
-      await shot(page, `${t.dir}/05-parent-center.png`);
-      await ctx.close();
-      console.log(`${t.name} 05-parent-center done`);
+    for (const scene of SCENES) {
+      await scene(browser, base, t.device, t.dir);
+      console.log(`${t.name} ${scene.label} done`);
     }
   }
 
