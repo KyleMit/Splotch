@@ -11,35 +11,6 @@
 
 ## Source: Code audit — tools/asset-gen · ideas-exploration (R&D scratch)
 
-### [P3][naming] Inconsistent script naming across idea dirs — `idea{N}-` prefix vs descriptive vs `tmp-`
-
-**File(s):** e.g. `idea-11/code/idea11-*.mjs`, `idea-12/code/idea12-*.mjs`,
-`idea-15/code/idea15-*.mjs`, `idea-5/code/idea5-*.mjs`, `idea-17/code/*-idea17.mjs` vs
-`idea-1/code/analyze-rim.mjs`, `idea-4/code/normalize-night-sky.mjs`, `idea-21/code/tmp-rects.mjs`,
-`idea-21/code/tmp-shoot-sheet.mjs` — pinned at SHA f934d43
-
-#### Problem
-
-21 of the 60 exploration `.mjs` files embed a redundant `idea{N}` in the filename (already implied
-by the directory), while 39 use plain descriptive names, and idea-17 uses a `-idea17` suffix instead
-of a prefix. idea-21 additionally has two `tmp-`prefixed scripts (`tmp-rects.mjs`,
-`tmp-shoot-sheet.mjs`) — the classic "throwaway I never renamed" marker — committed as if permanent.
-The inconsistency is low-stakes for frozen scratch but adds friction for the "several carry finished
-patches waiting to be promoted" ideas a maintainer may revisit.
-
-#### Proposed solution
-
-Don't churn all 60 files. As a light touch, note in the README that the `idea{N}` prefix is
-incidental, and at minimum rename the two `idea-21/code/tmp-*.mjs` to describe what they do (they
-generated the comparison sheets) or delete them if superseded by the landed
-`contact-sheet-git-source-and-compare.patch` in the same dir.
-
-#### Verification
-
-`find ideas-exploration -name 'tmp-*'` returns nothing; the README notes the naming convention.
-
----
-
 ### [P3][discoverability] `report.md` files carry no back-reference to their outcome (landed / open issue) or to the live code
 
 **File(s):** all `tools/asset-gen/ideas-exploration/idea-*/report.md` — pinned at SHA f934d43
