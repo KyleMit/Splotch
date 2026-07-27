@@ -8,15 +8,13 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { sleep } from '../lib/utils.mjs';
+import { circlePts, zigzag, arcPts } from '../lib/stroke-geometry.mjs';
 import {
   canvasBox,
   expandDrawer,
   pickColor,
   setStrokeSize,
   drawStroke,
-  circlePts,
-  zigzag,
-  arcPts,
 } from '../lib/app-driver.mjs';
 import {
   startTrace,

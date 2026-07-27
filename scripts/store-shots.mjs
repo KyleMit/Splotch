@@ -14,6 +14,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PALETTE_COLORS } from '../web/src/lib/palette.ts';
 import { ROOT, chromiumExecutablePath, sleep } from './lib/utils.mjs';
+import { circlePts, arcPts, zigzag } from './lib/stroke-geometry.mjs';
 import {
   ensureDevServer,
   openAppPage,
@@ -29,9 +30,6 @@ import {
   waitForColoringOverlay,
   openColorPicker,
   openParentCenter,
-  circlePts,
-  arcPts,
-  zigzag,
 } from './lib/app-driver.mjs';
 
 const OUT = join(ROOT, 'store-assets');

@@ -16,6 +16,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PALETTE_COLORS } from '../web/src/lib/palette.ts';
 import { ROOT, chromiumExecutablePath } from './lib/utils.mjs';
+import { circlePts } from './lib/stroke-geometry.mjs';
 import {
   ensureDevServer,
   openAppPage,
@@ -25,7 +26,6 @@ import {
   setStrokeSize,
   drawStroke,
   dismissMenu,
-  circlePts,
 } from './lib/app-driver.mjs';
 
 const SVG_FILE = join(ROOT, 'web', 'static', 'large-image.svg');

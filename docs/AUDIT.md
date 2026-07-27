@@ -11,29 +11,6 @@
 
 ## Source: Code audit — scripts · lib shared helpers
 
-### [P4][architecture] Point generators live inside the Playwright app-driver module
-
-**File(s):** `scripts/lib/app-driver.mjs:108-136` (`circlePts`, `arcPts`, `zigzag`) — pinned at SHA
-f934d43
-
-#### Problem
-
-The file header scopes the module to "dev-server lifecycle, page setup, and the UI gestures … the
-app needs," but the bottom third is pure geometry (parametric circle/arc/zigzag point lists) with no
-Playwright dependency. Mixing a stateless math concern into a browser-driving module means a script
-wanting only the geometry pulls in the whole Playwright surface.
-
-#### Proposed solution
-
-Move the three generators to `scripts/lib/stroke-geometry.mjs` (or `points.mjs`); `app-driver.mjs`
-and `store-shots.mjs` import from there.
-
-#### Verification
-
-`app-driver.mjs` no longer exports geometry; `gen:shots` / `gen:large-image` still render.
-
----
-
 ### [P4][maintainability] `median`/`mean` are generic stats buried in the report module
 
 **File(s):** `scripts/lib/model-eval-report.mjs:55-62` (`median`, `mean`) — pinned at SHA f934d43
