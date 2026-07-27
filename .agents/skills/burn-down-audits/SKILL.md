@@ -63,6 +63,7 @@ The important environment knobs are:
 ```bash
 AGENT_RUNNER=codex
 MAX_ISSUES=5
+MAX_HANDLED=5
 PUSH_EVERY=1
 BRANCH=audit/burndown
 CHECK_CMD='npm run check'
@@ -121,8 +122,9 @@ TEST_CMD='npm run test:unit && npm run test:scripts'
 Do not put `npm run ruler:check` in `CHECK_CMD`; it writes by reapplying Ruler. A finding that edits
 `.ruler/**` must run `npm run ruler:apply` and commit the generated output itself.
 
-Leave `PUSH_TEST_CMD` empty while actively supervising a draft PR: CI is the full-suite backstop.
-Set it to `npm test` only for a run nobody will watch. Keep `PUSH_EVERY=1`: every accepted finding
+Leave `PUSH_TEST_CMD` empty while actively supervising a draft PR: CI is the full-suite backstop. Do
+not launch a Codex burndown nobody will supervise; a local full-suite gate cannot replace CI failure
+handling, comment posting, or exact-head checkpoints. Keep `PUSH_EVERY=1`: every accepted finding
 must reach origin before an ephemeral environment can be reclaimed.
 
 ## Before a run
@@ -134,8 +136,10 @@ must reach origin before an ephemeral environment can be reclaimed.
    ```
 
 2. Choose a fresh continuation branch from current `main`; do not reuse a historical burndown
-   branch. Put the exact command, branch, gate overrides, PR number, state, and closeout tasks in
-   `docs/handoff/audit-burndown-run.md`. Commit and push the checkpoint before launching.
+   branch. Put the exact command, branch, gate overrides, `PR: pending`, initial backlog count,
+   current `run.log` line count, state, and closeout tasks in `docs/handoff/audit-burndown-run.md`.
+   The log baseline scopes closeout reconciliation to this run when `.audit-work/` contains
+   historical segments. Commit and push this initial checkpoint before preflight.
 
 3. Run preflight with the exact overrides:
 
@@ -150,8 +154,9 @@ must reach origin before an ephemeral environment can be reclaimed.
    Require every check green. Read back `runner: codex`, `branch: ...`, `codex logged in`, origin
    reachable, and the parsed backlog count.
 
-4. Open a draft PR before the canary. The checkpoint commit gives GitHub the diff required to open
-   one.
+4. Open a draft PR before the canary. The initial checkpoint gives GitHub the diff required to open
+   one. Replace `PR: pending` in the handoff with its number, commit, and push that second
+   checkpoint before launching the canary.
 
 5. Run a five-fix canary in the foreground with the same overrides and `MAX_ISSUES=5`. Deferrals and
    drops do not increment the limit, so it can process more than five findings.
@@ -190,10 +195,15 @@ must reach origin before an ephemeral environment can be reclaimed.
     ```bash
     AGENT_RUNNER=codex \
     BRANCH='<branch>' \
+    MAX_HANDLED=5 \
     CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check' \
     TEST_CMD='npm run test:unit && npm run test:scripts' \
     npm run audit:burndown:overnight -- 600
     ```
+
+    `MAX_HANDLED` counts every terminal outcome—fixed, dropped, or deferred—rather than only
+    accepted fixes. The detached driver exits cleanly after five outcomes so it cannot outrun the
+    required CI and comment checkpoint while the supervising conversation is between turns.
 
 ## Supervision
 
@@ -213,13 +223,26 @@ Treat CI supervision as independent from comment posting:
 * On any failed job, create `.audit-work/STOP` immediately, let the in-flight finding finish, and
   diagnose the first failing SHA before resuming. At most one extra finding should land on the red
   base.
-* After every five handled findings or 20 minutes, whichever comes first, require one workflow on
-  the exact branch HEAD to finish fully green before allowing another push. Drain comments during
-  this checkpoint, but never use comment draining as the CI trigger.
+* `MAX_HANDLED=5` is the mechanical ceiling for each detached full-run segment. When it exits,
+  require one workflow on the exact branch HEAD to finish fully green and drain every pending
+  comment before relaunching. Never remove the boundary from a supervised run.
+* Twenty minutes is still a manual ceiling because the driver cannot stop a role mid-finding. Create
+  `STOP` when the ceiling is reached, let the current finding finish, then apply the same exact-head
+  checkpoint.
+* Do not send a final response while the driver or a nested Codex role is active. A running burndown
+  is ongoing work: give user-requested status in commentary, continue supervision, and yield only
+  after the bounded segment has stopped. An explicit request to leave the process unattended is a
+  scope change; explain that it gives up CI supervision rather than silently doing so.
 
-Use `npm run audit:status` for a user-requested status. A mid-priority finding is normally under 15
-minutes; 15–25 minutes merits one later recheck; over 25 minutes merits diagnosis. Priority and fix
-rounds skew this: a P1 with two rounds can be healthy at 25 minutes.
+Use `npm run audit:status` for counters and current work, then confirm detached liveness with a
+process lookup outside the workspace sandbox. A sandboxed `pgrep` can report `idle` for the
+unsandboxed overnight child; do not call a run idle or stopped from that label alone. A mid-priority
+finding is normally under 15 minutes; 15–25 minutes merits one later recheck; over 25 minutes merits
+diagnosis. Priority and fix rounds skew this: a P1 with two rounds can be healthy at 25 minutes.
+
+```bash
+pgrep -af 'scripts/audit-burndown/(overnight|burndown)\.mjs'
+```
 
 For a liveness recheck, compare role-envelope counts—not HEAD or `run.log`, which the supervisor
 also changes:
@@ -241,11 +264,12 @@ startup failure.
 
 ## Control messages
 
-* **status** — run `npm run audit:status`; do not touch `STOP`.
+* **status** — run `npm run audit:status` plus the detached process check; do not touch `STOP`.
+  Report the facts in commentary and keep supervising until the current bounded segment stops.
 * **pause** — `touch .audit-work/STOP`; let the in-flight finding finish, wait for the driver to
   exit, push, drain comments, update the checkpoint, and leave `STOP` present.
 * **resume / continue** — verify no driver exists, remove `STOP`, relaunch the exact checkpoint
-  command, and re-arm monitoring.
+  command, and supervise through its next bounded stop; do not relaunch and immediately hand back.
 * **wrap up** — set `STOP`, let the finding land, complete closeout, and mark the PR ready even if
   findings remain.
 
@@ -258,13 +282,17 @@ Drain comments in an at-least-once loop:
 
 1. `node scripts/audit-burndown/backfill-comments.mjs next`
 2. Post the body on the draft PR with the GitHub connector and append a short OpenAI Codex
-   attribution footer.
+   attribution footer: `Posted by OpenAI Codex while supervising the audit burndown.`
 3. `node scripts/audit-burndown/backfill-comments.mjs done <sha>`
 4. Repeat until empty.
 
 Run `capture main..HEAD` before final drain and once after as a completeness check. Never wrap a
 commit SHA in backticks in GitHub text; bare SHAs auto-link. Escape any `#`-number that is not an
 intentional issue/PR reference.
+
+Drain at every handled-count/CI checkpoint and do not relaunch with pending records. If an older run
+left a large queue, post through the connector in batches of at most ten while preserving the `next`
+→ successful post → `done` ordering for each record.
 
 Iteration filenames restart at `iter0001` and drops can reuse a number within one run. Correlate by
 the timestamped `run.log` line and file mtime, not by the number alone.
@@ -290,14 +318,24 @@ committed handoff across machines.
 1. Stop cleanly and confirm no driver or nested Codex call remains.
 2. Confirm `HEAD` equals `origin/<branch>`.
 3. Run comment `capture`, drain every pending record, then run `capture` again.
-4. Reconcile run counts from every `finished:` line. Do not use the cumulative deferred list or
-   count commits: one finding can have several fix commits.
+4. Reconcile only the `finished:` lines after the handoff's `run.log` baseline. Prove
+   `initial backlog - remaining = fixed + dropped + deferred`; a halt can omit its final summary, so
+   reconcile any gap from terminal `DONE`/`INVALID`/`DEFERRED` events in that same scoped log. Do
+   not use historical lines, the cumulative deferred list, or commit count: one finding can have
+   several fix commits.
 5. Tidy empty `## Source:` sections; delete `docs/AUDIT.md` only when the backlog is empty.
 6. Add the `burn-down-audits` row to `docs/AUDIT-LOG.md` with fixed/deferred/dropped counts and the
    PR link.
-7. Run `npm run format:check`, the relevant quality checks, and the full test suite; confirm final
-   CI green, then mark the PR ready.
+7. Run `npm run format:check`, the relevant quality checks, and the full test suite. Listener-based
+   Playwright needs the outer command's local-server permission; a sandbox `listen EPERM` is an
+   environment boundary, so rerun that unchanged gate with the required permission rather than
+   calling it a regression.
 8. Delete the consumed `docs/handoff/audit-burndown-run.md`.
+9. Inspect the complete closeout diff, commit the audit-log/backlog/handoff changes together, and
+   push. Confirm local `HEAD` now equals `origin/<branch>`.
+10. Replace the canary-only PR body with final counts, themes, verification, deferred-work location,
+    and visual-evidence applicability.
+11. Confirm exact-head CI green on the pushed closeout commit, then mark the PR ready.
 
 A deferral keeps its post-mortem in `docs/AUDIT-DEFERRED.md` and, when available, its rejected draft
 under `docs/audit-deferred/`. Treat that patch as a starting point: deterministic gates passed, but

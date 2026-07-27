@@ -25,6 +25,7 @@ import {
   implementationCommitMessage,
   launchCommand,
   protectedImplementationPaths,
+  reachedHandledLimit,
   removeNewUntrackedPaths,
   renderDeferralNotes,
   resolveImplSha,
@@ -518,6 +519,10 @@ describe('launchCommand', () => {
     expect(launchCommand({ AGENT_RUNNER: 'codex' })).toContain("AGENT_RUNNER='codex'");
   });
 
+  it('records the handled-outcome checkpoint for bounded detached segments', () => {
+    expect(launchCommand({ MAX_HANDLED: '5' })).toContain("MAX_HANDLED='5'");
+  });
+
   it('records every non-default knob as a shell-quoted assignment', () => {
     expect(launchCommand({ MAX_ISSUES: '600', BRANCH: 'audit/other', EFFORT_REVIEW: 'high' })).toBe(
       "BRANCH='audit/other' EFFORT_REVIEW='high' npm run audit:burndown:overnight -- 600"
@@ -540,6 +545,19 @@ describe('launchCommand', () => {
     expect(launchCommand({ HOME: '/root', PATH: '/usr/bin' })).toBe(
       `npm run audit:burndown:overnight -- ${DEFAULT_MAX_ISSUES}`
     );
+  });
+});
+
+describe('reachedHandledLimit', () => {
+  it('counts fixes, drops, and deferrals toward one segment boundary', () => {
+    expect(reachedHandledLimit({ fixed: 2, dropped: 1, deferred: 2, maxHandled: 5 })).toBe(true);
+    expect(reachedHandledLimit({ fixed: 4, dropped: 0, deferred: 0, maxHandled: 5 })).toBe(false);
+  });
+
+  it('keeps zero, invalid, and omitted limits unbounded', () => {
+    expect(reachedHandledLimit({ fixed: 20, maxHandled: 0 })).toBe(false);
+    expect(reachedHandledLimit({ fixed: 20, maxHandled: 'nope' })).toBe(false);
+    expect(reachedHandledLimit({ fixed: 20 })).toBe(false);
   });
 });
 

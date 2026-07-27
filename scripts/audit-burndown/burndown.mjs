@@ -4,7 +4,7 @@
 // in docs/AUDIT.md and git, so a crash costs one iteration, not the run.
 //
 //   npm run audit:burndown                       # canary (MAX_ISSUES=5)
-//   MAX_ISSUES=600 npm run audit:burndown        # full run
+//   MAX_ISSUES=600 MAX_HANDLED=5 npm run audit:burndown
 //
 // Graceful stop:  touch .audit-work/STOP
 // Hard stop:      pkill -TERM -f 'claude -p|codex exec'
@@ -55,6 +55,7 @@ import {
   LOGS,
   PROMPTS,
   protectedImplementationPaths,
+  reachedHandledLimit,
   removeNewUntrackedPaths,
   renderDeferralNotes,
   resolveImplSha,
@@ -70,6 +71,10 @@ ensureWorkDirs();
 
 // ---- knobs ------------------------------------------------------------------
 const MAX_ISSUES = Number(process.env.MAX_ISSUES ?? DEFAULT_MAX_ISSUES); // canary; raise once proven
+// A supervised detached segment must stop for CI and comment reconciliation
+// after a bounded number of outcomes. Unlike MAX_ISSUES, this counts invalid
+// drops and deferrals too. Zero keeps the historical unbounded behavior.
+const MAX_HANDLED = Number(process.env.MAX_HANDLED ?? 0);
 // Push after EVERY finding. The run lives in an ephemeral cloud container that
 // is reclaimed without warning, so an unpushed commit is a commit at risk: the
 // only durable artifact is what is on origin. Batching existed to amortise a
@@ -479,12 +484,20 @@ function pushBatch({ final = false } = {}) {
 writeFileSync(join(WORK, 'launch-command'), `${launchCommand(process.env, MAX_ISSUES)}\n`);
 writeFileSync(join(WORK, 'launch-pid'), `${process.pid}\n`);
 
-logLine(`starting — target ${MAX_ISSUES} issues on ${BRANCH} via ${AGENT_RUNNER}`);
+logLine(
+  `starting — target ${MAX_ISSUES} fixes${
+    MAX_HANDLED > 0 ? `, ${MAX_HANDLED}-handled checkpoint` : ''
+  } on ${BRANCH} via ${AGENT_RUNNER}`
+);
 
 // =============================================================================
 while (done < MAX_ISSUES) {
   if (existsSync(join(WORK, 'STOP'))) {
     logLine('STOP file present — exiting cleanly');
+    break;
+  }
+  if (reachedHandledLimit({ fixed: done, dropped, deferred, maxHandled: MAX_HANDLED })) {
+    logLine(`handled checkpoint reached — ${done + dropped + deferred} outcomes; exiting cleanly`);
     break;
   }
 
