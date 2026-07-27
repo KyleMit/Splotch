@@ -20,12 +20,16 @@ exact-head CI supervision, or change tracked files while the driver is active.
 * Initial backlog: 128 findings, measured with `node scripts/audit-burndown/pop.mjs --count`.
 * Historical `run.log` baseline: 1,548 lines. Reconcile only later `finished:` and terminal-event
   lines.
-* Run state: preflight green; no driver process is active. A historical `.audit-work/STOP` is
-  present and must be cleared only by the launch/resume path.
+* Run state: five-fix canary green; no driver process is active and no `STOP` file is present.
+* Current backlog: 116 findings after 5 fixes, 4 invalid drops, and 3 deferrals.
+* Last fully green SHA: `3648a752593ba5a19bd72a8437c863deee912a23` in workflow run
+  [30285010376](https://github.com/KyleMit/Splotch/actions/runs/30285010376).
 
-| SHA      | What                                 |
-| -------- | ------------------------------------ |
-| 95cbb030 | Initial checkpoint and launch packet |
+| SHA      | What                                                        |
+| -------- | ----------------------------------------------------------- |
+| 95cbb030 | Initial checkpoint and launch packet                        |
+| 1ee77c0e | Draft PR and green preflight recorded                       |
+| 3648a752 | Canary complete: 5 fixed, 4 dropped, 3 deferred, 116 remain |
 
 Files touched so far: `docs/handoff/audit-burndown-run.md`.
 
@@ -69,8 +73,7 @@ npm run audit:burndown:overnight -- 600
 
 ## Unverified assumptions
 
-* The canary has not yet established that the remaining findings can pass deterministic gates,
-  adversarial review, push, exact-head CI, and comment backfill on this branch.
+* The remaining findings have not yet been exercised through a bounded detached segment.
 
 ## Done & verified
 
@@ -83,13 +86,23 @@ npm run audit:burndown:overnight -- 600
 * Exact audit preflight: green; confirmed Codex login, `runner: codex`, the expected branch, origin
   reachability, 128 parsed findings, and the repository-specific build gate.
 * Draft PR [#561](https://github.com/KyleMit/Splotch/pull/561) opened against `main`.
+* Foreground canary: 5 fixed, 4 invalid drops, 3 deferred, 116 remaining.
+* Canary inspection: every terminal commit removed exactly one finding; no commit removed two. The
+  spec split retained all 60 engine and 45 flow test titles. Fix rounds resumed their original
+  implementer thread and reviewers used distinct threads.
+* All five fix comments posted on PR [#561](https://github.com/KyleMit/Splotch/pull/561); capture
+  found no missing or pending records.
+* Exact-head CI on `3648a752593ba5a19bd72a8437c863deee912a23`: Quality and Tests green.
+* `npm run audit:cost`: no capped or errored calls; retained-log projection is about $30.91 for the
+  remaining 116 findings.
 
 ## Risks & next 3 steps
 
-1. Commit and push this PR checkpoint, then run the five-fix foreground canary.
-2. Inspect every canary diff and deletion count and confirm any fix-round thread resume.
-3. Require exact-head CI green, drain pending comments, review cost, then start one bounded full
-   segment.
+1. Commit and push this green-canary checkpoint and require exact-head CI green.
+2. Launch one detached `MAX_HANDLED=5` segment, record its start and 20-minute deadline, then
+   supervise it until stopped.
+3. Require exact-head CI green, drain all comments, inspect the segment diff, and repeat bounded
+   segments until the backlog is exhausted or the user asks to pause.
 
 Closeout must stop all driver and nested Codex processes; prove local `HEAD` equals the remote;
 capture and drain all comments; reconcile the 1,548-line run baseline; tidy the backlog; add the
