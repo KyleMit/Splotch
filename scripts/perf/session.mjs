@@ -116,25 +116,7 @@ async function clearDrag(page) {
   await sleep(150);
 }
 
-// Drive the full scenario against a ready page (canvas already loaded) with the
-// given CDP session, capture a trace + metrics, and write the profile artifacts
-// to outDir. `settings` is merged into metrics.json (target/device/throttle/…).
-export async function driveSession(page, cdp, { outDir, settings }) {
-  mkdirSync(outDir, { recursive: true });
-  const t0 = Date.now();
-
-  // CDP (Chromium / Android WebView) records a full Chrome trace; WebKit has no
-  // CDP, so we fall back to reading the user-timing marks at the end.
-  const useTrace = !!cdp;
-  await injectObservers(page);
-  const heapBefore = await heapBytes(page);
-  const events = useTrace ? await startTrace(cdp) : [];
-
-  console.log(`Profiling ${settings.target} ${settings.device ?? ''}…`);
-  await expandDrawer(page);
-  const box = await canvasBox(page);
-  if (!box) throw new Error('drawing canvas not found / not visible');
-
+async function runToddlerSession(page, box) {
   await beat(page, 'boot-settle', () => sleep(700));
   await beat(page, 'draw-single', async () => {
     await pickColor(page, COLORS[0]);
@@ -179,16 +161,10 @@ export async function driveSession(page, cdp, { outDir, settings }) {
   });
   await beat(page, 'undo', () => undoToEmpty(page));
   await beat(page, 'clear', () => clearDrag(page));
+}
 
-  const obs = await readObservers(page);
-  const heapAfter = await heapBytes(page);
-  const traceEvents = useTrace ? events : await collectMeasures(page);
-  if (useTrace) await stopTrace(cdp);
-
-  await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
-
-  writeFileSync(join(outDir, 'trace.json'), JSON.stringify({ traceEvents }));
-  const metrics = {
+function buildMetrics({ settings, useTrace, t0, obs, heapBefore, heapAfter }) {
+  return {
     settings: {
       ...settings,
       captureMode: useTrace ? 'cdp-trace' : 'user-timing',
@@ -199,12 +175,46 @@ export async function driveSession(page, cdp, { outDir, settings }) {
     frames: obs.frames,
     heap: { beforeBytes: heapBefore ?? 0, afterBytes: heapAfter ?? obs.heapBytes ?? 0 },
   };
-  writeFileSync(join(outDir, 'metrics.json'), JSON.stringify(metrics, null, 2));
+}
 
-  const summary = analyze(traceEvents, metrics);
-  const report = renderReport(summary);
+async function writeProfileArtifacts({ page, outDir, traceEvents, metrics, summary, report }) {
+  await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
+  writeFileSync(join(outDir, 'trace.json'), JSON.stringify({ traceEvents }));
+  writeFileSync(join(outDir, 'metrics.json'), JSON.stringify(metrics, null, 2));
   writeFileSync(join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
   writeFileSync(join(outDir, 'report.md'), report);
+}
+
+// Drive the full scenario against a ready page (canvas already loaded) with the
+// given CDP session, capture a trace + metrics, and write the profile artifacts
+// to outDir. `settings` is merged into metrics.json (target/device/throttle/…).
+export async function driveSession(page, cdp, { outDir, settings }) {
+  mkdirSync(outDir, { recursive: true });
+  const t0 = Date.now();
+
+  // CDP (Chromium / Android WebView) records a full Chrome trace; WebKit has no
+  // CDP, so we fall back to reading the user-timing marks at the end.
+  const useTrace = !!cdp;
+  await injectObservers(page);
+  const heapBefore = await heapBytes(page);
+  const events = useTrace ? await startTrace(cdp) : [];
+
+  console.log(`Profiling ${settings.target} ${settings.device ?? ''}…`);
+  await expandDrawer(page);
+  const box = await canvasBox(page);
+  if (!box) throw new Error('drawing canvas not found / not visible');
+
+  await runToddlerSession(page, box);
+
+  const obs = await readObservers(page);
+  const heapAfter = await heapBytes(page);
+  const traceEvents = useTrace ? events : await collectMeasures(page);
+  if (useTrace) await stopTrace(cdp);
+
+  const metrics = buildMetrics({ settings, useTrace, t0, obs, heapBefore, heapAfter });
+  const summary = analyze(traceEvents, metrics);
+  const report = renderReport(summary);
+  await writeProfileArtifacts({ page, outDir, traceEvents, metrics, summary, report });
 
   console.log(`\n${report}\n`);
   console.log(`Artifacts: ${outDir}`);
