@@ -15,42 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P4][consistency] `.env.example` mixes placeholder conventions and has a redundant/misleading entry
-
-**File(s):** `web/.env.example:11-13,41` — pinned at SHA f934d43
-
-#### Problem
-
-The file uses three different conventions for "fill this in":
-
-```
-# GEMINI_API_KEY=        (commented, empty)
-GEMINI_API_KEY=replace   (uncommented, "replace")
-ADMIN_ACCESS_TOKEN=replace
-...
-REDTEAM_FIXTURE_KEY=replace
-```
-
-`ALLOWED_TOKENS_LIST` gets a real working value (`"abc,daycare-club"`), others get `replace`, and
-`GEMINI_API_KEY` is both commented-out (line 12 as documented-optional) *and* set to `replace` on
-the next line — contradictory. Worse, `ADMIN_ACCESS_TOKEN=replace` implies it's consumed, but the
-E2E web server hardcodes `ADMIN_ACCESS_TOKEN: 'test-admin-secret'` (`playwright.config.ts:108`),
-overriding anything in `.env` — so copying this file with `replace` is silently ineffective for the
-admin specs, which is confusing.
-
-#### Proposed solution
-
-Pick one placeholder convention (e.g. `KEY=` empty, or `KEY=<your-token>`), remove the duplicate
-commented `# GEMINI_API_KEY=` above the active line, and add a note that `ADMIN_ACCESS_TOKEN` is
-only used by `npm run dev:netlify` (the E2E suite injects its own).
-
-#### Verification
-
-`cp web/.env.example web/.env` then run `npm run dev:netlify` and `npm run test:e2e`; confirm the
-doc comments now match which var each command actually reads.
-
----
-
 ### [P4][maintainability] Port `5173` is coupled across `vite.config.ts` and `web/netlify.toml` as bare literals
 
 **File(s):** `web/vite.config.ts:59` (`port: 5173`) and `web/netlify.toml:25` (`targetPort = 5173`)
