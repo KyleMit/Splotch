@@ -11,42 +11,6 @@
 
 ## Source: Code audit — tools/asset-gen · ideas-exploration (R&D scratch)
 
-### [P1][duplication] Graduated `idea-N/code/*.mjs` files are now drifted ancestors of live `bin/`/`lib/` files, with no pointer marking them frozen
-
-**File(s):** `tools/asset-gen/ideas-exploration/idea-25/code/gen-asset-manifest.mjs`,
-`idea-10/code/page-notes.mjs`, `idea-7/code/audit-night-halo.mjs` (and the other graduated code
-dirs) — pinned at SHA f934d43
-
-#### Problem
-
-Several exploration scripts share a filename with the live version but have already drifted from it:
-
-* `idea-25/code/gen-asset-manifest.mjs` (88 lines) vs `bin/gen-asset-manifest.mjs` (92 lines) —
-  differs
-* `idea-10/code/page-notes.mjs` (82 lines) vs `lib/page-notes.mjs` (90 lines) — differs
-* `idea-7/code/audit-night-halo.mjs` vs `bin/audit-night-halo.mjs` — differs
-
-These are legitimately-frozen snapshots, but nothing in the file or its directory says "this is a
-frozen ancestor; the maintained copy is `lib/page-notes.mjs`." A `grep`/search for a function will
-surface both, and someone could edit or copy the stale exploration version thinking it's current. No
-`report.md` records where its code graduated (`grep -li 'graduated|now live|promoted'` across all
-reports returns nothing).
-
-#### Proposed solution
-
-Add a one-line "Landed as: `../../bin/gen-asset-manifest.mjs`" (or "Superseded by …") banner to the
-top of each graduated `report.md`, and/or a `LANDED.md` stub in each graduated `code/` dir. The
-README status column (previous finding) is the systemic fix; this is the per-idea backstop so the
-pointer survives even when someone lands directly in a `code/` dir.
-
-#### Verification
-
-`diff ideas-exploration/idea-10/code/page-notes.mjs lib/page-notes.mjs` shows drift today; after the
-fix, each graduated report/dir names its live counterpart. Spot-check that every idea in the
-scoreboard marked LANDED has a matching back-pointer.
-
----
-
 ### [P2][dead-code] `build-review.mjs` output claims "nothing here is committed" and references the deleted `IDEAS.md` — both false now
 
 **File(s):** `tools/asset-gen/ideas-exploration/build-review.mjs` (lines 213, 224) — pinned at SHA

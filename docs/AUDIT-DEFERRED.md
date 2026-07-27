@@ -2602,3 +2602,134 @@ The rolled-back draft is kept at
 (3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p1-discoverability-readme-scoreboard-and-do-first-list-are-stale-most-id.patch`.
+
+### [P1][duplication] Graduated `idea-N/code/*.mjs` files are now drifted ancestors of live `bin/`/`lib/` files, with no pointer marking them frozen
+
+**File(s):** `tools/asset-gen/ideas-exploration/idea-25/code/gen-asset-manifest.mjs`,
+`idea-10/code/page-notes.mjs`, `idea-7/code/audit-night-halo.mjs` (and the other graduated code
+dirs) — pinned at SHA f934d43
+
+#### Problem
+
+Several exploration scripts share a filename with the live version but have already drifted from it:
+
+* `idea-25/code/gen-asset-manifest.mjs` (88 lines) vs `bin/gen-asset-manifest.mjs` (92 lines) —
+  differs
+* `idea-10/code/page-notes.mjs` (82 lines) vs `lib/page-notes.mjs` (90 lines) — differs
+* `idea-7/code/audit-night-halo.mjs` vs `bin/audit-night-halo.mjs` — differs
+
+These are legitimately-frozen snapshots, but nothing in the file or its directory says "this is a
+frozen ancestor; the maintained copy is `lib/page-notes.mjs`." A `grep`/search for a function will
+surface both, and someone could edit or copy the stale exploration version thinking it's current. No
+`report.md` records where its code graduated (`grep -li 'graduated|now live|promoted'` across all
+reports returns nothing).
+
+#### Proposed solution
+
+Add a one-line "Landed as: `../../bin/gen-asset-manifest.mjs`" (or "Superseded by …") banner to the
+top of each graduated `report.md`, and/or a `LANDED.md` stub in each graduated `code/` dir. The
+README status column (previous finding) is the systemic fix; this is the per-idea backstop so the
+pointer survives even when someone lands directly in a `code/` dir.
+
+#### Verification
+
+`diff ideas-exploration/idea-10/code/page-notes.mjs lib/page-notes.mjs` shows drift today; after the
+fix, each graduated report/dir names its live counterpart. Spot-check that every idea in the
+scoreboard marked LANDED has a matching back-pointer.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* `tools/asset-gen/ideas-exploration/idea-13/` got no banner or `LANDED.md`, but it is the same
+  defect class the fix targets: `idea-13/code/invented-shape-audit.mjs` exports
+  `detectInventedShapes`, a drifted ancestor of the live `lib/invented-shapes.mjs` (which itself
+  back-references `ideas-exploration/idea-13`), so a grep for that symbol surfaces both copies with
+  nothing marking the snapshot frozen. Add the same `report.md` banner + `code/LANDED.md` pointing
+  at `tools/asset-gen/lib/invented-shapes.mjs` (and `bin/audit-invented-shapes.mjs`).
+* `tools/asset-gen/ideas-exploration/idea-4/code/measure-night-bgluma.mjs` carries a copied
+  `scoreNightness` that is now maintained in `tools/asset-gen/lib/night-scores.mjs`; it needs the
+  same back-pointer treatment as the three dirs already covered.
+* The `idea-7` banner and `LANDED.md` name only `tools/asset-gen/bin/audit-night-halo.mjs`, but the
+  snapshot's scoring core (`auditPage`, `ringBands`, `bleedUnderMask`) actually graduated into
+  `tools/asset-gen/lib/night-halo.mjs` — name both so the pointer routes a reader to the file that
+  owns the algorithm.
+* `idea-23/code/` is a graduated snapshot with no `LANDED.md` and no report banner, yet it is the
+  origin of the very file idea-4's new banner points readers at: `idea-23/code/golden-tooling.patch`
+  creates `tools/asset-gen/lib/night-scores.mjs` (it extracts `scoreNightness` at patch line 556)
+  plus `audit-golden.mjs`, both live today as `lib/night-scores.mjs` and `bin/audit-golden.mjs`, and
+  `golden-scores-snapshot.patch` creates what is now `golden/golden-scores.json`. Add the same
+  `code/LANDED.md` + `report.md` "Landed as:" banner to idea-23 naming
+  `tools/asset-gen/lib/night-scores.mjs`, `tools/asset-gen/bin/audit-golden.mjs`, and
+  `tools/asset-gen/golden/golden-scores.json`.
+* `idea-10/code/LANDED.md` names only `lib/page-notes.mjs`, but the eight
+  `idea-10/code/registry/<cat>.notes.json` files are also drifted ancestors of the live
+  `tools/asset-gen/fill-src/<cat>/notes.json` (verified differing for farm, space, and creatures).
+  Extend that `LANDED.md` (and the idea-10 report banner) to say the `registry/` JSONs are frozen
+  copies of `fill-src/<cat>/notes.json`.
+* Three further ideas graduated with no back-pointer, which the finding's own verification ("every
+  idea in the scoreboard marked LANDED has a matching back-pointer") requires: idea-11's
+  `whiten-pen-solids-keep-reference.patch` is live in `bin/gen-coloring-chalk.mjs`
+  (`keepReference`), idea-12's `fix-eye-judge.patch` is live in `lib/eye-fill.mjs`
+  (`BAND_BLIND_INK_FRAC`, `CHALK_WHITE_MIN`, `judgeNightEyes`), and idea-19's
+  `idea-19-chalk-thumbs.patch` is live in `bin/gen-coloring-thumbs.mjs` and
+  `web/src/lib/state/books.ts` (`chalkThumbPath`). Add a report banner (a `code/LANDED.md` too, if
+  you keep the pattern uniform) to each naming those live files.
+* `idea-21` and `idea-24` graduated but got neither a `code/LANDED.md` nor a report banner, and both
+  hold patches that are already applied upstream —
+  `idea-21/code/contact-sheet-git-source-and-compare.patch` is live as the `--source git:<ref>` /
+  `--compare git:<ref>` support in `tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs`, and
+  `idea-24/code/books-ts-wiring.patch` is live in `web/src/lib/state/books.ts` (the `shapes/heart`
+  and `objects/umbrella` page entries, with the assets shipped under `web/static/coloring/`). Add
+  the same LANDED.md + banner treatment to both.
+* `idea-17` is a LANDED idea (`gemini-3.1-flash-image` became the pipeline default, written up in
+  `tools/asset-gen/docs/gemini-3.1-migration.md`) with no back-pointer in `idea-17/report.md` or
+  `idea-17/code/`; add one naming that doc so a reader of the bake-off scripts knows the swap
+  already shipped.
+* The `idea-4/report.md` banner is labelled "**Landed as:**", but idea-4's own deliverable — the
+  deterministic background-luma normalizer in `code/normalize-night-sky.mjs` — never shipped; only
+  the copied `scoreNightness` has a live counterpart in `lib/night-scores.mjs` (the 4× spread was
+  closed by the 3.1 regeneration instead, per `tools/asset-gen/docs/gemini-3.1-migration.md`).
+  Relabel it as superseded and say explicitly that the normalizer is not in the pipeline, so the
+  banner doesn't read as "this code is live".
+
+#### What was tried
+
+1. Added a one-line "Landed as:" banner under the title of the `idea-25`, `idea-10`, and `idea-7`
+   `report.md` files and a `LANDED.md` stub in each idea's `code/` dir, each naming the live
+   `bin/`/`lib/` file that snapshot graduated into. This gives someone who greps into a frozen
+   exploration copy an immediate pointer to the authoritative maintained file; the drifted `.mjs`
+   snapshots themselves are unchanged.
+2. Addressed all three review points. Added the `report.md` banner + `code/LANDED.md` stub to
+   `idea-13` (pointing at `tools/asset-gen/lib/invented-shapes.mjs`, which owns the live
+   `detectInventedShapes` at line 156, plus `bin/audit-invented-shapes.mjs`) and to `idea-4`
+   (pointing at `tools/asset-gen/lib/night-scores.mjs` for the copied `scoreNightness`; the stub
+   names both `measure-night-bgluma.mjs` and `normalize-night-sky.mjs`, since both carry the copy).
+   Rewrote `idea-7`'s banner and stub to lead with `tools/asset-gen/lib/night-halo.mjs` as the
+   scoring core that `auditPage`/`ringBands`/`bleedUnderMask` graduated into (now `scoreNightHalo`),
+   with `bin/audit-night-halo.mjs` named as the CLI. `npm run format:check` passes; the change is
+   Markdown-only and no frozen `.mjs` snapshot was edited.
+3. Addressed all three review points, extending the graduated-snapshot back-pointer pattern to the
+   remaining LANDED ideas. idea-23 got a report banner + code/LANDED.md naming
+   tools/asset-gen/lib/night-scores.mjs, tools/asset-gen/bin/audit-golden.mjs, and
+   tools/asset-gen/golden/golden-scores.json, attributing each to the patch that created it
+   (golden-tooling.patch for the first two, golden-scores-snapshot.patch for the third). idea-10's
+   banner and LANDED.md now also cover the eight code/registry/<cat>.notes.json files as frozen
+   copies of the live fill-src/<cat>/notes.json. idea-11, idea-12, and idea-19 each got a banner
+   plus a code/LANDED.md, keeping the pattern uniform: keepReference in bin/gen-coloring-chalk.mjs,
+   judgeNightEyes with BAND_BLIND_INK_FRAC/CHALK_WHITE_MIN in lib/eye-fill.mjs, and
+   bin/gen-coloring-thumbs.mjs + chalkThumbPath in web/src/lib/state/books.ts — all four symbols and
+   all three idea-23 live paths verified present before writing. npm run format:check passes; the
+   change is Markdown-only and no snapshot .mjs, .patch, or registry/*.json file was edited.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p1-duplication-graduated-idea-n-code-mjs-files-are-now-drifted-ancestors.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p1-duplication-graduated-idea-n-code-mjs-files-are-now-drifted-ancestors.patch`.
