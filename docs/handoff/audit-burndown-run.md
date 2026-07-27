@@ -20,16 +20,21 @@ exact-head CI supervision, or change tracked files while the driver is active.
 * Initial backlog: 128 findings, measured with `node scripts/audit-burndown/pop.mjs --count`.
 * Historical `run.log` baseline: 1,548 lines. Reconcile only later `finished:` and terminal-event
   lines.
-* Run state: five-fix canary green; no driver process is active and no `STOP` file is present.
-* Current backlog: 116 findings after 5 fixes, 4 invalid drops, and 3 deferrals.
-* Last fully green SHA: `3648a752593ba5a19bd72a8437c863deee912a23` in workflow run
-  [30285010376](https://github.com/KyleMit/Splotch/actions/runs/30285010376).
+* Run state: canary and three bounded segments green; no driver process is active and no `STOP` file
+  is present.
+* Current backlog: 101 findings after 14 fixes, 9 invalid drops, and 4 deferrals in this
+  continuation.
+* Last fully green SHA: `ff0b8a83bc44880c5073f068fbb0028a975d8366` in workflow run
+  [30290731529](https://github.com/KyleMit/Splotch/actions/runs/30290731529).
 
 | SHA      | What                                                        |
 | -------- | ----------------------------------------------------------- |
 | 95cbb030 | Initial checkpoint and launch packet                        |
 | 1ee77c0e | Draft PR and green preflight recorded                       |
 | 3648a752 | Canary complete: 5 fixed, 4 dropped, 3 deferred, 116 remain |
+| b8cc5a2f | Segment 1: 4 fixed, 1 dropped, 0 deferred, 111 remain       |
+| d3b546f0 | Segment 2: 3 fixed, 2 dropped, 0 deferred, 106 remain       |
+| ff0b8a83 | Segment 3: 2 fixed, 2 dropped, 1 deferred, 101 remain       |
 
 Files touched so far: `docs/handoff/audit-burndown-run.md`.
 
@@ -73,7 +78,7 @@ npm run audit:burndown:overnight -- 600
 
 ## Unverified assumptions
 
-* The remaining findings have not yet been exercised through a bounded detached segment.
+* The remaining 101 findings have not yet been exercised.
 
 ## Done & verified
 
@@ -93,14 +98,19 @@ npm run audit:burndown:overnight -- 600
 * All five fix comments posted on PR [#561](https://github.com/KyleMit/Splotch/pull/561); capture
   found no missing or pending records.
 * Exact-head CI on `3648a752593ba5a19bd72a8437c863deee912a23`: Quality and Tests green.
-* `npm run audit:cost`: no capped or errored calls; retained-log projection is about $30.91 for the
-  remaining 116 findings.
+* Three bounded `MAX_HANDLED=5` segments completed with exact-head CI green and all comments drained
+  at every checkpoint.
+* Supervisor inspection caught an inefficient reviewed red-pixel scan; follow-up commit `2eab584c`
+  restored the original in-browser early exit, passed focused E2E and full CI, and was disclosed in
+  the corresponding PR comment.
+* `npm run audit:cost`: no capped or errored calls; retained-log projection is about $26.91 for the
+  remaining 101 findings.
 
 ## Risks & next 3 steps
 
-1. Commit and push this green-canary checkpoint and require exact-head CI green.
-2. Launch one detached `MAX_HANDLED=5` segment, record its start and 20-minute deadline, then
-   supervise it until stopped.
+1. Commit and push this continuation checkpoint and require exact-head CI green.
+2. Launch segment 4 with `MAX_HANDLED=5`, record its start and 20-minute deadline, then supervise it
+   until stopped.
 3. Require exact-head CI green, drain all comments, inspect the segment diff, and repeat bounded
    segments until the backlog is exhausted or the user asks to pause.
 
