@@ -3,7 +3,7 @@
 // are inlined as base64 so the page renders in the sandbox and on GitHub Pages
 // with no external files.
 //
-//   node --experimental-strip-types --disable-warning=ExperimentalWarning build-sheet.mjs
+//   node build-sheet.mjs [--artifact=<path>]
 //
 // Writes ./out/index.html. Promote with the scrapbook:publish flow when happy.
 
