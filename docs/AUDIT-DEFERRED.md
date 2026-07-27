@@ -3591,3 +3591,62 @@ implementation failed
 Updated the two Claude script comments, but the sandbox denied writes to `.codex/cloud/setup.sh` and
 `.codex/cloud/maintenance.sh`. The required four-file change is therefore incomplete, so I did not
 run gates or commit.
+
+### [P3][consistency] Android emulator API level is a second source of truth for the `Pixel_7_Pro_API_33` AVD
+
+**File(s):** `.github/workflows/android-deploy.yml:70-74` (`api-level: 33`, `target: google_apis`,
+`arch: x86_64`, long `emulator-options` string) — pinned at SHA f934d43
+
+#### Problem
+
+CI hard-codes `api-level: 33` (and `target`/`arch`) in the emulator-runner inputs, while the local
+smoke path (`scripts/android-emulator-smoke.mjs`, `scripts/lib/android.mjs`) targets an AVD named
+`Pixel_7_Pro_API_33`. The API level "33" now lives in two unrelated places; a bump to API 34 must be
+made in both or CI and local diverge. The `emulator-options` value is also a long undocumented magic
+string (`-no-snapshot-save -no-window -noaudio -no-boot-anim -camera-back none`) with no named
+constant or comment explaining each flag.
+
+#### Proposed solution
+
+Derive the API level from a single source (an env/constant shared with `scripts/lib/android.mjs`, or
+at least a workflow `env:` used to interpolate both the runner input and any reference). Add a brief
+comment naming why each `emulator-options` flag is present (headless/perf).
+
+#### Verification
+
+Changing the API level in one place updates both CI and local smoke; a comment documents the
+emulator flags.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `.github/workflows/android-deploy.yml:70` still leaves the full `emulator-options` magic string
+  undocumented; add the requested brief explanation covering the purpose of each
+  headless/performance flag.
+* Hard-coded API 33 and `Pixel_7_Pro_API_33` references remain in
+  `scripts/android-emulator-smoke.mjs:10`, `package.json:227-229`, and the `.ruler`-authored
+  mobile/testing guidance, so changing `ANDROID_API_LEVEL` leaves user-facing setup and smoke
+  instructions stale; make these references version-neutral or update their `.ruler` sources
+  consistently.
+* No test exercises the new single-source invariant across `ANDROID_API_LEVEL`, the derived AVD
+  name/package commands, local system image, and workflow action input, leaving the exact regression
+  this finding addresses unguarded.
+
+#### What was tried
+
+Centralized Android emulator API 33 in the shared configuration, deriving local image/AVD settings,
+package-script targets, and the CI emulator input from it while preserving their distinct image
+targets and architectures.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p3-consistency-android-emulator-api-level-is-a-second-source-of-truth-fo.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p3-consistency-android-emulator-api-level-is-a-second-source-of-truth-fo.patch`.

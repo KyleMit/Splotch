@@ -1,0 +1,94 @@
+diff --git a/.github/workflows/android-deploy.yml b/.github/workflows/android-deploy.yml
+index 57e54cea..374be28b 100644
+--- a/.github/workflows/android-deploy.yml
++++ b/.github/workflows/android-deploy.yml
+@@ -54,10 +54,16 @@ jobs:
+
+       - uses: ./.github/actions/install-maestro
+
++      - name: Read Android emulator API level
++        id: android_config
++        run: |
++          api_level=$(node --input-type=module -e "import { ANDROID_API_LEVEL } from './scripts/lib/android.mjs'; console.log(ANDROID_API_LEVEL)")
++          echo "api_level=$api_level" >> "$GITHUB_OUTPUT"
++
+       - name: Run smoke test on emulator
+         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+         with:
+-          api-level: 33
++          api-level: ${{ steps.android_config.outputs.api_level }}
+           target: google_apis
+           arch: x86_64
+           force-avd-creation: false
+diff --git a/package.json b/package.json
+index ca04e99a..d0b14114 100644
+--- a/package.json
++++ b/package.json
+@@ -99,9 +99,9 @@
+     "cap:android": "npm run cap:sync && cap open android",
+     "cap:ios": "npm run cap:sync && cap open ios",
+     "android:setup": "node scripts/android-setup.mjs",
+-    "android:boot": "emulator -avd Pixel_7_Pro_API_33",
+-    "android:emulator": "npm run cap:sync && cap run android --target Pixel_7_Pro_API_33",
+-    "android:live": "cap run android --target Pixel_7_Pro_API_33 --live-reload --port 5173",
++    "android:boot": "emulator -avd $(node scripts/android-avd-name.mjs)",
++    "android:emulator": "npm run cap:sync && cap run android --target $(node scripts/android-avd-name.mjs)",
++    "android:live": "cap run android --target $(node scripts/android-avd-name.mjs) --live-reload --port 5173",
+     "android:apk": "npm run cap:sync && node scripts/gradle.mjs :app:assembleDebug",
+     "android:run": "npm run cap:sync && node scripts/gradle.mjs :app:installDebug",
+     "android:run:device": "npm run cap:sync && ANDROID_SERIAL=R5CY128YMGF node scripts/gradle.mjs :app:installDebug",
+diff --git a/scripts/android-avd-name.mjs b/scripts/android-avd-name.mjs
+new file mode 100644
+index 00000000..49b0163c
+--- /dev/null
++++ b/scripts/android-avd-name.mjs
+@@ -0,0 +1,3 @@
++import { AVD_NAME } from './lib/android.mjs';
++
++console.log(AVD_NAME);
+diff --git a/scripts/android-setup.mjs b/scripts/android-setup.mjs
+index d1fc672b..057c5b20 100644
+--- a/scripts/android-setup.mjs
++++ b/scripts/android-setup.mjs
+@@ -8,10 +8,10 @@
+ import { existsSync, writeFileSync } from 'node:fs';
+ import { join } from 'node:path';
+ import { ROOT, hasCommand, run, capture, fail, maestroInstalled } from './lib/utils.mjs';
+-import { ANDROID_HOME, AVD_NAME } from './lib/android.mjs';
++import { ANDROID_API_LEVEL, ANDROID_HOME, AVD_NAME } from './lib/android.mjs';
+
+ const ABI = process.arch === 'arm64' ? 'arm64-v8a' : 'x86_64';
+-const SYSTEM_IMAGE = `system-images;android-33;google_apis_playstore;${ABI}`;
++const SYSTEM_IMAGE = `system-images;android-${ANDROID_API_LEVEL};google_apis_playstore;${ABI}`;
+ const DEVICE_ID = 'pixel_7_pro';
+
+ const isMac = process.platform === 'darwin';
+@@ -50,7 +50,13 @@ if (missing.length > 0) {
+   fail(lines.join('\n'));
+ }
+
+-const imageDir = join(ANDROID_HOME, 'system-images', 'android-33', 'google_apis_playstore', ABI);
++const imageDir = join(
++  ANDROID_HOME,
++  'system-images',
++  `android-${ANDROID_API_LEVEL}`,
++  'google_apis_playstore',
++  ABI
++);
+ if (existsSync(imageDir)) {
+   console.log('[android-setup] System image already installed.');
+ } else {
+diff --git a/scripts/lib/android.mjs b/scripts/lib/android.mjs
+index ec669aec..ded25482 100644
+--- a/scripts/lib/android.mjs
++++ b/scripts/lib/android.mjs
+@@ -7,7 +7,8 @@ import { join } from 'node:path';
+ import { homedir } from 'node:os';
+ import { ROOT } from './utils.mjs';
+
+-export const AVD_NAME = 'Pixel_7_Pro_API_33';
++export const ANDROID_API_LEVEL = 33;
++export const AVD_NAME = `Pixel_7_Pro_API_${ANDROID_API_LEVEL}`;
+
+ export const ANDROID_HOME =
+   process.env.ANDROID_HOME ??

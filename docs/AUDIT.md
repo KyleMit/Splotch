@@ -21,33 +21,6 @@
 
 ## Source: Code audit — .github CI workflows
 
-### [P3][consistency] Android emulator API level is a second source of truth for the `Pixel_7_Pro_API_33` AVD
-
-**File(s):** `.github/workflows/android-deploy.yml:70-74` (`api-level: 33`, `target: google_apis`,
-`arch: x86_64`, long `emulator-options` string) — pinned at SHA f934d43
-
-#### Problem
-
-CI hard-codes `api-level: 33` (and `target`/`arch`) in the emulator-runner inputs, while the local
-smoke path (`scripts/android-emulator-smoke.mjs`, `scripts/lib/android.mjs`) targets an AVD named
-`Pixel_7_Pro_API_33`. The API level "33" now lives in two unrelated places; a bump to API 34 must be
-made in both or CI and local diverge. The `emulator-options` value is also a long undocumented magic
-string (`-no-snapshot-save -no-window -noaudio -no-boot-anim -camera-back none`) with no named
-constant or comment explaining each flag.
-
-#### Proposed solution
-
-Derive the API level from a single source (an env/constant shared with `scripts/lib/android.mjs`, or
-at least a workflow `env:` used to interpolate both the runner input and any reference). Add a brief
-comment naming why each `emulator-options` flag is present (headless/perf).
-
-#### Verification
-
-Changing the API level in one place updates both CI and local smoke; a comment documents the
-emulator flags.
-
----
-
 ### [P3][maintainability] `label-to-todo.sh` caps project items and fields at `first: 100` with no pagination
 
 **File(s):** `.github/scripts/label-to-todo.sh:23` (`projectItems(first: 100)`), `:37`
