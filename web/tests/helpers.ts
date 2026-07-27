@@ -22,6 +22,8 @@ export const TEST_PALETTE = {
 export const PICKER_GREEN = COLOR_FAMILIES.find((family) => family.name === 'greens')!.shades[4];
 export const CUSTOM_SWATCH_COLOR = 'custom';
 
+export type Rgba = [number, number, number, number];
+
 // Must remain greater than the engine's COLOR_CHANGE_DEBOUNCE_MS (100).
 export const COLOR_CHANGE_DEBOUNCE_SETTLE_MS = 150;
 
@@ -85,8 +87,8 @@ export async function draw(page: Page, points: { x: number; y: number }[]) {
 }
 
 /** First non-transparent pixel on the canvas as [r,g,b,a], or null if blank. */
-export function firstOpaquePixel(page: Page): Promise<number[] | null> {
-  return page.evaluate(() => {
+export function firstOpaquePixel(page: Page): Promise<Rgba | null> {
+  return page.evaluate((): Rgba | null => {
     const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
     const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
     for (let i = 3; i < data.length; i += 4) {
@@ -94,4 +96,8 @@ export function firstOpaquePixel(page: Page): Promise<number[] | null> {
     }
     return null;
   });
+}
+
+export function isBlueDominant(px: Rgba) {
+  return px[2] > px[0];
 }

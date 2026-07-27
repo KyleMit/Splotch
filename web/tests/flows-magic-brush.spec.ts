@@ -81,6 +81,17 @@ function distinctOpaqueColors(page: Page, bits = 4): Promise<number> {
   }, bits);
 }
 
+function hasRedPaintPixel(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] > 200 && data[i] > 200 && data[i + 1] < 120 && data[i + 2] < 120) return true;
+    }
+    return false;
+  });
+}
+
 test('the magic brush is always available and paints the coloring page colors', async ({
   page,
 }) => {
@@ -440,13 +451,5 @@ test('the eraser removes magic-brush strokes and later colors override them', as
     { x: 200, y: 240 },
     { x: 400, y: 240 },
   ]);
-  const hasRed = await page.evaluate(() => {
-    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i + 3] > 200 && data[i] > 200 && data[i + 1] < 120 && data[i + 2] < 120) return true;
-    }
-    return false;
-  });
-  expect(hasRed).toBe(true);
+  expect(await hasRedPaintPixel(page)).toBe(true);
 });

@@ -6,10 +6,12 @@ import {
   draw,
   firstOpaquePixel,
   gotoApp,
+  isBlueDominant,
   PICKER_GREEN,
   retryOpen,
   swatch,
   TEST_PALETTE,
+  type Rgba,
 } from './helpers';
 
 import { openBrushMenu, openDrawer, pickBrush } from './flows-harness';
@@ -73,7 +75,7 @@ test('selecting a palette color activates it and paints in that color', async ({
   const px = await firstOpaquePixel(page);
   expect(px).not.toBeNull();
   // The selected blue is blue-dominant, so the painted pixel should be more blue than red.
-  expect(px![2]).toBeGreaterThan(px![0]);
+  expect(isBlueDominant(px!)).toBe(true);
 });
 
 test('the crayon brush lays textured strokes that build up in the full app', async ({ page }) => {
@@ -260,55 +262,57 @@ test('pointer exploration still snaps a hexagon gap and commits the highlighted 
 test('a pen stroke shortly after a pen tap on a swatch still paints', async ({ page }) => {
   await gotoApp(page);
 
-  const painted = await swatch(page, TEST_PALETTE.blue).evaluate(async (paletteSwatch) => {
-    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-    const selectedSwatch = paletteSwatch as HTMLElement;
-    const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const rect = canvas.getBoundingClientRect();
-    const fire = (target: Element, type: string, x: number, y: number, buttons: number) =>
-      target.dispatchEvent(
-        new PointerEvent(type, {
-          pointerId: 99,
-          pointerType: 'pen',
-          buttons,
-          pressure: buttons ? 0.1 : 0,
-          clientX: x,
-          clientY: y,
-          bubbles: true,
-          cancelable: true,
-        })
+  const painted = await swatch(page, TEST_PALETTE.blue).evaluate(
+    async (paletteSwatch): Promise<Rgba | null> => {
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      const selectedSwatch = paletteSwatch as HTMLElement;
+      const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+      const rect = canvas.getBoundingClientRect();
+      const fire = (target: Element, type: string, x: number, y: number, buttons: number) =>
+        target.dispatchEvent(
+          new PointerEvent(type, {
+            pointerId: 99,
+            pointerType: 'pen',
+            buttons,
+            pressure: buttons ? 0.1 : 0,
+            clientX: x,
+            clientY: y,
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+
+      const s = selectedSwatch.getBoundingClientRect();
+      const sx = s.left + s.width / 2;
+      const sy = s.top + s.height / 2;
+      fire(selectedSwatch, 'pointerdown', sx, sy, 1);
+      await sleep(45);
+      fire(selectedSwatch, 'pointerup', sx, sy, 0);
+      selectedSwatch.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, clientX: sx, clientY: sy })
       );
 
-    const s = selectedSwatch.getBoundingClientRect();
-    const sx = s.left + s.width / 2;
-    const sy = s.top + s.height / 2;
-    fire(selectedSwatch, 'pointerdown', sx, sy, 1);
-    await sleep(45);
-    fire(selectedSwatch, 'pointerup', sx, sy, 0);
-    selectedSwatch.dispatchEvent(
-      new MouseEvent('click', { bubbles: true, cancelable: true, clientX: sx, clientY: sy })
-    );
+      await sleep(440);
 
-    await sleep(440);
+      fire(canvas, 'pointerdown', rect.left + 112, rect.top + 221, 1);
+      for (let i = 1; i <= 10; i++) {
+        await sleep(36);
+        fire(canvas, 'pointermove', rect.left + 112 + i * 35, rect.top + 221 + i * 5, 1);
+      }
+      fire(canvas, 'pointerup', rect.left + 462, rect.top + 271, 0);
+      await new Promise(requestAnimationFrame);
 
-    fire(canvas, 'pointerdown', rect.left + 112, rect.top + 221, 1);
-    for (let i = 1; i <= 10; i++) {
-      await sleep(36);
-      fire(canvas, 'pointermove', rect.left + 112 + i * 35, rect.top + 221 + i * 5, 1);
+      const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
+      for (let i = 3; i < data.length; i += 4) {
+        if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
+      }
+      return null;
     }
-    fire(canvas, 'pointerup', rect.left + 462, rect.top + 271, 0);
-    await new Promise(requestAnimationFrame);
-
-    const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
-    for (let i = 3; i < data.length; i += 4) {
-      if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
-    }
-    return null;
-  });
+  );
 
   expect(painted).not.toBeNull();
   // The selected blue is blue-dominant, so the stroke painted in the just-picked color.
-  expect(painted![2]).toBeGreaterThan(painted![0]);
+  expect(isBlueDominant(painted!)).toBe(true);
 });
 
 // A pen TAP on a swatch arms iPadOS Scribble: the pen stroke started within
