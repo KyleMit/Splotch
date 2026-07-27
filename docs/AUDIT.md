@@ -15,39 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P3][consistency] The `CAPACITOR` "single signal" is re-derived independently in every config with a repeated literal comparison
-
-**File(s):** `web/vite.config.ts:8`, `web/svelte.config.js:10`, `web/vitest.config.ts:18`
-(isCapacitor) — pinned at SHA f934d43
-
-#### Problem
-
-`CLAUDE.md` calls `CAPACITOR=true` "the single signal," yet each config recomputes it:
-
-```ts
-const isCapacitor = process.env.CAPACITOR === 'true'; // vite.config.ts:8
-const isCapacitor = process.env.CAPACITOR === 'true'; // svelte.config.js:10
-```
-
-and `vitest.config.ts:18` hardcodes the opposite (`__IS_CAPACITOR__: JSON.stringify(true)`) with its
-own inline rationale. The `=== 'true'` comparison (easy to get wrong, e.g.
-`Boolean(process.env.CAPACITOR)` which is truthy for `"false"`) is duplicated. There's no single
-named export representing the platform signal, so "the single signal" is really three call sites.
-
-#### Proposed solution
-
-Add a tiny shared module (`web/build/platform.ts` / `.mjs`) exporting
-`export const isCapacitor = process.env.CAPACITOR === 'true'` and import it into `vite.config.ts`
-and `svelte.config.js`. This makes the "single signal" literally single and removes the risk of one
-file using a laxer comparison.
-
-#### Verification
-
-`git grep -n "CAPACITOR === 'true'"` should return one hit. Build both targets and confirm adapter
-selection and PWA inclusion are unchanged.
-
----
-
 ### [P3][documentation] Stale/incorrect comment: `vitest-setup.ts` says "jsdom" but the environment is happy-dom
 
 **File(s):** `web/vitest-setup.ts:3-5` (comment) — pinned at SHA f934d43
