@@ -17,35 +17,6 @@
 
 ## Source: Code audit — Native shells (android + ios + fastlane)
 
-### [P4][dead-config] `AppDelegate.swift` is wall-to-wall empty template lifecycle stubs
-
-**File(s):** `ios/App/App/AppDelegate.swift:14-34` (iOS app delegate) — pinned at SHA f934d43
-
-#### Problem
-
-Five lifecycle methods (`applicationWillResignActive`, `applicationDidEnterBackground`,
-`applicationWillEnterForeground`, `applicationDidBecomeActive`, `applicationWillTerminate`) have
-empty bodies containing only the stock Apple template prose ("Sent when the application is about to
-move from active to inactive state… Games should use this method to pause the game."). None of it
-applies to Splotch, and the noise buries the two methods that *do* carry real logic (`open url` and
-the `supportedInterfaceOrientationsFor` override at lines 42-60). A reader has to wade through
-boiler comments to find the one intentional customization.
-
-#### Proposed solution
-
-Delete the empty stub methods and their template comments (they are optional protocol methods; the
-default behavior is identical). Keep `didFinishLaunchingWithOptions`, the
-`open url`/`continue
-userActivity` proxies, and the orientation override with its existing
-explanatory comment.
-
-#### Verification
-
-Build and run on device — background/foreground/rotation behavior is unchanged; the file now shows
-only methods that do something.
-
----
-
 ### [P4][maintainability] App-local iOS plugins were added via hand-crafted sequential pbxproj UUIDs
 
 **File(s):** `ios/App/App.xcodeproj/project.pbxproj:14-16,28-30,168-170` (Xcode project) — pinned at
