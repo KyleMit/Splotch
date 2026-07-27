@@ -13,36 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P2][flakiness] generate-image.spec.ts relies on implicit declaration-order execution and shared limiter buckets
-
-**File(s):** `web/tests/generate-image.spec.ts:11-14, 105-154` — pinned at SHA f934d43
-
-#### Problem
-
-The file opts out of parallel mode (`test.describe.configure({ mode: 'default' })`) because every
-BYOK request shares one per-IP limiter bucket and the burst test (line 139) must run last. This
-ordering coupling is enforced only by source position and a comment (line 12-13). The BYOK burst
-test (`139-154`) even acknowledges "Earlier tests in this file used a few BYOK hits from this IP, so
-the 429 can arrive slightly before the full BYOK_LIMIT" — i.e. its assertion window is loosened to
-absorb cross-test state bleed. A reordering or an added BYOK test silently shifts the bucket count
-and can flip the burst test red.
-
-#### Proposed solution
-
-Isolate the rate-limiter state per test by giving each test its own credential where possible (the
-throttle tests already do this for managed tokens via `daycare-club*`), or move the two burst tests
-into their own describe block with an explicit comment contract and a
-`test.describe.configure({ mode: 'serial' })` so a mid-file failure skips the dependent rather than
-cascading. At minimum, replace the "runs in declaration order" comment with a `serial` mode
-declaration that the runner actually enforces.
-
-#### Verification
-
-Reorder the non-burst tests locally and confirm the burst tests still pass;
-`npm run test:e2e -- generate-image.spec.ts --repeat-each=5`.
-
----
-
 ### [P3][maintainability] The color-change debounce sleep `waitForTimeout(150)` is an unnamed, duplicated magic number
 
 **File(s):** `web/tests/flows.spec.ts:208, 1536` — pinned at SHA f934d43
