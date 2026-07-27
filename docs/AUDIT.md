@@ -13,38 +13,6 @@
 
 ## Source: Code audit — web/tests · E2E + integration specs
 
-### [P2][duplication] Crayon-brush tests re-derive point generators and region samplers inline in every test
-
-**File(s):** `web/tests/engine.spec.ts:1309-1354` (crayonScene line/region), `1393-1428`,
-`1445-1488` (seg), `1493-1512`, `1521-1560` (pts+coverage), `1569-1607`, `1610-1621`, `1644-1701`,
-`1763-1802` — pinned at SHA f934d43
-
-#### Problem
-
-The crayon section (roughly `engine.spec.ts:1299-1802`, ~500 lines) has, in nearly every test's
-`page.evaluate`, a locally-defined horizontal-line generator (`line`/`pts`/`seg`:
-`for (let i = 0; i <= 40; i++) p.push({ x: x0 + ((x1-x0)*i)/40, y })`) and a region coverage
-sampler. The `E.clearCanvas(); E.setCrayonMode(true); E.setColor('#…'); E.setStrokeWidth(…)`
-preamble repeats verbatim in eight tests. The 40-segment interpolation formula alone appears ~9
-times.
-
-#### Proposed solution
-
-In the new `engine-harness.ts` (or a `crayon-harness.ts`), export in-page string builders / a single
-injected helper providing `interpolateLine(x0,x1,y,segments=40)`,
-`regionCoverage(g, x0, x1, yMid, h)`, and a `setupCrayon(color, width)` preamble. Since these run in
-`evaluate`, expose them by injecting a small helper object onto `window.__testkit` via
-`addInitScript` on the `/dev/engine` route, then call `window.__testkit.line(...)` inside each
-`evaluate`. Reduces the crayon section by a few hundred lines and pins the interpolation math in one
-place.
-
-#### Verification
-
-The interpolation formula `((x1 - x0) * i) / 40` appears once.
-`npm run test:e2e -- engine.spec.ts -g crayon --repeat-each=5` green.
-
----
-
 ### [P2][maintainability] Color hex literals are magic strings in flows.spec.ts while palette-trim.spec.ts already has a named palette map
 
 **File(s):** `web/tests/flows.spec.ts:200, 221, 250, 267(purple), 507, 557, 1267, 1534`, vs the

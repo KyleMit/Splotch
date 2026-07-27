@@ -3154,3 +3154,72 @@ The rolled-back draft is kept at
 (1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-duplication-the-dev-engine-readiness-beforeeach-and-state-readers-are.patch`.
+
+### [P2][duplication] Crayon-brush tests re-derive point generators and region samplers inline in every test
+
+**File(s):** `web/tests/engine.spec.ts:1309-1354` (crayonScene line/region), `1393-1428`,
+`1445-1488` (seg), `1493-1512`, `1521-1560` (pts+coverage), `1569-1607`, `1610-1621`, `1644-1701`,
+`1763-1802` — pinned at SHA f934d43
+
+#### Problem
+
+The crayon section (roughly `engine.spec.ts:1299-1802`, ~500 lines) has, in nearly every test's
+`page.evaluate`, a locally-defined horizontal-line generator (`line`/`pts`/`seg`:
+`for (let i = 0; i <= 40; i++) p.push({ x: x0 + ((x1-x0)*i)/40, y })`) and a region coverage
+sampler. The `E.clearCanvas(); E.setCrayonMode(true); E.setColor('#…'); E.setStrokeWidth(…)`
+preamble repeats verbatim in eight tests. The 40-segment interpolation formula alone appears ~9
+times.
+
+#### Proposed solution
+
+In the new `engine-harness.ts` (or a `crayon-harness.ts`), export in-page string builders / a single
+injected helper providing `interpolateLine(x0,x1,y,segments=40)`,
+`regionCoverage(g, x0, x1, yMid, h)`, and a `setupCrayon(color, width)` preamble. Since these run in
+`evaluate`, expose them by injecting a small helper object onto `window.__testkit` via
+`addInitScript` on the `/dev/engine` route, then call `window.__testkit.line(...)` inside each
+`evaluate`. Reduces the crayon section by a few hundred lines and pins the interpolation math in one
+place.
+
+#### Verification
+
+The interpolation formula `((x1 - x0) * i) / 40` appears once.
+`npm run test:e2e -- engine.spec.ts -g crayon --repeat-each=5` green.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* The consolidation leaves two cited stragglers: `web/tests/engine-snapshot-tier.spec.ts:57-64`
+  still defines its own 40-step line/setup, while `web/tests/engine-crayon.spec.ts:329-339` still
+  defines a region sampler and repeats the raw crayon preamble. Install and use the shared testkit
+  in the snapshot-tier spec and route both remaining sampler/setup sites through it.
+* `web/tests/engine-snapshot-tier.spec.ts:63` replaces a setup sequence that deliberately did not
+  clear with `setupCrayon()`, whose `clearCanvas()` call creates an extra undo snapshot; preserve
+  the original no-clear behavior so the test still observes exactly the two stroke snapshots
+  asserted at line 73.
+* `web/tests/engine-crayon.spec.ts:336` still re-derives the 40-segment interpolation formula inline
+  for the held-pointer stroke, so interpolation math is not pinned to the new helper as the original
+  finding requires; generate those pointer-move coordinates through `interpolatePoints` as well.
+
+#### What was tried
+
+1. Added a post-navigation, test-only crayon kit for point interpolation, region sampling, and
+   consistent crayon setup. Updated the crayon specs to reuse it while preserving scenario-specific
+   gestures, parameters, colour changes, thresholds, and pointer-event coverage.
+2. Applied Prettier’s required tuple layout to the crayon region sampler so the deterministic
+   formatting gate accepts the harness.
+3. Installed the shared crayon testkit in the snapshot-tier spec and replaced its local
+   interpolation/setup. Routed the pointer-event regression’s remaining alpha sampler and crayon
+   preamble through the same kit while leaving its gesture sequence inline.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-duplication-crayon-brush-tests-re-derive-point-generators-and-region.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-duplication-crayon-brush-tests-re-derive-point-generators-and-region.patch`.

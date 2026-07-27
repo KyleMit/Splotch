@@ -1,0 +1,408 @@
+diff --git a/web/tests/engine-crayon.spec.ts b/web/tests/engine-crayon.spec.ts
+index a3b6f39f..6b863b86 100644
+--- a/web/tests/engine-crayon.spec.ts
++++ b/web/tests/engine-crayon.spec.ts
+@@ -1,6 +1,6 @@
+ import { expect, test, type Page } from '@playwright/test';
+ 
+-import { count } from './engine-harness';
++import { count, installCrayonTestkit } from './engine-harness';
+ 
+ // --- Crayon brush (ADR-0065) ------------------------------------------------
+ 
+@@ -10,45 +10,32 @@ import { count } from './engine-harness';
+ // property of rendering the stored ops — not of the pure phase math (unit-tested
+ // in crayonBrush.test.ts).
+ 
++test.beforeEach(async ({ page }) => {
++  await installCrayonTestkit(page);
++});
++
+ // Draw a horizontal crayon line and read back per-region opaque coverage + mean
+ // opaque colour, all in one page context so the canvas pixels never leave the browser.
+ async function crayonScene(page: Page) {
+   return page.evaluate(() => {
+     const E = window.__engine;
++    const { interpolatePoints, sampleRegion, setupCrayon } = window.__crayonTestkit;
+     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+-    const g = cv.getContext('2d')!;
+     const ymid = Math.round(cv.height / 2);
+-    const line = (x0: number, x1: number) => {
+-      const p: { x: number; y: number }[] = [];
+-      for (let i = 0; i <= 40; i++) p.push({ x: x0 + ((x1 - x0) * i) / 40, y: ymid });
+-      return p;
+-    };
+-    const region = (x0: number, x1: number) => {
+-      const d = g.getImageData(Math.round(x0), ymid - 15, Math.round(x1 - x0), 30).data;
+-      let opq = 0,
+-        tot = 0,
+-        r = 0,
+-        gg = 0,
+-        b = 0;
+-      for (let i = 0; i < d.length; i += 4) {
+-        tot++;
+-        if (d[i + 3] > 128) {
+-          opq++;
+-          r += d[i];
+-          gg += d[i + 1];
+-          b += d[i + 2];
+-        }
+-      }
+-      return {
+-        cov: opq / tot,
+-        rgb: opq ? [Math.round(r / opq), Math.round(gg / opq), Math.round(b / opq)] : null,
+-      };
+-    };
+     const W = cv.width;
+-    E.clearCanvas();
+-    E.setCrayonMode(true);
+-    E.setColor('#e23b36');
+-    E.setStrokeWidth(30);
++    const line = (x0: number, x1: number) =>
++      interpolatePoints({ x: x0, y: ymid }, { x: x1, y: ymid });
++    const region = (x0: number, x1: number) =>
++      sampleRegion(
++        {
++          x: Math.round(x0),
++          y: ymid - 15,
++          width: Math.round(x1 - x0),
++          height: 30,
++        },
++        128
++      );
++    setupCrayon('#e23b36', 30);
+     E.strokeSync(line(W * 0.2, W * 0.8), 'pen'); // one full-width pass
+     const leftA = region(W * 0.25, W * 0.45);
+     const rightA = region(W * 0.55, W * 0.75);
+@@ -64,8 +51,8 @@ test('a crayon stroke reads as tooth, not a solid fill', async ({ page }) => {
+   // A single pass leaves paper tooth showing — neither a flat fill nor a few
+   // specks. The floor sits below the deliberately light first-pass defaults
+   // (they leave buildup headroom); the ceiling catches a solid fill.
+-  expect(r.leftA.cov).toBeGreaterThan(0.3);
+-  expect(r.leftA.cov).toBeLessThan(0.85);
++  expect(r.leftA.coverage).toBeGreaterThan(0.3);
++  expect(r.leftA.coverage).toBeLessThan(0.85);
+ });
+ 
+ test('a second same-colour crayon pass builds up where it is drawn, at a constant hue', async ({
+@@ -73,9 +60,9 @@ test('a second same-colour crayon pass builds up where it is drawn, at a constan
+ }) => {
+   const r = await crayonScene(page);
+   // Buildup: the redrawn (left) band gets denser — fills in tooth.
+-  expect(r.leftB.cov).toBeGreaterThan(r.leftA.cov + 0.03);
++  expect(r.leftB.coverage).toBeGreaterThan(r.leftA.coverage + 0.03);
+   // Live/gradual, not a global snap: the untouched (right) band is unchanged.
+-  expect(Math.abs(r.rightB.cov - r.rightA.cov)).toBeLessThan(0.02);
++  expect(Math.abs(r.rightB.coverage - r.rightA.coverage)).toBeLessThan(0.02);
+   // No darken/muddy: same-colour overdraw cannot shift the colour — the
+   // darken mix is EXACT on its own colour (min(c,c)=c), so the only mean
+   // drift left is the shade wobble's slow term (its per-texel min against the
+@@ -98,15 +85,12 @@ test('the crayon wax body carries a subtle shade variation, not one flat colour'
+   // stroke's anti-aliased silhouette from faking variation.
+   const r = await page.evaluate(() => {
+     const E = window.__engine;
++    const { interpolatePoints, setupCrayon } = window.__crayonTestkit;
+     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+     const g = cv.getContext('2d')!;
+     const ymid = Math.round(cv.height / 2);
+-    const p: { x: number; y: number }[] = [];
+-    for (let i = 0; i <= 40; i++) p.push({ x: 20 + ((cv.width - 40) * i) / 40, y: ymid });
+-    E.clearCanvas();
+-    E.setCrayonMode(true);
+-    E.setColor('#e23b36'); // r=226 g=59 b=54
+-    E.setStrokeWidth(30);
++    const p = interpolatePoints({ x: 20, y: ymid }, { x: cv.width - 20, y: ymid });
++    setupCrayon('#e23b36', 30); // r=226 g=59 b=54
+     E.strokeSync(p, 'pen');
+     const d = g.getImageData(20, ymid - 12, cv.width - 40, 24).data;
+     const exact = [226, 59, 54];
+@@ -150,23 +134,15 @@ test('crossing crayon colours mix subtractively — blue over yellow goes green'
+   // shipped strength while blue over bare paper stays pure.
+   const r = await page.evaluate(() => {
+     const E = window.__engine;
++    const { interpolatePoints, setupCrayon } = window.__crayonTestkit;
+     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+     const g = cv.getContext('2d')!;
+     const cx = Math.round(cv.width / 2);
+     const cy = Math.round(cv.height / 2);
+-    const seg = (x0: number, y0: number, x1: number, y1: number) => {
+-      const p: { x: number; y: number }[] = [];
+-      for (let i = 0; i <= 40; i++)
+-        p.push({ x: x0 + ((x1 - x0) * i) / 40, y: y0 + ((y1 - y0) * i) / 40 });
+-      return p;
+-    };
+-    E.clearCanvas();
+-    E.setCrayonMode(true);
+-    E.setStrokeWidth(36);
+-    E.setColor('#f7d64b'); // yellow underlay (247, 214, 75)
+-    E.strokeSync(seg(cx - 150, cy, cx + 150, cy), 'pen');
++    setupCrayon('#f7d64b', 36); // yellow underlay (247, 214, 75)
++    E.strokeSync(interpolatePoints({ x: cx - 150, y: cy }, { x: cx + 150, y: cy }), 'pen');
+     E.setColor('#62A2E9'); // blue over it (98, 162, 233)
+-    E.strokeSync(seg(cx, cy - 120, cx, cy + 120), 'pen');
++    E.strokeSync(interpolatePoints({ x: cx, y: cy - 120 }, { x: cx, y: cy + 120 }), 'pen');
+     // Sample the crossing square. Blue wax mixed by the yellow beneath lands
+     // at ≈ (98, 162, 0.45·233 + 0.55·75 ≈ 146) — green channel above blue,
+     // i.e. actually green — vs (98, 162, 233) pure over blank.
+@@ -198,16 +174,13 @@ test('colorMix 0 restores the direct opaque pipeline (the A/B escape hatch)', as
+   // wax, no pass buffer, no stamp — byte-for-byte the pre-mixing pipeline.
+   const opaque = await page.evaluate(() => {
+     const E = window.__engine;
++    const { interpolatePoints, setupCrayon } = window.__crayonTestkit;
+     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+     const g = cv.getContext('2d')!;
+     const ymid = Math.round(cv.height / 2);
+-    const p: { x: number; y: number }[] = [];
+-    for (let i = 0; i <= 40; i++) p.push({ x: 20 + ((cv.width - 40) * i) / 40, y: ymid });
+-    E.clearCanvas();
+-    E.setCrayonMode(true);
++    const p = interpolatePoints({ x: 20, y: ymid }, { x: cv.width - 20, y: ymid });
++    setupCrayon('#e23b36', 24);
+     E.setCrayonParams({ colorMix: 0 });
+-    E.setColor('#e23b36');
+-    E.setStrokeWidth(24);
+     E.strokeSync(p, 'pen');
+     const d = g.getImageData(20, ymid - 10, cv.width - 40, 20).data;
+     let full = 0;
+@@ -226,29 +199,23 @@ test('scribbling back and forth in ONE gesture builds up like separate strokes',
+   // coverage territory as three separate strokes over the same line.
+   const r = await page.evaluate(() => {
+     const E = window.__engine;
++    const { interpolatePoints, sampleRegion, setupCrayon } = window.__crayonTestkit;
+     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+-    const g = cv.getContext('2d')!;
+     const ymid = Math.round(cv.height / 2);
+     const W = cv.width;
+-    const pts = (x0: number, x1: number) => {
+-      const p: { x: number; y: number }[] = [];
+-      for (let i = 0; i <= 40; i++) p.push({ x: x0 + ((x1 - x0) * i) / 40, y: ymid });
+-      return p;
+-    };
+-    const coverage = () => {
+-      const d = g.getImageData(Math.round(W * 0.2), ymid - 12, Math.round(W * 0.6), 24).data;
+-      let opq = 0;
+-      let tot = 0;
+-      for (let i = 3; i < d.length; i += 4) {
+-        tot++;
+-        if (d[i] > 128) opq++;
+-      }
+-      return opq / tot;
+-    };
+-    E.clearCanvas();
+-    E.setCrayonMode(true);
+-    E.setColor('#2c5faa');
+-    E.setStrokeWidth(30);
++    const pts = (x0: number, x1: number) =>
++      interpolatePoints({ x: x0, y: ymid }, { x: x1, y: ymid });
++    const coverage = () =>
++      sampleRegion(
++        {
++          x: Math.round(W * 0.2),
++          y: ymid - 12,
++          width: Math.round(W * 0.6),
++          height: 24,
++        },
++        128
++      ).coverage;
++    setupCrayon('#2c5faa', 30);
+     E.strokeSync(pts(W * 0.1, W * 0.9), 'pen'); // one single-direction pass
+     const single = coverage();
+     E.clearCanvas();
+@@ -274,20 +241,13 @@ test('mid-stroke pass splits survive a remount byte-identically and undo cleanly
+   // any drift here means the fold diverged from the live pixels.
+   const r = await page.evaluate(() => {
+     const E = window.__engine;
++    const { interpolatePoints, setupCrayon } = window.__crayonTestkit;
+     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+     const g = cv.getContext('2d')!;
+     const y = Math.round(cv.height / 2);
+-    const pts = (x0: number, x1: number) => {
+-      const p: { x: number; y: number }[] = [];
+-      for (let i = 0; i <= 40; i++) p.push({ x: x0 + ((x1 - x0) * i) / 40, y });
+-      return p;
+-    };
+-    const fwd = pts(20, cv.width - 20);
+-    const back = pts(cv.width - 20, 20);
+-    E.clearCanvas();
+-    E.setCrayonMode(true);
+-    E.setColor('#e23b36');
+-    E.setStrokeWidth(24);
++    const fwd = interpolatePoints({ x: 20, y }, { x: cv.width - 20, y });
++    const back = interpolatePoints({ x: cv.width - 20, y }, { x: 20, y });
++    setupCrayon('#e23b36', 24);
+     E.strokeSync([...fwd, ...back.slice(1), ...fwd.slice(1)], 'pen');
+     const before = g.getImageData(0, 0, cv.width, cv.height).data;
+     E.remount();
+@@ -315,14 +275,11 @@ test('mid-stroke pass splits survive a remount byte-identically and undo cleanly
+ test('a crayon remount reproduces the exact pixel count', async ({ page }) => {
+   await page.evaluate(() => {
+     const E = window.__engine;
++    const { interpolatePoints, setupCrayon } = window.__crayonTestkit;
+     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+     const y = Math.round(cv.height / 2);
+-    const p: { x: number; y: number }[] = [];
+-    for (let i = 0; i <= 40; i++) p.push({ x: 20 + ((cv.width - 40) * i) / 40, y });
+-    E.clearCanvas();
+-    E.setCrayonMode(true);
+-    E.setColor('#2c5faa');
+-    E.setStrokeWidth(24);
++    const p = interpolatePoints({ x: 20, y }, { x: cv.width - 20, y });
++    setupCrayon('#2c5faa', 24);
+     E.strokeSync(p, 'pen');
+   });
+   const c0 = await count(page);
+@@ -349,8 +306,8 @@ test('an eraser interleaved mid-gesture cannot resurrect erased wax at commit',
+   // pass's un-erased ink back over the erased region at commit.
+   const r = await page.evaluate(() => {
+     const E = window.__engine;
++    const { sampleRegion, setupCrayon } = window.__crayonTestkit;
+     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+-    const g = cv.getContext('2d')!;
+     const rect = cv.getBoundingClientRect();
+     const ev = (type: string, pointerId: number, x: number, y: number) =>
+       cv.dispatchEvent(
+@@ -369,17 +326,10 @@ test('an eraser interleaved mid-gesture cannot resurrect erased wax at commit',
+     // The open pass's ink lives on the OVERLAY canvases until a stamp lands it
+     // on the main canvas, so sample the main canvas only after the boundary
+     // close (the eraser's first op) has stamped the line.
+-    const inkedAt = (x: number) => {
+-      const band = g.getImageData(x - 8, y - 8, 16, 16).data;
+-      let n = 0;
+-      for (let i = 3; i < band.length; i += 4) if (band[i] > 0) n++;
+-      return n;
+-    };
++    const inkedAt = (x: number) =>
++      sampleRegion({ x: x - 8, y: y - 8, width: 16, height: 16 }, 0).coverage;
+ 
+-    E.clearCanvas();
+-    E.setCrayonMode(true);
+-    E.setColor('#2c5faa');
+-    E.setStrokeWidth(24);
++    setupCrayon('#2c5faa', 24);
+ 
+     // Finger 1: draw a full horizontal crayon line and HOLD (gesture open).
+     ev('pointerdown', 1, 40, y);
+diff --git a/web/tests/engine-harness.ts b/web/tests/engine-harness.ts
+index 39a245f1..18e6b83a 100644
+--- a/web/tests/engine-harness.ts
++++ b/web/tests/engine-harness.ts
+@@ -19,6 +19,53 @@ export async function drawStroke(
+ export const state = (page: Page) => page.evaluate(() => window.__engineState);
+ export const count = (page: Page) => page.evaluate(() => window.__engine.nonTransparentCount());
+ 
++export async function installCrayonTestkit(page: Page) {
++  await page.evaluate(() => {
++    window.__crayonTestkit = {
++      interpolatePoints(start, end, segments = 40) {
++        const points: { x: number; y: number }[] = [];
++        for (let i = 0; i <= segments; i++) {
++          points.push({
++            x: start.x + ((end.x - start.x) * i) / segments,
++            y: start.y + ((end.y - start.y) * i) / segments,
++          });
++        }
++        return points;
++      },
++      sampleRegion(rect, alphaThreshold) {
++        const canvas = document.getElementById('engineCanvas') as HTMLCanvasElement;
++        const data = canvas
++          .getContext('2d')!
++          .getImageData(rect.x, rect.y, rect.width, rect.height).data;
++        let opaque = 0;
++        let red = 0;
++        let green = 0;
++        let blue = 0;
++        for (let i = 0; i < data.length; i += 4) {
++          if (data[i + 3] > alphaThreshold) {
++            opaque++;
++            red += data[i];
++            green += data[i + 1];
++            blue += data[i + 2];
++          }
++        }
++        return {
++          coverage: opaque / (data.length / 4),
++          rgb: opaque
++            ? [Math.round(red / opaque), Math.round(green / opaque), Math.round(blue / opaque)]
++            : null,
++        };
++      },
++      setupCrayon(color, width) {
++        window.__engine.clearCanvas();
++        window.__engine.setCrayonMode(true);
++        window.__engine.setColor(color);
++        window.__engine.setStrokeWidth(width);
++      },
++    };
++  });
++}
++
+ test.beforeEach(async ({ page }) => {
+   // Navigate ONCE, then poll for readiness. The harness sets window.__engineReady
+   // in onMount. Against the default `vite preview` build this settles on the
+diff --git a/web/tests/engine-snapshot-tier.spec.ts b/web/tests/engine-snapshot-tier.spec.ts
+index 1a3cb2a3..a359349d 100644
+--- a/web/tests/engine-snapshot-tier.spec.ts
++++ b/web/tests/engine-snapshot-tier.spec.ts
+@@ -1,6 +1,6 @@
+ import { expect, test } from '@playwright/test';
+ 
+-import { count, state } from './engine-harness';
++import { count, installCrayonTestkit, state } from './engine-harness';
+ 
+ // --- The snapshot memory tier (ADR-0066) --------------------------------------
+ //
+@@ -9,6 +9,10 @@ import { count, state } from './engine-harness';
+ // its queue promise (page.evaluate awaits it) and assertions that race the
+ // encode tier poll for the settled state.
+ 
++test.beforeEach(async ({ page }) => {
++  await installCrayonTestkit(page);
++});
++
+ test('depth caps at 20 and deep entries restore from encoded blobs', async ({ page }) => {
+   await page.evaluate(() => {
+     for (let i = 0; i < 22; i++) {
+@@ -52,16 +56,11 @@ test('undoing a later crayon stroke restores the earlier texture byte-exactly',
+   // an AA tolerance band.
+   const debug = await page.evaluate(async () => {
+     const E = window.__engine;
++    const { interpolatePoints, setupCrayon } = window.__crayonTestkit;
+     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+     const g = cv.getContext('2d')!;
+-    const line = (y: number) => {
+-      const p: { x: number; y: number }[] = [];
+-      for (let i = 0; i <= 40; i++) p.push({ x: 20 + ((cv.width - 40) * i) / 40, y });
+-      return p;
+-    };
+-    E.setCrayonMode(true);
+-    E.setColor('#2c5faa');
+-    E.setStrokeWidth(24);
++    const line = (y: number) => interpolatePoints({ x: 20, y }, { x: cv.width - 20, y });
++    setupCrayon('#2c5faa', 24);
+     E.strokeSync(line(75), 'pen'); // stroke A, top band
+     (window as unknown as { __bandBefore: number[] }).__bandBefore = Array.from(
+       g.getImageData(20, 60, cv.width - 40, 30).data
+diff --git a/web/tests/global.d.ts b/web/tests/global.d.ts
+index e9ad2623..49ceb3b6 100644
+--- a/web/tests/global.d.ts
++++ b/web/tests/global.d.ts
+@@ -7,6 +7,18 @@ declare global {
+   interface Window {
+     __engineReady?: boolean;
+     __engineState: { canUndo: boolean; canvasEmpty: boolean };
++    __crayonTestkit: {
++      interpolatePoints(
++        start: { x: number; y: number },
++        end: { x: number; y: number },
++        segments?: number
++      ): { x: number; y: number }[];
++      sampleRegion(
++        rect: { x: number; y: number; width: number; height: number },
++        alphaThreshold: number
++      ): { coverage: number; rgb: [number, number, number] | null };
++      setupCrayon(color: string, width: number): void;
++    };
+     __engine: {
+       setColor(color: string): void;
+       setStrokeWidth(width: number): void;
