@@ -3,9 +3,12 @@
 // so nothing here is string-interpolated at build time — this file is plain, lintable
 // JS that reads its inputs from that global. See ../docs/coloring-book-proof-sheet.md
 // for the layer model.
-const { cells: CELLS, source: SOURCE } = window.__COLORING_BOOK_PROOF_SHEET__;
+const {
+  cells: CELLS,
+  source: SOURCE,
+  outlineLuma: OUTLINE_LUMA,
+} = window.__COLORING_BOOK_PROOF_SHEET__;
 const RENDER_MAX = 640;
-const OUTLINE_LUMA = 150; // asset-gen's punch threshold (lib/punch-fill.mjs)
 const PAPER = { dark: '#211f29', light: '#fcfbf8' };
 const BLEND = { dark: 'screen', light: 'multiply' };
 const INVERT = { dark: true, light: false };

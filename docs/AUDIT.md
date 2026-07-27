@@ -9,40 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P2][duplication] Proof-sheet client hardcodes `OUTLINE_LUMA = 150`, duplicating the punch threshold that can drift out from under it
-
-**File(s):**
-`tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js:8` (constant)
-— pinned at SHA f934d43
-
-#### Problem
-
-```js
-const OUTLINE_LUMA = 150; // asset-gen's punch threshold (lib/punch-fill.mjs)
-```
-
-This is a copy of `OUTLINE_LUMA_THRESHOLD = 150` exported from
-`tools/asset-gen/lib/punch-fill.mjs:35` and used at line 125 there. The proof sheet's whole purpose
-is to faithfully approximate the shipped punch (see the `buildFills` comment at lines 36-43); if the
-pipeline's punch threshold is retuned, this client keeps masking at 150 and the proof sheet lies
-about what ships. The comment binding the two is not enforcement. The client is a browser script
-with no build step so it cannot `import` the constant directly — but the generator already injects
-`window.__COLORING_BOOK_PROOF_SHEET__` (line 6), so the value can travel in that blob.
-
-#### Proposed solution
-
-Have `bin/gen-coloring-book-proof-sheet.mjs` import `OUTLINE_LUMA_THRESHOLD` from
-`lib/punch-fill.mjs` and include it in the injected JSON (`{ cells, source, outlineLuma }`); read
-`SOURCE`-side `outlineLuma` in the client instead of the literal `150`. Same treatment removes the
-drift for any other pipeline constant the client mirrors.
-
-#### Verification
-
-Change `OUTLINE_LUMA_THRESHOLD` in `punch-fill.mjs`, regenerate a proof sheet, and confirm the
-client's masking follows without editing the client.
-
----
-
 ### [P3][duplication] The `--flag=value` `arg()` parser is copy-pasted across the crayon-sample scripts, and `build-sheet` re-inlines it
 
 **File(s):** `tools/asset-gen/crayon-brush-samples/build-compare-sheet.mjs:20-21`,

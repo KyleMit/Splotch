@@ -21,6 +21,7 @@ import {
   SAMPLES_DARK_DIR,
   fail,
 } from '../lib/paths.mjs';
+import { OUTLINE_LUMA_THRESHOLD } from '../lib/punch-fill.mjs';
 import { BOOKS } from '../../../web/src/lib/state/books.ts';
 
 const { values, positionals } = parseArgs({
@@ -184,7 +185,7 @@ const css = readFileSync(join(SHEET_DIR, 'coloring-book-proof-sheet.css'), 'utf8
 const clientJs = readFileSync(join(SHEET_DIR, 'coloring-book-proof-sheet.client.js'), 'utf8');
 
 const sourceLabel = gitRef ? `git:${gitRef} → current` : source;
-const bootData = JSON.stringify({ cells, source, gitRef });
+const bootData = JSON.stringify({ cells, source, gitRef, outlineLuma: OUTLINE_LUMA_THRESHOLD });
 
 // The ref is user-supplied and lands in the HTML shell, so escape it — the cell
 // data goes in as a JSON global (already safe), but these header interpolations don't.
