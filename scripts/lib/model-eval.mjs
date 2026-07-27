@@ -8,6 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { PALETTE_COLORS } from '../../web/src/lib/palette.ts';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -24,20 +25,8 @@ export const RATES = {
   'gemini-3.1-flash-image': { inPerM: 0.25, textOutPerM: 1.5, imgOutPerM: 60.0 },
 };
 
-// The app's 10-color palette (web/src/lib/state/colors.svelte.ts) — the only
-// colors a child can lay down with the pen, so faithful inputs must use them.
-export const PALETTE = [
-  { hex: '#AB71E1', label: 'Purple' },
-  { hex: '#62A2E9', label: 'Blue' },
-  { hex: '#4FC4C0', label: 'Teal' },
-  { hex: '#8CC864', label: 'Green' },
-  { hex: '#F9D24F', label: 'Yellow' },
-  { hex: '#F89C45', label: 'Orange' },
-  { hex: '#B5835A', label: 'Brown' },
-  { hex: '#EC534E', label: 'Red' },
-  { hex: '#F47CB0', label: 'Pink' },
-  { hex: '#0a0b10', label: 'Black' },
-];
+// The only colors a child can lay down with the pen, so faithful inputs must use them.
+export const PALETTE = PALETTE_COLORS.map(({ hex, label }) => ({ hex, label }));
 
 // Paper colors from web/src/app.css (--paper / --paper-margin), light + night.
 export const PAPER = {

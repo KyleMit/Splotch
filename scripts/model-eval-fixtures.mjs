@@ -4,7 +4,7 @@
 // any coloring-page line art, and the child's pen / magic-brush marks. Deterministic
 // (seeded), so re-running reproduces the same corpus.
 //
-//   node scripts/model-eval-fixtures.mjs          # regenerate all inputs
+//   node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/model-eval-fixtures.mjs
 //
 // Categories (filename prefix = category):
 //   coloring-outline  a coloring page just opened / barely colored

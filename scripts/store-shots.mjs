@@ -12,6 +12,7 @@
 import { chromium } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { PALETTE_COLORS } from '../web/src/lib/palette.ts';
 import { ROOT, chromiumExecutablePath, sleep } from './lib/utils.mjs';
 import {
   ensureDevServer,
@@ -43,16 +44,7 @@ const TABLET = { width: 1280, height: 720, deviceScaleFactor: 1.5 };
 const IPHONE = { width: 430, height: 932, deviceScaleFactor: 3 };
 const IPAD = { width: 1366, height: 1024, deviceScaleFactor: 2 };
 
-// Brand palette (from src/lib/state/colors.svelte.js)
-const C = {
-  purple: '#AB71E1',
-  blue: '#62A2E9',
-  green: '#8CC864',
-  yellow: '#F9D24F',
-  orange: '#F89C45',
-  red: '#EC534E',
-  black: '#0a0b10',
-};
+const C = Object.fromEntries(PALETTE_COLORS.map(({ hex, label }) => [label.toLowerCase(), hex]));
 
 const shot = (page, file) => page.screenshot({ path: join(OUT, file) });
 
@@ -257,18 +249,18 @@ function featureGraphicHtml(iconB64) {
     .icon { width:300px; height:300px; flex:0 0 auto; filter: drop-shadow(0 14px 30px rgba(120,80,180,.25)); }
     .copy { z-index:2; }
     .name { font-size:128px; font-weight:700; letter-spacing:-2px;
-      background:linear-gradient(90deg,#EC534E,#F89C45,#F9D24F,#8CC864,#62A2E9,#AB71E1);
+      background:linear-gradient(90deg,${C.red},${C.orange},${C.yellow},${C.green},${C.blue},${C.purple});
       -webkit-background-clip:text; background-clip:text; color:transparent; line-height:1; }
     .tag { font-size:38px; font-weight:600; color:#5a4a6b; margin-top:18px; }
     .sub { font-size:24px; font-weight:500; color:#9385a3; margin-top:14px; }
   </style></head>
   <body>
     <div class="dots">
-      <span class="dot" style="width:42px;height:42px;background:#F9D24F;top:48px;left:560px"></span>
-      <span class="dot" style="width:26px;height:26px;background:#8CC864;top:120px;left:930px"></span>
-      <span class="dot" style="width:34px;height:34px;background:#62A2E9;bottom:70px;left:520px"></span>
-      <span class="dot" style="width:20px;height:20px;background:#EC534E;bottom:120px;left:880px"></span>
-      <span class="dot" style="width:30px;height:30px;background:#AB71E1;top:60px;left:60px"></span>
+      <span class="dot" style="width:42px;height:42px;background:${C.yellow};top:48px;left:560px"></span>
+      <span class="dot" style="width:26px;height:26px;background:${C.green};top:120px;left:930px"></span>
+      <span class="dot" style="width:34px;height:34px;background:${C.blue};bottom:70px;left:520px"></span>
+      <span class="dot" style="width:20px;height:20px;background:${C.red};bottom:120px;left:880px"></span>
+      <span class="dot" style="width:30px;height:30px;background:${C.purple};top:60px;left:60px"></span>
     </div>
     <img class="icon" src="data:image/png;base64,${iconB64}">
     <div class="copy">

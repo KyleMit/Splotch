@@ -7,33 +7,6 @@
 
 ## Source: Code audit — scripts · root build/dev drivers
 
-### [P3][naming] Brand palette hex values hardcoded in generators, duplicating the source of truth
-
-**File(s):** `scripts/store-shots.mjs:41-49` (`C`), `scripts/gen-large-image.mjs:42-49`
-(`COLOR_MAP`) vs `web/src/lib/state/colors.svelte.ts:21-53` — pinned at SHA f934d43
-
-#### Problem
-
-`store-shots.mjs` hardcodes `{ purple:'#AB71E1', blue:'#62A2E9', … }` and `gen-large-image.mjs`
-hardcodes a `COLOR_MAP` of the same brand hexes, both re-stating the palette that already lives
-authoritatively in `web/src/lib/state/colors.svelte.ts`. `model-eval` does this right — it imports
-`PALETTE` from `lib/model-eval.mjs`. If a brand color is retuned, these generators silently paint
-the old hue (and `pickColor` may fail to find a matching swatch).
-
-#### Proposed solution
-
-Import the palette from the app source (these scripts already import `.ts` via
-`--experimental-strip-types` elsewhere in the repo, e.g. `check-assets.mjs`), or centralize it once
-in `lib/` and have both generators plus `model-eval` consume it. At minimum add a comment
-cross-linking `colors.svelte.ts` (like `gen-large-image` partially does).
-
-#### Verification
-
-Change a palette hex in `colors.svelte.ts`, run `npm run gen:shots` / `npm run gen:large-image`, and
-confirm the output uses the new color (or that a build-time check flags the mismatch).
-
----
-
 ### [P3][duplication] HTML-escaping helper reimplemented per script
 
 **File(s):** `scripts/redteam-run.mjs:113-117` (`esc`) vs `scripts/lib/scrapbook-chrome.mjs` (`esc`,
