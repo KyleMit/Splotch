@@ -7,35 +7,6 @@
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P5][maintainability] "Median" via `>>1` is the upper-middle element, and luma definitions differ between modules that compare against shared thresholds
-
-**File(s):** `tools/asset-gen/lib/composite-eye.mjs:80-88` (`grayResized`, sharp `.grayscale()`) vs
-`eye-fill.mjs:216-218` (manual Rec.601) — pinned at SHA f934d43
-
-#### Problem
-
-Two subtle inconsistencies compound. (1) Nearly every "median" is `vals[vals.length >> 1]` — the
-upper of the two middles for even-length arrays, not a true median; harmless in isolation but
-undocumented. (2) `composite-eye.scoreCompositeEyes` derives luma via `sharp(...).grayscale()`
-(libvips' weighting) while `eye-fill.scoreEyeFill` — which produces the very cores `composite-eye`
-re-measures — uses manual `0.299/0.587/0.114`. The two modules threshold the same conceptual "luma"
-(`DARK=90`, `WHITE=200` vs `EYE_DARK_MAX`, `EYE_LIGHT_MIN`) against values computed two different
-ways, so calibration constants tuned under one luma are applied to the other.
-
-#### Proposed solution
-
-Standardize on the shared `luma()` helper (see the first finding) everywhere thresholds are
-compared, replacing `.grayscale()` in `composite-eye`'s `grayResized`. Add a one-line note that
-`>>1` is a deliberate cheap upper-median.
-
-#### Verification
-
-Re-run `tests/composite-eye.test.mjs` against its calibrated fixtures; if verdicts shift, the
-calibration was silently luma-dependent and the constants should be re-pinned under the unified
-luma.
-
----
-
 ### [P5][readability] `strokeWidthP90`'s two-pass chamfer distance transform is dense and unnamed
 
 **File(s):** `tools/asset-gen/lib/solid-regions.mjs:90-122` — pinned at SHA f934d43

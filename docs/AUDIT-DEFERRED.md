@@ -2335,3 +2335,127 @@ The rolled-back draft is kept at
 (3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p3-architecture-fail-console-error-process-exit-lives-in-paths-mjs-unrel.patch`.
+
+### [P5][maintainability] "Median" via `>>1` is the upper-middle element, and luma definitions differ between modules that compare against shared thresholds
+
+**File(s):** `tools/asset-gen/lib/composite-eye.mjs:80-88` (`grayResized`, sharp `.grayscale()`) vs
+`eye-fill.mjs:216-218` (manual Rec.601) — pinned at SHA f934d43
+
+#### Problem
+
+Two subtle inconsistencies compound. (1) Nearly every "median" is `vals[vals.length >> 1]` — the
+upper of the two middles for even-length arrays, not a true median; harmless in isolation but
+undocumented. (2) `composite-eye.scoreCompositeEyes` derives luma via `sharp(...).grayscale()`
+(libvips' weighting) while `eye-fill.scoreEyeFill` — which produces the very cores `composite-eye`
+re-measures — uses manual `0.299/0.587/0.114`. The two modules threshold the same conceptual "luma"
+(`DARK=90`, `WHITE=200` vs `EYE_DARK_MAX`, `EYE_LIGHT_MIN`) against values computed two different
+ways, so calibration constants tuned under one luma are applied to the other.
+
+#### Proposed solution
+
+Standardize on the shared `luma()` helper (see the first finding) everywhere thresholds are
+compared, replacing `.grayscale()` in `composite-eye`'s `grayResized`. Add a one-line note that
+`>>1` is a deliberate cheap upper-median.
+
+#### Verification
+
+Re-run `tests/composite-eye.test.mjs` against its calibrated fixtures; if verdicts shift, the
+calibration was silently luma-dependent and the constants should be re-pinned under the unified
+luma.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* `tools/asset-gen/tests/fixtures/composite-eye/manifest.json`'s `worstCoreDarkFrac` values
+  (0.04/0.05/0.35/0.25/0.24) and the calibration figures in the `composite-eye.mjs` header comment
+  (lines 31-33: "stego 0.03, horse 0.05", "all 17 over-flags (≥ 0.10)", "good band-blind controls (≥
+  0.46)") were measured under libvips' grayscale; the suite only asserts direction against
+  `CORE_DARK_FRAC_MIN`, so it stays green while those recorded numbers go stale. Print the five
+  fixtures' actual `worstCoreDarkFrac` under the unified luma, update the manifest entries to the
+  measured values, and correct or explicitly mark the header's corpus figures as pre-unification.
+* The `grayResized` switch also changes pupil *detection*, not just the composite measurement the
+  finding described: `light` is now Rec.601 rather than libvips grayscale, so `darkBlob`'s
+  `light[...] < DARK` seed/flood — and everything gated off blob size
+  (`PUPIL_MIN_FRAC`/`PUPIL_MAX_FRAC`), the 0.4 bounding-box fill ratio, the 2.5 aspect bound, and
+  the `PUPIL_ERODE_PX` survival bar at composite-eye.mjs:202-249 — now runs on differently-valued
+  pixels for saturated light fills, and those bounds were tuned under the old luma. Report the
+  measured `pupils.length` per fixture before and after, and say in the commit message that this is
+  a detection-path change, since five fixtures are the only coverage of it.
+* `grayResized` assigns the float luma straight into a `Uint8Array`, which truncates, whereas the
+  `.grayscale()` it replaced rounded and `eye-fill`'s parallel loop keeps full precision in a
+  `Float32Array`. Wrap it in `Math.round` so the two modules' now-shared luma also agrees at the
+  `DARK`/`WHITE` boundaries instead of being systematically up to one level darker.
+* Part (1) of the finding — the undocumented median convention — is unaddressed.
+  `tools/asset-gen/lib/stats.mjs` still ships `quantile`/`median` with no note that they select an
+  existing element (`Math.floor(f * (len-1))`, i.e. the LOWER of the two middles for even-length
+  input) rather than averaging, which is the documentation the finding asked for now that the old
+  `vals[vals.length >> 1]` upper-median is gone from `lib/`. Add the one-line note beside
+  `quantile`/`median`.
+* `tools/asset-gen/lib/night-composite.mjs:19-25` is the remaining straggler of exactly the defect
+  this finding is about: it derives its ink value via sharp's `.grayscale()` and thresholds it
+  against the shared `OUTLINE_LUMA_THRESHOLD`, while every other consumer of that constant
+  (`punch-fill.mjs`, `night-halo.mjs`, `solid-regions.mjs`, `eye-fill.mjs`) now computes it with
+  `luma()` — and its own header claims it is "mirroring lib/punch-fill.mjs". Either route it through
+  `luma()` like `night-halo.mjs`'s `punchMask`, or state in the comment why the grayscale path is
+  equivalent for the ink-on-white grayscale chalk buffer.
+* `tools/asset-gen/lib/night-composite.mjs` — `compositeNight`'s ink switched from sharp
+  `.grayscale()` to `Math.round(luma(...))`, changing the composite's output pixels (both the
+  `punched` test against `OUTLINE_LUMA_THRESHOLD` and the `chalkWhite = 255 - ink[p]` screen) for
+  every night page consumed by the eye gates in `gen-coloring-fills-dark.mjs`, `audit-fill-eyes.mjs`
+  and `audit-golden.mjs`; nothing exercises it (`tests/audit-cli.test.mjs` mocks `compositeNight` to
+  identity) and the committed `tests/fixtures/composite-eye/*.comp.webp` were built with the OLD
+  `compositeNight`, so the fixtures README's "all 5 re-measured, unchanged" note validates only
+  `grayResized`. Either rebuild the fixtures under the new composite and confirm verdicts plus
+  `worstCoreDarkFrac` hold, or revert `night-composite.mjs` to `.grayscale()`.
+* `tools/asset-gen/golden/golden-scores.json` is unchanged, yet its `orbMinCoreDark`, `bgLuma` and
+  `lineWhite` entries are produced by the functions this range altered (`scoreCompositeEyes`,
+  `scoreNightness`, `scoreDrift`, `compositeNight`), and `gen:coloring-golden:diff` is not part of
+  `npm test` so the green suite covers none of it — run `npm run gen:coloring-golden:diff` (the
+  full-catalog form of the finding's "if verdicts shift, the calibration was luma-dependent" check;
+  the 5 fixtures are a small, wide-margin sample) and re-freeze in this commit if the movement is
+  intended and justified.
+
+#### What was tried
+
+1. Added a shared `luma()` helper to stats.mjs and switched composite-eye.mjs's `grayResized()` from
+   sharp's libvips grayscale weighting to that manual BT.601 formula, matching eye-fill.mjs's
+   inkMask/scoreEyeFill; also routed the same duplicated formula in night-halo.mjs,
+   night-scores.mjs, punch-fill.mjs, and solid-regions.mjs through the shared helper (the brief's
+   optional cleanup), since each was a one-line, low-risk swap. Ran the full asset-gen vitest suite
+   and no composite-eye fixture verdict flipped, so `CORE_DARK_FRAC_MIN` was left untouched as
+   instructed; unit tests, svelte-check, and eslint on all touched files are green.
+2. Addressed all three review points on top of ed186dd and committed as 9b6efcd: (1) wrapped
+   grayResized's per-pixel luma in Math.round so composite-eye.mjs no longer truncates relative to
+   eye-fill.mjs's Float32Array precision and the old .grayscale() rounding; (2) re-measured all 5
+   composite-eye fixtures' worstCoreDarkFrac under the unified luma against old libvips grayscale
+   and the shipped rounded Rec.601 — every value matched manifest.json to 2 decimal places (only
+   unicorn's un-rounded figure shifted, 0.3501→0.3528, not across the recorded boundary), documented
+   in tests/fixtures/composite-eye/README.md, and marked the header's 17-page-plus-controls
+   calibration figures as pre-unification history since that corpus isn't preserved in the repo; (3)
+   confirmed pupils.length is identical (1,1,1,1,2) across old/truncated/rounded variants for all 5
+   fixtures and noted in the commit message that this is a detection-path change (darkBlob's
+   seed/flood and its gates), not just the composite measurement, with only these 5 fixtures as
+   coverage. Full asset-gen vitest suite (114 tests), eslint, and format:check all pass; working
+   tree is clean.
+3. Addressed both remaining review points on top of 9b6efcd, committed as fdaa0ac: (1) documented
+   stats.mjs's quantile/median selection rule (picks the existing lower-middle element on
+   even-length input, doesn't average) right beside the functions; (2) switched
+   night-composite.mjs's compositeNight() from sharp's .grayscale() to the shared luma() (matching
+   night-halo.mjs's punchMask), since it was the last OUTLINE_LUMA_THRESHOLD consumer still on the
+   old path despite claiming to mirror punch-fill.mjs. Verified the switch is a true no-op in
+   practice on 3 real chalk/fill pairs — chalk assets are already near-achromatic (max channel
+   spread of 1), so old vs new composite output differs by at most 1/255 on ~0.002% of bytes. Full
+   asset-gen vitest suite (114 tests), eslint, and format:check all pass; working tree is clean.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p5-maintainability-median-via-1-is-the-upper-middle-element-and-luma-def.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p5-maintainability-median-via-1-is-the-upper-middle-element-and-luma-def.patch`.
