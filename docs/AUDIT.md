@@ -9,32 +9,6 @@
 
 ## Source: Code audit — tools/asset-gen · tests / samples / legacy
 
-### [P4][duplication] Two base64 image-inliners (`uri` / `dataUri`) do the same job under different names
-
-**File(s):** `tools/asset-gen/crayon-brush-samples/build-compare-sheet.mjs:27-33` (`uri`),
-`build-sheet.mjs:65-68` (`dataUri`) — pinned at SHA f934d43
-
-#### Problem
-
-Both scripts inline images as `data:` URIs for a self-contained scrapbook page;
-`build-compare-sheet` calls it `uri` (and resizes via sharp), `build-sheet` calls it `dataUri` (and
-passes through, MIME-mapped). Same concept, two names, two implementations — a reader comparing the
-two sheets can't tell whether the difference is intentional. The shared scrapbook chrome lib
-(`scripts/lib/scrapbook-chrome.mjs`) is the natural home and already the common import.
-
-#### Proposed solution
-
-Add one `inlineImage(path, { width } = {})` to `scrapbook-chrome.mjs` that resizes when `width` is
-given and passes through otherwise, returning a data URI. Both scripts call it; drop the local
-copies. Pick one name.
-
-#### Verification
-
-Rebuild both sheets and diff the emitted HTML — image `src` data URIs should be equivalent (modulo
-the intended resize).
-
----
-
 ### [P4][test-quality] `composite-eye` hardcodes fixture-name arrays and a `length === 5` that duplicate `manifest.json`
 
 **File(s):** `tools/asset-gen/tests/composite-eye.test.mjs:42,56,89` — pinned at SHA f934d43

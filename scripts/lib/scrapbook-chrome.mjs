@@ -10,7 +10,10 @@
 // tokens in its own CSS asset — keep the two crayon strips and the paper/ink
 // palette in sync by eye when either changes.
 //
-// Pure string builders: no DOM, no network. GitHub Pages serves the result as-is.
+// Mostly pure string builders (no DOM, no network) plus one filesystem/image
+// helper, `inlineImage`, that reads a file and (optionally) re-encodes it via
+// `sharp` to embed as a data: URI — importers pull in `sharp` transitively.
+// GitHub Pages serves the string-builder output as-is.
 
 import { readFile } from 'node:fs/promises';
 import { extname } from 'node:path';

@@ -76,6 +76,8 @@ const MACROS = [
 
 const sections = [];
 for (const s of SCENES) {
+  // Renders are 2x-DSF PNGs; refs are committed webp. Downsize both to a
+  // consistent inline size so the sheet stays in contact-sheet territory.
   const ref = await inlineImage(join(REF, `${s.id}.webp`), { width: 760 });
   const cur = await inlineImage(join(RENDERS, `${s.id}.png`), { width: 760 });
   sections.push(`<section class="scene">
@@ -88,6 +90,8 @@ for (const s of SCENES) {
   </section>`);
 }
 for (const m of MACROS) {
+  // Macros get a larger inline width than the paired scenes above — the whole
+  // point is showing tooth-scale deposit detail, which 760px would blur away.
   const img = await inlineImage(join(REF, `${m.id}.webp`), { width: 1024 });
   sections.push(`<section class="scene">
     <h2>${m.title}</h2>
