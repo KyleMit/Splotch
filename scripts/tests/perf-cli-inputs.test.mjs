@@ -176,7 +176,9 @@ describe('performance CLI input failures', () => {
     const context = { pages: vi.fn(() => [{ url: () => 'about:blank' }]) };
     const browser = { contexts: vi.fn(() => [context]) };
     const page = getWebviewPage(browser);
-    const rejection = expect(page).rejects.toThrow('No navigated WebView page was exposed over CDP');
+    const rejection = expect(page).rejects.toThrow(
+      'No navigated WebView page was exposed over CDP'
+    );
 
     await vi.advanceTimersByTimeAsync(10_000);
 

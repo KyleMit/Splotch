@@ -65,11 +65,15 @@ export async function findWebviewSocket(timeoutMs = WEBVIEW_SOCKET_TIMEOUT_MS) {
 
 export async function getWebviewPage(browser) {
   // The WebView's page may take a moment to register after launch.
-  const page = await pollUntil(() => {
-    const ctx = browser.contexts()[0];
-    const pages = ctx ? ctx.pages() : [];
-    return pages.find((candidate) => !candidate.url().startsWith('about:'));
-  }, WEBVIEW_PAGE_TIMEOUT_MS, WEBVIEW_PAGE_POLL_INTERVAL_MS);
+  const page = await pollUntil(
+    () => {
+      const ctx = browser.contexts()[0];
+      const pages = ctx ? ctx.pages() : [];
+      return pages.find((candidate) => !candidate.url().startsWith('about:'));
+    },
+    WEBVIEW_PAGE_TIMEOUT_MS,
+    WEBVIEW_PAGE_POLL_INTERVAL_MS
+  );
   if (!page) throw new Error('No navigated WebView page was exposed over CDP');
   return page;
 }
