@@ -2,6 +2,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
+import { buildDefines } from './defines';
 
 // The native apps bundle a static export and never use a service worker (the
 // shell and all assets are already on-device), so skip the PWA plugin there.
@@ -62,13 +63,13 @@ export default {
     // own hostname; no effect on normal dev/build, only when TUNNEL_HOST is set.
     ...(process.env.TUNNEL_HOST ? { allowedHosts: [process.env.TUNNEL_HOST] } : {}),
   },
-  define: {
-    __APP_VERSION__: JSON.stringify(APP_VERSION),
-    __BUILD_TIME__: JSON.stringify(BUILD_TIME),
-    __NATIVE_API_BASE__: JSON.stringify(NATIVE_API_BASE),
-    __IS_CAPACITOR__: JSON.stringify(isCapacitor),
-    __PERF_MARKS__: JSON.stringify(perfMarks),
-  },
+  define: buildDefines({
+    appVersion: APP_VERSION,
+    buildTime: BUILD_TIME,
+    nativeApiBase: NATIVE_API_BASE,
+    isCapacitor,
+    perfMarks,
+  }),
   // The supported-browser floor, pinned explicitly so it never silently drifts
   // with Vite's default (`baseline-widely-available` moves up every year). Keep
   // in sync with `browserslist` in the root package.json — both are documented

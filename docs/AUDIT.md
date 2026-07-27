@@ -15,46 +15,6 @@
 
 ## Source: Code audit — web · build/test configuration
 
-### [P2][duplication] The `define` compile-time constants are restated in `vite.config.ts` and `vitest.config.ts` and have already drifted
-
-**File(s):** `web/vite.config.ts:65-71` and `web/vitest.config.ts:11-19` (define blocks) — pinned at
-SHA f934d43
-
-#### Problem
-
-Both configs declare the `__APP_VERSION__` / `__BUILD_TIME__` / `__NATIVE_API_BASE__` /
-`__IS_CAPACITOR__` / `__PERF_MARKS__` compile-time globals, independently:
-
-```ts
-// vite.config.ts:65-71 — five keys
-__APP_VERSION__, __BUILD_TIME__, __NATIVE_API_BASE__, __IS_CAPACITOR__, __PERF_MARKS__;
-```
-
-```ts
-// vitest.config.ts:11-19 — only four keys, __PERF_MARKS__ omitted
-```
-
-The set has already diverged: `vitest.config.ts` is missing `__PERF_MARKS__`. It happens to work
-only because `web/src/lib/drawing/perf.ts:5` guards it with `typeof __PERF_MARKS__ !== 'undefined'`
-— a coincidental safety net, not a designed one. The two lists of magic global names (declared a
-third time in `web/src/app.d.ts`) have no shared source, so a newly added define can compile in prod
-but be `undefined`/differently-valued under test with no error.
-
-#### Proposed solution
-
-Extract the define keys into one shared module (e.g. `web/build/defines.ts` exporting a factory
-`buildDefines({ isCapacitor, appVersion, ... })`) imported by both configs, so the key set is
-defined once and each config only supplies environment-specific values. At minimum, add
-`__PERF_MARKS__` to `vitest.config.ts` for parity so the guard in `perf.ts` isn't load-bearing.
-
-#### Verification
-
-`git grep -n "__PERF_MARKS__\|__APP_VERSION__"` should show the key names in exactly one config
-source after refactor. Add a test importing every `__*__` name under Vitest and asserting it is
-defined.
-
----
-
 ### [P2][consistency] Production origin `https://splotch.art` and the Capacitor origins are hardcoded string literals scattered across configs
 
 **File(s):** `web/vite.config.ts:55` (`NATIVE_API_BASE`) and `web/svelte.config.js:40`
