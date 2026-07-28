@@ -31,9 +31,9 @@
     <h1>Join the Android Beta&nbsp;<span aria-hidden="true">🤖</span></h1>
 
     <p class="intro">
-      Splotch for Android is in <strong>closed testing</strong> on Google Play. Testing is free, takes
-      two steps, and you can leave whenever you like. Thank you for helping — the app gets better because
-      people like you tried it on a real phone.
+      Splotch for Android is in <strong>closed testing</strong> on Google Play. Joining is free and takes
+      three quick steps. Thank you for helping — trying Splotch on a real phone or tablet finds problems
+      we can't catch on our own.
     </p>
 
     <ol class="steps">
@@ -60,8 +60,7 @@
         </p>
         <p class="callout">
           <strong>Use the same Google account</strong> that's signed in to the Play Store on your phone
-          or tablet. Joining with a different account is far and away the most common reason the beta
-          never shows up.
+          or tablet. Using a different account is a common reason the beta never shows up.
         </p>
       </li>
 
@@ -105,12 +104,20 @@
       </li>
     </ol>
 
-    <h2>Give it a minute</h2>
+    <h2>One favour: stay for 14 days</h2>
+    <p class="callout">
+      <strong>Please stay opted in for at least 14 days in a row</strong>, even if you've seen
+      everything you wanted to in the first ten minutes. Google requires a stretch of continuously
+      enrolled testers before Splotch can apply for a public listing, so leaving early — or opting
+      out and back in — sets that clock back for everyone. You don't have to keep drawing; just stay
+      enrolled.
+    </p>
+
+    <h2>If a link doesn't work yet</h2>
     <p>
-      None of this is instant. Group membership has to reach Google Play before Play will treat you
-      as a tester, which usually takes a few minutes but can take a few hours. If a link doesn't
-      work on the first try, it's very often just early — make a cup of tea and try again before
-      assuming something is broken.
+      None of this is instant, and Google Play doesn't always recognise a new group membership
+      straight away. Check that both pages are signed in to the same Google account, then make a cup
+      of tea and try again a little later before assuming something is broken.
     </p>
 
     <h2>If it still isn't showing up</h2>
@@ -124,7 +131,8 @@
       <li>
         <strong>The tester page says you're not a member.</strong> Your request to join the group hasn't
         finished, or it went through on another account. If you joined by email, check that inbox for
-        the confirmation and make sure you replied to it — membership isn't final until you do.
+        Google's confirmation and make sure you replied to it — membership isn't final until you do. If
+        an owner has to approve you, you'll get a second email once they have.
       </li>
       <li>
         <strong>The phone can't find the app but your computer can.</strong> The two are signed in to
@@ -132,20 +140,25 @@
         account is active.
       </li>
       <li>
-        <strong>Everything looks right and Play still disagrees.</strong> The Play Store app caches hard.
-        Pull down to refresh it, or go to Settings → Apps → Google Play Store → Storage → Clear cache,
-        then reopen the store.
+        <strong>Everything looks right and Play still disagrees.</strong> Close and reopen the Play Store,
+        check the active account, and try the store link again. As a last resort, open Android Settings
+        → Apps → Google Play Store → Storage and clear its cache; the exact menu names vary by device.
       </li>
     </ul>
 
     <h2>What to expect</h2>
     <ul>
-      <li>Beta builds ship more often than public ones, so expect the occasional rough edge.</li>
+      <li>Beta builds may change frequently, so expect the occasional rough edge.</li>
       <li>
-        Your drawings live on your device. Nothing is uploaded, and there are no ads, accounts, or
-        tracking — exactly like the public app. See the <a href="/privacy">Privacy Policy</a>.
+        Your drawings stay on your device unless a grown-up turns on a feature that sends them — the
+        optional magic-image button, or a report you write yourself. Splotch shows no ads, has no
+        analytics, and never asks you to create a Splotch account. See the
+        <a href="/privacy">Privacy Policy</a>.
       </li>
-      <li>Everything works offline, so a plane or a car park is fair game.</li>
+      <li>
+        The drawing tools work offline, so a plane or a car park is fair game. The parts that reach
+        the internet — magic images, sending a report, the links on this page — need a connection.
+      </li>
     </ul>
 
     <h2>Telling us what you think</h2>
@@ -162,8 +175,10 @@
     <h2>Leaving the beta</h2>
     <p>
       Open <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer">the tester page</a>
-      again and press “Leave the program”. Google Play moves you back to the public version — you may
-      need to uninstall and reinstall Splotch for that to take effect. No hard feelings.
+      again and press “Leave the program”, which stops the beta updates. If a public Android version is
+      out by then, you may need to uninstall Splotch and reinstall it from Google Play to switch over;
+      until there is one, leaving the beta also means you won't be able to reinstall the Android app.
+      The browser version at <a href="/">splotch.art</a> is always there either way. No hard feelings.
     </p>
 
     <h2>Don't want to install anything?</h2>
