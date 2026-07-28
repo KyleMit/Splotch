@@ -393,6 +393,7 @@ try {
     env: {
       ADMIN_ACCESS_TOKEN: ADMIN_SECRET,
       ALLOWED_TOKENS_LIST: SEED_TOKENS,
+      GITHUB_ISSUE_TOKEN: '',
     },
   }));
 
