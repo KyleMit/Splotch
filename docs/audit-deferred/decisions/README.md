@@ -20,7 +20,7 @@
 | #  | Finding                                                        | Priority | Decision doc                                                       | Verdict |
 | -- | -------------------------------------------------------------- | -------- | ------------------------------------------------------------------ | ------- |
 | 1  | `--check` flag parsing ad hoc in every gate script             | P4       | [check-flag-parsing.md](check-flag-parsing.md)                     | FIX     |
-| 2  | Copy-pasted CLI `flag()` parser in every perf entry script     | P1       | [perf-flag-parser.md](perf-flag-parser.md)                         | pending |
+| 2  | Copy-pasted CLI `flag()` parser in every perf entry script     | P1       | [perf-flag-parser.md](perf-flag-parser.md)                         | FIX     |
 | 3  | `bumpAndroidGradle`/`bumpIosPbxproj` unanchored global regexes | P2       | [native-version-regexes.md](native-version-regexes.md)             | FIX     |
 | 4  | `scripts/lib/utils.mjs` grab-bag of unrelated concerns         | P2       | [utils-grab-bag.md](utils-grab-bag.md)                             | FIX     |
 | 5  | `/dev/engine` readiness `beforeEach` duplicated across specs   | P2       | [engine-readiness-duplication.md](engine-readiness-duplication.md) | FIX     |
