@@ -24,7 +24,7 @@
 | 3  | `bumpAndroidGradle`/`bumpIosPbxproj` unanchored global regexes | P2       | [native-version-regexes.md](native-version-regexes.md)             | FIX     |
 | 4  | `scripts/lib/utils.mjs` grab-bag of unrelated concerns         | P2       | [utils-grab-bag.md](utils-grab-bag.md)                             | FIX     |
 | 5  | `/dev/engine` readiness `beforeEach` duplicated across specs   | P2       | [engine-readiness-duplication.md](engine-readiness-duplication.md) | FIX     |
-| 6  | Crayon tests re-derive point generators/samplers inline        | P2       | [crayon-test-helpers.md](crayon-test-helpers.md)                   | pending |
+| 6  | Crayon tests re-derive point generators/samplers inline        | P2       | [crayon-test-helpers.md](crayon-test-helpers.md)                   | DROP    |
 | 7  | Single Parent-Center test asserts ~six behaviors               | P2       | [parent-center-test-split.md](parent-center-test-split.md)         | FIX     |
 | 8  | Browser floor duplicated: `vite.config.ts` vs `browserslist`   | P1       | [browser-floor-duplication.md](browser-floor-duplication.md)       | pending |
 | 9  | Git version derivation embedded untestable in `vite.config.ts` | P3       | [git-version-derivation.md](git-version-derivation.md)             | FIX     |
