@@ -4938,7 +4938,7 @@ truthful (lines 47–51), and `toggleFullscreen`'s guard + swallow semantics (li
 regression in the gating (e.g. the toggle appearing on iOS, where `fullscreenEnabled` is false, or
 inside the native shell) currently has no unit-level net.
 
-#### Proposal
+#### Proposed solution
 
 Add `fullscreen.svelte.test.ts` mirroring `install.svelte.test.ts`'s structure:
 `vi.mock('$app/environment', ...)`, `vi.mock('$lib/platform', ...)` for
