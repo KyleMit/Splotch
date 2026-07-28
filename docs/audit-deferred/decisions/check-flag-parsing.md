@@ -190,3 +190,10 @@ if (values['index-only']) { /* rebuild pages */ }
 if (values.check) { /* drift gate */ }
 const [source, dest] = positionals;
 ```
+
+## Post-merge addendum (2026-07-28, after PR 583 merged)
+
+PR 583 removed the duplicated `fail()` from `tools/asset-gen/lib/paths.mjs` (now imported from
+`lib/cli.mjs`), independently settling the reviewer's cross-boundary-duplication example for that
+helper. `gen-asset-manifest.mjs` still parses `--check` ad hoc, so it remains in this decision's
+five-script migration; nothing else changes.

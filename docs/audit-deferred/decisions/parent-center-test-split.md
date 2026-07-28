@@ -117,3 +117,11 @@ flake bar for changed specs), and each new title names exactly the behavior its 
 
 Out of scope, explicitly: further splitting Test 3 per setting (rejected as option 2), and touching
 any other test in the file.
+
+## Post-merge addendum (2026-07-28, after PR 583 merged)
+
+PR 583 added an unrelated test to `web/tests/flows-parent-center.spec.ts` ("setting card spacing
+only applies to direct section siblings") above the monolith, which is otherwise untouched — the
+finding and the 3-test carving above stand as written; only the monolith's line numbers shifted
+(~+31). Re-verify `git apply --check` on the draft before reusing it; expect at worst context
+offsets, not conflicts.

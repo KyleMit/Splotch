@@ -143,3 +143,9 @@ sources once, `ruler:apply` regenerates all mirrors — no hand-editing generate
 explicitly rules the one arguable expansion (rewriting the historical ADR-0062) out of scope with
 justification. Nothing else from the review remains open, so implementation should not re-litigate
 the split itself — only rebase it onto HEAD's current function bodies.
+
+## Post-merge addendum (2026-07-28, after PR 583 merged)
+
+PR 583 added one more `utils.mjs` consumer: the new `scripts/android-emulator.mjs` imports `fail`
+and `run`. Include it in the import-map migration (both symbols land wherever the split above places
+the process/CLI helpers). No other part of the decision is affected.

@@ -238,3 +238,16 @@ Covered inline above (steps 1–7). Reusable from the draft patch: the `scripts/
 verbatim, and the `scripts/android-setup.mjs` hunks minus nothing. Discard from the draft: the CI
 `$GITHUB_OUTPUT` bridge step, `scripts/android-avd-name.mjs`, and the `package.json` script
 rewrites. Estimated size: ~80 lines total including the test.
+
+## Post-merge addendum (2026-07-28, after PR 583 merged)
+
+PR 583 independently implemented the `package.json` neutralization half of this decision: the three
+`android:boot`/`android:emulator`/`android:live` scripts now delegate to a new
+`scripts/android-emulator.mjs` that imports `AVD_NAME` from `scripts/lib/android.mjs`, so the
+committed AVD-name literals in `package.json:103-105` are gone (the enumeration above predates
+this). The rest of the decision is unchanged and still needed: `AVD_NAME` remains a hard-coded
+composite in `android.mjs`, `scripts/android-setup.mjs` still carries two `android-33` system-image
+literals, the workflow still pins `api-level: 33` with the undocumented `emulator-options` string,
+and no drift test exists. Steps 1–7 apply as written minus the `package.json` items; the drift
+test's enforced-file list should still include `package.json` (it guards against literals coming
+back).

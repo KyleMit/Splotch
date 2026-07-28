@@ -208,3 +208,24 @@ for (const web of webkitFloorVersions) {
   }
 }
 ```
+
+## Post-merge addendum (2026-07-28, after PR 583 merged)
+
+The Codex burndown merged in PR 583 resolved the **duplication half** of this finding the opposite
+way: it deleted the root `package.json` `browserslist` (and the `update:browserslist` script)
+entirely, making `web/vite.config.ts` `build.target` the single declaration, and rewrote
+`docs/COMPATIBILITY.md` accordingly. With no second list, the derive-from-browserslist mechanism
+above is moot — do not re-add a `browserslist` to implement it.
+
+What **stands, unchanged and now more urgent**: the invariant-direction correction. The merged docs
+state the backwards direction in more places than before — `web/vite.config.ts:80-82` ("MUST stay >=
+the native iOS deployment target"), `docs/COMPATIBILITY.md:41-42` and `:140`, and
+`.ruler/skills/mobile/ios.md:12-13` (equivalent form: native "MUST stay ≤ the web `build.target`").
+The correct direction derived in this doc is unaffected by the single-declaration change: the web
+target's iOS/Safari version must stay **≤** `IPHONEOS_DEPLOYMENT_TARGET`. The remaining fix is
+therefore: flip the direction in those four places (the ios.md one via its `.ruler` source +
+`npm run ruler:apply`) and add the native-safety invariant test from the sketch above, now reading
+the floor from `vite.config.ts`'s literal (extract the target array to `web/browserTargets.ts` so
+the test can import it without executing the Vite config, per the sketch's isolation rationale).
+Nothing bites today because both values are 16.4 — the wrong prose direction is exactly what would
+green-light the next unsafe bump.
