@@ -37,44 +37,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P2][dead-config] No formatter owns JSON/YAML — config files drift unchecked
-
-**File(s):** `.prettierignore:26-29`, `dprint.json:13` (formatting) — pinned at SHA f934d43
-
-#### Problem
-
-`.prettierignore` deliberately excludes the config formats:
-
-```
-# Deliberately out of Prettier scope for now — remove these to bring configs into the check
-*.json
-*.yml
-*.yaml
-*.webmanifest
-```
-
-and dprint's `includes` is `["**/*.md"]` only (see the previous finding), so *no* formatter and *no*
-CI check owns `package.json`, `tsconfig`s, `.vscode/*.json`, `netlify.toml`-adjacent YAML, GitHub
-workflow YAML, or the webmanifest. These files — including this very `package.json` with its 117
-hand-maintained script rows — can drift in indentation/key style with zero enforcement, and the
-loaded-but-unused `@dprint/json` plugin makes it look like coverage exists when it doesn't.
-
-#### Proposed solution
-
-Decide and wire one owner for JSON/YAML: simplest is to drop `*.json`/`*.yml`/`*.yaml`/
-`*.webmanifest` from `.prettierignore` (Prettier already handles all four) and let `format:check`
-cover them; or add `**/*.json` etc. to `dprint.json` `includes` and use the already-loaded JSON
-plugin. Whichever is chosen, delete the other's dead config so there is a single, discoverable
-owner.
-
-#### Verification
-
-`npx prettier --check '**/*.json'` (or `dprint check` after adding the glob) currently either errors
-on the ignore or reports "0 files"; after the fix it should lint the real config tree. Add a
-deliberately mis-indented key to a JSON file and confirm the chosen check now fails.
-
----
-
 ### [P2][dead-config] `.markdownlint.json` is orphaned and duplicates dprint's markdown style
 
 **File(s):** `.markdownlint.json:1-11`, `dprint.json:4-9` (formatting) — pinned at SHA f934d43

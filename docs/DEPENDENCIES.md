@@ -37,6 +37,7 @@ Non-`keep` rows first.
 | @google/genai                       | prod     | keep                               |
 | @netlify/blobs                      | prod     | keep                               |
 | @sveltejs/adapter-static            | prod     | keep                               |
+| @dprint/json                        | dev      | keep                               |
 | @dprint/markdown                    | dev      | keep                               |
 | @dprint/typescript                  | dev      | keep                               |
 | @eslint/js                          | dev      | keep                               |
@@ -390,6 +391,22 @@ Non-`keep` rows first.
   `@trapezedev/configure` (same org, same staleness). No clearly-better maintained successor exists.
 * **Verdict:** monitor — keep for now (no viable replacement, low real risk), but watch for archival
   or a security advisory that reaches the runtime; the `sharp` override must survive any bump
+
+### @dprint/json
+
+* **Version:** `^0.23.0` declared · 0.23.0 locked · dev
+* **Used for:** dprint's JSON formatting plugin (wasm), referenced by `dprint.json` for fenced JSON
+  blocks in Markdown; real JSON files remain Prettier-owned.
+* **Source:** npm ·
+  [github.com/dprint/dprint-plugin-json](https://github.com/dprint/dprint-plugin-json) · published
+  by David Sherret (dsherret)
+* **License:** MIT
+* **Health** (checked 2026-07-17): [28 stars](https://github.com/dprint/dprint-plugin-json) · latest
+  0.23.0 on 2026-07-07 · last push 2026-07-07
+* **Maintenance:** active — same author as dprint itself
+* **Concerns:** single-maintainer ecosystem (all dprint plugins), but consistently maintained
+* **Alternatives:** leave fenced JSON blocks unformatted during dprint's Markdown pass
+* **Verdict:** keep — formats fenced JSON without taking ownership of real JSON files
 
 ### @dprint/markdown
 
