@@ -5074,34 +5074,6 @@ window.history.replaceState({}, '', url);
 
 Same length, no behavior change for current links, and future-proof against additional params.
 
-### [Readability] `colors` state initializer repeats `PALETTE_COLORS[0].hex` instead of using `DEFAULT_STROKE_COLOR`
-
-**File(s):** `web/src/lib/state/colors.svelte.ts` (lines 8, 37–42) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-Line 8 defines `export const DEFAULT_STROKE_COLOR = PALETTE_COLORS[0].hex;` (used by
-`engine.ts:1375`), yet the `$state` initializer thirty lines later spells the same expression out
-three times:
-
-```ts
-export const colors = $state({
-  activeSwatch: PALETTE_COLORS[0].hex,
-  activeColor: PALETTE_COLORS[0].hex,
-  customColor: PALETTE_COLORS[0].hex,
-  customColorSelected: false,
-});
-```
-
-A reader must verify positionally that the engine's default and the store's default are the same
-value; using the named constant makes the agreement structural and self-documenting.
-
-#### Proposed solution
-
-Initialize all three fields from `DEFAULT_STROKE_COLOR`.
-
 ### [Types] Name the `promptInstall` outcome union
 
 **File(s):** `web/src/lib/state/install.svelte.ts` (lines 128, 135) @ 9ae62ff1
@@ -5971,61 +5943,6 @@ own `requireDevHarness()` call, so soften (don't delete) the "call it from every
 need their own call; (b) confirm the Playwright engine spec still reaches `/dev/engine` under
 `PUBLIC_ENABLE_DEV_HARNESS=true` (it should — the gate logic is unchanged, only its location moves).
 
-### [Testing] The boot script's `data-*` attribute names have no drift guard against `publishActionPanelState`
-
-**File(s):** `web/src/app.html` (boot script, lines 106–115), `web/src/app.html.test.ts` (lines
-59–133) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-`app.html.test.ts` mechanically guards the boot script's *storage keys*, *boolean defaults*, *scale
-clamp*, and *route literal* — but not the **attribute names it stamps**. The boot script re-types
-eight attribute/property names as literals:
-
-```js
-el.toggleAttribute('data-off-adv', !adv);
-el.toggleAttribute('data-drawer-open', adv && on('splotch-drawer-open', false));
-el.toggleAttribute('data-off-stroke', !on('splotch-stroke-width-control', true));
-...
-if (brush === 'crayon' || brush === 'magic') el.setAttribute('data-brush', brush);
-```
-
-The live-side publisher, `publishActionPanelState` (`web/src/lib/actionButtonLayout.ts:126–145`),
-writes the same names, and `ActionsPanel.svelte`'s CSS keys off them
-(`:global(html[data-off-stroke])` etc., lines 447–511). The only thing tying the two sides together
-is prose: `actionButtonLayout.ts:115` says "the keys/defaults mirror BOOL_SETTINGS" and its test's
-comment at `actionButtonLayout.test.ts:136` says "The publish contract mirrors the app.html seed
-script". Rename `data-off-coloring` in the publisher + CSS + its unit test and everything stays
-green while the boot script stamps a dead attribute — customized users get a wrong first paint (the
-exact flash the boot script exists to prevent), silently. Per CLAUDE.md, cross-file agreement that
-can't share code gets a drift-guard test that reads both sides — the pattern `app.html.test.ts`
-already uses for `settings.svelte.ts`, just not applied to attribute names.
-
-#### Proposed solution
-
-Extend `app.html.test.ts` (which already has `bootScript` and the `readFileSync`-both-sides
-pattern): parse the attribute-name set out of each side —
-
-```ts
-const attrNames = (src: string) =>
-  new Set(
-    [...src.matchAll(/(?:toggleAttribute|setAttribute|removeAttribute)\('(data-[\w-]+)'/g)].map((
-      m,
-    ) => m[1]),
-  );
-it('stamps the same data-* attributes publishActionPanelState publishes', () => {
-  expect(attrNames(bootScript)).toEqual(attrNames(publishSource)); // publishSource = readFileSync(actionButtonLayout.ts)
-});
-```
-
-plus an assertion that `--action-btn-scale` appears in both. A stronger variant also pairs each
-`splotch-*` key with its `data-off-*` attribute, but the set-equality check alone already catches
-renames and additions. Scope the `publishActionPanelState` slice of `actionButtonLayout.ts` (e.g.
-match from the function name to the closing brace) so unrelated attributes elsewhere in the file
-don't pollute the set.
-
 ### [Testing] The boot script's brush (`'crayon' | 'magic'`) and theme (`'light' | 'dark'`) value literals are unguarded
 
 **File(s):** `web/src/app.html` (lines 114–118), `web/src/app.html.test.ts` @ 9ae62ff1
@@ -6114,38 +6031,6 @@ return () => {
 `release()` on an already-released sentinel resolves fine, so no released-state check is needed.
 Cheap to unit-test with a mocked `navigator.wakeLock` (the module currently has no test at all —
 worth adding while touching it).
-
-### [Maintainability] `<meta name="theme-color" content="#ffffff">` and `THEME_COLOR_LIGHT` agree only by prose
-
-**File(s):** `web/src/app.html` (line 24), `web/src/app.html.test.ts` @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`app.html:24` hardcodes the light theme-color:
-
-```html
-<meta name="theme-color" content="#ffffff" />
-```
-
-`web/src/lib/theme.ts:29–31` re-declares the same value with only a comment tying them together:
-`// Light keeps app.html's original white; ... THEME_COLOR_LIGHT = '#ffffff'`. That is a "keep in
-sync with X" agreement maintained by prose — per CLAUDE.md, a defect, not a mitigation: change one
-side (e.g. tint the light chrome to `--surface`) and the browser chrome color flickers between the
-static value and the JS-applied one on every boot, with nothing failing. Note `THEME_COLOR_DARK` on
-the very next line already does this right (read from `themes.dark.appBg`, "so it can never drift
-from the CSS"); only the light half is unpinned. Relatedly, dark-mode users get a white chrome bar
-until hydration because the boot script stamps `data-theme` but not the meta — worth noting in the
-same breath even if left as-is.
-
-#### Proposed solution
-
-Two options, in preference order: (1) source `THEME_COLOR_LIGHT` from `tokens.ts` like its dark twin
-(if `#ffffff` is a real token) and add a drift assertion to `app.html.test.ts` — the file already
-reads `app.html`, so
-`expect(html).toContain(\`<meta name="theme-color" content="${THEME_COLOR_LIGHT}" />\`)`after exporting the constant; or (2) just export`THEME_COLOR_LIGHT`from`theme.ts`and add that same assertion. Either makes the agreement mechanical. If the pre-hydration dark-chrome flash is deemed worth fixing, the boot script could also`document.querySelector('meta[name=theme-color]').setAttribute(...)`when it stamps`data-theme="dark"`
-— but that adds boot-script surface and should be its own decision.
 
 ### [Maintainability] `/dev/design`'s `nonColorKeys` hand-list duplicates token-kind knowledge that belongs in `tokens.ts`
 
@@ -7689,7 +7574,7 @@ delete both "keep in sync" comments, or replace them with a pointer to the guard
 `web/src/app.html` (lines 103–115), `web/src/app.html.test.ts`,
 `web/src/lib/actionButtonLayout.test.ts` (lines 150–157, 189–196) @ 9ae62ff1
 
-**Priority:** P3
+**Priority:** P2
 
 #### Problem
 
@@ -7730,6 +7615,11 @@ already regex-parses the boot script) asserts every `toggleAttribute('data-…')
 script appears in the exported table + `data-drawer-open`. The CSS selectors stay literal
 (tests-excepted rule doesn't cover CSS, but the CSS side breaks visibly in E2E; the seed/publish
 split is the silent one).
+
+Merged from the app-shell section's duplicate of this finding: the same missing guard was
+independently flagged from the `app.html` boot-script side, which raises its priority — one drift
+guard (asserting the attribute vocabulary against an exported constant, the `app.html.test.ts`
+pattern) resolves both reports.
 
 ### [Maintainability] The white-stroke/dark-stroke keyline rule is copied six times across three components
 
@@ -16458,65 +16348,6 @@ Gotcha: `classifyGeminiResponse` types its parameter as `GenerateContentResponse
 under `--experimental-strip-types` (they must, since they import `tokens.ts` through this module
 today).
 
-### [Maintainability] `chromiumExecutablePath` is duplicated across scripts/lib and web/playwright.config.ts, synced only by prose — and has already drifted
-
-**File(s):** `scripts/lib/playwright.mjs` (`chromiumExecutablePath`, lines 13–35) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-The self-heal fallback (resolve pinned Chromium; else scan
-`PLAYWRIGHT_BROWSERS_PATH`/`/opt/pw-browsers` for the newest `chromium-*` build) exists in two
-maintained copies: this module and `web/playwright.config.ts` lines 18–43. The only linkage is a
-comment ("Mirror the self-heal in web/playwright.config.ts", lines 6–7) — the exact "cross-file
-agreement maintained by prose" pattern CLAUDE.md calls a defect. Drift has already begun: the
-scripts copy accepts a `PLAYWRIGHT_CHROMIUM_PATH` alias (lines 14–15) that the config copy does not,
-and that alias is documented nowhere in the repo (`docs/CLOUD/Claude.md`, the
-`testing`/`run-splotch` skills all speak only of `PLAYWRIGHT_CHROMIUM`) and has no producer —
-speculative surface on top of the drift. (A third copy in `.claude/skills/run-splotch/driver.mjs` is
-inlined behind an explicit "so the script runs verbatim" comment — that one is a documented tradeoff
-and out of scope.)
-
-#### Proposed solution
-
-Make `web/playwright.config.ts` import the helper from `scripts/lib/playwright.mjs` (it already
-takes the `chromium` browser type as a parameter precisely so it has no `@playwright/test` import of
-its own): `import { chromiumExecutablePath } from '../scripts/lib/playwright.mjs'`. Playwright's
-config loader handles ESM relative imports; verify svelte-check/tsc don't complain about the
-outside-`web/` `.mjs` import (an `// @ts-expect-error`-free path may need `checkJs` accommodations —
-if that turns into a fight, the fallback is a drift-guard test in `scripts/tests/` that reads both
-files and asserts the shared logic tokens match, per the `app.html.test.ts` pattern). Either way,
-drop the undocumented `PLAYWRIGHT_CHROMIUM_PATH` alias unless something real sets it.
-
-### [Maintainability] "Keep in sync by eye" contract between scrapbook chrome and the proof-sheet CSS has no drift guard
-
-**File(s):** `scripts/lib/scrapbook-chrome.mjs` (header, lines 6–11; `crayons`, line 26;
-`CHROME_CSS` palette, lines 44–45) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The header says: "The coloring-book proof sheet lives under tools/asset-gen/ and may not import
-across that boundary, so it mirrors these tokens in its own CSS asset — keep the two crayon strips
-and the paper/ink palette in sync by eye when either changes." Per CLAUDE.md, "A 'keep in sync with
-X' comment marks a defect, not a mitigation … add a drift-guard test that reads both sides and fails
-on divergence." The mirrored side is real:
-`tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.css` re-declares
-`--paper: #f5f3ee` (line 5), `--c-red: #ec534e` (line 12), etc. Today the values match; nothing will
-notice when they stop matching, and the scrapbook (a published GitHub Pages site) will quietly fork
-into two palettes.
-
-#### Proposed solution
-
-Add `scripts/tests/scrapbook-chrome-tokens.test.mjs` that imports/reads both sources and asserts the
-shared token set is equal: extract the `--c-*` crayon hues plus `--paper`/`--ink` (and whichever
-others the comment means by "paper/ink palette") from `CHROME_CSS` and from the proof-sheet CSS with
-a small regex, and `expect(fromChrome).toEqual(fromProofSheet)`. Then rewrite the header comment to
-name the guard instead of asking for eyeballs. Cheap, and it converts a prose contract into the
-repo's standard drift-guard shape (same family as `android-config.test.mjs`).
-
 ### [DX] `run()` swallows the spawn error when the command itself can't be launched
 
 **File(s):** `scripts/lib/proc.mjs` (`run`, lines 42–50; `capture`, lines 94–98) @ 9ae62ff1
@@ -19521,7 +19352,7 @@ committed pipeline input). Update the two generator paths and drop both entries 
 
 **File(s):** `web/playwright.config.ts` (`chromiumExecutablePath`, lines 18–43) @ 9ae62ff1
 
-**Priority:** P3
+**Priority:** P2
 
 #### Problem
 
@@ -19557,6 +19388,12 @@ import from a TS config is fine under Vite/Playwright's loader). The two skill d
 trees (run-splotch is ruler-generated; edit `.ruler/skills/run-splotch/driver.mjs`) — they run from
 a repo checkout, so they *can* import `scripts/lib/`, but if keeping skills self-contained is
 preferred, at minimum fix lighthouse-audit's lexicographic sort and note the canonical copy.
+
+Merged from two duplicates of this finding (scripts/lib and .ruler sections):
+`scripts/lib/playwright.mjs` is a further copy and carries an undocumented
+`PLAYWRIGHT_CHROMIUM_PATH` env-var alias that exists nowhere else — decide its fate when
+consolidating — and `.ruler/skills/run-splotch/SKILL.md` instructs pasting an inline copy into
+driver code; change it to import the one shared helper instead.
 
 ### [Maintainability] `version.json` boundary string is declared in two places (emitter and fetcher)
 
@@ -22084,43 +21921,6 @@ record.
 Delete the sentence. If a stand-in is wanted, the modern equivalent is the `overrides`-pinned
 `sharp` entanglement already documented in dependency-health-audit Phase 1 — but a pointer there is
 optional; the landmine list in Phase 1 (lines 41–48) already covers coordinated families.
-
-### [Maintainability] Chromium-fallback resolution is implemented three divergent times across the skill helpers
-
-**File(s):** `.ruler/skills/run-splotch/driver.mjs` (`chromiumExecutablePath`, lines 38–56),
-`.ruler/skills/lighthouse-audit/run-audit.mjs` (`resolveChrome`, lines 188–203),
-`.ruler/skills/run-splotch/SKILL.md` (lines 84–102, instructing a fourth inline copy) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The "cloud Chromium revision drifted" fallback exists in at least four places with three different
-behaviors:
-
-* `driver.mjs` checks `PLAYWRIGHT_CHROMIUM`, then the pinned build, then scans `chromium-<rev>` dirs
-  **sorted numerically** and probes both `chrome-linux` and `chrome-linux64` subdirs (lines 45–53).
-* `run-audit.mjs` checks `CHROME_PATH`, then scans with `.sort().reverse()` — **lexicographic**, so
-  `chromium-999` outranks `chromium-1000` — and probes **only** `chrome-linux64` (lines 193–199),
-  silently missing revisions laid out as `chrome-linux/` (the layout driver.mjs explicitly handles).
-  It also ignores `PLAYWRIGHT_CHROMIUM`, the override the testing skill documents as universal
-  (`testing/SKILL.md:224`).
-* `web/playwright.config.ts` has its own copy (per `testing/SKILL.md:221–224`).
-* `run-splotch/SKILL.md:78–102` tells agents to paste "driver.mjs's `chromiumExecutablePath()`
-  inlined" into every ad-hoc screenshot script — institutionalizing a fourth copy that will drift
-  the same way `resolveChrome` already has.
-
-Same concern, three behaviors — the weakest copy (run-audit) fails precisely in the cloud
-environment the surrounding 60 lines of proxy/TLS workaround exist to serve.
-
-#### Proposed solution
-
-Extract one `resolveChromiumExecutable({ preferEnv } )` into `scripts/lib/` (sibling of
-`vite-server.mjs`), with the driver.mjs semantics (env override → pinned build → numeric-desc scan
-over both subdir layouts). Have both skill drivers import it (they run in-repo, so a relative
-`../../../scripts/lib/…` import from the generated skill dirs works), and change the SKILL.md
-snippet from "inline this function" to "import it from `scripts/lib/…`". `playwright.config.ts` can
-share it too if the TS/ESM boundary allows; if not, its drift-guard is at least down to one pair.
 
 ### [Docs] Machine-specific absolute paths baked into shared skills (`/Users/kylemit/…`)
 
