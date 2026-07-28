@@ -128,17 +128,30 @@ yes, write to docs/CODE-MAP. md
 ## Code Quality Audit
 
 ```md
-run a comprehensive code quality audit across the entire codebase.  refer to the docs/CODE-MAP.md for a full listing of the sections of the codebase.
+run a comprehensive code quality audit across the entire codebase. refer to the docs/CODE-MAP.md for
+a full listing of the sections of the codebase.
 
-spin up agents in parallel to review each section in detail.  agents should only be scoped to provide feedback on their section, but may have access to the whole repo.  In the case of large sections that are later spelled out into smaller subcategories, review just the subcategories.
+spin up agents in parallel to review each section in detail. agents should only be scoped to provide
+feedback on their section, but may have access to the whole repo. In the case of large sections that
+are later spelled out into smaller subcategories, review just the subcategories.
 
-each agent should carefully review the code for any issues with code quality, readability, maintainability, performance, and overall other code smells.  Make sure code is self documenting.  If a function is getting long, see if it can be split up into several smaller functions that more clearly explain what's going on.
+each agent should carefully review the code for any issues with code quality, readability,
+maintainability, performance, and overall other code smells. Make sure code is self documenting. If
+a function is getting long, see if it can be split up into several smaller functions that more
+clearly explain what's going on.
 
-Aim for at least 20 issues per section.  As long as making the changes would improve the overall code health of the repository, it should be done. Do not worry about the one time re-write cost as part of the calculus, but also don't just suffle deck chairs.  Aim for things that would genuinely improve the readability and grepability of the codebase to someone who's viewing it for the first time, even if that means structural changes.
+Aim for at least 20 issues per section. As long as making the changes would improve the overall code
+health of the repository, it should be done. Do not worry about the one time re-write cost as part
+of the calculus, but also don't just suffle deck chairs. Aim for things that would genuinely improve
+the readability and grepability of the codebase to someone who's viewing it for the first time, even
+if that means structural changes.
 
-Each agent should return it's findings in a detailed enough report so that another agent can pick up the implementation later.  Pin feedback to particular line numbers at a particular sha so that it's easy to find later if the code changes. Rank the feedback in terms of importance, p1 (most) to P5 (least).  
+Each agent should return it's findings in a detailed enough report so that another agent can pick up
+the implementation later. Pin feedback to particular line numbers at a particular sha so that it's
+easy to find later if the code changes. Rank the feedback in terms of importance, p1 (most) to P5
+(least).
 
-Each agent should return with all the feedback it found in a prioritize list 
+Each agent should return with all the feedback it found in a prioritize list
 
 At the end, combine the feedback with section headers and add to docs/AUDIT.md
 ```
