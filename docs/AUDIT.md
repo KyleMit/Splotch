@@ -37,41 +37,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P2][duplication] `--experimental-strip-types --disable-warning=ExperimentalWarning` repeated 10× and likely stale
-
-**File(s):** `package.json:20,25,72,73,76,77,78,85,86,91` (scripts) — pinned at SHA f934d43
-
-#### Problem
-
-Ten scripts invoke Node with the identical verbose flag pair, e.g.:
-
-```json
-"build:cap": "CAPACITOR=true node scripts/web.mjs vite build && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/strip-native-assets.mjs",
-"gen:tokens": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/gen-tokens.mjs",
-```
-
-Two problems: (1) the 60-character flag string is copy-pasted verbatim ten times — any change (or a
-typo in one) must be reconciled by hand; (2) it is likely **stale**. `engines.node` is `">=22.13"`
-(`package.json:6`); Node stabilized type-stripping so that `--experimental-strip-types` became the
-default (and the flag a deprecated no-op emitting its own warning) from 22.18 / 23.6 onward. On a
-modern Node in the supported range the whole pair is redundant, and `--disable-warning` exists only
-to silence a warning the flag itself triggers.
-
-#### Proposed solution
-
-Either drop both flags (verify on the project's Node floor that `node scripts/gen-tokens.mjs` strips
-types without them), or, if the floor must keep them, factor a single helper — e.g.
-`scripts/run-ts.mjs` that re-execs Node with the flags, or a package-level shell alias — so the flag
-string lives in exactly one place. Update `engines.node` to the version where the decision holds.
-
-#### Verification
-
-On the CI Node version: `node scripts/gen-tokens.mjs --check` (no flags) — if it runs, the flags are
-dead. `grep -c 'experimental-strip-types' package.json` should drop from 10 to 0 (or to 1 in a
-shared helper).
-
----
-
 ### [P3][duplication] Browser-support floor is duplicated between `browserslist` and vite `build.target`
 
 **File(s):** `package.json:304-310`, `web/vite.config.ts:77` (build config) — pinned at SHA f934d43

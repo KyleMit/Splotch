@@ -3672,3 +3672,77 @@ The rolled-back draft is kept at
 `docs/audit-deferred/p4-accessibility-tab-ui-is-built-from-bare-button-s-with-no-tab-aria-sem.patch`
 (3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p4-accessibility-tab-ui-is-built-from-bare-button-s-with-no-tab-aria-sem.patch`.
+
+### [P2][duplication] `--experimental-strip-types --disable-warning=ExperimentalWarning` repeated 10× and likely stale
+
+**File(s):** `package.json:20,25,72,73,76,77,78,85,86,91` (scripts) — pinned at SHA f934d43
+
+#### Problem
+
+Ten scripts invoke Node with the identical verbose flag pair, e.g.:
+
+```json
+"build:cap": "CAPACITOR=true node scripts/web.mjs vite build && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/strip-native-assets.mjs",
+"gen:tokens": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/gen-tokens.mjs",
+```
+
+Two problems: (1) the 60-character flag string is copy-pasted verbatim ten times — any change (or a
+typo in one) must be reconciled by hand; (2) it is likely **stale**. `engines.node` is `">=22.13"`
+(`package.json:6`); Node stabilized type-stripping so that `--experimental-strip-types` became the
+default (and the flag a deprecated no-op emitting its own warning) from 22.18 / 23.6 onward. On a
+modern Node in the supported range the whole pair is redundant, and `--disable-warning` exists only
+to silence a warning the flag itself triggers.
+
+#### Proposed solution
+
+Either drop both flags (verify on the project's Node floor that `node scripts/gen-tokens.mjs` strips
+types without them), or, if the floor must keep them, factor a single helper — e.g.
+`scripts/run-ts.mjs` that re-execs Node with the flags, or a package-level shell alias — so the flag
+string lives in exactly one place. Update `engines.node` to the version where the decision holds.
+
+#### Verification
+
+On the CI Node version: `node scripts/gen-tokens.mjs --check` (no flags) — if it runs, the flags are
+dead. `grep -c 'experimental-strip-types' package.json` should drop from 10 to 0 (or to 1 in a
+shared helper).
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `tools/asset-gen/package.json:8-14` still repeats the obsolete flag pair across five runnable
+  aliases, including aliases for scripts updated at the root; remove the flags there so the original
+  repository-level duplication is actually resolved.
+* `package-lock.json:63` still records the root Node engine as `>=22.13`; regenerate/update the
+  committed lockfile so it agrees with the new `package.json` floor of `>=22.18`.
+* Active guidance still claims these scripts require or receive `--experimental-strip-types`,
+  notably `scripts/.ruler/AGENTS.md:19-20`, `scripts/api-smoke.mjs:15`, and
+  `scripts/strip-native-assets.mjs:10-11`; update the Ruler source/generated instructions and
+  affected script documentation to describe default type stripping on the new Node floor.
+* Remove the stale flags from remaining runnable invocations in
+  `tools/asset-gen/tests/cli.test.mjs:209,244`, `crayon-brush-samples`, and `legacy`; the tests
+  currently bypass the newly supported flag-free invocation path and the original duplication
+  remains elsewhere in the repository.
+* Update `.ruler/skills/architecture/SKILL.md`, `.ruler/skills/design/SKILL.md`, and ADRs
+  0003/0029/0047, then regenerate their mirrors; these authoritative references still incorrectly
+  state that scripts require `--experimental-strip-types`.
+
+#### What was tried
+
+1. Raised the supported Node floor to 22.18 and removed the obsolete type-stripping and
+   warning-suppression flags from all 16 affected scripts while preserving every target and
+   argument.
+2. Removed the obsolete flags from all five asset-generator aliases, synchronized the lockfile’s
+   Node floor to 22.18, and updated generated/current script guidance to describe Node’s default
+   type stripping.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-duplication-experimental-strip-types-disable-warning-experimentalwarn.patch`
+(2 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-duplication-experimental-strip-types-disable-warning-experimentalwarn.patch`.
