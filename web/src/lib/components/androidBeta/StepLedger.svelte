@@ -13,7 +13,7 @@
 
   // Composed after hydration so the support address never appears in the
   // prerendered HTML, which is what address harvesters scrape. Without JS the
-  // note is simply absent — step 4 still offers the in-app report and GitHub.
+  // card is simply absent, leaving step 4's in-app report as the way to reach us.
   let support = $state('');
   onMount(() => {
     support = supportEmail();
