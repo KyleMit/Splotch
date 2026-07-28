@@ -58,7 +58,7 @@ import {
   toPosix,
 } from '../lib/paths.mjs';
 import { parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
-import { makeClient } from '../lib/gemini.mjs';
+import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
@@ -79,34 +79,14 @@ import { scoreEyeFill, judgeNightEyes } from '../lib/eye-fill.mjs';
 // core-vs-annulus eye gate misses on solid-pen eyes (lib/composite-eye.mjs).
 import { scoreCompositeEyes } from '../lib/composite-eye.mjs';
 import { darkFillPrompt } from '../lib/prompts.mjs';
-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
-const MODEL = 'gemini-3.1-flash-image';
 const OUT_DIR = SAMPLES_DARK_DIR;
 const WEBP_QUALITY = 90;
 
 async function generateDarkPage(ai, { imageBytes, mimeType, temperature, chalked, notes }) {
   const base = darkFillPrompt(chalked);
   const prompt = notes ? `${base}\n\nPAGE-SPECIFIC NOTES:\n${notes}` : base;
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          { inlineData: { mimeType, data: Buffer.from(imageBytes).toString('base64') } },
-          { text: prompt },
-        ],
-      },
-    ],
-    config: {
-      abortSignal: AbortSignal.timeout(120_000),
-      ...(temperature === undefined ? {} : { temperature }),
-    },
-  });
-  const classified = classifyGeminiResponse(response);
-  if (classified.kind !== 'image') throw new Error(`${classified.kind}: ${classified.reason}`);
-  return { bytes: Buffer.from(classified.data, 'base64'), mimeType: classified.mimeType };
+  return generateImage(ai, { imageBytes, mimeType, prompt, temperature });
 }
 
 // Grow the WHITE lines by `radius` px with a separable max filter. A pale

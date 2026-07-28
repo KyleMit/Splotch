@@ -42,7 +42,7 @@ import { existsSync } from 'node:fs';
 import sharp from 'sharp';
 import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
 import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
-import { makeClient } from '../lib/gemini.mjs';
+import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
@@ -50,9 +50,7 @@ import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, scoreEyes } from '../lib/eye-fill.mjs';
 import { NORMALIZE_INSTRUCTION } from '../lib/prompts.mjs';
 import { formatCandidateLine } from '../lib/report.mjs';
-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
-const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 92;
 const OUT_DIR = join(SAMPLES_DARK_DIR, 'normalize');
 // The candidate's ink must all lie on the reference's (no invented strokes).
@@ -97,30 +95,13 @@ function normalizeSettings(v, source) {
 normalizeSettings(values);
 
 async function editLineArt(imageBytes, temperature, instruction) {
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          {
-            inlineData: {
-              mimeType: 'image/webp',
-              data: Buffer.from(imageBytes).toString('base64'),
-            },
-          },
-          { text: instruction },
-        ],
-      },
-    ],
-    config: {
-      abortSignal: AbortSignal.timeout(120_000),
-      ...(temperature === undefined ? {} : { temperature }),
-    },
+  const { bytes } = await generateImage(ai, {
+    imageBytes,
+    mimeType: 'image/webp',
+    prompt: instruction,
+    temperature,
   });
-  const classified = classifyGeminiResponse(response);
-  if (classified.kind !== 'image') throw new Error(`${classified.kind}: ${classified.reason}`);
-  return Buffer.from(classified.data, 'base64');
+  return bytes;
 }
 
 // Normalize the model output back to a clean black-on-white page at the source

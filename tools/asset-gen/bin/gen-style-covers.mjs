@@ -14,12 +14,10 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import { STYLES_DIR, fail } from '../lib/paths.mjs';
 import { parseTemperature } from '../lib/cli.mjs';
-import { makeClient } from '../lib/gemini.mjs';
+import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { STYLE_SUFFIXES, STYLE_NAMES } from '../../../web/src/lib/ai/styles.ts';
 import { buildPromptForStyle } from '../../../web/src/lib/ai/prompt.ts';
-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
-const MODEL = 'gemini-3.1-flash-image';
 const SOURCE_SVG = join(STYLES_DIR, 'source.svg');
 const THUMB_SIZE = 448;
 const WEBP_QUALITY = 75;
@@ -28,27 +26,7 @@ const WEBP_QUALITY = 75;
 // or throws with the refusal/empty reason.
 async function generateStyledImage(ai, { imageBytes, mimeType, style, temperature }) {
   const prompt = buildPromptForStyle(style, STYLE_SUFFIXES);
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          { inlineData: { mimeType, data: Buffer.from(imageBytes).toString('base64') } },
-          { text: prompt },
-        ],
-      },
-    ],
-    config: {
-      abortSignal: AbortSignal.timeout(120_000),
-      ...(temperature === undefined ? {} : { temperature }),
-    },
-  });
-  const classified = classifyGeminiResponse(response);
-  if (classified.kind !== 'image') {
-    throw new Error(`${classified.kind}: ${classified.reason}`);
-  }
-  return { bytes: Buffer.from(classified.data, 'base64'), mimeType: classified.mimeType };
+  return generateImage(ai, { imageBytes, mimeType, prompt, temperature });
 }
 
 function resolveStyle(name) {

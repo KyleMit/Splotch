@@ -63,7 +63,7 @@ import {
   toPosix,
 } from '../lib/paths.mjs';
 import { parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
-import { makeClient } from '../lib/gemini.mjs';
+import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import {
@@ -80,9 +80,7 @@ import { scoreEyeFill, EYE_DARK_MAX, EYE_LIGHT_MIN } from '../lib/eye-fill.mjs';
 import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
 import { CHALK_INSTRUCTION } from '../lib/prompts.mjs';
 import { formatCandidateLine } from '../lib/report.mjs';
-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
-const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 92;
 const OUT_DIR = join(SAMPLES_DARK_DIR, 'chalk');
 
@@ -257,30 +255,13 @@ function chalkSettings(v, source) {
 chalkSettings(values);
 
 async function drawChalk(imageBytes, temperature, instruction) {
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          {
-            inlineData: {
-              mimeType: 'image/webp',
-              data: Buffer.from(imageBytes).toString('base64'),
-            },
-          },
-          { text: instruction },
-        ],
-      },
-    ],
-    config: {
-      abortSignal: AbortSignal.timeout(120_000),
-      ...(temperature === undefined ? {} : { temperature }),
-    },
+  const { bytes } = await generateImage(ai, {
+    imageBytes,
+    mimeType: 'image/webp',
+    prompt: instruction,
+    temperature,
   });
-  const classified = classifyGeminiResponse(response);
-  if (classified.kind !== 'image') throw new Error(`${classified.kind}: ${classified.reason}`);
-  return Buffer.from(classified.data, 'base64');
+  return bytes;
 }
 
 // Model output (white-on-black) -> stored ink polarity at source resolution:
