@@ -210,8 +210,9 @@ multi-touch input — the best way to get accurate profiles.
 * [ ] **Replace placeholder icons with final hi-res art.** Current icons are upscaled from the 512px
       web logo — produce a crisp **1024×1024** source at `assets/icon.png` (and tune
       `assets/splash.png`), then rerun `npx @capacitor/assets generate --android`.
-* [ ] Bump `versionCode` / `versionName` in `android/app/build.gradle` for each release (currently
-      `6` / `1.4.0`).
+* [ ] Confirm `npm run release` bumped `versionCode` / `versionName` — `scripts/release.mjs` derives
+      both and writes them into `android/app/build.gradle`, which is the source of truth. Read the
+      current values there rather than trusting a copy in this doc.
 * [x] `targetSdkVersion` meets the current Play requirement: `android/variables.gradle` sets **36**
       (Android 16), which satisfies the **Aug 31, 2026** deadline. Play raises this yearly — recheck
       each August against the
@@ -300,17 +301,35 @@ use, disclosure, and consent — Google being the one running the model does not
 one such integration is `/api/generate-image` → Gemini. What keeps it compliant, and what to
 re-verify if that flow changes:
 
-* **Consent** — the magic-image button is hidden until a grown-up enters an access code or their own
-  Gemini key (`ActionsPanel.svelte`, gated on `settings.aiAccessToken`), and it only fires on tap.
-  Never make generation automatic or unlock it without the Parent Center step.
+* **Consent** — the magic-image button is hidden until `settings.aiAccessToken` is set
+  (`ActionsPanel.svelte`, mirrored by `visibleActionButtonCount()` in `actionButtonLayout.ts`), and
+  it only ever fires on tap. This is the section to re-read when a Play reviewer asks how consent is
+  obtained, so note that **two paths set that token**, and why each counts as parent-mediated:
+  * A grown-up types an access code into the Parent Center (`AiKeyManager.svelte`) — explicit,
+    in-app, behind the parent gate.
+  * An invite link carrying `?ai_access_token=` is opened (`captureAiAccessTokenFromUrl`,
+    `state/settings.svelte.ts`), minted by `buildInvites` in `/admin`. No parent types anything, so
+    the consent rests on an admin handing the link to a specific grown-up out of band — keep invite
+    links private and single-recipient, or this path stops being parent-mediated.
+
+  A BYO Gemini key sets `aiUserApiKey`, **not** `aiAccessToken`, so it does not currently unhide the
+  button on its own (tracked separately). Never make generation automatic, and never add an unlock
+  path that isn't parent-mediated.
 * **Limited use** — the drawing is passed through to Gemini and the result returned; nothing is
   persisted. `lib/server/usage.ts` stores only a per-token tally (count, timestamps, last style, and
   the *static* style prompt from `lib/ai/prompt.ts` — never the image or any user-typed text). If a
   request or response image ever starts being stored, the privacy policy and Data safety form both
   have to change.
 * **Disclosure** — `/privacy` names Gemini, states we keep no copy, and distinguishes the managed
-  key from a parent's BYO key (which sends the drawing under the parent's own Google account and
-  terms — a different data controller, so it needs to stay called out).
+  key from a parent's BYO key. Two things there are easy to get wrong and must stay accurate:
+  * BYOK changes the **billing account and data controller, not the routing** — `aiImage.ts` puts
+    the parent's key in a header on a request to *our* `/api/generate-image`, and `gemini.ts` calls
+    Google server-side. The drawing still passes through our service either way.
+  * Google's own retention is **not** "only for the duration of the request". Per the
+    [Gemini API terms](https://ai.google.dev/gemini-api/terms), the paid tier logs prompts and
+    responses for a limited period for abuse detection, and the unpaid tier may use submitted
+    content to improve Google's products. An AI Studio key is unpaid by default, so the BYOK path is
+    the one that needs saying out loud.
 
 ### Policies that don't apply (verified — don't re-derive)
 
