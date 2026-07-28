@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, fail } from './lib/utils.mjs';
+import { ROOT, fail } from './lib/proc.mjs';
 
 const configPath = 'capacitor.config.json';
 const config = JSON.parse(readFileSync(join(ROOT, configPath), 'utf8'));

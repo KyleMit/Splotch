@@ -23,7 +23,7 @@
 // https).
 
 import { randomUUID } from 'node:crypto';
-import { sleep } from './lib/utils.mjs';
+import { sleep } from './lib/proc.mjs';
 import { check, fatal, summarize } from './lib/smoke.mjs';
 import { adminClient } from './lib/adminClient.mjs';
 

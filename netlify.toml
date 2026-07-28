@@ -9,7 +9,7 @@
 # because they apply to the deployed site.
 [build]
   # `git fetch --tags` first: Netlify's blobless clone has the full commit graph
-  # but does NOT fetch tags, so `git describe` in web/vite.config.ts can't see the
+  # but does NOT fetch tags, so `git describe` in web/buildVersion.ts can't see the
   # release tag and the web version would fall back to major.minor.0+<sha>
   # (ADR-0030). `|| true` so a fetch hiccup never fails the build — the fallback
   # still produces a valid per-commit version.

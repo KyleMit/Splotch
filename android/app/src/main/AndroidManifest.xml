@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Backups disabled: nothing here is worth migrating (drawings save to the
+         photo gallery; secure-storage secrets are Keystore-bound and cannot
+         restore onto another device) and the AI access token must not be
+         copied into cloud backups. No child data leaves the device via backup. -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"

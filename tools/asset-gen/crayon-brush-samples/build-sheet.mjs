@@ -17,7 +17,7 @@ import {
   page,
   siteFooter,
 } from '../../../scripts/lib/scrapbook-chrome.mjs';
-import { argFlag } from '../../../scripts/lib/utils.mjs';
+import { argFlag } from '../../../scripts/lib/proc.mjs';
 import { SAMPLES } from './samples.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));

@@ -27,7 +27,7 @@
 // deferred off the main thread).
 
 import { readFileSync } from 'node:fs';
-import { fail } from '../lib/utils.mjs';
+import { fail } from '../lib/proc.mjs';
 
 const path = process.argv[2];
 if (!path) {

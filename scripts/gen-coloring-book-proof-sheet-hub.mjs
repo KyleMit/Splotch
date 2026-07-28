@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, resolve } from 'node:path';
-import { ROOT } from './lib/utils.mjs';
+import { ROOT } from './lib/proc.mjs';
 import { chromeStyle, compactTopbar } from './lib/scrapbook-chrome.mjs';
 
 export const PROOF_SHEET_HUB_PATH = join(
@@ -64,13 +64,13 @@ export function buildColoringBookProofSheetHub() {
       </div>
       <nav class="tabsrow">
         <button class="nudge" id="prev" title="Previous category (←)" aria-label="Previous category">&#8592;</button>
-        <div class="tabs" id="tabs"></div>
+        <div class="tabs" id="tabs" role="tablist" aria-label="Coloring categories"></div>
         <button class="nudge" id="next" title="Next category (→)" aria-label="Next category">&#8594;</button>
         <span class="count" id="count"></span>
       </nav>
     </header>
     <main>
-      <iframe id="sheet" title="Category proof sheet"></iframe>
+      <iframe id="sheet" role="tabpanel" title="Category proof sheet"></iframe>
     </main>
     <script>
       const CATEGORIES = ${CATEGORIES};
@@ -84,7 +84,10 @@ export function buildColoringBookProofSheetHub() {
       CATEGORIES.forEach((cat, i) => {
         const b = document.createElement('button');
         b.textContent = cat.name;
+        b.id = \`tab-\${cat.id}\`;
         b.dataset.id = cat.id;
+        b.setAttribute('role', 'tab');
+        b.setAttribute('aria-controls', 'sheet');
         b.addEventListener('click', () => { show(i); });
         tabsEl.appendChild(b);
         buttons[cat.id] = b;
@@ -105,7 +108,9 @@ export function buildColoringBookProofSheetHub() {
         countEl.textContent = \`Category \${i + 1} of \${CATEGORIES.length} · \${cat.pages} pages\`;
         Object.keys(buttons).forEach((id) => {
           buttons[id].classList.toggle('on', id === cat.id);
+          buttons[id].setAttribute('aria-selected', String(id === cat.id));
         });
+        frame.setAttribute('aria-labelledby', buttons[cat.id].id);
         buttons[cat.id].scrollIntoView({ block: 'nearest', inline: 'center' });
         if (!skipHash) {
           if (location.hash.replace(/^#/, '') !== cat.id) {

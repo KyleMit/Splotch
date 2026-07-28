@@ -24,14 +24,10 @@ warn() {
   } >&2
 }
 
-# Match the npm major that authors package-lock.json (local dev runs npm 11; the
-# container image ships npm 10, whose install rewrites lockfile metadata in its
-# own dialect and dirties the working tree every session — the two majors
-# disagree on optional-peer entries, so no lockfile shape satisfies both).
-# The SessionStart hook also discards such churn as a fallback if this pin is
-# ever missing.
-# Via npx so the installer isn't the npm being replaced — npm 10 updating itself
-# in place dies halfway (MODULE_NOT_FOUND on its own half-overwritten files).
+# Pin npm to the major that authors package-lock.json — a mismatched npm rewrites
+# lockfile metadata in its own dialect and dirties the tree every session; full
+# rationale in docs/CLOUD/Claude.md ("npm-version note"). Via npx so the installer
+# isn't the npm being replaced (an in-place self-update can die halfway).
 npx -y npm@11 install -g npm@11 \
   || warn "npm 11 pin skipped — sessions may see package-lock.json churn (the SessionStart hook discards it)"
 

@@ -8,7 +8,8 @@
 // a grandchild and leaks the port. freePort() clears out any stale leftover
 // server up front so every run serves the build it just produced.
 
-import { run, sleep, waitForUrl } from '../lib/utils.mjs';
+import { run, sleep } from '../lib/proc.mjs';
+import { waitForUrl } from '../lib/net.mjs';
 import { spawnViteServer, freePort } from '../lib/vite-server.mjs';
 
 export async function buildAndPreview(port, { build = true, timeout = 90_000 } = {}) {

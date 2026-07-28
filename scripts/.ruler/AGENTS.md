@@ -9,9 +9,11 @@
   scattering them. Scripts bound to one platform by nature (`ios-simulator-smoke.mjs` needs Xcode)
   must fail fast with a clear message elsewhere.
 * Shared helpers live in `scripts/lib/` — `android.mjs` resolves the SDK and AVD locations per
-  platform (override the SDK with `ANDROID_HOME` or `ANDROID_SDK_ROOT`); `utils.mjs` has the common
-  run/log helpers (including `sh()` for a rejecting, shell-based command runner, and `waitForUrl()`
-  for polling a URL until ready) plus the Maestro location; `vite-server.mjs` spawns a throwaway
+  platform (override the SDK with `ANDROID_HOME` or `ANDROID_SDK_ROOT`); `proc.mjs` has the common
+  process/CLI helpers (`run`/`capture`/`fail`, `sh()` for a rejecting, shell-based command runner,
+  env and arg handling, the OS opener); `net.mjs` has `waitForUrl()` for polling a URL until ready;
+  `playwright.mjs` resolves the Chromium binary; `maestro.mjs` the Maestro location;
+  `frontmatter.mjs` the release frontmatter/semver parsing; `vite-server.mjs` spawns a throwaway
   vite dev/preview server in a detached process group so `stop()` can't orphan the vite grandchild;
   `smoke.mjs` has the `check()`/`fatal()`/`summarize()` pass-fail reporter shared by the smoke
   tests, and `adminClient.mjs` the `/api/admin` login + token-CRUD request plumbing they both drive.

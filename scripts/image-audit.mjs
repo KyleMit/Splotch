@@ -22,8 +22,9 @@
 
 import { readFileSync, writeFileSync, globSync } from 'node:fs';
 import { relative } from 'node:path';
+import { parseArgs } from 'node:util';
 import { optimize } from 'svgo';
-import { ROOT } from './lib/utils.mjs';
+import { ROOT } from './lib/proc.mjs';
 
 // Generator-input SVGs live under static/ but are never shipped or inlined —
 // they're consumed by scripts/gen-*.mjs. Optimizing them is at best pointless
@@ -34,7 +35,9 @@ const IGNORE = new Set(['web/static/large-image.svg', 'web/static/styles/source.
 
 const SVGO_CONFIG = { multipass: true, plugins: ['preset-default'] };
 
-const check = process.argv.includes('--check');
+const {
+  values: { check },
+} = parseArgs({ options: { check: { type: 'boolean' } } });
 
 const files = globSync('web/**/*.svg', { cwd: ROOT })
   .map((p) => `${ROOT}/${p}`)

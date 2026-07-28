@@ -11,7 +11,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
-import { ROOT, fail, sh } from './lib/utils.mjs';
+import { ROOT, fail, sh } from './lib/proc.mjs';
 import { runMaestroSmoke } from './lib/native-smoke.mjs';
 
 const execFileAsync = promisify(execFile);

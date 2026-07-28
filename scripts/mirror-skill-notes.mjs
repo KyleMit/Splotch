@@ -12,7 +12,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT } from './lib/utils.mjs';
+import { ROOT } from './lib/proc.mjs';
 
 process.chdir(ROOT);
 

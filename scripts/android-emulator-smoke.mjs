@@ -6,12 +6,13 @@
 // (the shared flow in lib/native-smoke.mjs). For a faster inner loop against an
 // emulator you keep running yourself, use `npm run test:android:device`.
 //
-// Assumes the standard local setup (see `npm run android:setup`): the
-// Pixel_7_Pro_API_33 AVD, the SDK in its default location, Maestro installed.
+// Assumes the standard local setup (see `npm run android:setup`): the AVD named
+// by AVD_NAME in lib/android.mjs, the SDK in its default location, Maestro
+// installed.
 
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { sleep, sh } from './lib/utils.mjs';
+import { sleep, sh } from './lib/proc.mjs';
 import { ADB, EMULATOR, AVD_NAME, ANDROID_DIR, GRADLEW } from './lib/android.mjs';
 import { runMaestroSmoke } from './lib/native-smoke.mjs';
 

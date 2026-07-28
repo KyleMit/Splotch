@@ -12,7 +12,7 @@
 import { readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { fail } from '../lib/utils.mjs';
+import { fail } from '../lib/proc.mjs';
 import { LONG_TASK_MS } from './thresholds.mjs';
 import { toMiB } from './units.mjs';
 

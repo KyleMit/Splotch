@@ -8,7 +8,7 @@
 // are gitignored; only encrypted/*.enc is committed.
 
 import { join } from 'node:path';
-import { ROOT, fail } from './lib/utils.mjs';
+import { ROOT, fail } from './lib/proc.mjs';
 import { encryptDir, decryptDir } from './lib/fixtureCrypto.mjs';
 
 const BASE = join(ROOT, 'web', 'tests', 'redteam');

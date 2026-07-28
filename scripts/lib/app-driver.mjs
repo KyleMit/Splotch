@@ -2,7 +2,8 @@
 // (store-shots.mjs, gen-large-image.mjs): dev-server lifecycle, page setup,
 // and the UI gestures (pick a color, set stroke size, draw) the app needs.
 
-import { sleep, waitForUrl } from './utils.mjs';
+import { sleep } from './proc.mjs';
+import { waitForUrl } from './net.mjs';
 import { spawnViteServer } from './vite-server.mjs';
 
 const DRAWING_CANVAS_SELECTOR = '#drawingCanvas';

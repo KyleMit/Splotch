@@ -15,7 +15,8 @@ import { chromium } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PALETTE_COLORS } from '../web/src/lib/palette.ts';
-import { ROOT, chromiumExecutablePath } from './lib/utils.mjs';
+import { ROOT } from './lib/proc.mjs';
+import { chromiumExecutablePath } from './lib/playwright.mjs';
 import { circlePts } from './lib/stroke-geometry.mjs';
 import {
   ensureDevServer,

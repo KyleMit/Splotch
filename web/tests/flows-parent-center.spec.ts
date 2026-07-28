@@ -103,16 +103,19 @@ test('parent center hub drills into a section and back (phone layout)', async ({
   await expect(page.locator('#advancedControlsToggle')).toHaveCount(0);
 });
 
+async function openParentCenterCompact(page: Page) {
+  await page.setViewportSize({ width: 852, height: 390 });
+  await gotoApp(page);
+  return openParentCenter(page);
+}
+
 // A landscape phone has the width of the tablet shell but almost none of its
 // height, so the full section list is unusably cramped there. The Parent Center
 // collapses to a strip of quick toggles plus a pointer to portrait; a landscape
 // tablet (height ≥ 600px, e.g. the default desktop viewport above) keeps the
 // two-pane shell.
-test('parent center shows quick toggles on a landscape phone', async ({ page }) => {
-  await page.setViewportSize({ width: 852, height: 390 });
-  await gotoApp(page);
-
-  const modal = await openParentCenter(page);
+test('landscape phone renders compact quick toggles', async ({ page }) => {
+  const modal = await openParentCenterCompact(page);
   await expect(modal).toHaveClass(/compact/);
 
   // Quick toggles render instead of the hub list or the sidebar.
@@ -128,13 +131,10 @@ test('parent center shows quick toggles on a landscape phone', async ({ page }) 
   await expect(orientationCell.locator('#quickLockPortrait')).toBeVisible();
   await expect(orientationCell.locator('#quickLockLandscape')).toBeVisible();
   await expect(page.getByText('Switch to portrait for the full settings')).toBeVisible();
+});
 
-  // A quick toggle drives the same persisted setting as the full section...
-  await page.locator('#quickAdvancedControlsToggle').click();
-  await expect(page.locator('#quickAdvancedControlsToggle')).toHaveAttribute(
-    'aria-checked',
-    'false'
-  );
+test('the orientation lock selector cycles portrait, landscape, and off', async ({ page }) => {
+  await openParentCenterCompact(page);
 
   // A phone-sized screen defaults to a portrait lock, so Portrait starts active.
   await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'true');
@@ -151,8 +151,25 @@ test('parent center shows quick toggles on a landscape phone', async ({ page }) 
   await expect(page.locator('#quickLockLandscape')).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'false');
 
-  // Re-select Portrait to carry a portrait lock into the rotation check below,
-  // where the full Appearance section should reflect it.
+  // A released selector accepts a fresh pick.
+  await page.locator('#quickLockPortrait').click();
+  await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('quick-toggle changes persist into the full portrait Parent Center', async ({ page }) => {
+  await openParentCenterCompact(page);
+
+  // A quick toggle drives the same persisted setting as the full section...
+  await page.locator('#quickAdvancedControlsToggle').click();
+  await expect(page.locator('#quickAdvancedControlsToggle')).toHaveAttribute(
+    'aria-checked',
+    'false'
+  );
+
+  // Set a portrait lock through the off state, proving each click acts.
+  await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#quickLockPortrait').click();
+  await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'false');
   await page.locator('#quickLockPortrait').click();
   await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'true');
 

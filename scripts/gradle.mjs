@@ -4,7 +4,7 @@
 // Gradle tasks) and exit code. Used by
 // android:apk / android:run / android:bundle / android:clean.
 
-import { run, fail } from './lib/utils.mjs';
+import { run, fail } from './lib/proc.mjs';
 import { ANDROID_DIR, GRADLEW } from './lib/android.mjs';
 
 const tasks = process.argv.slice(2);

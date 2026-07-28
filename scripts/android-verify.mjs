@@ -12,7 +12,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { fail } from './lib/utils.mjs';
+import { fail } from './lib/proc.mjs';
 import { RELEASE_AAB } from './lib/android.mjs';
 
 if (!process.env.JAVA_HOME)

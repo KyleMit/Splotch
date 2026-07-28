@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ROOT } from './lib/utils.mjs';
+import { ROOT } from './lib/proc.mjs';
 
 export const DIRECT_PROVIDER_PATHS = [
   '.claude/skills/burn-down-audits',

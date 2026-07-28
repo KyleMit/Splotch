@@ -15,7 +15,7 @@ vi.mock('node:child_process', async (importOriginal) => {
   return { ...actual, spawnSync: vi.fn(actual.spawnSync) };
 });
 
-vi.mock('../lib/utils.mjs', async (importOriginal) => {
+vi.mock('../lib/proc.mjs', async (importOriginal) => {
   const actual = await importOriginal();
   return { ...actual, isMain: () => state.directEntry, runMain: state.runMain };
 });

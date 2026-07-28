@@ -13,7 +13,8 @@ import { chromium } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PALETTE_COLORS } from '../web/src/lib/palette.ts';
-import { ROOT, chromiumExecutablePath, sleep } from './lib/utils.mjs';
+import { ROOT, sleep } from './lib/proc.mjs';
+import { chromiumExecutablePath } from './lib/playwright.mjs';
 import { circlePts, arcPts, zigzag } from './lib/stroke-geometry.mjs';
 import {
   ensureDevServer,

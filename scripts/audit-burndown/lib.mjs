@@ -1,12 +1,12 @@
 // Shared plumbing for the audit-burndown scripts (the burn-down-audits skill).
-// Unlike scripts/lib/utils.mjs's run()/capture(), the runners here return
+// Unlike scripts/lib/proc.mjs's run()/capture(), the runners here return
 // status instead of exiting — the driver loop handles every failure itself
 // (a failed step costs one iteration, not the run; see ADR-0017's caveat).
 
 import { spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT } from '../lib/utils.mjs';
+import { ROOT } from '../lib/proc.mjs';
 
 export { ROOT };
 export const WORK = '.audit-work';

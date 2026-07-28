@@ -10,7 +10,8 @@
 
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { requireEnv, waitForUrl } from './lib/utils.mjs';
+import { requireEnv } from './lib/proc.mjs';
+import { waitForUrl } from './lib/net.mjs';
 import { spawnViteServer } from './lib/vite-server.mjs';
 
 const TUNNEL_HOST = process.env.TUNNEL_HOST || 'splotch-tunnel-kyle.fly.dev';

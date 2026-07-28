@@ -278,7 +278,7 @@ npm run test:ios              # one-shot on the iOS simulator (macOS + full Xcod
 > platforms run the **same flow file**. The Android helper works on macOS and Linux (AVD name and
 > SDK locations resolve per-platform in `scripts/lib/android.mjs`; override the SDK with
 > `ANDROID_HOME`); the iOS helper is macOS-only and fails fast elsewhere. Maestro's install location
-> resolves in `scripts/lib/utils.mjs`.
+> resolves in `scripts/lib/maestro.mjs`.
 
 ### Prerequisites
 
@@ -306,8 +306,9 @@ curl -fsSL "https://get.maestro.mobile.dev" | bash
 
 > Use `get.maestro.mobile.dev` — `get.maestro.dev` does not work.
 >
-> The smoke scripts resolve Maestro via `scripts/lib/utils.mjs` (PATH first, then `~/.maestro/bin`),
-> so they run even before you reopen your shell to pick up the PATH entry the installer adds.
+> The smoke scripts resolve Maestro via `scripts/lib/maestro.mjs` (PATH first, then
+> `~/.maestro/bin`), so they run even before you reopen your shell to pick up the PATH entry the
+> installer adds.
 
 ### Running it locally
 

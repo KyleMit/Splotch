@@ -12,11 +12,11 @@
 
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { chromium } from '@playwright/test';
-import { chromiumExecutablePath, isMain, runMain } from '../lib/utils.mjs';
-import { resolveThrottle } from './args.mjs';
+import { chromiumExecutablePath } from '../lib/playwright.mjs';
+import { isMain, runMain } from '../lib/proc.mjs';
+import { parsePerfArgs } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace } from './capture.mjs';
-import { resolveDevice } from './devices.mjs';
 import { profilePath } from './paths.mjs';
 import { LONG_TASK_MS } from './thresholds.mjs';
 
@@ -32,16 +32,10 @@ const SLOW_4G = {
 // fire inside the trace so a fix that merely shifts cost later is visible.
 const POST_LOAD_SETTLE_MS = 5000;
 
-const args = process.argv.slice(2);
-const flag = (name, def) => {
-  const hit = args.find((a) => a.startsWith(`--${name}=`));
-  return hit ? hit.split('=')[1] : def;
-};
-const deviceName = flag('device', 'phone');
-const device = resolveDevice(deviceName);
-const throttle = resolveThrottle(args, 4);
-const port = Number(flag('port', '4173'));
-const build = !args.includes('--no-build');
+const { deviceName, device, throttle, port, build } = parsePerfArgs({
+  throttleDefault: 4,
+  entry: isMain(import.meta.url),
+});
 
 export async function runMountProfile() {
   const outDir = profilePath('mount', deviceName, throttle.tag);

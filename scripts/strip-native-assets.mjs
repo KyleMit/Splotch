@@ -13,7 +13,7 @@
 import { rmSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { webOnlyBooks } from './lib/book-assets.mjs';
-import { ROOT } from './lib/utils.mjs';
+import { ROOT } from './lib/proc.mjs';
 import { BOOKS, bookAssetPaths } from '../web/src/lib/state/books.ts';
 
 const BUILD_DIR = join(ROOT, 'web', 'build'); // capacitor.config.json webDir

@@ -11,7 +11,8 @@
 
 import { cpSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
-import { ROOT, fail } from './lib/utils.mjs';
+import { parseArgs } from 'node:util';
+import { ROOT, fail } from './lib/proc.mjs';
 import {
   buildScrapbookIndex,
   coloringBookProofSheetHubProblems,
@@ -45,10 +46,25 @@ function writeGeneratedPages() {
   writeProofSheetHub();
 }
 
-function main() {
-  const args = process.argv.slice(2);
+const USAGE =
+  'Usage: node scripts/publish-scrapbook.mjs <source> <type>/<name>\n' +
+  '       node scripts/publish-scrapbook.mjs --index-only';
 
-  if (args[0] === '--index-only') {
+function main() {
+  const { values, positionals } = parseArgs({
+    allowPositionals: true,
+    options: { check: { type: 'boolean' }, 'index-only': { type: 'boolean' } },
+  });
+
+  if (values.check && values['index-only']) {
+    fail(USAGE);
+  }
+
+  if ((values.check || values['index-only']) && positionals.length) {
+    fail(USAGE);
+  }
+
+  if (values['index-only']) {
     writeGeneratedPages();
     console.log(
       `Rebuilt scrapbook/index.html and coloring-book-proof-sheets/index.html → ${PAGES_BASE}`
@@ -60,7 +76,7 @@ function main() {
   // entry page, so the index's "N collections" count always matches the cards it
   // shows — an md-only collection that once vanished now surfaces (issue #490) —
   // and the committed index.html must be up to date with the tree.
-  if (args[0] === '--check') {
+  if (values.check) {
     const missing = collectionsMissingEntry(SCRAPBOOK_DIR);
     if (missing.length) {
       fail(
@@ -100,12 +116,9 @@ function main() {
     return;
   }
 
-  const [source, dest] = args;
+  const [source, dest] = positionals;
   if (!source || !dest) {
-    fail(
-      'Usage: node scripts/publish-scrapbook.mjs <source> <type>/<name>\n' +
-        '       node scripts/publish-scrapbook.mjs --index-only'
-    );
+    fail(USAGE);
   }
 
   const srcPath = resolve(process.cwd(), source);

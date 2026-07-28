@@ -1,17 +1,19 @@
 // cspell:ignore sdkmanager avdmanager avds cmdline playstore temurin libexec winget Adoptium
-// One-time emulator setup for local Android work: installs the API 33 Play
-// Store system image, creates the Pixel 7 Pro AVD, writes
+// One-time emulator setup for local Android work: installs the Play-Store
+// system image for the API level in scripts/lib/android.mjs, creates the
+// Pixel 7 Pro AVD, writes
 // android/local.properties, and installs the Maestro smoke-test CLI. Checks the
 // required SDK tools are on PATH first and prints per-platform fix instructions
 // if not. Safe to re-run.
 
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, hasCommand, run, capture, fail, maestroInstalled } from './lib/utils.mjs';
-import { ANDROID_HOME, AVD_NAME } from './lib/android.mjs';
+import { ROOT, hasCommand, run, capture, fail } from './lib/proc.mjs';
+import { maestroInstalled } from './lib/maestro.mjs';
+import { ANDROID_API_LEVEL, ANDROID_HOME, AVD_NAME } from './lib/android.mjs';
 
 const ABI = process.arch === 'arm64' ? 'arm64-v8a' : 'x86_64';
-const SYSTEM_IMAGE = `system-images;android-33;google_apis_playstore;${ABI}`;
+const SYSTEM_IMAGE = `system-images;android-${ANDROID_API_LEVEL};google_apis_playstore;${ABI}`;
 const DEVICE_ID = 'pixel_7_pro';
 
 const isMac = process.platform === 'darwin';
@@ -50,7 +52,13 @@ if (missing.length > 0) {
   fail(lines.join('\n'));
 }
 
-const imageDir = join(ANDROID_HOME, 'system-images', 'android-33', 'google_apis_playstore', ABI);
+const imageDir = join(
+  ANDROID_HOME,
+  'system-images',
+  `android-${ANDROID_API_LEVEL}`,
+  'google_apis_playstore',
+  ABI
+);
 if (existsSync(imageDir)) {
   console.log('[android-setup] System image already installed.');
 } else {

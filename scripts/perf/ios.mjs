@@ -11,22 +11,14 @@
 // `npm run perf:analyze` (see the `profiling` skill).
 
 import { webkit } from '@playwright/test';
-import { isMain, runMain, sleep } from '../lib/utils.mjs';
+import { isMain, runMain, sleep } from '../lib/proc.mjs';
+import { parsePerfArgs } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { driveSession } from './session.mjs';
-import { resolveDevice } from './devices.mjs';
 import { profilePath } from './paths.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 
-const args = process.argv.slice(2);
-const flag = (name, def) => {
-  const hit = args.find((a) => a.startsWith(`--${name}=`));
-  return hit ? hit.split('=')[1] : def;
-};
-const deviceName = flag('device', 'phone');
-const device = resolveDevice(deviceName);
-const port = Number(flag('port', '4173'));
-const build = !args.includes('--no-build');
+const { deviceName, device, port, build } = parsePerfArgs({ entry: isMain(import.meta.url) });
 
 export async function runIosProfile() {
   warnIfNoPerfMarks('npm run perf:ios');

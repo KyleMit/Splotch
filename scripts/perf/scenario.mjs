@@ -9,24 +9,18 @@
 // regressions, but absolute frame numbers want the Android path (android.mjs).
 
 import { chromium } from '@playwright/test';
-import { chromiumExecutablePath, isMain, runMain, sleep } from '../lib/utils.mjs';
-import { resolveThrottle } from './args.mjs';
+import { chromiumExecutablePath } from '../lib/playwright.mjs';
+import { isMain, runMain, sleep } from '../lib/proc.mjs';
+import { parsePerfArgs } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { driveSession } from './session.mjs';
-import { resolveDevice } from './devices.mjs';
 import { profilePath } from './paths.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 
-const args = process.argv.slice(2);
-const flag = (name, def) => {
-  const hit = args.find((a) => a.startsWith(`--${name}=`));
-  return hit ? hit.split('=')[1] : def;
-};
-const deviceName = flag('device', 'phone');
-const device = resolveDevice(deviceName);
-const throttle = resolveThrottle(args, 4);
-const port = Number(flag('port', '4173'));
-const build = !args.includes('--no-build');
+const { deviceName, device, throttle, port, build } = parsePerfArgs({
+  throttleDefault: 4,
+  entry: isMain(import.meta.url),
+});
 
 export async function runWebScenario() {
   warnIfNoPerfMarks('npm run perf:web');

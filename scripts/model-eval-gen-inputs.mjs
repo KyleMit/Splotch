@@ -14,7 +14,8 @@ import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, PALETTE, PAPER } from './lib/model-eval.mjs';
-import { chromiumExecutablePath, requireEnv } from './lib/utils.mjs';
+import { chromiumExecutablePath } from './lib/playwright.mjs';
+import { requireEnv } from './lib/proc.mjs';
 
 const OUT = join(ROOT, 'web/tests/model-eval/inputs');
 const AUTHOR_MODEL = 'gemini-3.1-flash-image';

@@ -34,15 +34,20 @@ All automation scripts in `scripts/` are Node `.mjs` files that must run on macO
 boilerplate lives in purpose-named modules under `scripts/lib/`, and each script reads imperatively
 top-to-bottom with only its own domain logic inline:
 
-* `scripts/lib/utils.mjs` — generic helpers: repo-root and main-entry resolution, environment and
+* `scripts/lib/proc.mjs` — process/CLI helpers: repo-root and main-entry resolution, environment and
   CLI argument handling, `run`/`capture` (spawn the executable with an argument array directly,
   preserving literal arguments while the OS resolves commands through `PATH`), `sh` (the explicit
-  escape hatch for deliberate shell command lines), OS opening, Chromium resolution, command
-  discovery through POSIX `sh` + `command -v`, strict flat-frontmatter parsing, file writes, and
-  semver/run-ID utilities.
+  escape hatch for deliberate shell command lines), OS opening, command discovery through POSIX
+  `sh` + `command -v`, polling, and run-ID generation.
+* `scripts/lib/net.mjs` — `waitForUrl`, polling a URL until it responds ready.
+* `scripts/lib/playwright.mjs` — Chromium binary resolution, self-healing against cached-revision
+  drift under `PLAYWRIGHT_BROWSERS_PATH`.
+* `scripts/lib/maestro.mjs` — the Maestro CLI location (PATH first, then `~/.maestro/bin`).
+* `scripts/lib/frontmatter.mjs` — strict flat-frontmatter parsing, deep file writes, and semver
+  comparison for the release tooling.
 * `scripts/lib/android.mjs` — macOS/Linux Android SDK resolution: `ANDROID_HOME` or
   `ANDROID_SDK_ROOT`, then `~/Library/Android/sdk` or `~/Android/Sdk`; plus `ADB`/`EMULATOR` binary
-  paths, `AVD_NAME`, and the Maestro location.
+  paths and `AVD_NAME`.
 * `scripts/lib/app-driver.mjs` — Playwright helpers for scripts that drive the live app
   (`store-shots.mjs`, `gen-large-image.mjs`): `ensureDevServer` (reuses an already-running server on
   the port, else spawns `node_modules/vite/bin/vite.js` directly — no shell — so killing the whole

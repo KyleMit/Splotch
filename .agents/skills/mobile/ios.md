@@ -9,8 +9,9 @@ Store release checklist. For the general build model and shared assets see
 > iOS can only be built on macOS — Xcode and the simulators are macOS-only. No CocoaPods anywhere:
 > the iOS project uses Swift Package Manager (ADR-0020). Minimum supported OS: **iOS 16.4**
 > (`IPHONEOS_DEPLOYMENT_TARGET` in `App.xcodeproj`), aligned with the web bundle's floor — see
-> [docs/COMPATIBILITY.md](../../../docs/COMPATIBILITY.md). It MUST stay ≤ the web `build.target` iOS
-> version in `web/vite.config.ts`.
+> [docs/COMPATIBILITY.md](../../../docs/COMPATIBILITY.md). It MUST stay ≥ the web floor's iOS/Safari
+> version (the web `build.target`, declared in `web/browserTargets.ts`) — lowering it below the web
+> floor would let pre-floor WebViews install a bundle they can't run.
 
 ## 1. Toolchain setup (macOS-only)
 

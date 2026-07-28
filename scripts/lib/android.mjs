@@ -5,9 +5,10 @@
 
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { ROOT } from './utils.mjs';
+import { ROOT } from './proc.mjs';
 
-export const AVD_NAME = 'Pixel_7_Pro_API_33';
+export const ANDROID_API_LEVEL = 33;
+export const AVD_NAME = `Pixel_7_Pro_API_${ANDROID_API_LEVEL}`;
 
 export const ANDROID_HOME =
   process.env.ANDROID_HOME ??

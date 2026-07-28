@@ -29,7 +29,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
-import { hasCommand, sleep } from '../lib/utils.mjs';
+import { hasCommand, sleep } from '../lib/proc.mjs';
 import { agentRunnerDefaults, normalizeAgentRunner, runAgentStep } from './agent-runner.mjs';
 import {
   auditFile,
