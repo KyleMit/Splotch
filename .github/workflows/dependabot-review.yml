@@ -64,10 +64,11 @@ jobs:
     timeout-minutes: 20
 
     steps:
+      # Default shallow depth is deliberate: this repo's history is ~183 MB and
+      # the review never reads it. The working tree is for grepping import
+      # sites; the diff itself comes from `gh pr diff`.
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
 
       - name: Review the dependency bump
         # Annotated tag — this must be the dereferenced *commit* SHA
