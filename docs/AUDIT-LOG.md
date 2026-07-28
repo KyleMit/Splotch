@@ -18,6 +18,7 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
+| 2026-07-28 | [code-audit](#2026-07-28--code-audit)                           |
 | 2026-07-28 | [burn-down-audits](#2026-07-28--burn-down-audits)               |
 | 2026-07-28 | [deferred-triage](#2026-07-28--deferred-triage)                 |
 | 2026-07-27 | [deferred-triage](#2026-07-27--deferred-triage)                 |
@@ -73,6 +74,21 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-07-03 | [code-audit](#2026-07-03--code-audit)                           |
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
+
+## 2026-07-28 · code-audit
+
+Comprehensive per-section quality pass over the whole codebase: 31 parallel section auditors, one
+per `docs/CODE-MAP.md` area (using the subcategory splits for the drawing engine, the other web/src
+domains, asset-gen, and scripts), each applying the performance / readability / maintainability /
+architecture lenses plus the repo conventions, deduping against the 163 open issues. **649
+findings** staged into `docs/AUDIT.md` under one `## Source: Code audit — <section>` header per
+section, each pinned to commit 9ae62ff1 with file/function/line citations and ranked P1–P5.
+Spot-verified P1s include a `perf:mount` crash (missing `join` import), duplicate ADR number 0077, a
+publicly served internal planning doc in `web/static/coloring/`, a missing `onerror` in
+`magicBrush.ts` sheet loading, and token mutations reporting success into the in-memory fallback
+during Blobs outages. Dominant cross-section themes: cross-file agreement maintained by prose
+instead of imported constants or drift guards, unnamed tuning literals, long functions with
+separable named steps, and module-scope mutable state outside factories.
 
 ## 2026-07-28 · burn-down-audits
 
