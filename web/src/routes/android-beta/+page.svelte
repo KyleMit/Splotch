@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { BETA_OPT_IN_URL, FEEDBACK_ISSUE_URL, supportEmail } from '$lib/androidBeta';
+  import CrayonStrip from '$lib/components/CrayonStrip.svelte';
   import StepLedger from '$lib/components/androidBeta/StepLedger.svelte';
 
   // Composed after hydration so the support address never appears in the
@@ -40,6 +41,7 @@
     </div>
 
     <div class="band header">
+      <CrayonStrip />
       <p class="eyebrow">Closed testing · Google Play</p>
       <h1>Join the Android beta</h1>
       <p class="lede">
@@ -294,6 +296,10 @@
   .header {
     padding-top: 44px;
     padding-bottom: 8px;
+  }
+
+  .header :global(.crayons) {
+    margin-bottom: 18px;
   }
 
   .eyebrow {

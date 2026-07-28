@@ -53,3 +53,16 @@ test('the support address is absent from the served HTML and added after hydrati
     `mailto:${supportEmail()}`
   );
 });
+
+test('the masthead crayon strip renders every palette hue it names', async ({ page }) => {
+  // The strip resolves its hues out of PALETTE_COLORS by label, so a renamed
+  // palette entry would otherwise silently drop a crayon.
+  await page.goto('/android-beta');
+  const crayons = page.locator('.crayons i');
+  await expect(crayons).toHaveCount(7);
+  for (const background of await crayons.evaluateAll((els) =>
+    els.map((el) => getComputedStyle(el).backgroundColor)
+  )) {
+    expect(background).not.toBe('rgba(0, 0, 0, 0)');
+  }
+});
