@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { BETA_OPT_IN_URL, FEEDBACK_ISSUE_URL, supportEmail } from '$lib/androidBeta';
   import CrayonStrip from '$lib/components/CrayonStrip.svelte';
+  import Icon from '$lib/components/Icon.svelte';
   import Disclosure from '$lib/components/design/Disclosure.svelte';
   import StepLedger from '$lib/components/androidBeta/StepLedger.svelte';
 
@@ -125,9 +126,11 @@
       <div class="callout">
         <h2>Telling us what you think</h2>
         <p>
-          This is the part that matters. Inside the app, tap the <strong>?</strong> button to open
-          the Parent Center and choose <strong>Send report</strong> to file a bug or suggest a
-          feature without leaving Splotch. You can also
+          This is the part that matters. Inside the app, tap the
+          <Icon name="parent" class="inline-icon" role="img" aria-label="Parent Center" /> button in the
+          bottom-right corner of the drawing screen to open the Parent Center, then choose
+          <strong>Send report</strong> to file a bug or suggest a feature without leaving Splotch.
+          You can also
           <a href={FEEDBACK_ISSUE_URL} target="_blank" rel="noopener noreferrer"
             >open an issue on GitHub</a
           >. Odd crashes, confusing buttons, and “my toddler did <em>what</em>?” stories are all
@@ -384,6 +387,15 @@
 
   .callout strong {
     color: var(--beta-ink);
+  }
+
+  /* The real Parent Center glyph, sized to the surrounding text so the sentence
+     shows the button rather than describing it. Icon renders its SVG at 100% of
+     this box, so the box has to carry the size. */
+  .callout :global(.inline-icon) {
+    width: 1.3em;
+    height: 1.3em;
+    vertical-align: -0.3em;
   }
 
   a {

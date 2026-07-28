@@ -64,6 +64,14 @@
             Become a tester
           </a>
         </p>
+        <div class="note">
+          <p class="note-label">If a link doesn't work yet</p>
+          <p class="note-body">
+            None of this is instant, and Google Play doesn't always recognise a new group membership
+            straight away. Check that both pages are signed in to the same Google account, then make
+            a cup of tea and try again a little later before assuming something is broken.
+          </p>
+        </div>
       </div>
     </li>
 
@@ -85,29 +93,19 @@
           Open this one on the Android device you want to draw on. Splotch needs Android {MIN_ANDROID_RELEASE}
           (API {MIN_ANDROID_API_LEVEL}) or newer.
         </p>
+        <div class="note">
+          <p class="note-label">Please stay for 14 days</p>
+          <p class="note-body">
+            Once you're in, <strong>stay opted in for at least 14 days in a row</strong>, even if
+            you've seen everything you wanted to in the first ten minutes. Google requires a stretch
+            of continuously enrolled testers before Splotch can apply for a public listing, so
+            leaving early — or opting out and back in — sets that clock back for everyone. You don't
+            have to keep drawing; just stay enrolled.
+          </p>
+        </div>
       </div>
     </li>
   </ol>
-
-  <div class="note aside">
-    <p class="note-label">If a link doesn't work yet</p>
-    <p class="note-body">
-      None of this is instant, and Google Play doesn't always recognise a new group membership
-      straight away. Check that both pages are signed in to the same Google account, then make a cup
-      of tea and try again a little later before assuming something is broken.
-    </p>
-  </div>
-
-  <div class="note aside">
-    <p class="note-label">Please stay for 14 days</p>
-    <p class="note-body">
-      Once you're in, <strong>stay opted in for at least 14 days in a row</strong>, even if you've
-      seen everything you wanted to in the first ten minutes. Google requires a stretch of
-      continuously enrolled testers before Splotch can apply for a public listing, so leaving early
-      — or opting out and back in — sets that clock back for everyone. You don't have to keep
-      drawing; just stay enrolled.
-    </p>
-  </div>
 </div>
 
 <style>
@@ -209,11 +207,6 @@
     background: var(--beta-tint);
     border: 1px solid var(--beta-rule);
     border-radius: var(--radius-md);
-  }
-
-  /* The two notes that close the ledger rather than sitting inside a step. */
-  .aside {
-    margin-top: 32px;
   }
 
   .note-label {
