@@ -57,6 +57,22 @@ function openStore(): TokenStore | null {
   }
 }
 
+async function confirmSeedRaceWinner(store: TokenStore): Promise<StoreRead> {
+  for (let attempt = 1; attempt <= SEED_CONFIRMATION_ATTEMPTS; attempt++) {
+    await sleep(SEED_CONFIRMATION_BACKOFF_MS * attempt);
+    try {
+      const winner = await store.getWithMetadata(KEY, { type: 'json' });
+      if (winner && Array.isArray(winner.data)) {
+        return { source: 'blobs', store, list: winner.data, etag: winner.etag };
+      }
+    } catch {
+      // Keep trying so a single transient read failure does not deny a current token.
+    }
+  }
+  console.warn('[tokens] Lost env-seed race but could not confirm the current list');
+  return { source: 'unconfirmed', store, list: [] };
+}
+
 /**
  * Resolve the current token list and the backing store (if available).
  * `source` distinguishes confirmed Blobs data, the explicit local-memory
@@ -85,19 +101,7 @@ async function readStore(): Promise<StoreRead> {
       if (seededWrite.modified) {
         return { source: 'blobs', store, list: seeded, etag: seededWrite.etag };
       }
-      for (let attempt = 1; attempt <= SEED_CONFIRMATION_ATTEMPTS; attempt++) {
-        await sleep(SEED_CONFIRMATION_BACKOFF_MS * attempt);
-        try {
-          const winner = await store.getWithMetadata(KEY, { type: 'json' });
-          if (winner && Array.isArray(winner.data)) {
-            return { source: 'blobs', store, list: winner.data, etag: winner.etag };
-          }
-        } catch {
-          // Keep trying so a single transient read failure does not deny a current token.
-        }
-      }
-      console.warn('[tokens] Lost env-seed race but could not confirm the current list');
-      return { source: 'unconfirmed', store, list: [] };
+      return confirmSeedRaceWinner(store);
     } catch (err) {
       // Transient Blobs error: degrade to memory for THIS request only. Do not
       // latch blobsUnavailable, or one blip would make the warm instance
