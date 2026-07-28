@@ -65,12 +65,20 @@ that Claude is granted `gh pr comment` and told to run it.
 Dependabot runs weekly, so rather than wait, force one:
 
 * **Insights → Dependency graph → Dependabot → "Check for updates"** on any ecosystem, or
-* close and reopen an existing Dependabot PR (`reopened` is in the trigger list).
+* comment `@dependabot reopen` on a closed Dependabot PR.
+
+**The gate reads the event actor, not the PR author** — `github.actor` is whoever triggered the
+specific event, and on a Dependabot PR the author is always `dependabot[bot]` no matter who did.
+That distinction is the whole reason the second recipe is worded that way: *Dependabot* has to
+perform the reopen. Closing and reopening the PR by hand makes you the actor, so the job is skipped
+— and that run wouldn't be given the Dependabot secret store anyway, so removing the gate wouldn't
+rescue it. The gate is correctly matched to where the secret exists.
 
 Then confirm, in order:
 
-1. The **Dependabot review** workflow appears in the PR's checks. If it's absent, the `if:` actor
-   gate didn't match — confirm the PR author really is `dependabot[bot]`.
+1. The **Dependabot review** workflow appears in the PR's checks and is not marked *skipped*.
+   Skipped means the actor gate didn't match — check who triggered the run (the "triggered by" line
+   on the run page), not who authored the PR.
 2. The job is green **and** a comment was posted. Green with no comment is a failure, not a pass —
    and it has two distinct causes worth telling apart: `allowed_bots` not matching (Claude never
    ran; the run log will be nearly empty) or the posting tool missing (Claude ran and wrote the
@@ -112,7 +120,8 @@ reading of the changes, not a guarantee.
 | Auth / credential error in the log    | Secret is in the Actions store instead of Dependabot, misnamed, or the OAuth token expired                                                                                                    |
 | Sudden run of auth failures           | **The `claude setup-token` token expires (~1 year) with no warning.** Regenerate and update the Dependabot secret                                                                             |
 | Comment posted but truncated or vague | Upstream published thin release notes, or `--max-turns` was hit. The prompt is instructed to admit thin evidence rather than fake confidence                                                  |
-| Workflow doesn't appear at all        | The actor gate didn't match, or the workflow file isn't on the default branch yet                                                                                                             |
+| Job shows as *skipped*                | `github.actor` isn't `dependabot[bot]` — the gate reads the event's actor, not the PR's author, so a human-triggered event on a Dependabot PR skips by design                                 |
+| Workflow doesn't appear at all        | The workflow file isn't on the default branch yet, or the event type isn't in the trigger list                                                                                                |
 
 ## Tuning
 
