@@ -988,9 +988,7 @@ export function releaseAllPointers() {
 
   const ids = [...activePointers.keys()];
   activePointers.clear();
-  groupHasDrawn = false;
-  commitStrokeGroup();
-  if (onDrawStopCallback) onDrawStopCallback();
+  finishStrokeGroup();
 
   ids.forEach(releaseCaptureSafe);
 }
