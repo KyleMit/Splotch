@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { rateLimit } from './rateLimit';
+import { adminLoginBucket } from './rateLimitKeys';
 import { rateLimitPolicy } from './rateLimitPolicy';
 import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 
@@ -45,11 +46,6 @@ export function verifyAdminSecret(key: string | undefined) {
   return constantTimeEqual(key, env.ADMIN_ACCESS_TOKEN);
 }
 
-// Both front doors throttle into this one bucket so an attacker can't double
-// their guessing budget by alternating between the form action and the JSON
-// endpoint.
-const ADMIN_LOGIN_BUCKET = (ip: string) => `admin-login:${ip}`;
-
 type AdminLoginVerdict = { ok: true; session: string } | { ok: false; status: 403 };
 
 export type AdminLoginAttempt =
@@ -65,7 +61,7 @@ export type AdminLoginAttempt =
  * whether or not `verify` is reached.
  */
 export function beginAdminLogin(ip: string): AdminLoginAttempt {
-  const { limited, retryAfter } = rateLimit(ADMIN_LOGIN_BUCKET(ip), rateLimitPolicy.adminLogin);
+  const { limited, retryAfter } = rateLimit(adminLoginBucket(ip), rateLimitPolicy.adminLogin);
   if (limited) return { ok: false, status: 429, retryAfter };
   return {
     ok: true,

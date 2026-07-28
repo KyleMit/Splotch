@@ -89,6 +89,11 @@ export default tseslint.config(
           message:
             'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).',
         },
+        {
+          selector: 'CallExpression[callee.name="rateLimit"][arguments.0.type="BinaryExpression"]',
+          message:
+            'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).',
+        },
       ],
     },
   },
@@ -211,7 +216,11 @@ export default tseslint.config(
     // The ONE type-aware exception to the fast non-type-aware design above: floating promises
     // in app code silently swallow rejections (a failed dynamic import, an unawaited native
     // call), and only a TS program can see a call's return type. Scoped to web/src TS so the
-    // project-service cost (~seconds) stays off tooling/scripts.
+    // project-service cost (~seconds) stays off tooling/scripts. .svelte components are NOT
+    // covered — a plain-TS project service resolves types imported from .svelte modules as
+    // `any`, producing structural false positives — so a floating promise in component markup
+    // (onclick={() => save()}) is out of this rule's reach; that gap is accepted, not an
+    // oversight.
     files: ['web/src/**/*.ts'],
     ignores: ['**/*.d.ts'],
     languageOptions: {
