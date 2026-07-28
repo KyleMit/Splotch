@@ -202,7 +202,10 @@ The remaining friction was about the host boundary and duplicate supervision wor
 
 * The first nested-CLI escalation sounded like a new security disclosure. The material difference
   from the supervising chat is additional automated OpenAI calls and usage, not a different data
-  recipient. The runbook now requires that precise explanation.
+  recipient. The runbook now treats explicit skill invocation as authorization for those in-scope
+  subprocesses, skips redundant conversational reconfirmation, and asks for one narrow reusable host
+  approval only when the platform still requires it. Invocation never overrides a host denial or
+  expands the role sandboxes.
 * `ruler:check` failed inside the workspace sandbox because its drift pass temporarily rebuilds
   `.agents/`, then passed unchanged outside it. The same distinction now sits beside the rule that
   keeps Ruler out of per-finding gates.

@@ -22,11 +22,20 @@ Opus-tier work. Override with `MODEL_*` or `EFFORT_*` only when the run has a me
 
 ## Approval boundary
 
-A run starts many additional networked `codex exec` calls. Each call sends its role prompt and the
-repository context it reads to OpenAI, the same provider processing the supervising Codex session.
-The shell host can still request a separate approval because an automated subprocess is making the
-outbound calls. Explain that distinction plainly: the approval covers repeated isolated model calls
-and their usage, not a new data recipient or evidence of a repository leak.
+Treat explicit invocation of this skill as user authorization to launch the in-scope `codex exec`
+subprocesses, make their expected outbound OpenAI calls, and provide them the repository context
+needed for their roles. Do not ask for a second conversational confirmation before the canary or
+each relaunch. The subprocesses use the same repository and tool environment as the supervising
+shell with no broader authority; their role sandboxes are narrower (`workspace-write` for verifier
+and implementer, read-only for reviewer) and interactive approvals stay disabled.
+
+The shell host can still require its own execution or network approval because an automated
+subprocess is making the calls. When it does, request one narrowly scoped reusable approval for the
+audit launch command family instead of prompting per role or segment. Explain that each call sends
+its role prompt and the repository context it reads to OpenAI, the same provider processing the
+supervising Codex session. The approval covers repeated isolated model calls and their usage, not a
+new data recipient or evidence of a repository leak. Never bypass a host denial or broaden the
+approval beyond the audit commands.
 
 ## Invariants
 
