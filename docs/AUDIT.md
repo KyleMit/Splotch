@@ -10,6 +10,13 @@ All findings below come from the 2026-07-28 comprehensive per-section code audit
 9ae62ff1c7faeb58437da293dfcad5a52dacbc18 (`9ae62ff1`); line numbers refer to that commit. Findings
 are ranked P1 (most important) to P5 (least) within each section.
 
+Two follow-up quality passes have already run over this list. A **dedup sweep** merged six blocks
+that were filed twice from different sections (649 raw findings → 643). An **adversarial
+verification sample** of 26 findings — every P1 plus a P2 sample — re-checked each claim against the
+cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
+`> **Verified 2026-07-28**` blockquote have been through that pass; the rest have not, so
+`/vet-audits` still owns validating them.
+
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
 ### [Correctness] Make `stopDrawing`'s unknown-pointer fall-through explicit — it silently fires stop callbacks on hover-out and is the load-bearing commit path after a discarded edge swipe
@@ -18,6 +25,10 @@ are ranked P1 (most important) to P5 (least) within each section.
 813–818) @ 9ae62ff1
 
 **Priority:** P2
+
+> **Verified 2026-07-28** — citations exact and the unlabelled trap is real. Minor caveat: the
+> multi-touch scenario assumes the OS emits a trailing `pointercancel`, which is asserted rather
+> than proven; the underlying hazard (an uncommitted group after a discard) holds either way.
 
 #### Problem
 
@@ -888,6 +899,11 @@ the memo (it currently calls `buildFields()` directly, line 253).
 `resetLiveCrayonForReplay`, plus `renderCrayonOp` at 519–555) @ 9ae62ff1
 
 **Priority:** P2
+
+> **Verified 2026-07-28** — claims hold. Two corrections: the file is 606 lines (not 607), and the
+> proposed 149–465 cut would also drag `clearAllOf` (lines 451–457), a non-crayon helper
+> `undoHistory` imports — the extraction boundary needs that one carve-out. Open issue #569 (dedupe
+> buffer-allocation blocks) is a narrower, distinct change, not a duplicate.
 
 #### Problem
 
@@ -2163,6 +2179,12 @@ Option 1 is structurally cleaner; option 2 is a five-line test with zero behavio
 **File(s):** `web/src/lib/drawing/exportDrawing.ts` (`loadPaperTexture`, lines 20–36) @ 9ae62ff1
 
 **Priority:** P2
+
+> **Verified 2026-07-28** — code and line citations exact. One softening the finding omits:
+> `/icons/handmade-paper.webp` is also a CSS background in `DrawingCanvas.svelte` line 450 and is
+> covered by the PWA precache `globPatterns` (`web/vite.config.ts` line 93), so the
+> connectivity-blip trigger is rarer than described. The memoization defect itself still stands
+> against the repo's "a memoized promise resets itself on rejection" rule.
 
 #### Problem
 
@@ -3602,66 +3624,6 @@ change (`AiImagePrompt.svelte` line 45 becomes `generateAiImage({ drawing: blob,
 `ActionsPanel.svelte` line 247 passes nothing).
 
 ## Source: Code audit — Parent Center / settings UI
-
-### [Correctness] `forgetKey()` fire-and-forgets an async secure-storage clear, so a failed forget is silent and leaves the UI inconsistent
-
-**File(s):** `web/src/lib/components/parent/AiKeyManager.svelte` (`forgetKey`, lines 126–130) @
-9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-`setAiUserApiKey` (in `web/src/lib/state/aiKey.svelte.ts`, lines 23–44) is async: it queues a
-secure-storage write and only assigns `settings.aiUserApiKey = v` after the persist succeeds; on
-persist failure the returned promise **rejects** and the live setting keeps its old value.
-`submitKey` treats it accordingly — it `await`s inside a `try/catch` and shows "could not be saved
-securely" on failure (lines 93–108).
-
-`forgetKey` does not:
-
-```svelte
-function forgetKey() {
-  setAiUserApiKey('');
-  keyInput = '';
-  resetKeyFeedback();
-}
-```
-
-If `clearApiKey()` fails (secure storage on native, encrypted IndexedDB on web — both can throw;
-that is exactly why `submitKey` has a dedicated catch branch for it), then:
-
-1. The returned promise rejection is unhandled — a console `unhandledrejection`, nothing surfaced to
-   the parent.
-2. `settings.aiUserApiKey` stays set, so `hasApiKey` stays true and the panel keeps showing the
-   masked key — the "Forget" tap appears to do nothing, with no error message, while
-   `resetKeyFeedback()` has just wiped any feedback that might have explained it.
-
-The success path also depends on the assignment inside `setAiUserApiKey` for the UI flip to the
-locked state; there is no local state masking the failure, which is good — but it means the
-silent-failure case is the *only* observable behavior difference, and it currently reads as a dead
-button.
-
-#### Proposed solution
-
-Make `forgetKey` async and mirror `submitKey`'s error handling:
-
-```ts
-async function forgetKey() {
-  keyInput = '';
-  resetKeyFeedback();
-  try {
-    await setAiUserApiKey('');
-  } catch {
-    keyStatus = 'error';
-    keyMessage = 'Could not remove the key from secure storage. Please try again.';
-  }
-}
-```
-
-Gotcha: `setAiUserApiKey`'s ordered write queue means a stale earlier save can still be in flight;
-the versioned queue already handles that, so no extra guard is needed here. `forgetAccessCode` is
-fine as-is (`setAiAccessToken` is synchronous).
 
 ### [Maintainability] Three hand-rolled copies of the iOS-style segmented control — extract a design primitive
 
@@ -7342,12 +7304,18 @@ self-contained while making the duplication safe.
 
 ## Source: Code audit — Core UI controls
 
-### [Correctness] Apply the scribbleGuard/scribbleTap contract to FullscreenToggle and the Clear Button
+### [Correctness] Apply the scribbleGuard/scribbleTap contract to the Clear Button
 
-**File(s):** `web/src/lib/components/FullscreenToggle.svelte` (line 11),
-`web/src/lib/components/ClearButton.svelte` (lines 38–74) @ 9ae62ff1
+**File(s):** `web/src/lib/components/ClearButton.svelte` (lines 38–74) @ 9ae62ff1
 
 **Priority:** P1
+
+> **Verified 2026-07-28.** An adversarial re-check confirmed the ClearButton half and **refuted** an
+> original second half naming `FullscreenToggle.svelte`: `fullscreenSupported()` in
+> `web/src/lib/state/fullscreen.svelte.ts` returns `isAndroidBrowser()` (after bailing on
+> `isNative()`/`isStandalone()`), and `platform.ts` line 47 matches `/android/i` against the UA — so
+> the toggle never renders on any WebKit surface, the only place iPadOS Scribble exists. Guarding it
+> would be dead work; that half has been removed from this finding.
 
 #### Problem
 
@@ -7357,32 +7325,24 @@ also documents that the *arming tap itself* is the trigger — it does not matte
 with the tap; a pen tap anywhere followed within ~450ms by a stroke gets that stroke silently
 swallowed by iPadOS Scribble (the ink commits to the engine and undo log but never paints).
 
-Two toddler-facing controls that sit directly on/next to the canvas are unguarded:
-
-* `FullscreenToggle.svelte` line 11 uses plain `onclick={toggleFullscreen}` and has no
-  `scribbleGuard`. It is anchored to the top-left of `.canvas-container` — squarely in
-  pen-tap-then-draw territory (and it renders on iPadOS Safari, where `fullscreen.supported` is
-  true).
-* `ClearButton.svelte` — the whole `dragToClear` gesture surface (lines 44–67) is pointer-event
-  driven, and neither the component nor `web/src/lib/actions/dragToClear.ts` cancels the parallel
-  stylus touch stream (grep for `touch` in `dragToClear.ts` finds nothing). A pen tap on the Clear
-  Button (a plain tap does nothing app-visible, which makes the subsequent invisible stroke even
-  more mysterious) arms Scribble exactly like a swatch tap did before ADR-0038.
+The Clear Button, a toddler-facing control sitting directly on the canvas, is unguarded: the whole
+`dragToClear` gesture surface (lines 44–67) is pointer-event driven, and neither the component nor
+`web/src/lib/actions/dragToClear.ts` cancels the parallel stylus touch stream (grep for `touch` in
+`dragToClear.ts` finds nothing). A pen tap on the Clear Button arms Scribble exactly like a swatch
+tap did before ADR-0038 — and because a plain tap does nothing app-visible, the subsequent invisible
+stroke is even more mysterious than the swatch case.
 
 Currently guarded surfaces are only `ColorPalette`, `ColorPicker`, and `ActionsPanel` (the three
 `use:scribbleGuard` sites in the repo).
 
 #### Proposed solution
 
-* FullscreenToggle: add `use:scribbleGuard` on the button and switch `onclick` to
-  `use:scribbleTap={toggleFullscreen}` (a `pointerup` grants transient user activation, so
-  `requestFullscreen()` is still legal — the pointer-activation gotcha in `.claude/rules/svelte.md`
-  explicitly lists pointerup as OK).
-* ClearButton: add `use:scribbleGuard` to `.clear-container` (or the button). Verify on-device that
-  cancelling stylus `touchstart` doesn't break `dragToClear` — it is pointer-driven and does its own
-  capture, so it should be unaffected; the guard also only fires for `touchType === 'stylus'`.
-* If either exclusion turns out to be deliberate (e.g. verified inert), the ADR-0038 rule deserves a
-  written carve-out; today nothing documents it.
+Add `use:scribbleGuard` to `.clear-container` (or the button). Verify on-device that cancelling
+stylus `touchstart` doesn't break `dragToClear` — it is pointer-driven and does its own capture, so
+it should be unaffected; the guard also only fires for `touchType === 'stylus'`.
+
+If the exclusion turns out to be deliberate (e.g. verified inert), the ADR-0038 rule deserves a
+written carve-out; today nothing documents it.
 
 ### [Maintainability] Deduplicate the AI-button visibility predicate between the layout math and the template
 
@@ -7390,6 +7350,11 @@ Currently guarded surfaces are only `ColorPalette`, `ColorPicker`, and `ActionsP
 `web/src/lib/components/ActionsPanel.svelte` (line 357) @ 9ae62ff1
 
 **Priority:** P2
+
+> **Verified 2026-07-28** — both quotes exact at the cited lines. Adjacent to open issue #599 ("A
+> BYO Gemini key never unhides the magic-image button"), which is a correctness bug in this same
+> predicate: fix them together so the two sites collapse into one shared function rather than
+> re-diverging.
 
 #### Problem
 
@@ -7575,6 +7540,11 @@ delete both "keep in sync" comments, or replace them with a pointer to the guard
 `web/src/lib/actionButtonLayout.test.ts` (lines 150–157, 189–196) @ 9ae62ff1
 
 **Priority:** P2
+
+> **Verified 2026-07-28** — every mirror site confirmed; `app.html.test.ts` guards `STORAGE_KEYS`,
+> `BOOL_SETTINGS` defaults and `data-app-surface`, but nothing checks the `data-off-*` vocabulary
+> against the TS writer. Citation correction: the "must stay in lockstep" prose is at
+> `actionButtonLayout.ts` lines 113–114, not 115–116.
 
 #### Problem
 
@@ -9647,6 +9617,11 @@ colors.customColor = DEFAULT_STROKE_COLOR;
 
 **Priority:** P2
 
+> **Verified 2026-07-28** — no drawing autosave/restore exists, so the hard navigation does lose
+> in-progress work. Caveat: the module header (lines 23–29) does describe the cache-bust redirect as
+> intentional design, and the blank-canvas invariant is scoped to waiting workers — so this is an
+> unconsidered gap rather than a documented tradeoff.
+
 #### Problem
 
 The entire update machinery is built around one invariant, stated in the module header (lines
@@ -11112,6 +11087,12 @@ return type `string | undefined` so the existing `if (!effectiveKey)` checks beh
 rotation-warm `$effect`, lines 59–63) @ 9ae62ff1
 
 **Priority:** P2
+
+> **Verified 2026-07-28** — confirmed that no other site warms chalk. Magnitude caveat the finding
+> omits: `web/vite.config.ts` line 93 precaches `**/*.webp` (all 96 chalk files, ~39 MB), so once
+> the service-worker precache completes both variants are local; the real win narrows to the
+> pre-SW/first-visit window plus decode warming, and is near-nil on native where assets are bundled.
+> Weigh that before ranking the work.
 
 #### Problem
 
@@ -14037,6 +14018,11 @@ printed report is worth pinning).
 
 **Priority:** P2
 
+> **Verified 2026-07-28** — the partial-move story checks out (line 72's sibling
+> `../docs/pen-chalk-fork.md` link is correct). The count is understated: there is a 6th
+> `../pipeline.md` reference at line 14 (a code span, not a link), and 23 raw occurrences total
+> rather than 18.
+
 #### Problem
 
 `legacy/README.md` is the canonical chronicle of the retired dark-mode approaches —
@@ -15686,6 +15672,10 @@ behavior only changes once.
 **File(s):** `scripts/perf/analyze-webinspector.mjs` (lines 32–166) @ 9ae62ff1
 
 **Priority:** P2
+
+> **Verified 2026-07-28** — the missing gate is real and `isMain(import.meta.url)` matches the
+> actual `scripts/lib/proc.mjs` signature. The testability argument is weaker than stated, though:
+> `perf-cli-inputs.test.mjs` spawns `analyze.mjs` as a subprocess even though that file *is* gated.
 
 #### Problem
 
@@ -18486,6 +18476,10 @@ Playwright's Node transform before choosing it as the export home; `strokeMath.t
 **File(s):** `web/tests/generate-image.spec.ts` (lines 19–21, 41–42) @ 9ae62ff1
 
 **Priority:** P2
+
+> **Verified 2026-07-28** — `rateLimitPolicy.ts` is side-effect-free and `admin.spec.ts` line 2
+> already imports a server module by relative path, so the proposed import is proven viable.
+> Citation correction: the constants are on lines 19–20 (line 18 is the comment).
 
 #### Problem
 
