@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
+
 import { gotoApp, openParentCenter } from './helpers';
 
 async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
@@ -48,6 +50,35 @@ test('parent center sidebar switches the content pane (tablet layout)', async ({
     .poll(() => aboutMascotImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .toBeGreaterThan(0);
   await expect(aboutMascot).toHaveClass(/icon-color/);
+});
+
+test('setting card spacing only applies to direct section siblings', async ({ page }) => {
+  await page.addInitScript(
+    (aiAccessToken) => localStorage.setItem(aiAccessToken, 'test-access-code'),
+    STORAGE_KEYS.aiAccessToken
+  );
+  await gotoApp(page);
+
+  const modal = await openParentCenter(page);
+  const directCards = page.locator('.pc-pane .setting-group > .setting');
+  await expect(directCards).toHaveCount(3);
+  await expect(directCards.nth(1)).toHaveCSS('margin-top', '6px');
+  await expect(directCards.nth(2)).toHaveCSS('margin-top', '6px');
+
+  await page.getByRole('button', { name: 'AI Art' }).click();
+  await expect(page.locator('#aiCodeActive')).toBeVisible();
+  const aiFeatureCards = page.locator('.pc-pane .ai-controls > .setting');
+  await expect(aiFeatureCards).toHaveCount(3);
+  await expect(aiFeatureCards.nth(1)).toHaveCSS('margin-top', '0px');
+  await expect(aiFeatureCards.nth(2)).toHaveCSS('margin-top', '0px');
+
+  await page.setViewportSize({ width: 852, height: 390 });
+  await expect(modal).toHaveClass(/compact/);
+  const quickToggleCells = page.locator('.quick-toggles > .setting');
+  await expect(quickToggleCells).toHaveCount(4);
+  await expect(quickToggleCells.nth(1)).toHaveCSS('margin-top', '0px');
+  await expect(quickToggleCells.nth(2)).toHaveCSS('margin-top', '0px');
+  await expect(quickToggleCells.nth(3)).toHaveCSS('margin-top', '0px');
 });
 
 test('parent center hub drills into a section and back (phone layout)', async ({ page }) => {

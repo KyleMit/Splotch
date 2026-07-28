@@ -132,141 +132,109 @@ interface PageExceptions {
   chalkExcept?: BookOrientation[];
 }
 
-function page(
-  book: string,
-  id: string,
+function book(
+  bookId: string,
   name: string,
-  { nightExcept = [], chalkExcept = [] }: PageExceptions = {}
-): ColoringPage {
+  platforms: BookPlatform[],
+  buildPages: (
+    page: (id: string, name: string, exceptions?: PageExceptions) => ColoringPage
+  ) => ColoringPage[]
+): Book {
+  function page(
+    id: string,
+    name: string,
+    { nightExcept = [], chalkExcept = [] }: PageExceptions = {}
+  ): ColoringPage {
+    return {
+      id,
+      name,
+      images: {
+        portrait: pageAssetPath(bookId, id, 'portrait', 'outline'),
+        landscape: pageAssetPath(bookId, id, 'landscape', 'outline'),
+      },
+      colorImages: {
+        portrait: pageAssetPath(bookId, id, 'portrait', 'light'),
+        landscape: pageAssetPath(bookId, id, 'landscape', 'light'),
+      },
+      nightImages: optionalPageAssetPaths(bookId, id, nightExcept, 'night'),
+      chalkImages: optionalPageAssetPaths(bookId, id, chalkExcept, 'chalk'),
+    };
+  }
+
   return {
-    id,
+    id: bookId,
     name,
-    images: {
-      portrait: pageAssetPath(book, id, 'portrait', 'outline'),
-      landscape: pageAssetPath(book, id, 'landscape', 'outline'),
-    },
-    colorImages: {
-      portrait: pageAssetPath(book, id, 'portrait', 'light'),
-      landscape: pageAssetPath(book, id, 'landscape', 'light'),
-    },
-    nightImages: optionalPageAssetPaths(book, id, nightExcept, 'night'),
-    chalkImages: optionalPageAssetPaths(book, id, chalkExcept, 'chalk'),
+    platforms,
+    cover: coverPath(bookId),
+    pages: buildPages(page),
   };
 }
 
 export const BOOKS: Book[] = [
-  {
-    id: 'farm',
-    name: 'Farm',
-    platforms: ['web', 'mobile'],
-    cover: coverPath('farm'),
-    pages: [
-      page('farm', 'cat', 'Cat'),
-      page('farm', 'cow', 'Cow'),
-      page('farm', 'dog', 'Dog'),
-      page('farm', 'duck', 'Duck'),
-      page('farm', 'horse', 'Horse'),
-      page('farm', 'pig', 'Pig'),
-    ],
-  },
-  {
-    id: 'dinosaur',
-    name: 'Dinosaurs',
-    platforms: ['web', 'mobile'],
-    cover: coverPath('dinosaur'),
-    pages: [
-      page('dinosaur', 'brachiosaurus', 'Brachiosaurus'),
-      page('dinosaur', 'pterodactyl', 'Pterodactyl'),
-      page('dinosaur', 'stegosaurus', 'Stegosaurus'),
-      page('dinosaur', 'trex', 'T. Rex'),
-      page('dinosaur', 'triceratops', 'Triceratops'),
-      page('dinosaur', 'velociraptor', 'Velociraptor'),
-    ],
-  },
-  {
-    id: 'creatures',
-    name: 'Creatures',
-    platforms: ['web', 'mobile'],
-    cover: coverPath('creatures'),
-    pages: [
-      page('creatures', 'dragon', 'Dragon'),
-      page('creatures', 'fairy', 'Fairy'),
-      page('creatures', 'mermaid', 'Mermaid'),
-      page('creatures', 'owl', 'Owl'),
-      page('creatures', 'pegasus', 'Pegasus'),
-      page('creatures', 'unicorn', 'Unicorn'),
-    ],
-  },
-  {
-    id: 'nature',
-    name: 'Nature',
-    platforms: ['web', 'mobile'],
-    cover: coverPath('nature'),
-    pages: [
-      page('nature', 'ant', 'Ant'),
-      page('nature', 'bee', 'Bee'),
-      page('nature', 'caterpillar', 'Caterpillar'),
-      page('nature', 'ladybug', 'Ladybug'),
-      page('nature', 'snail', 'Snail'),
-      page('nature', 'spider', 'Spider'),
-    ],
-  },
-  {
-    id: 'objects',
-    name: 'Objects',
-    platforms: ['web', 'mobile'],
-    cover: coverPath('objects'),
-    pages: [
-      page('objects', 'apple', 'Apple'),
-      page('objects', 'balloon', 'Balloon'),
-      page('objects', 'flower', 'Flower'),
-      page('objects', 'house', 'House'),
-      page('objects', 'teddy', 'Teddy'),
-      page('objects', 'umbrella', 'Umbrella'),
-    ],
-  },
-  {
-    id: 'shapes',
-    name: 'Shapes',
-    platforms: ['web', 'mobile'],
-    cover: coverPath('shapes'),
-    pages: [
-      page('shapes', 'circle', 'Circle'),
-      page('shapes', 'heart', 'Heart'),
-      page('shapes', 'rectangle', 'Rectangle'),
-      page('shapes', 'square', 'Square'),
-      page('shapes', 'star', 'Star'),
-      page('shapes', 'triangle', 'Triangle'),
-    ],
-  },
-  {
-    id: 'space',
-    name: 'Space',
-    platforms: ['web', 'mobile'],
-    cover: coverPath('space'),
-    pages: [
-      page('space', 'astronaut', 'Astronaut'),
-      page('space', 'meteor', 'Meteor'),
-      page('space', 'moon', 'Moon'),
-      page('space', 'rover', 'Rover'),
-      page('space', 'ship', 'Ship'),
-      page('space', 'station', 'Station'),
-    ],
-  },
-  {
-    id: 'vehicles',
-    name: 'Vehicles',
-    platforms: ['web', 'mobile'],
-    cover: coverPath('vehicles'),
-    pages: [
-      page('vehicles', 'excavator', 'Excavator'),
-      page('vehicles', 'fire', 'Fire Truck'),
-      page('vehicles', 'garbage', 'Garbage Truck'),
-      page('vehicles', 'monster', 'Monster Truck'),
-      page('vehicles', 'police', 'Police Car'),
-      page('vehicles', 'train', 'Train'),
-    ],
-  },
+  book('farm', 'Farm', ['web', 'mobile'], (page) => [
+    page('cat', 'Cat'),
+    page('cow', 'Cow'),
+    page('dog', 'Dog'),
+    page('duck', 'Duck'),
+    page('horse', 'Horse'),
+    page('pig', 'Pig'),
+  ]),
+  book('dinosaur', 'Dinosaurs', ['web', 'mobile'], (page) => [
+    page('brachiosaurus', 'Brachiosaurus'),
+    page('pterodactyl', 'Pterodactyl'),
+    page('stegosaurus', 'Stegosaurus'),
+    page('trex', 'T. Rex'),
+    page('triceratops', 'Triceratops'),
+    page('velociraptor', 'Velociraptor'),
+  ]),
+  book('creatures', 'Creatures', ['web', 'mobile'], (page) => [
+    page('dragon', 'Dragon'),
+    page('fairy', 'Fairy'),
+    page('mermaid', 'Mermaid'),
+    page('owl', 'Owl'),
+    page('pegasus', 'Pegasus'),
+    page('unicorn', 'Unicorn'),
+  ]),
+  book('nature', 'Nature', ['web', 'mobile'], (page) => [
+    page('ant', 'Ant'),
+    page('bee', 'Bee'),
+    page('caterpillar', 'Caterpillar'),
+    page('ladybug', 'Ladybug'),
+    page('snail', 'Snail'),
+    page('spider', 'Spider'),
+  ]),
+  book('objects', 'Objects', ['web', 'mobile'], (page) => [
+    page('apple', 'Apple'),
+    page('balloon', 'Balloon'),
+    page('flower', 'Flower'),
+    page('house', 'House'),
+    page('teddy', 'Teddy'),
+    page('umbrella', 'Umbrella'),
+  ]),
+  book('shapes', 'Shapes', ['web', 'mobile'], (page) => [
+    page('circle', 'Circle'),
+    page('heart', 'Heart'),
+    page('rectangle', 'Rectangle'),
+    page('square', 'Square'),
+    page('star', 'Star'),
+    page('triangle', 'Triangle'),
+  ]),
+  book('space', 'Space', ['web', 'mobile'], (page) => [
+    page('astronaut', 'Astronaut'),
+    page('meteor', 'Meteor'),
+    page('moon', 'Moon'),
+    page('rover', 'Rover'),
+    page('ship', 'Ship'),
+    page('station', 'Station'),
+  ]),
+  book('vehicles', 'Vehicles', ['web', 'mobile'], (page) => [
+    page('excavator', 'Excavator'),
+    page('fire', 'Fire Truck'),
+    page('garbage', 'Garbage Truck'),
+    page('monster', 'Monster Truck'),
+    page('police', 'Police Car'),
+    page('train', 'Train'),
+  ]),
 ];
 
 /** Books allowed on the given platform ('web' | 'mobile'). */

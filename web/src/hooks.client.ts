@@ -6,5 +6,7 @@ import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
 // error only goes to the console; the user-facing fallback is ErrorScreen.
 export const handleError: HandleClientError = ({ error, event }) => {
   console.error(ERROR_LOG_PREFIX.client, event?.url?.pathname ?? '', error);
+  // `message` isn't read by +error.svelte/ErrorScreen (their copy is fixed independently),
+  // but SvelteKit's default fallback error page (no custom error.html here) does surface it.
   return { message: GENERIC_ERROR_MESSAGE };
 };

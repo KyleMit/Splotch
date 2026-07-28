@@ -67,10 +67,6 @@
 </section>
 
 <style>
-  .setting-group .setting + .setting {
-    margin-top: 6px;
-  }
-
   .folder-location {
     display: flex;
     align-items: center;

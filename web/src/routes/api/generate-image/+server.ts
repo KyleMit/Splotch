@@ -8,6 +8,7 @@ import {
   authorizeGenerationRequest,
   type GenerationAuthorization,
 } from '$lib/server/generationAuthorization';
+import { contentTypeOf, readBodyWithinLimit } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 // A safety refusal is the model declining the drawing on policy grounds — the
@@ -28,9 +29,6 @@ const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 // token and (especially) a parent's BYO Gemini key are secrets, and query
 // strings leak into server/CDN access logs, browser history, and Referer
 // headers. The non-secret style enum is a plain query param. See ADR-0064.
-const contentTypeOf = (request: Request) =>
-  (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
-
 const asString = (value: FormDataEntryValue | null): string | null =>
   typeof value === 'string' ? value : null;
 
@@ -77,17 +75,10 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
     apiKey: request.headers.get(API_KEY_HEADER),
     style: url.searchParams.get('style'),
     readValidatedImage: async () => {
-      // Reject an oversized body before buffering it. Content-Length can be
-      // absent or wrong, so the byte length is re-checked after the read.
-      const declaredLength = Number(request.headers.get('content-length'));
-      if (Number.isFinite(declaredLength) && declaredLength > MAX_IMAGE_BYTES) {
-        throw error(413, 'Image is too large');
-      }
-      // Buffer.from(ArrayBuffer) wraps without copying (unlike the TypedArray
-      // overload), so the upload is only held in memory once.
-      const bytes = Buffer.from(await request.arrayBuffer());
+      const body = await readBodyWithinLimit(request, MAX_IMAGE_BYTES);
+      if (!body.ok) throw error(413, 'Image is too large');
+      const { bytes } = body;
       if (bytes.byteLength === 0) throw error(400, 'Missing image');
-      if (bytes.byteLength > MAX_IMAGE_BYTES) throw error(413, 'Image is too large');
       return { bytes, mimeType: contentTypeOf(request) };
     },
   };

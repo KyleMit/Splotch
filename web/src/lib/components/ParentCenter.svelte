@@ -497,6 +497,10 @@
     margin-bottom: 0;
   }
 
+  .parent-help-content :global(.setting-group > .setting + .setting) {
+    margin-top: 6px;
+  }
+
   .parent-help-content :global(.setting) {
     padding: 12px 16px;
     background: var(--surface-2);

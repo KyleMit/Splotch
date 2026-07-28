@@ -20,7 +20,7 @@
   import Icon from './Icon.svelte';
 
   let paletteEl: HTMLDivElement;
-  let swatchEls = $state<Record<string, HTMLButtonElement>>({});
+  let customSwatchEl: HTMLButtonElement | undefined;
 
   const dark = $derived(resolvedTheme() === 'dark');
 
@@ -77,7 +77,7 @@
   function selectCustomColor() {
     selectInkBrush();
     selectCustomSwatch();
-    colorPicker.show(swatchEls[CUSTOM_SWATCH] ? buttonCenter(swatchEls[CUSTOM_SWATCH]) : null);
+    colorPicker.show(customSwatchEl ? buttonCenter(customSwatchEl) : null);
     releaseAllPointers();
   }
 
@@ -130,7 +130,6 @@
       use:scribbleTap={() => selectSwatch(hex, shown)}
       onpointerdown={handlePaletteDown}
       onpointercancel={handleSwatchCancel}
-      bind:this={swatchEls[hex]}
     ></button>
   {/each}
 
@@ -146,7 +145,7 @@
     use:scribbleTap={selectCustomColor}
     onpointerdown={handlePaletteDown}
     onpointercancel={handleSwatchCancel}
-    bind:this={swatchEls[CUSTOM_SWATCH]}
+    bind:this={customSwatchEl}
     ><Icon name="more-colors" class="more-colors-icon" aria-hidden="true" /></button
   >
 </div>

@@ -5,6 +5,8 @@
   import { saveAdminSession, loadAdminSession, clearAdminSession } from '$lib/secureStorage';
   import { setAdminLinkVisible } from '$lib/state/settings.svelte';
   import { ASSUME_PERSISTENT } from '$lib/adminFormat';
+  import type { LoginResponse } from '../../api/admin/login/+server';
+  import type { TokenMutationError, TokenSnapshot } from '../../api/admin/tokens/+server';
 
   // API-backed twin of /admin for the native apps, whose static bundle has no
   // server to run the form actions. Same console UI, but auth rides as a
@@ -49,9 +51,7 @@
     return typeof invite.token === 'string' && typeof invite.url === 'string';
   }
 
-  function isSnapshot(
-    value: unknown
-  ): value is { ok: true; tokens: string[]; invites: Invite[]; persistent: boolean } {
+  function isSnapshot(value: unknown): value is TokenSnapshot {
     if (typeof value !== 'object' || value === null) return false;
     const snapshot = value as Record<string, unknown>;
     return (
@@ -77,7 +77,10 @@
 
   async function parseSnapshot(response: Response): Promise<SnapshotResult> {
     if (response.status === 401) return { ok: false, expired: true };
-    const data = await response.json().catch(() => null);
+    const data = (await response.json().catch(() => null)) as
+      | TokenSnapshot
+      | TokenMutationError
+      | null;
     if (!response.ok || !isSnapshot(data)) {
       return {
         ok: false,
@@ -137,9 +140,9 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key }),
       });
-      const data = await response.json().catch(() => null);
-      if (!response.ok || !data?.ok || typeof data?.session !== 'string') {
-        loginError = data?.error ?? 'Sign in failed.';
+      const data = (await response.json().catch(() => null)) as LoginResponse | null;
+      if (!response.ok || !data?.ok || typeof data.session !== 'string') {
+        loginError = (data && !data.ok ? data.error : null) ?? 'Sign in failed.';
         return false;
       }
       session = data.session;

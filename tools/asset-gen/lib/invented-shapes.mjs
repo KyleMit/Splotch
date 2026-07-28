@@ -21,13 +21,15 @@
 import sharp from 'sharp';
 import { dilateMask } from './morphology.mjs';
 import { OUTLINE_INK_CUTOFF } from './outline-match.mjs';
+import { floodBackground } from './regions.mjs';
 import { median } from './stats.mjs';
+
+export { BG_LIGHT_THRESHOLD as SRC_LIGHT } from './regions.mjs';
 
 // Geometry constants are inherited unchanged from scoreDrift/scoreNightness
 // (lib/night-scores.mjs) so this detector sees the same picture the gates do; the
 // blob thresholds are calibrated in ideas-exploration/idea-13/report.md.
 export const W = 512; // working width, matches scoreDrift's scale
-export const SRC_LIGHT = 170; // source pixel brighter than this = floodable background (as scoreNightness)
 export const LINE_DILATE = 6; // px of slack around source ink (registration + glow), as DRIFT_DILATE
 export const DEV_T = 60; // Euclidean RGB distance from median bg color to call a pixel "foreign"
 export const MIN_BLOB = 60; // px at W=512 — blobs smaller than this are speckle/texture
@@ -37,37 +39,6 @@ export const ANCHOR_MAX = 0.05; // blob FLOATS if <5% of its pixels touch the li
 // washes measure 21k-65k px here, real invented shapes 60-1300 px.
 export const MAX_BLOB = 8000;
 export const MIN_BG_FRAC = 0.04; // skip pages with almost no open background (as scoreNightness)
-
-function floodBackground(source, w, h, lightThreshold) {
-  const background = new Uint8Array(w * h);
-  const stack = [];
-  const push = (x, y) => {
-    if (x < 0 || x >= w || y < 0 || y >= h) return;
-    const i = y * w + x;
-    if (!background[i] && source[i] > lightThreshold) {
-      background[i] = 1;
-      stack.push(i);
-    }
-  };
-  for (let x = 0; x < w; x++) {
-    push(x, 0);
-    push(x, h - 1);
-  }
-  for (let y = 0; y < h; y++) {
-    push(0, y);
-    push(w - 1, y);
-  }
-  while (stack.length) {
-    const i = stack.pop();
-    const x = i % w;
-    const y = (i / w) | 0;
-    push(x + 1, y);
-    push(x - 1, y);
-    push(x, y + 1);
-    push(x, y - 1);
-  }
-  return background;
-}
 
 function medianCandidateColor(fill, candidates) {
   const rs = [],
@@ -169,7 +140,7 @@ export async function detectInventedShapes(fillBuf, sourceBuf) {
   const n = w * h;
 
   // 1. flood the open background from the border through source-light pixels
-  const bg = floodBackground(s.data, w, h, SRC_LIGHT);
+  const bg = floodBackground(s.data, w, h);
 
   // 2. dilated source-ink mask (lines + solid chalk whites)
   const ink = new Uint8Array(n);

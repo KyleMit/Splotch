@@ -73,10 +73,6 @@
 </section>
 
 <style>
-  .setting-group .setting + .setting {
-    margin-top: 6px;
-  }
-
   .appearance-label {
     display: flex;
     align-items: center;

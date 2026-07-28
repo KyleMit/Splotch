@@ -1,11 +1,30 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
+import { NON_RENDERABLE_ICONS, iconNameFromPath } from './iconTypes';
 
 // Guards against orphaned icon assets: an SVG nobody renders still inflates the
 // generated IconName union and the eager glob in Icon.svelte, and nothing else
-// would ever notice. Mirror Icon.svelte's own glob (splotchy is excluded there
-// too — it's consumed structurally, not through <Icon name=…>).
+// would ever notice. Mirror Icon.svelte's own glob — the exclusions repeat
+// NON_RENDERABLE_ICONS from iconTypes.ts, which is authoritative, but Vite
+// resolves import.meta.glob statically so the patterns can't be built from it.
 const svgs = import.meta.glob<string>(['../icons/*.svg', '!../icons/splotchy.svg'], {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+});
+
+// The unfiltered set, so the guard below can prove the literals above really do
+// exclude NON_RENDERABLE_ICONS and nothing else.
+const allSvgs = import.meta.glob<string>('../icons/*.svg', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+});
+
+// The other two files carrying the same exclusion literal, read as text so the
+// guard can check their patterns too. They need their own glob: `sources` below
+// excludes Icon.svelte and every *.test.ts.
+const globLiteralSources = import.meta.glob<string>(['./Icon.svelte', './Icon.svelte.test.ts'], {
   eager: true,
   query: '?raw',
   import: 'default',
@@ -31,8 +50,6 @@ const sources = import.meta.glob<string>(
 // mentions of the word are prose about the `settings` state module.
 const KNOWN_ORPHANS = ['chevron-up', 'settings'];
 
-const iconName = (path: string) => (path.split('/').pop() ?? '').replace('.svg', '');
-
 // Only a quoted string literal counts — `name="close"`, `icon: 'theme-auto'`,
 // the ERASER_SIZE_ICON maps. That's the form every real reference takes, and
 // requiring the quotes is what makes the guard work at all for icons named
@@ -45,14 +62,49 @@ const isReferenced = (name: string) => {
   return Object.values(sources).some((src) => literal.test(src));
 };
 
-describe('no orphan icons', () => {
-  it.each(Object.keys(svgs).map(iconName).sort())('%s: is referenced from source', (name) => {
-    if (KNOWN_ORPHANS.includes(name)) return;
+// Without this, NON_RENDERABLE_ICONS would be authoritative only by comment:
+// excluding a second icon in the glob literals while forgetting the constant
+// leaves CommonIconName admitting a name <Icon> can no longer render, and the
+// only symptom is an empty icon at runtime. All three literals are covered —
+// this file's by differencing the two globs against the icon directory, the
+// other two by reading their source and pulling out the `!` patterns.
+describe('NON_RENDERABLE_ICONS matches the glob literals', () => {
+  it('accounts for exactly the icons the exclusion globs drop', () => {
+    const excluded = new Set<string>(NON_RENDERABLE_ICONS);
     expect(
-      isReferenced(name),
-      `${name}.svg is never referenced by name — delete it, or render it via <Icon name="${name}">`
-    ).toBe(true);
+      Object.keys(allSvgs)
+        .map(iconNameFromPath)
+        .filter((name) => !excluded.has(name))
+        .sort()
+    ).toEqual(Object.keys(svgs).map(iconNameFromPath).sort());
   });
+
+  it('resolves both glob-literal source files', () => {
+    expect(Object.keys(globLiteralSources).sort()).toEqual([
+      './Icon.svelte',
+      './Icon.svelte.test.ts',
+    ]);
+  });
+
+  it.each(Object.keys(globLiteralSources))('%s excludes exactly those icons', (path) => {
+    const excluded = [...globLiteralSources[path].matchAll(/!\.\.\/icons\/([\w-]+)\.svg/g)].map(
+      ([, name]) => name
+    );
+    expect(excluded.sort()).toEqual([...NON_RENDERABLE_ICONS].sort());
+  });
+});
+
+describe('no orphan icons', () => {
+  it.each(Object.keys(svgs).map(iconNameFromPath).sort())(
+    '%s: is referenced from source',
+    (name) => {
+      if (KNOWN_ORPHANS.includes(name)) return;
+      expect(
+        isReferenced(name),
+        `${name}.svg is never referenced by name — delete it, or render it via <Icon name="${name}">`
+      ).toBe(true);
+    }
+  );
 
   it.each(KNOWN_ORPHANS)(
     '%s: is still an orphan, so the carve-out still earns its place',

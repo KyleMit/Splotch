@@ -141,15 +141,19 @@ let lastColorChangeTime = 0;
 // a full client re-render, replacing the live canvas — ADR-0072). Created,
 // styled, and inserted by the engine only where the markup has none (the
 // /dev/engine harness, which inits after hydration).
-let crayonOverlay: HTMLCanvasElement | null = null;
-let crayonOverlayCtx: CanvasRenderingContext2D | null = null;
-let crayonOverlayTop: HTMLCanvasElement | null = null;
-let crayonOverlayTopCtx: CanvasRenderingContext2D | null = null;
-let crayonOverlaysCreated = false;
+interface CrayonOverlays {
+  bottom: HTMLCanvasElement;
+  bottomCtx: CanvasRenderingContext2D;
+  top: HTMLCanvasElement;
+  topCtx: CanvasRenderingContext2D;
+  engineCreated: boolean;
+}
+
+let crayonOverlays: CrayonOverlays | null = null;
 
 function syncCrayonOverlayMix() {
-  if (crayonOverlayTop) {
-    crayonOverlayTop.style.opacity = String(1 - crayonColorMix());
+  if (crayonOverlays) {
+    crayonOverlays.top.style.opacity = String(1 - crayonColorMix());
   }
 }
 
@@ -428,15 +432,17 @@ function resizeCanvas() {
   canvas.height = Math.round(rect.height * renderScale);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  for (const [el, g] of [
-    [crayonOverlay, crayonOverlayCtx],
-    [crayonOverlayTop, crayonOverlayTopCtx],
-  ] as const) {
-    if (!el || !g) continue;
-    el.width = canvas.width;
-    el.height = canvas.height;
-    g.lineCap = 'round';
-    g.lineJoin = 'round';
+  const overlays = crayonOverlays;
+  if (overlays) {
+    for (const [el, g] of [
+      [overlays.bottom, overlays.bottomCtx],
+      [overlays.top, overlays.topCtx],
+    ] as const) {
+      el.width = canvas.width;
+      el.height = canvas.height;
+      g.lineCap = 'round';
+      g.lineJoin = 'round';
+    }
   }
   applyPaperView(lockPaper);
 
@@ -1182,14 +1188,11 @@ function teardownEngine() {
   setLiveCrayonBuffer(null, null);
   // Only engine-created overlays are removed — adopted ones belong to the
   // owner component's markup and die (or are re-adopted) with it.
-  if (crayonOverlaysCreated) {
-    crayonOverlay?.remove();
-    crayonOverlayTop?.remove();
+  if (crayonOverlays?.engineCreated) {
+    crayonOverlays.bottom.remove();
+    crayonOverlays.top.remove();
   }
-  crayonOverlay = null;
-  crayonOverlayCtx = null;
-  crayonOverlayTop = null;
-  crayonOverlayTopCtx = null;
+  crayonOverlays = null;
   // After the pointer release above has fired its stop/commit callbacks,
   // detach them all: a torn-down engine (e.g. a deferred fold settling after
   // navigation) must never signal an unmounted component. The next adopt or
@@ -1231,26 +1234,30 @@ function setupCrayonOverlays(canvas: HTMLCanvasElement): void {
   const providedOverlays = canvas.parentElement?.querySelectorAll<HTMLCanvasElement>(
     'canvas[data-crayon-overlay]'
   );
+  let bottom: HTMLCanvasElement;
+  let top: HTMLCanvasElement;
+  let engineCreated: boolean;
   if (providedOverlays && providedOverlays.length >= 2) {
-    crayonOverlay = providedOverlays[0];
-    crayonOverlayTop = providedOverlays[1];
-    crayonOverlaysCreated = false;
+    bottom = providedOverlays[0];
+    top = providedOverlays[1];
+    engineCreated = false;
   } else {
     const overlayCss =
       'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;';
-    crayonOverlay = document.createElement('canvas');
-    crayonOverlay.setAttribute('aria-hidden', 'true');
-    crayonOverlay.style.cssText = overlayCss + 'mix-blend-mode:darken;';
-    crayonOverlayTop = document.createElement('canvas');
-    crayonOverlayTop.setAttribute('aria-hidden', 'true');
-    crayonOverlayTop.style.cssText = overlayCss;
-    canvas.insertAdjacentElement('afterend', crayonOverlay);
-    crayonOverlay.insertAdjacentElement('afterend', crayonOverlayTop);
-    crayonOverlaysCreated = true;
+    bottom = document.createElement('canvas');
+    bottom.setAttribute('aria-hidden', 'true');
+    bottom.style.cssText = overlayCss + 'mix-blend-mode:darken;';
+    top = document.createElement('canvas');
+    top.setAttribute('aria-hidden', 'true');
+    top.style.cssText = overlayCss;
+    canvas.insertAdjacentElement('afterend', bottom);
+    bottom.insertAdjacentElement('afterend', top);
+    engineCreated = true;
   }
-  crayonOverlayCtx = crayonOverlay.getContext('2d')!;
-  crayonOverlayTopCtx = crayonOverlayTop.getContext('2d')!;
-  setLiveCrayonBuffer(ctx, crayonOverlayCtx, crayonOverlayTopCtx);
+  const bottomCtx = bottom.getContext('2d')!;
+  const topCtx = top.getContext('2d')!;
+  crayonOverlays = { bottom, bottomCtx, top, topCtx, engineCreated };
+  setLiveCrayonBuffer(ctx, bottomCtx, topCtx);
   syncCrayonOverlayMix();
 }
 

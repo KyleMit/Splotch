@@ -159,10 +159,6 @@
 </section>
 
 <style>
-  .setting-group .setting + .setting {
-    margin-top: 6px;
-  }
-
   .slider-setting {
     margin-top: 12px;
   }

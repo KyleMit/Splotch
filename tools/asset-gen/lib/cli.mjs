@@ -1,5 +1,9 @@
 import { parseArgs } from 'node:util';
-import { fail } from './paths.mjs';
+
+export function fail(message) {
+  console.error(message);
+  process.exit(1);
+}
 
 export function parsePngToWebpOptions(args = process.argv.slice(2), env = process.env) {
   const { values } = parseArgs({

@@ -21,14 +21,8 @@
 import { glob, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
-import {
-  ASSET_GEN_DIR,
-  COLORING_DIR,
-  STYLES_DIR,
-  FILL_SRC_DIR,
-  fail,
-  toPosix,
-} from '../lib/paths.mjs';
+import { ASSET_GEN_DIR, COLORING_DIR, STYLES_DIR, FILL_SRC_DIR, toPosix } from '../lib/paths.mjs';
+import { fail } from '../lib/cli.mjs';
 
 export const MANIFEST_PATH = join(ASSET_GEN_DIR, 'golden', 'asset-manifest.sha256');
 

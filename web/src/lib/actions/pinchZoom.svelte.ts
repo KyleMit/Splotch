@@ -222,13 +222,11 @@ export function pinchZoom(node: HTMLElement, getOptions: () => PinchZoomOptions)
   node.addEventListener('pointerup', onPointerUp);
   node.addEventListener('pointercancel', onPointerUp);
 
-  // Reset to fit whenever the gate toggles or a new image arrives. Reading these
-  // runes here is what subscribes the action to them; each run returns the
-  // preview to its un-zoomed, centered state.
+  // Calling the option getter performs the reactive reads that subscribe this
+  // effect to gate changes and new images. Each run returns the preview to its
+  // un-zoomed, centered state.
   $effect(() => {
     const o = getOptions();
-    void o.enabled;
-    void o.resetKey;
     reset(o.target);
   });
 

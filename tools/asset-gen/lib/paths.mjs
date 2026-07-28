@@ -37,11 +37,6 @@ export async function resolveNightLineArt(penPath, pen = null) {
   return { sourcePath, source, chalk: chalked ? source : null };
 }
 
-export function fail(message) {
-  console.error(message);
-  process.exit(1);
-}
-
 export function toPosix(rel) {
   return rel.replaceAll('\\', '/');
 }

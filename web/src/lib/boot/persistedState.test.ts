@@ -42,14 +42,18 @@ vi.mock('../orientation', () => ({
 }));
 
 import { STORAGE_KEYS } from '../storage';
+import { applyDeviceOrientationPreference } from '../orientation';
 import { settings } from '../state/settings.svelte';
 import { hydratePersistedState } from './persistedState';
 
 beforeEach(() => {
+  vi.clearAllMocks();
   localStorage.clear();
   prefsStore.clear();
   secureStore.apiKey = null;
   settings.aiUserApiKey = '';
+  settings.lockRotationEnabled = true;
+  settings.forceLandscapeOrientation = false;
   ctrl.native = false;
 });
 
@@ -64,5 +68,15 @@ describe('hydratePersistedState', () => {
     expect(secureStore.apiKey).toBe('durable-legacy-key');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
     await vi.waitFor(() => expect(prefsStore.has(STORAGE_KEYS.legacyAiUserApiKey)).toBe(false));
+  });
+
+  it('applies the restored device orientation preference', async () => {
+    ctrl.native = true;
+    prefsStore.set(STORAGE_KEYS.lockRotation, 'false');
+    prefsStore.set(STORAGE_KEYS.forceLandscape, 'true');
+
+    await hydratePersistedState();
+
+    expect(applyDeviceOrientationPreference).toHaveBeenCalledWith(false, true);
   });
 });

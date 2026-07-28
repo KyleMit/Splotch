@@ -70,18 +70,14 @@
     z-index: 1;
     pointer-events: none;
     overflow: hidden;
-    -webkit-mask-image: radial-gradient(
+    --confetti-mask: radial-gradient(
       ellipse var(--confetti-rx, 31%) var(--confetti-ry, 41%) at 50% 50%,
       transparent 0,
       transparent 95%,
       #000 100%
     );
-    mask-image: radial-gradient(
-      ellipse var(--confetti-rx, 31%) var(--confetti-ry, 41%) at 50% 50%,
-      transparent 0,
-      transparent 95%,
-      #000 100%
-    );
+    -webkit-mask-image: var(--confetti-mask);
+    mask-image: var(--confetti-mask);
   }
 
   .confetti {

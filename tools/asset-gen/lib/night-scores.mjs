@@ -10,6 +10,7 @@
 import sharp from 'sharp';
 import { dilateMask, erodeMask } from './morphology.mjs';
 import { OUTLINE_INK_CUTOFF, OUTLINE_MASK_SIZE } from './outline-match.mjs';
+import { floodBackground } from './regions.mjs';
 import { median } from './stats.mjs';
 
 // --- Drift detection ----------------------------------------------------------
@@ -36,7 +37,6 @@ export const DRIFT_THRESHOLD_DEFAULT = 0.004;
 // stays low even then, while a daytime sky reads bright. Known-good night fills
 // sit at ~15-32; sky-blue daytime is ~150+.
 const NIGHT_W = 384;
-const NIGHT_SRC_LIGHT = 170; // source pixel brighter than this = background candidate
 export const NIGHT_BG_LUMA_MAX_DEFAULT = 60; // median background luma above this = too bright / daytime (3.1-migration bar; shipped catalog is 18-48)
 const NIGHT_MIN_BG_FRAC = 0.04; // skip the check if there's barely any open background
 
@@ -62,33 +62,7 @@ export async function scoreNightness(fillBuf, sourceBuf) {
   const w = s.info.width;
   const h = s.info.height;
   const n = w * h;
-  const bg = new Uint8Array(n);
-  const stack = [];
-  const push = (x, y) => {
-    if (x < 0 || x >= w || y < 0 || y >= h) return;
-    const i = y * w + x;
-    if (!bg[i] && s.data[i] > NIGHT_SRC_LIGHT) {
-      bg[i] = 1;
-      stack.push(i);
-    }
-  };
-  for (let x = 0; x < w; x++) {
-    push(x, 0);
-    push(x, h - 1);
-  }
-  for (let y = 0; y < h; y++) {
-    push(0, y);
-    push(w - 1, y);
-  }
-  while (stack.length) {
-    const i = stack.pop();
-    const x = i % w;
-    const y = (i / w) | 0;
-    push(x + 1, y);
-    push(x - 1, y);
-    push(x, y + 1);
-    push(x, y - 1);
-  }
+  const bg = floodBackground(s.data, w, h);
   const lumas = [];
   for (let i = 0; i < n; i++) {
     if (!bg[i]) continue;

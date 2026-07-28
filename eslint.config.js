@@ -50,9 +50,6 @@ export default tseslint.config(
       parserOptions: { parser: tseslint.parser },
     },
     rules: {
-      // Bare member reads inside $effect register reactive dependencies (idiomatic Svelte 5);
-      // they are intentional, not dead expressions.
-      '@typescript-eslint/no-unused-expressions': 'off',
       // Misfires on `$bindable()` destructuring defaults, which read as unused assignments.
       'no-useless-assignment': 'off',
     },
