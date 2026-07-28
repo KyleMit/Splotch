@@ -19,34 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Maintainability] `resetEmptyScanScratch` is a shipped test-only reset export whose only consumer is a test of the seam itself
-
-**File(s):** `web/src/lib/drawing/emptyScan.ts` (`resetEmptyScanScratch`, lines 48–54);
-`web/src/lib/drawing/emptyScan.test.ts` (whole file) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-CLAUDE.md's convention is explicit: "Module-scope mutable `let` is either a pure memoization cache
-or lives behind a `createX()` factory so tests get fresh instances — never a shipped `*ForTests`
-reset export." The `scratchCanvas`/`scratchCtx` pair is a legitimate memoization cache, but
-`resetEmptyScanScratch` (lines 51–54) is precisely the banned shipped reset export under a different
-name — its own comment concedes "production code never calls this." Worse, the seam is circular: the
-*entire* test file exists to verify the reset seam ("These cover the test-only reset seam", lines
-5–9), and no other test consumes it. The module ships dead surface to production so that a test can
-prove the dead surface works.
-
-#### Proposed solution
-
-Delete `resetEmptyScanScratch` and `emptyScan.test.ts` as they stand. If the extraction from the
-previous finding lands, replace the file with unit tests of the pure predicate — real coverage
-instead of seam self-verification, and the module-scope cache needs no reset because the predicate
-takes its data as an argument. If a future test genuinely needs a fresh scratch (e.g. a jsdom-canvas
-integration test), follow the convention's factory route (`createEmptyScanner()`), not a reset
-export. Gotcha: the test currently doubles as documentation that the cache deliberately survives
-engine teardown — move that sentence into the module header (it's half there already, lines 48–50).
-
 ### [Maintainability] `DEFAULT_LINE_WIDTH_PX = 8` repeats the app's size-3 stroke width as an unlinked literal
 
 **File(s):** `web/src/lib/drawing/engine.ts` (lines 116–117) @ 9ae62ff1

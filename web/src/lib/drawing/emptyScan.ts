@@ -2,7 +2,9 @@
 // canvas instead of the main canvas: reading the (GPU-backed) main canvas
 // directly would either force a slow readback or require willReadFrequently,
 // which de-accelerates every stroke. Downscaling shrinks the pixel loop ~16×
-// and the drawImage stays GPU→GPU until the tiny scratch readback.
+// and the drawImage stays GPU→GPU until the tiny scratch readback. The scratch
+// canvas is a singleton cache that deliberately outlives engine teardown and
+// remounts, so a remount never pays for a re-allocation.
 
 import { PERF_MARKS } from './perf';
 
@@ -44,12 +46,4 @@ export function scanCanvasIsEmpty(source: HTMLCanvasElement, renderScale: number
   const empty = !alphaDataHasInk(data);
   if (PERF_MARKS) performance.measure('engine.scanEmpty', 'engine.scanEmpty:start');
   return empty;
-}
-
-// Test-only seam: production code never calls this — the scratch canvas is a
-// deliberate perf cache that outlives engine teardown/remounts (see the file
-// header). Exists so a unit test can force a clean re-alloc between cases.
-export function resetEmptyScanScratch(): void {
-  scratchCanvas = null;
-  scratchCtx = null;
 }
