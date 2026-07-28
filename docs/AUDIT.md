@@ -35,31 +35,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — scrapbook · run-artifact code
 
-### [P3][discoverability] README warns about masthead sync but not the hub's category-registry maintenance step
-
-**File(s):** `scrapbook/README.md:61-65` — pinned at SHA f934d43
-
-#### Problem
-
-The README tells maintainers the coloring hub `index.html` is a keeper that must be kept "in sync"
-with the chrome masthead/breadcrumb by hand. It does *not* mention the more consequential manual
-step: adding or removing a proof-sheet category requires editing the hub's `CATEGORIES` array (and
-its `pages` count) or the new sheet is invisible in the hub (see the P2 finding). The one piece of
-the hub most likely to need editing is the one the docs are silent on.
-
-#### Proposed solution
-
-Extend the existing hub note to state that adding/renaming/removing a category means editing the
-`CATEGORIES` array in `coloring-book-proof-sheets/index.html` (and its `pages` count), until/unless
-that array is generated. Pair this with whatever guard the P2 finding lands on.
-
-#### Verification
-
-The README's coloring-hub paragraph should name `CATEGORIES` as a hand-maintained list; confirm a
-reader adding a category is told to edit it.
-
----
-
 ### [P4][accessibility] Tab UI is built from bare `<button>`s with no tab ARIA semantics
 
 **File(s):** `scrapbook/coloring-book-proof-sheets/index.html:168-177`, `:199-206` (hand-authored
