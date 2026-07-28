@@ -19,49 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Testing] Extract emptyScan's alpha-scan predicate so the actual detection logic is unit-testable
-
-**File(s):** `web/src/lib/drawing/emptyScan.ts` (`scanCanvasIsEmpty`, lines 36–43);
-`web/src/lib/drawing/emptyScan.test.ts` @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The only logic in this module that can be wrong — the thresholded alpha scan —
-
-```ts
-const { data } = scratchCtx.getImageData(0, 0, w, h);
-let empty = true;
-for (let i = 3; i < data.length; i += 4) {
-  if (data[i] >= EMPTY_SCAN_ALPHA_THRESHOLD) {
-    empty = false;
-    break;
-  }
-}
-```
-
-has zero test coverage, because it's fused to canvas APIs happy-dom doesn't implement. The test file
-says so itself (lines 7–9: "happy-dom's `<canvas>` has no 2D context, so `scanCanvasIsEmpty`
-short-circuits to `true`") and consequently tests only allocation counting. The threshold semantics
-(`>=` vs `>`, the off-by-one at `EMPTY_SCAN_ALPHA_THRESHOLD - 1`, the stride-4 alpha walk) are
-exactly the kind of pure logic the repo's testing rules say belongs in Vitest.
-
-#### Proposed solution
-
-Extract a pure predicate:
-
-```ts
-export function alphaDataHasInk(data: Uint8ClampedArray): boolean;
-```
-
-(or `isAlphaDataEmpty`), called by `scanCanvasIsEmpty` after the readback. Unit tests then cover:
-all-zero → empty; a single alpha byte at `EMPTY_SCAN_ALPHA_THRESHOLD` → not empty; alpha at
-`EMPTY_SCAN_ALPHA_THRESHOLD - 1` everywhere → empty; ink in the final pixel (loop-bound check); and
-that only alpha bytes are consulted (RGB noise with zero alpha → empty). Per the testing rules,
-tests should import `EMPTY_SCAN_ALPHA_THRESHOLD` rather than re-declaring 4 — which means exporting
-the constant.
-
 ### [Maintainability] `resetEmptyScanScratch` is a shipped test-only reset export whose only consumer is a test of the seam itself
 
 **File(s):** `web/src/lib/drawing/emptyScan.ts` (`resetEmptyScanScratch`, lines 48–54);
