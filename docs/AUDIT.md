@@ -7,33 +7,6 @@
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P4][consistency] `info` uses `npx scripts-info` though `scripts-info` is a declared dependency
-
-**File(s):** `package.json:9,16,122` (scripts) — pinned at SHA f934d43
-
-#### Problem
-
-`"info": "npx scripts-info"` calls the binary through `npx` even though `scripts-info` is a
-`devDependency` (`package.json:266`) already installed in `node_modules/.bin`. The bare
-`scripts-info` would resolve the local binary directly; the `npx` wrapper adds a lookup/prompt path
-for no reason. Meanwhile `dev:kill` (`npx kill-port …`) and `update:browserslist`
-(`npx update-browserslist-db@latest`) *correctly* use `npx` for packages that are **not**
-dependencies. So the same `npx` prefix means two different things across the script block, and the
-one case that doesn't need it is the one that has it.
-
-#### Proposed solution
-
-Change `info` to `"scripts-info"` (local binary). Leave the genuine on-demand `npx` calls
-(`kill-port`, `update-browserslist-db@latest`) as-is, and consider a brief note that `npx` in this
-file signals "not a declared dependency".
-
-#### Verification
-
-`npm run info` still prints the script table. `ls node_modules/.bin/scripts-info` confirms the local
-binary exists, so `npx` is redundant.
-
----
-
 ### [P4][consistency] Ignore-glob style differs across eslint / dprint / prettier for the same paths
 
 **File(s):** `eslint.config.js:14-20`, `dprint.json:18-21`, `.prettierignore:1-9` (config) — pinned

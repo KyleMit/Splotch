@@ -6,7 +6,7 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "info": "npx scripts-info",
+    "info": "scripts-info",
     "dev": "node scripts/web.mjs vite dev",
     "predev:netlify": "node scripts/check-netlify-cli.mjs",
     "dev:netlify": "netlify dev --cwd web",
