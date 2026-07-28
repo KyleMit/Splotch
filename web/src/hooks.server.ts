@@ -74,5 +74,8 @@ export const handle: Handle = sequence(handleCors, handleSecurityHeaders);
 // so expected error(4xx) responses never land here.
 export const handleError: HandleServerError = ({ error, event, status }) => {
   console.error(ERROR_LOG_PREFIX.server, event.url.pathname, status, error);
+  // `message` isn't read by +error.svelte/ErrorScreen (their copy is fixed independently), but
+  // it does surface: SvelteKit's default fallback error page (no custom error.html here), and
+  // the JSON error body returned to callers when a /api/* +server.ts handler throws.
   return { message: GENERIC_ERROR_MESSAGE };
 };
