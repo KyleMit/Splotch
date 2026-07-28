@@ -38,17 +38,20 @@ won't hold back a feature for it.
 
 ## How the floor is enforced
 
-The web build floor has one declaration: `web/vite.config.ts` → `build.target`. **Its iOS/Safari
-version MUST stay ≥ the native iOS deployment target** — otherwise an iOS device gets a bundle its
-WebView can't run.
+The web build floor has one declaration: `web/browserTargets.ts`, imported by `web/vite.config.ts`
+as `build.target`. **Its iOS/Safari version MUST stay ≤ the native iOS deployment target** — the
+native app serves this exact bundle to every device that can install it, and a device on the oldest
+installable iOS runs WebKit at exactly that version, so a web floor *newer* than the deployment
+target ships syntax its WebView can't run. `web/src/browserFloor.test.ts` enforces the direction in
+CI.
 
 | Platform floor               | File                                                                   | Value                                                 |
 | ---------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------- |
-| Web JS/CSS transpile target  | `web/vite.config.ts` → `build.target`                                  | `chrome111, edge111, firefox114, safari16.4, ios16.4` |
+| Web JS/CSS transpile target  | `web/browserTargets.ts` → `build.target`                               | `chrome111, edge111, firefox114, safari16.4, ios16.4` |
 | Native iOS deployment target | `ios/App/App.xcodeproj/project.pbxproj` → `IPHONEOS_DEPLOYMENT_TARGET` | `16.4` (×4)                                           |
 | Native Android min SDK       | `android/variables.gradle` → `minSdkVersion`                           | `24`                                                  |
 
-`vite.config.ts` pins `build.target` explicitly rather than inheriting Vite's default
+`browserTargets.ts` pins `build.target` explicitly rather than inheriting Vite's default
 (`baseline-widely-available`), because that default silently moves up every year and would change
 the floor without a decision.
 
@@ -136,7 +139,8 @@ Chrome 111 / Safari 16.4. The deliberate non-polyfill choices:
 
 ## Maintaining this
 
-* Change the web floor in `web/vite.config.ts` `build.target`. Change the native iOS floor in
-  `IPHONEOS_DEPLOYMENT_TARGET`; keep the web target ≥ the native iOS target.
+* Change the web floor in `web/browserTargets.ts`. Change the native iOS floor in
+  `IPHONEOS_DEPLOYMENT_TARGET`; keep the web target's iOS/Safari version ≤ the native iOS target
+  (`web/src/browserFloor.test.ts` fails otherwise).
 * When adding a new web API, check its Baseline status against this floor and either confirm it's
   covered or feature-detect it — then add a row here.
