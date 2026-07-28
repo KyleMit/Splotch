@@ -646,6 +646,14 @@ function commitStrokeGroup() {
   if (PERF_MARKS) performance.measure('engine.commit', 'engine.commit:start');
 }
 
+// The last pointer of a group is gone: reset the per-group flag, commit, and let
+// consumers know drawing has stopped.
+function finishStrokeGroup() {
+  groupHasDrawn = false;
+  commitStrokeGroup();
+  if (onDrawStopCallback) onDrawStopCallback();
+}
+
 // --- Pointer tracking -------------------------------------------------------
 
 // x/y/midX/midY are PAPER coordinates (the space ops are recorded in).
@@ -811,10 +819,13 @@ function commitEdgeSwipe(ps: PointerState) {
 
 // Drop a pointer without rendering anything (an OS edge-swipe). Nothing was
 // painted, so undo/empty state and the group flag are left untouched.
+// Discarding the last live pointer does end the group here (flag reset
+// included): the discarded id gets no later stopDrawing tail to complete it.
 function discardPointer(e: PointerEvent) {
   activePointers.delete(e.pointerId);
   ctx.beginPath();
   releaseCaptureSafe(e.pointerId);
+  if (activePointers.size === 0) finishStrokeGroup();
 }
 
 // Edge-gesture candidate: withhold rendering until the direction is decided.
@@ -923,6 +934,15 @@ function draw(e: PointerEvent) {
 function stopDrawing(e: PointerEvent) {
   const pointerState = activePointers.get(e.pointerId);
 
+  // Not a pointer this engine is tracking: a hovering mouse's pointerout, or a
+  // trailing cancel for an id already dropped by discardPointer (which ended
+  // the group itself). Nothing to close down — releasing capture we never took
+  // is harmless, and covers a tracked pointer that never captured.
+  if (!pointerState) {
+    releaseCaptureSafe(e.pointerId);
+    return;
+  }
+
   // An edge-band touch that lifted before its direction was decided was a tap,
   // not a swipe — commit it (typically just the start dot). A pointercancel
   // (the OS took the gesture over) instead leaves it a candidate, so nothing is
@@ -947,11 +967,7 @@ function stopDrawing(e: PointerEvent) {
     setCanvasEmptyState(scanCanvasIsEmpty(canvas, renderScale));
   }
 
-  if (activePointers.size === 0) {
-    groupHasDrawn = false;
-    commitStrokeGroup();
-    if (onDrawStopCallback) onDrawStopCallback();
-  }
+  if (activePointers.size === 0) finishStrokeGroup();
 
   releaseCaptureSafe(e.pointerId);
 }
