@@ -47,6 +47,12 @@ Empirical checks run in this triage session (Node v22.22.2):
   (`docs/audit-deferred/p2-duplication-experimental-strip-types-disable-warning-experimentalwarn.patch`)
   **still applies cleanly at HEAD** (`git apply --check` passes).
 
+> **Addendum (2026-07-28, at 30f0c7ef3068):** the patch **no longer applies** — `git apply --check`
+> now fails on `package.json` and `scripts/api-smoke.mjs`, which both moved on after 63a7aa49. Treat
+> it as a reference for *which* sites to touch, not as something to apply. Everything else in this
+> section re-verified true at 30f0c7ef3068: `engines.node` is still `>=22.13`, with 16 flagged
+> script lines in the root `package.json` and 5 in `tools/asset-gen/package.json`.
+
 Node-floor bump safety, checked at every site the reviewer never mentioned:
 
 * **CI:** every workflow uses the composite `.github/actions/setup-node`, which pins
