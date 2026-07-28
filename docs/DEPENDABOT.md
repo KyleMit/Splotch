@@ -43,18 +43,22 @@ problem. What GitHub restricts is what the resulting run is *allowed to do*: on 
 receives a **read-only `GITHUB_TOKEN`** and **cannot read Actions secrets at all**. A secret
 reference there doesn't error — it resolves to an empty string.
 
-Three settings in the workflow exist solely to work within that sandbox, and **each one fails
-silently if removed.** The job goes green having done nothing, which is the failure mode to watch
-for:
+Four settings in the workflow exist solely to work within that sandbox and around the action's
+automation-mode defaults, and **each one fails silently if removed.** The job goes green having
+achieved nothing, which is the failure mode to watch for:
 
-| Setting                         | Why it's there                                                       | Symptom if missing         |
-| ------------------------------- | -------------------------------------------------------------------- | -------------------------- |
-| Secret in the Dependabot store  | The only secret store injected into these runs                       | Auth failure — empty token |
-| `permissions:` block            | Re-grants write to the read-only token so the comment can be posted  | Comment never appears      |
-| `allowed_bots: dependabot[bot]` | `claude-code-action` ignores bot actors by default (default: *none*) | Job succeeds, does nothing |
+| Setting                         | Why it's there                                                       | Symptom if missing              |
+| ------------------------------- | -------------------------------------------------------------------- | ------------------------------- |
+| Secret in the Dependabot store  | The only secret store injected into these runs                       | Auth failure — empty token      |
+| `permissions:` block            | Re-grants write to the read-only token so the comment can be posted  | Comment never appears           |
+| `allowed_bots: dependabot[bot]` | `claude-code-action` ignores bot actors by default (default: *none*) | Job succeeds, Claude never runs |
+| `Bash(gh pr comment:*)` granted | Automation mode posts nothing on its own — Claude posts the verdict  | Review written only to the log  |
 
-That last one is the sleeper. `allowed_bots` defaults to empty, meaning no bot may trigger the
-action — and the PR author here is `dependabot[bot]`.
+The last two are the sleepers, and they produce the *same* green-with-no-comment symptom from
+opposite ends. `allowed_bots` defaults to empty, meaning no bot may trigger the action — and the
+actor here is `dependabot[bot]`. Supplying a `prompt:` puts the action in automation mode, which
+deliberately creates no tracking or result comment, so the only reason a verdict reaches the PR is
+that Claude is granted `gh pr comment` and told to run it.
 
 ## Verifying the first pass
 
@@ -67,11 +71,12 @@ Then confirm, in order:
 
 1. The **Dependabot review** workflow appears in the PR's checks. If it's absent, the `if:` actor
    gate didn't match — confirm the PR author really is `dependabot[bot]`.
-2. The job is green **and** a comment was posted. Green with no comment is the `allowed_bots`
-   failure, not a pass.
+2. The job is green **and** a comment was posted. Green with no comment is a failure, not a pass —
+   and it has two distinct causes worth telling apart: `allowed_bots` not matching (Claude never
+   ran; the run log will be nearly empty) or the posting tool missing (Claude ran and wrote the
+   whole review to the run log, which will be full of it). Open the run log; which one it is will be
+   obvious immediately.
 3. The comment opens with a bolded **APPROVE** or **FLAG** verdict.
-
-The comment is sticky: pushes to the PR update it in place rather than stacking new comments.
 
 ## What the review does and doesn't do
 
@@ -94,13 +99,13 @@ reading of the changes, not a guarantee.
 
 ## Troubleshooting
 
-| Symptom                               | Likely cause                                                                                                                                 |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Job green, no comment                 | `allowed_bots` missing or misspelled                                                                                                         |
-| Auth / credential error in the log    | Secret is in the Actions store instead of Dependabot, misnamed, or the OAuth token expired                                                   |
-| Sudden run of auth failures           | **The `claude setup-token` token expires (~1 year) with no warning.** Regenerate and update the Dependabot secret                            |
-| Comment posted but truncated or vague | Upstream published thin release notes, or `--max-turns` was hit. The prompt is instructed to admit thin evidence rather than fake confidence |
-| Workflow doesn't appear at all        | The actor gate didn't match, or the workflow file isn't on the default branch yet                                                            |
+| Symptom                               | Likely cause                                                                                                                                                                                  |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Job green, no comment                 | Either `allowed_bots` didn't match (run log nearly empty) or `Bash(gh pr comment:*)` is missing from `--allowedTools` (run log has the full review). Automation mode posts nothing on its own |
+| Auth / credential error in the log    | Secret is in the Actions store instead of Dependabot, misnamed, or the OAuth token expired                                                                                                    |
+| Sudden run of auth failures           | **The `claude setup-token` token expires (~1 year) with no warning.** Regenerate and update the Dependabot secret                                                                             |
+| Comment posted but truncated or vague | Upstream published thin release notes, or `--max-turns` was hit. The prompt is instructed to admit thin evidence rather than fake confidence                                                  |
+| Workflow doesn't appear at all        | The actor gate didn't match, or the workflow file isn't on the default branch yet                                                                                                             |
 
 ## Tuning
 

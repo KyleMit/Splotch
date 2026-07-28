@@ -1,6 +1,7 @@
 # Claude reviews every Dependabot PR and posts an approve-or-flag verdict.
 #
-# Three non-obvious constraints make this work — all three are load-bearing:
+# Four non-obvious constraints make this work — all four are load-bearing, and
+# all four fail silently, leaving a green job that achieved nothing:
 #
 # 1. Dependabot-triggered runs cannot see Actions secrets. GitHub sandboxes
 #    them: the run gets a read-only GITHUB_TOKEN and *only* the separate
@@ -12,6 +13,9 @@
 # 3. claude-code-action ignores bot actors unless they are named in
 #    `allowed_bots`. Without that input the job runs green and silently does
 #    nothing.
+# 4. Supplying `prompt:` selects the action's automation mode, which posts no
+#    tracking or result comment of its own. Claude publishes the verdict itself
+#    via `gh pr comment` — granted in allowedTools, instructed in the prompt.
 #
 # https://docs.github.com/en/code-security/dependabot/troubleshooting-dependabot/troubleshooting-dependabot-on-github-actions
 #
@@ -65,10 +69,15 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: dependabot[bot]
-          use_sticky_comment: true
+          # Supplying `prompt:` puts the action in automation mode, which
+          # deliberately posts nothing — no tracking comment, no result comment.
+          # So the verdict only reaches the PR because `Bash(gh pr comment:*)`
+          # is granted below and the prompt ends by telling Claude to run it.
+          # Drop that tool and the job still goes green with the review sitting
+          # in the run log, seen by nobody.
           claude_args: |
             --max-turns 30
-            --allowedTools "Read,Grep,Glob,WebSearch,WebFetch,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh api:*)"
+            --allowedTools "Read,Grep,Glob,WebSearch,WebFetch,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh pr comment:*),Bash(gh api:*)"
           prompt: |
             You are reviewing a Dependabot pull request on Splotch, a SvelteKit
             drawing app for toddlers that ships to web (Netlify) and native
@@ -126,6 +135,11 @@ jobs:
             strongest signal. Do not treat pending checks as passing.
 
             ## Post your verdict
+
+            **You must post the review yourself — run `gh pr comment`.**
+            Nothing else publishes it. Writing the verdict as your final message
+            without running that command means it reaches nobody, and the job
+            still reports success, so there is no signal that it went missing.
 
             One comment, tight enough to read on a phone:
 

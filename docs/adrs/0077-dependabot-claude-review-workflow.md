@@ -43,8 +43,8 @@ Alternatives considered:
 ## Decision
 
 `.github/workflows/dependabot-review.yml` runs `anthropics/claude-code-action` on `pull_request`
-(`opened`/`synchronize`/`reopened`), gated by `if: github.actor == 'dependabot[bot]'`. Three
-settings are load-bearing and each fails *silently* if dropped:
+(`opened`/`synchronize`/`reopened`), gated by `if: github.actor == 'dependabot[bot]'`. Four settings
+are load-bearing and each fails *silently* if dropped:
 
 1. **`CLAUDE_CODE_OAUTH_TOKEN` lives in the Dependabot secret store** (Settings → Secrets and
    variables → **Dependabot**), not Actions. That store is the only one injected into these runs. A
@@ -54,6 +54,11 @@ settings are load-bearing and each fails *silently* if dropped:
 3. **`allowed_bots: dependabot[bot]`.** The action ignores bot actors by default (`allowed_bots`
    defaults to empty). Without this the job goes green having done nothing — the exact failure mode
    this ADR exists to keep someone from rediscovering.
+4. **`Bash(gh pr comment:*)` in `--allowedTools`, plus a prompt that tells Claude to run it.**
+   Supplying `prompt:` selects the action's *automation mode*, which by design creates neither a
+   tracking comment nor a result comment. Nothing publishes the review but Claude itself, so without
+   the tool the verdict is written to the run log and seen by nobody — the same
+   green-with-no-comment symptom as (3), from the opposite end.
 
 The token is generated with `claude setup-token` and bills the Pro/Max subscription rather than API
 credits.
