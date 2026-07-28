@@ -37,36 +37,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P2][dead-config] `.markdownlint.json` is orphaned and duplicates dprint's markdown style
-
-**File(s):** `.markdownlint.json:1-11`, `dprint.json:4-9` (formatting) — pinned at SHA f934d43
-
-#### Problem
-
-`.markdownlint.json` configures a markdownlint ruleset (asterisk bullets, asterisk emphasis, fenced
-code, `---` HR, etc.). But ADR-0057 made **dprint the sole markdown owner**, and nothing consumes
-this file: `markdownlint` is not a dependency, not in any `scripts`/`scripts-info` entry, and not in
-`.vscode/extensions.json` recommendations (`dprint.dprint`, `esbenp.prettier-vscode`,
-`svelte.svelte-vscode`). The only repo reference to markdownlint is inside ADR-0057 itself. Worse,
-its rules **restate** dprint's config with no cross-reference — `MD004 asterisk` ↔
-`unorderedListKind: "asterisks"`, `MD049 asterisk` ↔ `emphasisKind: "asterisks"` — a second source
-of truth for the same markdown style that a future edit to `dprint.json` will silently desync from.
-
-#### Proposed solution
-
-Delete `.markdownlint.json`. dprint already enforces the identical style via `format:md:check` in
-CI. If interactive lint-in-editor is still wanted, add the markdownlint extension to
-`.vscode/extensions.json` and keep the file — but then document the dprint/markdownlint style
-coupling in one place. Deletion is the ADR-0057-consistent default.
-
-#### Verification
-
-`git grep -l markdownlint -- ':!package-lock.json' ':!.markdownlint.json'` returns only
-`docs/adrs/0057-*.md` — proving no tool reads it. After deletion, `npm run format:md:check` still
-passes.
-
----
-
 ### [P2][duplication] `--experimental-strip-types --disable-warning=ExperimentalWarning` repeated 10× and likely stale
 
 **File(s):** `package.json:20,25,72,73,76,77,78,85,86,91` (scripts) — pinned at SHA f934d43
