@@ -277,6 +277,10 @@ policy). Google Play adds:
 * [ ] If you want the **"Teacher Approved"** badge, you can opt into review (optional).
 * [ ] Account/permission hygiene: don't request permissions you don't use (we only request network
       state + legacy storage).
+* [x] **Backups disabled** (`android:allowBackup="false"` in the manifest): no app data — settings,
+      the AI access token, or secure-storage ciphertext — is copied to Google cloud backup or
+      device-to-device transfer. Drawings are unaffected (they save to the photo gallery). Keep it
+      `false`; if selective backup is ever wanted, use `android:dataExtractionRules` (API 31+).
 
 ## 5. Known follow-ups (Android-specific)
 
