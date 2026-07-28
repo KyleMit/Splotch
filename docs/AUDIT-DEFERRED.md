@@ -1046,3 +1046,56 @@ The rolled-back draft is kept at
 `docs/audit-deferred/p3-dependency-split-capacitor-filesystem-appears-unused-no-js-import-any.patch`
 (1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p3-dependency-split-capacitor-filesystem-appears-unused-no-js-import-any.patch`.
+
+### [P3][maintainability] Dev/preview port numbers are magic values scattered across scripts and configs
+
+**File(s):** `package.json:16,47,103,115,121` (scripts) — pinned at SHA f934d43
+
+#### Problem
+
+The dev port `5173` is hard-coded in `dev:kill` (`kill-port 5173 8888`), `android:live`
+(`--port 5173`), `ios:live` (`--port 5173`), `adb:reverse` (`tcp:5173 tcp:5173`); the netlify-dev
+port `8888` in `dev:kill`; and the perf-preview port `4173` in `perf:serve`. There is no single
+declaration — a contributor changing the vite dev port (set in `web/vite.config.ts`) must hunt down
+and update several unrelated scripts, and `dev:kill` will silently kill the wrong port.
+
+#### Proposed solution
+
+Where the port is a vite concern, it already lives in `web/vite.config.ts`; have the port-dependent
+Node helpers (`cloud-tunnel.mjs`, the smoke scripts) read it rather than restating literals in
+`package.json`. For `dev:kill`, derive the port list from the same source. At minimum, add a comment
+in `scripts-info` noting `5173`/`8888`/`4173` are the vite / netlify-dev / perf-preview ports so the
+mapping is discoverable.
+
+#### Verification
+
+Change the vite dev port and run `npm run dev` + `npm run dev:kill`; today the kill misses the new
+port. After centralizing, both track the config.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `web/netlify.toml:26` still hard-codes `targetPort = 5173`, so changing `VITE_DEV_PORT` breaks
+  `npm run dev:netlify` by sending its proxy to the old port; make this active config consume the
+  centralized value as well.
+* `.ruler/skills/mobile/android.md:118` still tells contributors that port 5173 is pinned in
+  `web/vite.config.ts`, which is no longer the source of truth; update the generated skill source
+  documentation to point to `scripts/lib/dev-ports.mjs` and regenerate its outputs.
+
+#### What was tried
+
+Centralized the Vite dev, Netlify-dev, and Vite preview ports in one ESM module. All executable
+consumers now use the shared constants while preserving existing commands, overrides, and forwarding
+behavior.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p3-maintainability-dev-preview-port-numbers-are-magic-values-scattered-a.patch`
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p3-maintainability-dev-preview-port-numbers-are-magic-values-scattered-a.patch`.
