@@ -45,6 +45,18 @@ export const dilateMask = (mask, w, h, r, outOfBounds = 0) =>
   morph(mask, w, h, r, true, outOfBounds);
 export const erodeMask = (mask, w, h, r) => morph(mask, w, h, r, false, 0);
 
+// This intentionally differs from erodeMask's box kernel by using four orthogonal neighbors.
+export function erodeCross(mask, w, h) {
+  const out = new Uint8Array(w * h);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      out[i] = mask[i] && mask[i - 1] && mask[i + 1] && mask[i - w] && mask[i + w] ? 1 : 0;
+    }
+  }
+  return out;
+}
+
 // Two-pass chamfer distance-to-light transform: for each mask pixel, its
 // approximate distance to the nearest unset (non-mask) pixel, using edge
 // weight 1 and diagonal weight 1.414 (√2). Unset pixels are distance 0.

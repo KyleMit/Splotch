@@ -29,10 +29,10 @@ import {
   ASSET_GEN_DIR,
   COLORING_DIR,
   FILL_SRC_DIR,
-  fail,
   resolveNightLineArt,
   toPosix,
 } from '../lib/paths.mjs';
+import { fail } from '../lib/cli.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from '../lib/solid-regions.mjs';
 import {

@@ -16,7 +16,8 @@
     "**/.svelte-kit",
     "**/.netlify",
     "**/.gradle",
-    "web/build",
+    // Keep committed Markdown outside generated web and native build output in scope.
+    "**/web/build/",
     "android/**/build",
     "ios/**/build"
   ],

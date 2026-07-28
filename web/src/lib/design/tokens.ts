@@ -13,18 +13,25 @@ import { QUICKSAND_FONT_FAMILY } from '../fonts.ts';
 // identical — the compiler now enforces what app.css previously demanded via
 // a "these blocks MUST stay identical" comment.
 
+const BRAND_HEX = '#ab71e1';
+const BRAND_RGB = [
+  Number.parseInt(BRAND_HEX.slice(1, 3), 16),
+  Number.parseInt(BRAND_HEX.slice(3, 5), 16),
+  Number.parseInt(BRAND_HEX.slice(5, 7), 16),
+].join(', ');
+
 // Brand accent used for active/hover chrome across parent + AI UI.
 // Custom properties pierce Svelte's style scoping, so components reference
 // these directly via var().
 export const brand = {
-  brand: '#ab71e1',
+  brand: BRAND_HEX,
+  // Plain-RGBA brand-shadow fallbacks source their channels from --brand-rgb;
+  // the following color-mix declaration remains the modern rendering path.
+  brandRgb: BRAND_RGB,
   brandHover: '#9961d1',
   // Filter chain that renders a black icon in --brand. Filters can't reference
-  // a color directly, so this hand-tuned chain re-encodes #ab71e1 — keep the
-  // two in sync if the brand color ever changes. Brand-tinted shadows are
-  // derived instead via color-mix(in srgb, var(--brand) N%, transparent),
-  // each preceded by a plain-rgba fallback declaration for pre-color-mix
-  // engines (see docs/COMPATIBILITY.md).
+  // a color directly, so this hand-tuned chain re-encodes the brand color —
+  // keep the two in sync if the brand color ever changes.
   brandTintFilter:
     'invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%)',
   // Text/icon ink on --brand fills. Lives here (unthemed) because --brand

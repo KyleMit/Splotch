@@ -28,10 +28,10 @@ import {
   COLORING_DIR,
   FILL_SRC_DIR,
   SAMPLES_DIR,
-  fail,
   resolveNightLineArt,
   toPosix,
 } from '../lib/paths.mjs';
+import { fail } from '../lib/cli.mjs';
 import {
   detectInventedShapes,
   W,

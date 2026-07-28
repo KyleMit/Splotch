@@ -61,7 +61,7 @@ const BASELINE = new Map(
     // Eraser-hole preview chrome and the rainbow conic gradient.
     'lib/components/DrawingCanvas.svelte': 9,
     // Confetti particle colors are content, not chrome.
-    'lib/components/AiConfetti.svelte': 2,
+    'lib/components/AiConfetti.svelte': 1,
     // Paper-white backing behind the baked-light style-cover thumbnails.
     'lib/components/AiImagePrompt.svelte': 1,
     // Constant on-paper ink for the floating "?" button.

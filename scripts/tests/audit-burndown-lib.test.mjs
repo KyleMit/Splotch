@@ -25,6 +25,7 @@ import {
   implementationCommitMessage,
   launchCommand,
   lintablePaths,
+  needsRulerApply,
   normalizeDraftPatch,
   protectedImplementationPaths,
   reachedHandledLimit,
@@ -284,6 +285,12 @@ describe('Codex driver-owned commits', () => {
         'docs/audit-deferred/rejected.patch',
       ])
     ).toEqual(['docs/AUDIT.md', 'docs/AUDIT-DEFERRED.md', 'docs/audit-deferred/rejected.patch']);
+  });
+
+  it('regenerates agent outputs only when a Ruler source changed', () => {
+    expect(needsRulerApply(['web/src/app.css', '.ruler/skills/design/SKILL.md'])).toBe(true);
+    expect(needsRulerApply(['.ruler'])).toBe(true);
+    expect(needsRulerApply(['.agents/skills/design/SKILL.md', 'web/src/app.css'])).toBe(false);
   });
 });
 

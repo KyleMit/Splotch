@@ -25,12 +25,15 @@ vi.mock('../lib/paths.mjs', () => ({
   get SAMPLES_DIR() {
     return state.roots.samples;
   },
-  fail(message) {
-    throw new Error(message);
-  },
   resolveNightLineArt: async () => ({ source: null, chalk: null }),
   toPosix(rel) {
     return rel.replaceAll('\\', '/');
+  },
+}));
+vi.mock('../lib/cli.mjs', async (importOriginal) => ({
+  ...(await importOriginal()),
+  fail(message) {
+    throw new Error(message);
   },
 }));
 

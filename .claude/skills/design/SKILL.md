@@ -31,30 +31,30 @@ pierce Svelte's style scoping, so every component references them directly via `
 
 ## Token vocabulary
 
-| Group     | Tokens                                                                                                    |
-| --------- | --------------------------------------------------------------------------------------------------------- |
-| Brand     | `--brand`, `--brand-hover`, `--brand-tint-filter`, `--on-brand` (text/icon ink on brand fills)            |
-| Spacing   | `--space-1` (4px) … `--space-8` (40px), a 4px-based ramp                                                  |
-| Radius    | `--radius-xs/sm/md/lg/xl` (4/8/12/16/22px), `--radius-pill`                                               |
-| Border    | `--border-width` (1px) — the hairline width; the color comes from a theme token (`--border`,              |
-|           | `--border-warm`, `--float-border`). Older components still write `1px solid` raw — prefer the token       |
-| Type      | `--font-size-xs/sm/md/lg/xl/2xl/3xl` (12–28px), `--font-family` (the app-wide sans stack),                |
-|           | `--font-mono`, `--font-weight-semibold` (600 — the only weight with a token; 500/700 are still raw        |
-|           | everywhere they appear)                                                                                   |
-| Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s), `--ease-pop` (overshoot), `--ease-pop-strong` (harder       |
-|           | overshoot — visibly springier than `--ease-pop`, don't converge them), `--ease-glide` (settle)            |
-| Elevation | `--shadow-sm`, `--shadow-pop`, `--shadow-segment` (neutral; the last is the tight active-segment          |
-|           | lift — tighter and harder than `--shadow-sm`, don't converge them); `--float-shadow`,                     |
-|           | `--float-shadow-flyout` (themed, paper cards)                                                             |
-| Fill      | `--clear-gradient-rest` — the Clear Button's at-rest red, painted identically by the                      |
-|           | drag-to-clear coachmark ghost so the tutorial can't drift from the real control. Unthemed on              |
-|           | purpose (ADR-0052): it reads the same on both papers                                                      |
-| Stacking  | `--z-*` — the cross-component chrome order, `--z-canvas-chrome` (4) up to `--z-screenshot-flash`          |
-|           | (10000), listed low-to-high in `tokens.ts`. One list, not one context: all root-context except            |
-|           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under      |
-|           | `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers                           |
-| Theme     | surfaces, borders, text ramp, icon inks, brand/success/danger washes, paper, float-card chrome — the full |
-|           | list with per-token docs is in `tokens.ts` (`ThemeTokens`)                                                |
+| Group     | Tokens                                                                                                                                     |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Brand     | `--brand`, `--brand-rgb` (plain-RGBA brand fallbacks), `--brand-hover`, `--brand-tint-filter`, `--on-brand` (text/icon ink on brand fills) |
+| Spacing   | `--space-1` (4px) … `--space-8` (40px), a 4px-based ramp                                                                                   |
+| Radius    | `--radius-xs/sm/md/lg/xl` (4/8/12/16/22px), `--radius-pill`                                                                                |
+| Border    | `--border-width` (1px) — the hairline width; the color comes from a theme token (`--border`,                                               |
+|           | `--border-warm`, `--float-border`). Older components still write `1px solid` raw — prefer the token                                        |
+| Type      | `--font-size-xs/sm/md/lg/xl/2xl/3xl` (12–28px), `--font-family` (the app-wide sans stack),                                                 |
+|           | `--font-mono`, `--font-weight-semibold` (600 — the only weight with a token; 500/700 are still raw                                         |
+|           | everywhere they appear)                                                                                                                    |
+| Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s), `--ease-pop` (overshoot), `--ease-pop-strong` (harder                                        |
+|           | overshoot — visibly springier than `--ease-pop`, don't converge them), `--ease-glide` (settle)                                             |
+| Elevation | `--shadow-sm`, `--shadow-pop`, `--shadow-segment` (neutral; the last is the tight active-segment                                           |
+|           | lift — tighter and harder than `--shadow-sm`, don't converge them); `--float-shadow`,                                                      |
+|           | `--float-shadow-flyout` (themed, paper cards)                                                                                              |
+| Fill      | `--clear-gradient-rest` — the Clear Button's at-rest red, painted identically by the                                                       |
+|           | drag-to-clear coachmark ghost so the tutorial can't drift from the real control. Unthemed on                                               |
+|           | purpose (ADR-0052): it reads the same on both papers                                                                                       |
+| Stacking  | `--z-*` — the cross-component chrome order, `--z-canvas-chrome` (4) up to `--z-screenshot-flash`                                           |
+|           | (10000), listed low-to-high in `tokens.ts`. One list, not one context: all root-context except                                             |
+|           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under                                       |
+|           | `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers                                                            |
+| Theme     | surfaces, borders, text ramp, icon inks, brand/success/danger washes, paper, float-card chrome — the full                                  |
+|           | list with per-token docs is in `tokens.ts` (`ThemeTokens`)                                                                                 |
 
 **Adding a token:** it must earn its place — a semantic meaning used (or clearly about to be used)
 in 2–3 places. Prefer reusing an existing step of a ramp over minting a near-duplicate. New themed

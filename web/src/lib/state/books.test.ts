@@ -59,6 +59,14 @@ describe('pageThumb', () => {
 describe('bookAssetPaths', () => {
   const farm = BOOKS.find((book) => book.id === 'farm')!;
 
+  it('keeps every catalog asset inside its enclosing book directory', () => {
+    for (const book of BOOKS) {
+      for (const path of bookAssetPaths(book)) {
+        expect(path.startsWith(`/coloring/${book.id}/`)).toBe(true);
+      }
+    }
+  });
+
   it('lists the cover, both orientations of every page, and the colored fills', () => {
     const paths = bookAssetPaths(farm);
     expect(paths).toContain(farm.cover);

@@ -98,6 +98,10 @@ export function protectedImplementationPaths(paths, auditPath = auditFile()) {
   );
 }
 
+export function needsRulerApply(paths) {
+  return paths.some((path) => path === '.ruler' || path.startsWith('.ruler/'));
+}
+
 // Which of a fix's changed files the lint gate can actually run on.
 //
 // `git diff --name-only` reports the paths a commit *touched*, which includes

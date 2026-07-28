@@ -54,6 +54,7 @@ import {
   lintablePaths,
   logLine,
   LOGS,
+  needsRulerApply,
   normalizeDraftPatch,
   PROMPTS,
   protectedImplementationPaths,
@@ -214,7 +215,7 @@ function restoreWorktree(baseSha, untrackedBaseline, label) {
 function commitCodexImplementation({ title, baseSha, round = 0 }) {
   if (AGENT_RUNNER !== 'codex' || gitOut('rev-parse', 'HEAD') !== baseSha) return '';
 
-  const paths = changedImplementationPaths();
+  let paths = changedImplementationPaths();
   if (paths.length === 0) {
     logLine('  Codex returned success without worktree changes');
     return '';
@@ -224,6 +225,21 @@ function commitCodexImplementation({ title, baseSha, round = 0 }) {
   if (protectedPaths.length) {
     logLine(`  Codex changed protected audit state: ${protectedPaths.join(', ')}`);
     return '';
+  }
+
+  if (needsRulerApply(paths)) {
+    const ruler = runCmd('npm', ['run', 'ruler:apply']);
+    if (ruler.status !== 0) {
+      logLine(`  driver could not apply Ruler: ${commandFailureOutput(ruler)}`);
+      return '';
+    }
+    logLine('  driver applied Ruler outside the nested Codex sandbox');
+    paths = changedImplementationPaths();
+    const generatedProtectedPaths = protectedImplementationPaths(paths);
+    if (generatedProtectedPaths.length) {
+      logLine(`  Ruler changed protected audit state: ${generatedProtectedPaths.join(', ')}`);
+      return '';
+    }
   }
 
   const add = git('add', '-A', '--', ...paths);

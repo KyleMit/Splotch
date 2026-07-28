@@ -23,15 +23,13 @@ import { parseArgs } from 'node:util';
 import { writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
-import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
-import { parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
-import { makeClient } from '../lib/gemini.mjs';
+import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR } from '../lib/paths.mjs';
+import { fail, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { scoreSolidity } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, scoreEyes } from '../lib/eye-fill.mjs';
 import { FRESH_STYLE_PROMPT } from '../lib/prompts.mjs';
-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
-const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 90;
 const BORDER_WHITE_LEVEL = 235;
 // Lightweight fraction gate, intentionally independent of the registration mask resolution.
@@ -75,18 +73,12 @@ The page is ${orientWord}, ${aspect} aspect ratio.
 THE SCENE: ${args.values.scene}${args.values.notes ? `\n\nADDITIONAL INSTRUCTIONS: ${args.values.notes}` : ''}`;
 
 async function generateOutline(temperature) {
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    config: {
-      abortSignal: AbortSignal.timeout(120_000),
-      imageConfig: { aspectRatio: aspect },
-      temperature,
-    },
+  const { bytes } = await generateImage(ai, {
+    prompt,
+    temperature,
+    aspectRatio: aspect,
   });
-  const classified = classifyGeminiResponse(response);
-  if (classified.kind !== 'image') throw new Error(`${classified.kind}: ${classified.reason}`);
-  return Buffer.from(classified.data, 'base64');
+  return bytes;
 }
 
 // Normalize the model output to the pen contract: exact page dims, greyscale,

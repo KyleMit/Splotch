@@ -80,7 +80,7 @@ function markInstalled() {
 // mounts (on a repeat visit the service worker already controls the page, so
 // Chromium's installability check races hydration). Listen from module load,
 // not from initInstallPrompt(), so an early event isn't silently lost.
-if (browser && !isNative()) {
+if (browser && !(__IS_CAPACITOR__ && isNative())) {
   window.addEventListener('beforeinstallprompt', (e) => {
     // Stop Chrome's default mini-infobar — we own the timing and presentation.
     e.preventDefault();
@@ -102,7 +102,7 @@ if (browser && !isNative()) {
 // Web-only; no-op inside the native shell. Seeds mode/dismissed/installed from
 // persisted state and the manual-hint heuristic.
 export function initInstallPrompt() {
-  if (!browser || initialized || isNative()) return;
+  if (!browser || initialized || (__IS_CAPACITOR__ && isNative())) return;
   initialized = true;
 
   install.dismissed = readBool(STORAGE_KEYS.installDismissed, false);

@@ -11,7 +11,7 @@
 //     leaving a solid blob its original size — the exact trick both callers use
 //     to separate thin strokes from deliberate solid regions.
 import { describe, it, expect } from 'vitest';
-import { chamferDistance, dilateMask, erodeMask } from '../lib/morphology.mjs';
+import { chamferDistance, dilateMask, erodeCross, erodeMask } from '../lib/morphology.mjs';
 
 // Build a w×h 0/1 mask; `set` is a predicate (x, y) => boolean.
 function mask(w, h, set) {
@@ -109,6 +109,31 @@ describe('erodeMask', () => {
     // a 2-px-wide vertical bar cannot survive an r=1 erode (needs a 3-wide core)
     const bar = mask(w, h, (x) => x === 4 || x === 5);
     expect(count(erodeMask(bar, w, h, 1))).toBe(0);
+  });
+});
+
+describe('erodeCross', () => {
+  it('uses four orthogonal neighbors and treats the border as unset', () => {
+    const w = 5,
+      h = 5;
+    const cross = mask(
+      w,
+      h,
+      (x, y) => (x === 2 && y >= 1 && y <= 3) || (y === 2 && x >= 1 && x <= 3)
+    );
+    const eroded = erodeCross(cross, w, h);
+
+    expect(count(eroded)).toBe(1);
+    expect(at(eroded, w, 2, 2)).toBe(1);
+    expect(
+      count(
+        erodeCross(
+          mask(w, h, () => true),
+          w,
+          h
+        )
+      )
+    ).toBe(9);
   });
 });
 

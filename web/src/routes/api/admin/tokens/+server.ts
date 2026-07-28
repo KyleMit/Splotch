@@ -15,6 +15,15 @@ import type { RequestHandler } from './$types';
 // responses depend on the Authorization header and live Blobs data.
 export const prerender = false;
 
+export type TokenSnapshot = {
+  ok: true;
+  tokens: string[];
+  invites: ReturnType<typeof buildInvites>;
+  persistent: boolean;
+};
+
+export type TokenMutationError = { ok: false; error: string };
+
 /**
  * Every method requires `Authorization: Bearer <session>`, where <session> is
  * the derived token from POST /api/admin/login (identical to the value the
@@ -40,17 +49,21 @@ function requireSession(request: Request) {
 async function snapshot(origin: string, tokens?: string[]) {
   const { tokens: current, persistent } = await getTokensStatus();
   const list = tokens ?? current;
-  return json({ ok: true, tokens: list, invites: buildInvites(list, origin), persistent });
+  const payload = {
+    ok: true,
+    tokens: list,
+    invites: buildInvites(list, origin),
+    persistent,
+  } satisfies TokenSnapshot;
+  return json(payload);
 }
 
 // Validation failures (empty/duplicate) are the caller's fault → 400; a CAS
 // conflict (concurrent admin mutations kept colliding, see $lib/server/tokens)
 // is transient and worth retrying as-is → 409.
 function mutationError(result: MutationFailure) {
-  return json(
-    { ok: false, error: result.error },
-    { status: result.reason === 'conflict' ? 409 : 400 }
-  );
+  const payload = { ok: false, error: result.error } satisfies TokenMutationError;
+  return json(payload, { status: result.reason === 'conflict' ? 409 : 400 });
 }
 
 /** List access tokens and their prebuilt invite URLs. */

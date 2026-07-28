@@ -19,8 +19,8 @@ import {
   REPO_ROOT,
   SAMPLES_DIR,
   SAMPLES_DARK_DIR,
-  fail,
 } from '../lib/paths.mjs';
+import { fail } from '../lib/cli.mjs';
 import { OUTLINE_LUMA_THRESHOLD } from '../lib/punch-fill.mjs';
 import { BOOKS } from '../../../web/src/lib/state/books.ts';
 

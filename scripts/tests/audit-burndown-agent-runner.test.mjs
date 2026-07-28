@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   agentAuthCommand,
@@ -80,8 +81,20 @@ describe('Codex invocation', () => {
     expect(instructions).toContain('Do not run Playwright');
     expect(instructions).toContain('outside this nested sandbox');
     expect(instructions).toContain('Do not run `git add`');
+    expect(instructions).toContain('reruns Ruler outside this sandbox');
     expect(instructions).toContain('return `success=true` with an empty');
     expect(codexRoleInstructions('review')).toBe('');
+  });
+});
+
+describe('reviewer contract', () => {
+  it('excludes protected deferred snapshots from completeness findings', () => {
+    const prompt = readFileSync(
+      new URL('../audit-burndown/prompts/reviewer.md', import.meta.url),
+      'utf8'
+    );
+    expect(prompt).toContain('Never require edits to `docs/AUDIT-DEFERRED.md`');
+    expect(prompt).toContain('saved patches are only starting points');
   });
 });
 

@@ -35,16 +35,9 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
-import {
-  REPO_ROOT,
-  COLORING_DIR,
-  FILL_SRC_DIR,
-  SAMPLES_DIR,
-  fail,
-  toPosix,
-} from '../lib/paths.mjs';
-import { MAX_ATTEMPTS, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
-import { makeClient } from '../lib/gemini.mjs';
+import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, toPosix } from '../lib/paths.mjs';
+import { fail, MAX_ATTEMPTS, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
@@ -53,9 +46,7 @@ import { scoreEyeFill, judgeLightEyes } from '../lib/eye-fill.mjs';
 import { punchFill } from '../lib/punch-fill.mjs';
 import { FILL_PROMPT } from '../lib/prompts.mjs';
 import { formatCandidateLine } from '../lib/report.mjs';
-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
-const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 90;
 
 // How `run` reports the one failure mode a caller can act on: some renders were
@@ -72,27 +63,7 @@ export class RenderFailuresError extends Error {
 // Generate one flat-colored version of a coloring page. Returns raw image bytes
 // + mime type, or throws with the refusal/empty reason.
 async function generateColoredPage(ai, { imageBytes, mimeType, temperature }) {
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          { inlineData: { mimeType, data: Buffer.from(imageBytes).toString('base64') } },
-          { text: FILL_PROMPT },
-        ],
-      },
-    ],
-    config: {
-      abortSignal: AbortSignal.timeout(120_000),
-      ...(temperature === undefined ? {} : { temperature }),
-    },
-  });
-  const classified = classifyGeminiResponse(response);
-  if (classified.kind !== 'image') {
-    throw new Error(`${classified.kind}: ${classified.reason}`);
-  }
-  return { bytes: Buffer.from(classified.data, 'base64'), mimeType: classified.mimeType };
+  return generateImage(ai, { imageBytes, mimeType, prompt: FILL_PROMPT, temperature });
 }
 
 // Fraction of the image that is essentially pure white — a large value means big

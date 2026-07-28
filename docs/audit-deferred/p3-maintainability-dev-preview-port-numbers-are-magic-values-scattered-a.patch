@@ -1,0 +1,384 @@
+diff --git a/package.json b/package.json
+index cd734c83..3491f6e5 100644
+--- a/package.json
++++ b/package.json
+@@ -13,7 +13,7 @@
+     "dev:host": "node scripts/web.mjs vite dev --host",
+     "dev:cap": "CAPACITOR=true node scripts/web.mjs vite dev --host",
+     "dev:tunnel": "node scripts/cloud-tunnel.mjs",
+-    "dev:kill": "npx kill-port 5173 8888",
++    "dev:kill": "node scripts/dev-kill.mjs",
+     "prebuild": "node scripts/web.mjs svelte-kit sync && npm run gen:icons && npm run gen:releases",
+     "build": "node scripts/web.mjs vite build",
+     "prebuild:cap": "node scripts/web.mjs svelte-kit sync && npm run gen:icons && npm run gen:releases",
+@@ -44,7 +44,7 @@
+     "perf:ios": "PERF_MARKS=true node scripts/perf/ios.mjs",
+     "perf:undo": "PERF_MARKS=true node scripts/perf/undo-scenarios.mjs",
+     "perf:replay": "PERF_MARKS=true node scripts/perf/replay-scenario.mjs",
+-    "perf:serve": "PUBLIC_ENABLE_DEV_HARNESS=true node scripts/web.mjs vite preview --host --port 4173",
++    "perf:serve": "PUBLIC_ENABLE_DEV_HARNESS=true node scripts/perf-serve.mjs",
+     "perf:analyze": "node scripts/perf/analyze.mjs",
+     "perf:ios:analyze": "node scripts/perf/analyze-webinspector.mjs",
+     "test:unit": "node scripts/web.mjs vitest run",
+@@ -114,13 +114,13 @@
+     "ios:run": "npm run cap:sync && cap run ios",
+     "ios:run:emulator": "npm run cap:sync && cap run ios --target C6012C49-AA93-4869-B3A6-E47C9EAAC567",
+     "ios:run:device": "npm run cap:sync && cap run ios --target 00008103-0006202E3CF1001E",
+-    "ios:live": "cap run ios --live-reload --port 5173",
++    "ios:live": "node scripts/ios-live.mjs",
+     "ios:archive": "npm run cap:sync && cd ios/App && xcodebuild -scheme App -configuration Release -destination generic/platform=iOS -archivePath build/App.xcarchive -xcconfig ../local.xcconfig -allowProvisioningUpdates archive",
+     "ios:ipa": "npm run ios:archive && cd ios/App && xcodebuild -exportArchive -archivePath build/App.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath build/ipa -allowProvisioningUpdates",
+     "ios:open": "node scripts/open-path.mjs ios/App/build/ipa",
+     "ios:clean": "cd ios/App && xcodebuild -scheme App clean",
+     "adb:devices": "adb devices",
+-    "adb:reverse": "adb reverse tcp:5173 tcp:5173",
++    "adb:reverse": "node scripts/adb-reverse.mjs",
+     "deps:gha": "node scripts/gha-versions.mjs",
+     "audit:preflight": "node scripts/audit-burndown/preflight.mjs",
+     "audit:burndown": "node scripts/audit-burndown/burndown.mjs",
+diff --git a/scripts/adb-reverse.mjs b/scripts/adb-reverse.mjs
+new file mode 100644
+index 00000000..0676626c
+--- /dev/null
++++ b/scripts/adb-reverse.mjs
+@@ -0,0 +1,6 @@
++import { VITE_DEV_PORT } from './lib/dev-ports.mjs';
++import { run } from './lib/utils.mjs';
++
++const port = `tcp:${VITE_DEV_PORT}`;
++
++run('adb', ['reverse', port, port]);
+diff --git a/scripts/android-emulator.mjs b/scripts/android-emulator.mjs
+index 9434c53d..57c799c8 100644
+--- a/scripts/android-emulator.mjs
++++ b/scripts/android-emulator.mjs
+@@ -1,4 +1,5 @@
+ import { AVD_NAME } from './lib/android.mjs';
++import { VITE_DEV_PORT } from './lib/dev-ports.mjs';
+ import { fail, run } from './lib/utils.mjs';
+
+ const operation = process.argv[2];
+@@ -12,7 +13,15 @@ switch (operation) {
+     run('cap', ['run', 'android', '--target', AVD_NAME]);
+     break;
+   case 'live':
+-    run('cap', ['run', 'android', '--target', AVD_NAME, '--live-reload', '--port', '5173']);
++    run('cap', [
++      'run',
++      'android',
++      '--target',
++      AVD_NAME,
++      '--live-reload',
++      '--port',
++      String(VITE_DEV_PORT),
++    ]);
+     break;
+   default:
+     fail(`Unknown Android emulator operation: ${operation}`);
+diff --git a/scripts/cloud-tunnel.mjs b/scripts/cloud-tunnel.mjs
+index 97b28afd..2e036962 100644
+--- a/scripts/cloud-tunnel.mjs
++++ b/scripts/cloud-tunnel.mjs
+@@ -10,6 +10,7 @@
+
+ import { spawn } from 'node:child_process';
+ import { existsSync } from 'node:fs';
++import { VITE_DEV_PORT } from './lib/dev-ports.mjs';
+ import { requireEnv, waitForUrl } from './lib/utils.mjs';
+ import { spawnViteServer } from './lib/vite-server.mjs';
+
+@@ -18,7 +19,7 @@ const TUNNEL_AUTH = requireEnv(
+   'TUNNEL_AUTH',
+   'must match the Fly relay AUTH secret — set it in the Claude Code env config (see .claude/cloud/environment.example)'
+ );
+-const PORT = 5173;
++const PORT = VITE_DEV_PORT;
+ const REMOTE_PORT = 9000;
+ const PUBLIC_URL = `https://${TUNNEL_HOST}`;
+
+diff --git a/scripts/dev-kill.mjs b/scripts/dev-kill.mjs
+new file mode 100644
+index 00000000..78e57203
+--- /dev/null
++++ b/scripts/dev-kill.mjs
+@@ -0,0 +1,4 @@
++import { NETLIFY_DEV_PORT, VITE_DEV_PORT } from './lib/dev-ports.mjs';
++import { run } from './lib/utils.mjs';
++
++run('npx', ['kill-port', String(VITE_DEV_PORT), String(NETLIFY_DEV_PORT)]);
+diff --git a/scripts/driver-smoke.mjs b/scripts/driver-smoke.mjs
+index 8dc2a700..a320ce10 100644
+--- a/scripts/driver-smoke.mjs
++++ b/scripts/driver-smoke.mjs
+@@ -10,6 +10,7 @@
+ // each step matches current markup, then tears the server down.
+
+ import { chromium } from '@playwright/test';
++import { VITE_PREVIEW_PORT } from './lib/dev-ports.mjs';
+ import { chromiumExecutablePath, sleep } from './lib/utils.mjs';
+ import { check, fatal, summarize } from './lib/smoke.mjs';
+ import {
+@@ -26,7 +27,7 @@ import {
+   waitForColoringOverlay,
+ } from './lib/app-driver.mjs';
+
+-const PORT = Number(process.env.SMOKE_PORT ?? 4173);
++const PORT = Number(process.env.SMOKE_PORT ?? VITE_PREVIEW_PORT);
+ // Landscape so the full palette (portrait hides purple/blue) and the action
+ // drawer both have room — the same shape the store-shots tablet target uses.
+ const DEVICE = { width: 1280, height: 720, deviceScaleFactor: 1 };
+diff --git a/scripts/gen-large-image.mjs b/scripts/gen-large-image.mjs
+index 6da49a6a..0ae82ed8 100644
+--- a/scripts/gen-large-image.mjs
++++ b/scripts/gen-large-image.mjs
+@@ -15,6 +15,7 @@ import { chromium } from '@playwright/test';
+ import { readFileSync } from 'node:fs';
+ import { join } from 'node:path';
+ import { PALETTE_COLORS } from '../web/src/lib/palette.ts';
++import { VITE_PREVIEW_PORT } from './lib/dev-ports.mjs';
+ import { ROOT, chromiumExecutablePath } from './lib/utils.mjs';
+ import { circlePts } from './lib/stroke-geometry.mjs';
+ import {
+@@ -30,7 +31,7 @@ import {
+
+ const SVG_FILE = join(ROOT, 'web', 'static', 'large-image.svg');
+ const OUT = join(ROOT, 'web', 'static', 'large-image.png');
+-const PORT = 4173;
++const PORT = VITE_PREVIEW_PORT;
+
+ // SVG viewBox dimensions
+ const SVG_W = 2265,
+diff --git a/scripts/ios-live.mjs b/scripts/ios-live.mjs
+new file mode 100644
+index 00000000..9f5fbd22
+--- /dev/null
++++ b/scripts/ios-live.mjs
+@@ -0,0 +1,4 @@
++import { VITE_DEV_PORT } from './lib/dev-ports.mjs';
++import { run } from './lib/utils.mjs';
++
++run('cap', ['run', 'ios', '--live-reload', '--port', String(VITE_DEV_PORT)]);
+diff --git a/scripts/lib/dev-ports.d.mts b/scripts/lib/dev-ports.d.mts
+new file mode 100644
+index 00000000..8c021d9b
+--- /dev/null
++++ b/scripts/lib/dev-ports.d.mts
+@@ -0,0 +1,3 @@
++export const VITE_DEV_PORT: number;
++export const NETLIFY_DEV_PORT: number;
++export const VITE_PREVIEW_PORT: number;
+diff --git a/scripts/lib/dev-ports.mjs b/scripts/lib/dev-ports.mjs
+new file mode 100644
+index 00000000..935cec5a
+--- /dev/null
++++ b/scripts/lib/dev-ports.mjs
+@@ -0,0 +1,3 @@
++export const VITE_DEV_PORT = 5173;
++export const NETLIFY_DEV_PORT = 8888;
++export const VITE_PREVIEW_PORT = 4173;
+diff --git a/scripts/perf-serve.mjs b/scripts/perf-serve.mjs
+new file mode 100644
+index 00000000..30bd5243
+--- /dev/null
++++ b/scripts/perf-serve.mjs
+@@ -0,0 +1,4 @@
++import { VITE_PREVIEW_PORT } from './lib/dev-ports.mjs';
++import { run } from './lib/utils.mjs';
++
++run('node', ['scripts/web.mjs', 'vite', 'preview', '--host', '--port', String(VITE_PREVIEW_PORT)]);
+diff --git a/scripts/perf/ios.mjs b/scripts/perf/ios.mjs
+index 1dbb6953..3f83024b 100644
+--- a/scripts/perf/ios.mjs
++++ b/scripts/perf/ios.mjs
+@@ -11,6 +11,7 @@
+ // `npm run perf:analyze` (see the `profiling` skill).
+
+ import { webkit } from '@playwright/test';
++import { VITE_PREVIEW_PORT } from '../lib/dev-ports.mjs';
+ import { isMain, runMain, sleep } from '../lib/utils.mjs';
+ import { buildAndPreview } from './preview.mjs';
+ import { driveSession } from './session.mjs';
+@@ -25,7 +26,7 @@ const flag = (name, def) => {
+ };
+ const deviceName = flag('device', 'phone');
+ const device = resolveDevice(deviceName);
+-const port = Number(flag('port', '4173'));
++const port = Number(flag('port', String(VITE_PREVIEW_PORT)));
+ const build = !args.includes('--no-build');
+
+ export async function runIosProfile() {
+diff --git a/scripts/perf/mount.mjs b/scripts/perf/mount.mjs
+index 9db80c56..11e0f522 100644
+--- a/scripts/perf/mount.mjs
++++ b/scripts/perf/mount.mjs
+@@ -12,6 +12,7 @@
+
+ import { writeFileSync, mkdirSync } from 'node:fs';
+ import { chromium } from '@playwright/test';
++import { VITE_PREVIEW_PORT } from '../lib/dev-ports.mjs';
+ import { chromiumExecutablePath, isMain, runMain } from '../lib/utils.mjs';
+ import { resolveThrottle } from './args.mjs';
+ import { buildAndPreview } from './preview.mjs';
+@@ -40,7 +41,7 @@ const flag = (name, def) => {
+ const deviceName = flag('device', 'phone');
+ const device = resolveDevice(deviceName);
+ const throttle = resolveThrottle(args, 4);
+-const port = Number(flag('port', '4173'));
++const port = Number(flag('port', String(VITE_PREVIEW_PORT)));
+ const build = !args.includes('--no-build');
+
+ export async function runMountProfile() {
+diff --git a/scripts/perf/replay-scenario.mjs b/scripts/perf/replay-scenario.mjs
+index a1882c7e..ca9b9857 100644
+--- a/scripts/perf/replay-scenario.mjs
++++ b/scripts/perf/replay-scenario.mjs
+@@ -15,6 +15,7 @@
+ import { chromium } from '@playwright/test';
+ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+ import { basename, join } from 'node:path';
++import { VITE_PREVIEW_PORT } from '../lib/dev-ports.mjs';
+ import { chromiumExecutablePath, fail, isMain, runMain, sleep } from '../lib/utils.mjs';
+ import { resolveThrottle } from './args.mjs';
+ import { buildAndPreview } from './preview.mjs';
+@@ -37,7 +38,7 @@ const flag = (name, def) => {
+ const recordingPath = flag('recording', null);
+ const throttle = resolveThrottle(args, 0);
+ const turbo = args.includes('--turbo');
+-const port = Number(flag('port', '4173'));
++const port = Number(flag('port', String(VITE_PREVIEW_PORT)));
+ const build = !args.includes('--no-build');
+
+ export async function runReplayScenario() {
+diff --git a/scripts/perf/scenario.mjs b/scripts/perf/scenario.mjs
+index b792ec41..9d40b0a2 100644
+--- a/scripts/perf/scenario.mjs
++++ b/scripts/perf/scenario.mjs
+@@ -9,6 +9,7 @@
+ // regressions, but absolute frame numbers want the Android path (android.mjs).
+
+ import { chromium } from '@playwright/test';
++import { VITE_PREVIEW_PORT } from '../lib/dev-ports.mjs';
+ import { chromiumExecutablePath, isMain, runMain, sleep } from '../lib/utils.mjs';
+ import { resolveThrottle } from './args.mjs';
+ import { buildAndPreview } from './preview.mjs';
+@@ -25,7 +26,7 @@ const flag = (name, def) => {
+ const deviceName = flag('device', 'phone');
+ const device = resolveDevice(deviceName);
+ const throttle = resolveThrottle(args, 4);
+-const port = Number(flag('port', '4173'));
++const port = Number(flag('port', String(VITE_PREVIEW_PORT)));
+ const build = !args.includes('--no-build');
+
+ export async function runWebScenario() {
+diff --git a/scripts/perf/undo-scenarios.mjs b/scripts/perf/undo-scenarios.mjs
+index b8ffa8d5..e48305d6 100644
+--- a/scripts/perf/undo-scenarios.mjs
++++ b/scripts/perf/undo-scenarios.mjs
+@@ -18,6 +18,7 @@ import { chromium } from '@playwright/test';
+ import { mkdirSync, writeFileSync } from 'node:fs';
+ import { join } from 'node:path';
+ import { pathToFileURL } from 'node:url';
++import { VITE_PREVIEW_PORT } from '../lib/dev-ports.mjs';
+ import { chromiumExecutablePath, runMain, sleep } from '../lib/utils.mjs';
+ import { resolveThrottle } from './args.mjs';
+ import { buildAndPreview } from './preview.mjs';
+@@ -46,7 +47,7 @@ const flag = (name, def) => {
+   return hit ? hit.split('=')[1] : def;
+ };
+ const throttle = resolveThrottle(args, 4);
+-const port = Number(flag('port', '4173'));
++const port = Number(flag('port', String(VITE_PREVIEW_PORT)));
+ const build = !args.includes('--no-build');
+ const COLD_TIER_TIMEOUT_MS = Number(flag('cold-tier-timeout-ms', '10000'));
+
+diff --git a/scripts/store-shots.mjs b/scripts/store-shots.mjs
+index 5e377be7..86be2335 100644
+--- a/scripts/store-shots.mjs
++++ b/scripts/store-shots.mjs
+@@ -13,6 +13,7 @@ import { chromium } from '@playwright/test';
+ import { readFileSync } from 'node:fs';
+ import { join } from 'node:path';
+ import { PALETTE_COLORS } from '../web/src/lib/palette.ts';
++import { VITE_PREVIEW_PORT } from './lib/dev-ports.mjs';
+ import { ROOT, chromiumExecutablePath, sleep } from './lib/utils.mjs';
+ import { circlePts, arcPts, zigzag } from './lib/stroke-geometry.mjs';
+ import {
+@@ -33,7 +34,7 @@ import {
+ } from './lib/app-driver.mjs';
+
+ const OUT = join(ROOT, 'store-assets');
+-const PORT = 4173;
++const PORT = VITE_PREVIEW_PORT;
+
+ // Google Play: 9:16 portrait phone -> 1080x1920; 16:9 landscape tablet -> 1920x1080.
+ const PHONE = { width: 432, height: 768, deviceScaleFactor: 2.5 };
+diff --git a/scripts/tests/vite-server.test.mjs b/scripts/tests/vite-server.test.mjs
+index 0277b03b..863af447 100644
+--- a/scripts/tests/vite-server.test.mjs
++++ b/scripts/tests/vite-server.test.mjs
+@@ -1,5 +1,6 @@
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+ import { spawnSync } from 'node:child_process';
++import { VITE_PREVIEW_PORT } from '../lib/dev-ports.mjs';
+ import { freePort } from '../lib/vite-server.mjs';
+
+ vi.mock('node:child_process', async (importOriginal) => {
+@@ -23,10 +24,10 @@ describe('freePort', () => {
+     error.code = 'ENOENT';
+     spawnSync.mockReturnValue({ error, stdout: undefined });
+
+-    freePort(4173);
++    freePort(VITE_PREVIEW_PORT);
+
+     expect(console.warn).toHaveBeenCalledExactlyOnceWith(
+-      'Unable to check or clear port 4173 automatically because lsof could not be launched. If the port is in use, stop its listener before retrying.'
++      `Unable to check or clear port ${VITE_PREVIEW_PORT} automatically because lsof could not be launched. If the port is in use, stop its listener before retrying.`
+     );
+     expect(process.kill).not.toHaveBeenCalled();
+   });
+@@ -34,7 +35,7 @@ describe('freePort', () => {
+   it('stays silent when lsof finds no listener', () => {
+     spawnSync.mockReturnValue({ status: 1, stdout: '' });
+
+-    freePort(4173);
++    freePort(VITE_PREVIEW_PORT);
+
+     expect(console.warn).not.toHaveBeenCalled();
+     expect(process.kill).not.toHaveBeenCalled();
+diff --git a/web/playwright.shared.ts b/web/playwright.shared.ts
+index ac071748..dc098f19 100644
+--- a/web/playwright.shared.ts
++++ b/web/playwright.shared.ts
+@@ -1,6 +1,7 @@
+ import { ADMIN_ACCESS_TOKEN } from './tests/admin-helpers';
++import { VITE_PREVIEW_PORT } from '../scripts/lib/dev-ports.mjs';
+
+-export const playwrightPort = 4173;
++export const playwrightPort = VITE_PREVIEW_PORT;
+ export const playwrightBaseURL = `http://localhost:${playwrightPort}`;
+
+ export const commonPlaywrightConfig = {
+diff --git a/web/vite.config.ts b/web/vite.config.ts
+index 68f99460..2266e9f0 100644
+--- a/web/vite.config.ts
++++ b/web/vite.config.ts
+@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
+ import { VitePWA } from 'vite-plugin-pwa';
+ import { readFileSync } from 'node:fs';
+ import { execSync } from 'node:child_process';
++import { VITE_DEV_PORT } from '../scripts/lib/dev-ports.mjs';
+ import { buildDefines } from './defines';
+
+ // The native apps bundle a static export and never use a service worker (the
+@@ -62,9 +63,8 @@ const NATIVE_API_BASE = isCapacitor ? 'https://splotch.art' : '';
+
+ export default defineConfig({
+   server: {
+-    // Keep with web/netlify.toml's [dev].targetPort and Vite dev-port consumers:
+-    // scripts/cloud-tunnel.mjs and root dev:kill/live-reload/ADB scripts must all update together.
+-    port: 5173,
++    // Netlify Dev proxies to this port via web/netlify.toml's [dev].targetPort.
++    port: VITE_DEV_PORT,
+     strictPort: true,
+     // Allow a phone-preview reverse tunnel (e.g. chisel) to forward in under its
+     // own hostname; no effect on normal dev/build, only when TUNNEL_HOST is set.

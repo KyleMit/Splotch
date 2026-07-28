@@ -356,7 +356,7 @@
     color: white;
     font-size: 15px;
     font-weight: 700;
-    box-shadow: 0 4px 12px rgba(171, 113, 225, 0.4);
+    box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.4);
     box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 40%, transparent);
     transition:
       transform var(--duration-fast) ease,

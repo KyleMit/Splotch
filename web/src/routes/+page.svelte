@@ -25,9 +25,10 @@
   import { initWebOnlyServices } from '$lib/boot/webOnlyServices';
 
   $effect(() => {
-    settings.lockRotationEnabled;
-    settings.forceLandscapeOrientation;
-    applyDeviceOrientationPreference();
+    applyDeviceOrientationPreference(
+      settings.lockRotationEnabled,
+      settings.forceLandscapeOrientation
+    );
   });
 
   // Own the drawing route's app-surface locks (ADR-0076): no scroll, selection,

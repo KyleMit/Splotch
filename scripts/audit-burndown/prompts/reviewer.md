@@ -29,8 +29,10 @@ Review for:
   narrowed type whose invalid-input tests were made to compile with `as` casts while the runtime
   guard those tests exercise quietly went away.
 * Completeness: grep the WHOLE repository for every removed or renamed symbol and confirm there are
-  no stragglers in call sites, tests, type definitions, or comments. This is where these fixes
-  usually fail.
+  no stragglers in live call sites, tests, type definitions, or documentation. Exclude
+  `docs/AUDIT-DEFERRED.md` and `docs/audit-deferred/**`: those are driver-owned historical
+  snapshots, not living references, and their saved patches are only starting points that may drift
+  as later findings change the same code.
 * Implications: does anything downstream depend on the old behaviour, including invariants
   documented in comments near the changed code?
 * Coverage: a green suite does not mean the change is *tested*. If the fix altered behaviour that
@@ -47,6 +49,12 @@ their implementers performed it — do not read it as a step this one skipped. R
 of five findings on the 2026-07-25 canary: the implementer complied, deleted the entry, and the
 driver's own deletion then fell through onto the *next*, never-reviewed finding and destroyed it.
 The audit file is not part of your review. Nothing in it is a defect you can act on.
+
+**Never require edits to `docs/AUDIT-DEFERRED.md` or `docs/audit-deferred/**`.** The driver protects
+that state for the same reason it owns `docs/AUDIT.md`; an implementer cannot deliver a commit that
+touches it. A stale path or non-applying patch there records historical context, not a live product
+or documentation defect. Review the current source, tests, comments, ADRs, runbooks, and generated
+instructions for completeness, while ignoring these protected artifacts.
 
 Each finding is one or two sentences: the specific defect and where it is. The implementer gets your
 findings verbatim as its next round's instructions and they are quoted into the PR comment, so name

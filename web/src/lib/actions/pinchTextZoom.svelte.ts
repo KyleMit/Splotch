@@ -117,12 +117,10 @@ export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoom
   node.addEventListener('pointercancel', onPointerUp);
   node.addEventListener('click', onClickCapture, true);
 
-  // Reset to normal size whenever the gate toggles or the overlay reopens.
-  // Reading these runes here is what subscribes the action to them.
+  // Calling the option getter performs the reactive reads that subscribe this
+  // effect to gate changes and overlay reopens.
   $effect(() => {
-    const o = getOptions();
-    void o.enabled;
-    void o.resetKey;
+    getOptions();
     reset();
   });
 
