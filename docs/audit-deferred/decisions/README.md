@@ -17,23 +17,16 @@
 
 ## Status
 
-| #  | Finding                                                        | Priority | Decision doc                                                       | Verdict |
-| -- | -------------------------------------------------------------- | -------- | ------------------------------------------------------------------ | ------- |
-| 1  | `--check` flag parsing ad hoc in every gate script             | P4       | [check-flag-parsing.md](check-flag-parsing.md)                     | FIX     |
-| 2  | Copy-pasted CLI `flag()` parser in every perf entry script     | P1       | [perf-flag-parser.md](perf-flag-parser.md)                         | FIX     |
-| 3  | `bumpAndroidGradle`/`bumpIosPbxproj` unanchored global regexes | P2       | [native-version-regexes.md](native-version-regexes.md)             | FIX     |
-| 4  | `scripts/lib/utils.mjs` grab-bag of unrelated concerns         | P2       | [utils-grab-bag.md](utils-grab-bag.md)                             | FIX     |
-| 5  | `/dev/engine` readiness `beforeEach` duplicated across specs   | P2       | [engine-readiness-duplication.md](engine-readiness-duplication.md) | FIX     |
-| 6  | Crayon tests re-derive point generators/samplers inline        | P2       | [crayon-test-helpers.md](crayon-test-helpers.md)                   | DROP    |
-| 7  | Single Parent-Center test asserts ~six behaviors               | P2       | [parent-center-test-split.md](parent-center-test-split.md)         | FIX     |
-| 8  | Browser floor duplicated: `vite.config.ts` vs `browserslist`   | P1       | [browser-floor-duplication.md](browser-floor-duplication.md)       | FIX     |
-| 9  | Git version derivation embedded untestable in `vite.config.ts` | P3       | [git-version-derivation.md](git-version-derivation.md)             | FIX     |
-| 10 | `CAPACITOR` single signal re-derived in every config           | P3       | [capacitor-single-signal.md](capacitor-single-signal.md)           | DROP    |
-| 11 | `android:allowBackup="true"` unexplained for a kids app        | P4       | [android-allowbackup.md](android-allowbackup.md)                   | FIX     |
-| 12 | npm@11 pin rationale copy-pasted across four shell files       | P2       | [npm11-pin-rationale.md](npm11-pin-rationale.md)                   | FIX     |
-| 13 | Android emulator API level second source of truth              | P3       | [android-emulator-api-level.md](android-emulator-api-level.md)     | FIX     |
-| 14 | Proof-sheet hub tab UI lacks ARIA tab semantics                | P4       | [proof-sheet-tab-aria.md](proof-sheet-tab-aria.md)                 | FIX     |
-| 15 | `--experimental-strip-types` flag pair repeated 10× and stale  | P2       | [strip-types-flags.md](strip-types-flags.md)                       | FIX     |
+| #  | Finding                                                       | Priority | Decision doc                                 | Verdict |
+| -- | ------------------------------------------------------------- | -------- | -------------------------------------------- | ------- |
+| 15 | `--experimental-strip-types` flag pair repeated 10× and stale | P2       | [strip-types-flags.md](strip-types-flags.md) | FIX     |
+
+Findings 1–14 from this pass are dispatched. Each decision doc was deleted by the commit that
+resolved it, so the doc and its implementation sit in the same changeset — recover any of them with:
+
+```sh
+git log --diff-filter=D --oneline -- docs/audit-deferred/decisions/
+```
 
 ## Decision-doc template
 
