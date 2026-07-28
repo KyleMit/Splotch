@@ -148,13 +148,14 @@ TEST_CMD='npm run test:unit && npm run test:scripts'
 ```
 
 Do not put `npm run ruler:check` in `CHECK_CMD`; it writes by reapplying Ruler. A Codex implementer
-whose finding edits `.ruler/**` still runs `npm run ruler:apply`, but its nested sandbox may deny
-only the generated `.agents/**` write. In that case it leaves the source and partial generated
-changes and returns success; the outer driver detects `.ruler/**`, reruns `npm run ruler:apply`
-outside the nested sandbox, and includes the complete generated output in its commit. Any other
-Ruler failure remains an implementation failure. When the supervisor runs `ruler:check`, run it
-outside the workspace sandbox because its drift check temporarily rewrites `.agents/`; an `EPERM`
-under `.agents/skills.tmp-*` is a permission boundary, not drift.
+whose finding edits any Ruler source tree (`.ruler/**` or `<dir>/.ruler/**`) still runs
+`npm run ruler:apply`, but its nested sandbox may deny only the generated `.agents/**` write. In
+that case it leaves the source and partial generated changes and returns success; the outer driver
+detects any changed path whose component is `.ruler`, reruns `npm run ruler:apply` outside the
+nested sandbox, and includes the complete generated output in its commit. Any other Ruler failure
+remains an implementation failure. When the supervisor runs `ruler:check`, run it outside the
+workspace sandbox because its drift check temporarily rewrites `.agents/`; an `EPERM` under
+`.agents/skills.tmp-*` is a permission boundary, not drift.
 
 On macOS a sandboxed dprint invocation can warn that it could not save its incremental cache under
 `~/Library/Caches` and still exit zero. Use the command exit status as the gate verdict; do not turn
@@ -200,8 +201,11 @@ must reach origin before an ephemeral environment can be reclaimed.
    one. Replace `PR: pending` in the handoff with its number, commit, and push that second
    checkpoint before launching the canary.
 
-5. Run a five-fix canary in the foreground with the same overrides and `MAX_ISSUES=5`. Deferrals and
-   drops do not increment the limit, so it can process more than five findings.
+5. Run a five-outcome canary in the foreground with the same overrides, `MAX_ISSUES=5`, and
+   `MAX_HANDLED=5`. The canary validates a bounded sample; it does not need to land five fixes. If
+   all five outcomes are drops or deferrals and no accepted fix exercises commit, gates, review,
+   push, and comment capture, checkpoint and run one more five-outcome canary. Never remove the
+   handled ceiling to chase a successful fix.
 
 6. Inspect every canary change without backlog churn:
 

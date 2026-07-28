@@ -41,10 +41,11 @@ outside this nested sandbox before adversarial review.
   scoped lint.
 * Do not run \`git add\`, \`git commit\`, reset, restore, or otherwise mutate Git state. Leave the
   completed changes in the worktree.
-* When a finding changes \`.ruler/**\`, run \`npm run ruler:apply\` as requested. The nested sandbox
-  may deny only the generated \`.agents/**\` write; if that is the sole remaining failure, leave the
-  source and partial generated changes in place and return success. The outer driver detects the
-  \`.ruler/**\` change and reruns Ruler outside this sandbox before it commits.
+* When a finding changes a Ruler source tree (\`.ruler/**\` or \`<dir>/.ruler/**\`), run
+  \`npm run ruler:apply\` as requested. The nested sandbox may deny only the generated
+  \`.agents/**\` write; if that is the sole remaining failure, leave the source and partial
+  generated changes in place and return success. The outer driver detects any path whose component
+  is \`.ruler\` and reruns Ruler outside this sandbox before it commits.
 * When the implementation and non-listener checks pass, return \`success=true\` with an empty
   \`sha\`. Do not report failure merely because E2E and the commit belong to the driver.
 

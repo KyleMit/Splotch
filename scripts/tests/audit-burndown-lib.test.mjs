@@ -290,6 +290,8 @@ describe('Codex driver-owned commits', () => {
   it('regenerates agent outputs only when a Ruler source changed', () => {
     expect(needsRulerApply(['web/src/app.css', '.ruler/skills/design/SKILL.md'])).toBe(true);
     expect(needsRulerApply(['.ruler'])).toBe(true);
+    expect(needsRulerApply(['tools/asset-gen/.ruler/AGENTS.md'])).toBe(true);
+    expect(needsRulerApply(['web/src/lib/not-ruler.ts'])).toBe(false);
     expect(needsRulerApply(['.agents/skills/design/SKILL.md', 'web/src/app.css'])).toBe(false);
   });
 });
@@ -522,9 +524,9 @@ describe('deferralReason', () => {
 // driver records this at startup; the PreCompact hook reads it back.
 describe('launchCommand', () => {
   // The bare case must render the driver's own canary default, not a full-run
-  // number: an unset MAX_ISSUES means burndown.mjs runs 5 findings, and a recorded
-  // command reading `-- 600` would relaunch a run 120x longer than the one it
-  // claims to reproduce.
+  // number: an unset MAX_ISSUES means burndown.mjs targets five accepted fixes,
+  // and a recorded command reading `-- 600` would relaunch a run 120x longer than
+  // the one it claims to reproduce.
   it('emits a bare relaunch at the driver default when nothing was overridden', () => {
     expect(launchCommand({})).toBe(`npm run audit:burndown:overnight -- ${DEFAULT_MAX_ISSUES}`);
   });

@@ -99,7 +99,7 @@ export function protectedImplementationPaths(paths, auditPath = auditFile()) {
 }
 
 export function needsRulerApply(paths) {
-  return paths.some((path) => path === '.ruler' || path.startsWith('.ruler/'));
+  return paths.some((path) => path.split('/').includes('.ruler'));
 }
 
 // Which of a fix's changed files the lint gate can actually run on.
@@ -165,8 +165,9 @@ export const shellQuote = (value) => `'${String(value).replace(/'/g, `'\\''`)}'`
 
 // The canary default, shared with burndown.mjs so the recorded relaunch command
 // can never disagree with the run it claims to reproduce: an unset MAX_ISSUES
-// means a 5-finding canary, and a command reading `-- 600` would relaunch a run
-// 120× longer under a heading promising "this exact run".
+// means a five-accepted-fix ceiling, and a command reading `-- 600` would relaunch
+// a run 120× longer under a heading promising "this exact run". Codex canaries add
+// MAX_HANDLED=5 so drops and deferrals cannot make that sample unbounded.
 export const DEFAULT_MAX_ISSUES = 5;
 
 export function reachedHandledLimit({ fixed = 0, dropped = 0, deferred = 0, maxHandled = 0 } = {}) {
