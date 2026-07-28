@@ -1,6 +1,5 @@
 import { browser } from '$app/environment';
 import { isNative, supportsOrientationLock } from '$lib/platform';
-import { settings } from '$lib/state/settings.svelte';
 
 type OrientationLockType = 'portrait' | 'landscape';
 
@@ -11,15 +10,18 @@ type LockableScreenOrientation = ScreenOrientation & {
 
 let lastRequested: OrientationLockType | 'unlocked' | null = null;
 
-export async function applyDeviceOrientationPreference() {
+export async function applyDeviceOrientationPreference(
+  lockRotationEnabled: boolean,
+  forceLandscapeOrientation: boolean
+) {
   if (!browser) return;
 
   // Windowed platforms (iPadOS 26+) own orientation themselves; locking there
   // only floats a letterboxed window, so leave it to the OS window controls.
   if (!supportsOrientationLock()) return;
 
-  const target: OrientationLockType | 'unlocked' = settings.lockRotationEnabled
-    ? settings.forceLandscapeOrientation
+  const target: OrientationLockType | 'unlocked' = lockRotationEnabled
+    ? forceLandscapeOrientation
       ? 'landscape'
       : 'portrait'
     : 'unlocked';

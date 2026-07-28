@@ -1,5 +1,6 @@
 import { hydrateApiKey } from '$lib/state/aiKey.svelte';
 import { hydrateSaveFolder } from '$lib/state/saveFolder.svelte';
+import { settings } from '$lib/state/settings.svelte';
 import { hydrateDurableStorage } from '$lib/storage';
 import { applyDeviceOrientationPreference } from '$lib/orientation';
 
@@ -18,7 +19,12 @@ export async function hydratePersistedState(): Promise<void> {
   // but this guarantees the apply even when the restored value equals the
   // current one.
   const restored = await hydrateDurableStorage();
-  if (restored) applyDeviceOrientationPreference();
+  if (restored) {
+    applyDeviceOrientationPreference(
+      settings.lockRotationEnabled,
+      settings.forceLandscapeOrientation
+    );
+  }
 
   // Durable hydration must finish before the BYOK Gemini key migration so a
   // legacy plaintext key that survived only in Preferences can move into secure

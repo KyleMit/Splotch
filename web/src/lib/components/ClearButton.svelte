@@ -5,7 +5,7 @@
   import { clearCanvas } from '$lib/drawing/engine';
   import { saveDrawingIfEnabled } from '$lib/drawing/saveOnDelete';
   import { dragToClear } from '$lib/actions/dragToClear';
-  import { layout } from '$lib/state/layout.svelte';
+  import { layout, type Orientation } from '$lib/state/layout.svelte';
   import { resetToolAfterClear } from '$lib/state/tool.svelte';
 
   let containerEl: HTMLDivElement;
@@ -18,7 +18,7 @@
   // Tracked so resetButtonPosition can skip a reset mid-gesture.
   let isDragging = false;
 
-  function resetButtonPosition() {
+  function resetButtonPosition(_orientation: Orientation) {
     coachmark?.dismiss(); // geometry would be stale after a layout change
     if (!containerEl || isDragging) return;
     containerEl.style.transform = '';
@@ -30,8 +30,8 @@
   // it calls reads the coachmark's visibility state, and subscribing to that
   // would re-run this effect on reveal and instantly dismiss the tutorial.
   $effect(() => {
-    layout.orientation;
-    untrack(resetButtonPosition);
+    const orientation = layout.orientation;
+    untrack(() => resetButtonPosition(orientation));
   });
 </script>
 
