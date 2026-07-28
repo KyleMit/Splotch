@@ -9,36 +9,6 @@
 
 ## Source: Session audit
 
-### [Tooling] Make the session-audit conventions link resolve for Codex
-
-**File(s):** `.ruler/skills/session-audit/SKILL.md` (shared conventions link),
-`.agents/skills/session-audit/SKILL.md`
-
-#### Problem
-
-**Cost:** minor
-
-The generated Codex skill links to `[.claude/audit-conventions.md](../../audit-conventions.md)`.
-From `.agents/skills/session-audit/SKILL.md`, that relative target resolves to
-`.agents/audit-conventions.md`, which does not exist. During this session the prescribed
-`sed -n '1,320p' .agents/audit-conventions.md` read failed, and repository orientation had to be
-used to recover the real `.claude/audit-conventions.md` path. Every Codex session that runs this
-skill encounters the same broken reference.
-
-#### Proposed solution
-
-Change the shared source link in `.ruler/skills/session-audit/SKILL.md` to the provider-neutral
-`../../../.claude/audit-conventions.md`, then run `npm run ruler:apply`. From both generated skill
-locations, that path resolves to the repository's one directly maintained conventions file.
-
-#### Verification
-
-Run `npm run ruler:check`, then resolve the link from both `.agents/skills/session-audit/SKILL.md`
-and `.claude/skills/session-audit/SKILL.md`; each should identify the existing
-`.claude/audit-conventions.md` without a fallback lookup.
-
----
-
 ## Source: Deferred-audit triage — FIX verdicts (2026-07-27)
 
 These 30 findings were deferred by earlier `burn-down-audits` runs (failed implementation or failed

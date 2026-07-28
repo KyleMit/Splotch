@@ -1148,3 +1148,43 @@ The rolled-back draft is kept at
 `docs/audit-deferred/p4-consistency-no-editorconfig-indent-width-2-and-print-width-100-are-re.patch`
 (1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p4-consistency-no-editorconfig-indent-width-2-and-print-width-100-are-re.patch`.
+
+### [Tooling] Make the session-audit conventions link resolve for Codex
+
+**File(s):** `.ruler/skills/session-audit/SKILL.md` (shared conventions link),
+`.agents/skills/session-audit/SKILL.md`
+
+#### Problem
+
+**Cost:** minor
+
+The generated Codex skill links to `[.claude/audit-conventions.md](../../audit-conventions.md)`.
+From `.agents/skills/session-audit/SKILL.md`, that relative target resolves to
+`.agents/audit-conventions.md`, which does not exist. During this session the prescribed
+`sed -n '1,320p' .agents/audit-conventions.md` read failed, and repository orientation had to be
+used to recover the real `.claude/audit-conventions.md` path. Every Codex session that runs this
+skill encounters the same broken reference.
+
+#### Proposed solution
+
+Change the shared source link in `.ruler/skills/session-audit/SKILL.md` to the provider-neutral
+`../../../.claude/audit-conventions.md`, then run `npm run ruler:apply`. From both generated skill
+locations, that path resolves to the repository's one directly maintained conventions file.
+
+#### Verification
+
+Run `npm run ruler:check`, then resolve the link from both `.agents/skills/session-audit/SKILL.md`
+and `.claude/skills/session-audit/SKILL.md`; each should identify the existing
+`.claude/audit-conventions.md` without a fallback lookup.
+
+---
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+Updated the shared source and generated Claude copy, but `npm run ruler:apply` could not write the
+protected `.agents` tree in this nested sandbox. The Codex generated copy therefore remains stale,
+so the full brief cannot be delivered here.
