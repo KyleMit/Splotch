@@ -16,7 +16,7 @@ import {
 } from './crayonBrush';
 
 // One rendered curve segment: a quadratic with control cx/cy and endpoint x/y.
-export interface PathSeg {
+interface PathSeg {
   cx: number;
   cy: number;
   x: number;

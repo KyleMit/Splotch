@@ -50,7 +50,7 @@ export function verifyAdminSecret(key: string | undefined) {
 // endpoint.
 const ADMIN_LOGIN_BUCKET = (ip: string) => `admin-login:${ip}`;
 
-export type AdminLoginVerdict = { ok: true; session: string } | { ok: false; status: 403 };
+type AdminLoginVerdict = { ok: true; session: string } | { ok: false; status: 403 };
 
 export type AdminLoginAttempt =
   | { ok: false; status: 429; retryAfter: number }

@@ -404,7 +404,7 @@ export const BAND_BLIND_INK_FRAC = 0.5;
 // lights — lively light-on-dark by day, legitimately dark at night) is a
 // core the chalk never marked as an eye, and doesn't gate. The committed,
 // human-reviewed chalk is effectively the per-page eye annotation.
-export const CHALK_WHITE_MIN = 245;
+const CHALK_WHITE_MIN = 245;
 
 export function judgeNightEyes(scoredNight, scoredLight, { chalked = false } = {}) {
   let worst = null;

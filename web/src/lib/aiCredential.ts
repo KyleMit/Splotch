@@ -8,7 +8,7 @@ export function looksLikeApiKey(value: string): boolean {
   return value.startsWith(GEMINI_KEY_PREFIX);
 }
 
-export type CredentialKind = 'apiKey' | 'accessCode';
+type CredentialKind = 'apiKey' | 'accessCode';
 
 type VerifyPayload = { ok?: boolean; error?: string; accessCode?: string };
 

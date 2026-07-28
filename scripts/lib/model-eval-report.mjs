@@ -352,22 +352,3 @@ export async function buildReport({
   writeFileSync(join(outDir, 'summary.json'), JSON.stringify({ runId, agg }, null, 2));
   return htmlPath;
 }
-
-// Re-render index.html from a finished report bundle's results.json + the
-// thumbnails already sitting in assets/, with no browser. This is the path a
-// design/chrome change takes to reskin an already-committed report: the thumbnail
-// filenames are deterministic from (id, model, sample), so the HTML rebuilds
-// offline as long as the JPEGs exist.
-export function rebuildReportHtml({ reportDir, results, runId, samples = 1, verdictHtml }) {
-  const assetsExist = (name) => existsSync(join(reportDir, 'assets', `${name}.jpg`));
-  const ids = [...new Set(results.map((r) => r.id))];
-  const inThumb = {};
-  for (const id of ids) inThumb[id] = assetsExist(`in__${id}`) ? `assets/in__${id}.jpg` : null;
-  for (const r of results) {
-    const name = `out__${r.id}__${r.model}__${r.sample}`;
-    r._thumb = r.outFile && assetsExist(name) ? `assets/${name}.jpg` : null;
-  }
-  const html = renderReportHtml({ runId, results, samples, inThumb, verdictHtml });
-  writeFileSync(join(reportDir, 'index.html'), html);
-  return join(reportDir, 'index.html');
-}

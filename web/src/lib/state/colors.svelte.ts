@@ -2,7 +2,6 @@ import { perceivedBrightness } from '../colorRing';
 import { BLACK_INK, PALETTE_COLORS } from '../palette';
 
 export { BLACK_INK, PALETTE_COLORS };
-export type { PaletteColor } from '../palette';
 
 export const WHITE_INK = '#ffffff';
 

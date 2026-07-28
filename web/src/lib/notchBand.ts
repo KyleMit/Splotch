@@ -35,7 +35,7 @@ export const NOTCH_INSET_THRESHOLD_PX = 30;
 // icons (for a light band).
 export type StatusBarStyle = 'DARK' | 'LIGHT';
 
-export type Orientation = 'portrait' | 'landscape';
+type Orientation = 'portrait' | 'landscape';
 
 // Screen edge the band paints along — the edge the display cutout currently
 // sits on. The hole-punch is at the device's physical top, so it's the top edge
