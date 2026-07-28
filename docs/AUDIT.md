@@ -7,43 +7,6 @@
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P3][documentation] `overrides.tar` pin has no rationale, unlike every other config in the repo
-
-**File(s):** `package.json:298-303` (dependencies) — pinned at SHA f934d43
-
-#### Problem
-
-```json
-"overrides": {
-  "@capacitor/assets": { "sharp": "$sharp" },
-  "tar": "^7.5.19"
-},
-```
-
-The `sharp: "$sharp"` override is self-explaining (dedupe @capacitor/assets onto the project's
-sharp). The `"tar": "^7.5.19"` override has no comment — a reader can't tell whether it is a
-security advisory pin, a compatibility workaround, or stale cruft, nor when it can be removed. This
-is conspicuous next to `netlify.toml`, which comments nearly every directive. Un-annotated
-transitive pins are exactly the config that rots (the advisory gets fixed upstream, the pin lingers
-forever).
-
-#### Proposed solution
-
-Add a one-line comment (JSON5 not available in `package.json`, so use a sibling `overrides` note in
-the CONTRIBUTING/ADR or a `// tar:` convention isn't possible in strict JSON — instead record the
-reason in a short comment in `docs/` or the commit and reference the advisory ID / issue number in
-`scripts-info`-adjacent docs). Practically: document the CVE/reason and a removal condition wherever
-dependency decisions are tracked, and periodically re-check whether the transitive floor already
-satisfies it so the override can be dropped.
-
-#### Verification
-
-`npm ls tar` shows what depends on it and at what version; if the depended-on range already resolves
-to `>=7.5.19` without the override, the pin is removable — prove by deleting it and re-running
-`npm ci && npm ls tar`.
-
----
-
 ### [P3][dependency-split] `@capacitor/filesystem` appears unused — no JS import anywhere
 
 **File(s):** `package.json:279` (dependencies) — pinned at SHA f934d43
