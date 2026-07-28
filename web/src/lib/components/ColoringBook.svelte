@@ -291,7 +291,7 @@
       border-color: var(--brand);
       background: var(--brand-wash);
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(171, 113, 225, 0.25);
+      box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.25);
       box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 25%, transparent);
     }
   }
