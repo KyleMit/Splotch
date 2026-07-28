@@ -21,6 +21,7 @@
 import { glob, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
+import { parseArgs } from 'node:util';
 import { ASSET_GEN_DIR, COLORING_DIR, STYLES_DIR, FILL_SRC_DIR, toPosix } from '../lib/paths.mjs';
 import { fail } from '../lib/cli.mjs';
 
@@ -50,7 +51,9 @@ function render(entries) {
   return entries.map(({ path, hash }) => `${hash}  ${path}`).join('\n') + '\n';
 }
 
-const checkMode = process.argv.includes('--check');
+const {
+  values: { check: checkMode },
+} = parseArgs({ options: { check: { type: 'boolean' } } });
 const entries = await currentEntries();
 
 if (!checkMode) {

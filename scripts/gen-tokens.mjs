@@ -6,6 +6,7 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { parseArgs } from 'node:util';
 import { brand, scale, themes, toCssVarName, zIndex } from '../web/src/lib/design/tokens.ts';
 import { ROOT } from './lib/utils.mjs';
 
@@ -64,7 +65,9 @@ function safeRead(path) {
   }
 }
 
-const check = process.argv.includes('--check');
+const {
+  values: { check },
+} = parseArgs({ options: { check: { type: 'boolean' } } });
 const next = render();
 const current = safeRead(OUT_PATH);
 
