@@ -7,8 +7,9 @@
 The 2026-07-27 triage pass reviewed the 49 findings deferred up to that date and drained them from
 this file: 30 FIX verdicts were re-staged in `docs/AUDIT.md` with resolution guidance, 9 OPTIONS
 verdicts became `type:audit` + `needs-triage` GitHub issues (564-572), and 10 DROP verdicts were
-retired with rationale. The disposition index is `docs/audit-deferred/triage/README.md`; full
-original texts remain in this file's git history. Entries below arrived after that pass.
+retired with rationale. The disposition index (`docs/audit-deferred/triage/README.md`) and full
+original texts remain in this file's git history — the triage directory was removed once every
+verdict was dispatched. Entries below arrived after that pass.
 
 ### [P4][consistency] `--check`/flag parsing done ad hoc in every gate script
 
