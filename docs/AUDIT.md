@@ -35,34 +35,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — scrapbook · run-artifact code
 
-### [P4][naming] Inconsistent element-variable suffixing (`frame` vs `tabsEl`/`countEl`)
-
-**File(s):** `scrapbook/coloring-book-proof-sheets/index.html:193-196` (hand-authored hub) — pinned
-at SHA f934d43
-
-#### Problem
-
-```js
-var tabsEl = document.getElementById('tabs');
-var frame = document.getElementById('sheet');
-var countEl = document.getElementById('count');
-```
-
-Two of the three cached elements use the `…El` suffix convention; the middle one (`frame`, for the
-element with `id="sheet"`) does not, and its variable name (`frame`) doesn't match its id (`sheet`)
-either. Small, but it's the kind of inconsistency that makes a reader hunt.
-
-#### Proposed solution
-
-Pick one convention. Either `sheetEl`/`tabsEl`/`countEl` (matching ids + suffix) or drop the suffix
-uniformly. Align the variable name with the element id.
-
-#### Verification
-
-Read lines 193-196: the three cached-element names should follow one visible rule.
-
----
-
 ### [P5][readability] Hub script uses ES5 `var` + function expressions despite a modern-only target
 
 **File(s):** `scrapbook/coloring-book-proof-sheets/index.html:178-243` (hand-authored hub) — pinned
