@@ -4,6 +4,7 @@
   import { releaseAllPointers } from '$lib/drawing/engine';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
+  import { HEX_GRID_GEOMETRY } from '$lib/design/trimGeometry';
   import { PORTRAIT_ROWS, LANDSCAPE_ROWS, PICKER_DIM_BORDER } from '$lib/hexPickerLayout';
 
   // Both grid arrangements are rendered; CSS media queries pick one per
@@ -57,11 +58,12 @@
   // hexagons, where an element hit-test sees only the picker background. Snap
   // to the nearest hexagon center within this radius (px) so gap hits still
   // resolve — for the hover highlight while dragging and the committed color
-  // alike. Nearest-center also covers direct hits (a hexagon's farthest edge
-  // point is ~35px from its center), so no DOM hit-test is needed. Centers
-  // are snapshotted once per drag: per-move rect reads after each hover-class
-  // flip forced a reflow per hexagon per pointer event.
-  const HEX_SNAP_RADIUS = 40;
+  // alike. The radius reaches half the hexagon height plus enough slop to bridge
+  // its gaps, so nearest-center also covers direct hits without a DOM hit-test.
+  // Centers are snapshotted once per drag: per-move rect reads after each
+  // hover-class flip forced a reflow per hexagon per pointer event.
+  const HEX_SNAP_GAP_SLOP_PX = 5.5;
+  const HEX_SNAP_RADIUS = HEX_GRID_GEOMETRY.firstRowPx / 2 + HEX_SNAP_GAP_SLOP_PX;
 
   function snapshotHexCenters() {
     const centers: HexCenter[] = [];
