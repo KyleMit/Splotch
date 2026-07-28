@@ -126,5 +126,6 @@ carve-out):
   backlog** (then `docs/IDEAS.md`, now GitHub issues labeled `area:asset-gen`) — one report,
   evidence set, and (mostly) re-appliable patch per idea, plus a self-contained review dashboard
   (`ideas-review.html`). Read its README before working an `area:asset-gen` issue: 24 of 25 ideas
-  were validated there, and several carry finished patches/assets waiting to be promoted. Like
-  `legacy/`, nothing in it is live pipeline code.
+  were validated there; each report's `Status:` line records its current disposition and live-file
+  pointer, while the README scoreboard summarizes the promotion pass. Like `legacy/`, nothing in it
+  is live pipeline code.
