@@ -9,12 +9,12 @@
          (scripts/lib/scrapbook-chrome.mjs) — this hand-authored hub can't import it. */
       :root {
         color-scheme: light dark;
-        --fg: #23212a;
+        --ink: #23212a;
         --muted: #6b6774;
         --faint: #948f9c;
-        --bg: #f5f3ee;
-        --bar: #f6f3ec;
-        --line: #e6e1d8;
+        --paper: #f5f3ee;
+        --card-2: #f6f3ec;
+        --hair: #e6e1d8;
         --accent: #2f6fed;
         --accent-ink: #1e50c4;
         --tab-bg: #efeae1;
@@ -29,12 +29,12 @@
       }
       @media (prefers-color-scheme: dark) {
         :root {
-          --fg: #e9e7e2;
+          --ink: #e9e7e2;
           --muted: #a8a4af;
           --faint: #807d89;
-          --bg: #131418;
-          --bar: #181a20;
-          --line: #34373f;
+          --paper: #131418;
+          --card-2: #181a20;
+          --hair: #34373f;
           --accent: #7aa8ff;
           --accent-ink: #a9c6ff;
           --tab-bg: #24262d;
@@ -47,14 +47,14 @@
         margin: 0;
         display: flex;
         flex-direction: column;
-        background: var(--bg);
-        color: var(--fg);
+        background: var(--paper);
+        color: var(--ink);
         font: 16px/1.5 ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       }
       header {
         flex: 0 0 auto;
-        background: var(--bar);
-        border-bottom: 1px solid var(--line);
+        background: var(--card-2);
+        border-bottom: 1px solid var(--hair);
         box-shadow: 0 1px 0 rgba(20, 18, 26, 0.06), 0 6px 16px rgba(20, 18, 26, 0.05);
       }
       .titlebar {
@@ -68,7 +68,7 @@
         display: inline-flex;
         align-items: center;
         gap: .5rem;
-        color: var(--fg);
+        color: var(--ink);
         font-weight: 700;
         font-size: .92rem;
         letter-spacing: -.01em;
@@ -87,7 +87,7 @@
       .crumbs a { color: var(--muted); text-decoration: none; }
       .crumbs a:hover { color: var(--accent-ink); }
       .crumbs .sep { color: var(--faint); margin: 0 5px; }
-      .crumbs .here { color: var(--fg); font-weight: 650; }
+      .crumbs .here { color: var(--ink); font-weight: 650; }
       .count { color: var(--muted); font-size: .78rem; white-space: nowrap; }
       nav {
         display: flex;
@@ -127,9 +127,9 @@
         flex: 0 0 auto;
         width: 2rem;
         height: 2rem;
-        border: 1px solid var(--line);
-        background: var(--bg);
-        color: var(--fg);
+        border: 1px solid var(--hair);
+        background: var(--paper);
+        color: var(--ink);
         border-radius: 50%;
         cursor: pointer;
         font-size: 1.1rem;
@@ -139,7 +139,7 @@
       }
       .nudge:hover { border-color: var(--accent); color: var(--accent); }
       main { flex: 1 1 auto; min-height: 0; }
-      iframe { width: 100%; height: 100%; border: 0; display: block; background: var(--bg); }
+      iframe { width: 100%; height: 100%; border: 0; display: block; background: var(--paper); }
       .kbd-hint { color: var(--muted); font-size: .78rem; padding: 0 1rem; }
       @media (max-width: 560px) {
         .count { display: none; }

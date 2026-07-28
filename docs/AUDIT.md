@@ -35,36 +35,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — scrapbook · run-artifact code
 
-### [P3][maintainability] Hub palette renames the shared chrome tokens, defeating the "keep in sync by eye" note
-
-**File(s):** `scrapbook/coloring-book-proof-sheets/index.html:8-43` (hand-authored hub) — pinned at
-SHA f934d43
-
-#### Problem
-
-The hub opens with a comment promising the palette is "Kept in sync by eye with the shared scrapbook
-chrome (scripts/lib/scrapbook-chrome.mjs)". But it then declares the tokens under *different names*
-than the chrome uses — `--fg`/`--bg`/`--bar`/`--line`/`--tab-bg`/`--tab-fg` here vs
-`--ink`/`--paper`/`--card-2`/`--hair` in the generated pages (e.g. `scrapbook/index.html:12-13`,
-`crayon-brush-samples/index.html:11-13`). A maintainer trying to reconcile the two blocks after a
-chrome change can't diff them line-for-line; they must first mentally map `--fg` ↔ `--ink`, `--bar`
-↔ `--card-2`, etc. The renamed vocabulary makes the one sync mechanism the file relies on (human
-eyeballing) maximally error-prone.
-
-#### Proposed solution
-
-Adopt the chrome's exact token names in the hub so the two `:root` blocks are copy-comparable (or a
-future extraction can literally share them). Where the hub genuinely needs extra tokens (`--tab-bg`,
-`--tab-fg`), keep those but layer them on top of the shared names rather than substituting the core
-ones.
-
-#### Verification
-
-Diff the hub's `:root` light block against the shared chrome's after the rename — the shared subset
-should match token-name-for-token-name, so a drift is a visible diff.
-
----
-
 ### [P4][duplication] Hub re-implements the masthead/crayon-strip/breadcrumb chrome by hand
 
 **File(s):** `scrapbook/coloring-book-proof-sheets/index.html:150-173` (hand-authored hub) — pinned
