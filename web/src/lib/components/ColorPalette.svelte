@@ -20,7 +20,7 @@
   import Icon from './Icon.svelte';
 
   let paletteEl: HTMLDivElement;
-  let swatchEls = $state<Record<string, HTMLButtonElement>>({});
+  let customSwatchEl: HTMLButtonElement | undefined;
 
   const dark = $derived(resolvedTheme() === 'dark');
 
@@ -63,13 +63,8 @@
   // The selected-state gap (border + seam) is surface-colored, not white, so in
   // dark mode it reads as bar background and the colored ring floats around the
   // swatch. Light mode is unchanged (surface is white there).
-  function ringShadow(color: string) {
-    const ringColor = getRingColor(color);
-    return `0 0 0 0.5px var(--surface), 0 0 0 4.5px ${ringColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
-  }
-
-  function gradientRingShadow(color: string) {
-    return `0 0 0 0.5px var(--surface), 0 0 0 4.5px ${color}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
+  function selectionRingShadow(ringColor: string): string {
+    return `0 0 0 0.5px var(--surface), 0 0 0 var(--selection-ring-width) ${ringColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
   }
 
   function selectSwatch(hex: string, paint: string) {
@@ -82,7 +77,7 @@
   function selectCustomColor() {
     selectInkBrush();
     selectCustomSwatch();
-    colorPicker.show(swatchEls[CUSTOM_SWATCH] ? buttonCenter(swatchEls[CUSTOM_SWATCH]) : null);
+    colorPicker.show(customSwatchEl ? buttonCenter(customSwatchEl) : null);
     releaseAllPointers();
   }
 
@@ -120,6 +115,7 @@
 >
   {#each PALETTE_COLORS as { hex, label, bonus } (hex)}
     {@const shown = themedSwatchColor(hex, dark)}
+    {@const ringColor = getRingColor(shown)}
     <button
       class="color-swatch"
       class:bonus
@@ -128,13 +124,12 @@
       data-color={hex}
       data-trim-rank={trimRank.get(hex)}
       style="background-color: {shown}; {!erasing && colors.activeSwatch === hex
-        ? `box-shadow: ${ringShadow(shown)}; --ring-color: ${getRingColor(shown)};`
+        ? `box-shadow: ${selectionRingShadow(ringColor)}; --ring-color: ${ringColor};`
         : ''}"
       aria-label={shown === hex ? label : 'White'}
       use:scribbleTap={() => selectSwatch(hex, shown)}
       onpointerdown={handlePaletteDown}
       onpointercancel={handleSwatchCancel}
-      bind:this={swatchEls[hex]}
     ></button>
   {/each}
 
@@ -145,18 +140,19 @@
     data-color="custom"
     aria-label="Custom Color"
     style={!erasing && colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected
-      ? `box-shadow: ${gradientRingShadow(colors.customColor)};`
+      ? `box-shadow: ${selectionRingShadow(colors.customColor)};`
       : ''}
     use:scribbleTap={selectCustomColor}
     onpointerdown={handlePaletteDown}
     onpointercancel={handleSwatchCancel}
-    bind:this={swatchEls[CUSTOM_SWATCH]}
+    bind:this={customSwatchEl}
     ><Icon name="more-colors" class="more-colors-icon" aria-hidden="true" /></button
   >
 </div>
 
 <style>
   .color-palette {
+    --selection-ring-width: 4.5px;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     justify-items: center;
@@ -165,7 +161,7 @@
     padding: 12px;
     background: var(--surface);
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-    z-index: 1002; /* Above clear-accept-zone (1001) */
+    z-index: var(--z-palette); /* Above the clear coachmark, the tallest chrome below it */
     flex-shrink: 0;
     position: relative;
     overflow: hidden;
@@ -206,9 +202,9 @@
   .color-swatch:not(.gradient-swatch)::before {
     content: '';
     position: absolute;
-    inset: -4.5px;
+    inset: calc(-1 * var(--selection-ring-width));
     border-radius: 50%;
-    border: 4.5px solid var(--ring-color, transparent);
+    border: var(--selection-ring-width) solid var(--ring-color, transparent);
     box-sizing: border-box;
     pointer-events: none;
     opacity: 0;
@@ -277,7 +273,8 @@
        • ≥ 444px → 6 fit  (ranks 0–1 trimmed)
      Below 444px a 3rd swatch would have to go, so we fall back to the roomier
      2-column grid (the default layout) — which fits all 8 again, then trims in
-     pairs. */
+     pairs. See design/trimGeometry.ts for the executable form of this formula,
+     pinned against these values by trimGeometry.test.ts. */
   @media (orientation: landscape) and (min-height: 444px) {
     .color-palette {
       grid-template-columns: 1fr;
@@ -317,6 +314,11 @@
      rules use bounded min/max ranges instead, since a rank can become visible
      again when the layout switches to two columns. The gradient swatch has no
      trim rank, so it is never hidden.
+
+     Every threshold below is derived arithmetically; design/trimGeometry.ts is
+     the executable form of all four ladders, and trimGeometry.test.ts parses
+     this whole style block back out — swatch sizes and gaps as well as the
+     thresholds — and asserts the module still produces exactly these values.
 
      PORTRAIT — palette is a full-width row (55px swatches, 8px gaps, 10px side
      padding) plus the always-present gradient. k core swatches + gradient fit

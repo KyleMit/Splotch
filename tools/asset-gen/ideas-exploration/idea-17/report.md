@@ -1,5 +1,8 @@
 # Idea #17 — Model bake-off: flash-image vs the pro image tier
 
+Status: LANDED — `gemini-3.1-flash-image` is the pipeline default in every generator
+(../../docs/gemini-3.1-migration.md).
+
 **Verdict: WORKED.** A real second (and third) image model exists on this key. The reduced bake-off
 ran end-to-end on all three named hard pages with the production gates, inside the 12-call budget
 (exactly 12 Gemini image calls). There is a clear winner: **`gemini-3.1-flash-image` cleared all

@@ -37,19 +37,13 @@ vi.mock('@capacitor/preferences', () => ({
   },
 }));
 
-import { hydrateDurableStorage } from './storage';
-// Importing the real store modules runs their module-init code: each reads its
-// persisted key (registering it as managed) and calls onDurableRestore() to
-// register its reloader — exactly what earlyBoot.ts does at boot.
+import { STORAGE_KEYS, hydrateDurableStorage } from './storage';
+// Importing the real store modules runs their module-init code: each calls
+// onDurableRestore() to register its reloader — exactly what earlyBoot.ts does
+// at boot.
 import { strokeState } from './state/strokeWidth.svelte';
 import { toolState } from './state/tool.svelte';
 import { settings } from './state/settings.svelte';
-
-// The localStorage keys each store persists under, with a durable-only value
-// distinct from the store's default so a successful restore is observable.
-const PEN_SIZE_KEY = 'splotch-stroke-width-size'; // strokeState.penSize, default 3
-const BRUSH_TYPE_KEY = 'splotch-brush-type'; // toolState.brush, default 'pen'
-const SOUND_VOLUME_KEY = 'splotch-sound-volume'; // settings.soundVolume, default 50
 
 beforeEach(() => {
   localStorage.clear();
@@ -69,17 +63,15 @@ describe('hydrateDurableStorage restores real persisted stores (issue #521)', ()
 
     // Simulate a WebView eviction: the durable Preferences layer still holds the
     // parent's saved values, but localStorage lost them (cleared in beforeEach).
-    // The keys are already tracked as managed because the store modules read
-    // them at init above.
-    prefsStore.set(PEN_SIZE_KEY, '5');
-    prefsStore.set(BRUSH_TYPE_KEY, 'crayon');
-    prefsStore.set(SOUND_VOLUME_KEY, '80');
+    prefsStore.set(STORAGE_KEYS.strokeWidthSize, '5');
+    prefsStore.set(STORAGE_KEYS.brushType, 'crayon');
+    prefsStore.set(STORAGE_KEYS.soundVolume, '80');
 
     const restored = await hydrateDurableStorage();
     expect(restored).toBe(true);
 
     // localStorage was repopulated from the durable mirror...
-    expect(localStorage.getItem(PEN_SIZE_KEY)).toBe('5');
+    expect(localStorage.getItem(STORAGE_KEYS.strokeWidthSize)).toBe('5');
 
     // ...and, crucially, every real store's reloader fired via the registry, so
     // the live $state reflects the recovered values rather than the defaults.

@@ -34,8 +34,9 @@ and the native toolchains.
 Two Node smoke tests guard the server contract, on demand:
 
 * **`test:api:smoke`** boots a throwaway `vite dev` and checks the `/api/*` shapes (admin auth flow,
-  bearer gate, token add/remove, `verify-access-code`). No Blobs, so it asserts the snapshot's
-  `persistent` is `false`. See the `api` skill.
+  bearer gate, token add/remove, `verify-access-code`) plus the CORS/preflight contract the native
+  apps depend on. No Blobs, so it asserts the snapshot's `persistent` is `false`. See the `api`
+  skill.
 * **`test:blobs:smoke`** runs against a **real deploy** to prove Netlify Blobs is actually live on
   the deployed function — the failure mode of ADR-0025, which the local `vite dev` tests
   structurally cannot catch:
@@ -86,7 +87,12 @@ npm run test:scripts
 Configured in `scripts/vitest.config.mjs` (Node env), tests in `scripts/tests/`. Covers repo
 automation helpers whose regressions would be silent — currently the audit-burndown `docs/AUDIT.md`
 surgery in `scripts/audit-burndown/lib.mjs` (entry-boundary parsing, pure block removal,
-dprint-clean seams; see the `burn-down-audits` skill). Add a test here when a `scripts/` helper's
+dprint-clean seams; see the `burn-down-audits` skill) and complete runner-specific skill replacement
+in `scripts/apply-ruler-skill-forks.mjs` (package isolation, paired-runner coverage, and
+shared-source collision guards). The latter covers generic Ruler-managed forks; `burn-down-audits`
+itself is a direct provider fork under `.claude/` and `.agents/`, maintained independently and
+excluded from Ruler drift ownership. `scripts/ruler-apply.mjs` snapshots and restores those direct
+paths around generation, including its failure path. Add a test here when a `scripts/` helper's
 failure mode is corrupting state rather than crashing.
 
 ## E2E web tests — Playwright
@@ -272,7 +278,7 @@ npm run test:ios              # one-shot on the iOS simulator (macOS + full Xcod
 > platforms run the **same flow file**. The Android helper works on macOS and Linux (AVD name and
 > SDK locations resolve per-platform in `scripts/lib/android.mjs`; override the SDK with
 > `ANDROID_HOME`); the iOS helper is macOS-only and fails fast elsewhere. Maestro's install location
-> resolves in `scripts/lib/utils.mjs`.
+> resolves in `scripts/lib/maestro.mjs`.
 
 ### Prerequisites
 
@@ -300,8 +306,9 @@ curl -fsSL "https://get.maestro.mobile.dev" | bash
 
 > Use `get.maestro.mobile.dev` — `get.maestro.dev` does not work.
 >
-> The smoke scripts resolve Maestro via `scripts/lib/utils.mjs` (PATH first, then `~/.maestro/bin`),
-> so they run even before you reopen your shell to pick up the PATH entry the installer adds.
+> The smoke scripts resolve Maestro via `scripts/lib/maestro.mjs` (PATH first, then
+> `~/.maestro/bin`), so they run even before you reopen your shell to pick up the PATH entry the
+> installer adds.
 
 ### Running it locally
 

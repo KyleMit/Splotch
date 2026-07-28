@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { STORAGE_KEYS } from '$lib/storage';
 
 // In-memory stand-in for the idb-backed handle store, so the test exercises our
 // dispatch/permission logic without depending on happy-dom's IndexedDB. The
@@ -6,13 +7,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // test re-imports a fresh module instance via vi.resetModules().
 const store = new Map<string, unknown>();
 let openDbCalls = 0;
+let getCalls = 0;
 let failIdb = false;
 vi.mock('idb', () => ({
   openDB: async () => {
     openDbCalls++;
     if (failIdb) throw new Error('idb unavailable');
     return {
-      get: async (_s: string, k: string) => store.get(k),
+      get: async (_s: string, k: string) => {
+        getCalls++;
+        return store.get(k);
+      },
       put: async (_s: string, v: unknown, k: string) => void store.set(k, v),
       delete: async (_s: string, k: string) => void store.delete(k),
     };
@@ -46,7 +51,7 @@ function makeHandle(permission: PermissionState = 'granted', name = 'My Pictures
 
 function seedFolder(handle: unknown) {
   store.set('saveDir', handle);
-  localStorage.setItem('splotch-save-folder-chosen', 'true');
+  localStorage.setItem(STORAGE_KEYS.saveFolderChosen, 'true');
 }
 
 function setPicker(impl: () => unknown) {
@@ -57,6 +62,7 @@ beforeEach(async () => {
   store.clear();
   localStorage.clear();
   openDbCalls = 0;
+  getCalls = 0;
   failIdb = false;
   vi.resetModules();
   folderSave = await import('./folderSave');
@@ -147,7 +153,7 @@ describe('getSaveFolderName', () => {
 
   it('degrades to no-folder when IndexedDB is unavailable', async () => {
     failIdb = true;
-    localStorage.setItem('splotch-save-folder-chosen', 'true');
+    localStorage.setItem(STORAGE_KEYS.saveFolderChosen, 'true');
     setPicker(vi.fn());
     expect(await folderSave.getSaveFolderName()).toBeNull();
     expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(false);
@@ -186,6 +192,7 @@ describe('saveBlobToFolder', () => {
 
     expect(await folderSave.saveBlobToFolder(blob, 'b.png', { allowPrompt: false })).toBe(true);
     expect(await folderSave.saveBlobToFolder(blob, 'c.png', { allowPrompt: false })).toBe(true);
+    expect(getCalls).toBe(1);
     expect(openDbCalls).toBe(1);
   });
 

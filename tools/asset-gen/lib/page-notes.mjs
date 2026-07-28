@@ -23,7 +23,7 @@
 // gate-override flags to merge yet, so it only prints a page's review/why/motifs.
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { FILL_SRC_DIR } from './paths.mjs';
+import { FILL_SRC_DIR, toPosix } from './paths.mjs';
 
 const registries = new Map();
 
@@ -36,7 +36,7 @@ function categoryRegistry(category) {
 }
 
 export function pageLevers(rel, tool) {
-  const [category, page] = rel.replaceAll('\\', '/').split('/');
+  const [category, page] = toPosix(rel).split('/');
   if (!category || !page) return null;
   const registry = categoryRegistry(category);
   if (!registry) return null;

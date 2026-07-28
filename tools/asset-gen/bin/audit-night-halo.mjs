@@ -21,6 +21,8 @@
 // the top of the table needs an eyeball. Diff --out JSON runs before/after any
 // change to lib/punch-fill.mjs or a chalk/raw regen — unchanged pages reproduce
 // bit-identical scores.
+// Progress and timing use stderr so stdout stays a pipeable ranked table; --out
+// writes the full JSON results.
 //
 //   npm run gen:coloring-fills:audit:halo                   whole catalog
 //   npm run gen:coloring-fills:audit:halo -- vehicles       one category
@@ -31,16 +33,16 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { COLORING_DIR, FILL_SRC_DIR, fail } from '../lib/paths.mjs';
+import { fail } from '../lib/cli.mjs';
+import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt, toPosix } from '../lib/paths.mjs';
 import { scoreLineColor } from '../lib/night-scores.mjs';
 import { scoreNightHalo, DELTA_RIM, HALO_DARK, HALO_PROTECT_BLACK } from '../lib/night-halo.mjs';
 
 async function auditPage(page) {
   const rawBuf = await readFile(join(FILL_SRC_DIR, `${page}.night.raw.webp`));
-  const chalkPath = join(COLORING_DIR, `${page}.chalk.webp`);
   const penPath = join(COLORING_DIR, `${page}.outline.webp`);
   // the line art the shipped fill was punched against (as lib/punch-fill.mjs)
-  const lineArtBuf = await readFile(existsSync(chalkPath) ? chalkPath : penPath);
+  const { source: lineArtBuf } = await resolveNightLineArt(penPath);
   const shippedBuf = await readFile(join(COLORING_DIR, `${page}.night.webp`));
 
   const { lineWhite: lineW } = await scoreLineColor(rawBuf, lineArtBuf);
@@ -71,11 +73,7 @@ async function pagesUnder(sub = '') {
   const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
   const out = [];
   for await (const entry of glob('**/*.night.webp', { cwd }))
-    out.push(
-      join(sub, entry)
-        .replace(/\\/g, '/')
-        .replace(/\.night\.webp$/, '')
-    );
+    out.push(toPosix(join(sub, entry)).replace(/\.night\.webp$/, ''));
   return out;
 }
 async function resolveArg(arg) {

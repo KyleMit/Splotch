@@ -1,5 +1,8 @@
 # Idea #11 — Whiten pen solids out of the chalk keep reference
 
+Status: LANDED — the chalk keep gate scores against a reference with pen solids whitened out
+(`whitenSolidRegions` in ../../bin/gen-coloring-chalk.mjs).
+
 **Verdict: WORKED.** The gate blind spot is real, the fix is a ~10-line change to
 `tools/asset-gen/gen-coloring-chalk.mjs` reusing existing `lib/solid-regions.mjs` machinery, and
 offline re-scoring of the whole 94-page catalog validates it with zero regressions. A live regen of

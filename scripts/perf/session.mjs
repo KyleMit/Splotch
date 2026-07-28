@@ -5,18 +5,16 @@
 // only differences are how the page is obtained (launched Chromium + preview
 // vs. a device WebView over `adb forward`) and the settings recorded.
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { sleep } from '../lib/utils.mjs';
+import { sleep } from '../lib/proc.mjs';
+import { circlePts, zigzag, arcPts } from '../lib/stroke-geometry.mjs';
 import {
   canvasBox,
   expandDrawer,
   pickColor,
   setStrokeSize,
   drawStroke,
-  circlePts,
-  zigzag,
-  arcPts,
 } from '../lib/app-driver.mjs';
 import {
   startTrace,
@@ -27,10 +25,11 @@ import {
   heapBytes,
   markPhase,
 } from './capture.mjs';
-import { analyze, renderReport } from './analyze.mjs';
+import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
 
 // Brand palette (src/lib/state/colors.svelte) — the swatches the harness clicks.
 const COLORS = ['#EC534E', '#F89C45', '#F9D24F', '#8CC864', '#62A2E9', '#AB71E1'];
+const MAX_UNDO_CLICKS = 12;
 
 async function beat(page, label, fn) {
   process.stdout.write(`  • ${label}… `);
@@ -88,7 +87,7 @@ async function multiFingerDraw(page, fingers = 5, steps = 48) {
 }
 
 async function undoToEmpty(page) {
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < MAX_UNDO_CLICKS; i++) {
     const btn = page.locator('#undoButton');
     if ((await btn.count()) === 0 || (await btn.isDisabled())) break;
     await btn.click();
@@ -116,25 +115,7 @@ async function clearDrag(page) {
   await sleep(150);
 }
 
-// Drive the full scenario against a ready page (canvas already loaded) with the
-// given CDP session, capture a trace + metrics, and write the profile artifacts
-// to outDir. `settings` is merged into metrics.json (target/device/throttle/…).
-export async function driveSession(page, cdp, { outDir, settings }) {
-  mkdirSync(outDir, { recursive: true });
-  const t0 = Date.now();
-
-  // CDP (Chromium / Android WebView) records a full Chrome trace; WebKit has no
-  // CDP, so we fall back to reading the user-timing marks at the end.
-  const useTrace = !!cdp;
-  await injectObservers(page);
-  const heapBefore = await heapBytes(page);
-  const events = useTrace ? await startTrace(cdp) : [];
-
-  console.log(`Profiling ${settings.target} ${settings.device ?? ''}…`);
-  await expandDrawer(page);
-  const box = await canvasBox(page);
-  if (!box) throw new Error('drawing canvas not found / not visible');
-
+async function runToddlerSession(page, box) {
   await beat(page, 'boot-settle', () => sleep(700));
   await beat(page, 'draw-single', async () => {
     await pickColor(page, COLORS[0]);
@@ -179,6 +160,28 @@ export async function driveSession(page, cdp, { outDir, settings }) {
   });
   await beat(page, 'undo', () => undoToEmpty(page));
   await beat(page, 'clear', () => clearDrag(page));
+}
+
+// Drive the full scenario against a ready page (canvas already loaded) with the
+// given CDP session, capture a trace + metrics, and write the profile artifacts
+// to outDir. `settings` is merged into metrics.json (target/device/throttle/…).
+export async function driveSession(page, cdp, { outDir, settings }) {
+  mkdirSync(outDir, { recursive: true });
+  const t0 = Date.now();
+
+  // CDP (Chromium / Android WebView) records a full Chrome trace; WebKit has no
+  // CDP, so we fall back to reading the user-timing marks at the end.
+  const useTrace = !!cdp;
+  await injectObservers(page);
+  const heapBefore = await heapBytes(page);
+  const events = useTrace ? await startTrace(cdp) : [];
+
+  console.log(`Profiling ${settings.target} ${settings.device ?? ''}…`);
+  await expandDrawer(page);
+  const box = await canvasBox(page);
+  if (!box) throw new Error('drawing canvas not found / not visible');
+
+  await runToddlerSession(page, box);
 
   const obs = await readObservers(page);
   const heapAfter = await heapBytes(page);
@@ -186,25 +189,22 @@ export async function driveSession(page, cdp, { outDir, settings }) {
   if (useTrace) await stopTrace(cdp);
 
   await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
-
-  writeFileSync(join(outDir, 'trace.json'), JSON.stringify({ traceEvents }));
-  const metrics = {
+  const metrics = buildMetrics({
     settings: {
       ...settings,
       captureMode: useTrace ? 'cdp-trace' : 'user-timing',
       startedAt: new Date(t0).toISOString(),
       durationMs: Date.now() - t0,
     },
-    longTasks: obs.longTasks,
-    frames: obs.frames,
-    heap: { beforeBytes: heapBefore ?? 0, afterBytes: heapAfter ?? obs.heapBytes ?? 0 },
-  };
-  writeFileSync(join(outDir, 'metrics.json'), JSON.stringify(metrics, null, 2));
-
-  const summary = analyze(traceEvents, metrics);
-  const report = renderReport(summary);
-  writeFileSync(join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
-  writeFileSync(join(outDir, 'report.md'), report);
+    obs,
+    heapBefore,
+    heapAfter,
+  });
+  const { summary, report } = writeProfileArtifacts({
+    outDir,
+    traceEvents,
+    metrics,
+  });
 
   console.log(`\n${report}\n`);
   console.log(`Artifacts: ${outDir}`);

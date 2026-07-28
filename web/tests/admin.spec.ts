@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
+import { ADMIN_ACCESS_TOKEN } from './admin-helpers';
 
 // The admin console has two front doors over one shared core ($lib/server/admin
 // + $lib/server/tokens): the server-rendered /admin (form actions + HTTP-only
@@ -9,11 +10,9 @@ import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
 // Token names are unique per test because the preview server's in-memory list
 // is shared across the parallel workers.
 
-const ADMIN_KEY = 'test-admin-secret'; // set in playwright.config.ts webServer.env
-
 async function signIn(page: Page, path: string) {
   await page.goto(path);
-  await page.getByPlaceholder('Admin access key').fill(ADMIN_KEY);
+  await page.getByPlaceholder('Admin access key').fill(ADMIN_ACCESS_TOKEN);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByPlaceholder('Add a code…')).toBeVisible();
 }
@@ -115,7 +114,7 @@ test('native console reports a failed post-login snapshot and recovers on reload
   // Let the login POST through but kill the follow-up tokens GET: the session
   // is already saved by then, so the login card must say what went wrong…
   await page.route('**/api/admin/tokens', (route) => route.abort());
-  await page.getByPlaceholder('Admin access key').fill(ADMIN_KEY);
+  await page.getByPlaceholder('Admin access key').fill(ADMIN_ACCESS_TOKEN);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByRole('alert')).toContainText('Could not reach the server');
 
@@ -135,12 +134,12 @@ test('admin API requires a valid bearer session', async ({ request }) => {
     ).status()
   ).toBe(401);
 
-  const login = await request.post('/api/admin/login', { data: { key: ADMIN_KEY } });
+  const login = await request.post('/api/admin/login', { data: { key: ADMIN_ACCESS_TOKEN } });
   expect(login.ok()).toBe(true);
   const { session } = await login.json();
   // The session is the derived HMAC, never the raw secret.
   expect(session).toMatch(/^[0-9a-f]{64}$/);
-  expect(session).not.toContain(ADMIN_KEY);
+  expect(session).not.toContain(ADMIN_ACCESS_TOKEN);
 
   const headers = { Authorization: `Bearer ${session}` };
   const token = `e2e-api-${Date.now()}`;

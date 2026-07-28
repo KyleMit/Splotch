@@ -1,0 +1,182 @@
+diff --git a/.claude/skills/design/SKILL.md b/.claude/skills/design/SKILL.md
+index 66b4042e..29dd2582 100644
+--- a/.claude/skills/design/SKILL.md
++++ b/.claude/skills/design/SKILL.md
+@@ -95,6 +95,8 @@ Shared *global* patterns are classes in **`web/src/app.css`** rather than compon
+ |                                          | Fullscreen Toggle, Parent Help Button; positioning and z-index stay        |
+ |                                          | per-component                                                              |
+ | `.flyout-menu` / `.flyout-option`        | The popover shell and its option buttons — BrushMenu, StrokeWidthMenu      |
++| `.white-stroke` / `.dark-stroke`         | Ink keylines for current-color brush and stroke previews — ActionsPanel,   |
++|                                          | BrushMenu, StrokeWidthMenu                                                 |
+
+ They stay classes for one of two reasons: dialogs and imperative DOM need them unscoped, or the
+ pattern is chrome that several components share verbatim but that hasn't earned a primitive yet.
+diff --git a/.ruler/skills/design/SKILL.md b/.ruler/skills/design/SKILL.md
+index 66b4042e..29dd2582 100644
+--- a/.ruler/skills/design/SKILL.md
++++ b/.ruler/skills/design/SKILL.md
+@@ -95,6 +95,8 @@ Shared *global* patterns are classes in **`web/src/app.css`** rather than compon
+ |                                          | Fullscreen Toggle, Parent Help Button; positioning and z-index stay        |
+ |                                          | per-component                                                              |
+ | `.flyout-menu` / `.flyout-option`        | The popover shell and its option buttons — BrushMenu, StrokeWidthMenu      |
++| `.white-stroke` / `.dark-stroke`         | Ink keylines for current-color brush and stroke previews — ActionsPanel,   |
++|                                          | BrushMenu, StrokeWidthMenu                                                 |
+
+ They stay classes for one of two reasons: dialogs and imperative DOM need them unscoped, or the
+ pattern is chrome that several components share verbatim but that hasn't earned a primitive yet.
+diff --git a/scripts/lint-token-styles.mjs b/scripts/lint-token-styles.mjs
+index 369bb03a..5538d757 100644
+--- a/scripts/lint-token-styles.mjs
++++ b/scripts/lint-token-styles.mjs
+@@ -43,14 +43,6 @@ const BASELINE = new Map(
+     // Photographic stage/polaroid whites + the #9559cd download-button hover
+     // (≠ --brand-hover #9961d1; converging it is a visible change).
+     'lib/components/AiImageResult.svelte': 3,
+-    // #000 white-stroke keyline for the Brush/Stroke trigger faces.
+-    'lib/components/ActionsPanel.svelte': 1,
+-    // #000 white-stroke keyline for the Brush Menu popover (extracted from
+-    // ActionsPanel — see the twin rule there).
+-    'lib/components/BrushMenu.svelte': 1,
+-    // #000 white-stroke keyline for the Stroke Width popover (extracted from
+-    // ActionsPanel — see the twin rule there).
+-    'lib/components/StrokeWidthMenu.svelte': 1,
+     // Constant dim swatch ring + var(--color) usage documented in-file.
+     'lib/components/ColorPicker.svelte': 1,
+     // The armed (drag-past-threshold) danger red — unthemed on purpose, it
+diff --git a/web/src/app.css b/web/src/app.css
+index 86b05c4b..ec59ddcc 100644
+--- a/web/src/app.css
++++ b/web/src/app.css
+@@ -241,7 +241,7 @@ body {
+
+ /* Flyout chrome shared by the Brush Menu and the Stroke Width Menu: the popover
+    shell and its option buttons. Each component keeps only what differs — the
+-   eraser-mode sizing and the white-stroke/dark-stroke keylines.
++   eraser-mode sizing.
+
+    Landscape base rule (portrait overrides below): the action panel hugs the
+    bottom with little height to spare, so the flyout pops up as a horizontal
+@@ -310,6 +310,23 @@ body {
+   touch-action: manipulation;
+ }
+
++/* Ink keylines shared by ActionsPanel, BrushMenu, and StrokeWidthMenu. The
++   #000 edge is a deliberate one-off: black reads against every pen color and
++   both papers. */
++.white-stroke :is(svg path[fill='currentColor'], svg[fill='currentColor'] path) {
++  stroke: #000;
++  stroke-width: 2px;
++  paint-order: stroke;
++  vector-effect: non-scaling-stroke;
++}
++
++.dark-stroke :is(svg path[fill='currentColor'], svg[fill='currentColor'] path) {
++  stroke: var(--dark-ink-keyline);
++  stroke-width: 2px;
++  paint-order: stroke;
++  vector-effect: non-scaling-stroke;
++}
++
+ @media (hover: hover) {
+   .flyout-option:hover {
+     border-color: var(--brand);
+diff --git a/web/src/lib/components/ActionsPanel.svelte b/web/src/lib/components/ActionsPanel.svelte
+index bc1a4317..5dd8b924 100644
+--- a/web/src/lib/components/ActionsPanel.svelte
++++ b/web/src/lib/components/ActionsPanel.svelte
+@@ -754,29 +754,4 @@
+     :global(.action-icon[data-brush-face='eraser']) {
+     display: inline-flex;
+   }
+-
+-  /* White brush color is invisible on the white buttons, so ring the tinted
+-     shapes with a solid black edge while white is active. paint-order draws the
+-     stroke behind the white fill (so only an outer keyline shows), and
+-     non-scaling-stroke pins it to 2 screen px across the icons' very different
+-     viewBoxes (pen/crayon ~272). Only the currentColor paths are stroked,
+-     leaving each icon's fixed-palette parts untouched. The matching keyline
+-     rules for the menu popovers live in BrushMenu/StrokeWidthMenu. The #000 is
+-     a deliberate one-off — black reads against every pen color and both papers. */
+-  .action-button.white-stroke :global(svg path[fill='currentColor']) {
+-    stroke: #000;
+-    stroke-width: 2px;
+-    paint-order: stroke;
+-    vector-effect: non-scaling-stroke;
+-  }
+-
+-  /* The dark-mode mirror: ring near-black ink with a light keyline so it reads
+-     on the dark cards. Same paint-order trick; the keyline token is transparent
+-     in light mode, so this rule is inert there. */
+-  .action-button.dark-stroke :global(svg path[fill='currentColor']) {
+-    stroke: var(--dark-ink-keyline);
+-    stroke-width: 2px;
+-    paint-order: stroke;
+-    vector-effect: non-scaling-stroke;
+-  }
+ </style>
+diff --git a/web/src/lib/components/BrushMenu.svelte b/web/src/lib/components/BrushMenu.svelte
+index 061e84b8..25336548 100644
+--- a/web/src/lib/components/BrushMenu.svelte
++++ b/web/src/lib/components/BrushMenu.svelte
+@@ -54,29 +54,4 @@
+   :global(html[data-off-eraser]) #eraserButton {
+     display: none;
+   }
+-
+-  /* White brush color is invisible on the white buttons, so ring the tinted
+-     shapes with a solid black edge while white is active. paint-order draws the
+-     stroke behind the white fill (so only an outer keyline shows), and
+-     non-scaling-stroke pins it to 2 screen px across the icons' very different
+-     viewBoxes. Only the currentColor paths are stroked, leaving each icon's
+-     fixed-palette parts (colored pencils, the crayon's wrapper, the magic/eraser
+-     entries) untouched. The #000 keyline is a deliberate one-off — black reads
+-     against every pen color and both papers. */
+-  .brush-menu.white-stroke :global(svg path[fill='currentColor']) {
+-    stroke: #000;
+-    stroke-width: 2px;
+-    paint-order: stroke;
+-    vector-effect: non-scaling-stroke;
+-  }
+-
+-  /* The dark-mode mirror: ring near-black ink with a light keyline so it reads
+-     on the dark cards. Same paint-order trick; the keyline token is transparent
+-     in light mode, so this rule is inert there. */
+-  .brush-menu.dark-stroke :global(svg path[fill='currentColor']) {
+-    stroke: var(--dark-ink-keyline);
+-    stroke-width: 2px;
+-    paint-order: stroke;
+-    vector-effect: non-scaling-stroke;
+-  }
+ </style>
+diff --git a/web/src/lib/components/StrokeWidthMenu.svelte b/web/src/lib/components/StrokeWidthMenu.svelte
+index aba237f9..821dad6e 100644
+--- a/web/src/lib/components/StrokeWidthMenu.svelte
++++ b/web/src/lib/components/StrokeWidthMenu.svelte
+@@ -77,27 +77,4 @@
+     height: 56px;
+     flex-shrink: 0;
+   }
+-
+-  /* White brush color is invisible on the white buttons, so ring the tinted
+-     shape with a solid black edge while white is active. The size menu holds a
+-     single currentColor path, so plain `path` suffices. paint-order draws the
+-     stroke behind the white fill and non-scaling-stroke pins it to 2 screen px.
+-     The #000 keyline is a deliberate one-off — black reads against every pen
+-     color and both papers. */
+-  .stroke-width-menu.white-stroke :global(svg path) {
+-    stroke: #000;
+-    stroke-width: 2px;
+-    paint-order: stroke;
+-    vector-effect: non-scaling-stroke;
+-  }
+-
+-  /* The dark-mode mirror: ring near-black ink with a light keyline so it reads
+-     on the dark cards. Same paint-order trick; the keyline token is transparent
+-     in light mode, so this rule is inert there. */
+-  .stroke-width-menu.dark-stroke :global(svg path) {
+-    stroke: var(--dark-ink-keyline);
+-    stroke-width: 2px;
+-    paint-order: stroke;
+-    vector-effect: non-scaling-stroke;
+-  }
+ </style>

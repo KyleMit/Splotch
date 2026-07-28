@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import Icon from './Icon.svelte';
-  import SplotchyIcon from './SplotchyIcon.svelte';
+  import SectionIcon from './SectionIcon.svelte';
   import { ui, parentCenter } from '$lib/state/ui.svelte';
   import AppearanceSection from './parent/AppearanceSection.svelte';
   import SoundSection from './parent/SoundSection.svelte';
@@ -12,21 +12,10 @@
   import WhatsNewSection from './parent/WhatsNewSection.svelte';
   import ReportForm from './parent/ReportForm.svelte';
   import AboutSection from './parent/AboutSection.svelte';
+  import CompactShell from './parent/CompactShell.svelte';
   import { SECTIONS, sectionSubtitle, type SectionId } from './parent/sections';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
-  import ToggleRow from './parent/ToggleRow.svelte';
-  import {
-    settings,
-    setSound,
-    setLockRotation,
-    setForceLandscapeOrientation,
-    setAdvancedControls,
-    setTheme,
-  } from '$lib/state/settings.svelte';
-  import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { supportsOrientationLock } from '$lib/platform';
-  import type { CommonIconName } from './iconTypes';
 
   // Two shells, one section list (ADR-0061). Below the breakpoint it's a hub
   // that drills into a full-page section; at or above it's a persistent sidebar
@@ -45,47 +34,6 @@
   // the sidebar shell untouched.
   const COMPACT_QUERY = '(orientation: landscape) and (max-height: 599px)';
   let compact = $state(browser ? matchMedia(COMPACT_QUERY).matches : false);
-
-  const showOrientationControls = supportsOrientationLock();
-
-  // Compact orientation control: a two-way Portrait / Landscape selector that
-  // replaces the old single Lock Rotation switch. Picking a side is what enables
-  // the lock (and sets the orientation) — so a phone with rotation *unlocked*
-  // keeps free-rotating until the parent taps a side, and neither segment reads
-  // as active. When locked, the active segment mirrors forceLandscapeOrientation,
-  // and tapping it again releases the lock back to free rotation. This is also
-  // the escape hatch from a landscape lock: tapping Portrait flips the lock
-  // upright, which rotates the device out of this cramped shell and back to the
-  // full settings — the old switch could only *remove* the lock.
-  type LockedOrientation = 'portrait' | 'landscape';
-  const orientationOptions: {
-    value: LockedOrientation;
-    label: string;
-    icon: CommonIconName;
-    id: string;
-  }[] = [
-    { value: 'portrait', label: 'Portrait', icon: 'mobile-portrait', id: 'quickLockPortrait' },
-    { value: 'landscape', label: 'Landscape', icon: 'mobile-landscape', id: 'quickLockLandscape' },
-  ];
-  const lockedOrientation = $derived<LockedOrientation | null>(
-    settings.lockRotationEnabled
-      ? settings.forceLandscapeOrientation
-        ? 'landscape'
-        : 'portrait'
-      : null
-  );
-  function lockOrientation(value: LockedOrientation) {
-    // Tapping the already-locked side releases the lock — the only way back to
-    // free rotation from the compact shell.
-    if (lockedOrientation === value) {
-      setLockRotation(false);
-      return;
-    }
-    setForceLandscapeOrientation(value === 'landscape');
-    setLockRotation(true);
-  }
-
-  const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 
   // 'hub' = the phone top-level list; a section id = that section is open.
   let view = $state<'hub' | SectionId>('hub');
@@ -181,72 +129,7 @@
     </button>
 
     {#if compact}
-      <!-- Landscape phone: too cramped for the full section list, so just the
-           essential quick toggles plus a pointer to portrait for the rest. -->
-      <header class="pc-header pc-header-compact">
-        <h2>Parent Center</h2>
-      </header>
-      <div class="quick-toggles">
-        <div class="setting">
-          <ToggleRow
-            icon={settings.soundEnabled ? 'volume-on' : 'volume-off'}
-            label="Sound"
-            id="quickSoundToggle"
-            checked={settings.soundEnabled}
-            onToggle={setSound}
-          />
-        </div>
-        <div class="setting">
-          <ToggleRow
-            icon={resolvedTheme() === 'dark' ? 'theme-dark' : 'theme-light'}
-            label="Night Mode"
-            id="quickNightToggle"
-            checked={resolvedTheme() === 'dark'}
-            onToggle={(next) => setTheme(next ? 'dark' : 'light')}
-          />
-        </div>
-        <div class="setting">
-          <ToggleRow
-            icon="dashboard-customize"
-            label="Advanced Controls"
-            id="quickAdvancedControlsToggle"
-            checked={settings.advancedControlsEnabled}
-            onToggle={setAdvancedControls}
-          />
-        </div>
-        <!-- The bottom-right cell is the only one that varies by device: the
-             orientation lock selector, or — where the OS owns orientation (see
-             supportsOrientationLock) — a mini About cell so the 2×2 stays
-             flush instead of leaving a hole. -->
-        {#if showOrientationControls}
-          <div class="setting orientation-cell">
-            <div class="orient-seg" role="group" aria-label="Lock screen orientation">
-              {#each orientationOptions as option (option.value)}
-                <button
-                  type="button"
-                  class="orient-opt"
-                  class:active={lockedOrientation === option.value}
-                  id={option.id}
-                  aria-pressed={lockedOrientation === option.value}
-                  onclick={() => lockOrientation(option.value)}
-                >
-                  <Icon name={option.icon} class="orient-opt-icon" />
-                  <span>{option.label}</span>
-                </button>
-              {/each}
-            </div>
-          </div>
-        {:else}
-          <div class="setting about-cell">
-            <SplotchyIcon class="about-cell-icon" aria-label="Splotch" role="img" />
-            <span class="about-cell-version">Version {APP_VERSION}</span>
-          </div>
-        {/if}
-      </div>
-      <p class="portrait-note">
-        <Icon name="mobile-portrait" class="portrait-note-icon" />
-        Switch to portrait for the full settings.
-      </p>
+      <CompactShell />
     {:else if wide}
       <!-- Tablet / desktop: persistent sidebar + scrolling content pane. -->
       <header class="pc-header">
@@ -261,11 +144,7 @@
               aria-current={section.id === activeSection ? 'page' : undefined}
               onclick={() => openSection(section.id)}
             >
-              {#if section.icon === 'splotchy'}
-                <SplotchyIcon class="pc-nav-icon" />
-              {:else}
-                <Icon name={section.icon} class="pc-nav-icon" />
-              {/if}
+              <SectionIcon icon={section.icon} class="pc-nav-icon" />
               <span>{section.label}</span>
             </button>
           {/each}
@@ -289,11 +168,7 @@
               <li>
                 <button class="hub-row" onclick={() => openSection(section.id)}>
                   <span class="hub-icon">
-                    {#if section.icon === 'splotchy'}
-                      <SplotchyIcon class="hub-icon-svg" />
-                    {:else}
-                      <Icon name={section.icon} class="hub-icon-svg" />
-                    {/if}
+                    <SectionIcon icon={section.icon} class="hub-icon-svg" />
                   </span>
                   <span class="hub-text">
                     <span class="hub-title">{section.label}</span>
@@ -400,136 +275,6 @@
 
   .pc-header-sub h2 {
     font-size: 20px;
-  }
-
-  /* ── Landscape-phone quick toggles ──────────────────────────────────────── */
-  /* Every vertical pixel counts here, so the header shrinks and the toggles
-     pack into a two-column grid that scrolls only if it must. */
-  .pc-header-compact {
-    padding: 14px 24px 10px;
-    padding-right: 64px;
-    /* Reserve the close button's full vertical extent (top:12 + 44px height =
-       56px, plus a little breathing room) so the top-right toggle cell starts
-       below it instead of sliding up under the button. Mirrors the padding-right
-       that clears it horizontally. */
-    min-height: 62px;
-  }
-
-  .pc-header-compact h2 {
-    font-size: var(--font-size-xl);
-  }
-
-  .quick-toggles {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    align-content: start;
-    padding: 0 24px;
-  }
-
-  /* Orientation fourth cell: a Portrait / Landscape segmented control in place
-     of ToggleRow's switch. Tighter padding than a switch cell so the segments
-     fill it and its height lines up with the toggle rows beside it. */
-  .setting.orientation-cell {
-    padding: 6px;
-  }
-
-  /* iOS-style segmented control, matching the Theme picker in AppearanceSection.
-     No segment is active while rotation is unlocked, so the pair reads as "off"
-     until the parent picks a side. */
-  .orient-seg {
-    display: flex;
-    gap: 4px;
-    padding: 4px;
-    background: var(--slider-track);
-    border-radius: 10px;
-  }
-
-  .orient-opt {
-    flex: 1;
-    min-width: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 7px 4px;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--text-mid);
-    font-family: inherit;
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition:
-      background var(--duration-fast) ease,
-      color var(--duration-fast) ease,
-      box-shadow var(--duration-fast) ease;
-  }
-
-  @media (hover: hover) {
-    .orient-opt:not(.active):hover {
-      color: var(--text-strong);
-    }
-  }
-
-  .orient-opt.active {
-    background: var(--surface);
-    color: var(--text-strong);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
-  }
-
-  :global(.orient-opt-icon) {
-    width: 15px;
-    height: 15px;
-    flex-shrink: 0;
-  }
-
-  /* Non-toggle fourth cell: mirrors ToggleRow's icon + label left edge so the
-     grid reads as one family. */
-  .about-cell {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  :global(.about-cell-icon) {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-  }
-
-  .about-cell-version {
-    font-size: var(--font-size-md);
-    font-weight: 500;
-    color: var(--text-muted);
-  }
-
-  .portrait-note {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin: 0;
-    padding: 10px 24px 14px;
-    font-size: var(--font-size-sm);
-    color: var(--text-muted);
-    text-align: center;
-  }
-
-  :global(.portrait-note-icon) {
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-  }
-
-  :global(.portrait-note-icon svg) {
-    fill: var(--text-muted);
   }
 
   .pc-back {
@@ -750,6 +495,10 @@
 
   .parent-help-content :global(.setting-group:last-child) {
     margin-bottom: 0;
+  }
+
+  .parent-help-content :global(.setting-group > .setting + .setting) {
+    margin-top: 6px;
   }
 
   .parent-help-content :global(.setting) {

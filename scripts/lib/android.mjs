@@ -5,8 +5,10 @@
 
 import { join } from 'node:path';
 import { homedir } from 'node:os';
+import { ROOT } from './proc.mjs';
 
-export const AVD_NAME = 'Pixel_7_Pro_API_33';
+export const ANDROID_API_LEVEL = 33;
+export const AVD_NAME = `Pixel_7_Pro_API_${ANDROID_API_LEVEL}`;
 
 export const ANDROID_HOME =
   process.env.ANDROID_HOME ??
@@ -17,3 +19,17 @@ export const ANDROID_HOME =
 
 export const ADB = join(ANDROID_HOME, 'platform-tools', 'adb');
 export const EMULATOR = join(ANDROID_HOME, 'emulator', 'emulator');
+
+export const ANDROID_DIR = join(ROOT, 'android');
+export const GRADLEW = join(ANDROID_DIR, 'gradlew');
+
+export const RELEASE_BUNDLE_DIR = join(
+  ROOT,
+  'android',
+  'app',
+  'build',
+  'outputs',
+  'bundle',
+  'release'
+);
+export const RELEASE_AAB = join(RELEASE_BUNDLE_DIR, 'app-release.aab');

@@ -1,11 +1,12 @@
 # Splotch – Agent Instructions
 
 > [!IMPORTANT]
-> Every `CLAUDE.md` and `AGENTS.md` in this repo, plus the `.claude/skills/` and `.agents/skills/`
-> trees, is **generated** by [ruler](https://github.com/intellectronica/ruler) — never edit those
-> files directly. Edit the sources in `.ruler/` (or the nested `<dir>/.ruler/`), then run
-> `npm run ruler:apply` and commit the regenerated output. CI fails on drift
-> (`npm run ruler:check`).
+> Every `CLAUDE.md` and `AGENTS.md` in this repo and nearly every package in `.claude/skills/` and
+> `.agents/skills/` is **generated** by [ruler](https://github.com/intellectronica/ruler) — never
+> edit generated files directly. Edit their `.ruler/` source, run `npm run ruler:apply`, and commit
+> the output. The one exception is `burn-down-audits`: its Claude package under `.claude/` and Codex
+> package under `.agents/` are direct, provider-specific sources maintained independently. Edit only
+> the provider package and note you intend to change; never sync one from the other.
 
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
 

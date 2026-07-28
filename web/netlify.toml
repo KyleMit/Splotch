@@ -22,5 +22,6 @@
 [dev]
   framework = "#custom"
   command = "node ../scripts/web.mjs dev"
+  # Keep in sync with server.port in web/vite.config.ts and its documented dev-port consumers.
   targetPort = 5173
   publish = "static"

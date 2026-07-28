@@ -1,7 +1,8 @@
+import type { DBSchema } from 'idb';
 import { browser } from '$app/environment';
 import { isNative } from './platform';
 import { lazyPluginModule } from './nativePlugin';
-import { lazyIdbDatabase } from './idb';
+import { idbKvStore, lazyIdbDatabase } from './idb';
 
 // Secure home for the app's client-held secrets — the parent's Gemini API key
 // and the admin session token (used by the native apps to authenticate against
@@ -25,9 +26,27 @@ const ADMIN_SESSION = 'admin-session';
 
 // IndexedDB layout for the web path.
 const DB_NAME = 'splotch-secure';
-const DB_VERSION = 1;
 const STORE = 'secrets';
 const MASTER_KEY_ROW = 'master-key'; // the non-extractable AES-GCM CryptoKey
+
+type SecretPayload = {
+  iv: Uint8Array<ArrayBuffer>;
+  data: ArrayBuffer;
+};
+
+interface SecureDb extends DBSchema {
+  secrets: {
+    key: string;
+    value: CryptoKey | SecretPayload;
+  };
+}
+
+interface SecretPayloadDb extends DBSchema {
+  secrets: {
+    key: string;
+    value: SecretPayload;
+  };
+}
 
 // Native plugin, loaded lazily so it's never pulled in on the web or during SSR.
 // Returns the module namespace, not the SecureStorage proxy — see
@@ -42,7 +61,20 @@ const getPlugin = lazyPluginModule(() =>
 );
 
 // --- web: IndexedDB via idb (also lazy) ---
-const getDb = lazyIdbDatabase(DB_NAME, STORE, DB_VERSION);
+const getDb = lazyIdbDatabase<SecureDb>(DB_NAME, STORE);
+const payloadStore = idbKvStore<SecretPayloadDb>(DB_NAME, STORE);
+
+function isSecretPayload(value: unknown): value is SecretPayload {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'iv' in value &&
+    value.iv instanceof Uint8Array &&
+    value.iv.buffer instanceof ArrayBuffer &&
+    'data' in value &&
+    value.data instanceof ArrayBuffer
+  );
+}
 
 // Get (or lazily create) the persistent, non-extractable master key. Because it
 // can never be exported, code that reads IndexedDB can't lift the raw bytes out —
@@ -56,17 +88,18 @@ const getDb = lazyIdbDatabase(DB_NAME, STORE, DB_VERSION);
 // transaction, so a tab that loses the race adopts the winner's key.
 let masterKeyPromise: Promise<CryptoKey> | null = null;
 
-function getMasterKey(db: import('idb').IDBPDatabase): Promise<CryptoKey> {
-  masterKeyPromise ??= loadOrCreateMasterKey(db).catch((err) => {
+function getMasterKey(): Promise<CryptoKey> {
+  masterKeyPromise ??= loadOrCreateMasterKey().catch((err) => {
     masterKeyPromise = null;
     throw err;
   });
   return masterKeyPromise;
 }
 
-async function loadOrCreateMasterKey(db: import('idb').IDBPDatabase): Promise<CryptoKey> {
+async function loadOrCreateMasterKey(): Promise<CryptoKey> {
+  const db = await getDb();
   const existing = await db.get(STORE, MASTER_KEY_ROW);
-  if (existing) return existing;
+  if (existing && !isSecretPayload(existing)) return existing;
   // Generated *before* the transaction: an IDB transaction auto-commits once
   // control returns to the event loop with no pending requests, so awaiting
   // crypto.subtle.generateKey inside it would leave the transaction closed by
@@ -77,68 +110,81 @@ async function loadOrCreateMasterKey(db: import('idb').IDBPDatabase): Promise<Cr
   ]);
   const tx = db.transaction(STORE, 'readwrite');
   const winner = await tx.store.get(MASTER_KEY_ROW);
-  if (!winner) await tx.store.put(fresh, MASTER_KEY_ROW);
+  const winningKey = winner && !isSecretPayload(winner) ? winner : null;
+  if (!winningKey) await tx.store.put(fresh, MASTER_KEY_ROW);
   await tx.done;
-  return winner ?? fresh;
+  return winningKey ?? fresh;
 }
 
 async function webSave(name: string, value: string) {
-  const db = await getDb();
-  const key = await getMasterKey(db);
+  const key = await getMasterKey();
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },
     key,
     new TextEncoder().encode(value)
   );
-  await db.put(STORE, { iv, data }, name);
+  const payload: SecretPayload = { iv, data };
+  await payloadStore.put(name, payload);
 }
 
 async function webLoad(name: string) {
-  const db = await getDb();
-  const record = await db.get(STORE, name);
-  if (!record) return null;
-  const key = await getMasterKey(db);
-  try {
-    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: record.iv }, key, record.data);
-    return new TextDecoder().decode(plain);
-  } catch {
-    return null; // master key missing/rotated or payload corrupt — treat as no value
-  }
+  const record = await payloadStore.get(name);
+  if (record === undefined) return null;
+  if (!isSecretPayload(record)) throw new Error('Malformed secure-storage payload');
+  const key = await getMasterKey();
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: record.iv }, key, record.data);
+  return new TextDecoder().decode(plain);
 }
 
 async function webClear(name: string) {
-  const db = await getDb();
-  await db.delete(STORE, name);
+  await payloadStore.delete(name);
   // The master key is left in place: it's useless without a payload and lets a
   // re-entered secret reuse the same sandboxed key object.
 }
 
-/** Persist a named secret to the platform's secure store. */
-// The literal __IS_CAPACITOR__ guards (here and below) make the native paths
-// compile-time dead on web so Rollup drops the secure-storage plugin chunk;
-// isNative() alone is a runtime check it can't tree-shake.
-async function saveSecret(name: string, value: string) {
-  if (!browser || !value) return;
+interface SecureBackend {
+  save(name: string, value: string): Promise<void>;
+  load(name: string): Promise<string | null>;
+  clear(name: string): Promise<void>;
+}
+
+// The literal __IS_CAPACITOR__ guard makes the native path compile-time dead
+// on web so Rollup drops the secure-storage plugin chunk; isNative() alone is
+// a runtime check it can't tree-shake.
+async function selectBackend(): Promise<SecureBackend> {
   if (__IS_CAPACITOR__ && isNative()) {
     const { SecureStorage } = await getPlugin();
-    await SecureStorage.set(name, value);
-  } else {
-    await webSave(name, value);
+    return {
+      save: (name, value) => SecureStorage.set(name, value),
+      load: async (name) => {
+        const value = await SecureStorage.get(name);
+        return typeof value === 'string' ? value : null;
+      },
+      clear: async (name) => {
+        await SecureStorage.remove(name);
+      },
+    };
   }
+  return { save: webSave, load: webLoad, clear: webClear };
+}
+
+/** Persist a named secret to the platform's secure store. */
+async function saveSecret(name: string, value: string) {
+  if (!browser) return;
+  if (!value) return clearSecret(name);
+  const backend = await selectBackend();
+  await backend.save(name, value);
 }
 
 /** Read a named secret back, or null if none is stored. Never throws. */
 async function loadSecret(name: string) {
   if (!browser) return null;
   try {
-    if (__IS_CAPACITOR__ && isNative()) {
-      const { SecureStorage } = await getPlugin();
-      const value = await SecureStorage.get(name);
-      return typeof value === 'string' ? value : null;
-    }
-    return await webLoad(name);
-  } catch {
+    const backend = await selectBackend();
+    return await backend.load(name);
+  } catch (err) {
+    console.warn('Secure storage load failed', err);
     return null;
   }
 }
@@ -147,12 +193,8 @@ async function loadSecret(name: string) {
 async function clearSecret(name: string) {
   if (!browser) return;
   try {
-    if (__IS_CAPACITOR__ && isNative()) {
-      const { SecureStorage } = await getPlugin();
-      await SecureStorage.remove(name);
-    } else {
-      await webClear(name);
-    }
+    const backend = await selectBackend();
+    await backend.clear(name);
   } catch {
     // best-effort
   }
@@ -168,15 +210,3 @@ export const clearApiKey = () => clearSecret(API_KEY);
 export const saveAdminSession = (value: string) => saveSecret(ADMIN_SESSION, value);
 export const loadAdminSession = () => loadSecret(ADMIN_SESSION);
 export const clearAdminSession = () => clearSecret(ADMIN_SESSION);
-
-// Ask the browser not to evict our IndexedDB during low-storage cleanups, so the
-// key survives across sessions without the parent ever re-entering it. Web only.
-export async function requestPersistentStorage() {
-  if (!browser || isNative()) return false;
-  try {
-    if (navigator.storage?.persist) return await navigator.storage.persist();
-  } catch {
-    // ignore — persistence is a best-effort nicety
-  }
-  return false;
-}

@@ -27,10 +27,10 @@ The set is progressive, mirroring how a toddler builds a mark up (ids are prefix
 Needs `GEMINI_API_KEY` (real API cost — manual only, never in CI). Run from this folder:
 
 ```bash
-node --experimental-strip-types --disable-warning=ExperimentalWarning gen.mjs        # generate every sample (or pass id prefixes, e.g. `2- 3-`)
-node --experimental-strip-types --disable-warning=ExperimentalWarning to-webp.mjs    # downsize the raw JPGs to committed webp (max 1024px, q80)
-node --experimental-strip-types --disable-warning=ExperimentalWarning build-sheet.mjs # rebuild the contact sheet index.html
-npm --prefix ../../.. run scrapbook:index                                             # refresh the scrapbook landing card
+node --experimental-strip-types --disable-warning=ExperimentalWarning gen.mjs # generate every sample (or pass id prefixes, e.g. `2- 3-`)
+node to-webp.mjs                                                              # downsize the raw JPGs to committed webp (max 1024px, q80)
+node build-sheet.mjs                                                          # rebuild the contact sheet index.html
+npm --prefix ../../.. run scrapbook:index                                     # refresh the scrapbook landing card
 ```
 
 * `samples.mjs` — the sample specs (id, label, prompt). Add or tweak a mark here; every prompt

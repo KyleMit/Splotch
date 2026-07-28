@@ -1,12 +1,16 @@
 <script lang="ts">
   import { isNative, getPlatform, type Platform } from '$lib/platform';
   import Icon from '../Icon.svelte';
+  import Button from '../design/Button.svelte';
+  import Disclosure from '../design/Disclosure.svelte';
   import {
     install,
     promptInstall,
     installDeviceOs,
     type InstallDeviceOs,
   } from '$lib/state/install.svelte';
+
+  type SetupOs = 'ios' | 'android';
 
   let installing = $state(false);
 
@@ -44,7 +48,7 @@
 
   // Which OS setup sections to render. On native we know the exact platform, so
   // we show just that one; on the web we show both, detected OS first.
-  let setupOsList = $derived(
+  let setupOsList = $derived<SetupOs[]>(
     native
       ? [platform === 'android' ? 'android' : 'ios']
       : deviceOs === 'android'
@@ -52,7 +56,7 @@
         : ['ios', 'android']
   );
 
-  function lockTitle(os: string) {
+  function lockTitle(os: SetupOs) {
     if (deviceLocked) return os === 'ios' ? 'Guided Access is on' : 'App Pinning is on';
     return os === 'ios' ? 'Enable Guided Access' : 'Enable App Pinning';
   }
@@ -88,7 +92,7 @@
 
 <!-- The two checklists are authored once here and reused across the web
      accordion and the flat native view. -->
-{#snippet installSteps(os: string)}
+{#snippet installSteps(os: SetupOs)}
   {#if os === 'ios'}
     <ol class="steps">
       <li>
@@ -109,7 +113,7 @@
   {/if}
 {/snippet}
 
-{#snippet lockSteps(os: string)}
+{#snippet lockSteps(os: SetupOs)}
   {#if os === 'ios'}
     <ol class="steps">
       <li>Go to <strong>Settings → Accessibility → Guided Access</strong></li>
@@ -133,7 +137,7 @@
 
 <!-- Shown in place of the enable steps once the lock is already active, so the parent
      just needs to know how to get back out. -->
-{#snippet exitSteps(os: string)}
+{#snippet exitSteps(os: SetupOs)}
   {#if os === 'ios'}
     <ol class="steps">
       <li>Triple-click the <strong>side button</strong> (or Home button)</li>
@@ -154,10 +158,10 @@
      the OS lists below stay as the fallback. Never true on native. -->
 {#if install.mode === 'oneTap'}
   <div class="one-tap">
-    <button class="one-tap-btn" onclick={oneTapInstall} disabled={installing} type="button">
+    <Button variant="brand" onclick={oneTapInstall} disabled={installing}>
       <Icon name="home" class="one-tap-icon" />
       Install Splotch
-    </button>
+    </Button>
     <p class="one-tap-hint">One tap — your browser will do the rest.</p>
   </div>
 {/if}
@@ -181,47 +185,42 @@
   {:else}
     <section class="os-section">
       <h3 class="os-heading">{os === 'ios' ? 'iOS' : 'Android'}</h3>
-      <details class="help-section">
-        <summary>
+      <Disclosure class="help-section">
+        {#snippet summary()}
           <span class="summary-text">
             <span class="section-number">1.</span> Install as App
             {#if install.installed}<span class="install-check">✓</span>{/if}
           </span>
-        </summary>
+        {/snippet}
         {@render installSteps(os)}
-      </details>
+      </Disclosure>
 
-      <details class="help-section">
-        <summary
-          ><span class="summary-text"><span class="section-number">2.</span> {lockTitle(os)}</span
-          ></summary
-        >
+      <Disclosure class="help-section">
+        {#snippet summary()}
+          <span class="summary-text"><span class="section-number">2.</span> {lockTitle(os)}</span>
+        {/snippet}
         {@render lockSteps(os)}
-      </details>
+      </Disclosure>
     </section>
   {/if}
 {/each}
 
 <style>
-  .help-section {
+  /* The accordion's own chrome on the Disclosure primitive — reached with
+     :global() because the class lands on the primitive's own markup. */
+  .os-section :global(.help-section) {
     margin-bottom: 16px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
   }
 
-  .help-section:last-of-type {
+  .os-section :global(.help-section:last-of-type) {
     margin-bottom: 0;
   }
 
-  .help-section summary {
+  .os-section :global(.help-section summary) {
     padding: 16px;
     font-size: var(--font-size-xl);
     font-weight: 600;
     color: var(--text);
-    cursor: pointer;
-    user-select: none;
-    list-style: none;
     background: var(--surface-2);
     transition: background var(--duration-base) ease;
     display: flex;
@@ -231,25 +230,14 @@
   }
 
   @media (hover: hover) {
-    .help-section summary:hover {
+    .os-section :global(.help-section summary:hover) {
       background: var(--surface-hover);
     }
   }
 
-  .help-section summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .help-section summary::after {
-    content: '›';
+  .os-section :global(.help-section summary::after) {
     font-size: 24px;
-    color: var(--text-faint);
-    transition: transform var(--duration-base) ease;
     flex-shrink: 0;
-  }
-
-  .help-section[open] summary::after {
-    transform: rotate(90deg);
   }
 
   .os-section + .os-section {
@@ -295,30 +283,6 @@
   .one-tap {
     margin-bottom: 20px;
     text-align: center;
-  }
-
-  .one-tap-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 22px;
-    border: none;
-    border-radius: 14px;
-    background: var(--brand);
-    color: var(--on-brand);
-    font-size: 17px;
-    font-weight: 700;
-    cursor: pointer;
-    touch-action: manipulation;
-  }
-
-  .one-tap-btn:active {
-    transform: scale(0.97);
-  }
-
-  .one-tap-btn:disabled {
-    opacity: 0.6;
-    cursor: default;
   }
 
   :global(.one-tap-icon) {

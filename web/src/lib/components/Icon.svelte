@@ -1,4 +1,6 @@
 <script module lang="ts">
+  import type { CommonIconName } from './iconTypes';
+
   // Full-color "spot" icons carry their own palette, so callers that tint
   // monochrome icons with a CSS `filter` must leave these alone. We tag them
   // with `icon-color` so those filter rules can opt out (see ActionsPanel).
@@ -10,7 +12,7 @@
   // un-tagged and render wrongly tinted. The set is an allowed superset — the
   // stroke-size previews below are monochrome in their raw SVG but still opt
   // out because they tint via currentColor / theme vars.
-  export const COLOR_ICONS = new Set([
+  export const COLOR_ICONS = new Set<CommonIconName>([
     'camera',
     'crayon',
     'eraser',
@@ -20,7 +22,6 @@
     'more-colors',
     'pen',
     'shapes',
-    'sweep-icon',
     'trash-closed',
     'trash-open',
     'undo',
@@ -43,8 +44,12 @@
 </script>
 
 <script lang="ts">
-  import type { CommonIconName } from './iconTypes';
+  import type { HTMLAttributes } from 'svelte/elements';
+  import { iconNameFromPath } from './iconTypes';
 
+  // The exclusions must be spelled out literally here — Vite resolves
+  // import.meta.glob statically — but NON_RENDERABLE_ICONS in iconTypes.ts is
+  // the authoritative list; keep the two in step.
   const modules = import.meta.glob(['../icons/*.svg', '!../icons/splotchy.svg'], {
     eager: true,
     query: '?raw',
@@ -53,26 +58,26 @@
 
   const icons: Record<string, string> = {};
   for (const [path, src] of Object.entries(modules)) {
-    const key = (path.split('/').pop() ?? '').replace('.svg', '');
-    icons[key] = src as string;
+    icons[iconNameFromPath(path)] = src as string;
   }
 
-  interface Props {
+  interface Props extends HTMLAttributes<HTMLSpanElement> {
     name: CommonIconName;
-    class?: string;
-    [key: string]: unknown;
   }
-  let { name, class: className = '', ...rest }: Props = $props();
+  let { name, class: className, ...rest }: Props = $props();
 
   const markup = $derived(icons[name] ?? '');
-  const colorClass = $derived(COLOR_ICONS.has(name) ? ' icon-color' : '');
 </script>
 
 <!-- data-icon exposes the icon identity to the DOM: the SVG goes in via {@html}, so
      the name is otherwise invisible to tests (and to the {@html} hydration caveat in
      .claude/rules/svelte.md). -->
-<!-- eslint-disable-next-line svelte/no-at-html-tags markup is a first-party SVG string from the build-generated icon map -->
-<span class="{className}{colorClass}" {...rest} data-icon={name}>{@html markup}</span>
+<!-- eslint-disable svelte/no-at-html-tags markup is a first-party SVG string from the build-generated icon map -->
+<span class={[className, COLOR_ICONS.has(name) && 'icon-color']} {...rest} data-icon={name}
+  >{@html markup}</span
+>
+
+<!-- eslint-enable svelte/no-at-html-tags -->
 
 <style>
   span {

@@ -33,11 +33,12 @@
 // the opening tap's own trailing synthesized click (which would activate
 // whatever content painted under the finger — issue #308).
 import { guardLaunchZone, isPointInLaunchZone, clearLaunchZones } from './launchGuard';
+import type { Origin } from '$lib/state/modal.svelte';
 
 interface ModalOptions {
   open: boolean;
   onRequestClose?: () => void;
-  origin?: { x: number; y: number } | null;
+  origin?: Origin | null;
   onOpen?: () => void;
   onClose?: () => void;
   allowDismiss?: () => boolean;

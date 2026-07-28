@@ -3,6 +3,14 @@
 // both wait for this many committed strokes, deliberately the same signal.
 export const SETTLED_IN_STROKES = 3;
 
+// Engine-bridge exception to the setter convention in .claude/rules/svelte.md
+// ("components read state and call setters; they never own shared state"):
+// canvasState has no setters. Per ADR-0004, this is a passive bridge target
+// for the imperative drawing engine's callbacks — the only writer is
+// DrawingCanvas.svelte's onMount engine-adoption block (onUndoStateChange,
+// onCanvasEmptyChange, onStrokeEnd, onViewChange). Any new writer should
+// either route through that same adoption block, or this module should grow
+// real setters.
 export const canvasState = $state({
   canUndo: false,
   canvasEmpty: true,

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import {
     initDrawingCanvas,
     setColor,
@@ -14,7 +14,6 @@
     getUndoDebug,
     setCrayonMode,
     setCrayonParams,
-    getCrayonParams,
     setScreenAngleOverride,
     getViewState,
     RESIZE_SETTLE_MS,
@@ -27,9 +26,10 @@
   // The Playwright engine spec reaches the harness through these window globals.
   interface EngineHarnessWindow {
     __engineState: { canUndo: boolean; canvasEmpty: boolean };
-    __engine: Record<string, unknown>;
+    __engine: ReturnType<typeof buildEngineApi>;
     __engineReady: boolean;
   }
+  // ssr = false in +page.ts is what makes this top-level window read safe (see the comment there).
   const win = window as unknown as Window & EngineHarnessWindow;
 
   // Mirrors how the app wires the engine (see DrawingCanvas.svelte), but routes
@@ -48,16 +48,15 @@
     setStrokeWidth(8);
   }
 
-  onMount(() => {
-    wireEngine();
-
-    win.__engineState = { canUndo: false, canvasEmpty: true };
-
-    // Expose the real engine API + a few read helpers. The spec drives strokes
-    // with real Playwright pointer input on the canvas; these are for the
-    // imperative operations the app invokes from buttons (undo/clear) and for
-    // reading the resulting bitmap.
-    win.__engine = {
+  // Expose the real engine API + a few read helpers. The spec drives strokes
+  // with real Playwright pointer input on the canvas; these are for the
+  // imperative operations the app invokes from buttons (undo/clear) and for
+  // reading the resulting bitmap.
+  // Annotated against the ambient Window.__engine contract (web/tests/global.d.ts)
+  // that the Playwright specs compile against, so a harness member that drifts
+  // from that spec-facing contract errors here instead of type-checking silently.
+  function buildEngineApi(): Window['__engine'] {
+    return {
       setColor,
       setStrokeWidth,
       setEraserMode,
@@ -75,7 +74,6 @@
       // knobs. The spec draws crayon strokes via strokeSync after setCrayonMode.
       setCrayonMode,
       setCrayonParams,
-      getCrayonParams,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).
@@ -230,15 +228,25 @@
         }
       },
     };
+  }
 
+  onMount(() => {
+    wireEngine();
+
+    win.__engineState = { canUndo: false, canvasEmpty: true };
+
+    win.__engine = buildEngineApi();
     win.__engineReady = true;
   });
 
-  onDestroy(() => {
-    engine?.teardown();
+  $effect(() => {
+    return () => engine?.teardown();
   });
 </script>
 
+<!-- Deliberately bare, unlike the sibling harnesses: nobody browses this page —
+     it's an automated Playwright target, and chrome would only sit under the
+     viewport-pinned canvas the specs read pixels and pointer coordinates from. -->
 <div class="harness">
   <div class="canvas-wrapper" bind:this={wrapperEl}>
     <canvas bind:this={canvasEl} id="engineCanvas"></canvas>

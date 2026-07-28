@@ -1,13 +1,14 @@
 <script lang="ts">
-  import { slide } from 'svelte/transition';
   import Icon from '../Icon.svelte';
-  import ToggleRow from './ToggleRow.svelte';
+  import Button from '../design/Button.svelte';
+  import Disclosure from '../design/Disclosure.svelte';
+  import StatusMessage from '../design/StatusMessage.svelte';
+  import AiFeatureToggles from './AiFeatureToggles.svelte';
   import {
     settings,
     setAiImage,
-    setAiCustomization,
-    setAutoSaveAi,
     setAiAccessToken,
+    aiCredentialKind,
   } from '$lib/state/settings.svelte';
   import { setAiUserApiKey } from '$lib/state/aiKey.svelte';
   import { verifyCredential } from '$lib/aiCredential';
@@ -29,9 +30,9 @@
   let keyInput = $state('');
   let keyStatus = $state<'idle' | 'checking' | 'error' | 'success'>('idle');
   let keyMessage = $state('');
-  let hasApiKey = $derived(!!settings.aiUserApiKey);
-  let hasAccessCode = $derived(!!settings.aiAccessToken);
-  let aiLocked = $derived(!hasApiKey && !hasAccessCode);
+  let credentialKind = $derived(aiCredentialKind());
+  let hasApiKey = $derived(credentialKind === 'apiKey');
+  let aiLocked = $derived(credentialKind === 'none');
   const latest = createLatestRequest();
 
   // Show the saved key with everything but the last four characters masked, so
@@ -145,8 +146,8 @@
         own Google account. We never keep a copy of your key.
       </p>
 
-      <details class="byok-howto">
-        <summary>How do I get a Gemini API key?</summary>
+      <Disclosure class="byok-howto">
+        {#snippet summary()}How do I get a Gemini API key?{/snippet}
         <ol>
           <li>
             Open <a
@@ -160,7 +161,7 @@
           <li>Copy the key (it starts with <code>AIza…</code>) and paste it below.</li>
         </ol>
         <p class="byok-howto-note">The free tier is generous and is plenty for occasional use.</p>
-      </details>
+      </Disclosure>
 
       <label class="access-code-label" for="aiKeyInput">Gemini API Key</label>
       <div class="access-code-row">
@@ -176,13 +177,14 @@
           bind:value={keyInput}
           onkeydown={(e) => e.key === 'Enter' && submitKey()}
         />
-        <button
+        <Button
+          variant="brand"
           class="access-code-submit"
           onclick={submitKey}
           disabled={!keyInput.trim() || keyStatus === 'checking'}
         >
           {keyStatus === 'checking' ? 'Checking…' : 'Save'}
-        </button>
+        </Button>
       </div>
       <p class="byok-storage-note">
         <Icon name="lock" class="byok-storage-icon" />{keyStorageNote}
@@ -206,7 +208,7 @@
             aria-label="Saved Gemini API key (masked)"
             value={maskedKey}
           />
-          <button class="access-code-submit forget" onclick={forgetKey}>Forget</button>
+          <Button variant="danger" class="access-code-submit" onclick={forgetKey}>Forget</Button>
         </div>
         <p class="byok-storage-note">
           <Icon name="lock" class="byok-storage-icon" />{keyStorageNote}
@@ -226,68 +228,24 @@
             aria-label="Saved access code"
             value={settings.aiAccessToken}
           />
-          <button class="access-code-submit forget" onclick={forgetAccessCode}>Forget</button>
+          <Button variant="danger" class="access-code-submit" onclick={forgetAccessCode}>
+            Forget
+          </Button>
         </div>
       {/if}
     </div>
   {/if}
 
   {#if keyMessage}
-    <p
-      class="byok-message"
-      class:error={keyStatus === 'error'}
-      class:success={keyStatus === 'success'}
-      role={keyStatus === 'error' ? 'alert' : 'status'}
-      aria-live="polite"
-    >
-      {keyMessage}
-    </p>
+    <StatusMessage status={keyStatus === 'error' ? 'error' : 'success'}>{keyMessage}</StatusMessage>
   {/if}
 
   {#if !aiLocked}
-    <div class="ai-controls">
-      <div class="setting">
-        <ToggleRow
-          icon="wand-stars"
-          label="Create AI Images"
-          id="aiImageToggle"
-          checked={settings.aiImageEnabled}
-          onToggle={setAiImage}
-        />
-      </div>
-
-      {#if settings.aiImageEnabled}
-        <div class="setting" transition:slide={{ duration: 220 }}>
-          <ToggleRow
-            icon="customize"
-            label="AI Customization"
-            id="aiCustomizationToggle"
-            checked={settings.aiCustomizationEnabled}
-            onToggle={setAiCustomization}
-          />
-        </div>
-
-        <div class="setting" transition:slide={{ duration: 220 }}>
-          <ToggleRow
-            icon="download"
-            label="Auto-Save AI Images"
-            id="autoSaveAiToggle"
-            checked={settings.autoSaveAiEnabled}
-            onToggle={setAutoSaveAi}
-            help="Saves each AI image and the drawing to your photos, and shows a larger preview"
-          />
-        </div>
-      {/if}
-    </div>
+    <AiFeatureToggles />
   {/if}
 </section>
 
 <style>
-  /* AI feature toggles — spaced off from the key/code panel above them. */
-  .ai-controls {
-    margin-top: 24px;
-  }
-
   /* AI access code entry */
   .access-code-label {
     display: block;
@@ -306,10 +264,7 @@
     flex: 1;
     min-width: 0;
     padding: 8px 12px;
-    /* Never below 16px: iOS Safari / WKWebView zoom the visual viewport when a
-       focused input's font-size is < 16px, and on the drawing route that would
-       strand the canvas zoomed with no way to reset it (ADR-0076). */
-    font-size: max(16px, var(--font-size-md));
+    font-size: var(--input-font-size);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: var(--surface);
@@ -321,28 +276,10 @@
     border-color: var(--brand);
   }
 
-  .access-code-submit {
-    padding: 8px 16px;
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    color: var(--on-brand);
-    background: var(--brand);
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: background var(--duration-base) ease;
+  /* Chrome comes from the Button primitive; the row only stops it shrinking
+     next to the input. */
+  .access-code-row :global(.access-code-submit) {
     flex-shrink: 0;
-  }
-
-  @media (hover: hover) {
-    .access-code-submit:hover {
-      background: var(--brand-hover);
-    }
-  }
-
-  .access-code-submit:disabled {
-    background: var(--control-track-hover);
-    cursor: not-allowed;
   }
 
   /* BYOK (bring your own key) panel */
@@ -357,40 +294,25 @@
     color: var(--text-mid);
   }
 
-  .byok-howto {
+  /* The how-to's own chrome on the Disclosure primitive — reached with
+     :global() because the class lands on the primitive's own markup. */
+  .byok :global(.byok-howto) {
     margin: 0 0 14px 0;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
     background: var(--surface);
-    overflow: hidden;
   }
 
-  .byok-howto summary {
+  .byok :global(.byok-howto summary) {
     padding: 10px 12px;
     font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--brand);
-    cursor: pointer;
-    user-select: none;
-    list-style: none;
   }
 
-  .byok-howto summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .byok-howto summary::after {
-    content: '›';
+  .byok :global(.byok-howto summary::after) {
     float: right;
-    color: var(--text-faint);
-    transition: transform var(--duration-base) ease;
   }
 
-  .byok-howto[open] summary::after {
-    transform: rotate(90deg);
-  }
-
-  .byok-howto ol {
+  .byok :global(.byok-howto ol) {
     margin: 0;
     padding: 0 16px 8px 32px;
     color: var(--text-mid);
@@ -398,12 +320,12 @@
     line-height: 1.7;
   }
 
-  .byok-howto a {
+  .byok :global(.byok-howto a) {
     color: var(--brand);
     font-weight: 600;
   }
 
-  .byok-howto code {
+  .byok :global(.byok-howto code) {
     background: var(--brand-wash);
     border-radius: var(--radius-xs);
     padding: 1px 5px;
@@ -452,36 +374,7 @@
   .access-code-input[readonly] {
     background: var(--surface-hover);
     color: var(--text-muted);
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-mono);
     letter-spacing: 0.5px;
-  }
-
-  .access-code-submit.forget {
-    background: var(--slider-track);
-    color: var(--danger-text);
-  }
-
-  @media (hover: hover) {
-    .access-code-submit.forget:hover {
-      background: var(--control-track);
-    }
-  }
-
-  .byok-message {
-    margin: 12px 0 0 0;
-    padding: 10px 12px;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-sm);
-    line-height: 1.4;
-  }
-
-  .byok-message.success {
-    background: var(--success-wash);
-    color: var(--success-text);
-  }
-
-  .byok-message.error {
-    background: var(--danger-wash);
-    color: var(--danger-text);
   }
 </style>

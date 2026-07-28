@@ -151,9 +151,9 @@ so there is nothing to double and drift can't ghost.
   decoded yet, the raw fill is revealed (the pre-mask behaviour), so the brush never reveals
   nothing.
 
-A Playwright guard (`flows.spec.ts`) sweeps the magic brush across a page and asserts the canvas
-reveal is effectively black-free (the fill outlines are gone); before the fix that sweep painted
-~2.8% near-black pixels — the duplicate lines.
+A Playwright guard (`flows-magic-brush.spec.ts`) sweeps the magic brush across a page and asserts
+the canvas reveal is effectively black-free (the fill outlines are gone); before the fix that sweep
+painted ~2.8% near-black pixels — the duplicate lines.
 
 **This masks the fill's outline *copy*, not the fill's drift itself.** Where a fill's *fills* are
 geometrically drifted from the line art (the model redrew a feature shifted or scaled), the reveal

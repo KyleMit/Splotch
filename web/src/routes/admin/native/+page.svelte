@@ -4,6 +4,9 @@
   import { apiUrl } from '$lib/api';
   import { saveAdminSession, loadAdminSession, clearAdminSession } from '$lib/secureStorage';
   import { setAdminLinkVisible } from '$lib/state/settings.svelte';
+  import { ASSUME_PERSISTENT } from '$lib/adminFormat';
+  import type { LoginResponse } from '../../api/admin/login/+server';
+  import type { TokenMutationError, TokenSnapshot } from '../../api/admin/tokens/+server';
 
   // API-backed twin of /admin for the native apps, whose static bundle has no
   // server to run the form actions. Same console UI, but auth rides as a
@@ -15,7 +18,7 @@
   let session = $state('');
   let authed = $state(false);
   let invites = $state<Invite[]>([]);
-  let persistent = $state(true);
+  let persistent = $state(ASSUME_PERSISTENT);
   let flash = $state<Flash | null>(null);
   let loginError = $state<string | null>(null);
   // Don't flash the login form while the stored session is still being checked.
@@ -25,7 +28,7 @@
     session = '';
     authed = false;
     invites = [];
-    persistent = true;
+    persistent = ASSUME_PERSISTENT;
     loginError = message;
     setAdminLinkVisible(false);
     void clearAdminSession();
@@ -48,9 +51,7 @@
     return typeof invite.token === 'string' && typeof invite.url === 'string';
   }
 
-  function isSnapshot(
-    value: unknown
-  ): value is { ok: true; tokens: string[]; invites: Invite[]; persistent: boolean } {
+  function isSnapshot(value: unknown): value is TokenSnapshot {
     if (typeof value !== 'object' || value === null) return false;
     const snapshot = value as Record<string, unknown>;
     return (
@@ -69,25 +70,46 @@
     return typeof error === 'string' ? error : null;
   }
 
+  type SnapshotResult =
+    | { ok: true; invites: Invite[]; persistent: boolean }
+    | { ok: false; expired: true }
+    | { ok: false; expired: false; error: string };
+
+  async function parseSnapshot(response: Response): Promise<SnapshotResult> {
+    if (response.status === 401) return { ok: false, expired: true };
+    const data = (await response.json().catch(() => null)) as
+      | TokenSnapshot
+      | TokenMutationError
+      | null;
+    if (!response.ok || !isSnapshot(data)) {
+      return {
+        ok: false,
+        expired: false,
+        error: responseError(data) ?? 'Something went wrong. Please try again.',
+      };
+    }
+    return { ok: true, invites: data.invites, persistent: data.persistent };
+  }
+
   // Every /api/admin/tokens response carries the full { tokens, invites, persistent }
   // snapshot, so one handler covers list/add/remove. A 401 means the session
   // was invalidated server-side (secret rotated) — drop back to the login form.
   async function applySnapshot(response: Response) {
-    if (response.status === 401) {
-      signOutLocally('Your session has expired. Please sign in again.');
+    const result = await parseSnapshot(response);
+    if (!result.ok) {
+      if (result.expired) {
+        signOutLocally('Your session has expired. Please sign in again.');
+      } else if (authed) {
+        // The console renders `flash` only when authed; before then (the stored-
+        // session check and the post-login snapshot) only `loginError` is visible.
+        flash = { kind: 'error', text: result.error };
+      } else {
+        loginError = result.error;
+      }
       return false;
     }
-    const data = await response.json().catch(() => null);
-    if (!response.ok || !isSnapshot(data)) {
-      const text = responseError(data) ?? 'Something went wrong. Please try again.';
-      // The console renders `flash` only when authed; before then (the stored-
-      // session check and the post-login snapshot) only `loginError` is visible.
-      if (authed) flash = { kind: 'error', text };
-      else loginError = text;
-      return false;
-    }
-    invites = data.invites;
-    persistent = data.persistent;
+    invites = result.invites;
+    persistent = result.persistent;
     authed = true;
     return true;
   }
@@ -118,9 +140,9 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key }),
       });
-      const data = await response.json().catch(() => null);
-      if (!response.ok || !data?.ok || typeof data?.session !== 'string') {
-        loginError = data?.error ?? 'Sign in failed.';
+      const data = (await response.json().catch(() => null)) as LoginResponse | null;
+      if (!response.ok || !data?.ok || typeof data.session !== 'string') {
+        loginError = (data && !data.ok ? data.error : null) ?? 'Sign in failed.';
         return false;
       }
       session = data.session;

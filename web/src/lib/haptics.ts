@@ -10,6 +10,9 @@ import { lazyPluginModule } from './nativePlugin';
 // The __IS_CAPACITOR__ ternary keeps the import() itself out of the web bundle
 // (Rollup retains the thunk even when every caller is dead code); the reject arm
 // is unreachable because every call site is gated on __IS_CAPACITOR__ too.
+// Web Vibration API duration chosen to approximate native Medium impact.
+const WEB_IMPACT_MS = 15;
+
 const getPlugin = lazyPluginModule(() =>
   __IS_CAPACITOR__ ? import('@capacitor/haptics') : Promise.reject(new Error('native-only plugin'))
 );
@@ -28,5 +31,5 @@ export function impactThreshold(): void {
     return;
   }
 
-  navigator.vibrate?.(15);
+  navigator.vibrate?.(WEB_IMPACT_MS);
 }

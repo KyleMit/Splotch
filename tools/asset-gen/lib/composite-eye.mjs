@@ -33,7 +33,9 @@
 // vs. all 17 over-flags (≥ 0.10) and the good band-blind controls (≥ 0.46):
 // coreDarkFrac < CORE_DARK_FRAC_MIN ⇔ blank orb. See tools/asset-gen/tests.
 import sharp from 'sharp';
-import { BAND_BLIND_INK_FRAC, scoreEyeFill } from './eye-fill.mjs';
+import { BAND_BLIND_INK_FRAC, scoreEyeFill, STRONG_LIGHT_SIDE } from './eye-fill.mjs';
+import { erodeCross } from './morphology.mjs';
+import { median } from './stats.mjs';
 
 // A pupil check is anchored only at a CONFIRMED eye, using the same light-fill
 // oracle judgeNightEyes trusts — so shape blanket-checks and segment dots (which
@@ -44,8 +46,6 @@ import { BAND_BLIND_INK_FRAC, scoreEyeFill } from './eye-fill.mjs';
 //     the solid-ink pupil (annulusInkFrac high). judgeNightEyes SKIPS these as
 //     band-blind, which is exactly why the stego blank orb slipped through — so
 //     this check must own them.
-const STRONG_LIGHT_SIDE = 180;
-
 // Working resolution — coarse enough to be cheap, fine enough for eye-scale.
 const WORK_W = 512;
 const DARK = 90; // luma below this is "pupil dark" (matches the light-mode pupil)
@@ -135,6 +135,49 @@ function darkBlob(light, w, h, sx, sy) {
   return px;
 }
 
+function isPupilDisc(blob, w, h) {
+  // A pupil is a FILLED, roundish disc. Outline ink is dark too (luma < DARK),
+  // so a seed that snaps to a stroke floods a thin, sprawling blob — reject it
+  // by bounding-box fill and aspect, or shapes and stroke segments (which
+  // composite white and have no real eye) false-positive.
+  let bMinX = w;
+  let bMinY = h;
+  let bMaxX = 0;
+  let bMaxY = 0;
+  for (const p of blob) {
+    const x = p % w;
+    const y = (p / w) | 0;
+    if (x < bMinX) bMinX = x;
+    if (x > bMaxX) bMaxX = x;
+    if (y < bMinY) bMinY = y;
+    if (y > bMaxY) bMaxY = y;
+  }
+  const bw = bMaxX - bMinX + 1;
+  const bh = bMaxY - bMinY + 1;
+  if (blob.length / (bw * bh) < 0.4) return false;
+  if (Math.max(bw, bh) / Math.min(bw, bh) > 2.5) return false;
+
+  // A filled pupil disc keeps most of its mass through erosion; a thin outline
+  // stroke (also dark in the light fill) erodes away. If little survives, this
+  // blob is stroke ink, not a pupil — the shape pages false-positived here.
+  let eroded = new Uint8Array(bw * bh);
+  for (const p of blob) {
+    const x = (p % w) - bMinX;
+    const y = ((p / w) | 0) - bMinY;
+    eroded[y * bw + x] = 1;
+  }
+  for (let step = 0; step < PUPIL_ERODE_PX; step++) eroded = erodeCross(eroded, bw, bh);
+  const surviving = eroded.reduce((sum, value) => sum + value, 0);
+  return surviving >= Math.max(12, blob.length * 0.3);
+}
+
+function blobCentroid(blob, w) {
+  return {
+    x: blob.reduce((sum, p) => sum + (p % w), 0) / blob.length,
+    y: blob.reduce((sum, p) => sum + ((p / w) | 0), 0) / blob.length,
+  };
+}
+
 // Stats of a filled disc of radius R centred on (cx, cy) in a gray buffer.
 function discStats(g, w, h, cx, cy, R) {
   const R2 = R * R;
@@ -143,9 +186,8 @@ function discStats(g, w, h, cx, cy, R) {
     for (let x = Math.max(0, cx - R); x <= Math.min(w - 1, cx + R); x++)
       if ((x - cx) ** 2 + (y - cy) ** 2 <= R2) vals.push(g[y * w + x]);
   if (!vals.length) return { median: 255, whiteFrac: 1, darkFrac: 0 };
-  vals.sort((a, b) => a - b);
   return {
-    median: vals[vals.length >> 1],
+    median: median(vals),
     whiteFrac: vals.filter((v) => v > WHITE).length / vals.length,
     darkFrac: vals.filter((v) => v < DARK).length / vals.length,
   };
@@ -155,6 +197,24 @@ function discStats(g, w, h, cx, cy, R) {
 // render (compositeNight), `lightBuf` the committed light raw, `penBuf` the pen
 // outline that locates the eyes. Returns one entry per confirmed pupil plus a
 // verdict; pages with no confirmed eye aren't gated (passes: true).
+/**
+ * @typedef {object} PupilScore
+ * @property {number} x
+ * @property {number} y
+ * @property {number} px
+ * @property {number} median
+ * @property {number} whiteFrac
+ * @property {number} coreDarkFrac
+ * @property {boolean} blankOrb
+ */
+/**
+ * @typedef {object} CompositeEyeScore
+ * @property {PupilScore[]} pupils
+ * @property {boolean} passes
+ * @property {PupilScore | null} worst
+ * @property {number} failed
+ */
+/** @returns {Promise<CompositeEyeScore>} */
 export async function scoreCompositeEyes(compBuf, lightBuf, penBuf) {
   // Scope: ONLY the band-blind solid-pen eyes judgeNightEyes skips outright — a
   // bright catchlight core ringed by the solid-ink pupil (annulusInkFrac high).
@@ -184,56 +244,10 @@ export async function scoreCompositeEyes(compBuf, lightBuf, penBuf) {
     if (!blob) continue;
     if (blob.length < page * PUPIL_MIN_FRAC || blob.length > page * PUPIL_MAX_FRAC) continue;
     if (claimed[blob[0]]) continue;
-    // A pupil is a FILLED, roundish disc. Outline ink is dark too (luma < DARK),
-    // so a seed that snaps to a stroke floods a thin, sprawling blob — reject it
-    // by bounding-box fill and aspect, or shapes and stroke segments (which
-    // composite white and have no real eye) false-positive.
-    let bMinX = w;
-    let bMinY = h;
-    let bMaxX = 0;
-    let bMaxY = 0;
-    for (const p of blob) {
-      const x = p % w;
-      const y = (p / w) | 0;
-      if (x < bMinX) bMinX = x;
-      if (x > bMaxX) bMaxX = x;
-      if (y < bMinY) bMinY = y;
-      if (y > bMaxY) bMaxY = y;
-    }
-    const bw = bMaxX - bMinX + 1;
-    const bh = bMaxY - bMinY + 1;
-    if (blob.length / (bw * bh) < 0.4) continue; // not a filled disc
-    if (Math.max(bw, bh) / Math.min(bw, bh) > 2.5) continue; // not roundish
-
-    // A filled pupil disc keeps most of its mass through erosion; a thin outline
-    // stroke (also dark in the light fill) erodes away. If little survives, this
-    // blob is stroke ink, not a pupil — the shape pages false-positived here.
-    let eroded = new Set(blob);
-    for (let step = 0; step < PUPIL_ERODE_PX; step++) {
-      const next = new Set();
-      for (const p of eroded) {
-        const x = p % w;
-        const y = (p / w) | 0;
-        if (
-          x > 0 &&
-          eroded.has(p - 1) &&
-          x < w - 1 &&
-          eroded.has(p + 1) &&
-          y > 0 &&
-          eroded.has(p - w) &&
-          y < h - 1 &&
-          eroded.has(p + w)
-        ) {
-          next.add(p);
-        }
-      }
-      eroded = next;
-    }
-    if (eroded.size < Math.max(12, blob.length * 0.3)) continue;
+    if (!isPupilDisc(blob, w, h)) continue;
     for (const p of blob) claimed[p] = 1;
 
-    const bx = blob.reduce((s, p) => s + (p % w), 0) / blob.length;
-    const by = blob.reduce((s, p) => s + ((p / w) | 0), 0) / blob.length;
+    const { x: bx, y: by } = blobCentroid(blob, w);
     // Measure the composite in a small disc AT the catchlight core — not over the
     // light pupil's footprint, which lands on the (legitimately larger) night
     // sclera and reads white for legible and blank eyes alike. A real pupil sits

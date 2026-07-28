@@ -3,6 +3,7 @@ paths:
   - "web/tests/**"
   - "web/src/**/*.test.ts"
   - "web/playwright.config.ts"
+  - "web/playwright.shared.ts"
   - "web/vitest.config.ts"
   - "web/vitest-setup.ts"
   - ".maestro/**"

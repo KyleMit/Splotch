@@ -8,7 +8,8 @@
 //   npm run gen:coloring-outlines:audit -- nature/ant-tall
 import { readFile } from 'node:fs/promises';
 import { relative } from 'node:path';
-import { COLORING_DIR, fail } from '../lib/paths.mjs';
+import { fail } from '../lib/cli.mjs';
+import { COLORING_DIR } from '../lib/paths.mjs';
 import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, EYE_RING_DEPTH_MAX } from '../lib/eye-fill.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
@@ -23,22 +24,28 @@ const pages = await resolveOutlineTargets(args, {
 });
 
 const rows = [];
+let errors = 0;
 for (const page of pages) {
   const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
-  const buf = await readFile(page);
-  const { darkPx, solidPx, interiorPx, biggestBlob, passes } = await scoreSolidity(buf);
-  const rings = await scoreEyeRings(buf);
-  rows.push({
-    rel,
-    darkPx,
-    solidPx,
-    interiorPx,
-    biggestBlob,
-    ringDepth: rings.maxDepth,
-    passes: passes && rings.passes,
-    solidOk: passes,
-    ringsOk: rings.passes,
-  });
+  try {
+    const buf = await readFile(page);
+    const { darkPx, solidPx, interiorPx, biggestBlob, passes } = await scoreSolidity(buf);
+    const rings = await scoreEyeRings(buf);
+    rows.push({
+      rel,
+      darkPx,
+      solidPx,
+      interiorPx,
+      biggestBlob,
+      ringDepth: rings.maxDepth,
+      passes: passes && rings.passes,
+      solidOk: passes,
+      ringsOk: rings.passes,
+    });
+  } catch (error) {
+    console.error(`${rel}  ERROR (${error instanceof Error ? error.message : String(error)})`);
+    errors++;
+  }
 }
 rows.sort((a, b) => b.biggestBlob - a.biggestBlob);
 
@@ -70,3 +77,4 @@ console.log(
   `\n${offenders.length}/${rows.length} outline(s) need normalizing (solid regions or over-ringed eyes)` +
     (offenders.length ? ` — npm run gen:coloring-outlines:normalize -- <page>` : '')
 );
+if (errors) process.exitCode = 1;

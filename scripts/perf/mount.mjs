@@ -11,17 +11,14 @@
 // user-timing measures the page recorded.
 
 import { writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { chromium } from '@playwright/test';
-import { ROOT, chromiumExecutablePath } from '../lib/utils.mjs';
+import { chromiumExecutablePath } from '../lib/playwright.mjs';
+import { isMain, runMain } from '../lib/proc.mjs';
+import { parsePerfArgs } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace } from './capture.mjs';
-
-const DEVICES = {
-  phone: { width: 412, height: 915, deviceScaleFactor: 2.6 },
-  tablet: { width: 1024, height: 1366, deviceScaleFactor: 2 },
-  desktop: { width: 1280, height: 800, deviceScaleFactor: 1 },
-};
+import { profilePath } from './paths.mjs';
+import { LONG_TASK_MS } from './thresholds.mjs';
 
 // Lighthouse's "Slow 4G" throttle: 150 ms RTT, 1.6 Mbps down / 750 Kbps up.
 const SLOW_4G = {
@@ -35,21 +32,13 @@ const SLOW_4G = {
 // fire inside the trace so a fix that merely shifts cost later is visible.
 const POST_LOAD_SETTLE_MS = 5000;
 
-const args = process.argv.slice(2);
-const flag = (name, def) => {
-  const hit = args.find((a) => a.startsWith(`--${name}=`));
-  return hit ? hit.split('=')[1] : def;
-};
-const deviceName = flag('device', 'phone');
-const device = DEVICES[deviceName] || DEVICES.phone;
-const throttle = args.includes('--no-throttle') ? 1 : Number(flag('throttle', '4'));
-const port = Number(flag('port', '4173'));
-const build = !args.includes('--no-build');
+const { deviceName, device, throttle, port, build } = parsePerfArgs({
+  throttleDefault: 4,
+  entry: isMain(import.meta.url),
+});
 
-async function main() {
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const throttleTag = throttle > 1 ? `${throttle}x` : 'raw';
-  const outDir = join(ROOT, 'perf-profiles', `${stamp}-mount-${deviceName}-${throttleTag}`);
+export async function runMountProfile() {
+  const outDir = profilePath('mount', deviceName, throttle.tag);
   mkdirSync(outDir, { recursive: true });
 
   const { base, stop } = await buildAndPreview(port, { build });
@@ -82,7 +71,9 @@ async function main() {
     });
 
     const cdp = await ctx.newCDPSession(page);
-    if (throttle > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle });
+    if (throttle.active) {
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle.rate });
+    }
     await cdp.send('Network.enable');
     await cdp.send('Network.emulateNetworkConditions', SLOW_4G);
 
@@ -110,8 +101,13 @@ async function main() {
     writeFileSync(join(outDir, 'trace.json'), JSON.stringify({ traceEvents: events }));
     writeFileSync(join(outDir, 'mount-summary.json'), JSON.stringify(summary, null, 2));
 
-    const blocking = summary.longTasks.reduce((sum, t) => sum + Math.max(0, t.duration - 50), 0);
-    console.log(`Long tasks (>50 ms): ${summary.longTasks.length}, blocking time ~${blocking} ms`);
+    const blocking = summary.longTasks.reduce(
+      (sum, t) => sum + Math.max(0, t.duration - LONG_TASK_MS),
+      0
+    );
+    console.log(
+      `Long tasks (>${LONG_TASK_MS} ms): ${summary.longTasks.length}, blocking time ~${blocking} ms`
+    );
     for (const t of summary.longTasks) {
       console.log(`  at ${t.start.toFixed(0)} ms for ${t.duration.toFixed(0)} ms`);
     }
@@ -125,7 +121,4 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (isMain(import.meta.url)) runMain(runMountProfile);

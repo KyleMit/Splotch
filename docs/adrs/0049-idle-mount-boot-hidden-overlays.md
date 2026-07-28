@@ -27,15 +27,16 @@ Alternatives considered:
 ## Decision
 
 The six boot-hidden overlays live in one lazy chunk, `web/src/lib/components/bootHiddenOverlays.ts`,
-which `+page.svelte` imports inside a `requestIdleCallback` (setTimeout fallback — iOS lacks rIC,
-see `docs/COMPATIBILITY.md`). Five of them then mount **one per idle callback**
-(`{#each overlays as Overlay (Overlay)}`), so no idle slice forms its own long task.
+which the `mountBootHiddenOverlays()` pump in `web/src/lib/boot/bootHiddenOverlays.ts` imports
+inside a `requestIdleCallback` (setTimeout fallback — iOS lacks rIC, see `docs/COMPATIBILITY.md`).
+Five of them then mount **one per idle callback** (`{#each overlays as Overlay (Overlay)}`), so no
+idle slice forms its own long task.
 
 The **Parent Center dialog is the exception**: at ~200 ms mounted (throttled) it is too heavy even
-for an idle slice, so it mounts on its **first open** — `ui.parentCenterOpen` latches
-`parentCenterWanted`, and the mount cost hides inside the tap-to-fly-in moment (a parent gesture,
-not a toddler one). Its always-visible corner trigger was extracted to `ParentHelpButton.svelte` so
-the button itself stays eagerly rendered.
+for an idle slice, so it mounts on its **first open** — `parentCenter.open` latches
+`parentCenterEverOpened`, and the mount cost hides inside the tap-to-fly-in moment (a parent
+gesture, not a toddler one). Its always-visible corner trigger was extracted to
+`ParentHelpButton.svelte` so the button itself stays eagerly rendered.
 
 Why late mount is safe — and the invariant to keep: **every overlay must be fully state-driven.**
 The `modalDialog` action reads its `ui.*Open` flag on its first `$effect` run, so a tap that lands
@@ -53,9 +54,10 @@ context creation onto the child's first pointerdown.
 
 * \+ ~150–250 ms less main-thread blocking in the Lighthouse TBT window on a throttled phone; the
   canvas is stroke-ready sooner.
-* \+ A place to put the *next* boot-hidden overlay: add it to `bootHiddenOverlays.ts` and the idle
-  queue in `+page.svelte`, and it stays off the load path by construction. Re-importing one eagerly
-  in `+page.svelte` silently reverts the win — `npm run perf:mount` is the regression check.
+* \+ A place to put the *next* boot-hidden overlay: add it to `lib/components/bootHiddenOverlays.ts`
+  and to the idle queue in `lib/boot/bootHiddenOverlays.ts`, and it stays off the load path by
+  construction. Re-importing one eagerly in `+page.svelte` silently reverts the win —
+  `npm run perf:mount` is the regression check.
 * − The Parent Center's first open pays its mount (~50 ms on a real phone, masked by the fly-in
   animation). Deliberate: a parent-facing, once-per-visit cost.
 * − The overlays' SSR markup is gone (they client-render at idle). All were invisible at boot, so
@@ -74,8 +76,8 @@ are ~1.6 KB gzip each, so the co-evaluation never forms a >50 ms task in a `perf
 crossing the 50 ms long-task line at idle.
 
 The documented fix at that point — measured neutral now (2026-07), so **not adopted yet**: change
-`bootHiddenOverlays.ts` from static re-exports to a list of per-component lazy loaders
-(`() => import('./X.svelte')`) and have `+page.svelte` walk them **one loader per idle callback**,
+`lib/components/bootHiddenOverlays.ts` from static re-exports to a list of per-component lazy
+loaders (`() => import('./X.svelte')`) and have the pump walk them **one loader per idle callback**,
 so each overlay's chunk loads, evaluates, and mounts in its own slice. Cost: one idle request per
 overlay instead of one for the set (precached on repeat visits). Verify with `npm run perf:mount`
 that no per-overlay slice exceeds ~50 ms before adopting it.

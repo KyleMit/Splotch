@@ -1,9 +1,12 @@
 // cSpell:ignore SLOWMO
 import { existsSync, readdirSync } from 'node:fs';
 import { chromium, defineConfig, devices, webkit } from '@playwright/test';
-
-const PORT = 4173;
-const baseURL = `http://localhost:${PORT}`;
+import {
+  commonPlaywrightConfig,
+  commonWebServer,
+  playwrightPort,
+  productionPreviewCommand,
+} from './playwright.shared';
 
 // Cloud sessions cache Chromium under PLAYWRIGHT_BROWSERS_PATH, but the pinned
 // revision can drift from what playwright-core resolves (e.g. the env installed
@@ -16,19 +19,26 @@ function chromiumExecutablePath(): string | undefined {
   if (process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
   try {
     if (existsSync(chromium.executablePath())) return undefined; // pinned build present
-  } catch {}
+  } catch {
+    // An absent or unreadable browser path should fall through to discovery.
+  }
   const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
+  const chromiumPrefix = 'chromium-';
   try {
     const builds = readdirSync(base)
       .filter((d) => /^chromium-\d+$/.test(d))
-      .sort((a, b) => Number(b.slice(9)) - Number(a.slice(9)));
+      .sort(
+        (a, b) => Number(b.slice(chromiumPrefix.length)) - Number(a.slice(chromiumPrefix.length))
+      );
     for (const build of builds) {
       for (const sub of ['chrome-linux', 'chrome-linux64']) {
         const p = `${base}/${build}/${sub}/chrome`;
         if (existsSync(p)) return p;
       }
     }
-  } catch {}
+  } catch {
+    // An absent or unreadable browser path should fall through to Playwright.
+  }
   return undefined;
 }
 
@@ -41,7 +51,9 @@ function chromiumExecutablePath(): string | undefined {
 function webkitAvailable(): boolean {
   try {
     if (existsSync(webkit.executablePath())) return true;
-  } catch {}
+  } catch {
+    // An absent or unreadable browser path means WebKit is unavailable unless required.
+  }
   if (process.env.REQUIRE_WEBKIT) {
     throw new Error('REQUIRE_WEBKIT is set but the WebKit binary is not installed');
   }
@@ -49,21 +61,23 @@ function webkitAvailable(): boolean {
 }
 
 const slowMo = Number(process.env.SLOWMO) || 0;
+const ciRetries = 2;
+const ciAllowedTokens = Array.from({ length: ciRetries + 1 }, (_, retry) =>
+  retry === 0 ? 'daycare-club' : `daycare-club-retry${retry}`
+).join(',');
 
 export default defineConfig({
-  testDir: './tests',
-  globalSetup: './tests/global-setup.ts',
-  fullyParallel: true,
+  ...commonPlaywrightConfig,
   // Use all cores everywhere. Playwright otherwise defaults to ~50% of logical
   // cores, leaving half the machine idle even though every spec is
   // parallel-safe — on a 4-core box that's the difference between ~90s and
   // ~58s for the suite.
   workers: '100%',
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? ciRetries : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL,
+    ...commonPlaywrightConfig.use,
     trace: 'on-first-retry',
   },
   // launchOptions live per-project: the Chromium executable-path fallback must
@@ -91,20 +105,19 @@ export default defineConfig({
       : []),
   ],
   webServer: {
+    ...commonWebServer,
+    env: {
+      ...commonWebServer.env,
+      ...(process.env.CI ? { ALLOWED_TOKENS_LIST: ciAllowedTokens } : {}),
+    },
     // Exercise the production artifact (service worker, adapter output,
-    // minification) instead of the dev server. `vite preview` defaults to 4173,
-    // matching PORT above. PUBLIC_ENABLE_DEV_HARNESS unlocks the /dev/* test
-    // harnesses in the built app (404 otherwise); it's never set in the Netlify
-    // deploy. Set DEV_SERVER=1 for fast local iteration against `vite dev`.
+    // minification) instead of the dev server. PUBLIC_ENABLE_DEV_HARNESS unlocks
+    // the /dev/* test harnesses in the built app (404 otherwise); it's never set
+    // in the Netlify deploy. Set DEV_SERVER=1 for fast local iteration against
+    // `vite dev`.
     command: process.env.DEV_SERVER
-      ? `npx vite dev --port ${PORT}`
-      : `npx vite build && npx vite preview --port ${PORT}`,
-    url: baseURL,
+      ? `npx vite dev --port ${playwrightPort}`
+      : productionPreviewCommand,
     reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
-    // ADMIN_ACCESS_TOKEN is the known secret tests/admin.spec.ts signs in with.
-    // Token mutations land in the in-memory fallback (no Netlify Blobs here),
-    // so they reset with the server and never touch real data.
-    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true', ADMIN_ACCESS_TOKEN: 'test-admin-secret' },
   },
 });

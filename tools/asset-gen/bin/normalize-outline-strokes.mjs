@@ -40,16 +40,17 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';
-import { GoogleGenAI } from '@google/genai';
-import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR } from '../lib/paths.mjs';
+import { fail, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
-import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
+import { scoreEyeRings, scoreEyes } from '../lib/eye-fill.mjs';
+import { NORMALIZE_INSTRUCTION } from '../lib/prompts.mjs';
+import { formatCandidateLine } from '../lib/report.mjs';
 
-const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 92;
 const OUT_DIR = join(SAMPLES_DARK_DIR, 'normalize');
 // The candidate's ink must all lie on the reference's (no invented strokes).
@@ -57,21 +58,6 @@ const OUT_DIR = join(SAMPLES_DARK_DIR, 'normalize');
 // hair inside the old solid's footprint, which reads as new ink to the reverse
 // direction but not to the eye.
 const REVERSE_KEEP_THRESHOLD = 0.9;
-
-const INSTRUCTION = `This is a black-and-white children's COLORING PAGE — clean black outlines on a pure white background.
-
-PROBLEM: some areas of this drawing are filled with SOLID BLACK ink — for example the pupils of eyes, or other fully-black shapes. A coloring page must be made of THIN OUTLINES ONLY, so every region can be colored in.
-
-YOUR EDIT — convert every solid-black area into an outlined shape:
-- Trace the BOUNDARY of each solid-black area with the same clean, thin black stroke used everywhere else in the drawing, exactly where the solid shape's edge is now, and leave its INSIDE pure white.
-- EYES: a solid black pupil becomes an outlined pupil — EXACTLY ONE thin black circle/oval of the same size and position, white inside, plus EXACTLY ONE small thin-outlined catchlight circle inside it (where the white glare dot is now). Two circles per eye interior, NO MORE — never draw extra concentric circles, double rings, spirals, or repeated outlines inside an eye.
-- Do this for EVERY solid black area in the picture, large or small.
-
-ABSOLUTE RULES:
-- The finished page must contain NO solid black regions at all — every black mark on the page must be a thin stroke or outline.
-- Change NOTHING else. Every line that is already a thin stroke stays exactly where it is — do not move, redraw, thicken, thin, smooth, or erase it. Keep the same composition, framing, margins, and line style.
-- Do not add any new details, shapes, patterns, or decorations beyond the boundary outlines described above.
-- Output only clean black line art on a pure white background — no color, no grey, no shading.`;
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -85,54 +71,37 @@ const { values, positionals } = parseArgs({
   },
 });
 if (!positionals.length) fail('give one or more pages, e.g. "nature/ant-tall"');
-if (!values['dry-run'] && !process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
+const ai = makeClient({ optional: values['dry-run'] });
 
 // Per-page tuning resolves in the page loop — defaults, then the page's
 // fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
-function normalizeSettings(v, where) {
-  const s = {
-    baseTemp: v.temperature === undefined ? 0.3 : Number(v.temperature),
-    maxAttempts: v['max-attempts'] === undefined ? 4 : Number(v['max-attempts']),
+function normalizeSettings(v, source) {
+  const leverSettings = {
+    temperature: parseTemperature(v.temperature, '--temperature', 0.3, source),
+    'max-attempts': parsePositiveInt(v['max-attempts'], '--max-attempts', 4, source),
     notes: v.notes,
   };
-  if (!(s.baseTemp >= 0 && s.baseTemp <= 2))
-    fail(`--temperature must be between 0 and 2 (${where})`);
-  if (!(Number.isInteger(s.maxAttempts) && s.maxAttempts >= 1))
-    fail(`--max-attempts must be a positive integer (${where})`);
-  s.instruction = s.notes ? `${INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${s.notes}` : INSTRUCTION;
-  return s;
+  const instruction = leverSettings.notes
+    ? `${NORMALIZE_INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${leverSettings.notes}`
+    : NORMALIZE_INSTRUCTION;
+  return {
+    baseTemp: leverSettings.temperature,
+    maxAttempts: leverSettings['max-attempts'],
+    notes: leverSettings.notes,
+    instruction,
+    leverSettings,
+  };
 }
-normalizeSettings(values, 'cli');
-
-const ai = process.env.GEMINI_API_KEY
-  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-  : null;
+normalizeSettings(values);
 
 async function editLineArt(imageBytes, temperature, instruction) {
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          {
-            inlineData: {
-              mimeType: 'image/webp',
-              data: Buffer.from(imageBytes).toString('base64'),
-            },
-          },
-          { text: instruction },
-        ],
-      },
-    ],
-    config: {
-      abortSignal: AbortSignal.timeout(120_000),
-      ...(temperature === undefined ? {} : { temperature }),
-    },
+  const { bytes } = await generateImage(ai, {
+    imageBytes,
+    mimeType: 'image/webp',
+    prompt: instruction,
+    temperature,
   });
-  const classified = classifyGeminiResponse(response);
-  if (classified.kind !== 'image') throw new Error(`${classified.kind}: ${classified.reason}`);
-  return Buffer.from(classified.data, 'base64');
+  return bytes;
 }
 
 // Normalize the model output back to a clean black-on-white page at the source
@@ -206,11 +175,7 @@ for (const arg of positionals) {
         levers,
         fromRegistry,
         cliValues: values,
-        settings: {
-          temperature: cfg.baseTemp,
-          'max-attempts': cfg.maxAttempts,
-          notes: cfg.notes,
-        },
+        settings: cfg.leverSettings,
       })
     );
   if (values['dry-run']) continue;
@@ -222,13 +187,16 @@ for (const arg of positionals) {
   const source = await readFile(src);
   const { width, height } = await sharp(source).metadata();
   const srcSolidity = await scoreSolidity(source);
-  const srcRings = await scoreEyeRings(source);
-  if (srcSolidity.passes && srcRings.passes && !values.force) {
-    console.log(
-      `${arg}  already thin-stroke (biggest blob ${srcSolidity.biggestBlob}, ring depth ${srcRings.maxDepth}) — skipping (--force to redraw anyway)`
-    );
-    continue;
+  if (srcSolidity.passes && !values.force) {
+    const srcRings = await scoreEyeRings(source);
+    if (srcRings.passes) {
+      console.log(
+        `${arg}  already thin-stroke (biggest blob ${srcSolidity.biggestBlob}, ring depth ${srcRings.maxDepth}) — skipping (--force to redraw anyway)`
+      );
+      continue;
+    }
   }
+  const { cores: srcCores, rings: srcRings } = await scoreEyes(source);
   // An over-ringed eye's interior is REPLACEABLE (the redraw simplifies it to
   // one pupil + one catchlight), so clear it on BOTH sides of the registration
   // scoring — from the reference for the same reason solid interiors are
@@ -259,12 +227,13 @@ for (const arg of positionals) {
   let reference = await whitenSolidRegions(source, srcSolidity);
   if (srcRings.overDeep.length) reference = await whitenEyeInteriors(reference);
 
-  const srcEyeCores = (await findEyeCores(source)).cores;
+  const srcEyeCores = srcCores.cores;
 
   process.stdout.write(
     `${arg}  (blob ${srcSolidity.biggestBlob}, rings ${srcRings.maxDepth}) ... `
   );
   let best = null;
+  let overlay;
   try {
     for (let attempt = 0; attempt < cfg.maxAttempts; attempt++) {
       const temperature = Math.min(2, cfg.baseTemp + attempt * 0.15);
@@ -274,7 +243,7 @@ for (const arg of positionals) {
       const candidate = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
       const solidity = await scoreSolidity(candidate);
-      const rings = await scoreEyeRings(candidate);
+      const { cores, rings } = await scoreEyes(candidate);
       const fwd = await outlineMatch(reference, candidate);
       const revCandidate = srcRings.overDeep.length
         ? await whitenEyeInteriors(candidate)
@@ -284,10 +253,9 @@ for (const arg of positionals) {
         candidate,
         solidity,
         rings,
-        eyesPreserved: eyesPreserved(srcEyeCores, (await findEyeCores(candidate)).cores),
+        eyesPreserved: eyesPreserved(srcEyeCores, cores.cores),
         keep: fwd.keep,
         localKeep: fwd.localKeep,
-        overlay: fwd.overlay,
         reverseKeep: rev.keep,
         shift: { dx, dy },
         attempt,
@@ -295,6 +263,7 @@ for (const arg of positionals) {
       if (!best || rank(cand) > rank(best)) best = cand;
       if (passes(cand)) break;
     }
+    ({ overlay } = await outlineMatch(reference, best.candidate, { overlay: true }));
   } catch (err) {
     failures++;
     console.log(`FAILED (${err instanceof Error ? err.message : err})`);
@@ -304,11 +273,9 @@ for (const arg of positionals) {
   const dest = join(OUT_DIR, `${arg}.webp`);
   await mkdir(dirname(dest), { recursive: true });
   await writeFile(dest, best.candidate);
-  await sharp(best.overlay).toFile(dest.replace(/\.webp$/, '.overlay.png'));
+  await sharp(overlay).toFile(dest.replace(/\.webp$/, '.overlay.png'));
 
   const ok = passes(best);
-  const tries = best.attempt > 0 ? `  (${best.attempt + 1} tries)` : '';
-  const nudge = best.shift.dx || best.shift.dy ? `  shift ${best.shift.dx},${best.shift.dy}` : '';
   const warn = [];
   if (!best.solidity.passes) warn.push(`still solid (blob ${best.solidity.biggestBlob})`);
   if (!best.rings.passes) warn.push(`over-ringed (depth ${best.rings.maxDepth})`);
@@ -318,7 +285,13 @@ for (const arg of positionals) {
   if (best.reverseKeep < REVERSE_KEEP_THRESHOLD) warn.push('invented strokes');
   const stats = `blob ${srcSolidity.biggestBlob}→${best.solidity.biggestBlob}  keep ${(best.keep * 100).toFixed(1)}%  local ${(best.localKeep * 100).toFixed(1)}%  rev ${(best.reverseKeep * 100).toFixed(1)}%`;
   console.log(
-    `${stats}${nudge}${tries}${warn.length ? `  ⚠ ${warn.join(' + ')}` : ''}  -> ${relative(REPO_ROOT, dest)}`
+    formatCandidateLine({
+      stats,
+      warnings: warn,
+      attempt: best.attempt,
+      shift: best.shift,
+      outPath: dest,
+    })
   );
 
   if (values.apply) {

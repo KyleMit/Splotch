@@ -1,13 +1,9 @@
 import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
-import {
-  sessionToken,
-  verifyAdminSecret,
-  verifySessionToken,
-  buildInvites,
-} from '$lib/server/admin';
+import { sessionToken, beginAdminLogin, verifySessionToken, buildInvites } from '$lib/server/admin';
 import { getTokensStatus, addToken, removeToken } from '$lib/server/tokens';
+import type { MutationResult } from '$lib/server/tokens';
 import { getUsage } from '$lib/server/usage';
-import { rateLimit } from '$lib/server/rateLimit';
+import { ASSUME_PERSISTENT } from '$lib/adminFormat';
 import type { Actions, PageServerLoad } from './$types';
 
 // Must be server-rendered: it has form actions and validates the admin secret
@@ -64,7 +60,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
     return {
       authed: false,
       hasSession,
-      persistent: true,
+      persistent: ASSUME_PERSISTENT,
       invites: [] as { token: string; url: string }[],
     };
   }
@@ -85,19 +81,35 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
   return { authed: true, hasSession, persistent, invites };
 };
 
+// The `add`/`remove` actions differ only in which core mutation they call and
+// how they word success, so they share one body. The status mapping mirrors
+// /api/admin/tokens' mutationError: a caller-fault validation failure is 400, a
+// transient CAS conflict is 409 so both front doors answer the same underlying
+// error the same way.
+async function tokenMutation(
+  cookies: Cookies,
+  request: Request,
+  op: (token: string) => Promise<MutationResult>,
+  verb: 'Added' | 'Removed'
+) {
+  requireAdmin(cookies);
+  const form = await request.formData();
+  const token = String(form.get('token') ?? '').trim();
+  const result = await op(token);
+  if (!result.ok) return fail(result.reason === 'conflict' ? 409 : 400, { error: result.error });
+  return { success: true, message: `${verb} “${token}”` };
+}
+
 export const actions: Actions = {
   login: async ({ request, cookies, getClientAddress }) => {
-    // Throttle per IP: this is an unauthenticated oracle for guessing the admin
-    // secret, so cap brute-force bursts before checking the key — the same
-    // limiter the AI credential-verification endpoints use.
-    const { limited, retryAfter } = rateLimit(`admin-login:${getClientAddress()}`);
-    if (limited) {
-      return fail(429, { loginError: `Too many attempts. Please wait ${retryAfter}s.` });
+    const attempt = beginAdminLogin(getClientAddress());
+    if (!attempt.ok) {
+      return fail(429, { loginError: `Too many attempts. Please wait ${attempt.retryAfter}s.` });
     }
 
     const form = await request.formData();
     const key = String(form.get('access-key') ?? '');
-    if (!verifyAdminSecret(key)) {
+    if (!attempt.verify(key).ok) {
       return fail(403, { loginError: 'Incorrect access key.' });
     }
     setSession(cookies);
@@ -107,20 +119,6 @@ export const actions: Actions = {
     cookies.delete(SESSION_COOKIE, { path: '/admin' });
     throw redirect(303, '/admin');
   },
-  add: async ({ request, cookies }) => {
-    requireAdmin(cookies);
-    const form = await request.formData();
-    const token = String(form.get('token') ?? '').trim();
-    const result = await addToken(token);
-    if (!result.ok) return fail(400, { error: result.error });
-    return { success: true, message: `Added “${token}”` };
-  },
-  remove: async ({ request, cookies }) => {
-    requireAdmin(cookies);
-    const form = await request.formData();
-    const token = String(form.get('token') ?? '').trim();
-    const result = await removeToken(token);
-    if (!result.ok) return fail(400, { error: result.error });
-    return { success: true, message: `Removed “${token}”` };
-  },
+  add: ({ request, cookies }) => tokenMutation(cookies, request, addToken, 'Added'),
+  remove: ({ request, cookies }) => tokenMutation(cookies, request, removeToken, 'Removed'),
 };

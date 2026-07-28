@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { CUSTOM_SWATCH_COLOR, swatch } from './helpers';
+
 // The hex color picker trims purely via CSS media queries (no JS measurement),
 // like the palette — see palette-trim.spec.ts. These tests pin the trim
 // ladders documented in ColorPicker.svelte (ADR-0048): the short viewport
@@ -17,7 +19,7 @@ interface VisibleGrid {
 async function openPickerAt(page: Page, width: number, height: number): Promise<VisibleGrid> {
   await page.setViewportSize({ width, height });
   await page.goto('/');
-  const customSwatch = page.locator('button.color-swatch[data-color="custom"]');
+  const customSwatch = swatch(page, CUSTOM_SWATCH_COLOR);
   await expect(async () => {
     await customSwatch.click({ timeout: 1000 });
     await expect(page.locator('#color-picker')).toBeVisible({ timeout: 1000 });

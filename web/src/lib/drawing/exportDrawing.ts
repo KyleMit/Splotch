@@ -10,7 +10,7 @@
 // stroke snapshot is taken synchronously by engine.exportCanvasBlob BEFORE the
 // module load's await, so a clear racing the export can't blank it.
 
-import { PAPER_COLORS } from '../theme';
+import { PAPER_COLORS, type ResolvedTheme } from '../theme';
 import { resolvedTheme } from '../state/appearance.svelte';
 
 export interface ExportOptions {
@@ -46,7 +46,7 @@ async function paintPaperBackground(
   w: number,
   h: number,
   includePaperTexture: boolean,
-  theme: 'light' | 'dark'
+  theme: ResolvedTheme
 ) {
   target.fillStyle = PAPER_COLORS[theme];
   target.fillRect(0, 0, w, h);
@@ -85,7 +85,7 @@ function drawOverlayContained(
   overlay: HTMLImageElement,
   w: number,
   h: number,
-  theme: 'light' | 'dark'
+  theme: ResolvedTheme
 ) {
   if (overlay.naturalWidth === 0 || overlay.naturalHeight === 0) return;
   const scale = Math.min(w / overlay.naturalWidth, h / overlay.naturalHeight);

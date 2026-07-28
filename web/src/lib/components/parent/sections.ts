@@ -1,5 +1,6 @@
 import type { IconName } from '../icon-names';
-import { settings } from '$lib/state/settings.svelte';
+import { APP_VERSION } from '$lib/appVersion';
+import { aiCredentialKind, settings } from '$lib/state/settings.svelte';
 
 // The Parent Center is one flat list of sections (ADR-0061). Both shells — the
 // phone hub with full-page drill-in and the tablet sidebar + content pane —
@@ -37,7 +38,10 @@ export const SECTIONS: SectionMeta[] = [
   { id: 'about', label: 'About', icon: 'splotchy' },
 ];
 
-const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
+// Reveal timing shared by every conditional settings block inside a section.
+// It lives here rather than in tokens.css because `transition:slide` takes a JS
+// number, not a `var(--duration-*)` string.
+export const SECTION_SLIDE = { duration: 220 };
 
 const THEME_LABEL = { light: 'Light', dark: 'Dark', system: 'System' } as const;
 
@@ -61,10 +65,12 @@ export function sectionSubtitle(id: SectionId): string {
       return settings.saveOnDeleteEnabled ? 'Auto-save on' : 'Auto-save off';
     case 'controls':
       return settings.advancedControlsEnabled ? 'Advanced controls on' : 'Standard controls';
-    case 'ai':
-      if (settings.aiUserApiKey) return settings.aiImageEnabled ? 'Your Gemini key' : 'Turned off';
-      if (settings.aiAccessToken) return settings.aiImageEnabled ? 'Access code' : 'Turned off';
-      return 'Not set up';
+    case 'ai': {
+      const kind = aiCredentialKind();
+      if (kind === 'none') return 'Not set up';
+      if (!settings.aiImageEnabled) return 'Turned off';
+      return kind === 'apiKey' ? 'Your Gemini key' : 'Access code';
+    }
     case 'setup':
       return 'Install & lock the app';
     case 'whatsnew':

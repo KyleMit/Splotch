@@ -11,6 +11,17 @@
         ]
       }
     ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/precompact-burndown-snapshot.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [
@@ -23,6 +34,15 @@
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-branch-preview.sh"
           }
         ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-burndown-snapshot.sh"
+          }
+        ]
       }
     ]
   },
@@ -32,12 +52,8 @@
       "Bash(npm test*)",
       "Bash(npm ci)",
       "Bash(npm install)",
-      "Bash(npm install *)",
       "Bash(npx *)",
-      "Bash(node scripts/*)",
       "Bash(node scripts/**)",
-      "Bash(node --check *)",
-      "Bash(node --input-type=module -e *)",
 
       "Bash(git status*)",
       "Bash(git log*)",
@@ -45,23 +61,16 @@
       "Bash(git show *)",
       "Bash(git branch*)",
       "Bash(git stash list)",
-      "Bash(git rm *)",
 
       "Bash(grep *)",
       "Bash(rg *)",
       "Bash(ls *)",
       "Bash(cat *)",
-      "Bash(find *)",
       "Bash(head *)",
       "Bash(tail *)",
       "Bash(wc *)",
       "Bash(echo *)",
-      "Bash(sed *)",
       "Bash(jq *)",
-
-      "Bash(curl -s * http://localhost:*)",
-      "Bash(curl -s -i * http://localhost:*)",
-      "Bash(curl -s -o /dev/null * http://localhost:*)",
 
       "Bash(adb *)",
       "Bash(xcrun simctl *)",
@@ -69,7 +78,6 @@
       "Bash(xcodebuild -version)",
       "Bash(pod --version)",
       "Bash(ruby --version)",
-      "Bash(afplay *)",
 
       "Skill(update-config)",
       "Skill(update-config:*)",

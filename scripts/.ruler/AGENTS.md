@@ -9,12 +9,15 @@
   scattering them. Scripts bound to one platform by nature (`ios-simulator-smoke.mjs` needs Xcode)
   must fail fast with a clear message elsewhere.
 * Shared helpers live in `scripts/lib/` — `android.mjs` resolves the SDK and AVD locations per
-  platform (override the SDK with `ANDROID_HOME` or `ANDROID_SDK_ROOT`); `utils.mjs` has the common
-  run/log helpers (including `sh()` for a rejecting, shell-based command runner, and `waitForUrl()`
-  for polling a URL until ready) plus the Maestro location; `vite-server.mjs` spawns a throwaway
+  platform (override the SDK with `ANDROID_HOME` or `ANDROID_SDK_ROOT`); `proc.mjs` has the common
+  process/CLI helpers (`run`/`capture`/`fail`, `sh()` for a rejecting, shell-based command runner,
+  env and arg handling, the OS opener); `net.mjs` has `waitForUrl()` for polling a URL until ready;
+  `playwright.mjs` resolves the Chromium binary; `maestro.mjs` the Maestro location;
+  `frontmatter.mjs` the release frontmatter/semver parsing; `vite-server.mjs` spawns a throwaway
   vite dev/preview server in a detached process group so `stop()` can't orphan the vite grandchild;
   `smoke.mjs` has the `check()`/`fatal()`/`summarize()` pass-fail reporter shared by the smoke
-  tests. Check there before writing new glue.
+  tests, and `adminClient.mjs` the `/api/admin` login + token-CRUD request plumbing they both drive.
+  Check there before writing new glue.
 * TypeScript-flavored scripts run via `node --experimental-strip-types` (see the `check:assets` npm
   script).
 * Env vars in npm scripts are set inline (`VAR=value cmd`) — no `cross-env`, since scripts run only
@@ -27,15 +30,21 @@
   `tools/asset-gen/CLAUDE.md`. The **coloring-page pipeline** (pen/chalk outlines → fills → punch,
   gates, per-category runbook) lives in `tools/asset-gen/docs/pipeline.md` — read it before
   generating more.
-* `scripts/audit-burndown/` is the scripted bulk burndown of `docs/AUDIT.md` (the `burn-down-audits`
-  skill — read it before touching these): `burndown.mjs` drives one one-shot `claude -p` session per
-  role per finding (verify → implement → adversarial review → fix); `pop.mjs` is the **only** thing
-  that reads or edits `docs/AUDIT.md` at that scale; `lib.mjs` holds the shared runners, which
-  deliberately return status instead of exiting (the driver handles every failure itself — don't
-  swap them for `run()`/`capture()`); `prompts/*.md` are the role system prompts. Entry points are
-  the `audit:*` npm scripts. The `AUDIT.md` surgery is locked by
-  `scripts/tests/audit-burndown-lib.test.mjs` (`npm run test:scripts`, in CI) — extend that test
-  when touching `lib.mjs`'s parsing or seam logic.
+* `scripts/audit-burndown/` is the scripted bulk burndown of `docs/AUDIT.md` (the runner-specific
+  `burn-down-audits` skill — read the one for the active agent before touching these). Its Claude
+  package under `.claude/` and Codex package under `.agents/` are direct sources maintained
+  independently; do not edit it through Ruler or sync one provider from the other. `burndown.mjs`
+  drives one isolated Claude Code or Codex session per role per finding (verify → implement →
+  adversarial review → fix); `agent-runner.mjs` owns native auth, invocation, session-resume, model
+  defaults, and output normalization; `pop.mjs` is the **only** thing that reads or edits
+  `docs/AUDIT.md` at that scale; `lib.mjs` holds the shared state helpers, which deliberately return
+  status instead of exiting. `prompts/*.md` are runner-neutral role prompts. Entry points are the
+  `audit:*` npm scripts. The backlog surgery and runner seam are locked by
+  `scripts/tests/audit-burndown-*.test.mjs` (`npm run test:scripts`, in CI).
+* `ruler-apply.mjs` snapshots and restores the direct provider skill paths around Ruler's atomic
+  skill-tree replacement, including on failure. `apply-ruler-skill-forks.mjs` then replaces complete
+  generated packages for any Ruler-managed exceptional skills. The focused
+  `scripts/tests/ruler-*.test.mjs` files lock both seams.
 * The app-driving `gen:*` generators that stay here — `gen:shots` (`store-shots.mjs`) and
   `gen:large-image` (`gen-large-image.mjs`) — drive the live app by selector through
   `scripts/lib/app-driver.mjs` and only run on demand, so that module rots silently when app markup,

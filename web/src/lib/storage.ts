@@ -1,6 +1,9 @@
 import { browser } from '$app/environment';
 import { isNative } from './platform';
 import { lazyPluginModule } from './nativePlugin';
+import { STORAGE_KEYS, type StorageKey } from './storageKeys';
+
+export { STORAGE_KEYS, type StorageKey } from './storageKeys';
 
 // Storage is dual-layer so the web app and the native apps share one code path:
 //
@@ -15,19 +18,12 @@ import { lazyPluginModule } from './nativePlugin';
 // On the web, isNative() is false and the Preferences layer is skipped entirely
 // — behaviour is identical to before.
 
-// Every key that flows through read*/write* is remembered so the durable layer
-// knows exactly what to back up and restore. State stores read their keys at
-// init (before hydrate runs), so this set is complete by then.
-const managedKeys = new Set<string>();
+const hydrationKeys: StorageKey[] = Object.values(STORAGE_KEYS);
 
-function track(key: string) {
-  managedKeys.add(key);
-}
-
-// Restore-side counterpart to managedKeys: each persisted store registers its
-// reloader here at module init, so hydrateDurableStorage() can refresh every
-// live store after a native recovery without a hand-maintained call-site list
-// (issue #521). Returns a disposer, mainly so tests can unregister.
+// Each persisted store registers its reloader here at module init, so
+// hydrateDurableStorage() can refresh every live store after a native recovery
+// without a hand-maintained call-site list (issue #521). Returns a disposer,
+// mainly so tests can unregister.
 const durableRestoreCallbacks = new Set<() => void>();
 
 export function onDurableRestore(cb: () => void) {
@@ -40,13 +36,13 @@ export function onDurableRestore(cb: () => void) {
 // inside every settings setX handler, so an escaping throw would break the toggle
 // that triggered it. Swallow the failure (the native durable mirror still backs
 // the value up) and warn at most once so we don't spam the console.
-let storageWarned = false;
-function safeLocalStorage(op: () => void) {
+let storageMutationWarned = false;
+function safeStorageMutation(op: () => void) {
   try {
     op();
   } catch (err) {
-    if (!storageWarned) {
-      storageWarned = true;
+    if (!storageMutationWarned) {
+      storageMutationWarned = true;
       console.warn('localStorage write failed; relying on durable mirror', err);
     }
   }
@@ -57,12 +53,13 @@ function safeLocalStorage(op: () => void) {
 // iframes, private-mode WebViews). Reads run at module init inside $state
 // initializers, so an escaping throw would kill hydration; return the caller's
 // fallback instead — the same degrade model as the app.html boot script.
-function safeRead<T>(read: () => T, fallback: T): T {
+let storageReadWarned = false;
+function safeStorageRead<T>(read: () => T, fallback: T): T {
   try {
     return read();
   } catch (err) {
-    if (!storageWarned) {
-      storageWarned = true;
+    if (!storageReadWarned) {
+      storageReadWarned = true;
       console.warn('localStorage read failed; using fallback', err);
     }
     return fallback;
@@ -80,71 +77,75 @@ const getPrefs = lazyPluginModule(() =>
     : Promise.reject(new Error('native-only plugin'))
 );
 
-// Fire-and-forget durable mirror. Never throws into the caller — a failed
-// durable write just means we fall back to the localStorage copy. The literal
-// __IS_CAPACITOR__ guards (here and below) make the Preferences paths
-// compile-time dead on web so Rollup drops the plugin chunk; isNative() alone
-// is a runtime check it can't tree-shake.
-function mirror(key: string, value: string) {
-  if (__IS_CAPACITOR__ && isNative()) {
-    getPrefs()
-      .then(({ Preferences }) => Preferences.set({ key, value: String(value) }))
-      .catch(() => {});
+type DurablePreferences = Awaited<ReturnType<typeof getPrefs>>['Preferences'];
+
+async function runWithDurablePreferences<T>(
+  operation: (preferences: DurablePreferences) => Promise<T>
+): Promise<T | undefined> {
+  if (!__IS_CAPACITOR__ || !isNative()) return undefined;
+  try {
+    const { Preferences } = await getPrefs();
+    return await operation(Preferences);
+  } catch {
+    return undefined;
   }
 }
 
-export function readBool(key: string, fallback: boolean): boolean {
-  track(key);
+// Fire-and-forget durable mirror. Never throws into the caller — a failed
+// durable write just means we fall back to the localStorage copy.
+function mirror(key: StorageKey, value: string) {
+  void runWithDurablePreferences((Preferences) => Preferences.set({ key, value }));
+}
+
+export function readBool(key: StorageKey, fallback: boolean): boolean {
   if (!browser) return fallback;
-  return safeRead(() => {
+  return safeStorageRead(() => {
     const raw = localStorage.getItem(key);
-    if (raw === null) return fallback;
-    return raw === 'true';
+    if (raw === 'true') return true;
+    if (raw === 'false') return false;
+    return fallback;
   }, fallback);
 }
 
-export function writeBool(key: string, value: boolean) {
-  track(key);
+export function writeBool(key: StorageKey, value: boolean) {
   if (!browser) return;
   const str = value ? 'true' : 'false';
-  safeLocalStorage(() => localStorage.setItem(key, str));
+  safeStorageMutation(() => localStorage.setItem(key, str));
   mirror(key, str);
 }
 
-export function readString<T extends string | null>(key: string, fallback: T): string | T {
-  track(key);
+export function readString(key: StorageKey, fallback: string): string;
+export function readString(key: StorageKey, fallback: null): string | null;
+export function readString(key: StorageKey, fallback: string | null): string | null {
   if (!browser) return fallback;
-  return safeRead(() => {
+  return safeStorageRead(() => {
     const raw = localStorage.getItem(key);
     return raw === null ? fallback : raw;
   }, fallback);
 }
 
-export function writeString(key: string, value: string) {
-  track(key);
+export function writeString(key: StorageKey, value: string) {
   if (!browser) return;
-  safeLocalStorage(() => localStorage.setItem(key, value));
+  safeStorageMutation(() => localStorage.setItem(key, value));
   mirror(key, value);
 }
 
 // Delete a key from localStorage and, on native, its durable Preferences mirror.
 // Used to scrub a value that has moved elsewhere (e.g. a plaintext API key that's
 // been migrated into secure storage).
-export function removeKey(key: string) {
-  track(key);
+export function removeKey(key: StorageKey) {
   if (!browser) return;
-  safeLocalStorage(() => localStorage.removeItem(key));
-  if (__IS_CAPACITOR__ && isNative()) {
-    getPrefs()
-      .then(({ Preferences }) => Preferences.remove({ key }))
-      .catch(() => {});
-  }
+  safeStorageMutation(() => localStorage.removeItem(key));
+  void runWithDurablePreferences((Preferences) => Preferences.remove({ key }));
 }
 
-export function readInt(key: string, fallback: number, allowed: number[] | null = null): number {
-  track(key);
+export function readInt(
+  key: StorageKey,
+  fallback: number,
+  allowed: readonly number[] | null = null
+): number {
   if (!browser) return fallback;
-  return safeRead(() => {
+  return safeStorageRead(() => {
     const raw = parseInt(localStorage.getItem(key) ?? '', 10);
     if (Number.isNaN(raw)) return fallback;
     if (allowed && !allowed.includes(raw)) return fallback;
@@ -152,12 +153,21 @@ export function readInt(key: string, fallback: number, allowed: number[] | null 
   }, fallback);
 }
 
-export function writeInt(key: string, value: number) {
-  track(key);
+export function writeInt(key: StorageKey, value: number) {
   if (!browser) return;
   const str = String(value);
-  safeLocalStorage(() => localStorage.setItem(key, str));
+  safeStorageMutation(() => localStorage.setItem(key, str));
   mirror(key, str);
+}
+
+export function reconcileStorageValues(local: string | null, durable: string | null) {
+  if (local === null && durable !== null) return { restore: durable };
+  if (local !== null && durable === null) return { backup: local };
+  return {};
+}
+
+function notifyDurableRestore() {
+  for (const cb of durableRestoreCallbacks) cb();
 }
 
 /**
@@ -168,34 +178,31 @@ export function writeInt(key: string, value: number) {
  */
 export async function hydrateDurableStorage() {
   let restored = false;
-  if (__IS_CAPACITOR__ && isNative()) {
-    try {
-      const { Preferences } = await getPrefs();
-      // Fire every durable get concurrently rather than one serial bridge
-      // round-trip per key — ~15 keys on the cold-start critical path.
-      const keys = [...managedKeys];
-      const durable = await Promise.all(keys.map((key) => Preferences.get({ key })));
-      const backups: Promise<unknown>[] = [];
-      keys.forEach((key, i) => {
-        const local = localStorage.getItem(key);
-        const { value } = durable[i];
-        if (local === null && value !== null) {
-          localStorage.setItem(key, value); // WebView lost it — recover from durable store
-          restored = true;
-        } else if (local !== null && value === null) {
-          backups.push(Preferences.set({ key, value: local })); // back up the existing value
-        }
-      });
-      await Promise.all(backups);
-    } catch {
-      // If the durable layer is unavailable we simply keep the localStorage copy.
-    }
-  }
+  const completedRestore = await runWithDurablePreferences(async (Preferences) => {
+    // Fire every durable get concurrently rather than one serial bridge
+    // round-trip per declared key on the cold-start critical path.
+    const durable = await Promise.all(hydrationKeys.map((key) => Preferences.get({ key })));
+    const backups: Promise<unknown>[] = [];
+    hydrationKeys.forEach((key, i) => {
+      const local = localStorage.getItem(key);
+      const { value } = durable[i];
+      const action = reconcileStorageValues(local, value);
+      if (action.restore !== undefined) {
+        localStorage.setItem(key, action.restore); // WebView lost it — recover from durable store
+        restored = true;
+      } else if (action.backup !== undefined) {
+        backups.push(Preferences.set({ key, value: action.backup })); // back up the existing value
+      }
+    });
+    await Promise.all(backups);
+    return restored;
+  });
+  if (completedRestore !== undefined) restored = completedRestore;
   // localStorage is now repopulated, so every registered reloader re-reads fresh
   // values. Only fire when something actually changed — a no-op restore leaves
   // the live stores untouched.
   if (restored) {
-    for (const cb of durableRestoreCallbacks) cb();
+    notifyDurableRestore();
   }
   return restored;
 }

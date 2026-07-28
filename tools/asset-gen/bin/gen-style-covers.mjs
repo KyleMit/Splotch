@@ -12,43 +12,21 @@ import { parseArgs } from 'node:util';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
-import { GoogleGenAI } from '@google/genai';
-import { STYLES_DIR, fail } from '../lib/paths.mjs';
+import { STYLES_DIR } from '../lib/paths.mjs';
+import { fail, parseTemperature } from '../lib/cli.mjs';
+import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { STYLE_SUFFIXES, STYLE_NAMES } from '../../../web/src/lib/ai/styles.ts';
 import { buildPromptForStyle } from '../../../web/src/lib/ai/prompt.ts';
-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
-const MODEL = 'gemini-3.1-flash-image';
 const SOURCE_SVG = join(STYLES_DIR, 'source.svg');
 const THUMB_SIZE = 448;
 const WEBP_QUALITY = 75;
 
 // Generate one styled render of a drawing. Returns raw image bytes + mime type,
-// or throws with the refusal/empty reason. Kept free of file/CLI concerns so it
-// can migrate toward in-app use later.
-export async function generateStyledImage(ai, { imageBytes, mimeType, style, temperature }) {
+// or throws with the refusal/empty reason.
+async function generateStyledImage(ai, { imageBytes, mimeType, style, temperature }) {
   const prompt = buildPromptForStyle(style, STYLE_SUFFIXES);
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          { inlineData: { mimeType, data: Buffer.from(imageBytes).toString('base64') } },
-          { text: prompt },
-        ],
-      },
-    ],
-    config: {
-      abortSignal: AbortSignal.timeout(120_000),
-      ...(temperature === undefined ? {} : { temperature }),
-    },
-  });
-  const classified = classifyGeminiResponse(response);
-  if (classified.kind !== 'image') {
-    throw new Error(`${classified.kind}: ${classified.reason}`);
-  }
-  return { bytes: Buffer.from(classified.data, 'base64'), mimeType: classified.mimeType };
+  return generateImage(ai, { imageBytes, mimeType, prompt, temperature });
 }
 
 function resolveStyle(name) {
@@ -65,18 +43,12 @@ const { values } = parseArgs({
 });
 
 const styles = values.style?.length ? values.style.map(resolveStyle) : STYLE_NAMES;
-const temperature = values.temperature === undefined ? undefined : Number(values.temperature);
-if (temperature !== undefined && !(temperature >= 0 && temperature <= 2)) {
-  fail(`--temperature must be a number between 0 and 2, got "${values.temperature}"`);
-}
-if (!process.env.GEMINI_API_KEY) {
-  fail('GEMINI_API_KEY is not set.');
-}
+const temperature = parseTemperature(values.temperature, '--temperature', undefined);
+const ai = makeClient();
 
 const sourcePng = await sharp(await readFile(SOURCE_SVG))
   .png()
   .toBuffer();
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 let failures = 0;
 for (const style of styles) {

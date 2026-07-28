@@ -1,0 +1,43 @@
+name: Feature Request
+description: Suggest an idea for Splotch
+title: '[FEATURE] '
+labels:
+  - type:feature
+body:
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Feature description
+      description: Clearly describe the feature you would like to see.
+    validations:
+      required: true
+  - type: dropdown
+    id: target-user
+    attributes:
+      label: Target user
+      options:
+        - Toddler or child using the app
+        - Parent managing the app
+        - Both
+    validations:
+      required: true
+  - type: textarea
+    id: problem-it-solves
+    attributes:
+      label: Problem it solves
+      description: What problem would this feature solve? Is it related to something frustrating?
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed solution
+      description: How would you like this to work?
+  - type: textarea
+    id: alternatives-considered
+    attributes:
+      label: Alternatives considered
+      description: Have you considered any alternative solutions or features?
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any other context, mockups, or examples.

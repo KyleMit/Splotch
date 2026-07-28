@@ -1,6 +1,8 @@
 import { json } from '@sveltejs/kit';
 import { rateLimit } from '$lib/server/rateLimit';
-import { readJsonBody, throttled } from '$lib/server/http';
+import { reportBucket } from '$lib/server/rateLimitKeys';
+import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
+import { asRecord, readJsonBody, throttled } from '$lib/server/http';
 import { createIssue, escapeIssueMarkdown, isReportingConfigured } from '$lib/server/github';
 import { describeDeviceInfo, sanitizeDeviceInfo, type DeviceInfo } from '$lib/deviceReport';
 import type { RequestHandler } from './$types';
@@ -53,13 +55,13 @@ function bodyFor(kind: Kind, message: string, device: DeviceInfo | null): string
  * write; the limit is deliberately tighter than the read-only oracles.
  */
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-  const { limited, retryAfter } = rateLimit(`report:${getClientAddress()}`, {
-    limit: 5,
-    windowMs: 60_000,
-  });
+  const { limited, retryAfter } = rateLimit(
+    reportBucket(getClientAddress()),
+    rateLimitPolicy.report
+  );
   if (limited) return throttled(retryAfter);
 
-  const body = await readJsonBody(request);
+  const body = asRecord(await readJsonBody(request));
 
   // Honeypot: a hidden field no human fills. If it's populated, quietly accept
   // without creating an issue — a bot gets no signal and no issue lands.

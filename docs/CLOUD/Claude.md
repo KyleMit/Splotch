@@ -134,9 +134,11 @@ turns up empty or half-installed.
 **npm-version note:** `package-lock.json` is authored by npm 11 (local dev), but the container image
 ships npm 10, and the two majors rewrite lockfile metadata in incompatible dialects (they disagree
 on optional-peer entries, so no lockfile shape satisfies both — `--no-save` doesn't prevent the
-rewrite either). Two layers keep sessions clean: the setup script pins `npm@11` globally so the
-churn never happens, and the hook discards any lockfile diff its install produces (only when the
-lockfile was clean beforehand, so real in-session lockfile edits survive a resume).
+rewrite either). The pin runs through `npx -y npm@11` because letting npm 10 self-update in place
+can die halfway with `MODULE_NOT_FOUND` on its own half-overwritten files. Two layers keep sessions
+clean: the setup script pins `npm@11` globally so the churn never happens, and the hook discards any
+lockfile diff its install produces (only when the lockfile was clean beforehand, so real in-session
+lockfile edits survive a resume).
 
 ### Recommended setup script (environment config)
 

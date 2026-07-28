@@ -15,6 +15,7 @@ import sharp from 'sharp';
 
 const ALIGN_MAX = 12; // search radius (px) for the registration nudge
 const ALIGN_W = 1000; // work resolution for the correlation
+const EDGE_MIN = 60; // min |gradient| to treat a source pixel as a registration edge
 
 async function grayRaw(buf, w, h) {
   const { data } = await sharp(buf)
@@ -44,7 +45,7 @@ export async function alignToSource(candidateBuf, sourceBuf, width, height) {
   const idx = [];
   const wt = [];
   for (let i = 0; i < srcE.length; i++) {
-    if (srcE[i] > 60) {
+    if (srcE[i] > EDGE_MIN) {
       idx.push(i);
       wt.push(srcE[i]);
     }

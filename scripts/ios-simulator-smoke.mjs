@@ -3,15 +3,16 @@
 // flow, then shuts the simulator down if this script booted it. This is
 // `npm run test:ios`.
 //
-// It's just simulator-lifecycle glue: Maestro does the actual assertions
-// (.maestro/smoke.yaml — the same flow the Android smoke test runs).
+// It's just simulator-lifecycle glue: Maestro does the actual assertions (the
+// shared flow in lib/native-smoke.mjs — the same one the Android smoke runs).
 //
 // Requires macOS with full Xcode (simulators ship with it) and Maestro.
 
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
-import { ROOT, fail, sh, maestroPath } from './lib/utils.mjs';
+import { ROOT, fail, sh } from './lib/proc.mjs';
+import { runMaestroSmoke } from './lib/native-smoke.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -60,7 +61,7 @@ try {
     APP_DIR
   );
   await simctl('install', device.udid, APP_PATH);
-  await sh(`"${maestroPath()}" --device ${device.udid} test .maestro/smoke.yaml`);
+  await runMaestroSmoke({ device: device.udid });
 } finally {
   if (bootedByUs) {
     console.log(`Shutting down ${device.name}`);

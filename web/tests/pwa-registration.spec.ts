@@ -4,7 +4,7 @@ import { draw, gotoApp } from './helpers';
 // Issue #462: the service worker precaches the full offline bundle (~39 MB of
 // coloring-page variants), so registration no longer happens at load — it
 // waits behind the same "a few strokes drawn" signal the Install Banner uses
-// (STROKES_BEFORE_SW_REGISTER), then lands at idle. This pins both sides of
+// (SETTLED_IN_STROKES), then lands at idle. This pins both sides of
 // the gate: no sw.js request or registration before the third stroke, and the
 // third stroke arms it. A repeat visit must not wait for strokes — the SW from
 // the previous session keeps controlling the page from load.

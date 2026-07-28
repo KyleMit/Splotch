@@ -10,10 +10,12 @@
 // Requires GEMINI_API_KEY. Uses gemini-3.1-flash-image as the author.
 
 import { GoogleGenAI } from '@google/genai';
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, PALETTE, PAPER, CHROMIUM_PATH } from './lib/model-eval.mjs';
+import { ROOT, PALETTE, PAPER } from './lib/model-eval.mjs';
+import { chromiumExecutablePath } from './lib/playwright.mjs';
+import { requireEnv } from './lib/proc.mjs';
 
 const OUT = join(ROOT, 'web/tests/model-eval/inputs');
 const AUTHOR_MODEL = 'gemini-3.1-flash-image';
@@ -54,13 +56,10 @@ const PROMPTS = [
 ];
 
 async function main() {
-  if (!process.env.GEMINI_API_KEY) {
-    console.error('Missing GEMINI_API_KEY');
-    process.exit(1);
-  }
+  requireEnv('GEMINI_API_KEY', 'set it in .env or export it');
   mkdirSync(OUT, { recursive: true });
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  const browser = await chromium.launch({ executablePath: CHROMIUM_PATH });
+  const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
   const page = await browser.newPage();
 
   for (const p of PROMPTS) {

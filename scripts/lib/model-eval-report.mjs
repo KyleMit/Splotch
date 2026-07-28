@@ -10,7 +10,8 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { MODELS, RATES } from './model-eval.mjs';
-import { esc, chromeStyle, masthead, siteFooter } from './scrapbook-chrome.mjs';
+import { esc } from './html.mjs';
+import { chromeStyle, masthead, siteFooter } from './scrapbook-chrome.mjs';
 
 const usd = (n) => (n == null ? '—' : '$' + n.toFixed(4));
 const kb = (n) => (n == null ? '—' : (n / 1024).toFixed(0) + ' KB');

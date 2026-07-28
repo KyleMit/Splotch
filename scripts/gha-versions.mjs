@@ -19,8 +19,8 @@
 
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { ROOT } from './lib/utils.mjs';
+import { parseArgs } from 'node:util';
+import { isMain, ROOT } from './lib/proc.mjs';
 
 const WORKFLOWS_DIR = join(ROOT, '.github', 'workflows');
 
@@ -105,9 +105,11 @@ function refSummary(refs) {
 }
 
 async function main() {
-  const args = process.argv.slice(2);
-  const checkLatest = args.includes('--check-latest');
-  const asJson = args.includes('--json');
+  const { values } = parseArgs({
+    options: { 'check-latest': { type: 'boolean' }, json: { type: 'boolean' } },
+  });
+  const checkLatest = values['check-latest'];
+  const asJson = values.json;
 
   const files = listWorkflowFiles();
   const inventory = buildInventory(files);
@@ -189,6 +191,6 @@ async function main() {
 
 // Only drive the CLI when run directly — importing this module for its parsing
 // helpers (e.g. tests) must not print a report.
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+if (isMain(import.meta.url)) {
   main();
 }

@@ -1,12 +1,9 @@
-// Drift guard for the ruler-generated agent files (ADR-0058). Every
-// CLAUDE.md/AGENTS.md plus the .claude/skills/ and .agents/skills/ trees are
-// generated from .ruler/ sources and committed, so CI re-applies and fails if
-// git sees any resulting change (modified or untracked) — that means a .ruler
-// edit landed without `npm run ruler:apply`, or a generated file was edited
-// directly. The .ruler/ sources themselves are excluded so local uncommitted
-// source edits don't read as drift once they've been applied.
+// Drift guard for ruler-generated agent files (ADR-0058). CI re-applies Ruler
+// and fails if generated output changes. The provider-specific
+// burn-down-audits packages and notes are direct tracked sources, so their four
+// paths are excluded alongside .ruler itself.
 
-import { run, capture, fail } from './lib/utils.mjs';
+import { run, capture, fail } from './lib/proc.mjs';
 
 run('npm', ['run', 'ruler:apply']);
 
@@ -15,7 +12,13 @@ const generatedPathspecs = [
   '*AGENTS.md',
   '.claude/skills',
   '.agents/skills',
+  '.claude/skill-notes',
+  '.agents/skill-notes',
   ':(exclude).ruler',
+  ':(exclude).claude/skills/burn-down-audits',
+  ':(exclude).agents/skills/burn-down-audits',
+  ':(exclude).claude/skill-notes/burn-down-audits.md',
+  ':(exclude).agents/skill-notes/burn-down-audits.md',
 ];
 // Only worktree-side changes (second status column) and untracked files count
 // as drift — an entry that is merely staged means the apply changed nothing.
@@ -33,7 +36,8 @@ if (drift) {
       drift,
       '',
       'Run `npm run ruler:apply` and commit the regenerated files.',
-      'Never edit CLAUDE.md/AGENTS.md or the skill copies directly — edit .ruler/** instead.',
+      'Never edit generated files directly — edit .ruler/** instead.',
+      'The direct provider-specific burn-down-audits packages are the only exception.',
     ].join('\n')
   );
 }

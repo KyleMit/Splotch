@@ -1,5 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { coloringBookState, setOverlayPage, clearOverlay } from './coloringBook.svelte';
+import {
+  coloringBookState,
+  setOverlayPage,
+  setOverlayOrientation,
+  overlayUrl,
+  chalkUrl,
+  colorSheetUrl,
+  nightSheetUrl,
+  clearOverlay,
+} from './coloringBook.svelte';
 import { BOOKS, bookAssetPaths, pageNightImage, pageChalkImage } from './books';
 
 const page = BOOKS[0].pages[0];
@@ -15,25 +24,32 @@ describe('coloring book state', () => {
 
   it('setOverlayPage tracks the line art and the colored fill together', () => {
     setOverlayPage(page, 'landscape');
-    expect(coloringBookState.overlayUrl).toBe(page.images.landscape);
-    expect(coloringBookState.colorSheetUrl).toBe(page.colorImages.landscape);
+    expect(overlayUrl()).toBe(page.images.landscape);
+    expect(colorSheetUrl()).toBe(page.colorImages.landscape);
     expect(coloringBookState.overlayPage?.id).toBe(page.id);
   });
 
-  it('swaps both URLs to the orientation fill on rotation', () => {
-    setOverlayPage(page, 'landscape');
-    setOverlayPage(page, 'portrait');
-    expect(coloringBookState.overlayUrl).toBe(page.images.portrait);
-    expect(coloringBookState.colorSheetUrl).toBe(page.colorImages.portrait);
+  it('updates every asset accessor when only the orientation changes', () => {
+    setOverlayPage(spacePage, 'landscape');
+    expect(overlayUrl()).toBe(spacePage.images.landscape);
+    expect(chalkUrl()).toBe(spacePage.chalkImages.landscape);
+    expect(colorSheetUrl()).toBe(spacePage.colorImages.landscape);
+    expect(nightSheetUrl()).toBe(spacePage.nightImages.landscape);
+
+    setOverlayOrientation('portrait');
+    expect(overlayUrl()).toBe(spacePage.images.portrait);
+    expect(chalkUrl()).toBe(spacePage.chalkImages.portrait);
+    expect(colorSheetUrl()).toBe(spacePage.colorImages.portrait);
+    expect(nightSheetUrl()).toBe(spacePage.nightImages.portrait);
   });
 
   it('clearOverlay drops the line art, the chalk, the color sheet, and the night sheet', () => {
     setOverlayPage(spacePage, 'portrait');
     clearOverlay();
-    expect(coloringBookState.overlayUrl).toBeNull();
-    expect(coloringBookState.chalkUrl).toBeNull();
-    expect(coloringBookState.colorSheetUrl).toBeNull();
-    expect(coloringBookState.nightSheetUrl).toBeNull();
+    expect(overlayUrl()).toBeNull();
+    expect(chalkUrl()).toBeNull();
+    expect(colorSheetUrl()).toBeNull();
+    expect(nightSheetUrl()).toBeNull();
     expect(coloringBookState.overlayPage).toBeNull();
   });
 
@@ -50,20 +66,18 @@ describe('coloring book state', () => {
     // Space ships night fills for both orientations (ADR-0052 direction B),
     // derived from the line-art path.
     setOverlayPage(spacePage, 'portrait');
-    expect(coloringBookState.nightSheetUrl).toBe(spacePage.nightImages.portrait);
-    expect(coloringBookState.nightSheetUrl).toBe(
-      spacePage.images.portrait.replace('.outline.webp', '.night.webp')
-    );
-    setOverlayPage(spacePage, 'landscape');
-    expect(coloringBookState.nightSheetUrl).toBe(spacePage.nightImages.landscape);
-    expect(coloringBookState.nightSheetUrl).toBe(
+    expect(nightSheetUrl()).toBe(spacePage.nightImages.portrait);
+    expect(nightSheetUrl()).toBe(spacePage.images.portrait.replace('.outline.webp', '.night.webp'));
+    setOverlayOrientation('landscape');
+    expect(nightSheetUrl()).toBe(spacePage.nightImages.landscape);
+    expect(nightSheetUrl()).toBe(
       spacePage.images.landscape.replace('.outline.webp', '.night.webp')
     );
   });
 
   it('pages without a night fill track a null night sheet', () => {
     setOverlayPage(pageWithoutNight, 'portrait');
-    expect(coloringBookState.nightSheetUrl).toBeNull();
+    expect(nightSheetUrl()).toBeNull();
     expect(pageNightImage(pageWithoutNight, 'portrait')).toBeNull();
   });
 
@@ -73,10 +87,10 @@ describe('coloring book state', () => {
       chalkImages: { portrait: '/coloring/farm/cat-tall.chalk.webp' },
     };
     setOverlayPage(chalked, 'portrait');
-    expect(coloringBookState.chalkUrl).toBe('/coloring/farm/cat-tall.chalk.webp');
+    expect(chalkUrl()).toBe('/coloring/farm/cat-tall.chalk.webp');
     expect(pageChalkImage(chalked, 'portrait')).toBe('/coloring/farm/cat-tall.chalk.webp');
-    setOverlayPage(chalked, 'landscape');
-    expect(coloringBookState.chalkUrl).toBeNull();
+    setOverlayOrientation('landscape');
+    expect(chalkUrl()).toBeNull();
     expect(pageChalkImage(chalked, 'landscape')).toBeNull();
   });
 });

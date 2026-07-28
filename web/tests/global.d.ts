@@ -11,6 +11,7 @@ declare global {
       setColor(color: string): void;
       setStrokeWidth(width: number): void;
       setEraserMode(active: boolean): void;
+      setMagicMode(active: boolean): void;
       setSafeAreaInsets(insets: { top: number; right: number; bottom: number; left: number }): void;
       // Resolves when the queued restore has settled (a deep entry decodes
       // from its blob asynchronously) — page.evaluate awaits it.
@@ -21,7 +22,6 @@ declare global {
         snapshots: number;
         liveRasters: number;
         blobBytes: number;
-        pendingCommands: number;
       };
       setCrayonMode(active: boolean): void;
       setCrayonParams(params: {
@@ -34,7 +34,6 @@ declare global {
         colorMix?: number;
         passes?: { widthScale: number; coverage: number }[];
       }): void;
-      getCrayonParams(): unknown;
       setScreenAngleOverride(angle: number | null): void;
       remount(): void;
       getViewState(): {

@@ -1,6 +1,7 @@
+import type { DBSchema } from 'idb';
 import { browser } from '$app/environment';
-import { readBool, writeBool, removeKey } from '$lib/storage';
-import { lazyIdbDatabase } from '$lib/idb';
+import { STORAGE_KEYS, readBool, writeBool, removeKey } from '$lib/storage';
+import { idbKvStore } from '$lib/idb';
 
 // Silent folder save for the web target. On desktop Chromium (in-tab or
 // installed PWA) the File System Access API lets the parent optionally pick a
@@ -21,16 +22,22 @@ import { lazyIdbDatabase } from '$lib/idb';
 // opens IndexedDB just to find nothing.
 
 const DB_NAME = 'splotch-fs';
-const DB_VERSION = 1;
 const STORE = 'handles';
 const HANDLE_KEY = 'saveDir';
-const FOLDER_CHOSEN_KEY = 'splotch-save-folder-chosen';
 
-const getDb = lazyIdbDatabase(DB_NAME, STORE, DB_VERSION);
+interface FolderSaveDb extends DBSchema {
+  handles: {
+    key: string;
+    value: FileSystemDirectoryHandle;
+  };
+}
 
-// In-memory copy of the stored handle (undefined = not read yet, null = none),
-// so only the first save of a session touches IndexedDB.
-let cachedHandle: FileSystemDirectoryHandle | null | undefined;
+const handleStore = idbKvStore<FolderSaveDb>(DB_NAME, STORE);
+
+// In-memory copy of the stored handle, so only the first save of a session
+// touches IndexedDB.
+let cachedHandle: FileSystemDirectoryHandle | null = null;
+let loadedHandle = false;
 
 let folderClearedListener: (() => void) | null = null;
 
@@ -42,26 +49,26 @@ export function onSaveFolderCleared(listener: () => void) {
 }
 
 async function loadHandle(): Promise<FileSystemDirectoryHandle | null> {
-  if (cachedHandle !== undefined) return cachedHandle;
-  if (!readBool(FOLDER_CHOSEN_KEY, false)) {
+  if (loadedHandle) return cachedHandle;
+  if (!readBool(STORAGE_KEYS.saveFolderChosen, false)) {
     cachedHandle = null;
+    loadedHandle = true;
     return null;
   }
   let handle: FileSystemDirectoryHandle | null = null;
   try {
-    const db = await getDb();
-    handle = (await db.get(STORE, HANDLE_KEY)) ?? null;
+    handle = (await handleStore.get(HANDLE_KEY)) ?? null;
   } catch {
     // IndexedDB unavailable (corruption, embedded context, private mode):
     // behave as if no folder is set, so saves degrade to plain downloads.
   }
   cachedHandle = handle;
+  loadedHandle = true;
   return handle;
 }
 
 async function storeHandle(handle: FileSystemDirectoryHandle): Promise<void> {
-  const db = await getDb();
-  await db.put(STORE, handle, HANDLE_KEY);
+  await handleStore.put(HANDLE_KEY, handle);
 }
 
 /** Whether the browser exposes the File System Access directory picker. */
@@ -90,7 +97,8 @@ export async function chooseSaveFolder(): Promise<string | null> {
     return null;
   }
   cachedHandle = handle;
-  writeBool(FOLDER_CHOSEN_KEY, true);
+  loadedHandle = true;
+  writeBool(STORAGE_KEYS.saveFolderChosen, true);
   try {
     await storeHandle(handle);
   } catch (err) {
@@ -105,10 +113,10 @@ export async function chooseSaveFolder(): Promise<string | null> {
 export async function clearSaveFolder(): Promise<void> {
   if (!browser) return;
   cachedHandle = null;
-  removeKey(FOLDER_CHOSEN_KEY);
+  loadedHandle = true;
+  removeKey(STORAGE_KEYS.saveFolderChosen);
   try {
-    const db = await getDb();
-    await db.delete(STORE, HANDLE_KEY);
+    await handleStore.delete(HANDLE_KEY);
   } catch {
     // The chosen-flag is authoritative, so a failed delete only orphans a row.
   }
@@ -137,6 +145,22 @@ async function createUniqueFile(
   }
 }
 
+async function ensureWritePermission(
+  handle: FileSystemDirectoryHandle,
+  allowPrompt: boolean
+): Promise<boolean> {
+  let permission = await handle.queryPermission({ mode: 'readwrite' });
+  if (permission !== 'granted' && allowPrompt) {
+    permission = await handle.requestPermission({ mode: 'readwrite' });
+  }
+  return permission === 'granted';
+}
+
+async function forgetStaleFolder(): Promise<void> {
+  await clearSaveFolder();
+  folderClearedListener?.();
+}
+
 // Write `blob` as `filename` into the chosen folder. Returns true once written;
 // false (no folder set, unsupported, or permission lost) tells the caller to
 // fall back to a download. Never opens the folder picker — folder selection is a
@@ -156,11 +180,7 @@ export async function saveBlobToFolder(
     const handle = await loadHandle();
     if (!handle) return false;
 
-    let permission = await handle.queryPermission({ mode: 'readwrite' });
-    if (permission !== 'granted' && allowPrompt) {
-      permission = await handle.requestPermission({ mode: 'readwrite' });
-    }
-    if (permission !== 'granted') return false;
+    if (!(await ensureWritePermission(handle, allowPrompt))) return false;
 
     const fileHandle = await createUniqueFile(handle, filename);
     const writable = await fileHandle.createWritable();
@@ -173,8 +193,7 @@ export async function saveBlobToFolder(
     // so the UI stops naming it. AbortError and any other write failure just
     // fall back to a download.
     if (err instanceof DOMException && err.name === 'NotFoundError') {
-      await clearSaveFolder();
-      folderClearedListener?.();
+      await forgetStaleFolder();
     }
     return false;
   }

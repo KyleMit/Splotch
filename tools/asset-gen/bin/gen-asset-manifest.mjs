@@ -21,7 +21,9 @@
 import { glob, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
-import { ASSET_GEN_DIR, COLORING_DIR, STYLES_DIR, FILL_SRC_DIR, fail } from '../lib/paths.mjs';
+import { parseArgs } from 'node:util';
+import { ASSET_GEN_DIR, COLORING_DIR, STYLES_DIR, FILL_SRC_DIR, toPosix } from '../lib/paths.mjs';
+import { fail } from '../lib/cli.mjs';
 
 export const MANIFEST_PATH = join(ASSET_GEN_DIR, 'golden', 'asset-manifest.sha256');
 
@@ -35,7 +37,7 @@ async function currentEntries() {
   const entries = [];
   for (const { root, prefix } of TREES) {
     for await (const rel of glob('**/*.webp', { cwd: root })) {
-      const path = `${prefix}/${rel.replaceAll('\\', '/')}`;
+      const path = `${prefix}/${toPosix(rel)}`;
       const hash = createHash('sha256')
         .update(await readFile(join(root, rel)))
         .digest('hex');
@@ -49,7 +51,9 @@ function render(entries) {
   return entries.map(({ path, hash }) => `${hash}  ${path}`).join('\n') + '\n';
 }
 
-const checkMode = process.argv.includes('--check');
+const {
+  values: { check: checkMode },
+} = parseArgs({ options: { check: { type: 'boolean' } } });
 const entries = await currentEntries();
 
 if (!checkMode) {

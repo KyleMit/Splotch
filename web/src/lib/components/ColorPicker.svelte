@@ -1,10 +1,11 @@
 <script lang="ts">
   import { colorPicker } from '$lib/state/ui.svelte';
-  import { pickCustomColor, colors } from '$lib/state/colors.svelte';
+  import { pickCustomColor, colors, isWhite } from '$lib/state/colors.svelte';
   import { releaseAllPointers } from '$lib/drawing/engine';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
-  import { PORTRAIT_ROWS, LANDSCAPE_ROWS } from '$lib/hexPickerLayout';
+  import { HEX_GRID_GEOMETRY } from '$lib/design/trimGeometry';
+  import { PORTRAIT_ROWS, LANDSCAPE_ROWS, PICKER_DIM_BORDER } from '$lib/hexPickerLayout';
 
   // Both grid arrangements are rendered; CSS media queries pick one per
   // orientation and progressively trim it (see the trim ladders in the style
@@ -17,10 +18,16 @@
     { name: 'portrait', rows: PORTRAIT_ROWS },
   ];
 
+  interface HexCenter {
+    color: string;
+    cx: number;
+    cy: number;
+  }
+
   let pickerEl: HTMLDivElement;
   let hoveredHex = $state<string | null>(null);
   let isTrackingDrag = false;
-  let hexCenters: { color: string; cx: number; cy: number }[] | null = null;
+  let hexCenters: HexCenter[] | null = null;
 
   function selectColor(hex: string) {
     pickCustomColor(hex);
@@ -51,14 +58,15 @@
   // hexagons, where an element hit-test sees only the picker background. Snap
   // to the nearest hexagon center within this radius (px) so gap hits still
   // resolve — for the hover highlight while dragging and the committed color
-  // alike. Nearest-center also covers direct hits (a hexagon's farthest edge
-  // point is ~35px from its center), so no DOM hit-test is needed. Centers
-  // are snapshotted once per drag: per-move rect reads after each hover-class
-  // flip forced a reflow per hexagon per pointer event.
-  const HEX_SNAP_RADIUS = 40;
+  // alike. The radius reaches half the hexagon height plus enough slop to bridge
+  // its gaps, so nearest-center also covers direct hits without a DOM hit-test.
+  // Centers are snapshotted once per drag: per-move rect reads after each
+  // hover-class flip forced a reflow per hexagon per pointer event.
+  const HEX_SNAP_GAP_SLOP_PX = 5.5;
+  const HEX_SNAP_RADIUS = HEX_GRID_GEOMETRY.firstRowPx / 2 + HEX_SNAP_GAP_SLOP_PX;
 
   function snapshotHexCenters() {
-    const centers: { color: string; cx: number; cy: number }[] = [];
+    const centers: HexCenter[] = [];
     for (const hex of pickerEl.querySelectorAll<HTMLElement>('.hexagon')) {
       const color = hex.dataset.color;
       if (!color) continue;
@@ -152,8 +160,8 @@
               <button
                 class="hexagon c{c + 1}"
                 class:hover={hoveredHex === hex}
-                class:border={hex === '#ffffff'}
-                class:border-dim={hex === '#1A1F24'}
+                class:border={isWhite(hex)}
+                class:border-dim={hex === PICKER_DIM_BORDER}
                 class:selected={colors.customColor.toLowerCase() === hex.toLowerCase()}
                 style="--color: {hex};"
                 data-color={hex}
@@ -189,8 +197,12 @@
 
   .picker {
     display: inline-flex;
-    padding: 16px;
-    margin-top: 15px;
+    padding: var(--space-4);
+    margin-top: var(--hex-first-row-overlap);
+    --hex-offset: 31px;
+    --hex-first-row-overlap: 15px;
+    --hex-row-overlap: 18px;
+    --hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   }
 
   .grid {
@@ -200,11 +212,11 @@
 
   .row {
     display: flex;
-    margin-top: -15px;
+    margin-top: calc(-1 * var(--hex-first-row-overlap));
   }
 
   .row:not(:first-child) {
-    margin-top: -18px;
+    margin-top: calc(-1 * var(--hex-row-overlap));
   }
 
   /* ── Responsive trimming (ADR-0048) ──────────────────────────────────────
@@ -215,7 +227,11 @@
      2nd row/column from the light/red end) and shared by both grids: the
      drop order r2,r4,r6,r8,r3,r7(,c5) keeps an even spread across whichever
      ramp that axis holds — shades stay light→dark, families stay a rainbow —
-     and never drops r1/c1/r9/c9, the endpoints. */
+     and never drops r1/c1/r9/c9, the endpoints. Both ladders below are derived
+     arithmetically; design/trimGeometry.ts is their executable form — geometry,
+     formulas and step tables, the two hand-tightened steps included — and
+     trimGeometry.test.ts parses this whole style block back out and asserts the
+     module still produces exactly the values written here. */
   @media (orientation: landscape) {
     .grid.portrait {
       display: none;
@@ -229,7 +245,9 @@
 
   /* HEIGHT — r rows fit while 90vh ≥ 51·r + 50 (69px first row + 51px row
      pitch + 32px padding; measured 509px at 9 rows), so the ladder steps at
-     ≈ (51r + 50) / 0.9 with a few px of buffer. Hidden rows still count for
+     (51r + 50) / 0.9 rounded up to the whole pixel, no slack — except the
+     9-row step, tightened 1px below that minimum (HEX_GRID_ROW_RULE and its
+     one exception in HEX_GRID_ROW_LADDER). Hidden rows still count for
      :nth-child, so the base even-row rule can't drive the honeycomb offset;
      instead every step restates which rows carry the 31px offset so it
      alternates by VISIBLE position — that's what keeps a trimmed grid
@@ -238,7 +256,7 @@
   .r4,
   .r6,
   .r8 {
-    margin-left: 31px;
+    margin-left: var(--hex-offset);
   }
 
   @media (max-height: 564.98px) {
@@ -250,7 +268,7 @@
     .r5,
     .r7,
     .r9 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r4,
     .r6,
@@ -266,7 +284,7 @@
     .r3,
     .r6,
     .r8 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r5,
     .r7,
@@ -282,7 +300,7 @@
     .r3,
     .r7,
     .r9 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r5,
     .r8 {
@@ -296,7 +314,7 @@
     }
     .r3,
     .r7 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r5,
     .r9 {
@@ -310,7 +328,7 @@
     }
     .r5,
     .r9 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r7 {
       margin-left: 0;
@@ -322,7 +340,7 @@
       display: none;
     }
     .r5 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r9 {
       margin-left: 0;
@@ -331,8 +349,11 @@
 
   /* WIDTH — c columns fit while 90vw ≥ 60·c + 63 (60px column pitch + 31px
      row offset + 32px padding; measured 603px at 9 columns), stepping at
-     ≈ (60c + 63) / 0.9 + buffer. Every row loses the same positions, so
-     column trims never need offset bookkeeping. Floor: 2 columns (c1 + c9). */
+     (60c + 63) / 0.9 rounded up to the next 5px and then one 5px step further
+     — except the 4-column step, which stops at that first multiple of 5
+     (HEX_GRID_COLUMN_RULE and its one exception in HEX_GRID_COLUMN_LADDER).
+     Every row loses the same positions, so column trims never need offset
+     bookkeeping. Floor: 2 columns (c1 + c9). */
   @media (max-width: 674.98px) {
     .c2 {
       display: none;
@@ -374,7 +395,7 @@
     width: 60px;
     height: 69px; /* For a regular hexagon, height = width * 1.15 */
     flex-shrink: 0;
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    clip-path: var(--hex-clip);
     padding: 0;
     border: none;
     background: transparent;
@@ -388,8 +409,8 @@
     content: '';
     position: absolute;
     inset: 0;
-    background-color: var(--color, #007bff);
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    background-color: var(--color);
+    clip-path: var(--hex-clip);
     transition:
       inset 0.1s ease,
       filter 0.1s ease;
@@ -444,7 +465,7 @@
        engines keep a neutral dark ring instead of losing the selection indicator
        entirely (the base .hexagon background is transparent). */
     background-color: rgba(0, 0, 0, 0.2);
-    background-color: color-mix(in srgb, var(--color, #007bff), black 20%);
+    background-color: color-mix(in srgb, var(--color), black 20%);
   }
 
   .hexagon.selected::after {

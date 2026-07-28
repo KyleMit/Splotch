@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Claude Code on the web — environment Setup script (committed; see docs/CLOUD/Claude.md, ADR-0021).
 #
 # The env-config "Setup script" field can't be version-controlled, so keep it a one-liner
@@ -11,16 +11,25 @@
 # never block session startup, so each step swallows its own failure.
 set -uo pipefail
 
-# Match the npm major that authors package-lock.json (local dev runs npm 11; the
-# container image ships npm 10, whose install rewrites lockfile metadata in its
-# own dialect and dirties the working tree every session — the two majors
-# disagree on optional-peer entries, so no lockfile shape satisfies both).
-# The SessionStart hook also discards such churn as a fallback if this pin is
-# ever missing.
-# Via npx so the installer isn't the npm being replaced — npm 10 updating itself
-# in place dies halfway (MODULE_NOT_FOUND on its own half-overwritten files).
+warnings=()
+warn() {
+  warnings+=("$1")
+  {
+    echo ""
+    echo "########################################################################"
+    echo "# ⚠️  CLAUDE SETUP WARNING"
+    echo "# $1"
+    echo "########################################################################"
+    echo ""
+  } >&2
+}
+
+# Pin npm to the major that authors package-lock.json — a mismatched npm rewrites
+# lockfile metadata in its own dialect and dirties the tree every session; full
+# rationale in docs/CLOUD/Claude.md ("npm-version note"). Via npx so the installer
+# isn't the npm being replaced (an in-place self-update can die halfway).
 npx -y npm@11 install -g npm@11 \
-  || echo "npm 11 pin skipped — sessions may see package-lock.json churn (the SessionStart hook discards it)"
+  || warn "npm 11 pin skipped — sessions may see package-lock.json churn (the SessionStart hook discards it)"
 
 # Chromium-only Playwright browser for the E2E tier. Derive the version from the repo's
 # @playwright/test (package.json) so the installed Chromium revision matches what
@@ -31,8 +40,12 @@ npx -y npm@11 install -g npm@11 \
 # needing the fallback at all.
 # Needs cdn.playwright.dev + playwright.download.prss.microsoft.com on the allowlist.
 PW_VERSION="$(node -p "require('./package.json').devDependencies['@playwright/test'].replace(/^[^0-9]*/, '')" 2>/dev/null || true)"
-npx --yes "playwright@${PW_VERSION:-1.61.1}" install --with-deps chromium \
-  || echo "playwright browser install skipped — allowlist cdn.playwright.dev?"
+if [[ "$PW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  npx --yes "playwright@${PW_VERSION}" install --with-deps chromium \
+    || warn "playwright browser install skipped — allowlist cdn.playwright.dev?"
+else
+  warn "playwright browser install skipped — could not derive a numeric @playwright/test version from package.json"
+fi
 
 # Phone-preview reverse-tunnel client (ADR-0021). Cached into the snapshot at a persisted
 # path so later sessions skip the download. Pinned to the version docs/CLOUD/Claude.md references.
@@ -41,5 +54,14 @@ if ! command -v chisel >/dev/null 2>&1; then
   curl -sSL "https://github.com/jpillora/chisel/releases/download/v${CHISEL_VERSION}/chisel_${CHISEL_VERSION}_linux_amd64.gz" \
     | gunzip > /usr/local/bin/chisel && chmod +x /usr/local/bin/chisel \
     && echo "chisel ${CHISEL_VERSION} installed to /usr/local/bin/chisel" \
-    || echo "chisel install skipped — check github release-asset egress"
+    || warn "chisel install skipped — check github release-asset egress"
+fi
+
+if [ "${#warnings[@]}" -gt 0 ]; then
+  {
+    echo ""
+    echo "==> Claude setup finished with ${#warnings[@]} warning(s):"
+    for w in "${warnings[@]}"; do echo "    - $w"; done
+    echo "==> The environment is up but may be incomplete; address the warnings above."
+  } >&2
 fi

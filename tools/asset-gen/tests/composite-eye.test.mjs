@@ -15,31 +15,24 @@
 // (comp, light, pen) trio the detector consumes, stored full-res (the eye finder
 // is native-resolution bound). Rebuild them with
 // tools/asset-gen/.coloring-samples/orb-fixtures/build-fixtures.mjs.
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { scoreCompositeEyes, CORE_DARK_FRAC_MIN } from '../lib/composite-eye.mjs';
-
-const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures/composite-eye');
+import { FIXTURES, loadTrio } from './fixtures/composite-eye/load.mjs';
 
 async function score(name) {
-  const [comp, light, pen] = await Promise.all([
-    readFile(join(FIXTURES, `${name}.comp.webp`)),
-    readFile(join(FIXTURES, `${name}.light.webp`)),
-    readFile(join(FIXTURES, `${name}.pen.webp`)),
-  ]);
+  const { comp, light, pen } = await loadTrio(name);
   return scoreCompositeEyes(comp, light, pen);
 }
 
-let manifest;
-beforeAll(async () => {
-  manifest = JSON.parse(await readFile(join(FIXTURES, 'manifest.json'), 'utf8'));
-});
+const manifest = JSON.parse(await readFile(join(FIXTURES, 'manifest.json'), 'utf8'));
+const truePositives = manifest.filter((e) => e.expectBlankOrb);
+const legibleCases = manifest.filter((e) => !e.expectBlankOrb);
 
 describe('composite-eye blank-orb detector', () => {
   describe('true positives — a blank white orb must be flagged', () => {
-    for (const name of ['stegosaurus-tall', 'horse-tall']) {
+    for (const { name } of truePositives) {
       it(`flags ${name}`, async () => {
         const r = await score(name);
         expect(r.passes).toBe(false);
@@ -53,7 +46,7 @@ describe('composite-eye blank-orb detector', () => {
   });
 
   describe('legible over-flags — a small pupil in a big white sclera must pass', () => {
-    for (const name of ['unicorn-tall', 'owl-tall', 'square-tall']) {
+    for (const { name } of legibleCases) {
       it(`passes ${name}`, async () => {
         const r = await score(name);
         expect(r.passes).toBe(true);
@@ -73,12 +66,8 @@ describe('composite-eye blank-orb detector', () => {
       const r = await score(name);
       return r.pupils.reduce((m, p) => Math.min(m, p.coreDarkFrac), Infinity);
     };
-    const trueP = Math.max(await worstOf('stegosaurus-tall'), await worstOf('horse-tall'));
-    const legible = Math.min(
-      await worstOf('unicorn-tall'),
-      await worstOf('owl-tall'),
-      await worstOf('square-tall')
-    );
+    const trueP = Math.max(...(await Promise.all(truePositives.map((e) => worstOf(e.name)))));
+    const legible = Math.min(...(await Promise.all(legibleCases.map((e) => worstOf(e.name)))));
     // blank orbs sit below the bar, legible eyes above it — with air between.
     expect(trueP).toBeLessThan(CORE_DARK_FRAC_MIN);
     expect(legible).toBeGreaterThan(CORE_DARK_FRAC_MIN);
@@ -86,7 +75,6 @@ describe('composite-eye blank-orb detector', () => {
   });
 
   it('every fixture matches its manifest expectation', async () => {
-    expect(manifest.length).toBe(5);
     for (const entry of manifest) {
       const r = await score(entry.name);
       expect(r.passes).toBe(!entry.expectBlankOrb);

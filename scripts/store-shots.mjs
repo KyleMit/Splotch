@@ -12,7 +12,10 @@
 import { chromium } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, chromiumExecutablePath, sleep } from './lib/utils.mjs';
+import { PALETTE_COLORS } from '../web/src/lib/palette.ts';
+import { ROOT, sleep } from './lib/proc.mjs';
+import { chromiumExecutablePath } from './lib/playwright.mjs';
+import { circlePts, arcPts, zigzag } from './lib/stroke-geometry.mjs';
 import {
   ensureDevServer,
   openAppPage,
@@ -22,9 +25,12 @@ import {
   setStrokeSize,
   drawStroke,
   dismissMenu,
-  circlePts,
-  arcPts,
-  zigzag,
+  openColoringBook,
+  pickBook,
+  pickPage,
+  waitForColoringOverlay,
+  openColorPicker,
+  openParentCenter,
 } from './lib/app-driver.mjs';
 
 const OUT = join(ROOT, 'store-assets');
@@ -37,16 +43,7 @@ const TABLET = { width: 1280, height: 720, deviceScaleFactor: 1.5 };
 const IPHONE = { width: 430, height: 932, deviceScaleFactor: 3 };
 const IPAD = { width: 1366, height: 1024, deviceScaleFactor: 2 };
 
-// Brand palette (from src/lib/state/colors.svelte.js)
-const C = {
-  purple: '#AB71E1',
-  blue: '#62A2E9',
-  green: '#8CC864',
-  yellow: '#F9D24F',
-  orange: '#F89C45',
-  red: '#EC534E',
-  black: '#0a0b10',
-};
+const C = Object.fromEntries(PALETTE_COLORS.map(({ hex, label }) => [label.toLowerCase(), hex]));
 
 const shot = (page, file) => page.screenshot({ path: join(OUT, file) });
 
@@ -117,6 +114,124 @@ async function colorInLines(page, box) {
   await scribble(C.blue, W * 0.65, H * 0.4, W * 0.08, H * 0.07);
 }
 
+// No DOM signal is surfaced for these dialog animations, so they stay timed.
+const MENU_TRANSITION_MS = 450; // coloring-book dialog sliding open
+const PAGE_GRID_TRANSITION_MS = 400; // a book's page grid animating in
+// Scene 2 makes that same grid the subject of its shot, so it waits out the
+// transition with a margin — tuning the transition carries the shot along.
+const PAGE_GRID_SETTLE_MS = PAGE_GRID_TRANSITION_MS + 100;
+const SCREENSHOT_SETTLE_MS = 500; // last entrance animation before the capture
+
+// Each scene opens its own page, drives the app, captures one screenshot and
+// closes — so a single scene can be run on its own while iterating on it.
+
+async function sceneFreeDraw(browser, base, device, dir) {
+  const { ctx, page } = await openAppPage(browser, base, device);
+  await expandDrawer(page);
+  await setStrokeSize(page, 4);
+  const box = await canvasBox(page);
+  await drawScene(page, box);
+  await dismissMenu(page);
+  await shot(page, `${dir}/01-draw.png`);
+  await ctx.close();
+}
+sceneFreeDraw.label = '01-draw';
+
+async function sceneColoringBook(browser, base, device, dir) {
+  const { ctx, page } = await openAppPage(browser, base, device);
+  await expandDrawer(page);
+  await openColoringBook(page);
+  await sleep(MENU_TRANSITION_MS);
+  await pickBook(page, 'Farm');
+  await sleep(PAGE_GRID_SETTLE_MS);
+  await shot(page, `${dir}/02-coloring-book.png`);
+  await ctx.close();
+}
+sceneColoringBook.label = '02-coloring-book';
+
+async function sceneColorPage(browser, base, device, dir) {
+  const { ctx, page } = await openAppPage(browser, base, device);
+  await expandDrawer(page);
+  await setStrokeSize(page, 5);
+  await openColoringBook(page);
+  await sleep(MENU_TRANSITION_MS);
+  await pickBook(page, 'Farm');
+  await sleep(PAGE_GRID_TRANSITION_MS);
+  await pickPage(page, 'Farm');
+  await waitForColoringOverlay(page);
+  const box = await canvasBox(page);
+  await colorInLines(page, box);
+  await dismissMenu(page);
+  await shot(page, `${dir}/03-color-page.png`);
+  await ctx.close();
+}
+sceneColorPage.label = '03-color-page';
+
+async function sceneColorPicker(browser, base, device, dir) {
+  const { ctx, page } = await openAppPage(browser, base, device);
+  await openColorPicker(page);
+  await sleep(SCREENSHOT_SETTLE_MS);
+  await shot(page, `${dir}/04-color-picker.png`);
+  await ctx.close();
+}
+sceneColorPicker.label = '04-color-picker';
+
+async function sceneParentCenter(browser, base, device, dir) {
+  const { ctx, page } = await openAppPage(browser, base, device);
+  await openParentCenter(page);
+  await sleep(SCREENSHOT_SETTLE_MS);
+  await shot(page, `${dir}/05-parent-center.png`);
+  await ctx.close();
+}
+sceneParentCenter.label = '05-parent-center';
+
+function featureGraphicHtml(iconB64) {
+  return `<!doctype html><html><head><meta charset="utf-8">
+  <style>
+    @font-face { font-family:'QS'; src: local('Quicksand'); }
+    * { margin:0; box-sizing:border-box; }
+    html,body { width:1024px; height:500px; overflow:hidden; }
+    body {
+      display:flex; align-items:center; gap:54px; padding:0 86px;
+      font-family:'Quicksand','Segoe UI',sans-serif;
+      background: radial-gradient(circle at 20% 20%, #fff 0%, #fdf7ff 45%, #f3f0ff 100%);
+      position:relative;
+    }
+    .dots { position:absolute; inset:0; }
+    .dot { position:absolute; border-radius:50%; opacity:.85; }
+    .icon { width:300px; height:300px; flex:0 0 auto; filter: drop-shadow(0 14px 30px rgba(120,80,180,.25)); }
+    .copy { z-index:2; }
+    .name { font-size:128px; font-weight:700; letter-spacing:-2px;
+      background:linear-gradient(90deg,${C.red},${C.orange},${C.yellow},${C.green},${C.blue},${C.purple});
+      -webkit-background-clip:text; background-clip:text; color:transparent; line-height:1; }
+    .tag { font-size:38px; font-weight:600; color:#5a4a6b; margin-top:18px; }
+    .sub { font-size:24px; font-weight:500; color:#9385a3; margin-top:14px; }
+  </style></head>
+  <body>
+    <div class="dots">
+      <span class="dot" style="width:42px;height:42px;background:${C.yellow};top:48px;left:560px"></span>
+      <span class="dot" style="width:26px;height:26px;background:${C.green};top:120px;left:930px"></span>
+      <span class="dot" style="width:34px;height:34px;background:${C.blue};bottom:70px;left:520px"></span>
+      <span class="dot" style="width:20px;height:20px;background:${C.red};bottom:120px;left:880px"></span>
+      <span class="dot" style="width:30px;height:30px;background:${C.purple};top:60px;left:60px"></span>
+    </div>
+    <img class="icon" src="data:image/png;base64,${iconB64}">
+    <div class="copy">
+      <div class="name">Splotch</div>
+      <div class="tag">Doodle, color &amp; create</div>
+      <div class="sub">A calm, ad-free drawing app made for little hands</div>
+    </div>
+  </body></html>`;
+}
+
+const SCENES = [
+  sceneFreeDraw,
+  sceneColoringBook,
+  sceneColorPage,
+  sceneColorPicker,
+  sceneParentCenter,
+];
+
 const { base, stop } = await ensureDevServer(PORT);
 try {
   const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
@@ -128,69 +243,9 @@ try {
   ];
 
   for (const t of targets) {
-    // SCENE 1 — free drawing
-    {
-      const { ctx, page } = await openAppPage(browser, base, t.device);
-      await expandDrawer(page);
-      await setStrokeSize(page, 4);
-      const box = await canvasBox(page);
-      await drawScene(page, box);
-      await dismissMenu(page);
-      await shot(page, `${t.dir}/01-draw.png`);
-      await ctx.close();
-      console.log(`${t.name} 01-draw done`);
-    }
-
-    // SCENE 2 — coloring book (Farm pages grid)
-    {
-      const { ctx, page } = await openAppPage(browser, base, t.device);
-      await expandDrawer(page);
-      await page.locator('#coloringBookButton').click();
-      await sleep(450);
-      await page.locator('button[aria-label="Farm coloring book"]').click();
-      await sleep(500);
-      await shot(page, `${t.dir}/02-coloring-book.png`);
-      await ctx.close();
-      console.log(`${t.name} 02-coloring-book done`);
-    }
-
-    // SCENE 3 — coloring a page within the lines
-    {
-      const { ctx, page } = await openAppPage(browser, base, t.device);
-      await expandDrawer(page);
-      await setStrokeSize(page, 5);
-      await page.locator('#coloringBookButton').click();
-      await sleep(450);
-      await page.locator('button[aria-label="Farm coloring book"]').click();
-      await sleep(400);
-      await page.locator('button[aria-label="Farm coloring page"]').first().click();
-      await sleep(700); // wait for overlay image to load
-      const box = await canvasBox(page);
-      await colorInLines(page, box);
-      await dismissMenu(page);
-      await shot(page, `${t.dir}/03-color-page.png`);
-      await ctx.close();
-      console.log(`${t.name} 03-color-page done`);
-    }
-
-    // SCENE 4 — rainbow color picker
-    {
-      const { ctx, page } = await openAppPage(browser, base, t.device);
-      await page.locator('.color-swatch[data-color="custom"]').click();
-      await sleep(500);
-      await shot(page, `${t.dir}/04-color-picker.png`);
-      await ctx.close();
-      console.log(`${t.name} 04-color-picker done`);
-    }
-
-    // SCENE 5 — Parent Center (settings / trust)
-    {
-      const { ctx, page } = await openAppPage(browser, base, t.device);
-      await page.locator('#parentHelpButton').click();
-      await sleep(500);
-      await shot(page, `${t.dir}/05-parent-center.png`);
-      await ctx.close();
-      console.log(`${t.name} 05-parent-center done`);
+    for (const scene of SCENES) {
+      await scene(browser, base, t.device, t.dir);
+      console.log(`${t.name} ${scene.label} done`);
     }
   }
 
@@ -214,42 +269,3 @@ try {
   stop();
 }
 console.log('ALL DONE');
-
-function featureGraphicHtml(iconB64) {
-  return `<!doctype html><html><head><meta charset="utf-8">
-  <style>
-    @font-face { font-family:'QS'; src: local('Quicksand'); }
-    * { margin:0; box-sizing:border-box; }
-    html,body { width:1024px; height:500px; overflow:hidden; }
-    body {
-      display:flex; align-items:center; gap:54px; padding:0 86px;
-      font-family:'Quicksand','Segoe UI',sans-serif;
-      background: radial-gradient(circle at 20% 20%, #fff 0%, #fdf7ff 45%, #f3f0ff 100%);
-      position:relative;
-    }
-    .dots { position:absolute; inset:0; }
-    .dot { position:absolute; border-radius:50%; opacity:.85; }
-    .icon { width:300px; height:300px; flex:0 0 auto; filter: drop-shadow(0 14px 30px rgba(120,80,180,.25)); }
-    .copy { z-index:2; }
-    .name { font-size:128px; font-weight:700; letter-spacing:-2px;
-      background:linear-gradient(90deg,#EC534E,#F89C45,#F9D24F,#8CC864,#62A2E9,#AB71E1);
-      -webkit-background-clip:text; background-clip:text; color:transparent; line-height:1; }
-    .tag { font-size:38px; font-weight:600; color:#5a4a6b; margin-top:18px; }
-    .sub { font-size:24px; font-weight:500; color:#9385a3; margin-top:14px; }
-  </style></head>
-  <body>
-    <div class="dots">
-      <span class="dot" style="width:42px;height:42px;background:#F9D24F;top:48px;left:560px"></span>
-      <span class="dot" style="width:26px;height:26px;background:#8CC864;top:120px;left:930px"></span>
-      <span class="dot" style="width:34px;height:34px;background:#62A2E9;bottom:70px;left:520px"></span>
-      <span class="dot" style="width:20px;height:20px;background:#EC534E;bottom:120px;left:880px"></span>
-      <span class="dot" style="width:30px;height:30px;background:#AB71E1;top:60px;left:60px"></span>
-    </div>
-    <img class="icon" src="data:image/png;base64,${iconB64}">
-    <div class="copy">
-      <div class="name">Splotch</div>
-      <div class="tag">Doodle, color &amp; create</div>
-      <div class="sub">A calm, ad-free drawing app made for little hands</div>
-    </div>
-  </body></html>`;
-}

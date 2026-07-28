@@ -14,14 +14,13 @@
 // at 1 for clean latency numbers), OUT_TAG (suffix on the run dir), SKIP_REPORT.
 
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   ROOT,
   MODELS,
-  CHROMIUM_PATH,
   DEFAULT_PROMPT,
   SAFETY_SYSTEM_INSTRUCTION,
   assertProductionConfig,
@@ -32,6 +31,8 @@ import {
   imageDims,
   imageFormat,
 } from './lib/model-eval.mjs';
+import { chromiumExecutablePath } from './lib/playwright.mjs';
+import { requireEnv, runId as makeRunId } from './lib/proc.mjs';
 import { buildReport } from './lib/model-eval-report.mjs';
 
 const BASE = join(ROOT, 'web/tests/model-eval');
@@ -44,9 +45,7 @@ const FILTER = process.env.FILTER || '';
 // already produced an image, so existing outputs are preserved as-is.
 const RESUME = process.env.RESUME || '';
 // A fixed, filesystem-safe run id. Date.now() is fine in plain Node; kept simple.
-const runId =
-  new Date().toISOString().replace(/[:.]/g, '-') +
-  (process.env.OUT_TAG ? `-${process.env.OUT_TAG}` : '');
+const runId = makeRunId(process.env.OUT_TAG);
 const OUT = join(BASE, 'output', runId);
 
 const SAFETY = safetySettings(HarmCategory, HarmBlockThreshold);
@@ -114,7 +113,7 @@ async function reportOnly(dir) {
   const verdictHtml = process.env.VERDICT_FILE
     ? readFileSync(process.env.VERDICT_FILE, 'utf8')
     : undefined;
-  const browser = await chromium.launch({ executablePath: CHROMIUM_PATH });
+  const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
   try {
     const htmlPath = await buildReport({
       runId: data.runId,
@@ -135,10 +134,7 @@ async function main() {
   if (process.env.REPORT_FROM) return reportOnly(process.env.REPORT_FROM);
   assertProductionConfig();
   console.log('✓ prompt + system instruction match the app source');
-  if (!process.env.GEMINI_API_KEY) {
-    console.error('Missing GEMINI_API_KEY (set it in .env or export it).');
-    process.exit(1);
-  }
+  requireEnv('GEMINI_API_KEY', 'set it in .env or export it');
   if (!existsSync(IN)) {
     console.error(`No inputs at ${IN}. Run: npm run model-eval:fixtures`);
     process.exit(1);
@@ -249,7 +245,7 @@ async function main() {
   );
 
   if (!process.env.SKIP_REPORT) {
-    const browser = await chromium.launch({ executablePath: CHROMIUM_PATH });
+    const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
     try {
       const htmlPath = await buildReport({
         runId: effRunId,

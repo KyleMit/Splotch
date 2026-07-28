@@ -50,7 +50,7 @@ staging file, `fix-audits` burns the issues down.
 | Produce    | `session-audit`           | End-of-session retrospective on repo friction → `docs/AUDIT.md`                    |
 | Vet        | `vet-audits`              | Adversarially validate findings; file survivors as `type:audit` issues             |
 | Fix        | `fix-audits`              | Autonomously clear open `type:audit` issues, one commit each, on its own branch    |
-| Vet + fix  | `burn-down-audits`        | Bulk path for a huge `docs/AUDIT.md`: scripted overnight verify→implement→review   |
+| Vet + fix  | `burn-down-audits`        | Iteratively clears a huge `docs/AUDIT.md` with durable progress and run controls   |
 | Standalone | `dependency-update-audit` | Upgrade dependencies one at a time with migration guides (user-invoke only)        |
 | Standalone | `dependency-health-audit` | Provenance/license/maintenance review of every dependency → `docs/DEPENDENCIES.md` |
 | Standalone | `workflow-audit`          | Claude Code config + session-history review vs. best practice → dated review doc   |
@@ -81,10 +81,17 @@ All three augment the built-in PR flows rather than replacing them.
 
 ## Shipping
 
-| Skill     | Use for                                                                  |
-| --------- | ------------------------------------------------------------------------ |
-| `build`   | Build the signed release artifacts (Android `.aab`, iOS `.ipa`)          |
-| `release` | Draft release notes from the git log, bump versions, publish the release |
+| Skill               | Use for                                                                      |
+| ------------------- | ---------------------------------------------------------------------------- |
+| `release`           | Draft release notes from the git log, bump versions, tag, create the release |
+| `build`             | Build the signed release artifacts (Android `.aab`, iOS `.ipa`)              |
+| `publish-artifacts` | Attach the built artifacts to the GitHub Release, verifying their versions   |
+
+These three run **in order, and the order is load-bearing**: an artifact can only carry a version
+that is already committed, so `/release` creates the GitHub Release with nothing attached, `/build`
+produces the binaries for the version it just tagged, and `/publish-artifacts` attaches them —
+refusing any artifact whose embedded version does not match. Attaching at release time is how v1.4.0
+shipped a 1.2.0 bundle; see ADR-0077.
 
 ## Repo hygiene & meta
 
@@ -96,10 +103,16 @@ All three augment the built-in PR flows rather than replacing them.
 
 ## Keeping this guide current
 
-Every skill in `.ruler/skills/` must appear here, in exactly one primary group (cross-reference a
-second group in prose when a skill genuinely spans two, as `lighthouse-audit` does). **When you add,
-rename, or delete a skill, update this guide in the same change**, then run `npm run ruler:apply`.
-If a new skill fits no existing group, add a group rather than forcing it into one.
+Every skill must appear here in exactly one primary group (cross-reference a second group in prose
+when a skill genuinely spans two, as `lighthouse-audit` does). Most skills are generated from
+`.ruler/skills/` or `.ruler/skill-forks/`. `burn-down-audits` is the exception: Claude and Codex
+have complete, directly maintained implementations under `.claude/skills/burn-down-audits/` and
+`.agents/skills/burn-down-audits/`, with independent notes in the parallel `skill-notes/` trees.
+When editing it, change only the intended provider; never copy one implementation over the other.
+
+**When you add, rename, or delete a skill, update this guide in the same change**, then run
+`npm run ruler:apply` for generated surfaces. If a new skill fits no existing group, add a group
+rather than forcing it into one.
 
 Naming: workflow skills (perform a procedure with side effects) get verb-noun names (`create-adr`,
 `fix-audits`); reference skills (only load knowledge) get plain noun names (`architecture`, `adrs`).

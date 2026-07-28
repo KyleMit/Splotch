@@ -19,8 +19,7 @@ migrated to `../pipeline.md`).
 > canonical-eye guidance below predates the fork and applies only to un-chalked categories; the gate
 > documentation and the ship/wire steps are still accurate (wire `chalk` orientations in `books.ts`
 > alongside `night` —
-> `page('nature', 'ant', 'Ant', ['portrait', 'landscape'],
-> ['portrait', 'landscape'])`).
+> `book('nature', 'Nature', ['web', 'mobile'], (page) => [page('ant', 'Ant')])`).
 
 ## What a night fill is
 
@@ -118,10 +117,10 @@ least-drifted take that reads as night AND keeps white outlines; it warns (`⚠ 
     enough. A pin-dot glare → featureless white blob (mermaid's original bug); an iris ring → a
     bright ring that muddies it; two glares → two pupils.
   * **To fix a broken eye, retouch the LINE ART to the canonical form** with
-    `tools/asset-gen/retouch-line-art.mjs` (its default instruction is exactly this recipe: solid
-    pupil + one clear glare, no iris — enlarge a too-small glare). Do NOT "open the eye into an
-    outlined iris" — that was tried on the mermaid and made it a dark socket. After retouching the
-    outline, regenerate the WHOLE related suite from it (light `.light.webp` + night fill +
+    `tools/asset-gen/legacy/retouch-line-art.mjs` (its default instruction is exactly this recipe:
+    solid pupil + one clear glare, no iris — enlarge a too-small glare). Do NOT "open the eye into
+    an outlined iris" — that was tried on the mermaid and made it a dark socket. After retouching
+    the outline, regenerate the WHOLE related suite from it (light `.light.webp` + night fill +
     thumbnails, both orientations) and re-check the contact sheet **Combined** view in BOTH light
     and dark. Solid-pupil eyes are the normal cute eye in light mode too, so the same fix serves
     both.
@@ -169,13 +168,13 @@ images.
 ### Retouching the base line art (hard sections)
 
 When a "particularly hard section" of a page can't be rescued downstream — the eyes gotcha above is
-the canonical case — edit the base line art itself with `tools/asset-gen/retouch-line-art.mjs`
-(Gemini image edit; writes candidates to `.coloring-samples-dark/retouch/`, never touches shipped
-assets):
+the canonical case — edit the base line art itself with
+`tools/asset-gen/legacy/retouch-line-art.mjs` (Gemini image edit; writes candidates to
+`.coloring-samples-dark/retouch/`, never touches shipped assets):
 
 ```bash
 node --experimental-strip-types --disable-warning=ExperimentalWarning \
-  tools/asset-gen/retouch-line-art.mjs creatures/mermaid-tall creatures/mermaid-wide --samples 2
+  tools/asset-gen/legacy/retouch-line-art.mjs creatures/mermaid-tall creatures/mermaid-wide --samples 2
 ```
 
 The default instruction normalizes eyes to the canonical **solid pupil + one clear glare, no iris**
@@ -236,9 +235,10 @@ default 0 keeps the input pixel-faithful. 4. **On the user's approval**, ship:
   ```
   Never copy a lined fill straight into `web/static/coloring/` — the shipped `.night.webp` must be
   the punched (fills-only) derivation of the raw.
-* Wire the catalog in `web/src/lib/state/books.ts` — `page()` defaults night + chalk to both
-  orientations, so a fully-generated page is just `page('farm', 'cat', 'Cat')`. Pass the
-  `{ nightExcept, chalkExcept }` options object only to subtract an orientation with no asset yet.
+* Wire the catalog in `web/src/lib/state/books.ts` — the enclosing `book()` builder binds each page
+  to its book, and `page()` defaults night + chalk to both orientations, so a fully-generated page
+  is just `page('cat', 'Cat')`. Pass the `{ nightExcept, chalkExcept }` options object only to
+  subtract an orientation with no asset yet.
 * `npm run check:assets` (validates every listed fill exists; also gates strip-native-assets). Then
   `npm run check` + `npm run test:unit`.
 

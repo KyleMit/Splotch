@@ -27,7 +27,7 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
-import { COLORING_DIR, FILL_SRC_DIR } from './paths.mjs';
+import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt, toPosix } from './paths.mjs';
 
 // Same bar the runtime mask used before the punch moved to build time (ADR-0043):
 // darker than this is outline, lighter is fill. Exported so the halo auditor
@@ -96,12 +96,13 @@ export function bleedUnderMask(rgb, mask, width, height) {
 // identical. Pages without a chalk fall back to the pen outline (the pre-fork
 // behavior).
 export async function punchFill(rawPath) {
-  const rel = relative(FILL_SRC_DIR, rawPath).replace(/\\/g, '/');
+  const rel = toPosix(relative(FILL_SRC_DIR, rawPath));
   const shippedRel = rel.replace(/\.raw\.webp$/, '.webp');
   const penPath = join(COLORING_DIR, shippedRel.replace(/\.(light|night)\.webp$/, '.outline.webp'));
-  const chalkPath = join(COLORING_DIR, shippedRel.replace(/\.(light|night)\.webp$/, '.chalk.webp'));
-  const lineArtPath =
-    shippedRel.endsWith('.night.webp') && existsSync(chalkPath) ? chalkPath : penPath;
+  const nightLineArt = shippedRel.endsWith('.night.webp')
+    ? await resolveNightLineArt(penPath)
+    : null;
+  const lineArtPath = nightLineArt?.sourcePath ?? penPath;
   if (!existsSync(lineArtPath)) throw new Error(`Missing line art for ${rel}: ${lineArtPath}`);
 
   const {
@@ -113,7 +114,7 @@ export async function punchFill(rawPath) {
     .toBuffer({ resolveWithObject: true });
 
   // Line art luma at the fill's exact resolution → binary inpaint mask.
-  const { data: line } = await sharp(await readFile(lineArtPath))
+  const { data: line } = await sharp(nightLineArt?.source ?? (await readFile(lineArtPath)))
     .removeAlpha()
     .resize(width, height, { fit: 'fill' })
     .raw()

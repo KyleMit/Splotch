@@ -9,6 +9,9 @@
 //   scoreLineColor() — the model re-inked the white outlines DARK.
 import sharp from 'sharp';
 import { dilateMask, erodeMask } from './morphology.mjs';
+import { OUTLINE_INK_CUTOFF, OUTLINE_MASK_SIZE } from './outline-match.mjs';
+import { floodBackground } from './regions.mjs';
+import { median } from './stats.mjs';
 
 // --- Drift detection ----------------------------------------------------------
 // A night fill's white pixels are outlines; the model has drifted when it draws a
@@ -17,8 +20,6 @@ import { dilateMask, erodeMask } from './morphology.mjs';
 // dilate that mask to absorb registration slack + the fill's glow, then count
 // fill white/low-chroma pixels that fall outside it. Normalized by the source
 // outline mass so pages of different line density compare on one scale.
-const DRIFT_W = 512; // working width for the comparison
-const DRIFT_SRC_DARK = 110; // source pixel darker than this = a line
 const DRIFT_DILATE = 6; // px of slack around each source line (registration + glow)
 const DRIFT_THIN = 3; // white strokes up to ~2*this px wide are outline-like, not fills
 const DRIFT_LUMA_WHITE = 185; // fill pixel this bright...
@@ -36,9 +37,16 @@ export const DRIFT_THRESHOLD_DEFAULT = 0.004;
 // stays low even then, while a daytime sky reads bright. Known-good night fills
 // sit at ~15-32; sky-blue daytime is ~150+.
 const NIGHT_W = 384;
-const NIGHT_SRC_LIGHT = 170; // source pixel brighter than this = background candidate
 export const NIGHT_BG_LUMA_MAX_DEFAULT = 60; // median background luma above this = too bright / daytime (3.1-migration bar; shipped catalog is 18-48)
 const NIGHT_MIN_BG_FRAC = 0.04; // skip the check if there's barely any open background
+
+export async function prepareSourceScore(sourceBuf) {
+  return sharp(sourceBuf)
+    .resize(OUTLINE_MASK_SIZE, null, { fit: 'inside' })
+    .grayscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+}
 
 export async function scoreNightness(fillBuf, sourceBuf) {
   const s = await sharp(sourceBuf)
@@ -54,33 +62,7 @@ export async function scoreNightness(fillBuf, sourceBuf) {
   const w = s.info.width;
   const h = s.info.height;
   const n = w * h;
-  const bg = new Uint8Array(n);
-  const stack = [];
-  const push = (x, y) => {
-    if (x < 0 || x >= w || y < 0 || y >= h) return;
-    const i = y * w + x;
-    if (!bg[i] && s.data[i] > NIGHT_SRC_LIGHT) {
-      bg[i] = 1;
-      stack.push(i);
-    }
-  };
-  for (let x = 0; x < w; x++) {
-    push(x, 0);
-    push(x, h - 1);
-  }
-  for (let y = 0; y < h; y++) {
-    push(0, y);
-    push(w - 1, y);
-  }
-  while (stack.length) {
-    const i = stack.pop();
-    const x = i % w;
-    const y = (i / w) | 0;
-    push(x + 1, y);
-    push(x - 1, y);
-    push(x, y + 1);
-    push(x, y - 1);
-  }
+  const bg = floodBackground(s.data, w, h);
   const lumas = [];
   for (let i = 0; i < n; i++) {
     if (!bg[i]) continue;
@@ -91,18 +73,13 @@ export async function scoreNightness(fillBuf, sourceBuf) {
   }
   // Too little open background to judge (e.g. a full-bleed subject): treat as fine.
   if (lumas.length < n * NIGHT_MIN_BG_FRAC) return { bgLuma: 0, bgFrac: lumas.length / n };
-  lumas.sort((a, b) => a - b);
-  return { bgLuma: lumas[lumas.length >> 1], bgFrac: lumas.length / n };
+  return { bgLuma: median(lumas), bgFrac: lumas.length / n };
 }
 
-export async function scoreDrift(fillBuf, sourceBuf) {
-  const s = await sharp(sourceBuf)
-    .resize(DRIFT_W, null, { fit: 'inside' })
-    .grayscale()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+export async function scoreDrift(fillBuf, sourceBuf, preparedSource) {
+  const s = preparedSource ?? (await prepareSourceScore(sourceBuf));
   const t = await sharp(fillBuf)
-    .resize(DRIFT_W, null, { fit: 'inside' })
+    .resize(OUTLINE_MASK_SIZE, null, { fit: 'inside' })
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -112,7 +89,7 @@ export async function scoreDrift(fillBuf, sourceBuf) {
   const outline = new Uint8Array(n);
   let srcCount = 0;
   for (let i = 0; i < n; i++) {
-    if (s.data[i] < DRIFT_SRC_DARK) {
+    if (s.data[i] < OUTLINE_INK_CUTOFF) {
       outline[i] = 1;
       srcCount++;
     }
@@ -156,18 +133,12 @@ export async function scoreDrift(fillBuf, sourceBuf) {
 // (a mostly-white dog with a few dark contours) is the hard case — it can land near
 // the boundary, so a flagged page may need a targeted low-temp regen to come back
 // cleanly white; eyeball borderline pages in the coloring-book proof sheet.
-const LINE_W = 512;
-const LINE_SRC_DARK = 110; // source pixel darker than this = an outline
 export const LINE_WHITE_MIN_DEFAULT = 150; // median outline brightness below this = dark outlines
 
-export async function scoreLineColor(fillBuf, sourceBuf) {
-  const s = await sharp(sourceBuf)
-    .resize(LINE_W, null, { fit: 'inside' })
-    .grayscale()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+export async function scoreLineColor(fillBuf, sourceBuf, preparedSource) {
+  const s = preparedSource ?? (await prepareSourceScore(sourceBuf));
   const t = await sharp(fillBuf)
-    .resize(LINE_W, null, { fit: 'inside' })
+    .resize(OUTLINE_MASK_SIZE, null, { fit: 'inside' })
     .grayscale()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -176,7 +147,7 @@ export async function scoreLineColor(fillBuf, sourceBuf) {
   const maxes = [];
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      if (s.data[y * w + x] >= LINE_SRC_DARK) continue; // not a source outline pixel
+      if (s.data[y * w + x] >= OUTLINE_INK_CUTOFF) continue; // not a source outline pixel
       let mx = 0;
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
@@ -191,6 +162,13 @@ export async function scoreLineColor(fillBuf, sourceBuf) {
     }
   }
   if (!maxes.length) return { lineWhite: 255 };
-  maxes.sort((a, b) => a - b);
-  return { lineWhite: maxes[maxes.length >> 1] };
+  return { lineWhite: median(maxes) };
+}
+
+export async function scoreNightFillGates(fillBuf, sourceBuf) {
+  const preparedSource = await prepareSourceScore(sourceBuf);
+  const drift = await scoreDrift(fillBuf, sourceBuf, preparedSource);
+  const night = await scoreNightness(fillBuf, sourceBuf);
+  const line = await scoreLineColor(fillBuf, sourceBuf, preparedSource);
+  return { drift, night, line };
 }

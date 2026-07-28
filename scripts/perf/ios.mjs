@@ -11,36 +11,19 @@
 // `npm run perf:analyze` (see the `profiling` skill).
 
 import { webkit } from '@playwright/test';
-import { join } from 'node:path';
-import { ROOT, sleep } from '../lib/utils.mjs';
+import { isMain, runMain, sleep } from '../lib/proc.mjs';
+import { parsePerfArgs } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { driveSession } from './session.mjs';
+import { profilePath } from './paths.mjs';
+import { warnIfNoPerfMarks } from './warnings.mjs';
 
-const DEVICES = {
-  phone: { width: 412, height: 915, deviceScaleFactor: 2.6 },
-  tablet: { width: 1024, height: 1366, deviceScaleFactor: 2 },
-  desktop: { width: 1280, height: 800, deviceScaleFactor: 1 },
-};
+const { deviceName, device, port, build } = parsePerfArgs({ entry: isMain(import.meta.url) });
 
-const args = process.argv.slice(2);
-const flag = (name, def) => {
-  const hit = args.find((a) => a.startsWith(`--${name}=`));
-  return hit ? hit.split('=')[1] : def;
-};
-const deviceName = flag('device', 'phone');
-const device = DEVICES[deviceName] || DEVICES.phone;
-const port = Number(flag('port', '4173'));
-const build = !args.includes('--no-build');
+export async function runIosProfile() {
+  warnIfNoPerfMarks('npm run perf:ios');
 
-async function main() {
-  if (process.env.PERF_MARKS !== 'true') {
-    console.warn(
-      '! PERF_MARKS is not "true" — engine.* marks will be absent. Use `npm run perf:ios`.'
-    );
-  }
-
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const outDir = join(ROOT, 'perf-profiles', `${stamp}-ios-webkit-${deviceName}`);
+  const outDir = profilePath('ios-webkit', deviceName);
 
   const { base, stop } = await buildAndPreview(port, { build });
   const browser = await webkit.launch({ headless: true });
@@ -72,7 +55,4 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (isMain(import.meta.url)) runMain(runIosProfile);

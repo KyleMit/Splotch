@@ -4,14 +4,13 @@
 //   node scripts/generate-icon-names.mjs
 
 import { globSync, writeFileSync } from 'node:fs';
-import { fail } from './lib/utils.mjs';
+import { fail } from './lib/proc.mjs';
 
 const OUT = 'web/src/lib/components/icon-names.d.ts';
 
 const names = globSync('web/src/lib/icons/*.svg')
   .map((path) =>
     path
-      .replace(/\\/g, '/')
       .split('/')
       .pop()
       .replace(/\.svg$/, '')

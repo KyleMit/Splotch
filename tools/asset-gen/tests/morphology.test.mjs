@@ -11,7 +11,7 @@
 //     leaving a solid blob its original size — the exact trick both callers use
 //     to separate thin strokes from deliberate solid regions.
 import { describe, it, expect } from 'vitest';
-import { dilateMask, erodeMask } from '../lib/morphology.mjs';
+import { chamferDistance, dilateMask, erodeCross, erodeMask } from '../lib/morphology.mjs';
 
 // Build a w×h 0/1 mask; `set` is a predicate (x, y) => boolean.
 function mask(w, h, set) {
@@ -41,6 +41,19 @@ describe('dilateMask', () => {
     const corner = mask(w, h, (x, y) => x === 0 && y === 0);
     // r=1 from a corner reaches only x,y ∈ {0,1} — the negative side is off-image
     expect(count(dilateMask(corner, w, h, 1))).toBe(4);
+  });
+
+  it('can treat out-of-bounds pixels as set', () => {
+    const w = 5,
+      h = 5;
+    const empty = mask(w, h, () => false);
+    const expandedBorder = dilateMask(empty, w, h, 1, 1);
+    expect(count(expandedBorder)).toBe(16);
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++)
+        expect(at(expandedBorder, w, x, y)).toBe(
+          x === 0 || x === w - 1 || y === 0 || y === h - 1 ? 1 : 0
+        );
   });
 
   it('is a no-op on the empty mask and leaves a full mask full', () => {
@@ -96,6 +109,73 @@ describe('erodeMask', () => {
     // a 2-px-wide vertical bar cannot survive an r=1 erode (needs a 3-wide core)
     const bar = mask(w, h, (x) => x === 4 || x === 5);
     expect(count(erodeMask(bar, w, h, 1))).toBe(0);
+  });
+});
+
+describe('erodeCross', () => {
+  it('uses four orthogonal neighbors and treats the border as unset', () => {
+    const w = 5,
+      h = 5;
+    const cross = mask(
+      w,
+      h,
+      (x, y) => (x === 2 && y >= 1 && y <= 3) || (y === 2 && x >= 1 && x <= 3)
+    );
+    const eroded = erodeCross(cross, w, h);
+
+    expect(count(eroded)).toBe(1);
+    expect(at(eroded, w, 2, 2)).toBe(1);
+    expect(
+      count(
+        erodeCross(
+          mask(w, h, () => true),
+          w,
+          h
+        )
+      )
+    ).toBe(9);
+  });
+});
+
+describe('chamferDistance', () => {
+  it('is zero everywhere on a mask with no set pixels', () => {
+    const w = 5,
+      h = 5;
+    const d = chamferDistance(
+      mask(w, h, () => false),
+      w,
+      h
+    );
+    for (const v of d) expect(v).toBe(0);
+  });
+
+  it('measures unit/diagonal steps to a single unset pixel', () => {
+    const w = 7,
+      h = 7;
+    // every pixel is ink except one hole at the center (3,3)
+    const cx = 3,
+      cy = 3;
+    const d = chamferDistance(
+      mask(w, h, (x, y) => !(x === cx && y === cy)),
+      w,
+      h
+    );
+    // the hole itself is non-ink: distance 0
+    expect(at(d, w, cx, cy)).toBe(0);
+    // orthogonal neighbors: one unit step
+    expect(at(d, w, cx - 1, cy)).toBeCloseTo(1, 5);
+    expect(at(d, w, cx + 1, cy)).toBeCloseTo(1, 5);
+    expect(at(d, w, cx, cy - 1)).toBeCloseTo(1, 5);
+    expect(at(d, w, cx, cy + 1)).toBeCloseTo(1, 5);
+    // diagonal neighbors: one √2 step
+    expect(at(d, w, cx - 1, cy - 1)).toBeCloseTo(1.414, 3);
+    expect(at(d, w, cx + 1, cy - 1)).toBeCloseTo(1.414, 3);
+    expect(at(d, w, cx - 1, cy + 1)).toBeCloseTo(1.414, 3);
+    expect(at(d, w, cx + 1, cy + 1)).toBeCloseTo(1.414, 3);
+    // two steps out along an axis: two unit steps, not two diagonal steps
+    expect(at(d, w, cx - 2, cy)).toBeCloseTo(2, 5);
+    // two steps out along the diagonal: two √2 steps
+    expect(at(d, w, cx - 2, cy - 2)).toBeCloseTo(2 * 1.414, 3);
   });
 });
 

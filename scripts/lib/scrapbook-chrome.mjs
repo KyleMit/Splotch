@@ -10,13 +10,15 @@
 // tokens in its own CSS asset — keep the two crayon strips and the paper/ink
 // palette in sync by eye when either changes.
 //
-// Pure string builders: no DOM, no network. GitHub Pages serves the result as-is.
+// Mostly pure string builders (no DOM, no network) plus one filesystem/image
+// helper, `inlineImage`, that reads a file and (optionally) re-encodes it via
+// `sharp` to embed as a data: URI — importers pull in `sharp` transitively.
+// GitHub Pages serves the string-builder output as-is.
 
-export const esc = (s) =>
-  String(s ?? '').replace(
-    /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
-  );
+import { readFile } from 'node:fs/promises';
+import { extname } from 'node:path';
+import sharp from 'sharp';
+import { esc } from './html.mjs';
 
 // The brand crayon strip — the app's 7 palette hues. `size` picks a preset:
 // "lg" for the masthead, "sm" for the footer.
@@ -214,17 +216,7 @@ export function chromeStyle(extraCss = '') {
   return `<style>${CHROME_CSS}${extraCss ? '\n/* page */\n' + extraCss : ''}</style>`;
 }
 
-// The crayon masthead. `crumbs` is an ordered trail — every entry except the last
-// should carry an `href`; the last renders as the current location. `home` is the
-// relative path back to the scrapbook index (the brand + first crumb target).
-export function masthead({
-  title,
-  tagline = '',
-  crumbs = [],
-  home = 'index.html',
-  stats = '',
-  decoration = '',
-}) {
+export function compactTopbar({ home = 'index.html', crumbs = [] } = {}) {
   const trail = crumbs.length
     ? `<nav class="crumbs" aria-label="Breadcrumb">` +
       crumbs
@@ -238,12 +230,26 @@ export function masthead({
         .join('') +
       `</nav>`
     : '';
+  return `<a class="brand" href="${esc(home)}">${crayons('lg')}<span class="brand-name">Splotch<span class="brand-sub">Scrapbook</span></span></a>
+      ${trail}`;
+}
+
+// The crayon masthead. `crumbs` is an ordered trail — every entry except the last
+// should carry an `href`; the last renders as the current location. `home` is the
+// relative path back to the scrapbook index (the brand + first crumb target).
+export function masthead({
+  title,
+  tagline = '',
+  crumbs = [],
+  home = 'index.html',
+  stats = '',
+  decoration = '',
+}) {
   return `<header class="masthead">
   ${decoration ? `<div class="masthead-deco" aria-hidden="true">${decoration}</div>` : ''}
   <div class="shell">
     <div class="topbar">
-      <a class="brand" href="${esc(home)}">${crayons('lg')}<span class="brand-name">Splotch<span class="brand-sub">Scrapbook</span></span></a>
-      ${trail}
+      ${compactTopbar({ home, crumbs })}
     </div>
     <div class="masthead-body">
       <h1>${esc(title)}</h1>
@@ -262,6 +268,27 @@ export function siteFooter({ home = 'index.html' } = {}) {
     <p>Committed run outputs from the Splotch generators — see <code>scrapbook/README.md</code>. · <a href="https://github.com/KyleMit/Splotch">GitHub</a> · <a href="${esc(home)}">All collections</a></p>
   </div>
 </footer>`;
+}
+
+const MIME = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+};
+
+// Inlines an image file as a data: URI. Pass `width` to downscale + re-encode as
+// webp (quality 78); omit it to pass the file through as-is, MIME-mapped by extension.
+export async function inlineImage(path, { width } = {}) {
+  if (width) {
+    const buf = await sharp(path)
+      .resize({ width, withoutEnlargement: true })
+      .webp({ quality: 78 })
+      .toBuffer();
+    return `data:image/webp;base64,${buf.toString('base64')}`;
+  }
+  const buf = await readFile(path);
+  return `data:${MIME[extname(path).toLowerCase()]};base64,${buf.toString('base64')}`;
 }
 
 // Full self-contained HTML document wrapper for the pages this module fully owns

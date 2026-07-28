@@ -20,7 +20,7 @@ const clientDir = `${outputDir}/client`;
 const SAVE_MODULE_MARKERS: Record<string, string> = {
   'exportDrawing.ts': 'handmade-paper',
   'screenshot.ts': 'polaroid-flash',
-  'folderSave.ts': 'splotch-save-folder-chosen',
+  'folderSave.ts': 'Persisting the save folder failed:',
 };
 
 test.skip(!!process.env.DEV_SERVER, 'guards the production build output');

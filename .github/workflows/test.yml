@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -15,15 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - uses: ./.github/actions/setup-node
 
       # Fast-fail the cheapest, most-common failure first: a formatting-only
       # red PR should not wait through svelte-check + eslint to surface.
@@ -85,16 +82,12 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      PW_BROWSERS: chromium webkit
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - uses: ./.github/actions/setup-node
 
       - name: Run unit tests
         run: npm run test:unit
@@ -107,28 +100,27 @@ jobs:
 
       - name: Resolve Playwright version
         id: playwright-version
-        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
+        run: node scripts/playwright-version.mjs >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          # "-webkit" marks the cache generation that includes the WebKit
-          # binary — an older chromium-only cache would silently skip the
-          # WebKit smoke project (playwright.config.ts drops it when the
-          # binary is absent).
-          key: playwright-${{ runner.os }}-webkit-${{ steps.playwright-version.outputs.version }}
+          # PW_BROWSERS marks the cache generation's browser coverage — a
+          # cache without WebKit would silently skip the WebKit smoke project
+          # (playwright.config.ts drops it when the binary is absent).
+          key: playwright-${{ runner.os }}-${{ env.PW_BROWSERS }}-${{ steps.playwright-version.outputs.version }}
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium webkit
+        run: npx playwright install --with-deps ${{ env.PW_BROWSERS }}
 
       # The browser binaries cache, but the apt packages don't — install-deps
       # is still required on a cache hit.
       - name: Install Playwright system deps
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium webkit
+        run: npx playwright install-deps ${{ env.PW_BROWSERS }}
 
       - name: Run e2e tests
         run: npm run test:e2e
@@ -138,12 +130,6 @@ jobs:
           # cache or edited install line fails loudly instead of silently
           # dropping WebKit coverage.
           REQUIRE_WEBKIT: 1
-          # The generate-image rate-limit spec drives the managed-token path,
-          # which requires the token to be allowlisted. Locally this comes from
-          # .env (git-ignored); supply the same non-secret test tokens in CI.
-          # The burst spec picks a token by testInfo.retry so each CI retry
-          # (retries: 2) gets a fresh 60s limiter window — hence one per attempt.
-          ALLOWED_TOKENS_LIST: daycare-club,daycare-club-retry1,daycare-club-retry2
 
       # The gen:* generators drive the live app through scripts/lib/app-driver.mjs
       # and never run elsewhere in CI, so this smoke keeps that module from rotting
@@ -153,7 +139,7 @@ jobs:
 
       - name: Upload report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-report
           path: web/playwright-report/

@@ -4,42 +4,52 @@
   import Icon from './Icon.svelte';
   import SplotchyIcon from './SplotchyIcon.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
-  import { install, promptInstall, dismissInstall } from '$lib/state/install.svelte';
-
-  // Wait until the child has actually drawn a little, so the prompt feels earned
-  // and never competes with the very first finger-on-screen moment.
-  const STROKES_BEFORE_PROMPT = SETTLED_IN_STROKES;
+  import {
+    install,
+    promptInstall,
+    dismissInstall,
+    armInstallAutoClear,
+    autoDismissInstallIfDue,
+  } from '$lib/state/install.svelte';
+  import { PARENT_HELP_BUTTON_ID } from '$lib/state/ui.svelte';
 
   // The banner sits above the corner controls (actions toggle, Parent Help), so
   // it must not linger: once the child has kept drawing past it, clear it and
   // hand off to the Parent Center setup guide with a short parting message.
-  const STROKES_BEFORE_AUTO_CLEAR = 5;
   const PARTING_MESSAGE_MS = 4000;
+
+  // Shared motion vocabulary for the banner's enter/exit transitions.
+  const BANNER_FLY_Y = 120;
+  const BANNER_ENTER_MS = 420;
+  const BANNER_EXIT_MS = 300;
+  const BANNER_SHRINK_EXIT_MS = 550;
+  const PARTING_FADE_MS = 200;
+  const HINT_FADE_MS = 160;
 
   // iOS / Android manual flows have no one-tap API, so the button expands an
   // inline how-to instead of firing a dialog.
   let showHint = $state(false);
   let busy = $state(false);
   let parting = $state(false);
-  let shownAtStroke: number | null = null;
-  let exitIntoParentButton = false;
+  let exitIntoParentButton = $state(false);
 
+  // Wait until the child has actually drawn a little, so the prompt feels earned
+  // and never competes with the very first finger-on-screen moment.
   const visible = $derived(
     !install.installed &&
       !install.dismissed &&
       install.mode !== 'none' &&
-      canvasState.strokeCount >= STROKES_BEFORE_PROMPT
+      canvasState.strokeCount >= SETTLED_IN_STROKES
   );
 
   $effect(() => {
     if (!visible || parting) return;
-    shownAtStroke ??= canvasState.strokeCount;
+    armInstallAutoClear();
     // A parent mid-interaction (reading the expanded hint, native dialog up)
     // outranks the countdown — only auto-clear an ignored banner.
     if (showHint || busy) return;
-    if (canvasState.strokeCount < shownAtStroke + STROKES_BEFORE_AUTO_CLEAR) return;
+    if (!autoDismissInstallIfDue()) return;
     parting = true;
-    dismissInstall();
     setTimeout(() => {
       exitIntoParentButton = true;
       parting = false;
@@ -50,13 +60,15 @@
   // message's "it lives in the Parent Center" lands visually too. Manual
   // dismiss / completed install keep the plain fly-down.
   function bannerExit(node: HTMLElement) {
-    if (!exitIntoParentButton) return fly(node, { y: 120, duration: 300 });
-    const target = document.getElementById('parentHelpButton')?.getBoundingClientRect();
+    if (!exitIntoParentButton) return fly(node, { y: BANNER_FLY_Y, duration: BANNER_EXIT_MS });
+    const target = document.getElementById(PARENT_HELP_BUTTON_ID)?.getBoundingClientRect();
     const from = node.getBoundingClientRect();
     const dx = target ? target.left + target.width / 2 - (from.left + from.width / 2) : 0;
-    const dy = target ? target.top + target.height / 2 - (from.top + from.height / 2) : 120;
+    const dy = target
+      ? target.top + target.height / 2 - (from.top + from.height / 2)
+      : BANNER_FLY_Y;
     return {
-      duration: 550,
+      duration: BANNER_SHRINK_EXIT_MS,
       easing: cubicIn,
       css: (t: number, u: number) =>
         // The resting position already carries translateX(-50%) — restate it so
@@ -82,9 +94,13 @@
 </script>
 
 {#if visible || parting}
-  <div class="install-banner" in:fly={{ y: 120, duration: 420, easing: backOut }} out:bannerExit>
+  <div
+    class="install-banner"
+    in:fly={{ y: BANNER_FLY_Y, duration: BANNER_ENTER_MS, easing: backOut }}
+    out:bannerExit
+  >
     {#if parting}
-      <div class="install-parting" in:fade={{ duration: 200 }}>
+      <div class="install-parting" in:fade={{ duration: PARTING_FADE_MS }}>
         <span class="install-mascot" aria-hidden="true">
           <SplotchyIcon class="install-mascot-icon" />
         </span>
@@ -120,7 +136,7 @@
       </div>
 
       {#if showHint && install.mode !== 'oneTap'}
-        <div class="install-hint" transition:fade={{ duration: 160 }}>
+        <div class="install-hint" transition:fade={{ duration: HINT_FADE_MS }}>
           {#if install.mode === 'ios'}
             <p>
               Tap <Icon name="share-ios" class="install-inline-icon" aria-label="Share" /> Share at the
@@ -148,16 +164,16 @@
     left: 50%;
     bottom: calc(16px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
-    /* Above the corner controls (actions toggle 901, Parent Help 900): on phones
+    /* Above the corner controls (--z-panel, --z-corner-button): on phones
        the banner overlaps them, and the auto-clear keeps that takeover short. */
-    z-index: 950;
+    z-index: var(--z-banner);
     width: min(92vw, 420px);
     box-sizing: border-box;
     padding: 14px 16px;
     background: var(--surface);
     border: 2px solid var(--brand, #ab71e1);
     border-radius: var(--radius-xl);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--shadow-pop);
     font-family: inherit;
   }
 
@@ -237,7 +253,7 @@
 
   .install-copy strong {
     color: var(--text-strong);
-    font-size: 15px;
+    font-size: var(--font-size-lg);
     font-weight: 700;
   }
 
@@ -254,10 +270,10 @@
     gap: 6px;
     padding: 10px 16px;
     border: none;
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     background: var(--brand, #ab71e1);
     color: var(--on-brand, #fff);
-    font-size: 15px;
+    font-size: var(--font-size-lg);
     font-weight: 700;
     cursor: pointer;
     touch-action: manipulation;

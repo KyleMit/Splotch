@@ -1,0 +1,344 @@
+diff --git a/tools/asset-gen/bin/gen-coloring-chalk.mjs b/tools/asset-gen/bin/gen-coloring-chalk.mjs
+index 60578bfe..3700d653 100644
+--- a/tools/asset-gen/bin/gen-coloring-chalk.mjs
++++ b/tools/asset-gen/bin/gen-coloring-chalk.mjs
+@@ -55,6 +55,7 @@ import { existsSync } from 'node:fs';
+ import { join, dirname, relative } from 'node:path';
+ import sharp from 'sharp';
+ import { GoogleGenAI } from '@google/genai';
++import { IMAGE_MODEL, IMAGE_TIMEOUT_MS, CHALK_WEBP_QUALITY } from '../lib/gemini.mjs';
+ import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+ import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+ import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
+@@ -66,8 +67,6 @@ import { scoreEyeFill, EYE_DARK_MAX, EYE_LIGHT_MIN } from '../lib/eye-fill.mjs';
+ import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
+ import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
+ 
+-const MODEL = 'gemini-3.1-flash-image';
+-const WEBP_QUALITY = 92;
+ const OUT_DIR = join(SAMPLES_DARK_DIR, 'chalk');
+ 
+ // --- New-ink analysis ----------------------------------------------------------
+@@ -252,7 +251,7 @@ const ai = process.env.GEMINI_API_KEY
+ 
+ async function drawChalk(imageBytes, temperature, instruction) {
+   const response = await ai.models.generateContent({
+-    model: MODEL,
++    model: IMAGE_MODEL,
+     contents: [
+       {
+         role: 'user',
+@@ -268,7 +267,7 @@ async function drawChalk(imageBytes, temperature, instruction) {
+       },
+     ],
+     config: {
+-      abortSignal: AbortSignal.timeout(120_000),
++      abortSignal: AbortSignal.timeout(IMAGE_TIMEOUT_MS),
+       ...(temperature === undefined ? {} : { temperature }),
+     },
+   });
+@@ -289,7 +288,7 @@ async function toInkPolarity(buf, width, height) {
+     .negate()
+     .toBuffer();
+   return sharp(await crispInk(negated))
+-    .webp({ quality: WEBP_QUALITY })
++    .webp({ quality: CHALK_WEBP_QUALITY })
+     .toBuffer();
+ }
+ 
+@@ -359,7 +358,7 @@ for (const page of pages) {
+   const { width, height } = await sharp(pen).metadata();
+   const displayInput = await sharp(pen)
+     .negate({ alpha: false })
+-    .webp({ quality: WEBP_QUALITY })
++    .webp({ quality: CHALK_WEBP_QUALITY })
+     .toBuffer();
+ 
+   process.stdout.write(`${rel} ... `);
+@@ -402,7 +401,7 @@ for (const page of pages) {
+         const inked = await toInkPolarity(drawn, width, height);
+         const { buffer: aligned, dx, dy } = await alignToSource(inked, pen, width, height);
+         const cand = await score(
+-          await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer(),
++          await sharp(aligned).webp({ quality: CHALK_WEBP_QUALITY }).toBuffer(),
+           { dx, dy },
+           attempt
+         );
+@@ -421,7 +420,7 @@ for (const page of pages) {
+   // What dark mode will actually show — the negation — for human review.
+   await sharp(best.candidate)
+     .negate({ alpha: false })
+-    .webp({ quality: WEBP_QUALITY })
++    .webp({ quality: CHALK_WEBP_QUALITY })
+     .toFile(sample.replace(/\.webp$/, '.display.webp'));
+   await sharp(best.overlay).toFile(sample.replace(/\.webp$/, '.overlay.png'));
+ 
+diff --git a/tools/asset-gen/bin/gen-coloring-fills-dark.mjs b/tools/asset-gen/bin/gen-coloring-fills-dark.mjs
+index dd31cca8..b44b684b 100644
+--- a/tools/asset-gen/bin/gen-coloring-fills-dark.mjs
++++ b/tools/asset-gen/bin/gen-coloring-fills-dark.mjs
+@@ -49,6 +49,7 @@ import { existsSync } from 'node:fs';
+ import { join, dirname, relative } from 'node:path';
+ import sharp from 'sharp';
+ import { GoogleGenAI } from '@google/genai';
++import { IMAGE_MODEL, IMAGE_TIMEOUT_MS, FILL_WEBP_QUALITY } from '../lib/gemini.mjs';
+ import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+ import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+ import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
+@@ -73,9 +74,7 @@ import { scoreEyeFill, judgeNightEyes } from '../lib/eye-fill.mjs';
+ import { scoreCompositeEyes } from '../lib/composite-eye.mjs';
+ import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
+ 
+-const MODEL = 'gemini-3.1-flash-image';
+ const OUT_DIR = SAMPLES_DARK_DIR;
+-const WEBP_QUALITY = 90;
+ 
+ // The eye instruction depends on the line-art input. A plain inverted PEN
+ // outline has ringed eyes the fill must paint in three tones; a CHALK outline
+@@ -120,7 +119,7 @@ async function generateDarkPage(ai, { imageBytes, mimeType, temperature, chalked
+   const base = darkFillPrompt(chalked);
+   const prompt = notes ? `${base}\n\nPAGE-SPECIFIC NOTES:\n${notes}` : base;
+   const response = await ai.models.generateContent({
+-    model: MODEL,
++    model: IMAGE_MODEL,
+     contents: [
+       {
+         role: 'user',
+@@ -131,7 +130,7 @@ async function generateDarkPage(ai, { imageBytes, mimeType, temperature, chalked
+       },
+     ],
+     config: {
+-      abortSignal: AbortSignal.timeout(120_000),
++      abortSignal: AbortSignal.timeout(IMAGE_TIMEOUT_MS),
+       ...(temperature === undefined ? {} : { temperature }),
+     },
+   });
+@@ -189,7 +188,7 @@ async function dilateWhiteLines(negatedBuf, radius) {
+ async function toDarkInput(sourceBuf, dilateLines) {
+   const negated = await sharp(sourceBuf).negate({ alpha: false }).toBuffer();
+   const grown = dilateLines > 0 ? await dilateWhiteLines(negated, dilateLines) : sharp(negated);
+-  return grown.webp({ quality: WEBP_QUALITY }).toBuffer();
++  return grown.webp({ quality: FILL_WEBP_QUALITY }).toBuffer();
+ }
+ 
+ const { values, positionals } = parseArgs({
+@@ -402,7 +401,7 @@ for (const page of pages) {
+         lightEyes,
+         cfg,
+       });
+-      const colored = await sharp(take.aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
++      const colored = await sharp(take.aligned).webp({ quality: FILL_WEBP_QUALITY }).toBuffer();
+ 
+       const dir = join(OUT_DIR, dirname(rel));
+       await mkdir(dir, { recursive: true });
+diff --git a/tools/asset-gen/bin/gen-coloring-fills.mjs b/tools/asset-gen/bin/gen-coloring-fills.mjs
+index 8e5a8aba..6dbdec70 100644
+--- a/tools/asset-gen/bin/gen-coloring-fills.mjs
++++ b/tools/asset-gen/bin/gen-coloring-fills.mjs
+@@ -35,6 +35,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
+ import { join, dirname, relative } from 'node:path';
+ import sharp from 'sharp';
+ import { GoogleGenAI } from '@google/genai';
++import { IMAGE_MODEL, IMAGE_TIMEOUT_MS, FILL_WEBP_QUALITY } from '../lib/gemini.mjs';
+ import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
+ import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+ import { pageLevers, describeLevers } from '../lib/page-notes.mjs';
+@@ -44,9 +45,6 @@ import { scoreEyeFill, judgeLightEyes } from '../lib/eye-fill.mjs';
+ import { punchFill } from '../lib/punch-fill.mjs';
+ import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
+ 
+-const MODEL = 'gemini-3.1-flash-image';
+-const WEBP_QUALITY = 90;
+-
+ // The single prompt used for every page — no per-page tailoring. It leans hard
+ // on "do not touch the lines" because the whole point is a pixel-faithful fill.
+ const FILL_PROMPT = `You are given a black-and-white coloring-book page for a toddler. Color it in neatly, exactly like a completed page in a coloring book.
+@@ -74,7 +72,7 @@ The result must look like the identical line drawing, fully colored in with clea
+ // concerns so it can be reused (batch, samples, or eventually in-app).
+ export async function generateColoredPage(ai, { imageBytes, mimeType, temperature }) {
+   const response = await ai.models.generateContent({
+-    model: MODEL,
++    model: IMAGE_MODEL,
+     contents: [
+       {
+         role: 'user',
+@@ -85,7 +83,7 @@ export async function generateColoredPage(ai, { imageBytes, mimeType, temperatur
+       },
+     ],
+     config: {
+-      abortSignal: AbortSignal.timeout(120_000),
++      abortSignal: AbortSignal.timeout(IMAGE_TIMEOUT_MS),
+       ...(temperature === undefined ? {} : { temperature }),
+     },
+   });
+@@ -193,7 +191,7 @@ async function renderClean(source, width, height, slot) {
+     // undo any few-pixel nudge so it registers 1:1 against the outline page.
+     const resized = await sharp(bytes).resize(width, height, { fit: 'fill' }).png().toBuffer();
+     const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
+-    const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
++    const colored = await sharp(aligned).webp({ quality: FILL_WEBP_QUALITY }).toBuffer();
+ 
+     const [{ keep, drift, localKeep, worstTile, overlay }, white, eyeScore] = await Promise.all([
+       outlineMatch(source, colored),
+diff --git a/tools/asset-gen/bin/gen-coloring-outlines-fresh.mjs b/tools/asset-gen/bin/gen-coloring-outlines-fresh.mjs
+index 44811f8e..9f7fd286 100644
+--- a/tools/asset-gen/bin/gen-coloring-outlines-fresh.mjs
++++ b/tools/asset-gen/bin/gen-coloring-outlines-fresh.mjs
+@@ -24,14 +24,12 @@ import { writeFile, mkdir, copyFile } from 'node:fs/promises';
+ import { join, relative } from 'node:path';
+ import sharp from 'sharp';
+ import { GoogleGenAI } from '@google/genai';
++import { IMAGE_MODEL, IMAGE_TIMEOUT_MS, FRESH_OUTLINE_WEBP_QUALITY } from '../lib/gemini.mjs';
+ import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
+ import { scoreSolidity } from '../lib/solid-regions.mjs';
+ import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
+ import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
+ 
+-const MODEL = 'gemini-3.1-flash-image';
+-const WEBP_QUALITY = 90;
+-
+ const STYLE_PROMPT = `Draw ONE page of a toddler coloring book (for age 2+), in this exact style:
+ 
+ - Clean black pen OUTLINES on a pure white background. Medium, even line weight throughout — like a thick felt-tip pen. No shading, no grey, no color, no hatching, no texture, no text, letters, or numbers, and no border frame around the page.
+@@ -83,10 +81,10 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+ 
+ async function generateOutline(temperature) {
+   const response = await ai.models.generateContent({
+-    model: MODEL,
++    model: IMAGE_MODEL,
+     contents: [{ role: 'user', parts: [{ text: prompt }] }],
+     config: {
+-      abortSignal: AbortSignal.timeout(120_000),
++      abortSignal: AbortSignal.timeout(IMAGE_TIMEOUT_MS),
+       imageConfig: { aspectRatio: aspect },
+       temperature,
+     },
+@@ -103,7 +101,7 @@ async function toPen(bytes) {
+     .resize(W, H, { fit: 'fill' })
+     .toColourspace('b-w')
+     .normalise()
+-    .webp({ quality: WEBP_QUALITY })
++    .webp({ quality: FRESH_OUTLINE_WEBP_QUALITY })
+     .toBuffer();
+ }
+ 
+diff --git a/tools/asset-gen/bin/gen-style-covers.mjs b/tools/asset-gen/bin/gen-style-covers.mjs
+index 1befe6c6..d34e9b81 100644
+--- a/tools/asset-gen/bin/gen-style-covers.mjs
++++ b/tools/asset-gen/bin/gen-style-covers.mjs
+@@ -13,15 +13,14 @@ import { readFile } from 'node:fs/promises';
+ import { join } from 'node:path';
+ import sharp from 'sharp';
+ import { GoogleGenAI } from '@google/genai';
++import { IMAGE_MODEL, IMAGE_TIMEOUT_MS, STYLE_COVER_WEBP_QUALITY } from '../lib/gemini.mjs';
+ import { STYLES_DIR, fail } from '../lib/paths.mjs';
+ import { STYLE_SUFFIXES, STYLE_NAMES } from '../../../web/src/lib/ai/styles.ts';
+ import { buildPromptForStyle } from '../../../web/src/lib/ai/prompt.ts';
+ import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
+ 
+-const MODEL = 'gemini-3.1-flash-image';
+ const SOURCE_SVG = join(STYLES_DIR, 'source.svg');
+ const THUMB_SIZE = 448;
+-const WEBP_QUALITY = 75;
+ 
+ // Generate one styled render of a drawing. Returns raw image bytes + mime type,
+ // or throws with the refusal/empty reason. Kept free of file/CLI concerns so it
+@@ -29,7 +28,7 @@ const WEBP_QUALITY = 75;
+ export async function generateStyledImage(ai, { imageBytes, mimeType, style, temperature }) {
+   const prompt = buildPromptForStyle(style, STYLE_SUFFIXES);
+   const response = await ai.models.generateContent({
+-    model: MODEL,
++    model: IMAGE_MODEL,
+     contents: [
+       {
+         role: 'user',
+@@ -40,7 +39,7 @@ export async function generateStyledImage(ai, { imageBytes, mimeType, style, tem
+       },
+     ],
+     config: {
+-      abortSignal: AbortSignal.timeout(120_000),
++      abortSignal: AbortSignal.timeout(IMAGE_TIMEOUT_MS),
+       ...(temperature === undefined ? {} : { temperature }),
+     },
+   });
+@@ -91,7 +90,7 @@ for (const style of styles) {
+     });
+     await sharp(bytes)
+       .resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover' })
+-      .webp({ quality: WEBP_QUALITY })
++      .webp({ quality: STYLE_COVER_WEBP_QUALITY })
+       .toFile(out);
+     console.log(`saved ${out}`);
+   } catch (err) {
+diff --git a/tools/asset-gen/bin/normalize-outline-strokes.mjs b/tools/asset-gen/bin/normalize-outline-strokes.mjs
+index 4b8e2e25..ac5d62a7 100644
+--- a/tools/asset-gen/bin/normalize-outline-strokes.mjs
++++ b/tools/asset-gen/bin/normalize-outline-strokes.mjs
+@@ -41,6 +41,7 @@ import { join, dirname, relative } from 'node:path';
+ import { existsSync } from 'node:fs';
+ import sharp from 'sharp';
+ import { GoogleGenAI } from '@google/genai';
++import { IMAGE_MODEL, IMAGE_TIMEOUT_MS, NORMALIZED_OUTLINE_WEBP_QUALITY } from '../lib/gemini.mjs';
+ import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+ import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
+ import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
+@@ -49,8 +50,6 @@ import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
+ import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
+ import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
+ 
+-const MODEL = 'gemini-3.1-flash-image';
+-const WEBP_QUALITY = 92;
+ const OUT_DIR = join(SAMPLES_DARK_DIR, 'normalize');
+ // The candidate's ink must all lie on the reference's (no invented strokes).
+ // Slightly looser than KEEP_THRESHOLD: a faithfully-traced boundary ring sits a
+@@ -110,7 +109,7 @@ const ai = process.env.GEMINI_API_KEY
+ 
+ async function editLineArt(imageBytes, temperature, instruction) {
+   const response = await ai.models.generateContent({
+-    model: MODEL,
++    model: IMAGE_MODEL,
+     contents: [
+       {
+         role: 'user',
+@@ -126,7 +125,7 @@ async function editLineArt(imageBytes, temperature, instruction) {
+       },
+     ],
+     config: {
+-      abortSignal: AbortSignal.timeout(120_000),
++      abortSignal: AbortSignal.timeout(IMAGE_TIMEOUT_MS),
+       ...(temperature === undefined ? {} : { temperature }),
+     },
+   });
+@@ -144,7 +143,7 @@ async function cleanRender(buf, width, height) {
+     .resize(width, height, { fit: 'fill' })
+     .grayscale()
+     .linear(1.25, -18)
+-    .webp({ quality: WEBP_QUALITY })
++    .webp({ quality: NORMALIZED_OUTLINE_WEBP_QUALITY })
+     .toBuffer();
+ }
+ 
+@@ -271,7 +270,9 @@ for (const arg of positionals) {
+       const edited = await editLineArt(source, temperature, cfg.instruction);
+       const resized = await cleanRender(edited, width, height);
+       const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
+-      const candidate = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
++      const candidate = await sharp(aligned)
++        .webp({ quality: NORMALIZED_OUTLINE_WEBP_QUALITY })
++        .toBuffer();
+ 
+       const solidity = await scoreSolidity(candidate);
+       const rings = await scoreEyeRings(candidate);
+diff --git a/tools/asset-gen/lib/gemini.mjs b/tools/asset-gen/lib/gemini.mjs
+new file mode 100644
+index 00000000..71f53b47
+--- /dev/null
++++ b/tools/asset-gen/lib/gemini.mjs
+@@ -0,0 +1,7 @@
++export const IMAGE_MODEL = 'gemini-3.1-flash-image';
++export const IMAGE_TIMEOUT_MS = 120_000;
++export const FILL_WEBP_QUALITY = 90;
++export const CHALK_WEBP_QUALITY = 92;
++export const NORMALIZED_OUTLINE_WEBP_QUALITY = 92;
++export const FRESH_OUTLINE_WEBP_QUALITY = 90;
++export const STYLE_COVER_WEBP_QUALITY = 75;

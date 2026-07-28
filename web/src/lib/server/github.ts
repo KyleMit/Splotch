@@ -1,18 +1,21 @@
-import { env } from '$env/dynamic/private';
+import { config } from './config';
 
 // Server-only seam for the one thing we do with GitHub: open an issue from an
 // in-app feedback report. Isolated here (mirroring the AI provider seam,
 // ADR-0047) so route code never touches the token or the REST shape directly.
 
 const GITHUB_API = 'https://api.github.com';
+const GITHUB_ACCEPT = 'application/vnd.github+json';
+const GITHUB_API_VERSION = '2022-11-28';
+const GITHUB_USER_AGENT = 'splotch-feedback';
 
 function targetRepo(): string {
-  return env.GITHUB_ISSUE_REPO?.trim() || 'KyleMit/Splotch';
+  return config.githubIssueRepo();
 }
 
 /** Whether a token is configured — the endpoint uses this to fail gracefully. */
 export function isReportingConfigured(): boolean {
-  return Boolean(env.GITHUB_ISSUE_TOKEN);
+  return Boolean(config.githubIssueToken());
 }
 
 /**
@@ -53,18 +56,18 @@ export interface CreateIssueInput {
 export async function createIssue(
   input: CreateIssueInput
 ): Promise<{ url: string; number: number }> {
-  const token = env.GITHUB_ISSUE_TOKEN;
+  const token = config.githubIssueToken();
   if (!token) throw new Error('GITHUB_ISSUE_TOKEN is not configured');
 
   const res = await fetch(`${GITHUB_API}/repos/${targetRepo()}/issues`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
+      Accept: GITHUB_ACCEPT,
+      'X-GitHub-Api-Version': GITHUB_API_VERSION,
       'Content-Type': 'application/json',
       // GitHub rejects API calls without a User-Agent.
-      'User-Agent': 'splotch-feedback',
+      'User-Agent': GITHUB_USER_AGENT,
     },
     body: JSON.stringify(input),
   });

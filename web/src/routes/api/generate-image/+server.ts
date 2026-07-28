@@ -1,12 +1,14 @@
 import { error } from '@sveltejs/kit';
 import { STYLE_SUFFIXES } from '$lib/ai/styles';
 import { buildPromptForStyle } from '$lib/ai/prompt';
-import { recordTokenUsage } from '$lib/server/usage';
+import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
+import { recordByokUsage, recordTokenUsage } from '$lib/server/usage';
 import { aiProvider } from '$lib/server/ai/provider';
 import {
   authorizeGenerationRequest,
-  requireEffectiveGenerationKey,
+  type GenerationAuthorization,
 } from '$lib/server/generationAuthorization';
+import { contentTypeOf, readBodyWithinLimit } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 // A safety refusal is the model declining the drawing on policy grounds — the
@@ -27,12 +29,6 @@ const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 // token and (especially) a parent's BYO Gemini key are secrets, and query
 // strings leak into server/CDN access logs, browser history, and Referer
 // headers. The non-secret style enum is a plain query param. See ADR-0064.
-const ACCESS_TOKEN_HEADER = 'x-access-token';
-const API_KEY_HEADER = 'x-api-key';
-
-const contentTypeOf = (request: Request) =>
-  (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
-
 const asString = (value: FormDataEntryValue | null): string | null =>
   typeof value === 'string' ? value : null;
 
@@ -40,10 +36,10 @@ interface GenerationRequest {
   token: string | null;
   apiKey: string | null;
   style: string | null;
-  // Deferred so the ≤15 MB body isn't buffered until authorization succeeds — an
-  // unauthorized request never costs us the read. (The multipart shape has
+  // Deferred so the ≤15 MB body isn't read or validated until authorization
+  // succeeds — the thunk can throw 400 or 413. (The multipart shape has
   // already buffered by necessity; only the raw path actually saves the read.)
-  readImage: () => Promise<{ bytes: Buffer; mimeType: string }>;
+  readValidatedImage: () => Promise<{ bytes: Buffer; mimeType: string }>;
 }
 
 // Two request shapes are accepted (ADR-0064):
@@ -67,7 +63,7 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
       token: asString(form.get('token')),
       apiKey: asString(form.get('apiKey')),
       style: asString(form.get('style')),
-      readImage: async () => {
+      readValidatedImage: async () => {
         if (!(imageFile instanceof Blob)) throw error(400, 'Missing image');
         if (imageFile.size > MAX_IMAGE_BYTES) throw error(413, 'Image is too large');
         return { bytes: Buffer.from(await imageFile.arrayBuffer()), mimeType: imageFile.type };
@@ -78,21 +74,37 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
     token: request.headers.get(ACCESS_TOKEN_HEADER),
     apiKey: request.headers.get(API_KEY_HEADER),
     style: url.searchParams.get('style'),
-    readImage: async () => {
-      // Reject an oversized body before buffering it. Content-Length can be
-      // absent or wrong, so the byte length is re-checked after the read.
-      const declaredLength = Number(request.headers.get('content-length'));
-      if (Number.isFinite(declaredLength) && declaredLength > MAX_IMAGE_BYTES) {
-        throw error(413, 'Image is too large');
-      }
-      // Buffer.from(ArrayBuffer) wraps without copying (unlike the TypedArray
-      // overload), so the upload is only held in memory once.
-      const bytes = Buffer.from(await request.arrayBuffer());
+    readValidatedImage: async () => {
+      const body = await readBodyWithinLimit(request, MAX_IMAGE_BYTES);
+      if (!body.ok) throw error(413, 'Image is too large');
+      const { bytes } = body;
       if (bytes.byteLength === 0) throw error(400, 'Missing image');
-      if (bytes.byteLength > MAX_IMAGE_BYTES) throw error(413, 'Image is too large');
       return { bytes, mimeType: contentTypeOf(request) };
     },
   };
+}
+
+function recordGenerationUsage(
+  authorization: GenerationAuthorization,
+  style: string | null,
+  finalPrompt: string,
+  platform?: App.Platform
+): void {
+  // Only the managed tokens are worth a per-token tally (to spot one going
+  // rogue). BYOK requests run on the parent's own quota, so just log them.
+  if (authorization.usingByok) {
+    recordByokUsage(style, finalPrompt);
+  } else {
+    // The synchronous audit log inside recordTokenUsage runs immediately; only
+    // the Blobs write is async, and we don't make the image wait on it. waitUntil
+    // keeps the function alive long enough to finish on Netlify; without it
+    // (local dev) it's a fire-and-forget whose errors are caught internally.
+    const usage = recordTokenUsage(authorization.managedToken, {
+      style,
+      prompt: finalPrompt,
+    });
+    platform?.context?.waitUntil?.(usage);
+  }
 }
 
 export const POST: RequestHandler = async ({ request, url, platform, getClientAddress }) => {
@@ -105,37 +117,22 @@ export const POST: RequestHandler = async ({ request, url, platform, getClientAd
   });
   if (authorization instanceof Response) return authorization;
 
-  const { bytes: inputBytes, mimeType } = await source.readImage();
+  const { bytes: inputBytes, mimeType } = await source.readValidatedImage();
   // An empty type is fine (default to PNG below); only reject a type that's
   // present and not on the allowlist.
   if (mimeType && !ALLOWED_IMAGE_TYPES.includes(mimeType)) {
     throw error(415, 'Unsupported image type');
   }
   const style = source.style;
-  const effectiveKey = requireEffectiveGenerationKey(authorization);
 
   const finalPrompt = buildPromptForStyle(style, STYLE_SUFFIXES);
 
-  // Only the managed tokens are worth a per-token tally (to spot one going
-  // rogue). BYOK requests run on the parent's own quota, so just log them.
-  if (authorization.usingByok) {
-    console.log(`[ai-usage] byok style=${style || 'none'} at=${new Date().toISOString()}`);
-  } else {
-    // The synchronous audit log inside recordTokenUsage runs immediately; only
-    // the Blobs write is async, and we don't make the image wait on it. waitUntil
-    // keeps the function alive long enough to finish on Netlify; without it
-    // (local dev) it's a fire-and-forget whose errors are caught internally.
-    const usage = recordTokenUsage(authorization.managedToken, {
-      style: typeof style === 'string' ? style : null,
-      prompt: finalPrompt,
-    });
-    platform?.context?.waitUntil?.(usage);
-  }
+  recordGenerationUsage(authorization, style, finalPrompt, platform);
 
   const inputBase64 = inputBytes.toString('base64');
 
   const result = await aiProvider.generateImage({
-    apiKey: effectiveKey,
+    apiKey: authorization.effectiveKey,
     image: { base64: inputBase64, mimeType: mimeType || 'image/png' },
     prompt: finalPrompt,
   });

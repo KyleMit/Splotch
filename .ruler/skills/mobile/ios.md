@@ -9,8 +9,9 @@ Store release checklist. For the general build model and shared assets see
 > iOS can only be built on macOS — Xcode and the simulators are macOS-only. No CocoaPods anywhere:
 > the iOS project uses Swift Package Manager (ADR-0020). Minimum supported OS: **iOS 16.4**
 > (`IPHONEOS_DEPLOYMENT_TARGET` in `App.xcodeproj`), aligned with the web bundle's floor — see
-> [docs/COMPATIBILITY.md](../../../docs/COMPATIBILITY.md). It MUST stay ≤ the web `build.target` iOS
-> version in `web/vite.config.ts`.
+> [docs/COMPATIBILITY.md](../../../docs/COMPATIBILITY.md). It MUST stay ≥ the web floor's iOS/Safari
+> version (the web `build.target`, declared in `web/browserTargets.ts`) — lowering it below the web
+> floor would let pre-floor WebViews install a bundle they can't run.
 
 ## 1. Toolchain setup (macOS-only)
 
@@ -109,8 +110,8 @@ npx @capacitor/assets generate --ios
       CocoaPods (ADR-0020).
 * [x] Bundle ID `art.splotch.app`, display name **Splotch** (`ios/App/App.xcodeproj`, `Info.plist`).
 * [x] Version `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` match Android's
-      `versionName`/`versionCode` — `scripts/release.mjs` bumps both via `capacitor-set-version`;
-      never edit them by hand.
+      `versionName`/`versionCode` — `scripts/release.mjs` bumps both via
+      `scripts/lib/native-version.mjs`; never edit them by hand.
 * [x] `NSPhotoLibraryAddUsageDescription` in `Info.plist` (gallery save uses iOS add-only photo
       permission — the code never reads the library on iOS).
 * [x] `ITSAppUsesNonExemptEncryption = false` in `Info.plist` (HTTPS only), so TestFlight uploads

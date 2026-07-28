@@ -1,7 +1,10 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import Button from '$lib/components/design/Button.svelte';
-  import { brand, scale, themes, toCssVarName, type ThemeTokens } from '$lib/design/tokens';
+  import Disclosure from '$lib/components/design/Disclosure.svelte';
+  import StatusMessage from '$lib/components/design/StatusMessage.svelte';
+  import { brand, scale, themes, toCssVarName, zIndex, type ThemeTokens } from '$lib/design/tokens';
   import { applyTheme, isThemePreference, type ThemePreference } from '$lib/theme';
 
   // Start from whatever data-theme the app has already stamped on <html> (no
@@ -29,16 +32,20 @@
   const spaceKeys = Object.keys(scale).filter((k) => k.startsWith('space'));
   const radiusKeys = Object.keys(scale).filter((k) => k.startsWith('radius') && k !== 'radiusPill');
   const fontSizeKeys = Object.keys(scale).filter((k) => k.startsWith('fontSize'));
-  const shadowKeys = ['shadowSm', 'shadowPop'] as const;
+  const shadowKeys = Object.keys(scale).filter((k) => k.startsWith('shadow'));
   const motionEntries = Object.entries(scale).filter(
     ([k]) => k.startsWith('duration') || k.startsWith('ease')
   );
+  // Already authored low-to-high in tokens.ts; render it in that order so the
+  // page shows the stacking order, not just the values.
+  const zIndexEntries = Object.entries(zIndex);
 
   const cssVar = (key: string) => `var(${toCssVarName(key)})`;
 
   const themeOptions: ThemePreference[] = ['light', 'system', 'dark'];
   const buttonVariants = ['brand', 'wash', 'danger', 'ghost'] as const;
   const buttonSizes = ['md', 'sm'] as const;
+  const statusMessageStatuses = ['success', 'error'] as const;
 </script>
 
 <svelte:head>
@@ -47,6 +54,8 @@
 
 <main class="styleguide">
   <header>
+    <Breadcrumb current="Design tokens" />
+
     <h1>Design tokens</h1>
     <p>
       Rendered live from <code>lib/design/tokens.ts</code> — the source that generates
@@ -76,6 +85,18 @@
           <span class="value">{value}</span>
         </div>
       {/each}
+    </div>
+  </section>
+
+  <section>
+    <h2>Unthemed fills</h2>
+    <p>Constant chrome color — it reads the same on both papers, so it has no light/dark pair.</p>
+    <div class="swatch-grid">
+      <div class="swatch-card">
+        <div class="swatch" style:background={cssVar('clearGradientRest')}></div>
+        <code>--clear-gradient-rest</code>
+        <span class="value">{scale.clearGradientRest}</span>
+      </div>
     </div>
   </section>
 
@@ -131,6 +152,14 @@
         <span class="value">{scale.radiusPill}</span>
       </div>
     </div>
+    <h3>Border width</h3>
+    <div class="radius-grid">
+      <div class="swatch-card">
+        <div class="border-box"></div>
+        <code>{toCssVarName('borderWidth')}</code>
+        <span class="value">{scale.borderWidth}</span>
+      </div>
+    </div>
   </section>
 
   <section>
@@ -143,6 +172,29 @@
           <span class="value">{scale[key as keyof typeof scale]}</span>
         </div>
       {/each}
+      <div class="scale-row">
+        <code>{toCssVarName('inputFontSize')}</code>
+        <span class="type-sample" style:font-size={cssVar('inputFontSize')}>Splotch says hello</span
+        >
+        <span class="value">{scale.inputFontSize}</span>
+      </div>
+      <div class="scale-row">
+        <code>{toCssVarName('fontFamily')}</code>
+        <span class="type-sample" style:font-family={cssVar('fontFamily')}>Splotch says hello</span>
+        <span class="value">{scale.fontFamily}</span>
+      </div>
+      <div class="scale-row">
+        <code>{toCssVarName('fontMono')}</code>
+        <span class="type-sample" style:font-family={cssVar('fontMono')}>Splotch says hello</span>
+        <span class="value">{scale.fontMono}</span>
+      </div>
+      <div class="scale-row">
+        <code>{toCssVarName('fontWeightSemibold')}</code>
+        <span class="type-sample" style:font-weight={cssVar('fontWeightSemibold')}
+          >Splotch says hello</span
+        >
+        <span class="value">{scale.fontWeightSemibold}</span>
+      </div>
     </div>
   </section>
 
@@ -176,6 +228,24 @@
   </section>
 
   <section>
+    <h2>Stacking</h2>
+    <p>
+      The cross-component chrome order, low to high — one list, but not one stacking context, so a
+      bigger number doesn't always win. Everything resolves in the root context except
+      <code>--z-flyout</code>, which only orders the flyout inside <code>.actions-panel</code>
+      (<code>position: fixed</code> + <code>--z-panel</code>): raising it past
+      <code>--z-banner</code> would do nothing, because the panel caps its whole subtree. That makes
+      the <code>--z-panel</code>/<code>--z-flyout</code> tie inert; the
+      <code>--z-clear-button</code>/<code>--z-notch</code> tie is real and resolved by DOM order.
+    </p>
+    <ul class="raw-list">
+      {#each zIndexEntries as [key, value] (key)}
+        <li><code>{toCssVarName(key)}</code> <span class="value">{value}</span></li>
+      {/each}
+    </ul>
+  </section>
+
+  <section>
     <h2>Button</h2>
     <p><code>lib/components/design/Button.svelte</code></p>
     {#each buttonSizes as size (size)}
@@ -186,6 +256,29 @@
         <Button variant="brand" {size} disabled>disabled</Button>
       </div>
     {/each}
+  </section>
+
+  <section>
+    <h2>Status message</h2>
+    <p><code>lib/components/design/StatusMessage.svelte</code></p>
+    {#each statusMessageStatuses as status (status)}
+      <StatusMessage {status}
+        >The {status} wash, as a form shows it after a submit resolves.</StatusMessage
+      >
+    {/each}
+  </section>
+
+  <section>
+    <h2>Disclosure</h2>
+    <p><code>lib/components/design/Disclosure.svelte</code></p>
+    <Disclosure class="disclosure-demo">
+      {#snippet summary()}What does the primitive own?{/snippet}
+      <p class="disclosure-demo-body">
+        The bordered shell, the hidden native marker, and the <code>›</code> chevron that rotates on
+        open. Padding, type, color, and background stay with the call site, through the forwarded
+        <code>class</code>.
+      </p>
+    </Disclosure>
   </section>
 </main>
 
@@ -199,6 +292,13 @@
     touch-action: pan-y;
     user-select: text;
     -webkit-user-select: text;
+  }
+
+  /* Breadcrumb pins its current crumb to #666 for the light-only /admin host;
+     this page is themed (and its toggle flips to dark, where #666 is 3.1:1).
+     --text-mid is the same #666 in light theme, so only dark changes. */
+  .styleguide :global(.crumb-current) {
+    color: var(--text-mid);
   }
 
   header p,
@@ -237,6 +337,22 @@
   .value {
     font-size: var(--font-size-xs);
     color: var(--text-muted);
+  }
+
+  section :global(.disclosure-demo summary) {
+    padding: var(--space-3);
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    color: var(--brand-text);
+    background: var(--surface-2);
+  }
+
+  .disclosure-demo-body {
+    margin: 0;
+    padding: 0 var(--space-3) var(--space-3);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+    color: var(--text-mid);
   }
 
   .theme-toggle {
@@ -300,6 +416,13 @@
 
   .radius-box.pill {
     height: var(--space-6);
+  }
+
+  .border-box {
+    height: var(--space-8);
+    background: var(--surface);
+    border: var(--border-width) solid var(--brand);
+    border-radius: var(--radius-md);
   }
 
   .shadow-box {

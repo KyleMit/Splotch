@@ -1,4 +1,4 @@
-import { readString, writeString, onDurableRestore } from '../storage';
+import { STORAGE_KEYS, readString, writeString, onDurableRestore } from '../storage';
 import type { CommonIconName } from '../components/iconTypes';
 
 // The active brush, a single four-way axis picked from the Actions Panel's
@@ -32,7 +32,6 @@ export const BRUSH_OPTIONS: {
   { brush: 'eraser', icon: 'eraser', label: 'Eraser', id: 'eraserButton' },
 ];
 
-const BRUSH_TYPE_KEY = 'splotch-brush-type';
 const DEFAULT_BRUSH: BrushType = 'pen';
 
 export function isInkBrush(brush: BrushType): brush is 'pen' | 'crayon' {
@@ -45,7 +44,7 @@ export function isInkBrush(brush: BrushType): brush is 'pen' | 'crayon' {
 // resetToolAfterClear). Selecting the eraser therefore never overwrites the
 // stored choice, and a stored value is never restored as the eraser.
 function readBrush(fallback: BrushType): BrushType {
-  const raw = readString(BRUSH_TYPE_KEY, fallback);
+  const raw = readString(STORAGE_KEYS.brushType, fallback);
   return (BRUSH_TYPES as string[]).includes(raw) && raw !== 'eraser'
     ? (raw as BrushType)
     : fallback;
@@ -65,7 +64,7 @@ let inkBrush: 'pen' | 'crayon' = isInkBrush(toolState.brush) ? toolState.brush :
 export function selectBrush(brush: BrushType) {
   toolState.brush = brush;
   if (isInkBrush(brush)) inkBrush = brush;
-  if (brush !== 'eraser') writeString(BRUSH_TYPE_KEY, brush);
+  if (brush !== 'eraser') writeString(STORAGE_KEYS.brushType, brush);
 }
 
 // Resume drawing with the active color: the last-used pen/crayon. Called by

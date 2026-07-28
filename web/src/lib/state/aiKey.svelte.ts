@@ -1,5 +1,6 @@
-import { readString, removeKey } from '../storage';
-import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage';
+import { STORAGE_KEYS, readString, removeKey } from '../storage';
+import { saveApiKey, loadApiKey, clearApiKey } from '../secureStorage';
+import { requestPersistentStorage } from '../idb';
 import { settings } from './settings.svelte';
 
 // The parent's own Gemini API key (BYOK). Stored only on this device and sent
@@ -7,9 +8,7 @@ import { settings } from './settings.svelte';
 // of ours. Either this OR aiAccessToken being set unlocks the AI features.
 // The key itself is no longer kept here in plaintext — it lives in secure
 // storage (Keychain/Keystore on native, an encrypted IndexedDB payload on the
-// web). This constant only names the legacy localStorage slot so hydrateApiKey
-// can migrate and scrub any key written by an earlier build.
-const AI_USER_API_KEY = 'splotch-ai-user-api-key';
+// web).
 
 let aiKeyWriteVersion = 0;
 // Keep secure writes ordered so an older save already in flight cannot finish
@@ -53,15 +52,13 @@ export async function hydrateApiKey() {
   requestPersistentStorage();
 
   let key = await loadApiKey();
+  const legacy = readString(STORAGE_KEYS.legacyAiUserApiKey, '');
 
-  if (!key) {
-    const legacy = readString(AI_USER_API_KEY, '');
-    if (legacy) {
-      await saveApiKey(legacy);
-      removeKey(AI_USER_API_KEY); // remove the plaintext copy now that it's secured
-      key = legacy;
-    }
+  if (!key && legacy) {
+    await saveApiKey(legacy);
+    key = legacy;
   }
 
+  if (legacy) removeKey(STORAGE_KEYS.legacyAiUserApiKey);
   if (key) settings.aiUserApiKey = key;
 }

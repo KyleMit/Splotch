@@ -5,13 +5,16 @@
    Dark tokens are applied two ways: an explicit parent choice stamps
    data-theme="dark" on <html>, while the default "system" setting leaves the
    attribute off and lets prefers-color-scheme decide (data-theme="light" opts
-   out of it). The generator emits the dark block twice so the two forms can
-   never drift. */
+   out of it). CSS has no way to share a declaration block between an
+   attribute selector and a media query at our browser floor (light-dark()
+   needs Chrome 123 / Safari 17.5), so the generator emits the dark block
+   twice — that's what guarantees the two forms can never drift. */
 
 :root {
   color-scheme: light;
 
   --brand: #ab71e1;
+  --brand-rgb: 171, 113, 225;
   --brand-hover: #9961d1;
   --brand-tint-filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
   --on-brand: #fff;
@@ -30,6 +33,7 @@
   --radius-lg: 16px;
   --radius-xl: 22px;
   --radius-pill: 999px;
+  --border-width: 1px;
   --font-size-xs: 12px;
   --font-size-sm: 13px;
   --font-size-md: 14px;
@@ -37,6 +41,10 @@
   --font-size-xl: 18px;
   --font-size-2xl: 22px;
   --font-size-3xl: 28px;
+  --input-font-size: max(16px, var(--font-size-md));
+  --font-family: 'Quicksand Variable', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Courier New', monospace;
+  --font-weight-semibold: 600;
   --duration-fast: 0.15s;
   --duration-base: 0.2s;
   --duration-slow: 0.35s;
@@ -45,6 +53,22 @@
   --ease-pop-strong: cubic-bezier(0.34, 1.56, 0.64, 1);
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.12);
   --shadow-pop: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-segment: 0 1px 4px rgba(0, 0, 0, 0.18);
+  --clear-gradient-rest: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+
+  --z-canvas-chrome: 4;
+  --z-clear-preview: 400;
+  --z-ripple: 500;
+  --z-corner-button: 900;
+  --z-panel: 901;
+  --z-flyout: 901;
+  --z-banner: 950;
+  --z-clear-accept-zone: 999;
+  --z-clear-button: 1000;
+  --z-notch: 1000;
+  --z-clear-coachmark: 1001;
+  --z-palette: 1002;
+  --z-screenshot-flash: 10000;
 
   --app-bg: #f5f5f5;
   --surface: #ffffff;

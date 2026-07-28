@@ -1,12 +1,12 @@
 // Shared plumbing for the audit-burndown scripts (the burn-down-audits skill).
-// Unlike scripts/lib/utils.mjs's run()/capture(), the runners here return
+// Unlike scripts/lib/proc.mjs's run()/capture(), the runners here return
 // status instead of exiting — the driver loop handles every failure itself
 // (a failed step costs one iteration, not the run; see ADR-0017's caveat).
 
 import { spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT } from '../lib/utils.mjs';
+import { ROOT } from '../lib/proc.mjs';
 
 export { ROOT };
 export const WORK = '.audit-work';
@@ -14,6 +14,281 @@ export const LOGS = join(WORK, 'logs');
 export const PROMPTS = 'scripts/audit-burndown/prompts';
 
 export const auditFile = () => process.env.AUDIT_FILE || 'docs/AUDIT.md';
+
+// Findings are titled `[P3][consistency] …`. The priority drives impl-model
+// tiering: P4/P5 are the mechanical tail (dead code, renames, dedup) that a
+// cheaper model implements fine under the same adversarial review. Returns null
+// for a title with no [P<n>] tag so the caller falls back to the safe model
+// rather than guessing a priority the finding never claimed.
+export function findingPriority(title) {
+  const match = /^\[P(\d)\]/.exec(title ?? '');
+  return match ? Number(match[1]) : null;
+}
+
+// The implementer reports the sha of the commit it made. Even with a required
+// schema field, a failed call or legacy runner envelope can omit it, and treating
+// the gap as failure throws away the most expensive work the driver does. Trust
+// git over the envelope: HEAD past the base means it committed, whatever it
+// remembered to report. An unmoved HEAD still yields '' so a genuine no-op
+// defers as before.
+export function resolveImplSha({ reported, head, baseSha }) {
+  if (reported) return reported;
+  return head && head !== baseSha ? head : '';
+}
+
+export function implementationCommitMessage(title, round = 0) {
+  const plainTitle =
+    String(title ?? '')
+      .replace(/^(?:\[[^\]]+\])+\s*/, '')
+      .trim() || 'apply verified finding';
+  const subject = round
+    ? `fix(audit): address review round ${round} for ${plainTitle}`
+    : `fix(audit): ${plainTitle}`;
+  return `${subject}\n\nAudit: ${title}`;
+}
+
+const auditCommitTitle = (message) => {
+  const lines = String(message ?? '').split(/\r?\n/);
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    if (lines[index].startsWith('Audit: ')) return lines[index].slice('Audit: '.length).trim();
+  }
+  return '';
+};
+
+// A clean `Audit:` commit is still provisional while its exact backlog heading
+// remains. The approved amend removes that heading, so git plus AUDIT.md can
+// distinguish interrupted gate/review rounds without disposable run state.
+export function incompleteAuditCommitPlan({ headSha, auditBody, commitAt }) {
+  if (!headSha || typeof commitAt !== 'function') return null;
+
+  const headTitle = auditCommitTitle(commitAt(headSha)?.message);
+  const pendingHeading = `### ${headTitle}`;
+  if (
+    !headTitle ||
+    !String(auditBody ?? '')
+      .split(/\r?\n/)
+      .includes(pendingHeading)
+  )
+    return null;
+
+  let sha = headSha;
+  let baseSha = headSha;
+  let count = 0;
+  const visited = new Set();
+
+  while (sha && !visited.has(sha)) {
+    visited.add(sha);
+    const commit = commitAt(sha);
+    if (auditCommitTitle(commit?.message) !== headTitle) break;
+    if (!commit?.parentSha) return null;
+    baseSha = commit.parentSha;
+    count += 1;
+    sha = commit.parentSha;
+  }
+
+  return count ? { title: headTitle, baseSha, count } : null;
+}
+
+export function protectedImplementationPaths(paths, auditPath = auditFile()) {
+  return paths.filter(
+    (path) =>
+      path === auditPath ||
+      path === 'docs/AUDIT-DEFERRED.md' ||
+      path.startsWith('docs/audit-deferred/')
+  );
+}
+
+export function needsRulerApply(paths) {
+  return paths.some((path) => path.split('/').includes('.ruler'));
+}
+
+// Which of a fix's changed files the lint gate can actually run on.
+//
+// `git diff --name-only` reports the paths a commit *touched*, which includes
+// the ones it deleted and the rename-from side of a rename. eslint exits 2 on a
+// path that no longer exists ("No files matching the pattern"), so passing that
+// list through verbatim makes the gate red on a fix that introduced no lint
+// violation at all — and unrecoverably so, since no edit the implementer can
+// make will bring the deleted path back. A 2026-07-27 run lost a correct
+// rename-only fix that way: three fix rounds against an unsatisfiable gate,
+// then a rollback filed as "fix introduced a lint violation", which is a lie to
+// whoever triages docs/AUDIT-DEFERRED.md later. Deletions of .json/.webp never
+// exposed it because those extensions are not lintable to begin with.
+export function lintablePaths(paths, exists) {
+  return paths.filter((path) => /\.(ts|svelte|mjs|cjs|js)$/.test(path) && exists(path));
+}
+
+export function removeNewUntrackedPaths(baseline, current, removePath) {
+  const kept = new Set(baseline);
+  const added = current.filter((path) => !kept.has(path));
+  for (const path of added) removePath(path);
+  return added;
+}
+
+// Every env knob that changes how a run behaves, and is therefore part of that
+// run's relaunch command. ONE list with two consumers, deliberately: overnight.mjs
+// bakes these into the detached job's command line, and burndown.mjs records them
+// to .audit-work/launch-command so a later session can recover them. Keeping two
+// lists in sync by hand already failed twice — the EFFORT_* knobs and AUDIT_FILE
+// were added elsewhere and missed here. An omission fails silently and late:
+// preflight is spawned directly and inherits the full env, so it passes, and only
+// the detached driver runs without the knob. Add new knobs here and both paths
+// get them.
+export const LAUNCH_KNOBS = [
+  'RESUME',
+  'AGENT_RUNNER',
+  'MAX_HANDLED',
+  'PUSH_EVERY',
+  'BRANCH',
+  'AUDIT_FILE',
+  'CHECK_CMD',
+  'TEST_CMD',
+  'E2E_CMD',
+  'LINT_CMD',
+  'PUSH_TEST_CMD',
+  'COMMENT_STORE',
+  'MAX_DEFERRALS',
+  'RETRIES',
+  'MODEL_VERIFY',
+  'MODEL_IMPL',
+  'MODEL_IMPL_MINOR',
+  'MODEL_REVIEW',
+  'BUDGET_VERIFY',
+  'BUDGET_IMPL',
+  'BUDGET_REVIEW',
+  'EFFORT_VERIFY',
+  'EFFORT_IMPL',
+  'EFFORT_REVIEW',
+];
+
+export const shellQuote = (value) => `'${String(value).replace(/'/g, `'\\''`)}'`;
+
+// The canary default, shared with burndown.mjs so the recorded relaunch command
+// can never disagree with the run it claims to reproduce: an unset MAX_ISSUES
+// means a five-accepted-fix ceiling, and a command reading `-- 600` would relaunch
+// a run 120× longer under a heading promising "this exact run". Codex canaries add
+// MAX_HANDLED=5 so drops and deferrals cannot make that sample unbounded.
+export const DEFAULT_MAX_ISSUES = 5;
+
+export function reachedHandledLimit({ fixed = 0, dropped = 0, deferred = 0, maxHandled = 0 } = {}) {
+  const limit = Number(maxHandled);
+  return Number.isFinite(limit) && limit > 0 && fixed + dropped + deferred >= limit;
+}
+
+// The command that relaunches this exact run, reconstructed from the driver's own
+// environment. It cannot be recovered from the process list: overnight.mjs launches
+// via `env VAR=… node …`, and `env` EXECS node, so the assignments live in the
+// environment and never appear in argv — nothing retains the string, so scraping
+// `ps` recovers nothing at all. The driver passes its own already-resolved
+// MAX_ISSUES rather than letting this re-derive one, so the two can't drift apart.
+export function launchCommand(env = process.env, maxIssues = env.MAX_ISSUES ?? DEFAULT_MAX_ISSUES) {
+  const overrides = LAUNCH_KNOBS.filter((knob) => env[knob] != null).map(
+    (knob) => `${knob}=${shellQuote(env[knob])}`
+  );
+  return `${overrides.join(' ')}${overrides.length ? ' ' : ''}npm run audit:burndown:overnight -- ${maxIssues}`;
+}
+
+// Which role actually failed, for the docs/AUDIT-DEFERRED.md commit message.
+// Rolling unreviewed or ungated work back is always right; describing it as
+// rejected is not. Someone triages this file months later deciding whether to
+// re-stage the finding, and "failed adversarial review" on a fix no reviewer
+// ever saw sends them looking for a quality problem that does not exist. The
+// order matters: a reviewer that never ran, and an implementer that never
+// delivered, both take precedence over a stale gate result from an earlier
+// round. Only a real CHANGES_REQUIRED verdict is attributed to the reviewer.
+export function deferralReason({ reviewUnavailable, implFailed, gateRed }) {
+  if (reviewUnavailable) return 'reviewer unavailable';
+  if (implFailed) return 'implementer failed to deliver a fix round';
+  return gateRed?.reason ?? 'failed adversarial review';
+}
+
+// The verifier writes .audit-work/current-brief.md itself, and has been seen
+// returning VALID without doing so. The driver then hands the implementer the
+// PREVIOUS finding's brief while current-issue.md names this one, so anything
+// it commits is attributed to — and deletes by title — a finding nobody
+// verified or implemented. deleteEntryByTitle cannot catch this one: the title
+// it is handed really is the current finding's, and that entry really is
+// present. Both observed occurrences were caught only because the implementer
+// noticed the mismatch and refused to commit, which is a prompt-level backstop
+// rather than a guarantee.
+//
+// Compared by mtime rather than by having the verifier echo the finding's
+// title into the brief: a role that skipped writing the file would skip the
+// title too, so a guard needing its cooperation fails in exactly the case it
+// exists for. The driver writes current-issue.md itself and the verifier only
+// runs afterwards, so this compares two facts the driver owns. A missing brief
+// is stale by the same rule.
+export function briefIsStale(issueWrittenAtMs, briefMtimeMs) {
+  if (typeof briefMtimeMs !== 'number') return true;
+  return briefMtimeMs <= issueWrittenAtMs;
+}
+
+export const DRAFT_DIR = 'docs/audit-deferred';
+
+export function draftPatchPath(title, dir = DRAFT_DIR) {
+  const slug = String(title ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 72)
+    .replace(/-+$/, '');
+  return `${dir}/${slug || 'untitled'}.patch`;
+}
+
+// Unified diffs encode an empty context row as one space, which becomes trailing
+// whitespace when the patch itself is tracked. Git accepts the same row empty.
+export function normalizeDraftPatch(patch) {
+  return String(patch ?? '')
+    .replace(/^[\t ]+$/gm, '')
+    .replace(/\n*$/, '\n');
+}
+
+// What someone triaging docs/AUDIT-DEFERRED.md months later needs and cannot
+// reconstruct: which objection actually stopped the fix, what was already
+// tried, and where the rejected draft went. All three are in the driver's hands
+// at the moment it rolls back and nowhere afterwards — the role envelopes are
+// gitignored, container-local, and overwritten by the next run's same-numbered
+// iteration, so a deferral that records only its one-line reason throws the
+// expensive part away.
+export function renderDeferralNotes({
+  why = '',
+  catches = [],
+  tried = [],
+  gateDetail = '',
+  patchPath = '',
+  draftCommits = 0,
+} = {}) {
+  const out = ['#### Why it was deferred', '', why.trim() || 'No reason recorded.', ''];
+
+  if (gateDetail) out.push(`The driver's gates were red at the final round: ${gateDetail}.`, '');
+
+  if (catches.length) {
+    out.push("Reviewer's unresolved objections:", '');
+    out.push(...catches.map((c) => `- ${String(c).trim()}`), '');
+  }
+
+  if (tried.length) {
+    out.push('#### What was tried', '');
+    out.push(
+      ...tried.map((t, i) =>
+        tried.length === 1 ? String(t).trim() : `${i + 1}. ${String(t).trim()}`
+      ),
+      ''
+    );
+  }
+
+  if (patchPath) {
+    const commits = draftCommits ? ` (${draftCommits} commit${draftCommits === 1 ? '' : 's'})` : '';
+    out.push('#### Draft implementation', '');
+    out.push(
+      `The rolled-back draft is kept at \`${patchPath}\`${commits}. It was not accepted, so it is ` +
+        `a starting point rather than scrap. Apply with \`git apply ${patchPath}\`.`,
+      ''
+    );
+  }
+
+  return `${out.join('\n').replace(/\n*$/, '')}\n`;
+}
 
 // Every entry script chdirs to the repo root so relative paths (docs/AUDIT.md,
 // .audit-work/) behave the same no matter where it was invoked from.
@@ -49,6 +324,25 @@ export const gitOut = (...args) => (git(...args).stdout ?? '').trim();
 // through the shell.
 export function shellOk(command) {
   return spawnSync(command, { shell: true, stdio: 'ignore', maxBuffer: MAX_BUFFER }).status === 0;
+}
+
+export function shellResult(command) {
+  return spawnSync(command, {
+    shell: true,
+    encoding: 'utf8',
+    maxBuffer: MAX_BUFFER,
+  });
+}
+
+export function commandFailureOutput(result, maxLength = 6000) {
+  const ansiPattern = new RegExp(`${String.fromCharCode(27)}\\[[0-?]*[ -/]*[@-~]`, 'g');
+  const output = [result.stdout, result.stderr]
+    .filter(Boolean)
+    .join('\n')
+    .replace(ansiPattern, '')
+    .trim();
+  if (!output) return `command exited ${result.status ?? 'without a status'}`;
+  return output.length <= maxLength ? output : `…${output.slice(-maxLength)}`;
 }
 
 // ---- docs/AUDIT.md parsing --------------------------------------------------
@@ -102,10 +396,31 @@ export function getEntry(index = 1, file = auditFile()) {
 // Remove the first entry in place. Collapses the blank-line seam the excision
 // leaves so the file stays dprint-clean, and trims trailing blank lines.
 export function deleteFirstEntry(file = auditFile()) {
+  return deleteEntryAt(entryStarts(readLines(file) ?? [])[0], file);
+}
+
+// Remove the entry whose heading matches `title` (the heading line minus its
+// leading `### `). Returns false when no such entry exists.
+//
+// The driver deletes by title rather than by position because "delete the first
+// entry" is only correct while the entry being worked on is still the first one
+// — and a role can invalidate that mid-finding. On the 2026-07-25 canary the
+// reviewer rejected three of five fixes for "not deleting the AUDIT.md entry"
+// (it saw the excision in neighbouring burndown commits and read its absence as
+// an omission), the implementer complied by running `pop.mjs --delete`, and the
+// driver's own positional delete then removed what had become the first entry:
+// the NEXT, never-verified finding, silently, inside an unrelated fix commit.
+// Keying on identity makes that whole class impossible — a duplicated delete is
+// now a no-op instead of destroying a finding.
+export function deleteEntryByTitle(title, file = auditFile()) {
   const lines = readLines(file);
   if (!lines) return false;
-  const start = entryStarts(lines)[0];
-  if (start === undefined) return false;
+  const start = entryStarts(lines).find((i) => lines[i].replace(/^### /, '') === title);
+  return deleteEntryAt(start, file, lines);
+}
+
+function deleteEntryAt(start, file, lines = readLines(file)) {
+  if (!lines || start === undefined) return false;
   const { end } = entryRange(lines, start);
   lines.splice(start, end - start + 1);
   while (start > 0 && lines[start - 1]?.trim() === '' && lines[start]?.trim() === '') {

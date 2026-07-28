@@ -1,3 +1,10 @@
+import { building } from '$app/environment';
+import type { Handle, HandleServerError } from '@sveltejs/kit';
+import { sequence } from '@sveltejs/kit/hooks';
+import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
+import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
+import { SECURITY_HEADERS } from '$lib/server/securityHeaders';
+
 // The native apps load from a WebView origin (https://localhost on Android,
 // capacitor://localhost on iOS) but call the hosted /api/* endpoints. Those are
 // cross-origin requests, so the endpoints need permissive CORS. Every route is
@@ -6,63 +13,69 @@
 // can be abused without a valid credential, and none of it relies on cookies
 // (the wildcard origin is incompatible with credentialed requests anyway).
 // Only /api/* is opened up; the rest of the site stays same-origin.
-//
-// The hook also stamps the site's security headers onto function-served SSR
-// responses. Netlify custom headers (netlify.toml `for = "/*"`) reach only
-// CDN/static responses, so `/admin` (prerender = false) — the credentialed
-// console — otherwise ships with no CSP, no X-Frame-Options, nothing. The set
-// lives once in $lib/server/securityHeaders and is guarded against the
-// netlify.toml copy by securityHeaders.test.ts (ADR-0073).
-import { building } from '$app/environment';
-import type { Handle, HandleServerError } from '@sveltejs/kit';
-import { SECURITY_HEADERS } from '$lib/server/securityHeaders';
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  // Authorization: admin bearer sessions. X-Access-Token / X-Api-Key: the
+  // generate-image credentials (secrets kept out of the query string).
+  'Access-Control-Allow-Headers': `Content-Type, Authorization, ${ACCESS_TOKEN_HEADER}, ${API_KEY_HEADER}`,
+  // Let native clients cache the preflight for a day instead of paying an
+  // extra OPTIONS round trip on every cross-origin JSON request.
+  'Access-Control-Max-Age': '86400',
+};
 
-export const handle: Handle = async ({ event, resolve }) => {
-  const isApi = event.url.pathname.startsWith('/api/');
+function applyHeaders(response: Response, headers: Record<string, string>) {
+  for (const [key, value] of Object.entries(headers)) {
+    response.headers.set(key, value);
+  }
+}
+
+const handleCors: Handle = async ({ event, resolve }) => {
+  if (!event.url.pathname.startsWith('/api/')) return resolve(event);
 
   // Answer the CORS preflight before hitting any route logic.
-  if (isApi && event.request.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders() });
+  if (event.request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
   const response = await resolve(event);
 
-  if (isApi) {
-    // Cross-origin /api/* calls from the native WebView origins (ADR-0007).
-    for (const [key, value] of Object.entries(corsHeaders())) {
-      response.headers.set(key, value);
-    }
-  } else if (!building) {
-    // Runtime-only (`!building`): at build time this hook also runs to
-    // prerender the static pages, but those are served from the CDN with the
-    // netlify.toml headers — the function only serves SSR routes like `/admin`,
-    // and those are the responses that need this set.
-    for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
-      response.headers.set(key, value);
-    }
+  // Cross-origin /api/* calls from the native WebView origins (ADR-0007).
+  applyHeaders(response, CORS_HEADERS);
+
+  return response;
+};
+
+// Stamps the site's security headers onto function-served SSR responses.
+// Netlify custom headers (netlify.toml `for = "/*"`) reach only CDN/static
+// responses, so `/admin` (prerender = false) — the credentialed console —
+// otherwise ships with no CSP, no X-Frame-Options, nothing. The set lives once
+// in $lib/server/securityHeaders and is guarded against the netlify.toml copy
+// by securityHeaders.test.ts (ADR-0073).
+const handleSecurityHeaders: Handle = async ({ event, resolve }) => {
+  const response = await resolve(event);
+
+  // Runtime-only (`!building`): at build time this hook also runs to
+  // prerender the static pages, but those are served from the CDN with the
+  // netlify.toml headers — the function only serves SSR routes like `/admin`,
+  // and those are the responses that need this set.
+  if (!building && !event.url.pathname.startsWith('/api/')) {
+    applyHeaders(response, SECURITY_HEADERS);
   }
 
   return response;
 };
+
+export const handle: Handle = sequence(handleCors, handleSecurityHeaders);
 
 // Server twin of hooks.client.ts's handleError. No third-party telemetry by
 // design, so the Netlify function log is the only record of an unexpected
 // SSR or /api/* failure — SvelteKit only calls this for unexpected errors,
 // so expected error(4xx) responses never land here.
 export const handleError: HandleServerError = ({ error, event, status }) => {
-  console.error('[server error]', event.url.pathname, status, error);
-  return { message: 'Something went wrong.' };
+  console.error(ERROR_LOG_PREFIX.server, event.url.pathname, status, error);
+  // `message` isn't read by +error.svelte/ErrorScreen (their copy is fixed independently), but
+  // it does surface: SvelteKit's default fallback error page (no custom error.html here), and
+  // the JSON error body returned to callers when a /api/* +server.ts handler throws.
+  return { message: GENERIC_ERROR_MESSAGE };
 };
-
-function corsHeaders() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-    // Authorization: admin bearer sessions. X-Access-Token / X-Api-Key: the
-    // generate-image credentials (secrets kept out of the query string).
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Access-Token, X-Api-Key',
-    // Let native clients cache the preflight for a day instead of paying an
-    // extra OPTIONS round trip on every cross-origin JSON request.
-    'Access-Control-Max-Age': '86400',
-  };
-}

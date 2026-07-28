@@ -14,10 +14,12 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
-import { COLORING_DIR, FILL_SRC_DIR, REPO_ROOT, fail } from '../lib/paths.mjs';
+import { fail } from '../lib/cli.mjs';
+import { COLORING_DIR, FILL_SRC_DIR, REPO_ROOT, toPosix } from '../lib/paths.mjs';
 import { compositeNight } from '../lib/night-composite.mjs';
 import { scoreCompositeEyes } from '../lib/composite-eye.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+import { bytesToDataUri } from '../lib/data-uri.mjs';
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -33,12 +35,9 @@ const pages = await resolveOutlineTargets(positionals, {
   onMissing: (target) => fail(`no page or category "${target}" under ${COLORING_DIR}`),
 });
 
-const b64 = (buf) => `data:image/png;base64,${buf.toString('base64')}`;
 const cards = [];
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page)
-    .replace(/\.outline\.webp$/, '')
-    .replace(/\\/g, '/');
+  const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
   const lightPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
   const nightPath = join(FILL_SRC_DIR, `${rel}.night.raw.webp`);
   const chalkPath = page.replace(/\.outline\.webp$/, '.chalk.webp');
@@ -47,7 +46,7 @@ for (const page of pages) {
   const r = await scoreCompositeEyes(comp, await readFile(lightPath), await readFile(page));
   if (r.passes) continue;
   const meta = await sharp(comp).metadata();
-  const full = b64(await sharp(comp).resize(320).png().toBuffer());
+  const full = bytesToDataUri(await sharp(comp).resize(320).png().toBuffer(), 'image/png');
   const crops = [];
   for (const p of r.pupils.filter((q) => q.blankOrb)) {
     const cx = Math.round(p.x * meta.width);
@@ -65,7 +64,7 @@ for (const page of pages) {
       .resize(200, 200, { kernel: 'nearest' })
       .png()
       .toBuffer();
-    crops.push({ img: b64(crop), coreDark: p.coreDarkFrac });
+    crops.push({ img: bytesToDataUri(crop, 'image/png'), coreDark: p.coreDarkFrac });
   }
   cards.push({ rel, full, crops });
 }

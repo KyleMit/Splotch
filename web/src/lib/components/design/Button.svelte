@@ -33,7 +33,7 @@
     border: none;
     border-radius: var(--radius-md);
     font-family: inherit;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     cursor: pointer;
     touch-action: manipulation;
     transition:
@@ -79,7 +79,7 @@
 
   .ghost {
     background: transparent;
-    border: 1px solid var(--border);
+    border: var(--border-width) solid var(--border);
     color: var(--text-mid);
   }
 

@@ -31,6 +31,8 @@ export const ui: UiState = $state({
   aiErrorKind: 'generic',
 });
 
+export const PARENT_HELP_BUTTON_ID = 'parentHelpButton';
+
 export const colorPicker = createModal();
 export const coloringBook = createModal();
 export const parentCenter = createModal();

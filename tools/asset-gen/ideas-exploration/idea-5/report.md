@@ -1,5 +1,8 @@
 # Idea 5 — De-swirl the two flat-pupil pages (nature/caterpillar-wide, ladybug-wide)
 
+Status: NOT PROMOTED — the de-swirl surgery never shipped; the 3.1 regeneration cleared both
+flat-pupil pages (../../docs/gemini-3.1-migration.md).
+
 **Verdict: WORKED** — the mechanism was proven end-to-end on `nature/caterpillar-wide`:
 deterministic (sharp/SVG, zero-API) de-swirl of the pen eyes → regenerated light fill, chalk, and
 night fill → the eyes audit flips `caterpillar-wide` night from `FAIL (2 eye(s) flat)` to `ok`, with

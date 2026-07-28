@@ -12,44 +12,22 @@
 // Output goes to the gitignored screenshots/crayon-current by default; the
 // keeper is the comparison sheet build-compare-sheet.mjs inlines them into.
 
-import { existsSync, readdirSync, mkdirSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { argFlag } from '../../../scripts/lib/proc.mjs';
+import { chromiumExecutablePath } from '../../../scripts/lib/playwright.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const arg = (name, fallback) =>
-  process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
-const baseURL = arg('url', 'http://localhost:4188');
-const OUT = arg('out', join(HERE, '../../../screenshots/crayon-current'));
-
-// Cloud sessions cache a Chromium whose revision can drift from Playwright's
-// pinned build — same fallback as web/playwright.config.ts.
-function chromiumExecutablePath() {
-  if (process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
-  try {
-    if (existsSync(chromium.executablePath())) return undefined;
-  } catch {}
-  const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
-  try {
-    const builds = readdirSync(base)
-      .filter((d) => /^chromium-\d+$/.test(d))
-      .sort((a, b) => Number(b.slice(9)) - Number(a.slice(9)));
-    for (const build of builds) {
-      for (const sub of ['chrome-linux', 'chrome-linux64']) {
-        const p = `${base}/${build}/${sub}/chrome`;
-        if (existsSync(p)) return p;
-      }
-    }
-  } catch {}
-  return undefined;
-}
+const baseURL = argFlag('url', 'http://localhost:4188');
+const OUT = argFlag('out', join(HERE, '../../../screenshots/crayon-current'));
 
 const W = 560;
 const H = 420;
 mkdirSync(OUT, { recursive: true });
 
-const browser = await chromium.launch({ executablePath: chromiumExecutablePath() });
+const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
 const page = await browser.newPage({
   viewport: { width: 900, height: 700 },
   deviceScaleFactor: 2,

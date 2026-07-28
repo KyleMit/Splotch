@@ -1,309 +1,407 @@
 ---
 name: burn-down-audits
-description: Drive the scripted bulk burndown of docs/AUDIT.md — one one-shot `claude -p` subprocess per role per finding (verify → implement → adversarial review → fix), orchestrated by scripts/audit-burndown/ and built to run unattended overnight. Use when the staged audit backlog is too large to vet-and-file as GitHub issues (hundreds of findings) and the user asks to burn it down in bulk, run the audit burndown, or launch/check on an overnight run.
+description: Drive the scripted bulk burndown of docs/AUDIT.md with isolated Codex subprocesses per role and finding (verify → implement → adversarial review → fix). Use when the staged audit backlog is too large to vet and file as individual GitHub issues, or when asked to launch, resume, supervise, pause, report on, or close out an audit burndown from Codex.
 ---
 
-# Burn down audits
+# Burn down audits with Codex
 
-Progressive, adversarial burndown of a large `docs/AUDIT.md` backlog. Each finding goes through
-verify → implement → review → fix, entirely inside one-shot `claude -p` subprocesses, so nothing
-accumulates in a long-lived context window. The driver is `scripts/audit-burndown/burndown.mjs`;
-this skill is the runbook for launching, watching, and closing out a run.
+Drive `scripts/audit-burndown/burndown.mjs` with Codex as every model-backed role. Keep the driver
+as the orchestrator: do not replace its one-shot subprocesses with in-session subagents.
 
-**When to use which consumer** (shared rules: `.claude/audit-conventions.md`): for a normal-sized
-backlog (tens of findings), stay with the standard lifecycle — `/vet-audits` files survivors as
-`type:audit` issues and `/fix-audits` clears them interactively with subagents. This skill is the
-bulk path for a backlog where filing one GitHub issue per finding is impractical (hundreds of
-findings, e.g. a whole-codebase `/code-audit` pass). It replaces both vet and fix: its verifier
-subprocess *is* the adversarial vet, applied per finding at HEAD.
+Set `AGENT_RUNNER=codex` on every preflight, canary, and relaunch. The runner defaults are:
 
-## Architecture — why subprocesses, not subagents
+| Role               | Model           | Effort   |
+| ------------------ | --------------- | -------- |
+| Verify             | `gpt-5.6-terra` | `medium` |
+| Implement P1–P3    | `gpt-5.6-sol`   | `high`   |
+| Implement P4–P5    | `gpt-5.6-terra` | `high`   |
+| Adversarial review | `gpt-5.6-sol`   | `medium` |
 
-The orchestrator is a Node script, so the "main context" is process state, not a conversation. Three
-consequences worth internalising before touching the driver:
+This is the GPT‑5.6 mapping of the Claude run: Terra owns the Sonnet-tier work; Sol owns the
+Opus-tier work. Override with `MODEL_*` or `EFFORT_*` only when the run has a measured reason.
 
-* **`--resume` is the handoff.** The implementer's `session_id` is captured from the `claude -p`
-  JSON envelope and passed back on fix rounds, so it resumes with its full history — every prior
-  tool call, result, and reasoning step — instead of re-deriving the change from review text.
-  Sessions are addressed by ID, which sidesteps the name-collision problem of resuming hundreds of
-  same-named subagents.
-* **`--json-schema` replaces prose parsing.** Verdicts, SHAs, and review statuses come back typed in
-  `.structured_output`; no regex ever touches a SHA.
-* **State is `docs/AUDIT.md` plus git.** A finding's entry is deleted in the *same commit* as its
-  fix, so the file is always an exact record of remaining work and a crash mid-run leaves nothing to
-  reconcile. Re-running resumes where it stopped. Everything else (`.audit-work/`) is disposable,
-  gitignored working state.
+## Approval boundary
 
-No agent — including you — should read or edit `docs/AUDIT.md` directly at burndown scale (~19k
-lines): `scripts/audit-burndown/pop.mjs` is the only thing that touches it (`--count`, print,
-`--peek N`, `--delete`). Role system prompts live in `scripts/audit-burndown/prompts/*.md`.
+Treat explicit invocation of this skill as user authorization to launch the in-scope `codex exec`
+subprocesses, make their expected outbound OpenAI calls, and provide them the repository context
+needed for their roles. Do not ask for a second conversational confirmation before the canary or
+each relaunch. The subprocesses use the same repository and tool environment as the supervising
+shell with no broader authority; their role sandboxes are narrower (`workspace-write` for verifier
+and implementer, read-only for reviewer) and interactive approvals stay disabled.
+
+The shell host can still require its own execution or network approval because an automated
+subprocess is making the calls. When it does, request one narrowly scoped reusable approval for the
+audit launch command family instead of prompting per role or segment. Explain that each call sends
+its role prompt and the repository context it reads to OpenAI, the same provider processing the
+supervising Codex session. The approval covers repeated isolated model calls and their usage, not a
+new data recipient or evidence of a repository leak. Never bypass a host denial or broaden the
+approval beyond the audit commands.
+
+## Invariants
+
+* One fresh `codex exec` thread per verifier, implementer, and reviewer. A fix round resumes the
+  exact implementer thread with `codex exec resume <thread-id>`.
+* The reviewer is blind to the implementer's intent and runs read-only. The verifier and implementer
+  run in `workspace-write`; all calls use schema-constrained JSONL, no interactive approvals, and
+  `multi_agent=false`.
+* State is `docs/AUDIT.md` plus git. A finding's entry is deleted in the same commit as its approved
+  fix. Everything under `.audit-work/` is disposable run state.
+* Never read or edit `docs/AUDIT.md` directly at burndown scale. Use
+  `scripts/audit-burndown/pop.mjs` for count/peek/delete operations; the driver owns deletion.
+* The driver never talks to GitHub. It pushes commits and appends
+  `.audit-work/pending-comments.jsonl`; the supervising Codex agent opens/updates the PR, posts
+  comments through the GitHub connector, and watches CI.
+* Never edit a tracked file while the driver is running. Its rollback path resets tracked changes to
+  the finding base and removes untracked files introduced by that implementation. Pause first.
 
 ## Commands
 
-| Command                            | Purpose                                                              |
-| ---------------------------------- | -------------------------------------------------------------------- |
-| `npm run audit:preflight`          | Read-only go/no-go: deps, auth, clean tree, backlog parses, check    |
-| `npm run audit:burndown`           | The driver loop — canary default `MAX_ISSUES=5`                      |
-| `npm run audit:burndown:overnight` | Preflight-gated unattended launch under caffeinate + tmux (`-- 600`) |
-| `npm run audit:status`             | Counts, progress bar, run state, recent `Audit:` commits             |
-| `npm run audit:cost`               | Spend by role, per-issue average, projected total                    |
-| `npm run audit:watch`              | `tail -f` the run log; `-- --dash` for a refreshing summary          |
-
-## Knobs
-
-All environment variables on `audit:burndown`, all with defaults:
+Always carry the runner and branch:
 
 ```bash
-MAX_ISSUES=5          # how many to complete before stopping (canary default; overnight passes 600)
-PUSH_EVERY=10         # push boundary; one per-commit PR comment per pushed fix (see below)
-BRANCH=audit/burndown
-CHECK_CMD='npm run check'      # per-finding type-check gate
-TEST_CMD='npm run test:unit'   # per-finding fast-test gate (see the layered gate below)
-E2E_CMD='npm run test:e2e -- --retries=1'  # per-finding targeted E2E (retry past flakes), UI findings only
-LINT_CMD='npx eslint'          # per-finding lint gate, on the fix's changed files
-PUSH_TEST_CMD='npm test'       # full suite once per batch, before each push
-MAX_DEFERRALS=3       # consecutive deferrals before halting
-RETRIES=3             # retries per claude call before treating it as a deferral
-MODEL_VERIFY=sonnet          # verification is mostly grep-and-confirm (`sonnet` alias → Sonnet 5)
-MODEL_IMPL=claude-opus-5     # pinned id, not the `opus` alias — see below
-MODEL_REVIEW=claude-opus-5
-BUDGET_VERIFY=3.00    # --max-budget-usd per call; verify is code-read-heavy — see Tuning & lessons
-BUDGET_IMPL=4.00
-BUDGET_REVIEW=2.00
+AGENT_RUNNER=codex BRANCH=<branch> npm run audit:preflight
+AGENT_RUNNER=codex BRANCH=<branch> npm run audit:burndown
+AGENT_RUNNER=codex BRANCH=<branch> npm run audit:burndown:overnight -- 600
 ```
 
-### The layered test gate — why type-checking isn't enough
+Other commands:
 
-Unattended, the expensive failure is a fix that type-checks but breaks a test and commits green. So
-verification is layered by cost, catching a regression as early — and as attributed to one finding —
-as possible:
+| Command                             | Purpose                                                       |
+| ----------------------------------- | ------------------------------------------------------------- |
+| `npm run audit:status`              | Campaign-wide counts, run state, current call, comments       |
+| `npm run audit:cost`                | All retained Codex logs by role and projected remaining usage |
+| `npm run audit:watch`               | Follow `run.log`; add `-- --dash` for a refreshing summary    |
+| `pop.mjs --count`                   | Count remaining findings without loading the backlog          |
+| `pop.mjs --peek N`                  | Print finding N without changing the backlog                  |
+| `backfill-comments.mjs next`        | Print next pending fix comment                                |
+| `backfill-comments.mjs done <sha>`  | Mark it posted, only after the GitHub call succeeds           |
+| `backfill-comments.mjs capture ...` | Rebuild missing records from logs and commits                 |
 
-* **Every finding**, after the adversarial review approves, the driver itself re-runs `CHECK_CMD`
-  **and** `TEST_CMD` (fast unit tests) **and** `LINT_CMD` on the files the fix changed — it does not
-  trust the role prompts to have run them. A red result rolls the fix back and defers the finding
-  rather than committing it. Keep `TEST_CMD` fast (unit only). The lint gate exists because a
-  type-check is a different axis from eslint: a fix can pass `CHECK_CMD` yet ship a stray `any`
-  (`@typescript-eslint/no-explicit-any`) or a raw `Map` in a `.svelte.ts`
-  (`prefer-svelte-reactivity`) — both slipped an early run onto the branch and reddened CI's Quality
-  (lint) job.
-* **UI-touching findings only**, at the same point, the driver also runs `E2E_CMD` against the
-  Playwright spec(s) the verifier named for that finding (its `e2e_specs`). This catches a
-  behavioural regression *before it commits*, attributed to the one finding that caused it, without
-  paying full-suite E2E on all 600 findings — only the fraction with a runtime surface run E2E, and
-  only their relevant spec. A pure refactor / script / doc finding names no specs and skips it. The
-  verifier writes the specs into both `e2e_specs` and the acceptance criteria, so the implementer
-  and reviewer run them too; a red spec rolls the fix back and defers it.
-* **Every batch**, right before the push, the driver runs `PUSH_TEST_CMD` (the full `npm test`,
-  including the whole E2E suite) as a catch-all for cross-finding interactions the per-finding specs
-  can't see. A red batch is **not pushed** — the commits stay local and the push retries at the next
-  boundary, so a flaky E2E clears on retry and a real regression surfaces in `audit:status` instead
-  of shipping. (When pushing to a draft PR whose CI already runs the full suite per push, you can
-  set `PUSH_TEST_CMD` to the fast suites and let CI be the E2E backstop.)
+`pop.mjs` also supports no argument to print the first finding and `--delete` to print and remove
+it. The driver owns deletion. It has no `--help` or source-pruning mode; do not probe unsupported
+flags or manually compensate by editing the backlog.
 
-The reviewer is also handed the **original finding**, not just the verifier's acceptance criteria,
-so it can reject a fix that satisfies mis-scoped criteria while missing what the finding asked for —
-the verifier is the one role with no independent check.
+The important environment knobs are:
 
-### Per-commit PR comments
+```bash
+AGENT_RUNNER=codex
+MAX_ISSUES=5
+MAX_HANDLED=5
+PUSH_EVERY=1
+BRANCH=audit/burndown
+CHECK_CMD='npm run check'
+TEST_CMD='npm run test:unit'
+E2E_CMD='npm run test:e2e -- --retries=1'
+LINT_CMD='npx eslint'
+PUSH_TEST_CMD=''
+COMMENT_STORE=.audit-work/pending-comments.jsonl
+MAX_DEFERRALS=3
+RETRIES=3
+MODEL_VERIFY=gpt-5.6-terra
+MODEL_IMPL=gpt-5.6-sol
+MODEL_IMPL_MINOR=gpt-5.6-terra
+MODEL_REVIEW=gpt-5.6-sol
+EFFORT_VERIFY=medium
+EFFORT_IMPL=high
+EFFORT_REVIEW=medium
+```
 
-Each pushed fix gets its own PR comment — the finding (issue), the implementer's own summary (how it
-was solved), and any adversarial catch the reviewer forced before approval — so the PR reads as a
-per-commit history rather than a batched dump. `scripts/audit-burndown/comment.mjs` renders them
-(unit-tested in `scripts/tests/audit-burndown-comment.test.mjs`); `pushBatch` posts them only after
-a successful push, so a comment never references an unpushed SHA. Deferrals and drops stay in the
-commit log only (they carry their reason in the commit message).
+`BUDGET_*` remains accepted for Claude compatibility but has no Codex CLI equivalent. Subscription
+usage and wall-clock are the Codex run's practical limits.
 
-## Before the full run
+## Deterministic gates
 
-1. `npm run audit:preflight` — fix anything red.
-2. **Canary:** `npm run audit:burndown` (5 findings) and read the commits it makes.
-3. **Force a rejection** to exercise the path a happy-path canary won't: write one deliberately
-   vague brief so the reviewer returns `CHANGES_REQUIRED`, then check `.audit-work/logs/*.fix1.json`
-   to confirm the resumed implementer references its own earlier work rather than starting over.
-   That handoff is the whole design.
-4. `npm run audit:cost` — multiply the per-issue average by the backlog before committing to a full
-   run.
-5. `npm run audit:burndown:overnight -- 600`.
+At the top of every review round the driver runs:
 
-## While it runs
+1. `CHECK_CMD`
+2. `TEST_CMD`
+3. The verifier-selected Playwright specs, if any
+4. `LINT_CMD` on changed code files
 
-* Stop gracefully with `touch .audit-work/STOP` (exits after the current finding; `rm` it before
-  resuming). Stop hard with `pkill -TERM -f 'claude -p'`.
-* Transient API failures are retried with exponential backoff; a budget/turn cap is treated as a
-  real answer and deferred, not retried. Three *consecutive* deferrals halt the run — that shape
-  means something systemic (auth, disk, a red tree), not three unlucky findings.
-* macOS overnight gotchas: `caffeinate -s` only holds on AC power (stay plugged in; closed lid
-  additionally needs `sudo pmset -a disablesleep 1`, then `... 0` afterwards), and automatic macOS
-  updates can reboot at 3am (turn off "Install macOS updates"). `tmux` is optional: when present it
-  lets you `tmux attach`; without it `overnight.mjs` falls back to a detached `caffeinate` process
-  (setsid) that still survives a closed terminal — `brew install tmux` only if you want to attach.
+The reviewer sees only a finding range that passed. It must not rerun tests; it reads the complete
+`<finding-base>..<current-head>` diff for behavior smuggled into a refactor, incomplete renames,
+missing runtime guards, and uncovered behavior. Reviewing only the latest fix-round commit can hide
+the source change in its parent.
 
-## Responding to control messages mid-run
+The completeness grep excludes `docs/AUDIT-DEFERRED.md` and `docs/audit-deferred/**`. Those files
+are driver-owned historical snapshots, and their saved patches are starting points rather than
+living patches guaranteed to apply after later findings change the same code. The reviewer must not
+require an implementer to rewrite protected state that the driver will reject.
 
-The driver runs detached, so the user steers it by chatting with **you**, the supervising agent —
-not by touching the process. Four verbs, each a fixed procedure. Never hand-edit `docs/AUDIT.md` or
-the running process; only use the signals below. All four leave a resumable end state (state is
-`docs/AUDIT.md` + git + the draft PR), so this session or a brand-new one can carry out any of them.
+When a gate is red, the driver includes a bounded, ANSI-free tail of the command output in the
+resumed implementer's feedback. Preserve that output: a nested Codex role cannot rerun a
+listener-based E2E command, so a generic "Playwright is red" message makes it guess at a failure the
+driver already observed.
 
-### "status" — report without interrupting anything
+The nested Codex workspace-write sandbox cannot bind Playwright's localhost listener or write Git
+metadata. The implementer therefore runs type-check, unit, and scoped-lint checks, leaves its
+changes uncommitted, and returns `success=true` with an empty `sha`. The outer driver rejects any
+protected audit-state edit, stages the changed paths, creates the commit, then runs E2E before
+review. A localhost `EPERM` or `.git/index.lock` denial inside a role is an environment boundary,
+not an implementation verdict.
 
-Read-only: do **not** touch the STOP file or the process. Run `npm run audit:status` and relay the
-counts, run state, and — when a finding is in flight — the two elapsed figures it prints
-(`in-flight <elapsed> <finding>` and `current claude call <etime>`). Then **gut-check the duration**
-against these norms (from real runs on this repo):
+The default gates do not cover bespoke repository ratchets. For this repository use:
 
-| Signal                                       | Normal   | Watch     | Investigate |
-| -------------------------------------------- | -------- | --------- | ----------- |
-| whole finding (`in-flight`)                  | ≤ 15 min | 15–25 min | > 25 min    |
-| single `claude` call (`current claude call`) | ≤ 10 min | 10–15 min | > 15 min    |
+```bash
+CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check'
+TEST_CMD='npm run test:unit && npm run test:scripts'
+```
 
-Verify is ~150s; impl/review are the long poles; an E2E-gated finding runs longer. Budget and turn
-caps normally terminate a runaway call on their own near these ceilings.
+Do not put `npm run ruler:check` in `CHECK_CMD`; it writes by reapplying Ruler. A Codex implementer
+whose finding edits any Ruler source tree (`.ruler/**` or `<dir>/.ruler/**`) still runs
+`npm run ruler:apply`, but its nested sandbox may deny only the generated `.agents/**` write. In
+that case it leaves the source and partial generated changes and returns success; the outer driver
+detects any changed path whose component is `.ruler`, reruns `npm run ruler:apply` outside the
+nested sandbox, and includes the complete generated output in its commit. Any other Ruler failure
+remains an implementation failure. When the supervisor runs `ruler:check`, run it outside the
+workspace sandbox because its drift check temporarily rewrites `.agents/`; an `EPERM` under
+`.agents/skills.tmp-*` is a permission boundary, not drift.
 
-* **Within normal** → just report it; do nothing.
-* **Watch band (maybe too long)** → don't intervene yet. Schedule **one** re-check a few minutes out
-  and see whether it *advanced* (HEAD moved or `run.log` grew). Run it as a background job so it
-  reports back on its own:
-  ```bash
-  before="$(git rev-parse HEAD)$(wc -l < .audit-work/logs/run.log)"
-  sleep 300
-  after="$(git rev-parse HEAD)$(wc -l < .audit-work/logs/run.log)"
-  [ "$before" = "$after" ] && echo "STALLED: no advance in 5m" || echo "ADVANCED"
-  ```
-  Advanced → all is well. Still identical → treat it as *investigate*.
-* **Investigate (too long)** → decide whether remediation is warranted before acting. Check whether
-  the current `claude` child is alive and *working* (`ps -o %cpu,etime -p <pid>`; is its role
-  `.audit-work/logs/*.json` still growing?) versus hung (0% CPU, static log and envelope). A
-  genuinely stuck call: `pkill -TERM -f 'claude -p'` kills only that one call — the driver's
-  `RETRIES` re-attempt it or the finding defers; the orchestrator and every committed fix are
-  untouched and state stays durable. Never kill `burndown.mjs` itself for a merely slow finding.
+On macOS a sandboxed dprint invocation can warn that it could not save its incremental cache under
+`~/Library/Caches` and still exit zero. Use the command exit status as the gate verdict; do not turn
+that cache warning into a format failure.
 
-### "pause" — stop cleanly after the current finding
+Leave `PUSH_TEST_CMD` empty while actively supervising a draft PR: CI is the full-suite backstop. Do
+not launch a Codex burndown nobody will supervise; a local full-suite gate cannot replace CI failure
+handling, comment posting, or exact-head checkpoints. Keep `PUSH_EVERY=1`: every accepted finding
+must reach origin before an ephemeral environment can be reclaimed.
 
-`touch .audit-work/STOP`. The driver checks it at the top of each iteration, so it **finishes the
-entire in-flight workflow** — verify → implement → review → gates → commit, and the exit flush
-pushes the batch and posts each fix's PR comment — then exits without starting the next finding.
-Wait for the process to exit, then confirm the end state is resumable: no `burndown.mjs` /
-`claude -p` process left, `git rev-parse HEAD` == `origin/<branch>` (nothing unpushed), and the
-durable checkpoint (memory / handoff) reflects the new counts. **Leave the STOP file in place** — it
-holds the pause; a stray relaunch would exit immediately. Stand down any run-log monitor while
-paused.
+## Before a run
 
-### "resume" / "continue" — start the next finding
+1. Confirm no driver is active. Read process matches rather than trusting a count:
 
-Only after verifying **nothing is already in flight**: `pgrep -f audit-burndown/burndown.mjs` must
-be empty (if it isn't, the run is already going — say so, don't launch a second). Then
-`rm
-.audit-work/STOP`, relaunch with the exact command from the durable checkpoint (including the
-env overrides that dodge the flaky palette snapshots), and re-arm the event-driven monitor. The
-launcher self-recovers even in a brand-new session that never saw this run — see **Resuming a
-crashed run** below.
+   ```bash
+   pgrep -fl 'scripts/audit-burndown/(overnight|burndown)\.mjs'
+   ```
 
-### "wrap up" — finalize now and mark the PR ready
+   Run the lookup outside the workspace sandbox. `pgrep -af` is GNU-shaped and can print only a PID
+   on macOS; use `pgrep -fl`, then confirm a match with `ps -p <pid> -o pid=,ppid=,etime=,command=`
+   when needed.
 
-Terminal, unlike pause. `touch .audit-work/STOP` so the in-flight finding still lands (don't waste a
-nearly-done fix), wait for exit, then run **Closing out a run** below: push anything unpushed, add
-the `docs/AUDIT-LOG.md` row, tidy any emptied `## Source:` sections, and `gh pr ready <PR#>`. The
-backlog may still hold findings — that's expected; wrap-up ships what's done and closes the run out.
+2. Choose a fresh continuation branch from current `main`; do not reuse a historical burndown
+   branch. Put the exact command, branch, gate overrides, `PR: pending`, initial backlog count,
+   current `run.log` line count, state, and closeout tasks in `docs/handoff/audit-burndown-run.md`.
+   The log baseline scopes closeout reconciliation to this run when `.audit-work/` contains
+   historical segments. Commit and push this initial checkpoint before preflight.
 
-## Surviving the context window (supervising a 100+-finding run)
+3. Run preflight with the exact overrides:
 
-A full run is many hours; you — the supervising agent — will not last it in one context window. But
-the driver is a **subprocess** that needs none of your conversation: its state is `docs/AUDIT.md` +
-git + `.audit-work/` + the draft PR, so it keeps running (and a fresh context can take over) no
-matter what happens to yours. Exploit that — hold **no** orchestration state in the conversation:
+   ```bash
+   AGENT_RUNNER=codex \
+   BRANCH='<branch>' \
+   CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check' \
+   TEST_CMD='npm run test:unit && npm run test:scripts' \
+   npm run audit:preflight
+   ```
 
-* The moment you know them, write everything needed to launch, monitor, and close out to a **durable
-  file** and keep it current: the exact **relaunch command** (with every non-default override), the
-  **PR number**, roughly what's done, and the **closeout tasks**. Use a `project`-type memory
-  (Claude Code) or a `docs/handoff/` packet. A fresh or compacted context then resumes from that
-  file + `npm run audit:status` — nothing is re-derived.
-* Because all state is on disk, **compaction is lossless** — compact proactively (or let
-  auto-compact fire) when the context fills, rather than letting the window overflow mid-run. Don't
-  wait to be forced.
-* Keep the supervising context small so it lasts: monitor the run **event-driven** — a `run.log`
-  watcher that fires only on `HALT` / `hit a cap` / `red at batch` / `finished:` — not by polling
-  `audit:status` in a loop, and don't read per-finding logs or the PR back unless you're diagnosing
-  something specific.
+   Require every check green. Read back `runner: codex`, `branch: ...`, `codex logged in`, origin
+   reachable, and the parsed backlog count.
 
-## Resuming a crashed run (or a brand-new session)
+4. Open a draft PR before the canary. The initial checkpoint gives GitHub the diff required to open
+   one. Replace `PR: pending` in the handoff with its number, commit, and push that second
+   checkpoint before launching the canary.
 
-The whole run is reconstructable from git + the draft PR + `docs/AUDIT.md`, so a session that dies
-mid-run — or a completely fresh session, even a fresh clone on another machine with no
-`.audit-work/` — can pick up exactly where it stopped. Relaunch with the overnight launcher
-(`npm run audit:burndown:overnight -- <n>`), which sets `RESUME=1`; startup then reconciles state
-before touching a finding:
+5. Run a five-outcome canary in the foreground with the same overrides, `MAX_ISSUES=5`, and
+   `MAX_HANDLED=5`. The canary validates a bounded sample; it does not need to land five fixes. If
+   all five outcomes are drops or deferrals and no accepted fix exercises commit, gates, review,
+   push, and comment capture, checkpoint and run one more five-outcome canary. Never remove the
+   handled ceiling to chase a successful fix.
 
-* **Latches onto the real branch** — it creates the local branch *from* `origin/<branch>` when a
-  fresh clone has only the remote (a plain `git switch -c` would fork from `main` and silently
-  abandon the run), and fast-forwards to `origin/<branch>` to adopt progress another machine pushed
-  (keeping local commits when it's ahead).
-* **Rediscovers the draft PR** via `gh pr list --head <branch>`. `.audit-work/pr-number` is
-  gitignored and won't survive a fresh clone, so without this the next push would open a
-  **duplicate** draft PR.
-* **Clears crash residue** (`RESUME=1` only) — resets a dirty tree left by a half-done finding back
-  to HEAD and removes a stale `STOP`. The reset loses no accepted work: a finding's `docs/AUDIT.md`
-  entry is deleted only *inside* its fix commit, so an interrupted finding is still listed and
-  simply re-processed. `RESUME` is off for a bare `npm run audit:burndown`, so a canary in a dirty
-  repo still halts rather than discarding real uncommitted changes.
+6. Inspect every canary change without backlog churn:
 
-`npm run audit:preflight` (the launcher runs it for you) prints a **resume target** block — the
-branch state and the PR number it will latch onto — so a fresh session can confirm it's continuing
-the real run, not forking a new one, *before* it starts. One self-healing edge: if a crash lands
-between a fix's commit and the `docs/AUDIT.md` fold, that finding is re-verified at HEAD, found
-already fixed, and dropped as invalid — one extra drop commit, no lost work. **Before relaunching,
-commit or stash any real work in progress** — `RESUME=1` treats a dirty tree as crash residue and
-resets it.
+   ```bash
+   git log main..HEAD -p -- . ':(exclude)docs/AUDIT.md'
+   ```
 
-## Tuning & lessons
+   Look especially for non-equivalent call sites unified by a dedup, coincidentally equal constants
+   coupled as though intentional, and runtime guards erased while tests were cast around a narrowed
+   type.
 
-Notes from real runs — set these before a large run rather than discovering them at 3am:
+7. Check that each consumed finding deleted exactly one entry. A role may make intermediate fix
+   commits with zero deletions, so reconcile per finding:
 
-* **Verify is the slowest role and the main halt risk.** It reads a lot of code to confirm a finding
-  at HEAD (~150s median on this repo) and occasionally needs more than $1. The old
-  `BUDGET_VERIFY=1.00` clipped complex findings (`error_max_budget_usd` → deferral), and a cluster of
-  those nearly tripped the three-consecutive-deferral halt. Default is now `3.00`; don't drop it
-  below ~$2.50 for a big run.
-* **On a Claude subscription the `audit:cost` dollars are notional** — no API bill; the real ceiling
-  is your usage window. A big run self-pauses when the window is exhausted (retries fail → deferrals
-  → halt) and resumes cleanly on relaunch. Size a run by wall-clock and usage, not the dollar
-  figure.
-* **Scoping is correct; the wall-clock is inherent.** verify=Sonnet 5 (cheap confirm + brief),
-  impl=Opus 5, review=Opus 5 (adversarial). ~8–10 min/finding is three sequential LLM roles plus
-  independent test gates — and the reviewer running the tests *itself* rather than trusting the
-  author is the whole point, so that redundancy stays. A ~100-finding chunk is ~13–16h.
-* **The opus roles are pinned to the explicit `claude-opus-5` id, not the `opus` alias.** The `opus`
-  alias can lag a fresh release (it still resolved to `claude-opus-4-8` right after Opus 5 shipped),
-  so pinning the id is what actually puts impl/review on Opus 5; `sonnet` already resolves to Sonnet
-  5, so verify stays on the alias. When a newer opus lands, re-probe
-  (`claude -p --model
-  <id> --output-format json 'ok'` → check `modelUsage`) and bump the pin.
-* **The one safe speed lever is impl-model tiering.** Much of a `/code-audit` backlog is trivially
-  mechanical (P4/P5 dead-code, rename, dedup); routing those to `MODEL_IMPL=sonnet` (the opus review
-  still gates them) shaves the long tail, at a sliver of impl-correctness margin — opt in per run,
-  don't default it on when correctness dominates. Bigger throughput (parallel git worktrees per
-  finding) is a real redesign, not a knob.
-* **`docs/AUDIT-DEFERRED.md` is auto-formatted.** `defer()` runs `dprint fmt` on it before the
-  commit, so a deferral no longer reddens CI's Quality (format) job — the file's header used to be
-  wrapped narrower than dprint's width.
-* **Retry E2E to survive transient flakes.** A single flaky E2E failure red-lights an
-  otherwise-green batch (holding the push) or false-defers a good fix. `E2E_CMD` and the batch
-  `PUSH_TEST_CMD` both carry `--retries=1` so a genuine flake clears on retry; a real regression
-  still fails both attempts. A batch hold isn't fatal regardless — the next boundary (or the exit
-  flush) retries and pushes.
+   ```bash
+   for sha in $(git rev-list --reverse main..HEAD); do
+     echo "$(git log -1 --format='%h %s' $sha | cut -c1-70) removed=$(git show $sha -- docs/AUDIT.md | grep -c '^-### ')"
+   done
+   ```
 
-## Closing out a run
+   Stop if any commit removed two entries.
 
-* Verified fixes land one commit each on the branch (`Audit: <title>` trailer), batch-pushed to a
-  draft PR, each with its own per-commit comment (see above). Invalid findings are dropped with a
-  reasoned `chore(audit): drop invalid finding` commit. Un-fixable findings move to
-  `docs/AUDIT-DEFERRED.md` (committed) — triage these by hand afterwards: re-stage, file as issues,
-  or drop.
-* When the backlog is fully drained, `docs/AUDIT.md` should be deleted per
-  `.claude/audit-conventions.md` (a partial run may also leave emptied `## Source:` sections — tidy
-  them in a final commit).
-* Add one row to `docs/AUDIT-LOG.md` per `.claude/audit-conventions.md` §2 (date ·
-  `burn-down-audits` · done/deferred/dropped counts + the PR link), then mark the PR ready.
-* The deliberately-unported alternative: driving this loop with in-session subagents. Only worth it
-  to watch and steer a handful of findings interactively — and that path already exists as
-  `/fix-audits`.
+8. Confirm resume actually worked when a fix round occurred. The `thread_id` in that iteration's
+   `.impl.json` and `.fix1.json` `thread.started` events must be identical; reviewer thread ids must
+   differ. If no canary finding needed a fix round, do not invent one—continue only after the driver
+   unit tests and the committed resume probe remain green.
+
+9. Check CI on the canary's final push and require green before a full run. Then run
+   `npm run audit:cost` and sanity-check both wall-clock and tokens. Its scope is every retained
+   role envelope under `.audit-work/logs`, not necessarily this continuation alone.
+
+10. Launch the full run with the exact durable command:
+
+    ```bash
+    AGENT_RUNNER=codex \
+    BRANCH='<branch>' \
+    MAX_HANDLED=5 \
+    CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check' \
+    TEST_CMD='npm run test:unit && npm run test:scripts' \
+    npm run audit:burndown:overnight -- 600
+    ```
+
+    `MAX_HANDLED` counts every terminal outcome—fixed, dropped, or deferred—rather than only
+    accepted fixes. The detached driver exits cleanly after five outcomes so it cannot outrun the
+    required CI and comment checkpoint while the supervising conversation is between turns. Record
+    the segment start and 20-minute deadline when launching; the handled ceiling does not replace
+    the time ceiling.
+
+## Supervision
+
+Monitor events, not by repeatedly loading every role envelope:
+
+```bash
+tail -f -n 0 .audit-work/logs/run.log | grep -E --line-buffered \
+  "HALT|red at batch|red on the final|push failed|no impl session|DEFERRED|finished:|iter"
+```
+
+Treat CI supervision as independent from comment posting:
+
+* After each pushed `DONE`, or at least every two minutes, inspect the newest completed Quality job.
+  Track the last Quality-green SHA and the last fully-green SHA.
+* Prefer a compact `gh pr checks <pr> --json name,state,link,bucket,event,workflow` poll every 30–60
+  seconds. Reserve a streaming workflow watch or full job log for a near-terminal run or a failure
+  diagnosis; repeatedly printing the unchanged job matrix consumes supervision context without
+  adding evidence.
+* Treat `cancelled` as inconclusive, not as a regression. A newer push can cancel a healthy run.
+  Treat `failure` as red even when a newer run is queued or cancelled.
+* On any failed job, create `.audit-work/STOP` immediately, let the in-flight finding finish, and
+  diagnose the first failing SHA before resuming. At most one extra finding should land on the red
+  base.
+* `MAX_HANDLED=5` is the mechanical ceiling for each detached full-run segment. When it exits,
+  require one workflow on the exact branch HEAD to finish fully green and drain every pending
+  comment before relaunching. Never remove the boundary from a supervised run.
+* Twenty minutes is still a manual ceiling because the driver cannot stop a role mid-finding. At the
+  recorded deadline create `STOP` immediately, let the current finding finish, then apply the same
+  exact-head checkpoint. `STOP` is checked between findings, not between the active finding's review
+  and repair rounds, so report that expected latency instead of implying an immediate stop. Do not
+  reset the deadline because a role or fix round is still active.
+* Do not send a final response while the driver or a nested Codex role is active. A running burndown
+  is ongoing work: give user-requested status in commentary, continue supervision, and yield only
+  after the bounded segment has stopped. An explicit request to leave the process unattended is a
+  scope change; explain that it gives up CI supervision rather than silently doing so.
+
+Use `npm run audit:status` for counters and current work, then confirm detached liveness with a
+process lookup outside the workspace sandbox. A sandboxed `pgrep` can report `idle` for the
+unsandboxed overnight child; do not call a run idle or stopped from that label alone. A mid-priority
+finding is normally under 15 minutes; 15–25 minutes merits one later recheck; over 25 minutes merits
+diagnosis. Priority and fix rounds skew this: a P1 with two rounds can be healthy at 25 minutes.
+
+```bash
+pgrep -fl 'scripts/audit-burndown/(overnight|burndown)\.mjs'
+```
+
+For a liveness recheck, compare role-envelope counts—not HEAD or `run.log`, which the supervisor
+also changes:
+
+```bash
+before="$(find .audit-work/logs -name 'iter*.json' | wc -l)"
+# recheck later
+after="$(find .audit-work/logs -name 'iter*.json' | wc -l)"
+```
+
+If the current nested `codex exec` is genuinely stuck, terminate that child only; the driver's retry
+loop handles it. If the driver is alive with no nested Codex child and no new envelope for tens of
+minutes, it is orphaned: stop the driver, restore the worktree to `origin/<branch>`, and resume from
+the checkpoint. Do not kill the orchestrator for a merely slow finding.
+
+Three consecutive deferrals halt the run. Before calling them model verdicts, inspect the matching
+`.err` files for one shared mechanical error such as login loss, usage exhaustion, or sandbox
+startup failure.
+
+## Control messages
+
+* **status** — run `npm run audit:status` plus the detached process check; do not touch `STOP`.
+  Report `initial backlog - current remaining` as handled by this continuation and use only scoped
+  post-baseline terminal events for its fixed/dropped/deferred split. Label the command's
+  completed/deferred counters as campaign-wide; never present them as this run's outcomes. Keep
+  supervising until the current bounded segment stops.
+* **pause** — `touch .audit-work/STOP`; let the in-flight finding finish, wait for the driver to
+  exit, push, drain comments, update the checkpoint, and leave `STOP` present.
+* **resume / continue** — verify no driver exists, remove `STOP`, relaunch the exact checkpoint
+  command, and supervise through its next bounded stop; do not relaunch and immediately hand back.
+* **wrap up** — set `STOP`, let the finding land, complete closeout, and mark the PR ready even if
+  findings remain.
+
+Pause on your own initiative only after a demonstrated recurring mechanism is actively losing work
+and the cause can be fixed. One cleanly rolled-back deferral is not enough.
+
+## Per-commit PR comments
+
+Drain comments in an at-least-once loop:
+
+1. `node scripts/audit-burndown/backfill-comments.mjs next`
+2. Post the body on the draft PR with the GitHub connector and append a short OpenAI Codex
+   attribution footer: `Posted by OpenAI Codex while supervising the audit burndown.`
+3. `node scripts/audit-burndown/backfill-comments.mjs done <sha>`
+4. Repeat until empty.
+
+Run `capture main..HEAD` before final drain and once after as a completeness check. Never wrap a
+commit SHA in backticks in GitHub text; bare SHAs auto-link. Escape any `#`-number that is not an
+intentional issue/PR reference.
+
+Drain at every handled-count/CI checkpoint and do not relaunch with pending records. If an older run
+left a large queue, post through the connector in batches of at most ten. When orchestration is
+available, perform each batch in one execution cell to avoid round-tripping every body through the
+supervising conversation. Preserve `next` → confirmed successful post → `done` for every record, and
+abort the batch immediately on a connector error. Confirm success from the connector's structured
+result (`isError: false` when exposed); do not search its serialized text for the word `error`,
+because the success field itself contains that substring.
+
+Iteration filenames restart at `iter0001` and drops can reuse a number within one run. Correlate by
+the timestamped `run.log` line and file mtime, not by the number alone.
+
+## Resume after a crash
+
+The unattended launcher sets `RESUME=1`. It adopts `origin/<branch>`, fast-forwards when safe,
+resets tracked crash residue and removes untracked crash files from a half-finished finding, clears
+stale `STOP`, and starts with the same `docs/AUDIT.md` entry because deletion happens only inside an
+approved commit.
+
+Codex implementation and repair rounds are clean, driver-owned commits before gates and review. When
+the exact `Audit:` finding is still present, resume rewinds that contiguous local-only commit chain
+to the finding base before re-verifying it. It refuses to rewrite the chain if it has already been
+published.
+
+Before relaunching, commit or stash real work: `RESUME=1` treats a dirty tree as crash residue. The
+exact launch command is in `.audit-work/launch-command` while that local state survives and in the
+committed handoff across machines.
+
+## Closeout
+
+1. Stop cleanly and confirm no driver or nested Codex call remains.
+2. Confirm `HEAD` equals `origin/<branch>`.
+3. Run comment `capture`, drain every pending record, then run `capture` again.
+4. Reconcile only the `finished:` lines after the handoff's `run.log` baseline. Prove
+   `initial backlog - remaining = fixed + dropped + deferred`; a halt can omit its final summary, so
+   reconcile any gap from terminal `DONE`/`INVALID`/`DEFERRED` events in that same scoped log. Do
+   not use historical lines, the cumulative deferred list, or commit count: one finding can have
+   several fix commits.
+5. Verify the remaining count with `pop.mjs --count`. The driver owns individual deletion, and the
+   helper has no safe source-pruning mode, so do not directly tidy empty `## Source:` sections while
+   findings remain. Delete `docs/AUDIT.md` only when the count is zero.
+6. Add the `burn-down-audits` row to `docs/AUDIT-LOG.md` with fixed/deferred/dropped counts and the
+   PR link.
+7. Run `npm run format:check`, the relevant quality checks, and deterministic local tests. Do not
+   duplicate the full Playwright suite locally when exact-head CI in step 11 is available as the
+   full-suite gate; run it locally to diagnose CI or when CI is unavailable. Listener-based
+   Playwright needs the outer command's local-server permission, so a sandbox `listen EPERM` is an
+   environment boundary rather than a regression.
+8. Delete the consumed `docs/handoff/audit-burndown-run.md`.
+9. Inspect the complete closeout diff, commit the audit-log/backlog/handoff changes together, and
+   push. Confirm local `HEAD` now equals `origin/<branch>`.
+10. Replace the canary-only PR body with final counts, themes, verification, deferred-work location,
+    and visual-evidence applicability.
+11. Confirm exact-head CI green on the pushed closeout commit, then mark the PR ready.
+
+A deferral keeps its post-mortem in `docs/AUDIT-DEFERRED.md` and, when available, its rejected draft
+under `docs/audit-deferred/`. Treat that patch as a starting point: deterministic gates passed, but
+adversarial review did not.

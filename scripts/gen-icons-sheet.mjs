@@ -14,8 +14,9 @@
 import { readdirSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ROOT } from './lib/utils.mjs';
-import { esc, chromeStyle, masthead, siteFooter } from './lib/scrapbook-chrome.mjs';
+import { ROOT } from './lib/proc.mjs';
+import { esc } from './lib/html.mjs';
+import { chromeStyle, masthead, siteFooter } from './lib/scrapbook-chrome.mjs';
 import { isSpot } from './lib/iconChroma.mjs';
 
 const ICONS_DIR = join(ROOT, 'web/src/lib/icons');
@@ -46,9 +47,10 @@ function inkColors(svg) {
 
 // Inline-ready copy: strip the root width/height (CSS sizes it, viewBox scales)
 // and tag it. A plain glyph painted in a SINGLE ink color — whatever that color
-// is (black `#1f1f1f`, or a white Material export like trash.svg) — has that one
-// ink remapped to currentColor so it follows the theme and stays legible on the
-// card. Two-tone plain icons (e.g. the grey eraser-size rings) keep their colors.
+// is (usually black `#1f1f1f`, but a white Material export counts too) — has
+// that one ink remapped to currentColor so it follows the theme and stays
+// legible on the card. Two-tone plain icons (e.g. the grey eraser-size rings)
+// keep their colors.
 function inlineSvg(svg, spot) {
   let out = svg.replace(/<svg\b[^>]*>/, (tag) => {
     let t = tag.replace(/\s(width|height)="[^"]*"/g, '');

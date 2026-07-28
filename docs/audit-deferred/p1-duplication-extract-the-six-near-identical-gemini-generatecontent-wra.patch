@@ -1,0 +1,516 @@
+diff --git a/tools/asset-gen/bin/gen-coloring-chalk.mjs b/tools/asset-gen/bin/gen-coloring-chalk.mjs
+index 60578bfe..ddc56eb2 100644
+--- a/tools/asset-gen/bin/gen-coloring-chalk.mjs
++++ b/tools/asset-gen/bin/gen-coloring-chalk.mjs
+@@ -54,7 +54,6 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
+ import { existsSync } from 'node:fs';
+ import { join, dirname, relative } from 'node:path';
+ import sharp from 'sharp';
+-import { GoogleGenAI } from '@google/genai';
+ import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+ import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+ import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
+@@ -64,9 +63,8 @@ import { crispInk } from '../lib/crisp-ink.mjs';
+ import { dilateMask } from '../lib/morphology.mjs';
+ import { scoreEyeFill, EYE_DARK_MAX, EYE_LIGHT_MIN } from '../lib/eye-fill.mjs';
+ import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
+-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
++import { generateImage, makeClient } from '../lib/gemini.mjs';
+ 
+-const MODEL = 'gemini-3.1-flash-image';
+ const WEBP_QUALITY = 92;
+ const OUT_DIR = join(SAMPLES_DARK_DIR, 'chalk');
+ 
+@@ -246,35 +244,16 @@ function chalkSettings(v, where) {
+ }
+ chalkSettings(values, 'cli');
+ 
+-const ai = process.env.GEMINI_API_KEY
+-  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+-  : null;
++const ai = process.env.GEMINI_API_KEY ? makeClient(process.env.GEMINI_API_KEY) : null;
+ 
+ async function drawChalk(imageBytes, temperature, instruction) {
+-  const response = await ai.models.generateContent({
+-    model: MODEL,
+-    contents: [
+-      {
+-        role: 'user',
+-        parts: [
+-          {
+-            inlineData: {
+-              mimeType: 'image/webp',
+-              data: Buffer.from(imageBytes).toString('base64'),
+-            },
+-          },
+-          { text: instruction },
+-        ],
+-      },
+-    ],
+-    config: {
+-      abortSignal: AbortSignal.timeout(120_000),
+-      ...(temperature === undefined ? {} : { temperature }),
+-    },
++  const { bytes } = await generateImage(ai, {
++    imageBytes,
++    mimeType: 'image/webp',
++    prompt: instruction,
++    temperature,
+   });
+-  const classified = classifyGeminiResponse(response);
+-  if (classified.kind !== 'image') throw new Error(`${classified.kind}: ${classified.reason}`);
+-  return Buffer.from(classified.data, 'base64');
++  return bytes;
+ }
+ 
+ // Model output (white-on-black) -> stored ink polarity at source resolution:
+diff --git a/tools/asset-gen/bin/gen-coloring-fills-dark.mjs b/tools/asset-gen/bin/gen-coloring-fills-dark.mjs
+index dd31cca8..4447fdc4 100644
+--- a/tools/asset-gen/bin/gen-coloring-fills-dark.mjs
++++ b/tools/asset-gen/bin/gen-coloring-fills-dark.mjs
+@@ -48,7 +48,6 @@ import { readFile, mkdir } from 'node:fs/promises';
+ import { existsSync } from 'node:fs';
+ import { join, dirname, relative } from 'node:path';
+ import sharp from 'sharp';
+-import { GoogleGenAI } from '@google/genai';
+ import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+ import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+ import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
+@@ -71,9 +70,8 @@ import { scoreEyeFill, judgeNightEyes } from '../lib/eye-fill.mjs';
+ // Whole-eye legibility on the composite — catches the blank white orb that the
+ // core-vs-annulus eye gate misses on solid-pen eyes (lib/composite-eye.mjs).
+ import { scoreCompositeEyes } from '../lib/composite-eye.mjs';
+-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
++import { generateImage, makeClient } from '../lib/gemini.mjs';
+ 
+-const MODEL = 'gemini-3.1-flash-image';
+ const OUT_DIR = SAMPLES_DARK_DIR;
+ const WEBP_QUALITY = 90;
+ 
+@@ -119,25 +117,12 @@ The result must look like the identical white-line drawing, recolored as a cozy,
+ async function generateDarkPage(ai, { imageBytes, mimeType, temperature, chalked, notes }) {
+   const base = darkFillPrompt(chalked);
+   const prompt = notes ? `${base}\n\nPAGE-SPECIFIC NOTES:\n${notes}` : base;
+-  const response = await ai.models.generateContent({
+-    model: MODEL,
+-    contents: [
+-      {
+-        role: 'user',
+-        parts: [
+-          { inlineData: { mimeType, data: Buffer.from(imageBytes).toString('base64') } },
+-          { text: prompt },
+-        ],
+-      },
+-    ],
+-    config: {
+-      abortSignal: AbortSignal.timeout(120_000),
+-      ...(temperature === undefined ? {} : { temperature }),
+-    },
++  return generateImage(ai, {
++    imageBytes,
++    mimeType,
++    prompt,
++    temperature,
+   });
+-  const classified = classifyGeminiResponse(response);
+-  if (classified.kind !== 'image') throw new Error(`${classified.kind}: ${classified.reason}`);
+-  return { bytes: Buffer.from(classified.data, 'base64'), mimeType: classified.mimeType };
+ }
+ 
+ // Grow the WHITE lines by `radius` px with a separable max filter. A pale
+@@ -338,9 +323,7 @@ if (values.tall && values.wide) fail('pass only one of --tall / --wide');
+ if (values.tall) pages = pages.filter((p) => p.includes('-tall'));
+ if (values.wide) pages = pages.filter((p) => p.includes('-wide'));
+ 
+-const ai = process.env.GEMINI_API_KEY
+-  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+-  : null;
++const ai = process.env.GEMINI_API_KEY ? makeClient(process.env.GEMINI_API_KEY) : null;
+ 
+ let failures = 0;
+ for (const page of pages) {
+diff --git a/tools/asset-gen/bin/gen-coloring-fills.mjs b/tools/asset-gen/bin/gen-coloring-fills.mjs
+index 8e5a8aba..fdfc2859 100644
+--- a/tools/asset-gen/bin/gen-coloring-fills.mjs
++++ b/tools/asset-gen/bin/gen-coloring-fills.mjs
+@@ -34,7 +34,6 @@ import { parseArgs } from 'node:util';
+ import { readFile, writeFile, mkdir } from 'node:fs/promises';
+ import { join, dirname, relative } from 'node:path';
+ import sharp from 'sharp';
+-import { GoogleGenAI } from '@google/genai';
+ import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
+ import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+ import { pageLevers, describeLevers } from '../lib/page-notes.mjs';
+@@ -42,9 +41,8 @@ import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outli
+ import { alignToSource } from '../lib/align-to-source.mjs';
+ import { scoreEyeFill, judgeLightEyes } from '../lib/eye-fill.mjs';
+ import { punchFill } from '../lib/punch-fill.mjs';
+-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
++import { generateImage, makeClient } from '../lib/gemini.mjs';
+ 
+-const MODEL = 'gemini-3.1-flash-image';
+ const WEBP_QUALITY = 90;
+ 
+ // The single prompt used for every page — no per-page tailoring. It leans hard
+@@ -73,27 +71,12 @@ The result must look like the identical line drawing, fully colored in with clea
+ // + mime type, or throws with the refusal/empty reason. Kept free of file/CLI
+ // concerns so it can be reused (batch, samples, or eventually in-app).
+ export async function generateColoredPage(ai, { imageBytes, mimeType, temperature }) {
+-  const response = await ai.models.generateContent({
+-    model: MODEL,
+-    contents: [
+-      {
+-        role: 'user',
+-        parts: [
+-          { inlineData: { mimeType, data: Buffer.from(imageBytes).toString('base64') } },
+-          { text: FILL_PROMPT },
+-        ],
+-      },
+-    ],
+-    config: {
+-      abortSignal: AbortSignal.timeout(120_000),
+-      ...(temperature === undefined ? {} : { temperature }),
+-    },
++  return generateImage(ai, {
++    imageBytes,
++    mimeType,
++    prompt: FILL_PROMPT,
++    temperature,
+   });
+-  const classified = classifyGeminiResponse(response);
+-  if (classified.kind !== 'image') {
+-    throw new Error(`${classified.kind}: ${classified.reason}`);
+-  }
+-  return { bytes: Buffer.from(classified.data, 'base64'), mimeType: classified.mimeType };
+ }
+ 
+ // Fraction of the image that is essentially pure white — a large value means big
+@@ -142,7 +125,7 @@ const pages = await resolveOutlineTargets(positionals, {
+   onMissing: 'defer',
+ });
+ const sampleMode = samples > 1;
+-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
++const ai = makeClient(process.env.GEMINI_API_KEY);
+ 
+ // A candidate is only usable if it holds the original outline — globally AND in
+ // every region — and leaves no big blank-white area. Below any bar the fill either
+diff --git a/tools/asset-gen/bin/gen-coloring-outlines-fresh.mjs b/tools/asset-gen/bin/gen-coloring-outlines-fresh.mjs
+index 44811f8e..05b44461 100644
+--- a/tools/asset-gen/bin/gen-coloring-outlines-fresh.mjs
++++ b/tools/asset-gen/bin/gen-coloring-outlines-fresh.mjs
+@@ -23,13 +23,11 @@ import { parseArgs } from 'node:util';
+ import { writeFile, mkdir, copyFile } from 'node:fs/promises';
+ import { join, relative } from 'node:path';
+ import sharp from 'sharp';
+-import { GoogleGenAI } from '@google/genai';
+ import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
+ import { scoreSolidity } from '../lib/solid-regions.mjs';
+ import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
+-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
++import { generateImage, makeClient } from '../lib/gemini.mjs';
+ 
+-const MODEL = 'gemini-3.1-flash-image';
+ const WEBP_QUALITY = 90;
+ 
+ const STYLE_PROMPT = `Draw ONE page of a toddler coloring book (for age 2+), in this exact style:
+@@ -79,21 +77,15 @@ The page is ${orientWord}, ${aspect} aspect ratio.
+ 
+ THE SCENE: ${args.values.scene}${args.values.notes ? `\n\nADDITIONAL INSTRUCTIONS: ${args.values.notes}` : ''}`;
+ 
+-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
++const ai = makeClient(process.env.GEMINI_API_KEY);
+ 
+ async function generateOutline(temperature) {
+-  const response = await ai.models.generateContent({
+-    model: MODEL,
+-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+-    config: {
+-      abortSignal: AbortSignal.timeout(120_000),
+-      imageConfig: { aspectRatio: aspect },
+-      temperature,
+-    },
++  const { bytes } = await generateImage(ai, {
++    prompt,
++    temperature,
++    aspectRatio: aspect,
+   });
+-  const classified = classifyGeminiResponse(response);
+-  if (classified.kind !== 'image') throw new Error(`${classified.kind}: ${classified.reason}`);
+-  return Buffer.from(classified.data, 'base64');
++  return bytes;
+ }
+ 
+ // Normalize the model output to the pen contract: exact page dims, greyscale,
+diff --git a/tools/asset-gen/bin/gen-style-covers.mjs b/tools/asset-gen/bin/gen-style-covers.mjs
+index 1befe6c6..6cf83f80 100644
+--- a/tools/asset-gen/bin/gen-style-covers.mjs
++++ b/tools/asset-gen/bin/gen-style-covers.mjs
+@@ -12,13 +12,11 @@ import { parseArgs } from 'node:util';
+ import { readFile } from 'node:fs/promises';
+ import { join } from 'node:path';
+ import sharp from 'sharp';
+-import { GoogleGenAI } from '@google/genai';
+ import { STYLES_DIR, fail } from '../lib/paths.mjs';
+ import { STYLE_SUFFIXES, STYLE_NAMES } from '../../../web/src/lib/ai/styles.ts';
+ import { buildPromptForStyle } from '../../../web/src/lib/ai/prompt.ts';
+-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
++import { generateImage, makeClient } from '../lib/gemini.mjs';
+ 
+-const MODEL = 'gemini-3.1-flash-image';
+ const SOURCE_SVG = join(STYLES_DIR, 'source.svg');
+ const THUMB_SIZE = 448;
+ const WEBP_QUALITY = 75;
+@@ -28,27 +26,12 @@ const WEBP_QUALITY = 75;
+ // can migrate toward in-app use later.
+ export async function generateStyledImage(ai, { imageBytes, mimeType, style, temperature }) {
+   const prompt = buildPromptForStyle(style, STYLE_SUFFIXES);
+-  const response = await ai.models.generateContent({
+-    model: MODEL,
+-    contents: [
+-      {
+-        role: 'user',
+-        parts: [
+-          { inlineData: { mimeType, data: Buffer.from(imageBytes).toString('base64') } },
+-          { text: prompt },
+-        ],
+-      },
+-    ],
+-    config: {
+-      abortSignal: AbortSignal.timeout(120_000),
+-      ...(temperature === undefined ? {} : { temperature }),
+-    },
++  return generateImage(ai, {
++    imageBytes,
++    mimeType,
++    prompt,
++    temperature,
+   });
+-  const classified = classifyGeminiResponse(response);
+-  if (classified.kind !== 'image') {
+-    throw new Error(`${classified.kind}: ${classified.reason}`);
+-  }
+-  return { bytes: Buffer.from(classified.data, 'base64'), mimeType: classified.mimeType };
+ }
+ 
+ function resolveStyle(name) {
+@@ -76,7 +59,7 @@ if (!process.env.GEMINI_API_KEY) {
+ const sourcePng = await sharp(await readFile(SOURCE_SVG))
+   .png()
+   .toBuffer();
+-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
++const ai = makeClient(process.env.GEMINI_API_KEY);
+ 
+ let failures = 0;
+ for (const style of styles) {
+diff --git a/tools/asset-gen/bin/normalize-outline-strokes.mjs b/tools/asset-gen/bin/normalize-outline-strokes.mjs
+index 4b8e2e25..7f3fae96 100644
+--- a/tools/asset-gen/bin/normalize-outline-strokes.mjs
++++ b/tools/asset-gen/bin/normalize-outline-strokes.mjs
+@@ -40,16 +40,14 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
+ import { join, dirname, relative } from 'node:path';
+ import { existsSync } from 'node:fs';
+ import sharp from 'sharp';
+-import { GoogleGenAI } from '@google/genai';
+ import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+ import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
+ import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
+ import { alignToSource } from '../lib/align-to-source.mjs';
+ import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
+ import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
+-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
++import { generateImage, makeClient } from '../lib/gemini.mjs';
+ 
+-const MODEL = 'gemini-3.1-flash-image';
+ const WEBP_QUALITY = 92;
+ const OUT_DIR = join(SAMPLES_DARK_DIR, 'normalize');
+ // The candidate's ink must all lie on the reference's (no invented strokes).
+@@ -104,35 +102,16 @@ function normalizeSettings(v, where) {
+ }
+ normalizeSettings(values, 'cli');
+ 
+-const ai = process.env.GEMINI_API_KEY
+-  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+-  : null;
++const ai = process.env.GEMINI_API_KEY ? makeClient(process.env.GEMINI_API_KEY) : null;
+ 
+ async function editLineArt(imageBytes, temperature, instruction) {
+-  const response = await ai.models.generateContent({
+-    model: MODEL,
+-    contents: [
+-      {
+-        role: 'user',
+-        parts: [
+-          {
+-            inlineData: {
+-              mimeType: 'image/webp',
+-              data: Buffer.from(imageBytes).toString('base64'),
+-            },
+-          },
+-          { text: instruction },
+-        ],
+-      },
+-    ],
+-    config: {
+-      abortSignal: AbortSignal.timeout(120_000),
+-      ...(temperature === undefined ? {} : { temperature }),
+-    },
++  const { bytes } = await generateImage(ai, {
++    imageBytes,
++    mimeType: 'image/webp',
++    prompt: instruction,
++    temperature,
+   });
+-  const classified = classifyGeminiResponse(response);
+-  if (classified.kind !== 'image') throw new Error(`${classified.kind}: ${classified.reason}`);
+-  return Buffer.from(classified.data, 'base64');
++  return bytes;
+ }
+ 
+ // Normalize the model output back to a clean black-on-white page at the source
+diff --git a/tools/asset-gen/lib/gemini.mjs b/tools/asset-gen/lib/gemini.mjs
+new file mode 100644
+index 00000000..3948342a
+--- /dev/null
++++ b/tools/asset-gen/lib/gemini.mjs
+@@ -0,0 +1,36 @@
++import { GoogleGenAI } from '@google/genai';
++import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
++
++export const IMAGE_MODEL = 'gemini-3.1-flash-image';
++export const IMAGE_TIMEOUT_MS = 120_000;
++
++export function makeClient(apiKey) {
++  return new GoogleGenAI({ apiKey });
++}
++
++export async function generateImage(
++  ai,
++  { imageBytes, mimeType, prompt, temperature, aspectRatio }
++) {
++  const parts =
++    imageBytes === undefined
++      ? [{ text: prompt }]
++      : [
++          { inlineData: { mimeType, data: Buffer.from(imageBytes).toString('base64') } },
++          { text: prompt },
++        ];
++  const response = await ai.models.generateContent({
++    model: IMAGE_MODEL,
++    contents: [{ role: 'user', parts }],
++    config: {
++      abortSignal: AbortSignal.timeout(IMAGE_TIMEOUT_MS),
++      ...(temperature === undefined ? {} : { temperature }),
++      ...(aspectRatio === undefined ? {} : { imageConfig: { aspectRatio } }),
++    },
++  });
++  const classified = classifyGeminiResponse(response);
++  if (classified.kind !== 'image') {
++    throw new Error(`${classified.kind}: ${classified.reason}`);
++  }
++  return { bytes: Buffer.from(classified.data, 'base64'), mimeType: classified.mimeType };
++}
+diff --git a/tools/asset-gen/tests/gemini.test.mjs b/tools/asset-gen/tests/gemini.test.mjs
+new file mode 100644
+index 00000000..6b68f424
+--- /dev/null
++++ b/tools/asset-gen/tests/gemini.test.mjs
+@@ -0,0 +1,99 @@
++import { beforeEach, expect, test, vi } from 'vitest';
++
++const classifyGeminiResponse = vi.hoisted(() => vi.fn());
++const GoogleGenAI = vi.hoisted(() => vi.fn());
++
++vi.mock('../../../web/src/lib/server/ai/geminiSafety.ts', () => ({
++  classifyGeminiResponse,
++}));
++vi.mock('@google/genai', () => ({ GoogleGenAI }));
++
++import { generateImage, IMAGE_MODEL, IMAGE_TIMEOUT_MS, makeClient } from '../lib/gemini.mjs';
++
++const generateContent = vi.fn();
++const ai = { models: { generateContent } };
++
++beforeEach(() => {
++  generateContent.mockReset();
++  classifyGeminiResponse.mockReset();
++  GoogleGenAI.mockReset();
++});
++
++test('constructs the shared Gemini client', () => {
++  expect(makeClient('test-key')).toBeInstanceOf(GoogleGenAI);
++  expect(GoogleGenAI).toHaveBeenCalledWith({ apiKey: 'test-key' });
++});
++
++test('sends an inline image before the prompt and omits undefined options', async () => {
++  const response = {};
++  generateContent.mockResolvedValue(response);
++  classifyGeminiResponse.mockReturnValue({
++    kind: 'image',
++    data: Buffer.from('generated').toString('base64'),
++    mimeType: 'image/png',
++  });
++
++  await expect(
++    generateImage(ai, {
++      imageBytes: Buffer.from('source'),
++      mimeType: 'image/webp',
++      prompt: 'color this',
++    })
++  ).resolves.toEqual({ bytes: Buffer.from('generated'), mimeType: 'image/png' });
++
++  expect(IMAGE_MODEL).toBe('gemini-3.1-flash-image');
++  expect(IMAGE_TIMEOUT_MS).toBe(120_000);
++  expect(generateContent).toHaveBeenCalledWith({
++    model: IMAGE_MODEL,
++    contents: [
++      {
++        role: 'user',
++        parts: [
++          {
++            inlineData: {
++              mimeType: 'image/webp',
++              data: Buffer.from('source').toString('base64'),
++            },
++          },
++          { text: 'color this' },
++        ],
++      },
++    ],
++    config: {
++      abortSignal: expect.any(AbortSignal),
++    },
++  });
++  expect(classifyGeminiResponse).toHaveBeenCalledWith(response);
++});
++
++test('sends text-only generation options with temperature and aspect ratio', async () => {
++  generateContent.mockResolvedValue({});
++  classifyGeminiResponse.mockReturnValue({
++    kind: 'image',
++    data: Buffer.from('outline').toString('base64'),
++    mimeType: 'image/webp',
++  });
++
++  await generateImage(ai, {
++    prompt: 'draw this',
++    temperature: 0,
++    aspectRatio: '2:3',
++  });
++
++  expect(generateContent).toHaveBeenCalledWith({
++    model: IMAGE_MODEL,
++    contents: [{ role: 'user', parts: [{ text: 'draw this' }] }],
++    config: {
++      abortSignal: expect.any(AbortSignal),
++      temperature: 0,
++      imageConfig: { aspectRatio: '2:3' },
++    },
++  });
++});
++
++test('throws the classified kind and reason for a non-image response', async () => {
++  generateContent.mockResolvedValue({});
++  classifyGeminiResponse.mockReturnValue({ kind: 'empty', reason: 'no image part' });
++
++  await expect(generateImage(ai, { prompt: 'draw this' })).rejects.toThrow('empty: no image part');
++});

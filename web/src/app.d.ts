@@ -1,10 +1,11 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts for the App namespace.
 declare global {
   namespace App {
-    // interface Error {}
-    // interface Locals {}
-    // interface PageData {}
-    // interface PageState {}
+    // Pins the shape both hooks.client.ts's and hooks.server.ts's `handleError`
+    // already return: `{ message: GENERIC_ERROR_MESSAGE }`.
+    interface Error {
+      message: string;
+    }
 
     // The Netlify adapter exposes the function invocation context here.
     // `waitUntil` keeps the function alive past the response for background
@@ -39,6 +40,25 @@ declare global {
   // types, so declare only the surface we touch. skipLibCheck smooths over any
   // overlap with the partial built-in types.
   type FileSystemPermissionMode = 'read' | 'readwrite';
+
+  // Chromium-only event; not in the default TS DOM lib.
+  interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+  }
+
+  interface NetworkInformation {
+    saveData?: boolean;
+  }
+
+  interface Navigator {
+    connection?: NetworkInformation;
+  }
+
+  interface WindowEventMap {
+    beforeinstallprompt: BeforeInstallPromptEvent;
+    appinstalled: Event;
+  }
 
   interface Window {
     showDirectoryPicker(options?: {

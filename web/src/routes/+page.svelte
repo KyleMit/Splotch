@@ -13,33 +13,32 @@
   import NotchBand from '$lib/components/NotchBand.svelte';
   import ParentHelpButton from '$lib/components/ParentHelpButton.svelte';
   import { parentCenter } from '$lib/state/ui.svelte';
-  import { canvasState } from '$lib/state/canvas.svelte';
-  import {
-    initPWAUpdates,
-    registerDeferredServiceWorker,
-    STROKES_BEFORE_SW_REGISTER,
-  } from '$lib/pwa/updates';
-  import { initInstallPrompt } from '$lib/state/install.svelte';
+  import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
+  import { pwaUpdates } from '$lib/pwa/updates';
   import { captureAiAccessTokenFromUrl, settings } from '$lib/state/settings.svelte';
-  import { hydrateApiKey } from '$lib/state/aiKey.svelte';
-  import { hydrateSaveFolder } from '$lib/state/saveFolder.svelte';
-  import { hydrateDurableStorage } from '$lib/storage';
-  import { isNative } from '$lib/platform';
   import { applyTheme } from '$lib/theme';
   import { applyDeviceOrientationPreference } from '$lib/orientation';
-  import { scheduleIdle } from '$lib/idle';
+  import { mountBootHiddenOverlays } from '$lib/boot/bootHiddenOverlays';
+  import { installWakeLock } from '$lib/boot/wakeLock';
+  import { installContextMenuGuard } from '$lib/boot/contextMenuGuard';
+  import { hydratePersistedState } from '$lib/boot/persistedState';
+  import { initWebOnlyServices } from '$lib/boot/webOnlyServices';
 
   $effect(() => {
-    settings.lockRotationEnabled;
-    settings.forceLandscapeOrientation;
-    applyDeviceOrientationPreference();
+    applyDeviceOrientationPreference(
+      settings.lockRotationEnabled,
+      settings.forceLandscapeOrientation
+    );
   });
 
   // Own the drawing route's app-surface locks (ADR-0076): no scroll, selection,
   // zoom, or iOS callout. Every other route is a normal document; the drawing
   // page is the override, so it sets the flag app.css keys off and clears it when
   // the user navigates away (client-side nav to /privacy etc.). The app.html boot
-  // script seeds the same flag for first paint.
+  // script re-types the same route as a `'/'` literal to seed the flag for first
+  // paint (it can't import `DRAWING_ROUTE` from `lib/boot/appSurfaceRoute.ts` —
+  // it's vanilla JS in a template file); `app.html.test.ts` asserts that literal
+  // matches the constant.
   $effect(() => {
     document.documentElement.setAttribute('data-app-surface', '');
     return () => document.documentElement.removeAttribute('data-app-surface');
@@ -49,16 +48,16 @@
   // "a few strokes drawn" signal so the ~39 MB precache never lands on top of
   // boot or the first strokes (issue #462). Repeat visits don't pass through
   // here — initPWAUpdates re-registers an existing registration at idle.
+  // The gate waits for the shared settled-in signal (the same one the Install
+  // Banner uses). Pre-hydration strokes (ADR-0072) don't tick strokeCount, so
+  // only post-hydration strokes count — acceptable, it only defers
+  // registration slightly further.
   $effect(() => {
-    if (canvasState.strokeCount < STROKES_BEFORE_SW_REGISTER) return;
-    if (!isNative()) registerDeferredServiceWorker();
+    if (canvasState.strokeCount < SETTLED_IN_STROKES) return;
+    if (!__IS_CAPACITOR__) pwaUpdates.registerDeferredServiceWorker();
   });
 
-  // The boot-hidden overlays (see bootHiddenOverlays.ts) load and mount at idle
-  // so the ~470 ms first-load hydration long task doesn't pay for subtrees that
-  // are invisible until a tap or a few strokes later. One overlay per idle
-  // callback: mounting them all at once just relocates a long task to idle,
-  // where it would jank a stroke already in progress.
+  // Filled one at a time by the idle mount pump (see boot/bootHiddenOverlays.ts).
   let overlays = $state<Component[]>([]);
 
   // The Parent Center dialog is the one overlay too heavy even for an idle
@@ -67,35 +66,9 @@
   // dialog's modalDialog $effect shows it as soon as it lands. The corner
   // button that opens it (ParentHelpButton) stays eagerly mounted above.
   let ParentCenter = $state<Component | null>(null);
-  let parentCenterWanted = $state(false);
+  let parentCenterEverOpened = $state(false);
   $effect(() => {
-    if (parentCenter.open) parentCenterWanted = true;
-  });
-
-  onMount(() => {
-    // The cancel handle scheduleIdle returns can't reach the async import().then
-    // continuation below, so a `stopped` flag guards the recursive mount from
-    // running after unmount.
-    let stopped = false;
-    scheduleIdle(() => {
-      import('$lib/components/bootHiddenOverlays').then((module) => {
-        ParentCenter = module.ParentCenter;
-        const queue = [
-          module.ColorPicker,
-          module.ColoringBook,
-          module.AiImagePrompt,
-          module.AiImageResult,
-          module.InstallBanner,
-        ];
-        const mountNext = () => {
-          if (stopped) return;
-          overlays = [...overlays, queue[overlays.length]];
-          if (overlays.length < queue.length) scheduleIdle(mountNext);
-        };
-        mountNext();
-      });
-    });
-    return () => (stopped = true);
+    if (parentCenter.open) parentCenterEverOpened = true;
   });
 
   onMount(() => {
@@ -105,63 +78,18 @@
     // theme-color meta and OS-switch tracking now fall out of the single
     // reactive source in lib/state/appearance.svelte.ts.
     applyTheme(settings.theme);
-    // Load the BYOK Gemini key from secure storage into the live store (async,
-    // transparent — the AI button is only used long after boot completes).
-    hydrateApiKey();
-    // Load the optional saved-photo folder name for the Parent Center display
-    // (web/desktop only; no effect on whether saves happen).
-    hydrateSaveFolder();
+    hydratePersistedState();
 
-    // Native only: recover any settings the WebView's localStorage may have
-    // evicted from the durable Capacitor Preferences store. Each persisted store
-    // registers its own reloader via onDurableRestore (issue #521), so hydrate
-    // refreshes them all — no reload list to keep in sync here. No-op (and
-    // instant) on the web. Orientation is re-applied explicitly: it's an
-    // imperative side effect, not a persisted store, and reloadSettings changing
-    // an orientation setting also re-runs the $effect above, but this guarantees
-    // the apply even when the restored value equals the current one.
-    hydrateDurableStorage().then((restored) => {
-      if (restored) applyDeviceOrientationPreference();
-    });
-
-    // Prevent context menu on long press
-    const blockContextMenu = (e: Event) => e.preventDefault();
-    document.addEventListener('contextmenu', blockContextMenu);
-
-    // Wake lock to prevent screen sleep — request on first pointerdown, and
-    // re-request when the page becomes visible again.
-    let wakeLock: WakeLockSentinel | null = null;
-    async function requestWakeLock() {
-      try {
-        if ('wakeLock' in navigator) {
-          wakeLock = await navigator.wakeLock.request('screen');
-        }
-      } catch {}
-    }
-    const onFirstPointerDown = () => requestWakeLock();
-    const onVisibilityChange = () => {
-      if (wakeLock !== null && document.visibilityState === 'visible') {
-        requestWakeLock();
-      }
-    };
-    document.addEventListener('pointerdown', onFirstPointerDown, { once: true });
-    document.addEventListener('visibilitychange', onVisibilityChange);
-
-    // The service worker only exists in the web build; the native apps bundle
-    // their shell on-device, so there's nothing to update-check there. The
-    // install prompt is likewise web-only (the native app is already installed).
-    let teardownPWAUpdates: (() => void) | undefined;
-    if (!isNative()) {
-      teardownPWAUpdates = initPWAUpdates();
-      initInstallPrompt();
-    }
-
-    return () => {
-      document.removeEventListener('contextmenu', blockContextMenu);
-      document.removeEventListener('pointerdown', onFirstPointerDown);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      teardownPWAUpdates?.();
-    };
+    const teardowns = [
+      mountBootHiddenOverlays(
+        (overlay) => (ParentCenter = overlay),
+        (overlay) => (overlays = [...overlays, overlay])
+      ),
+      installContextMenuGuard(),
+      installWakeLock(),
+      initWebOnlyServices(),
+    ];
+    return () => teardowns.forEach((teardown) => teardown());
   });
 </script>
 
@@ -178,6 +106,6 @@
 {#each overlays as Overlay (Overlay)}
   <Overlay />
 {/each}
-{#if ParentCenter && parentCenterWanted}
+{#if ParentCenter && parentCenterEverOpened}
   <ParentCenter />
 {/if}

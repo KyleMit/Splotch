@@ -54,19 +54,27 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import sharp from 'sharp';
-import { GoogleGenAI } from '@google/genai';
-import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, toPosix } from '../lib/paths.mjs';
+import { fail, parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
-import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
+import {
+  outlineMatch,
+  KEEP_THRESHOLD,
+  LOCAL_KEEP_THRESHOLD,
+  OUTLINE_MASK_SIZE,
+  OUTLINE_INK_CUTOFF,
+} from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { crispInk } from '../lib/crisp-ink.mjs';
 import { dilateMask } from '../lib/morphology.mjs';
+import { floodFromBorder } from '../lib/regions.mjs';
 import { scoreEyeFill, EYE_DARK_MAX, EYE_LIGHT_MIN } from '../lib/eye-fill.mjs';
 import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
+import { CHALK_INSTRUCTION } from '../lib/prompts.mjs';
+import { formatCandidateLine } from '../lib/report.mjs';
 
-const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 92;
 const OUT_DIR = join(SAMPLES_DARK_DIR, 'chalk');
 
@@ -79,8 +87,6 @@ const OUT_DIR = join(SAMPLES_DARK_DIR, 'chalk');
 // judged by thickness (opening) misread every whitened sclera as an "invented
 // thin stroke" and rejected 9 of nature's 12 perfectly-good chalks. Same
 // working scale and ink bar as lib/outline-match.mjs so the masks agree.
-const INK_W = 512;
-const INK_DARK = 110; // grayscale px darker than this = ink
 const PEN_SLACK = 2; // px of registration slack around pen strokes (outline-match TOL)
 // Background-invention test uses a wider berth: local stroke thickening and the
 // residue of an align-corrected nudge hug the pen lines, while a genuinely
@@ -96,11 +102,11 @@ const WHITE_FRAC_MAX_DEFAULT = 0.1;
 async function inkMask(buf) {
   const { data } = await sharp(buf)
     .grayscale()
-    .resize(INK_W, INK_W, { fit: 'fill' })
+    .resize(OUTLINE_MASK_SIZE, OUTLINE_MASK_SIZE, { fit: 'fill' })
     .raw()
     .toBuffer({ resolveWithObject: true });
-  const mask = new Uint8Array(INK_W * INK_W);
-  for (let i = 0; i < data.length; i++) mask[i] = data[i] < INK_DARK ? 1 : 0;
+  const mask = new Uint8Array(OUTLINE_MASK_SIZE * OUTLINE_MASK_SIZE);
+  for (let i = 0; i < data.length; i++) mask[i] = data[i] < OUTLINE_INK_CUTOFF ? 1 : 0;
   return mask;
 }
 
@@ -108,34 +114,7 @@ async function inkMask(buf) {
 // border (same flood the night-fill mood scorer uses). A chalk must never
 // whiten it — chalk whites live in pen-bounded interiors.
 function openBackground(penMask) {
-  const w = INK_W;
-  const h = INK_W;
-  const bg = new Uint8Array(w * h);
-  const stack = [];
-  const push = (x, y) => {
-    if (x < 0 || x >= w || y < 0 || y >= h) return;
-    const i = y * w + x;
-    if (!bg[i] && !penMask[i]) {
-      bg[i] = 1;
-      stack.push(i);
-    }
-  };
-  for (let x = 0; x < w; x++) {
-    push(x, 0);
-    push(x, h - 1);
-  }
-  for (let y = 0; y < h; y++) {
-    push(0, y);
-    push(w - 1, y);
-  }
-  while (stack.length) {
-    const i = stack.pop();
-    push((i % w) + 1, (i / w) | 0);
-    push((i % w) - 1, (i / w) | 0);
-    push(i % w, ((i / w) | 0) + 1);
-    push(i % w, ((i / w) | 0) - 1);
-  }
-  return bg;
+  return floodFromBorder(OUTLINE_MASK_SIZE, OUTLINE_MASK_SIZE, (i) => !penMask[i]);
 }
 
 // Split a candidate's new ink (beyond the pen's slack-dilated strokes) into
@@ -144,9 +123,9 @@ function openBackground(penMask) {
 async function scoreNewInk(penBuf, candidateBuf) {
   const pen = await inkMask(penBuf);
   const cand = await inkMask(candidateBuf);
-  const n = INK_W * INK_W;
-  const allowed = dilateMask(pen, INK_W, INK_W, PEN_SLACK);
-  const bgSafe = dilateMask(pen, INK_W, INK_W, BG_SLACK);
+  const n = OUTLINE_MASK_SIZE * OUTLINE_MASK_SIZE;
+  const allowed = dilateMask(pen, OUTLINE_MASK_SIZE, OUTLINE_MASK_SIZE, PEN_SLACK);
+  const bgSafe = dilateMask(pen, OUTLINE_MASK_SIZE, OUTLINE_MASK_SIZE, BG_SLACK);
   const bg = openBackground(pen);
   let penMass = 0;
   let invented = 0;
@@ -187,22 +166,6 @@ function judgeChalkEyes(chalkScored, lightScored) {
   return { passes: pupilsInked === 0, pupilsInked, whitesMissed };
 }
 
-const INSTRUCTION = `This is a children's coloring-page drawing rendered as WHITE line art on a BLACK background — a chalk line drawing on a blackboard.
-
-YOUR EDIT — redraw it as a proper CHALK LINE DRAWING, making the judgment calls a chalk artist makes about which areas should be SOLID WHITE and which should stay black:
-- THE WHITES OF EYES: fill each eye's sclera — ONLY the area between the eyeball outline and the pupil circle — SOLID WHITE, and fill each tiny catchlight/glare circle SOLID WHITE, so the eyes read correctly on the dark board.
-- PUPILS STAY BLACK. The pupil is the large circle inside each eye: its inside must remain BLACK — the dark board showing through — surrounded by the solid white sclera, with only the small catchlight circle white inside it. NEVER fill a pupil white, and NEVER fill the entire eye white: an eye that is one solid white disc is WRONG and unusable. Every finished eye must show white sclera, BLACK pupil, and a small white catchlight.
-- Small features that are naturally white on the subject (teeth, a white patch or marking, a sparkle) may also be filled solid white.
-- Everything else stays exactly as it is: thin white outlines on black.
-
-ABSOLUTE RULES:
-- Keep every existing white line exactly where it is — do not move, redraw, thicken, thin, smooth, or erase a single line. The drawing must line up pixel-for-pixel with the original.
-- Do not add any new lines, shapes, stars, dots, patterns, decorations, or objects. The ONLY change allowed is filling some existing enclosed regions solid white.
-- NEVER fill the open background white, and never fill a large body or a whole shape white — only small deliberate features (eye whites, catchlights, teeth, small markings).
-- Output PURE WHITE on PURE BLACK only — no grey, no color, no shading, no chalk texture, dust, or smudging.
-- Keep the same polarity as the input: a white drawing on a black background.
-- Do not crop, zoom, rotate, shift, or resize. Same composition, framing, and margins.`;
-
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
@@ -221,60 +184,51 @@ if (!positionals.length)
   fail('give one or more pages or categories, e.g. "nature/ant-tall" or "nature"');
 // --rescore re-runs the gates over the existing candidates in the samples dir
 // (no API calls) — for re-judging after a gate change without burning takes.
-if (!values.rescore && !values['dry-run'] && !process.env.GEMINI_API_KEY)
-  fail('GEMINI_API_KEY is not set.');
+const ai = makeClient({ optional: values['dry-run'] || values.rescore });
 
 // Per-page tuning resolves in the page loop — defaults, then the page's
 // fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
-function chalkSettings(v, where) {
-  const s = {
-    baseTemp: v.temperature === undefined ? 0.35 : Number(v.temperature),
-    maxAttempts: v['max-attempts'] === undefined ? 4 : Number(v['max-attempts']),
-    inventedMax: v['invented-max'] === undefined ? INVENTED_MAX_DEFAULT : Number(v['invented-max']),
-    whiteFracMax:
-      v['white-frac-max'] === undefined ? WHITE_FRAC_MAX_DEFAULT : Number(v['white-frac-max']),
+function chalkSettings(v, source) {
+  const leverSettings = {
+    temperature: parseTemperature(v.temperature, '--temperature', 0.35, source),
+    'max-attempts': parsePositiveInt(v['max-attempts'], '--max-attempts', 4, source),
+    'invented-max': parseNonNegative(
+      v['invented-max'],
+      '--invented-max',
+      INVENTED_MAX_DEFAULT,
+      source
+    ),
+    'white-frac-max': parseNonNegative(
+      v['white-frac-max'],
+      '--white-frac-max',
+      WHITE_FRAC_MAX_DEFAULT,
+      source
+    ),
     notes: v.notes,
   };
-  if (!(s.baseTemp >= 0 && s.baseTemp <= 2))
-    fail(`--temperature must be between 0 and 2 (${where})`);
-  if (!(Number.isInteger(s.maxAttempts) && s.maxAttempts >= 1))
-    fail(`--max-attempts must be a positive integer (${where})`);
-  if (!(s.inventedMax >= 0)) fail(`--invented-max must be a non-negative number (${where})`);
-  if (!(s.whiteFracMax >= 0)) fail(`--white-frac-max must be a non-negative number (${where})`);
-  s.instruction = s.notes ? `${INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${s.notes}` : INSTRUCTION;
-  return s;
+  const instruction = leverSettings.notes
+    ? `${CHALK_INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${leverSettings.notes}`
+    : CHALK_INSTRUCTION;
+  return {
+    baseTemp: leverSettings.temperature,
+    maxAttempts: leverSettings['max-attempts'],
+    inventedMax: leverSettings['invented-max'],
+    whiteFracMax: leverSettings['white-frac-max'],
+    notes: leverSettings.notes,
+    instruction,
+    leverSettings,
+  };
 }
-chalkSettings(values, 'cli');
-
-const ai = process.env.GEMINI_API_KEY
-  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-  : null;
+chalkSettings(values);
 
 async function drawChalk(imageBytes, temperature, instruction) {
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          {
-            inlineData: {
-              mimeType: 'image/webp',
-              data: Buffer.from(imageBytes).toString('base64'),
-            },
-          },
-          { text: instruction },
-        ],
-      },
-    ],
-    config: {
-      abortSignal: AbortSignal.timeout(120_000),
-      ...(temperature === undefined ? {} : { temperature }),
-    },
+  const { bytes } = await generateImage(ai, {
+    imageBytes,
+    mimeType: 'image/webp',
+    prompt: instruction,
+    temperature,
   });
-  const classified = classifyGeminiResponse(response);
-  if (classified.kind !== 'image') throw new Error(`${classified.kind}: ${classified.reason}`);
-  return Buffer.from(classified.data, 'base64');
+  return bytes;
 }
 
 // Model output (white-on-black) -> stored ink polarity at source resolution:
@@ -317,9 +271,7 @@ const pages = await resolveOutlineTargets(positionals, {
 
 let failures = 0;
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page)
-    .replace(/\.outline\.webp$/, '')
-    .replace(/\\/g, '/');
+  const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
   // Resolve this page's levers: defaults < fill-src/<cat>/notes.json < CLI.
   const levers = pageLevers(rel, 'chalk');
   const { merged, fromRegistry } = mergeFlags(values, levers);
@@ -331,13 +283,7 @@ for (const page of pages) {
         levers,
         fromRegistry,
         cliValues: values,
-        settings: {
-          temperature: cfg.baseTemp,
-          'max-attempts': cfg.maxAttempts,
-          'invented-max': cfg.inventedMax,
-          'white-frac-max': cfg.whiteFracMax,
-          notes: cfg.notes,
-        },
+        settings: cfg.leverSettings,
       })
     );
   if (values['dry-run']) continue;
@@ -380,7 +326,6 @@ for (const page of pages) {
       candidate,
       keep: fwd.keep,
       localKeep: fwd.localKeep,
-      overlay: fwd.overlay,
       newInk,
       eyes,
       shift,
@@ -388,6 +333,7 @@ for (const page of pages) {
     };
   };
   let best = null;
+  let overlay;
   try {
     if (values.rescore) {
       if (!existsSync(sample)) {
@@ -410,6 +356,7 @@ for (const page of pages) {
         if (passes(cand, cfg)) break;
       }
     }
+    ({ overlay } = await outlineMatch(keepReference, best.candidate, { overlay: true }));
   } catch (err) {
     failures++;
     console.log(`FAILED (${err instanceof Error ? err.message : err})`);
@@ -423,11 +370,9 @@ for (const page of pages) {
     .negate({ alpha: false })
     .webp({ quality: WEBP_QUALITY })
     .toFile(sample.replace(/\.webp$/, '.display.webp'));
-  await sharp(best.overlay).toFile(sample.replace(/\.webp$/, '.overlay.png'));
+  await sharp(overlay).toFile(sample.replace(/\.webp$/, '.overlay.png'));
 
   const ok = passes(best, cfg);
-  const tries = best.attempt > 0 ? `  (${best.attempt + 1} tries)` : '';
-  const nudge = best.shift.dx || best.shift.dy ? `  shift ${best.shift.dx},${best.shift.dy}` : '';
   const warn = [];
   if (best.keep < KEEP_THRESHOLD) warn.push('drifting');
   if (best.localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
@@ -437,7 +382,13 @@ for (const page of pages) {
   if (best.eyes.whitesMissed) warn.push(`eye whites not chalked (${best.eyes.whitesMissed})`);
   const stats = `keep ${(best.keep * 100).toFixed(1)}%  local ${(best.localKeep * 100).toFixed(1)}%  white ${(best.newInk.whiteFrac * 100).toFixed(1)}%  invented ${best.newInk.inventedRatio.toFixed(4)}`;
   console.log(
-    `${stats}${nudge}${tries}${warn.length ? `  ⚠ ${warn.join(' + ')}` : ''}  -> ${relative(REPO_ROOT, sample)}`
+    formatCandidateLine({
+      stats,
+      warnings: warn,
+      attempt: best.attempt,
+      shift: best.shift,
+      outPath: sample,
+    })
   );
 
   if (values.apply) {

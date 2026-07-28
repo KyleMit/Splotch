@@ -18,6 +18,10 @@ paths:
   `src/lib/server/rateLimit.ts` (ADR-0014). Throttled responses use `throttled(retryAfter)` from
   `src/lib/server/http.ts` — the standard JSON `429` with `Retry-After` — and JSON bodies are parsed
   with its `readJsonBody(request)` (uniform `400` on malformed input). Don't hand-roll either.
+* The dedicated `verify-access-code` and `verify-key` oracle endpoints deliberately return HTTP
+  `200` with `{ ok: false, error }` for ordinary failed verification so validity is not disclosed
+  through the status. Non-oracle request validation retains `4xx` responses with the same body
+  shape; throttling retains the standard `429`.
 * Admin auth: the raw `ADMIN_ACCESS_TOKEN` is exchanged once for a derived HMAC session token; all
   secret comparisons must be constant-time (`timingSafeEqual`). The web `/admin` console and the
   JSON `/api/admin/*` endpoints share one core (`src/lib/server/admin.ts` + `tokens.ts`) — the

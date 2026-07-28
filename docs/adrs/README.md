@@ -37,8 +37,8 @@ The decisions that shape everything else, in rough order of importance. All are 
 * **[0071 — Design Tokens from One Generated Source](0071-design-token-single-source.md)** — all
   component styling draws from the generated token vocabulary; no raw one-off values.
 * **[0058 — Agent Instruction Files Generated from `.ruler/`](0058-ruler-generated-agent-files.md)**
-  — every `CLAUDE.md`, `AGENTS.md`, and skill tree is generated; edit `.ruler/**` sources and run
-  `npm run ruler:apply`.
+  — `CLAUDE.md`, `AGENTS.md`, and nearly every skill are generated; `burn-down-audits` is a direct,
+  independently maintained Claude/Codex provider fork.
 
 ## Canvas & drawing
 
@@ -116,17 +116,18 @@ The decisions that shape everything else, in rough order of importance. All are 
 
 ## Build & tooling
 
-| #                                                  | Title                                                              | Status                                                       |
-| -------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------ |
-| [0003](0003-typescript-migration.md)               | Full TypeScript Adoption                                           | Active                                                       |
-| [0010](0010-compile-time-build-constants.md)       | Compile-Time Build Constants via Vite Define                       | Active                                                       |
-| [0017](0017-cross-platform-node-scripts.md)        | Cross-Platform Node Scripts with Shared Helpers in scripts/lib/    | Active (amended by [0062](0062-drop-windows-dev-support.md)) |
-| [0019](0019-npm-script-naming-and-scripts-info.md) | npm Script Naming Conventions + scripts-info Self-Documentation    | Active                                                       |
-| [0029](0029-npm-as-package-manager.md)             | npm as the Package Manager                                         | Active                                                       |
-| [0030](0030-git-derived-web-version.md)            | Git-Derived Per-Commit Web Version (major.minor.commits-since-tag) | Active                                                       |
-| [0044](0044-svg-optimization-audit.md)             | SVG Optimization as a Re-runnable Audit, Not a One-Off Pass        | Active                                                       |
-| [0057](0057-dprint-markdown-formatter.md)          | dprint Formats Markdown (Prettier Can't Match House Style)         | Active                                                       |
-| [0062](0062-drop-windows-dev-support.md)           | Drop Windows Dev Support (macOS + Linux Only)                      | Active                                                       |
+| #                                                             | Title                                                                                  | Status                                                       |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [0003](0003-typescript-migration.md)                          | Full TypeScript Adoption                                                               | Active                                                       |
+| [0010](0010-compile-time-build-constants.md)                  | Compile-Time Build Constants via Vite Define                                           | Active                                                       |
+| [0017](0017-cross-platform-node-scripts.md)                   | Cross-Platform Node Scripts with Shared Helpers in scripts/lib/                        | Active (amended by [0062](0062-drop-windows-dev-support.md)) |
+| [0019](0019-npm-script-naming-and-scripts-info.md)            | npm Script Naming Conventions + scripts-info Self-Documentation                        | Active                                                       |
+| [0029](0029-npm-as-package-manager.md)                        | npm as the Package Manager                                                             | Active                                                       |
+| [0030](0030-git-derived-web-version.md)                       | Git-Derived Per-Commit Web Version (major.minor.commits-since-tag)                     | Active                                                       |
+| [0044](0044-svg-optimization-audit.md)                        | SVG Optimization as a Re-runnable Audit, Not a One-Off Pass                            | Active                                                       |
+| [0057](0057-dprint-markdown-formatter.md)                     | dprint Formats Markdown (Prettier Can't Match House Style)                             | Active                                                       |
+| [0062](0062-drop-windows-dev-support.md)                      | Drop Windows Dev Support (macOS + Linux Only)                                          | Active                                                       |
+| [0077](0077-three-phase-release-verified-artifact-publish.md) | Three-Phase Shipping (Release → Build → Publish) with Version-Verified Artifact Upload | Active                                                       |
 
 ## Agent workflow & docs
 

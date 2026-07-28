@@ -1,6 +1,7 @@
 <script lang="ts">
   import ToggleRow from './ToggleRow.svelte';
   import Icon from '../Icon.svelte';
+  import Button from '../design/Button.svelte';
   import { settings, setSaveOnDelete } from '$lib/state/settings.svelte';
   import { changeSaveFolder, forgetSaveFolder } from '$lib/state/saveFolder.svelte';
   import { folderSaveSupported } from '$lib/drawing/folderSave';
@@ -30,14 +31,16 @@
       </div>
       {#if settings.saveFolderName}
         <div class="folder-actions">
-          <button
+          <Button
+            variant="wash"
+            size="sm"
             class="folder-pill"
             id="changeSaveFolderButton"
             title="Change folder"
             onclick={changeSaveFolder}
           >
             {settings.saveFolderName}
-          </button>
+          </Button>
           <button
             class="folder-clear"
             id="forgetSaveFolderButton"
@@ -49,19 +52,21 @@
           </button>
         </div>
       {:else}
-        <button class="folder-change" id="changeSaveFolderButton" onclick={changeSaveFolder}>
+        <Button
+          variant="brand"
+          size="sm"
+          class="folder-change"
+          id="changeSaveFolderButton"
+          onclick={changeSaveFolder}
+        >
           Choose folder
-        </button>
+        </Button>
       {/if}
     </div>
   {/if}
 </section>
 
 <style>
-  .setting-group .setting + .setting {
-    margin-top: 6px;
-  }
-
   .folder-location {
     display: flex;
     align-items: center;
@@ -83,21 +88,11 @@
     white-space: nowrap;
   }
 
-  /* Empty state: primary CTA to pick a folder. */
-  .folder-change {
+  /* Empty state: primary CTA to pick a folder. Chrome comes from the Button
+     primitive; the pill radius is this row's own shape, matching .folder-pill. */
+  .folder-location :global(.folder-change) {
     flex-shrink: 0;
-    border: none;
     border-radius: var(--radius-pill);
-    padding: 7px 16px;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--on-brand);
-    background: var(--brand);
-    cursor: pointer;
-  }
-
-  .folder-change:hover {
-    background: var(--brand-hover);
   }
 
   .folder-actions {
@@ -107,25 +102,18 @@
     min-width: 0;
   }
 
-  /* Selected state: secondary (lighter) pill showing the current folder. */
-  .folder-pill {
+  /* Selected state: the wash variant carries the secondary (lighter) fill; this
+     row supplies the pill shape and the ellipsis for a long folder name. The
+     display override matters — the primitive is inline-flex, which would wrap
+     the label in an anonymous flex item that text-overflow can't clip. */
+  .folder-actions :global(.folder-pill) {
+    display: block;
     min-width: 0;
     max-width: 190px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    border: none;
     border-radius: var(--radius-pill);
-    padding: 7px 14px;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--brand-text);
-    background: var(--brand-wash);
-    cursor: pointer;
-  }
-
-  .folder-pill:hover {
-    background: var(--brand-wash-hover);
   }
 
   .folder-clear {

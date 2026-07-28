@@ -13,7 +13,7 @@
 // costs ~250ms of package-resolution overhead per invocation, on every dev boot / check / test.
 import { join, delimiter } from 'node:path';
 import { existsSync } from 'node:fs';
-import { run, ROOT } from './lib/utils.mjs';
+import { run, ROOT } from './lib/proc.mjs';
 
 const web = join(ROOT, 'web');
 process.env.PATH = `${join(ROOT, 'node_modules', '.bin')}${delimiter}${process.env.PATH}`;

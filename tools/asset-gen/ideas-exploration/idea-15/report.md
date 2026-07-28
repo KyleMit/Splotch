@@ -1,5 +1,8 @@
 # Idea 15 — Punch-inpaint quality on dense line work
 
+Status: NOT PROMOTED — per-region mean-color inpaint was rejected; the punch keeps its nearest-bleed
+inpaint (../../docs/inpainted-fill-punch.md).
+
 **Verdict: nearest-bleed is good enough. Per-region mean-color inpaint was implemented and compared;
 it fixes nothing visible and introduces a new fringe defect on shaded fills. Do not replace the
 shipped inpaint.**

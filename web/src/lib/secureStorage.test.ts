@@ -61,6 +61,11 @@ vi.mock('./idb', () => {
   };
   return {
     lazyIdbDatabase: () => () => Promise.resolve(db as unknown as import('idb').IDBPDatabase),
+    idbKvStore: () => ({
+      get: (key: string) => db.get('secrets', key),
+      put: (key: string, value: unknown) => db.put('secrets', value, key),
+      delete: (key: string) => db.delete('secrets', key),
+    }),
   };
 });
 
@@ -91,7 +96,39 @@ describe('web save/load round trip', () => {
   });
 
   it('returns null when nothing is stored', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
     await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['a non-payload value', 'not-a-payload'],
+    ['a malformed payload', { iv: new Uint8Array(12), data: 'not-an-array-buffer' }],
+  ])('warns and returns null when the secret row contains %s', async (_description, record) => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    ctrl.rows.set(API_KEY_ROW, record);
+
+    await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith('Secure storage load failed', expect.any(Error));
+  });
+
+  it('warns and returns null when the persisted master key cannot decrypt the payload', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await secureStorage.saveApiKey('secret-key-123');
+    const replacement = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, [
+      'encrypt',
+      'decrypt',
+    ]);
+    ctrl.rows.set(MASTER_KEY_ROW, replacement);
+
+    vi.resetModules();
+    const freshTab = await import('./secureStorage');
+
+    await expect(freshTab.loadApiKey()).resolves.toBeNull();
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith('Secure storage load failed', expect.any(Error));
   });
 
   it('clearApiKey removes the payload but keeps the master key for reuse', async () => {
@@ -100,6 +137,14 @@ describe('web save/load round trip', () => {
 
     expect(ctrl.rows.has(API_KEY_ROW)).toBe(false);
     expect(ctrl.rows.has(MASTER_KEY_ROW)).toBe(true);
+    await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+  });
+
+  it('clears a saved API key when saving an empty value', async () => {
+    await secureStorage.saveApiKey('secret-key-123');
+    await secureStorage.saveApiKey('');
+
+    expect(ctrl.rows.has(API_KEY_ROW)).toBe(false);
     await expect(secureStorage.loadApiKey()).resolves.toBeNull();
   });
 });
@@ -120,6 +165,22 @@ describe('master key creation', () => {
 
     await secureStorage.saveApiKey('second');
     await expect(secureStorage.loadApiKey()).resolves.toBe('second');
+  });
+
+  it('replaces a payload-shaped master-key row with a generated key', async () => {
+    ctrl.rows.set(MASTER_KEY_ROW, {
+      iv: new Uint8Array(12),
+      data: new ArrayBuffer(16),
+    });
+
+    await secureStorage.saveApiKey('secret-key-123');
+
+    expect(ctrl.txPuts).toContain(MASTER_KEY_ROW);
+    expect(ctrl.rows.get(MASTER_KEY_ROW)).not.toMatchObject({
+      iv: expect.any(Uint8Array),
+      data: expect.any(ArrayBuffer),
+    });
+    await expect(secureStorage.loadApiKey()).resolves.toBe('secret-key-123');
   });
 
   it('a tab that loses the cross-tab race adopts the winner key instead of overwriting it', async () => {

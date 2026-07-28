@@ -1,5 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
+import { buildDefines } from './defines';
 
 // Unit-test config, separate from the Playwright E2E suite (`npm test`).
 // The SvelteKit plugin gives us the `$lib` / `$app/*` aliases and, crucially,
@@ -8,15 +9,16 @@ import { defineConfig } from 'vitest/config';
 // for the storage/state layers.
 export default defineConfig({
   plugins: [sveltekit()],
-  define: {
-    __APP_VERSION__: JSON.stringify('1.0.0-test'),
-    __BUILD_TIME__: JSON.stringify('2026-01-01T00:00:00Z'),
-    __NATIVE_API_BASE__: JSON.stringify(''),
+  define: buildDefines({
+    appVersion: '1.0.0-test',
+    buildTime: '2026-01-01T00:00:00Z',
+    nativeApiBase: '',
     // `true` keeps the native branches compiled in (they're guarded as
     // `__IS_CAPACITOR__ && isNative()`), so tests stay in control of the
     // web/native split through their runtime isNative() mocks.
-    __IS_CAPACITOR__: JSON.stringify(true),
-  },
+    isCapacitor: true,
+    perfMarks: false,
+  }),
   test: {
     environment: 'happy-dom',
     // Worker threads spawn faster than the default child-process forks and

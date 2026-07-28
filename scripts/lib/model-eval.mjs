@@ -6,10 +6,12 @@
 // web/tests/model-eval/README.md.
 
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
+import { themes } from '../../web/src/lib/design/tokens.ts';
+import { PALETTE_COLORS } from '../../web/src/lib/palette.ts';
+import { ROOT } from './proc.mjs';
 
-export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+export { ROOT };
 
 // The two models under comparison: the live production model and the candidate.
 export const MODELS = [
@@ -24,31 +26,14 @@ export const RATES = {
   'gemini-3.1-flash-image': { inPerM: 0.25, textOutPerM: 1.5, imgOutPerM: 60.0 },
 };
 
-// The app's 10-color palette (web/src/lib/state/colors.svelte.ts) — the only
-// colors a child can lay down with the pen, so faithful inputs must use them.
-export const PALETTE = [
-  { hex: '#AB71E1', label: 'Purple' },
-  { hex: '#62A2E9', label: 'Blue' },
-  { hex: '#4FC4C0', label: 'Teal' },
-  { hex: '#8CC864', label: 'Green' },
-  { hex: '#F9D24F', label: 'Yellow' },
-  { hex: '#F89C45', label: 'Orange' },
-  { hex: '#B5835A', label: 'Brown' },
-  { hex: '#EC534E', label: 'Red' },
-  { hex: '#F47CB0', label: 'Pink' },
-  { hex: '#0a0b10', label: 'Black' },
-];
+// The only colors a child can lay down with the pen, so faithful inputs must use them.
+export const PALETTE = PALETTE_COLORS.map(({ hex, label }) => ({ hex, label }));
 
-// Paper colors from web/src/app.css (--paper / --paper-margin), light + night.
+// Paper colors from the app's design-token source of truth, light + night.
 export const PAPER = {
-  light: { fill: '#fcfbf8', margin: '#f1efeb' },
-  night: { fill: '#211f29', margin: '#1a1922' },
+  light: { fill: themes.light.paper, margin: themes.light.paperMargin },
+  night: { fill: themes.dark.paper, margin: themes.dark.paperMargin },
 };
-
-// Pre-installed Chromium in the cloud env; overridable for local dev where
-// Playwright's own download is present.
-export const CHROMIUM_PATH =
-  process.env.PLAYWRIGHT_CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 
 // --- Production request config -------------------------------------------------
 // The base prompt lives in web/src/lib/ai/prompt.ts and the system instruction +
@@ -139,11 +124,16 @@ export function costOf(model, usage) {
   return (inp * rt.inPerM + text * rt.textOutPerM + img * rt.imgOutPerM) / 1e6;
 }
 
+const isPng = (buf) => buf[0] === 0x89 && buf[1] === 0x50;
+const isJpeg = (buf) => buf[0] === 0xff && buf[1] === 0xd8;
+
 // Dimensions of a PNG or JPEG buffer, for the report's format table.
 export function imageDims(buf) {
   if (!buf || buf.length < 24) return null;
-  if (buf[0] === 0x89 && buf[1] === 0x50) return `${buf.readUInt32BE(16)}x${buf.readUInt32BE(20)}`;
-  if (buf[0] === 0xff && buf[1] === 0xd8) {
+  if (isPng(buf)) return `${buf.readUInt32BE(16)}x${buf.readUInt32BE(20)}`;
+  if (isJpeg(buf)) {
+    const JPEG_SOF_HEIGHT_OFFSET = 5;
+    const JPEG_SOF_WIDTH_OFFSET = 7;
     let i = 2;
     while (i < buf.length) {
       if (buf[i] !== 0xff) {
@@ -151,8 +141,9 @@ export function imageDims(buf) {
         continue;
       }
       const m = buf[i + 1];
+      // SOFn is [marker][length u16][precision][height u16][width u16]; C4/C8/CC are non-SOF.
       if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc)
-        return `${buf.readUInt16BE(i + 7)}x${buf.readUInt16BE(i + 5)}`;
+        return `${buf.readUInt16BE(i + JPEG_SOF_WIDTH_OFFSET)}x${buf.readUInt16BE(i + JPEG_SOF_HEIGHT_OFFSET)}`;
       i += 2 + buf.readUInt16BE(i + 2);
     }
   }
@@ -161,7 +152,7 @@ export function imageDims(buf) {
 
 export function imageFormat(buf) {
   if (!buf) return null;
-  if (buf[0] === 0x89 && buf[1] === 0x50) return 'png';
-  if (buf[0] === 0xff && buf[1] === 0xd8) return 'jpeg';
+  if (isPng(buf)) return 'png';
+  if (isJpeg(buf)) return 'jpeg';
   return 'other';
 }

@@ -1,3 +1,5 @@
+import { QUICKSAND_FONT_FAMILY } from '../fonts.ts';
+
 // Design-token single source of truth (ADR-0071).
 //
 // Every value here is emitted into web/src/tokens.css by `npm run gen:tokens`
@@ -11,18 +13,25 @@
 // identical — the compiler now enforces what app.css previously demanded via
 // a "these blocks MUST stay identical" comment.
 
+const BRAND_HEX = '#ab71e1';
+const BRAND_RGB = [
+  Number.parseInt(BRAND_HEX.slice(1, 3), 16),
+  Number.parseInt(BRAND_HEX.slice(3, 5), 16),
+  Number.parseInt(BRAND_HEX.slice(5, 7), 16),
+].join(', ');
+
 // Brand accent used for active/hover chrome across parent + AI UI.
 // Custom properties pierce Svelte's style scoping, so components reference
 // these directly via var().
 export const brand = {
-  brand: '#ab71e1',
+  brand: BRAND_HEX,
+  // Plain-RGBA brand-shadow fallbacks source their channels from --brand-rgb;
+  // the following color-mix declaration remains the modern rendering path.
+  brandRgb: BRAND_RGB,
   brandHover: '#9961d1',
   // Filter chain that renders a black icon in --brand. Filters can't reference
-  // a color directly, so this hand-tuned chain re-encodes #ab71e1 — keep the
-  // two in sync if the brand color ever changes. Brand-tinted shadows are
-  // derived instead via color-mix(in srgb, var(--brand) N%, transparent),
-  // each preceded by a plain-rgba fallback declaration for pre-color-mix
-  // engines (see docs/COMPATIBILITY.md).
+  // a color directly, so this hand-tuned chain re-encodes the brand color —
+  // keep the two in sync if the brand color ever changes.
   brandTintFilter:
     'invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%)',
   // Text/icon ink on --brand fills. Lives here (unthemed) because --brand
@@ -32,7 +41,9 @@ export const brand = {
 
 // Theme-independent scales. These are the vocabulary for component styles —
 // prefer them over literal px/shadow/easing values so spacing, corners, type,
-// and motion stay on one ramp app-wide.
+// and motion stay on one ramp app-wide. It also holds the handful of unthemed
+// *fills*: chrome color that reads the same on both papers, so it has no
+// light/dark pair to live in ThemeTokens.
 export const scale = {
   space1: '4px',
   space2: '8px',
@@ -50,6 +61,8 @@ export const scale = {
   radiusXl: '22px',
   radiusPill: '999px',
 
+  borderWidth: '1px',
+
   // Named --font-size-*, not --text-*, so the type ramp can't collide with
   // the themed text-color family (--text, --text-strong, --text-muted, …).
   fontSizeXs: '12px',
@@ -59,6 +72,22 @@ export const scale = {
   fontSizeXl: '18px',
   fontSize2xl: '22px',
   fontSize3xl: '28px',
+
+  // Text-input font-size floor: iOS Safari / WKWebView zooms the visual
+  // viewport when a focused input's font-size is < 16px, which on the
+  // drawing route would strand the canvas zoomed with no way to reset it
+  // (ADR-0076). Every parent-center text input must reference this.
+  inputFontSize: 'max(16px, var(--font-size-md))',
+
+  // The app-wide sans stack. Components reference var(--font-family) rather
+  // than hand-copying it (ErrorScreen, AdminConsole) so there is one source of
+  // truth for the family name.
+  fontFamily: `'${QUICKSAND_FONT_FAMILY}', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`,
+
+  // Raw code/version values (masked API keys, version strings, inline code).
+  fontMono: "'Courier New', monospace",
+
+  fontWeightSemibold: '600',
 
   durationFast: '0.15s',
   durationBase: '0.2s',
@@ -76,6 +105,62 @@ export const scale = {
   // one shadow reads correctly on both themes.
   shadowSm: '0 2px 6px rgba(0, 0, 0, 0.12)',
   shadowPop: '0 8px 32px rgba(0, 0, 0, 0.3)',
+  // The tight lift on the selected segment of a segmented toggle (theme,
+  // orientation). Deliberately harder and closer than --shadow-sm so the
+  // thumb reads as sitting just above its track — don't converge the two.
+  shadowSegment: '0 1px 4px rgba(0, 0, 0, 0.18)',
+
+  // The Clear Button's at-rest fill, mirrored by the drag-to-clear coachmark
+  // ghost so the tutorial always matches the real control.
+  clearGradientRest: 'linear-gradient(135deg, #ff6b6b, #ee5a6f)',
+} as const;
+
+// The cross-component stacking order, low to high. Scoped to "chrome" — the
+// fixed/absolute-positioned UI that can visually collide with something outside
+// its own component. Layers sealed inside a real stacking context (everything
+// under DrawingCanvas's .canvas-stack, which sets isolation: isolate; the close
+// buttons on the AI and coloring-book cards; the hovered palette hexagon) stay
+// as local integers: tokenizing them would imply a global relationship they
+// don't have.
+//
+// These are ONE ordered list but not one stacking context, so a bigger number
+// does not always win. Every value except zFlyout resolves in the root context
+// — notably .canvas-container is position: relative with no z-index, so it
+// establishes nothing and its children compete directly with the fixed chrome.
+// zFlyout is the exception (see its note). The tiers are a convention, not a
+// containment guarantee.
+export const zIndex = {
+  // FullscreenToggle — the floor of that shared root context, not a separate
+  // local scale. It clears DrawingCanvas's other root-level layers
+  // (.paper-sheet 0, .canvas-stack 1, .paper-view 2, .brush-ring/.eraser-bubble
+  // 3) and deliberately loses to every persistent control below.
+  zCanvasChrome: 4,
+
+  // Clear Button drag feedback: the paper wash previewing the clear, then the
+  // confirmation ripple over it. Both are full-viewport, both sit above the
+  // canvas and below every persistent control.
+  zClearPreview: 400,
+  zRipple: 500,
+
+  zCornerButton: 900, // ParentHelpButton
+  zPanel: 901, // ActionsPanel
+  // app.css .flyout-menu (Brush Menu + Stroke Width Menu) — the one value here
+  // that is NOT in the root context. .actions-panel is position: fixed with a
+  // z-index, so it establishes its own, and this only orders the flyout inside
+  // that subtree. Hence the tie with zPanel is inert; hence also raising this
+  // past zBanner would change nothing, because zPanel caps the whole subtree.
+  // Lifting a flyout over the banner means raising zPanel, not this.
+  zFlyout: 901,
+  zBanner: 950, // InstallBanner — takes over the corner controls while shown
+  zClearAcceptZone: 999, // below the button it rings, so the button stays on top
+  zClearButton: 1000,
+  // Pre-existing tie with zClearButton: both are fixed, and which one paints on
+  // top is DOM order today. Preserved deliberately — resolving it is a visual
+  // change, not a rename.
+  zNotch: 1000,
+  zClearCoachmark: 1001, // the ghost button, above the real one
+  zPalette: 1002,
+  zScreenshotFlash: 10000, // app.css .polaroid-overlay
 } as const;
 
 // Themed tokens. Dark mode swaps these — and only these — so themed chrome

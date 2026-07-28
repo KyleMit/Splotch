@@ -1,18 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { readFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { scoreEyeFill } from '../lib/eye-fill.mjs';
 import { diffGoldenPage, scoreGoldenNightEyes } from '../lib/golden-catalog.mjs';
-
-const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures/composite-eye');
+import { loadTrio } from './fixtures/composite-eye/load.mjs';
 
 async function scoreFixture(name) {
-  const [composite, light, pen] = await Promise.all([
-    readFile(join(FIXTURES, `${name}.comp.webp`)),
-    readFile(join(FIXTURES, `${name}.light.webp`)),
-    readFile(join(FIXTURES, `${name}.pen.webp`)),
-  ]);
+  const { comp: composite, light, pen } = await loadTrio(name);
   const lightEyes = await scoreEyeFill(light, pen);
   return {
     night: await scoreGoldenNightEyes(composite, light, pen, lightEyes, { chalked: true }),

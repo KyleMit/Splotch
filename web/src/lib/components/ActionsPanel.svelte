@@ -6,7 +6,7 @@
   import { canvasState } from '$lib/state/canvas.svelte';
   import { colors, isWhite, isDarkInk } from '$lib/state/colors.svelte';
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
-  import { setStrokeSize, activeStrokeSize } from '$lib/state/strokeWidth.svelte';
+  import { setStrokeSize, activeStrokeSize, type StrokeSize } from '$lib/state/strokeWidth.svelte';
   import { toolState, selectBrush, BRUSH_OPTIONS, type BrushType } from '$lib/state/tool.svelte';
   import { ui, coloringBook, aiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
@@ -226,7 +226,7 @@
     openFlyout = null;
   }
 
-  function handleStrokeSizeClick(size: number) {
+  function handleStrokeSizeClick(size: StrokeSize) {
     setStrokeSize(size);
     openFlyout = null;
   }
@@ -397,14 +397,12 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    z-index: 901;
+    z-index: var(--z-panel);
   }
 
   @media (orientation: portrait) {
     .actions-panel {
       flex-direction: column-reverse;
-      left: calc(8px + env(safe-area-inset-left));
-      bottom: calc(8px + env(safe-area-inset-bottom));
     }
   }
 
@@ -423,11 +421,12 @@
     grid-template-columns: 1fr;
     align-items: center;
     margin-right: 8px;
-    transition:
-      grid-template-columns 0.28s ease,
-      grid-template-rows 0.28s ease,
-      opacity var(--duration-base) ease,
-      margin 0.28s ease;
+    --drawer-collapse: 0.28s;
+    --drawer-transition:
+      grid-template-columns var(--drawer-collapse) ease,
+      grid-template-rows var(--drawer-collapse) ease, opacity var(--duration-base) ease,
+      margin var(--drawer-collapse) ease;
+    transition: var(--drawer-transition);
   }
 
   .actions-drawer-inner {
@@ -456,15 +455,12 @@
     pointer-events: none;
     /* Inert when closed: out of hit-testing, the a11y tree, and tab order (unlike
        opacity alone). visibility flips to hidden only after the collapse finishes
-       (0.28s transition-delay) so the close still animates; opening restores it
-       instantly because the base rule doesn't transition visibility. */
+       (--drawer-collapse transition-delay) so the close still animates; opening
+       restores it instantly because the base rule doesn't transition visibility. */
     visibility: hidden;
     transition:
-      grid-template-columns 0.28s ease,
-      grid-template-rows 0.28s ease,
-      opacity var(--duration-base) ease,
-      margin 0.28s ease,
-      visibility 0s 0.28s;
+      var(--drawer-transition),
+      visibility 0s var(--drawer-collapse);
   }
 
   @media (orientation: portrait) {
@@ -520,8 +516,6 @@
      in app.css, shared with the Parent Center button) so it doesn't compete
      with the tools. */
   .drawer-toggle {
-    width: 48px;
-    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -632,7 +626,7 @@
     .action-button:hover:not(:disabled):not(.disabled) {
       background: var(--float-surface-hover);
       border-color: var(--brand);
-      box-shadow: 0 4px 12px rgba(171, 113, 225, 0.3);
+      box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.3);
       box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 30%, transparent);
     }
   }
@@ -686,7 +680,7 @@
       opacity: 1;
       border-color: var(--brand);
       background: var(--brand-wash);
-      box-shadow: 0 0 0 10px rgba(171, 113, 225, 0.5);
+      box-shadow: 0 0 0 10px rgba(var(--brand-rgb), 0.5);
       box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 50%, transparent);
     }
   }

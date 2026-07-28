@@ -101,8 +101,9 @@ Gotchas encoded in the code:
   (`rotationDelta(paperAngle, angle) !== 0`).
 * The engine also funnels `screen.orientation` `change` events into the debounced resize handler, in
   case an angle update lands after the resize event. `setScreenAngleOverride()` is the dev-harness
-  seam that lets Playwright simulate rotation (`tests/engine.spec.ts`, "device rotation / the paper
-  view"); a flows spec covers the app-level page lock via CDP orientation emulation.
+  seam that lets Playwright simulate rotation (`tests/engine-rotation.spec.ts`, "device rotation /
+  the paper view"); `tests/flows-coloring-book.spec.ts` covers the app-level page lock via CDP
+  orientation emulation.
 
 ## Consequences
 
@@ -143,8 +144,8 @@ untouched. What changes is the margin-ink corner and the replay framing:
   "renders and replays normally while its command is retained … reappears when rotating forward
   again while its ops survive" no longer holds — there is no command log to resurrect it from.
   Rotating forward again shows nothing in the margins. The E2E ("the margins around the rotated
-  paper are drawable, and crop on rotating back", `web/tests/engine.spec.ts`) pins the permanent
-  crop.
+  paper are drawable, and crop on rotating back", `web/tests/engine-rotation.spec.ts`) pins the
+  permanent crop.
 * **The command-retention framing is gone.** The Consequences' "10-command retention window" was
   stale even under replay (the depth was 20), and history is now a depth-20 stack of paper
   snapshots, not commands. An undo restores a prior paper raster, which never contained margin ink

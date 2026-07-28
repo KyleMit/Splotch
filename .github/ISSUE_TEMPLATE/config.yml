@@ -4,5 +4,5 @@ contact_links:
     url: https://splotch.art
     about: Open the app and tap the parent icon (bottom-right) for setup help
   - name: Issue & label conventions
-    url: https://github.com/kylemit/splotch/blob/main/docs/ISSUE-WORKFLOW.md
+    url: https://github.com/KyleMit/splotch/blob/main/docs/ISSUE-WORKFLOW.md
     about: How this tracker is organized — issue format, the label glossary, and triage

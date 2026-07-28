@@ -9,12 +9,15 @@
 // Facebook Sharing Debugger since scrapers cache the old card for weeks.
 //
 // A dev server is started automatically (or reused if one is already on 4173):
-//   node scripts/gen-large-image.mjs
+//   node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/gen-large-image.mjs
 
 import { chromium } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, chromiumExecutablePath } from './lib/utils.mjs';
+import { PALETTE_COLORS } from '../web/src/lib/palette.ts';
+import { ROOT } from './lib/proc.mjs';
+import { chromiumExecutablePath } from './lib/playwright.mjs';
+import { circlePts } from './lib/stroke-geometry.mjs';
 import {
   ensureDevServer,
   openAppPage,
@@ -24,7 +27,6 @@ import {
   setStrokeSize,
   drawStroke,
   dismissMenu,
-  circlePts,
 } from './lib/app-driver.mjs';
 
 const SVG_FILE = join(ROOT, 'web', 'static', 'large-image.svg');
@@ -38,14 +40,20 @@ const SVG_W = 2265,
 // 1280x720 @ 1.5x = 1920x1080 screenshot
 const DEVICE = { width: 1280, height: 720, deviceScaleFactor: 1.5 };
 
+function paletteColor(label) {
+  const color = PALETTE_COLORS.find((item) => item.label === label);
+  if (!color) throw new Error(`Missing palette color: ${label}`);
+  return color.hex;
+}
+
 // Nearest palette colour for each SVG stroke colour
 const COLOR_MAP = {
-  '#86aed3': '#62A2E9',
-  '#95c274': '#8CC864',
-  '#b57cd0': '#AB71E1',
-  '#dd6158': '#EC534E',
-  '#e79255': '#F89C45',
-  '#e8cf77': '#F9D24F',
+  '#86aed3': paletteColor('Blue'),
+  '#95c274': paletteColor('Green'),
+  '#b57cd0': paletteColor('Purple'),
+  '#dd6158': paletteColor('Red'),
+  '#e79255': paletteColor('Orange'),
+  '#e8cf77': paletteColor('Yellow'),
 };
 
 // SIZE_TO_PX: {1:2, 2:4, 3:8, 4:14, 5:22} (from strokeWidth.svelte.ts)

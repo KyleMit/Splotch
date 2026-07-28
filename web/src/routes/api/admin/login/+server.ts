@@ -1,8 +1,9 @@
 import { json } from '@sveltejs/kit';
-import { sessionToken, verifyAdminSecret } from '$lib/server/admin';
-import { rateLimit } from '$lib/server/rateLimit';
-import { readJsonBody, throttled } from '$lib/server/http';
+import { beginAdminLogin } from '$lib/server/admin';
+import { readJsonBody, stringField, throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
+
+export type LoginResponse = { ok: true; session: string } | { ok: false; error: string };
 
 /**
  * Exchange the raw admin secret for a derived session token. This is the API
@@ -14,17 +15,16 @@ import type { RequestHandler } from './$types';
  * never the raw secret.
  */
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-  // Throttle per IP: this is an unauthenticated oracle for guessing the admin
-  // secret, so cap brute-force bursts before checking the key — the same
-  // limiter (and bucket) as the /admin page's login action, so attackers can't
-  // double their budget by alternating between the two doors.
-  const { limited, retryAfter } = rateLimit(`admin-login:${getClientAddress()}`);
-  if (limited) return throttled(retryAfter);
+  const attempt = beginAdminLogin(getClientAddress());
+  if (!attempt.ok) return throttled(attempt.retryAfter);
 
   const body = await readJsonBody(request);
-  const key = typeof body?.key === 'string' ? body.key : '';
-  if (!verifyAdminSecret(key)) {
-    return json({ ok: false, error: 'Incorrect access key.' }, { status: 403 });
+  const key = stringField(body, 'key');
+  const result = attempt.verify(key);
+  if (!result.ok) {
+    return json({ ok: false, error: 'Incorrect access key.' } satisfies LoginResponse, {
+      status: 403,
+    });
   }
-  return json({ ok: true, session: sessionToken() });
+  return json({ ok: true, session: result.session } satisfies LoginResponse);
 };

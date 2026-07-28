@@ -1,0 +1,56 @@
+# Skill notes
+
+Design history and open questions for the shared agent **skills** in this repo — one file per skill,
+named after it.
+
+Authored in `.ruler/skill-notes/` and mirrored to `.claude/skill-notes/` and `.agents/skill-notes/`
+by `scripts/mirror-skill-notes.mjs` on every `npm run ruler:apply` — **edit the `.ruler/` copy**,
+the other two are generated and carry a `<!-- Source: ... -->` marker saying so. Both agent trees
+get them for the same reason both get the skills: a Codex session working on a skill needs its
+design history as much as a Claude session does.
+
+A fully forked skill keeps its independent notes beside its independent packages:
+
+```text
+.ruler/skill-forks/
+├── claude/skill-notes/<name>.md.template
+└── codex/skill-notes/<name>.md.template
+```
+
+`scripts/apply-ruler-skill-forks.mjs` writes each note only to its matching agent tree. A fork note
+must not also exist here; that guard prevents runner-specific design history from silently becoming
+a shared contract.
+
+`burn-down-audits` is the one unmanaged provider fork. Its independent notes are edited directly at
+`.claude/skill-notes/burn-down-audits.md` and `.agents/skill-notes/burn-down-audits.md`, beside the
+provider trees they describe. Neither note has a `.ruler/` source, and the two must not be synced.
+
+A skill's `SKILL.md` is a runbook: it tells an agent what to do *now*, and every line it carries is
+context the agent pays for on each invocation. That leaves no room for the other half of the story —
+why the skill is shaped the way it is, which failures earned which rule, what was tried and
+rejected, and what is still unvalidated. This directory is where that half lives.
+
+## Rules
+
+* **A skill must not link to its notes file.** The whole point of keeping this out of `SKILL.md` is
+  that an agent executing the skill should not pull the design history into its context window. A
+  pointer is an invitation to read it. These notes are for a human (or an agent explicitly sent
+  here) working *on* the skill, not for one running it.
+* **Notes are not authoritative over the skill.** If the two disagree, `SKILL.md` and the code are
+  the truth and the notes are stale — fix them.
+* **Record the reasoning, not the diff.** Git already has the diff. What is expensive to reconstruct
+  is why a knob has the value it does, what the failure looked like, and which plausible-sounding
+  alternative was already ruled out.
+
+## Why here, and not somewhere else
+
+* **Not `docs/adrs/`.** ADRs are for decisions about the production app — the thing that ships to
+  users. Skills are internal agent tooling with a different audience and a much faster churn rate;
+  mixing them dilutes the ADR index. (Architectural decisions about the *repo* that happen to
+  involve skills — like ADR-0058 on ruler — are still ADRs.)
+* **Not `docs/`.** That tree is app documentation: compatibility floors, contributing, issue
+  workflow, cloud setup. Skill design history is not app documentation.
+* **Not inside a skill package.** Everything there is copied verbatim into the generated skill, so a
+  notes file placed there would sit *inside* the skill it is deliberately kept out of — the one
+  thing this directory exists to prevent. Hence a sibling `skill-notes/` tree rather than a file
+  inside each skill.

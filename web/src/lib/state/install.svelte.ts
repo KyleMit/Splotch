@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { isAndroidBrowser, isIosDevice, isNative, isStandalone } from '$lib/platform';
-import { readBool, writeBool } from '$lib/storage';
+import { STORAGE_KEYS, readBool, writeBool } from '$lib/storage';
+import { canvasState } from './canvas.svelte';
 
 // "Add to Home Screen" / PWA install, surfaced as a friendly parent-facing prompt.
 //
@@ -13,15 +14,6 @@ import { readBool, writeBool } from '$lib/storage';
 //
 // Inside the native Capacitor shell the app is already "installed", so the whole
 // feature is inert there.
-
-const DISMISSED_KEY = 'splotch-install-dismissed';
-const INSTALLED_KEY = 'splotch-install-completed';
-
-// Chromium-only event; not in the default TS DOM lib.
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
-}
 
 // How (if at all) we can offer install on this device/browser right now:
 //   'oneTap'  — Chromium fired beforeinstallprompt; tap = native install dialog.
@@ -44,6 +36,9 @@ export const install = $state({
 
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 let initialized = false;
+let installAutoClearArmedAt: number | null = null;
+
+const STROKES_BEFORE_AUTO_CLEAR = 5;
 
 function isIosSafari() {
   if (!isIosDevice()) return false;
@@ -68,28 +63,34 @@ function manualMode(): InstallMode {
   return 'none';
 }
 
+// A spent/stale one-tap prompt drops to the manual hint so the UI falls back to
+// something a tap can actually do.
+function fallBackToManualHint() {
+  if (install.mode === 'oneTap') install.mode = manualMode();
+}
+
 function markInstalled() {
   deferredPrompt = null;
   install.installed = true;
   install.mode = 'none';
-  writeBool(INSTALLED_KEY, true);
+  writeBool(STORAGE_KEYS.installCompleted, true);
 }
 
 // beforeinstallprompt is one-shot and can fire before the page component
 // mounts (on a repeat visit the service worker already controls the page, so
 // Chromium's installability check races hydration). Listen from module load,
 // not from initInstallPrompt(), so an early event isn't silently lost.
-if (browser && !isNative()) {
+if (browser && !(__IS_CAPACITOR__ && isNative())) {
   window.addEventListener('beforeinstallprompt', (e) => {
     // Stop Chrome's default mini-infobar — we own the timing and presentation.
     e.preventDefault();
-    deferredPrompt = e as BeforeInstallPromptEvent;
+    deferredPrompt = e;
     // The browser only fires this when the app is NOT currently installed, so
     // it outranks a stale persisted flag (installed once, later uninstalled —
     // localStorage survives a PWA uninstall).
-    if (install.installed || readBool(INSTALLED_KEY, false)) {
+    if (install.installed || readBool(STORAGE_KEYS.installCompleted, false)) {
       install.installed = false;
-      writeBool(INSTALLED_KEY, false);
+      writeBool(STORAGE_KEYS.installCompleted, false);
     }
     install.mode = 'oneTap';
   });
@@ -101,16 +102,16 @@ if (browser && !isNative()) {
 // Web-only; no-op inside the native shell. Seeds mode/dismissed/installed from
 // persisted state and the manual-hint heuristic.
 export function initInstallPrompt() {
-  if (!browser || initialized || isNative()) return;
+  if (!browser || initialized || (__IS_CAPACITOR__ && isNative())) return;
   initialized = true;
 
-  install.dismissed = readBool(DISMISSED_KEY, false);
+  install.dismissed = readBool(STORAGE_KEYS.installDismissed, false);
 
   // A live prompt captured before init already proved the app is installable
   // (and not installed) — the listener above has set mode/installed.
   if (deferredPrompt) return;
 
-  if (readBool(INSTALLED_KEY, false) || isStandalone()) {
+  if (readBool(STORAGE_KEYS.installCompleted, false) || isStandalone()) {
     install.installed = true;
     install.mode = 'none';
     return;
@@ -126,7 +127,7 @@ export function initInstallPrompt() {
 // something a tap can actually do.
 export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unavailable'> {
   if (!deferredPrompt) {
-    if (install.mode === 'oneTap') install.mode = manualMode();
+    fallBackToManualHint();
     return 'unavailable';
   }
   const evt = deferredPrompt;
@@ -138,7 +139,7 @@ export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unava
   } catch {
     // The stashed event went stale (e.g. Chrome revoked installability since
     // capture). Swallow it — callers must never be left with a stuck busy flag.
-    if (install.mode === 'oneTap') install.mode = manualMode();
+    fallBackToManualHint();
     return 'unavailable';
   }
   if (outcome === 'accepted') {
@@ -146,7 +147,7 @@ export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unava
   } else {
     // Declined: the one-shot prompt is spent. Drop to the manual menu hint and
     // stop nagging with the banner on this device.
-    install.mode = manualMode();
+    fallBackToManualHint();
     dismissInstall();
   }
   return outcome;
@@ -154,5 +155,20 @@ export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unava
 
 export function dismissInstall() {
   install.dismissed = true;
-  writeBool(DISMISSED_KEY, true);
+  writeBool(STORAGE_KEYS.installDismissed, true);
+}
+
+export function armInstallAutoClear() {
+  installAutoClearArmedAt ??= canvasState.strokeCount;
+}
+
+export function autoDismissInstallIfDue(): boolean {
+  if (
+    installAutoClearArmedAt === null ||
+    canvasState.strokeCount < installAutoClearArmedAt + STROKES_BEFORE_AUTO_CLEAR
+  ) {
+    return false;
+  }
+  dismissInstall();
+  return true;
 }

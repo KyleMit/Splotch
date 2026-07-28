@@ -5,7 +5,8 @@
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, fail, webOnlyBooks } from './lib/utils.mjs';
+import { webOnlyBooks } from './lib/book-assets.mjs';
+import { ROOT, fail } from './lib/proc.mjs';
 import { BOOKS, booksForPlatform, bookAssetPaths } from '../web/src/lib/state/books.ts';
 
 const STATIC_DIR = join(ROOT, 'web', 'static');
@@ -26,7 +27,7 @@ for (const book of BOOKS) {
 console.log(`[check-assets] ${checked} asset(s) checked across ${BOOKS.length} book(s).`);
 
 // 2. Cross-check platform filtering: strip-native-assets drops webOnlyBooks
-//    (defined script-side in lib/utils.mjs); booksForPlatform('mobile') is the
+//    (defined script-side in lib/book-assets.mjs); booksForPlatform('mobile') is the
 //    app-side complement. If any book appears in both sets, the filters disagree.
 const mobileBooks = new Set(booksForPlatform('mobile').map((b) => b.id));
 const webOnly = webOnlyBooks(BOOKS);

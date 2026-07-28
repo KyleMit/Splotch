@@ -20,7 +20,7 @@
 import { readFileSync } from 'node:fs';
 import { readdirSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { isMain } from './lib/proc.mjs';
 
 // file (relative to web/src) → allowed raw-hex count, with the reason.
 const BASELINE = new Map(
@@ -28,10 +28,17 @@ const BASELINE = new Map(
     // Light-only surface with its own WCAG-tuned accent palette (#7c4dcf
     // family); themed color tokens would half-dark-theme it. See the note at
     // the top of its <style> block.
-    'lib/components/admin/AdminConsole.svelte': 49,
+    'lib/components/admin/AdminConsole.svelte': 34,
+    // The /admin overflow modal, lifted out of AdminConsole with its
+    // `.more-menu*` rules intact — same light-only surface, same reasoning.
+    // Its four are the sheet white, the hover tint, and the destructive
+    // red + its tint; none has an --admin-* equivalent to point at.
+    'lib/components/admin/InviteMenu.svelte': 4,
     // Light-only page, same reasoning as /admin.
     'routes/privacy/+page.svelte': 8,
-    // Deliberate constants: contrast-pinned #666 on hardcoded-light host pages.
+    // Deliberate constant: #666 is contrast-pinned for the one light-only host
+    // (/admin), where --text-mid's dark value would be 1.9:1. Themed hosts (the
+    // /dev harnesses) override it — see the note on .crumb-current.
     'lib/components/Breadcrumb.svelte': 1,
     // Photographic stage/polaroid whites + the #9559cd download-button hover
     // (≠ --brand-hover #9961d1; converging it is a visible change).
@@ -46,12 +53,15 @@ const BASELINE = new Map(
     'lib/components/StrokeWidthMenu.svelte': 1,
     // Constant dim swatch ring + var(--color) usage documented in-file.
     'lib/components/ColorPicker.svelte': 1,
-    // Unthemed danger-red chrome (deliberate — reads the same on both papers).
-    'lib/components/ClearButton.svelte': 6,
+    // The armed (drag-past-threshold) danger red — unthemed on purpose, it
+    // reads the same on both papers (ADR-0052 and the ThemeTokens doc comment
+    // in lib/design/tokens.ts). The at-rest fill is --clear-gradient-rest,
+    // shared with the coachmark ghost.
+    'lib/components/ClearButton.svelte': 2,
     // Eraser-hole preview chrome and the rainbow conic gradient.
     'lib/components/DrawingCanvas.svelte': 9,
     // Confetti particle colors are content, not chrome.
-    'lib/components/AiConfetti.svelte': 2,
+    'lib/components/AiConfetti.svelte': 1,
     // Paper-white backing behind the baked-light style-cover thumbnails.
     'lib/components/AiImagePrompt.svelte': 1,
     // Constant on-paper ink for the floating "?" button.
@@ -82,7 +92,7 @@ export function countRawHex(source) {
 }
 
 async function main() {
-  const { ROOT } = await import('./lib/utils.mjs');
+  const { ROOT } = await import('./lib/proc.mjs');
   const SRC = resolve(ROOT, 'web/src');
   const problems = [];
   const seen = new Set();
@@ -118,6 +128,6 @@ async function main() {
   console.log(`Raw-hex token lint passed (${BASELINE.size} allowlisted files).`);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMain(import.meta.url)) {
   await main();
 }

@@ -111,8 +111,8 @@ Process the issues in the sweep order chosen in Setup. For each issue:
       * Prefer several focused commands, each doing one thing, over one command switched by
         arguments. If an issue's proposed solution sketches a broad do-everything script, decompose
         it — build the smallest reusable primitive, then let callers compose primitives.
-      * Reuse before you add: check `scripts/lib/` (`utils.mjs`, `vite-server.mjs`, `smoke.mjs`,
-        `android.mjs`) for glue that already exists rather than re-implementing it.
+      * Reuse before you add: check `scripts/lib/` (`proc.mjs`, `net.mjs`, `vite-server.mjs`,
+        `smoke.mjs`, `android.mjs`) for glue that already exists rather than re-implementing it.
       * Name and document every new script per ADR-0019: a `namespace:variant` npm script with a
         matching one-line `scripts-info` entry, plus a `scripts/CLAUDE.md` bullet where it earns
         one. An undocumented helper is **not** a finished fix — if `npm run info` and the skill /

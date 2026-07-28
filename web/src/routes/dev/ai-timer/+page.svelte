@@ -9,6 +9,7 @@
     failAiGeneration,
     closeAiResult,
   } from '$lib/state/aiGeneration.svelte';
+  import { AI_SAFETY_REFUSAL_MESSAGE, AI_TIMEOUT_MESSAGE } from '$lib/drawing/aiImage';
 
   // Sample artifacts stand in for a real generation: the child's drawing (shown
   // blurred behind the dial) and the finished "AI" image that's revealed. They
@@ -17,19 +18,19 @@
   const drawingInputUrl = '/dev/ai-timer/artifacts/drawing-input.jpeg';
   const aiOutputUrl = '/dev/ai-timer/artifacts/ai-output.jpeg';
 
-  // We drive AiImageResult.svelte through the exact ui.svelte.js seam the real
-  // generate flow uses (see src/lib/drawing/aiImage.js): open in the loading
+  // We drive AiImageResult.svelte through the exact ui.svelte.ts seam the real
+  // generate flow uses (see src/lib/drawing/aiImage.ts): open in the loading
   // state with a preview, then deliver the finished image after a delay. No
   // production code is touched — this page just calls the same public actions.
 
   let delayMs = $state(10000);
-  let pending: ReturnType<typeof setTimeout> | 0 = 0; // setTimeout id for the scheduled "finish"
+  let pending: ReturnType<typeof setTimeout> | null = null; // setTimeout id for the scheduled "finish"
   let runId = 0;
 
   function clearPending() {
-    if (pending) {
+    if (pending !== null) {
       clearTimeout(pending);
-      pending = 0;
+      pending = null;
     }
   }
 
@@ -57,8 +58,8 @@
     if (!ui.aiResultOpen) runId = startAiGeneration(drawingInputUrl);
     failAiGeneration(runId, message, kind);
   }
-  const triggerSafety = () => fail("Let's try drawing something else!", 'safety');
-  const triggerTimeout = () => fail("That's taking too long — please try again.", 'retry');
+  const triggerSafety = () => fail(AI_SAFETY_REFUSAL_MESSAGE, 'safety');
+  const triggerTimeout = () => fail(AI_TIMEOUT_MESSAGE, 'retry');
   const triggerServerError = () => fail(undefined, 'generic');
 
   function reset() {
@@ -69,15 +70,19 @@
   // Once the modal opens it's a modal <dialog>, so it makes the rest of the page
   // inert and the buttons below become unclickable. Global key listeners still
   // fire, so offer hotkeys to drive the animation while it's on screen.
+  const HOTKEYS: { key: string; label: string; run: () => void }[] = [
+    { key: 'p', label: 'play', run: () => play() },
+    { key: 'f', label: 'finish', run: finishNow },
+    { key: 's', label: 'safety', run: triggerSafety },
+    { key: 'e', label: 'server error', run: triggerServerError },
+    { key: 't', label: 'timeout', run: triggerTimeout },
+    { key: 'r', label: 'reset', run: reset },
+  ];
+
   function onKeyDown(e: KeyboardEvent) {
     if (e.target instanceof HTMLInputElement) return;
     const k = e.key.toLowerCase();
-    if (k === 'p') play();
-    else if (k === 'f') finishNow();
-    else if (k === 's') triggerSafety();
-    else if (k === 'e') triggerServerError();
-    else if (k === 't') triggerTimeout();
-    else if (k === 'r') reset();
+    HOTKEYS.find((h) => h.key === k)?.run();
   }
 
   onDestroy(() => {
@@ -128,9 +133,8 @@
 
   <p class="hint">
     The modal blocks the page once open — use hotkeys to drive it from anywhere:
-    <kbd>P</kbd> play · <kbd>F</kbd> finish · <kbd>S</kbd> safety · <kbd>E</kbd> server error ·
-    <kbd>T</kbd>
-    timeout · <kbd>R</kbd> reset.
+    {#each HOTKEYS as h, i (h.key)}<kbd>{h.key.toUpperCase()}</kbd>
+      {h.label}{i < HOTKEYS.length - 1 ? ' · ' : '.'}{/each}
   </p>
 
   <dl class="state" aria-label="ui state">
@@ -178,6 +182,13 @@
     padding: 32px 24px 64px;
     font-family: system-ui, sans-serif;
     color: var(--text-strong);
+  }
+
+  /* Breadcrumb pins its current crumb to #666 for the light-only /admin host;
+     .debug has no background of its own, so it sits on the themed var(--app-bg)
+     where #666 is 3.1:1. --text-mid is the same #666 in light theme. */
+  .debug :global(.crumb-current) {
+    color: var(--text-mid);
   }
 
   h1 {

@@ -5,7 +5,7 @@
   import { computeNotchBandState } from '$lib/notchBand';
   import { layout } from '$lib/state/layout.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { PAPER_COLORS } from '$lib/theme';
+  import { PAPER_COLORS, setThemeColorMeta } from '$lib/theme';
 
   // Measured env(safe-area-inset-*), in CSS px — we need the number (not just
   // the CSS value) to tell a real notch from a bezel. The top and both sides
@@ -29,30 +29,28 @@
   // Web: keep <meta name="theme-color"> in sync — the only mechanism that tints
   // the Android web status bar; a harmless no-op on iOS and native builds.
   $effect(() => {
-    if (typeof document === 'undefined') return;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', band.themeColor);
+    setThemeColorMeta(band.themeColor);
   });
 
   // Native: flip the system clock/battery icons light or dark for contrast.
-  // The literal __IS_CAPACITOR__ (here and below) keeps the status-bar plugin
-  // out of the web bundle; the inline import() resolves to the module
-  // namespace, never the plugin proxy, and repeat calls share one module.
-  $effect(() => {
-    const style = band.statusBarStyle;
-    if (__IS_CAPACITOR__ && isNative() && style) {
-      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
-        StatusBar.setStyle({ style: style === 'DARK' ? Style.Dark : Style.Light }).catch(() => {});
-      });
-    }
-  });
-
+  // The literal __IS_CAPACITOR__ keeps the status-bar plugin out of the web
+  // bundle; the inline import() resolves to the module namespace, never the
+  // plugin proxy, and repeat calls share one module.
   // Android native: hide the status bar in landscape to reclaim the long top
   // edge as canvas; show it again in portrait. null elsewhere = leave it alone.
   $effect(() => {
+    const style = band.statusBarStyle;
     const hidden = band.statusBarHidden;
-    if (__IS_CAPACITOR__ && isNative() && hidden !== null) {
-      import('@capacitor/status-bar').then(({ StatusBar }) => {
-        (hidden ? StatusBar.hide() : StatusBar.show()).catch(() => {});
+    if (__IS_CAPACITOR__ && isNative()) {
+      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+        if (style) {
+          StatusBar.setStyle({ style: style === 'DARK' ? Style.Dark : Style.Light }).catch(
+            () => {}
+          );
+        }
+        if (hidden !== null) {
+          (hidden ? StatusBar.hide() : StatusBar.show()).catch(() => {});
+        }
       });
     }
   });
@@ -72,9 +70,9 @@
      physical top: that's the top edge in portrait and a side edge in landscape. */
   .notch-band {
     position: fixed;
-    z-index: 1000;
+    z-index: var(--z-notch);
     pointer-events: none;
-    transition: background-color 250ms ease;
+    transition: background-color var(--duration-base) ease;
   }
   .notch-band--top {
     top: 0;

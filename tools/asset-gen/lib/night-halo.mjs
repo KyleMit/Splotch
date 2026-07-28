@@ -21,12 +21,14 @@
 import sharp from 'sharp';
 import { dilateMask } from './morphology.mjs';
 import { bleedUnderMask, OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
+import { quantile } from './stats.mjs';
 
 export const DELTA_RIM = 40; // rimΔ above this = much darker than the true local fill
 export const REF_DILATE = 4; // reference punch clears any plausible rim (bands 1..3 + slack)
 export const MAX_BAND = 3; // hotspots count halo px out to this ring; the score uses 1..2
 export const HALO_DARK = 145; // the mid-dark penumbra window: a visible halo pixel is
 export const HALO_PROTECT_BLACK = 55; // luma in [55, 145) — legit near-black ink sits below
+export const HOTSPOT_TILE_PX = 64; // hotspot tiling grain
 
 async function loadRgb(buf) {
   const { data, info } = await sharp(buf).removeAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -54,7 +56,7 @@ function ringBands(mask, w, h, maxD) {
   const bands = [];
   let prev = mask;
   for (let d = 1; d <= maxD; d++) {
-    const grown = dilateMask(mask, w, h, d);
+    const grown = dilateMask(prev, w, h, 1);
     const band = [];
     for (let p = 0; p < w * h; p++) if (grown[p] && !prev[p]) band.push(p);
     bands.push(band);
@@ -66,6 +68,34 @@ function ringBands(mask, w, h, maxD) {
 // Core scorer: the night raw fill, the line art it was punched against (chalk if
 // forked, else pen), and the shipped night fill. Returns the halo statistics; the
 // caller adds page-label and lineWhite context.
+/**
+ * @typedef {object} HaloBandStat
+ * @property {number} d
+ * @property {number} n
+ * @property {number} med
+ * @property {number} p90
+ * @property {number} p99
+ * @property {number} rimShare
+ * @property {number} haloShare
+ */
+/**
+ * @typedef {object} HaloHotspot
+ * @property {number} left
+ * @property {number} top
+ * @property {number} haloPx
+ */
+/**
+ * @typedef {object} HaloScore
+ * @property {number} w
+ * @property {number} h
+ * @property {number} haloScore
+ * @property {number} rawScore
+ * @property {number} haloPx12
+ * @property {number} rimPx12
+ * @property {HaloBandStat[]} bandStats
+ * @property {HaloHotspot[]} hotspots
+ */
+/** @returns {Promise<HaloScore>} */
 export async function scoreNightHalo(rawBuf, lineArtBuf, shippedBuf) {
   const { rgb: rawRgb, width: w, height: h } = await loadRgb(rawBuf);
   const mask = await punchMask(lineArtBuf, w, h);
@@ -84,8 +114,8 @@ export async function scoreNightHalo(rawBuf, lineArtBuf, shippedBuf) {
   };
 
   const bandStats = bands.map((band, i) => {
-    const deltas = band.map(deltaAt).sort((a, b) => a - b);
-    const q = (f) => deltas[Math.floor(f * (deltas.length - 1))] ?? NaN;
+    const deltas = band.map(deltaAt);
+    const q = (f) => quantile(deltas, f) ?? NaN;
     return {
       d: i + 1,
       n: deltas.length,
@@ -105,24 +135,25 @@ export async function scoreNightHalo(rawBuf, lineArtBuf, shippedBuf) {
   const haloScore = +((100 * halo12) / (n12 || 1)).toFixed(3);
   const rawScore = +((100 * rim12) / (n12 || 1)).toFixed(3);
 
-  // hotspots: 64px tiles ranked by count of band-1..3 halo px — page-level share
+  // hotspots: tiles ranked by count of band-1..3 halo px — page-level share
   // dilutes a localized failure (train-wide's is ~6 face tiles), so an audit
   // consumer should look at both columns
   const counts = new Map();
   for (const band of bands)
     for (const p of band) {
       if (!isHalo(p)) continue;
-      const k = Math.floor(Math.floor(p / w) / 64) * 1000 + Math.floor((p % w) / 64);
+      const col = Math.floor((p % w) / HOTSPOT_TILE_PX);
+      const row = Math.floor(Math.floor(p / w) / HOTSPOT_TILE_PX);
+      const k = `${col},${row}`;
       counts.set(k, (counts.get(k) || 0) + 1);
     }
   const hotspots = [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
-    .map(([k, n]) => ({
-      left: (k % 1000) * 64,
-      top: Math.floor(k / 1000) * 64,
-      haloPx: n,
-    }));
+    .map(([k, n]) => {
+      const [col, row] = k.split(',').map(Number);
+      return { left: col * HOTSPOT_TILE_PX, top: row * HOTSPOT_TILE_PX, haloPx: n };
+    });
 
   return {
     w,

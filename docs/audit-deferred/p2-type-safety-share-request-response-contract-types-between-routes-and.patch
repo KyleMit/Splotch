@@ -1,0 +1,238 @@
+diff --git a/web/src/lib/aiCredential.ts b/web/src/lib/aiCredential.ts
+index 518886f5..917e2790 100644
+--- a/web/src/lib/aiCredential.ts
++++ b/web/src/lib/aiCredential.ts
+@@ -1,4 +1,5 @@
+ import { apiUrl } from '$lib/api';
++import type { VerifyAccessCodeResponse, VerifyKeyResponse } from '$lib/apiContracts';
+ 
+ const GEMINI_KEY_PREFIX = 'AIza';
+ 
+@@ -10,11 +11,11 @@ export function looksLikeApiKey(value: string): boolean {
+ 
+ export type CredentialKind = 'apiKey' | 'accessCode';
+ 
+-type VerifyPayload = { ok?: boolean; error?: string; accessCode?: string };
+-
+-export interface VerifyCredentialResult extends VerifyPayload {
++export interface VerifyCredentialResult {
+   kind: CredentialKind;
+   ok: boolean; // narrowed from optional to required — verifyCredential always sets it
++  accessCode?: string;
++  error?: string;
+ }
+ 
+ // Classifies the entered value, calls the matching verify endpoint, and reports
+@@ -34,12 +35,14 @@ export async function verifyCredential(
+     body: JSON.stringify(body),
+     signal,
+   });
+-  const data: VerifyPayload = await res.json().catch(() => ({}));
++  const data: VerifyAccessCodeResponse | VerifyKeyResponse | Record<string, never> = await res
++    .json()
++    .catch(() => ({}));
+ 
+   return {
+     kind,
+     ok: res.ok && data.ok === true,
+-    accessCode: data.accessCode,
+-    error: data.error,
++    accessCode: 'accessCode' in data ? data.accessCode : undefined,
++    error: 'error' in data ? data.error : undefined,
+   };
+ }
+diff --git a/web/src/lib/apiContracts.ts b/web/src/lib/apiContracts.ts
+new file mode 100644
+index 00000000..e8e6ece1
+--- /dev/null
++++ b/web/src/lib/apiContracts.ts
+@@ -0,0 +1,7 @@
++export type ApiErrorResponse = { ok: false; error: string };
++
++export type VerifyAccessCodeResponse = { ok: true; accessCode: string } | ApiErrorResponse;
++
++export type VerifyKeyResponse = { ok: true } | ApiErrorResponse;
++
++export type ReportResponse = { ok: true; url?: string } | ApiErrorResponse;
+diff --git a/web/src/lib/components/parent/ReportForm.svelte b/web/src/lib/components/parent/ReportForm.svelte
+index b5528457..ad9b9bfd 100644
+--- a/web/src/lib/components/parent/ReportForm.svelte
++++ b/web/src/lib/components/parent/ReportForm.svelte
+@@ -4,6 +4,7 @@
+   import Disclosure from '../design/Disclosure.svelte';
+   import StatusMessage from '../design/StatusMessage.svelte';
+   import { apiUrl } from '$lib/api';
++  import type { ReportResponse } from '$lib/apiContracts';
+   import { createLatestRequest } from '$lib/latestRequest';
+   import { collectDeviceInfo } from '$lib/deviceInfo';
+   import { describeDeviceInfo, type DeviceInfo } from '$lib/deviceReport';
+@@ -83,9 +84,7 @@
+         }),
+         signal,
+       });
+-      const data: { ok?: boolean; error?: string; url?: string } = await res
+-        .json()
+-        .catch(() => ({}));
++      const data: ReportResponse | Record<string, never> = await res.json().catch(() => ({}));
+       if (!latest.isCurrent(id)) return;
+       if (res.ok && data.ok) {
+         status = 'success';
+@@ -94,7 +93,8 @@
+         message = '';
+       } else {
+         status = 'error';
+-        feedback = data.error || 'Could not send your report. Please try again.';
++        feedback =
++          ('error' in data && data.error) || 'Could not send your report. Please try again.';
+       }
+     } catch {
+       if (!latest.isCurrent(id)) return;
+diff --git a/web/src/lib/server/http.ts b/web/src/lib/server/http.ts
+index d61453a5..a7f81358 100644
+--- a/web/src/lib/server/http.ts
++++ b/web/src/lib/server/http.ts
+@@ -1,4 +1,5 @@
+ import { error, json } from '@sveltejs/kit';
++import type { ApiErrorResponse } from '$lib/apiContracts';
+ 
+ /**
+  * Parse a JSON request body, turning a malformed payload into a uniform
+@@ -27,7 +28,10 @@ export function stringField(body: Record<string, unknown> | null, name: string):
+  */
+ export function throttled(retryAfter: number) {
+   return json(
+-    { ok: false, error: `Too many attempts. Please wait ${retryAfter}s.` },
++    {
++      ok: false,
++      error: `Too many attempts. Please wait ${retryAfter}s.`,
++    } satisfies ApiErrorResponse,
+     { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+   );
+ }
+diff --git a/web/src/routes/api/report/+server.ts b/web/src/routes/api/report/+server.ts
+index 332e69cd..a03e46a1 100644
+--- a/web/src/routes/api/report/+server.ts
++++ b/web/src/routes/api/report/+server.ts
+@@ -1,4 +1,5 @@
+ import { json } from '@sveltejs/kit';
++import type { ReportResponse } from '$lib/apiContracts';
+ import { rateLimit } from '$lib/server/rateLimit';
+ import { reportBucket } from '$lib/server/rateLimitKeys';
+ import { readJsonBody, throttled } from '$lib/server/http';
+@@ -65,18 +66,22 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+   // Honeypot: a hidden field no human fills. If it's populated, quietly accept
+   // without creating an issue — a bot gets no signal and no issue lands.
+   if (typeof body?.hp === 'string' && body.hp.trim()) {
+-    return json({ ok: true });
++    return json({ ok: true } satisfies ReportResponse);
+   }
+ 
+   const kind: Kind | null =
+     body?.kind === 'feature' ? 'feature' : body?.kind === 'bug' ? 'bug' : null;
+   if (!kind) {
+-    return json({ ok: false, error: 'Please choose bug or feature.' }, { status: 400 });
++    return json({ ok: false, error: 'Please choose bug or feature.' } satisfies ReportResponse, {
++      status: 400,
++    });
+   }
+ 
+   const rawMessage = typeof body?.message === 'string' ? body.message.trim() : '';
+   if (!rawMessage) {
+-    return json({ ok: false, error: 'Please type a short description.' }, { status: 400 });
++    return json({ ok: false, error: 'Please type a short description.' } satisfies ReportResponse, {
++      status: 400,
++    });
+   }
+   const message = rawMessage.slice(0, MAX_MESSAGE_LENGTH);
+ 
+@@ -88,7 +93,10 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+   // a precise 400 regardless of whether reporting is wired up on this instance.
+   if (!isReportingConfigured()) {
+     return json(
+-      { ok: false, error: 'Reporting is not available right now. Please try again later.' },
++      {
++        ok: false,
++        error: 'Reporting is not available right now. Please try again later.',
++      } satisfies ReportResponse,
+       { status: 503 }
+     );
+   }
+@@ -99,11 +107,14 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+       body: bodyFor(kind, message, hasDevice),
+       labels: [REPORT_LABEL, KIND_LABEL[kind]],
+     });
+-    return json({ ok: true, url });
++    return json({ ok: true, url } satisfies ReportResponse);
+   } catch (err) {
+     console.error('[report] issue creation failed', err);
+     return json(
+-      { ok: false, error: 'Could not send your report. Please try again later.' },
++      {
++        ok: false,
++        error: 'Could not send your report. Please try again later.',
++      } satisfies ReportResponse,
+       { status: 502 }
+     );
+   }
+diff --git a/web/src/routes/api/verify-access-code/+server.ts b/web/src/routes/api/verify-access-code/+server.ts
+index 94218b15..3ef4e50d 100644
+--- a/web/src/routes/api/verify-access-code/+server.ts
++++ b/web/src/routes/api/verify-access-code/+server.ts
+@@ -1,4 +1,5 @@
+ import { json } from '@sveltejs/kit';
++import type { VerifyAccessCodeResponse } from '$lib/apiContracts';
+ import { isAllowedToken } from '$lib/server/tokens';
+ import { peekRateLimit, rateLimit } from '$lib/server/rateLimit';
+ import { verifyAccessCodeBucket } from '$lib/server/rateLimitKeys';
+@@ -24,11 +25,16 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+ 
+   const body = await readJsonBody(request);
+   const code = typeof body?.code === 'string' ? body.code.trim() : '';
+-  if (!code) return json({ ok: false, error: 'No access code provided' });
++  if (!code) {
++    return json({ ok: false, error: 'No access code provided' } satisfies VerifyAccessCodeResponse);
++  }
+ 
+   if (!(await isAllowedToken(code))) {
+     rateLimit(key);
+-    return json({ ok: false, error: 'That access code was not recognized.' });
++    return json({
++      ok: false,
++      error: 'That access code was not recognized.',
++    } satisfies VerifyAccessCodeResponse);
+   }
+-  return json({ ok: true, accessCode: code });
++  return json({ ok: true, accessCode: code } satisfies VerifyAccessCodeResponse);
+ };
+diff --git a/web/src/routes/api/verify-key/+server.ts b/web/src/routes/api/verify-key/+server.ts
+index 8917a010..207ed754 100644
+--- a/web/src/routes/api/verify-key/+server.ts
++++ b/web/src/routes/api/verify-key/+server.ts
+@@ -1,4 +1,5 @@
+ import { json } from '@sveltejs/kit';
++import type { VerifyKeyResponse } from '$lib/apiContracts';
+ import { rateLimit } from '$lib/server/rateLimit';
+ import { verifyKeyBucket } from '$lib/server/rateLimitKeys';
+ import { readJsonBody, throttled } from '$lib/server/http';
+@@ -18,13 +19,18 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+ 
+   const body = await readJsonBody(request);
+   const apiKey = typeof body?.apiKey === 'string' ? body.apiKey.trim() : '';
+-  if (!apiKey) return json({ ok: false, error: 'No API key provided' });
++  if (!apiKey) {
++    return json({ ok: false, error: 'No API key provided' } satisfies VerifyKeyResponse);
++  }
+ 
+   const check = await aiProvider.verifyKey(apiKey);
+   if (!check.ok) {
+     console.warn('[verify-key] key rejected:', check.reason);
+-    return json({ ok: false, error: 'That key could not authenticate with Gemini.' });
++    return json({
++      ok: false,
++      error: 'That key could not authenticate with Gemini.',
++    } satisfies VerifyKeyResponse);
+   }
+ 
+-  return json({ ok: true });
++  return json({ ok: true } satisfies VerifyKeyResponse);
+ };

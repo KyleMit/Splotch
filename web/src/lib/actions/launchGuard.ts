@@ -17,10 +17,10 @@ import type { Origin } from '$lib/state/modal.svelte';
 
 // Buttons are 48px; a 72px radius covers the target plus the slop of a
 // toddler's aim without reaching neighbouring controls.
-const DEFAULT_RADIUS = 72;
+export const DEFAULT_RADIUS = 72;
 // Fly-in is 0.35s (app.css); hold a little past it so the dialog is plainly
 // present before the backdrop goes live.
-const DEFAULT_DURATION_MS = 600;
+export const DEFAULT_DURATION_MS = 600;
 
 interface DeadZone {
   x: number;
@@ -29,42 +29,34 @@ interface DeadZone {
   expiresAt: number;
 }
 
+// Module-level singleton, intentionally: there is only ever one modal-launch
+// context in the app, and modalDialog owns clearing it via clearLaunchZones()
+// on close.
 let zones: DeadZone[] = [];
-
-export interface LaunchGuardOptions {
-  radius?: number;
-  durationMs?: number;
-}
 
 // Arm a dead zone at the launching button's center. A null origin (a modal
 // opened with no anchor, e.g. via keyboard) simply arms nothing.
-export function guardLaunchZone(origin: Origin | null, options: LaunchGuardOptions = {}) {
+export function guardLaunchZone(origin: Origin | null) {
   if (!origin) return;
-  const radius = options.radius ?? DEFAULT_RADIUS;
-  const durationMs = options.durationMs ?? DEFAULT_DURATION_MS;
   zones = liveZones();
   zones.push({
     x: origin.x,
     y: origin.y,
-    radiusSq: radius * radius,
-    expiresAt: Date.now() + durationMs,
+    radiusSq: DEFAULT_RADIUS * DEFAULT_RADIUS,
+    expiresAt: Date.now() + DEFAULT_DURATION_MS,
   });
 }
 
 // True while a point sits inside an unexpired dead zone. Prunes lapsed zones as
 // it goes, so no timer is needed to reclaim them.
 export function isPointInLaunchZone(x: number, y: number): boolean {
-  const now = Date.now();
+  zones = liveZones();
   let hit = false;
-  const surviving: DeadZone[] = [];
   for (const zone of zones) {
-    if (zone.expiresAt <= now) continue;
-    surviving.push(zone);
     const dx = x - zone.x;
     const dy = y - zone.y;
     if (dx * dx + dy * dy <= zone.radiusSq) hit = true;
   }
-  zones = surviving;
   return hit;
 }
 

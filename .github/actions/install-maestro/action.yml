@@ -1,0 +1,13 @@
+name: Install Maestro
+description: Install the pinned Maestro CLI version
+
+runs:
+  using: composite
+  steps:
+    - name: Install Maestro CLI
+      shell: bash
+      env:
+        MAESTRO_VERSION: 2.4.0
+      run: |
+        curl -fsSL "https://get.maestro.mobile.dev" | bash
+        echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"

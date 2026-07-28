@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -35,7 +35,7 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-test('defaults to all tall and wide pages in stable order without category covers', async () => {
+it('defaults to all tall and wide pages in stable order without category covers', async () => {
   await expect(resolveOutlineTargets([], options())).resolves.toEqual([
     join(root, 'nature/ant-tall.outline.webp'),
     join(root, 'nature/zebra-wide.outline.webp'),
@@ -43,7 +43,7 @@ test('defaults to all tall and wide pages in stable order without category cover
   ]);
 });
 
-test('resolves categories and page ids', async () => {
+it('resolves categories and page ids', async () => {
   await expect(resolveOutlineTargets(['nature'], options())).resolves.toEqual([
     join(root, 'nature/ant-tall.outline.webp'),
     join(root, 'nature/zebra-wide.outline.webp'),
@@ -53,7 +53,7 @@ test('resolves categories and page ids', async () => {
   ]);
 });
 
-test('preserves explicit WebP support as a caller policy', async () => {
+it('preserves explicit WebP support as a caller policy', async () => {
   await expect(resolveOutlineTargets(['nature/ant-tall.outline.webp'], options())).resolves.toEqual(
     [join(root, 'nature/ant-tall.outline.webp')]
   );
@@ -70,7 +70,7 @@ test('preserves explicit WebP support as a caller policy', async () => {
   ).rejects.toThrow('missing nature/ant-tall.outline.webp');
 });
 
-test('includes category covers only when requested', async () => {
+it('includes category covers only when requested', async () => {
   await expect(
     resolveOutlineTargets(['nature'], options({ includeCovers: true }))
   ).resolves.toEqual([
@@ -80,7 +80,7 @@ test('includes category covers only when requested', async () => {
   ]);
 });
 
-test('preserves deferred and immediate missing-target behavior', async () => {
+it('preserves deferred and immediate missing-target behavior', async () => {
   await expect(resolveOutlineTargets(['nature/missing'], options())).resolves.toEqual([
     join(root, 'nature/missing.outline.webp'),
   ]);
@@ -96,7 +96,7 @@ test('preserves deferred and immediate missing-target behavior', async () => {
   ).rejects.toThrow('no target nature/missing');
 });
 
-test('supports no-op defaults and both existing sort policies', async () => {
+it('supports no-op defaults and both existing sort policies', async () => {
   await expect(resolveOutlineTargets([], options({ defaultAll: false }))).resolves.toEqual([]);
   await expect(
     resolveOutlineTargets(['space', 'nature'], options({ sort: 'per-target' }))
@@ -112,7 +112,7 @@ test('supports no-op defaults and both existing sort policies', async () => {
   ]);
 });
 
-test('normalizes Windows-style target separators', async () => {
+it('normalizes backslash separators in target args', async () => {
   await expect(resolveOutlineTargets(['nature\\ant-tall'], options())).resolves.toEqual([
     join(root, 'nature/ant-tall.outline.webp'),
   ]);
@@ -122,7 +122,7 @@ test('normalizes Windows-style target separators', async () => {
 });
 
 describe('configuration', () => {
-  test('requires callers to state every behavior-changing policy', async () => {
+  it('requires callers to state every behavior-changing policy', async () => {
     await expect(resolveOutlineTargets([], { root })).rejects.toThrow(
       'includeCovers must be a boolean'
     );

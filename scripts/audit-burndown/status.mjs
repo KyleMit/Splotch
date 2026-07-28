@@ -39,8 +39,8 @@ else if (existsSync(join(WORK, 'STOP'))) {
   console.log(`state      STOPPED (STOP file present — rm ${WORK}/STOP to resume)`);
 } else console.log('state      idle');
 
-// While a finding is in flight, report how long it — and the current `claude -p`
-// call — have been running, so a supervising agent can gut-check the duration
+// While a finding is in flight, report how long it — and the current agent call
+// — have been running, so a supervising agent can gut-check the duration
 // (thresholds + remediation live in the burn-down-audits skill). Facts only, no
 // verdict. "In flight" means the newest `iter` line is more recent than the
 // newest terminal marker (DONE/DEFERRED/INVALID); between findings, show nothing.
@@ -69,21 +69,27 @@ if (pid) {
     const findingSecs = since(stampSecs(logLines[iterIdx]));
     const title = logLines[iterIdx].replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, '');
     if (findingSecs != null) console.log(`in-flight  ${fmt(findingSecs)}  ${title}`);
-    // The current role's `claude -p` child; its ps ELAPSED is the current call's age.
-    const cpid = (runCmd('pgrep', ['-f', 'claude -p']).stdout ?? '')
-      .split('\n')
-      .filter(Boolean)
-      .pop();
+    const launchFile = join(WORK, 'launch-command');
+    const launch = existsSync(launchFile) ? readFileSync(launchFile, 'utf8') : '';
+    const runner =
+      process.env.AGENT_RUNNER === 'codex' || /AGENT_RUNNER='codex'/.test(launch)
+        ? 'codex exec'
+        : 'claude -p';
+    const cpid = (runCmd('pgrep', ['-f', runner]).stdout ?? '').split('\n').filter(Boolean).pop();
     if (cpid) {
       const etime = (runCmd('ps', ['-o', 'etime=', '-p', cpid.trim()]).stdout ?? '').trim();
-      if (etime) console.log(`           current claude call ${etime} (pid ${cpid.trim()})`);
+      if (etime) console.log(`           current ${runner} call ${etime} (pid ${cpid.trim()})`);
     }
   }
 }
 
-const prNumberFile = join(WORK, 'pr-number');
-if (existsSync(prNumberFile))
-  console.log(`PR         #${readFileSync(prNumberFile, 'utf8').trim()}`);
+// Unposted per-commit comments are work the supervising agent still owes the PR,
+// and nothing else surfaces them — the driver only ever appends to this file.
+const store = process.env.COMMENT_STORE ?? join(WORK, 'pending-comments.jsonl');
+if (existsSync(store)) {
+  const pending = readFileSync(store, 'utf8').split('\n').filter(Boolean).length;
+  if (pending) console.log(`comments   ${pending} unposted (${store})`);
+}
 
 console.log('\nlast 10 audit commits');
 const commits = gitOut('log', '--oneline', '-10', '--grep=^Audit:');

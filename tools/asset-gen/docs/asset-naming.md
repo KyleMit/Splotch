@@ -56,7 +56,7 @@ Key implementation points:
   resolving them, and the dark generator's review samples in `.coloring-samples-dark/` stay bare
   (`dog-wide.webp`) — the `.night.raw` suffix is added at ship time (the night-fill runbook, now
   `../legacy/night-fills.md`).
-* The E2E overlay assertions (`web/tests/flows.spec.ts`) pin the overlay `src` to
+* The E2E overlay assertions (`web/tests/flows-coloring-book.spec.ts`) pin the overlay `src` to
   `-{tall,wide}.outline.webp`.
 
 ## Consequences

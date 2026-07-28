@@ -1,7 +1,7 @@
 import { existsSync, statSync } from 'node:fs';
 import { glob } from 'node:fs/promises';
 import { join } from 'node:path';
-import { COLORING_DIR } from './paths.mjs';
+import { COLORING_DIR, toPosix } from './paths.mjs';
 
 const SORT_MODES = new Set([false, 'per-target', 'all']);
 
@@ -13,10 +13,6 @@ function assertOptions({ includeCovers, explicitFiles, sort, defaultAll, onMissi
   if (onMissing !== 'defer' && typeof onMissing !== 'function') {
     throw new TypeError('onMissing must be "defer" or a function');
   }
-}
-
-function normalizeTarget(target) {
-  return target.replaceAll('\\', '/');
 }
 
 async function pagesUnder(root, sub, includeCovers, shouldSort) {
@@ -40,7 +36,7 @@ export async function resolveOutlineTargets(
 
   const groups = await Promise.all(
     args.map(async (target) => {
-      const normalized = normalizeTarget(target);
+      const normalized = toPosix(target);
       if (explicitFiles && normalized.endsWith('.webp')) return [join(root, normalized)];
 
       const asFile = join(root, `${normalized}.outline.webp`);
