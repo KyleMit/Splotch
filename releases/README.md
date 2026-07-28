@@ -40,13 +40,23 @@ the latest release exceeds it).
 
 ## How to cut a release
 
-Run the `/release` slash command in Claude Code (it drafts notes from the git log since the last
-tag, you review, it writes the file and publishes), or do it by hand:
+Shipping is **three ordered phases** — release, build, publish (ADR-0077). The order matters: an
+`.aab`/`.ipa` can only carry a version that is already committed, so the release phase deliberately
+creates the GitHub Release with **no artifacts attached**, and they are attached afterwards.
 
-1. Create `releases/<version>.md` with the notes (frontmatter `androidVersionCode` can be omitted —
-   the script fills it in).
-2. Run `npm run release <version>`.
+| Phase      | Slash command        | By hand                                                    |
+| ---------- | -------------------- | ---------------------------------------------------------- |
+| 1. Release | `/release`           | write `releases/<version>.md`, `npm run release <version>` |
+| 2. Build   | `/build`             | `npm run android:bundle` / `npm run ios:ipa`               |
+| 3. Publish | `/publish-artifacts` | `npm run release:publish`                                  |
 
 `npm run release <version>` bumps every version location, regenerates the artifacts above, commits,
-tags `v<version>`, and publishes the GitHub Release (attaching the release `.aab` if it has been
-built). Pass `--no-publish` to stop after the local commit/tag for a dry run.
+tags `v<version>`, and publishes the GitHub Release. Pass `--no-publish` to stop after the local
+commit/tag for a dry run. (`androidVersionCode` can be omitted from the frontmatter — the script
+assigns and pins it.)
+
+`npm run release:publish` then attaches the built binaries, reading the version out of each one and
+refusing any that does not match the release — the build output directories are not cleaned between
+releases, so a leftover from an older version is otherwise indistinguishable by path. Add
+`--dry-run` to verify without uploading, or `--only=android` / `--only=ios` when just one platform
+is built.

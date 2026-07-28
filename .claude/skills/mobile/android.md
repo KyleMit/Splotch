@@ -210,10 +210,13 @@ multi-touch input — the best way to get accurate profiles.
 * [ ] **Replace placeholder icons with final hi-res art.** Current icons are upscaled from the 512px
       web logo — produce a crisp **1024×1024** source at `assets/icon.png` (and tune
       `assets/splash.png`), then rerun `npx @capacitor/assets generate --android`.
-* [ ] Bump `versionCode` / `versionName` in `android/app/build.gradle` for each release (currently
-      `1` / `1.0`).
-* [ ] Confirm `targetSdkVersion` meets the current Play requirement (review
-      `android/variables.gradle`).
+* [ ] Confirm `npm run release` bumped `versionCode` / `versionName` — `scripts/release.mjs`
+      (`setAndroidVersion`) derives both and writes them into `android/app/build.gradle`, which is
+      the source of truth. Only a hand-built release needs them set manually.
+* [x] `targetSdkVersion` meets the current Play requirement: `android/variables.gradle` sets **36**
+      (Android 16), which satisfies the **Aug 31, 2026** deadline. Play raises this yearly — recheck
+      each August against the
+      [target API level policy](https://support.google.com/googleplay/android-developer/answer/11926878).
 * [ ] Test the AI flow on a real device: enter an access code in Parent Center, verify the image
       round-trips against `https://splotch.art`.
 * [ ] Test offline: enable airplane mode → AI button disappears, everything else works.
@@ -252,10 +255,18 @@ multi-touch input — the best way to get accurate profiles.
 * [ ] Create a **Google Play Developer account** ($25 one-time). Allow time for identity
       verification (can take days).
 * [ ] Create the app; choose **App** (not Game), **Free**.
-* [ ] Complete **Data safety** form: declare **no data collected/shared**, *or* if you count the AI
-      upload, declare "Photos" → used for **App functionality**, **not** shared, **not** for
-      tracking, processed at user request. Be precise — this is legally binding.
-* [ ] Complete **Content rating** questionnaire (IARC) → should land at *Everyone*.
+* [ ] **Register the app in Play Console** to meet the
+      [Android developer verification](https://developer.android.com/developer-verification)
+      requirement. ~99% of apps were auto-registered, but confirm `art.splotch.app` shows as
+      registered on the Play Console Home page — an unregistered app faces **global removal from
+      Play**.
+* [ ] Complete **Data safety** form. The `/api/generate-image` upload means "no data collected" is
+      the **wrong** answer: declare **Photos and videos** → collected (not shared), purpose **App
+      functionality** only, **not** for tracking or advertising, **processed ephemerally** at the
+      user's request (the server keeps no copy — `lib/server/usage.ts` records only a per-token
+      tally). Be precise — this is legally binding.
+* [ ] Complete **Content rating** questionnaire (IARC) → should land at *Everyone*. Play does **not
+      allow unrated apps**, so this gates release rather than merely decorating it.
 * [ ] **Target audience & content**: select **Children** age bands → this opts you into the
       **Families policy** (below).
 * [x] Privacy Policy URL → `https://splotch.art/privacy` (see [native.md](native.md)).
@@ -281,6 +292,59 @@ policy). Google Play adds:
       the AI access token, or secure-storage ciphertext — is copied to Google cloud backup or
       device-to-device transfer. Drawings are unaffected (they save to the photo gallery). Keep it
       `false`; if selective backup is ever wanted, use `android:dataExtractionRules` (API 31+).
+
+### Third-party AI integrations (User Data policy)
+
+Play's [User Data](https://support.google.com/googleplay/android-developer/answer/10144311) policy
+explicitly covers third-party AI integrations, and **the developer stays responsible** for limited
+use, disclosure, and consent — Google being the one running the model does not shift that. Splotch's
+one such integration is `/api/generate-image` → Gemini. What keeps it compliant, and what to
+re-verify if that flow changes:
+
+* **Consent** — generation is never automatic; it fires only on a tap, and only after a grown-up
+  supplied a credential. There are **two** unlock paths, and a Play reviewer asking how consent is
+  obtained needs both:
+  1. **Typed in the Parent Center** — `AiKeyManager.svelte` verifies the input and stores it
+     (`setAiAccessToken` for an access code, `setAiUserApiKey` for a BYO Gemini key). Consent is the
+     grown-up's own deliberate entry, behind the Parent Center gate a child can't pass.
+  2. **An invite link** — `captureAiAccessTokenFromUrl` (`state/settings.svelte.ts:236-241`) reads
+     `?ai_access_token=` on load, stores it, and rewrites the URL. The links are minted by
+     `buildInvites` in `/admin` (`server/admin.ts:92-95`). Consent is still parent-mediated — an
+     admin hands the link to a specific grown-up — but it is *not* a Parent Center interaction, so
+     don't describe the Parent Center as the only gate.
+
+  Keep both paths grown-up-initiated. Anything that unlocks generation without a credential a
+  grown-up chose to supply breaks the consent story.
+
+  ⚠️ The visibility gate is currently narrower than the intent: `ActionsPanel.svelte:357` and
+  `visibleActionButtonCount()` (`actionButtonLayout.ts:64`) both check `settings.aiAccessToken`
+  alone, so a BYO Gemini key never actually unhides the button — issue #599. `/privacy` deliberately
+  describes the intended behavior ("an access code or Gemini key"); the two converge when #599
+  ships.
+* **Limited use** — the drawing is passed through to Gemini and the result returned; nothing is
+  persisted. `lib/server/usage.ts` stores only a per-token tally (count, timestamps, last style, and
+  the *static* style prompt from `lib/ai/prompt.ts` — never the image or any user-typed text), and
+  `deleteUsage` drops it when the token is revoked. If a request or response image ever starts being
+  stored, the privacy policy and Data safety form both have to change.
+* **Disclosure** — `/privacy` names Gemini, states we keep no copy, and distinguishes the managed
+  key from a parent's BYO key. Two things there are easy to get wrong and must stay right: BYOK
+  changes the **billing and data controller, not the routing** (the drawing still passes through
+  `/api/generate-image` with the parent's key — `aiImage.ts:158`), and a **free** Gemini key runs on
+  terms that let Google use the content to improve its products, unlike our paid managed quota
+  (ADR-0064).
+
+### Policies that don't apply (verified — don't re-derive)
+
+These come up in Play policy announcements but have no Splotch surface. Re-check only if the listed
+assumption breaks:
+
+| Policy                                          | Why it's N/A                                                                                                                         |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Anonymous / random chat, Child Safety Standards | No chat, social, or user-to-user features at all. The Parent Center report form is one-way to our GitHub issue tracker.              |
+| SMS & Call Log Permissions (`READ_CALL_LOG`)    | Manifest declares only `INTERNET`, `ACCESS_NETWORK_STATE`, `WRITE_EXTERNAL_STORAGE` (maxSdk 28). No accounts, no phone verification. |
+| Location disclosures                            | No location permission and no Geolocation use; `securityHeaders.ts` denies `geolocation=()` outright.                                |
+| Personal Loans / Earned Wage Access             | Not a financial app.                                                                                                                 |
+| Ads, analytics, advertising ID                  | No ad/analytics/attribution SDKs — Android deps are appcompat, splashscreen, and Capacitor plugins only.                             |
 
 ## 5. Known follow-ups (Android-specific)
 

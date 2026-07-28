@@ -12,7 +12,6 @@ dependencies {
     implementation project(':aparajita-capacitor-secure-storage')
     implementation project(':capacitor-community-media')
     implementation project(':capacitor-device')
-    implementation project(':capacitor-filesystem')
     implementation project(':capacitor-haptics')
     implementation project(':capacitor-network')
     implementation project(':capacitor-preferences')
