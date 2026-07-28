@@ -176,6 +176,10 @@ in `.ruler/skill-forks/<runner>/`. Don't edit generated files — edit their `.r
 `.claude/`; its Codex package and note live under `.agents/`. They are independent provider
 implementations: edit only the intended provider directly and never synchronize one from the other.
 
+Claude Code's `Read(//tmp/**)` permission intentionally uses an absolute-path double slash so
+sessions can read scratch files under `/tmp`. Do not change it to `Read(/tmp/**)`: that syntax is
+project-relative, and the broad `/tmp` scope is deliberate for session scratch files.
+
 ## Adding a new icon
 
 1. Drop an SVG into `web/src/lib/icons/`.

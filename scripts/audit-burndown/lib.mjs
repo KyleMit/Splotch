@@ -230,6 +230,14 @@ export function draftPatchPath(title, dir = DRAFT_DIR) {
   return `${dir}/${slug || 'untitled'}.patch`;
 }
 
+// Unified diffs encode an empty context row as one space, which becomes trailing
+// whitespace when the patch itself is tracked. Git accepts the same row empty.
+export function normalizeDraftPatch(patch) {
+  return String(patch ?? '')
+    .replace(/^[\t ]+$/gm, '')
+    .replace(/\n*$/, '\n');
+}
+
 // What someone triaging docs/AUDIT-DEFERRED.md months later needs and cannot
 // reconstruct: which objection actually stopped the fix, what was already
 // tried, and where the rejected draft went. All three are in the driver's hands
@@ -268,9 +276,8 @@ export function renderDeferralNotes({
     const commits = draftCommits ? ` (${draftCommits} commit${draftCommits === 1 ? '' : 's'})` : '';
     out.push('#### Draft implementation', '');
     out.push(
-      `The rolled-back draft is kept at \`${patchPath}\`${commits}. It passed the driver's ` +
-        `type-check, unit-test and lint gates — the review is what it did not pass — so it is a ` +
-        `starting point rather than scrap. Apply with \`git apply ${patchPath}\`.`,
+      `The rolled-back draft is kept at \`${patchPath}\`${commits}. It was not accepted, so it is ` +
+        `a starting point rather than scrap. Apply with \`git apply ${patchPath}\`.`,
       ''
     );
   }

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # SessionStart (matcher: compact) — point the post-compaction session at the
 # snapshot its predecessor left behind.
 #

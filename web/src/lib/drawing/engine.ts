@@ -59,7 +59,6 @@ import {
 } from './strokeOps';
 import {
   setCrayonOptions,
-  getCrayonOptions,
   crayonColorMix,
   warmCrayonTiles,
   CrayonPassTracker,
@@ -1146,10 +1145,6 @@ export function setCrayonParams(params: Partial<CrayonOptions>) {
   setCrayonOptions(params);
   syncCrayonOverlayMix();
   if (ctx) repaintAll(ctx);
-}
-
-export function getCrayonParams(): CrayonOptions {
-  return getCrayonOptions();
 }
 
 // --- Mount / unmount ---------------------------------------------------------

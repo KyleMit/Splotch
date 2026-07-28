@@ -15,5 +15,5 @@
   `keystore.properties.example`). Values must not be quoted. Without the file, `bundleRelease`
   produces an unsigned AAB.
 * Don't hand-edit `versionCode`/`versionName` in `app/build.gradle` — `npm run release` sets them
-  via `capacitor-set-version`.
+  via `scripts/lib/native-version.mjs`.
 * Full toolchain setup, device workflows, and the store release checklist: `mobile` skill.

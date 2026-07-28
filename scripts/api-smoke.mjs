@@ -16,17 +16,12 @@ import { adminClient } from './lib/adminClient.mjs';
 // so the absence assertions below name the same headers the hook stamps — a new
 // security header is covered here the moment it's added to that module.
 import { SECURITY_HEADERS } from '../web/src/lib/server/securityHeaders.ts';
+import { tinyPngBuffer } from '../web/tests/fixtures.ts';
 
 const PORT = Number(process.env.SMOKE_PORT ?? 5199);
 const BASE = `http://localhost:${PORT}`;
 const ADMIN_SECRET = randomUUID();
 const SEED_TOKENS = 'alpha,beta';
-
-// 1x1 transparent PNG — a tiny, allow-listed image for the legacy multipart case.
-const TINY_PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-  'base64'
-);
 
 const postJson = (base, path, body, headers = {}) =>
   fetch(`${base}${path}`, {
@@ -319,7 +314,7 @@ async function checkGenerateImage(base) {
   const legacyMultipart = ({ token, mimeType }) => {
     const form = new FormData();
     if (token) form.set('token', token);
-    form.set('image', new Blob([TINY_PNG], { type: mimeType }), 'drawing');
+    form.set('image', new Blob([tinyPngBuffer()], { type: mimeType }), 'drawing');
     return fetch(`${base}/api/generate-image`, { method: 'POST', body: form });
   };
 

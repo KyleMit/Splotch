@@ -14,10 +14,15 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { ROOT, fail } from './lib/utils.mjs';
 import {
   buildScrapbookIndex,
+  coloringBookProofSheetHubProblems,
   collectionsMissingEntry,
   OWNER,
   REPO,
 } from './lib/scrapbook-index.mjs';
+import {
+  buildColoringBookProofSheetHub,
+  PROOF_SHEET_HUB_PATH,
+} from './gen-coloring-book-proof-sheet-hub.mjs';
 
 // Project Pages site: https://<owner>.github.io/<repo>/ — GitHub lowercases the
 // subdomain, the repo segment keeps its casing. Owner/repo are sourced from
@@ -31,12 +36,23 @@ function writeIndex() {
   writeFileSync(INDEX_PATH, buildScrapbookIndex(SCRAPBOOK_DIR));
 }
 
+function writeProofSheetHub() {
+  writeFileSync(PROOF_SHEET_HUB_PATH, buildColoringBookProofSheetHub());
+}
+
+function writeGeneratedPages() {
+  writeIndex();
+  writeProofSheetHub();
+}
+
 function main() {
   const args = process.argv.slice(2);
 
   if (args[0] === '--index-only') {
-    writeIndex();
-    console.log(`Rebuilt scrapbook/index.html → ${PAGES_BASE}`);
+    writeGeneratedPages();
+    console.log(
+      `Rebuilt scrapbook/index.html and coloring-book-proof-sheets/index.html → ${PAGES_BASE}`
+    );
     return;
   }
 
@@ -51,6 +67,20 @@ function main() {
         'Scrapbook collections with no reachable entry page (counted in the index but shown as no card):\n' +
           missing.map((m) => `  - scrapbook/${m}/`).join('\n') +
           '\nAdd an .html entry page or an .md report, or remove the empty dir. See scrapbook/README.md.'
+      );
+    }
+    const proofSheetProblems = coloringBookProofSheetHubProblems(
+      join(SCRAPBOOK_DIR, 'coloring-book-proof-sheets')
+    );
+    if (proofSheetProblems.length) {
+      fail(
+        'Coloring-book proof-sheet hub is out of sync:\n' +
+          proofSheetProblems.map((problem) => `  - ${problem}`).join('\n')
+      );
+    }
+    if (readFileSync(PROOF_SHEET_HUB_PATH, 'utf8') !== buildColoringBookProofSheetHub()) {
+      fail(
+        'scrapbook/coloring-book-proof-sheets/index.html is stale — run `npm run scrapbook:index` and commit the result.'
       );
     }
     // Structural freshness: a collection added/removed without re-running
@@ -94,7 +124,7 @@ function main() {
 
   mkdirSync(dirname(destPath), { recursive: true });
   cpSync(srcPath, destPath, { recursive: true });
-  writeIndex();
+  writeGeneratedPages();
 
   const url = PAGES_BASE + rel + (statSync(destPath).isDirectory() ? '/' : '');
   console.log(`Published ${source} → scrapbook/${rel}`);

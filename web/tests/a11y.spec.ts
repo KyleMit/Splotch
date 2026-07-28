@@ -1,5 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { ADMIN_ACCESS_TOKEN } from './admin-helpers';
+import { openParentCenter } from './helpers';
 
 // Axe-core scans for the adult-facing surfaces (issue #458): /privacy, /admin
 // (both auth states), and the Parent Center dialog. The toddler-facing canvas
@@ -9,8 +11,6 @@ import { expect, test, type Page } from '@playwright/test';
 //
 // Only serious/critical violations fail the test, but the failure message
 // reports every violation axe found so the full picture is one run away.
-
-const ADMIN_KEY = 'test-admin-secret'; // set in playwright.config.ts webServer.env
 
 async function expectNoSeriousViolations(page: Page, include?: string) {
   let builder = new AxeBuilder({ page });
@@ -46,7 +46,7 @@ test('/admin logged out has no serious accessibility violations', async ({ page 
 
 test('/admin logged in has no serious accessibility violations', async ({ page }) => {
   await page.goto('/admin');
-  await page.getByPlaceholder('Admin access key').fill(ADMIN_KEY);
+  await page.getByPlaceholder('Admin access key').fill(ADMIN_ACCESS_TOKEN);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByPlaceholder('Add a code…')).toBeVisible();
 
@@ -65,13 +65,7 @@ test('/admin logged in has no serious accessibility violations', async ({ page }
 test('the Parent Center has no serious accessibility violations', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#drawingCanvas')).toBeVisible();
-  const modal = page.locator('#parentHelpModal');
-  await expect(async () => {
-    if (!(await modal.isVisible().catch(() => false))) {
-      await page.getByRole('button', { name: 'Parent Center' }).click({ timeout: 3000 });
-    }
-    await expect(modal).toBeVisible({ timeout: 1500 });
-  }).toPass({ timeout: 10_000 });
+  await openParentCenter(page);
 
   await expectNoSeriousViolations(page, '#parentHelpModal');
 });

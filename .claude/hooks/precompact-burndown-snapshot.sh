@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PreCompact — snapshot audit-burndown run state before the conversation is summarized.
 #
 # Compaction replaces the verbatim conversation with prose. Prose is a poor

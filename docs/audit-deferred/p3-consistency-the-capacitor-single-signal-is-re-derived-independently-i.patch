@@ -1,0 +1,67 @@
+diff --git a/.gitignore b/.gitignore
+index caf1c116..55a68960 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -162,6 +162,10 @@ workbox-*.js.map
+ ## Mac
+ .DS_Store
+ build/
++!web/build/
++web/build/*
++!web/build/platform.d.mts
++!web/build/platform.mjs
+ # The `build` skill (source + its ruler-generated copies, ADR-0058) must dodge
+ # the blanket build/ ignore above.
+ !.ruler/skills/build/
+diff --git a/web/build/platform.d.mts b/web/build/platform.d.mts
+new file mode 100644
+index 00000000..14c86aec
+--- /dev/null
++++ b/web/build/platform.d.mts
+@@ -0,0 +1 @@
++export declare const isCapacitor: boolean;
+diff --git a/web/build/platform.mjs b/web/build/platform.mjs
+new file mode 100644
+index 00000000..617e118f
+--- /dev/null
++++ b/web/build/platform.mjs
+@@ -0,0 +1 @@
++export const isCapacitor = process.env.CAPACITOR === 'true';
+diff --git a/web/svelte.config.js b/web/svelte.config.js
+index bc560295..34674ba0 100644
+--- a/web/svelte.config.js
++++ b/web/svelte.config.js
+@@ -1,14 +1,13 @@
+ import adapterNetlify from '@sveltejs/adapter-netlify';
+ import adapterStatic from '@sveltejs/adapter-static';
+ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
++import { isCapacitor } from './build/platform.mjs';
+
+ // The web app ships to Netlify (SSR + the /api/generate-image function and the
+ // /admin token console). The native apps bundle a fully static export instead,
+ // so when CAPACITOR=true we swap in adapter-static. The server-only routes
+ // (api, admin, dev) aren't reachable inside the bundle and are skipped by
+ // `strict: false`; the native AI button talks to the hosted endpoint instead.
+-const isCapacitor = process.env.CAPACITOR === 'true';
+-
+ /** @type {import('@sveltejs/kit').Config} */
+ const config = {
+   preprocess: vitePreprocess(),
+diff --git a/web/vite.config.ts b/web/vite.config.ts
+index b338ffcc..b9e271b8 100644
+--- a/web/vite.config.ts
++++ b/web/vite.config.ts
+@@ -3,12 +3,11 @@ import { defineConfig } from 'vite';
+ import { VitePWA } from 'vite-plugin-pwa';
+ import { readFileSync } from 'node:fs';
+ import { execSync } from 'node:child_process';
++import { isCapacitor } from './build/platform.mjs';
+ import { buildDefines } from './defines';
+
+ // The native apps bundle a static export and never use a service worker (the
+ // shell and all assets are already on-device), so skip the PWA plugin there.
+-const isCapacitor = process.env.CAPACITOR === 'true';
+-
+ // Opt-in `performance.mark/measure` instrumentation on the drawing engine's hot
+ // paths, read by the profiling harness (scripts/perf/, `npm run perf:web`). Off
+ // by default so the marks never ship: with the literal `false` the guarded

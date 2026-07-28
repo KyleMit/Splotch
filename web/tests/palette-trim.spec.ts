@@ -1,25 +1,22 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { TEST_PALETTE } from './helpers';
+
 // Layer 4 — the color palette trims/reveals swatches purely via CSS media
 // queries (no JS measurement), so a broken breakpoint only shows up in what's
 // actually rendered. These tests pin the trim rules documented in
 // ColorPalette.svelte by asserting exactly which swatches are visible at each
 // viewport, plus a few visual snapshots for appearance regressions.
 
-const C = {
-  purple: '#AB71E1',
-  blue: '#62A2E9',
-  green: '#8CC864',
-  yellow: '#F9D24F',
-  orange: '#F89C45',
-  red: '#EC534E',
-  black: '#0a0b10',
-  // bonus colors — hidden by default, revealed only on a tall landscape
-  teal: '#4FC4C0',
-  brown: '#B5835A',
-  pink: '#F47CB0',
-};
-const CORE = [C.purple, C.blue, C.green, C.yellow, C.orange, C.red, C.black];
+const CORE = [
+  TEST_PALETTE.purple,
+  TEST_PALETTE.blue,
+  TEST_PALETTE.green,
+  TEST_PALETTE.yellow,
+  TEST_PALETTE.orange,
+  TEST_PALETTE.red,
+  TEST_PALETTE.black,
+];
 
 /** data-color of every palette swatch (excluding the always-on custom swatch)
  *  that is currently rendered (not display:none). */
@@ -48,12 +45,34 @@ async function expectVisible(page: Page, expected: string[]) {
 // black). Bonus colors never appear in portrait. Height fixed tall. ──────────
 const PORTRAIT = [
   { w: 600, visible: CORE }, // > 515.98 → all 7 core
-  { w: 500, visible: [C.purple, C.blue, C.green, C.yellow, C.orange, C.black] }, // − red
-  { w: 400, visible: [C.purple, C.blue, C.green, C.yellow, C.black] }, // − red,orange
-  { w: 350, visible: [C.purple, C.blue, C.yellow, C.black] }, // − green
-  { w: 300, visible: [C.purple, C.blue, C.black] }, // − yellow
-  { w: 250, visible: [C.purple, C.black] }, // − blue
-  { w: 180, visible: [C.black] }, // − purple
+  {
+    w: 500,
+    visible: [
+      TEST_PALETTE.purple,
+      TEST_PALETTE.blue,
+      TEST_PALETTE.green,
+      TEST_PALETTE.yellow,
+      TEST_PALETTE.orange,
+      TEST_PALETTE.black,
+    ],
+  }, // − red
+  {
+    w: 400,
+    visible: [
+      TEST_PALETTE.purple,
+      TEST_PALETTE.blue,
+      TEST_PALETTE.green,
+      TEST_PALETTE.yellow,
+      TEST_PALETTE.black,
+    ],
+  }, // − red,orange
+  {
+    w: 350,
+    visible: [TEST_PALETTE.purple, TEST_PALETTE.blue, TEST_PALETTE.yellow, TEST_PALETTE.black],
+  }, // − green
+  { w: 300, visible: [TEST_PALETTE.purple, TEST_PALETTE.blue, TEST_PALETTE.black] }, // − yellow
+  { w: 250, visible: [TEST_PALETTE.purple, TEST_PALETTE.black] }, // − blue
+  { w: 180, visible: [TEST_PALETTE.black] }, // − purple
   { w: 130, visible: [] }, // − black (only the custom swatch remains)
 ];
 
@@ -68,12 +87,34 @@ for (const { w, visible } of PORTRAIT) {
 // teal ≥732, brown ≥804) and trims core colors as height shrinks (red ≤587.98,
 // orange ≤515.98). Width fixed wide. ────────────────────────────────────────
 const LANDSCAPE = [
-  { h: 850, visible: [...CORE, C.pink, C.teal, C.brown] }, // all bonus revealed
-  { h: 760, visible: [...CORE, C.pink, C.teal] }, // brown still hidden
-  { h: 700, visible: [...CORE, C.pink] }, // only pink revealed
+  {
+    h: 850,
+    visible: [...CORE, TEST_PALETTE.pink, TEST_PALETTE.teal, TEST_PALETTE.brown],
+  }, // all bonus revealed
+  { h: 760, visible: [...CORE, TEST_PALETTE.pink, TEST_PALETTE.teal] }, // brown still hidden
+  { h: 700, visible: [...CORE, TEST_PALETTE.pink] }, // only pink revealed
   { h: 620, visible: CORE }, // no bonus, no trim
-  { h: 550, visible: [C.purple, C.blue, C.green, C.yellow, C.orange, C.black] }, // − red
-  { h: 480, visible: [C.purple, C.blue, C.green, C.yellow, C.black] }, // − red,orange
+  {
+    h: 550,
+    visible: [
+      TEST_PALETTE.purple,
+      TEST_PALETTE.blue,
+      TEST_PALETTE.green,
+      TEST_PALETTE.yellow,
+      TEST_PALETTE.orange,
+      TEST_PALETTE.black,
+    ],
+  }, // − red
+  {
+    h: 480,
+    visible: [
+      TEST_PALETTE.purple,
+      TEST_PALETTE.blue,
+      TEST_PALETTE.green,
+      TEST_PALETTE.yellow,
+      TEST_PALETTE.black,
+    ],
+  }, // − red,orange
 ];
 
 for (const { h, visible } of LANDSCAPE) {
@@ -87,7 +128,13 @@ for (const { h, visible } of LANDSCAPE) {
 // pairs; ≤299.98px tall drops red+orange (ranks 3–4), bonus stays hidden.
 test('short landscape (two-column) drops red and orange', async ({ page }) => {
   await loadAt(page, 1000, 250);
-  await expectVisible(page, [C.purple, C.blue, C.green, C.yellow, C.black]);
+  await expectVisible(page, [
+    TEST_PALETTE.purple,
+    TEST_PALETTE.blue,
+    TEST_PALETTE.green,
+    TEST_PALETTE.yellow,
+    TEST_PALETTE.black,
+  ]);
 });
 
 // ── Visual snapshots — catch appearance regressions (swatch colors, sizing,

@@ -14,7 +14,6 @@
     getUndoDebug,
     setCrayonMode,
     setCrayonParams,
-    getCrayonParams,
     setScreenAngleOverride,
     getViewState,
     RESIZE_SETTLE_MS,
@@ -75,7 +74,6 @@
       // knobs. The spec draws crayon strokes via strokeSync after setCrayonMode.
       setCrayonMode,
       setCrayonParams,
-      getCrayonParams,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).

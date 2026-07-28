@@ -34,8 +34,8 @@ they're never shown in the picker, so they get no thumbnail.
 
 * **Grid tiles** (`ColoringBook.svelte`) use `thumbPath(src)`.
 * **The canvas overlay** (`#coloringOverlay` in `DrawingCanvas.svelte`) keeps the **full-res**
-  source — it fills the screen, and the existing E2E assertion (`flows.spec.ts`, overlay `src`
-  matches `/-(wide|tall)\.outline\.webp$/`) pins that.
+  source — it fills the screen, and the existing E2E assertion (`flows-coloring-book.spec.ts`,
+  overlay `src` matches `/-(wide|tall)\.outline\.webp$/`) pins that.
 
 `books.ts` is the single mapping point: `thumbPath()` derives the thumb path (`x.outline.webp` →
 `x.thumb.webp`), and `bookAssetPaths()` returns **both** the full-res paths and their thumbs. That

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { draw, firstOpaquePixel, gotoApp } from './helpers';
+import { draw, firstOpaquePixel, gotoApp, openParentCenter, PICKER_GREEN } from './helpers';
 
 // WebKit critical-path smoke — the only spec the `webkit` project runs (see
 // playwright.config.ts). The rest of the E2E suite is Chromium-only, but
@@ -7,10 +7,12 @@ import { draw, firstOpaquePixel, gotoApp } from './helpers';
 // this tiny subset proves the core toddler path — boot, draw a stroke, open
 // the Parent Center and Color Picker dialogs — works on the WebKit engine.
 //
-// Keep it small and WebKit-portable: no CDP sessions (viewport rotation and
-// touch synthesis in flows.spec.ts are Chromium-only), no dev-harness routes,
-// no pixel-perfect assertions that depend on Chromium's rasterizer. The shared
-// helpers imported above are held to the same WebKit-portable bar.
+// Keep it small and WebKit-portable: no CDP sessions (the viewport-rotation
+// coverage in flows-coloring-book.spec.ts and flows-magic-brush.spec.ts is
+// Chromium-only), no synthetic-touch cases from flows-palette-brush.spec.ts,
+// no dev-harness routes, no pixel-perfect assertions that depend on Chromium's
+// rasterizer. The shared helpers imported above are held to the same
+// WebKit-portable bar.
 
 test('the app boots: canvas, palette, and Parent Center button render', async ({ page }) => {
   await gotoApp(page);
@@ -31,13 +33,7 @@ test('a pointer stroke puts ink on the canvas', async ({ page }) => {
 
 test('the Parent Center dialog opens and closes', async ({ page }) => {
   await gotoApp(page);
-  const modal = page.locator('#parentHelpModal');
-  await expect(async () => {
-    if (!(await modal.isVisible().catch(() => false))) {
-      await page.getByRole('button', { name: 'Parent Center' }).click({ timeout: 3000 });
-    }
-    await expect(modal).toBeVisible({ timeout: 1500 });
-  }).toPass({ timeout: 10_000 });
+  const modal = await openParentCenter(page);
   await modal.getByRole('button', { name: 'Close' }).click();
   await expect(modal).not.toBeVisible();
 });
@@ -47,7 +43,7 @@ test('the Color Picker dialog opens and commits a color', async ({ page }) => {
   await page.getByRole('button', { name: 'Custom Color' }).click();
   const dialog = page.locator('#color-picker');
   await expect(dialog).toBeVisible();
-  const green = dialog.locator('.grid.landscape .hexagon[data-color="#2ECC71"]');
+  const green = dialog.locator(`.grid.landscape .hexagon[data-color="${PICKER_GREEN}"]`);
   await green.click();
   await expect(dialog).not.toBeVisible();
   await expect(page.getByRole('button', { name: 'Custom Color' })).toHaveClass(/active/);
