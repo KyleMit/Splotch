@@ -1,7 +1,8 @@
 # Handoff — audit burndown run
 
-> 2026-07-27 · branch `audit/burndown-20260727-codex-2` · PR pending · Burn down the staged audit
-> backlog with the Codex driver
+> 2026-07-27 · branch `audit/burndown-20260727-codex-2` · PR
+> [#583](https://github.com/KyleMit/Splotch/pull/583) · Burn down the staged audit backlog with the
+> Codex driver
 
 ## Objective & non-goals
 
@@ -14,16 +15,16 @@ driver running without CI and comment supervision.
 
 ## State
 
-| Item                   | Value                               |
-| ---------------------- | ----------------------------------- |
-| Branch                 | `audit/burndown-20260727-codex-2`   |
-| Base                   | `main` at 63a7aa49ed34              |
-| PR                     | pending                             |
-| Initial backlog        | 45 findings                         |
-| `run.log` baseline     | 2,221 lines                         |
-| State                  | Initial checkpoint before preflight |
-| Last Quality-green SHA | none                                |
-| Last fully-green SHA   | none                                |
+| Item                   | Value                                               |
+| ---------------------- | --------------------------------------------------- |
+| Branch                 | `audit/burndown-20260727-codex-2`                   |
+| Base                   | `main` at 63a7aa49ed34                              |
+| PR                     | [#583](https://github.com/KyleMit/Splotch/pull/583) |
+| Initial backlog        | 45 findings                                         |
+| `run.log` baseline     | 2,221 lines                                         |
+| State                  | Preflight green; canary checkpoint                  |
+| Last Quality-green SHA | none                                                |
+| Last fully-green SHA   | none                                                |
 
 No burndown commit has landed on this continuation yet.
 
@@ -89,13 +90,16 @@ npm run audit:burndown:overnight -- 600
 * The first preflight passed runner, authentication, repository, origin, prompt, and 45-finding
   parsing checks, but found pre-existing dprint drift in `docs/PROMPTS.md`; the gate must be
   corrected and preflight rerun.
+* Formatted `docs/PROMPTS.md`, reran the repository-specific deterministic gate, and completed
+  preflight successfully.
+* Opened draft PR [#583](https://github.com/KyleMit/Splotch/pull/583).
 
 ## Risks & next 3 steps
 
-1. Commit and push this checkpoint, then run preflight and require every check green.
-2. Open a draft PR, replace `PR: pending` with its number, and push the second checkpoint.
-3. Run and inspect the five-fix canary, require exact-head CI green, and only then launch bounded
-   continuation segments.
+1. Commit and push this second checkpoint.
+2. Run and inspect the five-fix canary, including backlog deletion and thread-resume reconciliation.
+3. Require exact-head CI green, drain pending comments, and only then launch bounded continuation
+   segments.
 
 ## Closeout tasks
 
