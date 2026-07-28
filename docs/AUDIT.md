@@ -35,34 +35,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — scrapbook · run-artifact code
 
-### [P3][discoverability] README omits the `crayon-brush-samples` collection and how it's regenerated
-
-**File(s):** `scrapbook/README.md` (whole file; cf. the icons paragraph at `:66-71`) — pinned at SHA
-f934d43
-
-#### Problem
-
-The README's "Live URLs" section calls out how to regenerate the coloring-book proof sheets, the
-icon gallery, and the model-eval report, but never mentions the `crayon-brush-samples/` collection —
-even though it is a committed top-level collection with its own generators
-(`tools/asset-gen/crayon-brush-samples/build-sheet.mjs` → `index.html`, `build-compare-sheet.mjs` →
-`vs-current.html`). A newcomer who opens `scrapbook/crayon-brush-samples/` in the tree has, unlike
-every other collection, no in-`scrapbook` pointer to what produced it or how to refresh it.
-
-#### Proposed solution
-
-Add a short paragraph alongside the icons/coloring entries: what `crayon-brush-samples/` is, its
-live URL (`…/crayon-brush-samples/`), and that `index.html`/`vs-current.html` are built by the
-`tools/asset-gen/crayon-brush-samples/` scripts (link to that dir's README). Keep it symmetric with
-the existing collection blurbs.
-
-#### Verification
-
-Grep `scrapbook/README.md` for `crayon-brush-samples` — currently zero hits; after the fix the
-collection is documented like the others.
-
----
-
 ### [P3][discoverability] README warns about masthead sync but not the hub's category-registry maintenance step
 
 **File(s):** `scrapbook/README.md:61-65` — pinned at SHA f934d43
