@@ -71,3 +71,26 @@ Composition should be centered with generous whitespace and consistent visual we
 Overall feeling: modern, friendly, premium, Montessori-inspired, Apple sticker aesthetic, soft toy
 design, optimized for small mobile UI buttons.
 ```
+
+## AUDIT-DEFERRED
+
+```md
+Start figuring out what to do with the findings in docs/AUDIT-DEFERRED.md
+
+Each of those has failed a multi round review with no implementation.  Don't actually handle any implementation right now, but spin up sub agents and fan out and try to iterate on each.  Figure out if there really is a single ideal solution.  If there's not a single winner, come up with multiple possible solutions, then come up with the pros and cons for each.  based on the pros and cons, rank the possible solutions.  If there's a clear winner, pick that.  If there's not or there are real tradeoffs that need to be considered, return a brief on the possilbe options, the pros and cons and where you would lean but what the tradeoffs are.  The goal is that every item in the deferred backlog is traiged.  If there's no good fix or the issue has already been resolved elsewhere, it's okay to drain the audit finding, but do so with an explanation as to why it doesn't need to be worked on.
+
+You don't need to commit any code changes in a PR - this is a decision doc that will allow us to confidently move forward with each option.  If you do have a strong beed on the implemenation, you can scaffold it out, but it's not meant to be code complete or thorough - just as a way to illustrate your point.  Figure out a good place to store the decisions (could be another markdown doc, could be separate md docs for each deferred audit, could be github issues - just pick one and be consistent). 
+
+We may burn through the context window, so make sure you're working in a way that's durable to auto-compactions since this is going to be a long task.
+
+Ask any questions you'd like the answer to before beginning and then run autonomously for the rest of the run until the deferred backlog is fully reviewed
+```
+
+## Self Heal
+
+```md
+self heal.  what went well / poorly this session? what can be added or removed to the codex burn down agent skill that would improve future runs?
+ 
+before making any changes, checkout main and pull the latest changes and branch off of there.  I merged PR ###, so create a new PR with any findings / improvements for the skill
+```
+
