@@ -6,7 +6,7 @@
   // (see MOBILE.md). Keep the tone simple enough for a parent to skim in 30
   // seconds. Bump LAST_UPDATED whenever the wording changes.
 
-  const LAST_UPDATED = 'July 16, 2026';
+  const LAST_UPDATED = 'July 28, 2026';
   // Splotch has no email; questions/concerns go through GitHub issues.
   const CONTACT_URL = 'https://github.com/KyleMit/Splotch/issues/new/choose';
 </script>
@@ -52,7 +52,9 @@
     <h2>When the internet is used</h2>
     <p>
       Splotch has an optional “magic image” button that re-imagines a child's drawing as a polished
-      illustration. It only runs when someone taps it.
+      illustration. A grown-up has to switch it on first — the button stays hidden until an access
+      code or Gemini key is entered in the Parent Center — and it only ever runs when someone taps
+      it.
     </p>
     <ul>
       <li>
@@ -60,8 +62,20 @@
         AI) to generate a new picture, which is sent right back.
       </li>
       <li>
-        We keep a simple count of how often each invite code is used, purely to prevent abuse. This
-        isn't tied to a person and isn't used to identify anyone.
+        <strong>We don't keep the drawing.</strong> It passes straight through our service on its way
+        to Google and back. Neither the drawing your child sent nor the picture that comes back is saved
+        on our servers.
+      </li>
+      <li>
+        Google processes the drawing under its own Gemini API terms for as long as it takes to make
+        the picture. That part happens on Google's systems, not ours. If you've added your
+        <em>own</em> Gemini key in the Parent Center, the drawing goes to Google under your account and
+        the terms that apply to it, rather than ours.
+      </li>
+      <li>
+        We keep a simple count of how often each access code is used, purely to prevent abuse —
+        along with the date and which art style was picked. This isn't tied to a person and isn't
+        used to identify anyone.
       </li>
       <li>
         Drawings are not used to build profiles, are not sold, and are not used for advertising or
