@@ -14,6 +14,19 @@ export interface PaletteColor {
 // priority, only the pixels change (see themedSwatchColor / ColorPalette).
 export const BLACK_INK = '#0a0b10';
 
+/**
+ * Look up a swatch by its display label, for UI that wants a specific crayon
+ * hue (the /android-beta masthead strip and its step numerals). Throws rather
+ * than returning undefined so a renamed entry fails loudly at render instead of
+ * silently painting nothing — palette-source.test.mjs keeps this file the only
+ * place those hexes are written.
+ */
+export function paletteHex(label: string): string {
+  const color = PALETTE_COLORS.find((entry) => entry.label === label);
+  if (!color) throw new Error(`No palette color labelled "${label}"`);
+  return color.hex;
+}
+
 export const PALETTE_COLORS: PaletteColor[] = [
   { hex: '#AB71E1', label: 'Purple' },
   { hex: '#62A2E9', label: 'Blue' },

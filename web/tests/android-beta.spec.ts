@@ -4,7 +4,7 @@ import {
   PLAY_STORE_LISTING_URL,
   TESTERS_GROUP_URL,
   supportEmail,
-} from '../src/lib/androidBeta';
+} from '../src/lib/components/androidBeta/androidBeta';
 
 // The /android-beta page is a set of sign-up links; a link that points at the
 // wrong place is the only way it can fail, and nothing else in the suite would
