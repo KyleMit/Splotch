@@ -16,8 +16,10 @@
     "**/.svelte-kit",
     "**/.netlify",
     "**/.gradle",
-    // Keep committed native Markdown in scope while excluding generated build output.
-    "**/build"
+    // Keep committed Markdown outside generated web and native build output in scope.
+    "web/build",
+    "android/**/build",
+    "ios/**/build"
   ],
   "plugins": [
     "node_modules/@dprint/markdown/plugin.wasm",
