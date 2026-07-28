@@ -240,6 +240,28 @@
     overflow: hidden;
   }
 
+  /* Narrower than the sheet's own 720px and the card has no room to read as a
+     card — the frame collapses to a hairline of ground either side, which looks
+     like a rendering fault rather than a decision. Below that, the page goes
+     wall to wall and the tinted bands become the only structure, running
+     full-bleed. Threshold is the sheet width plus the ground padding it needs
+     on both sides to be visible at all. */
+  @media (max-width: 760px) {
+    .beta {
+      padding: 0;
+      /* The sheet now covers the ground everywhere, so anything that peeks
+         through (overscroll, a short viewport) has to match it. */
+      background: var(--beta-sheet);
+    }
+
+    .sheet {
+      max-width: none;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+  }
+
   .band {
     padding-left: var(--beta-gutter);
     padding-right: var(--beta-gutter);
