@@ -55,7 +55,11 @@ jobs:
           fetch-depth: 0
 
       - name: Review the dependency bump
-        uses: anthropics/claude-code-action@672170b4a9bde1482339aeba9637452ef5490ca6 # v1.0.183
+        # Annotated tag — this must be the dereferenced *commit* SHA
+        # (`refs/tags/v1.0.183^{}`), not the tag object SHA that `git ls-remote`
+        # lists first. `uses:` resolves a branch, tag, or commit; a tag object
+        # is none of those and fails with "unable to find version".
+        uses: anthropics/claude-code-action@be7b93b1907a4abad570368f3c74b6fe3807510b # v1.0.183
         env:
           GH_TOKEN: ${{ github.token }}
         with:
