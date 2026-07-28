@@ -57,10 +57,16 @@ jobs:
       - name: Run smoke test on emulator
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
+          # Keep in sync with ANDROID_API_LEVEL in scripts/lib/android.mjs
+          # (enforced by scripts/tests/android-config.test.mjs).
           api-level: 33
           target: google_apis
           arch: x86_64
           force-avd-creation: false
+          # -no-snapshot-save: throwaway VM — never persist state between runs
+          # -no-window: headless (no display on the CI runner)
+          # -noaudio / -no-boot-anim: skip audio init and boot animation for faster boot
+          # -camera-back none: no camera emulation (unused by the app; avoids extra init)
           emulator-options: -no-snapshot-save -no-window -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
