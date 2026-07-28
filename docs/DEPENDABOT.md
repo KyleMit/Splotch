@@ -89,9 +89,16 @@ where a misfiled package breaks the Netlify deploy while CI stays green) and Cap
 need a native rebuild.
 
 **It never installs dependencies.** The bumped package's code is therefore never executed on the
-runner — only its diff and its published notes are read. The `--allowedTools` list grants read,
-search, fetch, and read-only `git`/`gh`; no install, no build, no write, no merge. Release-note
-content is treated as untrusted data, not as instructions.
+runner — only its diff and its published notes are read. Release-note content is treated as
+untrusted data, not as instructions.
+
+`--allowedTools` is what enforces that, so it is deliberately narrow: read, search, fetch, read-only
+`git`, and read-only `gh pr` subcommands. **Posting the verdict is the only write it permits** —
+`gh pr comment`, nothing else. No install, no build, no approve, no merge. Broad patterns defeat
+this: `Bash(gh api:*)` is a prefix match, so it would admit
+`gh api -X POST .../reviews -f
+event=APPROVE` and turn "Claude does not approve" from a constraint
+into a polite request. It was granted in an early draft and removed for exactly that reason.
 
 **The verdict is advisory.** Claude does not approve, merge, or push. A human still merges, and CI
 remains the gate on correctness — an APPROVE from a review that can't run the test suite is a

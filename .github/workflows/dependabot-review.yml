@@ -25,8 +25,14 @@
 #
 # Safety: this job never installs dependencies, so the bumped package's code is
 # never executed on the runner — only its manifest/lockfile diff and its
-# published release notes are read. Keep it that way; see the allowedTools
-# list, which grants no install, build, or write capability.
+# published release notes are read. Keep it that way.
+#
+# The allowedTools list is the enforcement layer for that, so keep it narrow and
+# specific. Posting the verdict is the single write it permits: `gh pr comment`
+# and nothing else. In particular do not add `Bash(gh api:*)` back — the pattern
+# is a prefix match, so it would admit `gh api -X POST .../reviews -f
+# event=APPROVE` and every other write the token's permissions allow, making
+# "Claude does not approve or merge" a request rather than a constraint.
 
 name: Dependabot review
 
@@ -77,7 +83,7 @@ jobs:
           # in the run log, seen by nobody.
           claude_args: |
             --max-turns 30
-            --allowedTools "Read,Grep,Glob,WebSearch,WebFetch,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh pr comment:*),Bash(gh api:*)"
+            --allowedTools "Read,Grep,Glob,WebSearch,WebFetch,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh pr comment:*)"
           prompt: |
             You are reviewing a Dependabot pull request on Splotch, a SvelteKit
             drawing app for toddlers that ships to web (Netlify) and native
