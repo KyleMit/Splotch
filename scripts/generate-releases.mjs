@@ -9,7 +9,14 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { marked } from 'marked';
-import { ROOT, fail, parseFrontmatter, compareSemverDesc, writeFileDeep } from './lib/utils.mjs';
+import {
+  ROOT,
+  fail,
+  isMain,
+  parseFrontmatter,
+  compareSemverDesc,
+  writeFileDeep,
+} from './lib/utils.mjs';
 
 const RELEASES_DIR = join(ROOT, 'releases');
 const ANDROID_CHANGELOG_LIMIT = 500; // Google Play "What's new" hard limit.
@@ -38,54 +45,73 @@ function toPlainText(body) {
     .trim();
 }
 
+export function validateStoreText(text) {
+  if (/<\/?[A-Za-z][A-Za-z0-9:-]*(?:\s[^<>]*?)?\s*\/?>/.test(text)) {
+    throw new Error('Store text contains HTML/XML-like markup');
+  }
+}
+
 function write(path, contents) {
   writeFileDeep(path, contents);
   console.log(`  wrote ${relative(ROOT, path)}`);
 }
 
-if (!existsSync(RELEASES_DIR)) fail(`No releases/ directory at ${RELEASES_DIR}`);
+function main() {
+  if (!existsSync(RELEASES_DIR)) fail(`No releases/ directory at ${RELEASES_DIR}`);
 
-const releases = readdirSync(RELEASES_DIR)
-  .filter((f) => /^\d+\.\d+\.\d+\.md$/.test(f))
-  .map(parseRelease)
-  .sort((a, b) => compareSemverDesc(a.meta.version, b.meta.version));
+  const releases = readdirSync(RELEASES_DIR)
+    .filter((f) => /^\d+\.\d+\.\d+\.md$/.test(f))
+    .map(parseRelease)
+    .sort((a, b) => compareSemverDesc(a.meta.version, b.meta.version));
 
-if (releases.length === 0) fail('No release files found in releases/ (expected e.g. 1.0.0.md)');
+  if (releases.length === 0) fail('No release files found in releases/ (expected e.g. 1.0.0.md)');
 
-console.log(`Generating release artifacts from ${releases.length} release file(s)…`);
+  console.log(`Generating release artifacts from ${releases.length} release file(s)…`);
 
-// 1. In-app About tab data. Body is our own first-party Markdown, rendered to
-//    static HTML at build time, so {@html} in Svelte is safe and there is no
-//    runtime Markdown dependency.
-const appData = releases.map((r) => ({
-  version: r.meta.version,
-  date: r.meta.date,
-  bodyHtml: marked.parse(r.body).trim(),
-}));
-write(join(ROOT, 'web', 'src', 'lib', 'releases.json'), JSON.stringify(appData, null, 2) + '\n');
+  // 1. In-app About tab data. Body is our own first-party Markdown, rendered to
+  //    static HTML at build time, so {@html} in Svelte is safe and there is no
+  //    runtime Markdown dependency.
+  const appData = releases.map((r) => ({
+    version: r.meta.version,
+    date: r.meta.date,
+    bodyHtml: marked.parse(r.body).trim(),
+  }));
+  write(join(ROOT, 'web', 'src', 'lib', 'releases.json'), JSON.stringify(appData, null, 2) + '\n');
 
-// 2. Google Play changelogs — one file per versionCode (supply layout).
-for (const r of releases) {
-  const code = r.meta.androidVersionCode;
-  if (!code) continue; // not yet assigned (release.mjs fills it in)
-  const text = toPlainText(r.body);
-  write(
-    join(ROOT, 'fastlane', 'metadata', 'android', 'en-US', 'changelogs', `${code}.txt`),
-    text + '\n'
-  );
-  if (r === releases[0] && text.length > ANDROID_CHANGELOG_LIMIT) {
-    console.warn(
-      `  ⚠ ${r.filename}: Android changelog is ${text.length} chars ` +
-        `(Play limit ${ANDROID_CHANGELOG_LIMIT}). Trim before uploading.`
+  const androidChangelogs = releases
+    .filter((r) => r.meta.androidVersionCode)
+    .map((release) => ({ release, text: toPlainText(release.body) }));
+  const appStoreText = toPlainText(releases[0].body);
+  for (const { text } of androidChangelogs) validateStoreText(text);
+  validateStoreText(appStoreText);
+
+  // 2. Google Play changelogs — one file per versionCode (supply layout).
+  for (const { release, text } of androidChangelogs) {
+    write(
+      join(
+        ROOT,
+        'fastlane',
+        'metadata',
+        'android',
+        'en-US',
+        'changelogs',
+        `${release.meta.androidVersionCode}.txt`
+      ),
+      text + '\n'
     );
+    if (release === releases[0] && text.length > ANDROID_CHANGELOG_LIMIT) {
+      console.warn(
+        `  ⚠ ${release.filename}: Android changelog is ${text.length} chars ` +
+          `(Play limit ${ANDROID_CHANGELOG_LIMIT}). Trim before uploading.`
+      );
+    }
   }
+
+  // 3. App Store "What's New" — deliver uploads a single current value, so only
+  //    the latest release goes here, overwritten each time.
+  write(join(ROOT, 'fastlane', 'metadata', 'en-US', 'release_notes.txt'), appStoreText + '\n');
+
+  console.log('Done.');
 }
 
-// 3. App Store "What's New" — deliver uploads a single current value, so only
-//    the latest release goes here, overwritten each time.
-write(
-  join(ROOT, 'fastlane', 'metadata', 'en-US', 'release_notes.txt'),
-  toPlainText(releases[0].body) + '\n'
-);
-
-console.log('Done.');
+if (isMain(import.meta.url)) main();

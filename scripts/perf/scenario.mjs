@@ -9,16 +9,13 @@
 // regressions, but absolute frame numbers want the Android path (android.mjs).
 
 import { chromium } from '@playwright/test';
-import { join } from 'node:path';
-import { ROOT, chromiumExecutablePath, sleep } from '../lib/utils.mjs';
+import { chromiumExecutablePath, isMain, runMain, sleep } from '../lib/utils.mjs';
+import { resolveThrottle } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { driveSession } from './session.mjs';
-
-const DEVICES = {
-  phone: { width: 412, height: 915, deviceScaleFactor: 2.6 },
-  tablet: { width: 1024, height: 1366, deviceScaleFactor: 2 },
-  desktop: { width: 1280, height: 800, deviceScaleFactor: 1 },
-};
+import { resolveDevice } from './devices.mjs';
+import { profilePath } from './paths.mjs';
+import { warnIfNoPerfMarks } from './warnings.mjs';
 
 const args = process.argv.slice(2);
 const flag = (name, def) => {
@@ -26,21 +23,15 @@ const flag = (name, def) => {
   return hit ? hit.split('=')[1] : def;
 };
 const deviceName = flag('device', 'phone');
-const device = DEVICES[deviceName] || DEVICES.phone;
-const throttle = args.includes('--no-throttle') ? 1 : Number(flag('throttle', '4'));
+const device = resolveDevice(deviceName);
+const throttle = resolveThrottle(args, 4);
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
 
-async function main() {
-  if (process.env.PERF_MARKS !== 'true') {
-    console.warn(
-      '! PERF_MARKS is not "true" — engine.* marks will be absent. Use `npm run perf:web`.'
-    );
-  }
+export async function runWebScenario() {
+  warnIfNoPerfMarks('npm run perf:web');
 
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const throttleTag = throttle > 1 ? `${throttle}x` : 'raw';
-  const outDir = join(ROOT, 'perf-profiles', `${stamp}-web-${deviceName}-${throttleTag}`);
+  const outDir = profilePath('web', deviceName, throttle.tag);
 
   const { base, stop } = await buildAndPreview(port, { build });
   const browser = await chromium.launch({
@@ -60,7 +51,9 @@ async function main() {
     await sleep(400);
 
     const cdp = await ctx.newCDPSession(page);
-    if (throttle > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle });
+    if (throttle.active) {
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle.rate });
+    }
 
     await driveSession(page, cdp, {
       outDir,
@@ -68,7 +61,7 @@ async function main() {
         target: 'web',
         device: deviceName,
         viewport: device,
-        throttle: throttle > 1 ? throttle : 0,
+        throttle: throttle.forSettings,
         buildMode: build ? 'production-preview' : 'production-preview (reused build)',
       },
     });
@@ -78,7 +71,4 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (isMain(import.meta.url)) runMain(runWebScenario);

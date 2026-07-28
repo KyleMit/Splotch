@@ -18,12 +18,7 @@
 import { readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 import sharp from 'sharp';
-
-export const esc = (s) =>
-  String(s ?? '').replace(
-    /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
-  );
+import { esc } from './html.mjs';
 
 // The brand crayon strip — the app's 7 palette hues. `size` picks a preset:
 // "lg" for the masthead, "sm" for the footer.
@@ -221,17 +216,7 @@ export function chromeStyle(extraCss = '') {
   return `<style>${CHROME_CSS}${extraCss ? '\n/* page */\n' + extraCss : ''}</style>`;
 }
 
-// The crayon masthead. `crumbs` is an ordered trail — every entry except the last
-// should carry an `href`; the last renders as the current location. `home` is the
-// relative path back to the scrapbook index (the brand + first crumb target).
-export function masthead({
-  title,
-  tagline = '',
-  crumbs = [],
-  home = 'index.html',
-  stats = '',
-  decoration = '',
-}) {
+export function compactTopbar({ home = 'index.html', crumbs = [] } = {}) {
   const trail = crumbs.length
     ? `<nav class="crumbs" aria-label="Breadcrumb">` +
       crumbs
@@ -245,12 +230,26 @@ export function masthead({
         .join('') +
       `</nav>`
     : '';
+  return `<a class="brand" href="${esc(home)}">${crayons('lg')}<span class="brand-name">Splotch<span class="brand-sub">Scrapbook</span></span></a>
+      ${trail}`;
+}
+
+// The crayon masthead. `crumbs` is an ordered trail — every entry except the last
+// should carry an `href`; the last renders as the current location. `home` is the
+// relative path back to the scrapbook index (the brand + first crumb target).
+export function masthead({
+  title,
+  tagline = '',
+  crumbs = [],
+  home = 'index.html',
+  stats = '',
+  decoration = '',
+}) {
   return `<header class="masthead">
   ${decoration ? `<div class="masthead-deco" aria-hidden="true">${decoration}</div>` : ''}
   <div class="shell">
     <div class="topbar">
-      <a class="brand" href="${esc(home)}">${crayons('lg')}<span class="brand-name">Splotch<span class="brand-sub">Scrapbook</span></span></a>
-      ${trail}
+      ${compactTopbar({ home, crumbs })}
     </div>
     <div class="masthead-body">
       <h1>${esc(title)}</h1>

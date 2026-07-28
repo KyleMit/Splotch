@@ -1,0 +1,116 @@
+diff --git a/scrapbook/coloring-book-proof-sheets/index.html b/scrapbook/coloring-book-proof-sheets/index.html
+index a1af538c..472b5364 100644
+--- a/scrapbook/coloring-book-proof-sheets/index.html
++++ b/scrapbook/coloring-book-proof-sheets/index.html
+@@ -211,13 +211,13 @@ iframe{width:100%;height:100%;border:0;display:block;background:var(--paper)}
+       </div>
+       <nav class="tabsrow">
+         <button class="nudge" id="prev" title="Previous category (←)" aria-label="Previous category">&#8592;</button>
+-        <div class="tabs" id="tabs"></div>
++        <div class="tabs" id="tabs" role="tablist"></div>
+         <button class="nudge" id="next" title="Next category (→)" aria-label="Next category">&#8594;</button>
+         <span class="count" id="count"></span>
+       </nav>
+     </header>
+     <main>
+-      <iframe id="sheet" title="Category proof sheet"></iframe>
++      <iframe id="sheet" role="tabpanel" title="Category proof sheet"></iframe>
+     </main>
+     <script>
+       var CATEGORIES = [
+@@ -240,7 +240,10 @@ iframe{width:100%;height:100%;border:0;display:block;background:var(--paper)}
+       CATEGORIES.forEach(function (cat, i) {
+         var b = document.createElement('button');
+         b.textContent = cat.name;
++        b.id = 'tab-' + cat.id;
+         b.dataset.id = cat.id;
++        b.setAttribute('role', 'tab');
++        b.setAttribute('aria-controls', 'sheet');
+         b.addEventListener('click', function () { show(i); });
+         tabsEl.appendChild(b);
+         buttons[cat.id] = b;
+@@ -261,7 +264,9 @@ iframe{width:100%;height:100%;border:0;display:block;background:var(--paper)}
+         countEl.textContent = 'Category ' + (i + 1) + ' of ' + CATEGORIES.length + ' · ' + cat.pages + ' pages';
+         Object.keys(buttons).forEach(function (id) {
+           buttons[id].classList.toggle('on', id === cat.id);
++          buttons[id].setAttribute('aria-selected', id === cat.id);
+         });
++        frame.setAttribute('aria-labelledby', buttons[cat.id].id);
+         buttons[cat.id].scrollIntoView({ block: 'nearest', inline: 'center' });
+         if (!skipHash) {
+           if (location.hash.replace(/^#/, '') !== cat.id) {
+diff --git a/scripts/gen-coloring-book-proof-sheet-hub.mjs b/scripts/gen-coloring-book-proof-sheet-hub.mjs
+index 2cbabf35..062d1e8f 100644
+--- a/scripts/gen-coloring-book-proof-sheet-hub.mjs
++++ b/scripts/gen-coloring-book-proof-sheet-hub.mjs
+@@ -64,13 +64,13 @@ export function buildColoringBookProofSheetHub() {
+       </div>
+       <nav class="tabsrow">
+         <button class="nudge" id="prev" title="Previous category (←)" aria-label="Previous category">&#8592;</button>
+-        <div class="tabs" id="tabs"></div>
++        <div class="tabs" id="tabs" role="tablist"></div>
+         <button class="nudge" id="next" title="Next category (→)" aria-label="Next category">&#8594;</button>
+         <span class="count" id="count"></span>
+       </nav>
+     </header>
+     <main>
+-      <iframe id="sheet" title="Category proof sheet"></iframe>
++      <iframe id="sheet" role="tabpanel" title="Category proof sheet"></iframe>
+     </main>
+     <script>
+       var CATEGORIES = ${CATEGORIES};
+@@ -84,7 +84,10 @@ export function buildColoringBookProofSheetHub() {
+       CATEGORIES.forEach(function (cat, i) {
+         var b = document.createElement('button');
+         b.textContent = cat.name;
++        b.id = 'tab-' + cat.id;
+         b.dataset.id = cat.id;
++        b.setAttribute('role', 'tab');
++        b.setAttribute('aria-controls', 'sheet');
+         b.addEventListener('click', function () { show(i); });
+         tabsEl.appendChild(b);
+         buttons[cat.id] = b;
+@@ -105,7 +108,9 @@ export function buildColoringBookProofSheetHub() {
+         countEl.textContent = 'Category ' + (i + 1) + ' of ' + CATEGORIES.length + ' · ' + cat.pages + ' pages';
+         Object.keys(buttons).forEach(function (id) {
+           buttons[id].classList.toggle('on', id === cat.id);
++          buttons[id].setAttribute('aria-selected', id === cat.id);
+         });
++        frame.setAttribute('aria-labelledby', buttons[cat.id].id);
+         buttons[cat.id].scrollIntoView({ block: 'nearest', inline: 'center' });
+         if (!skipHash) {
+           if (location.hash.replace(/^#/, '') !== cat.id) {
+diff --git a/web/tests/proof-sheet-history.spec.ts b/web/tests/proof-sheet-history.spec.ts
+index 237fc82f..d61f92df 100644
+--- a/web/tests/proof-sheet-history.spec.ts
++++ b/web/tests/proof-sheet-history.spec.ts
+@@ -26,6 +26,30 @@ test('the bare proof-sheet hub preserves the page before it in history', async (
+
+   await expect(page).toHaveTitle('Splotch proof sheets — Farm');
+   await expect(page.locator('#sheet')).toHaveAttribute('src', 'farm.html');
++  await expect(page.getByRole('tablist')).toHaveCount(1);
++  await expect(page.getByRole('tab')).toHaveCount(8);
++  await expect(page.locator('[role="tab"].on[aria-selected="true"]')).toHaveCount(1);
++  await expect(page.locator('[role="tab"]:not(.on)[aria-selected="false"]')).toHaveCount(7);
++  await expect(page.getByRole('tab', { name: 'Farm' })).toHaveAttribute('aria-selected', 'true');
++  await expect(page.getByRole('tab', { name: 'Farm' })).toHaveAttribute('aria-controls', 'sheet');
++  await expect(page.locator('#sheet')).toHaveAttribute('role', 'tabpanel');
++  await expect(page.locator('#sheet')).toHaveAttribute('aria-labelledby', 'tab-farm');
++
++  await page.getByRole('tab', { name: 'Dinosaurs' }).click();
++
++  await expect(page.getByRole('tab', { name: 'Farm' })).toHaveAttribute('aria-selected', 'false');
++  await expect(page.getByRole('tab', { name: 'Dinosaurs' })).toHaveClass(/on/);
++  await expect(page.getByRole('tab', { name: 'Dinosaurs' })).toHaveAttribute(
++    'aria-selected',
++    'true'
++  );
++  await expect(page.locator('[role="tab"].on[aria-selected="true"]')).toHaveCount(1);
++  await expect(page.locator('[role="tab"]:not(.on)[aria-selected="false"]')).toHaveCount(7);
++  await expect(page.locator('#sheet')).toHaveAttribute('aria-labelledby', 'tab-dinosaur');
++
++  await page.evaluate(() => window.history.back());
++
++  await expect(page).toHaveURL(/#farm$/);
+
+   await page.goBack();

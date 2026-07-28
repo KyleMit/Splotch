@@ -25,6 +25,7 @@ import {
   implementationCommitMessage,
   launchCommand,
   lintablePaths,
+  normalizeDraftPatch,
   protectedImplementationPaths,
   reachedHandledLimit,
   removeNewUntrackedPaths,
@@ -615,6 +616,16 @@ describe('draftPatchPath', () => {
   });
 });
 
+describe('normalizeDraftPatch', () => {
+  it('removes whitespace-only context rows without changing substantive patch lines', () => {
+    const patch = ['diff --git a/a b/a', ' unchanged', ' ', '+added  ', '', ''].join('\n');
+
+    expect(normalizeDraftPatch(patch)).toBe(
+      ['diff --git a/a b/a', ' unchanged', '', '+added  ', ''].join('\n')
+    );
+  });
+});
+
 describe('renderDeferralNotes', () => {
   it('records the reviewer objections that actually stopped the fix', () => {
     const notes = renderDeferralNotes({
@@ -659,8 +670,10 @@ describe('renderDeferralNotes', () => {
     const notes = renderDeferralNotes({
       why: 'fix broke the type-check',
       gateDetail: 'npm run check is red',
+      patchPath: 'docs/audit-deferred/thing.patch',
     });
     expect(notes).toContain('gates were red at the final round: npm run check is red');
+    expect(notes).not.toContain('review is what it did not pass');
   });
 
   it('never claims a reason it was not given', () => {

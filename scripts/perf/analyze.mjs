@@ -12,6 +12,9 @@
 import { readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { fail } from '../lib/utils.mjs';
+import { LONG_TASK_MS } from './thresholds.mjs';
+import { toMiB } from './units.mjs';
 
 const US_PER_MS = 1000;
 
@@ -54,7 +57,7 @@ const PAINTING = new Set([
   'DrawFrame',
 ]);
 
-const LONG_TASK_US = 50 * US_PER_MS;
+const LONG_TASK_US = LONG_TASK_MS * US_PER_MS;
 
 // Symbols that exist only because of profiling/driving, not in the shipped app:
 // the injected rAF FPS sampler, the user-timing API the PERF_MARKS calls hit
@@ -77,10 +80,21 @@ const HARNESS_SYMBOLS = new Set([
 ]);
 
 function loadInputs(target) {
-  const isDir = statSync(target).isDirectory();
-  const tracePath = isDir ? join(target, 'trace.json') : target;
+  let tracePath = target;
+  let traceJson;
+  try {
+    if (statSync(target).isDirectory()) tracePath = join(target, 'trace.json');
+    traceJson = readFileSync(tracePath, 'utf8');
+  } catch {
+    fail(`Trace not found: ${tracePath}`);
+  }
+  let trace;
+  try {
+    trace = JSON.parse(traceJson);
+  } catch {
+    fail(`Trace is not valid JSON: ${tracePath}`);
+  }
   const dir = dirname(tracePath);
-  const trace = JSON.parse(readFileSync(tracePath, 'utf8'));
   const events = Array.isArray(trace) ? trace : trace.traceEvents || [];
   let metrics = {};
   try {
@@ -89,6 +103,32 @@ function loadInputs(target) {
     // metrics.json is optional — a bare exported trace still analyzes.
   }
   return { dir, events, metrics };
+}
+
+function classifyEvents(events) {
+  const userTimingEvents = [];
+  const runTasks = [];
+  const commits = [];
+  const profiles = [];
+  const bucketEvents = [];
+  const nestedEvents = [];
+  for (const e of events) {
+    if (e.cat?.includes('blink.user_timing')) userTimingEvents.push(e);
+    if (e.name === 'ProfileChunk' || e.name === 'Profile') profiles.push(e);
+    if (e.ph !== 'X' || typeof e.dur !== 'number') continue;
+    if (e.name === 'RunTask') runTasks.push(e);
+    if (e.name === 'Commit') commits.push(e);
+    if (
+      e.name === 'RunTask' ||
+      SCRIPTING.has(e.name) ||
+      RENDERING.has(e.name) ||
+      PAINTING.has(e.name)
+    ) {
+      bucketEvents.push(e);
+    }
+    if (e.dur >= US_PER_MS && !CONTAINER_EVENTS.has(e.name)) nestedEvents.push(e);
+  }
+  return { userTimingEvents, runTasks, commits, profiles, bucketEvents, nestedEvents };
 }
 
 // performance.measure() lands in blink.user_timing either as a complete event
@@ -105,7 +145,6 @@ function userTimingMeasures(events) {
     byName.set(name, m);
   };
   for (const e of events) {
-    if (!e.cat || !e.cat.includes('blink.user_timing')) continue;
     if (e.ph === 'X' && typeof e.dur === 'number') add(e.name, e.dur);
     else if (e.ph === 'b') open.set(`${e.name}/${e.id}`, e.ts);
     else if (e.ph === 'e') {
@@ -134,7 +173,6 @@ function categoryBreakdown(events) {
     runTask = 0;
   const longTasks = [];
   for (const e of events) {
-    if (e.ph !== 'X' || typeof e.dur !== 'number') continue;
     if (e.name === 'RunTask') {
       runTask += e.dur;
       if (e.dur >= LONG_TASK_US) longTasks.push(e.dur / US_PER_MS);
@@ -150,7 +188,11 @@ function categoryBreakdown(events) {
     scriptingMs: scripting / US_PER_MS,
     renderingMs: rendering / US_PER_MS,
     paintingMs: painting / US_PER_MS,
-    longTasksFromTrace: { count: longTasks.length, longestMs: longTasks[0] || 0 },
+    longTasksFromTrace: {
+      count: longTasks.length,
+      totalMs: longTasks.reduce((total, duration) => total + duration, 0),
+      longestMs: longTasks[0] || 0,
+    },
   };
 }
 
@@ -162,7 +204,6 @@ function jsSelfTime(events) {
   const nodes = new Map();
   const selfUs = new Map();
   for (const e of events) {
-    if (e.name !== 'ProfileChunk' && e.name !== 'Profile') continue;
     const profile = e.args?.data?.cpuProfile;
     if (!profile) continue;
     for (const n of profile.nodes || []) {
@@ -170,9 +211,14 @@ function jsSelfTime(events) {
     }
     const samples = profile.samples || [];
     const deltas = e.args?.data?.timeDeltas || [];
+    if (samples.length !== deltas.length) {
+      throw new Error(
+        `Malformed CPU profile: ${e.name} has ${samples.length} samples but ${deltas.length} time deltas`
+      );
+    }
     for (let i = 0; i < samples.length; i++) {
       const id = samples[i];
-      const dt = Math.max(0, deltas[i] || 0);
+      const dt = Math.max(0, deltas[i]);
       selfUs.set(id, (selfUs.get(id) || 0) + dt);
     }
   }
@@ -181,17 +227,17 @@ function jsSelfTime(events) {
     const f = nodes.get(id);
     if (!f) continue;
     const name = f.functionName || '(anonymous)';
-    const loc = f.url ? `${f.url.split('/').pop()}:${(f.lineNumber ?? 0) + 1}` : '';
-    const key = `${name}\t${loc}`;
-    byFn.set(key, (byFn.get(key) || 0) + us);
+    const url = f.url || '';
+    const loc = url ? `${url.split('/').pop()}:${(f.lineNumber ?? 0) + 1}` : '';
+    const key = JSON.stringify([name, loc]);
+    const entry = byFn.get(key) || { name, location: loc, url, us: 0 };
+    entry.us += us;
+    byFn.set(key, entry);
   }
-  return [...byFn.entries()]
-    .map(([key, us]) => {
-      const [name, loc] = key.split('\t');
-      return { name, location: loc, selfMs: us / US_PER_MS };
-    })
+  return [...byFn.values()]
     .filter((f) => f.name !== '(idle)' && f.name !== '(program)')
-    .filter((f) => !HARNESS_SYMBOLS.has(f.name.toLowerCase()))
+    .filter((f) => f.url || !HARNESS_SYMBOLS.has(f.name.toLowerCase()))
+    .map(({ name, location, us }) => ({ name, location, selfMs: us / US_PER_MS }))
     .sort((a, b) => b.selfMs - a.selfMs)
     .slice(0, 15);
 }
@@ -202,7 +248,6 @@ function phaseWindows(events) {
   const windows = [];
   const open = new Map();
   for (const e of events) {
-    if (!e.cat || !e.cat.includes('blink.user_timing')) continue;
     if (!e.name.startsWith('phase:')) continue;
     const label = e.name.replace(/^phase:/, '');
     if (e.ph === 'X' && typeof e.dur === 'number') {
@@ -222,13 +267,7 @@ function phaseWindows(events) {
 // raster/damage push of the (high-DPR) canvas, the dominant on-device drawing
 // cost per ADR-0015. Wall-clock is dominated by the scenario's pacing sleeps,
 // so busy time is the real per-phase cost signal.
-function perPhase(events, windows) {
-  const tasks = events
-    .filter((e) => e.name === 'RunTask' && e.ph === 'X' && typeof e.dur === 'number')
-    .map((e) => ({ ts: e.ts, dur: e.dur }));
-  const commits = events
-    .filter((e) => e.name === 'Commit' && e.ph === 'X' && typeof e.dur === 'number')
-    .map((e) => ({ ts: e.ts, dur: e.dur }));
+function perPhase(tasks, commits, windows) {
   return windows.map((w) => {
     let busyUs = 0;
     let longTasks = 0;
@@ -268,22 +307,12 @@ const CONTAINER_EVENTS = new Set(['RunTask', 'ThreadControllerImpl::RunTask']);
 // in and its dominant nested timeline events — so "which phase janked" (the
 // per-phase table) becomes "what the jank actually was" (a compositor Commit, a
 // pointerup dispatch, a blob decode) without hand-walking the trace.
-function attributeLongTasks(events, windows, limit = 12) {
-  const tasks = events
-    .filter(
-      (e) =>
-        e.name === 'RunTask' && e.ph === 'X' && typeof e.dur === 'number' && e.dur >= LONG_TASK_US
-    )
+function attributeLongTasks(runTasks, nested, windows, limit = 12) {
+  const tasks = runTasks
+    .filter((e) => e.dur >= LONG_TASK_US)
     .sort((a, b) => b.dur - a.dur)
     .slice(0, limit);
   if (tasks.length === 0) return [];
-  const nested = events.filter(
-    (e) =>
-      e.ph === 'X' &&
-      typeof e.dur === 'number' &&
-      e.dur >= 1 * US_PER_MS &&
-      !CONTAINER_EVENTS.has(e.name)
-  );
   return tasks
     .map((t) => {
       const phase = windows.find((w) => t.ts >= w.startUs && t.ts < w.endUs);
@@ -302,23 +331,26 @@ function attributeLongTasks(events, windows, limit = 12) {
 }
 
 export function analyze(events, metrics = {}) {
-  const measures = userTimingMeasures(events);
-  const windows = phaseWindows(events);
+  const { userTimingEvents, runTasks, commits, profiles, bucketEvents, nestedEvents } =
+    classifyEvents(events);
+  const measures = userTimingMeasures(userTimingEvents);
+  const windows = phaseWindows(userTimingEvents);
+  const breakdown = categoryBreakdown(bucketEvents);
   return {
     settings: metrics.settings || {},
-    breakdown: categoryBreakdown(events),
+    breakdown,
     engineHotPaths: measures.filter((m) => m.name.startsWith('engine.')),
-    phases: perPhase(events, windows),
-    longTaskAttribution: attributeLongTasks(events, windows),
-    topSelfTime: jsSelfTime(events),
+    phases: perPhase(runTasks, commits, windows),
+    longTaskAttribution: attributeLongTasks(runTasks, nestedEvents, windows),
+    topSelfTime: jsSelfTime(profiles),
     frames: metrics.frames || null,
-    longTasks: metrics.longTasks
+    longTasks: Object.hasOwn(metrics, 'longTasks')
       ? {
           count: metrics.longTasks.length,
           totalMs: metrics.longTasks.reduce((s, t) => s + t.duration, 0),
           longestMs: metrics.longTasks.reduce((m, t) => Math.max(m, t.duration), 0),
         }
-      : null,
+      : breakdown.longTasksFromTrace,
     heap: metrics.heap || null,
   };
 }
@@ -481,14 +513,14 @@ export function renderReport(s) {
 
   out.push('\n## Memory\n');
   if (s.heap && s.heap.afterBytes) {
-    const delta = (s.heap.afterBytes - s.heap.beforeBytes) / 1048576;
+    const delta = toMiB(s.heap.afterBytes - s.heap.beforeBytes);
     out.push(
       table(
         ['Metric', 'Value'],
         [
-          ['JS heap before', `${(s.heap.beforeBytes / 1048576).toFixed(1)} MB`],
-          ['JS heap after', `${(s.heap.afterBytes / 1048576).toFixed(1)} MB`],
-          ['Delta', `${delta.toFixed(1)} MB`],
+          ['JS heap before', `${toMiB(s.heap.beforeBytes).toFixed(1)} MiB`],
+          ['JS heap after', `${toMiB(s.heap.afterBytes).toFixed(1)} MiB`],
+          ['Delta', `${delta.toFixed(1)} MiB`],
         ]
       )
     );
@@ -500,6 +532,13 @@ export function renderReport(s) {
   return out.join('\n');
 }
 
+export function writeAnalysisArtifacts({ outDir, summary }) {
+  const report = renderReport(summary);
+  writeFileSync(join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
+  writeFileSync(join(outDir, 'report.md'), report);
+  return report;
+}
+
 function main() {
   const target = process.argv[2];
   if (!target) {
@@ -508,9 +547,7 @@ function main() {
   }
   const { dir, events, metrics } = loadInputs(target);
   const summary = analyze(events, metrics);
-  const report = renderReport(summary);
-  writeFileSync(join(dir, 'summary.json'), JSON.stringify(summary, null, 2));
-  writeFileSync(join(dir, 'report.md'), report);
+  const report = writeAnalysisArtifacts({ outDir: dir, summary });
   console.log(report);
   console.log(`\nWrote ${join(dir, 'summary.json')} and ${join(dir, 'report.md')}`);
 }

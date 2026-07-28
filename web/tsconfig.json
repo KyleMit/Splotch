@@ -2,8 +2,8 @@
   "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
     "strict": true,
-    // All of src/ is now TypeScript. Config files (vite/svelte/vitest/playwright)
-    // and build scripts live outside src/ and are unaffected by this.
+    // src/ is TypeScript-only; allowJs: false enforces that rule. Root config files
+    // and build scripts live outside src/ and are therefore exempt.
     "allowJs": false,
     "skipLibCheck": true,
     // tokens.ts is also executed directly by node (gen:tokens, via

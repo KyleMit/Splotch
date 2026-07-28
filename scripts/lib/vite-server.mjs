@@ -14,6 +14,12 @@ import { ROOT } from './utils.mjs';
 // and we never reuse a stale server from a previous run.
 export function freePort(port) {
   const out = spawnSync('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
+  if (out.error) {
+    console.warn(
+      `Unable to check or clear port ${port} automatically because lsof could not be launched. If the port is in use, stop its listener before retrying.`
+    );
+    return;
+  }
   for (const pid of (out.stdout || '')
     .split('\n')
     .map((s) => s.trim())
@@ -26,12 +32,12 @@ export function freePort(port) {
   }
 }
 
-export function spawnViteServer(port, env = {}, command = 'dev') {
+export function spawnViteServer(port, { env = {}, command = 'dev', stdout = 'ignore' } = {}) {
   const vite = join(ROOT, 'node_modules', 'vite', 'bin', 'vite.js');
   const server = spawn(process.execPath, [vite, command, '--port', String(port), '--strictPort'], {
     cwd: join(ROOT, 'web'),
     env: { ...process.env, ...env },
-    stdio: ['ignore', 'ignore', 'inherit'],
+    stdio: ['ignore', stdout, 'inherit'],
     detached: true,
   });
 

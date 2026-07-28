@@ -12,7 +12,8 @@
 import { readdirSync, statSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './utils.mjs';
-import { esc, chromeStyle, masthead, siteFooter } from './scrapbook-chrome.mjs';
+import { esc } from './html.mjs';
+import { chromeStyle, masthead, siteFooter } from './scrapbook-chrome.mjs';
 
 // Not scrapbook entries — the index's own scaffolding.
 const SCAFFOLDING = new Set(['index.html', 'README.md', '.nojekyll', '.gitkeep']);
@@ -88,7 +89,7 @@ const REGISTRY = {
       'Every icon shipped in the app, rendered at size and split into the colorful spot illustrations and the monochrome UI glyphs that follow the current text color.',
     entry: 'icons/index.html',
     kind: 'Reference sheet',
-    count: null,
+    count: () => null,
   },
 };
 
@@ -129,7 +130,7 @@ function pagesUnder(dir, rel, out = []) {
 }
 
 // Top-level collection dirs that would produce no card — no linkable .html/.md
-// page anywhere beneath (registry types always render a card). When non-empty the
+// page anywhere beneath. When non-empty the
 // index's "N collections" chip would exceed the cards it shows; the scrapbook:check
 // guard fails on it so nothing published silently vanishes from the index.
 export function collectionsMissingEntry(scrapbookDir) {
@@ -137,17 +138,56 @@ export function collectionsMissingEntry(scrapbookDir) {
     .filter((e) => e.isDirectory() && !SCAFFOLDING.has(e.name))
     .map((e) => e.name)
     .sort()
-    .filter((t) => !REGISTRY[t] && pagesUnder(join(scrapbookDir, t), t).length === 0);
+    .filter((t) => pagesUnder(join(scrapbookDir, t), t).length === 0);
 }
 
-function card(type, meta, dir) {
+export function coloringBookProofSheetHubProblems(proofSheetsDir) {
+  const hub = readFileSync(join(proofSheetsDir, 'index.html'), 'utf8');
+  const categoriesSource = hub.match(/const CATEGORIES = \[([\s\S]*?)\];/)[1];
+  const categories = [...categoriesSource.matchAll(/\{\s*id:\s*'([^']+)'[^}]*pages:\s*(\d+)/g)].map(
+    ([, id, pages]) => ({ id, pages: Number(pages) })
+  );
+  const sheetIds = readdirSync(proofSheetsDir)
+    .filter((name) => name.endsWith('.html') && name !== 'index.html')
+    .map((name) => name.slice(0, -'.html'.length))
+    .sort();
+  const categoryIds = categories.map(({ id }) => id);
+  const problems = [
+    ...sheetIds
+      .filter((id) => !categoryIds.includes(id))
+      .map((id) => `Sibling proof sheet ${id}.html has no matching hub category.`),
+    ...categoryIds
+      .filter((id) => !sheetIds.includes(id))
+      .map((id) => `Hub category "${id}" has no sibling proof sheet ${id}.html.`),
+  ];
+
+  for (const { id, pages } of categories) {
+    if (!sheetIds.includes(id)) continue;
+    const sheet = readFileSync(join(proofSheetsDir, `${id}.html`), 'utf8');
+    const marker = 'window.__COLORING_BOOK_PROOF_SHEET__ = ';
+    const dataStart = sheet.indexOf(marker) + marker.length;
+    const dataEnd = sheet.indexOf(';</script>', dataStart);
+    const cells = JSON.parse(sheet.slice(dataStart, dataEnd)).cells;
+    const sheetPages = new Set(cells.map((cell) => cell.id)).size;
+    if (pages !== sheetPages) {
+      problems.push(
+        `Hub category "${id}" declares ${pages} pages, but ${id}.html contains ${sheetPages} distinct page IDs across ${cells.length} cells.`
+      );
+    }
+  }
+
+  return problems;
+}
+
+function card(type, meta, scrapbookDir) {
+  const dir = join(scrapbookDir, type);
   const files = readdirSync(dir);
-  const countLabel = typeof meta.count === 'function' ? meta.count(files) : null;
+  const countLabel = meta.count(files);
   const updated = fmtDate(latestMtime(dir));
-  const entryExists = existsSync(join(dir, '..', meta.entry));
-  const href = entryExists ? meta.entry : `${type}/${files.find((f) => f.endsWith('.html')) ?? ''}`;
+  const entryExists = existsSync(join(scrapbookDir, meta.entry));
+  if (!entryExists) return fallbackCard(type, dir);
   return `<article class="card" style="--hue:var(--c-${meta.hue})">
-      <a class="card-hit" href="${esc(href)}" aria-label="${esc(meta.title)}"></a>
+      <a class="card-hit" href="${esc(meta.entry)}" aria-label="${esc(meta.title)}"></a>
       <div class="card-top"></div>
       <div class="card-body">
         <div class="card-emoji" aria-hidden="true">${inlineIcon(meta.icon)}</div>
@@ -199,7 +239,7 @@ export function buildScrapbookIndex(scrapbookDir) {
   const unknown = typeDirs.filter((t) => !REGISTRY[t]);
 
   const cards = [
-    ...known.map((t) => card(t, REGISTRY[t], join(scrapbookDir, t))),
+    ...known.map((t) => card(t, REGISTRY[t], scrapbookDir)),
     ...unknown.map((t) => fallbackCard(t, join(scrapbookDir, t))),
   ].filter(Boolean);
 

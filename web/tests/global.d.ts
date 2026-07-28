@@ -22,7 +22,6 @@ declare global {
         snapshots: number;
         liveRasters: number;
         blobBytes: number;
-        pendingCommands: number;
       };
       setCrayonMode(active: boolean): void;
       setCrayonParams(params: {
@@ -35,7 +34,6 @@ declare global {
         colorMix?: number;
         passes?: { widthScale: number; coverage: number }[];
       }): void;
-      getCrayonParams(): unknown;
       setScreenAngleOverride(angle: number | null): void;
       remount(): void;
       getViewState(): {

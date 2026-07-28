@@ -10,8 +10,8 @@
 
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
-import { ROOT, requireEnv, waitForUrl } from './lib/utils.mjs';
+import { requireEnv, waitForUrl } from './lib/utils.mjs';
+import { spawnViteServer } from './lib/vite-server.mjs';
 
 const TUNNEL_HOST = process.env.TUNNEL_HOST || 'splotch-tunnel-kyle.fly.dev';
 const TUNNEL_AUTH = requireEnv(
@@ -32,14 +32,14 @@ function resolveChisel() {
 
 const children = [];
 function shutdown(code) {
-  for (const c of children) c.kill('SIGTERM');
+  for (const { stop } of children) stop();
   process.exit(code);
 }
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
 
-function track(name, child) {
-  children.push(child);
+function track(name, child, stop = () => child.kill('SIGTERM')) {
+  children.push({ stop });
   child.on('exit', (code) => {
     console.error(`\n✗ ${name} exited (code ${code}); shutting down.`);
     shutdown(1);
@@ -49,16 +49,11 @@ function track(name, child) {
 
 try {
   console.log('Starting vite dev…');
-  track(
-    'vite',
-    spawn('npx', ['vite', 'dev', '--port', String(PORT), '--strictPort'], {
-      cwd: join(ROOT, 'web'),
-      // TUNNEL_HOST drives vite's server.allowedHosts (vite.config.ts) so the tunnel host is
-      // accepted; --host is intentionally omitted (chisel forwards via localhost).
-      env: { ...process.env, TUNNEL_HOST },
-      stdio: ['ignore', 'inherit', 'inherit'],
-    })
-  );
+  const { server, stop } = spawnViteServer(PORT, {
+    env: { TUNNEL_HOST },
+    stdout: 'inherit',
+  });
+  track('vite', server, stop);
   await waitForUrl(`http://localhost:${PORT}/`, 60_000);
   console.log(`✓ vite ready on http://localhost:${PORT}\n`);
 

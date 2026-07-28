@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 # Cloud (Claude Code on the web) only — local sessions manage their own deps.
@@ -39,4 +39,5 @@ fi
 # Generate web/.svelte-kit types so `npm run check` and `npm run dev` work
 # immediately (the SvelteKit app lives in web/, so sync must run there —
 # ADR-0024; scripts/web.mjs is the cwd shim).
-node scripts/web.mjs svelte-kit sync
+node scripts/web.mjs svelte-kit sync ||
+  echo 'session-start.sh: svelte-kit sync failed — rerun node scripts/web.mjs svelte-kit sync before using npm run check'

@@ -32,7 +32,7 @@ The hard requirements (and the traps to avoid):
 * **Rides the existing single-renderer model** (ADR-0033): undo, resize, PNG export, and remount all
   replay the stored ops through one `renderOp`, so the brush must be **bit-identical on replay** and
   **deterministic** — no `Math.random`/time at render (the 0-pixel-drift invariant in
-  `engine.spec.ts` must stay green).
+  `engine-crayon.spec.ts` must stay green).
 * **Cheap on the hot path** (ADR-0032/0036): under the 4× CPU-throttle brush-perf setting, average
   per-op draw ≲ 2 ms and no single op > ~8 ms.
 
@@ -71,8 +71,8 @@ Three properties, owned by `lib/drawing/crayonBrush.ts`, deliver the look and th
    texture visibly shifts the instant any later stroke is undone. Making the tooth binary closes
    that gap: overlapping same-phase ops are idempotent, so live pixels equal replay pixels. The lone
    residual is the anti-aliased **silhouette** of the stroke itself (a sub-pixel edge ring), which
-   is inherent to per-op `stroke()` and imperceptible. `engine.spec.ts` guards this two ways now:
-   the pixel-**count** invariant (which a soft tooth also passed — count is blind to a spatial
+   is inherent to per-op `stroke()` and imperceptible. `engine-crayon.spec.ts` guards this two ways
+   now: the pixel-**count** invariant (which a soft tooth also passed — count is blind to a spatial
    shuffle) *and* a spatial-**stability** check that undoes a later stroke and asserts an earlier
    stroke's texture band is byte-stable.
 
@@ -177,9 +177,9 @@ body, and added slow body-density variation for waxy pressure unevenness.
 
 Following the `setSimplifyParams` precedent (ADR-0036), the crayon is dev-selectable and its
 variants A/B-able through the `/dev/engine` harness, gated by `PUBLIC_ENABLE_DEV_HARNESS`:
-`setCrayonMode` toggles the brush and `setCrayonParams`/`getCrayonParams` override the
-tooth/coverage/pass knobs at runtime, so **one preview build sweeps every variant** and the winner
-ships as the `CRAYON_DEFAULTS`. Production never calls the setter.
+`setCrayonMode` toggles the brush and `setCrayonParams` overrides the tooth/coverage/pass knobs at
+runtime, so **one preview build sweeps every variant** and the winner ships as the
+`CRAYON_DEFAULTS`. Production never calls the setter.
 
 ## Consequences
 

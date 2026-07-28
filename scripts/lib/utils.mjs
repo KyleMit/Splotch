@@ -15,6 +15,13 @@ export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const isMain = (url) =>
   Boolean(process.argv[1]) && pathToFileURL(process.argv[1]).href === url;
 
+export function runMain(main) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function fail(message) {
@@ -33,18 +40,11 @@ export function argFlag(name, fallback) {
   return process.argv.find((a) => a.startsWith(prefix))?.slice(prefix.length) ?? fallback;
 }
 
-// Commands go through the shell so PATH shims (npm, npx, gh, sdkmanager)
-// resolve — which means args that aren't plain words need quoting.
-const quoteArg = (arg) => (/^[\w./:=-]+$/.test(arg) ? arg : `"${arg}"`);
-const shellJoin = (cmd, args) => [cmd, ...args.map(quoteArg)].join(' ');
-
 // Run a command with live output; exits the script with the command's exit
 // code if it fails. Pass `input` to answer interactive prompts.
 export function run(cmd, args = [], { input, cwd = ROOT, echo = true } = {}) {
-  const full = shellJoin(cmd, args);
-  if (echo) console.log(`$ ${full}`);
-  const result = spawnSync(full, {
-    shell: true,
+  if (echo) console.log('$', cmd, ...args);
+  const result = spawnSync(cmd, args, {
     cwd,
     input,
     stdio: input === undefined ? 'inherit' : ['pipe', 'inherit', 'inherit'],
@@ -97,9 +97,20 @@ export async function waitForUrl(url, timeoutMs, ready = (res) => res.ok) {
   throw new Error(`${url} did not become ready within ${timeoutMs}ms`);
 }
 
+export async function pollUntil(callback, timeoutMs, intervalMs) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const value = await callback();
+    if (value) return value;
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return null;
+    await sleep(Math.min(intervalMs, remaining));
+  }
+}
+
 // Run a command and return its stdout; exits the script if it fails.
 export function capture(cmd, args = [], { cwd = ROOT } = {}) {
-  const result = spawnSync(shellJoin(cmd, args), { shell: true, cwd, encoding: 'utf8' });
+  const result = spawnSync(cmd, args, { cwd, encoding: 'utf8' });
   if (result.status !== 0) fail(`${cmd} failed (exit ${result.status})\n${result.stderr ?? ''}`);
   return result.stdout ?? '';
 }
@@ -120,10 +131,13 @@ export function chromiumExecutablePath(chromium) {
     if (existsSync(chromium.executablePath())) return undefined;
   } catch {}
   const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
+  const chromiumPrefix = 'chromium-';
   try {
     const builds = readdirSync(base)
       .filter((d) => /^chromium-\d+$/.test(d))
-      .sort((a, b) => Number(b.slice(9)) - Number(a.slice(9)));
+      .sort(
+        (a, b) => Number(b.slice(chromiumPrefix.length)) - Number(a.slice(chromiumPrefix.length))
+      );
     for (const build of builds) {
       for (const sub of ['chrome-linux', 'chrome-linux64']) {
         const p = join(base, build, sub, 'chrome');
@@ -134,7 +148,8 @@ export function chromiumExecutablePath(chromium) {
   return undefined;
 }
 
-export const hasCommand = (cmd) => spawnSync('which', [cmd], { stdio: 'ignore' }).status === 0;
+export const hasCommand = (cmd) =>
+  spawnSync('sh', ['-c', 'command -v "$1"', 'sh', cmd], { stdio: 'ignore' }).status === 0;
 
 // Maestro's default install location when it isn't on PATH (the curl installer
 // drops it in ~/.maestro/bin).
@@ -154,9 +169,11 @@ export function parseFrontmatter(raw) {
   const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
   if (!match) return null;
   const meta = {};
-  for (const line of match[1].split(/\r?\n/)) {
+  for (const [index, line] of match[1].split(/\r?\n/).entries()) {
+    if (!line.trim()) continue;
     const m = line.match(/^([A-Za-z]\w*):\s*(.*)$/);
-    if (m) meta[m[1]] = m[2].trim();
+    if (!m) throw new Error(`Malformed frontmatter line ${index + 1}: ${line}`);
+    meta[m[1]] = m[2].trim();
   }
   return { frontmatter: match[1], meta, body: match[2].trim() };
 }
@@ -180,8 +197,3 @@ export function compareSemverDesc(a, b) {
 export function runId(tag) {
   return new Date().toISOString().replace(/[:.]/g, '-') + (tag ? `-${tag}` : '');
 }
-
-// Books whose required `platforms` field omits 'mobile'.
-// strip-native-assets.mjs deletes these from native builds; check-assets.mjs
-// cross-checks this filter against booksForPlatform() in src/lib/state/books.ts.
-export const webOnlyBooks = (books) => books.filter((book) => !book.platforms.includes('mobile'));

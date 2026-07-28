@@ -1,5 +1,7 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
 
+import { tinyPngBuffer } from './fixtures';
+
 // Server-side guards on /api/generate-image. These hit the endpoint directly
 // (no page) because the size/type caps are pure request validation. The
 // contract is a raw image body: the credential rides in a header (an `X-Api-Key`
@@ -12,12 +14,6 @@ import { expect, test, type APIRequestContext } from '@playwright/test';
 // tests must run in declaration order (burst test last) — opt this file out of
 // the suite's fullyParallel mode.
 test.describe.configure({ mode: 'default' });
-
-// 1x1 transparent PNG — a legitimate, tiny, allowed upload.
-const TINY_PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-  'base64'
-);
 
 // Mirrors of generateToken / generateByok in src/lib/server/rateLimitPolicy.ts.
 const GENERATE_LIMIT = 15;
@@ -49,14 +45,14 @@ test('rejects an oversized upload with 413', async ({ request }) => {
 });
 
 test('rejects an unsupported image type with 415', async ({ request }) => {
-  const res = await postImage(request, TINY_PNG, 'image/gif');
+  const res = await postImage(request, tinyPngBuffer(), 'image/gif');
   expect(res.status()).toBe(415);
 });
 
 test('lets a normal-sized, allowed upload past the guards', async ({ request }) => {
   // The throwaway key means the Gemini call itself fails downstream (≈502), but
   // the point is only that the size/type guards do NOT reject it.
-  const res = await postImage(request, TINY_PNG, 'image/png');
+  const res = await postImage(request, tinyPngBuffer(), 'image/png');
   expect(res.status()).not.toBe(413);
   expect(res.status()).not.toBe(415);
 });
@@ -94,7 +90,7 @@ test('still accepts the legacy multipart contract (shipped native clients)', asy
   // downstream (≈502), which is past every check that matters here.
   const res = await postLegacyMultipart(request, baseURL, {
     apiKey: 'byok-test-key',
-    buffer: TINY_PNG,
+    buffer: tinyPngBuffer(),
     mimeType: 'image/png',
   });
   expect(res.status()).not.toBe(403);
@@ -109,17 +105,15 @@ test('throttles a managed token hammered in a burst', async ({ request }, testIn
   //
   // The limiter window is per token, lasts 60s, and rejected hits don't extend
   // it — so a full window doesn't clear until 60s after the burst. A CI retry
-  // (retries: 2) starts inside that still-full window, so it would see the very
-  // first request 429 and fail deterministically. Give each attempt its own
-  // token (the retry ones are allowlisted alongside daycare-club in test.yml) so
-  // every attempt gets a fresh window. Local runs never retry, so testInfo.retry
-  // is always 0 there — they only ever need daycare-club.
-  const tokens = ['daycare-club', 'daycare-club-retry1', 'daycare-club-retry2'];
-  const token = tokens[testInfo.retry] ?? tokens[tokens.length - 1];
+  // starts inside that still-full window, so it would see the very first request
+  // 429 and fail deterministically. Give each attempt its own token so every
+  // attempt gets a fresh window. Local runs never retry, so testInfo.retry is
+  // always 0 there — they only ever need daycare-club.
+  const token = testInfo.retry === 0 ? 'daycare-club' : `daycare-club-retry${testInfo.retry}`;
 
   const statuses: number[] = [];
   for (let i = 0; i < GENERATE_LIMIT; i++) {
-    const res = await postImage(request, TINY_PNG, 'image/gif', { token });
+    const res = await postImage(request, tinyPngBuffer(), 'image/gif', { token });
     statuses.push(res.status());
   }
 
@@ -131,7 +125,7 @@ test('throttles a managed token hammered in a burst', async ({ request }, testIn
   expect(statuses).not.toContain(429);
 
   // The next request tips over the limit → 429 with a Retry-After.
-  const res = await postImage(request, TINY_PNG, 'image/gif', { token });
+  const res = await postImage(request, tinyPngBuffer(), 'image/gif', { token });
   expect(res.status()).toBe(429);
   expect(res.headers()['retry-after']).toBeTruthy();
 });
@@ -143,12 +137,12 @@ test('throttles BYOK requests per IP after a generous burst', async ({ request }
   // full BYOK_LIMIT — the assertion only requires it within the limit + 1.
   const statuses: number[] = [];
   while (statuses.length < BYOK_LIMIT + 1 && !statuses.includes(429)) {
-    const res = await postImage(request, TINY_PNG, 'image/gif');
+    const res = await postImage(request, tinyPngBuffer(), 'image/gif');
     statuses.push(res.status());
   }
   expect(statuses).toContain(429);
 
-  const res = await postImage(request, TINY_PNG, 'image/gif');
+  const res = await postImage(request, tinyPngBuffer(), 'image/gif');
   expect(res.status()).toBe(429);
   expect(res.headers()['retry-after']).toBeTruthy();
 });

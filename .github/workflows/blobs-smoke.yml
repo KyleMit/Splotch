@@ -21,6 +21,14 @@ on:
         description: Deploy URL to smoke (preview or production)
         required: true
 
+permissions:
+  contents: read
+
+# Serialize smokes against the same deploy instead of cancelling, so an in-flight round-trip can clean up.
+concurrency:
+  group: blobs-smoke-${{ github.event.inputs.url || github.event.deployment_status.environment_url }}
+  cancel-in-progress: false
+
 jobs:
   smoke:
     name: Netlify Blobs persistence
@@ -31,11 +39,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v6
+      - uses: ./.github/actions/setup-node
         with:
-          node-version: 24
+          cache: 'false'
+          install: 'false'
 
       # No npm ci: the smoke script and its scripts/lib imports use only node
       # builtins, so installing the full dependency tree here would be waste.
