@@ -4,7 +4,7 @@ Design history and open questions for the Codex implementation of the `burn-down
 note belongs only to the directly maintained Codex package under `.agents/`; it is not a shared
 contract with the Claude Code implementation.
 
-Current as of **2026-07-27**. The Codex runner was validated with direct CLI probes and a live
+Current as of **2026-07-28**. The Codex runner was validated with direct CLI probes and a live
 canary before its runbook was separated from the Claude Code skill.
 
 ## Invariants
@@ -236,6 +236,33 @@ already earned clear instructions for both. Repeating those rules would make the
 without changing the contract, so this revision leaves them in place and records the execution miss
 here instead.
 
+## PR 583 deferred-triage rerun retrospective
+
+The 45-finding rerun closed the staged backlog with 27 fixes, 5 drops, and 13 bounded deferrals. The
+expanded triage context paid off: previously deadlocked findings landed with exact semantic
+solutions, including predicate-based border flooding and cross-kernel pupil erosion. Five-outcome
+segments, exact-head CI, per-finding comments, blind review, scoped log reconciliation, and the
+final handoff/backlog deletion all behaved as designed.
+
+Three failures were caught and contained during the run:
+
+* The initial “five-fix” canary handled ten findings—3 fixed, 3 dropped, 4 deferred—because
+  `MAX_ISSUES` advances only on accepted fixes. That is too wide a first sample for a backlog
+  expected to contain difficult deferrals. Codex canaries now set both `MAX_ISSUES=5` and
+  `MAX_HANDLED=5`; a second bounded canary is allowed when the first lands no fix.
+* Outer Ruler recovery initially recognized only root `.ruler/**`. The final documentation finding
+  changed `tools/asset-gen/.ruler/AGENTS.md`, so the first implementation commit omitted generated
+  `AGENTS.md`/`CLAUDE.md`; blind review caught it and forced a repair. Ruler-source detection now
+  treats any path component named `.ruler` as authoritative, with a nested-path regression test.
+* The API smoke harness inherited a real `GITHUB_ISSUE_TOKEN` and created test issue 585 before the
+  supervisor closed it. The harness now clears that variable in its child environment. This was
+  fixed at the unsafe source rather than adding a runbook warning that every caller would need to
+  remember.
+
+The run also found and repaired the protected-generated-output and protected-historical-patch
+mechanisms already documented above. No further supervision prose is warranted for those now-tested
+driver contracts.
+
 ## Provider ownership
 
 The complete Codex package and this note are maintained directly:
@@ -279,3 +306,4 @@ the other.
 | 2026-07-27 | Clarify consent, sandbox noise, stop latency, and closeout after PR 561 |
 | 2026-07-28 | Move protected `.agents/` Ruler generation to the outer Codex driver    |
 | 2026-07-28 | Exclude protected historical patches from live completeness review      |
+| 2026-07-28 | Bound canaries and recognize nested Ruler sources after PR 583          |
