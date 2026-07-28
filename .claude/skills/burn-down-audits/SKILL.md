@@ -540,9 +540,9 @@ stacking them.
 
 Terminal, unlike pause. `touch .audit-work/STOP` so the in-flight finding still lands (don't waste a
 nearly-done fix), wait for exit, then run **Closing out a run** below: push anything unpushed, drain
-the comment store, add the `docs/AUDIT-LOG.md` row, tidy any emptied `## Source:` sections, and mark
-the PR ready (`mcp__github__update_pull_request` with `draft: false`). The backlog may still hold
-findings — that's expected; wrap-up ships what's done and closes the run out.
+the comment store, add the `docs/AUDIT-LOG.md` entry, tidy any emptied `## Source:` sections, and
+mark the PR ready (`mcp__github__update_pull_request` with `draft: false`). The backlog may still
+hold findings — that's expected; wrap-up ships what's done and closes the run out.
 
 ### No verb — pausing on your own initiative
 
@@ -819,7 +819,7 @@ Notes from real runs — set these before a large run rather than discovering th
 * Confirm CI is green on the final push before marking the PR ready. It is the only full-suite gate
   in this configuration, so "the run finished" and "the branch is sound" are genuinely different
   claims here.
-* Add one row to `docs/AUDIT-LOG.md` per `.claude/audit-conventions.md` §2 (date ·
+* Add one entry to `docs/AUDIT-LOG.md` per `.claude/audit-conventions.md` §2 (date ·
   `burn-down-audits` · done/deferred/dropped counts + the PR link), then mark the PR ready with
   `mcp__github__update_pull_request` (`draft: false`). **Take the counts from each run's `finished:`
   line** (`N fixed, N dropped, N deferred`) and cross-check them against the commit record —

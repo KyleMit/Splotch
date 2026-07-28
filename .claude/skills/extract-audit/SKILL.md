@@ -54,5 +54,5 @@ This is an audit skill. Follow the shared conventions in
 
 * **Merge into `docs/AUDIT.md`, don't overwrite** (§1) — the file header lives there; enrich
   existing items, add new ones, drop fixed ones.
-* **Log the run** (§2) — add a row to `docs/AUDIT-LOG.md`.
+* **Log the run** (§2) — add an entry to `docs/AUDIT-LOG.md`.
 * **Self-heal** (§3) — if this run surfaced a durable method learning, fold it into this file.

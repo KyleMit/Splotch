@@ -165,7 +165,7 @@ This is an audit skill. Follow the shared conventions in
 
 * **Merge into `docs/AUDIT.md`, don't overwrite** (§1) — the finding format and the file header live
   there; enrich existing items, add new ones, drop items whose fix has landed.
-* **Log the run** (§2) — add a row to `docs/AUDIT-LOG.md`, one line summarizing what you filed (or
-  "clean run").
+* **Log the run** (§2) — add an entry to `docs/AUDIT-LOG.md`, one line summarizing what you filed
+  (or "clean run").
 * **Self-heal** (§3) — if this run surfaced a durable method learning (a session-history tell worth
   watching for, a false-positive trap), fold it into the Method notes above.

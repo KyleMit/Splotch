@@ -124,8 +124,8 @@ canonical finding format documented there. **Merge into that section — do not 
 
 ### 3. Log the run
 
-Add a row to `docs/AUDIT-LOG.md` (§2 of the shared conventions) — today's date, `lighthouse-audit`,
-and a one-line summary (headline scores + the standout lever).
+Add an entry to `docs/AUDIT-LOG.md` (§2 of the shared conventions) — today's date,
+`lighthouse-audit`, and a one-line summary (headline scores + the standout lever).
 
 ### 4. Self-heal this skill
 

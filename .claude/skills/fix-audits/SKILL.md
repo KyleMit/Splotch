@@ -177,7 +177,7 @@ When every issue is either fixed or skipped:
 2. The `type:audit` issues are the backlog — this skill doesn't touch `docs/AUDIT.md`. Fixed issues
    close automatically when the PR merges (each commit references them with `Fixes #<NN>`); skipped
    issues stay open with the comment step 3 of the per-item loop added.
-3. Add one row to `docs/AUDIT-LOG.md` for this run per `.claude/audit-conventions.md` §2 (date ·
+3. Add one entry to `docs/AUDIT-LOG.md` for this run per `.claude/audit-conventions.md` §2 (date ·
    `fix-audits` · one-line summary with the PR link, or the branch name in Branch-only mode),
    committed and pushed with the completion changes.
 4. **In Draft-PR mode**, update the PR description (`gh pr edit --body`, or the GitHub MCP
