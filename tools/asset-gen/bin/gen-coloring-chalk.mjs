@@ -76,6 +76,7 @@ import {
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { crispInk } from '../lib/crisp-ink.mjs';
 import { dilateMask } from '../lib/morphology.mjs';
+import { floodFromBorder } from '../lib/regions.mjs';
 import { scoreEyeFill, EYE_DARK_MAX, EYE_LIGHT_MIN } from '../lib/eye-fill.mjs';
 import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
 import { CHALK_INSTRUCTION } from '../lib/prompts.mjs';
@@ -120,34 +121,7 @@ async function inkMask(buf) {
 // border (same flood the night-fill mood scorer uses). A chalk must never
 // whiten it — chalk whites live in pen-bounded interiors.
 function openBackground(penMask) {
-  const w = OUTLINE_MASK_SIZE;
-  const h = OUTLINE_MASK_SIZE;
-  const bg = new Uint8Array(w * h);
-  const stack = [];
-  const push = (x, y) => {
-    if (x < 0 || x >= w || y < 0 || y >= h) return;
-    const i = y * w + x;
-    if (!bg[i] && !penMask[i]) {
-      bg[i] = 1;
-      stack.push(i);
-    }
-  };
-  for (let x = 0; x < w; x++) {
-    push(x, 0);
-    push(x, h - 1);
-  }
-  for (let y = 0; y < h; y++) {
-    push(0, y);
-    push(w - 1, y);
-  }
-  while (stack.length) {
-    const i = stack.pop();
-    push((i % w) + 1, (i / w) | 0);
-    push((i % w) - 1, (i / w) | 0);
-    push(i % w, ((i / w) | 0) + 1);
-    push(i % w, ((i / w) | 0) - 1);
-  }
-  return bg;
+  return floodFromBorder(OUTLINE_MASK_SIZE, OUTLINE_MASK_SIZE, (i) => !penMask[i]);
 }
 
 // Split a candidate's new ink (beyond the pen's slack-dilated strokes) into
