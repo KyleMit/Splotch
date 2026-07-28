@@ -37,49 +37,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P2][dead-config] dprint loads the TypeScript and JSON plugins but never runs them
-
-**File(s):** `dprint.json:10-13,23-27` (formatting) — pinned at SHA f934d43
-
-#### Problem
-
-`dprint.json` loads three plugins and configures a TypeScript block:
-
-```json
-"typescript": { "quoteStyle": "preferSingle" },
-"includes": ["**/*.md"],
-...
-"plugins": [
-  "node_modules/@dprint/markdown/plugin.wasm",
-  "node_modules/@dprint/typescript/plugin.wasm",
-  "node_modules/@dprint/json/plugin.wasm"
-],
-```
-
-`includes` matches only `**/*.md`. dprint only formats a file when it is in `includes` *and* a
-plugin claims its extension — so with markdown the sole included glob, the `@dprint/typescript` and
-`@dprint/json` plugins (and the `typescript.quoteStyle` config block) never execute. `format:md`
-(`dprint fmt`) and `format:md:check` (`dprint check`) touch only markdown. The two extra WASM
-plugins are dead weight: they are downloaded/cached, listed as `devDependencies` (`@dprint/json`,
-`@dprint/typescript` at `package.json:252-254`), and mislead a reader into thinking dprint owns
-`.ts`/`.json` formatting when Prettier owns `.ts` and *nothing* owns `.json`.
-
-#### Proposed solution
-
-Either (a) delete the `@dprint/typescript` + `@dprint/json` plugin lines, the `typescript` config
-block, and their two `devDependencies`, to make dprint honestly markdown-only (matches ADR-0057); or
-(b) if JSON formatting is actually wanted, add `**/*.json` to `includes` and wire `format:md` into
-`format` accordingly — but that overlaps Prettier/`.prettierignore` and should be an explicit
-decision, not latent config. Option (a) is the low-risk default.
-
-#### Verification
-
-`grep -c '\.ts' <(git ls-files '*.md')` — no TS files are markdown, confirming the plugin is
-unreachable. After removing, run `npm run format:md:check` and confirm identical output. Confirm no
-other tool references `@dprint/json`/`@dprint/typescript`: `git grep dprint/json dprint/typescript`.
-
----
-
 ### [P2][dead-config] No formatter owns JSON/YAML — config files drift unchecked
 
 **File(s):** `.prettierignore:26-29`, `dprint.json:13` (formatting) — pinned at SHA f934d43
