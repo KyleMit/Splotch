@@ -4,14 +4,12 @@
     MIN_ANDROID_API_LEVEL,
     MIN_ANDROID_RELEASE,
     PLAY_STORE_LISTING_URL,
-    TESTERS_GROUP_SUBSCRIBE_EMAIL,
     TESTERS_GROUP_URL,
   } from '$lib/androidBeta';
 
-  // The three sign-up steps of /android-beta. Each leads with the one route
-  // that works for a reader who has done nothing yet: the group's own web page
-  // refuses most first-time testers, and the Play listing is dark until they
-  // have opted in, so the mailto and the tester page take the buttons.
+  // The three sign-up steps of /android-beta. They are sequential, not a menu:
+  // opting in enrols without installing, and the store listing stays a 404
+  // until it is done — so each step says what it unlocks.
   //
   // Colors come from the --beta-* custom properties the route declares; they
   // inherit through the component boundary, so this stays light-only with the
@@ -32,21 +30,15 @@
         <h3>Join the testers group</h3>
         <p class="step-body">
           Google Play decides who can see the beta by checking a Google Group, so this has to happen
-          first. The quickest way in is a blank email — the group writes back, you reply, and you're
-          a member.
+          first.
         </p>
-        <div class="action-row">
-          <a class="btn" href="mailto:{TESTERS_GROUP_SUBSCRIBE_EMAIL}">Email to join</a>
-          <span class="beside">
-            or <a href={TESTERS_GROUP_URL} target="_blank" rel="noopener noreferrer">
-              open the group on Google Groups</a
-            >
-          </span>
-        </div>
+        <p class="action-row">
+          <a class="btn" href={TESTERS_GROUP_URL} target="_blank" rel="noopener noreferrer">
+            Join the testers group
+          </a>
+        </p>
         <p class="hint">
-          Send it blank — no subject, no message. An automated reply usually lands within a minute
-          (check spam if it doesn't); reply to it, blank again, and you're in. The web route may ask
-          you to sign in or request access first.
+          Google may ask you to sign in or to request access before it lets you in.
         </p>
         <div class="note">
           <p class="note-label">The one thing to get right</p>
@@ -63,18 +55,14 @@
       <div>
         <h3>Opt in on Google Play</h3>
         <p class="step-body">
-          Open the tester page and press <strong>Become a tester</strong>. When it works, the page
-          switches to “You're a tester” and offers a download link.
+          Open the tester page and press <strong>Become a tester</strong>. This enrols you; it
+          doesn't install anything yet. Once you're in, the same page grows a “Download it on Google
+          Play” link — that's step 3.
         </p>
         <p class="action-row">
           <a class="btn" href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer">
             Become a tester
           </a>
-        </p>
-        <p class="hint">
-          Works in any browser, phone or computer — just make sure it's signed in to the account
-          from step 1. This enrols you; it doesn't install anything yet. Once you're in, this same
-          page grows a “Download it on Google Play” link — that's step 3.
         </p>
       </div>
     </li>
@@ -85,8 +73,8 @@
         <h3>Install Splotch</h3>
         <p class="step-body">
           The store listing stays hidden until step 2 is done — before that it just says “item not
-          found”. Now it opens normally and installs like any other app, and updates arrive
-          automatically as new beta builds go out.
+          found”. Now it installs like any other app, and updates arrive automatically as new beta
+          builds go out.
         </p>
         <p class="action-row">
           <a class="btn" href={PLAY_STORE_LISTING_URL} target="_blank" rel="noopener noreferrer">
@@ -101,7 +89,16 @@
     </li>
   </ol>
 
-  <div class="note stay">
+  <div class="note aside">
+    <p class="note-label">If a link doesn't work yet</p>
+    <p class="note-body">
+      None of this is instant, and Google Play doesn't always recognise a new group membership
+      straight away. Check that both pages are signed in to the same Google account, then make a cup
+      of tea and try again a little later before assuming something is broken.
+    </p>
+  </div>
+
+  <div class="note aside">
     <p class="note-label">Please stay for 14 days</p>
     <p class="note-body">
       Once you're in, <strong>stay opted in for at least 14 days in a row</strong>, even if you've
@@ -118,13 +115,6 @@
     padding: 36px var(--beta-gutter) 44px;
   }
 
-  .ledger-intro {
-    margin: 6px 0 0;
-    font-size: 15px;
-    color: var(--beta-muted);
-    max-width: 60ch;
-  }
-
   .section-label {
     margin: 0 0 4px;
     font-size: 11.5px;
@@ -132,6 +122,13 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--beta-label);
+  }
+
+  .ledger-intro {
+    margin: 6px 0 0;
+    font-size: 15px;
+    color: var(--beta-muted);
+    max-width: 60ch;
   }
 
   /* A ledger, not cards: hairline rules and a numeral gutter carry the sequence,
@@ -182,19 +179,8 @@
     color: var(--beta-ink);
   }
 
-  /* The button and its inline alternative share a line where there's room, so a
-     step never reads as two competing blocks. */
   .action-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px 18px;
     margin: 0;
-  }
-
-  .beside {
-    font-size: 14px;
-    color: var(--beta-muted);
   }
 
   .btn {
@@ -225,7 +211,8 @@
     border-radius: var(--radius-md);
   }
 
-  .stay {
+  /* The two notes that close the ledger rather than sitting inside a step. */
+  .aside {
     margin-top: 32px;
   }
 
@@ -248,21 +235,11 @@
     color: var(--beta-ink);
   }
 
-  a:not(.btn) {
-    color: var(--beta-link);
-    text-underline-offset: 3px;
-    text-decoration-thickness: 1px;
-  }
-
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
      keep it stuck until the next tap elsewhere. */
   @media (hover: hover) {
     .btn:hover {
       background: var(--beta-link-hover);
-    }
-
-    a:not(.btn):hover {
-      color: var(--beta-link-hover);
     }
   }
 </style>

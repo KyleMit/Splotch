@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { BETA_OPT_IN_URL, FEEDBACK_ISSUE_URL, supportEmail } from '$lib/androidBeta';
   import CrayonStrip from '$lib/components/CrayonStrip.svelte';
+  import Disclosure from '$lib/components/design/Disclosure.svelte';
   import StepLedger from '$lib/components/androidBeta/StepLedger.svelte';
 
   // Composed after hydration so the support address never appears in the
@@ -13,11 +14,10 @@
     support = supportEmail();
   });
 
-  // Sign-up instructions for the Google Play closed test. The ordering of the
-  // links is the whole point of the page: the store listing is dark for anyone
-  // who has not opted in yet, and the group's own web page refuses most
-  // first-time testers, so each step leads with the route that actually works
-  // for a reader who has done nothing yet.
+  // Sign-up instructions for the Google Play closed test. The steps are
+  // sequential rather than a menu — see StepLedger — and everything a reader
+  // only needs when something has gone wrong lives in the collapsed
+  // Troubleshooting panel below them.
 </script>
 
 <svelte:head>
@@ -52,85 +52,73 @@
 
     <StepLedger />
 
-    <div class="band tinted">
-      <h2 class="band-title">If a link doesn't work yet</h2>
-      <p class="band-body">
-        None of this is instant, and Google Play doesn't always recognise a new group membership
-        straight away. Check that both pages are signed in to the same Google account, then make a
-        cup of tea and try again a little later before assuming something is broken.
-      </p>
-    </div>
+    <div class="band trouble">
+      <Disclosure class="beta-disclosure">
+        {#snippet summary()}Troubleshooting{/snippet}
 
-    <div class="band rows">
-      <h2 class="section-label">If it still isn't showing up</h2>
-
-      <div class="row">
-        <h3>“Item not found” on the store link</h3>
-        <p>
-          You aren't opted in yet, or the browser is signed in to a different Google account. Go
-          back to <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer"
-            >the tester page</a
-          >, check the account shown in the top-right corner, and opt in there first.
-        </p>
-      </div>
-      <div class="row">
-        <h3>The tester page says you're not a member</h3>
-        <p>
-          Your request to join the group hasn't finished, or it went through on another account. If
-          you joined by email, check that inbox for Google's confirmation and make sure you replied
-          to it — membership isn't final until you do. If an owner has to approve you, you'll get a
-          second email once they have.
-        </p>
-      </div>
-      <div class="row">
-        <h3>The phone can't find the app but your computer can</h3>
-        <p>
-          The two are signed in to different accounts. In the Play Store app, tap your profile
-          picture in the top-right to see which account is active.
-        </p>
-      </div>
-      <div class="row">
-        <h3>Everything looks right and Play still disagrees</h3>
-        <p>
-          Close and reopen the Play Store, check the active account, and try the store link again.
-          As a last resort, open Android Settings → Apps → Google Play Store → Storage and clear its
-          cache; the exact menu names vary by device.
-        </p>
-      </div>
-      <div class="row">
-        <h3>Still stuck</h3>
-        <p>
-          {#if support}
-            Email <a href="mailto:{support}">{support}</a> and say which Google account you're
-            trying to use — that's almost always the missing piece. You can also
-            <a href={FEEDBACK_ISSUE_URL} target="_blank" rel="noopener noreferrer">
-              open an issue on GitHub</a
-            >.
-          {:else}
-            <a href={FEEDBACK_ISSUE_URL} target="_blank" rel="noopener noreferrer">
-              Open an issue on GitHub</a
-            > and say which Google account you're trying to use — that's almost always the missing piece.
-          {/if}
-        </p>
-      </div>
-    </div>
-
-    <div class="band expect">
-      <h2 class="section-label">What to expect</h2>
-      <div class="expect-rows">
-        <p>Beta builds may change frequently, so expect the occasional rough edge.</p>
-        <p>
-          Your drawings stay on your device unless a grown-up turns on a feature that sends them —
-          the optional magic-image button, or a report you write yourself. Splotch shows no ads, has
-          no analytics, and never asks you to create a Splotch account. See the
-          <a href="/privacy">Privacy Policy</a>.
-        </p>
-        <p>
-          The drawing tools work offline, so a plane or a car park is fair game. The parts that
-          reach the internet — magic images, sending a report, the links on this page — need a
-          connection.
-        </p>
-      </div>
+        <div class="rows">
+          <div class="row">
+            <h3>“Item not found” on the store link</h3>
+            <p>
+              You aren't opted in yet, or the browser is signed in to a different Google account. Go
+              back to <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer"
+                >the tester page</a
+              >, check the account shown in the top-right corner, and opt in there first.
+            </p>
+          </div>
+          <div class="row">
+            <h3>The tester page says you're not a member</h3>
+            <p>
+              Your request to join the group hasn't finished, or it went through on another account.
+              Check that account's inbox for Google's confirmation — and if an owner has to approve
+              you, you'll get a second email once they have.
+            </p>
+          </div>
+          <div class="row">
+            <h3>The phone can't find the app but your computer can</h3>
+            <p>
+              The two are signed in to different accounts. In the Play Store app, tap your profile
+              picture in the top-right to see which account is active.
+            </p>
+          </div>
+          <div class="row">
+            <h3>Everything looks right and Play still disagrees</h3>
+            <p>
+              Close and reopen the Play Store, check the active account, and try the store link
+              again. As a last resort, open Android Settings → Apps → Google Play Store → Storage
+              and clear its cache; the exact menu names vary by device.
+            </p>
+          </div>
+          <div class="row">
+            <h3>Leaving the beta</h3>
+            <p>
+              Open <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer"
+                >the tester page</a
+              > again and press “Leave the program”, which stops the beta updates. If a public Android
+              version is out by then, you may need to uninstall Splotch and reinstall it from Google Play
+              to switch over; until there is one, leaving the beta also means you won't be able to reinstall
+              the Android app. No hard feelings.
+            </p>
+          </div>
+          <div class="row">
+            <h3>Still stuck</h3>
+            <p>
+              {#if support}
+                Email <a href="mailto:{support}">{support}</a> and say which Google account you're
+                trying to use — that's almost always the missing piece. You can also
+                <a href={FEEDBACK_ISSUE_URL} target="_blank" rel="noopener noreferrer">
+                  open an issue on GitHub</a
+                >.
+              {:else}
+                <a href={FEEDBACK_ISSUE_URL} target="_blank" rel="noopener noreferrer">
+                  Open an issue on GitHub</a
+                > and say which Google account you're trying to use — that's almost always the missing
+                piece.
+              {/if}
+            </p>
+          </div>
+        </div>
+      </Disclosure>
     </div>
 
     <div class="band callout-band">
@@ -144,27 +132,6 @@
             >open an issue on GitHub</a
           >. Odd crashes, confusing buttons, and “my toddler did <em>what</em>?” stories are all
           genuinely useful.
-        </p>
-      </div>
-    </div>
-
-    <div class="band footer">
-      <div>
-        <h2>Leaving the beta</h2>
-        <p>
-          Open <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer"
-            >the tester page</a
-          > again and press “Leave the program”, which stops the beta updates. If a public Android version
-          is out by then, you may need to uninstall Splotch and reinstall it from Google Play to switch
-          over; until there is one, leaving the beta also means you won't be able to reinstall the Android
-          app. No hard feelings.
-        </p>
-      </div>
-      <div>
-        <h2>Don't want to install anything?</h2>
-        <p>
-          Splotch runs in a browser at <a href="/">splotch.art</a> — no beta, no store, no sign-up. Add
-          it to your home screen and it behaves much like the installed app.
         </p>
       </div>
     </div>
@@ -329,41 +296,39 @@
     max-width: 56ch;
   }
 
-  /* Small uppercase band heading. A real <h2> so the <h3> rows beneath it don't
-     skip a level, styled as the quiet label the design calls for. */
-  .section-label {
-    margin: 0 0 4px;
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--beta-label);
+  .trouble {
+    padding-top: 36px;
+    padding-bottom: 40px;
   }
 
-  .tinted {
-    padding-top: 32px;
-    padding-bottom: 32px;
+  /* The Disclosure primitive owns only the shell, the hidden native marker and
+     the chevron; its two themed values (--border, --text-faint) are overridden
+     here so the panel stays on this page's light-only palette. */
+  .trouble :global(.beta-disclosure) {
+    border-color: var(--beta-rule);
+    border-radius: var(--radius-md);
     background: var(--beta-tint);
-    border-top: 1px solid var(--beta-rule);
-    border-bottom: 1px solid var(--beta-rule);
   }
 
-  .band-title {
-    margin: 0 0 8px;
-    font-size: 19px;
+  .trouble :global(.beta-disclosure > summary) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    font-size: 16px;
     font-weight: 700;
     color: var(--beta-ink);
   }
 
-  .band-body {
-    margin: 0;
-    color: var(--beta-body);
-    max-width: 62ch;
+  .trouble :global(.beta-disclosure > summary::after) {
+    color: var(--beta-muted);
+    font-size: 22px;
+    line-height: 1;
   }
 
   .rows {
-    padding-top: 40px;
-    padding-bottom: 8px;
+    padding: 0 18px 6px;
   }
 
   .row {
@@ -388,22 +353,6 @@
     font-size: 15.5px;
     color: var(--beta-body);
     max-width: 62ch;
-  }
-
-  .expect {
-    padding-top: 40px;
-  }
-
-  .expect-rows {
-    margin-top: 16px;
-  }
-
-  .expect-rows p {
-    margin: 0;
-    padding: 16px 0;
-    border-top: 1px solid var(--beta-rule);
-    color: var(--beta-body);
-    max-width: 64ch;
   }
 
   .callout-band {
@@ -435,29 +384,6 @@
 
   .callout strong {
     color: var(--beta-ink);
-  }
-
-  .footer {
-    padding-top: 32px;
-    padding-bottom: 40px;
-    background: var(--beta-tint);
-    border-top: 1px solid var(--beta-rule);
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 28px 40px;
-  }
-
-  .footer h2 {
-    margin: 0 0 6px;
-    font-size: 16.5px;
-    font-weight: 700;
-    color: var(--beta-ink);
-  }
-
-  .footer p {
-    margin: 0;
-    font-size: 15px;
-    color: var(--beta-body);
   }
 
   a {

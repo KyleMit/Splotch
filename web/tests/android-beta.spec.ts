@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test';
 import {
   BETA_OPT_IN_URL,
   PLAY_STORE_LISTING_URL,
-  TESTERS_GROUP_SUBSCRIBE_EMAIL,
   TESTERS_GROUP_URL,
   supportEmail,
 } from '../src/lib/androidBeta';
@@ -17,13 +16,7 @@ test('the beta sign-up steps link to the group, the opt-in page, and the listing
   await page.goto('/android-beta');
   await expect(page.getByRole('heading', { name: 'Join the Android Beta' })).toBeVisible();
 
-  // The join CTA is a mailto: the group's web page refuses most first-time
-  // testers outright, so the subscribe alias is what leads.
-  await expect(page.getByRole('link', { name: 'Email to join' })).toHaveAttribute(
-    'href',
-    `mailto:${TESTERS_GROUP_SUBSCRIBE_EMAIL}`
-  );
-  await expect(page.getByRole('link', { name: 'Open the group on Google Groups' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'Join the testers group' })).toHaveAttribute(
     'href',
     TESTERS_GROUP_URL
   );
@@ -47,11 +40,22 @@ test('the support address is absent from the served HTML and added after hydrati
   expect(html).not.toContain(supportEmail());
   expect(html).toContain('noindex');
 
+  // It lives in the collapsed Troubleshooting panel, which keeps it out of the
+  // accessibility tree until a reader who has a problem opens it.
   await page.goto('/android-beta');
+  await page.getByText('Troubleshooting', { exact: true }).click();
   await expect(page.getByRole('link', { name: supportEmail() })).toHaveAttribute(
     'href',
     `mailto:${supportEmail()}`
   );
+});
+
+test('the troubleshooting panel starts collapsed', async ({ page }) => {
+  await page.goto('/android-beta');
+  const panel = page.locator('details.beta-disclosure');
+  await expect(panel).not.toHaveAttribute('open', /.*/);
+  await page.getByText('Troubleshooting', { exact: true }).click();
+  await expect(panel).toHaveAttribute('open', /.*/);
 });
 
 test('the masthead crayon strip renders every palette hue it names', async ({ page }) => {
