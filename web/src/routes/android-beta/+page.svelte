@@ -1,19 +1,8 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { BETA_OPT_IN_URL, FEEDBACK_ISSUE_URL, supportEmail } from '$lib/androidBeta';
+  import { BETA_OPT_IN_URL } from '$lib/androidBeta';
   import CrayonStrip from '$lib/components/CrayonStrip.svelte';
-  import Icon from '$lib/components/Icon.svelte';
   import Disclosure from '$lib/components/design/Disclosure.svelte';
   import StepLedger from '$lib/components/androidBeta/StepLedger.svelte';
-
-  // Composed after hydration so the support address never appears in the
-  // prerendered HTML, which is what address harvesters scrape. Until it
-  // resolves — and for anyone with JS off — the GitHub issue form is offered
-  // instead, so the row is never a dead end.
-  let support = $state('');
-  onMount(() => {
-    support = supportEmail();
-  });
 
   // Sign-up instructions for the Google Play closed test. The steps are
   // sequential rather than a menu — see StepLedger — and everything a reader
@@ -101,42 +90,8 @@
               the Android app. No hard feelings.
             </p>
           </div>
-          <div class="row">
-            <h3>Still stuck</h3>
-            <p>
-              {#if support}
-                Email <a href="mailto:{support}">{support}</a> and say which Google account you're
-                trying to use — that's almost always the missing piece. You can also
-                <a href={FEEDBACK_ISSUE_URL} target="_blank" rel="noopener noreferrer">
-                  open an issue on GitHub</a
-                >.
-              {:else}
-                <a href={FEEDBACK_ISSUE_URL} target="_blank" rel="noopener noreferrer">
-                  Open an issue on GitHub</a
-                > and say which Google account you're trying to use — that's almost always the missing
-                piece.
-              {/if}
-            </p>
-          </div>
         </div>
       </Disclosure>
-    </div>
-
-    <div class="band callout-band">
-      <div class="callout">
-        <h2>Telling us what you think</h2>
-        <p>
-          This is the part that matters. Inside the app, tap the
-          <Icon name="parent" class="inline-icon" role="img" aria-label="Parent Center" /> button in the
-          bottom-right corner of the drawing screen to open the Parent Center, then choose
-          <strong>Send report</strong> to file a bug or suggest a feature without leaving Splotch.
-          You can also
-          <a href={FEEDBACK_ISSUE_URL} target="_blank" rel="noopener noreferrer"
-            >open an issue on GitHub</a
-          >. Odd crashes, confusing buttons, and “my toddler did <em>what</em>?” stories are all
-          genuinely useful.
-        </p>
-      </div>
     </div>
   </div>
 </main>
@@ -163,10 +118,6 @@
     --beta-rule: #e7e1d6;
     --beta-rule-soft: #ece7dd;
     --beta-tint: #f6f2ec; /* ~ --surface-warm-hover (#f4f0ea), light */
-    /* The single accent-tinted block on the page (the feedback callout) —
-       --brand-wash warmed to sit on the paper ground rather than on white. */
-    --beta-accent: #f4eefb;
-    --beta-accent-border: #e6dbf6;
     --beta-ink: #2b2b33; /* ~ --text-strong (#333), light */
     --beta-body: #55525c; /* ~ --text (#555), light */
     --beta-body-strong: #4d4a53; /* between --text-strong and --text */
@@ -356,46 +307,6 @@
     font-size: 15.5px;
     color: var(--beta-body);
     max-width: 62ch;
-  }
-
-  .callout-band {
-    padding-top: 36px;
-    padding-bottom: 40px;
-  }
-
-  /* The page's one accent-tinted block, marking the thing it actually wants
-     back from the reader. */
-  .callout {
-    background: var(--beta-accent);
-    border: 1px solid var(--beta-accent-border);
-    border-radius: var(--radius-lg);
-    padding: 26px 28px;
-  }
-
-  .callout h2 {
-    margin: 0 0 8px;
-    font-size: 19px;
-    font-weight: 700;
-    color: var(--beta-ink);
-  }
-
-  .callout p {
-    margin: 0;
-    color: var(--beta-body-strong);
-    max-width: 60ch;
-  }
-
-  .callout strong {
-    color: var(--beta-ink);
-  }
-
-  /* The real Parent Center glyph, sized to the surrounding text so the sentence
-     shows the button rather than describing it. Icon renders its SVG at 100% of
-     this box, so the box has to carry the size. */
-  .callout :global(.inline-icon) {
-    width: 1.3em;
-    height: 1.3em;
-    vertical-align: -0.3em;
   }
 
   a {

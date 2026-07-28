@@ -1,11 +1,23 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import {
     BETA_OPT_IN_URL,
+    FEEDBACK_ISSUE_URL,
     MIN_ANDROID_API_LEVEL,
     MIN_ANDROID_RELEASE,
     PLAY_STORE_LISTING_URL,
     TESTERS_GROUP_URL,
+    supportEmail,
   } from '$lib/androidBeta';
+  import Icon from '$lib/components/Icon.svelte';
+
+  // Composed after hydration so the support address never appears in the
+  // prerendered HTML, which is what address harvesters scrape. Without JS the
+  // note is simply absent — step 4 still offers the in-app report and GitHub.
+  let support = $state('');
+  onMount(() => {
+    support = supportEmail();
+  });
 
   // The three sign-up steps of /android-beta. They are sequential, not a menu:
   // opting in enrols without installing, and the store listing stays a 404
@@ -105,6 +117,34 @@
         </div>
       </div>
     </li>
+
+    <li class="optional-step">
+      <span class="num">4</span>
+      <div>
+        <h3>Tell us what you think <span class="optional">Optional</span></h3>
+        <p class="step-body">
+          This is the part that matters. Inside the app, tap the
+          <Icon name="parent" class="inline-icon" role="img" aria-label="Parent Center" /> button in the
+          bottom-right corner of the drawing screen to open the Parent Center, then choose
+          <strong>Send report</strong> to file a bug or suggest a feature without leaving Splotch.
+          You can also
+          <a href={FEEDBACK_ISSUE_URL} target="_blank" rel="noopener noreferrer"
+            >open an issue on GitHub</a
+          >. Odd crashes, confusing buttons, and “my toddler did <em>what</em>?” stories are all
+          genuinely useful.
+        </p>
+        {#if support}
+          <div class="note">
+            <p class="note-label">Or just email us</p>
+            <p class="note-body">
+              <a href="mailto:{support}">{support}</a> reaches a human. Anything at all — something broken,
+              something confusing, an idea, or just to say your kid liked it. Good and bad are both worth
+              hearing.
+            </p>
+          </div>
+        {/if}
+      </div>
+    </li>
   </ol>
 </div>
 
@@ -144,6 +184,38 @@
     border-top: 1px solid var(--beta-rule);
     margin-top: 32px;
     padding-top: 28px;
+  }
+
+  /* Step 4 asks for something back rather than moving the install along, so it
+     gets more air above the same hairline — a section break, not a fourth
+     instruction, while the numbering carries straight on. */
+  .steps > li.optional-step {
+    margin-top: 52px;
+  }
+
+  .optional {
+    margin-left: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--beta-muted);
+    vertical-align: 0.18em;
+  }
+
+  /* The real Parent Center glyph, sized to the surrounding text so the sentence
+     shows the button rather than describing it. Icon renders its SVG at 100% of
+     this box, so the box has to carry the size. */
+  .step-body :global(.inline-icon) {
+    width: 1.3em;
+    height: 1.3em;
+    vertical-align: -0.3em;
+  }
+
+  a {
+    color: var(--beta-link);
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
   }
 
   .steps > li:first-child {
@@ -233,6 +305,10 @@
   @media (hover: hover) {
     .btn:hover {
       background: var(--beta-link-hover);
+    }
+
+    a:not(.btn):hover {
+      color: var(--beta-link-hover);
     }
   }
 </style>

@@ -40,10 +40,7 @@ test('the support address is absent from the served HTML and added after hydrati
   expect(html).not.toContain(supportEmail());
   expect(html).toContain('noindex');
 
-  // It lives in the collapsed Troubleshooting panel, which keeps it out of the
-  // accessibility tree until a reader who has a problem opens it.
   await page.goto('/android-beta');
-  await page.getByText('Troubleshooting', { exact: true }).click();
   await expect(page.getByRole('link', { name: supportEmail() })).toHaveAttribute(
     'href',
     `mailto:${supportEmail()}`
