@@ -229,8 +229,8 @@ This is an audit skill. It writes to its own report (`docs/DEPENDENCIES.md`), no
 but the run-tracking conventions in [`.claude/audit-conventions.md`](../../audit-conventions.md)
 still apply:
 
-* **Log the run** (§2) — add a row to `docs/AUDIT-LOG.md`: how many packages reviewed, the verdict
-  split, and any replace/investigate calls.
+* **Log the run** (§2) — add an entry to `docs/AUDIT-LOG.md`: how many packages reviewed, the
+  verdict split, and any replace/investigate calls.
 * **Self-heal** (§3) — fold durable *method* knowledge back into this file: a newly discovered repo
   entanglement for Phase 1's list, a data source that lied, a proxy workaround, a false-abandonment
   trap. Specific package verdicts stay in the report, not here.

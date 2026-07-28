@@ -75,9 +75,9 @@ run.
    issue (a filed finding now lives in the issue, not the file). Preserve the file header and any
    `## Source:` sections that still hold un-drained findings; delete a `## Source:` section once its
    last finding is gone. **If no findings remain, delete `docs/AUDIT.md` entirely.**
-2. Add one row to `docs/AUDIT-LOG.md` for this run per `.claude/audit-conventions.md` §2 (date ·
+2. Add one entry to `docs/AUDIT-LOG.md` for this run per `.claude/audit-conventions.md` §2 (date ·
    `vet-audits` · one-line summary — issues filed with their numbers vs what was dropped).
-3. Commit and push the `docs/AUDIT.md` drain + `docs/AUDIT-LOG.md` row.
+3. Commit and push the `docs/AUDIT.md` drain + `docs/AUDIT-LOG.md` entry.
 4. In your response, print two short lists:
    * **Filed** — one line each: the issue number/link, its labels, and what you sharpened or the
      verification you added (flag any `needs-triage` issues).

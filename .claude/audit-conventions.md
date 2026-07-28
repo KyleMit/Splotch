@@ -135,9 +135,13 @@ first, or tolerate a non-zero exit from `cat`).
 
 ### 2. Log every run in `docs/AUDIT-LOG.md`
 
-After a run, add one row to `docs/AUDIT-LOG.md` (most recent first) so there's a committable,
-scannable history of what each audit found and when. See that file's header for the exact format.
-Keep the summary to one line.
+After a run, add one entry to `docs/AUDIT-LOG.md` (most recent first) so there's a committable,
+scannable history of what each audit found and when. An entry is two parts — a row in the index
+table (date + the audit name linked to its section) and an `## <date> · <audit>` section holding the
+summary prose. See that file's header for the exact format, including the `(run N)` suffix that
+keeps anchors stable when a day has more than one run of the same audit. The index table stays two
+columns; the summary belongs in the section, not the table. Keep that summary tight — a sentence for
+a quiet run, a short paragraph for a busy one.
 
 This includes the **consumer** skills (`/fix-audits`, `/vet-audits`): log the run — branch/PR for
 fix-audits, and for vet-audits the issues filed (with numbers) plus what was pruned — even though
@@ -211,8 +215,9 @@ These apply to every scheduled (or otherwise user-absent) audit run:
   full `npm test` once at the end.
 * **One PR per run.** Per-item commits are preserved inside it. A bump or fix that fails
   verification is left out and noted in the PR body — never left broken in the branch.
-* **Log rows ride the PR.** The `docs/AUDIT-LOG.md` rows for all phases (§2 applies to each phase's
-  skill) go into the run's PR. A run that produces no fix/upgrade PR still opens a small **log-only
-  chore PR** with just its `AUDIT-LOG.md` rows, so the committed history stays complete.
+* **Log entries ride the PR.** The `docs/AUDIT-LOG.md` entries for all phases (§2 applies to each
+  phase's skill) go into the run's PR. A run that produces no fix/upgrade PR still opens a small
+  **log-only chore PR** with just its `AUDIT-LOG.md` entries, so the committed history stays
+  complete.
 * **Finish with a summary** — findings filed, issues fixed or deferred, and the PR URL(s) — even
   when the run was a no-op.

@@ -388,8 +388,8 @@ committed handoff across machines.
 5. Verify the remaining count with `pop.mjs --count`. The driver owns individual deletion, and the
    helper has no safe source-pruning mode, so do not directly tidy empty `## Source:` sections while
    findings remain. Delete `docs/AUDIT.md` only when the count is zero.
-6. Add the `burn-down-audits` row to `docs/AUDIT-LOG.md` with fixed/deferred/dropped counts and the
-   PR link.
+6. Add the `burn-down-audits` entry to `docs/AUDIT-LOG.md` with fixed/deferred/dropped counts and
+   the PR link.
 7. Run `npm run format:check`, the relevant quality checks, and deterministic local tests. Do not
    duplicate the full Playwright suite locally when exact-head CI in step 11 is available as the
    full-suite gate; run it locally to diagnose CI or when CI is unavailable. Listener-based
