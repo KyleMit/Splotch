@@ -7,33 +7,6 @@
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P4][consistency] No `.editorconfig`; indent width `2` and print width `100` are restated in three files
-
-**File(s):** `.prettierrc.json:3,6`, `dprint.json:1-2`, `.vscode/settings.json:4` (config) — pinned
-at SHA f934d43
-
-#### Problem
-
-The same two formatting constants live in three places with three vocabularies: `.prettierrc.json`
-(`tabWidth: 2`, `printWidth: 100`), `dprint.json` (`indentWidth: 2`, `lineWidth: 100`),
-`.vscode/settings.json` (`editor.tabSize: 2` for markdown). There is no `.editorconfig`, so any
-editor without the Prettier/dprint extensions gets no indentation guidance, and the `100`/`2` magic
-numbers must be kept in lockstep by hand across formatter configs.
-
-#### Proposed solution
-
-Add a root `.editorconfig` (`indent_size = 2`, `max_line_length = 100`, `charset = utf-8`,
-`insert_final_newline = true`) as the editor-agnostic source, and reference it in a comment from the
-formatter configs. This doesn't remove the per-tool settings (each formatter needs its own) but
-gives one canonical statement and covers editors without extensions.
-
-#### Verification
-
-Open a source file in a bare editor (no plugins) and confirm 2-space indent is applied from
-`.editorconfig`. Confirm `100`/`2` still agree across `.prettierrc.json` and `dprint.json`.
-
----
-
 ### [P4][consistency] No `.nvmrc` / `.node-version` despite an `engines.node` floor
 
 **File(s):** `package.json:5-7` (config) — pinned at SHA f934d43
