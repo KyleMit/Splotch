@@ -20,6 +20,23 @@ Set `AGENT_RUNNER=codex` on every preflight, canary, and relaunch. The runner de
 This is the GPT‑5.6 mapping of the Claude run: Terra owns the Sonnet-tier work; Sol owns the
 Opus-tier work. Override with `MODEL_*` or `EFFORT_*` only when the run has a measured reason.
 
+## Approval boundary
+
+Treat explicit invocation of this skill as user authorization to launch the in-scope `codex exec`
+subprocesses, make their expected outbound OpenAI calls, and provide them the repository context
+needed for their roles. Do not ask for a second conversational confirmation before the canary or
+each relaunch. The subprocesses use the same repository and tool environment as the supervising
+shell with no broader authority; their role sandboxes are narrower (`workspace-write` for verifier
+and implementer, read-only for reviewer) and interactive approvals stay disabled.
+
+The shell host can still require its own execution or network approval because an automated
+subprocess is making the calls. When it does, request one narrowly scoped reusable approval for the
+audit launch command family instead of prompting per role or segment. Explain that each call sends
+its role prompt and the repository context it reads to OpenAI, the same provider processing the
+supervising Codex session. The approval covers repeated isolated model calls and their usage, not a
+new data recipient or evidence of a repository leak. Never bypass a host denial or broaden the
+approval beyond the audit commands.
+
 ## Invariants
 
 * One fresh `codex exec` thread per verifier, implementer, and reviewer. A fix round resumes the
@@ -126,7 +143,14 @@ TEST_CMD='npm run test:unit && npm run test:scripts'
 ```
 
 Do not put `npm run ruler:check` in `CHECK_CMD`; it writes by reapplying Ruler. A finding that edits
-`.ruler/**` must run `npm run ruler:apply` and commit the generated output itself.
+`.ruler/**` must run `npm run ruler:apply` and commit the generated output itself. When the
+supervisor runs `ruler:check`, run it outside the workspace sandbox because its drift check
+temporarily rewrites `.agents/`; an `EPERM` under `.agents/skills.tmp-*` is a permission boundary,
+not drift.
+
+On macOS a sandboxed dprint invocation can warn that it could not save its incremental cache under
+`~/Library/Caches` and still exit zero. Use the command exit status as the gate verdict; do not turn
+that cache warning into a format failure.
 
 Leave `PUSH_TEST_CMD` empty while actively supervising a draft PR: CI is the full-suite backstop. Do
 not launch a Codex burndown nobody will supervise; a local full-suite gate cannot replace CI failure
@@ -245,7 +269,9 @@ Treat CI supervision as independent from comment posting:
   comment before relaunching. Never remove the boundary from a supervised run.
 * Twenty minutes is still a manual ceiling because the driver cannot stop a role mid-finding. At the
   recorded deadline create `STOP` immediately, let the current finding finish, then apply the same
-  exact-head checkpoint. Do not reset the deadline because a role or fix round is still active.
+  exact-head checkpoint. `STOP` is checked between findings, not between the active finding's review
+  and repair rounds, so report that expected latency instead of implying an immediate stop. Do not
+  reset the deadline because a role or fix round is still active.
 * Do not send a final response while the driver or a nested Codex role is active. A running burndown
   is ongoing work: give user-requested status in commentary, continue supervision, and yield only
   after the bounded segment has stopped. An explicit request to leave the process unattended is a
@@ -314,7 +340,9 @@ Drain at every handled-count/CI checkpoint and do not relaunch with pending reco
 left a large queue, post through the connector in batches of at most ten. When orchestration is
 available, perform each batch in one execution cell to avoid round-tripping every body through the
 supervising conversation. Preserve `next` → confirmed successful post → `done` for every record, and
-abort the batch immediately on a connector error.
+abort the batch immediately on a connector error. Confirm success from the connector's structured
+result (`isError: false` when exposed); do not search its serialized text for the word `error`,
+because the success field itself contains that substring.
 
 Iteration filenames restart at `iter0001` and drops can reuse a number within one run. Correlate by
 the timestamped `run.log` line and file mtime, not by the number alone.
@@ -350,10 +378,11 @@ committed handoff across machines.
    findings remain. Delete `docs/AUDIT.md` only when the count is zero.
 6. Add the `burn-down-audits` row to `docs/AUDIT-LOG.md` with fixed/deferred/dropped counts and the
    PR link.
-7. Run `npm run format:check`, the relevant quality checks, and the full test suite. Listener-based
-   Playwright needs the outer command's local-server permission; a sandbox `listen EPERM` is an
-   environment boundary, so rerun that unchanged gate with the required permission rather than
-   calling it a regression.
+7. Run `npm run format:check`, the relevant quality checks, and deterministic local tests. Do not
+   duplicate the full Playwright suite locally when exact-head CI in step 11 is available as the
+   full-suite gate; run it locally to diagnose CI or when CI is unavailable. Listener-based
+   Playwright needs the outer command's local-server permission, so a sandbox `listen EPERM` is an
+   environment boundary rather than a regression.
 8. Delete the consumed `docs/handoff/audit-burndown-run.md`.
 9. Inspect the complete closeout diff, commit the audit-log/backlog/handoff changes together, and
    push. Confirm local `HEAD` now equals `origin/<branch>`.

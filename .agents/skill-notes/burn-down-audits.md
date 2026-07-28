@@ -182,6 +182,47 @@ The remaining friction was supervisory rather than correctness-related:
   the prohibition on direct backlog edits. The runbook now lists the supported modes and removes
   that unsafe cleanup step.
 
+## PR 561 supervision retrospective
+
+The next continuation started with 128 findings and wrapped on request after a 12-outcome canary and
+21 bounded segments. It reconciled 75 fixes, 28 drops, and 11 deferrals exactly against the original
+backlog delta, leaving 14 original findings. All 75 accepted fixes received their PR comments, the
+queue was empty, no Codex role was capped or errored, retained logs cost $18.1190, and exact-head CI
+was fully green before PR 561 was marked ready. The session audit then added one unrelated tooling
+finding, correctly reported separately from the 14-finding campaign remainder.
+
+The strongest mechanisms were already present. Five-outcome boundaries kept detached work behind CI;
+blind review forced multiple real corrections; failed final findings rolled back cleanly with
+diagnostics; `STOP` prevented another finding from starting during wrap-up; and scoped log
+reconciliation kept cumulative status and cost data from contaminating this continuation's counts.
+Checkpoint inspection also caught a generic deferral renderer that blamed review for deterministic
+gate failures; the driver and its regression tests were corrected during the run.
+
+The remaining friction was about the host boundary and duplicate supervision work:
+
+* The first nested-CLI escalation sounded like a new security disclosure. The material difference
+  from the supervising chat is additional automated OpenAI calls and usage, not a different data
+  recipient. The runbook now treats explicit skill invocation as authorization for those in-scope
+  subprocesses, skips redundant conversational reconfirmation, and asks for one narrow reusable host
+  approval only when the platform still requires it. Invocation never overrides a host denial or
+  expands the role sandboxes.
+* `ruler:check` failed inside the workspace sandbox because its drift pass temporarily rebuilds
+  `.agents/`, then passed unchanged outside it. The same distinction now sits beside the rule that
+  keeps Ruler out of per-finding gates.
+* dprint emitted a cache-write warning on nearly every sandboxed format pass while returning zero.
+  The exit status, not the warning text, remains the verdict.
+* Wrap-up duplicated the exact-head CI suite locally. A macOS first-test Playwright harness failure
+  then consumed two reruns even though the pushed head completed the same CI suite green. Closeout
+  now keeps deterministic local checks but delegates the full-suite verdict to exact-head CI unless
+  local Playwright is needed for diagnosis.
+* `STOP` worked, but the active finding still consumed its remaining review and repair rounds. The
+  runbook now says explicitly that stop requests take effect only between findings.
+
+Compact CI polling and batched connector posting were also not followed consistently, but PR 554 had
+already earned clear instructions for both. Repeating those rules would make the skill longer
+without changing the contract, so this revision leaves them in place and records the execution miss
+here instead.
+
 ## Provider ownership
 
 The complete Codex package and this note are maintained directly:
@@ -222,3 +263,4 @@ the other.
 | 2026-07-26 | Remove failed-role untracked files without deleting pre-existing paths  |
 | 2026-07-27 | Bound detached segments by handled outcomes and make handoff explicit   |
 | 2026-07-27 | Make supervision portable, scoped, timed, and low-noise after PR 554    |
+| 2026-07-27 | Clarify consent, sandbox noise, stop latency, and closeout after PR 561 |
