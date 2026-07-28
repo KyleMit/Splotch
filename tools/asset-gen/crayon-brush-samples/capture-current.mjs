@@ -15,7 +15,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 import { argFlag } from '../../../scripts/lib/proc.mjs';
 import { chromiumExecutablePath } from '../../../scripts/lib/playwright.mjs';
 

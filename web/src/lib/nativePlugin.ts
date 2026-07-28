@@ -22,5 +22,15 @@
  */
 export function lazyPluginModule<T>(load: () => Promise<T>): () => Promise<T> {
   let cached: Promise<T> | null = null;
-  return () => (cached ??= load());
+  return () => {
+    if (!cached) {
+      // Drop the memo on rejection (mirrors lazyIdbDatabase in idb.ts): caching
+      // a failed chunk load would pin every future caller to that one failure.
+      cached = load().catch((error) => {
+        cached = null;
+        throw error;
+      });
+    }
+    return cached;
+  };
 }

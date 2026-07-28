@@ -1,12 +1,14 @@
 <script lang="ts">
+  import type { HTMLAttributes } from 'svelte/elements';
   import Icon from './Icon.svelte';
   import SplotchyIcon from './SplotchyIcon.svelte';
   import type { IconName } from './icon-names';
 
-  interface Props {
+  interface Props extends HTMLAttributes<HTMLSpanElement> {
     icon: IconName;
+    // Narrowed from ClassValue to match SplotchyIcon, which interpolates it
+    // into a class string.
     class?: string;
-    [key: string]: unknown;
   }
   let { icon, class: className = '', ...rest }: Props = $props();
 </script>

@@ -17,24 +17,30 @@ export function mountBootHiddenOverlays(
   // running after unmount.
   let stopped = false;
   scheduleIdle(() => {
-    import('$lib/components/bootHiddenOverlays').then((module) => {
-      onParentCenter(module.ParentCenter);
-      const queue = [
-        module.ColorPicker,
-        module.ColoringBook,
-        module.AiImagePrompt,
-        module.AiImageResult,
-        module.InstallBanner,
-      ];
-      let mounted = 0;
-      const mountNext = () => {
-        if (stopped) return;
-        onOverlay(queue[mounted]);
-        mounted += 1;
-        if (mounted < queue.length) scheduleIdle(mountNext);
-      };
-      mountNext();
-    });
+    import('$lib/components/bootHiddenOverlays')
+      .then((module) => {
+        onParentCenter(module.ParentCenter);
+        const queue = [
+          module.ColorPicker,
+          module.ColoringBook,
+          module.AiImagePrompt,
+          module.AiImageResult,
+          module.InstallBanner,
+        ];
+        let mounted = 0;
+        const mountNext = () => {
+          if (stopped) return;
+          onOverlay(queue[mounted]);
+          mounted += 1;
+          if (mounted < queue.length) scheduleIdle(mountNext);
+        };
+        mountNext();
+      })
+      .catch((err) => {
+        // A failed chunk load leaves the overlays unmounted for this session;
+        // surface it rather than silently losing the Parent Center et al.
+        console.error('Boot-hidden overlay chunk failed to load:', err);
+      });
   });
   return () => {
     stopped = true;

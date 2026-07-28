@@ -1047,7 +1047,9 @@ function queuePaperStep(step: () => void | Promise<void>): Promise<void> {
 }
 
 function queueDeferredCommandFold() {
-  queuePaperStep(() => {
+  // queuePaperStep handles step failures internally; the chain promise is only
+  // needed by callers that sequence after it, which the fold does not.
+  void queuePaperStep(() => {
     finalizeDeferredCommand();
     setCanUndo(snapshotCount() > 0);
   });

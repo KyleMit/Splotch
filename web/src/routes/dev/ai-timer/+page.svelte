@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte';
   import AiImageResult from '$lib/components/AiImageResult.svelte';
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import { ui } from '$lib/state/ui.svelte';
@@ -85,9 +84,13 @@
     HOTKEYS.find((h) => h.key === k)?.run();
   }
 
-  onDestroy(() => {
-    clearPending();
-    closeAiResult();
+  // $effect cleanup instead of onDestroy: onDestroy also runs during SSR, where
+  // this teardown has no business executing (.claude/rules/svelte.md).
+  $effect(() => {
+    return () => {
+      clearPending();
+      closeAiResult();
+    };
   });
 </script>
 

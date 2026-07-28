@@ -14,7 +14,7 @@
 //                expand the inline steps
 //   • none     — iOS Chrome (CriOS) UA; the shot documents the banner's absence
 
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
