@@ -45,7 +45,11 @@
 
 <script lang="ts">
   import type { HTMLAttributes } from 'svelte/elements';
+  import { iconNameFromPath } from './iconTypes';
 
+  // The exclusions must be spelled out literally here — Vite resolves
+  // import.meta.glob statically — but NON_RENDERABLE_ICONS in iconTypes.ts is
+  // the authoritative list; keep the two in step.
   const modules = import.meta.glob(['../icons/*.svg', '!../icons/splotchy.svg'], {
     eager: true,
     query: '?raw',
@@ -54,8 +58,7 @@
 
   const icons: Record<string, string> = {};
   for (const [path, src] of Object.entries(modules)) {
-    const key = (path.split('/').pop() ?? '').replace('.svg', '');
-    icons[key] = src as string;
+    icons[iconNameFromPath(path)] = src as string;
   }
 
   interface Props extends HTMLAttributes<HTMLSpanElement> {
