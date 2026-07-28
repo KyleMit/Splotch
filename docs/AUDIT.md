@@ -7,26 +7,6 @@
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P3][duplication] `.cache` is ignored three times in `.gitignore`
-
-**File(s):** `.gitignore:88,100,110` (config) — pinned at SHA f934d43
-
-#### Problem
-
-`.cache` / `.cache/` appears three times — line 88 (parcel-bundler block), line 100 (Gatsby block),
-line 110 (vuepress-v2 block) — all ignoring the same path with different trailing-slash forms. Pure
-redundancy that compounds the template-bloat problem above.
-
-#### Proposed solution
-
-Collapse to a single `.cache/` entry (folded into the prune of the previous finding).
-
-#### Verification
-
-`grep -n '^\.cache' .gitignore` currently prints three lines; after the fix, one.
-
----
-
 ### [P3][maintainability] Personal device identifiers are hard-coded into committed scripts
 
 **File(s):** `package.json:106,113,114` (scripts) — pinned at SHA f934d43
