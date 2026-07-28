@@ -1,131 +1,177 @@
 # Code Map — lines of code by domain
 
-> **Snapshot as of 2026-07-23.** These are point-in-time counts of committed source and will drift
-> as the code changes. Re-run the pass (see [Method](#method)) to refresh. This is a sibling to
-> `docs/DEPENDENCIES.md`: a "state of the codebase" inventory, not a maintained-in-lockstep truth.
+> **Snapshot as of 2026-07-28 at 43bc7716, plus this document.** These are point-in-time counts of
+> tracked source and will drift as the code changes. Re-run the pass (see [Method](#method)) to
+> refresh. This is a sibling to `docs/DEPENDENCIES.md`: a "state of the codebase" inventory, not a
+> maintained-in-lockstep truth.
 
 ## Method
 
-Counts are `git ls-files` line counts over the committed tree, with these filters applied so the
-numbers reflect **hand-written code and config**, not assets or generated duplicates:
+Counts are newline counts over the `git ls-files` inventory. The pass assigns every tracked file to
+exactly one measured area or one explicit exclusion class:
 
-* **Excluded:** binary assets (PNG/WebP/JPG/MP3/fonts), large data dumps (`package-lock.json`,
-  asset-gen / scrapbook data JSON, `.patch` / `.enc` / `.sha256`, `.txt` notes, generated
-  report/proof-sheet HTML).
-* **Kept:** source code plus important config files (`package.json`, `tsconfig`, `dprint.json`,
-  `capacitor.config.json`, `.claude/settings.json`, `netlify.toml`, svelte/vite/playwright configs,
-  …).
-* **Ruler dedup:** dropped every generated `CLAUDE.md` / `AGENTS.md`, `.claude/skills/**`, and the
-  entire `.agents/**` tree. The later direct-maintained `burn-down-audits` provider packages remain
-  excluded from this historical snapshot under the same path filter. Kept `.ruler/**` sources; a
-  `.md` file is counted only if it's a `.ruler` source or independently authored (docs, ADRs,
-  release notes, README).
+* **Measured:** source code, authored Markdown, SVG/XML/project files, shell/config files, store
+  listing text, and authoritative `.ruler/**` sources — including nested `.ruler` instruction
+  sources.
+* **Binary media / archives:** PNG, WebP, JPG/JPEG, MP3, ICO, and JAR.
+* **Generated or bulky data:** `package-lock.json`, asset-gen and scrapbook measurement JSON,
+  generated report/proof-sheet HTML, generated ranking/audit text, patch/encrypted/hash payloads,
+  and the scrapbook publishing marker.
+* **Agent dedup:** generated `CLAUDE.md` / `AGENTS.md`, `.claude/skills/**`,
+  `.claude/skill-notes/**`, and `.agents/**`. This also leaves the direct-maintained
+  `burn-down-audits` provider packages out of the LOC total, preserving the provider-tree exclusion.
+* **Repository metadata outside LOC scope:** `LICENSE` and `.git-blame-ignore-revs`.
 
-Grouping is one file → one area; a few cross-cutting files sit in a single bucket by convention (for
-example `books.ts` counts under Coloring books, not App state), so individual buckets are ±a few
-hundred lines at the boundaries while totals are exact.
+Grouping is one file → one area and, where shown, one sub-bucket. Cross-cutting files sit in a
+single bucket by convention; co-located tests follow the subject they test. Totals are exact even
+though a few functional boundaries are judgment calls.
 
-## Grand total: **89,323 LOC across 721 files**
+### Coverage check
 
-| #  | Area                                      |    LOC | Files |
-| -- | ----------------------------------------- | -----: | ----: |
-| 1  | **web/src** — the app                     | 30,562 |   257 |
-| 4  | **tools/asset-gen** — art pipeline        | 22,052 |   163 |
-| 9  | **docs** — ADRs & guides (authored md)    |  9,573 |    83 |
-| 5  | **scripts** — build/dev drivers           |  8,837 |    58 |
-| 7  | **.ruler** — agent-instruction sources    |  5,597 |    43 |
-| 2  | **web/tests** — E2E + integration         |  5,465 |    21 |
-| 3  | web/\* — build/test config                |  2,331 |    15 |
-| 6  | android + ios + fastlane — native shells  |  1,220 |    28 |
-| 11 | .github — CI workflows                    |    852 |    13 |
-| 10 | scrapbook — run-artifact code             |    899 |     9 |
-| 14 | root config (package.json, dprint, …)     |    828 |    11 |
-| 8  | .claude / .codex — hooks/rules/cmds/cloud |    694 |    11 |
-| 13 | store-assets — listing text               |    260 |     3 |
-| 12 | releases — release notes                  |    153 |     6 |
+| Disposition                    | Files |
+| ------------------------------ | ----: |
+| Measured and categorized       |   939 |
+| Explicitly excluded            | 2,093 |
+| **All tracked files**          | 3,032 |
+| Unassigned or multiply counted |     0 |
 
-## Splits for every area over 3k LOC
+| Exclusion class                           | Files |
+| ----------------------------------------- | ----: |
+| Binary media / archives                   | 1,829 |
+| Generated / provider agent delivery trees |    96 |
+| Generated measurement data                |    82 |
+| Archived payloads / hashes                |    54 |
+| Generated report / proof-sheet HTML       |    19 |
+| Generated audit / ranking text            |     9 |
+| Repository metadata outside LOC scope     |     2 |
+| Dependency lockfile                       |     1 |
+| Publishing marker                         |     1 |
+| **Total explicitly excluded**             | 2,093 |
 
-### 1. web/src (30,562) — functional domains
+## Grand total: **106,836 LOC across 939 measured files**
 
-| Domain                        |   LOC | Files |
-| ----------------------------- | ----: | ----: |
-| Drawing / canvas engine †     | 7,154 |    25 |
-| AI image generation †         | 4,857 |    38 |
-| App state (runes) †           | 3,307 |    25 |
-| Parent Center / settings      | 2,770 |    12 |
-| Core UI controls              | 2,146 |     7 |
-| Design system + icons         | 1,395 |    72 |
-| Admin console + token backend | 1,335 |     6 |
-| Routes / app shell / dev      | 1,318 |    13 |
-| Gestures / Svelte actions     | 1,213 |    10 |
-| Color palette & picker        | 1,169 |     6 |
-| Storage / persistence         |   865 |     6 |
-| PWA / service worker          |   848 |     2 |
-| Server / API backend          |   739 |    10 |
-| Coloring books                |   374 |     1 |
-| Misc lib utilities            |   361 |    10 |
-| Audio                         |   104 |     1 |
+| Area                                     |    LOC | Files |
+| ---------------------------------------- | -----: | ----: |
+| **web/src** — the app                    | 34,591 |   316 |
+| **tools/asset-gen** — art pipeline       | 23,255 |   176 |
+| **scripts** — build/dev drivers          | 16,392 |   129 |
+| **docs** — ADRs & guides                 | 11,617 |    89 |
+| **.ruler** — agent-instruction sources   |  6,007 |    46 |
+| **web/tests** — E2E + integration        |  5,923 |    44 |
+| web/\* — build/test config               |  2,705 |    24 |
+| android + ios + fastlane — native shells |  2,012 |    53 |
+| root config / README                     |  1,032 |    12 |
+| .claude / .codex — agent runtime config  |    997 |    14 |
+| .github — CI and issue config            |    957 |    17 |
+| scrapbook — run-artifact prose           |    903 |     9 |
+| store-assets — listing text              |    260 |     3 |
+| releases — release notes                 |    185 |     7 |
 
-### 4. tools/asset-gen (22,052) — by subtree
+## Splits for every measured area over 3k LOC
 
-| Sub-bucket                        |    LOC | Files |
-| --------------------------------- | -----: | ----: |
-| ideas-exploration (R&D scratch) † | 11,912 |    88 |
-| bin (pipeline CLIs) †             |  3,222 |    18 |
-| lib (pipeline core)               |  2,124 |    16 |
-| docs (pipeline records)           |  1,566 |    12 |
-| tests                             |  1,367 |    15 |
-| crayon-brush-samples              |    811 |     7 |
-| legacy                            |    541 |     3 |
-| coloring-book-proof-sheet-assets  |    476 |     2 |
-| (root)                            |     33 |     2 |
+### web/src (34,591) — functional domains
 
-### 9. docs (9,573) — by subtree
+| Domain                          |   LOC | Files |
+| ------------------------------- | ----: | ----: |
+| Drawing / canvas engine         | 7,239 |    27 |
+| AI image generation             | 3,774 |    36 |
+| Parent Center / settings        | 3,112 |    15 |
+| App state (runes)               | 2,923 |    25 |
+| Admin console + token backend   | 2,669 |    17 |
+| Routes / app shell / dev        | 2,376 |    31 |
+| Design system + icons           | 1,959 |    78 |
+| Core UI controls                | 1,788 |     9 |
+| Gestures / Svelte actions       | 1,765 |    14 |
+| Color palette & picker          | 1,240 |     7 |
+| Storage / persistence           | 1,224 |     8 |
+| PWA / service worker            | 1,194 |     3 |
+| Server / API backend            | 1,178 |    17 |
+| Coloring books                  |   989 |     5 |
+| Platform / device integration   |   739 |    16 |
+| Audio                           |   247 |     2 |
+| Miscellaneous focused utilities |   175 |     6 |
 
-| Sub-bucket  |   LOC | Files |
-| ----------- | ----: | ----: |
-| adrs †      | 7,634 |    74 |
-| (root docs) | 1,610 |     7 |
-| CLOUD       |   329 |     2 |
+#### Drawing / canvas engine (7,239) — defined subdomains
 
-### 5. scripts (8,837) — by subtree
+The drawing domain contains `lib/drawing/**` except the four `aiImage*` files, plus
+`DrawingCanvas.svelte`, `state/canvas.svelte.ts`, and `routes/dev/engine/**`. Every one of those 27
+files lands in exactly one subdomain below.
 
-| Sub-bucket       |   LOC | Files |
-| ---------------- | ----: | ----: |
-| (root scripts) † | 3,968 |    32 |
-| perf †           | 3,188 |    14 |
-| lib              | 1,681 |    12 |
+| Subdomain                                 | Scope                                                                                           |   LOC | Files |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------- | ----: | ----: |
+| Engine orchestration & canvas integration | `engine`, early boot/perf/empty scan, `DrawingCanvas`, canvas state, and the engine dev harness | 2,554 |     9 |
+| Stroke model & brush rendering            | `strokeOps`, `crayonBrush`, `magicBrush`, and their co-located tests                            | 1,982 |     6 |
+| Undo & snapshot history                   | `undoHistory` implementation and tests                                                          | 1,432 |     2 |
+| Export, saving & clear-time persistence   | `exportDrawing`, `folderSave`, `screenshot`, and `saveOnDelete`                                 |   752 |     5 |
+| Paper view & coloring overlay             | `paperView`, its tests, and `overlay`                                                           |   263 |     3 |
+| Pointer / gesture math                    | `strokeMath` implementation and tests                                                           |   256 |     2 |
+| **Drawing / canvas engine total**         |                                                                                                 | 7,239 |    27 |
 
-### 7. .ruler (5,597) — by subtree
+### tools/asset-gen (23,255) — by subtree
 
-| Sub-bucket           |   LOC | Files |
-| -------------------- | ----: | ----: |
-| skills sources †     | 5,388 |    37 |
-| root instruction .md |   209 |     6 |
+| Sub-bucket                       |    LOC | Files |
+| -------------------------------- | -----: | ----: |
+| ideas-exploration (R&D scratch)  | 11,981 |    88 |
+| bin (pipeline CLIs)              |  3,090 |    18 |
+| lib (pipeline core)              |  2,483 |    23 |
+| tests                            |  2,171 |    20 |
+| docs (pipeline records)          |  1,569 |    12 |
+| crayon-brush-samples             |    787 |     7 |
+| legacy                           |    542 |     3 |
+| coloring-book-proof-sheet-assets |    468 |     2 |
+| instruction source               |    131 |     1 |
+| (root)                           |     33 |     2 |
 
-### 2. web/tests (5,465) — by subtree
+### scripts (16,392) — by subtree
 
-| Sub-bucket            |   LOC | Files |
-| --------------------- | ----: | ----: |
-| (root) E2E/unit specs | 5,269 |    19 |
-| model-eval            |   106 |     1 |
-| redteam               |    90 |     1 |
+| Sub-bucket         |   LOC | Files |
+| ------------------ | ----: | ----: |
+| (root scripts)     | 4,728 |    43 |
+| perf               | 3,362 |    21 |
+| tests              | 2,888 |    25 |
+| lib                | 2,781 |    25 |
+| audit-burndown     | 2,570 |    14 |
+| instruction source |    63 |     1 |
 
-† = sub-bucket is itself over 3k LOC; left un-split here (one level of splitting only). The two
-largest web/src domains (Drawing and AI) break down further file-by-file — `drawing/engine.ts` alone
-is ~1,450 lines.
+### docs (11,617) — by subtree
+
+| Sub-bucket     |   LOC | Files |
+| -------------- | ----: | ----: |
+| adrs           | 7,868 |    75 |
+| (root docs)    | 2,906 |     8 |
+| CLOUD          |   331 |     2 |
+| handoff        |   270 |     2 |
+| audit-deferred |   242 |     2 |
+
+### .ruler (6,007) — by subtree
+
+| Sub-bucket                |   LOC | Files |
+| ------------------------- | ----: | ----: |
+| skill sources             | 5,650 |    38 |
+| root instruction / config |   301 |     7 |
+| skill notes               |    56 |     1 |
+
+### web/tests (5,923) — by subtree
+
+| Sub-bucket               |   LOC | Files |
+| ------------------------ | ----: | ----: |
+| (root) E2E / integration | 5,709 |    41 |
+| model-eval               |   106 |     1 |
+| redteam                  |    90 |     1 |
+| instruction source       |    18 |     1 |
 
 ## Notes worth carrying forward
 
-* **The drawing engine is the heart of the app** — ~7.2k LOC (nearly a quarter of `web/src`) and the
-  most test-covered production code (see ADR-0004, ADR-0066).
-* **AI image generation is a full vertical, not a feature** — ~4.9k LOC spanning client, server, and
-  admin/token plumbing.
-* **`tools/asset-gen` is nearly as large as the app** (22k vs 30.5k), but **more than half of it
-  (11.9k) is `ideas-exploration`** — committed R&D scratch, not the live pipeline. The production
-  pipeline is `bin` + `lib` ≈ 5.3k.
-* **ADRs are 7.6k LOC of markdown** (74 files) — the decision record is a substantial, real part of
-  the repo.
-* **The backend surface is small** (~2.8k across AI-server + admin + API) because native ships fully
-  static and calls the hosted API (ADR-0001).
+* **The drawing engine remains the heart of the app** — 7.2k LOC (21% of `web/src`). Its largest
+  pieces are orchestration/integration (2.6k), rendering/brushes (2.0k), and undo/snapshots (1.4k);
+  the new split makes those different responsibilities visible (see ADR-0004, ADR-0066).
+* **AI image generation is still a full vertical, not a single feature** — 3.8k LOC spanning client,
+  server, and generation-specific state. Admin/token infrastructure remains separate so the buckets
+  do not double-count it.
+* **`tools/asset-gen` is two-thirds the size of the app** (23.3k vs 34.6k), and just over half of it
+  (12.0k) is `ideas-exploration` — committed R&D scratch, not the live pipeline. The production
+  pipeline core is `bin` + `lib` ≈ 5.6k.
+* **Automation is now a major code surface:** `scripts` is 16.4k LOC, including 2.9k of script tests
+  and 2.6k for the audit-burndown tooling.
+* **ADRs are 7.9k LOC of Markdown** (75 files) — the decision record is a substantial part of the
+  repository.
