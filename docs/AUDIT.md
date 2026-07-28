@@ -19,53 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Maintainability] Single-source the toolState→engine push shared by earlyBoot and DrawingCanvas
-
-**File(s):** `web/src/lib/drawing/earlyBoot.ts` (`bootDrawingEngine`, lines 38–41);
-`web/src/lib/components/DrawingCanvas.svelte` (lines 177, 230–232, 253–259) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-The mapping from persisted tool state to engine setters exists twice and must stay in agreement by
-prose alone. `earlyBoot.ts`:
-
-```ts
-setStrokeWidth(getStrokeWidthPx(activeStrokeSize()));
-setCrayonMode(toolState.brush === 'crayon');
-setMagicMode(toolState.brush === 'magic');
-```
-
-and `DrawingCanvas.svelte` repeats each line inside separate `$effect`s (lines 230–232, 253–255,
-257–259) plus the explicit `setStrokeWidth(...)` at line 177. Today the two sites agree, but the
-contract is invisible: a new engine-facing tool property (a fourth brush flag, a persisted texture
-knob — the crayon idea backlog is full of candidates) added only to the component's effects silently
-leaves the pre-hydration window running with the wrong mode, exactly the class of drift the boot
-path exists to prevent. The eraser's deliberate absence (never persisted — `readBrush` in
-`web/src/lib/state/tool.svelte.ts` lines 46–51 filters it) is knowledge currently encoded nowhere
-near either site.
-
-#### Proposed solution
-
-Extract one shared helper, e.g. in `earlyBoot.ts` or a small `toolBridge.ts`:
-
-```ts
-export function pushToolStateToEngine(): void {
-  setStrokeWidth(getStrokeWidthPx(activeStrokeSize()));
-  setCrayonMode(toolState.brush === 'crayon');
-  setMagicMode(toolState.brush === 'magic');
-  setEraserMode(toolState.brush === 'eraser');
-}
-```
-
-`bootDrawingEngine` calls it once; DrawingCanvas calls it from a single `$effect` (reading
-`toolState.brush` and `activeStrokeSize()` keeps the effect reactive to both). Tradeoff: collapsing
-the component's per-setter effects into one means a brush change also re-pushes the (unchanged)
-width — every setter involved is an idempotent assignment, so that's free. Keep the
-eraser-not-persisted note on the helper so the boot path's behavior is explained where it's
-implemented.
-
 ### [Testing] Extract emptyScan's alpha-scan predicate so the actual detection logic is unit-testable
 
 **File(s):** `web/src/lib/drawing/emptyScan.ts` (`scanCanvasIsEmpty`, lines 36–43);
