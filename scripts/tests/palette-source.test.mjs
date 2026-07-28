@@ -10,7 +10,9 @@ const paletteSource = readFileSync(join(repoRoot, 'web/src/lib/palette.ts'), 'ut
 const paletteHexes = [
   ...new Set([...paletteSource.matchAll(/'#([0-9a-fA-F]{3,8})'/g)].map((m) => m[1].toLowerCase())),
 ];
-const hexRegex = new RegExp(`#(?:${paletteHexes.join('|')})\\b`, 'gi');
+// The optional trailing pair catches 8-digit alpha variants of a palette hex
+// (#ab71e1cc) — a plausible drift copy the plain \b boundary would skip.
+const hexRegex = new RegExp(`#(?:${paletteHexes.join('|')})(?:[0-9a-fA-F]{2})?\\b`, 'gi');
 
 // file (relative to repo root) → allowed occurrence count, with the reason.
 // Everything here duplicates a palette hex because it genuinely can't import
@@ -67,8 +69,13 @@ describe('brand palette single source', () => {
   });
 
   it('counts hexes case-insensitively but ignores var() fallbacks', () => {
-    expect(countPaletteHexes('color: #AB71E1; fill: #ab71e1;')).toBe(2);
-    expect(countPaletteHexes('color: var(--brand, #ab71e1);')).toBe(0);
+    const hex = paletteHexes[0];
+    expect(countPaletteHexes(`color: #${hex.toUpperCase()}; fill: #${hex};`)).toBe(2);
+    expect(countPaletteHexes(`color: var(--brand, #${hex});`)).toBe(0);
+  });
+
+  it('catches 8-digit alpha variants of a palette hex', () => {
+    expect(countPaletteHexes(`border-color: #${paletteHexes[0]}cc;`)).toBe(1);
   });
 
   it('finds palette hexes only in allowlisted files', () => {
