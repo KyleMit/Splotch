@@ -35,34 +35,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — scrapbook · run-artifact code
 
-### [P4][duplication] Hub re-implements the masthead/crayon-strip/breadcrumb chrome by hand
-
-**File(s):** `scrapbook/coloring-book-proof-sheets/index.html:150-173` (hand-authored hub) — pinned
-at SHA f934d43
-
-#### Problem
-
-The `<header>` block hand-copies the crayon-strip brand, the `Splotch / Scrapbook` wordmark, and the
-breadcrumb that `scripts/lib/scrapbook-chrome.mjs` generates for every other page. The README even
-concedes it "carries the shared crayon masthead + breadcrumb by hand; keep it in sync". This is real
-structural duplication (distinct from the token duplication above): a change to the generated chrome
-(a new brand element, a different crumb separator) leaves this page visually diverged with no guard.
-
-#### Proposed solution
-
-Since the hub is intentionally hand-authored (an iframe switcher the generator doesn't produce), the
-cleanest fix is to have `scrapbook-chrome.mjs` expose its masthead/breadcrumb fragment as a reusable
-export and generate the hub's shell (injecting the hand-authored tab strip + iframe + script) rather
-than hand-writing the chrome. If full generation is too much, at least factor the chrome HTML into a
-shared string both the generator and a tiny hub-build step consume.
-
-#### Verification
-
-Change the generated masthead (e.g. crumb separator) and confirm the hub does not follow today;
-after the fix the hub inherits the change (or a check flags the divergence).
-
----
-
 ### [P3][discoverability] README omits the `crayon-brush-samples` collection and how it's regenerated
 
 **File(s):** `scrapbook/README.md` (whole file; cf. the icons paragraph at `:66-71`) — pinned at SHA

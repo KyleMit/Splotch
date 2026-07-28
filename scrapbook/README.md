@@ -58,11 +58,9 @@ at <https://kylemit.github.io/Splotch/>.
 The coloring-book proof sheets have their own hub at
 `https://kylemit.github.io/Splotch/coloring-book-proof-sheets/` — one sheet per category
 (`coloring-book-proof-sheets/<category>.html`, built by `npm run gen:coloring-book-proof-sheet`)
-plus a hand-authored `index.html` that jumps between categories (tabs, prev/next arrows, ←/→ keys,
-hash deep links). The hub `index.html` is a keeper — `scrapbook:publish`/`scrapbook:index` only
-regenerate the **top-level** `index.html`, so republishing a category sheet never touches it. (It
-also carries the shared crayon masthead + breadcrumb by hand; keep it in sync with
-`scrapbook-chrome.mjs` when the chrome changes.)
+plus a generated `index.html` that jumps between categories (tabs, prev/next arrows, ←/→ keys, hash
+deep links). `npm run scrapbook:index` regenerates the hub alongside the top-level index;
+`npm run scrapbook:check` verifies both generated pages are current.
 
 The icon gallery lives at `https://kylemit.github.io/Splotch/icons/` — `icons/index.html`, built by
 `npm run gen:icons-sheet` from the SVGs in `web/src/lib/icons/`, split into colorful spot icons and
