@@ -121,7 +121,6 @@
     "ios:clean": "cd ios/App && xcodebuild -scheme App clean",
     "adb:devices": "adb devices",
     "adb:reverse": "adb reverse tcp:5173 tcp:5173",
-    "update:browserslist": "npx update-browserslist-db@latest",
     "deps:gha": "node scripts/gha-versions.mjs",
     "audit:preflight": "node scripts/audit-burndown/preflight.mjs",
     "audit:burndown": "node scripts/audit-burndown/burndown.mjs",
@@ -248,7 +247,6 @@
     "ios:clean": "Xcode clean of the App scheme (macOS-only)",
     "adb:devices": "List connected Android devices (expect 'device', not 'unauthorized')",
     "adb:reverse": "Forward the phone's port 5173 to the desktop dev server (re-run after each USB reconnect)",
-    "update:browserslist": "Refresh the browserslist database (caniuse-lite) to clear outdated-browserslist warnings",
     "deps:gha": "Report the GitHub Actions version pins across .github/workflows and flag drift; add --check-latest to compare each against its latest upstream release (network)",
     "audit:preflight": "Read-only go/no-go check before an unattended audit burndown: selected agent auth, clean tree, origin reachable, docs/AUDIT.md parses, npm run check green (burn-down-audits skill)",
     "audit:burndown": "Scripted burndown of docs/AUDIT.md: one isolated Claude/Codex session per role per finding (verify → implement → adversarial review → fix), one commit each, pushed every finding. MAX_ISSUES=5 canary by default; knobs are env vars — see the burn-down-audits skill",
@@ -316,12 +314,5 @@
       "sharp": "$sharp"
     },
     "tar": "^7.5.19"
-  },
-  "browserslist": [
-    "chrome >= 111",
-    "edge >= 111",
-    "firefox >= 114",
-    "safari >= 16.4",
-    "ios_saf >= 16.4"
-  ]
+  }
 }
