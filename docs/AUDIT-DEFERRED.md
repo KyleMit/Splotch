@@ -946,3 +946,48 @@ The rolled-back draft is kept at
 `docs/audit-deferred/p2-duplication-experimental-strip-types-disable-warning-experimentalwarn.patch`
 (2 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-duplication-experimental-strip-types-disable-warning-experimentalwarn.patch`.
+
+### [P3][maintainability] Personal device identifiers are hard-coded into committed scripts
+
+**File(s):** `package.json:106,113,114` (scripts) — pinned at SHA f934d43
+
+#### Problem
+
+Three scripts embed one developer's specific hardware:
+
+```json
+"android:run:device": "... ANDROID_SERIAL=R5CY128YMGF node scripts/gradle.mjs :app:installDebug",
+"ios:run:emulator":   "... cap run ios --target C6012C49-AA93-4869-B3A6-E47C9EAAC567",
+"ios:run:device":     "... cap run ios --target 00008103-0006202E3CF1001E",
+```
+
+and the `scripts-info` describes them as the physical "SM-S938U1" phone and "Kyle's iPad". These
+serials/UDIDs are meaningless (and non-functional) for any other contributor or CI, yet they sit in
+the shared `package.json`. They are effectively personal config committed to the repo.
+
+#### Proposed solution
+
+Read the target from an env var with the current value as a documented fallback, e.g.
+`ANDROID_SERIAL=${ANDROID_SERIAL:-R5CY128YMGF}` is not portable inline — instead have the Node
+helper (`scripts/gradle.mjs` / a wrapper) accept `--target`/`ANDROID_SERIAL` from the environment
+and drop the literals from `package.json`, or move the device-specific variants into a gitignored
+local overrides file. At minimum, document in `scripts-info` that these are placeholders to replace
+with `adb:devices` / `xcrun simctl list` output (already partially noted for Android).
+
+#### Verification
+
+On a machine without those devices, `npm run ios:run:device` fails with "device not found" — proving
+the literal is dead for everyone but one person. After the fix it should resolve from env or error
+with a clear "set TARGET_DEVICE" message.
+
+---
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+Removed the personal device scripts and updated the authoritative mobile guidance, but the sandbox
+denied writes to the tracked `.agents/skills/mobile` mirrors during `ruler:apply`. Those generated
+files remain stale, so the full change cannot be delivered safely from this runner.
