@@ -12,12 +12,10 @@ cd "$CLAUDE_PROJECT_DIR"
 # Node deps. `npm install` (not `npm ci`) so the result carries into the
 # environment cache and stays correct when package.json changes between rebuilds.
 #
-# package-lock.json is authored by npm 11; .claude/cloud/setup.sh pins npm 11
-# here to match. If the pin is ever missing (snapshot rebuild, image update), a
-# different npm major rewrites lockfile metadata in its own dialect and dirties
-# the tree at session start (npm 10 and 11 disagree on optional-peer entries, so
-# no lockfile shape satisfies both — `--no-save` doesn't stop the repair either).
-# Discard that churn, but never touch a lockfile that already had edits.
+# .claude/cloud/setup.sh pins npm@11 to match package-lock.json's authoring major.
+# If the pin is ever missing, a different npm rewrites lockfile metadata in its own
+# dialect (docs/CLOUD/Claude.md, "npm-version note") — discard that churn, but
+# never touch a lockfile that already had edits.
 lock_was_clean=false
 if git diff --quiet -- package-lock.json 2>/dev/null; then lock_was_clean=true; fi
 

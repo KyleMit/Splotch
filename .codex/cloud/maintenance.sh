@@ -26,9 +26,7 @@ warn() {
 
 export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-/opt/pw-browsers}"
 
-# Pin npm to the major/patch that authors package-lock.json (see setup.sh for the full rationale):
-# the Codex image ships npm 11.4.2, which disagrees with local dev / Claude Cloud (npm 11.13+) on
-# optional-peer lockfile entries and fails `npm ci`. Matching npm@11 (latest 11.x) removes the drift.
+# Pin npm@11 to match package-lock.json's authoring npm — see docs/CLOUD/Codex.md.
 npx -y npm@11 install -g npm@11 \
   || warn "npm 11 pin skipped — npm ci may fail on a package-lock.json/npm-version optional-peer mismatch."
 
