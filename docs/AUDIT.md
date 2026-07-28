@@ -7,31 +7,6 @@
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P3][duplication] AVD name `Pixel_7_Pro_API_33` is hard-coded across four scripts
-
-**File(s):** `package.json:101,102,103,219` (scripts) — pinned at SHA f934d43
-
-#### Problem
-
-The emulator/AVD name is repeated verbatim in `android:boot` (`emulator -avd Pixel_7_Pro_API_33`),
-`android:emulator` (`cap run android --target Pixel_7_Pro_API_33`), `android:live`
-(`--target Pixel_7_Pro_API_33`), and described in `android:setup`'s `scripts-info` (line 219). The
-matching "API 33" system image lives in `scripts/android-setup.mjs`. Renaming the AVD or bumping the
-API level touches four+ places with no single constant.
-
-#### Proposed solution
-
-Define the AVD name once — an env default resolved in a Node helper
-(`scripts/android-emulator-*.mjs` already exist) or a single constant those scripts read — and
-reference it from the `android:*` scripts. Keep the human-readable form in `scripts-info` only.
-
-#### Verification
-
-`grep -c Pixel_7_Pro_API_33 package.json` returns 3 (plus prose); after centralizing it should be 0
-in the executable commands.
-
----
-
 ### [P3][documentation] `overrides.tar` pin has no rationale, unlike every other config in the repo
 
 **File(s):** `package.json:298-303` (dependencies) — pinned at SHA f934d43
