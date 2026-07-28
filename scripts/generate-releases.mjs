@@ -9,14 +9,8 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { marked } from 'marked';
-import {
-  ROOT,
-  fail,
-  isMain,
-  parseFrontmatter,
-  compareSemverDesc,
-  writeFileDeep,
-} from './lib/utils.mjs';
+import { ROOT, fail, isMain } from './lib/proc.mjs';
+import { parseFrontmatter, compareSemverDesc, writeFileDeep } from './lib/frontmatter.mjs';
 
 const RELEASES_DIR = join(ROOT, 'releases');
 const ANDROID_CHANGELOG_LIMIT = 500; // Google Play "What's new" hard limit.

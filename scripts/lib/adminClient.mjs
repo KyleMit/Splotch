@@ -4,7 +4,7 @@
 // method returns the raw Response alongside the parsed JSON body so the
 // assertions stay in the smoke scripts — this module only makes the requests.
 
-import { sleep } from './utils.mjs';
+import { sleep } from './proc.mjs';
 import { json } from './smoke.mjs';
 
 const LOGIN_ATTEMPTS = 5;

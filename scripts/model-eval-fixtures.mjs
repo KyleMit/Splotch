@@ -23,7 +23,7 @@ import { chromium } from '@playwright/test';
 import { readFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, PALETTE, PAPER } from './lib/model-eval.mjs';
-import { chromiumExecutablePath } from './lib/utils.mjs';
+import { chromiumExecutablePath } from './lib/playwright.mjs';
 
 const OUT = join(ROOT, 'web/tests/model-eval/inputs');
 const COLORING = join(ROOT, 'web/static/coloring');

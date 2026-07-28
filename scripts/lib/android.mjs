@@ -5,7 +5,7 @@
 
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { ROOT } from './utils.mjs';
+import { ROOT } from './proc.mjs';
 
 export const AVD_NAME = 'Pixel_7_Pro_API_33';
 

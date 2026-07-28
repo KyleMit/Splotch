@@ -7,7 +7,7 @@
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
-import { fail, requireEnv } from './utils.mjs';
+import { fail, requireEnv } from './proc.mjs';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;

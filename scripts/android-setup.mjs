@@ -7,7 +7,8 @@
 
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, hasCommand, run, capture, fail, maestroInstalled } from './lib/utils.mjs';
+import { ROOT, hasCommand, run, capture, fail } from './lib/proc.mjs';
+import { maestroInstalled } from './lib/maestro.mjs';
 import { ANDROID_HOME, AVD_NAME } from './lib/android.mjs';
 
 const ABI = process.arch === 'arm64' ? 'arm64-v8a' : 'x86_64';

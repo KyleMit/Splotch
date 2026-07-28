@@ -8,7 +8,7 @@
 
 import { spawn, spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { ROOT } from './utils.mjs';
+import { ROOT } from './proc.mjs';
 
 // Best-effort: kill whatever is listening on `port` so strictPort doesn't fail
 // and we never reuse a stale server from a previous run.

@@ -17,7 +17,8 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { chromiumExecutablePath, isMain, runMain, sleep } from '../lib/utils.mjs';
+import { chromiumExecutablePath } from '../lib/playwright.mjs';
+import { isMain, runMain, sleep } from '../lib/proc.mjs';
 import { parsePerfArgs } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import {

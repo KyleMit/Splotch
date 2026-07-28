@@ -5,7 +5,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { sleep } from '../lib/utils.mjs';
+import { sleep } from '../lib/proc.mjs';
 import { chdirRoot, LOGS } from './lib.mjs';
 
 chdirRoot();

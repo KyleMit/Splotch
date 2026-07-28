@@ -3,7 +3,7 @@
 // folder.
 
 import { join } from 'node:path';
-import { ROOT, openInOS, fail } from './lib/utils.mjs';
+import { ROOT, openInOS, fail } from './lib/proc.mjs';
 
 const target = process.argv[2];
 if (!target) fail('[open-path] no path given — e.g. node scripts/open-path.mjs ios/App/build/ipa');

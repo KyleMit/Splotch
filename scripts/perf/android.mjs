@@ -13,7 +13,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
-import { sleep, pollUntil, run, fail, isMain, runMain } from '../lib/utils.mjs';
+import { sleep, pollUntil, run, fail, isMain, runMain } from '../lib/proc.mjs';
 import { driveSession } from './session.mjs';
 import { profilePath } from './paths.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';

@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { themes } from '../../web/src/lib/design/tokens.ts';
 import { PALETTE_COLORS } from '../../web/src/lib/palette.ts';
-import { ROOT } from './utils.mjs';
+import { ROOT } from './proc.mjs';
 
 export { ROOT };
 

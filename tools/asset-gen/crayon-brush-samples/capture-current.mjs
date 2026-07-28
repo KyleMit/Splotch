@@ -16,7 +16,8 @@ import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { argFlag, chromiumExecutablePath } from '../../../scripts/lib/utils.mjs';
+import { argFlag } from '../../../scripts/lib/proc.mjs';
+import { chromiumExecutablePath } from '../../../scripts/lib/playwright.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const baseURL = argFlag('url', 'http://localhost:4188');

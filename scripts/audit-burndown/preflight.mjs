@@ -3,7 +3,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { hasCommand } from '../lib/utils.mjs';
+import { hasCommand } from '../lib/proc.mjs';
 import { agentAuthCommand, agentRunnerDefaults, normalizeAgentRunner } from './agent-runner.mjs';
 import {
   auditFile,

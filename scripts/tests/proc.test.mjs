@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { capture, hasCommand, parseFrontmatter } from '../lib/utils.mjs';
+import { capture, hasCommand } from '../lib/proc.mjs';
 
 const argumentsToPreserve = [
   '$HOME',
@@ -13,7 +13,7 @@ const argumentsToPreserve = [
   '$(printf substituted); printf not-run | cat',
 ];
 const argumentPrinter = 'process.stdout.write(JSON.stringify(process.argv.slice(1)))';
-const utilsUrl = new URL('../lib/utils.mjs', import.meta.url).href;
+const procUrl = new URL('../lib/proc.mjs', import.meta.url).href;
 
 describe('command helpers', () => {
   it('detects commands without which on PATH', () => {
@@ -41,7 +41,7 @@ describe('command helpers', () => {
 
   it('passes run arguments to the child unchanged', () => {
     const script = `
-      import { run } from ${JSON.stringify(utilsUrl)};
+      import { run } from ${JSON.stringify(procUrl)};
       run(process.execPath, [
         '-e',
         ${JSON.stringify(argumentPrinter)},
@@ -58,7 +58,7 @@ describe('command helpers', () => {
 
   it('keeps deliberate shell syntax available through sh', () => {
     const script = `
-      import { sh } from ${JSON.stringify(utilsUrl)};
+      import { sh } from ${JSON.stringify(procUrl)};
       await sh('printf "left" && printf " right"');
     `;
     const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
@@ -67,27 +67,5 @@ describe('command helpers', () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toBe('left right');
-  });
-});
-
-describe('parseFrontmatter', () => {
-  it('parses flat keys and ignores blank lines', () => {
-    expect(
-      parseFrontmatter('---\nversion: 1.3.1\n \nandroidVersionCode: 7\n---\nRelease notes')
-    ).toEqual({
-      frontmatter: 'version: 1.3.1\n \nandroidVersionCode: 7',
-      meta: { version: '1.3.1', androidVersionCode: '7' },
-      body: 'Release notes',
-    });
-  });
-
-  it('returns null without a frontmatter block', () => {
-    expect(parseFrontmatter('Release notes')).toBeNull();
-  });
-
-  it('rejects malformed non-blank frontmatter lines', () => {
-    expect(() => parseFrontmatter('---\nandroid-version-code: 7\n---\nRelease notes')).toThrow(
-      'Malformed frontmatter line 1: android-version-code: 7'
-    );
   });
 });

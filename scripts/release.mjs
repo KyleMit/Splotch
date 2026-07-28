@@ -19,7 +19,8 @@
 import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { ROOT, fail, run, capture, isMain, parseFrontmatter } from './lib/utils.mjs';
+import { ROOT, fail, run, capture, isMain } from './lib/proc.mjs';
+import { parseFrontmatter } from './lib/frontmatter.mjs';
 import { RELEASE_AAB } from './lib/android.mjs';
 import { setAndroidVersion, setIosVersion } from './lib/native-version.mjs';
 

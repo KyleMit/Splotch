@@ -31,7 +31,8 @@ import {
   imageDims,
   imageFormat,
 } from './lib/model-eval.mjs';
-import { chromiumExecutablePath, requireEnv, runId as makeRunId } from './lib/utils.mjs';
+import { chromiumExecutablePath } from './lib/playwright.mjs';
+import { requireEnv, runId as makeRunId } from './lib/proc.mjs';
 import { buildReport } from './lib/model-eval-report.mjs';
 
 const BASE = join(ROOT, 'web/tests/model-eval');

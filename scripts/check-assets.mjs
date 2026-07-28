@@ -6,7 +6,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { webOnlyBooks } from './lib/book-assets.mjs';
-import { ROOT, fail } from './lib/utils.mjs';
+import { ROOT, fail } from './lib/proc.mjs';
 import { BOOKS, booksForPlatform, bookAssetPaths } from '../web/src/lib/state/books.ts';
 
 const STATIC_DIR = join(ROOT, 'web', 'static');

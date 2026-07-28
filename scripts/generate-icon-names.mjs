@@ -4,7 +4,7 @@
 //   node scripts/generate-icon-names.mjs
 
 import { globSync, writeFileSync } from 'node:fs';
-import { fail } from './lib/utils.mjs';
+import { fail } from './lib/proc.mjs';
 
 const OUT = 'web/src/lib/components/icon-names.d.ts';
 

@@ -11,7 +11,7 @@
 // `npm run perf:analyze` (see the `profiling` skill).
 
 import { webkit } from '@playwright/test';
-import { isMain, runMain, sleep } from '../lib/utils.mjs';
+import { isMain, runMain, sleep } from '../lib/proc.mjs';
 import { parsePerfArgs } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { driveSession } from './session.mjs';

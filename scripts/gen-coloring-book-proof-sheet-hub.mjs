@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, resolve } from 'node:path';
-import { ROOT } from './lib/utils.mjs';
+import { ROOT } from './lib/proc.mjs';
 import { chromeStyle, compactTopbar } from './lib/scrapbook-chrome.mjs';
 
 export const PROOF_SHEET_HUB_PATH = join(

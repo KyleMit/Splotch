@@ -11,7 +11,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { hasCommand, fail, ROOT } from './lib/utils.mjs';
+import { hasCommand, fail, ROOT } from './lib/proc.mjs';
 
 if (!hasCommand('netlify')) {
   fail(

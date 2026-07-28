@@ -10,7 +10,8 @@
 // each step matches current markup, then tears the server down.
 
 import { chromium } from '@playwright/test';
-import { chromiumExecutablePath, sleep } from './lib/utils.mjs';
+import { chromiumExecutablePath } from './lib/playwright.mjs';
+import { sleep } from './lib/proc.mjs';
 import { check, fatal, summarize } from './lib/smoke.mjs';
 import {
   ensureDevServer,

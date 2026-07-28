@@ -3,7 +3,7 @@
 // burn-down-audits packages and notes are direct tracked sources, so their four
 // paths are excluded alongside .ruler itself.
 
-import { run, capture, fail } from './lib/utils.mjs';
+import { run, capture, fail } from './lib/proc.mjs';
 
 run('npm', ['run', 'ruler:apply']);
 

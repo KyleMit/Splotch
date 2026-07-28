@@ -8,7 +8,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { brand, scale, themes, toCssVarName, zIndex } from '../web/src/lib/design/tokens.ts';
-import { ROOT } from './lib/utils.mjs';
+import { ROOT } from './lib/proc.mjs';
 
 const OUT_PATH = resolve(ROOT, 'web/src/tokens.css');
 

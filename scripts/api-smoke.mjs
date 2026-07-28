@@ -9,7 +9,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { spawnViteServer } from './lib/vite-server.mjs';
-import { waitForUrl } from './lib/utils.mjs';
+import { waitForUrl } from './lib/net.mjs';
 import { check, fatal, summarize, json } from './lib/smoke.mjs';
 import { adminClient } from './lib/adminClient.mjs';
 // Type-stripped at runtime (the npm script passes --experimental-strip-types)

@@ -19,7 +19,7 @@ import {
   page,
   siteFooter,
 } from '../../../scripts/lib/scrapbook-chrome.mjs';
-import { argFlag } from '../../../scripts/lib/utils.mjs';
+import { argFlag } from '../../../scripts/lib/proc.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REF = join(HERE, '../../../scrapbook/crayon-brush-samples');

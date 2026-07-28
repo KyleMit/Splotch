@@ -12,7 +12,7 @@
 import { cpSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { ROOT, fail } from './lib/utils.mjs';
+import { ROOT, fail } from './lib/proc.mjs';
 import {
   buildScrapbookIndex,
   coloringBookProofSheetHubProblems,

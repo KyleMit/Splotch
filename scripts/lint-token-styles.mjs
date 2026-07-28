@@ -20,7 +20,7 @@
 import { readFileSync } from 'node:fs';
 import { readdirSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
-import { isMain } from './lib/utils.mjs';
+import { isMain } from './lib/proc.mjs';
 
 // file (relative to web/src) → allowed raw-hex count, with the reason.
 const BASELINE = new Map(
@@ -92,7 +92,7 @@ export function countRawHex(source) {
 }
 
 async function main() {
-  const { ROOT } = await import('./lib/utils.mjs');
+  const { ROOT } = await import('./lib/proc.mjs');
   const SRC = resolve(ROOT, 'web/src');
   const problems = [];
   const seen = new Set();

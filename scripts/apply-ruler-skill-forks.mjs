@@ -10,7 +10,7 @@ import {
 } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
-import { ROOT } from './lib/utils.mjs';
+import { ROOT } from './lib/proc.mjs';
 
 const FORK_ROOT = join('.ruler', 'skill-forks');
 const SHARED_SKILLS_ROOT = join('.ruler', 'skills');

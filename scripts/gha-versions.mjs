@@ -20,7 +20,7 @@
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { isMain, ROOT } from './lib/utils.mjs';
+import { isMain, ROOT } from './lib/proc.mjs';
 
 const WORKFLOWS_DIR = join(ROOT, '.github', 'workflows');
 

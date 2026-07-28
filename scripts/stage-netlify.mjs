@@ -17,7 +17,7 @@
 // .netlify does not pre-exist; locally it may, so it is replaced.
 import { cpSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT } from './lib/utils.mjs';
+import { ROOT } from './lib/proc.mjs';
 
 const from = join(ROOT, 'web', '.netlify');
 const to = join(ROOT, '.netlify');

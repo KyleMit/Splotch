@@ -1,5 +1,5 @@
 import { AVD_NAME } from './lib/android.mjs';
-import { fail, run } from './lib/utils.mjs';
+import { fail, run } from './lib/proc.mjs';
 
 const operation = process.argv[2];
 

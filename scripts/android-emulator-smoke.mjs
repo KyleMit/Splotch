@@ -11,7 +11,7 @@
 
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { sleep, sh } from './lib/utils.mjs';
+import { sleep, sh } from './lib/proc.mjs';
 import { ADB, EMULATOR, AVD_NAME, ANDROID_DIR, GRADLEW } from './lib/android.mjs';
 import { runMaestroSmoke } from './lib/native-smoke.mjs';
 

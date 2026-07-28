@@ -18,7 +18,8 @@
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ROOT, fail, openInOS, requireEnv, waitForUrl, runId as makeRunId } from './lib/utils.mjs';
+import { ROOT, fail, openInOS, requireEnv, runId as makeRunId } from './lib/proc.mjs';
+import { waitForUrl } from './lib/net.mjs';
 import { spawnViteServer } from './lib/vite-server.mjs';
 import { decryptDir } from './lib/fixtureCrypto.mjs';
 import { buildReport, verdict } from './lib/redteam-report.mjs';

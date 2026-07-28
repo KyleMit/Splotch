@@ -11,7 +11,7 @@
 
 import { readdirSync, statSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT } from './utils.mjs';
+import { ROOT } from './proc.mjs';
 import { esc } from './html.mjs';
 import { chromeStyle, masthead, siteFooter } from './scrapbook-chrome.mjs';
 

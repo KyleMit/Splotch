@@ -24,9 +24,11 @@ vi.mock('../perf/capture.mjs', () => ({
 
 vi.mock('../perf/paths.mjs', () => ({ profilePath: () => state.outDir }));
 
-vi.mock('../lib/utils.mjs', async (importOriginal) => {
+vi.mock('../lib/playwright.mjs', () => ({ chromiumExecutablePath: () => undefined }));
+
+vi.mock('../lib/proc.mjs', async (importOriginal) => {
   const actual = await importOriginal();
-  return { ...actual, chromiumExecutablePath: () => undefined, sleep: async () => {} };
+  return { ...actual, sleep: async () => {} };
 });
 
 let fixtureDir;
