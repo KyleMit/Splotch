@@ -16,6 +16,21 @@ export async function readJsonBody(request: Request): Promise<unknown> {
   }
 }
 
+export async function readBodyWithinLimit(
+  request: Request,
+  maxBytes: number
+): Promise<{ ok: true; bytes: Buffer } | { ok: false }> {
+  const declaredLength = Number(request.headers.get('content-length'));
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    return { ok: false };
+  }
+
+  // Content-Length is only an early-rejection hint: raw byte length remains
+  // authoritative when the header is absent or dishonest, including for multibyte text.
+  const bytes = Buffer.from(await request.arrayBuffer());
+  return bytes.byteLength > maxBytes ? { ok: false } : { ok: true, bytes };
+}
+
 export function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)

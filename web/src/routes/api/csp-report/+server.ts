@@ -1,7 +1,7 @@
 import { rateLimit } from '$lib/server/rateLimit';
 import { cspReportBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
-import { contentTypeOf, throttled } from '$lib/server/http';
+import { contentTypeOf, readBodyWithinLimit, throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 // A single page load under a broken policy can fire dozens of violations, so
@@ -115,17 +115,11 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     return new Response(null, { status: 415 });
   }
 
-  // Reject on the declared length first so an oversized body is never
-  // buffered; the byte-accurate re-check after reading catches liars (a
-  // code-unit length check would let multibyte payloads triple the cap).
-  const declaredLength = Number(request.headers.get('content-length'));
-  if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
+  const body = await readBodyWithinLimit(request, MAX_BODY_BYTES);
+  if (!body.ok) {
     return new Response(null, { status: 413 });
   }
-  const raw = await request.text();
-  if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) {
-    return new Response(null, { status: 413 });
-  }
+  const raw = body.bytes.toString('utf8');
 
   let payload: unknown;
   try {
