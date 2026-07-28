@@ -670,8 +670,10 @@ describe('renderDeferralNotes', () => {
     const notes = renderDeferralNotes({
       why: 'fix broke the type-check',
       gateDetail: 'npm run check is red',
+      patchPath: 'docs/audit-deferred/thing.patch',
     });
     expect(notes).toContain('gates were red at the final round: npm run check is red');
+    expect(notes).not.toContain('review is what it did not pass');
   });
 
   it('never claims a reason it was not given', () => {

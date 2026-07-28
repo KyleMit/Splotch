@@ -622,8 +622,7 @@ eslint clean on the three changed files; `npm run test:e2e -- flows.spec.ts` 43 
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p2-duplication-the-icon-glob-splotchy-exclusion-is-repeated-in-three-pla.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-duplication-the-icon-glob-splotchy-exclusion-is-repeated-in-three-pla.patch`.
 *Only the final review round and the last fix round survive: the earlier envelopes for this finding
 were overwritten by a later run reusing the same `iter0002` filename.*
@@ -824,8 +823,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p2-type-safety-native-page-hand-rolls-type-guards-that-duplicate-the-ser.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-type-safety-native-page-hand-rolls-type-guards-that-duplicate-the-ser.patch`.
 *Three review rounds; the first two were fully addressed. Only the last objection above remained,
 and it is narrow — a wrong string literal in a new test fixture.*
@@ -928,8 +926,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p2-duplication-the-three-per-invite-action-groups-are-triplicated-markup.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-duplication-the-three-per-invite-action-groups-are-triplicated-markup.patch`.
 
 ### [P2][complexity] `readStore` bundles store-open, read, seed, confirmation-loop, and fallback into one function
@@ -1206,8 +1203,7 @@ canvas-pixel test that flaked last round, green on retry).
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p2-complexity-effect-bodies-use-bare-member-access-statements-purely-to.patch`
-(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-complexity-effect-bodies-use-bare-member-access-statements-purely-to.patch`.
 
 ### [P5][readability] `+error.svelte` and both `handleError` hooks produce a `{ message }` that nothing ever displays
@@ -1305,8 +1301,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p5-readability-error-svelte-and-both-handleerror-hooks-produce-a-message.patch`
-(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p5-readability-error-svelte-and-both-handleerror-hooks-produce-a-message.patch`.
 
 ### [P3][maintainability] Hexagon geometry constants are scattered and coupled to a JS comment
@@ -1635,8 +1630,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p2-type-safety-share-request-response-contract-types-between-routes-and.patch`
-(2 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(2 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-type-safety-share-request-response-contract-types-between-routes-and.patch`.
 
 ### [P2][platform-branching] Install-prompt module branches on `isNative()` at runtime where it could be a build-time exclusion
@@ -1738,8 +1732,7 @@ update paths.
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p4-duplication-reload-side-effect-pair-refreshstate-idle-window-location.patch`
-(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p4-duplication-reload-side-effect-pair-refreshstate-idle-window-location.patch`.
 
 ### [P1][duplication] Book id is re-typed as a string argument on every `page()` call, silently generating asset paths on mismatch
@@ -1819,8 +1812,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p1-duplication-book-id-is-re-typed-as-a-string-argument-on-every-page-ca.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p1-duplication-book-id-is-re-typed-as-a-string-argument-on-every-page-ca.patch`.
 
 ### [P2][design-tokens] Spacing and font sizes are raw px while colors/radii/durations use tokens
@@ -1881,8 +1873,7 @@ all unresolved raw spacing values so the layout remains pixel-identical.
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p2-design-tokens-spacing-and-font-sizes-are-raw-px-while-colors-radii-du.patch`
-(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-design-tokens-spacing-and-font-sizes-are-raw-px-while-colors-radii-du.patch`.
 
 ### [P4][design-tokens] Hardcoded brand RGB `171,113,225` fallback will silently drift from `--brand`
@@ -1936,8 +1927,7 @@ from the themed brand color.
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p4-design-tokens-hardcoded-brand-rgb-171-113-225-fallback-will-silently.patch`
-(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p4-design-tokens-hardcoded-brand-rgb-171-113-225-fallback-will-silently.patch`.
 
 ### [P2][architecture] Scatter of platform/device utilities across `lib/` root hurts grepability — group under one folder
@@ -2036,8 +2026,7 @@ duplicate module-level exports were removed.
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p2-duplication-orientation-portrait-landscape-is-redeclared-in-8-places.patch`
-(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-duplication-orientation-portrait-landscape-is-redeclared-in-8-places.patch`.
 
 ### [P1][duplication] Extract the six near-identical Gemini `generateContent` wrappers into `lib/gemini.mjs`
@@ -2113,8 +2102,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p1-duplication-extract-the-six-near-identical-gemini-generatecontent-wra.patch`
-(2 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(2 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p1-duplication-extract-the-six-near-identical-gemini-generatecontent-wra.patch`.
 
 ### [P2][duplication] Centralize the `MODEL`, `WEBP_QUALITY`, and timeout constants
@@ -2176,8 +2164,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p2-duplication-centralize-the-model-webp-quality-and-timeout-constants.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-duplication-centralize-the-model-webp-quality-and-timeout-constants.patch`.
 
 ### [P2][duplication] Background flood-fill is written twice in lib (and a third time in bin)
@@ -2226,8 +2213,7 @@ pixel-selection semantics.
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p2-duplication-background-flood-fill-is-written-twice-in-lib-and-a-third.patch`
-(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-duplication-background-flood-fill-is-written-twice-in-lib-and-a-third.patch`.
 
 ### [P3][complexity] `scoreCompositeEyes` is a 100-line function with an inline pupil-shape validator
@@ -2275,8 +2261,7 @@ outputs remain identical to HEAD.
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p3-complexity-scorecompositeeyes-is-a-100-line-function-with-an-inline-p.patch`
-(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p3-complexity-scorecompositeeyes-is-a-100-line-function-with-an-inline-p.patch`.
 
 ### [P3][architecture] `fail()` (console.error + process.exit) lives in `paths.mjs`, unrelated to path resolution
@@ -2332,8 +2317,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p3-architecture-fail-console-error-process-exit-lives-in-paths-mjs-unrel.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p3-architecture-fail-console-error-process-exit-lives-in-paths-mjs-unrel.patch`.
 
 ### [P5][maintainability] "Median" via `>>1` is the upper-middle element, and luma definitions differ between modules that compare against shared thresholds
@@ -2456,8 +2440,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p5-maintainability-median-via-1-is-the-upper-middle-element-and-luma-def.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p5-maintainability-median-via-1-is-the-upper-middle-element-and-luma-def.patch`.
 
 ### [P1][discoverability] README scoreboard and "do first" list are stale — most ideas already graduated into the live pipeline, but nothing here says so
@@ -2599,8 +2582,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p1-discoverability-readme-scoreboard-and-do-first-list-are-stale-most-id.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p1-discoverability-readme-scoreboard-and-do-first-list-are-stale-most-id.patch`.
 
 ### [P1][duplication] Graduated `idea-N/code/*.mjs` files are now drifted ancestors of live `bin/`/`lib/` files, with no pointer marking them frozen
@@ -2730,8 +2712,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p1-duplication-graduated-idea-n-code-mjs-files-are-now-drifted-ancestors.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p1-duplication-graduated-idea-n-code-mjs-files-are-now-drifted-ancestors.patch`.
 
 ### [P3][naming] Inconsistent script naming across idea dirs — `idea{N}-` prefix vs descriptive vs `tmp-`
@@ -2827,8 +2808,7 @@ restart.
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p3-naming-inconsistent-script-naming-across-idea-dirs-idea-n-prefix-vs-d.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p3-naming-inconsistent-script-naming-across-idea-dirs-idea-n-prefix-vs-d.patch`.
 
 ### [P4][consistency] `--check`/flag parsing done ad hoc in every gate script
@@ -2890,8 +2870,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p4-consistency-check-flag-parsing-done-ad-hoc-in-every-gate-script.patch` (3
-commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p4-consistency-check-flag-parsing-done-ad-hoc-in-every-gate-script.patch`.
 
 ### [P1][duplication] Extract the copy-pasted CLI `flag()`/`args` parser shared by every perf entry script
@@ -2957,8 +2936,7 @@ behavior remain unchanged.
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p1-duplication-extract-the-copy-pasted-cli-flag-args-parser-shared-by-ev.patch`
-(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p1-duplication-extract-the-copy-pasted-cli-flag-args-parser-shared-by-ev.patch`.
 
 ### [P2][cross-platform] `bumpAndroidGradle` / `bumpIosPbxproj` regexes are unanchored and global — they corrupt sibling lines
@@ -3042,8 +3020,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p2-cross-platform-bumpandroidgradle-bumpiospbxproj-regexes-are-unanchore.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-cross-platform-bumpandroidgradle-bumpiospbxproj-regexes-are-unanchore.patch`.
 
 ### [P2][architecture] `utils.mjs` is a grab-bag mixing generic, Playwright, release, and app-domain concerns
@@ -3097,8 +3074,7 @@ filtering into a narrowly named asset helper shared only by asset validation and
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p2-architecture-utils-mjs-is-a-grab-bag-mixing-generic-playwright-releas.patch`
-(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-architecture-utils-mjs-is-a-grab-bag-mixing-generic-playwright-releas.patch`.
 
 ### [P2][duplication] The `/dev/engine` readiness `beforeEach` and state readers are duplicated verbatim across engine and multitouch specs
@@ -3151,8 +3127,7 @@ unchanged.
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p2-duplication-the-dev-engine-readiness-beforeeach-and-state-readers-are.patch`
-(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-duplication-the-dev-engine-readiness-beforeeach-and-state-readers-are.patch`.
 
 ### [P2][duplication] Crayon-brush tests re-derive point generators and region samplers inline in every test
@@ -3220,8 +3195,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p2-duplication-crayon-brush-tests-re-derive-point-generators-and-region.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-duplication-crayon-brush-tests-re-derive-point-generators-and-region.patch`.
 
 ### [P2][test-quality] A single Parent-Center test asserts ~six distinct behaviors across 60 lines
@@ -3292,8 +3266,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p2-test-quality-a-single-parent-center-test-asserts-six-distinct-behavio.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-test-quality-a-single-parent-center-test-asserts-six-distinct-behavio.patch`.
 
 ### [P1][duplication] Browser-support floor is duplicated across `vite.config.ts` and root `browserslist` with only a comment enforcing sync
@@ -3369,8 +3342,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p1-duplication-browser-support-floor-is-duplicated-across-vite-config-ts.patch`
-(2 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(2 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p1-duplication-browser-support-floor-is-duplicated-across-vite-config-ts.patch`.
 
 ### [P3][maintainability] Git-based version derivation is ~35 lines of imperative logic embedded in `vite.config.ts` and is untestable there
@@ -3449,8 +3421,7 @@ Reviewer's unresolved objections:
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p3-maintainability-git-based-version-derivation-is-35-lines-of-imperativ.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p3-maintainability-git-based-version-derivation-is-35-lines-of-imperativ.patch`.
 
 ### [P3][consistency] The `CAPACITOR` "single signal" is re-derived independently in every config with a repeated literal comparison
@@ -3500,8 +3471,7 @@ narrow tracking exceptions and a type declaration.
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p3-consistency-the-capacitor-single-signal-is-re-derived-independently-i.patch`
-(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p3-consistency-the-capacitor-single-signal-is-re-derived-independently-i.patch`.
 
 ### [P4][documentation] `android:allowBackup="true"` is unexplained for a privacy-first kids app
@@ -3647,8 +3617,7 @@ targets and architectures.
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p3-consistency-android-emulator-api-level-is-a-second-source-of-truth-fo.patch`
-(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p3-consistency-android-emulator-api-level-is-a-second-source-of-truth-fo.patch`.
 
 ### [P4][accessibility] Tab UI is built from bare `<button>`s with no tab ARIA semantics
@@ -3701,6 +3670,5 @@ tests/proof-sheet-history.spec.ts are red.
 
 The rolled-back draft is kept at
 `docs/audit-deferred/p4-accessibility-tab-ui-is-built-from-bare-button-s-with-no-tab-aria-sem.patch`
-(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
-not pass — so it is a starting point rather than scrap. Apply with
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p4-accessibility-tab-ui-is-built-from-bare-button-s-with-no-tab-aria-sem.patch`.

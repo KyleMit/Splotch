@@ -20,12 +20,12 @@ exact-head CI supervision, or change tracked files while the driver is active.
 * Initial backlog: 128 findings, measured with `node scripts/audit-burndown/pop.mjs --count`.
 * Historical `run.log` baseline: 1,548 lines. Reconcile only later `finished:` and terminal-event
   lines.
-* Run state: canary and seventeen bounded segments green; no driver process is active and no `STOP`
+* Run state: canary and twenty bounded segments complete; no driver process is active and no `STOP`
   file is present.
-* Current backlog: 33 findings after 64 fixes, 22 invalid drops, and 9 deferrals in this
+* Current backlog: 18 findings after 74 fixes, 26 invalid drops, and 10 deferrals in this
   continuation.
-* Last fully green SHA: `e76f0be733e929bbfb6902b6ce6df61239aadf93` in workflow run
-  [30313854827](https://github.com/KyleMit/Splotch/actions/runs/30313854827).
+* Last fully green finding SHA: `c9a7b7fef9a15cdbfeb670f976eaea9e3b0ead32` in workflow run
+  [30316399419](https://github.com/KyleMit/Splotch/actions/runs/30316399419).
 
 | SHA      | What                                                        |
 | -------- | ----------------------------------------------------------- |
@@ -49,12 +49,16 @@ exact-head CI supervision, or change tracked files while the driver is active.
 | 625e7815 | Segment 15: 4 fixed, 1 dropped, 0 deferred, 43 remain       |
 | 28c21922 | Segment 16: 4 fixed, 0 dropped, 1 deferred, 38 remain       |
 | e76f0be7 | Segment 17: 3 fixed, 2 dropped, 0 deferred, 33 remain       |
+| e5ee996e | Segment 18: 4 fixed, 1 dropped, 0 deferred, 28 remain       |
+| c9a7b7fe | Segment 19: 4 fixed, 1 dropped, 0 deferred, 23 remain       |
+| c77cfb2f | Segment 20: 2 fixed, 2 dropped, 1 deferred, 18 remain       |
 
 Supervisor-authored follow-ups: `2eab584c` restored an efficient in-browser pixel scan, `6f6e85f0`
 normalized a deferred patch, and `f7420c42` fixed that recurring patch-writer defect with a
 regression test. `ded6889c` corrected stale native-version guidance found while validating segment
 9, and `14c0da79` changed a segment 10 release-checklist breadcrumb from Codex's generated copy to
-the shared `.ruler` source.
+the shared `.ruler` source. A segment 20 follow-up corrects the deferral renderer's generic claim
+that every rejected draft failed review, which was false for deterministic-gate deferrals.
 
 ## Decisions made (and why)
 
@@ -98,7 +102,7 @@ npm run audit:burndown:overnight -- 600
 
 ## Unverified assumptions
 
-* The remaining 33 findings have not yet been exercised.
+* The remaining 18 findings have not yet been exercised.
 
 ## Done & verified
 
@@ -118,8 +122,8 @@ npm run audit:burndown:overnight -- 600
 * All five fix comments posted on PR [#561](https://github.com/KyleMit/Splotch/pull/561); capture
   found no missing or pending records.
 * Exact-head CI on `3648a752593ba5a19bd72a8437c863deee912a23`: Quality and Tests green.
-* Seventeen bounded `MAX_HANDLED=5` segments completed with exact-head CI green and all comments
-  drained at every checkpoint.
+* Twenty bounded `MAX_HANDLED=5` segments completed with exact-head CI enforced before every
+  relaunch and all comments drained at every checkpoint.
 * Supervisor inspection caught an inefficient reviewed red-pixel scan; follow-up commit `2eab584c`
   restored the original in-browser early exit, passed focused E2E and full CI, and was disclosed in
   the corresponding PR comment.
@@ -140,13 +144,20 @@ npm run audit:burndown:overnight -- 600
   matched to its upstream release tag, and the Playwright-version helper reports `1.61.1`.
 * Segment 17 verification: all 146 script tests passed; exact-head CI completed Quality in 1m00s and
   Tests in 4m45s.
-* `npm run audit:cost`: $18.1190 retained-log spend, no capped or errored calls, and an $8.79
-  projection for the remaining 33 findings.
+* Segment 18 verification: all 149 script tests and `npm run scrapbook:check` passed; exact-head CI
+  completed Quality in 1m10s and Tests in 4m19s.
+* Segment 19 verification: all 149 script tests and `npm run scrapbook:check` passed; exact-head CI
+  completed Quality in 1m03s and Tests in 6m48s.
+* Segment 20 verification: the focused proof-sheet E2E gate passed for the accepted syntax change;
+  the failed accessibility draft was rolled back and saved with its diagnostic patch. The deferral
+  renderer follow-up passes all 68 focused library tests.
+* `npm run audit:cost`: $18.1190 retained-log spend, no capped or errored calls, and a $4.80
+  projection for the remaining 18 findings.
 
 ## Risks & next 3 steps
 
 1. Commit and push this continuation checkpoint and require exact-head CI green.
-2. Launch segment 18 with `MAX_HANDLED=5`, record its start and 20-minute deadline, then supervise
+2. Launch segment 21 with `MAX_HANDLED=5`, record its start and 20-minute deadline, then supervise
    it until stopped.
 3. Require exact-head CI green, drain all comments, inspect the segment diff, and repeat bounded
    segments until the backlog is exhausted or the user asks to pause.
