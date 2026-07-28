@@ -33,7 +33,7 @@
 | 12 | npm@11 pin rationale copy-pasted across four shell files       | P2       | [npm11-pin-rationale.md](npm11-pin-rationale.md)                   | FIX     |
 | 13 | Android emulator API level second source of truth              | P3       | [android-emulator-api-level.md](android-emulator-api-level.md)     | FIX     |
 | 14 | Proof-sheet hub tab UI lacks ARIA tab semantics                | P4       | [proof-sheet-tab-aria.md](proof-sheet-tab-aria.md)                 | FIX     |
-| 15 | `--experimental-strip-types` flag pair repeated 10× and stale  | P2       | [strip-types-flags.md](strip-types-flags.md)                       | pending |
+| 15 | `--experimental-strip-types` flag pair repeated 10× and stale  | P2       | [strip-types-flags.md](strip-types-flags.md)                       | FIX     |
 
 ## Decision-doc template
 
