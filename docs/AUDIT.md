@@ -19174,34 +19174,6 @@ mechanism) or the same docs tree. Delete it from `static/`. Gotchas: `.svelte-ki
 regenerates its `Asset()` union on the next `svelte-kit sync` (no manual edit needed); double-check
 no external bookmark relies on the URL (nothing in-repo does).
 
-### [Performance] Dead 210 KB `soft-wallpaper.png` ships to production and into the SW precache
-
-**File(s):** `web/static/icons/soft-wallpaper.png` (209,808 bytes) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-`web/static/icons/` holds two files: `handmade-paper.webp` (referenced by
-`web/src/lib/components/DrawingCanvas.svelte:450` and `web/src/lib/drawing/exportDrawing.ts:33`) and
-`soft-wallpaper.png` — which has **zero references anywhere in the repo** (a full-tree grep for
-`soft-wallpaper`/`wallpaper` finds only the generated `.svelte-kit` asset union). The file is:
-
-* served on every deploy and copied into both native app binaries, and
-* **precached by the service worker on every web client** — `web/vite.config.ts:93` globs
-  `'**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}'` over the build output, which includes
-  `static/` copies (the config's own comment at lines 76–77 notes the precache is ~39 MB because of
-  the static coloring set).
-
-210 KB of dead weight downloaded by every installing client, on an app that already worries about
-precache size saturating slow connections (vite.config.ts lines 76–81).
-
-#### Proposed solution
-
-Delete `web/static/icons/soft-wallpaper.png`. It appears to be an orphan from the design-system PR
-(last touched in commit ed1ecc6). Verify with a repo-wide grep after deletion and a production build
-(`npm run build`) that nothing 404s.
-
 ### [Maintainability] Dev/preview ports (5173, 4173) are synced by prose comments and hand-maintained duplicates, with no drift guard
 
 **File(s):** `web/vite.config.ts` (lines 30–33), `web/netlify.toml` (lines 25–26),
