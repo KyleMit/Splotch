@@ -26,7 +26,7 @@
 | 5  | `/dev/engine` readiness `beforeEach` duplicated across specs   | P2       | [engine-readiness-duplication.md](engine-readiness-duplication.md) | FIX     |
 | 6  | Crayon tests re-derive point generators/samplers inline        | P2       | [crayon-test-helpers.md](crayon-test-helpers.md)                   | DROP    |
 | 7  | Single Parent-Center test asserts ~six behaviors               | P2       | [parent-center-test-split.md](parent-center-test-split.md)         | FIX     |
-| 8  | Browser floor duplicated: `vite.config.ts` vs `browserslist`   | P1       | [browser-floor-duplication.md](browser-floor-duplication.md)       | pending |
+| 8  | Browser floor duplicated: `vite.config.ts` vs `browserslist`   | P1       | [browser-floor-duplication.md](browser-floor-duplication.md)       | FIX     |
 | 9  | Git version derivation embedded untestable in `vite.config.ts` | P3       | [git-version-derivation.md](git-version-derivation.md)             | FIX     |
 | 10 | `CAPACITOR` single signal re-derived in every config           | P3       | [capacitor-single-signal.md](capacitor-single-signal.md)           | DROP    |
 | 11 | `android:allowBackup="true"` unexplained for a kids app        | P4       | [android-allowbackup.md](android-allowbackup.md)                   | FIX     |
