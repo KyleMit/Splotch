@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import {
     BETA_OPT_IN_URL,
-    FEEDBACK_ISSUE_URL,
     MIN_ANDROID_API_LEVEL,
     MIN_ANDROID_RELEASE,
     PLAY_STORE_LISTING_URL,
@@ -20,7 +19,7 @@
     support = supportEmail();
   });
 
-  // The four sign-up steps. Steps 1-3 are sequential — opting in enrols without
+  // The four sign-up steps. Steps 1-3 are sequential — opting in enrolls without
   // installing, and the store listing stays a 404 until it is done — and step 4
   // is the optional ask afterwards.
   //
@@ -41,7 +40,9 @@
       <div class="head"><h3>Join the testers group</h3></div>
       <p class="body">
         Google Play decides who can see the beta by checking a Google Group, so this has to happen
-        first.
+        first. Click <strong>Accept Invite</strong>. Don't worry about the permission warning when
+        you first open the page — it's just because you're not a member yet, but accepting the
+        invite will grant you access.
       </p>
       <div class="action">
         <a class="btn" href={TESTERS_GROUP_URL} target="_blank" rel="noopener noreferrer">
@@ -54,7 +55,7 @@
       <div class="card" style="--card-accent:{NUMERAL_INK[0]}">
         <span class="bar"></span>
         <div>
-          <p class="card-label alert">The one thing to get right</p>
+          <p class="card-label alert">Double check your account</p>
           <p class="card-body">
             Use the <strong>same Google account</strong> that's signed in to the Play Store on your phone
             or tablet. Using a different account is a common reason the beta never shows up.
@@ -69,9 +70,9 @@
     <div class="content">
       <div class="head"><h3>Opt in on Google Play</h3></div>
       <p class="body">
-        Open the tester page and press <strong>Become a tester</strong>. This enrols you; it doesn't
-        install anything yet. Once you're in, the same page grows a “Download it on Google Play”
-        link — that's step 3.
+        Open the tester page and press <strong>Become a tester</strong>. This enrolls you; it
+        doesn't install anything yet. Once you're in, the same page should automatically show you a
+        link to “Download it on Google Play”, taking you to step 3.
       </p>
       <div class="action">
         <a class="btn" href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer">
@@ -83,7 +84,7 @@
         <div>
           <p class="card-label warn">If a link doesn't work yet</p>
           <p class="card-body">
-            None of this is instant, and Google Play doesn't always recognise a new group membership
+            None of this is instant, and Google Play doesn't always recognize a new group membership
             straight away. Check that both pages are signed in to the same Google account, then make
             a cup of tea and try again a little later before assuming something is broken.
           </p>
@@ -134,25 +135,22 @@
         <span class="optional">Optional</span>
       </div>
       <p class="body">
-        This is the part that matters. Inside the app, tap the
+        Inside the app, tap the
         <Icon name="parent" class="inline-icon" role="img" aria-label="Parent Center" /> button in the
         bottom-right corner of the drawing screen to open the Parent Center, then choose
-        <strong>Send report</strong> to file a bug or suggest a feature without leaving Splotch. You
-        can also
-        <a href={FEEDBACK_ISSUE_URL} target="_blank" rel="noopener noreferrer"
-          >open an issue on GitHub</a
-        >. Odd crashes, confusing buttons, and “my toddler did <em>what</em>?” stories are all
-        genuinely useful.
+        <strong>Send report</strong> to file a bug or suggest a feature without leaving Splotch. Odd
+        crashes, confusing buttons, and “my toddler did <em>what</em>?” stories are all genuinely
+        useful.
       </p>
       {#if support}
         <div class="card" style="--card-accent:{NUMERAL_INK[3]}">
           <span class="bar"></span>
           <div>
-            <p class="card-label info">Or just email us</p>
+            <p class="card-label info">Or just email me</p>
             <p class="card-body">
-              <a href="mailto:{support}">{support}</a> reaches a human. Anything at all — something broken,
-              something confusing, an idea, or just to say your kid liked it. Good and bad are both worth
-              hearing.
+              Reach out to me at <a href="mailto:{support}">{support}</a> if you need anything at all…
+              something is broken, something is confusing, an idea, or just to say your kid liked it.
+              Good and bad are both worth hearing.
             </p>
           </div>
         </div>

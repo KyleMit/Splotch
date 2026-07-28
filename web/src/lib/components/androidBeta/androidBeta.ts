@@ -26,8 +26,6 @@ const TESTERS_GROUP_NAME = 'splotch-testers';
 
 export const TESTERS_GROUP_URL = `https://groups.google.com/g/${TESTERS_GROUP_NAME}`;
 
-export const FEEDBACK_ISSUE_URL = 'https://github.com/KyleMit/Splotch/issues/new/choose';
-
 // The support address is split so the literal string appears nowhere in the
 // prerendered HTML: the page composes it after hydration, which keeps it out of
 // reach of the harvesters that scrape static markup. A headless scraper can
