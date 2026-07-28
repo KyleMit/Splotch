@@ -1,7 +1,8 @@
 # Handoff — audit burndown (642-finding backlog)
 
-> 2026-07-28 · branch `claude/audit-burn-down-skill-1s5jty` · PR *(opened at step 3 — record the
-> number here)* · Bulk-burn the fresh 642-finding `docs/AUDIT.md` backlog staged by PR #614.
+> 2026-07-28 · branch `claude/audit-burn-down-skill-1s5jty` · PR
+> [#616](https://github.com/KyleMit/Splotch/pull/616) · Bulk-burn the fresh 642-finding
+> `docs/AUDIT.md` backlog staged by PR #614.
 
 ## Objective & non-goals
 
