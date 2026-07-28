@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { asRecord, readJsonBody, throttled } from './http';
+import { asRecord, contentTypeOf, readJsonBody, throttled } from './http';
 
 function jsonRequest(body: string) {
   return new Request('http://localhost/api/test', {
@@ -9,6 +9,20 @@ function jsonRequest(body: string) {
     body,
   });
 }
+
+describe('contentTypeOf', () => {
+  it('normalizes a parameterized mixed-case header', () => {
+    const request = new Request('http://localhost/api/test', {
+      headers: { 'Content-Type': '  Image/WebP ; charset=UTF-8' },
+    });
+
+    expect(contentTypeOf(request)).toBe('image/webp');
+  });
+
+  it('returns an empty string when the header is absent', () => {
+    expect(contentTypeOf(new Request('http://localhost/api/test'))).toBe('');
+  });
+});
 
 describe('readJsonBody', () => {
   it('returns the parsed object for a valid JSON body', async () => {

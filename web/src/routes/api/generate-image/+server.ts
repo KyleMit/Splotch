@@ -8,6 +8,7 @@ import {
   authorizeGenerationRequest,
   type GenerationAuthorization,
 } from '$lib/server/generationAuthorization';
+import { contentTypeOf } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 // A safety refusal is the model declining the drawing on policy grounds — the
@@ -28,9 +29,6 @@ const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 // token and (especially) a parent's BYO Gemini key are secrets, and query
 // strings leak into server/CDN access logs, browser history, and Referer
 // headers. The non-secret style enum is a plain query param. See ADR-0064.
-const contentTypeOf = (request: Request) =>
-  (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
-
 const asString = (value: FormDataEntryValue | null): string | null =>
   typeof value === 'string' ? value : null;
 

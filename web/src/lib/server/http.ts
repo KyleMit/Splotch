@@ -1,5 +1,9 @@
 import { error, json } from '@sveltejs/kit';
 
+export function contentTypeOf(request: Request): string {
+  return (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+}
+
 /**
  * Parse a JSON request body, turning a malformed payload into a uniform
  * 400 instead of an unhandled 500.

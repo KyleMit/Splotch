@@ -1,7 +1,7 @@
 import { rateLimit } from '$lib/server/rateLimit';
 import { cspReportBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
-import { throttled } from '$lib/server/http';
+import { contentTypeOf, throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 // A single page load under a broken policy can fire dozens of violations, so
@@ -110,10 +110,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   );
   if (limited) return throttled(retryAfter);
 
-  const contentType = (request.headers.get('content-type') ?? '')
-    .split(';')[0]
-    .trim()
-    .toLowerCase();
+  const contentType = contentTypeOf(request);
   if (!ACCEPTED_CONTENT_TYPES.includes(contentType)) {
     return new Response(null, { status: 415 });
   }
