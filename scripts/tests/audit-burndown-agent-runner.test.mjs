@@ -80,6 +80,7 @@ describe('Codex invocation', () => {
     expect(instructions).toContain('Do not run Playwright');
     expect(instructions).toContain('outside this nested sandbox');
     expect(instructions).toContain('Do not run `git add`');
+    expect(instructions).toContain('reruns Ruler outside this sandbox');
     expect(instructions).toContain('return `success=true` with an empty');
     expect(codexRoleInstructions('review')).toBe('');
   });

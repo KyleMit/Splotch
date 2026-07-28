@@ -62,6 +62,12 @@ workspace-write sandbox protects Git metadata. Codex implementers now leave a di
 return success without a SHA. The driver enumerates changed paths, rejects protected audit-state
 edits, stages only the bounded change, and commits it.
 
+A later run exposed the same boundary for generated agent files: `npm run ruler:apply` could update
+the `.ruler/` source and `.claude/` output but not the protected `.agents/` tree, so an otherwise
+green API-contract fix was deferred twice. Codex implementers now treat that one denied generated
+write as outer-driver work, and the driver reruns Ruler whenever the implementation changed
+`.ruler/**` before staging. Other Ruler failures still fail closed.
+
 A repair round follows the same contract: resume the exact implementer thread, edit on top of the
 rejected commit, leave Git metadata alone, and let the outer driver create the next round commit.
 
@@ -264,3 +270,4 @@ the other.
 | 2026-07-27 | Bound detached segments by handled outcomes and make handoff explicit   |
 | 2026-07-27 | Make supervision portable, scoped, timed, and low-noise after PR 554    |
 | 2026-07-27 | Clarify consent, sandbox noise, stop latency, and closeout after PR 561 |
+| 2026-07-28 | Move protected `.agents/` Ruler generation to the outer Codex driver    |

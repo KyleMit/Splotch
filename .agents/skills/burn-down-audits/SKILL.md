@@ -142,11 +142,14 @@ CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm r
 TEST_CMD='npm run test:unit && npm run test:scripts'
 ```
 
-Do not put `npm run ruler:check` in `CHECK_CMD`; it writes by reapplying Ruler. A finding that edits
-`.ruler/**` must run `npm run ruler:apply` and commit the generated output itself. When the
-supervisor runs `ruler:check`, run it outside the workspace sandbox because its drift check
-temporarily rewrites `.agents/`; an `EPERM` under `.agents/skills.tmp-*` is a permission boundary,
-not drift.
+Do not put `npm run ruler:check` in `CHECK_CMD`; it writes by reapplying Ruler. A Codex implementer
+whose finding edits `.ruler/**` still runs `npm run ruler:apply`, but its nested sandbox may deny
+only the generated `.agents/**` write. In that case it leaves the source and partial generated
+changes and returns success; the outer driver detects `.ruler/**`, reruns `npm run ruler:apply`
+outside the nested sandbox, and includes the complete generated output in its commit. Any other
+Ruler failure remains an implementation failure. When the supervisor runs `ruler:check`, run it
+outside the workspace sandbox because its drift check temporarily rewrites `.agents/`; an `EPERM`
+under `.agents/skills.tmp-*` is a permission boundary, not drift.
 
 On macOS a sandboxed dprint invocation can warn that it could not save its incremental cache under
 `~/Library/Caches` and still exit zero. Use the command exit status as the gate verdict; do not turn
