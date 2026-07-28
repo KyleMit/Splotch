@@ -35,20 +35,11 @@
     </div>
 
     <div class="hero">
-      <div class="hero-main">
-        <h1>Join the Android beta</h1>
-        <p class="lede">
-          Joining is free and takes three quick steps. Thank you for helping — trying Splotch on a
-          real phone or tablet finds problems we can't catch on our own.
-        </p>
-      </div>
-      <div class="hero-side">
-        <p class="eyebrow">Closed testing · Google Play</p>
-        <p class="hero-note">
-          Three steps, in order — each one unlocks the next. Google Play won't show you the app
-          until the first two are done.
-        </p>
-      </div>
+      <h1>Join the Android beta</h1>
+      <p class="lede">
+        Joining is free and takes three quick steps. Thank you for helping — trying Splotch on a
+        real phone or tablet finds problems we can't catch on our own.
+      </p>
     </div>
 
     <h2 class="rule-label"><span>How to join</span></h2>
@@ -141,18 +132,19 @@
        /privacy pins for the same reason. */
     --beta-link: #7c4dcf;
     --beta-link-hover: #6b3fbf;
-    --beta-pill: #f2ecfb; /* ~ --brand-wash (#ede7f6), light */
-    --beta-eyebrow: #7c50bb; /* = --brand-text, light */
     --beta-warm: #f7f3ee; /* ~ --surface-warm-hover (#f4f0ea), light */
     --beta-rule: #eeeae4; /* ~ --border-warm (#ddd6cc), lightened */
     --beta-note-rule: #e6e1d9;
     --beta-row: #faf8f5;
     --beta-row-hover: #f4f0ea;
-    /* Darkened tints of the Red and Green crayons for the two card labels: the
-       raw palette hues are ~2.6:1 on the warm tint. Not palette values, so they
-       are not palette-source.test.mjs's to own. */
-    --beta-warn-ink: #b03f3b;
-    --beta-go-ink: #4f7a36;
+    /* One darkened tint per crayon hue for the card labels — the raw palette
+       hues are ~2.6:1 on the warm tint, so each label takes a deeper shade of
+       its step's color. Measured on #f7f3ee: 5.3, 4.7, 4.6, 4.8:1. Not palette
+       values, so they are not palette-source.test.mjs's to own. */
+    --beta-alert-ink: #b03f3b; /* deep Red */
+    --beta-warn-ink: #a35a00; /* deep Orange */
+    --beta-go-ink: #4f7a36; /* deep Green */
+    --beta-info-ink: #2a6db8; /* deep Blue */
     --beta-on-accent: #fff;
     /* Inside the sheet every band lines up on one horizontal padding. */
     --beta-gutter: clamp(20px, 5vw, 34px);
@@ -239,10 +231,6 @@
   }
 
   .hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 250px;
-    gap: 48px;
-    align-items: end;
     padding: 8px 0 34px;
   }
 
@@ -262,33 +250,6 @@
     font-weight: 500;
     line-height: 1.6;
     color: var(--beta-body);
-  }
-
-  .eyebrow {
-    display: inline-block;
-    margin: 0;
-    padding: 7px 12px;
-    border-radius: 999px;
-    background: var(--beta-pill);
-    color: var(--beta-eyebrow);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
-  .hero-side {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .hero-note {
-    margin: 12px 0 0;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 1.55;
-    color: var(--beta-muted);
   }
 
   /* The section label survives only as a rule: a small caps word and a hairline
@@ -408,38 +369,19 @@
   }
 
   @media (max-width: 540px) {
-    /* Three items squeeze the bar, and the wordmark is the least load-bearing:
-       it drops under the chips rather than out of the page. */
     .brand {
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
       --crayon-width: 10px;
       --crayon-height: 5px;
     }
 
+    /* The wordmark is the least load-bearing thing in the bar and the first to
+       crowd the back link, so on a phone the chips carry the brand alone. */
     .wordmark {
-      font-size: 11px;
+      display: none;
     }
 
-    /* Eyebrow first, then the H1 it labels, then the lede and the context note. */
     .hero {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 0;
       padding-bottom: 28px;
-    }
-
-    .hero-side {
-      display: contents;
-    }
-
-    .eyebrow {
-      order: -1;
-      margin-bottom: 14px;
-    }
-
-    .hero-note {
-      margin-top: 14px;
     }
 
     h1 {

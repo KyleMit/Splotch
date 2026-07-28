@@ -54,7 +54,7 @@
       <div class="card" style="--card-accent:{NUMERAL_INK[0]}">
         <span class="bar"></span>
         <div>
-          <p class="card-label warn">The one thing to get right</p>
+          <p class="card-label alert">The one thing to get right</p>
           <p class="card-body">
             Use the <strong>same Google account</strong> that's signed in to the Play Store on your phone
             or tablet. Using a different account is a common reason the beta never shows up.
@@ -78,13 +78,16 @@
           Become a tester
         </a>
       </div>
-      <div class="aside">
-        <p class="aside-label">If a link doesn't work yet</p>
-        <p class="aside-body">
-          None of this is instant, and Google Play doesn't always recognise a new group membership
-          straight away. Check that both pages are signed in to the same Google account, then make a
-          cup of tea and try again a little later before assuming something is broken.
-        </p>
+      <div class="card" style="--card-accent:{NUMERAL_INK[1]}">
+        <span class="bar"></span>
+        <div>
+          <p class="card-label warn">If a link doesn't work yet</p>
+          <p class="card-body">
+            None of this is instant, and Google Play doesn't always recognise a new group membership
+            straight away. Check that both pages are signed in to the same Google account, then make
+            a cup of tea and try again a little later before assuming something is broken.
+          </p>
+        </div>
       </div>
     </div>
   </li>
@@ -142,13 +145,16 @@
         genuinely useful.
       </p>
       {#if support}
-        <div class="aside">
-          <p class="aside-label">Or just email us</p>
-          <p class="aside-body">
-            <a href="mailto:{support}">{support}</a> reaches a human. Anything at all — something broken,
-            something confusing, an idea, or just to say your kid liked it. Good and bad are both worth
-            hearing.
-          </p>
+        <div class="card" style="--card-accent:{NUMERAL_INK[3]}">
+          <span class="bar"></span>
+          <div>
+            <p class="card-label info">Or just email us</p>
+            <p class="card-body">
+              <a href="mailto:{support}">{support}</a> reaches a human. Anything at all — something broken,
+              something confusing, an idea, or just to say your kid liked it. Good and bad are both worth
+              hearing.
+            </p>
+          </div>
         </div>
       {/if}
     </div>
@@ -157,8 +163,7 @@
 
 <style>
   /* No rules between steps: the gap and the colored numeral do the separating,
-     so the only hairlines on the page are the section label's and the aside
-     notes' left borders. */
+     so the only hairline on the page is the section label's. */
   .steps {
     list-style: none;
     margin: 0;
@@ -258,8 +263,8 @@
     color: var(--beta-muted);
   }
 
-  /* Two callout tiers. The card is for the two notes that can actually cost
-     someone their beta; the aside is for the two that are only context. */
+  /* Every step closes on a callout carrying its own crayon accent, so the four
+     read as one system rather than as two competing note styles. */
   .card {
     display: flex;
     gap: 14px;
@@ -283,15 +288,23 @@
     text-transform: uppercase;
   }
 
-  /* Darkened tints of the step's crayon hue — the raw Red/Green are ~2.6:1 on
-     the warm tint, so the label takes a deeper shade that clears AA. Not
-     palette values, so they live here rather than in palette.ts. */
+  /* Each card label takes a darkened tint of its step's crayon hue: the raw
+     palette hues are ~2.6:1 on the warm tint. Deeper shades that clear AA, and
+     not palette values, so they live in the route's local palette. */
+  .alert {
+    color: var(--beta-alert-ink);
+  }
+
   .warn {
     color: var(--beta-warn-ink);
   }
 
   .go {
     color: var(--beta-go-ink);
+  }
+
+  .info {
+    color: var(--beta-info-ink);
   }
 
   .card-body {
@@ -304,29 +317,6 @@
 
   .card-body strong {
     color: var(--beta-ink);
-  }
-
-  .aside {
-    margin-top: 22px;
-    padding-left: 18px;
-    border-left: 1px solid var(--beta-note-rule);
-  }
-
-  .aside-label {
-    margin: 0 0 4px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--beta-muted);
-  }
-
-  .aside-body {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 500;
-    line-height: 1.6;
-    color: var(--beta-muted);
   }
 
   /* The real Parent Center glyph, sized to the surrounding text so the sentence
