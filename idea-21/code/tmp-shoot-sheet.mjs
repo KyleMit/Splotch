@@ -1,5 +1,5 @@
 // TEMP (idea-21 experiment): screenshot a contact sheet HTML file. Delete me.
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 import { pathToFileURL } from 'node:url';
 
 const [file, out, clipSpec] = process.argv.slice(2);

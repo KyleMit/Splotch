@@ -1,5 +1,5 @@
 // TEMP (idea-21 experiment): dump tile rects from a rendered sheet. Delete me.
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 import { pathToFileURL } from 'node:url';
 
 const [file] = process.argv.slice(2);

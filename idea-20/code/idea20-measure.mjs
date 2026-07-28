@@ -2,7 +2,7 @@
 // Connects to the driver's dev server (http://localhost:5199), emulates each
 // profile, applies a Creatures coloring page, and measures the overlay art box,
 // DPR, and the engine's canvas backing store.
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 import { existsSync, readdirSync, writeFileSync } from 'node:fs';
 
 function chromiumExecutablePath() {
