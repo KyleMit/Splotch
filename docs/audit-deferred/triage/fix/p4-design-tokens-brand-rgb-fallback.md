@@ -115,5 +115,5 @@ modern engines take the `color-mix` line, so nothing above the floor changes at 
 
 Discard the draft patch (a one-line deletion in the wrong direction) and re-stage in docs/AUDIT.md
 with the `--brand-rgb` approach and the seven-site list above. Small mechanical PR; pairs naturally
-with the C14 sibling (`options/p2-design-tokens-spacing-font-px.md`) since both touch the same
-stylesheet.
+with the C14 sibling ([issue \#565](https://github.com/KyleMit/Splotch/issues/565)) since both touch
+the same stylesheet.

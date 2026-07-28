@@ -75,7 +75,7 @@ Verification per the finding: `AbortSignal.timeout` count in `bin/` drops 6 → 
 `classifyGeminiResponse` disappears from `bin/` imports, `npm run test:asset-gen` green. Request
 payloads are byte-identical, so no golden/asset impact. Note this also centralizes the model id and
 timeout, which subsumes the substantive half of the sibling constants finding
-(`options/p2-duplication-asset-gen-constants.md`).
+([issue \#566](https://github.com/KyleMit/Splotch/issues/566)).
 
 ## Suggested next step
 
