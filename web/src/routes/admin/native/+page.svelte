@@ -142,7 +142,7 @@
       });
       const data = (await response.json().catch(() => null)) as LoginResponse | null;
       if (!response.ok || !data?.ok || typeof data.session !== 'string') {
-        loginError = data && !data.ok ? data.error : 'Sign in failed.';
+        loginError = (data && !data.ok ? data.error : null) ?? 'Sign in failed.';
         return false;
       }
       session = data.session;
