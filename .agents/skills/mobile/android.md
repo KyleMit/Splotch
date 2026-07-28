@@ -318,8 +318,8 @@ re-verify if that flow changes:
 
   ⚠️ The visibility gate is currently narrower than the intent: `ActionsPanel.svelte:357` and
   `visibleActionButtonCount()` (`actionButtonLayout.ts:64`) both check `settings.aiAccessToken`
-  alone, so a BYO Gemini key never actually unhides the button — issue #600. `/privacy` deliberately
-  describes the intended behavior ("an access code or Gemini key"); the two converge when #600
+  alone, so a BYO Gemini key never actually unhides the button — issue #599. `/privacy` deliberately
+  describes the intended behavior ("an access code or Gemini key"); the two converge when #599
   ships.
 * **Limited use** — the drawing is passed through to Gemini and the result returned; nothing is
   persisted. `lib/server/usage.ts` stores only a per-token tally (count, timestamps, last style, and
