@@ -68,6 +68,13 @@ green API-contract fix was deferred twice. Codex implementers now treat that one
 write as outer-driver work, and the driver reruns Ruler whenever the implementation changed
 `.ruler/**` before staging. Other Ruler failures still fail closed.
 
+A subsequent platform-folder move exposed a reviewer/protection contradiction. Completeness review
+required retargeting historical patches under `docs/audit-deferred/`, while the driver correctly
+rejects every implementer edit to that state. Two otherwise-green findings were rolled back on the
+same impossible repair. Deferred patches are explicitly starting points, not living artifacts, so
+review now excludes the protected deferred files and continues to grep every live code and
+documentation surface.
+
 A repair round follows the same contract: resume the exact implementer thread, edit on top of the
 rejected commit, leave Git metadata alone, and let the outer driver create the next round commit.
 
@@ -271,3 +278,4 @@ the other.
 | 2026-07-27 | Make supervision portable, scoped, timed, and low-noise after PR 554    |
 | 2026-07-27 | Clarify consent, sandbox noise, stop latency, and closeout after PR 561 |
 | 2026-07-28 | Move protected `.agents/` Ruler generation to the outer Codex driver    |
+| 2026-07-28 | Exclude protected historical patches from live completeness review      |

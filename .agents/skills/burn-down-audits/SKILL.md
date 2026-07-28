@@ -123,6 +123,11 @@ The reviewer sees only a finding range that passed. It must not rerun tests; it 
 missing runtime guards, and uncovered behavior. Reviewing only the latest fix-round commit can hide
 the source change in its parent.
 
+The completeness grep excludes `docs/AUDIT-DEFERRED.md` and `docs/audit-deferred/**`. Those files
+are driver-owned historical snapshots, and their saved patches are starting points rather than
+living patches guaranteed to apply after later findings change the same code. The reviewer must not
+require an implementer to rewrite protected state that the driver will reject.
+
 When a gate is red, the driver includes a bounded, ANSI-free tail of the command output in the
 resumed implementer's feedback. Preserve that output: a nested Codex role cannot rerun a
 listener-based E2E command, so a generic "Playwright is red" message makes it guess at a failure the
