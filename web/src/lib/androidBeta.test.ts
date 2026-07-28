@@ -13,7 +13,7 @@ import {
 describe('/android-beta facts', () => {
   it('states the Android floor Google Play actually enforces', () => {
     const gradle = readFileSync(
-      new URL('../../../../android/variables.gradle', import.meta.url),
+      new URL('../../../android/variables.gradle', import.meta.url),
       'utf8'
     );
     const minSdkVersion = Number(gradle.match(/minSdkVersion\s*=\s*(\d+)/)?.[1]);

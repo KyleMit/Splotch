@@ -1,18 +1,12 @@
 <script lang="ts">
-  import {
-    BETA_OPT_IN_URL,
-    FEEDBACK_ISSUE_URL,
-    MIN_ANDROID_API_LEVEL,
-    MIN_ANDROID_RELEASE,
-    PLAY_STORE_LISTING_URL,
-    TESTERS_GROUP_SUBSCRIBE_EMAIL,
-    TESTERS_GROUP_URL,
-  } from './androidBeta';
+  import { BETA_OPT_IN_URL, FEEDBACK_ISSUE_URL } from '$lib/androidBeta';
+  import StepLedger from '$lib/components/androidBeta/StepLedger.svelte';
 
   // Sign-up instructions for the Google Play closed test. The ordering of the
-  // two Play links is the whole point of the page: the store listing is dark
-  // for anyone who has not opted in yet, so the opt-in page has to come first
-  // or a would-be tester lands on "item not found" and gives up.
+  // links is the whole point of the page: the store listing is dark for anyone
+  // who has not opted in yet, and the group's own web page refuses most
+  // first-time testers, so each step leads with the route that actually works
+  // for a reader who has done nothing yet.
 </script>
 
 <svelte:head>
@@ -25,342 +19,403 @@
 
 <main class="beta">
   <div class="sheet">
-    <a class="back" href="/">← Back to drawing</a>
+    <div class="topbar">
+      <a class="back" href="/">← Back to drawing</a>
+      <span class="wordmark">Splotch for Android</span>
+    </div>
 
-    <!-- Non-breaking space so a narrow screen never strands the emoji on its own line. -->
-    <h1>Join the Android Beta&nbsp;<span aria-hidden="true">🤖</span></h1>
+    <div class="band header">
+      <p class="eyebrow">Closed testing · Google Play</p>
+      <h1>Join the Android beta</h1>
+      <p class="lede">
+        Joining is free and takes three quick steps. Thank you for helping — trying Splotch on a
+        real phone or tablet finds problems we can't catch on our own.
+      </p>
+    </div>
 
-    <p class="intro">
-      Splotch for Android is in <strong>closed testing</strong> on Google Play. Joining is free and takes
-      three quick steps. Thank you for helping — trying Splotch on a real phone or tablet finds problems
-      we can't catch on our own.
-    </p>
+    <StepLedger />
 
-    <ol class="steps">
-      <li>
-        <h2>Join the testers group</h2>
+    <div class="band tinted">
+      <h2 class="band-title">If a link doesn't work yet</h2>
+      <p class="band-body">
+        None of this is instant, and Google Play doesn't always recognise a new group membership
+        straight away. Check that both pages are signed in to the same Google account, then make a
+        cup of tea and try again a little later before assuming something is broken.
+      </p>
+    </div>
+
+    <div class="band rows">
+      <h2 class="section-label">If it still isn't showing up</h2>
+
+      <div class="row">
+        <h3>“Item not found” on the store link</h3>
         <p>
-          Google Play decides who can see the beta by checking a Google Group, so this has to happen
-          first. The quickest way in is a blank email — the group writes back, you reply, and you're
-          a member.
+          You aren't opted in yet, or the browser is signed in to a different Google account. Go
+          back to <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer"
+            >the tester page</a
+          >, check the account shown in the top-right corner, and opt in there first.
+        </p>
+      </div>
+      <div class="row">
+        <h3>The tester page says you're not a member</h3>
+        <p>
+          Your request to join the group hasn't finished, or it went through on another account. If
+          you joined by email, check that inbox for Google's confirmation and make sure you replied
+          to it — membership isn't final until you do. If an owner has to approve you, you'll get a
+          second email once they have.
+        </p>
+      </div>
+      <div class="row">
+        <h3>The phone can't find the app but your computer can</h3>
+        <p>
+          The two are signed in to different accounts. In the Play Store app, tap your profile
+          picture in the top-right to see which account is active.
+        </p>
+      </div>
+      <div class="row">
+        <h3>Everything looks right and Play still disagrees</h3>
+        <p>
+          Close and reopen the Play Store, check the active account, and try the store link again.
+          As a last resort, open Android Settings → Apps → Google Play Store → Storage and clear its
+          cache; the exact menu names vary by device.
+        </p>
+      </div>
+    </div>
+
+    <div class="band expect">
+      <h2 class="section-label">What to expect</h2>
+      <div class="expect-rows">
+        <p>Beta builds may change frequently, so expect the occasional rough edge.</p>
+        <p>
+          Your drawings stay on your device unless a grown-up turns on a feature that sends them —
+          the optional magic-image button, or a report you write yourself. Splotch shows no ads, has
+          no analytics, and never asks you to create a Splotch account. See the
+          <a href="/privacy">Privacy Policy</a>.
         </p>
         <p>
-          <a href="mailto:{TESTERS_GROUP_SUBSCRIBE_EMAIL}" class="cta primary"> Email to join </a>
+          The drawing tools work offline, so a plane or a car park is fair game. The parts that
+          reach the internet — magic images, sending a report, the links on this page — need a
+          connection.
         </p>
-        <p class="fine">
-          Nothing to write — no subject, no message. An automated reply usually lands within a
-          minute (check spam if it doesn't); reply to it, blank again, and you're in.
-        </p>
-        <p class="fine">
-          Rather do it on the web?
-          <a href={TESTERS_GROUP_URL} target="_blank" rel="noopener noreferrer">
-            Open the group on Google Groups</a
-          >. Google may ask you to sign in or request access first, so the email above is the
-          smoother route on a phone.
-        </p>
-        <p class="callout">
-          <strong>Use the same Google account</strong> that's signed in to the Play Store on your phone
-          or tablet. Using a different account is a common reason the beta never shows up.
-        </p>
-      </li>
+      </div>
+    </div>
 
-      <li>
-        <h2>Opt in on Google Play</h2>
+    <div class="band callout-band">
+      <div class="callout">
+        <h2>Telling us what you think</h2>
         <p>
-          Open the tester page and press <strong>“Become a tester”</strong>. When it works, the page
-          switches to “You're a tester” and offers a download link.
+          This is the part that matters. Inside the app, tap the <strong>?</strong> button to open
+          the Parent Center and choose <strong>Send report</strong> to file a bug or suggest a
+          feature without leaving Splotch. You can also
+          <a href={FEEDBACK_ISSUE_URL} target="_blank" rel="noopener noreferrer"
+            >open an issue on GitHub</a
+          >. Odd crashes, confusing buttons, and “my toddler did <em>what</em>?” stories are all
+          genuinely useful.
         </p>
+      </div>
+    </div>
+
+    <div class="band footer">
+      <div>
+        <h2>Leaving the beta</h2>
         <p>
-          <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer" class="cta primary">
-            Become a tester
-          </a>
+          Open <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer"
+            >the tester page</a
+          > again and press “Leave the program”, which stops the beta updates. If a public Android version
+          is out by then, you may need to uninstall Splotch and reinstall it from Google Play to switch
+          over; until there is one, leaving the beta also means you won't be able to reinstall the Android
+          app. No hard feelings.
         </p>
-        <p class="fine">
-          This page works in any browser, on a phone or a computer — just make sure it's signed in
-          to the account from step 1.
-        </p>
-      </li>
-
-      <li>
-        <h2>Install Splotch</h2>
+      </div>
+      <div>
+        <h2>Don't want to install anything?</h2>
         <p>
-          Once you're opted in, the normal store listing opens for you and installs like any other
-          app. Updates arrive automatically as new beta builds go out.
+          Splotch runs in a browser at <a href="/">splotch.art</a> — no beta, no store, no sign-up. Add
+          it to your home screen and it behaves much like the installed app.
         </p>
-        <p>
-          <a
-            href={PLAY_STORE_LISTING_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="cta secondary"
-          >
-            Open Splotch on Google Play
-          </a>
-        </p>
-        <p class="fine">
-          Open this one on the Android device you want to draw on. Splotch needs Android {MIN_ANDROID_RELEASE}
-          (API {MIN_ANDROID_API_LEVEL}) or newer.
-        </p>
-      </li>
-    </ol>
-
-    <h2>One favour: stay for 14 days</h2>
-    <p class="callout">
-      <strong>Please stay opted in for at least 14 days in a row</strong>, even if you've seen
-      everything you wanted to in the first ten minutes. Google requires a stretch of continuously
-      enrolled testers before Splotch can apply for a public listing, so leaving early — or opting
-      out and back in — sets that clock back for everyone. You don't have to keep drawing; just stay
-      enrolled.
-    </p>
-
-    <h2>If a link doesn't work yet</h2>
-    <p>
-      None of this is instant, and Google Play doesn't always recognise a new group membership
-      straight away. Check that both pages are signed in to the same Google account, then make a cup
-      of tea and try again a little later before assuming something is broken.
-    </p>
-
-    <h2>If it still isn't showing up</h2>
-    <ul>
-      <li>
-        <strong>“Item not found” on the store link.</strong> You aren't opted in yet, or the browser
-        is signed in to a different Google account. Go back to
-        <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer">the tester page</a>,
-        check the account shown in the top-right corner, and opt in there first.
-      </li>
-      <li>
-        <strong>The tester page says you're not a member.</strong> Your request to join the group hasn't
-        finished, or it went through on another account. If you joined by email, check that inbox for
-        Google's confirmation and make sure you replied to it — membership isn't final until you do. If
-        an owner has to approve you, you'll get a second email once they have.
-      </li>
-      <li>
-        <strong>The phone can't find the app but your computer can.</strong> The two are signed in to
-        different accounts. In the Play Store app, tap your profile picture in the top-right to see which
-        account is active.
-      </li>
-      <li>
-        <strong>Everything looks right and Play still disagrees.</strong> Close and reopen the Play Store,
-        check the active account, and try the store link again. As a last resort, open Android Settings
-        → Apps → Google Play Store → Storage and clear its cache; the exact menu names vary by device.
-      </li>
-    </ul>
-
-    <h2>What to expect</h2>
-    <ul>
-      <li>Beta builds may change frequently, so expect the occasional rough edge.</li>
-      <li>
-        Your drawings stay on your device unless a grown-up turns on a feature that sends them — the
-        optional magic-image button, or a report you write yourself. Splotch shows no ads, has no
-        analytics, and never asks you to create a Splotch account. See the
-        <a href="/privacy">Privacy Policy</a>.
-      </li>
-      <li>
-        The drawing tools work offline, so a plane or a car park is fair game. The parts that reach
-        the internet — magic images, sending a report, the links on this page — need a connection.
-      </li>
-    </ul>
-
-    <h2>Telling us what you think</h2>
-    <p>
-      This is the part that matters. Inside the app, tap the <strong>“?”</strong> button to open the
-      Parent Center and choose <strong>“Send report”</strong> to file a bug or suggest a feature
-      without leaving Splotch. You can also
-      <a href={FEEDBACK_ISSUE_URL} target="_blank" rel="noopener noreferrer"
-        >open an issue on GitHub</a
-      >. Odd crashes, confusing buttons, and “my toddler did <em>what</em>?” stories are all
-      genuinely useful.
-    </p>
-
-    <h2>Leaving the beta</h2>
-    <p>
-      Open <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer">the tester page</a>
-      again and press “Leave the program”, which stops the beta updates. If a public Android version is
-      out by then, you may need to uninstall Splotch and reinstall it from Google Play to switch over;
-      until there is one, leaving the beta also means you won't be able to reinstall the Android app.
-      The browser version at <a href="/">splotch.art</a> is always there either way. No hard feelings.
-    </p>
-
-    <h2>Don't want to install anything?</h2>
-    <p>
-      Splotch runs in a browser at <a href="/">splotch.art</a> with no beta, no store, and no sign-up.
-      Add it to your home screen and it behaves much like the installed app.
-    </p>
+      </div>
+    </div>
   </div>
 </main>
 
 <style>
-  /* Unlike /privacy and /admin, this page is fully themed: it's new, so it has
-     no contrast-pinned palette to preserve, and every color it needs already
-     exists as a token. The drawing route's app-surface locks (app.css) don't
-     reach here, so it scrolls, selects, and zooms as a normal document. */
+  /* Deliberately light-only, like /privacy and /admin: the themed color tokens
+     flip with data-theme / prefers-color-scheme (tokens.css sets them on :root,
+     which reaches this route too), so adopting them would half-dark-theme a
+     page whose link and button contrast is pinned to a light ground. The
+     palette is therefore declared once here instead of scattered as literals,
+     each value commented with the light-theme token it approximates.
+     Theme-invariant tokens (--radius-*, --duration-*, --font-family) are still
+     referenced directly.
+
+     The drawing route's app-surface locks (app.css) don't reach this route, so
+     the page scrolls, selects, and zooms as a normal document with no opt-out. */
   .beta {
+    --beta-ground: #f1efeb; /* = --paper-margin, light */
+    --beta-sheet: #fcfbf8; /* = --paper, light */
+    --beta-sheet-border: #ddd6cc; /* = --border-warm, light */
+    /* Hairlines: between --border-warm and --paper-margin. The top bar's is a
+       shade lighter than the in-content rules so it reads as chrome, not a
+       section break. */
+    --beta-rule: #e7e1d6;
+    --beta-rule-soft: #ece7dd;
+    --beta-tint: #f6f2ec; /* ~ --surface-warm-hover (#f4f0ea), light */
+    /* The single accent-tinted block on the page (the feedback callout) —
+       --brand-wash warmed to sit on the paper ground rather than on white. */
+    --beta-accent: #f4eefb;
+    --beta-accent-border: #e6dbf6;
+    --beta-ink: #2b2b33; /* ~ --text-strong (#333), light */
+    --beta-body: #55525c; /* ~ --text (#555), light */
+    --beta-body-strong: #4d4a53; /* between --text-strong and --text */
+    --beta-muted: #6c6c76; /* ~ --text-mid (#666), light */
+    --beta-label: #666; /* = --text-mid, light */
+    --beta-eyebrow: #7c50bb; /* = --brand-text, light */
+    /* Darker than --brand, whose 3.4:1 fails WCAG AA for body-size text; this
+       clears 4.5:1 as a link and as a white-on-purple button fill. Same value
+       /privacy pins for the same reason. */
+    --beta-link: #7c4dcf;
+    --beta-link-hover: #6b3fa0;
+    /* Step numerals. The handoff specced a lighter tint (#c4a7ea), which is
+       2.0:1 on the sheet and fails even the 3:1 large-text threshold, so the
+       numerals take --brand instead — the lightest purple that clears it at
+       this size. --brand is one of the few themed-file tokens safe on this
+       light-only page: tokens.css defines it once and never redefines it in a
+       dark block, the same exemption /privacy documents for its h1. */
+    --beta-numeral: var(--brand);
+    --beta-on-accent: #fff;
+    /* Inside the sheet every band lines up on one horizontal padding. */
+    --beta-gutter: clamp(24px, 5vw, 52px);
+
+    /* body's background is the themed --app-bg, so the ground has to reach the
+       bottom of the viewport or a dark-mode strip shows beneath short content. */
     min-height: 100vh;
-    background: var(--app-bg);
-    padding: var(--space-6) var(--space-4) var(--space-8);
-    color: var(--text);
-    line-height: 1.6;
+    background: var(--beta-ground);
+    padding: 32px 16px 72px;
+    color: var(--beta-ink);
+    line-height: 1.62;
+    font-size: 16px;
+    text-wrap: pretty;
   }
 
   .sheet {
-    max-width: 680px;
+    max-width: 720px;
     margin: 0 auto;
-    background: var(--surface);
+    background: var(--beta-sheet);
+    border: 1px solid var(--beta-sheet-border);
     border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-sm);
-    padding: var(--space-7) clamp(var(--space-5), 5vw, var(--space-8)) var(--space-8);
+    box-shadow:
+      0 1px 2px rgba(93, 84, 68, 0.05),
+      0 10px 30px rgba(93, 84, 68, 0.07);
+    overflow: hidden;
+  }
+
+  .band {
+    padding-left: var(--beta-gutter);
+    padding-right: var(--beta-gutter);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 22px var(--beta-gutter);
+    border-bottom: 1px solid var(--beta-rule-soft);
   }
 
   .back {
-    display: inline-block;
-    margin-bottom: var(--space-5);
+    color: var(--beta-link);
     text-decoration: none;
-    font-weight: var(--font-weight-semibold);
+    font-weight: 600;
+    font-size: 14.5px;
+  }
+
+  .wordmark {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--beta-label);
+  }
+
+  .header {
+    padding-top: 44px;
+    padding-bottom: 8px;
+  }
+
+  .eyebrow {
+    margin: 0 0 14px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--beta-eyebrow);
   }
 
   h1 {
-    font-size: clamp(1.8rem, 5vw, 2.4rem);
-    color: var(--brand);
-    margin-bottom: var(--space-2);
+    margin: 0 0 18px;
+    font-size: clamp(30px, 5.2vw, 42px);
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    font-weight: 700;
+    color: var(--beta-ink);
+    max-width: 15ch;
   }
 
-  h2 {
-    font-size: var(--font-size-2xl);
-    color: var(--brand-text);
-    margin: var(--space-7) 0 var(--space-2);
+  .lede {
+    margin: 0;
+    font-size: 17.5px;
+    line-height: 1.6;
+    color: var(--beta-body);
+    max-width: 56ch;
   }
 
-  .intro {
-    font-size: var(--font-size-xl);
-    margin-bottom: var(--space-6);
+  /* Small uppercase band heading. A real <h2> so the <h3> rows beneath it don't
+     skip a level, styled as the quiet label the design calls for. */
+  .section-label {
+    margin: 0 0 4px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--beta-label);
   }
 
-  p {
-    margin-bottom: var(--space-3);
+  .tinted {
+    padding-top: 32px;
+    padding-bottom: 32px;
+    background: var(--beta-tint);
+    border-top: 1px solid var(--beta-rule);
+    border-bottom: 1px solid var(--beta-rule);
   }
 
-  ul {
-    margin: 0 0 var(--space-3);
-    padding-left: 1.2em;
+  .band-title {
+    margin: 0 0 8px;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--beta-ink);
   }
 
-  ul li {
-    margin-bottom: var(--space-2);
+  .band-body {
+    margin: 0;
+    color: var(--beta-body);
+    max-width: 62ch;
+  }
+
+  .rows {
+    padding-top: 40px;
+    padding-bottom: 8px;
+  }
+
+  .row {
+    border-top: 1px solid var(--beta-rule);
+    margin-top: 20px;
+    padding-top: 20px;
+  }
+
+  .row:first-of-type {
+    margin-top: 16px;
+  }
+
+  .row h3 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--beta-ink);
+  }
+
+  .row p {
+    margin: 0;
+    font-size: 15.5px;
+    color: var(--beta-body);
+    max-width: 62ch;
+  }
+
+  .expect {
+    padding-top: 40px;
+  }
+
+  .expect-rows {
+    margin-top: 16px;
+  }
+
+  .expect-rows p {
+    margin: 0;
+    padding: 16px 0;
+    border-top: 1px solid var(--beta-rule);
+    color: var(--beta-body);
+    max-width: 64ch;
+  }
+
+  .callout-band {
+    padding-top: 36px;
+    padding-bottom: 40px;
+  }
+
+  /* The page's one accent-tinted block, marking the thing it actually wants
+     back from the reader. */
+  .callout {
+    background: var(--beta-accent);
+    border: 1px solid var(--beta-accent-border);
+    border-radius: var(--radius-lg);
+    padding: 26px 28px;
+  }
+
+  .callout h2 {
+    margin: 0 0 8px;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--beta-ink);
+  }
+
+  .callout p {
+    margin: 0;
+    color: var(--beta-body-strong);
+    max-width: 60ch;
+  }
+
+  .callout strong {
+    color: var(--beta-ink);
+  }
+
+  .footer {
+    padding-top: 32px;
+    padding-bottom: 40px;
+    background: var(--beta-tint);
+    border-top: 1px solid var(--beta-rule);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 28px 40px;
+  }
+
+  .footer h2 {
+    margin: 0 0 6px;
+    font-size: 16.5px;
+    font-weight: 700;
+    color: var(--beta-ink);
+  }
+
+  .footer p {
+    margin: 0;
+    font-size: 15px;
+    color: var(--beta-body);
   }
 
   a {
-    color: var(--brand-text);
+    color: var(--beta-link);
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
   }
 
+  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
+     keep it stuck until the next tap elsewhere. */
   @media (hover: hover) {
-    a:hover {
-      text-decoration: none;
+    .back:hover {
+      text-decoration: underline;
     }
-  }
 
-  /* Numbered step cards. The marker is drawn as a brand disc in the gutter so
-     the three steps read as a sequence at a glance rather than as prose. */
-  .steps {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    counter-reset: step;
-  }
-
-  .steps > li {
-    counter-increment: step;
-    position: relative;
-    background: var(--surface-2);
-    border: var(--border-width) solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-5) var(--space-5) var(--space-4);
-    margin-bottom: var(--space-4);
-  }
-
-  .steps > li::before {
-    content: counter(step);
-    position: absolute;
-    top: var(--space-5);
-    left: var(--space-5);
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-pill);
-    background: var(--brand);
-    color: var(--on-brand);
-    font-weight: var(--font-weight-semibold);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* Clear the disc in the gutter; the rest of the card runs full width. */
-  .steps h2 {
-    margin: 0 0 var(--space-2);
-    padding-left: calc(32px + var(--space-3));
-    min-height: 32px;
-    display: flex;
-    align-items: center;
-    font-size: var(--font-size-xl);
-    color: var(--text-strong);
-  }
-
-  .steps p:last-child {
-    margin-bottom: 0;
-  }
-
-  /* Link styled as a button. Not the Button primitive: that renders a <button>,
-     and these are navigations.
-
-     Both weights are drawn from --brand-wash/--brand-text rather than a solid
-     --brand fill: --on-brand on --brand is 3.39:1, which clears AA only for
-     large text, and at button size axe flags it (serious). The step the reader
-     is meant to take next is marked by a --brand outline instead of a stronger
-     fill. */
-  .cta {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-3) var(--space-5);
-    border-radius: var(--radius-md);
-    font-weight: var(--font-weight-semibold);
-    text-decoration: none;
-    transition:
-      background var(--duration-base) ease,
-      transform var(--duration-fast) ease;
-  }
-
-  .cta:active {
-    transform: scale(0.96);
-  }
-
-  .primary,
-  .secondary {
-    background: var(--brand-wash);
-    color: var(--brand-text);
-  }
-
-  .primary {
-    border: 2px solid var(--brand);
-  }
-
-  @media (hover: hover) {
-    .primary:hover,
-    .secondary:hover {
-      background: var(--brand-wash-hover);
+    a:not(.back):hover {
+      color: var(--beta-link-hover);
     }
-  }
-
-  .fine {
-    font-size: var(--font-size-md);
-    color: var(--text-mid);
-  }
-
-  /* The "same Google account" warning — the one thing that silently breaks the
-     whole flow, so it gets a tinted panel rather than another paragraph. */
-  .callout {
-    background: var(--brand-wash);
-    border-radius: var(--radius-md);
-    padding: var(--space-3) var(--space-4);
-    font-size: var(--font-size-md);
   }
 </style>

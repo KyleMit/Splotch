@@ -42,6 +42,10 @@ const BASELINE = new Map(
     'lib/components/admin/InviteMenu.svelte': 4,
     // Light-only page, same reasoning as /admin.
     'routes/privacy/+page.svelte': 8,
+    // Light-only page, same reasoning as /admin — a warm paper palette pinned to
+    // a light ground, declared once as local custom properties at the top of its
+    // <style> block. Shares /privacy's AA-safe #7c4dcf/#6b3fa0 brand pair.
+    'routes/android-beta/+page.svelte': 17,
     // Deliberate constant: #666 is contrast-pinned for the one light-only host
     // (/admin), where --text-mid's dark value would be 1.9:1. Themed hosts (the
     // /dev harnesses) override it — see the note on .crumb-current.
