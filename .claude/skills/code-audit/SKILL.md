@@ -48,6 +48,14 @@ Learned from prior runs:
 * Before filing, re-verify the top-ranked claims yourself against the cited lines (agents
   occasionally misread control flow); the ordering is only as good as the claims are true.
 * Check open GitHub issues first so already-tracked work is excluded.
+* For an exhaustive whole-repo pass (every area, high finding counts), `docs/CODE-MAP.md` is the
+  ready-made section inventory — one auditor per area, using the subcategory splits where defined.
+  At that scale, have each auditor write its full report to its own scratch file and return only
+  counts + themes, then assemble `docs/AUDIT.md` by concatenation with one
+  `## Source: Code audit — <section>` header per section (keeps the `###` = one-finding invariant
+  the consumers parse). Pin every citation to the audited commit SHA so line numbers stay resolvable
+  after the code moves, and hand auditors a pre-fetched open-issue list file — 100+ issues is too
+  much for each agent to re-query.
 
 ## Shared audit conventions
 
