@@ -7,32 +7,6 @@
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P4][consistency] `.vscode/settings.json` wires a formatter only for markdown, not for code
-
-**File(s):** `.vscode/settings.json:1-7`, `.vscode/extensions.json:1-3` (editor config) — pinned at
-SHA f934d43
-
-#### Problem
-
-`extensions.json` recommends `dprint.dprint`, `esbenp.prettier-vscode`, and `svelte.svelte-vscode`,
-but `settings.json` sets `editor.defaultFormatter` only for `[markdown]` (→ dprint). It never sets
-Prettier as the default formatter for `.ts`/`.js`/`.json`/`.svelte`, nor `editor.formatOnSave`. A
-contributor who installs the recommended extensions still gets no Prettier-on-save for code and may
-default to VS Code's built-in formatter, producing diffs `format:check` then rejects.
-
-#### Proposed solution
-
-Add `editor.defaultFormatter: "esbenp.prettier-vscode"` for `[typescript]`/`[javascript]`/`[json]`
-and `svelte.svelte-vscode` for `[svelte]`, plus `editor.formatOnSave: true`, so the committed
-workspace settings match the CI formatters end-to-end.
-
-#### Verification
-
-Open a `.ts` file in VS Code with the recommended extensions and save an intentionally mis-formatted
-line; today nothing reformats it. After the change, save reformats to match `npm run format:check`.
-
----
-
 ## Source: Session audit
 
 ### [Tooling] Make the session-audit conventions link resolve for Codex
