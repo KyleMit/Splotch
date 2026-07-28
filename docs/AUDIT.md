@@ -35,33 +35,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — scrapbook · run-artifact code
 
-### [P4][accessibility] Tab UI is built from bare `<button>`s with no tab ARIA semantics
-
-**File(s):** `scrapbook/coloring-book-proof-sheets/index.html:168-177`, `:199-206` (hand-authored
-hub) — pinned at SHA f934d43
-
-#### Problem
-
-The hub implements a genuine tablist — mutually-exclusive `.on` state, ←/→ arrow navigation, a
-switched iframe — but with no assistive semantics: `<div class="tabs">` is not `role="tablist"`, the
-generated buttons are not `role="tab"` and never set `aria-selected`, and the `<iframe id="sheet">`
-is not `role="tabpanel"` associated to the active tab. Screen-reader users get eight unlabelled
-toggle buttons and an untied frame instead of a coherent tab widget.
-
-#### Proposed solution
-
-Add `role="tablist"` to the `.tabs` container, `role="tab"` + `aria-selected` (toggled alongside the
-`.on` class in `show()`) to each button, and wire the iframe as the panel (`role="tabpanel"` +
-`aria-labelledby`). This is a reference/keeper page so the bar is low, but the tab pattern is
-already there — the semantics are cheap to finish.
-
-#### Verification
-
-Run an a11y checker (axe) against the hub, or tab through with a screen reader: the tab strip should
-announce as a tablist with a selected tab.
-
----
-
 ### [P4][naming] Inconsistent element-variable suffixing (`frame` vs `tabsEl`/`countEl`)
 
 **File(s):** `scrapbook/coloring-book-proof-sheets/index.html:193-196` (hand-authored hub) — pinned

@@ -3650,3 +3650,57 @@ The rolled-back draft is kept at
 (1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p3-consistency-android-emulator-api-level-is-a-second-source-of-truth-fo.patch`.
+
+### [P4][accessibility] Tab UI is built from bare `<button>`s with no tab ARIA semantics
+
+**File(s):** `scrapbook/coloring-book-proof-sheets/index.html:168-177`, `:199-206` (hand-authored
+hub) — pinned at SHA f934d43
+
+#### Problem
+
+The hub implements a genuine tablist — mutually-exclusive `.on` state, ←/→ arrow navigation, a
+switched iframe — but with no assistive semantics: `<div class="tabs">` is not `role="tablist"`, the
+generated buttons are not `role="tab"` and never set `aria-selected`, and the `<iframe id="sheet">`
+is not `role="tabpanel"` associated to the active tab. Screen-reader users get eight unlabelled
+toggle buttons and an untied frame instead of a coherent tab widget.
+
+#### Proposed solution
+
+Add `role="tablist"` to the `.tabs` container, `role="tab"` + `aria-selected` (toggled alongside the
+`.on` class in `show()`) to each button, and wire the iframe as the panel (`role="tabpanel"` +
+`aria-labelledby`). This is a reference/keeper page so the bar is low, but the tab pattern is
+already there — the semantics are cheap to finish.
+
+#### Verification
+
+Run an a11y checker (axe) against the hub, or tab through with a screen reader: the tab strip should
+announce as a tablist with a selected tab.
+
+---
+
+#### Why it was deferred
+
+fix broke a targeted E2E spec
+
+The driver's gates were red at the final round: the Playwright spec(s)
+tests/proof-sheet-history.spec.ts are red.
+
+#### What was tried
+
+1. Added synchronized tablist, tab, and tabpanel semantics to the proof-sheet hub and regenerated
+   its committed HTML. Extended the existing history spec to verify active-tab accessibility state
+   and panel association.
+2. Formatted the Playwright assertions to satisfy the repository formatter. All permitted driver
+   gates and original non-listener checks now pass; the only worktree change is the formatting
+   correction.
+3. Changed the hash-only history step to `window.history.back()` so Playwright no longer waits for a
+   full page load while the iframe updates. The original full-page history assertion remains intact,
+   and all permitted non-listener checks pass.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p4-accessibility-tab-ui-is-built-from-bare-button-s-with-no-tab-aria-sem.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p4-accessibility-tab-ui-is-built-from-bare-button-s-with-no-tab-aria-sem.patch`.
