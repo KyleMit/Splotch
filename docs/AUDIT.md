@@ -7,35 +7,6 @@
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P3][dead-config] `.gitignore` is padded with generic-template entries for tools this repo never uses
-
-**File(s):** `.gitignore:42-137` (config) — pinned at SHA f934d43
-
-#### Problem
-
-Roughly 60 lines are boilerplate from the standard Node `.gitignore` for frameworks/tools absent
-from this SvelteKit + Capacitor project: `.grunt` (42), `bower_components` (46), `.lock-wscript`
-(49), `jspm_packages/` (56), `web_modules/` (59), `.next`/`out` (92-93), `.nuxt`/`dist` (95-97),
-Gatsby `.cache/` (100), `.vuepress/dist` (106), `**/.vitepress/*` (116-119), `.docusaurus` (122),
-`.serverless/` (125), `.fusebox/` (128), `.dynamodb/` (131), `.firebase/` (133), `.tern-port` (137),
-`.vscode-test` (140), the entire `.yarn/*` block (143-149). None correspond to a tool in
-`package.json`. The noise buries the ~30 lines that are actually project-specific and load-bearing
-(the Playwright/perf/redteam/coloring-samples/maestro anchored ignores), hurting grepability.
-
-#### Proposed solution
-
-Prune the unused framework blocks, keeping only entries that match tools actually in use (Vite,
-SvelteKit, Playwright, Netlify, Capacitor, dprint, the project's own scratch dirs). Keep the
-generic-but-cheap safety nets (`*.log`, `.env*`, `.DS_Store`, `node_modules/`, `coverage`).
-
-#### Verification
-
-For each removed entry, `git grep` the tool name in `package.json` returns nothing (e.g. `grunt`,
-`bower`, `nuxt`, `docusaurus`, `fusebox`). `git status` is unchanged after pruning (nothing that was
-being ignored is now surfaced).
-
----
-
 ### [P3][duplication] `.cache` is ignored three times in `.gitignore`
 
 **File(s):** `.gitignore:88,100,110` (config) — pinned at SHA f934d43
