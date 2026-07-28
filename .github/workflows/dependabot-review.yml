@@ -90,6 +90,16 @@ jobs:
             --max-turns 30
             --allowedTools "Read,Grep,Glob,WebSearch,WebFetch,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh pr comment:*)"
           prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Pass that PR number explicitly to every `gh` call — `gh pr view
+            $PR`, `gh pr diff $PR`, `gh pr checks $PR`, `gh pr comment $PR`. The
+            bare form infers the PR from the current branch, and the checkout
+            here is a detached HEAD on the merge ref, so there is no branch to
+            infer from. The PR branch is already checked out in the working
+            directory.
+
             You are reviewing a Dependabot pull request on Splotch, a SvelteKit
             drawing app for toddlers that ships to web (Netlify) and native
             (Capacitor, Android + iOS).
