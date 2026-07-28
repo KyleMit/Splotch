@@ -7,35 +7,6 @@
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P3][dependency-split] `@capacitor/filesystem` appears unused — no JS import anywhere
-
-**File(s):** `package.json:279` (dependencies) — pinned at SHA f934d43
-
-#### Problem
-
-Every Capacitor plugin in `dependencies` is imported from `web/src` (verified) — except
-`@capacitor/filesystem`, which has **zero** JS references. Its only repo mentions are the generated
-native registrations (`android/capacitor.settings.gradle`, `ios/App/CapApp-SPM/Package.swift`) and
-`package.json` itself. A Capacitor plugin that is installed but never called from JS ships in the
-native binaries yet does nothing, and — under the inverted-split rule (ADR-0070: `dependencies` =
-what the Netlify web build imports) — it doesn't belong in `dependencies` either, since the web
-build never bundles it.
-
-#### Proposed solution
-
-Confirm no dynamic import or peer requirement (e.g. `@capacitor-community/media` needing it) then
-remove `@capacitor/filesystem`, `cap sync`, and re-run the native smoke test. If a peer/native need
-surfaces, document why it is present-but-unimported.
-
-#### Verification
-
-`git grep "@capacitor/filesystem" -- ':!package-lock.json' ':!*.md'` returns only native config +
-`package.json` (confirmed). `npm ls @capacitor/filesystem` shows whether anything depends on it
-transitively; if it's a leaf with no JS import, it is dead. Remove it and confirm
-`npm run test:android:device` still passes.
-
----
-
 ### [P3][maintainability] Dev/preview port numbers are magic values scattered across scripts and configs
 
 **File(s):** `package.json:16,47,103,115,121` (scripts) — pinned at SHA f934d43
