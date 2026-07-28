@@ -1,21 +1,27 @@
-// Raw-hex ratchet for component styles (ADR-0071). Scans the <style> blocks
-// of every web/src Svelte component for raw hex colors — the values that
-// should be design tokens (`var(--…)` from web/src/lib/design/tokens.ts) —
-// and fails if any file's count differs from the committed baseline below.
+// Token lints for component styles (ADR-0071). Scans the <style> blocks of
+// every web/src Svelte component for two classes of raw values that should be
+// design tokens (from web/src/lib/design/tokens.ts):
 //
-// The baseline is the explicit allowlist of documented one-offs. A count
-// ABOVE baseline means a new raw hex crept in: migrate it to a token (see the
-// design skill). A count BELOW baseline means someone migrated a one-off:
-// lower the baseline here so the ratchet holds. CSS comments and hexes inside
-// var(--x, #fallback) are ignored.
+// 1. Raw hex colors — a ratchet against the committed baseline below. The
+//    baseline is the explicit allowlist of documented one-offs. A count ABOVE
+//    baseline means a new raw hex crept in: migrate it to a token (see the
+//    design skill). A count BELOW baseline means someone migrated a one-off:
+//    lower the baseline here so the ratchet holds. CSS comments and hexes
+//    inside var(--x, #fallback) are ignored. Scope is deliberately hex-only:
+//    raw rgba()/hsl() are dominated by legitimate alpha shadows and overlays
+//    that have no token equivalent, so counting them would triple the
+//    baseline and blunt the signal. Hex is the surface the token migration
+//    actually finished.
 //
-// Scope is deliberately hex-only: raw rgba()/hsl() are dominated by
-// legitimate alpha shadows and overlays that have no token equivalent, so
-// counting them would triple the baseline and blunt the signal. Hex is the
-// surface the token migration actually finished.
+// 2. Raw multi-digit z-index values — zero tolerance, no baseline. A z-index
+//    of 10+ is chrome-tier stacking and must use the --z-* tokens so the
+//    stacking order stays legible in one place. Single-digit values (local
+//    ordering inside an isolated stacking context), var(--z-…), and calc()
+//    stay legal.
 //
 // Run via `npm run lint:tokens` (wired into the CI Quality job).
-// countRawHex is unit-tested in web/src/lib/design/lint-token-styles.test.ts.
+// countRawHex and countRawZIndex are unit-tested in
+// web/src/lib/design/lint-token-styles.test.ts.
 
 import { readFileSync } from 'node:fs';
 import { readdirSync } from 'node:fs';
@@ -83,12 +89,20 @@ function svelteFiles(dir) {
 // up as a baseline bump to investigate, not a silent pass), and the var()
 // strip doesn't survive nested parens (var(--x, rgba(…))) — fine while
 // fallbacks stay simple, since the leftover text contains no hex.
-export function countRawHex(source) {
-  const styles = [...source.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)]
+function strippedStyles(source) {
+  return [...source.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)]
     .map((m) => m[1])
-    .join('\n');
-  const stripped = styles.replace(/\/\*[\s\S]*?\*\//g, '').replace(/var\([^)]*\)/g, 'var()');
-  return (stripped.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).length;
+    .join('\n')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/var\([^)]*\)/g, 'var()');
+}
+
+export function countRawHex(source) {
+  return (strippedStyles(source).match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).length;
+}
+
+export function countRawZIndex(source) {
+  return (strippedStyles(source).match(/z-index\s*:\s*-?\d{2,}/g) ?? []).length;
 }
 
 async function main() {
@@ -99,9 +113,17 @@ async function main() {
 
   for (const file of svelteFiles(SRC)) {
     const rel = relative(SRC, file);
-    const count = countRawHex(readFileSync(file, 'utf8'));
+    const source = readFileSync(file, 'utf8');
+    const count = countRawHex(source);
     const allowed = BASELINE.get(rel) ?? 0;
     seen.add(rel);
+    const zCount = countRawZIndex(source);
+    if (zCount > 0) {
+      problems.push(
+        `${rel}: ${zCount} raw multi-digit z-index value(s) in <style> — chrome-tier stacking must ` +
+          `use the --z-* tokens (var(--z-…), see the design skill); single-digit local values are fine.`
+      );
+    }
     if (count > allowed) {
       problems.push(
         `${rel}: ${count} raw hex color(s) in <style> (baseline ${allowed}) — use the design tokens ` +
@@ -122,10 +144,12 @@ async function main() {
   }
 
   if (problems.length) {
-    console.error('Raw-hex token lint failed:\n\n' + problems.map((p) => `  ${p}`).join('\n'));
+    console.error('Token style lint failed:\n\n' + problems.map((p) => `  ${p}`).join('\n'));
     process.exit(1);
   }
-  console.log(`Raw-hex token lint passed (${BASELINE.size} allowlisted files).`);
+  console.log(
+    `Token style lint passed (${BASELINE.size} allowlisted raw-hex files, 0 raw z-index).`
+  );
 }
 
 if (isMain(import.meta.url)) {

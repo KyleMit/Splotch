@@ -48,3 +48,11 @@ describe('Android emulator API level single source', () => {
     });
   }
 });
+
+describe('Android manifest kids-compliance', () => {
+  it('keeps allowBackup disabled so drawings never leave the device via cloud backup', () => {
+    expect(read('android/app/src/main/AndroidManifest.xml')).toContain(
+      'android:allowBackup="false"'
+    );
+  });
+});
