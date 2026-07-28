@@ -7,41 +7,6 @@
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P3][duplication] Four ignore lists re-encode the same excluded paths with no shared source
-
-**File(s):** `eslint.config.js:13-23`, `.prettierignore:1-14`, `dprint.json:14-22`, `.gitignore`
-(config) — pinned at SHA f934d43
-
-#### Problem
-
-The generated/vendored dirs are enumerated independently in every config:
-
-* `eslint.config.js:13-23`: `.svelte-kit`, `build`, `.netlify`, `node_modules`, `android/`, `ios/`,
-  `scrapbook/`, `web/src/lib/components/icon-names.d.ts`, `web/src/lib/releases.json`
-* `.prettierignore:1-14`: the same set plus `package-lock.json`, `tokens.css`, `*-snapshots/`, …
-* `dprint.json:14-22`: `node_modules`, `.svelte-kit`, `.netlify`, `.gradle`, `web/build`,
-  `android/**/build`, `ios/**/build`
-
-Adding a new generated artifact (or renaming `icon-names.d.ts`/`releases.json`) requires editing
-three or four files, and they already disagree in ways a newcomer can't distinguish from bugs
-(`eslint` ignores all of `android/`, dprint ignores only `android/**/build` because it must still
-format generated `android/**/*.md` — but nothing says so).
-
-#### Proposed solution
-
-Can't fully share across tools with different config languages, but reduce the surface: add a short
-comment in each list pointing to the others ("generated-path ignores also live in `.prettierignore`
-/ `dprint.json`"), and align the glob *style* (see the consistency finding). For the two
-project-specific generated files (`icon-names.d.ts`, `releases.json`), consider co-locating them
-under a single ignored dir so one glob covers both everywhere.
-
-#### Verification
-
-`git grep -n 'icon-names.d.ts'` shows it hard-coded in both `eslint.config.js` and `.prettierignore`
-— renaming it today silently breaks one. After co-location, a single glob per tool should cover it.
-
----
-
 ### [P3][dead-config] `.gitignore` is padded with generic-template entries for tools this repo never uses
 
 **File(s):** `.gitignore:42-137` (config) — pinned at SHA f934d43
