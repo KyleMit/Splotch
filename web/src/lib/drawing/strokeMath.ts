@@ -20,9 +20,9 @@ export interface SpeedSample {
 // an OS-gesture candidate, the travel before the inward/cross direction is
 // decided, and the minimum safe-area inset that marks a tablet's landscape
 // long-bottom as a real home-indicator zone. See engine.ts for the full story.
-const EDGE_SWIPE_BAND_PX = 24;
-const EDGE_SWIPE_DECISION_PX = 12;
-const GESTURE_INSET_MIN_PX = 16;
+export const EDGE_SWIPE_BAND_PX = 24;
+export const EDGE_SWIPE_DECISION_PX = 12;
+export const GESTURE_INSET_MIN_PX = 16;
 
 export interface GuardEdgeDims {
   width: number;
@@ -87,8 +87,8 @@ export function edgeSwipeDirectionDecided(travel: number, renderScale: number): 
 // again — a dropped pointerup/pointerdown pair (see engine.ts). The jump
 // threshold is a fraction of the canvas's shorter backing-store side, so it
 // scales with canvas size and renderScale.
-const POINTER_RESUME_GAP_MS = 100;
-const POINTER_RESUME_JUMP_RATIO = 0.1;
+export const POINTER_RESUME_GAP_MS = 100;
+export const POINTER_RESUME_JUMP_RATIO = 0.1;
 
 export function pointerWasResumed(
   idleMs: number,

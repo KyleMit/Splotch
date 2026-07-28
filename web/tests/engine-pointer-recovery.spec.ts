@@ -1,7 +1,21 @@
 import { expect, test } from '@playwright/test';
 
+import {
+  EDGE_SWIPE_BAND_PX,
+  EDGE_SWIPE_DECISION_PX,
+  GESTURE_INSET_MIN_PX,
+  POINTER_RESUME_GAP_MS,
+  POINTER_RESUME_JUMP_RATIO,
+} from '$lib/drawing/strokeMath';
 import { state } from './engine-harness';
 import { COLOR_CHANGE_DEBOUNCE_SETTLE_MS, touchEventPrevented } from './helpers';
+
+// The harness canvas is 300×300 at the viewport origin (renderScale 1).
+const CANVAS_PX = 300;
+// Mid-band start on the guarded edge, and travel comfortably past the
+// swipe-direction decision distance.
+const BAND_START_PX = CANVAS_PX - EDGE_SWIPE_BAND_PX / 2;
+const SWIPE_TRAVEL_PX = 5 * EDGE_SWIPE_DECISION_PX;
 
 test('a pointer resumed far away after an idle gap does not draw a connecting line', async ({
   page,
@@ -14,9 +28,12 @@ test('a pointer resumed far away after an idle gap does not draw a connecting li
   const box = await page.locator('#engineCanvas').boundingBox();
   if (!box) throw new Error('canvas has no bounding box');
 
+  // The premise: the diagonal jump is far past the resume threshold.
+  expect(Math.hypot(220, 220)).toBeGreaterThan(POINTER_RESUME_JUMP_RATIO * CANVAS_PX);
+
   await page.mouse.move(box.x + 40, box.y + 40);
   await page.mouse.down();
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(2 * POINTER_RESUME_GAP_MS);
   await page.mouse.move(box.x + 260, box.y + 260);
   await page.mouse.up();
 
@@ -220,24 +237,26 @@ test('the canvas cancels its touch stream so iPadOS Scribble releases pen stroke
   expect(prevented).toEqual([true, true]);
 });
 
-// The harness canvas is 300×300 at the viewport origin (renderScale 1) — a
-// square is treated as portrait (width ≤ height), so the bottom band
-// (EDGE_SWIPE_BAND_PX = 24) is y ≥ 276. Portrait guards the bottom from
+// A square canvas is treated as portrait (width ≤ height), so the bottom
+// EDGE_SWIPE_BAND_PX band is guarded. Portrait guards the bottom from
 // orientation alone, needing no injected insets; landscape tests resize the
 // canvas wider than tall.
 test('in portrait a touch swiping up from the bottom edge is discarded as the OS gesture', async ({
   page,
 }) => {
-  const dropped = await page.evaluate(() => {
-    window.__engine.strokeSync(
-      [
-        { x: 60, y: 290 },
-        { x: 60, y: 230 },
-      ],
-      'touch'
-    );
-    return window.__engine.nonTransparentCount();
-  });
+  const dropped = await page.evaluate(
+    ([startY, travel]) => {
+      window.__engine.strokeSync(
+        [
+          { x: 60, y: startY },
+          { x: 60, y: startY - travel },
+        ],
+        'touch'
+      );
+      return window.__engine.nonTransparentCount();
+    },
+    [BAND_START_PX, SWIPE_TRAVEL_PX]
+  );
   expect(dropped).toBe(0);
   const s = await state(page);
   expect(s.canvasEmpty).toBe(true);
@@ -246,16 +265,19 @@ test('in portrait a touch swiping up from the bottom edge is discarded as the OS
 });
 
 test('a touch starting at the bottom edge but moving sideways still draws', async ({ page }) => {
-  const painted = await page.evaluate(() => {
-    window.__engine.strokeSync(
-      [
-        { x: 60, y: 290 },
-        { x: 220, y: 290 },
-      ],
-      'touch'
-    );
-    return window.__engine.nonTransparentCount();
-  });
+  const painted = await page.evaluate(
+    ([startY]) => {
+      window.__engine.strokeSync(
+        [
+          { x: 60, y: startY },
+          { x: 220, y: startY },
+        ],
+        'touch'
+      );
+      return window.__engine.nonTransparentCount();
+    },
+    [BAND_START_PX]
+  );
   expect(painted).toBeGreaterThan(0);
   const s = await state(page);
   expect(s.canvasEmpty).toBe(false);
@@ -280,10 +302,13 @@ test('an upward touch that starts above the bottom band draws normally', async (
 
 test('a stationary tap at a guarded edge still leaves a dot', async ({ page }) => {
   // Lifting before the direction is decided is a tap, not a swipe, so it commits.
-  const painted = await page.evaluate(() => {
-    window.__engine.strokeSync([{ x: 60, y: 290 }], 'touch');
-    return window.__engine.nonTransparentCount();
-  });
+  const painted = await page.evaluate(
+    ([startY]) => {
+      window.__engine.strokeSync([{ x: 60, y: startY }], 'touch');
+      return window.__engine.nonTransparentCount();
+    },
+    [BAND_START_PX]
+  );
   expect(painted).toBeGreaterThan(0);
 });
 
@@ -296,30 +321,36 @@ test('in phone landscape the guard moves to the short side edges, not the long b
   await page.evaluate(() => window.__engine.resizeTo(400, 300));
 
   // A swipe inward from the short left edge is the OS gesture → discarded.
-  const fromSide = await page.evaluate(() => {
-    window.__engine.strokeSync(
-      [
-        { x: 8, y: 150 },
-        { x: 70, y: 150 },
-      ],
-      'touch'
-    );
-    return window.__engine.nonTransparentCount();
-  });
+  const fromSide = await page.evaluate(
+    ([bandMid, travel]) => {
+      window.__engine.strokeSync(
+        [
+          { x: bandMid, y: 150 },
+          { x: bandMid + travel, y: 150 },
+        ],
+        'touch'
+      );
+      return window.__engine.nonTransparentCount();
+    },
+    [EDGE_SWIPE_BAND_PX / 2, SWIPE_TRAVEL_PX]
+  );
   expect(fromSide).toBe(0);
 
   // A stroke swiping up from the long bottom edge is NOT the navbar gesture on a
   // phone in landscape, so it must still draw.
-  const fromBottom = await page.evaluate(() => {
-    window.__engine.strokeSync(
-      [
-        { x: 200, y: 290 },
-        { x: 200, y: 230 },
-      ],
-      'touch'
-    );
-    return window.__engine.nonTransparentCount();
-  });
+  const fromBottom = await page.evaluate(
+    ([startY, travel]) => {
+      window.__engine.strokeSync(
+        [
+          { x: 200, y: startY },
+          { x: 200, y: startY - travel },
+        ],
+        'touch'
+      );
+      return window.__engine.nonTransparentCount();
+    },
+    [BAND_START_PX, SWIPE_TRAVEL_PX]
+  );
   expect(fromBottom).toBeGreaterThan(0);
 });
 
@@ -328,17 +359,20 @@ test('in tablet landscape a reported bottom inset additionally guards the long b
 }) => {
   // A tablet keeps its home indicator on the long bottom in landscape; the OS
   // reports an inset there, so an upward swipe from that edge is discarded.
-  const dropped = await page.evaluate(async () => {
-    await window.__engine.resizeTo(400, 300);
-    window.__engine.setSafeAreaInsets({ top: 0, right: 0, bottom: 30, left: 0 });
-    window.__engine.strokeSync(
-      [
-        { x: 200, y: 290 },
-        { x: 200, y: 230 },
-      ],
-      'touch'
-    );
-    return window.__engine.nonTransparentCount();
-  });
+  const dropped = await page.evaluate(
+    async ([inset, startY, travel]) => {
+      await window.__engine.resizeTo(400, 300);
+      window.__engine.setSafeAreaInsets({ top: 0, right: 0, bottom: inset, left: 0 });
+      window.__engine.strokeSync(
+        [
+          { x: 200, y: startY },
+          { x: 200, y: startY - travel },
+        ],
+        'touch'
+      );
+      return window.__engine.nonTransparentCount();
+    },
+    [2 * GESTURE_INSET_MIN_PX, BAND_START_PX, SWIPE_TRAVEL_PX]
+  );
   expect(dropped).toBe(0);
 });
