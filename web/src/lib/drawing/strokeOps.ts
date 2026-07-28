@@ -393,6 +393,20 @@ function clearCrayonBounds(buf: CrayonPassBuffer) {
   buf.dirty = false;
 }
 
+function stampSubtractiveGlaze(
+  target: CanvasRenderingContext2D,
+  mix: number,
+  blit: () => void
+) {
+  target.globalCompositeOperation = 'darken';
+  target.globalAlpha = 1;
+  blit();
+  target.globalCompositeOperation = 'source-over';
+  target.globalAlpha = 1 - mix;
+  blit();
+  target.globalAlpha = 1;
+}
+
 // Stamp the target's open pass (if any) as the two-blit subtractive glaze (see
 // the pass-buffer notes above) and clear the buffer — all restricted to the
 // pass's device-px bounds. Buffer and target share backing dimensions, and ops
@@ -407,12 +421,9 @@ export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
     const h = b.y1 - b.y0;
     target.save();
     target.setTransform(1, 0, 0, 1, 0, 0);
-    target.globalCompositeOperation = 'darken';
-    target.globalAlpha = 1;
-    target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
-    target.globalCompositeOperation = 'source-over';
-    target.globalAlpha = 1 - getCrayonMix();
-    target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
+    stampSubtractiveGlaze(target, getCrayonMix(), () => {
+      target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
+    });
     target.restore();
   }
   clearCrayonBounds(buf);
@@ -575,13 +586,9 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     // not the current option, so the stamp matches the live preview even if
     // the dev harness changed colorMix since the pass closed.
     flushCrayonBuffer(target);
-    target.globalCompositeOperation = 'darken';
-    target.globalAlpha = 1;
-    target.drawImage(op.canvas, op.x, op.y);
-    target.globalCompositeOperation = 'source-over';
-    target.globalAlpha = 1 - op.mix;
-    target.drawImage(op.canvas, op.x, op.y);
-    target.globalAlpha = 1;
+    stampSubtractiveGlaze(target, op.mix, () => {
+      target.drawImage(op.canvas, op.x, op.y);
+    });
     return;
   }
   if (op.magic) {
