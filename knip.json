@@ -11,6 +11,7 @@
     "web/playwright.config.ts",
     "web/playwright.webkit-scratch.config.ts",
     "web/tests/**/*.spec.ts",
+    "web/tests/global-setup.ts",
     "web/src/**/*.test.ts",
     "scripts/*.mjs",
     "scripts/perf/*.mjs",
@@ -22,6 +23,7 @@
   ],
   "project": [
     "web/src/**/*.{ts,svelte}",
+    "web/tests/**/*.ts",
     "scripts/**/*.mjs",
     "tools/asset-gen/{bin,lib}/**/*.{mjs,ts}"
   ],
