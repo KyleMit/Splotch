@@ -11,7 +11,7 @@
 
 // #rgb / #rrggbb (with optional alpha) -> {s, l} in 0..1. Returns s=0 for the
 // grey axis (r==g==b) so pure black/white/grey never register as a hue.
-export function chroma(hex) {
+function chroma(hex) {
   let h = hex.slice(1);
   if (h.length === 3 || h.length === 4) h = h.replace(/./g, (c) => c + c);
   const r = parseInt(h.slice(0, 2), 16) / 255;

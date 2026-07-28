@@ -12,7 +12,7 @@ export function installWakeLock(): () => void {
   const onFirstPointerDown = () => requestWakeLock();
   const onVisibilityChange = () => {
     if (wakeLock !== null && document.visibilityState === 'visible') {
-      requestWakeLock();
+      void requestWakeLock();
     }
   };
   document.addEventListener('pointerdown', onFirstPointerDown, { once: true });

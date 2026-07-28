@@ -8,6 +8,10 @@ paths:
 
 * Runes only (`$state`, `$derived`, `$effect`, `$props`). Never `writable`/`readable`/`derived` from
   `svelte/store` (ADR-0002).
+* Mutable component-level state defaults to `$state`; a deliberately non-reactive `let` (timer
+  handles, transition-time latches) carries a one-line comment saying it's intentionally untracked.
+* Props that forward `...rest` extend the matching `svelte/elements` attributes type
+  (`HTMLAttributes<...>`); index-signature prop bags are lint-banned.
 * Shared state lives in `src/lib/state/*.svelte.ts`. Components read state and call setters; they
   never own shared state.
 * Complex gestures and dialog wiring are Svelte actions in `src/lib/actions/` (see `dragToClear.ts`,
@@ -18,8 +22,18 @@ paths:
   directly — don't wrap it in reactive stores. Never insert DOM into the prerendered `/` subtree
   before hydration (engine code included): Svelte bails to a full client re-render, silently
   replacing the live canvas.
+* **Hot-path rule:** code reached per `pointermove`/`resize`/frame (the engine stroke path, gesture
+  trackers, viewport sync) must not allocate arrays/objects, create or measure DOM, or make
+  defensive lazy-init calls — hoist that work to `pointerdown`/init and verify with
+  `npm run perf:*`. Bind only element refs something actually reads, and never into `$state` unless
+  something reacts to them.
 * Styles are scoped in the component's `<style>` block. No global CSS except genuine cross-component
   tokens; `:global()` only when a class is set imperatively (e.g. via `classList`).
+* A value repeated 3+ times in a component's `<style>` (a duration, gradient, transition list)
+  becomes a local custom property on the block's root selector (see `--drawer-transition` in
+  `ActionsPanel.svelte`). Never `!important` to beat a sibling rule — fix specificity or ordering.
+* A prop that renders help/explanatory text for a control must wire it to the control (`id` +
+  `aria-describedby`) — axe does not flag the omission.
 * New icons: drop the SVG in `src/lib/icons/`, run `npm run gen:icons`, then use
   `<Icon name="..." />` — the `name` prop is type-checked against the generated union. `<Icon>` sets
   `data-icon={name}` so the icon is assertable in tests (the SVG itself goes in via `{@html}` and

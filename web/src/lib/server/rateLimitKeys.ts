@@ -1,3 +1,10 @@
+// Both admin front doors (the form action and the JSON endpoint) throttle into
+// this one bucket so an attacker can't double their guessing budget by
+// alternating between them.
+export function adminLoginBucket(address: string): string {
+  return `admin-login:${address}`;
+}
+
 export function verifyAccessCodeBucket(address: string): string {
   return `verify-access-code:${address}`;
 }

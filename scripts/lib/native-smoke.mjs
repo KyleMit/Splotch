@@ -5,7 +5,7 @@
 import { sh } from './proc.mjs';
 import { maestroPath } from './maestro.mjs';
 
-export const SMOKE_FLOW = '.maestro/smoke.yaml';
+const SMOKE_FLOW = '.maestro/smoke.yaml';
 
 export function runMaestroSmoke({ device } = {}) {
   const deviceFlag = device ? `--device ${device} ` : '';

@@ -17,7 +17,15 @@
   vite dev/preview server in a detached process group so `stop()` can't orphan the vite grandchild;
   `smoke.mjs` has the `check()`/`fatal()`/`summarize()` pass-fail reporter shared by the smoke
   tests, and `adminClient.mjs` the `/api/admin` login + token-CRUD request plumbing they both drive.
-  Check there before writing new glue.
+  Check there before writing new glue. A new helper joins the purpose-named module that owns its
+  concern (or gets a new purpose-named file) — never a `utils`/`misc`/`helpers` grab-bag.
+* Every CLI script gates execution behind `isMain(import.meta)` (`scripts/lib/proc.mjs`) and exports
+  a distinctly named entry function.
+* Script options are flags via `parseArgs`; an env var is at most a documented fallback.
+* Multi-item CLI runs: validate inputs up front with a path-specific one-line error and a non-zero
+  exit; wrap per-item work in try/catch and report failures at the end without discarding completed
+  results; never overwrite a baseline/output artifact from a run that had errors; name polling
+  budgets.
 * TypeScript-flavored scripts run via `node --experimental-strip-types` (see the `check:assets` npm
   script).
 * Env vars in npm scripts are set inline (`VAR=value cmd`) — no `cross-env`, since scripts run only

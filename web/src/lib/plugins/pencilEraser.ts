@@ -39,7 +39,7 @@ export function initPencilEraser(): () => void {
 
   PencilEraser.addListener('doubleTap', handleDoubleTap)
     .then((h) => {
-      if (removed) h.remove();
+      if (removed) void h.remove();
       else handle = h;
     })
     .catch((err) => {
@@ -48,6 +48,6 @@ export function initPencilEraser(): () => void {
 
   return () => {
     removed = true;
-    handle?.remove();
+    void handle?.remove();
   };
 }

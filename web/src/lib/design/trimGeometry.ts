@@ -10,7 +10,7 @@
 // still fits, so the ladders encode `threshold - 0.02` (e.g. 588 → 587.98).
 const BREAKPOINT_EPSILON_PX = 0.02;
 
-export function justBelowPx(thresholdPx: number): number {
+function justBelowPx(thresholdPx: number): number {
   return thresholdPx - BREAKPOINT_EPSILON_PX;
 }
 
@@ -50,22 +50,22 @@ function stackExtentPx(
  * roomier two-column grid instead of trimming further — which is why the trim
  * rules are floored at that count's height.
  */
-export const LANDSCAPE_SINGLE_COLUMN_LADDER = [8, 7, 6] as const;
+const LANDSCAPE_SINGLE_COLUMN_LADDER = [8, 7, 6] as const;
 
 /**
  * Column slots the three bonus colors reveal into. The core seven plus the
  * gradient swatch fill slots 1–8, so the bonuses start at 9.
  */
-export const LANDSCAPE_BONUS_REVEAL_LADDER = [9, 10, 11] as const;
+const LANDSCAPE_BONUS_REVEAL_LADDER = [9, 10, 11] as const;
 
 /** Row counts the landscape two-column grid trims through, tallest first. */
-export const LANDSCAPE_TWO_COLUMN_LADDER = [4, 3, 2, 1] as const;
+const LANDSCAPE_TWO_COLUMN_LADDER = [4, 3, 2, 1] as const;
 
 /** Core swatch counts the portrait row trims through, widest first. */
-export const PORTRAIT_LADDER = [7, 6, 5, 4, 3, 2, 1] as const;
+const PORTRAIT_LADDER = [7, 6, 5, 4, 3, 2, 1] as const;
 
 /** Height at which a landscape single column still holds `swatches`. */
-export function landscapeSingleColumnMinHeightPx(
+function landscapeSingleColumnMinHeightPx(
   swatches: number,
   geometry: PaletteStackGeometry = PALETTE_COLUMN_GEOMETRY
 ): number {
@@ -152,7 +152,7 @@ interface HexGridLadderRule {
   slackSteps: number;
 }
 
-export interface HexGridStep {
+interface HexGridStep {
   /** Rows (or columns) still shown above this breakpoint. */
   count: number;
   /** Overrides the ladder's default slack for a hand-tightened step. */
@@ -162,7 +162,7 @@ export interface HexGridStep {
 // Rows land on whole pixels with no slack…
 const HEX_GRID_ROW_RULE: HexGridLadderRule = { roundToPx: 1, slackSteps: 0 };
 
-export const HEX_GRID_ROW_LADDER: readonly HexGridStep[] = [
+const HEX_GRID_ROW_LADDER: readonly HexGridStep[] = [
   // Nine rows need 565.56px of viewport; this step is tightened down to 565
   // rather than up to 566, so the honeycomb overruns the 90vh cap by half a
   // pixel — invisible, and the picker clips it (overflow: hidden) anyway.
@@ -178,7 +178,7 @@ export const HEX_GRID_ROW_LADDER: readonly HexGridStep[] = [
 // wider ladder on round numbers with a little breathing room.
 const HEX_GRID_COLUMN_RULE: HexGridLadderRule = { roundToPx: 5, slackSteps: 1 };
 
-export const HEX_GRID_COLUMN_LADDER: readonly HexGridStep[] = [
+const HEX_GRID_COLUMN_LADDER: readonly HexGridStep[] = [
   { count: 9 },
   { count: 8 },
   { count: 7 },
@@ -205,7 +205,7 @@ function hexGridBreakpointPx(
 }
 
 /** Height below which the honeycomb drops below `step.count` rows. */
-export function hexGridRowMaxHeightPx(
+function hexGridRowMaxHeightPx(
   step: HexGridStep,
   geometry: HexGridGeometry = HEX_GRID_GEOMETRY
 ): number {
@@ -215,7 +215,7 @@ export function hexGridRowMaxHeightPx(
 }
 
 /** Width below which the honeycomb drops below `step.count` columns. */
-export function hexGridColumnMaxWidthPx(
+function hexGridColumnMaxWidthPx(
   step: HexGridStep,
   geometry: HexGridGeometry = HEX_GRID_GEOMETRY
 ): number {

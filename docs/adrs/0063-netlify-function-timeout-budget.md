@@ -97,10 +97,10 @@ export const GET: RequestHandler = async ({ url }) => {
 Sweep it from a client and watch for the status flip (200 → 502) and the body-size flip (200 → 500):
 `for ms in 5000 … 30000; do curl -w '%{http_code} %{time_total}\n' "$BASE/api/slowtest?ms=$ms"; done`.
 
-### Invariant guard (not currently wired as a live test)
+### Invariant guard
 
-If we want a CI guard that we never regress the ladder ourselves, this is enough to reconstruct it —
-a colocated `web/src/lib/ai/limits.test.ts`:
+A CI guard that we never regress the ladder ourselves — wired as the colocated
+`web/src/lib/ai/limits.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest';

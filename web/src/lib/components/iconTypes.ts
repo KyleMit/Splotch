@@ -1,7 +1,5 @@
 import type { IconName } from './icon-names';
 
-export type { IconName } from './icon-names';
-
 // The authoritative list of icons that are *not* renderable through <Icon>:
 // they're consumed structurally instead (splotchy via SplotchyIcon.svelte).
 // Vite resolves `import.meta.glob` statically, so the exclusion globs in

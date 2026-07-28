@@ -7,7 +7,9 @@ import globals from 'globals';
 // Flat config lives at the repo root (where package.json / node_modules are), but the app
 // source is under web/. Type checking is owned by `npm run check` (svelte-check); ESLint runs
 // without a TS program so it stays fast and tolerant of the toolchain (e.g. TypeScript majors)
-// — it covers correctness/style rules and the project conventions, not type errors.
+// — it covers correctness/style rules and the project conventions, not type errors. The one
+// deliberate exception is the scoped type-aware block near the bottom (no-floating-promises
+// over web/src TS), which pays the TS-program cost for that rule alone.
 export default tseslint.config(
   {
     ignores: [
@@ -42,6 +44,57 @@ export default tseslint.config(
       'no-empty': ['error', { allowEmptyCatch: true }],
       // Internal route/static links don't use SvelteKit's resolve(); the app has no base path.
       'svelte/no-navigation-without-resolve': 'off',
+      'no-restricted-properties': [
+        'error',
+        { property: 'substr', message: 'Deprecated Annex B API — use slice().' },
+      ],
+      // Only @playwright/test is a declared dependency; the bare `playwright` package rides in
+      // transitively and re-exports the same API, so imports of it work until an install shuffle
+      // breaks them. NOTE (flat-config gotcha): a later block that configures
+      // no-restricted-imports REPLACES this entry — the web/src conventions block below must
+      // carry the playwright path too.
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'playwright',
+              message:
+                'Import from @playwright/test — bare playwright is an undeclared transitive dependency.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Rate-limit bucket keys are a shared contract (ADR-0014): every producer must go through
+    // the builders in src/lib/server/rateLimitKeys.ts, so an inline string key at a call site
+    // can silently fork (or collide with) a bucket. Placed BEFORE the svelte-files block on
+    // purpose: that block's no-restricted-syntax (index-signature ban) replaces this one for
+    // .svelte/.svelte.ts files, which is fine — rateLimit() is server-only and can't appear
+    // there. The Vitest block near the bottom likewise replaces this for *.test.ts files,
+    // where ad-hoc literal keys are the point.
+    files: ['web/src/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'CallExpression[callee.name="rateLimit"][arguments.0.type="Literal"]',
+          message:
+            'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).',
+        },
+        {
+          selector: 'CallExpression[callee.name="rateLimit"][arguments.0.type="TemplateLiteral"]',
+          message:
+            'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).',
+        },
+        {
+          selector: 'CallExpression[callee.name="rateLimit"][arguments.0.type="BinaryExpression"]',
+          message:
+            'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).',
+        },
+      ],
     },
   },
   {
@@ -52,6 +105,16 @@ export default tseslint.config(
     rules: {
       // Misfires on `$bindable()` destructuring defaults, which read as unused assignments.
       'no-useless-assignment': 'off',
+      // An index signature on a Props interface erases type checking for every forwarded
+      // attribute; svelte/elements ships the accurate types for `...rest` bags.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'TSInterfaceDeclaration TSIndexSignature',
+          message:
+            'Extend HTMLAttributes<...> from svelte/elements instead of an index-signature prop bag.',
+        },
+      ],
     },
   },
   {
@@ -71,6 +134,8 @@ export default tseslint.config(
   },
   {
     // Project conventions (CLAUDE.md, ADR-0002): Svelte 5 runes only — no legacy stores.
+    // Flat-config rule entries replace (not merge) across blocks, so this block must restate
+    // the repo-wide playwright ban from the root block alongside its own paths.
     files: ['web/src/**/*.{ts,svelte}'],
     rules: {
       'no-restricted-imports': [
@@ -82,9 +147,90 @@ export default tseslint.config(
               message:
                 'Use Svelte 5 runes ($state/$derived/$effect) instead of legacy stores (ADR-0002).',
             },
+            {
+              name: 'svelte',
+              importNames: ['onDestroy'],
+              message:
+                'onDestroy runs during SSR — use an $effect cleanup (.claude/rules/svelte.md).',
+            },
+            {
+              name: 'playwright',
+              message:
+                'Import from @playwright/test — bare playwright is an undeclared transitive dependency.',
+            },
           ],
         },
       ],
+    },
+  },
+  {
+    // Size ratchet for app + E2E code: past 500 real lines a module is overdue for the split
+    // treatment engine.ts got (ADR-0004 siblings). Grandfathered outliers below carry caps just
+    // above their current size so they can only shrink.
+    files: ['web/src/**', 'web/tests/**'],
+    rules: {
+      'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
+    // Imperative-by-design engine facade (ADR-0004): the canvas/pointer/undo orchestration is
+    // deliberately one module; splitting further was rejected. Currently ~880 counted lines.
+    files: ['web/src/lib/drawing/engine.ts'],
+    rules: {
+      'max-lines': ['error', { max: 900, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
+    // Grandfathered pre-ratchet components (~625/~633 counted lines): the toolbar drawer and the
+    // admin console each mix markup + scoped styles that resist extraction. Cap sits just above
+    // today's size — shrink over time, never grow.
+    files: [
+      'web/src/lib/components/ActionsPanel.svelte',
+      'web/src/lib/components/admin/AdminConsole.svelte',
+    ],
+    rules: {
+      'max-lines': ['error', { max: 650, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
+    // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
+    // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
+    // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
+    // unit tests construct ad-hoc literal bucket keys on purpose.
+    files: ['**/*.test.ts', '**/*.test.mjs'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'CallExpression[callee.name="test"]',
+          message: 'Vitest files use it()/describe() — test() is the Playwright vocabulary.',
+        },
+        {
+          selector: 'CallExpression[callee.object.name="test"]',
+          message: 'Vitest files use it()/describe() — test() is the Playwright vocabulary.',
+        },
+      ],
+    },
+  },
+  {
+    // The ONE type-aware exception to the fast non-type-aware design above: floating promises
+    // in app code silently swallow rejections (a failed dynamic import, an unawaited native
+    // call), and only a TS program can see a call's return type. Scoped to web/src TS so the
+    // project-service cost (~seconds) stays off tooling/scripts. .svelte components are NOT
+    // covered — a plain-TS project service resolves types imported from .svelte modules as
+    // `any`, producing structural false positives — so a floating promise in component markup
+    // (onclick={() => save()}) is out of this rule's reach; that gap is accepted, not an
+    // oversight.
+    files: ['web/src/**/*.ts'],
+    ignores: ['**/*.d.ts'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname + '/web',
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
     },
   },
   prettier

@@ -34,14 +34,14 @@ function getKey() {
   return scryptSync(secret, 'splotch-redteam', 32);
 }
 
-export function encryptBuffer(plain, key = getKey()) {
+function encryptBuffer(plain, key = getKey()) {
   const iv = randomBytes(IV_LENGTH);
   const cipher = createCipheriv(ALGORITHM, key, iv);
   const ciphertext = Buffer.concat([cipher.update(plain), cipher.final()]);
   return Buffer.concat([iv, cipher.getAuthTag(), ciphertext]);
 }
 
-export function decryptBuffer(payload, key = getKey()) {
+function decryptBuffer(payload, key = getKey()) {
   const iv = payload.subarray(0, IV_LENGTH);
   const authTag = payload.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
   const ciphertext = payload.subarray(IV_LENGTH + AUTH_TAG_LENGTH);

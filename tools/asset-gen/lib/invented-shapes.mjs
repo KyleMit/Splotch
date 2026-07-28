@@ -24,21 +24,19 @@ import { OUTLINE_INK_CUTOFF } from './outline-match.mjs';
 import { floodBackground } from './regions.mjs';
 import { median } from './stats.mjs';
 
-export { BG_LIGHT_THRESHOLD as SRC_LIGHT } from './regions.mjs';
-
 // Geometry constants are inherited unchanged from scoreDrift/scoreNightness
 // (lib/night-scores.mjs) so this detector sees the same picture the gates do; the
 // blob thresholds are calibrated in ideas-exploration/idea-13/report.md.
 export const W = 512; // working width, matches scoreDrift's scale
-export const LINE_DILATE = 6; // px of slack around source ink (registration + glow), as DRIFT_DILATE
-export const DEV_T = 60; // Euclidean RGB distance from median bg color to call a pixel "foreign"
+const LINE_DILATE = 6; // px of slack around source ink (registration + glow), as DRIFT_DILATE
+const DEV_T = 60; // Euclidean RGB distance from median bg color to call a pixel "foreign"
 export const MIN_BLOB = 60; // px at W=512 — blobs smaller than this are speckle/texture
 export const ANCHOR_MAX = 0.05; // blob FLOATS if <5% of its pixels touch the line mask or image border
 // Above this area a floating region is a second background WASH (a painted
 // ground/sky band — art, reported as info), not a compact invented shape: real
 // washes measure 21k-65k px here, real invented shapes 60-1300 px.
 export const MAX_BLOB = 8000;
-export const MIN_BG_FRAC = 0.04; // skip pages with almost no open background (as scoreNightness)
+const MIN_BG_FRAC = 0.04; // skip pages with almost no open background (as scoreNightness)
 
 function medianCandidateColor(fill, candidates) {
   const rs = [],

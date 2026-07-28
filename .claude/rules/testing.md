@@ -32,6 +32,16 @@ paths:
   `tests/a11y.spec.ts` — serious/critical violations fail. The toddler-facing canvas chrome is out
   of scope by design; scans of overlays over it are scoped via `AxeBuilder.include()`. Details in
   the `testing` skill.
+* Parametrized tests import the constant/manifest they exercise — never re-declare the value (a
+  mirrored copy keeps passing for the wrong reason). Prove the derivation: temporarily change the
+  source and confirm the test tracks it. If the source executes at import time, move the constant to
+  a side-effect-free module.
+* A page-driving helper needed by a second spec moves to the shared helpers module at that moment —
+  never copied between specs. Exception: the self-contained white-box pixel specs stay
+  self-contained (a past consolidation there created a real defect for a measured 8-line saving).
+* One behavior per test: a spec accumulating assertion clusters across behaviors gets split, with
+  setup-only helpers carrying zero assertions. Imperative logic whose only coverage is E2E (inline
+  in a component or config) is an extraction candidate: pure injectable module + unit tests.
 * **Flake-resistance (the suite runs 4 parallel workers, so specs share the CPU):** never assert on
   a single interaction against a lazily-wired control — wrap open-then-assert in
   `expect(...).toPass()` or reuse a retrying helper

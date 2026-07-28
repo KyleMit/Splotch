@@ -8,8 +8,10 @@
 //
 // Invariant: GENERATE_DEADLINE_MS < NETLIFY_SYNC_TIMEOUT_MS < CLIENT_REQUEST_TIMEOUT_MS
 // — the server aborts before the platform would, and the client waits just past
-// the platform so the server's error always wins.
+// the platform so the server's error always wins. Guarded by limits.test.ts.
 
+// The measured platform ceiling itself — not a knob we control, but named so
+// the ladder's invariant is machine-checked against it rather than prose.
 export const NETLIFY_SYNC_TIMEOUT_MS = 26_000;
 
 // Abort the Gemini image call with headroom below the ceiling, so the 502 body

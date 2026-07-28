@@ -23,7 +23,7 @@ import { quantile } from './stats.mjs';
 
 // Same ink bar as the punch mask (lib/punch-fill.mjs OUTLINE_LUMA_THRESHOLD),
 // so "solid" is judged on exactly the pixels the punch would cut.
-export const SOLID_LUMA_THRESHOLD = OUTLINE_LUMA_THRESHOLD;
+const SOLID_LUMA_THRESHOLD = OUTLINE_LUMA_THRESHOLD;
 
 // Bounds for the erosion radius. The radius is derived per page from the
 // MEASURED stroke width (see strokeWidthP90) rather than fixed: a fixed r=8
@@ -31,8 +31,8 @@ export const SOLID_LUMA_THRESHOLD = OUTLINE_LUMA_THRESHOLD;
 // eroded away with the strokes), while the measured strokes on shipped pages
 // are only ~4px wide (p90 ≈ 6-8 at junctions). r = ceil(p90/2) + 2 erases
 // every stroke with margin and keeps a scoreable core in even a small pupil.
-export const OPEN_RADIUS_MIN = 5;
-export const OPEN_RADIUS_MAX = 8;
+const OPEN_RADIUS_MIN = 5;
+const OPEN_RADIUS_MAX = 8;
 
 // Pass bars, calibrated on the shipped set at the adaptive radius. Two bars
 // because they catch different cheats:

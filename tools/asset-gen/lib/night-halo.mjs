@@ -24,11 +24,11 @@ import { bleedUnderMask, OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
 import { quantile } from './stats.mjs';
 
 export const DELTA_RIM = 40; // rimΔ above this = much darker than the true local fill
-export const REF_DILATE = 4; // reference punch clears any plausible rim (bands 1..3 + slack)
-export const MAX_BAND = 3; // hotspots count halo px out to this ring; the score uses 1..2
+const REF_DILATE = 4; // reference punch clears any plausible rim (bands 1..3 + slack)
+const MAX_BAND = 3; // hotspots count halo px out to this ring; the score uses 1..2
 export const HALO_DARK = 145; // the mid-dark penumbra window: a visible halo pixel is
 export const HALO_PROTECT_BLACK = 55; // luma in [55, 145) — legit near-black ink sits below
-export const HOTSPOT_TILE_PX = 64; // hotspot tiling grain
+const HOTSPOT_TILE_PX = 64; // hotspot tiling grain
 
 async function loadRgb(buf) {
   const { data, info } = await sharp(buf).removeAlpha().raw().toBuffer({ resolveWithObject: true });

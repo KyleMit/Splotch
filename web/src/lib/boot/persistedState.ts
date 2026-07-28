@@ -6,8 +6,9 @@ import { applyDeviceOrientationPreference } from '$lib/orientation';
 
 export async function hydratePersistedState(): Promise<void> {
   // Load the optional saved-photo folder name for the Parent Center display
-  // (web/desktop only; no effect on whether saves happen).
-  hydrateSaveFolder();
+  // (web/desktop only; no effect on whether saves happen). Fire-and-forget:
+  // nothing downstream needs the folder name before it arrives.
+  void hydrateSaveFolder();
 
   // Native only: recover any settings the WebView's localStorage may have
   // evicted from the durable Capacitor Preferences store. Each persisted store
@@ -20,7 +21,7 @@ export async function hydratePersistedState(): Promise<void> {
   // current one.
   const restored = await hydrateDurableStorage();
   if (restored) {
-    applyDeviceOrientationPreference(
+    void applyDeviceOrientationPreference(
       settings.lockRotationEnabled,
       settings.forceLandscapeOrientation
     );

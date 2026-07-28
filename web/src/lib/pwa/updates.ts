@@ -101,8 +101,8 @@ export function createPWAUpdates() {
       history.replaceState(null, '', url.toString());
     }
 
-    checkForUpdates();
-    checkVersionMismatch(attemptedVersion);
+    void checkForUpdates();
+    void checkVersionMismatch(attemptedVersion);
 
     // Repeat visit: an existing registration means the precache download already
     // happened (or was interrupted and should resume) — bypass the stroke gate.
@@ -114,14 +114,14 @@ export function createPWAUpdates() {
       .catch(() => {});
 
     const updateCheckInterval = setInterval(() => {
-      checkForUpdates();
+      void checkForUpdates();
     }, UPDATE_CHECK_INTERVAL_MS);
 
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') checkForUpdates();
+      if (document.visibilityState === 'visible') void checkForUpdates();
     };
     const onFocus = () => {
-      checkForUpdates();
+      void checkForUpdates();
     };
 
     document.addEventListener('visibilitychange', onVisibilityChange);

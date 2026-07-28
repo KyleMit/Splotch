@@ -22,7 +22,7 @@ import { esc } from './html.mjs';
 
 // The brand crayon strip — the app's 7 palette hues. `size` picks a preset:
 // "lg" for the masthead, "sm" for the footer.
-export function crayons(size = 'lg') {
+function crayons(size = 'lg') {
   const hues = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink'];
   return (
     `<span class="crayons crayons-${size}" aria-hidden="true">` +
@@ -32,7 +32,7 @@ export function crayons(size = 'lg') {
 }
 
 // The design system. Emitted once per page inside a <style> block by chromeStyle().
-export const CHROME_CSS = `
+const CHROME_CSS = `
 :root{
   color-scheme: light dark;
   --paper:#f5f3ee; --paper-2:#efece5; --card:#fdfbf6; --card-2:#f6f3ec;

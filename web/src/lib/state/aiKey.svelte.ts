@@ -49,7 +49,7 @@ export function setAiUserApiKey(v: string, ownsRequest: () => boolean = () => tr
 // web and on native; never throws.
 export async function hydrateApiKey() {
   // Best-effort: ask the browser not to evict our encrypted IndexedDB (web only).
-  requestPersistentStorage();
+  void requestPersistentStorage();
 
   let key = await loadApiKey();
   const legacy = readString(STORAGE_KEYS.legacyAiUserApiKey, '');

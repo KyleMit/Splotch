@@ -1,0 +1,34 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "web/src/routes/**/+{page,layout,server,error}*.{ts,svelte}",
+    "web/src/hooks*.ts",
+    "web/svelte.config.js",
+    "web/vite.config.ts",
+    "web/vitest.config.ts",
+    "web/vitest-setup.ts",
+    "web/defines.ts",
+    "web/playwright.config.ts",
+    "web/playwright.webkit-scratch.config.ts",
+    "web/tests/**/*.spec.ts",
+    "web/tests/global-setup.ts",
+    "web/src/**/*.test.ts",
+    "scripts/*.mjs",
+    "scripts/perf/*.mjs",
+    "scripts/audit-burndown/*.mjs",
+    "scripts/tests/*.test.mjs",
+    "tools/asset-gen/bin/*.mjs",
+    "tools/asset-gen/crayon-brush-samples/*.mjs",
+    "tools/asset-gen/tests/*.test.mjs"
+  ],
+  "project": [
+    "web/src/**/*.{ts,svelte}",
+    "web/tests/**/*.ts",
+    "scripts/**/*.mjs",
+    "tools/asset-gen/{bin,lib}/**/*.{mjs,ts}"
+  ],
+  "ignoreDependencies": [".*"],
+  "paths": {
+    "$lib/*": ["web/src/lib/*"]
+  }
+}

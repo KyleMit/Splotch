@@ -1,4 +1,4 @@
-export const BG_LIGHT_THRESHOLD = 170;
+const BG_LIGHT_THRESHOLD = 170;
 
 export function floodFromBorder(w, h, isOpen) {
   const region = new Uint8Array(w * h);

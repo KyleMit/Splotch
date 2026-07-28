@@ -8,7 +8,7 @@ import {
   type ColoringPage,
 } from './books';
 
-export { BOOKS, booksForPlatform } from './books';
+export { booksForPlatform } from './books';
 
 interface ColoringBookState {
   overlayPage: ColoringPage | null;

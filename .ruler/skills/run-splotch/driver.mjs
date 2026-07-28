@@ -18,7 +18,7 @@
 //
 // Exit code is non-zero if the target route never became interactive.
 
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';

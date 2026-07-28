@@ -58,7 +58,9 @@ pierce Svelte's style scoping, so every component references them directly via `
 
 **Adding a token:** it must earn its place — a semantic meaning used (or clearly about to be used)
 in 2–3 places. Prefer reusing an existing step of a ramp over minting a near-duplicate. New themed
-tokens need both light and dark values (the compiler enforces this).
+tokens need both light and dark values (the compiler enforces this). Minting a token isn't done
+until it's registered in the vocabulary table above and renders on `/dev/design` — an undiscoverable
+token guarantees the next hardcoded duplicate (a failure review has caught three times).
 
 ## Primitives
 

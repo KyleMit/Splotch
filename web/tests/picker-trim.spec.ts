@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { hexGridRowLadderPx } from '$lib/design/trimGeometry';
 import { CUSTOM_SWATCH_COLOR, swatch } from './helpers';
 
 // The hex color picker trims purely via CSS media queries (no JS measurement),
@@ -102,7 +103,12 @@ for (const { w, h, rows, cols, label } of CASES) {
 // Walk every rung of the height ladder at a fixed width and assert the
 // honeycomb still interlocks.
 test('honeycomb offsets alternate at every height-ladder rung', async ({ page }) => {
-  for (const h of [600, 550, 500, 440, 380, 330, 275]) {
+  // One height above the top breakpoint (the untrimmed grid), then one just
+  // inside each breakpoint — the boundary-adjacent state every rung's CSS
+  // re-declares its offsets for.
+  const ladder = hexGridRowLadderPx();
+  const rungHeights = [Math.ceil(ladder[0]) + 20, ...ladder.map((bp) => Math.floor(bp))];
+  for (const h of rungHeights) {
     const grid = await openPickerAt(page, 1100, h);
     expectHoneycomb(grid);
   }
