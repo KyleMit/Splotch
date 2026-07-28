@@ -67,6 +67,9 @@ npm run audit:burndown:overnight -- 600
 * Chose a fresh continuation branch because all shorter date-based names already existed locally and
   on origin.
 * Kept `PUSH_EVERY=1` and the repository-specific deterministic gates required by the skill.
+* Treat findings re-added from `docs/AUDIT-DEFERRED.md` as fresh implementation attempts. Their
+  expanded `docs/AUDIT.md` context is intended to resolve the ambiguity that caused earlier
+  deferrals, so prior deferral alone is not a reason to drop them.
 
 ## Unverified assumptions
 
@@ -74,6 +77,7 @@ npm run audit:burndown:overnight -- 600
 * Origin is reachable from the audit subprocess host.
 * The current 45-finding backlog parses cleanly in preflight.
 * The GitHub Actions branch workflow is healthy on this continuation.
+* The re-added findings' expanded context is sufficient for the isolated roles to converge.
 
 ## Done & verified
 
@@ -82,6 +86,9 @@ npm run audit:burndown:overnight -- 600
 * Confirmed no `overnight.mjs` or `burndown.mjs` process was active.
 * Counted 45 findings through `pop.mjs --count`.
 * Recorded the existing `.audit-work/logs/run.log` baseline at 2,221 lines.
+* The first preflight passed runner, authentication, repository, origin, prompt, and 45-finding
+  parsing checks, but found pre-existing dprint drift in `docs/PROMPTS.md`; the gate must be
+  corrected and preflight rerun.
 
 ## Risks & next 3 steps
 
