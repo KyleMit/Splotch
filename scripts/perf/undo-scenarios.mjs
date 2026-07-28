@@ -17,9 +17,8 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { chromiumExecutablePath, runMain, sleep } from '../lib/utils.mjs';
-import { resolveThrottle } from './args.mjs';
+import { chromiumExecutablePath, isMain, runMain, sleep } from '../lib/utils.mjs';
+import { parsePerfArgs } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import {
   startTrace,
@@ -40,14 +39,19 @@ import { warnIfNoPerfMarks } from './warnings.mjs';
 // renderScale at min(dpr, 2) = 2, so the backing store is 2048×2732 and the
 // square paper/snapshot raster is 2732² ≈ 29.9 MB each — the real per-raster
 // cost on that device (the hot tier holds 2 of them + the paper).
-const args = process.argv.slice(2);
-const flag = (name, def) => {
-  const hit = args.find((a) => a.startsWith(`--${name}=`));
-  return hit ? hit.split('=')[1] : def;
-};
-const throttle = resolveThrottle(args, 4);
-const port = Number(flag('port', '4173'));
-const build = !args.includes('--no-build');
+const { flag, throttle, port, build } = parsePerfArgs({
+  throttleDefault: 4,
+  extra: [
+    'cold-tier-timeout-ms',
+    'hz',
+    'long-seconds',
+    'long-ops',
+    'multi-seconds',
+    'strokes',
+    'scenarios',
+  ],
+  entry: isMain(import.meta.url),
+});
 const COLD_TIER_TIMEOUT_MS = Number(flag('cold-tier-timeout-ms', '10000'));
 
 // Op volume = refresh rate × stroke duration. A 120 Hz ProMotion iPad Pro
@@ -616,6 +620,4 @@ function renderUndoReport({ settings, scenarios }) {
   return out.join('\n');
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  runMain(runUndoScenarios);
-}
+if (isMain(import.meta.url)) runMain(runUndoScenarios);

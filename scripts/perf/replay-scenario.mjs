@@ -16,7 +16,7 @@ import { chromium } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { chromiumExecutablePath, fail, isMain, runMain, sleep } from '../lib/utils.mjs';
-import { resolveThrottle } from './args.mjs';
+import { parsePerfArgs } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { startTrace, stopTrace, injectObservers, readObservers, heapBytes } from './capture.mjs';
 import { IPAD_PRO } from './devices.mjs';
@@ -29,16 +29,13 @@ import { warnIfNoPerfMarks } from './warnings.mjs';
 export const SIZE_PX = { 1: 2, 2: 4, 3: 8, 4: 14, 5: 22 };
 const MAX_IDLE_GAP_MS = 250;
 
-const args = process.argv.slice(2);
-const flag = (name, def) => {
-  const hit = args.find((a) => a.startsWith(`--${name}=`));
-  return hit ? hit.split('=')[1] : def;
-};
+const { flag, has, throttle, port, build } = parsePerfArgs({
+  throttleDefault: 0,
+  extra: ['recording', 'turbo'],
+  entry: isMain(import.meta.url),
+});
 const recordingPath = flag('recording', null);
-const throttle = resolveThrottle(args, 0);
-const turbo = args.includes('--turbo');
-const port = Number(flag('port', '4173'));
-const build = !args.includes('--no-build');
+const turbo = has('turbo');
 
 export async function runReplayScenario() {
   if (!recordingPath) {
