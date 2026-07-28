@@ -1,12 +1,13 @@
 <script lang="ts">
   // Friendly, plain-language privacy policy. Splotch collects nothing
   // automatically — the only data it ever receives is what a grown-up
-  // deliberately types into the optional feedback form (see "Sending feedback"),
-  // and this page exists mostly to *prove* that. It's required by the app stores
+  // deliberately turns on or sends: a magic-image request (see "When the
+  // internet is used") or the optional feedback form (see "Sending feedback").
+  // This page exists mostly to *prove* that. It's required by the app stores
   // (see MOBILE.md). Keep the tone simple enough for a parent to skim in 30
   // seconds. Bump LAST_UPDATED whenever the wording changes.
 
-  const LAST_UPDATED = 'July 16, 2026';
+  const LAST_UPDATED = 'July 28, 2026';
   // Splotch has no email; questions/concerns go through GitHub issues.
   const CONTACT_URL = 'https://github.com/KyleMit/Splotch/issues/new/choose';
 </script>
@@ -38,7 +39,7 @@
       <li><strong>📊 No analytics.</strong> No third-party trackers or SDKs.</li>
       <li>
         <strong>🗂️ No background collection.</strong> The only info we ever receive is what a grown-up
-        chooses to send us (like a bug report).
+        turns on or sends us — a magic-image request, or a bug report.
       </li>
       <li><strong>✈️ Works offline.</strong> Drawing happens entirely on your device.</li>
     </ul>
@@ -52,7 +53,9 @@
     <h2>When the internet is used</h2>
     <p>
       Splotch has an optional “magic image” button that re-imagines a child's drawing as a polished
-      illustration. It only runs when someone taps it.
+      illustration. A grown-up has to switch it on first — the button stays hidden until an access
+      code or Gemini key is entered in the Parent Center — and it only ever runs when someone taps
+      it.
     </p>
     <ul>
       <li>
@@ -60,8 +63,28 @@
         AI) to generate a new picture, which is sent right back.
       </li>
       <li>
-        We keep a simple count of how often each invite code is used, purely to prevent abuse. This
-        isn't tied to a person and isn't used to identify anyone.
+        <strong>We don't keep the drawing.</strong> It passes straight through our service on its way
+        to Google and back. Neither the drawing your child sent nor the picture that comes back is saved
+        on our servers.
+      </li>
+      <li>
+        Google generates the picture on its own systems, under the
+        <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">
+          Gemini API terms</a
+        >, which let it keep prompts and results for a limited time to check for abuse. That part is
+        Google's, not ours.
+      </li>
+      <li>
+        If you've added your <em>own</em> Gemini key in the Parent Center, the drawing still passes
+        through our service on the way to Google, along with your key — which we use for that one
+        request and never store. It reaches Google under <em>your</em> account and the terms that apply
+        to it, rather than ours. On a free Gemini key, those terms let Google use the content to improve
+        its own products, so it's worth reading them before you add one.
+      </li>
+      <li>
+        We keep a simple count of how often each access code is used, purely to prevent abuse —
+        along with the date and which art style was picked. This isn't tied to a person, isn't used
+        to identify anyone, and is deleted when the access code is retired.
       </li>
       <li>
         Drawings are not used to build profiles, are not sold, and are not used for advertising or
