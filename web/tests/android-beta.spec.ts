@@ -4,6 +4,7 @@ import {
   PLAY_STORE_LISTING_URL,
   TESTERS_GROUP_SUBSCRIBE_EMAIL,
   TESTERS_GROUP_URL,
+  supportEmail,
 } from '../src/lib/androidBeta';
 
 // The /android-beta page is a set of sign-up links; a link that points at the
@@ -33,5 +34,22 @@ test('the beta sign-up steps link to the group, the opt-in page, and the listing
   await expect(page.getByRole('link', { name: 'Open Splotch on Google Play' })).toHaveAttribute(
     'href',
     PLAY_STORE_LISTING_URL
+  );
+});
+
+test('the support address is absent from the served HTML and added after hydration', async ({
+  page,
+  request,
+}) => {
+  // Address harvesters scrape markup, so the prerendered document must not
+  // carry the literal address — only the hydrated page composes it.
+  const html = await (await request.get('/android-beta')).text();
+  expect(html).not.toContain(supportEmail());
+  expect(html).toContain('noindex');
+
+  await page.goto('/android-beta');
+  await expect(page.getByRole('link', { name: supportEmail() })).toHaveAttribute(
+    'href',
+    `mailto:${supportEmail()}`
   );
 });

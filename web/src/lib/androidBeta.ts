@@ -37,6 +37,18 @@ export const TESTERS_GROUP_URL = `https://groups.google.com/g/${TESTERS_GROUP_NA
 
 export const FEEDBACK_ISSUE_URL = 'https://github.com/KyleMit/Splotch/issues/new/choose';
 
+// The support address is split so the literal string appears nowhere in the
+// prerendered HTML: the page composes it after hydration, which keeps it out of
+// reach of the harvesters that scrape static markup. A headless scraper can
+// still reassemble it — this reduces exposure, it doesn't eliminate it.
+const SUPPORT_MAILBOX = 'kylemit.dev';
+const SUPPORT_DOMAIN = 'gmail.com';
+
+/** Call from the browser only — see the note above on SUPPORT_MAILBOX. */
+export function supportEmail(): string {
+  return `${SUPPORT_MAILBOX}@${SUPPORT_DOMAIN}`;
+}
+
 /** The Android floor the store enforces on install — android/variables.gradle. */
 export const MIN_ANDROID_API_LEVEL = 24;
 

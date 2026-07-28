@@ -20,6 +20,10 @@
 
 <div class="band ledger">
   <h2 class="section-label">How to join</h2>
+  <p class="ledger-intro">
+    Three steps, in order — each one unlocks the next. Google Play won't show you the app until the
+    first two are done.
+  </p>
 
   <ol class="steps">
     <li>
@@ -69,7 +73,8 @@
         </p>
         <p class="hint">
           Works in any browser, phone or computer — just make sure it's signed in to the account
-          from step 1.
+          from step 1. This enrols you; it doesn't install anything yet. Once you're in, this same
+          page grows a “Download it on Google Play” link — that's step 3.
         </p>
       </div>
     </li>
@@ -79,8 +84,9 @@
       <div>
         <h3>Install Splotch</h3>
         <p class="step-body">
-          Once you're opted in, the normal store listing opens for you and installs like any other
-          app. Updates arrive automatically as new beta builds go out.
+          The store listing stays hidden until step 2 is done — before that it just says “item not
+          found”. Now it opens normally and installs like any other app, and updates arrive
+          automatically as new beta builds go out.
         </p>
         <p class="action-row">
           <a class="btn" href={PLAY_STORE_LISTING_URL} target="_blank" rel="noopener noreferrer">
@@ -110,6 +116,13 @@
 <style>
   .ledger {
     padding: 36px var(--beta-gutter) 44px;
+  }
+
+  .ledger-intro {
+    margin: 6px 0 0;
+    font-size: 15px;
+    color: var(--beta-muted);
+    max-width: 60ch;
   }
 
   .section-label {

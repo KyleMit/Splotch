@@ -1,6 +1,16 @@
 <script lang="ts">
-  import { BETA_OPT_IN_URL, FEEDBACK_ISSUE_URL } from '$lib/androidBeta';
+  import { onMount } from 'svelte';
+  import { BETA_OPT_IN_URL, FEEDBACK_ISSUE_URL, supportEmail } from '$lib/androidBeta';
   import StepLedger from '$lib/components/androidBeta/StepLedger.svelte';
+
+  // Composed after hydration so the support address never appears in the
+  // prerendered HTML, which is what address harvesters scrape. Until it
+  // resolves — and for anyone with JS off — the GitHub issue form is offered
+  // instead, so the row is never a dead end.
+  let support = $state('');
+  onMount(() => {
+    support = supportEmail();
+  });
 
   // Sign-up instructions for the Google Play closed test. The ordering of the
   // links is the whole point of the page: the store listing is dark for anyone
@@ -15,6 +25,11 @@
     name="description"
     content="How to become an Android beta tester for Splotch: join the testers group, opt in on Google Play, and install the app."
   />
+  <!-- Link-only page: keeping it out of search indexes limits how widely the
+       support address on it circulates. Deliberately NOT paired with a
+       robots.txt Disallow — a blocked crawler never fetches the page, so it
+       would never see this tag and could still index the bare URL. -->
+  <meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
 <main class="beta">
@@ -78,6 +93,22 @@
           Close and reopen the Play Store, check the active account, and try the store link again.
           As a last resort, open Android Settings → Apps → Google Play Store → Storage and clear its
           cache; the exact menu names vary by device.
+        </p>
+      </div>
+      <div class="row">
+        <h3>Still stuck</h3>
+        <p>
+          {#if support}
+            Email <a href="mailto:{support}">{support}</a> and say which Google account you're
+            trying to use — that's almost always the missing piece. You can also
+            <a href={FEEDBACK_ISSUE_URL} target="_blank" rel="noopener noreferrer">
+              open an issue on GitHub</a
+            >.
+          {:else}
+            <a href={FEEDBACK_ISSUE_URL} target="_blank" rel="noopener noreferrer">
+              Open an issue on GitHub</a
+            > and say which Google account you're trying to use — that's almost always the missing piece.
+          {/if}
         </p>
       </div>
     </div>
