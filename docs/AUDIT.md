@@ -7,30 +7,6 @@
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P4][consistency] No `.nvmrc` / `.node-version` despite an `engines.node` floor
-
-**File(s):** `package.json:5-7` (config) — pinned at SHA f934d43
-
-#### Problem
-
-`engines.node` is `">=22.13"`, and several scripts depend on version-specific behavior (the
-`--experimental-strip-types` flags). But there is no `.nvmrc` or `.node-version` at the root, so
-`nvm use` / `fnm`/`asdf`/Volta pick nothing up and contributors + tooling can silently run a
-different major than CI. Given the strip-types staleness risk (separate finding), pinning the Node
-version a contributor should use is load-bearing here, not cosmetic.
-
-#### Proposed solution
-
-Add a `.nvmrc` (or `.node-version`) pinning the exact supported Node line (e.g. the CI version).
-Keep `engines.node` as the enforced floor and the version file as the "use this" hint.
-
-#### Verification
-
-`nvm use` in a fresh clone currently errors ("No .nvmrc file found"); after adding the file it
-selects the pinned version. Confirm it matches whatever Node the CI/GitHub-Actions setup uses.
-
----
-
 ### [P4][consistency] `info` uses `npx scripts-info` though `scripts-info` is a declared dependency
 
 **File(s):** `package.json:9,16,122` (scripts) — pinned at SHA f934d43
