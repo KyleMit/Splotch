@@ -7,34 +7,6 @@
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P4][consistency] Ignore-glob style differs across eslint / dprint / prettier for the same paths
-
-**File(s):** `eslint.config.js:14-20`, `dprint.json:18-21`, `.prettierignore:1-9` (config) — pinned
-at SHA f934d43
-
-#### Problem
-
-The three tools spell equivalent excludes differently: eslint uses `**/build/` and blanket
-`android/` + `ios/`; dprint uses `web/build`, `android/**/build`, `ios/**/build`; `.prettierignore`
-uses `**/build/` and blanket `android/` + `ios/`. The dprint narrowing is *intentional* (it must
-still format generated `android/**/*.md`), but nothing in the files says so, so the divergence reads
-as an accident and invites a "fix" that would either over- or under-format. Style also varies
-(`**/build/` vs `web/build`) for what is meant to be the same directory.
-
-#### Proposed solution
-
-Normalize the glob form where the intent is identical, and add a one-line comment in `dprint.json`
-explaining why its `android`/`ios` excludes are build-only (to keep formatting generated markdown
-under those trees). This turns an apparent inconsistency into documented intent.
-
-#### Verification
-
-`npm run lint`, `npm run format:check`, `npm run format:md:check` all pass unchanged after
-normalization — proving the globs were equivalent where merged and deliberately different where
-commented.
-
----
-
 ### [P4][consistency] `.vscode/settings.json` wires a formatter only for markdown, not for code
 
 **File(s):** `.vscode/settings.json:1-7`, `.vscode/extensions.json:1-3` (editor config) — pinned at
