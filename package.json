@@ -129,7 +129,8 @@
     "audit:cost": "node scripts/audit-burndown/cost.mjs",
     "audit:watch": "node scripts/audit-burndown/watch.mjs",
     "prerelease": "npm run check:assets && npm run check:assets:manifest",
-    "release": "node scripts/release.mjs"
+    "release": "node scripts/release.mjs",
+    "release:publish": "node scripts/publish-artifacts.mjs"
   },
   "scripts-info": {
     "info": "Lists every npm script with its description (this output)",
@@ -255,7 +256,8 @@
     "audit:cost": "Audit-burndown usage from saved Claude JSON or Codex JSONL: cost/tokens by role, per-issue average, projected remaining total",
     "audit:watch": "Live view of a running audit burndown: tail -f the run log, or -- --dash for a status summary refreshing every 10s",
     "prerelease": "check:assets + check:assets:manifest gates before release",
-    "release": "Cut a release from releases/<version>.md: bump versions, commit, tag, push (use the /release command to draft notes first)"
+    "release": "Cut a release from releases/<version>.md: bump versions, commit, tag, push (use the /release command to draft notes first). Attaches no store artifacts — they cannot exist until this bump is committed",
+    "release:publish": "Attach the built .aab/.ipa to an existing GitHub Release, refusing any artifact whose embedded version does not match (run after /release then /build)"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
@@ -279,7 +281,7 @@
     "prettier-plugin-svelte": "^4.1.1",
     "scripts-info": "^1.0.5",
     "sharp": "^0.35.2",
-    "svelte-check": "^4.7.1",
+    "svelte-check": "^4.7.4",
     "svgo": "^4.0.1",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.0",
@@ -290,18 +292,17 @@
     "@capacitor-community/media": "^9.1.0",
     "@capacitor/core": "^8.4.1",
     "@capacitor/device": "^8.0.3",
-    "@capacitor/filesystem": "^8.1.2",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/network": "^8.0.1",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/screen-orientation": "^8.0.1",
-    "@capacitor/status-bar": "^8.0.2",
-    "@fontsource-variable/quicksand": "^5.2.10",
+    "@capacitor/status-bar": "^8.0.3",
+    "@fontsource-variable/quicksand": "^5.3.0",
     "@google/genai": "^2.10.0",
     "@netlify/blobs": "^10.7.9",
     "@sveltejs/adapter-netlify": "^6.0.4",
     "@sveltejs/adapter-static": "^3.0.10",
-    "@sveltejs/kit": "^2.68.0",
+    "@sveltejs/kit": "^2.70.1",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "idb": "^8.0.3",
     "marked": "^18.0.5",

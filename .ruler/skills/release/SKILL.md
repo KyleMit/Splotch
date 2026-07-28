@@ -55,9 +55,22 @@ Follow these steps:
 7. **Report the result** — the new version, the versionCode that was assigned, and the GitHub
    release URL if published. Remind the user that the Play / App Store "What's new" text is ready to
    paste from `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` and
-   `fastlane/metadata/en-US/release_notes.txt`. If they want the `.aab` attached to the GitHub
-   release, it must be built first with `npm run android:bundle` before running the release.
+   `fastlane/metadata/en-US/release_notes.txt`.
 
-8. **Point to the next step.** Once the version is committed and tagged, the store artifacts still
-   need to be compiled — that's a separate step. Suggest the user run **`/build`** next to produce
-   the signed `.aab` for this version.
+   **The GitHub Release is created with no artifacts attached, and that is correct.** Do not try to
+   build or attach an `.aab`/`.ipa` before or during this step, and do not tell the user they should
+   have. The version this release just bumped to has to be committed *before* an artifact carrying
+   it can be built, so any bundle sitting in the build output directory right now is necessarily
+   from an **older** version. Attaching it is how v1.4.0 shipped a 1.2.0 bundle (ADR-0077).
+
+8. **Point to the next steps** — releasing is the first of three phases:
+
+   | Phase             | Command              | Produces                                       |
+   | ----------------- | -------------------- | ---------------------------------------------- |
+   | 1. Release (done) | `/release`           | version bump, tag, notes, empty GitHub Release |
+   | 2. Build          | `/build`             | the signed `.aab` / `.ipa` for that version    |
+   | 3. Publish        | `/publish-artifacts` | those artifacts attached to the release        |
+
+   Tell the user to run **`/build`** next, then **`/publish-artifacts`**. The publish step verifies
+   each artifact's embedded version against the release and refuses a mismatch, so the stale-upload
+   failure cannot recur silently.
