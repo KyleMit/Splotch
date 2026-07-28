@@ -136,6 +136,7 @@ The decisions that shape everything else, in rough order of importance. All are 
 | [0021](0021-cloud-session-tunneling.md)                 | Tunneling the Dev Server from Claude Code Cloud Sessions (self-hosted chisel reverse tunnel)                  | Active |
 | [0046](0046-pr-screenshot-hosting-via-orphan-branch.md) | Host PR Screenshots on a `pr-assets` Orphan Branch                                                            | Active |
 | [0059](0059-committed-run-artifacts-github-pages.md)    | Committed Run Artifacts in `/scrapbook`, Published Live via GitHub Pages (amended: renamed from `/artifacts`) | Active |
+| [0077](0077-dependabot-claude-review-workflow.md)       | Auto-Review Dependabot PRs with Claude, Authenticated from the Dependabot Secret Store                        | Active |
 
 ## Historical
 
