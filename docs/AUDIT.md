@@ -35,30 +35,6 @@ lockfile parsing, and assorted consistency papercuts.
 
 ## Source: Code audit — scrapbook · run-artifact code
 
-### [P5][readability] Hub script uses ES5 `var` + function expressions despite a modern-only target
-
-**File(s):** `scrapbook/coloring-book-proof-sheets/index.html:178-243` (hand-authored hub) — pinned
-at SHA f934d43
-
-#### Problem
-
-The entire `<script>` is written in ES5 style — `var` bindings, `function () {}` callbacks
-throughout. The scrapbook is self-contained modern HTML served to current browsers (the repo's
-`docs/COMPATIBILITY.md` floor is well past ES5), and the rest of the codebase is `const`/`let` +
-arrow functions. There is no build/transpile step here, so the dated style is a pure readability
-drag with no compatibility upside, and it's inconsistent with how a contributor would expect Splotch
-JS to read.
-
-#### Proposed solution
-
-Modernise in place: `const`/`let`, arrow callbacks, template literals for the count string.
-Behaviour is unchanged; the diff is mechanical. Low priority — it works as-is.
-
-#### Verification
-
-Load the hub after the rewrite and exercise tabs, arrows, and hash deep-links; behaviour identical,
-source reads in the house style.
-
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
 ### [P2][dead-config] dprint loads the TypeScript and JSON plugins but never runs them

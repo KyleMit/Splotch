@@ -143,7 +143,7 @@ export function collectionsMissingEntry(scrapbookDir) {
 
 export function coloringBookProofSheetHubProblems(proofSheetsDir) {
   const hub = readFileSync(join(proofSheetsDir, 'index.html'), 'utf8');
-  const categoriesSource = hub.match(/var CATEGORIES = \[([\s\S]*?)\];/)[1];
+  const categoriesSource = hub.match(/const CATEGORIES = \[([\s\S]*?)\];/)[1];
   const categories = [...categoriesSource.matchAll(/\{\s*id:\s*'([^']+)'[^}]*pages:\s*(\d+)/g)].map(
     ([, id, pages]) => ({ id, pages: Number(pages) })
   );

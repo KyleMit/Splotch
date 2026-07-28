@@ -20,7 +20,7 @@ function writeProofSheetCollection(dir, categories, sheets) {
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, 'index.html'),
-    `<script>var CATEGORIES = [${categories
+    `<script>const CATEGORIES = [${categories
       .map(({ id, pages }) => `{ id: '${id}', name: '${id}', pages: ${pages} }`)
       .join(',')}];</script>`
   );

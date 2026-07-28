@@ -73,59 +73,59 @@ export function buildColoringBookProofSheetHub() {
       <iframe id="sheet" title="Category proof sheet"></iframe>
     </main>
     <script>
-      var CATEGORIES = ${CATEGORIES};
+      const CATEGORIES = ${CATEGORIES};
 
-      var tabsEl = document.getElementById('tabs');
-      var frame = document.getElementById('sheet');
-      var countEl = document.getElementById('count');
-      var buttons = {};
-      var current = -1;
+      const tabsEl = document.getElementById('tabs');
+      const frame = document.getElementById('sheet');
+      const countEl = document.getElementById('count');
+      const buttons = {};
+      let current = -1;
 
-      CATEGORIES.forEach(function (cat, i) {
-        var b = document.createElement('button');
+      CATEGORIES.forEach((cat, i) => {
+        const b = document.createElement('button');
         b.textContent = cat.name;
         b.dataset.id = cat.id;
-        b.addEventListener('click', function () { show(i); });
+        b.addEventListener('click', () => { show(i); });
         tabsEl.appendChild(b);
         buttons[cat.id] = b;
       });
 
-      function indexFromHash() {
-        var id = (location.hash || '').replace(/^#/, '');
-        var i = CATEGORIES.findIndex(function (c) { return c.id === id; });
+      const indexFromHash = () => {
+        const id = (location.hash || '').replace(/^#/, '');
+        const i = CATEGORIES.findIndex((c) => c.id === id);
         return i === -1 ? 0 : i;
-      }
+      };
 
-      function show(i, skipHash, initialLoad) {
+      const show = (i, skipHash, initialLoad) => {
         i = (i + CATEGORIES.length) % CATEGORIES.length;
         if (i === current) return;
         current = i;
-        var cat = CATEGORIES[i];
-        frame.src = cat.id + '.html';
-        countEl.textContent = 'Category ' + (i + 1) + ' of ' + CATEGORIES.length + ' · ' + cat.pages + ' pages';
-        Object.keys(buttons).forEach(function (id) {
+        const cat = CATEGORIES[i];
+        frame.src = \`\${cat.id}.html\`;
+        countEl.textContent = \`Category \${i + 1} of \${CATEGORIES.length} · \${cat.pages} pages\`;
+        Object.keys(buttons).forEach((id) => {
           buttons[id].classList.toggle('on', id === cat.id);
         });
         buttons[cat.id].scrollIntoView({ block: 'nearest', inline: 'center' });
         if (!skipHash) {
           if (location.hash.replace(/^#/, '') !== cat.id) {
-            if (initialLoad) history.replaceState(null, '', '#' + cat.id);
-            else location.hash = cat.id;
+            if (initialLoad) history.replaceState(null, '', \`#\${cat.id}\`);
+            else location.hash = \`#\${cat.id}\`;
           }
         }
-        document.title = 'Splotch proof sheets — ' + cat.name;
-      }
+        document.title = \`Splotch proof sheets — \${cat.name}\`;
+      };
 
-      document.getElementById('prev').addEventListener('click', function () { show(current - 1); });
-      document.getElementById('next').addEventListener('click', function () { show(current + 1); });
+      document.getElementById('prev').addEventListener('click', () => { show(current - 1); });
+      document.getElementById('next').addEventListener('click', () => { show(current + 1); });
 
-      window.addEventListener('keydown', function (e) {
+      window.addEventListener('keydown', (e) => {
         if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
         if (e.key === 'ArrowLeft') { show(current - 1); }
         else if (e.key === 'ArrowRight') { show(current + 1); }
       });
 
-      window.addEventListener('hashchange', function () { show(indexFromHash(), true); });
+      window.addEventListener('hashchange', () => { show(indexFromHash(), true); });
 
       show(indexFromHash(), false, true);
     </script>
