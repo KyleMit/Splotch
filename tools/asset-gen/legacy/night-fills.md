@@ -19,8 +19,7 @@ migrated to `../pipeline.md`).
 > canonical-eye guidance below predates the fork and applies only to un-chalked categories; the gate
 > documentation and the ship/wire steps are still accurate (wire `chalk` orientations in `books.ts`
 > alongside `night` —
-> `page('nature', 'ant', 'Ant', ['portrait', 'landscape'],
-> ['portrait', 'landscape'])`).
+> `book('nature', 'Nature', ['web', 'mobile'], (page) => [page('ant', 'Ant')])`).
 
 ## What a night fill is
 
@@ -236,9 +235,10 @@ default 0 keeps the input pixel-faithful. 4. **On the user's approval**, ship:
   ```
   Never copy a lined fill straight into `web/static/coloring/` — the shipped `.night.webp` must be
   the punched (fills-only) derivation of the raw.
-* Wire the catalog in `web/src/lib/state/books.ts` — `page()` defaults night + chalk to both
-  orientations, so a fully-generated page is just `page('farm', 'cat', 'Cat')`. Pass the
-  `{ nightExcept, chalkExcept }` options object only to subtract an orientation with no asset yet.
+* Wire the catalog in `web/src/lib/state/books.ts` — the enclosing `book()` builder binds each page
+  to its book, and `page()` defaults night + chalk to both orientations, so a fully-generated page
+  is just `page('cat', 'Cat')`. Pass the `{ nightExcept, chalkExcept }` options object only to
+  subtract an orientation with no asset yet.
 * `npm run check:assets` (validates every listed fill exists; also gates strip-native-assets). Then
   `npm run check` + `npm run test:unit`.
 
