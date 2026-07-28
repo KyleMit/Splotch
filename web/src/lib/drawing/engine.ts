@@ -19,7 +19,11 @@
 //   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
 import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
-import { ERASER_SIZE_MULTIPLIER } from '$lib/state/strokeWidth.svelte';
+import {
+  DEFAULT_SIZE,
+  ERASER_SIZE_MULTIPLIER,
+  getStrokeWidthPx,
+} from '$lib/state/strokeWidth.svelte';
 import {
   calculateStrokeSpeed,
   edgeSwipeIsOsGesture,
@@ -113,7 +117,7 @@ interface InitOptions {
 let canvas!: HTMLCanvasElement;
 let ctx!: CanvasRenderingContext2D;
 let currentColor = '';
-const DEFAULT_LINE_WIDTH_PX = 8;
+const DEFAULT_LINE_WIDTH_PX = getStrokeWidthPx(DEFAULT_SIZE);
 let currentLineWidth = DEFAULT_LINE_WIDTH_PX;
 let eraserActive = false;
 let magicActive = false;

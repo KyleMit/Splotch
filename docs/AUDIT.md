@@ -19,44 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Maintainability] `DEFAULT_LINE_WIDTH_PX = 8` repeats the app's size-3 stroke width as an unlinked literal
-
-**File(s):** `web/src/lib/drawing/engine.ts` (lines 116–117) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-const DEFAULT_LINE_WIDTH_PX = 8;
-let currentLineWidth = DEFAULT_LINE_WIDTH_PX;
-```
-
-The value 8 is the same fact as `SIZE_TO_PX[DEFAULT_SIZE]` in
-`web/src/lib/state/strokeWidth.svelte.ts` (lines 36–42: size 3 → 8), but the agreement is maintained
-by coincidence — CLAUDE.md: "Cross-file agreement is never maintained by prose" (here it isn't even
-prose, just a bare literal). The engine already imports from this exact module
-(`ERASER_SIZE_MULTIPLIER`, line 22), so there is no new coupling to fear. If the design ever retunes
-size 3, the engine's pre-`setStrokeWidth` default silently diverges — the exposure window is small
-(earlyBoot pushes the real width in the same synchronous boot, `earlyBoot.ts` line 39), but
-small-window drift is still drift, and the constant misleads a reader into thinking 8 is an
-engine-owned decision.
-
-#### Proposed solution
-
-```ts
-import {
-  DEFAULT_SIZE,
-  ERASER_SIZE_MULTIPLIER,
-  getStrokeWidthPx,
-} from '$lib/state/strokeWidth.svelte';
-const DEFAULT_LINE_WIDTH_PX = getStrokeWidthPx(DEFAULT_SIZE);
-```
-
-(`DEFAULT_SIZE` is already exported; passing it explicitly avoids the reactive default-arg read of
-`strokeState`). Alternatively drop the engine default entirely and require `initDrawingCanvas`
-callers to push a width — but both real callers already do, so the import is the smaller change.
-
 ### [Architecture] DrawingCanvas heuristically re-detects engine stroke adoption instead of being told
 
 **File(s):** `web/src/lib/components/DrawingCanvas.svelte` (`handlePointerMove`, lines 118–140);
