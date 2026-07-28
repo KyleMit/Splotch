@@ -7,42 +7,6 @@
 
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
-### [P3][duplication] Browser-support floor is duplicated between `browserslist` and vite `build.target`
-
-**File(s):** `package.json:304-310`, `web/vite.config.ts:77` (build config) — pinned at SHA f934d43
-
-#### Problem
-
-The root `package.json` declares:
-
-```json
-"browserslist": [ "chrome >= 111", "edge >= 111", "firefox >= 114", "safari >= 16.4", "ios_saf >= 16.4" ]
-```
-
-and `web/vite.config.ts:77` hard-codes the same floor as
-`build: { target: ['chrome111', 'edge111', 'firefox114', 'safari16.4', 'ios16.4'] }`, with a comment
-"Keep in sync with `browserslist` in the root package.json". Two hand-synced sources of truth for
-the same five-browser floor. It is also unclear what actually *consumes* the `browserslist` field:
-vite compiles against `build.target`, not browserslist, so the array may be feeding only
-`update:browserslist`/caniuse-lite and otherwise be inert — a reader can't tell whether editing it
-changes any output.
-
-#### Proposed solution
-
-Make one the source of truth. Simplest: keep `browserslist` as the single declaration and have
-`vite.config.ts` derive `build.target` from it (e.g. via `browserslist-to-esbuild`), or, if vite's
-`build.target` is the real control, delete the `browserslist` field and the `update:browserslist`
-script and document the floor once in `docs/COMPATIBILITY.md` + `vite.config.ts`. Either way, remove
-the "keep in sync by hand" coupling.
-
-#### Verification
-
-Change one browser version in the chosen source and rebuild; confirm the emitted bundle's
-syntax-lowering target moved (e.g. inspect for `??`/optional-chaining lowering). Confirm the other
-file no longer needs a manual edit.
-
----
-
 ### [P3][duplication] Four ignore lists re-encode the same excluded paths with no shared source
 
 **File(s):** `eslint.config.js:13-23`, `.prettierignore:1-14`, `dprint.json:14-22`, `.gitignore`
