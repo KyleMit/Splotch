@@ -23,7 +23,7 @@
 | 2  | Copy-pasted CLI `flag()` parser in every perf entry script     | P1       | [perf-flag-parser.md](perf-flag-parser.md)                         | pending |
 | 3  | `bumpAndroidGradle`/`bumpIosPbxproj` unanchored global regexes | P2       | [native-version-regexes.md](native-version-regexes.md)             | pending |
 | 4  | `scripts/lib/utils.mjs` grab-bag of unrelated concerns         | P2       | [utils-grab-bag.md](utils-grab-bag.md)                             | pending |
-| 5  | `/dev/engine` readiness `beforeEach` duplicated across specs   | P2       | [engine-readiness-duplication.md](engine-readiness-duplication.md) | pending |
+| 5  | `/dev/engine` readiness `beforeEach` duplicated across specs   | P2       | [engine-readiness-duplication.md](engine-readiness-duplication.md) | FIX     |
 | 6  | Crayon tests re-derive point generators/samplers inline        | P2       | [crayon-test-helpers.md](crayon-test-helpers.md)                   | pending |
 | 7  | Single Parent-Center test asserts ~six behaviors               | P2       | [parent-center-test-split.md](parent-center-test-split.md)         | pending |
 | 8  | Browser floor duplicated: `vite.config.ts` vs `browserslist`   | P1       | [browser-floor-duplication.md](browser-floor-duplication.md)       | pending |
