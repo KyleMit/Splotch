@@ -6,7 +6,7 @@ updates:
       interval: weekly
     groups:
       github-actions:
-        patterns: ["*"]
+        patterns: ['*']
         update-types:
           - minor
           - patch

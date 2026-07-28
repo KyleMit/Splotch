@@ -1,7 +1,7 @@
 # ADR-0031: Linting, Formatting, and CI Quality Gates
 
 **Status:** Active **Date:** 2026-06 (amended 2026-07: ignore-based file selection; markdown handed
-to dprint — ADR-0057)
+to dprint — ADR-0057; hand-authored configuration brought into Prettier scope)
 
 ## Context
 
@@ -30,20 +30,19 @@ choices:
   (first-party icons / build-time Markdown) carries a justified per-line disable so the security
   rule keeps its value elsewhere.
 * **Prettier matches the existing style** (2-space, single-quote, width 100, `trailingComma: es5`).
-  Adopting it meant a one-time reformat of `web/src` and `scripts`; it is scoped to source —
-  Markdown is dprint's (ADR-0057) and `package.json` (whose `scripts-info` order is meaningful,
-  ADR-0019) is left alone.
+  Adopting it meant a one-time reformat of `web/src` and `scripts`; hand-authored JSON, YAML, and
+  web manifests are also in scope. Markdown is dprint's (ADR-0057), while generated and frozen
+  artifacts are explicitly ignored.
 * **File selection is ignore-based, not allowlist-based** (amended 2026-07). The scripts are just
   `eslint .` and `prettier --check .`; what to skip lives in the `ignores` block of
   `eslint.config.js` and in `.prettierignore` (Prettier 3 also respects `.gitignore`). The original
   inline package.json globs were an allowlist, and its failure mode is silent: `web/tests/`, the
   `web/` root configs, and `web/src/app.html` sat unchecked until an unrelated CI failure exposed
   them. With inversion, a new directory or file type is covered by default and an unwanted one fails
-  loudly until ignored — the right default for an AI-assisted codebase. The source-only scope
-  survives as explicit `*.json` / `*.yml` / `*.yaml` / `*.webmanifest` lines in `.prettierignore`,
-  marked as deliberate and removable when config formatting is brought into scope. (`*.md` stays
-  ignored permanently: markdown is formatted by dprint instead, because Prettier cannot produce the
-  house bullet/emphasis style — ADR-0057.)
+  loudly until ignored — the right default for an AI-assisted codebase. Hand-authored JSON, YAML,
+  and web manifests are covered; generated and frozen artifacts receive narrow path exclusions.
+  (`*.md` stays ignored permanently: markdown is formatted by dprint instead, because Prettier
+  cannot produce the house bullet/emphasis style — ADR-0057.)
 * **Enforcement is CI-only — no pre-commit hook.** No husky/lint-staged: it avoids an extra install
   step and an `install`-time `prepare` script, and keeps the local loop friction-free. The `quality`
   job is the gate.

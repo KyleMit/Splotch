@@ -1,6 +1,6 @@
 name: Bug Report
 description: Report a problem with Splotch
-title: "[BUG] "
+title: '[BUG] '
 labels:
   - type:bug
 body:
@@ -63,8 +63,8 @@ body:
     attributes:
       label: Installed as a PWA
       options:
-        - "Yes"
-        - "No"
+        - 'Yes'
+        - 'No'
         - Not sure
     validations:
       required: true
