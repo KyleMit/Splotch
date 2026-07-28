@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import {
   BETA_OPT_IN_URL,
   PLAY_STORE_LISTING_URL,
+  TESTERS_GROUP_SUBSCRIBE_EMAIL,
   TESTERS_GROUP_URL,
 } from '../src/routes/android-beta/androidBeta';
 
@@ -15,7 +16,13 @@ test('the beta sign-up steps link to the group, the opt-in page, and the listing
   await page.goto('/android-beta');
   await expect(page.getByRole('heading', { name: 'Join the Android Beta' })).toBeVisible();
 
-  await expect(page.getByRole('link', { name: 'Join the testers group' })).toHaveAttribute(
+  // The join CTA is a mailto: the group's web page refuses most first-time
+  // testers outright, so the subscribe alias is what leads.
+  await expect(page.getByRole('link', { name: 'Email to join' })).toHaveAttribute(
+    'href',
+    `mailto:${TESTERS_GROUP_SUBSCRIBE_EMAIL}`
+  );
+  await expect(page.getByRole('link', { name: 'Open the group on Google Groups' })).toHaveAttribute(
     'href',
     TESTERS_GROUP_URL
   );

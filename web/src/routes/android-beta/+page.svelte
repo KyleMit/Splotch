@@ -5,7 +5,7 @@
     MIN_ANDROID_API_LEVEL,
     MIN_ANDROID_RELEASE,
     PLAY_STORE_LISTING_URL,
-    TESTERS_GROUP_EMAIL,
+    TESTERS_GROUP_SUBSCRIBE_EMAIL,
     TESTERS_GROUP_URL,
   } from './androidBeta';
 
@@ -41,16 +41,22 @@
         <h2>Join the testers group</h2>
         <p>
           Google Play decides who can see the beta by checking a Google Group, so this has to happen
-          first.
+          first. The quickest way in is a blank email — the group writes back, you reply, and you're
+          a member.
         </p>
         <p>
-          <a href={TESTERS_GROUP_URL} target="_blank" rel="noopener noreferrer" class="cta primary">
-            Join the testers group
-          </a>
+          <a href="mailto:{TESTERS_GROUP_SUBSCRIBE_EMAIL}" class="cta primary"> Email to join </a>
         </p>
         <p class="fine">
-          Prefer email? Send a note to
-          <a href="mailto:{TESTERS_GROUP_EMAIL}">{TESTERS_GROUP_EMAIL}</a> to ask for an invite.
+          Nothing to write — no subject, no message. An automated reply usually lands within a
+          minute (check spam if it doesn't); reply to it, blank again, and you're in.
+        </p>
+        <p class="fine">
+          Rather do it on the web?
+          <a href={TESTERS_GROUP_URL} target="_blank" rel="noopener noreferrer">
+            Open the group on Google Groups</a
+          >. Google may ask you to sign in or request access first, so the email above is the
+          smoother route on a phone.
         </p>
         <p class="callout">
           <strong>Use the same Google account</strong> that's signed in to the Play Store on your phone
@@ -117,8 +123,8 @@
       </li>
       <li>
         <strong>The tester page says you're not a member.</strong> Your request to join the group hasn't
-        gone through yet, or it went through on another account. Check the inbox of the account you used
-        for the group's confirmation.
+        finished, or it went through on another account. If you joined by email, check that inbox for
+        the confirmation and make sure you replied to it — membership isn't final until you do.
       </li>
       <li>
         <strong>The phone can't find the app but your computer can.</strong> The two are signed in to

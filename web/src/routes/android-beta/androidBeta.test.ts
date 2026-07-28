@@ -6,7 +6,7 @@ import {
   MIN_ANDROID_API_LEVEL,
   PLAY_STORE_APP_ID,
   PLAY_STORE_LISTING_URL,
-  TESTERS_GROUP_EMAIL,
+  TESTERS_GROUP_SUBSCRIBE_EMAIL,
   TESTERS_GROUP_URL,
 } from './androidBeta';
 
@@ -30,7 +30,8 @@ describe('/android-beta facts', () => {
     expect(PLAY_STORE_LISTING_URL).toContain(PLAY_STORE_APP_ID);
   });
 
-  it('points the group email and group page at the same group', () => {
-    expect(TESTERS_GROUP_URL.split('/g/')[1]).toBe(TESTERS_GROUP_EMAIL.split('@')[0]);
+  it('points the subscribe alias and the group page at the same group', () => {
+    const [localPart] = TESTERS_GROUP_SUBSCRIBE_EMAIL.split('@');
+    expect(TESTERS_GROUP_URL.split('/g/')[1]).toBe(localPart.replace('+subscribe', ''));
   });
 });
