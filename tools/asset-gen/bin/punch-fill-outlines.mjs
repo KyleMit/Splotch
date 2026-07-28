@@ -20,7 +20,8 @@ import { parseArgs } from 'node:util';
 import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
-import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, fail, toPosix } from '../lib/paths.mjs';
+import { fail } from '../lib/cli.mjs';
+import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, toPosix } from '../lib/paths.mjs';
 import { punchFill } from '../lib/punch-fill.mjs';
 
 // Resolve args to raw fills (default: all). An arg is a category ("nature") or a

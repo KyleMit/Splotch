@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { fail } from './paths.mjs';
+import { fail } from './cli.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 export const IMAGE_MODEL = 'gemini-3.1-flash-image';

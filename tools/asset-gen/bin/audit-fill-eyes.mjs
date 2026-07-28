@@ -11,7 +11,8 @@
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { COLORING_DIR, FILL_SRC_DIR, fail, resolveNightLineArt } from '../lib/paths.mjs';
+import { fail } from '../lib/cli.mjs';
+import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt } from '../lib/paths.mjs';
 import { scoreEyeFill, judgeLightEyes, judgeNightEyes } from '../lib/eye-fill.mjs';
 import { compositeNight } from '../lib/night-composite.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';

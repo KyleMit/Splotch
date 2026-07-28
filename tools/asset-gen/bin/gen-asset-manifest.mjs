@@ -26,9 +26,9 @@ import {
   COLORING_DIR,
   STYLES_DIR,
   FILL_SRC_DIR,
-  fail,
   toPosix,
 } from '../lib/paths.mjs';
+import { fail } from '../lib/cli.mjs';
 
 export const MANIFEST_PATH = join(ASSET_GEN_DIR, 'golden', 'asset-manifest.sha256');
 

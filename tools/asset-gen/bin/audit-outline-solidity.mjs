@@ -8,7 +8,8 @@
 //   npm run gen:coloring-outlines:audit -- nature/ant-tall
 import { readFile } from 'node:fs/promises';
 import { relative } from 'node:path';
-import { COLORING_DIR, fail } from '../lib/paths.mjs';
+import { fail } from '../lib/cli.mjs';
+import { COLORING_DIR } from '../lib/paths.mjs';
 import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, EYE_RING_DEPTH_MAX } from '../lib/eye-fill.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';

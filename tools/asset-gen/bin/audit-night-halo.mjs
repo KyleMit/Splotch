@@ -33,7 +33,8 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { COLORING_DIR, FILL_SRC_DIR, fail, resolveNightLineArt, toPosix } from '../lib/paths.mjs';
+import { fail } from '../lib/cli.mjs';
+import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt, toPosix } from '../lib/paths.mjs';
 import { scoreLineColor } from '../lib/night-scores.mjs';
 import { scoreNightHalo, DELTA_RIM, HALO_DARK, HALO_PROTECT_BLACK } from '../lib/night-halo.mjs';
 

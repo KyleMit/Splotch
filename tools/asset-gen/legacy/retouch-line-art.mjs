@@ -34,7 +34,8 @@ import { join, dirname } from 'node:path';
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { COLORING_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+import { fail } from '../lib/cli.mjs';
+import { COLORING_DIR, SAMPLES_DARK_DIR } from '../lib/paths.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';

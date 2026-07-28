@@ -59,10 +59,9 @@ import {
   COLORING_DIR,
   FILL_SRC_DIR,
   SAMPLES_DARK_DIR,
-  fail,
   toPosix,
 } from '../lib/paths.mjs';
-import { parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
+import { fail, parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
