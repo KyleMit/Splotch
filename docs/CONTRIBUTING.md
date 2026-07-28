@@ -187,6 +187,14 @@ project-relative, and the broad `/tmp` scope is deliberate for session scratch f
 3. Use `<Icon name="your-icon-name" />` — the `name` prop is type-checked against the generated
    union.
 
+## Dependency updates
+
+Dependabot opens weekly npm and github-actions PRs, and a workflow has Claude review each one and
+post an approve-or-flag comment. That verdict is advisory — CI is still the gate, and a human still
+merges. The setup requires one manual step (an OAuth token in the **Dependabot** secret store, not
+the Actions one), and misconfigurations fail silently rather than loudly. See
+[DEPENDABOT.md](DEPENDABOT.md).
+
 ## Release process
 
 See the `/release` slash command in `.claude/skills/release/SKILL.md`. The short version:

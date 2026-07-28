@@ -1,0 +1,112 @@
+# Dependency Updates (Dependabot + Claude auto-review)
+
+How dependency bumps arrive, who reviews them, and what to do when the review doesn't show up.
+
+The architectural decision and the rejected alternatives are in
+[ADR-0077](adrs/0077-dependabot-claude-review-workflow.md); this document is the operational side —
+setup, verification, troubleshooting.
+
+## What's configured
+
+**`.github/dependabot.yml`** opens PRs on two ecosystems, both weekly:
+
+| Ecosystem        | Scope                          | Grouping                                                       |
+| ---------------- | ------------------------------ | -------------------------------------------------------------- |
+| `github-actions` | Action pins in `.github/`      | One grouped PR for all minor + patch bumps; majors open singly |
+| `npm`            | Root `package.json` (ADR-0024) | Ungrouped — one PR per package                                 |
+
+Because every action is pinned to a SHA with a version comment, Dependabot rewrites both the SHA and
+the comment together. A pin whose SHA and comment disagree is a red flag, and the review checks it.
+
+**`.github/workflows/dependabot-review.yml`** then runs Claude on each of those PRs and posts a
+verdict comment.
+
+## One-time setup
+
+The workflow is inert until this exists:
+
+1. Run `claude setup-token` locally (requires a Claude Pro or Max subscription).
+2. Add the result at **Settings → Secrets and variables → Dependabot → New repository secret**,
+   named `CLAUDE_CODE_OAUTH_TOKEN`.
+
+**It must go in the Dependabot secret store, not the Actions store.** They are separate tabs on the
+same settings page and the distinction is the single most important fact in this document — see
+below for why.
+
+Usage bills against the Pro/Max subscription's weekly limits, not Anthropic API credits.
+
+## Why the setup is fussy: GitHub sandboxes Dependabot runs
+
+The `pull_request` event fires normally for a Dependabot PR — capturing the event was never the
+problem. What GitHub restricts is what the resulting run is *allowed to do*: on Dependabot-triggered
+`push`, `pull_request`, `pull_request_review`, and `pull_request_review_comment` events, the run
+receives a **read-only `GITHUB_TOKEN`** and **cannot read Actions secrets at all**. A secret
+reference there doesn't error — it resolves to an empty string.
+
+Three settings in the workflow exist solely to work within that sandbox, and **each one fails
+silently if removed.** The job goes green having done nothing, which is the failure mode to watch
+for:
+
+| Setting                         | Why it's there                                                       | Symptom if missing         |
+| ------------------------------- | -------------------------------------------------------------------- | -------------------------- |
+| Secret in the Dependabot store  | The only secret store injected into these runs                       | Auth failure — empty token |
+| `permissions:` block            | Re-grants write to the read-only token so the comment can be posted  | Comment never appears      |
+| `allowed_bots: dependabot[bot]` | `claude-code-action` ignores bot actors by default (default: *none*) | Job succeeds, does nothing |
+
+That last one is the sleeper. `allowed_bots` defaults to empty, meaning no bot may trigger the
+action — and the PR author here is `dependabot[bot]`.
+
+## Verifying the first pass
+
+Dependabot runs weekly, so rather than wait, force one:
+
+* **Insights → Dependency graph → Dependabot → "Check for updates"** on any ecosystem, or
+* close and reopen an existing Dependabot PR (`reopened` is in the trigger list).
+
+Then confirm, in order:
+
+1. The **Dependabot review** workflow appears in the PR's checks. If it's absent, the `if:` actor
+   gate didn't match — confirm the PR author really is `dependabot[bot]`.
+2. The job is green **and** a comment was posted. Green with no comment is the `allowed_bots`
+   failure, not a pass.
+3. The comment opens with a bolded **APPROVE** or **FLAG** verdict.
+
+The comment is sticky: pushes to the PR update it in place rather than stacking new comments.
+
+## What the review does and doesn't do
+
+It reads the manifest and lockfile diff, the upstream release notes, and the repo's own usage of the
+package. It reports the semver jump, breaking changes, requirement shifts (Node engine, peer deps,
+browser floor), supply-chain smell (new maintainers, new install scripts), license changes, CVE
+relevance, and blast radius from actual import sites — plus Splotch-specific traps: the inverted
+`dependencies`/`devDependencies` split ([ADR-0070](adrs/0070-netlify-build-minute-reduction.md),
+where a misfiled package breaks the Netlify deploy while CI stays green) and Capacitor bumps that
+need a native rebuild.
+
+**It never installs dependencies.** The bumped package's code is therefore never executed on the
+runner — only its diff and its published notes are read. The `--allowedTools` list grants read,
+search, fetch, and read-only `git`/`gh`; no install, no build, no write, no merge. Release-note
+content is treated as untrusted data, not as instructions.
+
+**The verdict is advisory.** Claude does not approve, merge, or push. A human still merges, and CI
+remains the gate on correctness — an APPROVE from a review that can't run the test suite is a
+reading of the changes, not a guarantee.
+
+## Troubleshooting
+
+| Symptom                               | Likely cause                                                                                                                                 |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Job green, no comment                 | `allowed_bots` missing or misspelled                                                                                                         |
+| Auth / credential error in the log    | Secret is in the Actions store instead of Dependabot, misnamed, or the OAuth token expired                                                   |
+| Sudden run of auth failures           | **The `claude setup-token` token expires (~1 year) with no warning.** Regenerate and update the Dependabot secret                            |
+| Comment posted but truncated or vague | Upstream published thin release notes, or `--max-turns` was hit. The prompt is instructed to admit thin evidence rather than fake confidence |
+| Workflow doesn't appear at all        | The actor gate didn't match, or the workflow file isn't on the default branch yet                                                            |
+
+## Tuning
+
+* **Too much weekly-limit burn?** Narrow the trigger to `opened` only (drops re-reviews on
+  `synchronize`), or add an ecosystem condition to the `if:` gate to skip grouped github-actions
+  bumps.
+* **Reviews too shallow?** Raise `--max-turns` in `claude_args`.
+* **Want a different emphasis?** The `prompt:` input is plain prose — edit it directly. Keep the
+  closing instruction that release notes are untrusted data.
