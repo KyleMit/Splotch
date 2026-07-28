@@ -210,8 +210,9 @@ multi-touch input — the best way to get accurate profiles.
 * [ ] **Replace placeholder icons with final hi-res art.** Current icons are upscaled from the 512px
       web logo — produce a crisp **1024×1024** source at `assets/icon.png` (and tune
       `assets/splash.png`), then rerun `npx @capacitor/assets generate --android`.
-* [ ] Bump `versionCode` / `versionName` in `android/app/build.gradle` for each release (currently
-      `6` / `1.4.0`).
+* [ ] Confirm `npm run release` bumped `versionCode` / `versionName` — `scripts/release.mjs`
+      (`setAndroidVersion`) derives both and writes them into `android/app/build.gradle`, which is
+      the source of truth. Only a hand-built release needs them set manually.
 * [x] `targetSdkVersion` meets the current Play requirement: `android/variables.gradle` sets **36**
       (Android 16), which satisfies the **Aug 31, 2026** deadline. Play raises this yearly — recheck
       each August against the
@@ -300,17 +301,37 @@ use, disclosure, and consent — Google being the one running the model does not
 one such integration is `/api/generate-image` → Gemini. What keeps it compliant, and what to
 re-verify if that flow changes:
 
-* **Consent** — the magic-image button is hidden until a grown-up enters an access code or their own
-  Gemini key (`ActionsPanel.svelte`, gated on `settings.aiAccessToken`), and it only fires on tap.
-  Never make generation automatic or unlock it without the Parent Center step.
+* **Consent** — generation is never automatic; it fires only on a tap, and only after a grown-up
+  supplied a credential. There are **two** unlock paths, and a Play reviewer asking how consent is
+  obtained needs both:
+  1. **Typed in the Parent Center** — `AiKeyManager.svelte` verifies the input and stores it
+     (`setAiAccessToken` for an access code, `setAiUserApiKey` for a BYO Gemini key). Consent is the
+     grown-up's own deliberate entry, behind the Parent Center gate a child can't pass.
+  2. **An invite link** — `captureAiAccessTokenFromUrl` (`state/settings.svelte.ts:236-241`) reads
+     `?ai_access_token=` on load, stores it, and rewrites the URL. The links are minted by
+     `buildInvites` in `/admin` (`server/admin.ts:92-95`). Consent is still parent-mediated — an
+     admin hands the link to a specific grown-up — but it is *not* a Parent Center interaction, so
+     don't describe the Parent Center as the only gate.
+
+  Keep both paths grown-up-initiated. Anything that unlocks generation without a credential a
+  grown-up chose to supply breaks the consent story.
+
+  ⚠️ The visibility gate is currently narrower than the intent: `ActionsPanel.svelte:357` and
+  `visibleActionButtonCount()` (`actionButtonLayout.ts:64`) both check `settings.aiAccessToken`
+  alone, so a BYO Gemini key never actually unhides the button — issue #600. `/privacy` deliberately
+  describes the intended behavior ("an access code or Gemini key"); the two converge when #600
+  ships.
 * **Limited use** — the drawing is passed through to Gemini and the result returned; nothing is
   persisted. `lib/server/usage.ts` stores only a per-token tally (count, timestamps, last style, and
-  the *static* style prompt from `lib/ai/prompt.ts` — never the image or any user-typed text). If a
-  request or response image ever starts being stored, the privacy policy and Data safety form both
-  have to change.
+  the *static* style prompt from `lib/ai/prompt.ts` — never the image or any user-typed text), and
+  `deleteUsage` drops it when the token is revoked. If a request or response image ever starts being
+  stored, the privacy policy and Data safety form both have to change.
 * **Disclosure** — `/privacy` names Gemini, states we keep no copy, and distinguishes the managed
-  key from a parent's BYO key (which sends the drawing under the parent's own Google account and
-  terms — a different data controller, so it needs to stay called out).
+  key from a parent's BYO key. Two things there are easy to get wrong and must stay right: BYOK
+  changes the **billing and data controller, not the routing** (the drawing still passes through
+  `/api/generate-image` with the parent's key — `aiImage.ts:158`), and a **free** Gemini key runs on
+  terms that let Google use the content to improve its products, unlike our paid managed quota
+  (ADR-0064).
 
 ### Policies that don't apply (verified — don't re-derive)
 

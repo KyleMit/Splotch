@@ -1,8 +1,9 @@
 <script lang="ts">
   // Friendly, plain-language privacy policy. Splotch collects nothing
   // automatically — the only data it ever receives is what a grown-up
-  // deliberately types into the optional feedback form (see "Sending feedback"),
-  // and this page exists mostly to *prove* that. It's required by the app stores
+  // deliberately turns on or sends: a magic-image request (see "When the
+  // internet is used") or the optional feedback form (see "Sending feedback").
+  // This page exists mostly to *prove* that. It's required by the app stores
   // (see MOBILE.md). Keep the tone simple enough for a parent to skim in 30
   // seconds. Bump LAST_UPDATED whenever the wording changes.
 
@@ -38,7 +39,7 @@
       <li><strong>📊 No analytics.</strong> No third-party trackers or SDKs.</li>
       <li>
         <strong>🗂️ No background collection.</strong> The only info we ever receive is what a grown-up
-        chooses to send us (like a bug report).
+        turns on or sends us — a magic-image request, or a bug report.
       </li>
       <li><strong>✈️ Works offline.</strong> Drawing happens entirely on your device.</li>
     </ul>
@@ -67,15 +68,23 @@
         on our servers.
       </li>
       <li>
-        Google processes the drawing under its own Gemini API terms for as long as it takes to make
-        the picture. That part happens on Google's systems, not ours. If you've added your
-        <em>own</em> Gemini key in the Parent Center, the drawing goes to Google under your account and
-        the terms that apply to it, rather than ours.
+        Google generates the picture on its own systems, under the
+        <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">
+          Gemini API terms</a
+        >, which let it keep prompts and results for a limited time to check for abuse. That part is
+        Google's, not ours.
+      </li>
+      <li>
+        If you've added your <em>own</em> Gemini key in the Parent Center, the drawing still passes
+        through our service on the way to Google, along with your key — which we use for that one
+        request and never store. It reaches Google under <em>your</em> account and the terms that apply
+        to it, rather than ours. On a free Gemini key, those terms let Google use the content to improve
+        its own products, so it's worth reading them before you add one.
       </li>
       <li>
         We keep a simple count of how often each access code is used, purely to prevent abuse —
-        along with the date and which art style was picked. This isn't tied to a person and isn't
-        used to identify anyone.
+        along with the date and which art style was picked. This isn't tied to a person, isn't used
+        to identify anyone, and is deleted when the access code is retired.
       </li>
       <li>
         Drawings are not used to build profiles, are not sold, and are not used for advertising or
