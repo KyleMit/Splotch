@@ -80,15 +80,34 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 Comprehensive per-section quality pass over the whole codebase: 31 parallel section auditors, one
 per `docs/CODE-MAP.md` area (using the subcategory splits for the drawing engine, the other web/src
 domains, asset-gen, and scripts), each applying the performance / readability / maintainability /
-architecture lenses plus the repo conventions, deduping against the 163 open issues. **649
-findings** staged into `docs/AUDIT.md` under one `## Source: Code audit — <section>` header per
-section, each pinned to commit 9ae62ff1 with file/function/line citations and ranked P1–P5.
-Spot-verified P1s include a `perf:mount` crash (missing `join` import), duplicate ADR number 0077, a
-publicly served internal planning doc in `web/static/coloring/`, a missing `onerror` in
-`magicBrush.ts` sheet loading, and token mutations reporting success into the in-memory fallback
-during Blobs outages. Dominant cross-section themes: cross-file agreement maintained by prose
-instead of imported constants or drift guards, unnamed tuning literals, long functions with
-separable named steps, and module-scope mutable state outside factories.
+architecture lenses plus the repo conventions, deduping against the 163 open issues. **643
+findings** (649 raw, less six merged by a follow-up dedup sweep) staged into `docs/AUDIT.md` under
+one `## Source: Code audit — <section>` header per section, each pinned to commit 9ae62ff1 with
+file/function/line citations and ranked P1–P5.
+
+The dominant theme, by a wide margin and in nearly every section, is the repo's own "cross-file
+agreement is never maintained by prose" convention being violated: mirrored constants and
+vocabularies linked only by "keep in sync" comments — the `app.html` boot script's `data-*` names
+and brush/theme literals, engine constants copied across the perf harness, server policy values
+re-declared in E2E specs, dev/preview ports, token values baked into CSS, `chromiumExecutablePath`
+in four copies, asset-gen gate thresholds re-declared in test mocks. Several have already drifted
+(the scrapbook palette disagrees on six values; four asset-gen test constants no longer match their
+source). Secondary themes: unnamed tuning literals against the named-constant rule; long functions
+and files mixing concerns that want extraction (`engine.ts` at 1,487 lines, `undoHistory.ts`
+spanning five concerns, `burndown.mjs`'s numbered-step main loop, the crayon pass-buffer subsystem
+inside `strokeOps.ts`); module-scope mutable state outside a `createX()` factory forcing
+`vi.resetModules` gymnastics; and CLI scripts skipping the documented `isMain` gate (~30 of 42 in
+`scripts/`, none of the eight in `audit-burndown/`).
+
+Eleven P1s, five spot-verified against the code: a `perf:mount` crash (`join` used but never
+imported — invisible because the `no-undef` lint carve-out covers `tools/asset-gen` but not
+`scripts/**`), two Active ADRs both numbered 0077 (`create-adr`'s count-based numbering rule is
+broken), an internal coloring-book planning doc listing trademarked characters publicly served from
+`web/static/`, a missing `onerror` in `magicBrush.ts` that wedges the magic sheet forever, and token
+mutations reporting success into the per-request memory fallback during transient Blobs failures —
+including revocations that never persist. Also notable: `FullscreenToggle`/`ClearButton` violate
+ADR-0038's scribbleGuard rule, and dark mode never reached the native layer (Android theme
+hard-coded Light, both platforms pinning a white WebView background).
 
 ## 2026-07-28 · burn-down-audits
 
