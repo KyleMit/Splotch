@@ -5,36 +5,6 @@
 > then deletes this file. `/fix-audits` burns down those issues. Never treat this file as a
 > long-lived backlog.
 
-## Source: Code audit — scripts · root build/dev drivers
-
-## Source: Code audit — scripts · perf profiling harness
-
-## Source: Code audit — scripts · lib shared helpers
-
-## Source: Code audit — web/tests · E2E + integration specs
-
-## Source: Code audit — web · build/test configuration
-
-## Source: Code audit — Native shells (android + ios + fastlane)
-
-## Source: Code audit — .claude / .codex config (hooks, rules, settings)
-
-## Source: Code audit — .github CI workflows
-
-## Summary
-
-23 findings. The two P1s are correctness/security: issue templates apply labels outside the
-declarative taxonomy (mislabeling every templated bug/feature and defeating `type:*` automation),
-and four workflows run with an unscoped default token. The P2 cluster is the classic CI-hygiene set
-— one duplicated checkout/setup/`npm ci` preamble to extract into a composite action, a hard-coded
-Node `24` in five places (that disagrees with the docs), CI rebuilding the APK inline instead of
-calling `npm run android:apk` (violating the ADR-0017 gradle-helper convention), a stray
-`checkout@v4`, duplicated Maestro install/upload steps, and missing timeouts on the label jobs. The
-tail covers supply-chain pinning (SHA pins + a missing `dependabot.yml`), brittle inline `node -p`
-lockfile parsing, and assorted consistency papercuts.
-
-## Source: Code audit — scrapbook · run-artifact code
-
 ## Source: Code audit — Root config (package.json, dprint, tsconfig, …)
 
 ### [P3][duplication] Browser-support floor is duplicated between `browserslist` and vite `build.target`
@@ -439,5 +409,37 @@ workspace settings match the CI formatters end-to-end.
 
 Open a `.ts` file in VS Code with the recommended extensions and save an intentionally mis-formatted
 line; today nothing reformats it. After the change, save reformats to match `npm run format:check`.
+
+---
+
+## Source: Session audit
+
+### [Tooling] Make the session-audit conventions link resolve for Codex
+
+**File(s):** `.ruler/skills/session-audit/SKILL.md` (shared conventions link),
+`.agents/skills/session-audit/SKILL.md`
+
+#### Problem
+
+**Cost:** minor
+
+The generated Codex skill links to `[.claude/audit-conventions.md](../../audit-conventions.md)`.
+From `.agents/skills/session-audit/SKILL.md`, that relative target resolves to
+`.agents/audit-conventions.md`, which does not exist. During this session the prescribed
+`sed -n '1,320p' .agents/audit-conventions.md` read failed, and repository orientation had to be
+used to recover the real `.claude/audit-conventions.md` path. Every Codex session that runs this
+skill encounters the same broken reference.
+
+#### Proposed solution
+
+Change the shared source link in `.ruler/skills/session-audit/SKILL.md` to the provider-neutral
+`../../../.claude/audit-conventions.md`, then run `npm run ruler:apply`. From both generated skill
+locations, that path resolves to the repository's one directly maintained conventions file.
+
+#### Verification
+
+Run `npm run ruler:check`, then resolve the link from both `.agents/skills/session-audit/SKILL.md`
+and `.claude/skills/session-audit/SKILL.md`; each should identify the existing
+`.claude/audit-conventions.md` without a fallback lookup.
 
 ---
