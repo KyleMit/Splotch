@@ -6,6 +6,10 @@
 //   node scripts/release.mjs 1.2.0 --no-publish bump, generate, commit, tag locally — no push, no gh
 //   node scripts/release.mjs 1.2.0 --dry-run    bump + generate files only, no git at all
 //
+// It never attaches store artifacts: the .aab/.ipa for this version cannot exist
+// until after this script bumps and commits the version. Building them is /build
+// and attaching them is scripts/publish-artifacts.mjs (ADR-0077).
+//
 // Native version numbers are set directly in the Android/iOS project files by
 // scripts/lib/native-version.mjs so the two stay in sync; package.json is the
 // canonical semver source.
@@ -21,7 +25,6 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { ROOT, fail, run, capture, isMain } from './lib/proc.mjs';
 import { parseFrontmatter } from './lib/frontmatter.mjs';
-import { RELEASE_AAB } from './lib/android.mjs';
 import { setAndroidVersion, setIosVersion } from './lib/native-version.mjs';
 
 const RELEASE_PATHS = [
@@ -62,6 +65,12 @@ function parseReleaseArgs(args) {
   };
 }
 
+// parseFrontmatter trims the body, so the blank line after the closing fence has
+// to be put back explicitly — dprint requires it, and without it pinning the
+// versionCode lands a release commit that fails CI's `dprint check`.
+export const renderReleaseFile = (frontmatter, body) =>
+  `---\n${frontmatter.trim()}\n---\n\n${body}\n`;
+
 function releasePath(version) {
   const file = join(ROOT, 'releases', `${version}.md`);
   if (!existsSync(file)) {
@@ -83,7 +92,7 @@ function resolveVersionCode(releaseFile, version) {
     frontmatter = /androidVersionCode:/.test(frontmatter)
       ? frontmatter.replace(/androidVersionCode:.*/i, `androidVersionCode: ${versionCode}`)
       : `${frontmatter}\nandroidVersionCode: ${versionCode}`;
-    writeFileSync(releaseFile, `---\n${frontmatter.trim()}\n---\n${body}\n`);
+    writeFileSync(releaseFile, renderReleaseFile(frontmatter, body));
     console.log(`Pinned androidVersionCode: ${versionCode} in ${version}.md`);
   }
 
@@ -132,7 +141,13 @@ function publish(version, body) {
   const notesPath = join(notesDir, 'notes.md');
   writeFileSync(notesPath, body + '\n');
 
-  const ghArgs = [
+  // No artifacts are attached here, deliberately. The version this release just
+  // bumped to has to be committed before an .aab/.ipa carrying it can be built,
+  // so any artifact present now is necessarily from an older version — attaching
+  // whatever sat in the build directory is how v1.4.0 shipped a 1.2.0 bundle.
+  // `npm run release:publish` attaches them after /build, verifying each one's
+  // embedded version against this release first (ADR-0077).
+  run('gh', [
     'release',
     'create',
     `v${version}`,
@@ -140,19 +155,15 @@ function publish(version, body) {
     `v${version}`,
     '--notes-file',
     notesPath,
-  ];
-  if (existsSync(RELEASE_AAB)) {
-    ghArgs.push(RELEASE_AAB);
-    console.log('Attaching built release bundle: app-release.aab');
-  } else {
-    console.log('(no app-release.aab found — run `npm run android:bundle` first to attach it)');
-  }
-  run('gh', ghArgs);
+  ]);
   rmSync(notesDir, { recursive: true, force: true });
 
   console.log(
     `\n✓ Released v${version}: https://github.com/KyleMit/Splotch/releases/tag/v${version}`
   );
+  console.log('\nNext: build the store artifacts for this version, then attach them:');
+  console.log('  /build                 (or npm run android:bundle / npm run ios:ipa)');
+  console.log(`  npm run release:publish   attaches them to v${version}`);
 }
 
 export function main(args = process.argv.slice(2)) {
@@ -176,6 +187,7 @@ export function main(args = process.argv.slice(2)) {
     console.log(`Push and publish when ready:`);
     console.log(`  git push && git push origin v${version}`);
     console.log(`  gh release create v${version} --title "v${version}" --notes-file <body>`);
+    console.log(`Then build the artifacts and attach them with: npm run release:publish`);
     return;
   }
 
