@@ -54,13 +54,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import sharp from 'sharp';
-import {
-  REPO_ROOT,
-  COLORING_DIR,
-  FILL_SRC_DIR,
-  SAMPLES_DARK_DIR,
-  toPosix,
-} from '../lib/paths.mjs';
+import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, toPosix } from '../lib/paths.mjs';
 import { fail, parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
