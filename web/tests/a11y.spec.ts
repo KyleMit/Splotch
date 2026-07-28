@@ -3,8 +3,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { ADMIN_ACCESS_TOKEN } from './admin-helpers';
 import { openParentCenter } from './helpers';
 
-// Axe-core scans for the adult-facing surfaces (issue #458): /privacy, /admin
-// (both auth states), and the Parent Center dialog. The toddler-facing canvas
+// Axe-core scans for the adult-facing surfaces (issue #458): /privacy,
+// /android-beta, /admin (both auth states), and the Parent Center dialog. The toddler-facing canvas
 // chrome is deliberately out of scope — its UX rules (giant wordless buttons,
 // no reading order) aren't WCAG's — so the Parent Center scan is scoped to the
 // dialog itself rather than the whole drawing page.
@@ -35,6 +35,12 @@ async function expectNoSeriousViolations(page: Page, include?: string) {
 test('/privacy has no serious accessibility violations', async ({ page }) => {
   await page.goto('/privacy');
   await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+  await expectNoSeriousViolations(page);
+});
+
+test('/android-beta has no serious accessibility violations', async ({ page }) => {
+  await page.goto('/android-beta');
+  await expect(page.getByRole('heading', { name: 'Join the Android Beta' })).toBeVisible();
   await expectNoSeriousViolations(page);
 });
 
