@@ -43,8 +43,8 @@ Alternatives considered:
 ## Decision
 
 `.github/workflows/dependabot-review.yml` runs `anthropics/claude-code-action` on `pull_request`
-(`opened`/`synchronize`/`reopened`), gated by `if: github.actor == 'dependabot[bot]'`. Four settings
-are load-bearing and each fails *silently* if dropped:
+(`opened`/`reopened`), gated by `if: github.actor == 'dependabot[bot]'`. Four settings are
+load-bearing and each fails *silently* if dropped:
 
 1. **`CLAUDE_CODE_OAUTH_TOKEN` lives in the Dependabot secret store** (Settings → Secrets and
    variables → **Dependabot**), not Actions. That store is the only one injected into these runs. A
@@ -82,6 +82,20 @@ and specifically checks the inverted dependency split from
 `devDependencies` breaks the Netlify deploy while CI stays green. It also treats release-note
 content as untrusted data, not instructions.
 
+**The review deliberately races CI and does not wait for it.** It fires on the same `pull_request`
+event as `test.yml` and, having no dependency install, finishes in a couple of minutes while Tests
+is still running under its 15-minute budget — so `gh pr checks` reports "pending" on essentially
+every run. Waiting was considered and rejected: it would spend runner minutes and subscription usage
+to restate a failure already visible on the PR, while the review's actual value — reading the
+upstream changes and their blast radius — doesn't depend on CI at all. Instead the prompt expects
+unresolved checks, reports them honestly, and is told never to read pending as passing nor to soften
+a FLAG because CI hadn't failed *yet*. CI remains the human's merge gate, unchanged.
+
+`synchronize` is excluded from the trigger for a related reason: Dependabot fires it on rebase, the
+dependency diff is identical, and the re-review would both cost usage and stack a second comment
+(Claude posts via `gh pr comment`, so there is no update-in-place). A genuinely new version arrives
+as a new PR, so `opened` still catches every distinct bump.
+
 ## Consequences
 
 * \+ Every Dependabot PR gets a substantive read of what changed upstream, with a verdict, without
@@ -97,4 +111,8 @@ content as untrusted data, not instructions.
 * − Review quality is bounded by what upstream publishes. A release with no notes yields a thin
   review; the prompt is instructed to say so rather than fake confidence.
 * − Adds a Claude run per Dependabot PR, which draws down weekly subscription limits. If that gets
-  noisy, narrow the trigger to `opened` only, or drop the github-actions ecosystem from the gate.
+  noisy, drop the github-actions ecosystem from the gate; the trigger is already as narrow as it
+  usefully gets.
+* − The verdict is formed without CI, so it can only ever speak to the dependency change, never to
+  whether the repo still builds against it. Read the comment as one input beside the checks, not as
+  a summary of them.

@@ -112,6 +112,15 @@ into a polite request. It was granted in an early draft and removed for exactly 
 remains the gate on correctness — an APPROVE from a review that can't run the test suite is a
 reading of the changes, not a guarantee.
 
+**The review usually can't see CI.** It's triggered by the same `pull_request` event as `test.yml`
+and, having no dependency install, finishes in a couple of minutes while Tests is still running
+under its 15-minute budget. So expect the CI column to read "still running". That's by design rather
+than a defect worth fixing: the review's value is reading the upstream changes, which doesn't depend
+on CI, and making it wait would spend runner minutes and subscription usage to restate a red X
+already visible on the PR. The prompt tells Claude to report the status it actually saw and never to
+treat pending as passing. If you want a verdict informed by CI, re-read the PR after checks land —
+that's a human step by design.
+
 ## Troubleshooting
 
 | Symptom                               | Likely cause                                                                                                                                                                                  |
@@ -125,9 +134,8 @@ reading of the changes, not a guarantee.
 
 ## Tuning
 
-* **Too much weekly-limit burn?** Narrow the trigger to `opened` only (drops re-reviews on
-  `synchronize`), or add an ecosystem condition to the `if:` gate to skip grouped github-actions
-  bumps.
+* **Too much weekly-limit burn?** The trigger is already narrowed to `opened` + `reopened`; from
+  here, add an ecosystem condition to the `if:` gate to skip grouped github-actions bumps.
 * **Reviews too shallow?** Raise `--max-turns` in `claude_args`.
 * **Want a different emphasis?** The `prompt:` input is plain prose — edit it directly. Keep the
   closing instruction that release notes are untrusted data.

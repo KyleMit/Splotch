@@ -38,7 +38,12 @@ name: Dependabot review
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    # No `synchronize`. Dependabot fires it when it rebases, but a rebase leaves
+    # the dependency diff identical, so a re-review spends subscription usage to
+    # reprint the same verdict — and would stack a second comment, since Claude
+    # posts via `gh pr comment` rather than the action. A genuinely new version
+    # arrives as a new PR, so `opened` still catches every distinct bump.
+    types: [opened, reopened]
 
 permissions:
   contents: read
@@ -136,9 +141,19 @@ jobs:
 
             ## Verify
 
-            Check the PR's CI status with `gh pr checks`. If anything is red,
-            look at why before forming a verdict — a failure here is the single
-            strongest signal. Do not treat pending checks as passing.
+            Check the PR's CI status with `gh pr checks`, but expect it to be
+            unresolved: this review is triggered by the same event as the test
+            suite and finishes long before it, so checks are normally still
+            running. That is the expected case, not a problem.
+
+            Report what you actually saw. If checks were still in flight, say so
+            plainly — "CI still running at review time" — and form your verdict
+            on the dependency evidence, which does not depend on CI. Never
+            describe pending checks as passing, and never soften a FLAG because
+            CI hadn't failed yet; it hadn't finished.
+
+            If checks did resolve and anything is red, that is decisive — look
+            at why before forming a verdict.
 
             ## Post your verdict
 
@@ -151,16 +166,18 @@ jobs:
 
             - Open with a bolded verdict line: **APPROVE** (safe to merge as-is)
               or **FLAG** (needs a human look), plus a one-sentence reason.
-            - A short table: package, version jump, CI status, risk (low /
-              medium / high).
+            - A short table: package, version jump, CI status (usually "still
+              running" — see Verify), risk (low / medium / high).
             - **What changed** — 2-5 bullets of substance from the release
               notes, not a restatement of the version numbers.
             - **To run down** — only if flagging. Each item concrete and
               actionable: what to check, in which file, and why it might bite.
               Omit this section entirely on a clean APPROVE.
 
-            Be decisive. A routine patch bump to an unused dev tool with green
-            CI should be a two-line APPROVE, not a hedged essay. Save the detail
+            Be decisive. A routine patch bump to a dev tool nothing imports
+            should be a two-line APPROVE, not a hedged essay — unresolved CI is
+            not a reason to hedge, since CI is the human's gate and it blocks
+            the merge on its own. Save the detail
             for bumps that genuinely carry risk. If evidence is thin — release
             notes missing, upstream unreachable — say so explicitly rather than
             implying a confidence you do not have.
