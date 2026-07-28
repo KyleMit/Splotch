@@ -1,7 +1,38 @@
 ## Conventions
 
-* **No comments** unless the WHY is non-obvious. Well-named identifiers are the documentation.
+* **No comments** unless the WHY is non-obvious. Well-named identifiers are the documentation. A
+  comment that does survive states stable facts: no temporal phrasing ("now", "previously") and no
+  restating mutable facts (counts, dates, values, paths) owned elsewhere — name the owning
+  identifier or file instead.
+* Numbered step comments (`// 1. …`) or section banners inside one function are the signal to
+  extract each step into a named helper — write it that way the first time.
+* **Tuning literals get names.** A numeric literal that encodes a tunable decision — threshold,
+  duration, dimension, curve shaping, byte offset, retry count — gets a named module-scope constant
+  with the unit in the name (`_MS`, `_PX`, `SNAP_BAND_FRACTION`); the WHY comment lives on the
+  constant. Plain geometry arithmetic stays inline. (ESLint's `no-magic-numbers` was evaluated and
+  rejected: ~750 hits in this canvas-heavy codebase.)
+* **Cross-file agreement is never maintained by prose.** A value that must agree with another module
+  is imported from one exported constant; when the agreeing sites can't share code (the `app.html`
+  boot script, YAML, native config, generated output), add a drift-guard test that reads both sides
+  and fails on divergence — the pattern of `web/src/app.html.test.ts`,
+  `scripts/tests/android-config.test.mjs`, and `web/src/browserFloor.test.ts`. A "keep in sync with
+  X" comment marks a defect, not a mitigation. Same rule for boundary strings (storage keys, query
+  params, event names, special-case ids): declared once, imported everywhere (tests deliberately
+  excepted).
 * **TypeScript everywhere.** No plain `.js` source files in `src/`.
+* **Close finite value sets in the type.** A value drawn from a fixed vocabulary (style names,
+  platforms, sizes, themes) is a literal union or `keyof typeof`, threaded end to end — never bare
+  `string`/`number` plus a runtime fallback; constant maps are `Record<UnionType, V>` (or
+  `satisfies`), not `Record<string, V>`.
+* **`as` is a boundary tool.** Cast only where typed code meets untyped input (storage, wire,
+  non-standard browser APIs) after runtime validation, or augment globals in `app.d.ts` (the
+  `WindowEventMap` pattern). Never cast to silence a generated union — fix the type at its source.
+* **No speculative surface.** A new prop, option, or optional parameter needs a production caller
+  that exercises it; a seam kept only for tests gets a comment saying so at the declaration.
+* Module-scope mutable `let` is either a pure memoization cache or lives behind a `createX()`
+  factory so tests get fresh instances — never a shipped `*ForTests` reset export. A memoized
+  promise resets itself on rejection (see `web/src/lib/idb.ts`) unless permanent failure is
+  intended.
 * **Svelte 5 runes only.** No legacy stores (`writable`, `readable`, `derived` from `svelte/store`).
 * All npm scripts must run on macOS and Linux (ADR-0017; Windows dev support was dropped in
   ADR-0062): env vars are set inline (`VAR=value cmd`, no `cross-env`), and platform-specific tools

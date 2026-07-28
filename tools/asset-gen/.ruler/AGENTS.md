@@ -90,6 +90,10 @@ carve-out):
   The pair is deliberate: the golden scores catch quality drift, the sha256 manifest catches byte
   swaps between score-identical renders (and enforces that a night-only pass never touches
   light-side bytes).
+* **Scorers composed into a gate accept a shared prepared analysis** (decode/resize/label once), not
+  raw buffers each — never re-decode per scorer.
+* **Diagnostic artifacts (overlay PNGs and the like) are opt-in** — generated for the selected
+  winner or a failed page, never inside retry loops.
 * **Per-page generator levers live in the `fill-src/<cat>/notes.json` registry** (schema in
   `lib/page-notes.mjs`): the night, chalk, and normalize generators auto-apply a page's registry
   `flags` (an explicit CLI flag always wins) and print `retry`/`review`/`why`/`motifs`; `--dry-run`
