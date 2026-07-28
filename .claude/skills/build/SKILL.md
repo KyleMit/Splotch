@@ -4,9 +4,22 @@ description: Build the signed release artifacts for the current version (Android
 ---
 
 You are building the **release artifacts** for Splotch — the signed binaries you upload to the app
-stores. This is **separate from `/release`**: `/release` bumps the version and writes the
-changelog/notes; `/build` just compiles the artifacts for whatever version is currently committed.
-So `/build` is normally run *after* `/release` (or any time you want a fresh local build).
+stores. This is phase 2 of three, and the phases are ordered for a reason:
+
+| Phase      | Command              | Produces                                                |
+| ---------- | -------------------- | ------------------------------------------------------- |
+| 1. Release | `/release`           | version bump, tag, notes, GitHub Release (no artifacts) |
+| 2. Build   | `/build` (you)       | the signed `.aab` / `.ipa` for that version             |
+| 3. Publish | `/publish-artifacts` | those artifacts attached to the GitHub Release          |
+
+`/release` must come first because an artifact can only carry a version that is already committed —
+which is why `/release` attaches nothing, and why the artifacts you build here are attached
+afterwards by `/publish-artifacts` (ADR-0077). `/build` on its own is also fine any time you just
+want a fresh local build.
+
+**The build output directories are not cleaned between releases.** A stale `.aab`/`.ipa` from an
+earlier version sits at the same path as a fresh one, so never treat "the file exists" as "the build
+succeeded" — always confirm the version, per the verify steps below.
 
 This builds **Android** (a signed `.aab`) and **iOS** (an App Store `.ipa`; macOS + Xcode + a
 signing team only — see the `mobile` skill).
@@ -34,8 +47,14 @@ and skip iOS with a note if it doesn't).
    success that one line is all you'll see. If it fails, the script dumps the full jarsigner output
    and exits non-zero — surface that and stop.
 
-5. **Report.** Tell the user:
-   * the version + versionCode of the built `.aab` and its path
+5. **Verify the bundle carries the version you expected.** Run
+   `npm run release:publish -- --only=android --dry-run`. It reads the versionName/versionCode out
+   of the `.aab` itself and checks them against `releases/<version>.md`. If it reports a mismatch,
+   the Gradle build did not actually produce a new bundle (a failed or skipped build leaves the
+   previous version's file in place) — surface that and stop rather than reporting success.
+
+6. **Report.** Tell the user:
+   * the version + versionCode read back out of the built `.aab` and its path
      (`android/app/build/outputs/bundle/release/app-release.aab`),
    * that signature verification passed,
    * that `npm run android:open` will reveal the file in Explorer.
@@ -60,8 +79,24 @@ and skip iOS with a note if it doesn't).
    exports per `ios/App/ExportOptions.plist`. Slow (minutes) — let it finish. If xcodebuild fails,
    surface the error and stop.
 
-4. **Report.** Tell the user:
-   * the version + build number of the exported `.ipa` and its path (`ios/App/build/ipa/App.ipa`),
+4. **Verify the `.ipa` carries the version you expected.** Run
+   `npm run release:publish -- --only=ios --dry-run`, which reads
+   `CFBundleShortVersionString`/`CFBundleVersion` out of the exported `.ipa` and checks them against
+   `releases/<version>.md`. A mismatch means the export reused an older archive — surface it and
+   stop rather than reporting success.
+
+5. **Report.** Tell the user:
+   * the version + build number read back out of the exported `.ipa` and its path
+     (`ios/App/build/ipa/App.ipa`),
    * that uploading is **manual**: drag the `.ipa` into Apple's **Transporter** app (or Xcode
      Organizer). The matching "What's New" text lives at
      `fastlane/metadata/en-US/release_notes.txt`.
+
+## Next step
+
+If this build was for a version that has already been released, finish with **`/publish-artifacts`**
+to attach what you just built to the GitHub Release for it. Suggest it explicitly — an artifact that
+is built but never attached is the normal way a release ends up with no downloadable binary.
+
+If you built without a matching release (just a local build), there is nothing to attach; say so
+rather than pointing at the publish step.
