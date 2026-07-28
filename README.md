@@ -7,9 +7,11 @@
 A frozen snapshot of a 25-subagent exploration session that ran down **every idea in the then
 `../IDEAS.md` image-quality backlog**, one subagent at a time, from baseline commit `8e471b8`. Each
 subagent actually attempted its idea's proposed approach (Gemini calls included where needed),
-captured before/after evidence, and **reverted the repo to pristine before exiting** — so nothing
-from these experiments is live in the pipeline. This folder is the complete record, intended for a
-follow-up session to review and decide what to promote.
+captured before/after evidence, and **reverted the repo to pristine before exiting**. A later
+promotion pass resulted in 13 `LANDED`, 7 `NOT PROMOTED`, and 5 `OPEN` ideas. Each report's
+`Status:` line records its current disposition and points to the live files when applicable; see
+[`../docs/gemini-3.1-migration.md`](../docs/gemini-3.1-migration.md) for the regeneration-wave
+record.
 
 **This folder is not part of the asset pipeline.** Nothing in here is imported by the generators;
 the `lib/paths.mjs` and scratch-dir rules in `../CLAUDE.md` don't apply to these frozen copies.
@@ -29,52 +31,39 @@ the `lib/paths.mjs` and scratch-dir rules in `../CLAUDE.md` don't apply to these
 
 ## Scoreboard: 24 WORKED · 1 PARTIAL · 0 BLOCKED
 
-| #  | Idea                                                                         | Verdict | Outcome                                                                                                         |
-| -- | ---------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------- |
-| 1  | [Dark-bodied subjects re-ink outlines dark](./idea-1/report.md)              | WORKED  | Deterministic rim-erase punch extension validated; blanket dilation risky; Gemini edit re-rolls fills           |
-| 2  | [Whitened-motif inconsistency across sibling pages](./idea-2/report.md)      | WORKED  | Motif strips confirmed outliers; notes-driven re-chalk matched sibling treatment first try                      |
-| 3  | [Chalk whites the night fill disagrees with](./idea-3/report.md)             | WORKED  | Offline scorer works; ranking is near-all true positives, a dozen new flags                                     |
-| 4  | [Night-sky brightness varies ~4× across the catalog](./idea-4/report.md)     | WORKED  | Deterministic background-luma normalization hits target exactly with no edge artifacts; regen at ≤50 also works |
-| 5  | [De-swirl the two flat-pupil pages](./idea-5/report.md)                      | WORKED  | Deterministic pen-eye surgery fixed caterpillar-wide's flat night pupils end-to-end                             |
-| 6  | [Pen normalization + light-fill regen for dead eyes](./idea-6/report.md)     | WORKED  | Normalizer + regen (or free re-punch) revives dead light-mode eyes; night untouched                             |
-| 7  | [Catalog-wide residual dark halo audit](./idea-7/report.md)                  | WORKED  | 48s offline auditor ranks all 94 night fills, finds 3 new real halos                                            |
-| 8  | [Light↔night palette coherence](./idea-8/report.md)                          | WORKED  | Hue-flip scorer ranks catalog; punched-light-conditioned night regen fixes ant blanket, all gates pass          |
-| 9  | [Tall↔wide palette coherence for the same subject](./idea-9/report.md)       | WORKED  | Inventory ranks 46 pairs; text-palette conditioning fixed dragon-wide (53°→11°)                                 |
-| 10 | [Per-page notes registry for regen levers](./idea-10/report.md)              | WORKED  | Registry mined (28 entries), auto-loaded by generators, CLI wins; spider-tall passed first take                 |
-| 11 | [Whiten pen solids out of the chalk keep reference](./idea-11/report.md)     | WORKED  | Gate fix validated: all 19 overridden chalks now pass, zero regressions, regen passes first try                 |
-| 12 | [Eye detector: side profiles and non-face cores](./idea-12/report.md)        | WORKED  | All five night false-flags cleared, every true fail retained, fully offline                                     |
-| 13 | [Gate colored-shape invention on open background](./idea-13/report.md)       | WORKED  | Detector works; 11 shipped night fills carry confirmed invented shapes                                          |
-| 14 | [Local-warp registration check (shimmer suspect)](./idea-14/report.md)       | WORKED  | Scorer works; found 4 genuinely warped shipped pages; big-nudge hypothesis refuted                              |
-| 15 | [Punch-inpaint quality on dense line work](./idea-15/report.md)              | WORKED  | No visible smearing in composites; nearest-bleed vindicated, per-region mean adds fringe risk without benefit   |
-| 16 | [Night fill as a recolor edit of the light raw](./idea-16/report.md)         | PARTIAL | Perfect registration, polarity, and palette coherence, but mood too bright and desaturated                      |
-| 17 | [Model bake-off: flash-image vs pro image tier](./idea-17/report.md)         | WORKED  | gemini-3.1-flash-image clears all three flash-2.5 failure classes; pro tier drifts                              |
-| 18 | [Deterministic fills: model picks palette, code paints](./idea-18/report.md) | WORKED  | End-to-end success: perfect registration, coherent themes, mermaid rivals shipped fill                          |
-| 19 | [Chalk covers + dark-mode thumbnails](./idea-19/report.md)                   | WORKED  | Chalk page thumbs + dark-mode picker swap work end-to-end; covers need 8 Gemini calls                           |
-| 20 | [Upscale / resolution audit vs device DPR](./idea-20/report.md)              | WORKED  | 1024×1536 adequate; tablets overscale 1.7× but lanczos upscale buys nothing visible                             |
-| 21 | [Before/after contact sheet from git history](./idea-21/report.md)           | WORKED  | `--source git:<ref>` and `--compare git:<ref>` validated on farm and owl-tall, offline                          |
-| 22 | [Composite view as a first-class tool](./idea-22/report.md)                  | WORKED  | gen:coloring-composite built, byte-identical to ad hoc lib use, gate-override demo works                        |
-| 23 | [Golden-set regression fixtures](./idea-23/report.md)                        | WORKED  | Catalog-wide golden score freeze/diff works: deterministic, ~54s, caught one-page revert                        |
-| 24 | [Complete the orphan pages: heart + umbrella](./idea-24/report.md)           | WORKED  | Both orphan pages completed end-to-end, all gates green, in 12 Gemini calls                                     |
-| 25 | [Light-mode byte-stability check in CI](./idea-25/report.md)                 | WORKED  | Committed sha256 manifest + CI drift check validated in both directions                                         |
+| #  | Idea                                                                         | Verdict | Status       | Outcome                                                                                                         |
+| -- | ---------------------------------------------------------------------------- | ------- | ------------ | --------------------------------------------------------------------------------------------------------------- |
+| 1  | [Dark-bodied subjects re-ink outlines dark](./idea-1/report.md)              | WORKED  | NOT PROMOTED | Deterministic rim-erase punch extension validated; blanket dilation risky; Gemini edit re-rolls fills           |
+| 2  | [Whitened-motif inconsistency across sibling pages](./idea-2/report.md)      | WORKED  | LANDED       | Motif strips confirmed outliers; notes-driven re-chalk matched sibling treatment first try                      |
+| 3  | [Chalk whites the night fill disagrees with](./idea-3/report.md)             | WORKED  | OPEN         | Offline scorer works; ranking is near-all true positives, a dozen new flags                                     |
+| 4  | [Night-sky brightness varies ~4× across the catalog](./idea-4/report.md)     | WORKED  | NOT PROMOTED | Deterministic background-luma normalization hits target exactly with no edge artifacts; regen at ≤50 also works |
+| 5  | [De-swirl the two flat-pupil pages](./idea-5/report.md)                      | WORKED  | NOT PROMOTED | Deterministic pen-eye surgery fixed caterpillar-wide's flat night pupils end-to-end                             |
+| 6  | [Pen normalization + light-fill regen for dead eyes](./idea-6/report.md)     | WORKED  | NOT PROMOTED | Normalizer + regen (or free re-punch) revives dead light-mode eyes; night untouched                             |
+| 7  | [Catalog-wide residual dark halo audit](./idea-7/report.md)                  | WORKED  | LANDED       | 48s offline auditor ranks all 94 night fills, finds 3 new real halos                                            |
+| 8  | [Light↔night palette coherence](./idea-8/report.md)                          | WORKED  | OPEN         | Hue-flip scorer ranks catalog; punched-light-conditioned night regen fixes ant blanket, all gates pass          |
+| 9  | [Tall↔wide palette coherence for the same subject](./idea-9/report.md)       | WORKED  | OPEN         | Inventory ranks 46 pairs; text-palette conditioning fixed dragon-wide (53°→11°)                                 |
+| 10 | [Per-page notes registry for regen levers](./idea-10/report.md)              | WORKED  | LANDED       | Registry mined (28 entries), auto-loaded by generators, CLI wins; spider-tall passed first take                 |
+| 11 | [Whiten pen solids out of the chalk keep reference](./idea-11/report.md)     | WORKED  | LANDED       | Gate fix validated: all 19 overridden chalks now pass, zero regressions, regen passes first try                 |
+| 12 | [Eye detector: side profiles and non-face cores](./idea-12/report.md)        | WORKED  | LANDED       | All five night false-flags cleared, every true fail retained, fully offline                                     |
+| 13 | [Gate colored-shape invention on open background](./idea-13/report.md)       | WORKED  | LANDED       | Detector works; 11 shipped night fills carry confirmed invented shapes                                          |
+| 14 | [Local-warp registration check (shimmer suspect)](./idea-14/report.md)       | WORKED  | OPEN         | Scorer works; found 4 genuinely warped shipped pages; big-nudge hypothesis refuted                              |
+| 15 | [Punch-inpaint quality on dense line work](./idea-15/report.md)              | WORKED  | NOT PROMOTED | No visible smearing in composites; nearest-bleed vindicated, per-region mean adds fringe risk without benefit   |
+| 16 | [Night fill as a recolor edit of the light raw](./idea-16/report.md)         | PARTIAL | NOT PROMOTED | Perfect registration, polarity, and palette coherence, but mood too bright and desaturated                      |
+| 17 | [Model bake-off: flash-image vs pro image tier](./idea-17/report.md)         | WORKED  | LANDED       | gemini-3.1-flash-image clears all three flash-2.5 failure classes; pro tier drifts                              |
+| 18 | [Deterministic fills: model picks palette, code paints](./idea-18/report.md) | WORKED  | OPEN         | End-to-end success: perfect registration, coherent themes, mermaid rivals shipped fill                          |
+| 19 | [Chalk covers + dark-mode thumbnails](./idea-19/report.md)                   | WORKED  | LANDED       | Chalk page thumbs + dark-mode picker swap work end-to-end; covers need 8 Gemini calls                           |
+| 20 | [Upscale / resolution audit vs device DPR](./idea-20/report.md)              | WORKED  | NOT PROMOTED | 1024×1536 adequate; tablets overscale 1.7× but lanczos upscale buys nothing visible                             |
+| 21 | [Before/after contact sheet from git history](./idea-21/report.md)           | WORKED  | LANDED       | `--source git:<ref>` and `--compare git:<ref>` validated on farm and owl-tall, offline                          |
+| 22 | [Composite view as a first-class tool](./idea-22/report.md)                  | WORKED  | LANDED       | gen:coloring-composite built, byte-identical to ad hoc lib use, gate-override demo works                        |
+| 23 | [Golden-set regression fixtures](./idea-23/report.md)                        | WORKED  | LANDED       | Catalog-wide golden score freeze/diff works: deterministic, ~54s, caught one-page revert                        |
+| 24 | [Complete the orphan pages: heart + umbrella](./idea-24/report.md)           | WORKED  | LANDED       | Both orphan pages completed end-to-end, all gates green, in 12 Gemini calls                                     |
+| 25 | [Light-mode byte-stability check in CI](./idea-25/report.md)                 | WORKED  | LANDED       | Committed sha256 manifest + CI drift check validated in both directions                                         |
 
-## What a follow-up session should probably do first
+## Promotion retrospective
 
-Ordered by leverage, from the evidence in the reports (not a decree):
-
-1. **Land the gate fixes** — #11 (keep-reference whitening, ~10 lines, unblocks 19 pages) and #12
-   (eye-judge false flags) are small patches with zero-regression evidence.
-2. **Land the safety nets before any regen wave** — #23 (golden scores) and #25 (asset sha256
-   manifest); they were designed to work together (the manifest is #23's missing content-hash
-   column).
-3. **Trial the model swap (#17)** — `gemini-3.1-flash-image` cleared every historical failure class
-   first-take; validate on one full category, then make it the default. It likely shrinks the cost
-   of every other regen item.
-4. **Ship the finished goods** — #24's heart-wide + umbrella-tall suites are complete and gate-green
-   (assets in `idea-24/`), #19's dark-mode thumbs are a tiny patch, #10's notes registry prevents
-   every future regen from re-fighting old battles.
-5. **Work the shipped-defect lists** — #13 found 11 pages with invented shapes, #7 found 3 halos,
-   #14 found 4 warped pages, #3 found ~12 chalk/fill disagreements: each report carries the exact
-   page lists and crops.
+The 2026-07 promotion wave executed the follow-up work from this exploration. Remaining work is
+tracked in GitHub issues labeled `area:asset-gen`; the five `OPEN` report statuses identify the
+validated-but-unbuilt scorers and gaps.
 
 ## Cross-cutting learnings (things that surprised us)
 
