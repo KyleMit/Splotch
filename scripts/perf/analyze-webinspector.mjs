@@ -12,16 +12,23 @@
 //     below the clock floor — treat <1 ms as "effectively free," not precise.
 //
 // We recover an engine op's cost two ways, preferring the first:
-//   1. Paired marks: an op that also emits `<name>:end` (engine.undo does, at
-//      restore completion) gets end−start per pair. This is the only correct
-//      attribution for ops spanning multiple tasks — post-ADR-0066 a deep undo
-//      runs mark + snapshot pop in one slice, awaits createImageBitmap(blob),
-//      then blits in a later continuation, so no single record bounds it.
-//   2. Enclosing record (fallback for start-only ops): each synthetic pointer
-//      event is its own `event-dispatched` script record, and the commit's
-//      paper copy runs inside the pointerup record — so the smallest record
-//      spanning the mark's timestamp bounds a single-slice op's main-thread
-//      cost.
+//   1. Paired marks: an op that also emits `<name>:end` gets end−start per
+//      pair. `engine.undo`, `engine.commit`, `engine.draw`, and
+//      `engine.scanEmpty` all pair — `engine.undo` because it spans multiple
+//      tasks (post-ADR-0066 a deep undo runs mark + snapshot pop in one
+//      slice, awaits createImageBitmap(blob), then blits in a later
+//      continuation, so no single record bounds it); the other three because
+//      their `finally`-placed end mark must fire on every early return, so a
+//      buffered-candidate `draw()`, a hover `commitStrokeGroup()`, or a
+//      null-scratch-context `scanCanvasIsEmpty()` still measures instead of
+//      leaving an unmatched start in the marker stream. Device-export numbers
+//      for these are mark-delta durations, so they're subject to WebKit's
+//      ~1 ms `performance.now()` clamp rather than a record's finer duration.
+//   2. Enclosing record (fallback for the remaining start-only ops —
+//      engine.snapshot, engine.fold, engine.resize): each synthetic pointer
+//      event is its own `event-dispatched` script record, so the smallest
+//      record spanning the mark's timestamp bounds a single-slice op's
+//      main-thread cost.
 // GPU-side cost shows up in paint/composite records instead (the canvas is
 // GPU-accelerated, so issuing replay ops is cheap and rasterization is
 // deferred off the main thread).
@@ -85,10 +92,13 @@ const fmt = (s) =>
 
 // Prefer paired `<name>:start`/`<name>:end` marks (correct for ops spanning
 // multiple tasks, like an async deep undo); fall back to the enclosing record
-// for start-only ops. Steps that emit end marks run serialized (the engine's
-// paper chain), so pairing each start with the first end before the next start
-// is exact; a start whose end is missing (ring buffer, mid-op stop) is counted
-// as unpaired rather than misattributed.
+// for start-only ops. Pairing each start with the first end before the next
+// start is exact for both of the paired ops' shapes: `engine.undo`'s steps
+// run serialized on the engine's paper chain, and `engine.draw` /
+// `engine.commit` / `engine.scanEmpty` are synchronous and non-reentrant (one
+// call completes, end mark included, before the next can start). A start
+// whose end is missing (ring buffer, mid-op stop) is counted as unpaired
+// rather than misattributed.
 function engineOp(name) {
   const starts = markers.filter((m) => m.details === `${name}:start`).map((m) => m.time);
   const ends = markers.filter((m) => m.details === `${name}:end`).map((m) => m.time);

@@ -111,6 +111,14 @@ first bullet lists:
   `engine.undo:start` → `engine.undo:end`. Marks-only consumers — WebKit's Web Inspector timeline
   export exposes marks but not measures — pair the start/end marks instead of the
   smallest-enclosing-record heuristic, which bounded only the first task of an async undo.
+* **`engine.draw`, `engine.commit`, and `engine.scanEmpty` also emit an explicit `:end` mark now,**
+  each closed in a `finally` alongside its function body. All three have early returns (a buffered
+  edge-swipe candidate in `draw`, the deferred-restore/no-op paths in `commitStrokeGroup`, a missing
+  scratch context in `scanCanvasIsEmpty`) that used to leave the `:start` mark unmatched — a mark
+  with no measure isn't just missing a number, it corrupts the marks-only consumer above: WebKit's
+  timeline export has no measures to fall back on, so an orphaned start left the Web Inspector
+  marker stream with a dangling `:start` and no way to attribute its cost. The `finally` guarantees
+  the pair closes on every exit path, matching `engine.undo`'s shape.
 
 ADR-0066 also deleted the `perf:sweep`/`perf:units` harnesses that tuned the replay machinery; the
 platform commands this ADR ships (`perf:web`/`perf:android`/`perf:ios`) are unchanged.
