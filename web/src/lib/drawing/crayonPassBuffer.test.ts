@@ -18,7 +18,7 @@ import {
   hasOpenLiveCrayonPass,
   flushCrayonBuffer,
 } from './crayonPassBuffer';
-import { AA_PAD } from './opGeometry';
+import { AA_PAD_PX } from './opGeometry';
 import { renderOp, type StrokeOp } from './strokeOps';
 
 // happy-dom's <canvas> has no 2D context; install a no-op recording stub so the
@@ -130,9 +130,9 @@ describe('live crayon paper-space seam', () => {
     setLiveCrayonBuffer(target, buffer);
     setCrayonPaperSpace(64);
 
-    // radius 5 + AA_PAD pads the bbox to [-pad, pad] around x=0, so the left
+    // radius 5 + AA_PAD_PX pads the bbox to [-pad, pad] around x=0, so the left
     // edge runs off the paper square and must be clamped to 0.
-    const pad = 5 + AA_PAD;
+    const pad = 5 + AA_PAD_PX;
     renderOp(target, crayonDot({ x: 0, y: 32, radius: 5 }));
 
     const raster = closeLiveCrayonPass();
@@ -169,11 +169,11 @@ describe('live crayon paper-space seam', () => {
     setLiveCrayonBuffer(target, buffer);
     setCrayonPaperSpace(64);
 
-    // radius 5 + AA_PAD pads the bbox to [57, 71] on both axes around (64,
+    // radius 5 + AA_PAD_PX pads the bbox to [57, 71] on both axes around (64,
     // 64) — the paper square's bottom-right corner — so the upper clamp
     // (x1 = min(w, ...), y1 = min(h, ...)) must cut it back to 64, the half
     // of unionCrayonBounds' clamp the earlier left-edge case never exercises.
-    const pad = 5 + AA_PAD;
+    const pad = 5 + AA_PAD_PX;
     renderOp(target, crayonDot({ x: 64, y: 64, radius: 5 }));
 
     const raster = closeLiveCrayonPass();
@@ -191,7 +191,7 @@ describe('live crayon paper-space seam', () => {
     setLiveCrayonBuffer(target, buffer);
     setCrayonPaperSpace(64);
 
-    // radius 5 + AA_PAD pads the bbox to [-107, -93] on x — entirely left of
+    // radius 5 + AA_PAD_PX pads the bbox to [-107, -93] on x — entirely left of
     // the paper square, so unionCrayonBounds' empty-rect guard must drop it
     // rather than growing bounds to a zero/negative-width rect.
     renderOp(target, crayonDot({ x: -100, y: 32, radius: 5 }));
@@ -205,7 +205,7 @@ describe('live crayon paper-space seam', () => {
     setLiveCrayonBuffer(target, buffer);
     setCrayonPaperSpace(256);
 
-    const pad = 5 + AA_PAD;
+    const pad = 5 + AA_PAD_PX;
     renderOp(target, crayonDot({ x: 20, y: 20, radius: 5 }));
     renderOp(target, crayonDot({ x: 200, y: 200, radius: 5 }));
 

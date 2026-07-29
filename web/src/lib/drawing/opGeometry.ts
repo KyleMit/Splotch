@@ -37,12 +37,12 @@ export function paintOpShape(
 // anti-aliased edges and keeps the crayon flush stamp inside the rect (the pass
 // buffer bounds its stamp with this same pad). Shared with undoHistory's
 // opPaddedBounds so the dirty-rect and undo-patch math stay single-sourced.
-export const AA_PAD = 2;
+export const AA_PAD_PX = 2;
 
 // An op's raw user-space geometric extent (no padding): a dot's point, a path's
 // min/max over the start point and every seg's control and end points.
 // `halfWidth` is the op's stroke half-width — the one per-kind number each
-// caller scales before adding AA_PAD.
+// caller scales before adding AA_PAD_PX.
 export function opGeometricExtent(op: DotOp | PathOp): {
   x0: number;
   y0: number;
@@ -77,5 +77,5 @@ export function opPaddedUserBounds(op: DotOp | PathOp): {
   pad: number;
 } {
   const { x0, y0, x1, y1, halfWidth } = opGeometricExtent(op);
-  return { x0, y0, x1, y1, pad: halfWidth + AA_PAD };
+  return { x0, y0, x1, y1, pad: halfWidth + AA_PAD_PX };
 }

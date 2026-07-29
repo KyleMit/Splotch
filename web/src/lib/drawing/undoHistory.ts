@@ -36,7 +36,7 @@
 // (ADR-0004).
 
 import { clearAllOf, renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
-import { AA_PAD, opGeometricExtent } from './opGeometry';
+import { AA_PAD_PX, opGeometricExtent } from './opGeometry';
 import { resetCrayonStateForClear, resetLiveCrayonForReplay } from './crayonPassBuffer';
 import { isMagicSheetUnready } from './magicBrush';
 import { getCrayonPasses } from './crayonBrush';
@@ -298,17 +298,17 @@ function opPaddedBounds(op: StrokeOp, crayonScale: number): Box | null {
   if (op.kind === 'clear' || op.kind === 'crayonFlush') return null;
   if (op.kind === 'crayonPassRaster') {
     return {
-      x0: op.x - AA_PAD,
-      y0: op.y - AA_PAD,
-      x1: op.x + op.canvas.width + AA_PAD,
-      y1: op.y + op.canvas.height + AA_PAD,
+      x0: op.x - AA_PAD_PX,
+      y0: op.y - AA_PAD_PX,
+      x1: op.x + op.canvas.width + AA_PAD_PX,
+      y1: op.y + op.canvas.height + AA_PAD_PX,
     };
   }
   // Magic and erase render at base width (renderOp routes them before the
   // crayon branch); only a crayon ink op picks up the pass scale.
   const scale = op.crayon && !op.erase && !op.magic ? crayonScale : 1;
   const { x0, y0, x1, y1, halfWidth } = opGeometricExtent(op);
-  const pad = halfWidth * scale + AA_PAD;
+  const pad = halfWidth * scale + AA_PAD_PX;
   return { x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad };
 }
 
