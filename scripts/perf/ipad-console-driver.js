@@ -264,29 +264,30 @@
   performance.clearMeasures(); // drop the probe's own commit/snapshot/undo entries
   performance.clearMarks();
 
-  // Every scenario must start from blank paper AND zero history, so each row's
-  // snapshot / undo-step counts come only from its own strokes — 22 strokes
-  // against the depth-20 cap means every row reports 20 snapshots and drains
-  // 20 undo steps.
-  // A bare clearCanvas() can't be the last reset step: a clear runs the full
-  // pushCommand path (it IS an undoable action, engine.ts clearCanvas), so it
-  // would leave one phantom snapshot that pads every count, dilutes the undo
-  // average with a trivial blank-paper restore, and inflates history MB.
-  // Instead drain the history first (undo restores the pre-command snapshot,
-  // so a full drain lands on the pre-history baseline — blank unless the
-  // operator drew past the undo cap before pasting); only if ink remains,
-  // clear and drain the clear's own entry too, then assert the count is 0.
+  // Blank paper is the only thing a scenario needs from the reset: leftover ink
+  // makes this scenario's patches denser, which inflates blob bytes and the
+  // encode cost measured from them.
+  //
+  // Snapshot depth needs no reset and must not be chased. STROKES exceeds
+  // MAX_UNDO_DEPTH (undoHistory.ts caps the stack by shifting the oldest out),
+  // so by drawEnd the stack holds only this scenario's most recent commits no
+  // matter what preceded them — including the clear's own entry, which is long
+  // gone by then.
+  //
+  // Draining *after* the clear is the trap: a clear is itself undoable
+  // (engine.ts clearCanvas runs the full pushCommand path), so undoing it
+  // restores the very ink it just removed. That left every scenario after the
+  // first drawing on inherited ink while reporting `0 leftover snapshot(s),
+  // canvasEmpty=false`. Drain first — a full drain lands on the pre-history
+  // baseline, which is as blank as undo can get it — then clear whatever the
+  // undo cap left permanently folded into the paper, and stop.
   const resetForScenario = async (label) => {
     await undoAll();
+    if (!E.isCanvasEmpty()) E.clearCanvas();
     if (!E.isCanvasEmpty()) {
-      E.clearCanvas();
-      await undoAll();
-    }
-    const leftover = E.getUndoDebug().snapshots;
-    if (leftover !== 0 || !E.isCanvasEmpty()) {
       console.warn(
-        `[${label}] reset incomplete: ${leftover} leftover snapshot(s), ` +
-          `canvasEmpty=${E.isCanvasEmpty()} — this row's counts include pre-existing state`
+        `[${label}] paper is not blank at scenario start — this row's patches, ` +
+          'blob bytes and encode cost include pre-existing ink'
       );
     }
   };
@@ -316,10 +317,24 @@
     // build that predates it. The +1 raster is the paper itself.
     const liveMB = dbg.rasterBytes != null ? dbg.rasterBytes / MIB : dbg.liveRasters * mbPerRaster;
     const historyMB = liveMB + mbPerRaster + dbg.blobBytes / MIB;
+    // A zero in a timing column means one of two opposite things: too fast to
+    // measure, or nothing measured at all. `commits` disambiguates — it is the
+    // sample count every timing column below is a max over, so commits=0 marks
+    // the whole row as missing data rather than free.
+    if (commit.count === 0 && (dbg.snapshots ?? 0) > 0) {
+      console.warn(
+        `[${label}] ${dbg.snapshots} snapshot(s) but no engine.commit measure landed in ` +
+          "the draw window — this row's timings are missing, not zero. " +
+          `rasterBytes=${dbg.rasterBytes} blobBytes=${dbg.blobBytes}; zero for both means ` +
+          'the snapshots carry no patches, so the fold never touched the paper — ' +
+          'commitStrokeGroup parks the fold while a paper restore is still pending.'
+      );
+    }
     return {
       key,
       scenario: label,
       snapshots: dbg.snapshots ?? 0,
+      commits: commit.count,
       'blob KB': Math.round((dbg.blobBytes ?? 0) / 1024),
       'snap copy max ms': snap.max,
       'fold max ms': fold.max,

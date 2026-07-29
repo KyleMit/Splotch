@@ -8,14 +8,17 @@
 
 ## TODO
 
-* [ ] **Fix the driver's `resetForScenario`.** It drains history, sees leftover ink, calls
-      `clearCanvas()`, then drains again — which undoes the clear and restores the ink. 22 strokes
-      against the depth-20 cap always leaves 2 strokes folded into the paper, so every scenario
-      after the first inherits ink and warns `reset incomplete`. Blocks a citable gates run.
-* [ ] **Explain the `multi-finger` zero row.** 20 snapshots and 20 undo steps, but no
-      `engine.commit` measures land in the draw window, so every timing column reads 0. Either the
-      multi-touch commit path skips the measure or the measures fall outside `[drawStart, drawEnd]`.
-      One of four gate scenarios currently reports nothing.
+* [x] **Fix the driver's `resetForScenario`.** It drained history, saw leftover ink, cleared, then
+      drained again — undoing its own clear. Now it drains, clears, and stops. The old code chased
+      zero history to keep counts honest, but that was unnecessary: `STROKES` exceeds
+      `MAX_UNDO_DEPTH`, so the stack shifts out everything older before `drawEnd` anyway. Verified
+      over three consecutive scenarios — no warnings, `snapshots=20` on every row.
+* [ ] **`multi-finger` zero row — still open, needs the device.** Not reproducible in Mac WebKit:
+      `multiStrokeSync` there produces a commit per gesture with real measures, all inside the draw
+      window. The driver now prints a `commits` column and warns when a row has snapshots but no
+      `engine.commit` samples, so the next device run says whether the zeros are missing data (and
+      dumps `rasterBytes`/`blobBytes`, where zero for both means patch-less snapshots — a fold
+      parked behind a pending paper restore).
 * [ ] **Clean on-device gates run** once the two above are fixed — four honest rows including
       `encode max ms`. Every issue comment below cites these numbers.
 * [ ] **Update the issues** (outward-facing, needs a go-ahead):
