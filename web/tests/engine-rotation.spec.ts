@@ -1,6 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
-import { count, drawStroke, state } from './engine-harness';
+import { count, drawStroke, expect, state, test } from './engine-harness';
 
 // ── device rotation / the paper view (ADR-0050) ─────────────────────────────
 // A resize with a changed Screen Orientation angle is a rotation. With ink on

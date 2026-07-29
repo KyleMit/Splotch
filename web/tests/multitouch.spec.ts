@@ -1,6 +1,4 @@
-import { expect, test } from '@playwright/test';
-
-import { alphaAt, count, state } from './engine-harness';
+import { alphaAt, count, expect, state, test } from './engine-harness';
 
 // Multi-touch drawing. The engine keys its drawing state by pointerId
 // (activePointers: Map<number, PointerState>), so several touch pointers must
@@ -41,12 +39,16 @@ const LINES = [
 ];
 
 test('five simultaneous touch pointers each paint an independent line', async ({ page }) => {
-  expect(await count(page)).toBe(0);
+  await expect.poll(() => count(page)).toBe(0);
 
   await page.evaluate(
     (strokes) => window.__engine.multiStrokeSync(strokes),
     LINES.map(({ stroke }) => stroke)
   );
+
+  // multiStrokeSync dispatches the pointer events synchronously, but the engine
+  // paints on its own frame — wait for ink to land before sampling pixels.
+  await expect.poll(() => count(page)).toBeGreaterThan(0);
 
   // Every line painted: its midpoint pixel is opaque.
   for (const { sample } of LINES) {
@@ -61,8 +63,7 @@ test('five simultaneous touch pointers each paint an independent line', async ({
   expect(await alphaAt(page, 150, 70)).toBe(0); // between lines 1 and 2
   expect(await alphaAt(page, 290, 290)).toBe(0); // untouched corner
 
-  expect(await count(page)).toBeGreaterThan(0);
-  expect((await state(page)).canvasEmpty).toBe(false);
+  await expect.poll(async () => (await state(page)).canvasEmpty).toBe(false);
 });
 
 test('a five-pointer gesture snapshots once and undoes as a single unit', async ({ page }) => {
@@ -70,14 +71,14 @@ test('a five-pointer gesture snapshots once and undoes as a single unit', async 
     (strokes) => window.__engine.multiStrokeSync(strokes),
     LINES.map(({ stroke }) => stroke)
   );
-  expect(await count(page)).toBeGreaterThan(0);
-  expect((await state(page)).canUndo).toBe(true);
+  await expect.poll(() => count(page)).toBeGreaterThan(0);
+  await expect.poll(async () => (await state(page)).canUndo).toBe(true);
 
   // One undo reverts all five fingers — the gesture pushed a single snapshot
   // (when the active-pointer count went 0 → 1), not one per pointerdown.
   await page.evaluate(() => window.__engine.undo());
 
-  expect(await count(page)).toBe(0);
+  await expect.poll(() => count(page)).toBe(0);
   const s = await state(page);
   expect(s.canvasEmpty).toBe(true);
   expect(s.canUndo).toBe(false);
@@ -116,6 +117,7 @@ test('a pinch/spread across five pointers does not zoom or scale the canvas', as
 
   // Content maps 1:1 to where the fingers actually went — a zoom would have
   // displaced the spread pair's strokes off their sampled coordinates.
+  await expect.poll(() => count(page)).toBeGreaterThan(0);
   for (const { sample } of LINES) {
     expect(
       await alphaAt(page, sample.x, sample.y),

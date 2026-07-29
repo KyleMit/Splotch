@@ -1,5 +1,3 @@
-import { expect, test } from '@playwright/test';
-
 import {
   EDGE_SWIPE_BAND_PX,
   EDGE_SWIPE_DECISION_PX,
@@ -7,7 +5,7 @@ import {
   POINTER_RESUME_GAP_MS,
   POINTER_RESUME_JUMP_RATIO,
 } from '$lib/drawing/strokeMath';
-import { state } from './engine-harness';
+import { expect, state, test } from './engine-harness';
 import { COLOR_CHANGE_DEBOUNCE_SETTLE_MS, touchEventPrevented } from './helpers';
 
 // The harness canvas is 300×300 at the viewport origin (renderScale 1).

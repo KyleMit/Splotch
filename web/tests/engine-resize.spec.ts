@@ -1,6 +1,4 @@
-import { expect, test } from '@playwright/test';
-
-import { count, drawStroke, state } from './engine-harness';
+import { count, drawStroke, expect, state, test } from './engine-harness';
 
 test('a dense zigzag survives a resize, repainted from the paper raster', async ({ page }) => {
   // A resize wipes the visible backing store; the repaint is one blit of the
