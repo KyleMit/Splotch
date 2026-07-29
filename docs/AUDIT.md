@@ -21,57 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Performance] `buildFields()` runs eagerly at module import — ~400k texel-loop iterations on the boot path
-
-**File(s):** `web/src/lib/drawing/crayonBrush.ts` (`buildFields`, lines 226–246; module-scope call,
-line 248) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-Line 248 executes `buildFields();` at module evaluation time. That builds three 256×256
-`Float32Array` fields with nested per-texel loops: 4 tooth octaves + 1 body octave through
-`addOctave` (each a full 65,536-texel pass with bilinear smoothstep interpolation, lines 177–202),
-two `normalizeInPlace` passes, and a 65,536-iteration dither fill — roughly 400k loop iterations of
-float math, synchronously, on the main thread.
-
-`crayonBrush.ts` is imported by `strokeOps.ts` (line 11) which is imported by `engine.ts` which is
-imported by `DrawingCanvas.svelte` — so this cost lands inside initial bundle evaluation of the
-drawing route, before first paint, for **every** visitor, including the many sessions that never
-touch the crayon. On the low-end devices this app targets (and that issue \#223 budgets for) that is
-plausibly 5–20 ms of added boot time for a feature that may never be used. The module already has
-the right tool imported: `scheduleIdle` (line 53) is used by `warmCrayonTiles` for exactly this
-reason ("Build a colour's wax tiles off the pointer hot path", lines 386–395) — but the fields
-underneath the tiles don't get the same treatment.
-
-#### Proposed solution
-
-Make field building lazy: the only consumers of `height`/`body`/`dither`/`tile` are `colorTile` and
-`waxAlpha` (itself only called from `colorTile`). Replace the eager call with a memoized accessor,
-e.g.
-
-```ts
-interface CrayonFields {
-  tile: number;
-  height: Float32Array;
-  body: Float32Array;
-  dither: Float32Array;
-}
-function crayonFields(): CrayonFields; // builds on first call, rebuilt by setCrayonOptions
-```
-
-`warmCrayonTiles` (already called on crayon select / color change from engine.ts:1405, 1431) then
-pays the build inside its idle callback, keeping the first crayon stroke fast. This also fixes a
-secondary wart: the four non-null assertions `height!`, `body!`, `dither!` in `waxAlpha` (lines
-317–319) and `body![i]` in `colorTile` (line 368) disappear because the accessor returns
-non-nullable fields — currently the fields are typed `Float32Array | null` (lines 222–224) even
-though the eager call makes null unreachable. Optionally schedule an idle prebuild at module load so
-the common case still front-loads work into idle time. Gotcha: `setCrayonOptions` must invalidate
-the memo (it currently calls `buildFields()` directly, line 253).
-
----
-
 ### [Architecture] The crayon pass-buffer subsystem has outgrown `strokeOps.ts` — extract it to its own module
 
 **File(s):** `web/src/lib/drawing/strokeOps.ts` (lines 149–465: `CrayonPassBuffer` through
