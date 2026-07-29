@@ -31,7 +31,10 @@ export function scanCanvasIsEmpty(source: HTMLCanvasElement, renderScale: number
       scratchCanvas = document.createElement('canvas');
       scratchCtx = scratchCanvas.getContext('2d', { willReadFrequently: true });
     }
-    if (!scratchCtx) return true;
+    if (!scratchCtx) {
+      scratchCanvas = null;
+      return false;
+    }
     // Scan relative to CSS pixels so the readback loop stays the same size
     // regardless of renderScale.
     const w = Math.max(1, Math.ceil((source.width * EMPTY_SCAN_SCALE) / renderScale));
