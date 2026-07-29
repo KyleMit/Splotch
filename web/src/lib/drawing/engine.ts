@@ -316,9 +316,8 @@ let rectScaleY = 1;
 // Snapshot the canvas's client rect and the backing-pixel scale factors. Called
 // only off the hot path (resize/scroll/orientation), so the per-pointermove
 // pointerToScreen() can stay reflow-free.
-function refreshCanvasRect() {
+function refreshCanvasRect(rect: DOMRect = canvas.getBoundingClientRect()) {
   if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
   canvasRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
   rectScaleX = rect.width ? canvas.width / rect.width : 1;
   rectScaleY = rect.height ? canvas.height / rect.height : 1;
@@ -427,9 +426,8 @@ function applyPaperView(lockPaper: boolean) {
   }
 }
 
-function resizeCanvas() {
+function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
   if (PERF_MARKS) performance.mark('engine.resize:start');
-  const rect = canvas.getBoundingClientRect();
   const lockPaper = adoptPaperUnlessLocked(rect);
   resizedAngle = currentScreenAngle();
 
@@ -466,7 +464,7 @@ function resizeCanvas() {
   rasterizeSheet();
   repaintAll(ctx);
 
-  refreshCanvasRect();
+  refreshCanvasRect(rect);
   notifyViewChange();
 
   if (PERF_MARKS) performance.measure('engine.resize', 'engine.resize:start');
@@ -483,11 +481,11 @@ export const RESIZE_SETTLE_MS = 150;
 let resizeSettleTimer: ReturnType<typeof setTimeout> | null = null;
 
 function handleResize() {
-  refreshCanvasRect();
   if (__IS_CAPACITOR__) {
     resizeCanvas();
     return;
   }
+  refreshCanvasRect();
   if (resizeSettleTimer !== null) clearTimeout(resizeSettleTimer);
   resizeSettleTimer = setTimeout(() => {
     resizeSettleTimer = null;
@@ -509,7 +507,7 @@ function resyncOnReentry() {
     canvas.width !== Math.round(rect.width * renderScale) ||
     canvas.height !== Math.round(rect.height * renderScale) ||
     resizedAngle !== currentScreenAngle();
-  if (stale) resizeCanvas();
+  if (stale) resizeCanvas(rect);
   else refreshCanvasRect();
 }
 
@@ -1366,8 +1364,8 @@ function registerEngineListeners(canvas: HTMLCanvasElement): void {
   listen(window, 'resize', handleResize);
   // Scroll/orientation move the canvas in the viewport without resizing it, so
   // refresh the cached rect (left/top) without the full backing-store rebuild.
-  listen(window, 'scroll', refreshCanvasRect, true);
-  listen(window, 'orientationchange', refreshCanvasRect);
+  listen(window, 'scroll', () => refreshCanvasRect(), true);
+  listen(window, 'orientationchange', () => refreshCanvasRect());
   // The paper view keys off the Screen Orientation angle (resizeCanvas). The
   // resize event usually lands after the angle updates, but ordering isn't
   // guaranteed everywhere — also funnel the orientation change itself through
