@@ -90,13 +90,11 @@ which is what Approach C records against.)
 that iPad page. (There's a **Develop → ⟨device⟩ → Connect via Network** toggle if you'd rather not
 stay tethered after the first connection.)
 
-### A4. Drive the scenarios — **⟨Mac⟩**
+### A4. Gates run — **⟨Mac⟩**
 
-**Do this pass with no Timeline recording running.** The driver is the workload, not a profiler: it
-reads the `engine.*` measures the `PERF_MARKS` build already emits. A Timeline recording is a second
-observer whose overhead lands *inside* those numbers, and `commit max ms` is judged against an 8.3
-ms budget — so take the gate numbers from a clean run and use the Timeline (A5) only to explain a
-hot row.
+The driver has **two modes, and they are separate runs.** This is the first: full op volume, **no
+Timeline recording**, and its table is the ADR-0066 verdict. A4 tells you *how much*; A5 tells you
+*where* and *whether a frame dropped*. Never try to get both from one run — the reasons are in A5.
 
 In Web Inspector → **Console** tab, paste the **entire contents** of
 [`scripts/perf/ipad-console-driver.js`](../../../scripts/perf/ipad-console-driver.js) and press
@@ -112,36 +110,69 @@ Enter. It runs on the iPad page and:
   each scenario resets to blank paper **and** zero history first so its counts are its own,
 * prints a `console.table` with, per scenario: `snapshots` / `blob KB`, **`snap copy max ms`** (the
   patch capture alone, `engine.snapshot`), **`fold max ms`** (rendering the committed ops,
-  `engine.fold`), **`commit max ms`** (the stroke-end hitch), **`undo avg/p95/max ms`** (live blit
-  vs deep blob decode), and the real `history MB` — then the ADR-0066 gates verbatim.
+  `engine.fold`), **`encode max ms`** (demoting cold snapshots to blobs, `engine.encode`),
+  **`commit max ms`** (the stroke-end hitch, which the previous three attribute),
+  **`undo
+  avg/p95/max ms`** (live blit vs deep blob decode), and the real `history MB` — then the
+  ADR-0066 gates verbatim.
 
-Keep the iPad screen awake and the tab foregrounded while it runs (a minute or two).
+Narrow it to some scenarios with `window.__perfScenarios = 'crayon-scribbles'` (comma-separated for
+several) set in its own console statement first; unset runs all four. Keep the iPad screen awake and
+the tab foregrounded while it runs (a minute or two).
 
 Read the table against the gates in [Reading the results](#reading-the-results). If every row
 passes, you're done — Approach A's whole point is these numbers, and A5–A6 exist only to explain a
 row that doesn't pass.
 
-### A5. Record a Timeline over the hot row — **⟨Mac⟩**
+### A5. Timeline run — **⟨Mac⟩**
 
 Only worth doing once A4 has named a row to chase. The Timeline sees what the engine marks
 structurally cannot: whether a ProMotion frame was actually **dropped** at finger-lift, and the
 **paint/composite** cost of the canvas raster — the canvas is GPU-accelerated, so issuing draw calls
 is cheap on the main thread and the marks *understate* the real cost.
 
-Scope the run to that one row first, because Web Inspector stores marks in a **ring buffer** and a
-recording across all four scenarios drops the early ones off the front of the export. In the
-**Console**, as its own statement before pasting the driver again:
+It is a **separate run from A4**, in the driver's other mode, for a blunt reason: a recorded gates
+run melts Web Inspector. Measured from one 117-second recording of a full run —
+
+| What Web Inspector had to ingest | Count  | Share                          |
+| -------------------------------- | ------ | ------------------------------ |
+| `engine.draw` markers            | 52,850 | 99.7% of all markers           |
+| Marks you were recording *for*   | 135    | 0.3%                           |
+| `event-dispatched` records       | 52,943 | 13.9 MB                        |
+| Screenshot records               | 68     | **34.8 MB of a 115 MB export** |
+
+Web Inspector streams every one of those over USB, models them, and renders them into a UI that is
+itself a WebKit app on your Mac. That is what pins it at 100% CPU — not your hardware.
+
+**1. Turn off the instruments you aren't reading.** In the **Timelines** tab, uncheck at minimum
+**Screenshots** (a third of the payload, and nothing here reads it) and **Network Requests**
+(irrelevant to a canvas workload). Keep **JavaScript & Events** — the marks live there — and
+**Layout & Rendering** for the paint/composite records.
+
+**2. Switch the driver to timeline mode.** In the **Console**, as its own statement before pasting:
 
 ```js
+window.__perfTimeline = true;
 window.__perfScenarios = 'crayon-scribbles';
 ```
 
-Valid keys are the `key` column of the A4 table — `long-squiggles`, `multi-finger`,
-`crayon-squiggles`, `crayon-scribbles` — the same keys `npm run perf:undo --scenarios=` takes, so a
-row that's hot here names the desktop scenario that reproduces it. An unknown key fails immediately
-with the list of valid ones; unset runs all four.
+Timeline mode runs the same code path at roughly a twentieth of the volume — 6 strokes of ~200 ops
+instead of 22 of ~1200. Draw marks and event records both scale with op count, so cutting ops cuts
+the noise at its source. Six strokes still pushes snapshot depth past `MAX_HOT_RASTERS`, so cold
+snapshots exist and encode. Override with `window.__perfStrokes` / `window.__perfOps` in either
+mode.
 
-Then: **Timelines** tab → record button → paste the driver → let it finish → stop the recording.
+Scenario keys are the `key` column of the A4 table — `long-squiggles`, `multi-finger`,
+`crayon-squiggles`, `crayon-scribbles` — the same keys `npm run perf:undo --scenarios=` takes, so a
+row that's hot here names the desktop scenario that reproduces it. Timeline mode **requires exactly
+one**: you record because A4 flagged a specific row, and Web Inspector's marker ring buffer drops
+the front of a longer run anyway. It refuses with the key list if you forget.
+
+> **Timeline mode measures shape, not magnitude.** Shorter strokes make smaller patches and cheaper
+> encodes, so its milliseconds are *not* gate numbers. Read it for where the time goes and whether a
+> frame dropped; quote A4 for how much.
+
+**3. Record.** **Timelines** tab → record button → paste the driver → let it finish → stop.
 
 ### A6. Export and analyze — **⟨Mac⟩**
 
@@ -167,8 +198,8 @@ npm run perf:ios:analyze -- perf-profiles/web-inspector-timeline/<export>.json
 >   unmatched), but since those three stay single-slice, the analyzer only uses the pair to flag an
 >   orphaned start — their reported cost still comes from the enclosing record.
 > * `markers` is a **ring buffer** — a long session keeps only the most recent marks (the analyzer
->   warns when the first mark is far past the recording start). This is why A5 records one scenario
->   at a time via `window.__perfScenarios`.
+>   warns when the first mark is far past the recording start). This is one of the reasons A5 is a
+>   separate, smaller run than A4 — see its instrument and timeline-mode steps.
 > * `performance.now()` is clamped to **~1 ms**, so sub-ms values are at the clock floor — read them
 >   as "effectively free," not precise.
 >

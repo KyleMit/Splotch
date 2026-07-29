@@ -11,17 +11,25 @@
 // real hardware.
 //
 // WebKit clamps performance.now() to ~1 ms, so timings are coarse — but that is
-// plenty to tell a ~10 ms blit from a hundreds-of-ms replay hang. For the
-// frame/GPU picture, record a Web Inspector *Timeline* across the run and watch
-// for a dropped frame at finger-lift; export it and feed it to
-// `npm run perf:ios:analyze -- <export>.json` (the Web Inspector export is a
-// different, mark-only/ring-buffered format — NOT the Chrome-trace perf:analyze).
-// Peak memory wants the Xcode memory gauge on the same session.
+// plenty to tell a ~10 ms blit from a hundreds-of-ms replay hang. Peak memory
+// wants the Xcode memory gauge on the same session.
 //
-// Run every scenario by pasting this file alone. To run a subset — which a
-// Timeline recording wants, since its mark ring buffer can't hold the whole
-// run — set the keys first, in their own console statement:
-//   window.__perfScenarios = 'crayon-scribbles'
+// TWO RUN MODES — see the block by the TIMELINE constant for why they can't be
+// the same run.
+//
+//   GATES (default). Paste this file alone. Full op volume, all four
+//   scenarios, no Timeline recording. Its table is the ADR-0066 verdict.
+//   Narrow it to some scenarios with:
+//     window.__perfScenarios = 'crayon-scribbles'
+//
+//   TIMELINE. For recording a Web Inspector Timeline over one row the gates
+//   run already flagged. Set both, then paste:
+//     window.__perfTimeline = true; window.__perfScenarios = 'crayon-scribbles'
+//   Export the recording and feed it to
+//   `npm run perf:ios:analyze -- <export>.json` (the Web Inspector export is a
+//   different, mark-only/ring-buffered format — NOT the Chrome-trace
+//   perf:analyze). Override the volume with window.__perfStrokes /
+//   window.__perfOps in either mode.
 (async () => {
   const E = window.__engine;
   const S = window.__engineState;
@@ -46,7 +54,37 @@
   const MIB = 1024 * 1024;
   const mbPerRaster = (side * side * 4) / MIB;
 
-  const longSquiggle = (row, pts = HZ * 10) => {
+  // Two run modes, because the gates run and a Web Inspector Timeline recording
+  // want opposite things from the same scenarios.
+  //
+  // GATES (default) — real op volume, so the absolute milliseconds are honest.
+  // This is the mode whose numbers answer ADR-0066. Never record a Timeline
+  // across it: Web Inspector has to stream, model, and render every pointer
+  // event and every engine.draw mark over USB, and a full run is ~53k markers
+  // (99.7% of them engine.draw) plus ~53k event records. That pins the Mac at
+  // 100% CPU and buries the ~135 marks the recording was for.
+  //
+  // TIMELINE (window.__perfTimeline = true) — same code path, ~20× less of it,
+  // so a recording stays small enough for Web Inspector to keep up. Draw marks
+  // and event records both scale with op count, so cutting ops cuts the noise
+  // at its source without changing what the engine does.
+  //
+  // TIMELINE MODE MEASURES SHAPE, NOT MAGNITUDE. Shorter strokes make smaller
+  // patches and cheaper encodes, so its milliseconds are not gate numbers —
+  // read it for *where* the time goes and whether a frame dropped, and quote
+  // the gates run for *how much*.
+  const TIMELINE = window.__perfTimeline === true;
+  // 22 strokes is two past MAX_UNDO_DEPTH (20, matching
+  // scripts/perf/undo-scenarios.mjs), so the gates run measures history with
+  // the stack full and exercises the oldest-entry fold + shift overflow path.
+  // Timeline mode only needs depth past MAX_HOT_RASTERS (2) for cold snapshots
+  // to exist and encode at all.
+  const STROKES = Number(window.__perfStrokes) || (TIMELINE ? 6 : 22);
+  const OPS = Number(window.__perfOps) || (TIMELINE ? 200 : HZ * 10);
+  const MULTI_FINGERS = 5;
+  const MULTI_PER_FINGER = Math.round(OPS * 0.4);
+
+  const longSquiggle = (row, pts = OPS) => {
     const x0 = M,
       span = W - 2 * M,
       cy = M + ((H - 2 * M) * (row + 0.5)) / 6,
@@ -60,7 +98,7 @@
   };
   // Back-and-forth triangle-wave scribble — with the crayon on, every reversal
   // splits a deposition pass and stamps a crayonFlush (the toddler fill case).
-  const scribble = (row, pts = HZ * 10) => {
+  const scribble = (row, pts = OPS) => {
     const sweeps = 8,
       x0 = M,
       span = W - 2 * M,
@@ -74,7 +112,7 @@
     }
     return a;
   };
-  const multiGesture = (gi, perFinger = HZ * 4, fingers = 5) => {
+  const multiGesture = (gi, perFinger = MULTI_PER_FINGER, fingers = MULTI_FINGERS) => {
     const out = [];
     for (let f = 0; f < fingers; f++) {
       const cy = M + ((H - 2 * M) * (f + 0.5)) / fingers,
@@ -132,23 +170,18 @@
     return n;
   };
 
-  // 22 strokes — two past the depth-20 cap (MAX_UNDO_DEPTH, matching
-  // scripts/perf/undo-scenarios.mjs) — so history MB is measured with the
-  // stack full and the oldest-entry fold + shift overflow path runs on the
-  // real device.
-  const STROKES = 22;
   // Keys mirror the `--scenarios=` keys of `npm run perf:undo`, so a row found
   // hot here names the desktop scenario that reproduces it;
   // scripts/tests/ipad-console-driver.test.mjs fails if the two drift apart.
   const SCENARIOS = [
     {
       key: 'long-squiggles',
-      label: `${STROKES} long squiggles (~1200 ops each)`,
+      label: `${STROKES} long squiggles (~${OPS} ops each)`,
       strokes: Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6)),
     },
     {
       key: 'multi-finger',
-      label: `${STROKES} five-finger drags (~2400 ops each)`,
+      label: `${STROKES} five-finger drags (~${MULTI_FINGERS * MULTI_PER_FINGER} ops each)`,
       strokes: Array.from({ length: STROKES }, (_, i) => multiGesture(i)),
     },
     {
@@ -184,15 +217,27 @@
     );
     return;
   }
+  // A recording is always chasing one row that the gates run already flagged,
+  // and Web Inspector's marker ring buffer drops the front of a longer one, so
+  // timeline mode makes the choice explicit rather than guessing at a default.
+  if (TIMELINE && requestedKeys.length !== 1) {
+    console.error(
+      'Timeline mode records exactly one scenario. Set both, then paste again:\n' +
+        "  window.__perfTimeline = true; window.__perfScenarios = 'crayon-scribbles'\n" +
+        `Known keys: ${SCENARIOS.map((sc) => sc.key).join(', ')}`
+    );
+    return;
+  }
   const selected = requestedKeys.length
     ? SCENARIOS.filter((sc) => requestedKeys.includes(sc.key))
     : SCENARIOS;
-  if (selected.length !== SCENARIOS.length) {
-    console.log(
-      `Running ${selected.length} of ${SCENARIOS.length} scenarios: ` +
-        selected.map((sc) => sc.key).join(', ')
-    );
-  }
+  console.log(
+    (TIMELINE
+      ? 'TIMELINE mode — shape, not magnitude. Quote the gates run for numbers. '
+      : 'GATES mode — full op volume; do NOT record a Timeline across this. ') +
+      `${STROKES} strokes × ~${OPS} ops · ` +
+      `${selected.length}/${SCENARIOS.length} scenarios: ${selected.map((sc) => sc.key).join(', ')}`
+  );
 
   // Preflight the PERF_MARKS half of the build recipe. The harness checks above
   // prove PUBLIC_ENABLE_DEV_HARNESS is on, but a build made without
@@ -302,6 +347,18 @@
   // (and for re-reading a run), which are otherwise trapped in this IIFE.
   window.__perfRows = rows;
   console.log('Exact values: copy(JSON.stringify(window.__perfRows, null, 2))');
+  if (TIMELINE) {
+    console.log(
+      'TIMELINE mode: stop the recording now and export it (Timelines tab → ' +
+        'export icon), then: npm run perf:ios:analyze -- <export>.json — NOT ' +
+        'perf:analyze, which reads a Chrome trace. These milliseconds are the ' +
+        'shape of the run at reduced volume, not gate numbers; re-run without ' +
+        'window.__perfTimeline for those. What the Timeline adds that the marks ' +
+        'cannot: whether a ProMotion frame actually dropped at finger-lift, and ' +
+        'the paint/composite cost of the canvas raster.'
+    );
+    return;
+  }
   console.log(
     'Gates (ADR-0066): undo p95 < 50 ms · commit hitch (engine.commit max) ≈ one ' +
       '120 Hz frame ≈ 8.3 ms · history ≲ 150 MiB · no dropped frames while blobs ' +
@@ -311,9 +368,9 @@
       'encodes in parallel as specified, a full main-thread block in WebKit, ' +
       'which encodes inside the call). A hot commit attributes to one of those; ' +
       'if it attributes to none, the remainder is unmarked work in ' +
-      'commitStrokeGroup. Watch a Web Inspector Timeline for a ' +
-      'dropped frame at finger-lift and during the blob encodes after it, and ' +
-      'the Xcode memory gauge for the snapshot tier. To record a Timeline over ' +
-      "one hot row, rerun it alone: window.__perfScenarios = '<key>'"
+      'commitStrokeGroup. The Xcode memory gauge covers the snapshot tier. ' +
+      'To see whether a frame actually dropped at finger-lift, record a ' +
+      'Timeline over the hot row in timeline mode — never across this run:\n' +
+      "  window.__perfTimeline = true; window.__perfScenarios = '<key>'"
   );
 })();
