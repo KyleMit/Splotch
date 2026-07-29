@@ -108,18 +108,18 @@ export type StrokeStartData = Pick<PointerEvent, 'pointerId' | 'clientX' | 'clie
 };
 
 interface InitOptions {
-  onDrawSound?: ((data: DrawSoundData) => void) | null;
-  onDrawStop?: (() => void) | null;
-  onUndoStateChange?: ((canUndo: boolean) => void) | null;
-  onCanvasEmptyChange?: ((empty: boolean) => void) | null;
+  onDrawSound?: (data: DrawSoundData) => void;
+  onDrawStop?: () => void;
+  onUndoStateChange?: (canUndo: boolean) => void;
+  onCanvasEmptyChange?: (empty: boolean) => void;
   // Fires where the engine begins painting a stroke, the down-less pen streams
   // it adopts mid-move included (see isOrphanPenContact) — those deliver no
   // pointerdown to the owning component at all. A buffered edge-swipe candidate
   // reports nothing, at start or at commitEdgeSwipe: its contact point is
   // already stale by the time the swipe is judged a stroke.
-  onStrokeStart?: ((stroke: StrokeStartData) => void) | null;
-  onStrokeEnd?: (() => void) | null;
-  onViewChange?: ((view: EngineViewState) => void) | null;
+  onStrokeStart?: (stroke: StrokeStartData) => void;
+  onStrokeEnd?: () => void;
+  onViewChange?: (view: EngineViewState) => void;
   initialColor?: string;
 }
 
@@ -197,13 +197,7 @@ function recordCrayonFlush() {
 // pixels regardless of the counter's position.
 let crayonSeedCounter = 1;
 
-let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
-let onDrawStopCallback: (() => void) | null = null;
-let onUndoStateChange: ((canUndo: boolean) => void) | null = null;
-let onCanvasEmptyChange: ((empty: boolean) => void) | null = null;
-let onStrokeStartCallback: ((stroke: StrokeStartData) => void) | null = null;
-let onStrokeEnd: (() => void) | null = null;
-let onViewChange: ((view: EngineViewState) => void) | null = null;
+let callbacks: Omit<InitOptions, 'initialColor'> = {};
 
 // Strokes rasterize at the device pixel ratio so they stay crisp on mobile
 // screens, capped at 2× — DPR-3 panels would cost 9× the pixels for detail a
@@ -217,7 +211,7 @@ let canUndo = false;
 
 function setCanUndo(value: boolean) {
   canUndo = value;
-  if (onUndoStateChange) onUndoStateChange(value);
+  callbacks.onUndoStateChange?.(value);
 }
 
 let canvasEmpty = true;
@@ -225,7 +219,7 @@ let canvasEmpty = true;
 function setCanvasEmptyState(empty: boolean) {
   if (canvasEmpty === empty) return;
   canvasEmpty = empty;
-  if (onCanvasEmptyChange) onCanvasEmptyChange(empty);
+  callbacks.onCanvasEmptyChange?.(empty);
   // A blank canvas frees the locked paper to match the live viewport again
   // (clear, undo-to-blank, erase-to-blank): re-adopt right away instead of
   // leaving the child a letterboxed blank page until the next rotation.
@@ -294,7 +288,7 @@ export function getViewState(): EngineViewState {
 }
 
 function notifyViewChange() {
-  if (onViewChange) onViewChange(getViewState());
+  callbacks.onViewChange?.(getViewState());
 }
 
 // --- Pointer → paper coordinate mapping ------------------------------------
@@ -569,7 +563,7 @@ function renderStrokeStart(ps: PointerState) {
   ctx.beginPath();
   ctx.moveTo(ps.x, ps.y);
 
-  if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0, isStrokeStart: true });
+  callbacks.onDrawSound?.({ speed: 0, isStrokeStart: true });
 }
 
 // One quadratic segment per input point: the path runs midpoint-to-midpoint
@@ -657,7 +651,7 @@ function commitStrokeGroup() {
       for (const r of rasterRects) blitPaperRect(ctx, r);
     }
     setCanUndo(true);
-    if (onStrokeEnd) onStrokeEnd();
+    callbacks.onStrokeEnd?.();
   } finally {
     if (PERF_MARKS) {
       performance.mark('engine.commit:end');
@@ -671,7 +665,7 @@ function commitStrokeGroup() {
 function finishStrokeGroup() {
   groupHasDrawn = false;
   commitStrokeGroup();
-  if (onDrawStopCallback) onDrawStopCallback();
+  callbacks.onDrawStop?.();
 }
 
 // --- Pointer tracking -------------------------------------------------------
@@ -812,10 +806,8 @@ function startDrawing(e: PointerEvent) {
   // A candidate paints nothing yet — renderStrokeStart runs later, on commit.
   if (!edgeSwipeGuard) {
     renderStrokeStart(pointerState);
-    if (onStrokeStartCallback) {
-      const { pointerId, clientX, clientY } = e;
-      onStrokeStartCallback({ pointerId, clientX, clientY, magic: magicActive });
-    }
+    const { pointerId, clientX, clientY } = e;
+    callbacks.onStrokeStart?.({ pointerId, clientX, clientY, magic: magicActive });
   }
 
   // Capture every pointer — pen included — so a stroke keeps flowing to the
@@ -952,7 +944,7 @@ function draw(e: PointerEvent) {
 
     pointerState.lastTime = now;
 
-    if (onDrawSoundCallback) onDrawSoundCallback({ speed, isStrokeStart: false });
+    callbacks.onDrawSound?.({ speed, isStrokeStart: false });
   } finally {
     if (PERF_MARKS) {
       performance.mark('engine.draw:end');
@@ -1206,13 +1198,8 @@ let engineLive = false;
 let listenerRemovers: (() => void)[] = [];
 
 function attachCallbacks(options: InitOptions) {
-  onDrawSoundCallback = options.onDrawSound || null;
-  onDrawStopCallback = options.onDrawStop || null;
-  onUndoStateChange = options.onUndoStateChange || null;
-  onCanvasEmptyChange = options.onCanvasEmptyChange || null;
-  onStrokeStartCallback = options.onStrokeStart || null;
-  onStrokeEnd = options.onStrokeEnd || null;
-  onViewChange = options.onViewChange || null;
+  const { initialColor: _initialColor, ...rest } = options;
+  callbacks = rest;
 }
 
 function teardownEngine() {
@@ -1266,8 +1253,8 @@ export function engineOwnsCanvas(canvasElement: HTMLCanvasElement): boolean {
 export function adoptDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
   if (!engineOwnsCanvas(canvasElement)) return initDrawingCanvas(canvasElement, options);
   attachCallbacks(options);
-  if (onUndoStateChange) onUndoStateChange(canUndo);
-  if (onCanvasEmptyChange) onCanvasEmptyChange(canvasEmpty);
+  callbacks.onUndoStateChange?.(canUndo);
+  callbacks.onCanvasEmptyChange?.(canvasEmpty);
   notifyViewChange();
   return { teardown: teardownEngine };
 }

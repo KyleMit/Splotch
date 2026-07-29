@@ -19,54 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Readability] Consolidate the six parallel callback variables (and their inconsistent naming) into one callbacks record
-
-**File(s):** `web/src/lib/drawing/engine.ts` (lines 186–191, `attachCallbacks` lines 1163–1170,
-`InitOptions` lines 102–110) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Six module-scope `let`s mirror `InitOptions` field-for-field:
-
-```ts
-let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
-let onDrawStopCallback: (() => void) | null = null;
-let onUndoStateChange: ((canUndo: boolean) => void) | null = null;
-...
-```
-
-with `attachCallbacks` copying each across. The naming is inconsistent for no reason
-(`onDrawSoundCallback`/`onDrawStopCallback` carry a `Callback` suffix; the other four don't), every
-new callback means touching three places (interface, `let`, `attachCallbacks`), and `InitOptions`
-doubles each field's optionality (`onDrawSound?: ((data: DrawSoundData) => void) | null` — no caller
-passes an explicit `null`; `attachCallbacks({})` relies on omission, so the `| null` unions are dead
-surface).
-
-#### Proposed solution
-
-```ts
-type EngineCallbacks = Required<
-  { [K in keyof InitOptions as K extends `on${string}` ? K : never]: InitOptions[K] }
->;
-```
-
-is more cleverness than needed — a plain record suffices:
-
-```ts
-let callbacks: Omit<InitOptions, 'initialColor'> = {};
-function attachCallbacks(options: InitOptions) {
-  const { initialColor: _, ...rest } = options;
-  callbacks = rest;
-}
-```
-
-Call sites become `callbacks.onDrawSound?.(...)` — also retiring the repeated `if (onX) onX(...)`
-idiom (11 call sites). Drop the `| null` from `InitOptions` at the same time (`?` alone is the
-contract every caller actually uses). This is mechanical, but it removes the three-place ritual and
-the naming drift in one pass.
-
 ### [Readability] Drop the redundant mount-time `setStrokeWidth` push in DrawingCanvas
 
 **File(s):** `web/src/lib/components/DrawingCanvas.svelte` (line 177, lines 230–232) @ 9ae62ff1
