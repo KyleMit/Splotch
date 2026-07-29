@@ -21,43 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Testing] The pure geometry in `strokeOps.ts` has no direct unit coverage
-
-**File(s):** `web/src/lib/drawing/strokeOps.ts` (`opGeometricExtent`, lines 477–498;
-`unionCrayonBounds`, lines 343–379; `closeLiveCrayonPass` crop math, lines 290–307);
-`web/src/lib/drawing/strokeOps.test.ts` @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`strokeOps.test.ts` covers exactly one seam (the live paper-space accumulation, 2 tests). Meanwhile
-the file exports/contains pure, DOM-light geometry with subtle invariants that only get indirect
-exercise through `undoHistory`'s tests and E2E:
-
-* `opGeometricExtent` — exported, feeds `undoHistory`'s undo-patch bounds (undoHistory.ts:317). Its
-  "control points bound the hull" property (mins/maxes include `s.cx/s.cy`) is precisely the kind of
-  thing a future "optimize the bbox" edit breaks silently — an undershot extent corrupts undo
-  patches.
-* `unionCrayonBounds` — clamping to the canvas, the empty-rect early-out (line 370),
-  transformed-corner unioning, and pad handling; a wrong union double-stamps or under-clears passes.
-* The `closeLiveCrayonPass` crop rect (bounds → `drawImage` 9-arg source rect).
-
-The sibling modules set the bar: `crayonBrush.test.ts` and `magicBrush.test.ts` both unit-test their
-pure halves (`seedPhase`, `shadeShift`, `edgeMargins`) explicitly for this reason.
-
-#### Proposed solution
-
-Add focused cases to `strokeOps.test.ts` (or the extracted module's test, per the P2 architecture
-finding): `opGeometricExtent` for a dot (point + radius halfWidth), a multi-seg path whose control
-point sticks outside the endpoint hull, and `lineWidth/2` halfWidth; `unionCrayonBounds`-level
-behavior via the existing seam (paint an op partially off-canvas, assert the closed raster's
-`x/y/canvas` dims are clamped). `edgeMargins`' test style in `magicBrush.test.ts` is the template.
-Testing rules prefer the lowest layer that catches the regression — these are unit-layer facts
-currently guarded only by E2E pixels.
-
----
-
 ### [Maintainability] Duplicated per-context pattern-cache + invalidation idiom across `crayonBrush` and `magicBrush`
 
 **File(s):** `web/src/lib/drawing/crayonBrush.ts` (lines 400, 427–437, 254);

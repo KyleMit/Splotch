@@ -163,6 +163,28 @@ describe('live crayon paper-space seam', () => {
     ]);
   });
 
+  it('clamps the closed raster to the paper square at the right/bottom edge too', () => {
+    const target = ctx2d();
+    const buffer = ctx2d();
+    setLiveCrayonBuffer(target, buffer);
+    setCrayonPaperSpace(64);
+
+    // radius 5 + AA_PAD pads the bbox to [57, 71] on both axes around (64,
+    // 64) — the paper square's bottom-right corner — so the upper clamp
+    // (x1 = min(w, ...), y1 = min(h, ...)) must cut it back to 64, the half
+    // of unionCrayonBounds' clamp the earlier left-edge case never exercises.
+    const pad = 5 + AA_PAD;
+    renderOp(target, crayonDot({ x: 64, y: 64, radius: 5 }));
+
+    const raster = closeLiveCrayonPass();
+
+    expect(raster).not.toBeNull();
+    expect(raster!.x).toBe(64 - pad);
+    expect(raster!.y).toBe(64 - pad);
+    expect(raster!.canvas.width).toBe(pad);
+    expect(raster!.canvas.height).toBe(pad);
+  });
+
   it('drops an op painted entirely off the registered paper square, leaving no raster to close', () => {
     const target = ctx2d();
     const buffer = ctx2d();
@@ -202,11 +224,21 @@ describe('live crayon paper-space seam', () => {
     // the target ctx reports — unlike the live paper-space buffer, which is
     // always painted through an identity transform.
     const target = ctx2d();
-    const matrix = new DOMMatrix([2, 0, 0, 2, 10, 20]);
+    // A pure scale+translate would let two opposite corners stand in for all
+    // four (its x'/y' extremes fall on the same corner pair), so this test
+    // couldn't tell a four-corner union from a two-corner shortcut. This
+    // matrix (x' = x + y + 100, y' = x - y + 100) has mismatched signs on its
+    // x-row and y-row coefficients, so the corner that maximizes x' differs
+    // from the corner that maximizes y' — the y-extent can only be found by
+    // examining all four mapped corners.
+    const matrix = new DOMMatrix([1, 1, 1, -1, 100, 100]);
     (target as unknown as { getTransform: () => DOMMatrix }).getTransform = () => matrix;
 
     // Dot at (10, 10), radius 5 -> padded user-space bbox [3, 3]..[17, 17].
-    // Transformed corners (x' = 2x + 10, y' = 2y + 20) union to [16, 26]..[44, 54].
+    // Mapped corners: (3,3)->(106,100), (17,3)->(120,114), (3,17)->(120,86),
+    // (17,17)->(134,100). Only (17,3) and (3,17) reach y'=114 and y'=86 — the
+    // two "opposite" corners (3,3)/(17,17) both map to y'=100 and would miss
+    // the true [86, 114] y-extent entirely.
     renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
     flushCrayonBuffer(target);
 
@@ -217,7 +249,7 @@ describe('live crayon paper-space seam', () => {
     for (const call of calls) {
       const [source, sx, sy, sw, sh, dx, dy, dw, dh] = call;
       expect(source).toBeInstanceOf(HTMLCanvasElement);
-      expect([sx, sy, sw, sh, dx, dy, dw, dh]).toEqual([16, 26, 28, 28, 16, 26, 28, 28]);
+      expect([sx, sy, sw, sh, dx, dy, dw, dh]).toEqual([106, 86, 28, 28, 106, 86, 28, 28]);
     }
   });
 });
