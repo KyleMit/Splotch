@@ -785,13 +785,15 @@ export function repaintAll(target: CanvasRenderingContext2D) {
 // encoded tier's total size — together the history memory the perf harness
 // reports; `pendingCommands` counts commands the unready magic sheet is
 // holding out of the paper.
-export function getHistoryDebug(): {
+export interface HistoryDebug {
   snapshots: number;
   liveRasters: number;
   rasterBytes: number;
   blobBytes: number;
   pendingCommands: number;
-} {
+}
+
+export function getHistoryDebug(): HistoryDebug {
   return {
     snapshots: snapshotStack.length,
     liveRasters: snapshotStack.reduce((n, s) => n + (s.patches.some((p) => p.canvas) ? 1 : 0), 0),

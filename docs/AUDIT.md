@@ -19,41 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Types] `getUndoDebug` re-declares `getHistoryDebug`'s return shape instead of referencing it
-
-**File(s):** `web/src/lib/drawing/engine.ts` (`getUndoDebug`, lines 1136–1144) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-export function getUndoDebug(): {
-  snapshots: number;
-  liveRasters: number;
-  rasterBytes: number;
-  blobBytes: number;
-  pendingCommands: number;
-} {
-  return getHistoryDebug();
-}
-```
-
-The five-field shape is copied verbatim from `undoHistory.ts`'s `getHistoryDebug` (lines 788–794),
-which also spells it inline. A field added to the source annotation propagates silently
-(excess-property widening means the facade's annotation just narrows what callers see), and a field
-added only to the facade is a compile error at the wrong file. The debug shape currently exists in
-three places (the third, `web/tests/global.d.ts` lines 21–25, is the deliberate tests exception —
-it's even intentionally narrower).
-
-#### Proposed solution
-
-Export a named type from the owner and reference it: in `undoHistory.ts`,
-`export interface HistoryDebug { snapshots: number; liveRasters: number; rasterBytes: number; blobBytes: number; pendingCommands: number }`,
-annotate `getHistoryDebug(): HistoryDebug`, and in `engine.ts`,
-`export function getUndoDebug(): HistoryDebug`. (`ReturnType<typeof getHistoryDebug>` works too but
-reads worse in the facade's public signature.)
-
 ### [DX] Engine dev harness: `__engineState` is created after `wireEngine` and never re-seeded, so callback-during-init or state-after-remount silently misreports
 
 **File(s):** `web/src/routes/dev/engine/+page.svelte` (`onMount`, lines 233–240; `remount`, lines

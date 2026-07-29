@@ -77,6 +77,7 @@ import {
   ensurePaperCovers,
   finalizeDeferredCommand,
   getHistoryDebug,
+  type HistoryDebug,
   hasUnfoldedCommands,
   pendingCommandCount,
   popSnapshot,
@@ -1169,13 +1170,7 @@ export function isCanvasEmpty(): boolean {
 
 // Test/profiling seam: how the undo history is currently stored (see
 // undoHistory.getHistoryDebug).
-export function getUndoDebug(): {
-  snapshots: number;
-  liveRasters: number;
-  rasterBytes: number;
-  blobBytes: number;
-  pendingCommands: number;
-} {
+export function getUndoDebug(): HistoryDebug {
   return getHistoryDebug();
 }
 
