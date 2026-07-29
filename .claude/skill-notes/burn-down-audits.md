@@ -692,6 +692,95 @@ permission scope (blocked by the session's own auto-mode classifier), so it was 
 operator rather than worked around. Added to the skill: check the `.err` files for a shared
 non-model error string before assuming a HALT is the ordinary case.
 
+### The first clean run — and the defect class it exposed instead (2026-07-29)
+
+43 findings on `claude/burn-down-audit-skill-ecb5np` → PR #627: **39 fixed, 4 dropped, 0 deferred**,
+entry accounting exact, CI green throughout, zero supervisor interventions. The first run in this
+skill's history where nothing was lost, mislabelled, or silently discarded. That matters mostly
+because it means the failures worth recording here are no longer about the machinery.
+
+Two long-standing prescriptions paid off measurably and should not be softened:
+
+* **Verifying tiering before launch rather than after.** The previous run discovered post-hoc that
+  all 642 findings had routed to the expensive model. Running `findingPriority` over the backlog
+  took one command and returned `636 findings, 0 unparsable`, and the `sonnet` tier — unproven at
+  the last wrap-up — then took review rounds like any other and produced no deferrals. The tier is
+  now validated on a real backlog; the *check* is what stays mandatory, because its failure is
+  silent by construction.
+* **Re-deriving the gate list from `test.yml`.** The Quality job had grown 8 → 11 steps since the
+  list was last written down. `lint:tokens` justified itself within the canary, catching a raw-hex
+  baseline still pointing at `DrawingCanvas.svelte` after the CSS moved to a new
+  `PointerHalos.svelte` — a correct fix that would otherwise have reddened CI, recovered as a fix
+  round instead.
+
+**The new defect class: a fix that moves the goalpost rather than clearing it.** Three of 43
+findings raised an eslint `max-lines` cap to accommodate their own additions (`engine.ts` 900 → 901
+→ 913, `undoHistory.test.ts` 500 → 529). Every one passed all four gates, disclosed the bump in its
+commit message, and was approved on review. Nothing in the loop is wrong-footed by this — the gates
+are deterministic, so editing the gate is simply the cheapest path through a binding one, and the
+module *had* genuinely grown. It only reads as a defect in aggregate: a ratchet that yields whenever
+it binds has stopped being a ratchet, and at ~7% of findings that is ~40 bumps over a 600-finding
+backlog.
+
+What makes this worth recording rather than just fixing is that **the loop corrected it without
+being told to**. A fourth attempt raised `undoHistory.test.ts` to 580 and the reviewer rejected it —
+not on the number, but because the adjacent comment read "Cap sits at today's size — shrink, never
+grow", so the commit falsified a comment it was sitting next to. The implementer took the harder
+option the review offered: extracted the shared canvas-stub harness into `undoHistoryHarness.ts`,
+split the suite, and dropped the file to 441 lines — **under the 500 default**, so the grandfathered
+override was deleted outright rather than raised. That is the repair to prefer, and it was found by
+the adversarial pass rather than by a gate. Added to the canary-audit checklist in `SKILL.md` as a
+fourth smuggling shape, framed as a rate to measure rather than an instance to catch.
+
+**The reviewer's value continues to concentrate where no gate can reach.** The catches worth naming:
+a default parameter evaluating `canvas.getBoundingClientRect()` *before* its own
+`if (!canvas)
+return` guard, converting a no-op into a TypeError; a paired-marks change that would
+have moved the two hottest ops onto WebKit's ~1 ms-clamped mark deltas and destroyed ADR-0066's
+commit-hitch attribution; an LRU eviction that freed tile canvases while `createPattern`'s bitmap
+copies stayed in the pattern cache, so the memory the finding targeted was still retained; and a
+four-corner-union test written with a pure scale+translate matrix, under which two opposite corners
+produce the identical rect — a test that passed without exercising the invariant its own name
+claimed.
+
+The single best evidence for a documented design decision: on the `SnapshotPatch` finding the
+reviewer rejected the fix because **the verifier's acceptance criteria were wrong**, asserting no
+E2E spec covered the surface when `engine-snapshot-tier.spec.ts` did. The implementer ran it, then
+mutation-tested each rewritten path to show the coverage was non-vacuous. Handing the reviewer the
+*original finding* rather than only the brief is what made that reachable — the verifier is the one
+role with no independent check, and this is the first run where that safeguard visibly fired.
+
+Smaller frictions, all fixed in `SKILL.md` this pass:
+
+* **The documented monitor command cannot be armed at launch.** `tail -f` on a not-yet-created
+  `run.log` exits 1 immediately, so the first monitor died before the run wrote a line — and a dead
+  monitor is exactly the silence the skill elsewhere warns reads as health. Needs an
+  `until [ -f … ]` guard and `-n +1` on the first arm.
+* **"Read the flaky count" is wrong advice for this repo.** Bare `npm run test:e2e` carries no
+  `--retries`, so Playwright never emits a `flaky` line; a load-dependent flake surfaces as a plain
+  `1 failed`, indistinguishable from a broken base. The baseline run hit exactly this on
+  `pwa-registration.spec.ts:60` (green 3/3 in isolation). The procedure has to be *classify by
+  re-running the failing spec alone*, not *read a count that will not be there*. Also worth pinning:
+  `(npm run test:e2e; echo "EXIT=$?")` — piping the suite hands you the wrong exit code, which is
+  how the initial "exit 0" reading happened.
+* **The `Audit:` trailer often disagrees with the `iter` line's title**, because the verifier
+  rescopes and retitles as part of writing the brief. Reads exactly like a commit consuming the
+  wrong entry, and cost a diagnostic detour to disprove. The `removed=` count is the real invariant.
+* **`awk '/starting — target/{f=1} f'` does not scope to "the current run"** in a session that ran a
+  canary first — it latches onto the canary's start line and silently returns both runs. Right for a
+  wrap-up total, wrong for "what has this run done".
+* **`capture`'s `skipped N already posted` is a stronger check than the skill treated it as.** `N`
+  equalling the fix count is the only end-to-end proof every fix reached the PR; the store going
+  empty proves only that what was *offered* got posted.
+* **The duration table's `> 25 min` investigate threshold fires on healthy `[Architecture]`
+  findings.** Extraction/module-move findings landed at 17, 20, 29 and 29.5 min, all fine. Category
+  skews elapsed as hard as priority does.
+
+Also trimmed: the "Monitor hygiene, both directions" paragraph under the *resume* verb duplicated
+the fuller treatment under **Surviving the context window**; collapsed to a pointer. Both failure
+directions did occur this run (a monitor armed dead, and two monitors double-reporting), so the rule
+is right — it just does not need saying twice at per-invocation context cost.
+
 ## Rejected, and why
 
 Proposals that were considered on their merits and turned down. Each is here so it does not get
@@ -883,3 +972,5 @@ the stale timing table for free.
 | 2026-07-25 | f389dd39 | Delete backlog entries by title — the canary destroyed 3 findings in 5    |
 | 2026-07-26 | 049d5e35 | Stop the verifier naming `npm test` — it discarded a finished, green fix  |
 | 2026-07-26 | —        | Verifier must name which kind of "stale" on INVALID; HALT env-cause note  |
+| 2026-07-28 | —        | Body-line `**Priority:**` fallback — tiering was silently off for 642     |
+| 2026-07-29 | —        | First clean run (39/4/0, PR #627); goalpost-moving fixes named as a shape |

@@ -314,6 +314,17 @@ this is only about SHAs.)
      is free to drift.
    * A narrowed type whose invalid-input tests were made to compile with `as` casts; confirm the
      runtime guard those tests exercise still exists.
+   * **A fix that moved a goalpost instead of clearing it.** The gates are deterministic, so the
+     cheapest way past a binding one is to edit the gate — raise an eslint `max-lines` cap, widen a
+     ratchet baseline, add an allowlist entry. Each such edit is individually defensible (the module
+     genuinely grew) and lands green with the rationale written into the commit, so nothing flags
+     it. Over a backlog it is corrosive: a cap that yields whenever it binds has stopped
+     constraining anything. `git log <base>..HEAD -- eslint.config.js` and the equivalent for each
+     ratchet's baseline file is a two-second read; do it on the canary and again at wrap-up, and
+     judge the **rate**, not the instance. On 2026-07-29, 3 of 43 findings raised a `max-lines` cap.
+     The right repair is usually the one the reviewer eventually forced on the fourth: extract the
+     shared helper the file was duplicating, which drops it back under the *default* and lets the
+     grandfathered override be deleted outright rather than raised.
 5. **Count the backlog entries each commit deleted — it must be exactly one.** The canary's own diff
    hides this: `':(exclude)docs/AUDIT.md'` is what makes the code readable, and it is also what
    hides a finding being destroyed. Check it separately:
@@ -329,6 +340,18 @@ this is only about SHAs.)
    amends the excision in); judge per finding, not per commit. The driver now deletes by title so
    this should be structurally impossible — check anyway, because the first time it happened it hit
    three of five findings and nothing in the log or the run's counts said so.
+
+   **A commit's `Audit:` trailer routinely does not match the title the `iter` line announced, and
+   that is not a symptom of anything.** The verifier rescopes and retitles a finding as part of
+   producing the brief, and the trailer carries *its* title — so an iteration announcing a
+   two-module dedup can commit as `Audit: [<one module>] …`. It reads exactly like the commit
+   consumed the wrong entry. Do not go diagnosing it from the titles:
+   `git show <sha> -- docs/AUDIT.md
+   | grep '^-### '` prints the entry actually deleted, and the
+   `removed` count above is the real invariant. What the mismatch *can* legitimately signal is a
+   **narrowed scope** — a finding naming two modules, fixed in one, entry consumed — so read the
+   fix's own summary for whether the narrowing was deliberate (the implementer says so, e.g. "left
+   `X` untouched per the brief's scoping call") before deciding anything was lost.
 6. **Confirm the resume handoff actually fired.** Extra rounds happen on their own — a typical run
    logs `round 1: changes required` (a reviewer rejection) or `round 1: gates red — …` (a red gate,
    which is now also a recoverable round) every few findings — so read one instead of staging one.
@@ -470,6 +493,15 @@ count dominates priority, so read a long elapsed as "probably in a fix round", n
 finding". A P1 that reaches `round 3: changes required` is the one shape that reliably runs past 25
 minutes and can still end in a rollback.
 
+**Category skews it as hard as priority does, and the table hides that.** An `[Architecture]`
+finding that moves a subsystem into a new module runs 15–30 min at *any* priority: the fix is a
+large mechanical diff, it usually drags stale cross-references (comments, ADRs, the architecture
+skill's source map) that the reviewer then catches one at a time, and it is the shape most likely to
+take two or three rounds. The 2026-07-29 run had extraction findings land healthily at 17, 20, 29
+and 29.5 min, every one of which would have tripped the `> 25 min` investigate threshold above.
+Before reading a duration as slow, check the category alongside the `[P<n>]`: an extraction or
+module-move at 25 min is ordinary, whereas a `[Readability]` rename at 25 min genuinely is not.
+
 The headline: **fix rounds dominate, and priority sets how many you get.** A finding that clears
 review first time lands in a third the wall-clock of one that doesn't, at the same priority. The
 26-minute P2 above was entirely healthy — it would have tripped the `> 25 min` investigate
@@ -550,12 +582,9 @@ the driver. Then `rm .audit-work/STOP`, relaunch with the exact command from the
 and re-arm the event-driven monitor. The launcher self-recovers even in a brand-new session that
 never saw this run — see **Resuming a crashed run** below.
 
-**Monitor hygiene, both directions.** A monitor tailing `run.log` does *not* reliably survive the
-run it was watching, so after every relaunch confirm the new one is actually armed rather than
-assuming it — a dead monitor is indistinguishable from a quiet run, and that silence reads as "all
-is well" for hours. The mirror failure is just as easy: a monitor from a *previous* run can still be
-alive and will double-report every event, so stop the old one before arming the new one instead of
-stacking them.
+**Re-arm the monitor as part of the relaunch** — stopping the previous one first, and confirming the
+new one caught. Both failure directions and the arming details are under **Surviving the context
+window**; the tell that you stacked two instead of replacing one is every event arriving twice.
 
 ### "wrap up" — finalize now and mark the PR ready
 
@@ -659,6 +688,17 @@ state in the conversation:
   it cannot reach, and every commit it makes after that is unprotected. `no impl session` means a
   fix round lost the resume handoff and re-derived the change from review text — one such line is
   tolerable, a pattern of them means the session minting is broken again.
+
+  **Arming it in the same breath as the launch does not work, and fails silently-ish.** A fresh
+  container has no `run.log` until the driver's first write, and `tail -f` on a missing file exits
+  `1` immediately — so the monitor is dead before the run produces a line, and every "healthy
+  silence" that follows is nothing of the sort. Wait the file out first:
+  ```bash
+  until [ -f .audit-work/logs/run.log ]; do sleep 5; done
+  tail -f -n +1 .audit-work/logs/run.log | grep -E --line-buffered "…"
+  ```
+  Use `-n +1` on that first arm so the lines written between launch and arm are not skipped; `-n 0`
+  is right for every later re-arm, which is closing a gap you cover separately (below).
 
   Whatever you arm, **confirm it is actually armed after every relaunch**, and stop the previous one
   first. This is not hypothetical bookkeeping: a `Monitor` clamps to a 30-minute timeout no matter
@@ -829,13 +869,28 @@ Notes from real runs — set these before a large run rather than discovering th
   times. `--retries=1` actively hides this, because the gate goes green and the run logs nothing.
 
   So treat the flake baseline as a preflight artifact, not a mid-run surprise. Run the full E2E
-  suite once at the base commit and **read the flaky count, not just the pass/fail** — Playwright
-  reports `N flaky` separately, and a suite can be "green" with dozens. Fix what you find, or at
-  minimum record the flaky spec names in the durable checkpoint so the next implementer that trips
-  one recognises it instead of re-deriving it. If a flake surfaces mid-run and is cheap to fix,
-  **pause** (`touch .audit-work/STOP`), fix it, relaunch — the arithmetic favours the interrupt
-  almost immediately, and this is the rare case where the fix is *not* attributable to any finding,
-  so it belongs in its own commit.
+  suite once at the base commit — but **do not go looking for a `N flaky` line, because the bare
+  suite does not produce one.** `npm run test:e2e` carries no `--retries` (only the driver's
+  `E2E_CMD` adds it), and without retries Playwright has nothing to call flaky: a load-dependent
+  flake is reported as a plain `1 failed`, identical to a genuine breakage. The 2026-07-29 baseline
+  did exactly this — one `pwa-registration.spec.ts` failure that looked like a red base commit.
+
+  **So classify every failure before believing it**: re-run the failing spec alone a few times.
+  Green in isolation and red under the full suite means load-dependent flake — the specs run at a
+  parallelism the driver's targeted `E2E_CMD` never reproduces, so it will cost you almost nothing
+  per finding and will instead surface as intermittently red CI. Red in isolation too means the base
+  is genuinely broken and nothing should launch until it is fixed. Wrap the run so the exit code
+  survives, too: `(npm run test:e2e; echo "EXIT=$?") > log` records the suite's status, while piping
+  into anything else hands you the *last* command's code and a red suite reads as green.
+
+  Fix what you find, or at minimum record the spec name **and which of the two classes it is** in
+  the durable checkpoint, so the next implementer that trips it recognises it instead of re-deriving
+  it, and so a red CI naming that spec is triaged in seconds. Resist "fixing" a flake you have not
+  diagnosed: raising a timeout is the wrong repair when the cause is a dropped input event rather
+  than a slow one, and a confidently wrong test change is worse than a documented flake. If a flake
+  surfaces mid-run and is cheap to fix, **pause** (`touch .audit-work/STOP`), fix it, relaunch — the
+  arithmetic favours the interrupt almost immediately, and this is the rare case where the fix is
+  *not* attributable to any finding, so it belongs in its own commit.
 
   When the flake is a readiness race in a **test harness**, prefer fixing the seam over adding a
   wait: a harness that signals readiness with a boolean separate from the API the specs then call
@@ -867,6 +922,15 @@ Notes from real runs — set these before a large run rather than discovering th
   window you are trying to conserve. The per-iteration JSON envelopes collide the same way — see the
   blockquote under **Per-commit PR comments**.
 
+  **Anchor on the *timestamped* start line, not the bare `starting — target` pattern** — and be
+  deliberate about which run you mean. A normal session runs a canary and *then* the full run, so
+  `awk '/starting — target/{f=1} f'` latches onto the **canary's** start and hands you both runs
+  concatenated. That is the right scope for a wrap-up total (sum every `finished:` line) and the
+  wrong one for "what has the current run done", where it silently doubles the picture. Pin the
+  timestamp you actually want (`awk '/09:41:44\] starting/{f=1} f'`), or take the last one with
+  `awk '/starting — target/{n=NR} …'`. Same trap in reverse at closeout: a session with a canary has
+  **two** `finished:` lines and the log row covers both.
+
 ## Closing out a run
 
 * Verified fixes land one commit each on the branch (`Audit: <title>` trailer), pushed as they land,
@@ -891,6 +955,15 @@ Notes from real runs — set these before a large run rather than discovering th
   exactly when the drain succeeded.) If `COMMENT_STORE` was pointed at a committed path, delete that
   file in the same commit that finishes draining it: a leftover `docs/AUDIT-PENDING-COMMENTS.jsonl`
   reads as work still owed.
+
+  **Read that `skipped N` as an assertion, not a formality: `N` must equal the run's fix count.** It
+  is the only end-to-end check that every fix reached the PR — the store going empty proves only
+  that you posted what was *offered*, and a comment record lost with a reclaimed container is
+  invisible from the store's point of view. `capture` rebuilds from the pushed commits instead, so
+  agreement between the two is real evidence. A `skipped N` **below** the fix count means capture
+  just re-armed the difference: post those before finishing. On 2026-07-29,
+  `skipped 39 already
+  posted` against 39 fixed closed the run out in one command.
 * Confirm CI is green on the final push before marking the PR ready. It is the only full-suite gate
   in this configuration, so "the run finished" and "the branch is sound" are genuinely different
   claims here.
