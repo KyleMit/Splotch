@@ -8,6 +8,8 @@ import { playPolaroidAnimation } from './polaroidAnimation';
 
 const ALBUM_NAME = 'Splotch';
 
+let activeScreenshotSave: Promise<void> | null = null;
+
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -75,11 +77,18 @@ export async function saveImageBlob(
   }
 }
 
-export async function saveScreenshot() {
+async function saveScreenshotImage() {
   const blob = await exportCanvasBlob(getActiveOverlayImage());
   if (!blob) return;
   // Feedback first: the polaroid must not wait behind the folder write — or the
   // permission re-confirm dialog — that saveImageBlob may perform on the web.
   playPolaroidAnimation(URL.createObjectURL(blob));
   await saveImageBlob(blob, undefined, { allowPrompt: true });
+}
+
+export function saveScreenshot(): Promise<void> {
+  activeScreenshotSave ??= saveScreenshotImage().finally(() => {
+    activeScreenshotSave = null;
+  });
+  return activeScreenshotSave;
 }

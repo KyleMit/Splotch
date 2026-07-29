@@ -87,6 +87,36 @@ test('the screenshot button is gated on the canvas being non-empty', async ({ pa
   await expect(shot).toBeDisabled();
 });
 
+test('a burst of screenshot taps shares one save before allowing the next', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await draw(page, [
+    { x: 140, y: 140 },
+    { x: 240, y: 200 },
+  ]);
+
+  const shot = page.locator('#screenshotButton');
+  const downloads: string[] = [];
+  page.on('download', (download) => downloads.push(download.suggestedFilename()));
+
+  await shot.evaluate((button) => {
+    for (let pointerId = 1; pointerId <= 3; pointerId++) {
+      button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId }));
+      button.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId }));
+    }
+  });
+
+  // This is a negative assertion: let every tap's asynchronous save path begin.
+  await page.waitForTimeout(500);
+  expect(downloads).toHaveLength(1);
+  await expect(page.locator('.polaroid-overlay')).toHaveCount(1);
+
+  const nextDownload = page.waitForEvent('download');
+  await shot.click();
+  await nextDownload;
+  await expect.poll(() => downloads.length).toBe(2);
+});
+
 // ── tool/stroke state + persistence ─────────────────────────────────────────
 
 test('pen and eraser keep independent stroke sizes that persist across reload', async ({

@@ -21,50 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Correctness] saveScreenshot has no in-flight guard — a mashed camera button runs parallel full exports and stacked polaroids
-
-**File(s):** `web/src/lib/drawing/screenshot.ts` (`saveScreenshot`, lines 94–101) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-export async function saveScreenshot() {
-  const blob = await exportCanvasBlob(getActiveOverlayImage());
-  if (!blob) return;
-  playPolaroidAnimation(URL.createObjectURL(blob));
-  await saveImageBlob(blob, undefined, { allowPrompt: true });
-}
-```
-
-Neither this function nor its caller (`ActionsPanel.handleScreenshotClick`, lines 202–210) latches
-while a save is in flight. This is a toddler app — button-mashing is the *expected* input. Each tap
-runs a full export (`snapshotStrokes` repaints every op at paper resolution, then `composeExportPng`
-allocates a ≥2× canvas and PNG-encodes it), spawns an overlapping polaroid overlay, and — with
-`allowPrompt: true` — can queue a folder-permission re-confirm dialog per tap when the grant has
-lapsed. Five rapid taps on a big iPad canvas means five full-resolution repaints + five PNG encodes
-back-to-back plus five duplicate files, all for one drawing.
-
-#### Proposed solution
-
-A module-scope in-flight latch in `saveScreenshot`:
-
-```ts
-let saveInFlight = false;
-export async function saveScreenshot() {
-  if (saveInFlight) return;
-  saveInFlight = true;
-  try { ...existing body... } finally { saveInFlight = false; }
-}
-```
-
-Deliberate choice to make: whether a tap during the polaroid animation (after the write finished)
-should re-save. If each completed save should stay one-tap-one-photo, the latch above is exactly
-right; if repeat saves should be rate-limited to the polaroid duration, hold the latch until the
-animation teardown. Either way, note the mutable module `let` is a transient latch, not shared state
-(per the module-scope-`let` convention, it needs no factory — but a one-line comment helps).
-
 ### [Types] rotationDelta casts unvalidated arithmetic to ViewRotation, letting a bad angle fall through computePaperView's exhaustive switch
 
 **File(s):** `web/src/lib/drawing/paperView.ts` (`rotationDelta`, lines 47–49; `computePaperView`,
