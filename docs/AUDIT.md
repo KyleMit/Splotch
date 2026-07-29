@@ -19,35 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Types] `popSnapshot`'s deep path uses `as` upcasts and an anonymous result shape
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`popSnapshot`, lines 653, 677, 683) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-if (p.canvas) return { source: p.canvas as CanvasImageSource, rect: p.rect, bitmap: null };
-...
-return { source: bitmap as CanvasImageSource, rect: p.rect, bitmap };
-```
-
-Both casts are safe upcasts (`HTMLCanvasElement` and `ImageBitmap` are already `CanvasImageSource`),
-used only to force the two return branches to unify — but the repo convention reserves `as` for
-validated boundaries, and these are avoidable with an annotation. Separately, the function's
-resolved shape `{ wasEmpty: boolean; rects: PatchRect[] }` (line 653) is anonymous even though
-`engine.undo` destructures it across an await (engine.ts line 1082); a named type would make the
-seam greppable.
-
-#### Proposed solution
-
-Annotate the map callback's return type (or extract
-`async function decodePatchSource(p: SnapshotPatch): Promise<{ source: CanvasImageSource; rect: PatchRect; bitmap: ImageBitmap | null } | null>`),
-letting inference widen without casts. Name the result:
-`export interface RestoredSnapshot { wasEmpty: boolean; rects: PatchRect[] }` and type
-`popSnapshot(): Promise<RestoredSnapshot> | null`.
-
 ### [Performance] `foldableCount` scans every op for magic before checking the cheap sheet gate
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`foldableCount`, lines 462–469;

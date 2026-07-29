@@ -114,6 +114,18 @@ interface Snapshot {
   // sheet unready) — replayed on top of the raster to reproduce the state.
   pending: StrokeGroupCommand[];
 }
+
+export interface RestoredSnapshot {
+  wasEmpty: boolean;
+  rects: PaperRect[];
+}
+
+interface RestoredPatch {
+  source: CanvasImageSource;
+  rect: PaperRect;
+  bitmap: ImageBitmap | null;
+}
+
 const snapshotStack: Snapshot[] = [];
 let pendingCommands: StrokeGroupCommand[] = [];
 
@@ -538,7 +550,7 @@ function reinflateHotSnapshots() {
 // touched the paper), so an eligible caller can repaint just those patches
 // instead of the whole canvas — see engine.undo. Null when nothing is
 // undoable.
-export function popSnapshot(): Promise<{ wasEmpty: boolean; rects: PaperRect[] }> | null {
+export function popSnapshot(): Promise<RestoredSnapshot> | null {
   const snap = snapshotStack.pop();
   if (!snap) return null;
   pendingCommands = [...snap.pending];
@@ -555,12 +567,12 @@ export function popSnapshot(): Promise<{ wasEmpty: boolean; rects: PaperRect[] }
   // Decode every demoted patch, then restore the whole entry in one pass (the
   // rects are disjoint, so within-entry order is immaterial).
   return Promise.all(
-    snap.patches.map(async (p) => {
+    snap.patches.map(async (p): Promise<RestoredPatch> => {
       if (p.store.tier === 'hot') {
-        return { source: p.store.canvas as CanvasImageSource, rect: p.rect, bitmap: null };
+        return { source: p.store.canvas, rect: p.rect, bitmap: null };
       }
       const bitmap = await createImageBitmap(p.store.blob);
-      return { source: bitmap as CanvasImageSource, rect: p.rect, bitmap };
+      return { source: bitmap, rect: p.rect, bitmap };
     })
   ).then((restores) => {
     for (const r of restores) {
