@@ -22,8 +22,9 @@ import { applyFarmPage, openBrushMenu, openDrawer, pickBrush } from './flows-har
 // budget fixed nothing at one worker, where there is no contention to blame,
 // and it forced test.slow() everywhere — which turned a stuck reveal into a 90s
 // job, past the suite's ~70s parallel floor, so one bad test became the whole
-// run's critical path. A stuck reveal is not time-starved, so the fix is to stop
-// churning sooner (issue #650), not to widen the window.
+// run's critical path. This is the outer backstop only; what a stuck reveal
+// costs is bounded by MAGIC_REVEAL_MAX_ATTEMPTS instead, so widening this window
+// no longer widens that failure.
 const MAGIC_REVEAL_TIMEOUT = 15_000;
 
 // How long a *correct* stroke may legitimately read unchanged before the fold-in
@@ -39,6 +40,43 @@ const MAGIC_REVEAL_MIN_COLORS = 4;
 // 2065 top); a wrong-mode pen pass leaves none of it, so this only has to clear
 // the anti-aliasing noise floor.
 const BAND_MIN_REVEALED_PX = 500;
+
+// Attempts, not wall clock, is the right bound on a redraw loop. A wrong-mode
+// stroke is already committed, so a loop that keeps redrawing either recovers on
+// the next attempt — once the $effect has landed the mode is correct for good —
+// or it is stuck and no further attempt can change that. Wall clock cannot tell
+// those apart, so `toPass({ timeout })` alone spends the entire budget on the
+// stuck case and fails anyway, and at 4 workers a job that long becomes the
+// suite's makespan (ADR-0078).
+//
+// Measured over 328 samples across 1/2/4/8 workers (issue #650): every success
+// landed by attempt 2 (317 on the first, 10 on the second), while the one
+// non-converging case ran 4 attempts and burned the full budget. Three leaves a
+// spare attempt above that tail, so a valid-but-slow reveal keeps its second
+// chance and the stuck case stops paying for it.
+const MAGIC_REVEAL_MAX_ATTEMPTS = 3;
+
+// Retry a draw-and-check that a wrong brush mode can defeat, bounded by BOTH the
+// attempt cap and MAGIC_REVEAL_TIMEOUT — whichever comes first. The timeout
+// stays as the outer backstop for a worker starved enough that a single attempt
+// runs long; the cap is what stops a non-converging loop. `what` names the pass
+// in the failure message.
+async function redrawUntilPasses(what: string, attempt: () => Promise<void>) {
+  const deadline = Date.now() + MAGIC_REVEAL_TIMEOUT;
+  for (let tries = 1; ; tries++) {
+    try {
+      await attempt();
+      return;
+    } catch (error) {
+      if (tries < MAGIC_REVEAL_MAX_ATTEMPTS && Date.now() < deadline) continue;
+      throw new Error(
+        `${what} never landed in ${tries} attempt(s) — the engine stayed in the previous brush ` +
+          `mode, which no further redraw recovers (see MAGIC_REVEAL_MAX_ATTEMPTS).`,
+        { cause: error }
+      );
+    }
+  }
+}
 
 // Draw a magic-brush stroke and confirm its reveal actually landed (more than a
 // flat pen colour), retrying the whole stroke on a miss. The brush→engine
@@ -59,7 +97,7 @@ const BAND_MIN_REVEALED_PX = 500;
 // outer retry redraw. Reading the colour count once instead would undo those
 // valid-but-slow strokes and churn draw→undo→draw to the timeout.
 async function drawMagicReveal(page: Page, points: { x: number; y: number }[]) {
-  await expect(async () => {
+  await redrawUntilPasses('magic reveal', async () => {
     await draw(page, points);
     try {
       await expect
@@ -68,9 +106,9 @@ async function drawMagicReveal(page: Page, points: { x: number; y: number }[]) {
     } catch {
       await page.locator('#undoButton').click();
       await expect.poll(() => distinctOpaqueColors(page)).toBe(0);
-      throw new Error('magic reveal came up flat (engine still in pen mode) — retrying');
+      throw new Error('magic reveal came up flat (engine still in pen mode)');
     }
-  }).toPass({ timeout: MAGIC_REVEAL_TIMEOUT });
+  });
 }
 
 /** Perform the drag-to-clear gesture: pull the clear button past its accept
@@ -402,7 +440,7 @@ test('the magic brush paints the letterbox margin by extending the edge colour',
   // a flat pen pass, and no amount of polling recovers a stroke that already
   // painted in the wrong mode. Accumulating strokes is harmless here — nothing
   // downstream depends on the canvas holding exactly one.
-  await expect(async () => {
+  await redrawUntilPasses('left-band reveal', async () => {
     // Hug the far-left edge, well inside the letterbox band, sweeping top to bottom.
     await draw(page, [
       { x: 3, y: 40 },
@@ -418,7 +456,7 @@ test('the magic brush paints the letterbox margin by extending the edge colour',
         timeout: REVEAL_ATTEMPT_SETTLE_MS,
       })
       .toBeGreaterThan(BAND_MIN_REVEALED_PX);
-  }).toPass({ timeout: MAGIC_REVEAL_TIMEOUT });
+  });
 });
 
 // The case the user hit: after a rotation-with-ink the paper LOCKS (ADR-0050) and is
@@ -452,7 +490,7 @@ test('the magic brush paints the rotation-lock letterbox margin', async ({ page 
   // a stroke that commits before the engine leaves pen mode can only be fixed by
   // drawing again. This margin is reachable by a pen too (see the note above), so
   // the colour count is doing the discriminating.
-  await expect(async () => {
+  await redrawUntilPasses('top-band reveal', async () => {
     // Sweep along the very top of the canvas — inside the rotation-lock top margin.
     await draw(page, [
       { x: 40, y: 6 },
@@ -468,13 +506,13 @@ test('the magic brush paints the rotation-lock letterbox margin', async ({ page 
         timeout: REVEAL_ATTEMPT_SETTLE_MS,
       })
       .toBeGreaterThan(BAND_MIN_REVEALED_PX);
-  }).toPass({ timeout: MAGIC_REVEAL_TIMEOUT });
+  });
 });
 
 test('the magic brush reveals a rainbow gradient when no coloring page is applied', async ({
   page,
 }) => {
-  // Two drawMagicReveal calls, each bounded by MAGIC_REVEAL_TIMEOUT, can
+  // Two drawMagicReveal calls, each bounded by MAGIC_REVEAL_MAX_ATTEMPTS, can
   // together approach the default 30s per-test budget under load — the clear
   // gesture and asserts still need room. test.slow() triples it so a worst-case
   // pair of slow reveals can't trip a test-level timeout.
@@ -521,9 +559,9 @@ function opaqueCount(page: Page): Promise<number> {
 }
 
 test('the eraser removes magic-brush strokes and later colors override them', async ({ page }) => {
-  // Two MAGIC_REVEAL_TIMEOUT windows compose here — the reveal, then the eraser
-  // pass, which lags through the same $effect — so a worst case would reach the
-  // default per-test budget with the setup still to pay for.
+  // Two bounded redraw loops compose here — the reveal, then the eraser pass,
+  // which lags through the same $effect — so a worst case would reach the default
+  // per-test budget with the setup still to pay for.
   test.slow();
   await gotoApp(page);
   await openDrawer(page);
@@ -547,12 +585,12 @@ test('the eraser removes magic-brush strokes and later colors override them', as
   // toggle, so a stroke drawn too early is still a magic pass and ADDS ink
   // instead of removing it. That stroke is already committed, so redraw rather
   // than poll a count that will never fall on its own.
-  await expect(async () => {
+  await redrawUntilPasses('eraser pass', async () => {
     await draw(page, line);
     await expect
       .poll(() => opaqueCount(page), { timeout: REVEAL_ATTEMPT_SETTLE_MS })
       .toBeLessThan(revealed / 2);
-  }).toPass({ timeout: MAGIC_REVEAL_TIMEOUT });
+  });
 
   // A solid color drawn afterward overrides the reveal: paint magic, then a
   // single palette color on top, and confirm that flat color is present.
