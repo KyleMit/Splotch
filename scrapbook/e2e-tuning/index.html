@@ -255,19 +255,20 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
 
   <section>
     <div class="panel verdict">
-      <h3>Two workers locally, three on CI</h3>
+      <h3>Two workers locally, four on CI</h3>
       <p>
-        Wall clock saturates at ~3 workers on 4 physical cores, but the useful setting depends on
-        whether retries are absorbing the flakes. Locally (<code>retries: 0</code>) a red run costs a
-        re-run plus attention, and the break-even is only ~25 seconds of attention — so 2 workers
-        wins despite being ~12s slower. On CI (<code>retries: 2</code>) a flake costs ~1.5s of retry
-        work, so 3 workers wins by ~11s.
+        The two environments want different settings, for different reasons. Locally
+        (<code>retries: 0</code>) a red run costs a re-run plus the attention to triage it, and the
+        break-even is only ~15 seconds of attention — so 2 workers wins despite finishing ~11s later.
+        On CI (<code>retries: 2</code>) flakes are absorbed cheaply and the flake rate barely moves
+        between 1 and 6 workers, so wall clock decides: 4 workers, the fastest setting measured.
       </p>
       <p>
-        The measured saturation point has a simple explanation: past 2 workers, per-test latency
-        inflation tracks <strong>w/2</strong> almost exactly, which means each Playwright worker
-        demands about <strong>2 cores</strong> to run unthrottled — a Chromium is several processes,
-        not one. That is why <code>workers: '100%'</code> (1 worker per core) oversubscribes.
+        One finding holds on both machines: CPU work per run divided by the uncontended baseline
+        tracks <strong>w/2</strong>, which means each Playwright worker demands about
+        <strong>2 cores</strong> to run unthrottled — a Chromium is several processes, not one.
+        Implied cores per worker came out 2.0–2.5 locally and 2.2–2.8 on CI. That is why
+        <code>workers: '100%'</code> (one worker per core) oversubscribes on any machine.
       </p>
     </div>
   </section>
@@ -365,12 +366,20 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
       <th class="num">Failures</th><th class="num">Per-test rate</th>
       <th class="num">Latency inflation</th><th class="num">CPU work</th>
     </tr></thead>
-    <tbody><tr class="pick">
-      <td>3</td>
-      <td class="num">82.0s</td>
-      <td class="num">1/8</td>
+    <tbody><tr>
+      <td>2</td>
+      <td class="num">92.3s</td>
+      <td class="num">1/16</td>
       <td class="num">1</td>
-      <td class="num">0.062%</td>
+      <td class="num">0.031%</td>
+      <td class="num">—</td>
+      <td class="num">—</td>
+    </tr><tr class="pick">
+      <td>3</td>
+      <td class="num">80.8s</td>
+      <td class="num">3/16</td>
+      <td class="num">3</td>
+      <td class="num">0.092%</td>
       <td class="num">—</td>
       <td class="num">—</td>
     </tr><tr>
@@ -396,8 +405,68 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
       disabled for the measurement (the production config sets <code>retries: 2</code> on CI, which
       would mask the rate being measured).
     </p>
-    <p class="empty-note">CI sweep pending — re-run <code>npm run gen:e2e-tuning-report</code> once the numbers land.</p>
-  </section>
+    <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Workers</th><th class="num">Wall (median)</th><th class="num">Red runs</th>
+      <th class="num">Failures</th><th class="num">Per-test rate</th>
+      <th class="num">Latency inflation</th><th class="num">CPU work</th>
+    </tr></thead>
+    <tbody><tr>
+      <td>1</td>
+      <td class="num">95.2s</td>
+      <td class="num">3/5</td>
+      <td class="num">3</td>
+      <td class="num">0.296%</td>
+      <td class="num">1.00×</td>
+      <td class="num">92.3s</td>
+    </tr><tr>
+      <td>2</td>
+      <td class="num">69.6s</td>
+      <td class="num">2/5</td>
+      <td class="num">2</td>
+      <td class="num">0.197%</td>
+      <td class="num">1.38×</td>
+      <td class="num">127.7s</td>
+    </tr><tr>
+      <td>3</td>
+      <td class="num">63.1s</td>
+      <td class="num">1/5</td>
+      <td class="num">1</td>
+      <td class="num">0.099%</td>
+      <td class="num">1.88×</td>
+      <td class="num">173.8s</td>
+    </tr><tr class="pick">
+      <td>4</td>
+      <td class="num">60.2s</td>
+      <td class="num">2/5</td>
+      <td class="num">2</td>
+      <td class="num">0.197%</td>
+      <td class="num">2.34×</td>
+      <td class="num">216.1s</td>
+    </tr><tr>
+      <td>6</td>
+      <td class="num">63.5s</td>
+      <td class="num">1/5</td>
+      <td class="num">2</td>
+      <td class="num">0.197%</td>
+      <td class="num">3.58×</td>
+      <td class="num">330.7s</td>
+    </tr><tr>
+      <td>8</td>
+      <td class="num">60.4s</td>
+      <td class="num">5/5</td>
+      <td class="num">9</td>
+      <td class="num">0.887%</td>
+      <td class="num">4.35×</td>
+      <td class="num">401.9s</td>
+    </tr></tbody>
+  </table></div>
+    <ul class="notes">
+      <li><b>The flake rate is flat from 1 to 6 workers</b> (1–3 failures per 1015 executions) and only breaks at 8. Contention is not the dominant driver here, which is the opposite of the local result.</li>
+      <li><b>One worker was the second-WORST setting</b> — 3 failures, two of them 30s timeouts. With zero contention, that rules contention out as the cause: the runner has no GPU, so Chromium rasterizes the magic-brush reveal in software and the reveal sits near its 15s budget no matter how many workers are running.</li>
+      <li><b>Wall clock bottoms out at 4 workers</b> (60.2s). 8 workers is no faster and carries 4.5× the failures.</li>
+      <li><b>CI is faster than the local box overall</b> (60–95s vs 81–169s) while being slower at canvas work — a reminder that "faster hardware" is not one number.</li>
+    </ul>
 
   <section>
     <h2>What was tried</h2>

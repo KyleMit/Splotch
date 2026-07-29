@@ -123,11 +123,11 @@ Android smoke test is for.
 
 ### Writing flake-resistant specs
 
-The full suite runs **4 workers in parallel** (`playwright.config.ts`), so every spec shares the CPU
-with three others. A test that passes alone but fails in the full run is almost always a timing race
-under that contention, not a real regression. Locally `retries: 0` surfaces it immediately; CI sets
-`retries: 2`, so it hides there until a double-flake turns CI red. Write specs that can't race in
-the first place:
+The full suite runs **2 workers locally and 4 on CI** (`playwright.config.ts` — the counts are
+measured per environment, ADR-0078), so every spec shares the CPU with three others. A test that
+passes alone but fails in the full run is almost always a timing race under that contention, not a
+real regression. Locally `retries: 0` surfaces it immediately; CI sets `retries: 2`, so it hides
+there until a double-flake turns CI red. Write specs that can't race in the first place:
 
 * **Never assert on a single interaction against a lazily-wired control.** Overlays that idle-mount
   (the Parent Center, ADR-0049) can drop the first click before their handler is attached, so a bare
@@ -180,10 +180,10 @@ the first place:
   `scripts/tests/e2e-harness-imports.test.mjs` fails the build if one imports `test` from
   `@playwright/test` instead.
 * **Prove it's fixed under load, not in isolation.** Flakes only appear under contention, so verify
-  with `npm run test:e2e -- <spec> --repeat-each=10` (which still fans out across the 4 workers)
-  before trusting green — a single isolated pass proves nothing. A stubborn one may only show every
-  ~1-in-5 runs; raise `--repeat-each` until you've seen it both fail on the old code and hold on the
-  new.
+  with `npm run test:e2e -- <spec> --repeat-each=10` (which still fans out across the configured
+  workers) before trusting green — a single isolated pass proves nothing. A stubborn one may only
+  show every ~1-in-5 runs; raise `--repeat-each` until you've seen it both fail on the old code and
+  hold on the new.
 
 ### WebKit critical-path smoke — `tests/webkit-smoke.spec.ts`
 

@@ -68,11 +68,19 @@ const ciAllowedTokens = Array.from({ length: ciRetries + 1 }, (_, retry) =>
 
 export default defineConfig({
   ...commonPlaywrightConfig,
-  // Use all cores everywhere. Playwright otherwise defaults to ~50% of logical
-  // cores, leaving half the machine idle even though every spec is
-  // parallel-safe — on a 4-core box that's the difference between ~90s and
-  // ~58s for the suite.
-  workers: '100%',
+  // Measured per environment, not assumed (ADR-0078; full study in
+  // scrapbook/e2e-tuning/). A percentage is the wrong shape for this knob: a
+  // Playwright worker is a whole Chromium plus a Node runner and costs ~2 cores,
+  // so "one worker per core" oversubscribes on any machine.
+  //
+  // CI retries absorb flakes cheaply and the measured flake rate barely moves
+  // between 1 and 6 workers there, so wall clock decides: 4 was fastest.
+  // Locally there are no retries, so a flake costs a re-run plus triage — 2
+  // workers cut the red-run rate for ~11s of wall clock, which the break-even
+  // says is worth it after ~15s of attention.
+  //
+  // Re-measure on new hardware; the shape transfers, the optimum does not.
+  workers: process.env.CI ? 4 : 2,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? ciRetries : 0,
   reporter: [['list'], ['html', { open: 'never' }]],

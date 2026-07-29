@@ -18,7 +18,14 @@ import { applyFarmPage, openBrushMenu, openDrawer, pickBrush } from './flows-har
 // repaint fires, so on a starved parallel worker the reveal can finish painting
 // well past a few seconds. Poll magic-reveal assertions against this generous
 // window rather than a tight one — see issue #498.
-const MAGIC_REVEAL_TIMEOUT = 15_000;
+// Raised from 15s after the ADR-0078 CI sweep: on a GPU-less runner Chromium
+// rasterizes the sheet in software, and the reveal lands AT the old budget
+// rather than past it (failures measured at 15.6s, 15.7s and 18.4s against
+// 15s). Those failures appeared at every worker count including one, so they
+// were never contention — the budget was simply too tight for software
+// rasterization. The specs that use it call test.slow() where two reveals could
+// otherwise approach the per-test budget.
+const MAGIC_REVEAL_TIMEOUT = 30_000;
 
 // Draw a magic-brush stroke and confirm its reveal actually landed (more than a
 // flat pen colour), retrying the whole stroke on a miss. The brush→engine
@@ -92,6 +99,10 @@ function distinctOpaqueColors(page: Page, bits = 4): Promise<number> {
 test('the magic brush is always available and paints the coloring page colors', async ({
   page,
 }) => {
+  // MAGIC_REVEAL_TIMEOUT is 30s and the default per-test budget is 30s, so a
+  // worst-case reveal would trip the test timeout before its own retry window
+  // closed. test.slow() triples the budget to leave room.
+  test.slow();
   await gotoApp(page);
   await openDrawer(page);
 
@@ -289,6 +300,10 @@ function revealedNearBlackFraction(page: Page): Promise<number> {
 test('the magic brush reveals fills only, never the fill outlines (no double lines)', async ({
   page,
 }) => {
+  // MAGIC_REVEAL_TIMEOUT is 30s and the default per-test budget is 30s, so a
+  // worst-case reveal would trip the test timeout before its own retry window
+  // closed. test.slow() triples the budget to leave room.
+  test.slow();
   await gotoApp(page);
   await openDrawer(page);
   await applyFarmPage(page);
@@ -329,6 +344,10 @@ function opaquePixelsInLeftBand(page: Page, frac = 0.04): Promise<number> {
 test('the magic brush paints the letterbox margin by extending the edge colour', async ({
   page,
 }) => {
+  // MAGIC_REVEAL_TIMEOUT is 30s and the default per-test budget is 30s, so a
+  // worst-case reveal would trip the test timeout before its own retry window
+  // closed. test.slow() triples the budget to leave room.
+  test.slow();
   await gotoApp(page);
   await openDrawer(page);
   await applyFarmPage(page);
@@ -372,6 +391,10 @@ function opaquePixelsInTopBand(page: Page, frac = 0.05): Promise<number> {
 // paints those margins too — before, they revealed nothing even though a pen could
 // draw there. Rotation is emulated via CDP (new metrics + a changed orientation angle).
 test('the magic brush paints the rotation-lock letterbox margin', async ({ page }) => {
+  // MAGIC_REVEAL_TIMEOUT is 30s and the default per-test budget is 30s, so a
+  // worst-case reveal would trip the test timeout before its own retry window
+  // closed. test.slow() triples the budget to leave room.
+  test.slow();
   await gotoApp(page);
   await openDrawer(page);
   await applyFarmPage(page); // landscape viewport → wide art
@@ -405,7 +428,7 @@ test('the magic brush paints the rotation-lock letterbox margin', async ({ page 
 test('the magic brush reveals a rainbow gradient when no coloring page is applied', async ({
   page,
 }) => {
-  // Two drawMagicReveal calls, each bounded by MAGIC_REVEAL_TIMEOUT (15s), can
+  // Two drawMagicReveal calls, each bounded by MAGIC_REVEAL_TIMEOUT, can
   // together approach the default 30s per-test budget under load — the clear
   // gesture and asserts still need room. test.slow() triples it so a worst-case
   // pair of slow reveals can't trip a test-level timeout.
@@ -452,6 +475,10 @@ function opaqueCount(page: Page): Promise<number> {
 }
 
 test('the eraser removes magic-brush strokes and later colors override them', async ({ page }) => {
+  // MAGIC_REVEAL_TIMEOUT is 30s and the default per-test budget is 30s, so a
+  // worst-case reveal would trip the test timeout before its own retry window
+  // closed. test.slow() triples the budget to leave room.
+  test.slow();
   await gotoApp(page);
   await openDrawer(page);
   await applyFarmPage(page);

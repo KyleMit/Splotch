@@ -25,7 +25,7 @@ const HARDWARE = {
   },
   ci: {
     label: 'GitHub Actions ubuntu-latest',
-    detail: 'PLACEHOLDER',
+    detail: '4 vCPU · 16 GB · no GPU (Chromium falls back to software rasterization)',
   },
 };
 
@@ -42,13 +42,36 @@ const LOCAL_PREFIX = [
   { w: 8, wall: 85.8, runs: 8, execs: 1624, fails: 27, redRuns: 8, infl: 4.1, cpu: null },
 ];
 
-// After the three magic-brush fixes, on a freshly restarted preview server.
+// After the three magic-brush fixes. w=2 and w=3 come from one 16-rep
+// round-robin session; w=4 from an earlier 8-rep session on the same box.
 const LOCAL_POSTFIX = [
-  { w: 3, wall: 82.0, runs: 8, execs: 1624, fails: 1, redRuns: 1 },
+  { w: 2, wall: 92.3, runs: 16, execs: 3248, fails: 1, redRuns: 1 },
+  { w: 3, wall: 80.8, runs: 16, execs: 3248, fails: 3, redRuns: 3 },
   { w: 4, wall: 82.1, runs: 8, execs: 1624, fails: 5, redRuns: 4 },
 ];
 
-const CI_SWEEP = [];
+// GitHub Actions ubuntu-latest, 5 reps per worker count, one runner each, with
+// the magic-brush fixes in place and retries disabled. `cpu` is the summed
+// duration of every passing test; `infl` divides it by the uncontended w=1
+// figure. Raw reports: run 30474047690 artifacts.
+const CI_SWEEP = [
+  { w: 1, wall: 95.2, runs: 5, execs: 1015, fails: 3, redRuns: 3, cpu: 92.3, infl: 1.0 },
+  { w: 2, wall: 69.6, runs: 5, execs: 1015, fails: 2, redRuns: 2, cpu: 127.7, infl: 1.38 },
+  { w: 3, wall: 63.1, runs: 5, execs: 1015, fails: 1, redRuns: 1, cpu: 173.8, infl: 1.88 },
+  {
+    w: 4,
+    wall: 60.2,
+    runs: 5,
+    execs: 1015,
+    fails: 2,
+    redRuns: 2,
+    cpu: 216.1,
+    infl: 2.34,
+    recommended: true,
+  },
+  { w: 6, wall: 63.5, runs: 5, execs: 1015, fails: 2, redRuns: 1, cpu: 330.7, infl: 3.58 },
+  { w: 8, wall: 60.4, runs: 5, execs: 1015, fails: 9, redRuns: 5, cpu: 401.9, infl: 4.35 },
+];
 
 // Each hypothesis that was tested, and how it was killed or confirmed. The
 // falsified ones are the point: they are cheap to re-derive and expensive to
@@ -216,19 +239,20 @@ ${masthead({
 
   <section>
     <div class="panel verdict">
-      <h3>Two workers locally, three on CI</h3>
+      <h3>Two workers locally, four on CI</h3>
       <p>
-        Wall clock saturates at ~3 workers on 4 physical cores, but the useful setting depends on
-        whether retries are absorbing the flakes. Locally (<code>retries: 0</code>) a red run costs a
-        re-run plus attention, and the break-even is only ~25 seconds of attention — so 2 workers
-        wins despite being ~12s slower. On CI (<code>retries: 2</code>) a flake costs ~1.5s of retry
-        work, so 3 workers wins by ~11s.
+        The two environments want different settings, for different reasons. Locally
+        (<code>retries: 0</code>) a red run costs a re-run plus the attention to triage it, and the
+        break-even is only ~15 seconds of attention — so 2 workers wins despite finishing ~11s later.
+        On CI (<code>retries: 2</code>) flakes are absorbed cheaply and the flake rate barely moves
+        between 1 and 6 workers, so wall clock decides: 4 workers, the fastest setting measured.
       </p>
       <p>
-        The measured saturation point has a simple explanation: past 2 workers, per-test latency
-        inflation tracks <strong>w/2</strong> almost exactly, which means each Playwright worker
-        demands about <strong>2 cores</strong> to run unthrottled — a Chromium is several processes,
-        not one. That is why <code>workers: '100%'</code> (1 worker per core) oversubscribes.
+        One finding holds on both machines: CPU work per run divided by the uncontended baseline
+        tracks <strong>w/2</strong>, which means each Playwright worker demands about
+        <strong>2 cores</strong> to run unthrottled — a Chromium is several processes, not one.
+        Implied cores per worker came out 2.0–2.5 locally and 2.2–2.8 on CI. That is why
+        <code>workers: '100%'</code> (one worker per core) oversubscribes on any machine.
       </p>
     </div>
   </section>
@@ -286,7 +310,12 @@ ${masthead({
       would mask the rate being measured).
     </p>
     ${ciSection}
-  </section>
+    <ul class="notes">
+      <li><b>The flake rate is flat from 1 to 6 workers</b> (1–3 failures per 1015 executions) and only breaks at 8. Contention is not the dominant driver here, which is the opposite of the local result.</li>
+      <li><b>One worker was the second-WORST setting</b> — 3 failures, two of them 30s timeouts. With zero contention, that rules contention out as the cause: the runner has no GPU, so Chromium rasterizes the magic-brush reveal in software and the reveal sits near its 15s budget no matter how many workers are running.</li>
+      <li><b>Wall clock bottoms out at 4 workers</b> (60.2s). 8 workers is no faster and carries 4.5× the failures.</li>
+      <li><b>CI is faster than the local box overall</b> (60–95s vs 81–169s) while being slower at canvas work — a reminder that "faster hardware" is not one number.</li>
+    </ul>
 
   <section>
     <h2>What was tried</h2>

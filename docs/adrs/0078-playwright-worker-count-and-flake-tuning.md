@@ -34,7 +34,7 @@ hardware changes.** Three things follow from that.
 
 ```ts
 retries: process.env.CI ? 2 : 0,
-workers: process.env.CI ? 3 : 2,
+workers: process.env.CI ? 4 : 2,
 ```
 
 Not `'100%'`, and not a percentage at all. A percentage silently means something different on a
@@ -45,20 +45,25 @@ The split is not arbitrary — it falls out of an expected-cost model,
 run`:
 
 * **Locally** (`retries: 0`) a red run costs a re-run plus the attention to notice and triage it.
-  The break-even is only **~25 seconds of attention** on top of the re-run, which triage always
-  exceeds. Two workers wins despite finishing ~12s later.
-* **On CI** (`retries: 2`) a flake costs ~1.5s of expected retry work instead of a human
-  interruption, so the ~12s saved dominates. Three workers wins.
+  The break-even is only **~15 seconds of attention** on top of the re-run, which triage always
+  exceeds. Two workers wins despite finishing ~11s later.
+* **On CI** (`retries: 2`) flakes are absorbed cheaply, and the measured flake rate barely moves
+  between 1 and 6 workers — so wall clock decides, and 4 workers is the fastest setting measured
+  (60.2s, against 63.1s at 3 and 69.6s at 2).
 
 ### 2. Each worker costs ~2 cores, which is why `'100%'` oversubscribed
 
 Per-test latency inflation (each test's mean duration ÷ its own mean at one worker) tracks **w/2**
 almost exactly past the saturation point:
 
-| workers                  | 2     | 3     | 4     | 6     | 8     |
-| ------------------------ | ----- | ----- | ----- | ----- | ----- |
-| measured inflation       | 1.27× | 1.67× | 2.13× | 3.06× | 4.10× |
-| implied cores per worker | 2.54  | 2.23  | 2.13  | 2.04  | 2.05  |
+| workers                      | 2     | 3     | 4     | 6     | 8     |
+| ---------------------------- | ----- | ----- | ----- | ----- | ----- |
+| local inflation              | 1.27× | 1.67× | 2.13× | 3.06× | 4.10× |
+| CI inflation                 | 1.38× | 1.88× | 2.34× | 3.58× | 4.35× |
+| implied cores/worker (local) | 2.54  | 2.23  | 2.13  | 2.04  | 2.05  |
+| implied cores/worker (CI)    | 2.77  | 2.51  | 2.34  | 2.39  | 2.18  |
+
+The ratio reproduced on completely different hardware, which is the part that generalises.
 
 A "worker" is not one process — it is a Chromium (browser, renderer, GPU, network, utility
 processes, many threads) plus a Node runner, alongside the shared `vite preview` server. On 4 cores
@@ -69,6 +74,27 @@ Because the machine is already saturated, everything past w=2 divides fixed capa
 adding any. The CPU accounting shows the waste directly — summing every test's duration in a run
 should be flat (it is the same 203 tests) and is not: 179.5s at 2 workers, 225.4s at 3, **293.3s at
 4** against the 152.4s an uncontended run needs.
+
+### 2b. On CI, contention is not the dominant flake driver
+
+The CI sweep (`ubuntu-latest`, 5 reps per worker count, one runner each, retries off) did **not**
+reproduce the local flake curve:
+
+| workers             | 1     | 2     | 3     | 4         | 6     | 8       |
+| ------------------- | ----- | ----- | ----- | --------- | ----- | ------- |
+| wall clock (median) | 95.2s | 69.6s | 63.1s | **60.2s** | 63.5s | 60.4s   |
+| green runs          | 2/5   | 3/5   | 4/5   | 3/5       | 4/5   | **0/5** |
+| failures / 1015     | 3     | 2     | 1     | 2         | 2     | **9**   |
+
+The rate is flat from 1 to 6 workers and only breaks at 8. **One worker was the second-worst
+setting** — three failures, two of them 30s timeouts — which rules contention out as the cause,
+because at one worker there is none. The runner has no GPU, so Chromium rasterizes the magic-brush
+reveal in software; the reveal sits near its 15s budget regardless of how many workers run. That is
+also why `MAGIC_REVEAL_TIMEOUT` was raised: on CI the failures land *at* the budget (15.6s, 15.7s,
+18.4s against 15s), not far past it.
+
+So the same suite is limited by different things in the two places: contention locally, raw canvas
+throughput on CI. Worker count fixes only the first.
 
 ### 3. Contention breaks tests two different ways, and only one is a timeout problem
 
@@ -94,7 +120,7 @@ the `drawMagicReveal` pattern the file already established — measured at 16/20
 
 ## Consequences
 
-\+ The worker count is now defensible: 59 local runs plus a CI sweep, with the hardware recorded
+\+ The worker count is now defensible: 91 local runs and 30 CI runs, with the hardware recorded
 alongside the numbers.
 
 \+ Local runs get a materially more trustworthy signal — the configuration that produced 4 red runs
@@ -111,10 +137,13 @@ next person does not re-test input coalescing or baseline polling.
 − **The numbers are hardware-specific and will rot.** Nothing here transfers to a different runner
 without re-measuring. The shape (saturation near cores−1) should hold; the optimum will not.
 
-− **The CI setting leans on retries to stay cheap.** Choosing 3 workers on CI because `retries: 2`
-absorbs the flakes is a local optimisation that also hides accumulating flakiness — which is how the
-magic-brush tests reached the state they were in. If CI signal matters more than 11s, 2 workers is
-the more honest setting there too.
+− **The CI setting leans on retries to stay cheap.** Choosing the fastest worker count on CI because
+`retries: 2` absorbs the flakes is a local optimisation that also hides accumulating flakiness —
+which is how the magic-brush tests reached the state they were in.
+
+− **CI's real limit is canvas throughput, not workers.** A GPU-less runner rasterizes the magic
+reveal in software, so those specs sit near their budget at any worker count. Worker tuning cannot
+help there; only cheaper assertions or larger budgets can.
 
 − **The deeper seam is unaddressed.** Tests can only observe when the *button* changes, not when the
 engine commits the brush mode. A dev-harness signal for the engine's committed mode would retire the
