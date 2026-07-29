@@ -104,9 +104,20 @@ of the run until the deferred backlog is fully reviewed
 ## Self Heal
 
 ```md
-self heal. what went well / poorly this session? what can be added or removed to the codex burn down
-agent skill that would improve future runs?
+self heal. what went well / poorly this session? what can be added or removed to the burn down agent
+skill that would improve future runs?
 
 before making any changes, checkout main and pull the latest changes and branch off of there. I
 merged PR ###, so create a new PR with any findings / improvements for the skill
+```
+
+## Invoke codex burn down with approvals
+
+```md
+Run the burn-down-audits skill. I explicitly approve sending each isolated audit-role prompt and the
+repository files it reads to OpenAI for the canary and all subsequent bounded burndown segments. I
+authorize the skill’s actual codex exec subprocesses and outbound OpenAI calls, including their
+usage, repository modifications, commits, pushes, PR creation/updates, and PR comments. Proceed
+through verification, implementation, adversarial review, CI supervision, and closeout, then mark
+the PR ready when all required gates pass.
 ```
