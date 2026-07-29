@@ -115,6 +115,16 @@ describe('warmPaperTexture', () => {
 });
 
 describe('composeExportPng overlay', () => {
+  it('returns null when the output canvas cannot allocate a context', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    const toBlob = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob');
+    const { composeExportPng } = await import('./exportDrawing');
+
+    await expect(composeExportPng(createSnapshot(), 1)).resolves.toBeNull();
+
+    expect(toBlob).not.toHaveBeenCalled();
+  });
+
   it('multiplies the original overlay in light mode', async () => {
     const contexts = setupExportContexts(null);
     const overlay = createOverlayImage();

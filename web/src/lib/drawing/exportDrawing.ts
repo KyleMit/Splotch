@@ -135,7 +135,8 @@ export async function composeExportPng(
   const out = document.createElement('canvas');
   out.width = Math.round(w * exportScale);
   out.height = Math.round(h * exportScale);
-  const outCtx = out.getContext('2d')!;
+  const outCtx = out.getContext('2d');
+  if (!outCtx) return null;
   outCtx.imageSmoothingEnabled = true;
   outCtx.imageSmoothingQuality = 'high';
   outCtx.scale(exportScale, exportScale);

@@ -21,41 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Correctness] composeExportPng's `getContext('2d')!` turns an export-canvas allocation failure into a throw instead of the contracted null
-
-**File(s):** `web/src/lib/drawing/exportDrawing.ts` (`composeExportPng`, lines 123–126) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const out = document.createElement('canvas');
-out.width = Math.round(w * exportScale);
-out.height = Math.round(h * exportScale);
-const outCtx = out.getContext('2d')!;
-```
-
-The export canvas is at least 2× the CSS size (line 119), created while the full-resolution stroke
-`snapshot` canvas (and, in dark mode, an `invertedOverlay` canvas) are also alive. iOS Safari
-enforces hard per-canvas and total-canvas-memory limits; when they're hit, `getContext('2d')`
-returns `null` and the `!` converts that into a `TypeError` inside an async function. The function's
-own contract is graceful: it returns `Promise<Blob | null>`, and every caller already handles `null`
-(e.g. `saveScreenshot` line 96, `saveOnDelete` line 16). The one failure mode most likely on the
-lowest-memory floor devices is the one that bypasses the contract. Note the module handles the
-identical hazard properly three lines up the file — `invertedOverlay` checks `if (!ctx) return null`
-(line 71).
-
-#### Proposed solution
-
-```ts
-const outCtx = out.getContext('2d');
-if (!outCtx) return null;
-```
-
-Two lines, aligns the function with its declared return type, and matches the file's own existing
-pattern.
-
 ### [Types] saveImageBlob's `Blob | null` parameter is speculative — every production caller already null-checks
 
 **File(s):** `web/src/lib/drawing/screenshot.ts` (`saveImageBlob`, lines 71–76) @ 9ae62ff1
