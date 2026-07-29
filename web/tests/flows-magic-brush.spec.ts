@@ -334,17 +334,24 @@ test('the magic brush paints the letterbox margin by extending the edge colour',
   await applyFarmPage(page);
   await pickBrush(page, '#magicBrushButton');
 
-  // Hug the far-left edge, well inside the letterbox band, sweeping top to bottom.
-  await draw(page, [
-    { x: 3, y: 40 },
-    { x: 3, y: 200 },
-    { x: 3, y: 360 },
-    { x: 3, y: 520 },
-  ]);
-  // The margin now reveals the extended edge colour instead of staying transparent.
-  await expect
-    .poll(() => opaquePixelsInLeftBand(page), { timeout: MAGIC_REVEAL_TIMEOUT })
-    .toBeGreaterThan(500);
+  // The margin reveals the extended edge colour instead of staying transparent.
+  // The stroke is redrawn rather than merely polled: magic mode reaches the
+  // engine through a Svelte $effect, so a stroke dispatched too early commits as
+  // a flat pen pass that never fills the band, and no amount of polling recovers
+  // a stroke that already painted in the wrong mode. A band pixel count can't
+  // tell the two apart (a pen stroke leaves opaque pixels too), so the retry
+  // uses the assertion itself as the signal. Accumulating strokes is harmless
+  // here — nothing downstream depends on the canvas holding exactly one.
+  await expect(async () => {
+    // Hug the far-left edge, well inside the letterbox band, sweeping top to bottom.
+    await draw(page, [
+      { x: 3, y: 40 },
+      { x: 3, y: 200 },
+      { x: 3, y: 360 },
+      { x: 3, y: 520 },
+    ]);
+    await expect.poll(() => opaquePixelsInLeftBand(page), { timeout: 3000 }).toBeGreaterThan(500);
+  }).toPass({ timeout: MAGIC_REVEAL_TIMEOUT });
 });
 
 // Opaque pixel count within a thin band at the TOP canvas edge.
@@ -380,16 +387,19 @@ test('the magic brush paints the rotation-lock letterbox margin', async ({ page 
   await expect(page.locator('.paper-sheet.paper-lifted')).toBeVisible();
 
   await pickBrush(page, '#magicBrushButton');
-  // Sweep along the very top of the canvas — inside the rotation-lock top margin.
-  await draw(page, [
-    { x: 40, y: 6 },
-    { x: 240, y: 6 },
-    { x: 440, y: 6 },
-    { x: 660, y: 6 },
-  ]);
-  await expect
-    .poll(() => opaquePixelsInTopBand(page), { timeout: MAGIC_REVEAL_TIMEOUT })
-    .toBeGreaterThan(500);
+  // Redrawn rather than polled for the same reason as the left-band case above:
+  // a stroke that commits before the engine leaves pen mode can only be fixed by
+  // drawing again.
+  await expect(async () => {
+    // Sweep along the very top of the canvas — inside the rotation-lock top margin.
+    await draw(page, [
+      { x: 40, y: 6 },
+      { x: 240, y: 6 },
+      { x: 440, y: 6 },
+      { x: 660, y: 6 },
+    ]);
+    await expect.poll(() => opaquePixelsInTopBand(page), { timeout: 3000 }).toBeGreaterThan(500);
+  }).toPass({ timeout: MAGIC_REVEAL_TIMEOUT });
 });
 
 test('the magic brush reveals a rainbow gradient when no coloring page is applied', async ({
@@ -453,15 +463,21 @@ test('the eraser removes magic-brush strokes and later colors override them', as
     { x: 300, y: 240 },
     { x: 500, y: 160 },
   ];
-  await draw(page, line);
+  await drawMagicReveal(page, line);
   const revealed = await opaqueCount(page);
   expect(revealed).toBeGreaterThan(0);
 
   // Eraser wipes magic pixels like any other — dragging back along the stroke
   // removes most of it.
   await pickBrush(page, '#eraserButton');
-  await draw(page, line);
-  await expect.poll(() => opaqueCount(page)).toBeLessThan(revealed / 2);
+  // Eraser mode reaches the engine through the same Svelte $effect as the magic
+  // toggle, so a stroke drawn too early is still a magic pass and ADDS ink
+  // instead of removing it. That stroke is already committed, so redraw rather
+  // than poll a count that will never fall on its own.
+  await expect(async () => {
+    await draw(page, line);
+    await expect.poll(() => opaqueCount(page), { timeout: 3000 }).toBeLessThan(revealed / 2);
+  }).toPass({ timeout: MAGIC_REVEAL_TIMEOUT });
 
   // A solid color drawn afterward overrides the reveal: paint magic, then a
   // single palette color on top, and confirm that flat color is present.
