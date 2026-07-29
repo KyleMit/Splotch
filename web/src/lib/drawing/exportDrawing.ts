@@ -12,6 +12,7 @@
 
 import { PAPER_COLORS, type ResolvedTheme } from '../theme';
 import { resolvedTheme } from '../state/appearance.svelte';
+import { containFit } from './paperView';
 
 export interface ExportOptions {
   includePaperTexture?: boolean;
@@ -95,7 +96,10 @@ function drawOverlayContained(
   theme: ResolvedTheme
 ) {
   if (overlay.naturalWidth === 0 || overlay.naturalHeight === 0) return;
-  const scale = Math.min(w / overlay.naturalWidth, h / overlay.naturalHeight);
+  const { scale, offsetX, offsetY } = containFit(
+    { width: overlay.naturalWidth, height: overlay.naturalHeight },
+    { width: w, height: h }
+  );
   const drawnW = overlay.naturalWidth * scale;
   const drawnH = overlay.naturalHeight * scale;
   if (theme === 'dark') {
@@ -106,10 +110,10 @@ function drawOverlayContained(
       return;
     }
     target.globalCompositeOperation = 'screen';
-    target.drawImage(inverted, (w - drawnW) / 2, (h - drawnH) / 2, drawnW, drawnH);
+    target.drawImage(inverted, offsetX, offsetY, drawnW, drawnH);
   } else {
     target.globalCompositeOperation = 'multiply';
-    target.drawImage(overlay, (w - drawnW) / 2, (h - drawnH) / 2, drawnW, drawnH);
+    target.drawImage(overlay, offsetX, offsetY, drawnW, drawnH);
   }
   target.globalCompositeOperation = 'source-over';
 }

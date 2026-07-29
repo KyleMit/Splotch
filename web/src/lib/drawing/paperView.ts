@@ -35,6 +35,18 @@ export const IDENTITY_PAPER_VIEW: Readonly<PaperView> = Object.freeze<PaperView>
   ty: 0,
 });
 
+export function containFit(
+  content: Size,
+  box: Size
+): { scale: number; offsetX: number; offsetY: number } {
+  const scale = Math.min(box.width / content.width, box.height / content.height);
+  return {
+    scale,
+    offsetX: (box.width - content.width * scale) / 2,
+    offsetY: (box.height - content.height * scale) / 2,
+  };
+}
+
 export function isIdentityView(view: PaperView): boolean {
   return view.scale === 1 && view.rotate === 0 && view.tx === 0 && view.ty === 0;
 }
@@ -54,9 +66,10 @@ export function rotationDelta(paperAngle: number, currentAngle: number): ViewRot
 export function computePaperView(paper: Size, viewport: Size, rotate: ViewRotation): PaperView {
   const rotatedW = rotate % 180 === 0 ? paper.width : paper.height;
   const rotatedH = rotate % 180 === 0 ? paper.height : paper.width;
-  const scale = Math.min(viewport.width / rotatedW, viewport.height / rotatedH);
-  const marginX = (viewport.width - rotatedW * scale) / 2;
-  const marginY = (viewport.height - rotatedH * scale) / 2;
+  const { scale, offsetX: marginX, offsetY: marginY } = containFit(
+    { width: rotatedW, height: rotatedH },
+    viewport
+  );
   // The translation puts the rotated paper's bounding box at (marginX, marginY):
   // rotation is about the paper origin, so each quarter-turn shifts which mapped
   // corner is the box's top-left.
