@@ -1,7 +1,8 @@
 # Handoff — audit burndown run
 
-> 2026-07-29 · branch `audit/burndown-20260729-codex` · PR: pending · clear the staged audit backlog
-> through bounded Codex-driven verification, implementation, and adversarial review
+> 2026-07-29 · branch `audit/burndown-20260729-codex` · PR
+> [#632](https://github.com/KyleMit/Splotch/pull/632) · clear the staged audit backlog through
+> bounded Codex-driven verification, implementation, and adversarial review
 
 ## Objective & non-goals
 
@@ -12,14 +13,14 @@ unbounded unattended segments.
 
 ## State
 
-| Field              | Value                               |
-| ------------------ | ----------------------------------- |
-| Branch             | `audit/burndown-20260729-codex`     |
-| PR                 | pending                             |
-| Initial backlog    | 584 findings                        |
-| `run.log` baseline | 2582 lines                          |
-| Runner             | `codex`                             |
-| Campaign state     | Initial checkpoint before preflight |
+| Field              | Value                                               |
+| ------------------ | --------------------------------------------------- |
+| Branch             | `audit/burndown-20260729-codex`                     |
+| PR                 | [#632](https://github.com/KyleMit/Splotch/pull/632) |
+| Initial backlog    | 584 findings                                        |
+| `run.log` baseline | 2582 lines                                          |
+| Runner             | `codex`                                             |
+| Campaign state     | Preflight green; ready for canary                   |
 
 No finding commits have landed in this continuation.
 
@@ -78,12 +79,14 @@ checkpointed before each relaunch.
 * No audit-burndown driver process was active.
 * `node scripts/audit-burndown/pop.mjs --count` reported 584.
 * The connected GitHub app reported admin permission for `KyleMit/Splotch`.
+* The exact Codex preflight passed, including origin reachability and deterministic quality gates.
+* Draft PR [#632](https://github.com/KyleMit/Splotch/pull/632) is open.
 
 ## Risks & next 3 steps
 
-1. Commit and push this initial checkpoint, then run the exact preflight command.
-2. Open the draft PR, replace `PR: pending` with its number, commit, and push that checkpoint.
-3. Remove the stale stop sentinel and run the bounded foreground canary.
+1. Commit and push this PR-number checkpoint.
+2. Remove the stale stop sentinel and run the bounded foreground canary.
+3. Inspect the full canary diff and deletion accounting, then require exact-head CI green.
 
 ## Closeout tasks
 
