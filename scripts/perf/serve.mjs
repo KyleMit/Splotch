@@ -6,6 +6,8 @@ import { join } from 'node:path';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { lanAddresses } from '../lib/net.mjs';
 
+const SERVE_ENTRY = join(ROOT, 'scripts', 'perf', 'serve.mjs');
+
 // vite's default preview port. The runbook, the console driver, and the
 // recorder snippet all point the iPad at it.
 const PREVIEW_PORT = 4173;
@@ -64,6 +66,34 @@ export function runPerfServe() {
       process.exit(signal ? 1 : (code ?? 0));
     });
   });
+}
+
+// The same server as a child process, for a script that needs it running for
+// the length of its own run (perf:ipad). It goes into its own process group so
+// stop() reaches the vite grandchild this module spawns rather than orphaning
+// it on the port.
+export function spawnPerfServe() {
+  const child = spawn(process.execPath, [SERVE_ENTRY], {
+    cwd: ROOT,
+    env: { ...process.env, PUBLIC_ENABLE_DEV_HARNESS: 'true' },
+    stdio: ['ignore', 'ignore', 'inherit'],
+    detached: true,
+  });
+
+  const stop = () => {
+    try {
+      process.kill(-child.pid, 'SIGTERM');
+    } catch {
+      try {
+        child.kill();
+      } catch {
+        // already gone
+      }
+    }
+  };
+  process.on('exit', stop);
+
+  return { child, stop };
 }
 
 if (isMain(import.meta.url)) runMain(runPerfServe);

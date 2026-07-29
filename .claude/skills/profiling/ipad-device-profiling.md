@@ -2,17 +2,23 @@
 
 # Capturing a performance profile on a real iPad
 
-This is the manual runbook for profiling on a **physical iPad** — the highest- fidelity target we
-have for the drawing engine, because it's the real **WebKit/JavaScriptCore engine + Apple GPU + 120
-Hz ProMotion** display the app actually ships on.
+This is the runbook for profiling on a **physical iPad** — the highest-fidelity target we have for
+the drawing engine, because it's the real **WebKit/JavaScriptCore engine + Apple GPU + 120 Hz
+ProMotion** display the app actually ships on.
 
-It exists because the automated harness can't reach a physical iOS device:
+The gates run is automated: **`npm run perf:ipad`** drives it end to end. This file covers the
+one-time device setup that command needs, the Timeline recording it deliberately does *not* do, and
+the by-hand fallback for when it won't attach.
+
+Where the device sits among the harness targets:
 
 * `npm run perf:web` / `perf:android` drive Chromium/the Android WebView over CDP.
 * `npm run perf:ios` drives **Playwright's WebKit on the Mac** — the right *engine*, but not the
   iPad's CPU, GPU, or refresh rate.
-* Apple exposes no CDP/automation socket for a physical device, so the device path is **Safari Web
-  Inspector remote debugging**, driven by hand or by a console script.
+* Apple exposes no **CDP** endpoint on a physical device — but it does expose Safari's own **WebKit
+  Inspector Protocol** over USB, which carries `Runtime.evaluate` and `Console.messageAdded`.
+  `npm run perf:ipad` speaks that protocol directly; Safari's Web Inspector is the same channel with
+  a UI on top.
 
 Throughout, every step is tagged **⟨Mac⟩** or **⟨iPad⟩** so it's clear where the action happens.
 
@@ -29,6 +35,10 @@ Safari-on-iPad and the native WKWebView run the **same** WebKit engine, so for e
 performance Approach A is the right default; Approach B is a sanity check on the app shell. Both are
 documented below.
 
+Approach A has two forms, and they produce the same table: **`npm run perf:ipad`** (next section)
+and the by-hand paste in A1–A4. Reach for the command first — the hand path exists for when it won't
+attach, and for the Timeline run in A5–A6, which stays manual.
+
 ---
 
 ## One-time setup
@@ -44,9 +54,55 @@ application menu.
 **⟨Mac⟩ + ⟨iPad⟩** Connect the iPad to the Mac by **USB**, unlock the iPad, and tap **Trust This
 Computer** when prompted. Put both devices on the **same Wi‑Fi** network.
 
+**⟨Mac⟩** For `npm run perf:ipad`, install the USB relay once:
+
+```sh
+brew install ios-webkit-debug-proxy
+```
+
+---
+
+## The automated gates run — `npm run perf:ipad` — **⟨Mac⟩**
+
+```sh
+npm run perf:ipad                                # all four scenarios
+npm run perf:ipad -- --scenarios=crayon-scribbles # one of them
+npm run perf:ipad --ignore-scripts               # skip the rebuild
+```
+
+One command does what A1–A4 do by hand: rebuilds the instrumented bundle, serves it on the LAN,
+attaches to Safari on the device, **navigates the tab to `/dev/engine`**, injects
+`ipad-console-driver.js`, and prints the same table plus the driver's warnings. It writes
+`ipad-gates.json` (the exact values, so nothing depends on copying the table out) to
+`perf-profiles/<timestamp>-ipad-<device>/`. A full run is a couple of minutes.
+
+**⟨iPad⟩ Before running it:** unlock the device and leave **Safari open on at least one tab**. The
+relay lists Safari's tabs, so a device with no tab exposes nothing to attach to — that one step is
+manual and cannot be automated away. Keep the screen awake and the tab foregrounded while it runs;
+iOS throttles a backgrounded tab and the numbers stop meaning anything.
+
+Navigating the tab is the point of the automation as much as the driving is: a tab left open from an
+earlier run keeps serving that run's bundle, and nothing about its URL says so. The command also
+assigns **every** `window.__perf*` override on each run, so a leftover `window.__perfScenarios`
+can't silently scope a "full" run down to one scenario. Both of those cost real measurements before
+it existed.
+
+Flags: `--scenarios=key1,key2`, `--strokes=N`, `--ops=N`, `--url=`, `--port=N`, `--device-id=` (pick
+among several attached devices), `--no-serve` (attach to a server you started yourself).
+
+Read the table against [Reading the results](#reading-the-results) — the gates and the column
+meanings are identical to the hand-driven run.
+
+**What it deliberately does not do:** record a Timeline. The protocol has a `Timeline` domain, but
+its event stream is not the shape `npm run perf:ios:analyze` parses, so a recording still means Web
+Inspector by hand — A5 and A6 below.
+
 ---
 
 ## Approach A — Safari on iPad against the Mac's `/dev/engine` build
+
+A1–A4 are the hand-driven form of the section above; run them when `npm run perf:ipad` won't attach,
+or when you want to watch a step. A5–A6 are the Timeline run, which has no automated form.
 
 ### A1. Build and serve the instrumented bundle — **⟨Mac⟩**
 
@@ -317,6 +373,15 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
 * **iPad not under the Develop menu** → re-confirm the iPad's Web Inspector toggle, re-seat the USB
   cable, re-tap **Trust This Computer**, and make sure the iPad is unlocked with the Safari tab
   foregrounded.
+* **`perf:ipad` says "No iOS device on the inspector relay"** → the same causes as the Develop-menu
+  entry above; the relay and the Develop menu read the same channel, so if one can't see the device
+  neither can the other. Check the Develop menu first — it's the faster signal.
+* **`perf:ipad` says "The iPad exposes no Safari pages"** → the device is attached but Safari has no
+  tab to attach to. Open Safari on the iPad (any page) and re-run; the command navigates whatever
+  tab it finds.
+* **`perf:ipad` reports the driver stopped early** → it surfaces the driver's own `console.error`
+  verbatim, so read that message: the two it raises are a build without `PERF_MARKS=true` and an
+  unknown `--scenarios=` key.
 * **More than one `Network:` URL** → `perf:serve` filters out link-local addresses but still prints
   every genuinely-routable one, so a machine on a VPN or with a second active adapter shows several.
   The Wi‑Fi one is the one the iPad can reach — `ipconfig getifaddr en0` names it. Whichever you

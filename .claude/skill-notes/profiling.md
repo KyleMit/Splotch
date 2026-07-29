@@ -1,0 +1,80 @@
+<!-- Source: .ruler/skill-notes/profiling.md.template -->
+
+# profiling — design notes
+
+Design history for the `profiling` skill, and specifically for `npm run perf:ipad`
+(`scripts/perf/ipad.mjs` + `scripts/perf/webkit-inspector.mjs`), whose shape is almost entirely
+dictated by protocol facts that are expensive to rediscover.
+
+## Driving a physical iPad: what is actually true
+
+The runbook used to say Apple "exposes no CDP/automation socket for a physical device." That is
+right about **CDP** and wrong about automation. Safari on a real device speaks the **WebKit
+Inspector Protocol** over USB — the same channel Web Inspector uses — and it carries
+`Runtime.evaluate` and `Console.messageAdded`, which is the entire gates loop. The correction is in
+the runbook now; the claim as written had discouraged anyone from looking.
+
+Verified on **iPadOS 26.5** (device `Kyle's iPad`), macOS Tahoe, July 2026.
+
+### `ios-webkit-debug-proxy` works — the spike expected it wouldn't
+
+Issue #636 predicted brew's `ios-webkit-debug-proxy` 1.9.2 was a dead end, reasoning that it speaks
+the legacy usbmuxd/lockdown path Apple replaced with RemoteXPC in iOS 17. That reasoning is sound
+and the conclusion is still wrong: the inspector relay works fine on iPadOS 26.5. It enumerated the
+device, listed Safari's tabs, and relayed the full protocol. Whatever RemoteXPC changed, it did not
+take `com.apple.webinspector` with it.
+
+**`pymobiledevice3` was therefore never needed**, and neither was its `sudo`-for-the-tunnel problem
+— the concern that most threatened putting this in an npm script. Do not reach for it unless the
+proxy actually breaks on some future iPadOS.
+
+### Three protocol shapes that dictate the client
+
+These are why `webkit-inspector.mjs` is not a thin wrapper over a CDP client:
+
+1. **Everything multiplexes through the Target domain.** A bare `Runtime.evaluate` answers
+   `'Runtime' domain was not found` — which reads like a missing capability and is really a missing
+   envelope. Commands must be JSON-encoded inside `Target.sendMessageToTarget` and their replies
+   pulled back out of `Target.dispatchMessageFromTarget`, on an id space separate from the outer
+   one. The `Target.targetCreated` event is where the `targetId` comes from, so a client has to wait
+   for it before it can send anything at all.
+2. **There is no `awaitPromise`.** That is a CDP parameter; WebKit ignores it and hands back the
+   promise object. This is *the* structural reason the runner fires the driver and then polls
+   `window.__perfRows` instead of awaiting the injected IIFE. Any future "just await the payload"
+   refactor will silently get an empty object.
+3. **`returnByValue` does not return structured values.** Anything non-primitive comes back as an
+   opaque remote object. Hence the `readJson()` convention — evaluate `JSON.stringify(expr)` and
+   parse in Node. Cheap, total, and it sidesteps remote-object handles entirely.
+
+### Why the tab is navigated on every run
+
+Not convenience. The two failures that cost real measurements during the #446 verification were a
+stale tab silently running an old bundle, and a leftover `window.__perfScenarios` quietly scoping a
+"full" run to one scenario. Both are invisible in the output — the table looks completely normal. So
+the runner navigates the tab itself rather than trusting one that already shows the harness URL, and
+assigns *every* `window.__perf*` override on each run rather than only the requested ones. The
+overrides are locked by `scripts/tests/perf-ipad.test.mjs`; the navigation is not, because faking
+the device is more machinery than the guarantee is worth.
+
+### What stays manual, and why
+
+* **Timeline recording.** The protocol has a `Timeline` domain, but its event stream is not the
+  shape `npm run perf:ios:analyze` parses (that reads a Web Inspector *export*,
+  `{recording:{records,markers}}`). Automating the gates run does not get Timeline capture for free,
+  and the issue scoped it out. A5–A6 of the runbook remain the only path. Anyone attempting it
+  should expect to write a second analyzer, not to reuse the existing one.
+* **Opening Safari with a tab.** The relay lists Safari's *existing* tabs; with none open there is
+  nothing to attach to and no protocol call that creates one. So a human still unlocks the iPad and
+  opens Safari once. Everything after that is automated.
+
+## Open / unvalidated
+
+* Only ever run against one device (iPadOS 26.5). `--device-id=` exists for multi-device machines
+  but has not been exercised with two attached.
+* The gates thresholds are not enforced by `perf:ipad` — it prints the table and the gate text, like
+  the manual paste. `perf:undo:webkit` is the one that exits non-zero past `COMMIT_GATE_MS`. Making
+  the device run gate-enforcing would need a view on device-to-device variance nobody has yet.
+* Every measured column on iPadOS 26.5 came back at or under 1 ms, against a 1 ms
+  `performance.now()` clamp — the run proves the plumbing, but the device is currently so far inside
+  the gates that the numbers can't discriminate. A regression hunt will want the Timeline, not this
+  table.

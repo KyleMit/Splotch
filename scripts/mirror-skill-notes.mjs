@@ -19,14 +19,33 @@ process.chdir(ROOT);
 const SOURCE = join('.ruler', 'skill-notes');
 const TARGETS = [join('.claude', 'skill-notes'), join('.agents', 'skill-notes')];
 const DIRECT_NOTES = new Set(['burn-down-audits.md']);
+const SOURCE_SUFFIX = '.md.template';
 
-const sourceFiles = existsSync(SOURCE) ? readdirSync(SOURCE).filter((f) => f.endsWith('.md')) : [];
+const noteOutputName = (file) => file.slice(0, -'.template'.length);
+
+const entries = existsSync(SOURCE) ? readdirSync(SOURCE) : [];
+
+// Sources carry the same .md.template suffix the skill forks require, for the
+// same reason: ruler's recursive rule loader concatenates every .md under
+// .ruler/ into the root instruction files. A plain .md here would publish the
+// design history into every session's context window — the one thing this tree
+// exists to prevent.
+const stray = entries.filter((file) => file.endsWith('.md'));
+if (stray.length) {
+  throw new Error(
+    `Skill notes must end in ${SOURCE_SUFFIX}, or ruler concatenates them into CLAUDE.md and ` +
+      `AGENTS.md: ${stray.map((file) => join(SOURCE, file)).join(', ')}`
+  );
+}
+
+const sourceFiles = entries.filter((file) => file.endsWith(SOURCE_SUFFIX));
+const generated = new Set(sourceFiles.map(noteOutputName));
 
 for (const target of TARGETS) {
   mkdirSync(target, { recursive: true });
 
   for (const stale of readdirSync(target).filter(
-    (file) => !sourceFiles.includes(file) && !DIRECT_NOTES.has(file)
+    (file) => !generated.has(file) && !DIRECT_NOTES.has(file)
   )) {
     rmSync(join(target, stale), { force: true });
   }
@@ -35,7 +54,10 @@ for (const target of TARGETS) {
     const body = readFileSync(join(SOURCE, file), 'utf8');
     // Same marker ruler writes onto its own generated files, so a copy found in
     // the wild names the file to edit instead of inviting an in-place fix.
-    writeFileSync(join(target, file), `<!-- Source: ${join(SOURCE, file)} -->\n\n${body}`);
+    writeFileSync(
+      join(target, noteOutputName(file)),
+      `<!-- Source: ${join(SOURCE, file)} -->\n\n${body}`
+    );
   }
 }
 
