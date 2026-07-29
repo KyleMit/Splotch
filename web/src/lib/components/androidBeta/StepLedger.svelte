@@ -8,8 +8,14 @@
     TESTERS_GROUP_URL,
   } from './androidBeta';
   import { supportEmail } from '$lib/supportEmail';
-  import Icon from '$lib/components/Icon.svelte';
+  import { SITE_ORIGIN } from '$lib/siteUrl';
   import { paletteHex, type PaletteLabel } from '$lib/palette';
+
+  // Step 4 shows this rather than linking the word "feedback": the sign-up page
+  // is read on one device and often acted on from another, so the address has to
+  // survive being copied or read aloud. The href beside it stays relative, so a
+  // deploy preview links to itself.
+  const FEEDBACK_URL = `${SITE_ORIGIN}/feedback`;
 
   // Composed after hydration so the support address never appears in the
   // prerendered HTML, which is what address harvesters scrape. Without JS the
@@ -130,12 +136,10 @@
       <span class="optional">Optional</span>
     </div>
     <p class="body">
-      Inside the app, tap the
-      <Icon name="parent" class="inline-icon" role="img" aria-label="Parent Center" /> button in the bottom-right
-      corner of the drawing screen to open the Parent Center, then choose
-      <strong>Send report</strong> to file a bug or suggest a feature without leaving Splotch. Odd
-      crashes, confusing buttons, and “my toddler did <em>what</em>?” stories are all genuinely
-      useful.
+      Found a bug, or thought of something Splotch should do? The form lives at
+      <a href="/feedback">{FEEDBACK_URL}</a> — open it on whichever device is handy, or pass it on
+      to whoever is doing the testing. Odd crashes, confusing buttons, and “my toddler did
+      <em>what</em>?” stories are all genuinely useful.
     </p>
     <div class="action">
       <!-- The only same-origin destination in the ledger, so no target/rel: the
@@ -143,8 +147,7 @@
            untouched sign-up page. -->
       <a class="btn" href="/feedback">Send feedback</a>
       <p class="fine">
-        The same form as a web page — handy on a computer, or when the app itself is the thing
-        that's broken.
+        No account, nothing to install; your note opens an issue on our public tracker.
       </p>
     </div>
     {#if support}
@@ -370,15 +373,6 @@
 
   .card-body strong {
     color: var(--page-ink);
-  }
-
-  /* The real Parent Center glyph, sized to the surrounding text so the sentence
-     shows the button rather than describing it. Icon renders its SVG at 100% of
-     this box, so the box has to carry the size. */
-  .body :global(.inline-icon) {
-    width: 1.3em;
-    height: 1.3em;
-    vertical-align: -0.3em;
   }
 
   a:not(.btn) {

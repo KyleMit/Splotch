@@ -4,6 +4,7 @@ import {
   PLAY_STORE_LISTING_URL,
   TESTERS_GROUP_URL,
 } from '../src/lib/components/androidBeta/androidBeta';
+import { SITE_ORIGIN } from '../src/lib/siteUrl';
 import { supportEmail } from '../src/lib/supportEmail';
 
 // The /android-beta page is a set of sign-up links; a link that points at the
@@ -32,6 +33,17 @@ test('the beta sign-up steps link to the group, the opt-in page, the listing, an
     'href',
     '/feedback'
   );
+});
+
+// Step 4 prints the address rather than hiding it behind link text, because the
+// reader is often on a different device from the one they will report from. A
+// relative href that rendered as its own path would still work on every click
+// and be useless to copy, so the visible string is asserted, not just the href.
+test('the feedback address is shown in full and points at the form', async ({ page }) => {
+  await page.goto('/android-beta');
+  const address = page.getByRole('link', { name: `${SITE_ORIGIN}/feedback` });
+  await expect(address).toBeVisible();
+  await expect(address).toHaveAttribute('href', '/feedback');
 });
 
 // /android-beta is prerendered and /feedback is not (it has a form action), so
