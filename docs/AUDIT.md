@@ -21,34 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Performance] `colorTileCache` grows without eviction — ~262 KB of canvas per (color, pass) forever
-
-**File(s):** `web/src/lib/drawing/crayonBrush.ts` (`colorTileCache`, line 348; `colorTile`, lines
-350–384) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Every color the crayon touches allocates one 256×256 RGBA canvas per pass (`tile = 256`, 2 default
-passes → ~524 KB per color) into a plain `Map` keyed `${color}@${passIdx}` that is only ever cleared
-by the dev-harness `setCrayonOptions`. A child cycling through a ~20-color palette retains ~10 MB of
-tile canvases for the session — on the low-end tablets this app targets, that's real memory, and
-each tile also spawns per-context `CanvasPattern`s in `patternCache`. Today the palette bounds it in
-practice, but nothing enforces that bound, and planned features (custom colors, issue \#167) would
-unbound it. The magic sheet next door caps its analogous cost at exactly one sheet.
-
-#### Proposed solution
-
-Give the cache a small LRU cap (e.g. `MAX_COLOR_TILES = 8` colors × passes — the active color plus
-recent ones; re-building an evicted color's tile is a one-time cost `warmCrayonTiles` already
-amortizes off the hot path). A `Map` is already insertion-ordered, so LRU is ~6 lines (delete+re-set
-on hit, evict first key past cap). Name the cap constant with the WHY. Tradeoff: an
-evicted-then-reused color pays a synchronous tile build if it lands mid-stroke before idle warm —
-mitigated because color changes go through `warmCrayonTiles` (engine.ts:1405).
-
----
-
 ### [Testing] The pure geometry in `strokeOps.ts` has no direct unit coverage
 
 **File(s):** `web/src/lib/drawing/strokeOps.ts` (`opGeometricExtent`, lines 477–498;

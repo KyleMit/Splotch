@@ -51,6 +51,7 @@
 // reproduces it by the same mechanism as everything else.
 
 import { scheduleIdle } from '../idle';
+import { PALETTE_COLORS } from '../palette';
 import type { Point } from './strokeMath';
 
 // A density pass: stroke the op at `widthScale` of its line width, filled with
@@ -361,11 +362,23 @@ export function shadeShift(heightValue: number, bodyValue: number, amplitude: nu
 // per texel (identically for every pass), alpha = the pass's tooth field. Built
 // once and reused by every context's pattern.
 const colorTileCache = new Map<string, HTMLCanvasElement>();
+// Bounds resident wax-tile canvases to this many recent (colour, pass) keys — each tile is
+// tile*tile RGBA, so unbounded growth (issue #167, custom colours) would leak canvas memory.
+// Derived, not a flat number, so an added swatch or pass can't silently drop the fixed palette
+// below the cap and make every colour change evict, rebuild a tile, and wipe patternCache: covers
+// every PALETTE_COLORS swatch, +1 for the dark-mode black/white swap, at CRAYON_DEFAULTS' pass
+// count.
+// Exported for crayonBrush.test.ts only — no production caller needs the raw cap.
+export const MAX_COLOR_TILES = (PALETTE_COLORS.length + 1) * CRAYON_DEFAULTS.passes.length;
 
 function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
   const key = `${color}@${passIdx}`;
   const hit = colorTileCache.get(key);
-  if (hit) return hit;
+  if (hit) {
+    colorTileCache.delete(key);
+    colorTileCache.set(key, hit);
+    return hit;
+  }
   const pass = opts.passes[passIdx];
   if (!pass) return null;
   const { tile, height, body } = crayonFields();
@@ -395,6 +408,15 @@ function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
   }
   g.putImageData(img, 0, 0);
   colorTileCache.set(key, c);
+  if (colorTileCache.size > MAX_COLOR_TILES) {
+    const oldest = colorTileCache.keys().next().value;
+    if (oldest !== undefined) colorTileCache.delete(oldest);
+    // createPattern copies the source bitmap, so every context's patternCache entry for the
+    // evicted key is an independent full-tile copy the WeakMap can't reach to purge — drop the
+    // whole cache rather than leave it retaining every colour ever drawn (same reset
+    // setCrayonOptions already does on a full option change).
+    patternCache = new WeakMap();
+  }
   return c;
 }
 

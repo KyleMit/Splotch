@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import {
   seedPhase,
   getCrayonOptions,
@@ -8,10 +8,12 @@ import {
   crayonPassCount,
   crayonPassWidthScale,
   crayonColorMix,
+  crayonPatternFor,
   shadeShift,
   CrayonPassTracker,
   CRAYON_DEFAULTS,
   MAX_CRAYON_MIX,
+  MAX_COLOR_TILES,
   type CrayonPoint,
 } from './crayonBrush';
 
@@ -123,6 +125,64 @@ describe('crayon options seam', () => {
     setCrayonOptions({ colorMix: 0.95 });
     expect(crayonColorMix()).toBe(0.95);
     expect(getCrayonMix()).toBe(MAX_CRAYON_MIX);
+  });
+});
+
+// colorTile is internal, so eviction is observed through crayonPatternFor: a
+// fresh target context on each call skips the per-context pattern cache, so
+// every call re-touches colorTileCache and returns the tile canvas actually
+// used to build the pattern.
+describe('colorTileCache LRU eviction', () => {
+  let origGetContext: typeof HTMLCanvasElement.prototype.getContext;
+
+  beforeEach(() => {
+    origGetContext = HTMLCanvasElement.prototype.getContext;
+    (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = function (
+      this: HTMLCanvasElement,
+      kind: string
+    ) {
+      if (kind !== '2d') return null;
+      return {
+        createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+        putImageData: () => {},
+      };
+    };
+    setCrayonOptions({ passes: [{ widthScale: 1, coverage: 0.9 }] });
+  });
+
+  afterEach(() => {
+    HTMLCanvasElement.prototype.getContext = origGetContext;
+    setCrayonOptions(CRAYON_DEFAULTS);
+  });
+
+  function tileFor(color: string): HTMLCanvasElement {
+    const createdWith: HTMLCanvasElement[] = [];
+    const target = {
+      createPattern: (tile: HTMLCanvasElement) => {
+        createdWith.push(tile);
+        return { setTransform: () => {} };
+      },
+    } as unknown as CanvasRenderingContext2D;
+    crayonPatternFor(target, color, 1, 0);
+    return createdWith[0];
+  }
+
+  it('evicts the oldest untouched colour past the cap, while a recently-touched colour survives', () => {
+    const colors = Array.from(
+      { length: MAX_COLOR_TILES },
+      (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`
+    );
+    const tiles = colors.map(tileFor);
+
+    // Re-touch an early colour so it is no longer the least-recently-used entry.
+    const recentTile = tileFor(colors[1]);
+    expect(recentTile).toBe(tiles[1]);
+
+    // A new colour past the cap must evict the true LRU entry: colors[0].
+    tileFor('#abcdef');
+
+    expect(tileFor(colors[0])).not.toBe(tiles[0]);
+    expect(tileFor(colors[1])).toBe(recentTile);
   });
 });
 
