@@ -23,38 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Readability] `pushCommand` inlines four phases; extract the patch-capture step
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`pushCommand`, lines 479–532) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`pushCommand` runs four phases inline — decide the fold set (482–485), capture patches via two
-strategies with a failure mode (486–506), push the entry with a 10-line comment explaining the
-failure semantics (507–524), then fold + retier (526–531). The capture phase alone is ~20 lines with
-its own local state (`patches`, `captureFailed`, `adopted`) and the swap-vs-copy branch. The repo
-convention says a function whose steps need step-comments should be split into named helpers; here
-the comments ("A clear in the fold set claims the full paper...", "A failed patch context loses this
-one undo entry...") are doing exactly that narration.
-
-#### Proposed solution
-
-Extract the capture phase:
-
-```ts
-function capturePatchesUnder(
-  rects: PatchRect[],
-  folding: StrokeGroupCommand[],
-): SnapshotPatch[] | null;
-```
-
-returning `null` on a failed copy context (the current `captureFailed`), keeping the swap-capture
-decision inside it. `pushCommand` then reads as: plan → capture → push-if-captured → fold → retier.
-Pairs naturally with the P2 finding above (the `wipesPaper` flag becomes a parameter). The
-failure-semantics comment moves onto the helper where the failure originates.
-
 ### [Types] Model a patch's hot/cold tier as a discriminated union instead of four nullable fields plus a runtime tripwire
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`SnapshotPatch`, lines 87–93; null-null tripwire

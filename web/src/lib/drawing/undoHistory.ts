@@ -313,11 +313,13 @@ function foldableCount(commands: StrokeGroupCommand[]): number {
   return n;
 }
 
-// Capture the pixels of `paper` under each planned fold region. The paper is
-// a parameter rather than a re-read of the module's canvas because the adopt
-// path below can install a fresh blank one mid-capture: the copy loop is
-// pinned to the pre-swap paper the caller handed in, which is the paper the
-// fold's rects were planned against.
+// Capture the pixels of `paper` under each planned fold region. Swapping and
+// copying are mutually exclusive: an adopted paper returns as the entry's one
+// patch, and adoptPaperAsSnapshot only installs the fresh canvas on the path
+// that succeeds, so the copy loop below always runs against a paper no swap
+// has touched. Taking that paper as a parameter pins the capture to the
+// caller's canvas — the one whose dimensions foldRegionsForCommands planned
+// these rects against — instead of re-reading mutable module state.
 //
 // Null when a patch canvas yields no 2D context: that loses this one undo
 // entry, never the ink — the caller's fold must still run or the stroke would
