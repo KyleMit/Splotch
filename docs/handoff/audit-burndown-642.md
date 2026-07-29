@@ -91,15 +91,76 @@ Against the skill's published per-shape timings: 407 P4/P5 findings on the `sonn
 for repeated container reclamation and a live session per relaunch; the run resumes cleanly from
 `origin` every time.
 
+The canary measured **9.2 min/finding at $2.63** — but it ran before the tiering fix below, so every
+one of its findings used Opus. That rate over the remaining backlog is ~97 h; the projection above
+is the post-fix expectation. Dollar figures are notional on a Claude subscription — the real ceiling
+is the usage window.
+
+## Driver fix landed before the full run — tiering was off for the whole backlog
+
+`findingPriority()` read the priority from a leading `[P<n>]` **title** tag. This backlog's staging
+format (PR #614) tags titles by category — `[Maintainability] …` — and states the priority on a
+`**Priority:** P4` **body** line, so all 642 findings scored as unknown and fell back to
+`MODEL_IMPL`. Impl-model tiering was silently disabled for the entire run.
+
+Nothing reports this: the driver's tiering log line only prints when tiering *fires*, so its absence
+is indistinguishable from a backlog with no P4/P5 findings.
+
+Fixed by giving `findingPriority` a second `body` argument with a body-line fallback, the title tag
+still winning where both appear; the driver already had the full entry text in scope at the call
+site. Verified against the live backlog: all 637 remaining findings now resolve a priority (zero
+unknown) and **407 route to `MODEL_IMPL_MINOR`**. The body-fallback test was mutation-tested against
+the previous implementation and fails there.
+
+**Consequence for review:** the canary exercised only the Opus path, so the minor tier is unproven
+on this backlog. Read the first few `impl model: sonnet (P4)` findings of the full run closely
+rather than assuming that path is sound.
+
 ## Risks & next 3 steps
 
-1. Open the draft PR (head = this branch) and record its number in the status line above.
-2. Canary `npm run audit:burndown` with `MAX_ISSUES=5`; audit its commits for behavior smuggled
-   inside a refactor, confirm each fix commit deleted exactly one `###` entry, confirm a fix round
-   resumed the implementer's own session, and confirm CI is green before launching the full run.
-3. Run the loop until drained, relaunching after each container reclamation. Re-arm the `run.log`
-   monitor every ~30 min (Monitor clamps to 30 min regardless of requested timeout), drain the
-   comment store as it fills, and watch CI.
+1. ~~Open the draft PR.~~ Done — PR 616, draft.
+2. ~~Canary + audit.~~ Done and clean — see **Canary** below. Both comments posted; store drained.
+3. **Run the loop until the backlog is drained**, relaunching after each container reclamation with
+   the command above. Re-arm the `run.log` monitor every ~30 min (Monitor clamps to 30 min
+   regardless of requested timeout), drain the comment store as it fills, and watch CI.
+
+### Canary — 5 fixed, 0 dropped, 0 deferred, 46 min, $13.12
+
+| sha          | finding                                    | rounds | elapsed  |
+| ------------ | ------------------------------------------ | ------ | -------- |
+| 646bad82112e | `stopDrawing` untracked-pointer early exit | 1      | 33.7 min |
+| 8d77bb08ca60 | Single-source the toolState→engine push    | 0      | 9.1 min  |
+| 1ef7b34fbd76 | Extract `alphaDataHasInk` predicate        | 0      | 4.2 min  |
+| 0dd208ffd19f | Drop `resetEmptyScanScratch` test seam     | 0      | 4.5 min  |
+| 369d4a7d3f50 | Derive engine default line width           | 0      | 3.7 min  |
+
+* **Entry accounting exact.** Each fix deleted exactly one `###` entry; the one `removed=0` commit
+  (7ad1aaa) is iter0001's intermediate fix round, as designed. Identity closes: 642 − 5 = 637 =
+  `pop.mjs --count`.
+* **Resume handoff confirmed** on iter0001. The impl round created a `finishStrokeGroup()` helper;
+  the fix round reports "`releaseAllPointers` now calls `finishStrokeGroup()` instead of re-inlining
+  the sequence" — refining its own construct, not re-deriving from review text. Zero
+  `no impl session` lines.
+* **The adversarial loop did real work.** iter0001's reviewer rejected the first attempt because the
+  relocated commit-at-discard behaviour had no test and the existing harness structurally could not
+  produce the required pointer ordering. The implementer added a `pointerEventsSync` seam plus three
+  specs and verified each fails against the pre-fix engine by temporarily reverting the hunks.
+* **No behavior smuggled inside a refactor.** Checked by hand against the three shapes the skill
+  names:
+  * `DEFAULT_LINE_WIDTH_PX = getStrokeWidthPx(DEFAULT_SIZE)` — value-preserving and intentional:
+    `DEFAULT_SIZE` is 3 and `SIZE_TO_PX[3]` is 8, the exact literal replaced.
+  * The `alphaDataHasInk` extraction is loop-identical (early `break` → early `return true`), and
+    its new tests use zero `as` casts — they are genuine threshold/boundary cases.
+  * The toolState dedup collapsed three `$effect`s into one. `activeStrokeSize()` already read
+    `toolState.brush`, so no dependency was added. The one real change: a stroke-size change now
+    also fires `setCrayonMode`/`setMagicMode`. Both are semantically idempotent —
+    `ensureMagicSheet()` early-returns, and `warmCrayonTiles` schedules an idle warm of a
+    `colorTile` cache memoized on `color@pass` — so this is a negligible redundant call on a rare
+    interaction, not a regression. Eraser was correctly left out (never restored from storage).
+* **CI: `cancel-in-progress` thinned intermediate coverage, as documented.** Findings 2–4 pushed
+  faster than a CI run completes, so runs 30409000626 / 30409221348 / 30409459299 were cancelled.
+  Finding 1's run passed in full. Judge the run by the final CI result plus the per-finding gates,
+  not by a green tick on every commit.
 
 Risks: the container is ephemeral and `.audit-work/` dies with it, so drain PR comments as you go;
 CI is the *only* full-suite gate in this configuration, so a red run means pause and diagnose, not
