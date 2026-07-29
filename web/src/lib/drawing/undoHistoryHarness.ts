@@ -122,6 +122,25 @@ export function cmd(color: string, magic = false, wasEmpty = false): StrokeGroup
   return { ops: [op], wasEmpty };
 }
 
+// A stroke spanning the whole stub paper, so its snapshot patch is a full
+// paper-sized rect. The resident tier is a byte budget scaled to the paper, so
+// exercising demotion needs entries big enough to exhaust it — cmd()'s hairline
+// never would.
+export function paperWideCmd(color: string, wasEmpty = false): StrokeGroupCommand {
+  const op: PathOp = {
+    kind: 'path',
+    pid: 1,
+    startX: 0,
+    startY: 0,
+    segs: [{ cx: 0, cy: 0, x: PAPER_SIDE, y: PAPER_SIDE }],
+    color,
+    lineWidth: 8,
+    erase: false,
+    magic: false,
+  };
+  return { ops: [op], wasEmpty };
+}
+
 // undoHistory's stacks are module state with no reset export, so isolation
 // between cases is a module reset plus a re-import.
 export async function freshHistory(): Promise<UndoHistory> {

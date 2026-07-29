@@ -17,6 +17,11 @@ test('depth caps at 20 and deep entries restore from encoded blobs', async ({ pa
         [
           { x: 30, y },
           { x: 270, y },
+          // L tail: leaves the asserted band pixels where they are while
+          // stretching the snapshot patch across the paper, so the resident
+          // byte budget is actually reached (see undoHistory hotWindowStart).
+          { x: 1240, y },
+          { x: 1240, y: 690 },
         ],
         'pen'
       );
@@ -24,11 +29,11 @@ test('depth caps at 20 and deep entries restore from encoded blobs', async ({ pa
   });
 
   // The cold tier encodes off the commit path — wait for it to settle: only
-  // MAX_HOT_RASTERS (2) recent snapshots stay hot rasters, the rest demote to blobs.
+  // the newest entries stay hot rasters up to the resident byte budget, the rest demote.
   await expect(async () => {
     const d = await page.evaluate(() => window.__engine.getUndoDebug());
     expect(d.snapshots).toBe(20);
-    expect(d.liveRasters).toBeLessThanOrEqual(2);
+    expect(d.liveRasters).toBeLessThan(d.snapshots);
     expect(d.blobBytes).toBeGreaterThan(0);
   }).toPass();
 
@@ -106,6 +111,11 @@ test('a stroke committed during a deep-undo blob decode survives the restore and
         [
           { x: 30, y },
           { x: 270, y },
+          // L tail: leaves the asserted band pixels where they are while
+          // stretching the snapshot patch across the paper, so the resident
+          // byte budget is actually reached (see undoHistory hotWindowStart).
+          { x: 1240, y },
+          { x: 1240, y: 690 },
         ],
         'pen'
       );
@@ -115,7 +125,7 @@ test('a stroke committed during a deep-undo blob decode survives the restore and
   // Wait for the cold tier to settle so the third undo is a blob decode.
   await expect(async () => {
     const d = await page.evaluate(() => window.__engine.getUndoDebug());
-    expect(d.liveRasters).toBeLessThanOrEqual(2);
+    expect(d.liveRasters).toBeLessThan(d.snapshots);
     expect(d.blobBytes).toBeGreaterThan(0);
   }).toPass();
 
@@ -155,28 +165,36 @@ test('drawing immediately after rapid undos folds onto the restored paper (undo 
   // then dot the canvas before the restores land. The stroke's commit queues
   // behind all three restores, its baseline rebases to the restored blank
   // paper, and the next undo removes just that stroke back to blank.
-  await page.evaluate(() => {
-    for (let i = 0; i < 3; i++) {
+  // Six strokes, not three: a spanning patch is ~0.56 of the paper, so it takes
+  // six of them to pass the resident byte budget and demote anything — and this
+  // spec needs the deepest restore to be a real blob decode.
+  const BANDS = 6;
+  await page.evaluate((bands) => {
+    for (let i = 0; i < bands; i++) {
       const y = 20 + i * 20;
       window.__engine.strokeSync(
         [
           { x: 30, y },
           { x: 270, y },
+          // L tail: leaves the asserted band pixels where they are while
+          // stretching the snapshot patch across the paper, so the resident
+          // byte budget is actually reached (see undoHistory hotWindowStart).
+          { x: 1240, y },
+          { x: 1240, y: 690 },
         ],
         'pen'
       );
     }
-  });
+  }, BANDS);
   await expect(async () => {
     const d = await page.evaluate(() => window.__engine.getUndoDebug());
     expect(d.blobBytes).toBeGreaterThan(0);
   }).toPass();
 
-  await page.evaluate(async () => {
+  await page.evaluate(async (bands) => {
     const E = window.__engine;
-    E.undo();
-    E.undo();
-    const chain = E.undo(); // three rapid taps back to blank
+    for (let i = 0; i < bands - 1; i++) E.undo();
+    const chain = E.undo(); // rapid taps back to blank, the deepest a blob decode
     E.strokeSync(
       [
         { x: 150, y: 200 },
@@ -185,12 +203,13 @@ test('drawing immediately after rapid undos folds onto the restored paper (undo 
       'pen'
     ); // draws before any restore lands
     await chain;
-  });
+  }, BANDS);
 
   // Only the new stroke survives the queued restores.
-  expect(await page.evaluate(() => window.__engine.pixelAt(150, 20)[3])).toBe(0);
-  expect(await page.evaluate(() => window.__engine.pixelAt(150, 40)[3])).toBe(0);
-  expect(await page.evaluate(() => window.__engine.pixelAt(150, 60)[3])).toBe(0);
+  for (let i = 0; i < BANDS; i++) {
+    const y = 20 + i * 20;
+    expect(await page.evaluate((py) => window.__engine.pixelAt(150, py)[3], y)).toBe(0);
+  }
   expect(await page.evaluate(() => window.__engine.pixelAt(150, 200)[3])).toBeGreaterThan(0);
   let s = await state(page);
   expect(s.canvasEmpty).toBe(false);
@@ -210,32 +229,38 @@ test('encoded snapshots rising into the hot window re-inflate to hot rasters', a
   // growth: after deep undos the entries that rise into the top-2 window
   // decode back to hot rasters off the interaction path, so the *second* undo
   // tap after a new stroke is a synchronous blit, not a blob decode.
-  await page.evaluate(() => {
-    for (let i = 0; i < 5; i++) {
+  // Eight, for the same reason as the spec above: a spanning patch is ~0.56 of
+  // the paper, so demotion needs more than five of them.
+  const BANDS = 8;
+  await page.evaluate((bands) => {
+    for (let i = 0; i < bands; i++) {
       const y = 20 + i * 20;
       window.__engine.strokeSync(
         [
           { x: 30, y },
           { x: 270, y },
+          // L tail: leaves the asserted band pixels where they are while
+          // stretching the snapshot patch across the paper, so the resident
+          // byte budget is actually reached (see undoHistory hotWindowStart).
+          { x: 1240, y },
+          { x: 1240, y: 690 },
         ],
         'pen'
       );
     }
-  });
+  }, BANDS);
 
-  // Let the cold tier settle: strokes 1–3 demote to blobs, 4–5 stay live.
+  // Let the cold tier settle: the oldest entries pass the byte budget and demote.
   await expect(async () => {
     const d = await page.evaluate(() => window.__engine.getUndoDebug());
-    expect(d.snapshots).toBe(5);
-    expect(d.liveRasters).toBe(2);
+    expect(d.snapshots).toBe(BANDS);
+    expect(d.liveRasters).toBeLessThan(d.snapshots);
     expect(d.blobBytes).toBeGreaterThan(0);
   }).toPass();
 
-  await page.evaluate(async () => {
-    await window.__engine.undo();
-    await window.__engine.undo();
-    await window.__engine.undo();
-  });
+  await page.evaluate(async (undos) => {
+    for (let i = 0; i < undos; i++) await window.__engine.undo();
+  }, BANDS - 2);
 
   // Both survivors were blobs; rising into the window re-inflates them.
   await expect(async () => {
@@ -247,13 +272,14 @@ test('encoded snapshots rising into the hot window re-inflate to hot rasters', a
 
   await page.evaluate(() => window.__engine.strokeSync([{ x: 150, y: 200 }], 'pen'));
 
-  // The new commit re-tiers: top-2 live (stroke 2's snapshot + the dot's),
-  // the entry pushed below the window demotes back to a blob.
+  // The new commit re-tiers, and a three-entry stack is far inside the byte
+  // budget — so nothing demotes back. That is the point of a budget: encoding
+  // happens under memory pressure, not on a fixed entry count.
   await expect(async () => {
     const d = await page.evaluate(() => window.__engine.getUndoDebug());
     expect(d.snapshots).toBe(3);
-    expect(d.liveRasters).toBe(2);
-    expect(d.blobBytes).toBeGreaterThan(0);
+    expect(d.liveRasters).toBe(3);
+    expect(d.blobBytes).toBe(0);
   }).toPass();
 
   // First undo drops the dot; the second — the tap that used to pay a blob
