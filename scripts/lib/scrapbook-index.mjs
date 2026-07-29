@@ -81,6 +81,16 @@ const REGISTRY = {
       return n ? `${n} samples` : null;
     },
   },
+  'e2e-tuning': {
+    icon: 'settings',
+    hue: 'pink',
+    title: 'E2E tuning — workers, retries, flakes',
+    blurb:
+      'How many Playwright workers the suite should run with, measured across 1–8 workers on local and CI hardware: where wall clock saturates, where the flake rate takes over, and the three magic-brush flakes fixed along the way. Includes the hypotheses that were falsified.',
+    entry: 'e2e-tuning/index.html',
+    kind: 'Measurement study',
+    count: () => null,
+  },
   icons: {
     icon: 'more-colors',
     hue: 'purple',

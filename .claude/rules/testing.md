@@ -47,9 +47,9 @@ paths:
   spec file that imports it and every later spec file in that worker silently runs with no setup.
   Extend `test` in the helper and import `test`/`expect` from it (`tests/engine-harness.ts`);
   `scripts/tests/e2e-harness-imports.test.mjs` guards the import.
-* **Flake-resistance (the suite runs 4 parallel workers, so specs share the CPU):** never assert on
-  a single interaction against a lazily-wired control — wrap open-then-assert in
-  `expect(...).toPass()` or reuse a retrying helper
+* **Flake-resistance (the suite runs 2 workers locally and 4 on CI — ADR-0078 — so specs share the
+  CPU):** never assert on a single interaction against a lazily-wired control — wrap
+  open-then-assert in `expect(...).toPass()` or reuse a retrying helper
   (`openParentCenter`/`openDrawer`/`openStrokeMenu`); use `expect.poll` / web-first assertions
   instead of a fixed `waitForTimeout` to wait for something to happen (a fixed sleep is fine only to
   idle *past* a known threshold or to prove a state does *not* change); poll async canvas/relayout
