@@ -333,9 +333,10 @@ function adoptPaperAsSnapshot(): HTMLCanvasElement | null {
 // command the unready magic sheet would render blank (nothing after it folds
 // either, preserving cross-command ordering — eraser, crayon mix).
 function foldableCount(commands: StrokeGroupCommand[]): number {
+  if (!isMagicSheetUnready()) return commands.length;
   let n = 0;
   for (const cmd of commands) {
-    if (commandHasMagic(cmd) && isMagicSheetUnready()) break;
+    if (commandHasMagic(cmd)) break;
     n++;
   }
   return n;

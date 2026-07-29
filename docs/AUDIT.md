@@ -19,45 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Performance] `foldableCount` scans every op for magic before checking the cheap sheet gate
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`foldableCount`, lines 462–469;
-`commandHasMagic`, lines 750–752) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-for (const cmd of commands) {
-  if (commandHasMagic(cmd) && isMagicSheetUnready()) break;
-  n++;
-}
-```
-
-`commandHasMagic` is `command.ops.some(...)` — a full op scan (a long stroke records one path op per
-smoothing call, so this can be hundreds of ops) — and it runs *first*, on every commit, inside the
-pointerup path. `isMagicSheetUnready()` is a boolean read and is `false` in the overwhelmingly
-common case (sheet ready or magic never used), which would short-circuit the whole scan. The gate
-also can't change mid-loop, so it can be hoisted out entirely.
-
-#### Proposed solution
-
-```ts
-function foldableCount(commands: StrokeGroupCommand[]): number {
-  if (!isMagicSheetUnready()) return commands.length;
-  let n = 0;
-  for (const cmd of commands) {
-    if (commandHasMagic(cmd)) break;
-    n++;
-  }
-  return n;
-}
-```
-
-Behavior-identical (the gate is loop-invariant), removes the op scan from every ordinary commit, and
-reads clearer: "everything folds unless the sheet is unready".
-
 ### [Readability] `unionBoxes` mutates its first element while reading as pure
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`unionBoxes`, lines 345–349; call sites lines
