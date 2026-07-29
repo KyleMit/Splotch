@@ -19,26 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Readability] `getHistoryDebug`'s nested reduces and a fractured comment
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`getHistoryDebug` and its comment, lines 777–810)
-@ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The three stack aggregations are nested `reduce` chains (lines 797–807) — the `rasterBytes` one is a
-reduce-inside-reduce spanning five lines — and the 11-line comment above has a mid-sentence wrap
-artifact ("...a patch-level\n// count) and\n// `rasterBytes` is...", lines 783–785) that reads like
-a merge scar. For a debug seam this carries unusually high parse cost.
-
-#### Proposed solution
-
-Extract tiny named helpers (`entryHoldsRaster(s)`, `patchRasterBytes(p)`, `patchBlobBytes(p)`) or
-use straightforward `for` loops accumulating the three numbers in one pass over the stack; reflow
-the comment while touching it. Zero behavior change.
-
 ### [DX] Unit suite resets the module registry twice per test
 
 **File(s):** `web/src/lib/drawing/undoHistory.test.ts` (`afterEach`, lines 85–89; `freshHistory`,

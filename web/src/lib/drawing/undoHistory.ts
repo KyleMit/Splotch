@@ -738,11 +738,11 @@ export function repaintAll(target: CanvasRenderingContext2D) {
 }
 
 // Test/profiling seam: how the undo history is currently stored. `liveRasters`
-// counts ENTRIES still holding any patch canvas (≤ the budget's entries +
-// whose encode hasn't landed — entry-level on purpose: the settle gates in
-// engine-snapshot-tier.spec.ts and scripts/perf/undo-scenarios.mjs compare it against
-// the budget, and a multi-patch entry would overshoot a patch-level
-// count) and
+// counts ENTRIES still holding any patch canvas (≤ the budget's entries plus
+// those whose encode hasn't landed). It is entry-level on purpose: the settle
+// gates in engine-snapshot-tier.spec.ts and scripts/perf/undo-scenarios.mjs
+// compare it against the budget, and a multi-patch entry would overshoot a
+// patch-level count.
 // `rasterBytes` is the hot patches' actual pixel cost (w × h × 4 —
 // patch-sized since ADR-0069, per-cluster since ADR-0074); `blobBytes` is the
 // encoded tier's total size — together the history memory the perf harness
@@ -763,31 +763,31 @@ export interface HistoryDebug {
 }
 
 export function getHistoryDebug(): HistoryDebug {
+  let liveRasters = 0;
+  let rasterBytes = 0;
+  let blobBytes = 0;
+  let patchBytes = 0;
+
+  for (const snapshot of snapshotStack) {
+    let hasHotPatch = false;
+    for (const patch of snapshot.patches) {
+      patchBytes += patch.rect.w * patch.rect.h * 4;
+      if (patch.store.tier === 'hot') {
+        hasHotPatch = true;
+        rasterBytes += patch.store.canvas.width * patch.store.canvas.height * 4;
+      } else {
+        blobBytes += patch.store.blob.size;
+      }
+    }
+    if (hasHotPatch) liveRasters++;
+  }
+
   return {
     snapshots: snapshotStack.length,
-    liveRasters: snapshotStack.reduce(
-      (n, s) => n + (s.patches.some((p) => p.store.tier === 'hot') ? 1 : 0),
-      0
-    ),
-    rasterBytes: snapshotStack.reduce(
-      (n, s) =>
-        n +
-        s.patches.reduce(
-          (m, p) =>
-            m + (p.store.tier === 'hot' ? p.store.canvas.width * p.store.canvas.height * 4 : 0),
-          0
-        ),
-      0
-    ),
-    blobBytes: snapshotStack.reduce(
-      (n, s) =>
-        n + s.patches.reduce((m, p) => m + (p.store.tier === 'cold' ? p.store.blob.size : 0), 0),
-      0
-    ),
-    patchBytes: snapshotStack.reduce(
-      (n, s) => n + s.patches.reduce((m, p) => m + p.rect.w * p.rect.h * 4, 0),
-      0
-    ),
+    liveRasters,
+    rasterBytes,
+    blobBytes,
+    patchBytes,
     pendingCommands: pendingCommands.length,
   };
 }
