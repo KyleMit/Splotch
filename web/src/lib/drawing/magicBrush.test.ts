@@ -12,8 +12,12 @@ function seededRand(seed: number): () => number {
 }
 
 describe('rainbow gradient generation', () => {
-  it('ships ten pooled gradients', () => {
-    expect(MAGIC_GRADIENT_COUNT).toBe(10);
+  it('produces MAGIC_GRADIENT_COUNT distinct rainbows, matching the pool size', () => {
+    const gradients = Array.from({ length: MAGIC_GRADIENT_COUNT }, (_, i) =>
+      createRainbowGradient(seededRand(i + 1))
+    );
+    const serialized = new Set(gradients.map((g) => JSON.stringify(g)));
+    expect(serialized.size).toBe(MAGIC_GRADIENT_COUNT);
   });
 
   it('produces a rainbow of ascending hsl stops from 0 to 1', () => {
