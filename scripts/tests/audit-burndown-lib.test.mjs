@@ -241,6 +241,38 @@ describe('findingPriority', () => {
   it('only reads a leading tag, not a [P<n>] appearing later in the title', () => {
     expect(findingPriority('[dedupe] see the [P2] finding above')).toBeNull();
   });
+
+  // The whole-repo code-audit format tags titles by category and states the
+  // priority on a body line instead. Reading only the title scored every one of
+  // those findings as unknown, silently routing the entire mechanical tail to
+  // the expensive model — a tiering outage nothing logs, since the tiering log
+  // line only prints when tiering fires.
+  it('falls back to the body **Priority:** line when the title carries no tag', () => {
+    const body = [
+      '### [Maintainability] Single-source the toolState push',
+      '',
+      '**File(s):** `web/src/lib/drawing/earlyBoot.ts` @ 9ae62ff1',
+      '',
+      '**Priority:** P4',
+    ].join('\n');
+    expect(findingPriority('[Maintainability] Single-source the toolState push', body)).toBe(4);
+  });
+
+  it('prefers the title tag over a body line when both are present', () => {
+    expect(findingPriority('[P2][naming] Rename it', '**Priority:** P5')).toBe(2);
+  });
+
+  it('ignores a **Priority:** mention that is not at the start of a line', () => {
+    expect(
+      findingPriority('[dedupe] Merge them', 'see the **Priority:** P1 finding above')
+    ).toBeNull();
+  });
+
+  it('returns null when neither the title nor the body states a priority', () => {
+    expect(
+      findingPriority('[dead-code] Unused export', '#### Problem\n\nNo priority here.')
+    ).toBeNull();
+  });
 });
 
 // A missing sha used to mean "roll back and defer", which twice discarded a

@@ -608,7 +608,7 @@ while (done < MAX_ISSUES) {
   // renames, dedup), where the cheaper model shaves the long pole and the
   // unchanged adversarial review still gates the result. Anything more
   // consequential — or untagged, so unknown — stays on the stronger model.
-  const priority = findingPriority(title);
+  const priority = findingPriority(title, issue);
   const implModel = priority !== null && priority >= 4 ? MODEL_IMPL_MINOR : MODEL_IMPL;
   if (implModel !== MODEL_IMPL) logLine(`  impl model: ${implModel} (P${priority})`);
 
