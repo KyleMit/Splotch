@@ -178,6 +178,14 @@
     }
   }
 
+  /* Below this the longer label wraps while its neighbour doesn't, leaving two
+     visibly different text blocks inside one pill. */
+  @media (max-width: 360px) {
+    .report-kind {
+      flex-direction: column;
+    }
+  }
+
   .report-label {
     font-size: var(--font-size-md);
     font-weight: 500;
@@ -199,9 +207,10 @@
     border-radius: var(--radius-sm);
   }
 
-  .report-textarea:focus {
-    outline: none;
+  .report-textarea:focus-visible {
     border-color: var(--brand);
+    outline: 2px solid var(--brand-text);
+    outline-offset: 2px;
   }
 
   .report-public-note {
@@ -254,14 +263,13 @@
   }
 
   .report-device :global(.report-device-details summary) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: 8px 12px;
     font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--brand-text);
-  }
-
-  .report-device :global(.report-device-details summary::after) {
-    float: right;
   }
 
   .report-device-list {

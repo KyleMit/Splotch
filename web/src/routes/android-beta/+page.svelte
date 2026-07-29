@@ -139,6 +139,9 @@
     --page-accent: #7c4dcf;
     --page-accent-hover: #6b3fbf;
     --page-on-accent: #ffffff;
+    /* The sheet's lift, pinned for the same reason: --float-shadow's dark value
+       is a light keyline that would show as a halo on this white sheet. */
+    --page-shadow: 0 1px 2px rgba(93, 84, 68, 0.05), 0 10px 30px rgba(93, 84, 68, 0.07);
   }
 
   /* Chrome the Troubleshooting panel owns rather than the shell: everything here

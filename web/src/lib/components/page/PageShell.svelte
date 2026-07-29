@@ -81,8 +81,13 @@
     --page-accent: var(--brand-solid);
     --page-accent-hover: var(--brand-solid-hover);
     --page-on-accent: var(--on-brand);
-    /* One reading measure for every text block on the page. */
+    /* The reading measure: 62 characters, so each block resolves it against its
+       own font size (the 18px lede runs wider in px than the 16px body). */
     --page-measure: 62ch;
+    /* Themed, because the light sheet's warm lift is invisible on a dark ground
+       — --float-shadow is the app's paper-card elevation and already carries a
+       dark value. A page with a pinned palette pins this too. */
+    --page-shadow: var(--float-shadow);
     /* Inside the sheet every band lines up on one horizontal padding. */
     --page-gutter: clamp(20px, 5vw, 34px);
 
@@ -106,9 +111,7 @@
     padding: 0 var(--page-gutter) 40px;
     background: var(--page-sheet);
     border-radius: var(--radius-xl);
-    box-shadow:
-      0 1px 2px rgba(93, 84, 68, 0.05),
-      0 10px 30px rgba(93, 84, 68, 0.07);
+    box-shadow: var(--page-shadow);
   }
 
   /* Narrower than the sheet itself and the card has no room to read as a card —

@@ -23,6 +23,11 @@
   let honeypot = $state('');
   let submitting = $state(false);
 
+  // Sent and unsent are two states of one page, not one page with a banner: the
+  // hero carries the outcome, so a reporter who just submitted isn't re-invited
+  // to submit by a 46px "Send us feedback" above the thank-you.
+  let sent = $derived(form?.ok === true);
+
   const submit: SubmitFunction = () => {
     submitting = true;
     return async ({ update }) => {
@@ -42,34 +47,57 @@
   />
 </svelte:head>
 
-<PageShell title="Send us feedback" wordmark="Splotch feedback">
+{#snippet nextSteps()}
+  <aside class="aside">
+    <h2>What happens next</h2>
+    <ol>
+      <li>Your note opens an issue on our public GitHub tracker.</li>
+      <li>We read it, and it joins the list of things to fix or build.</li>
+      <li>Nothing else is collected — see the <a href="/privacy">privacy policy</a>.</li>
+    </ol>
+  </aside>
+{/snippet}
+
+<PageShell
+  title={sent ? 'Thank you — your report is in.' : 'Send us feedback'}
+  wordmark="Splotch feedback"
+>
   {#snippet lede()}
-    Found a bug or have an idea? Tell us here — it goes straight to our issue tracker. No account,
-    no sign-up, and nothing to install.
+    {#if sent}
+      A real person reads every one of these. There's no account attached to it, so we can't write
+      back directly — the issue itself is where any follow-up questions will appear.
+    {:else}
+      Found a bug or have an idea? Tell us here — it goes straight to our issue tracker. No account,
+      no sign-up, and nothing to install.
+    {/if}
   {/snippet}
 
-  <RuleLabel>{form?.ok ? 'All done' : 'Your report'}</RuleLabel>
+  <RuleLabel>{sent ? 'What happens now' : 'Your report'}</RuleLabel>
 
-  {#if form?.ok}
+  {#if sent}
     <div class="done">
-      <h2>Thank you — your report is in.</h2>
-      <p>
-        A real person reads every one of these. There's no account attached to it, so we can't write
-        back directly; the issue itself is where any follow-up questions will appear.
-      </p>
+      <StatusMessage status="success">Your report was sent.</StatusMessage>
       <div class="done-actions">
-        {#if form.url}
+        {#if form?.url}
           <a class="done-link" href={form.url} target="_blank" rel="noopener noreferrer">
             View your report ↗
           </a>
         {/if}
         <a class="done-again" href="/feedback">Send another</a>
       </div>
+      {@render nextSteps()}
     </div>
   {:else}
     <div class="layout">
       <form class="card" method="POST" use:enhance={submit}>
         <ReportFields bind:kind bind:message bind:includeDevice bind:device bind:honeypot />
+
+        <!-- Above the button, not below it: the reporter's eye is on the control
+             they just pressed, and an error under a full-width button on a phone
+             lands at or past the fold. -->
+        {#if form?.error}
+          <StatusMessage status="error">{form.error}</StatusMessage>
+        {/if}
 
         <!-- Not the Button primitive: that one is sized for a modal's settings
              card, and this page's call to action is the same solid, generously
@@ -78,28 +106,17 @@
         <button class="submit" type="submit" disabled={submitting}>
           {submitting ? 'Sending…' : 'Send report'}
         </button>
-
-        {#if form?.error}
-          <StatusMessage status="error">{form.error}</StatusMessage>
-        {/if}
       </form>
 
-      <aside class="aside">
-        <h2>What happens next</h2>
-        <ol>
-          <li>Your note opens an issue on our public GitHub tracker.</li>
-          <li>We read it, and it joins the list of things to fix or build.</li>
-          <li>Nothing else is collected — see the <a href="/privacy">privacy policy</a>.</li>
-        </ol>
-      </aside>
+      {@render nextSteps()}
     </div>
   {/if}
 </PageShell>
 
 <style>
-  /* Desktop puts the note beside the form rather than under it, so the whole
-     page is one screen; the form keeps a comfortable reading measure instead of
-     stretching to the sheet's full 880px. */
+  /* Wide desktops put the note beside the form; anything narrower stacks, since
+     a fixed 250px rail beside a squeezed form wraps its own sentences and leaves
+     the short page bottom-heavy with empty sheet. */
   .layout {
     display: flex;
     flex-wrap: wrap;
@@ -107,12 +124,52 @@
     gap: 32px;
   }
 
+  /* The form sits on its own panel, exactly as it does inside the Parent Center:
+     ReportFields' inputs are --surface, so without a --surface-2 ground under
+     them a white field on a white sheet is separated only by a hairline and the
+     whole form reads as unstyled. */
   .card {
     display: flex;
     flex-direction: column;
     gap: 12px;
     flex: 1 1 380px;
     max-width: var(--page-measure);
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    background: var(--surface-2);
+  }
+
+  /* The page's own type scale, not the modal's: inside a settings card the
+     prompt is a 14px label among many, but here it is the one question the
+     visitor came to answer. */
+  .card :global(.report-label) {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--page-ink);
+  }
+
+  .card :global(.report-kind-option) {
+    font-size: 15px;
+    padding: 10px 12px;
+  }
+
+  .card :global(.report-public-note) {
+    font-size: 13px;
+  }
+
+  /* Three radii on the page, one family: 22 the sheet, 14 the buttons and the
+     control they sit in, 12 the fields. */
+  .card :global(.report-kind) {
+    border-radius: 14px;
+  }
+
+  .card :global(.report-kind-option) {
+    border-radius: 11px;
+  }
+
+  .card :global(.report-textarea),
+  .card :global(.report-device-details) {
+    border-radius: var(--radius-md);
   }
 
   .submit {
@@ -142,18 +199,23 @@
     cursor: default;
   }
 
+  /* A callout in the step ledger's language rather than three lines floating in
+     the corner — the same left-ruled, washed block /android-beta closes each
+     step with, so the two pages share a second element besides the button. */
   .aside {
     flex: 0 1 250px;
     min-width: 0;
+    padding: 14px 18px;
+    border-left: 3px solid var(--brand);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    background: var(--brand-wash);
   }
 
   .aside h2 {
-    margin: 0 0 10px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--page-muted);
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--page-ink);
   }
 
   .aside ol {
@@ -161,7 +223,7 @@
     padding-left: 1.1em;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
 
   .aside li {
@@ -175,27 +237,12 @@
     max-width: var(--page-measure);
   }
 
-  .done h2 {
-    margin: 0;
-    font-size: 21px;
-    font-weight: 700;
-    color: var(--page-ink);
-  }
-
-  .done p {
-    margin: 12px 0 0;
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 1.65;
-    color: var(--page-body);
-  }
-
   .done-actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 20px;
-    margin-top: 24px;
+    margin: 24px 0 32px;
   }
 
   /* The same solid affordance the beta page's step buttons wear, so the two
@@ -240,23 +287,23 @@
     }
   }
 
-  @media (max-width: 700px) {
-    /* Below this the aside would be a 250px column beside a squeezed form, so
-       it drops under it — and after the form, since it describes what happens
-       once the report is sent. */
+  /* The rail only earns its place when the form beside it is still comfortable.
+     Below this it drops under the form — after it, since it describes what
+     happens once the report is sent. */
+  @media (max-width: 1024px) {
     .aside {
       flex: 1 1 100%;
+      max-width: var(--page-measure);
     }
   }
 
   @media (max-width: 540px) {
-    .done h2 {
-      font-size: 19px;
-    }
-
-    .done p,
     .aside li {
       font-size: 15px;
+    }
+
+    .card {
+      padding: 16px;
     }
 
     /* Full-width tap target, matching the beta page's step buttons. */
@@ -264,12 +311,15 @@
       gap: 12px;
     }
 
+    .done-link {
+      flex: 1 0 100%;
+      text-align: center;
+    }
+
     .done-link,
     .submit {
-      flex: 1 0 100%;
       width: 100%;
       min-height: 48px;
-      text-align: center;
     }
   }
 </style>
