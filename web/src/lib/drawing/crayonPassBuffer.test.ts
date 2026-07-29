@@ -17,6 +17,7 @@ import {
   closeLiveCrayonPass,
   hasOpenLiveCrayonPass,
 } from './crayonPassBuffer';
+import { AA_PAD } from './opGeometry';
 import { renderOp, type StrokeOp } from './strokeOps';
 
 // happy-dom's <canvas> has no 2D context; install a no-op recording stub so the
@@ -68,8 +69,17 @@ function ctx2d(): CanvasRenderingContext2D {
   return c.getContext('2d')! as unknown as CanvasRenderingContext2D;
 }
 
-function crayonDot(): StrokeOp {
-  return { kind: 'dot', x: 100, y: 100, radius: 8, color: '#ff0000', erase: false, crayon: true };
+function crayonDot(overrides: Partial<Extract<StrokeOp, { kind: 'dot' }>> = {}): StrokeOp {
+  return {
+    kind: 'dot',
+    x: 100,
+    y: 100,
+    radius: 8,
+    color: '#ff0000',
+    erase: false,
+    crayon: true,
+    ...overrides,
+  };
 }
 
 describe('live crayon paper-space seam', () => {
@@ -106,5 +116,44 @@ describe('live crayon paper-space seam', () => {
     // ...but livePaperSide is back to 0, so nothing landed in paper space and
     // there is no raster to close. Before the reset seam this returned a raster.
     expect(closeLiveCrayonPass()).toBeNull();
+  });
+
+  it("clamps the closed raster to the registered paper square, not the op's unclamped extent", () => {
+    const target = ctx2d();
+    const buffer = ctx2d();
+    setLiveCrayonBuffer(target, buffer);
+    setCrayonPaperSpace(64);
+
+    // radius 5 + AA_PAD pads the bbox to [-pad, pad] around x=0, so the left
+    // edge runs off the paper square and must be clamped to 0.
+    const pad = 5 + AA_PAD;
+    renderOp(target, crayonDot({ x: 0, y: 32, radius: 5 }));
+
+    const raster = closeLiveCrayonPass();
+
+    expect(raster).not.toBeNull();
+    expect(raster!.x).toBe(0);
+    expect(raster!.y).toBe(32 - pad);
+    expect(raster!.canvas.width).toBe(pad);
+    expect(raster!.canvas.height).toBe(2 * pad);
+  });
+
+  it('grows the closed raster to cover the union of two non-overlapping crayon ops', () => {
+    const target = ctx2d();
+    const buffer = ctx2d();
+    setLiveCrayonBuffer(target, buffer);
+    setCrayonPaperSpace(256);
+
+    const pad = 5 + AA_PAD;
+    renderOp(target, crayonDot({ x: 20, y: 20, radius: 5 }));
+    renderOp(target, crayonDot({ x: 200, y: 200, radius: 5 }));
+
+    const raster = closeLiveCrayonPass();
+
+    expect(raster).not.toBeNull();
+    expect(raster!.x).toBe(20 - pad);
+    expect(raster!.y).toBe(20 - pad);
+    expect(raster!.canvas.width).toBe(200 + pad - (20 - pad));
+    expect(raster!.canvas.height).toBe(200 + pad - (20 - pad));
   });
 });
