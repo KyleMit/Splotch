@@ -260,7 +260,8 @@ ${masthead({
       <p>
         The two environments want different settings, for different reasons. Locally
         (<code>retries: 0</code>) a red run costs a re-run plus the attention to triage it, and the
-        break-even is only ~15 seconds of attention — so 2 workers wins despite finishing ~11s later.
+        break-even is only ~15 seconds of attention — so 2 workers wins despite finishing ~10.2s
+        later (92.3s vs 82.1s).
         On CI (<code>retries: 2</code>) flakes are absorbed cheaply and the flake rate barely moves
         between 1 and 6 workers, so wall clock decides: 4 workers, the fastest setting measured.
       </p>
