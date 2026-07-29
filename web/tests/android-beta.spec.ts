@@ -10,7 +10,7 @@ import { supportEmail } from '../src/lib/supportEmail';
 // wrong place is the only way it can fail, and nothing else in the suite would
 // notice.
 
-test('the beta sign-up steps link to the group, the opt-in page, and the listing', async ({
+test('the beta sign-up steps link to the group, the opt-in page, the listing, and /feedback', async ({
   page,
 }) => {
   await page.goto('/android-beta');
@@ -28,6 +28,20 @@ test('the beta sign-up steps link to the group, the opt-in page, and the listing
     'href',
     PLAY_STORE_LISTING_URL
   );
+  await expect(page.getByRole('link', { name: 'Send feedback' })).toHaveAttribute(
+    'href',
+    '/feedback'
+  );
+});
+
+// /android-beta is prerendered and /feedback is not (it has a form action), so
+// the one link between them is the pairing a build-time crawl or a stale
+// adapter config could turn into a 404 with nothing else noticing.
+test('the feedback button reaches the form', async ({ page }) => {
+  await page.goto('/android-beta');
+  await page.getByRole('link', { name: 'Send feedback' }).click();
+  await expect(page).toHaveURL('/feedback');
+  await expect(page.getByRole('heading', { name: 'Send us feedback' })).toBeVisible();
 });
 
 test('the support address is absent from the served HTML and added after hydration', async ({

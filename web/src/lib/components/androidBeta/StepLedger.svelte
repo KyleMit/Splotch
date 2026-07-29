@@ -13,7 +13,8 @@
 
   // Composed after hydration so the support address never appears in the
   // prerendered HTML, which is what address harvesters scrape. Without JS the
-  // card is simply absent, leaving step 4's in-app report as the way to reach us.
+  // card is simply absent; step 4's /feedback button is the path that survives,
+  // and that page posts through a form action so it works without JS too.
   let support = $state('');
   onMount(() => {
     support = supportEmail();
@@ -136,6 +137,16 @@
       crashes, confusing buttons, and “my toddler did <em>what</em>?” stories are all genuinely
       useful.
     </p>
+    <div class="action">
+      <!-- The only same-origin destination in the ledger, so no target/rel: the
+           other three hand the reader off to Google and should come back to an
+           untouched sign-up page. -->
+      <a class="btn" href="/feedback">Send feedback</a>
+      <p class="fine">
+        The same form as a web page — handy on a computer, or when the app itself is the thing
+        that's broken.
+      </p>
+    </div>
     {#if support}
       <div class="card" style="--card-accent:{CARD_ACCENT[3]}">
         <p class="card-label">Or just email me</p>
