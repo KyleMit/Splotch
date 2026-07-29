@@ -15,7 +15,7 @@ function loadFolderSave() {
   // next tap should retry the import instead of replaying the old failure.
   folderSaveModule ??= import('$lib/drawing/folderSave').then(
     (m) => {
-      m.onSaveFolderCleared(() => {
+      m.setSaveFolderClearedListener(() => {
         settings.saveFolderName = null;
       });
       return m;

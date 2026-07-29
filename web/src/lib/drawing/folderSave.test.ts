@@ -302,7 +302,7 @@ describe('saveBlobToFolder', () => {
     seedFolder(handle);
     setPicker(vi.fn());
     const cleared = vi.fn();
-    folderSave.onSaveFolderCleared(cleared);
+    folderSave.setSaveFolderClearedListener(cleared);
 
     expect(await folderSave.saveBlobToFolder(blob, 'e.png', { allowPrompt: false })).toBe(false);
     expect(store.has('saveDir')).toBe(false);
