@@ -19,42 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Testing] Depth-cap test floats `popSnapshot` promises instead of awaiting them
-
-**File(s):** `web/src/lib/drawing/undoHistory.test.ts` (lines 139–144) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-let undos = 0;
-while (m.popSnapshot()) undos++;
-...
-expect(repaintedContent(m)).toEqual(colors.slice(0, 2));
-```
-
-Each `popSnapshot()` return value (a promise) is discarded, and `repaintedContent` is asserted
-immediately after the loop. This is correct *today* only because the hot-raster restore path blits
-synchronously before resolving — an implementation detail the test silently bakes in. If the restore
-ordering ever moved inside the promise (e.g. the discriminated-union refactor, or batching
-restores), this test would assert against a half-restored paper and fail confusingly — or worse,
-keep passing while restores race.
-
-#### Proposed solution
-
-Await each pop:
-
-```ts
-for (let p = m.popSnapshot(); p; p = m.popSnapshot()) {
-  await p;
-  undos++;
-}
-```
-
-Same coverage, no reliance on synchronous restoration; matches how every other test in the file
-already awaits `popSnapshot`.
-
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
 ### [Maintainability] Guard the polaroid-overlay lifetime against the CSS animation duration it silently mirrors

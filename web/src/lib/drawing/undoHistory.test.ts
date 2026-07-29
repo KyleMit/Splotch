@@ -47,7 +47,10 @@ describe('snapshot stack depth', () => {
     const colors = Array.from({ length: m.MAX_UNDO_DEPTH + 2 }, (_, i) => `#s${i}`);
     for (const c of colors) m.pushCommand(cmd(c));
     let undos = 0;
-    while (m.popSnapshot()) undos++;
+    for (let restore = m.popSnapshot(); restore; restore = m.popSnapshot()) {
+      await restore;
+      undos++;
+    }
     expect(undos).toBe(m.MAX_UNDO_DEPTH);
     // The two overflow commands survive on the paper — that's the wall the
     // undo button hits.
