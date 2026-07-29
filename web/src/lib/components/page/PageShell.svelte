@@ -20,27 +20,17 @@
     wordmark: string;
     lede?: Snippet;
     children: Snippet;
-    backHref?: string;
-    backLabel?: string;
     /** Lands on the palette-bearing root, so a page can override --page-*. */
     class?: string;
   }
 
-  let {
-    title,
-    wordmark,
-    lede,
-    children,
-    backHref = '/',
-    backLabel = '← Back to drawing',
-    class: className,
-  }: Props = $props();
+  let { title, wordmark, lede, children, class: className }: Props = $props();
 </script>
 
 <main class={['page', className]}>
   <div class="sheet">
     <div class="topbar">
-      <a class="back" href={backHref}>{backLabel}</a>
+      <a class="back" href="/">← Back to drawing</a>
       <span class="brand">
         <CrayonStrip />
         <span class="wordmark">{wordmark}</span>

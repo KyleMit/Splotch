@@ -5,7 +5,6 @@
   import PageShell from '$lib/components/page/PageShell.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import ReportFields from '$lib/components/report/ReportFields.svelte';
-  import type { DeviceInfo } from '$lib/deviceReport';
   import type { ReportKind } from '$lib/report';
   import type { PageProps } from './$types';
 
@@ -14,19 +13,27 @@
   // can go in the Play Store listing instead of behind the in-app modal. It
   // posts to a form action rather than /api/report so a report still sends with
   // JavaScript unavailable — the one thing the in-app form can't offer.
-  let { form }: PageProps = $props();
+  let { data, form }: PageProps = $props();
 
-  let kind = $state<ReportKind>('bug');
-  let message = $state('');
-  let includeDevice = $state(false);
-  let device = $state<DeviceInfo | null>(null);
-  let honeypot = $state('');
+  // Seeded from the failed submission so a browser with no JavaScript — which
+  // re-renders this page from scratch on every POST — hands the reporter back
+  // what they wrote instead of an empty box. Deliberately the INITIAL value
+  // only: with `use:enhance` the component never remounts, so re-seeding from a
+  // later `form` would overwrite whatever the reporter has since typed.
+  // svelte-ignore state_referenced_locally
+  let kind = $state<ReportKind>(form?.values.kind ?? 'bug');
+  // svelte-ignore state_referenced_locally
+  let message = $state(form?.values.message ?? '');
+  // svelte-ignore state_referenced_locally
+  let includeDevice = $state(form?.values.includeDevice ?? false);
   let submitting = $state(false);
 
   // Sent and unsent are two states of one page, not one page with a banner: the
   // hero carries the outcome, so a reporter who just submitted isn't re-invited
-  // to submit by a 46px "Send us feedback" above the thank-you.
-  let sent = $derived(form?.ok === true);
+  // to submit by a 46px "Send us feedback" above the thank-you. It comes from
+  // the redirected URL rather than the action's return value (see +page.server),
+  // so a reload of the thank-you can't re-post the report.
+  let sent = $derived(data.sent);
 
   const submit: SubmitFunction = () => {
     submitting = true;
@@ -78,8 +85,8 @@
     <div class="done">
       <StatusMessage status="success">Your report was sent.</StatusMessage>
       <div class="done-actions">
-        {#if form?.url}
-          <a class="done-link" href={form.url} target="_blank" rel="noopener noreferrer">
+        {#if data.sentIssueUrl}
+          <a class="done-link" href={data.sentIssueUrl} target="_blank" rel="noopener noreferrer">
             View your report ↗
           </a>
         {/if}
@@ -90,7 +97,7 @@
   {:else}
     <div class="layout">
       <form class="card" method="POST" use:enhance={submit}>
-        <ReportFields bind:kind bind:message bind:includeDevice bind:device bind:honeypot />
+        <ReportFields bind:kind bind:message bind:includeDevice />
 
         <!-- Above the button, not below it: the reporter's eye is on the control
              they just pressed, and an error under a full-width button on a phone

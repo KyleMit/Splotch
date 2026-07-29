@@ -128,6 +128,8 @@ This endpoint is one of **two** front doors onto the same core. Validation, the 
 Markdown, and the error wording all live in `$lib/server/report.ts`; the `/feedback` page's form
 action calls it too, and throttles into the same `reportBucket` so the pair shares one budget rather
 than doubling it. Change the behaviour there, not here — this route only adds the JSON wire shape.
+The page's action additionally echoes the submitted values back on failure and answers success with
+a 303 redirect, neither of which a JSON endpoint needs.
 
 ```json
 // request

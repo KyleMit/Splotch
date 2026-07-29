@@ -53,9 +53,9 @@ const BASELINE = new Map(
     // step's crayon hue in two strengths — a wash behind the numeral and under
     // the callout, and a darkened ink for both of those texts (the raw palette
     // hues fail contrast on either ground) — plus the connector rail and the
-    // callout body ink. The crayon
-    // chips and the callout accent rails are NOT here: those read their hexes
-    // out of lib/palette.ts at render, which palette-source.test.mjs requires.
+    // callout body ink. The crayon chips and the callout accent rails are NOT
+    // here: those read their hexes out of lib/palette.ts at render, which
+    // palette-source.test.mjs requires.
     'lib/components/androidBeta/StepLedger.svelte': 10,
     // Deliberate constant: #666 is contrast-pinned for the one light-only host
     // (/admin), where --text-mid's dark value would be 1.9:1. Themed hosts (the

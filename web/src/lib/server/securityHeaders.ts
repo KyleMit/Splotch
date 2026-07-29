@@ -29,6 +29,23 @@ const CONTENT_SECURITY_POLICY = [
   'report-to csp',
 ].join('; ');
 
+/**
+ * Routes whose document must disclose its own origin to itself.
+ *
+ * A cross-document form POST from a page served `Referrer-Policy: no-referrer`
+ * carries `Origin: null` — Chromium opaques the origin along with the referrer
+ * — and SvelteKit's CSRF guard rejects that as cross-site with a bare 403
+ * "Cross-site POST form submissions are forbidden". It only bites without
+ * JavaScript, because `use:enhance` posts via fetch and sends no Origin at all.
+ * `same-origin` is the tightest policy that fixes it: a full referrer on
+ * same-origin navigations, still nothing at all cross-origin, so the outbound
+ * links to GitHub leak no more than before.
+ *
+ * Keyed by exact pathname — a prefix match would quietly cover future
+ * sub-routes that never asked for it.
+ */
+const SAME_ORIGIN_REFERRER_ROUTES: ReadonlySet<string> = new Set(['/feedback']);
+
 export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
@@ -39,3 +56,9 @@ export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
   'Reporting-Endpoints': 'csp="/api/csp-report"',
   'Content-Security-Policy': CONTENT_SECURITY_POLICY,
 };
+
+/** The security headers for one response, with any per-route override applied. */
+export function securityHeadersFor(pathname: string): Readonly<Record<string, string>> {
+  if (!SAME_ORIGIN_REFERRER_ROUTES.has(pathname)) return SECURITY_HEADERS;
+  return { ...SECURITY_HEADERS, 'Referrer-Policy': 'same-origin' };
+}

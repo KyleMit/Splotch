@@ -22,7 +22,12 @@ function titleFor(kind: ReportKind, message: string): string {
   return `[${prefix}] ${summary || fallback}`;
 }
 
-function bodyFor(kind: ReportKind, message: string, device: DeviceInfo | null): string {
+function bodyFor(
+  kind: ReportKind,
+  message: string,
+  device: DeviceInfo | null,
+  deviceUnavailable = false
+): string {
   const source = kind === 'bug' ? 'bug report' : 'feature request';
   // The message and every device value are attacker-controlled and rendered as
   // Markdown, so neutralize mentions/refs/embeds before they reach the issue.
@@ -32,6 +37,13 @@ function bodyFor(kind: ReportKind, message: string, device: DeviceInfo | null): 
     '---',
     `_Submitted from the Splotch app's ${source} form._`,
   ];
+
+  if (deviceUnavailable) {
+    lines.push(
+      '',
+      '_The reporter asked to attach device info, but their browser could not collect it (JavaScript unavailable)._'
+    );
+  }
 
   const rows = device ? describeDeviceInfo(device) : [];
   if (rows.length) {
@@ -48,6 +60,13 @@ export interface ReportInput {
   kind: unknown;
   message: unknown;
   device: unknown;
+  /**
+   * Whether the reporter asked for device info. Normally redundant — a ticked
+   * box is what produces `device` — but a form post with no JavaScript can
+   * carry the opt-in and no snapshot, and an explicit request must not vanish
+   * silently. Present and empty gets said so in the issue.
+   */
+  wantsDevice?: unknown;
   /** Honeypot — see the quiet-accept branch in submitReport. */
   hp: unknown;
 }
@@ -57,8 +76,23 @@ export interface ReportInput {
  * action fails with, so the two front doors agree on more than the wording.
  */
 export type ReportResult =
-  | { ok: true; url?: string }
-  | { ok: false; status: number; error: string };
+  | { ok: true; url?: string; number?: number }
+  | { ok: false; status: 400 | 502 | 503; error: string };
+
+/**
+ * A form post reaches a front door as strings; `device` rides along as the JSON
+ * the client collected, so an empty or malformed value means "no device info"
+ * rather than a failed report. Lives here rather than in the route so it is
+ * unit-testable against hostile input.
+ */
+export function parseDeviceField(raw: unknown): unknown {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Validate a feedback submission and open a labelled GitHub issue for it.
@@ -69,6 +103,7 @@ export async function submitReport({
   kind,
   message,
   device,
+  wantsDevice,
   hp,
 }: ReportInput): Promise<ReportResult> {
   // Honeypot: a hidden field no human fills. If it's populated, quietly accept
@@ -101,12 +136,12 @@ export async function submitReport({
   }
 
   try {
-    const { url } = await createIssue({
+    const { url, number } = await createIssue({
       title: titleFor(reportKind, text),
-      body: bodyFor(reportKind, text, hasDevice),
+      body: bodyFor(reportKind, text, hasDevice, Boolean(wantsDevice) && !hasDevice),
       labels: [REPORT_LABEL, KIND_LABEL[reportKind]],
     });
-    return { ok: true, url };
+    return { ok: true, url, number };
   } catch (err) {
     console.error('[report] issue creation failed', err);
     return {

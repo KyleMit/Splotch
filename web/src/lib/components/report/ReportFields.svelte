@@ -12,22 +12,28 @@
   // the honeypot lives here — including the copy, which is what a reporter
   // actually reads.
   //
-  // Every control carries the `name` the form action reads. Inside the Parent
-  // Center there is no <form> around them, so the names are inert there.
+  // Every control is a real, named form control rather than a scripted one, so
+  // the whole field set submits correctly with JavaScript unavailable. Inside
+  // the Parent Center there is no <form> around them and the names are inert.
   interface Props {
     kind: ReportKind;
     message: string;
     includeDevice: boolean;
-    device: DeviceInfo | null;
-    honeypot: string;
+    /**
+     * The collected snapshot. Bindable for ReportForm, which sends it as JSON
+     * rather than through the hidden field below; /feedback never reads it.
+     */
+    device?: DeviceInfo | null;
+    /** Bindable for the same reason — no host has business reading a bot trap. */
+    honeypot?: string;
   }
 
   let {
     kind = $bindable(),
     message = $bindable(),
     includeDevice = $bindable(),
-    device = $bindable(),
-    honeypot = $bindable(),
+    device = $bindable(null),
+    honeypot = $bindable(''),
   }: Props = $props();
 
   let deviceRows = $derived(device ? describeDeviceInfo(device) : []);
@@ -51,21 +57,14 @@
 </script>
 
 <div class="report-fields">
-  <div class="report-kind" role="radiogroup" aria-label="Report type">
+  <div class="report-kind">
     {#each REPORT_KINDS as option (option.value)}
-      <button
-        type="button"
-        class="report-kind-option"
-        class:active={kind === option.value}
-        role="radio"
-        aria-checked={kind === option.value}
-        onclick={() => (kind = option.value)}
-      >
+      <label class="report-kind-option" class:active={kind === option.value}>
+        <input type="radio" name="kind" value={option.value} bind:group={kind} />
         {option.label}
-      </button>
+      </label>
     {/each}
   </div>
-  <input type="hidden" name="kind" value={kind} />
 
   <label class="report-label" for="reportMessage">
     {kind === 'bug' ? 'What went wrong?' : "What's your idea?"}
@@ -90,7 +89,7 @@
   {#if kind === 'bug'}
     <div class="report-device" transition:slide={{ duration: 180 }}>
       <label class="report-check">
-        <input type="checkbox" bind:checked={includeDevice} />
+        <input type="checkbox" name="includeDevice" bind:checked={includeDevice} />
         <span>Include device info <em>(helps us reproduce the bug)</em></span>
       </label>
 
@@ -151,6 +150,10 @@
 
   .report-kind-option {
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     padding: 8px 10px;
     font-size: var(--font-size-sm);
     font-weight: 600;
@@ -162,6 +165,24 @@
     transition:
       background var(--duration-fast) ease,
       color var(--duration-fast) ease;
+  }
+
+  /* The radio itself is the accessible control; the label is its skin. Hidden
+     without display:none / visibility:hidden, both of which would take it out of
+     the a11y tree and off the focus path. */
+  .report-kind-option input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    margin: 0;
+  }
+
+  /* Keyboard users move through the group with the arrow keys and see nothing
+     otherwise — the ring has to come from the hidden input's focus. */
+  .report-kind-option:has(input:focus-visible) {
+    outline: 2px solid var(--brand-text);
+    outline-offset: 2px;
   }
 
   /* --brand-solid, not --brand: a white label on the identity hue is 3.4:1 and

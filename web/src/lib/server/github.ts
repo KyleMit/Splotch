@@ -42,6 +42,15 @@ export function escapeIssueMarkdown(text: string): string {
     .replace(/!(?=\[)/g, '\\!');
 }
 
+/**
+ * The web URL of an issue by number. The /feedback page redirects with the
+ * number rather than the full URL (a URL in a query string is both ugly and an
+ * open-redirect shape), and rebuilds the link from it here.
+ */
+export function issueUrl(number: number): string {
+  return `https://github.com/${targetRepo()}/issues/${number}`;
+}
+
 export interface CreateIssueInput {
   title: string;
   body: string;

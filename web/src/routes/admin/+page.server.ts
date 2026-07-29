@@ -1,5 +1,6 @@
 import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
 import { sessionToken, beginAdminLogin, verifySessionToken, buildInvites } from '$lib/server/admin';
+import { throttledMessage } from '$lib/server/http';
 import { getTokensStatus, addToken, removeToken } from '$lib/server/tokens';
 import type { MutationResult } from '$lib/server/tokens';
 import { getUsage } from '$lib/server/usage';
@@ -104,7 +105,7 @@ export const actions: Actions = {
   login: async ({ request, cookies, getClientAddress }) => {
     const attempt = beginAdminLogin(getClientAddress());
     if (!attempt.ok) {
-      return fail(429, { loginError: `Too many attempts. Please wait ${attempt.retryAfter}s.` });
+      return fail(429, { loginError: throttledMessage(attempt.retryAfter) });
     }
 
     const form = await request.formData();
