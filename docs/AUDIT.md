@@ -19,31 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Readability] Drop the redundant mount-time `setStrokeWidth` push in DrawingCanvas
-
-**File(s):** `web/src/lib/components/DrawingCanvas.svelte` (line 177, lines 230–232) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`onMount` calls `setStrokeWidth(getStrokeWidthPx(activeStrokeSize()))` at line 177, and the
-`$effect` at lines 230–232 makes exactly the same call. Svelte 5 flushes a freshly-mounted
-component's `$effect`s in the same synchronous flush that ran `onMount` — no event-loop turn
-separates them, so no pointer input can arrive in between and the explicit call is dead weight. It's
-also triply redundant on the adopt path: `earlyBoot.ts` line 39 already pushed the identical value
-at module evaluation. None of the other bridged setters (`setColor`, `setEraserMode`,
-`setMagicMode`, `setCrayonMode`) get a mount-time duplicate, so line 177 reads as though stroke
-width has some special timing requirement — it doesn't, and the asymmetry sends a first-time reader
-hunting for a reason that isn't there.
-
-#### Proposed solution
-
-Delete line 177. If there *is* a subtle reason it exists (e.g. guarding a historical effect-ordering
-bug), the no-comments-unless-WHY convention says that reason must be written down — but repo history
-and the current Svelte 5 flush semantics support plain removal. Folding this into the shared
-`pushToolStateToEngine()` helper (see the P2 duplication finding) resolves it as a side effect.
-
 ### [Maintainability] Extract the CSS→backing-pixel size computation repeated at three resize sites
 
 **File(s):** `web/src/lib/drawing/engine.ts` (`adoptPaperUnlessLocked`, lines 375–380;
