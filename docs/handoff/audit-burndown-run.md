@@ -1,7 +1,8 @@
 # Handoff — audit burndown
 
-> 2026-07-29 · branch `audit/burndown-2026-07-29-codex-2` · PR pending · supervise the remaining
-> staged audit backlog through bounded Codex segments
+> 2026-07-29 · branch `audit/burndown-2026-07-29-codex-2` · PR
+> [#656](https://github.com/KyleMit/Splotch/pull/656) · supervise the remaining staged audit backlog
+> through bounded Codex segments
 
 ## Objective & non-goals
 
@@ -13,7 +14,7 @@ or run a segment without active supervision.
 ## State
 
 * Branch: `audit/burndown-2026-07-29-codex-2`
-* PR: pending
+* PR: [#656](https://github.com/KyleMit/Splotch/pull/656)
 * Initial backlog: 584 findings
 * `run.log` baseline: 2582 lines
 * Driver state at checkpoint: idle; no matching host process
