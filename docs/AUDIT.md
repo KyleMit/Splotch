@@ -21,33 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Testing] `MAGIC_GRADIENT_COUNT` test mirrors the constant instead of exercising it
-
-**File(s):** `web/src/lib/drawing/magicBrush.test.ts` (lines 21–23) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-it('ships ten pooled gradients', () => {
-  expect(MAGIC_GRADIENT_COUNT).toBe(10);
-});
-```
-
-This asserts a constant equals its own literal — the "mirrored copy keeps passing for the wrong
-reason" pattern the testing rules call out. It proves no derivation: change the constant and the
-only failure is the test restating it; nothing verifies the pool actually *has* that many gradients
-(`buildGradientPool`, magicBrush.ts:105–107, is unexported and untested).
-
-#### Proposed solution
-
-Either delete the test, or make it earn its name: export nothing new but drive the observable — e.g.
-exercise `createRainbowGradient` × `MAGIC_GRADIENT_COUNT` distinctness, or (if the pool becomes
-testable via the P3 factory finding) assert `pool.length === MAGIC_GRADIENT_COUNT`. If the intent is
-"10 is a deliberate product decision, flag any change," say so in a comment on the assertion so the
-mirror is at least declared.
-
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
 ### [Correctness] Validate the clear swap-capture plan before swapping the paper (and stop scanning the fold set for 'clear' twice)

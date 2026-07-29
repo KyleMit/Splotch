@@ -12,7 +12,7 @@ function seededRand(seed: number): () => number {
 }
 
 describe('rainbow gradient generation', () => {
-  it('produces MAGIC_GRADIENT_COUNT distinct rainbows, matching the pool size', () => {
+  it('produces a distinct rainbow for each of MAGIC_GRADIENT_COUNT seeds', () => {
     const gradients = Array.from({ length: MAGIC_GRADIENT_COUNT }, (_, i) =>
       createRainbowGradient(seededRand(i + 1))
     );
