@@ -100,10 +100,21 @@ Non-obvious invariants:
 
 ## Consequences
 
-* \+ The stroke-end freeze is gone rather than relocated. Measured through `/dev/engine` in
-  Playwright's WebKit over 22 crayon scribbles: `engine.commit` total 4639 ms → **0 ms**,
-  `engine.encode` total 4636 ms → **2 ms**, blob output 2671 KB → **0**. The budget absorbed the
-  whole stack, so nothing needed encoding.
+* \+ The stroke-end freeze is gone rather than relocated. Re-running the gates on the same 12.9″
+  iPad Pro, against the failing table in Context:
+
+  | Scenario         | `commit max` before | after    | `blob KB` after | `history MiB` after |
+  | ---------------- | ------------------- | -------- | --------------- | ------------------- |
+  | multi-finger     | 1 ms                | **0 ms** | 0               | 28                  |
+  | long-squiggles   | 112 ms              | **2 ms** | 0               | 59                  |
+  | crayon-squiggles | 1149 ms             | **1 ms** | 0               | 60                  |
+  | crayon-scribbles | 2390 ms             | **1 ms** | 0               | 56                  |
+
+  Every scenario is inside the 8.3 ms frame budget, and `blob KB` is zero throughout — the budget
+  absorbed the whole stack, so nothing encoded at all. `history MiB` equals the unencoded cost
+  exactly on every row, which is the arithmetic confirmation of that. All of ADR-0066's gates now
+  pass on device. (The same before/after in Playwright's WebKit on a Mac: `engine.commit` total 4639
+  ms → 0 ms, `engine.encode` 4636 ms → 2 ms.)
 * \+ Deep undo gets faster on the same workload: entries that would have been blobs are resident
   rasters, so their restore is a blit instead of a decode.
 * \+ No user-visible tradeoff. Undo depth stays `MAX_UNDO_DEPTH = 20` — entries still exist, they
@@ -111,8 +122,9 @@ Non-obvious invariants:
 * \+ Encoding now correlates with memory pressure, which is what it was always for. A session that
   genuinely needs the tier still gets it.
 * − **Typical resident memory rises**, from paper + 2 patches to paper + up to 3 papers of patches.
-  Measured at 28–60 MiB where the old policy held 28–34 MiB. That is inside the gate, but it is a
-  real increase and the gate is the only thing bounding it.
+  Measured on device at 28–60 MiB where the old policy held 28–34 MiB — 40% of the ≲150 MB gate at
+  its worst. Inside it with margin, but it is a real increase and the gate is the only thing
+  bounding it.
 * − **The pathological case still encodes, and on WebKit that still blocks** — just on an idle
   callback rather than the pointerup frame. Canvas-spanning scribbles, where every patch really is a
   full paper, will reach the budget. A worker encode remains the only fix that removes the block

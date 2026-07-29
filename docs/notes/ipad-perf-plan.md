@@ -39,10 +39,10 @@
       → 0.
 * [x] **ADR-0078** written from the measured result; ADR-0066's "verification pending" status closed
       out.
-* [ ] **Open the PR** for `perf/encode-memory-headroom` and get it reviewed.
-* [ ] **Re-run the device gates on the fix** — the before/after above is Mac WebKit, which shares
-      the mechanism but not the CPU. Confirm `commit max` lands inside 8.3 ms on real hardware, and
-      that `history MiB` stays inside the gate now more patches stay resident.
+* [x] **Opened PR \#641.**
+* [x] **Re-ran the device gates on the fix — all pass.** `commit max` 2 / 0 / 1 / 1 ms against the
+      8.3 ms budget (was 112 / 1 / 1149 / 2390), `blob KB` 0 on every row, `history MiB` 28–60
+      against the 150 MB gate. `history` equals `no-encode` exactly, confirming nothing encoded.
 * [ ] \#636 — spike programmatic iPad driving (iPadOS 26.5 rules out `ios-webkit-debug-proxy`;
       `pymobiledevice3` is the candidate). Still not blocking anything.
 * [ ] Delete this file.
