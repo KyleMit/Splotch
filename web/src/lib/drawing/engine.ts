@@ -316,8 +316,9 @@ let rectScaleY = 1;
 // Snapshot the canvas's client rect and the backing-pixel scale factors. Called
 // only off the hot path (resize/scroll/orientation), so the per-pointermove
 // pointerToScreen() can stay reflow-free.
-function refreshCanvasRect(rect: DOMRect = canvas.getBoundingClientRect()) {
+function refreshCanvasRect(rect?: DOMRect) {
   if (!canvas) return;
+  rect ??= canvas.getBoundingClientRect();
   canvasRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
   rectScaleX = rect.width ? canvas.width / rect.width : 1;
   rectScaleY = rect.height ? canvas.height / rect.height : 1;
@@ -508,7 +509,7 @@ function resyncOnReentry() {
     canvas.height !== Math.round(rect.height * renderScale) ||
     resizedAngle !== currentScreenAngle();
   if (stale) resizeCanvas(rect);
-  else refreshCanvasRect();
+  else refreshCanvasRect(rect);
 }
 
 // --- Stroke rendering -------------------------------------------------------

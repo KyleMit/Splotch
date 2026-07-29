@@ -19,43 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Performance] Resize paths force duplicate `getBoundingClientRect` reflows
-
-**File(s):** `web/src/lib/drawing/engine.ts` (`resizeCanvas`, lines 415–458; `handleResize`, lines
-470–481; `resyncOnReentry`, lines 490–499; `refreshCanvasRect`, lines 304–310) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The module is scrupulous about keeping `getBoundingClientRect()` off the pointer hot path (lines
-294–297), but the resize paths call it redundantly:
-
-* `resizeCanvas` measures the rect at line 417, then calls `refreshCanvasRect()` at line 454, which
-  measures again (line 306) — two forced layouts per rebuild. Nothing between them changes the
-  client rect: reassigning `canvas.width/height` changes the backing store, not the CSS box
-  (`width: 100%; height: 100%`).
-* `handleResize` on native: `refreshCanvasRect()` (line 471) then `resizeCanvas()` (line 473) →
-  three measures per rotation event.
-* `resyncOnReentry`: measures at line 492, then a stale geometry triggers `resizeCanvas()`
-  (line 497) → two more.
-
-Resize/rotation isn't per-frame, but it *is* the moment the main thread is already paying a
-backing-store wipe + full repaint, and a desktop edge-drag funnels a continuous event stream through
-`handleResize`. The duplicate synchronous reflows are pure waste.
-
-#### Proposed solution
-
-Let `refreshCanvasRect` accept an optional pre-measured rect —
-`function refreshCanvasRect(rect: DOMRect = canvas.getBoundingClientRect())` — and pass the rect
-`resizeCanvas` already holds; likewise have `resyncOnReentry` pass its rect through to a
-`resizeCanvas(rect?: DOMRect)` parameter. On the native `handleResize` branch, drop the leading
-`refreshCanvasRect()` (the immediate `resizeCanvas()` refreshes at its end anyway; the pre-refresh
-only matters on the debounced web path, where it's the whole point). Gotcha: `refreshCanvasRect`
-also derives `rectScaleX/Y` from `canvas.width` — when a passed-in rect is reused after the
-backing-store assignment those must still read the *new* canvas dimensions, which the parameter
-approach preserves since the scale math stays inside the function.
-
 ### [Readability] Consolidate the six parallel callback variables (and their inconsistent naming) into one callbacks record
 
 **File(s):** `web/src/lib/drawing/engine.ts` (lines 186–191, `attachCallbacks` lines 1163–1170,
