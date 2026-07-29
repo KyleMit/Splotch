@@ -21,47 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Maintainability] chooseSaveFolder's catch-all is labeled "AbortError" but swallows every error
-
-**File(s):** `web/src/lib/drawing/folderSave.ts` (`chooseSaveFolder`, lines 92–98) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-try {
-  handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'pictures' });
-  if ((await handle.requestPermission({ mode: 'readwrite' })) !== 'granted') return null;
-} catch {
-  // AbortError — the parent cancelled the picker.
-  return null;
-}
-```
-
-The comment asserts a fact the code doesn't enforce. `showDirectoryPicker` also throws
-`SecurityError` (no transient activation — exactly the bug this function's own doc comment at lines
-86–88 warns about if a caller wires it outside a user gesture) and `TypeError`s for bad options; all
-get silently mapped to "parent cancelled", making that wiring bug undiagnosable — the picker just
-"never appears" with nothing in the console. Contrast `saveBlobToFolder` (lines 190–198), which
-correctly discriminates `NotFoundError` before deciding.
-
-#### Proposed solution
-
-Discriminate the expected case and log the rest, keeping the return contract:
-
-```ts
-} catch (err) {
-  if (!(err instanceof DOMException && err.name === 'AbortError')) {
-    console.warn('Folder picker failed:', err);
-  }
-  return null;
-}
-```
-
-The comment then describes only the branch it sits on, per the comments convention (state stable
-facts).
-
 ### [Types] getActiveOverlayImage casts getElementById without validating the element is an image
 
 **File(s):** `web/src/lib/drawing/overlay.ts` (`getActiveOverlayImage`, lines 1–6) @ 9ae62ff1

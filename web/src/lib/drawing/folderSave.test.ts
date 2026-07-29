@@ -119,6 +119,7 @@ describe('chooseSaveFolder', () => {
   });
 
   it('returns null when the parent cancels the picker', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     setPicker(
       vi.fn(async () => {
         throw new DOMException('cancelled', 'AbortError');
@@ -127,6 +128,20 @@ describe('chooseSaveFolder', () => {
 
     expect(await folderSave.chooseSaveFolder()).toBeNull();
     expect(await folderSave.getSaveFolderName()).toBeNull();
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('warns when the picker fails unexpectedly', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = new DOMException('activation expired', 'SecurityError');
+    setPicker(
+      vi.fn(async () => {
+        throw error;
+      })
+    );
+
+    expect(await folderSave.chooseSaveFolder()).toBeNull();
+    expect(warn).toHaveBeenCalledWith('Choosing a save folder failed:', error);
   });
 
   it('keeps the folder for the session when persisting it fails', async () => {

@@ -89,8 +89,9 @@ export async function chooseSaveFolder(): Promise<string | null> {
   try {
     handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'pictures' });
     if ((await handle.requestPermission({ mode: 'readwrite' })) !== 'granted') return null;
-  } catch {
-    // AbortError — the parent cancelled the picker.
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') return null;
+    console.warn('Choosing a save folder failed:', err);
     return null;
   }
   handlePromise = Promise.resolve(handle);
