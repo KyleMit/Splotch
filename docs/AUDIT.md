@@ -21,37 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Testing] screenshot.ts has zero unit coverage despite containing pure, unit-testable logic
-
-**File(s):** `web/src/lib/drawing/screenshot.ts` (`timestamp`, lines 7–11; `saveImageBlob`, lines
-71–92; `getPolaroidFrameOffset`, lines 105–111) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The sibling modules in this section all have colocated tests (`folderSave.test.ts`,
-`paperView.test.ts`, `strokeMath.test.ts`), but `screenshot.ts` has none, and it contains exactly
-the kind of logic the testing rules assign to Vitest:
-
-* `timestamp()` — a pure formatter whose zero-padding and `YYYY-MM-DD_HH-MM-SS` shape downstream
-  filenames (and the `folderSave.ts` line 126–127 comment's "second-resolution" collision reasoning)
-  depend on. A regression to unpadded fields breaks filename sorting silently.
-* `saveImageBlob`'s web dispatch chain (lines 85–91): folder write attempted first, `true`
-  short-circuits the download, `false` falls back to `triggerDownload` + `URL.revokeObjectURL`. This
-  branching is the seam between two tested modules and is itself untested — `folderSave.test.ts`
-  tests below it, `aiImage.test.ts` mocks it away above.
-* `getPolaroidFrameOffset` (pure given a `DOMRect` and window size).
-
-#### Proposed solution
-
-Add `screenshot.test.ts` (happy-dom, since the module's imports touch `document` at load): assert
-`timestamp()` against a mocked `Date`; mock `./folderSave` and `./engine` to drive `saveImageBlob`
-through the folder-hit, folder-miss→download, and native branches (`__IS_CAPACITOR__` is
-compile-time `false` under Vitest web config — the native branch may need the test to stay web-only,
-which is fine and worth a comment). If the architecture split proposed above happens first, the
-naming/download utils test drops to `// @vitest-environment node`.
-
 ### [Performance] saveDrawingIfEnabled serializes the screenshot-chunk fetch behind the export
 
 **File(s):** `web/src/lib/drawing/saveOnDelete.ts` (`saveDrawingIfEnabled`, lines 11–19) @ 9ae62ff1
