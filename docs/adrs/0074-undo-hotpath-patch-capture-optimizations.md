@@ -80,7 +80,10 @@ Three changes in `web/src/lib/drawing/undoHistory.ts` (+ a small `engine.ts` hoo
   site would skip a real wipe — the unit suite's clear round-trips are the guard.
 * − Per-patch tier bookkeeping multiplies the async encode/decode bookkeeping (validated-blob swap,
   live-window re-checks) by the patch count. The invariant "a stacked patch always holds its canvas
-  or its blob" is unchanged but now per patch, with the same tripwire.
+  or its blob" is unchanged but now per patch, and is closed in the type rather than watched at
+  runtime: a patch's pixels are a `PatchStore` discriminated union (`hot` carries the canvas, `cold`
+  the blob), so holding neither is unrepresentable and each tier transition is one whole-store
+  assignment.
 * − Undo of a deep multi-patch entry decodes all its blobs before restoring (a `Promise.all`), so a
   five-band deep undo waits for the slowest decode — still far less data than the union bbox it
   replaces.

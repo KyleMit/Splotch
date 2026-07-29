@@ -23,53 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Types] Model a patch's hot/cold tier as a discriminated union instead of four nullable fields plus a runtime tripwire
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`SnapshotPatch`, lines 87–93; null-null tripwire
-in `popSnapshot`, lines 666–681) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-interface SnapshotPatch {
-  rect: PatchRect;
-  canvas: HTMLCanvasElement | null;
-  blob: Blob | null;
-  encoding: boolean;
-  decoding: boolean;
-}
-```
-
-The type admits states the design forbids — most importantly `canvas === null && blob === null`,
-which the code guards with a prose invariant ("a stacked patch always holds its canvas or its blob",
-lines 668–674) and a runtime `console.error` tripwire (line 679) that skips the restore blit and
-leaves the paper wrong. The repo convention is to close finite value sets in the type; here the "hot
-vs cold" tier is a two-state vocabulary encoded as two independent nullables, so the compiler can't
-help the exact refactor the tripwire comment worries about.
-
-#### Proposed solution
-
-```ts
-type PatchStore =
-  | { tier: 'hot'; canvas: HTMLCanvasElement; encoding: boolean }
-  | { tier: 'cold'; blob: Blob; decoding: boolean };
-interface SnapshotPatch {
-  rect: PatchRect;
-  store: PatchStore;
-}
-```
-
-Transitions in `encodeColdSnapshots`/`reinflateHotSnapshots` become single `patch.store = {...}`
-assignments (which also fixes the current two-step mutation windows where `blob` is set before
-`canvas` is nulled, line 593–594). The null-null branch and its tripwire become unrepresentable and
-get deleted. Gotcha: the async callbacks currently compare identity (`patch.canvas === source`,
-`patch.blob !== source`); those checks port cleanly
-(`patch.store.tier === 'hot' && patch.store.canvas === source`), but the empty-`patches` entry case
-is unaffected (it's the array, not the fields). Real migration cost across ~6 functions — but this
-is the exact invariant the module documents most anxiously.
-
 ### [Testing] The encode/reinflate tier's race guards have no coverage anywhere
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`encodeColdSnapshots`, lines 581–601;
