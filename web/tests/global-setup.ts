@@ -15,22 +15,25 @@ import { HARNESS_PROBE_CODE } from '../playwright.shared';
 // /api/verify-access-code is exactly that question, and it charges its guess
 // budget only on a failed code (ADR-0014) — so a match costs nothing, no spec
 // uses the endpoint, and nothing is written either way.
+// The whole value of the probe is the diagnosis it hands whoever hit it, so an
+// unreachable port, a non-JSON body and the blind 429 the endpoint returns on a
+// spent guess budget each report as themselves rather than as "wrong server".
 async function assertHarnessServer(baseURL: string) {
-  const recognized = await fetch(`${baseURL}/api/verify-access-code`, {
+  const outcome = await fetch(`${baseURL}/api/verify-access-code`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code: HARNESS_PROBE_CODE }),
-  })
-    .then((res) => res.json())
-    .then((body) => body?.ok === true)
-    .catch(() => false);
+  }).catch((err: unknown) => err);
+  const recognized =
+    outcome instanceof Response && (await outcome.json().catch(() => null))?.ok === true;
 
   if (!recognized) {
+    const answer = outcome instanceof Response ? `HTTP ${outcome.status}` : String(outcome);
     throw new Error(
       `globalSetup: whatever is serving ${baseURL} was not started by this run — it does not know ` +
-        "the harness access code, so it carries your web/.env rather than the suite's test " +
-        'credentials, and a report spec would file a real issue. Stop the server holding the port ' +
-        '(an already-running one is reused) and rerun.'
+        `the harness access code (it answered ${answer}), so it carries your web/.env rather than ` +
+        "the suite's test credentials, and a report spec would file a real issue. Stop the server " +
+        'holding the port (an already-running one is reused) and rerun.'
     );
   }
 }

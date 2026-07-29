@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { commonWebServer } from '../../web/playwright.shared.ts';
@@ -20,6 +20,12 @@ const PRIVATE_ENV_IMPORT = "from '$env/dynamic/private'";
 // one of those names be declared would have a harness blank a Node or Vite var
 // (NODE_ENV, NETLIFY, DEV) in the server it starts.
 const PRIVATE_ENV_READ = /(?<![.\w])env\.([A-Z][A-Z0-9_]*)\b/g;
+// A read the scan above cannot see is a name it can hold no server to, so the
+// shape itself is rejected rather than passed over: `$env/static/private` names
+// arrive as bindings with no `env.` in sight, and destructuring the dynamic env
+// hides them the same way.
+const STATIC_PRIVATE_IMPORT = /from '\$env\/static\/private'/;
+const DESTRUCTURED_PRIVATE_ENV = /\{[^}]*\}\s*=\s*env\b/;
 
 function sourceFiles(dir) {
   return readdirSync(dir, { withFileTypes: true, recursive: true })
@@ -29,12 +35,24 @@ function sourceFiles(dir) {
     .map((entry) => join(entry.parentPath, entry.name));
 }
 
+const sources = sourceFiles(appDir).map((path) => ({
+  path: relative(repoRoot, path),
+  text: readFileSync(path, 'utf8'),
+}));
+
 const privateEnvNames = new Set(
-  sourceFiles(appDir)
-    .map((path) => readFileSync(path, 'utf8'))
-    .filter((source) => source.includes(PRIVATE_ENV_IMPORT))
-    .flatMap((source) => [...source.matchAll(PRIVATE_ENV_READ)].map((match) => match[1]))
+  sources
+    .filter(({ text }) => text.includes(PRIVATE_ENV_IMPORT))
+    .flatMap(({ text }) => [...text.matchAll(PRIVATE_ENV_READ)].map((match) => match[1]))
 );
+
+const unscannableReads = sources
+  .filter(
+    ({ text }) =>
+      STATIC_PRIVATE_IMPORT.test(text) ||
+      (text.includes(PRIVATE_ENV_IMPORT) && DESTRUCTURED_PRIVATE_ENV.test(text))
+  )
+  .map(({ path }) => path);
 
 /** The object literal `spawnViteServer` is handed, sliced out at its braces. */
 function apiSmokeEnvLiteral(source) {
@@ -70,6 +88,14 @@ const servers = [
 describe('throwaway server env', () => {
   it('finds the private env reads to check', () => {
     expect(privateEnvNames.size).toBeGreaterThan(0);
+  });
+
+  it('finds every private env read in a shape it can scan', () => {
+    expect(
+      unscannableReads,
+      'read private env as `env.NAME` off $env/dynamic/private — the other shapes hide the name ' +
+        'from this guard, leaving it to arrive from a developer web/.env'
+    ).toEqual([]);
   });
 
   for (const { name, env } of servers) {
