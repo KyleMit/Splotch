@@ -1,8 +1,9 @@
 <script lang="ts">
   import { BETA_OPT_IN_URL, TESTERS_GROUP_URL } from '$lib/components/androidBeta/androidBeta';
-  import CrayonStrip from '$lib/components/CrayonStrip.svelte';
   import Icon from '$lib/components/Icon.svelte';
   import Disclosure from '$lib/components/design/Disclosure.svelte';
+  import PageShell from '$lib/components/page/PageShell.svelte';
+  import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import StepLedger from '$lib/components/androidBeta/StepLedger.svelte';
 
   // Sign-up instructions for the Google Play closed test. The steps are
@@ -24,26 +25,15 @@
   <meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
-<main class="beta">
-  <div class="sheet">
-    <div class="topbar">
-      <a class="back" href="/">← Back to drawing</a>
-      <span class="brand">
-        <CrayonStrip />
-        <span class="wordmark">Splotch for Android</span>
-      </span>
-    </div>
+<div class="beta">
+  <PageShell class="beta-palette" title="Join the Android beta" wordmark="Splotch for Android">
+    {#snippet lede()}
+      Joining is free and takes three quick steps — plus an optional fourth if you'd like to send
+      feedback. Thank you for helping: trying Splotch on a real phone or tablet finds problems we
+      can't catch on our own.
+    {/snippet}
 
-    <div class="hero">
-      <h1>Join the Android beta</h1>
-      <p class="lede">
-        Joining is free and takes three quick steps — plus an optional fourth if you'd like to send
-        feedback. Thank you for helping: trying Splotch on a real phone or tablet finds problems we
-        can't catch on our own.
-      </p>
-    </div>
-
-    <h2 class="rule-label"><span>How to join</span></h2>
+    <RuleLabel>How to join</RuleLabel>
 
     <StepLedger />
 
@@ -112,191 +102,53 @@
         </div>
       </Disclosure>
     </div>
-  </div>
-</main>
+  </PageShell>
+</div>
 
 <style>
   /* Deliberately light-only, like /privacy and /admin: the themed color tokens
      flip with data-theme / prefers-color-scheme (tokens.css sets them on :root,
      which reaches this route too), so adopting them would half-dark-theme a
-     page whose link and button contrast is pinned to a light ground. The
-     palette is therefore declared once here instead of scattered as literals,
-     each value commented with the light-theme token it approximates.
-     Theme-invariant tokens (--duration-*, --font-family) are used directly.
+     page whose link and button contrast is pinned to a light ground. PageShell
+     defaults its --page-* palette to those themed tokens, so this route pins
+     every one of them instead, each value commented with the light-theme token
+     it approximates. Theme-invariant tokens (--duration-*, --radius-*) are used
+     directly.
 
-     The drawing route's app-surface locks (app.css) don't reach this route, so
-     the page scrolls, selects, and zooms as a normal document with no opt-out. */
-  .beta {
-    --beta-ground: #f0efed; /* ~ --app-bg (#f5f5f5), warmed */
-    --beta-sheet: #ffffff; /* = --surface, light */
-    --beta-ink: #26262e; /* ~ --text-strong (#333), light */
-    --beta-body: #55555f; /* ~ --text (#555), light */
-    --beta-note: #4a4a54; /* ~ --text on a callout wash */
+     The overrides land on PageShell's own root via the forwarded class, which is
+     the only element they can sit on: a custom property declared on .page would
+     otherwise win over the same property inherited from an ancestor. */
+  .beta :global(.beta-palette) {
+    --page-ground: #f0efed; /* ~ --app-bg (#f5f5f5), warmed */
+    --page-sheet: #ffffff; /* = --surface, light */
+    --page-ink: #26262e; /* ~ --text-strong (#333), light */
+    --page-body: #55555f; /* ~ --text (#555), light */
     /* The spec's muted ink was #9a98a3 (~ --text-faint). That is 2.8:1 on the
        sheet and fails WCAG AA everywhere it carries text — the wordmark, the
        hero note, fine print, and callout labels. This is the darkest value that
        still reads as recessive and clears 4.5:1. */
-    --beta-muted: #6c6c76; /* ~ --text-mid (#666), light */
+    --page-muted: #6c6c76; /* ~ --text-mid (#666), light */
+    --page-rule: #eeeae4; /* ~ --border-warm (#ddd6cc), lightened */
     /* Darker than --brand, whose 3.4:1 fails WCAG AA for body-size text; this
        clears 4.5:1 as a link and as a white-on-purple button fill. Same value
        /privacy pins for the same reason. */
-    --beta-link: #7c4dcf;
-    --beta-link-hover: #6b3fbf;
-    --beta-rule: #eeeae4; /* ~ --border-warm (#ddd6cc), lightened */
+    --page-link: #7c4dcf;
+    --page-link-hover: #6b3fbf;
+    /* The step buttons' fill. Same pinning reason as the link: --brand-solid's
+       dark value would flip under prefers-color-scheme. */
+    --page-accent: #7c4dcf;
+    --page-accent-hover: #6b3fbf;
+    --page-on-accent: #ffffff;
+  }
+
+  /* Chrome the Troubleshooting panel owns rather than the shell: everything here
+     is one collapsed <details> and the rows inside it. */
+  .beta {
     --beta-row: #f7f6f5;
     --beta-row-hover: #f2f0ef;
     --beta-row-border: #eeecec;
     --beta-row-border-hover: #e2dfdf;
     --beta-disc-border: #e8e6e6;
-    /* The connector between the step numerals. Decorative — the numerals and
-       their order carry the sequence, so this sits below the 3:1 floor by
-       design. */
-    --beta-rail: #efeced;
-
-    /* Each step is a crayon hue in two strengths: a 5% wash behind its numeral
-       and under its callout, and a darkened ink for the numeral and the callout
-       label. The raw palette hues are ~2.6:1 and carry no text; these deeper
-       shades measure 5.3, 4.9, 4.7, 4.9:1 on their own wash. Neither is a
-       palette value, so palette-source.test.mjs does not own them — the full
-       hues on the callout rails are read out of lib/palette.ts instead. */
-    --beta-step-1-wash: #fdf3f2; /* Red */
-    --beta-step-1-ink: #b03f3b;
-    --beta-step-2-wash: #fdf7ef; /* Orange */
-    --beta-step-2-ink: #a35a00;
-    --beta-step-3-wash: #f3f9ef; /* Green */
-    --beta-step-3-ink: #4f7a36;
-    --beta-step-4-wash: #f0f6fc; /* Blue */
-    --beta-step-4-ink: #2a6db8;
-    --beta-on-accent: #fff;
-    /* One reading measure for every text block on the page. */
-    --beta-measure: 62ch;
-    /* Inside the sheet every band lines up on one horizontal padding. */
-    --beta-gutter: clamp(20px, 5vw, 34px);
-
-    /* body's background is the themed --app-bg, so the ground has to reach the
-       bottom of the viewport or a dark-mode strip shows beneath short content. */
-    min-height: 100vh;
-    background: var(--beta-ground);
-    padding: 32px 16px 72px;
-    color: var(--beta-ink);
-    font-size: 16px;
-    line-height: 1.62;
-    text-wrap: pretty;
-  }
-
-  /* Wide enough that the hero's 250px side column can sit beside a 46px H1
-     without squeezing it onto three lines — the handoff specced the columns but
-     not the sheet, and this is the width they imply. */
-  .sheet {
-    max-width: 880px;
-    margin: 0 auto;
-    padding: 0 var(--beta-gutter) 40px;
-    background: var(--beta-sheet);
-    border-radius: var(--radius-xl);
-    box-shadow:
-      0 1px 2px rgba(93, 84, 68, 0.05),
-      0 10px 30px rgba(93, 84, 68, 0.07);
-  }
-
-  /* Narrower than the sheet itself and the card has no room to read as a card —
-     the frame collapses to a hairline of ground either side, which looks like a
-     rendering fault rather than a decision. Below that the page goes wall to
-     wall. Threshold is the sheet width plus the ground padding it needs on both
-     sides to be visible at all. */
-  @media (max-width: 920px) {
-    .beta {
-      padding: 0;
-      /* The sheet now covers the ground everywhere, so anything that peeks
-         through (overscroll, a short viewport) has to match it. */
-      background: var(--beta-sheet);
-    }
-
-    .sheet {
-      max-width: none;
-      border-radius: 0;
-      box-shadow: none;
-    }
-  }
-
-  /* One bar, then one hero: nothing sits between them, and the bar carries no
-     rule of its own so the H1 owns the top of the page. */
-  .topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 18px 0;
-  }
-
-  .back {
-    color: var(--beta-link);
-    font-size: 15px;
-    font-weight: 700;
-    text-decoration: none;
-  }
-
-  /* Chips plus wordmark read as one mark, so they travel together and the
-     wordmark stays quiet enough not to compete with the H1. */
-  .brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    --crayon-width: 13px;
-    --crayon-height: 6px;
-    --crayon-gap: 3px;
-  }
-
-  .wordmark {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
-    color: var(--beta-muted);
-  }
-
-  .hero {
-    padding: 8px 0 34px;
-  }
-
-  h1 {
-    margin: 0;
-    font-size: 46px;
-    font-weight: 700;
-    line-height: 1.06;
-    letter-spacing: -0.015em;
-    color: var(--beta-ink);
-    text-wrap: balance;
-  }
-
-  .lede {
-    margin: 16px 0 0;
-    max-width: var(--beta-measure);
-    font-size: 18px;
-    font-weight: 500;
-    line-height: 1.6;
-    color: var(--beta-body);
-  }
-
-  /* The section label survives only as a rule: a small caps word and a hairline
-     that runs out to the edge. */
-  .rule-label {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin: 0;
-    padding-bottom: 30px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--beta-muted);
-  }
-
-  .rule-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--beta-rule);
   }
 
   .trouble {
@@ -342,14 +194,14 @@
     margin: 0;
     font-size: 17px;
     font-weight: 700;
-    color: var(--beta-ink);
+    color: var(--page-ink);
   }
 
   .trouble-sub {
     font-size: 14px;
     font-weight: 500;
     line-height: 1.45;
-    color: var(--beta-muted);
+    color: var(--page-muted);
   }
 
   /* The disc is the tappable affordance: a raised white target rather than a
@@ -362,7 +214,7 @@
     height: 32px;
     border: 1px solid var(--beta-disc-border);
     border-radius: 50%;
-    background: var(--beta-sheet);
+    background: var(--page-sheet);
   }
 
   .trouble :global(.chev) {
@@ -373,10 +225,10 @@
 
   /* The rotation is the only visual signal of the panel's state, so this is a
      non-text contrast case (WCAG 1.4.11, 3:1) rather than a decorative one.
-     --beta-muted is 5.2:1 on the disc it sits in, and clears the floor against
+     --page-muted is 5.2:1 on the disc it sits in, and clears the floor against
      the panel behind it too (4.8:1, 4.6:1 hovered). */
   .trouble :global(.chev svg) {
-    fill: var(--beta-muted);
+    fill: var(--page-muted);
   }
 
   .trouble :global(.beta-disclosure[open] .chev) {
@@ -388,7 +240,7 @@
   }
 
   .row {
-    border-top: 1px solid var(--beta-rule);
+    border-top: 1px solid var(--page-rule);
     margin-top: 20px;
     padding-top: 20px;
   }
@@ -397,7 +249,7 @@
     margin: 0 0 4px;
     font-size: 16px;
     font-weight: 700;
-    color: var(--beta-ink);
+    color: var(--page-ink);
   }
 
   .row p {
@@ -405,11 +257,11 @@
     font-size: 15px;
     font-weight: 500;
     line-height: 1.6;
-    color: var(--beta-body);
+    color: var(--page-body);
   }
 
   a {
-    color: var(--beta-link);
+    color: var(--page-link);
     text-underline-offset: 3px;
     text-decoration-thickness: 1px;
   }
@@ -417,48 +269,13 @@
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
      keep it stuck until the next tap elsewhere. */
   @media (hover: hover) {
-    .back:hover {
-      text-decoration: underline;
-    }
-
     .trouble :global(.beta-disclosure:hover) {
       background: var(--beta-row-hover);
       border-color: var(--beta-row-border-hover);
     }
 
-    a:not(.back):hover {
-      color: var(--beta-link-hover);
-    }
-  }
-
-  @media (max-width: 540px) {
-    /* Chips alone are seven anonymous dots, so the wordmark stays and stacks
-       under them instead of competing with the back link for the same line. */
-    .brand {
-      --crayon-width: 10px;
-      --crayon-height: 5px;
-
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
-    }
-
-    .wordmark {
-      font-size: 10px;
-      letter-spacing: 0.12em;
-    }
-
-    .hero {
-      padding-bottom: 28px;
-    }
-
-    h1 {
-      font-size: 34px;
-      line-height: 1.1;
-    }
-
-    .lede {
-      font-size: 16px;
+    a:hover {
+      color: var(--page-link-hover);
     }
   }
 

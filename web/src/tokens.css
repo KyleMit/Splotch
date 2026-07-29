@@ -93,6 +93,8 @@
   --brand-wash: #ede7f6;
   --brand-wash-hover: #e3d7f5;
   --brand-text: #7c50bb;
+  --brand-solid: #7c50bb;
+  --brand-solid-hover: #6b3fbf;
   --success-wash: #e9f7ec;
   --success-text: #2e7d4f;
   --success-accent: #4caf50;
@@ -136,6 +138,8 @@
   --brand-wash: #3b2f4f;
   --brand-wash-hover: #46395c;
   --brand-text: #c9a9f0;
+  --brand-solid: #8058c0;
+  --brand-solid-hover: #6f47b0;
   --success-wash: #24382b;
   --success-text: #8bcfa4;
   --success-accent: #4caf50;
@@ -180,6 +184,8 @@
     --brand-wash: #3b2f4f;
     --brand-wash-hover: #46395c;
     --brand-text: #c9a9f0;
+    --brand-solid: #8058c0;
+    --brand-solid-hover: #6f47b0;
     --success-wash: #24382b;
     --success-text: #8bcfa4;
     --success-accent: #4caf50;
