@@ -1,8 +1,24 @@
 # Handoff — audit burndown (642-finding backlog)
 
-> 2026-07-28 · branch `claude/audit-burn-down-skill-1s5jty` · PR
-> [#616](https://github.com/KyleMit/Splotch/pull/616) · Bulk-burn the fresh 642-finding
-> `docs/AUDIT.md` backlog staged by PR #614.
+> 2026-07-29 · branch `claude/audit-burn-down-skill-1s5jty` · PR
+> [#616](https://github.com/KyleMit/Splotch/pull/616) · Resume the bulk burndown of the 642-finding
+> `docs/AUDIT.md` backlog staged by PR #614 — 642 → 637 done, PR marked ready, relaunch to continue.
+
+## Current state — wrapped up, resumable
+
+Wrapped on request after the **canary only: 5 fixed · 0 dropped · 0 deferred** (backlog 642 → 637).
+The full run was never launched. PR 616 is out of draft; the branch is pushed and the working tree
+is clean. **Nothing is in flight** — relaunch with the command below to continue, or open a fresh PR
+from the same branch.
+
+Verified at wrap-up: no `burndown.mjs` or `claude -p` process running; `HEAD` == `origin/<branch>`;
+all 5 per-commit comments posted and the store drained (`capture` reports
+`skipped 5 already
+posted`); CI green on the head commit (Quality + Tests both success).
+
+The one thing the canary could not validate: it ran **before** the tiering fix, so every finding
+used Opus and the `sonnet` minor tier is still unproven on this backlog. Read the first few
+`impl model: sonnet (P4)` findings of the next run closely.
 
 ## Objective & non-goals
 

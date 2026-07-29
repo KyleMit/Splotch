@@ -746,11 +746,29 @@ Notes from real runs — set these before a large run rather than discovering th
   trivially mechanical (P4/P5 dead-code, rename, dedup), so the driver routes those findings to
   `MODEL_IMPL_MINOR` (default `sonnet`) and keeps P1–P3 on `MODEL_IMPL`. The Opus review still gates
   every fix, so the cheaper model buys wall-clock at a sliver of impl-correctness margin exactly
-  where the stakes are lowest. The priority comes from the finding's leading `[P<n>]` tag
-  (`findingPriority` in `lib.mjs`, unit-tested); a title with no tag is treated as unknown and stays
-  on the stronger model. Set `MODEL_IMPL_MINOR=claude-opus-5` to switch tiering off for a run where
-  correctness dominates. Bigger throughput (parallel git worktrees per finding) is a real redesign,
-  not a knob.
+  where the stakes are lowest. `findingPriority` in `lib.mjs` (unit-tested) reads the priority from
+  either staging format — a leading `[P<n>]` **title** tag, or a `**Priority:** P4` **body** line,
+  which is what the whole-repo code-audit writes while tagging titles by category
+  (`[Maintainability] …`). A finding stating neither is unknown and stays on the stronger model. Set
+  `MODEL_IMPL_MINOR=claude-opus-5` to switch tiering off for a run where correctness dominates.
+  Bigger throughput (parallel git worktrees per finding) is a real redesign, not a knob.
+
+  **Confirm tiering actually fires before a long run — its failure is silent.** The driver logs
+  `impl model: …` only when tiering *fires*, so a backlog whose priorities it cannot parse looks
+  exactly like one with no P4/P5 findings, and every mechanical finding quietly bills the expensive
+  model at `EFFORT_IMPL=high`. That is what a 2026-07-28 run hit: 642 findings, every one of them
+  routed to Opus, discovered only by reading a canary title and noticing it had no `[P<n>]` tag. A
+  staging format is free to move the priority again, so check the backlog parses rather than
+  assuming — the fastest read is to run `findingPriority` over the whole file and confirm no entry
+  scores `null`:
+
+  ```bash
+  node -e "import('./scripts/audit-burndown/lib.mjs').then(({findingPriority})=>{
+    const b=require('fs').readFileSync('docs/AUDIT.md','utf8').split(/^### /m).slice(1);
+    const n=b.filter(x=>findingPriority(x.split('\n',1)[0],'### '+x)===null).length;
+    console.log(b.length+' findings, '+n+' with no parsable priority');
+  })"
+  ```
 * **The PR is the fragile part of the run; the commits are not.** Pushing is plain git and is
   reliable; anything touching the GitHub API is not. That asymmetry is why the driver was taken out
   of the GitHub business altogether rather than being taught to retry: it used to create the draft
