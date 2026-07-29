@@ -39,7 +39,10 @@ beforeEach(() => {
   state.outDir = fixtureDir;
   state.stop = vi.fn();
   originalArgv = process.argv;
-  process.argv = [...process.argv, '--cold-tier-timeout-ms=0'];
+  // Enough budget for a quiesced tier to produce its consecutive identical
+  // samples (Date.now is mocked to tick once per call, sleep is a no-op), while
+  // still expiring for the scenario whose tier never stops changing.
+  process.argv = [...process.argv, '--cold-tier-timeout-ms=20'];
 });
 
 afterEach(() => {
@@ -51,6 +54,7 @@ afterEach(() => {
 describe('undo scenario profiling', () => {
   it('writes artifacts and continues after a cold-tier timeout', async () => {
     let navigations = 0;
+    let churn = 0;
     const page = {
       goto: vi.fn(async () => {
         navigations++;
@@ -60,8 +64,11 @@ describe('undo scenario profiling', () => {
       evaluate: vi.fn(async (fn) => {
         const source = fn.toString();
         if (source.includes('getUndoDebug')) {
+          // One scenario's tier never quiesces — blobBytes keeps moving, so the
+          // settle poll never sees two identical samples and the scenario is
+          // skipped. The rest report a stable tier and settle immediately.
           return navigations === 3
-            ? { snapshots: 22, liveRasters: 3, blobBytes: 0 }
+            ? { snapshots: 22, liveRasters: 3, blobBytes: churn++ }
             : { snapshots: 22, liveRasters: 2, blobBytes: 1 };
         }
         if (source.includes('document.querySelector')) {
@@ -110,20 +117,20 @@ describe('undo scenario profiling', () => {
       expect.objectContaining({
         key: 'short-marks',
         skipped: true,
-        error:
-          'cold tier never settled within 0 ms: snapshots=22 liveRasters=3 blobBytes=0 ' +
-          '(want liveRasters ≤ 2 with below-window entries encoded)',
+        error: expect.stringContaining(
+          'cold tier never settled within 20 ms: snapshots=22 liveRasters=3'
+        ),
       })
     );
     const laterScenario = summary.scenarios.find((scenario) => scenario.key === 'mixed');
     expect(laterScenario).toMatchObject({ draw: { ops: 1 } });
     expect(laterScenario).not.toHaveProperty('skipped');
     expect(readFileSync(markdownPath, 'utf8')).toContain(
-      'Skipped: cold tier never settled within 0 ms: snapshots=22 liveRasters=3 blobBytes=0'
+      'Skipped: cold tier never settled within 20 ms: snapshots=22 liveRasters=3'
     );
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining(
-        'Skipping undo scenario short-marks: cold tier never settled within 0 ms'
+        'Skipping undo scenario short-marks: cold tier never settled within 20 ms'
       )
     );
     expect(state.stop).toHaveBeenCalledOnce();

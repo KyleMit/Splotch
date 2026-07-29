@@ -274,31 +274,49 @@ async function undoAll(page) {
 const undoDebug = (page) =>
   page.evaluate(() => (window.__engine.getUndoDebug ? window.__engine.getUndoDebug() : null));
 
-// Cold-tier demotion is async (encodeColdSnapshots' toBlob callbacks), and the
-// batched draw phase returns before those callbacks run — sampled immediately,
-// below-window entries still hold their ~30 MB rasters, so historyRasterMB
-// transiently reports hundreds of MB of a healthy tier (nondeterministically,
-// against the ≲150 MB gate) and the undo phase would measure live-raster
-// restores instead of the blob decodes it exists to validate. Mirror the E2E
-// spec (engine-snapshot-tier.spec.ts): poll until only the hot window still holds rasters
-// — a raster is only dropped after its blob lands and validates, so
-// liveRasters ≤ MAX_HOT_RASTERS means every below-window entry is encoded.
-const MAX_HOT_RASTERS = 2;
+// The tier re-balances asynchronously — encodes land on an idle callback,
+// decodes on a promise — and the batched draw phase returns before either runs.
+// Sampled immediately, entries still hold rasters a pending encode is about to
+// free, so historyRasterMB transiently reports hundreds of MB of a healthy tier
+// (nondeterministically, against the ≲150 MB gate) and the undo phase would
+// measure raster restores instead of the blob decodes it exists to validate.
+//
+// What the harness needs is that the tier has *quiesced*, not that it reached
+// any particular shape. An earlier version waited for `liveRasters <= 2`,
+// mirroring the hot-entry count undoHistory used at the time; ADR-0078 replaced
+// that count with a byte budget and the predicate became unreachable, skipping
+// every scenario with an all-`n/a` report (docs/AUDIT.md had already filed the
+// mirror as a drift risk). Polling for a stable reading instead is independent
+// of whatever the tiering policy is.
+const SETTLE_POLL_MS = 100;
+// Stability has to outlast a pending encode that has not started yet: scheduleIdle
+// (web/src/lib/idle.ts) falls back to a 200 ms timeout wherever requestIdleCallback
+// is missing, so fewer samples than that could read "unchanged" before any work ran.
+const SETTLE_STABLE_SAMPLES = 4;
 async function settleColdTier(page, timeoutMs = 10_000) {
   const t0 = Date.now();
+  const sameTier = (a, b) =>
+    a != null &&
+    a.snapshots === b.snapshots &&
+    a.liveRasters === b.liveRasters &&
+    a.blobBytes === b.blobBytes &&
+    a.rasterBytes === b.rasterBytes;
+  let prev = null;
+  let stable = 0;
   for (;;) {
     const d = await undoDebug(page);
     if (d == null) return null;
-    if (d.liveRasters <= MAX_HOT_RASTERS && (d.snapshots <= MAX_HOT_RASTERS || d.blobBytes > 0))
-      return d;
+    stable = sameTier(prev, d) ? stable + 1 : 0;
+    if (stable >= SETTLE_STABLE_SAMPLES - 1) return d;
     if (Date.now() - t0 > timeoutMs) {
       throw new Error(
         `cold tier never settled within ${timeoutMs} ms: snapshots=${d.snapshots} ` +
           `liveRasters=${d.liveRasters} blobBytes=${d.blobBytes} ` +
-          `(want liveRasters ≤ ${MAX_HOT_RASTERS} with below-window entries encoded)`
+          `(want ${SETTLE_STABLE_SAMPLES} consecutive identical samples)`
       );
     }
-    await sleep(100);
+    prev = d;
+    await sleep(SETTLE_POLL_MS);
   }
 }
 
