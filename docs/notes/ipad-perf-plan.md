@@ -31,15 +31,20 @@
   * [x] \#494 — noted that this run does not answer it (`undoAll` waits per step, so rapid taps are
         never tested), left open
 * [x] **Merge PR \#634** — merged, main synced, branch deleted.
-* [ ] **Measure `no-encode MiB`** on device (branch `perf/encode-memory-headroom`, commit ba920cec).
-      Decides \#635's fix: comfortably under the 150 MiB gate means the encode is buying headroom
-      nothing needs and can mostly go; near it means the fix has to move the block rather than
-      remove it. Watch `crayon-scribbles` — biggest patches set the ceiling.
-* [ ] \#636 filed — spike programmatic iPad driving (iPadOS 26.5 rules out `ios-webkit-debug-proxy`;
-      `pymobiledevice3` is the candidate). Deliberately not blocking the ADR.
-* [ ] **ADR for the fix**, then implement. Options trade differently: defer encoding to idle, cap
-      encodes per commit, `OffscreenCanvas` in a worker, or skip encoding where `toBlob` is
-      synchronous and carry the memory.
+* [x] **Measured `no-encode MiB`** on device: 28 / 56 / 59 / 60 MiB against the 150 MiB gate — 2.5×
+      headroom, so the encode was buying memory nothing needed.
+* [x] **Implemented the fix** (\#635, branch `perf/encode-memory-headroom`): resident tier sized by
+      a byte budget, residual encodes moved off the commit. Measured in WebKit over 22 crayon
+      scribbles — `engine.commit` total 4639 ms → 0 ms, `engine.encode` 4636 ms → 2 ms, blob 2671 KB
+      → 0.
+* [x] **ADR-0078** written from the measured result; ADR-0066's "verification pending" status closed
+      out.
+* [ ] **Open the PR** for `perf/encode-memory-headroom` and get it reviewed.
+* [ ] **Re-run the device gates on the fix** — the before/after above is Mac WebKit, which shares
+      the mechanism but not the CPU. Confirm `commit max` lands inside 8.3 ms on real hardware, and
+      that `history MiB` stays inside the gate now more patches stay resident.
+* [ ] \#636 — spike programmatic iPad driving (iPadOS 26.5 rules out `ios-webkit-debug-proxy`;
+      `pymobiledevice3` is the candidate). Still not blocking anything.
 * [ ] Delete this file.
 
 ## Verdict — issue \#446, Part 1
