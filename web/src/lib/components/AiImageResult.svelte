@@ -325,9 +325,9 @@
     font-size: var(--font-size-lg);
     font-weight: 600;
   }
-  .ai-result-error-sub {
-    font-size: var(--font-size-md) !important;
-    font-weight: 500 !important;
+  .ai-result-error p.ai-result-error-sub {
+    font-size: var(--font-size-md);
+    font-weight: 500;
     color: var(--text-muted);
     max-width: 280px;
   }

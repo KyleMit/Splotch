@@ -23,36 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Maintainability] `!important` used to beat a sibling rule in AiImageResult, against the Svelte component rules
-
-**File(s):** `web/src/lib/components/AiImageResult.svelte` (lines 328–333) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`.claude/rules/svelte.md` states: "Never `!important` to beat a sibling rule — fix specificity or
-ordering." `AiImageResult.svelte` does exactly that:
-
-```css
-.ai-result-error-sub {
-  font-size: var(--font-size-md) !important;
-  font-weight: 500 !important;
-  ...
-}
-```
-
-(lines 328–333). The `!important`s exist only to out-rank the sibling
-`.ai-result-error p { font-size: var(--font-size-lg); font-weight: 600; }` block (lines 323–327),
-which matches the same element with higher specificity (class + element vs. lone class).
-
-#### Proposed solution
-
-Raise the sub-line selector's specificity instead: `.ai-result-error p.ai-result-error-sub { ... }`,
-or scope the general rule to exclude it (`.ai-result-error p:not(.ai-result-error-sub)`), or —
-simplest — give the primary message its own class (`.ai-result-error-main`) so the two paragraphs
-don't compete at all. Any of these deletes both `!important`s.
-
 ### [Maintainability] Active-run tracking is module-scope mutable state outside a factory; tests must resort to `vi.resetModules()`
 
 **File(s):** `web/src/lib/state/aiGeneration.svelte.ts` (lines 10–11) @ 9ae62ff1; also
