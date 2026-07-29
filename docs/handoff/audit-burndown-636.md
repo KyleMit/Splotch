@@ -1,15 +1,34 @@
-# Handoff — audit burndown (636-finding backlog)
+# Handoff — audit burndown (593 findings remaining)
 
-> 2026-07-29 · branch `claude/burn-down-audit-skill-ecb5np` · PR *(pending — fill in once opened)* ·
-> Bulk-burn the 636-finding `docs/AUDIT.md` backlog with `scripts/audit-burndown/burndown.mjs`,
-> relaunching after each container reclamation until drained.
+> 2026-07-29 · branch `claude/burn-down-audit-skill-ecb5np` · PR
+> [#627](https://github.com/KyleMit/Splotch/pull/627) · Bulk-burn the `docs/AUDIT.md` backlog with
+> `scripts/audit-burndown/burndown.mjs` — **636 → 593 done, PR marked ready**; relaunch to continue.
 
-## Current state
+## Current state — wrapped up, resumable
 
-Fresh run, forked from `origin/main` at f101386e99b08ad366716ab65b46fcb89ce1c164. The previous
-burndown's PR ([#616](https://github.com/KyleMit/Splotch/pull/616)) **merged** on 2026-07-29, so its
-packet (`audit-burndown-642.md`) was spent and is deleted in this branch's first commit; its
-still-owed follow-ups are carried forward at the bottom of this file.
+Wrapped on request after **39 fixed · 4 dropped · 0 deferred** (canary 5 + full run 34); backlog 636
+→ 593. PR 627 is out of draft; the branch is pushed and the working tree is clean. **Nothing is in
+flight** — continue by relaunching with the command below, or, if PR 627 has merged by then, fork a
+fresh branch from the new `main` and open a new PR (a merged PR cannot track new work).
+
+Verified at wrap-up: no `burndown.mjs` or `claude -p` process running; `HEAD` == `origin/<branch>`;
+all 39 per-commit comments posted and the store drained (`capture` reports
+`skipped 39 already posted`); CI green; entry accounting exact (636 − 43 consumed = 593 =
+`pop.mjs --count`, no commit draining more than one finding).
+
+The previous burndown's PR ([#616](https://github.com/KyleMit/Splotch/pull/616)) **merged** on
+2026-07-29, so its packet (`audit-burndown-642.md`) was spent and was deleted in this branch's first
+commit; its still-owed follow-ups are carried forward at the bottom of this file.
+
+## What this run established (so the next one need not re-derive it)
+
+* **The `sonnet` minor tier is proven on this backlog.** It was unproven at the last wrap-up. It
+  took review rounds like any other tier and produced zero deferrals. Tiering was confirmed *before*
+  launch (all 636 findings parsed a priority; 407 routed to the minor tier) rather than discovered
+  afterwards — do the same check each time, it is cheap and its failure is silent.
+* **The gate list below is current as of `test.yml` on 2026-07-29** and every gate was run green at
+  the base commit. Re-derive it anyway next time; the Quality job has grown from 8 steps to 11.
+* **Zero deferrals across 43 findings**, so `docs/AUDIT-DEFERRED.md` gained nothing this run.
 
 ## Objective & non-goals
 
@@ -136,14 +155,19 @@ notional on a Claude subscription — the real ceiling is the usage window.
 
 ## Risks & next 3 steps
 
-1. Open the draft PR (head = this branch) and record its number in the status line above.
-2. Canary (`npm run audit:burndown` with the two gate overrides, `MAX_ISSUES=5`), then audit it per
-   the skill's steps 4–7: read the diff for smuggled behavior change, confirm each commit deleted
-   exactly one `###` entry, confirm the resume handoff fired, and **confirm CI is green** before
-   launching the full run.
-3. **Run the loop until the backlog is drained**, relaunching after each container reclamation with
-   the command above. Re-arm the `run.log` monitor every ~30 min (Monitor clamps to 30 min
+1. ~~Open the draft PR.~~ Done — PR 627, now marked ready.
+2. ~~Canary + audit.~~ Done and clean; the full run followed. See **What this run established**.
+3. **Decide where the next run lands before relaunching.** If PR 627 is still open, relaunch on this
+   branch with the command above and it continues the same PR. If PR 627 has **merged**, do *not*
+   stack onto it — `git fetch origin main && git checkout -B <branch> origin/main`, relaunch, and
+   open a new PR. Then: re-arm the `run.log` monitor every ~30 min (Monitor clamps to 30 min
    regardless of requested timeout), drain the comment store as it fills, and watch CI.
+
+**Re-check the eslint `max-lines` caps.** Three findings this run raised one to fit their own
+additions (`engine.ts` 900 → 913, `undoHistory.test.ts` 500 → 529). Each was pinned exactly and
+disclosed in its PR comment, and the loop rejected a fourth on review — the implementer extracted a
+shared test harness instead, dropping the file under the default so the override could be deleted
+outright. That is the right shape; the earlier three are worth revisiting the same way.
 
 Risks: the container is ephemeral and `.audit-work/` dies with it, so drain PR comments as you go;
 CI is the *only* full-suite gate in this configuration, so a red run means pause and diagnose, not

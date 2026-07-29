@@ -17,10 +17,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 `> **Verified 2026-07-28**` blockquote have been through that pass; the rest have not, so
 `/vet-audits` still owns validating them.
 
-## Source: Code audit — Drawing engine — orchestration & canvas integration
-
-## Source: Code audit — Drawing engine — stroke model & brush rendering
-
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
 ### [Maintainability] Paper-surface creation boilerplate duplicated three times
