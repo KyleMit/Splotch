@@ -44,13 +44,15 @@ const BASELINE = new Map(
     'routes/privacy/+page.svelte': 8,
     // Light-only page, same reasoning as /admin — a palette pinned to a light
     // ground, declared once as local custom properties at the top of its <style>
-    // block. Shares /privacy's AA-safe #7c4dcf link, and adds four darkened
-    // crayon tints shared by each step's numeral and its callout label (the raw
-    // palette hues fail contrast on both the sheet and the warm card). The
-    // crayon chips and the callout accent bars are NOT here: those read their
-    // hexes out of lib/palette.ts at render, which palette-source.test.mjs
+    // block. Shares /privacy's AA-safe #7c4dcf link, and adds each step's crayon
+    // hue in two strengths: a wash behind the numeral and under the callout, and
+    // a darkened ink for both of those texts (the raw palette hues fail contrast
+    // on either ground). The rest are the neutral furniture of the sheet — the
+    // step rail, and the troubleshooting panel's fill, border and hover pair.
+    // The crayon chips and the callout accent rails are NOT here: those read
+    // their hexes out of lib/palette.ts at render, which palette-source.test.mjs
     // requires.
-    'routes/android-beta/+page.svelte': 17,
+    'routes/android-beta/+page.svelte': 24,
     // Deliberate constant: #666 is contrast-pinned for the one light-only host
     // (/admin), where --text-mid's dark value would be 1.9:1. Themed hosts (the
     // /dev harnesses) override it — see the note on .crumb-current.

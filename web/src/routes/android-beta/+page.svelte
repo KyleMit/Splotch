@@ -30,15 +30,19 @@
       <a class="back" href="/">← Back to drawing</a>
       <span class="brand">
         <CrayonStrip />
-        <span class="wordmark">Splotch for Android</span>
+        <!-- The separating space lives inside the lead so it disappears with it;
+             Svelte trims a trailing space at an element boundary, so it has to
+             be a non-breaking one. Same shape as the troubleshooting subtitle. -->
+        <span class="wordmark"><span class="wordmark-lead">Splotch&nbsp;</span>for Android</span>
       </span>
     </div>
 
     <div class="hero">
       <h1>Join the Android beta</h1>
       <p class="lede">
-        Joining is free and takes three quick steps. Thank you for helping — trying Splotch on a
-        real phone or tablet finds problems we can't catch on our own.
+        Joining is free and takes three quick steps — plus an optional fourth if you'd like to send
+        feedback. Thank you for helping: trying Splotch on a real phone or tablet finds problems we
+        can't catch on our own.
       </p>
     </div>
 
@@ -49,8 +53,16 @@
     <div class="trouble">
       <Disclosure class="beta-disclosure">
         {#snippet summary()}
-          <span class="trouble-label">Troubleshooting</span>
-          <Icon name="chevron-right" class="chev" aria-hidden="true" />
+          <span class="trouble-heading">
+            <span class="trouble-label">Troubleshooting</span>
+            <span class="trouble-sub">
+              Beta not showing up, <span class="trouble-sub-clause">“item not found”,&nbsp;</span>or
+              stuck on step 2?
+            </span>
+          </span>
+          <span class="chev-disc">
+            <Icon name="chevron-right" class="chev" aria-hidden="true" />
+          </span>
         {/snippet}
 
         <div class="rows">
@@ -119,7 +131,7 @@
     --beta-sheet: #ffffff; /* = --surface, light */
     --beta-ink: #26262e; /* ~ --text-strong (#333), light */
     --beta-body: #55555f; /* ~ --text (#555), light */
-    --beta-note: #4a4a54; /* ~ --text on the warm tint */
+    --beta-note: #4a4a54; /* ~ --text on a callout wash */
     /* The spec's muted ink was #9a98a3 (~ --text-faint). That is 2.8:1 on the
        sheet and fails WCAG AA everywhere it carries text — the wordmark, the
        hero note, fine print, and callout labels. This is the darkest value that
@@ -130,19 +142,34 @@
        /privacy pins for the same reason. */
     --beta-link: #7c4dcf;
     --beta-link-hover: #6b3fbf;
-    --beta-warm: #f7f3ee; /* ~ --surface-warm-hover (#f4f0ea), light */
     --beta-rule: #eeeae4; /* ~ --border-warm (#ddd6cc), lightened */
-    --beta-row: #faf8f5;
-    --beta-row-hover: #f4f0ea;
-    /* One darkened tint per crayon hue for the card labels — the raw palette
-       hues are ~2.6:1 on the warm tint, so each label takes a deeper shade of
-       its step's color. Measured on #f7f3ee: 5.3, 4.7, 4.6, 4.8:1. Not palette
-       values, so they are not palette-source.test.mjs's to own. */
-    --beta-alert-ink: #b03f3b; /* deep Red */
-    --beta-warn-ink: #a35a00; /* deep Orange */
-    --beta-go-ink: #4f7a36; /* deep Green */
-    --beta-info-ink: #2a6db8; /* deep Blue */
+    --beta-row: #f7f6f5;
+    --beta-row-hover: #f2f0ef;
+    --beta-row-border: #eeecec;
+    --beta-row-border-hover: #e2dfdf;
+    --beta-disc-border: #e8e6e6;
+    /* The connector between the step numerals. Decorative — the numerals and
+       their order carry the sequence, so this sits below the 3:1 floor by
+       design. */
+    --beta-rail: #efeced;
+
+    /* Each step is a crayon hue in two strengths: a 5% wash behind its numeral
+       and under its callout, and a darkened ink for the numeral and the callout
+       label. The raw palette hues are ~2.6:1 and carry no text; these deeper
+       shades measure 5.3, 4.9, 4.7, 4.9:1 on their own wash. Neither is a
+       palette value, so palette-source.test.mjs does not own them — the full
+       hues on the callout rails are read out of lib/palette.ts instead. */
+    --beta-step-1-wash: #fdf3f2; /* Red */
+    --beta-step-1-ink: #b03f3b;
+    --beta-step-2-wash: #fdf7ef; /* Orange */
+    --beta-step-2-ink: #a35a00;
+    --beta-step-3-wash: #f3f9ef; /* Green */
+    --beta-step-3-ink: #4f7a36;
+    --beta-step-4-wash: #f0f6fc; /* Blue */
+    --beta-step-4-ink: #2a6db8;
     --beta-on-accent: #fff;
+    /* One reading measure for every text block on the page. */
+    --beta-measure: 62ch;
     /* Inside the sheet every band lines up on one horizontal padding. */
     --beta-gutter: clamp(20px, 5vw, 34px);
 
@@ -243,6 +270,7 @@
 
   .lede {
     margin: 16px 0 0;
+    max-width: var(--beta-measure);
     font-size: 18px;
     font-weight: 500;
     line-height: 1.6;
@@ -280,17 +308,19 @@
      chevron icon, which rotates rather than swapping glyphs — Icon renders via
      {@html}, which hydration does not reconcile (.claude/rules/svelte.md). */
   .trouble :global(.beta-disclosure) {
-    border: 0;
+    border: 1px solid var(--beta-row-border);
     border-radius: 14px;
     background: var(--beta-row);
-    transition: background var(--duration-base) ease;
+    transition:
+      background var(--duration-base) ease,
+      border-color var(--duration-base) ease;
   }
 
   .trouble :global(.beta-disclosure > summary) {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 16px;
     padding: 18px 20px;
   }
 
@@ -298,21 +328,50 @@
     content: none;
   }
 
+  /* A title alone reads as a footer slab. The subtitle names what is inside, so
+     the panel offers a reason to open it rather than a label. */
+  .trouble-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
   .trouble-label {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 700;
     color: var(--beta-ink);
   }
 
+  .trouble-sub {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--beta-muted);
+  }
+
+  /* The disc is the tappable affordance: a raised white target rather than a
+     glyph floating on the panel. */
+  .chev-disc {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 32px;
+    height: 32px;
+    border: 1px solid var(--beta-disc-border);
+    border-radius: 50%;
+    background: var(--beta-sheet);
+  }
+
   .trouble :global(.chev) {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     transition: transform var(--duration-base) ease;
   }
 
   /* The rotation is the only visual signal of the panel's state, so this is a
      non-text contrast case (WCAG 1.4.11, 3:1) rather than a decorative one.
-     --beta-muted is 4.9:1 on the row and 4.6:1 on its hover. */
+     --beta-muted is 5.2:1 on the disc it sits in, and clears the floor against
+     the panel behind it too (4.8:1, 4.6:1 hovered). */
   .trouble :global(.chev svg) {
     fill: var(--beta-muted);
   }
@@ -361,6 +420,7 @@
 
     .trouble :global(.beta-disclosure:hover) {
       background: var(--beta-row-hover);
+      border-color: var(--beta-row-border-hover);
     }
 
     a:not(.back):hover {
@@ -369,14 +429,23 @@
   }
 
   @media (max-width: 540px) {
+    /* Chips alone are seven anonymous dots, so the wordmark stays and stacks
+       under them instead of competing with the back link for the same line. */
     .brand {
       --crayon-width: 10px;
       --crayon-height: 5px;
+
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
     }
 
-    /* The wordmark is the least load-bearing thing in the bar and the first to
-       crowd the back link, so on a phone the chips carry the brand alone. */
     .wordmark {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+    }
+
+    .wordmark-lead {
       display: none;
     }
 
@@ -391,6 +460,18 @@
 
     .lede {
       font-size: 16px;
+    }
+  }
+
+  /* The subtitle is the first thing to wrap to three lines beside the chevron
+     disc, so the narrowest phones get the short form of the same sentence. */
+  @media (max-width: 480px) {
+    .trouble-sub-clause {
+      display: none;
+    }
+
+    .trouble-sub {
+      font-size: 13px;
     }
   }
 </style>

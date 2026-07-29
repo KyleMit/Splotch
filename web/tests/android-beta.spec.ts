@@ -83,18 +83,28 @@ const CONTRAST = `(fg, bg) => {
   return (hi + 0.05) / (lo + 0.05);
 }`;
 
-test('the step numerals clear the 3:1 large-text minimum', async ({ page }) => {
+// Each numeral and its step's callout label are the same ink on the same wash,
+// so one measurement covers both. The numeral is set below the large-text
+// threshold, so it owes the full 4.5:1 rather than 3:1.
+test('the step inks clear 4.5:1 on the wash they sit on', async ({ page }) => {
   await page.goto('/android-beta');
+  // Step 4's callout is the one composed after hydration, so waiting for it is
+  // what makes all eight measurable.
+  await expect(page.locator('.step-4 .card')).toBeVisible();
   const ratios = await page.evaluate(`(() => {
     const contrast = ${CONTRAST};
-    return [...document.querySelectorAll('.num')].map((el) => ({
-      step: el.textContent.trim(),
-      ratio: contrast(getComputedStyle(el).color, getComputedStyle(el.closest('.sheet')).backgroundColor),
-    }));
+    return [...document.querySelectorAll('.steps > li')].flatMap((li) =>
+      [li.querySelector('.num'), li.querySelector('.card-label')]
+        .filter(Boolean)
+        .map((el) => ({
+          where: li.className + ' ' + el.className,
+          ratio: contrast(getComputedStyle(el).color, getComputedStyle(el.closest('.num, .card')).backgroundColor),
+        }))
+    );
   })()`);
-  expect(ratios).toHaveLength(4);
-  for (const { step, ratio } of ratios as { step: string; ratio: number }[]) {
-    expect(ratio, `step ${step} numeral contrast`).toBeGreaterThanOrEqual(3);
+  expect(ratios).toHaveLength(8);
+  for (const { where, ratio } of ratios as { where: string; ratio: number }[]) {
+    expect(ratio, `${where} contrast`).toBeGreaterThanOrEqual(4.5);
   }
 });
 

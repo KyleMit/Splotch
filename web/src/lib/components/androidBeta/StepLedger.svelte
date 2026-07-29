@@ -23,15 +23,14 @@
   // installing, and the store listing stays a 404 until it is done — and step 4
   // is the optional ask afterwards.
   //
-  // Each step carries its own crayon hue on the bar of its callout, tying the
+  // Each step carries its own crayon hue on the rail of its callout, tying the
   // list back to the masthead strip. Read out of palette.ts rather than written
   // as hexes here, which palette-source.test.mjs requires and which makes a
   // renamed swatch fail loudly.
   //
-  // The numerals do NOT use these: three of the four raw hues are 2.0-2.7:1 on
-  // the sheet, under the 3:1 that large text needs. They take the darkened
-  // --beta-*-ink of the same step instead (5.0-5.8:1), which is the color of
-  // that step's callout label anyway.
+  // Nothing that carries text uses these: three of the four raw hues are
+  // 2.0-2.7:1 on the sheet. The numeral and the callout label take the darkened
+  // --beta-step-*-ink of the same step instead, over its --beta-step-*-wash.
   const CARD_ACCENT: string[] = (['Red', 'Orange', 'Green', 'Blue'] as PaletteLabel[]).map(
     paletteHex
   );
@@ -42,165 +41,203 @@
 </script>
 
 <ol class="steps">
-  <li>
-    <span class="num alert">1</span>
-    <div class="content">
-      <div class="head"><h3>Join the testers group</h3></div>
-      <p class="body">
-        Google Play decides who can see the beta by checking a Google Group, so this has to happen
-        first. Click <strong>Accept Invite</strong>. Don't worry about the permission warning when
-        you first open the page — it's just because you're not a member yet, but accepting the
-        invite will grant you access.
+  <li class="step-1">
+    <div class="head">
+      <span class="num">1</span>
+      <h3>Join the testers group</h3>
+    </div>
+    <p class="body">
+      Google Play decides who can see the beta by checking a Google Group, so this has to happen
+      first. Click <strong>Accept Invite</strong>. Don't worry about the permission warning when you
+      first open the page — it's just because you're not a member yet, but accepting the invite will
+      grant you access.
+    </p>
+    <div class="action">
+      <a class="btn" href={TESTERS_GROUP_URL} target="_blank" rel="noopener noreferrer">
+        Join the testers group
+      </a>
+      <p class="fine">Google may ask you to sign in or to request access before it lets you in.</p>
+    </div>
+    <div class="card" style="--card-accent:{CARD_ACCENT[0]}">
+      <p class="card-label">Double check your account</p>
+      <p class="card-body">
+        Use the <strong>same Google account</strong> that's signed in to the Play Store on your phone
+        or tablet. Using a different account is a common reason the beta never shows up.
       </p>
-      <div class="action">
-        <a class="btn" href={TESTERS_GROUP_URL} target="_blank" rel="noopener noreferrer">
-          Join the testers group
-        </a>
-        <p class="fine">
-          Google may ask you to sign in or to request access before it lets you in.
+    </div>
+  </li>
+
+  <li class="step-2">
+    <div class="head">
+      <span class="num">2</span>
+      <h3>Opt in on Google Play</h3>
+    </div>
+    <p class="body">
+      Open the tester page and press <strong>Become a tester</strong>. This enrolls you; it doesn't
+      install anything yet. Once you're in, the same page should automatically show you a link to
+      “Download it on Google Play”, taking you to step 3.
+    </p>
+    <div class="action">
+      <a class="btn" href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer">
+        Become a tester
+      </a>
+      <p class="fine">Sign in with the same account you used in step 1.</p>
+    </div>
+    <div class="card" style="--card-accent:{CARD_ACCENT[1]}">
+      <p class="card-label">If a link doesn't work yet</p>
+      <p class="card-body">
+        None of this is instant, and Google Play doesn't always recognize a new group membership
+        straight away. Check that both pages are signed in to the same Google account, then make a
+        cup of tea and try again a little later before assuming something is broken.
+      </p>
+    </div>
+  </li>
+
+  <li class="step-3">
+    <div class="head">
+      <span class="num">3</span>
+      <h3>Install Splotch</h3>
+    </div>
+    <p class="body">
+      The store listing stays hidden until step 2 is done — before that it just says “item not
+      found”. Now it installs like any other app, and updates arrive automatically as new beta
+      builds go out.
+    </p>
+    <div class="action">
+      <a class="btn" href={PLAY_STORE_LISTING_URL} target="_blank" rel="noopener noreferrer">
+        Open Splotch on Google Play
+      </a>
+      <p class="fine">
+        Open this one on the Android device you want to draw on. Needs Android {MIN_ANDROID_RELEASE}
+        (API {MIN_ANDROID_API_LEVEL}) or newer.
+      </p>
+    </div>
+    <div class="card" style="--card-accent:{CARD_ACCENT[2]}">
+      <p class="card-label">Please stay for 14 days</p>
+      <p class="card-body">
+        Once you're in, <strong>stay opted in for at least 14 days in a row</strong>, even if you've
+        seen everything you wanted to in the first ten minutes. Google requires a stretch of
+        continuously enrolled testers before Splotch can apply for a public listing, so leaving
+        early — or opting out and back in — sets that clock back for everyone. You don't have to
+        keep drawing; just stay enrolled.
+      </p>
+    </div>
+  </li>
+
+  <li class="step-4">
+    <div class="head">
+      <span class="num">4</span>
+      <h3>Tell us what you think</h3>
+      <span class="optional">Optional</span>
+    </div>
+    <p class="body">
+      Inside the app, tap the
+      <Icon name="parent" class="inline-icon" role="img" aria-label="Parent Center" /> button in the bottom-right
+      corner of the drawing screen to open the Parent Center, then choose
+      <strong>Send report</strong> to file a bug or suggest a feature without leaving Splotch. Odd
+      crashes, confusing buttons, and “my toddler did <em>what</em>?” stories are all genuinely
+      useful.
+    </p>
+    {#if support}
+      <div class="card" style="--card-accent:{CARD_ACCENT[3]}">
+        <p class="card-label">Or just email me</p>
+        <p class="card-body">
+          Reach out to me at <a href="mailto:{support}">{support}</a> if you need anything at all… something
+          is broken, something is confusing, an idea, or just to say your kid liked it. Good and bad are
+          both worth hearing.
         </p>
       </div>
-      <div class="card" style="--card-accent:{CARD_ACCENT[0]}">
-        <span class="bar"></span>
-        <div>
-          <p class="card-label alert">Double check your account</p>
-          <p class="card-body">
-            Use the <strong>same Google account</strong> that's signed in to the Play Store on your phone
-            or tablet. Using a different account is a common reason the beta never shows up.
-          </p>
-        </div>
-      </div>
-    </div>
-  </li>
-
-  <li>
-    <span class="num warn">2</span>
-    <div class="content">
-      <div class="head"><h3>Opt in on Google Play</h3></div>
-      <p class="body">
-        Open the tester page and press <strong>Become a tester</strong>. This enrolls you; it
-        doesn't install anything yet. Once you're in, the same page should automatically show you a
-        link to “Download it on Google Play”, taking you to step 3.
-      </p>
-      <div class="action">
-        <a class="btn" href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer">
-          Become a tester
-        </a>
-      </div>
-      <div class="card" style="--card-accent:{CARD_ACCENT[1]}">
-        <span class="bar"></span>
-        <div>
-          <p class="card-label warn">If a link doesn't work yet</p>
-          <p class="card-body">
-            None of this is instant, and Google Play doesn't always recognize a new group membership
-            straight away. Check that both pages are signed in to the same Google account, then make
-            a cup of tea and try again a little later before assuming something is broken.
-          </p>
-        </div>
-      </div>
-    </div>
-  </li>
-
-  <li>
-    <span class="num go">3</span>
-    <div class="content">
-      <div class="head"><h3>Install Splotch</h3></div>
-      <p class="body">
-        The store listing stays hidden until step 2 is done — before that it just says “item not
-        found”. Now it installs like any other app, and updates arrive automatically as new beta
-        builds go out.
-      </p>
-      <div class="action">
-        <a class="btn" href={PLAY_STORE_LISTING_URL} target="_blank" rel="noopener noreferrer">
-          Open Splotch on Google Play
-        </a>
-        <p class="fine">
-          Open this one on the Android device you want to draw on. Splotch needs Android {MIN_ANDROID_RELEASE}
-          (API {MIN_ANDROID_API_LEVEL}) or newer.
-        </p>
-      </div>
-      <div class="card" style="--card-accent:{CARD_ACCENT[2]}">
-        <span class="bar"></span>
-        <div>
-          <p class="card-label go">Please stay for 14 days</p>
-          <p class="card-body">
-            Once you're in, <strong>stay opted in for at least 14 days in a row</strong>, even if
-            you've seen everything you wanted to in the first ten minutes. Google requires a stretch
-            of continuously enrolled testers before Splotch can apply for a public listing, so
-            leaving early — or opting out and back in — sets that clock back for everyone. You don't
-            have to keep drawing; just stay enrolled.
-          </p>
-        </div>
-      </div>
-    </div>
-  </li>
-
-  <li>
-    <span class="num info">4</span>
-    <div class="content">
-      <div class="head">
-        <h3>Tell us what you think</h3>
-        <span class="optional">Optional</span>
-      </div>
-      <p class="body">
-        Inside the app, tap the
-        <Icon name="parent" class="inline-icon" role="img" aria-label="Parent Center" /> button in the
-        bottom-right corner of the drawing screen to open the Parent Center, then choose
-        <strong>Send report</strong> to file a bug or suggest a feature without leaving Splotch. Odd
-        crashes, confusing buttons, and “my toddler did <em>what</em>?” stories are all genuinely
-        useful.
-      </p>
-      {#if support}
-        <div class="card" style="--card-accent:{CARD_ACCENT[3]}">
-          <span class="bar"></span>
-          <div>
-            <p class="card-label info">Or just email me</p>
-            <p class="card-body">
-              Reach out to me at <a href="mailto:{support}">{support}</a> if you need anything at all…
-              something is broken, something is confusing, an idea, or just to say your kid liked it.
-              Good and bad are both worth hearing.
-            </p>
-          </div>
-        </div>
-      {/if}
-    </div>
+    {/if}
   </li>
 </ol>
 
 <style>
-  /* No rules between steps: the gap and the colored numeral do the separating,
-     so the only hairline on the page is the section label's. */
+  /* No rules between steps: the numeral gutter carries a hairline rail instead,
+     so the four read as one sequence rather than four unrelated blocks. The
+     rail's geometry is derived from these, which is why they are named — the
+     segment under each step has to land exactly on the next step's numeral. */
   .steps {
+    --step-gap: 52px;
+    --num-size: 32px;
+    /* The numeral plus the space between it and the text column. */
+    --num-gutter: 52px;
+    --rail-width: 2px;
+    /* How far the rail stops short of the numerals it runs between. */
+    --rail-inset: 8px;
+
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 44px;
+    gap: var(--step-gap);
   }
 
   .steps > li {
-    display: grid;
-    grid-template-columns: 34px minmax(0, 1fr);
-    gap: 0 18px;
+    position: relative;
+    padding-left: var(--num-gutter);
   }
 
-  .content {
-    max-width: 600px;
+  .step-1 {
+    --step-wash: var(--beta-step-1-wash);
+    --step-ink: var(--beta-step-1-ink);
+  }
+
+  .step-2 {
+    --step-wash: var(--beta-step-2-wash);
+    --step-ink: var(--beta-step-2-ink);
+  }
+
+  .step-3 {
+    --step-wash: var(--beta-step-3-wash);
+    --step-ink: var(--beta-step-3-ink);
+  }
+
+  .step-4 {
+    --step-wash: var(--beta-step-4-wash);
+    --step-ink: var(--beta-step-4-ink);
+  }
+
+  /* One segment per step rather than one rail down the whole list: the bottom
+     of a step is a known distance from the next numeral (the flex gap), while
+     the height of the last step's content is not. */
+  .steps > li:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: calc((var(--num-size) - var(--rail-width)) / 2);
+    top: calc(var(--num-size) + var(--rail-inset));
+    bottom: calc(var(--rail-inset) - var(--step-gap));
+    width: var(--rail-width);
+    background: var(--beta-rail);
+  }
+
+  /* The head is exactly one numeral tall, so the numeral it holds on desktop can
+     be lifted into the gutter and still line up with the title. */
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-height: var(--num-size);
   }
 
   .num {
-    font-size: 26px;
-    font-weight: 700;
-    line-height: 1.15;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .head {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 1;
     display: flex;
-    align-items: baseline;
-    gap: 10px;
-    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 var(--num-size);
+    width: var(--num-size);
+    height: var(--num-size);
+    border-radius: 50%;
+    background: var(--step-wash);
+    color: var(--step-ink);
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
   }
 
   h3 {
@@ -220,7 +257,8 @@
   }
 
   .body {
-    margin: 10px 0 0;
+    margin: 14px 0 0;
+    max-width: var(--beta-measure);
     font-size: 16px;
     font-weight: 500;
     line-height: 1.65;
@@ -233,13 +271,15 @@
   }
 
   /* Fine print sits beside its button rather than under it, so a step reads as
-     one action with a caveat instead of a stack of blocks. */
+     one action with a caveat instead of a stack of blocks. Every step gets the
+     same pairing — a step with a button and no caveat looked unfinished next to
+     its neighbours. */
   .action {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 16px;
-    margin-top: 20px;
+    gap: 20px;
+    margin-top: 18px;
   }
 
   .btn {
@@ -262,28 +302,23 @@
 
   .fine {
     margin: 0;
-    max-width: 260px;
-    font-size: 13px;
+    max-width: 34ch;
+    font-size: 14px;
     font-weight: 500;
     line-height: 1.5;
     color: var(--beta-muted);
   }
 
-  /* Every step closes on a callout carrying its own crayon accent, so the four
-     read as one system rather than as two competing note styles. */
+  /* Every step closes on a callout washed in its own crayon hue, so the four
+     read as one system rather than as four notes on the same grey. The rail is
+     the full hue; the fill is the same hue at wash strength. */
   .card {
-    display: flex;
-    gap: 14px;
+    max-width: var(--beta-measure);
     margin-top: 22px;
-    padding: 16px 18px;
-    border-radius: 14px;
-    background: var(--beta-warm);
-  }
-
-  .bar {
-    flex: 0 0 4px;
-    border-radius: 999px;
-    background: var(--card-accent);
+    padding: 14px 18px;
+    border-left: 3px solid var(--card-accent);
+    border-radius: 0 12px 12px 0;
+    background: var(--step-wash);
   }
 
   .card-label {
@@ -292,25 +327,7 @@
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-  }
-
-  /* Each card label takes a darkened tint of its step's crayon hue: the raw
-     palette hues are ~2.6:1 on the warm tint. Deeper shades that clear AA, and
-     not palette values, so they live in the route's local palette. */
-  .alert {
-    color: var(--beta-alert-ink);
-  }
-
-  .warn {
-    color: var(--beta-warn-ink);
-  }
-
-  .go {
-    color: var(--beta-go-ink);
-  }
-
-  .info {
-    color: var(--beta-info-ink);
+    color: var(--step-ink);
   }
 
   .card-body {
@@ -353,13 +370,25 @@
   }
 
   @media (max-width: 540px) {
+    .steps {
+      --step-gap: 38px;
+      --num-size: 26px;
+    }
+
+    /* The gutter costs ~28px of an already tight measure, so the numeral drops
+       out of it and sits inline with the title while the body and its callouts
+       run the full sheet width. With no gutter there is nothing to rail. */
     .steps > li {
-      grid-template-columns: 26px minmax(0, 1fr);
-      gap: 0 14px;
+      padding-left: 0;
+    }
+
+    .steps > li:not(:last-child)::before {
+      content: none;
     }
 
     .num {
-      font-size: 22px;
+      position: static;
+      font-size: 13px;
     }
 
     h3 {
@@ -383,6 +412,7 @@
 
     .fine {
       max-width: none;
+      font-size: 13.5px;
     }
   }
 </style>
