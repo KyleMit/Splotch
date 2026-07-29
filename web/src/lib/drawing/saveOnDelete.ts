@@ -12,8 +12,10 @@ export async function saveDrawingIfEnabled() {
   if (!settings.saveOnDeleteEnabled) return;
   if (isCanvasEmpty()) return;
 
+  const screenshotModule = import('./screenshot');
+  void screenshotModule.catch(() => undefined);
   const blob = await exportCanvasBlob(getActiveOverlayImage());
   if (!blob) return;
-  const { saveImageBlob } = await import('./screenshot');
+  const { saveImageBlob } = await screenshotModule;
   await saveImageBlob(blob);
 }
