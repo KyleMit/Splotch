@@ -16,6 +16,7 @@
 //   paperView.ts        pure rotation-lock view geometry (ADR-0050)
 //   magicBrush.ts       the magic brush's color sheet + paint pattern (ADR-0043)
 //   emptyScan.ts        cheap blank-canvas detection
+//   penStreamQuirks.ts  WebKit merged-stream pen-contact adoption
 //   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
 import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
@@ -91,6 +92,7 @@ import {
   snapshotCount,
 } from './undoHistory';
 import { scanCanvasIsEmpty } from './emptyScan';
+import { createPenStreamAdopter } from './penStreamQuirks';
 import type { ExportOptions } from './exportDrawing';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
@@ -907,10 +909,10 @@ function strokeSpeed(ps: PointerState, last: Point, now: number): number {
 function draw(e: PointerEvent) {
   const pointerState = activePointers.get(e.pointerId);
 
-  // Canvas-targeted flavor of the merged-stream quirk (see adoptStrayPenStream):
-  // adopt the down-less stream as the stroke start instead of dropping the
-  // whole first stroke after a color pick.
-  if (!pointerState && isOrphanPenContact(e)) {
+  // Canvas-targeted flavor of the merged-stream quirk (see penStreamQuirks.ts's
+  // adoptStrayPenStream): adopt the down-less stream as the stroke start
+  // instead of dropping the whole first stroke after a color pick.
+  if (!pointerState && penStreamAdopter.isOrphanPenContact(e)) {
     startDrawing(e);
     return;
   }
@@ -1016,40 +1018,14 @@ export function releaseAllPointers() {
 }
 
 // --- WebKit merged-stream pen quirks ---------------------------------------
+// See penStreamQuirks.ts for the quirk itself; the adopter below is wired to
+// this engine's canvas, pointer tracking, and stroke-start action.
 
-// Every pointerdown actually delivered anywhere in the document, until its
-// up/cancel arrives. A pen contact stream whose id is missing here never got a
-// pointerdown at all — the WebKit merged-stream signature — which is what
-// licenses adoption below without stealing pointers that legitimately began on
-// a UI control (drag-to-clear's uncaptured drag, the color picker's captured
-// drag, a slide off a swatch).
-const liveDownIds = new Set<number>();
-const trackPointerDown = (e: PointerEvent) => liveDownIds.add(e.pointerId);
-const trackPointerLift = (e: PointerEvent) => liveDownIds.delete(e.pointerId);
-
-// The WebKit merge quirk of POINTER_RESUME_GAP_MS, for a stream that began on a
-// UI control: a fast pen tap on e.g. a color swatch merged with the following
-// stroke drops the intervening pointerup + pointerdown, so the stroke arrives
-// as bare pointermoves — a down-less contact stream. Hover moves (buttons ===
-// 0) never match, and touch keeps its 100ms color-change debounce precisely to
-// absorb this kind of tap fallout.
-function isOrphanPenContact(e: PointerEvent) {
-  return e.pointerType === 'pen' && e.buttons !== 0 && !liveDownIds.has(e.pointerId);
-}
-
-// Pens get no implicit capture, so an orphaned stream's moves usually hit-test
-// onto the canvas (draw() adopts those directly) — but WebKit can also keep
-// delivering them to the control the merged stream started on. This
-// window-level listener catches that flavor: an orphaned pen contact move
-// physically over exposed canvas (elementFromPoint, so an open picker or a
-// floating control still wins) becomes the stroke start, and startDrawing's
-// setPointerCapture retargets the rest of the stream to the canvas.
-function adoptStrayPenStream(e: PointerEvent) {
-  if (e.target === canvas || activePointers.has(e.pointerId)) return;
-  if (!isOrphanPenContact(e)) return;
-  if (document.elementFromPoint(e.clientX, e.clientY) !== canvas) return;
-  startDrawing(e);
-}
+const penStreamAdopter = createPenStreamAdopter({
+  canvas: () => canvas,
+  isTracked: (pointerId) => activePointers.has(pointerId),
+  adopt: startDrawing,
+});
 
 const cancelTouch = (e: TouchEvent) => e.preventDefault();
 
@@ -1208,12 +1184,12 @@ function teardownEngine() {
   // Pointer-input state must not outlive the mount, unlike the drawing
   // state (see the persistence note in undoHistory.ts): a stale
   // activePointers entry surviving into a remount would let hover moves paint
-  // after a remount reuses its pointerId, and liveDownIds loses its
+  // after a remount reuses its pointerId, and the pen-stream adopter loses its
   // self-healing window trackers above. releaseAllPointers also commits any
   // mid-flight stroke into the log, so navigating away mid-stroke keeps
   // the ink.
   releaseAllPointers();
-  liveDownIds.clear();
+  penStreamAdopter.reset();
   setLiveCrayonBuffer(null, null);
   // Only engine-created overlays are removed — adopted ones belong to the
   // owner component's markup and die (or are re-adopted) with it.
@@ -1375,10 +1351,9 @@ function registerEngineListeners(canvas: HTMLCanvasElement): void {
   // the scribbleGuard action.
   listen(canvas, 'touchstart', cancelTouch, { passive: false });
   listen(canvas, 'touchmove', cancelTouch, { passive: false });
-  listen(window, 'pointerdown', trackPointerDown, true);
-  listen(window, 'pointerup', trackPointerLift, true);
-  listen(window, 'pointercancel', trackPointerLift, true);
-  listen(window, 'pointermove', adoptStrayPenStream, true);
+  penStreamAdopter.registerWindowListeners((type, handler, capture) =>
+    listen(window, type, handler, capture)
+  );
 }
 
 export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {

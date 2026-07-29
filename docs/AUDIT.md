@@ -19,50 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Architecture] Extract the WebKit merged-stream pen-quirk subsystem from engine.ts
-
-**File(s):** `web/src/lib/drawing/engine.ts` (lines 982–1016; consumption at `draw` lines 884–888
-and `registerEngineListeners` lines 1351–1354) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`engine.ts` is 1,487 lines. Its header declares pointer tracking engine-owned by design (ADR-0004),
-so wholesale splitting would fight a documented decision — but the WebKit merged-stream section is a
-self-contained quirk workaround, not pointer tracking proper: `liveDownIds` +
-`trackPointerDown`/`trackPointerLift` (lines 990–992), `isOrphanPenContact` (1000–1002),
-`adoptStrayPenStream` (1011–1016), plus four window-level capture listeners (1351–1354) and the
-adoption branch in `draw()`. It has one narrow contract with the rest of the file (call
-`startDrawing(e)` when an orphaned stream is over exposed canvas; consult `activePointers.has`), its
-own state, and dense platform-archaeology comments. Inside the conductor file it's ~60 lines a
-reader must mentally page out to follow the core stroke path, and it's the part most likely to grow
-(each WebKit release is a new flavor — the codebase already tracks two: canvas-targeted and
-window-level).
-
-#### Proposed solution
-
-Move it to `web/src/lib/drawing/penStreamQuirks.ts` behind a small factory:
-
-```ts
-export function createPenStreamAdopter(deps: {
-  canvas: () => HTMLCanvasElement;
-  isTracked: (pointerId: number) => boolean;
-  adopt: (e: PointerEvent) => void;
-}): {
-  isOrphanPenContact(e: PointerEvent): boolean;
-  registerWindowListeners(listen: ListenFn): void;
-  reset(): void; // liveDownIds.clear() at teardown
-};
-```
-
-matching how `strokeMath`/`paperView` already hold extracted pure logic. Tradeoff: the deps closure
-adds indirection to four one-line handlers; the win is that `engine.ts` drops to quirk-free stroke
-logic and the quirk file becomes independently unit-testable (synthesize the down-less event
-sequences in Vitest — coverage that today only exists as on-device lore). If the team judges the
-factory ceremony too heavy, the fallback that still helps is a plain module with module-scope state
-plus the documented persistence caveat, mirroring `emptyScan.ts`'s shape.
-
 ### [Architecture] Extract the pointer-halo UI (eraser bubble + brush rings) from DrawingCanvas
 
 **File(s):** `web/src/lib/components/DrawingCanvas.svelte` (lines 41–149, 405–421, 495–538) @
