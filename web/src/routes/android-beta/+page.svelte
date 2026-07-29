@@ -75,12 +75,12 @@
           <div class="row">
             <h3>The tester page says you're not a member</h3>
             <p>
-              Joining is instant and there's no approval to wait on, so either the invite wasn't
-              accepted or it was accepted on a different Google account. Open <a
+              Joining is instant and there's no approval to wait on, so either the join never went
+              through or it went through on a different Google account. Open <a
                 href={TESTERS_GROUP_URL}
                 target="_blank"
                 rel="noopener noreferrer">the group page</a
-              > again, check the account in the top-right corner, and accept from there.
+              > again, check the account in the top-right corner, and join from there.
             </p>
           </div>
           <div class="row">

@@ -25,7 +25,7 @@ describe('/android-beta facts', () => {
   });
 
   it('points the group link at the testers group', () => {
-    expect(TESTERS_GROUP_URL).toBe('https://groups.google.com/g/splotch-testers');
+    expect(TESTERS_GROUP_URL).toBe('https://groups.google.com/g/splotch-testers/about');
   });
 
   it('points both Play links at the same app', () => {

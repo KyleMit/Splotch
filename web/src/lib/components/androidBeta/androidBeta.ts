@@ -24,7 +24,13 @@ export const PLAY_STORE_LISTING_URL = `https://play.google.com/store/apps/detail
 // is step one.
 const TESTERS_GROUP_NAME = 'splotch-testers';
 
-export const TESTERS_GROUP_URL = `https://groups.google.com/g/${TESTERS_GROUP_NAME}`;
+/**
+ * The group's *about* page, not its message list. Both offer the same "Join
+ * group" action to a non-member, but the message list opens on a permission
+ * warning first — alarming for a link handed to a parent, and nothing the
+ * reader has to act on.
+ */
+export const TESTERS_GROUP_URL = `https://groups.google.com/g/${TESTERS_GROUP_NAME}/about`;
 
 // The support address is split so the literal string appears nowhere in the
 // prerendered HTML: the page composes it after hydration, which keeps it out of

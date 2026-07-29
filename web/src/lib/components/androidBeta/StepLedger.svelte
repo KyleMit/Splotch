@@ -47,9 +47,7 @@
     </div>
     <p class="body">
       Google Play decides who can see the beta by checking a Google Group, so this has to happen
-      first. Click <strong>Accept Invite</strong>. Don't worry about the permission warning when you
-      first open the page — it's just because you're not a member yet, but accepting the invite will
-      grant you access.
+      first. Click <strong>Join group</strong> at the top.
     </p>
     <div class="action">
       <a class="btn" href={TESTERS_GROUP_URL} target="_blank" rel="noopener noreferrer">
