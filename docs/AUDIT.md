@@ -19,34 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Maintainability] Name the lossless-encode literals and share the MIME vocabulary between encoder and validator
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`encodeColdSnapshots`, lines 596–597;
-`isValidColdSnapshotBlob`, line 569) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The encode call passes bare literals — `'image/webp'`, quality `1` (line 596–597) — and the
-validator independently re-declares `'image/webp' || 'image/png'` (line 569). The quality `1` is a
-tuning literal encoding the lossless-WebP decision (the WHY lives in comments at lines 562–566 and
-575–577, not on a named constant, contra the "tuning literals get names" convention). The MIME
-strings are boundary strings that must agree between the encoder and the validator; today they agree
-by prose ("WebP first... falls back to image/png"), which the conventions call a defect.
-
-#### Proposed solution
-
-```ts
-const LOSSLESS_WEBP_QUALITY = 1;
-const COLD_SNAPSHOT_MIME_WEBP = 'image/webp';
-const COLD_SNAPSHOT_MIME_PNG = 'image/png';
-```
-
-(or a `COLD_SNAPSHOT_MIME_TYPES` readonly set the validator checks membership of), with the
-lossless-encoding WHY comment moved onto the constants. `isValidColdSnapshotBlob`'s unit test keeps
-its literal strings per the tests-excepted rule.
-
 ### [Readability] `rebaseDeferredCommands`' scan encodes "last clear wins" in an opaque some/length pair
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`rebaseDeferredCommands`, lines 138–147) @

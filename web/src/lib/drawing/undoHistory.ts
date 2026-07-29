@@ -54,6 +54,12 @@ export const MAX_UNDO_DEPTH = 20;
 // blob rising back into the window re-inflates (reinflateHotSnapshots).
 const MAX_HOT_RASTERS = 2;
 
+// Quality-1 WebP is lossless where supported; canvas falls back to lossless
+// PNG when an engine cannot encode WebP.
+const COLD_SNAPSHOT_WEBP_MIME = 'image/webp';
+const COLD_SNAPSHOT_PNG_MIME = 'image/png';
+const COLD_SNAPSHOT_LOSSLESS_WEBP_QUALITY = 1;
+
 let paperCanvas: HTMLCanvasElement | null = null;
 let paperCtx: CanvasRenderingContext2D | null = null;
 
@@ -438,7 +444,9 @@ function isInHotWindow(snap: Snapshot): boolean {
 // stays byte-exact. Exported as the unit-test seam for the validation rule.
 export function isValidColdSnapshotBlob(blob: Blob | null): blob is Blob {
   return (
-    blob !== null && blob.size > 0 && (blob.type === 'image/webp' || blob.type === 'image/png')
+    blob !== null &&
+    blob.size > 0 &&
+    (blob.type === COLD_SNAPSHOT_WEBP_MIME || blob.type === COLD_SNAPSHOT_PNG_MIME)
   );
 }
 
@@ -466,8 +474,8 @@ function encodeColdSnapshots() {
           if (current.tier !== 'hot' || current.canvas !== source || isInHotWindow(snap)) return;
           patch.store = { tier: 'cold', blob, decoding: false };
         },
-        'image/webp',
-        1
+        COLD_SNAPSHOT_WEBP_MIME,
+        COLD_SNAPSHOT_LOSSLESS_WEBP_QUALITY
       );
     }
   }
