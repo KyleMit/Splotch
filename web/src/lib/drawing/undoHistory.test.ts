@@ -299,30 +299,35 @@ describe('dirty-rect patch snapshots', () => {
       erase: false,
     };
     // pad = 8/2 + 2 = 6: x spans 20−6..28+6, y spans 30−6..38+6.
-    expect(m.foldRegionsForCommands([{ ops: [op], wasEmpty: false }], 64, 64)).toEqual([
-      { x: 14, y: 24, w: 20, h: 20 },
-    ]);
+    expect(m.foldRegionsForCommands([{ ops: [op], wasEmpty: false }], 64, 64)).toEqual({
+      rects: [{ x: 14, y: 24, w: 20, h: 20 }],
+      wipesPaper: false,
+    });
   });
 
   it('bounds a dot by its radius plus AA bleed and clamps to the paper', async () => {
     const m = await freshHistory();
     const dot = { kind: 'dot' as const, x: 2, y: 62, radius: 5, color: '#a', erase: false };
     // pad = 5 + 2 = 7: clamped at the left and bottom paper edges.
-    expect(m.foldRegionsForCommands([{ ops: [dot], wasEmpty: false }], 64, 64)).toEqual([
-      { x: 0, y: 55, w: 9, h: 9 },
-    ]);
+    expect(m.foldRegionsForCommands([{ ops: [dot], wasEmpty: false }], 64, 64)).toEqual({
+      rects: [{ x: 0, y: 55, w: 9, h: 9 }],
+      wipesPaper: false,
+    });
   });
 
   it('a clear claims the whole paper; wholly off-paper ink claims nothing', async () => {
     const m = await freshHistory();
     expect(
       m.foldRegionsForCommands([{ ops: [{ kind: 'clear' }], wasEmpty: false }], 64, 64)
-    ).toEqual([{ x: 0, y: 0, w: 64, h: 64 }]);
+    ).toEqual({ rects: [{ x: 0, y: 0, w: 64, h: 64 }], wipesPaper: true });
     // Margin ink beyond the paper square is clipped at fold (ADR-0050), so the
     // fold never touches the paper and no patch is owed.
     const off = { kind: 'dot' as const, x: -40, y: 10, radius: 5, color: '#a', erase: false };
-    expect(m.foldRegionsForCommands([{ ops: [off], wasEmpty: false }], 64, 64)).toEqual([]);
-    expect(m.foldRegionsForCommands([], 64, 64)).toEqual([]);
+    expect(m.foldRegionsForCommands([{ ops: [off], wasEmpty: false }], 64, 64)).toEqual({
+      rects: [],
+      wipesPaper: false,
+    });
+    expect(m.foldRegionsForCommands([], 64, 64)).toEqual({ rects: [], wipesPaper: false });
   });
 
   it('a magic-blocked commit captures no pixels, and its undo still restores the pending set', async () => {
@@ -358,9 +363,10 @@ describe('dirty-rect patch snapshots', () => {
     canvas.height = 12;
     const raster = { kind: 'crayonPassRaster', canvas, x: 20, y: 30, mix: 0.55 } as const;
     // The stamp blits exactly the raster's rect; pad 2 covers any AA bleed.
-    expect(m.foldRegionsForCommands([{ ops: [raster], wasEmpty: false }], 64, 64)).toEqual([
-      { x: 18, y: 28, w: 14, h: 16 },
-    ]);
+    expect(m.foldRegionsForCommands([{ ops: [raster], wasEmpty: false }], 64, 64)).toEqual({
+      rects: [{ x: 18, y: 28, w: 14, h: 16 }],
+      wipesPaper: false,
+    });
   });
 
   it('widens a crayon ink op pad by the widest dev-harness pass', async () => {
@@ -373,9 +379,10 @@ describe('dirty-rect patch snapshots', () => {
     const op = cmd('#wax').ops[0] as PathOp;
     op.crayon = true;
     // pad = (8/2)×2 + 2 = 10 (vs 6 at base width): span 0..1 grows to 0..11.
-    expect(m.foldRegionsForCommands([{ ops: [op], wasEmpty: false }], 64, 64)).toEqual([
-      { x: 0, y: 0, w: 11, h: 11 },
-    ]);
+    expect(m.foldRegionsForCommands([{ ops: [op], wasEmpty: false }], 64, 64)).toEqual({
+      rects: [{ x: 0, y: 0, w: 11, h: 11 }],
+      wipesPaper: false,
+    });
   });
 
   it('covers every command folding under one commit, then unwinds the round trip', async () => {
@@ -487,9 +494,10 @@ describe('disjoint multi-finger patches', () => {
       color: '#swarm',
       erase: false,
     }));
-    expect(m.foldRegionsForCommands([{ ops: dots, wasEmpty: true }], 64, 64)).toEqual([
-      { x: 7, y: 7, w: 54, h: 22 },
-    ]);
+    expect(m.foldRegionsForCommands([{ ops: dots, wasEmpty: true }], 64, 64)).toEqual({
+      rects: [{ x: 7, y: 7, w: 54, h: 22 }],
+      wipesPaper: false,
+    });
   });
 
   it('falls back to one union patch past the cluster cap', async () => {

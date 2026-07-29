@@ -348,15 +348,17 @@ function unionBoxes(boxes: Box[]): Box {
 // rect per finger instead of a near-full-paper union — the union bbox is the
 // worst case, never exceeded (ADR-0069's containment invariant holds per
 // cluster: every op's padded bounds sit inside its cluster's rect). A 'clear'
-// wipes everything, so it short-circuits to the full paper. Empty when
-// nothing would touch the paper — no foldable commands, or ink wholly outside
-// the paper square (margin ink is clipped at fold, ADR-0050). Exported as the
-// rect-math unit-test seam.
+// wipes everything, so it short-circuits to the full paper and reports
+// `wipesPaper` — the fold's result never reads the pre-fold paper, which is
+// what licenses pushCommand's swap capture. Rects are empty when nothing would
+// touch the paper — no foldable commands, or ink wholly outside the paper
+// square (margin ink is clipped at fold, ADR-0050). Exported as the rect-math
+// unit-test seam.
 export function foldRegionsForCommands(
   commands: StrokeGroupCommand[],
   paperW: number,
   paperH: number
-): PatchRect[] {
+): { rects: PatchRect[]; wipesPaper: boolean } {
   // Crayon density passes stroke at op.lineWidth × widthScale (dot radius ×
   // widthScale). The shipped passes never exceed 1, but the dev harness's
   // setCrayonParams accepts arbitrary passes — a widthScale > 1 experiment
@@ -369,7 +371,9 @@ export function foldRegionsForCommands(
   let solo = 0;
   for (let c = 0; c < commands.length; c++) {
     for (const op of commands[c].ops) {
-      if (op.kind === 'clear') return [{ x: 0, y: 0, w: paperW, h: paperH }];
+      if (op.kind === 'clear') {
+        return { rects: [{ x: 0, y: 0, w: paperW, h: paperH }], wipesPaper: true };
+      }
       const box = opPaddedBounds(op, crayonScale);
       if (!box) continue;
       const key = op.kind === 'path' ? `${c}:${op.pid}` : `solo:${solo++}`;
@@ -409,19 +413,13 @@ export function foldRegionsForCommands(
     const h = Math.min(paperH, Math.ceil(b.y1)) - y;
     if (w > 0 && h > 0) rects.push({ x, y, w, h });
   }
-  return rects;
-}
-
-// Whether the fold set wipes the paper: a 'clear' op discards every pixel
-// before it, and everything after renders onto blank — so the fold's result
-// never reads the pre-fold paper, licensing the swap capture in pushCommand.
-function foldContainsClear(commands: StrokeGroupCommand[]): boolean {
-  return commands.some((cmd) => cmd.ops.some((op) => op.kind === 'clear'));
+  return { rects, wipesPaper: false };
 }
 
 // Capture-by-swap for a clear: adopt the current paper canvas as the snapshot
 // raster (its pixels ARE the full-paper patch a clear's fold region demands)
-// and install a fresh, already-blank paper for the fold to land on. O(1)
+// and install a fresh, already-blank paper for the fold to land on, licensed by
+// the fold plan being `wipesPaper` with exactly one rect. O(1)
 // pointer swap + allocation instead of drawImage-copying the whole 2×-DPR
 // paper — the worst fixed pointerup hitch in the 2026-07 profile. Null when
 // the fresh canvas yields no context; the caller falls back to the copy path.
@@ -475,13 +473,19 @@ export function pushCommand(cmd: StrokeGroupCommand) {
   const prospective = [...pendingCommands, cmd];
   const foldCount = foldableCount(prospective);
   const folding = prospective.slice(0, foldCount);
-  const rects = foldRegionsForCommands(folding, paperCanvas.width, paperCanvas.height);
+  const { rects, wipesPaper } = foldRegionsForCommands(
+    folding,
+    paperCanvas.width,
+    paperCanvas.height
+  );
   const patches: SnapshotPatch[] = [];
   let captureFailed = false;
   // A clear in the fold set claims the full paper AND never reads the
   // pre-fold pixels, so the paper itself becomes the patch (swap, not copy).
-  const adopted = foldContainsClear(folding) ? adoptPaperAsSnapshot() : null;
-  if (adopted && rects.length === 1) {
+  // Swapping only once the plan is exactly that one full-paper rect keeps the
+  // copy loop below reading the pre-swap paper, never a fresh blank one.
+  const adopted = wipesPaper && rects.length === 1 ? adoptPaperAsSnapshot() : null;
+  if (adopted) {
     patches.push({ rect: rects[0], canvas: adopted, blob: null, encoding: false, decoding: false });
   } else {
     for (const rect of rects) {

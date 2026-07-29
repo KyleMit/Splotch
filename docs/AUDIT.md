@@ -23,56 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Correctness] Validate the clear swap-capture plan before swapping the paper (and stop scanning the fold set for 'clear' twice)
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`pushCommand`, lines 479–532;
-`foldContainsClear`, lines 425–427; `adoptPaperAsSnapshot`, lines 435–457; `foldRegionsForCommands`
-short-circuit, line 379) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-`pushCommand` performs the destructive paper swap *before* checking whether the capture plan matches
-it:
-
-```ts
-const adopted = foldContainsClear(folding) ? adoptPaperAsSnapshot() : null;
-if (adopted && rects.length === 1) {
-  patches.push({ rect: rects[0], canvas: adopted, blob: null, encoding: false, decoding: false });
-} else {
-  for (const rect of rects) {
-    const copy = document.createElement('canvas');
-    ...
-    copyCtx.drawImage(paperCanvas, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
-```
-
-`adoptPaperAsSnapshot()` (line 435) swaps `paperCanvas`/`paperCtx` to a fresh blank canvas as a side
-effect. If `adopted` is non-null but `rects.length !== 1`, control falls into the copy loop — which
-reads from the *already-swapped, blank* `paperCanvas` (line 503). The captured patches would be
-blank pixels, and undoing that entry would silently blit blankness over the child's drawing.
-
-This branch is unreachable today only because `foldRegionsForCommands` short-circuits on the first
-`'clear'` op to exactly one full-paper rect (line 379:
-`if (op.kind === 'clear') return [{ x: 0, y: 0, w: paperW, h: paperH }]`). But that agreement is
-maintained by two *independent scans of the same ops* — `foldContainsClear` (line 426) and the
-short-circuit inside `foldRegionsForCommands` — with no shared code, no assertion, and no tripwire.
-The repo convention is explicit that cross-site agreement is never maintained by prose; a refactor
-to either scan (e.g. clipping a clear's rect, or changing what counts as a wipe) silently arms the
-blank-capture trap. As a bonus, the current shape walks the fold set three times on the pointerup
-hot path (`foldableCount`, `foldRegionsForCommands`, `foldContainsClear`).
-
-#### Proposed solution
-
-Make the wipe decision part of the single region scan: change `foldRegionsForCommands` to return
-`{ rects: PatchRect[]; wipesPaper: boolean }` (it already detects the `'clear'` internally), delete
-`foldContainsClear`, and only call `adoptPaperAsSnapshot()` when `wipesPaper && rects.length === 1`
-— i.e. swap only after the plan is confirmed to be the single full-paper rect the swap satisfies.
-The unreachable-but-dangerous else branch disappears structurally instead of being guarded by
-coincidence. Gotcha: `foldRegionsForCommands` is an exported test seam; the shape change touches the
-unit tests (`undoHistory.test.ts` lines 301, 310, 318, 323–324, 360, 375, 489) — mechanical, and the
-tests get to assert `wipesPaper` explicitly.
-
 ### [Correctness] `ensurePaperCovers` grow path discards the whole drawing when the grown context fails
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`ensurePaperCovers`, lines 174–185) @ 9ae62ff1
