@@ -2,6 +2,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { chromium, defineConfig, devices, webkit } from '@playwright/test';
 import {
+  allowedTokensList,
   commonPlaywrightConfig,
   commonWebServer,
   managedAccessTokenForRetry,
@@ -63,9 +64,9 @@ function webkitAvailable(): boolean {
 
 const slowMo = Number(process.env.SLOWMO) || 0;
 const ciRetries = 2;
-const ciAllowedTokens = Array.from({ length: ciRetries + 1 }, (_, retry) =>
-  managedAccessTokenForRetry(retry)
-).join(',');
+const ciAllowedTokens = allowedTokensList(
+  ...Array.from({ length: ciRetries + 1 }, (_, retry) => managedAccessTokenForRetry(retry))
+);
 
 export default defineConfig({
   ...commonPlaywrightConfig,

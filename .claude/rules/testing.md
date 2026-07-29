@@ -28,7 +28,11 @@ paths:
   (`ADMIN_ACCESS_TOKEN=test-admin-secret`, the managed access code) and blanks the outbound-write
   ones (`GITHUB_ISSUE_TOKEN`, `GEMINI_API_KEY`). Vite gives that env precedence over `web/.env`, so
   a developer's real dotenv can't change what a spec exercises or reaches. Add each new private var
-  to that object — `scripts/tests/e2e-server-env.test.mjs` fails when one is missing.
+  to that object (and to the one `scripts/api-smoke.mjs` spawns its server with) —
+  `scripts/tests/e2e-server-env.test.mjs` fails when either is missing a name. `reuseExistingServer`
+  can still hand the suite a server nobody here started, so `tests/global-setup.ts` probes
+  `/api/verify-access-code` for a harness-only access code and aborts the run when the server on the
+  port doesn't know it.
 * `tests/webkit-smoke.spec.ts` is a WebKit critical-path subset (boot, stroke, the two dialogs) run
   by the `webkit` Playwright project — CI installs WebKit so it always gates there; locally it only
   runs if the WebKit binary is installed. Keep that spec free of CDP and dev-harness dependencies.

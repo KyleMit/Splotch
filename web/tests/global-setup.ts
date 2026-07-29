@@ -1,4 +1,39 @@
 import { chromium, type FullConfig } from '@playwright/test';
+import { HARNESS_PROBE_CODE } from '../playwright.shared';
+
+// Prove the server answering the port is the one this harness started.
+//
+// `reuseExistingServer` (playwright.config.ts) hands the suite whatever is
+// already listening on the port — a `npm run preview` or `npm run perf:serve` a
+// developer left up, loaded from their real web/.env. That server has none of
+// commonWebServer.env, which is the state that filed live issues from the
+// /feedback spec (issue #646) and the state a spec can silently pass in on a
+// credential CI doesn't have.
+//
+// The managed-code allowlist is declared by that same env, so asking whether a
+// code only this harness sets is on it identifies the server in one request.
+// /api/verify-access-code is exactly that question, and it charges its guess
+// budget only on a failed code (ADR-0014) — so a match costs nothing, no spec
+// uses the endpoint, and nothing is written either way.
+async function assertHarnessServer(baseURL: string) {
+  const recognized = await fetch(`${baseURL}/api/verify-access-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: HARNESS_PROBE_CODE }),
+  })
+    .then((res) => res.json())
+    .then((body) => body?.ok === true)
+    .catch(() => false);
+
+  if (!recognized) {
+    throw new Error(
+      `globalSetup: whatever is serving ${baseURL} was not started by this run — it does not know ` +
+        "the harness access code, so it carries your web/.env rather than the suite's test " +
+        'credentials, and a report spec would file a real issue. Stop the server holding the port ' +
+        '(an already-running one is reused) and rerun.'
+    );
+  }
+}
 
 // Warm Vite's dep optimizer once before the parallel workers run.
 //
@@ -14,8 +49,10 @@ import { chromium, type FullConfig } from '@playwright/test';
 // serves the production build via `vite preview`, which has no optimizer and no
 // reload storm — so the ~6-8s warm-up is pure overhead there. Skip it.
 export default async function globalSetup(config: FullConfig) {
-  if (!process.env.DEV_SERVER) return;
   const baseURL = config.projects[0].use.baseURL ?? '';
+  await assertHarnessServer(baseURL);
+
+  if (!process.env.DEV_SERVER) return;
   const browser = await chromium.launch();
   const page = await browser.newPage();
 

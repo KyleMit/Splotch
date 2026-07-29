@@ -19,6 +19,7 @@ test.describe.configure({ mode: 'default' });
 // Mirrors of generateToken / generateByok in src/lib/server/rateLimitPolicy.ts.
 const GENERATE_LIMIT = 15;
 const BYOK_LIMIT = 30;
+const UNSUPPORTED_TYPE_STATUS = 415;
 
 // Raw-body POST to the endpoint. A raw image body (Content-Type: image/*) is not
 // a form submission, so SvelteKit's CSRF guard — active in the production build
@@ -47,7 +48,7 @@ test('rejects an oversized upload with 413', async ({ request }) => {
 
 test('rejects an unsupported image type with 415', async ({ request }) => {
   const res = await postImage(request, tinyPngBuffer(), 'image/gif');
-  expect(res.status()).toBe(415);
+  expect(res.status()).toBe(UNSUPPORTED_TYPE_STATUS);
 });
 
 test('lets a normal-sized, allowed upload past the guards', async ({ request }) => {
@@ -118,13 +119,14 @@ test('throttles a managed token hammered in a burst', async ({ request }, testIn
     statuses.push(res.status());
   }
 
-  // Requests within the limit clear the throttle (rejected only by the type guard).
-  //
-  // A 403 here means the code never reached the server's allowlist — the web
-  // server's ALLOWED_TOKENS_LIST is set from this same helper
-  // (playwright.shared.ts), so the two have drifted apart.
-  expect(statuses[0], 'access code rejected (403) — check ALLOWED_TOKENS_LIST').not.toBe(403);
-  expect(statuses).not.toContain(429);
+  // Requests within the limit clear the throttle, and the type guard is what
+  // rejects them — assert that rather than merely "not throttled", or the burst
+  // still passes when something upstream of the guard (a 403 from an allowlist
+  // that lost this code, a 500 from a server with no GEMINI_API_KEY) rejects
+  // every request for a reason this test isn't about.
+  expect(new Set(statuses), 'each in-limit request must reach the image-type guard').toEqual(
+    new Set([UNSUPPORTED_TYPE_STATUS])
+  );
 
   // The next request tips over the limit → 429 with a Retry-After.
   const res = await postImage(request, tinyPngBuffer(), 'image/gif', { token });
