@@ -19,36 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Testing] `blitPaperRect` and `ensurePaperCovers` have no unit coverage
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`blitPaperRect`, lines 224–238;
-`ensurePaperCovers`, lines 160–186); `web/src/lib/drawing/undoHistory.test.ts` @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Two exported functions with real logic never appear in the unit suite beyond `freshHistory()`'s
-single setup call to `ensurePaperCovers(64)` (test line 110):
-
-* `blitPaperRect` clamps the rect to the paper (lines 227–230), early-returns on degenerate results
-  (line 231), and forces `source-over`/alpha-1 under save/restore — none asserted. Its rect math is
-  the commit-reconcile path (`engine.ts` line 642) and the rect-limited undo repaint (line 1087).
-* `ensurePaperCovers`' grow path (lines 174–185) — copying the existing drawing into the grown
-  canvas, `Math.max` dimension logic, the no-shrink early return (line 173) — is untested; a
-  regression there loses drawings on window resize/rotation.
-
-Both are exercisable with the existing recording canvas stub (drawImage copies `_content`; the stub
-already counts `drawImageCalls`).
-
-#### Proposed solution
-
-Add: (a) `blitPaperRect` with an off-paper rect → no draw; a straddling rect → clamped clear+draw
-(assert via `drawImageCalls` and target `_content`); (b) draw → `ensurePaperCovers(larger)` →
-`repaintedContent` still shows the stroke, and `ensurePaperCovers(smaller)` is a no-op. If the
-recording stub needs source-rect awareness for the clamp assertions, extend `drawImage` to record
-its arguments — a smaller change than it sounds since the stub already exists.
-
 ### [Readability] `getHistoryDebug`'s nested reduces and a fractured comment
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`getHistoryDebug` and its comment, lines 777–810)
