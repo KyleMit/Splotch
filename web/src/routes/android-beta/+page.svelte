@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BETA_OPT_IN_URL } from '$lib/components/androidBeta/androidBeta';
+  import { BETA_OPT_IN_URL, TESTERS_GROUP_URL } from '$lib/components/androidBeta/androidBeta';
   import CrayonStrip from '$lib/components/CrayonStrip.svelte';
   import Icon from '$lib/components/Icon.svelte';
   import Disclosure from '$lib/components/design/Disclosure.svelte';
@@ -75,9 +75,12 @@
           <div class="row">
             <h3>The tester page says you're not a member</h3>
             <p>
-              Your request to join the group hasn't finished, or it went through on another account.
-              Check that account's inbox for Google's confirmation — and if an owner has to approve
-              you, you'll get a second email once they have.
+              Joining is instant and there's no approval to wait on, so either the invite wasn't
+              accepted or it was accepted on a different Google account. Open <a
+                href={TESTERS_GROUP_URL}
+                target="_blank"
+                rel="noopener noreferrer">the group page</a
+              > again, check the account in the top-right corner, and accept from there.
             </p>
           </div>
           <div class="row">

@@ -55,7 +55,7 @@
       <a class="btn" href={TESTERS_GROUP_URL} target="_blank" rel="noopener noreferrer">
         Join the testers group
       </a>
-      <p class="fine">Google may ask you to sign in or to request access before it lets you in.</p>
+      <p class="fine">Google may ask you to sign in first. There's nobody to wait on after that.</p>
     </div>
     <div class="card" style="--card-accent:{CARD_ACCENT[0]}">
       <p class="card-label">Double check your account</p>
