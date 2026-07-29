@@ -21,36 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Types] `StrokeOp`'s optional `magic?`/`crayon?` booleans make impossible brush combinations representable
-
-**File(s):** `web/src/lib/drawing/strokeOps.ts` (`StrokeOp`, lines 55–89; `renderOp` precedence,
-lines 590–599) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-A dot/path op carries `erase: boolean; magic?: boolean; crayon?: boolean; seed?: number`. Nothing in
-the type prevents `{ magic: true, crayon: true }` or a `seed` on a non-crayon op; the actual
-exclusivity is enforced only by construction in `engine.ts` (lines 769–774 set
-`magic: magicActive, crayon: crayonActive, seed: crayonActive ? … : 0` — and even guards
-`passTracker` with `crayonActive && !eraserActive && !magicActive`) and by branch *order* in
-`renderOp`: the `op.magic` check (line 590) silently wins over `op.crayon` (line 598), and
-`op.crayon && !op.erase` quietly demotes a crayon-eraser to a plain eraser. The repo convention is
-to close finite value sets in the type; "which brush drew this op" is a textbook closed set.
-
-#### Proposed solution
-
-Model the brush as a discriminant on the ink ops, e.g.
-`brush: 'pen' | 'eraser' | 'magic' | { kind: 'crayon'; seed: number }` (or flat
-`brush: 'pen' | 'eraser' | 'magic' | 'crayon'` with `seed` required only via a narrowed variant).
-`renderOp` becomes an exhaustive switch instead of ordered truthiness checks. Tradeoff: the op shape
-is touched by `engine.ts`, `undoHistory.ts`, and tests, so this is a wide mechanical change — worth
-doing opportunistically (e.g. riding along with the pass-buffer extraction above), not as a
-standalone churn PR. If ops are ever persisted (issue \#207), settle this before the format freezes.
-
----
-
 ### [Maintainability] Name the `0.9` mix clamp in `getCrayonMix`
 
 **File(s):** `web/src/lib/drawing/crayonBrush.ts` (`getCrayonMix`, lines 266–268) @ 9ae62ff1
