@@ -23,44 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Maintainability] Active-run tracking is module-scope mutable state outside a factory; tests must resort to `vi.resetModules()`
-
-**File(s):** `web/src/lib/state/aiGeneration.svelte.ts` (lines 10–11) @ 9ae62ff1; also
-`web/src/lib/state/aiKey.svelte.ts` (lines 13–16), `web/src/lib/drawing/aiImage.test.ts` (line 43)
-
-**Priority:** P3
-
-#### Problem
-
-CLAUDE.md: "Module-scope mutable `let` is either a pure memoization cache or lives behind a
-`createX()` factory so tests get fresh instances." `aiGeneration.svelte.ts` keeps its run machine as
-bare module lets:
-
-```ts
-let nextAiGenerationId = 0;
-let activeAiGeneration: ActiveAiGeneration | null = null;
-```
-
-(lines 10–11). This is neither a memoization cache nor factory-wrapped. The cost shows up in
-`aiImage.test.ts`, which must call `vi.resetModules()` in `beforeEach` (line 43) and
-re-`await import(...)` every module in every test to get fresh run-tracking state — the exact
-ceremony the factory convention exists to avoid. Notably, the same file already models the compliant
-shape: `createDrawingDeduper()` in `aiImage.ts` (lines 60–72) was made constructible precisely "so
-tests can exercise the dedupe in isolation instead of driving it end-to-end through a shared module
-instance." `aiKey.svelte.ts` has the same pattern with `aiKeyWriteVersion`/`aiKeyWriteQueue` (lines
-13–16), though its tests happen to survive without resets because each test awaits the queue to
-quiescence.
-
-#### Proposed solution
-
-Extract a `createAiGenerationMachine(ui: UiState)` factory returning
-`{ start, isActive, end, setPreview, finish, fail, close }`, instantiate the production singleton at
-module scope, and re-export the existing named functions bound to it (keeping every call site
-unchanged). Tests then construct fresh machines directly instead of `vi.resetModules()`. Tradeoff:
-the singleton's `ui` binding still makes full `generateAiImage` integration tests need module resets
-for `ui` itself — but the state-machine logic (ownership, URL swapping) becomes directly testable,
-which is where the subtle bugs live (see the ownership comments at lines 52–58, 62–70).
-
 ### [Testing] No drift guard between `STYLE_SUFFIXES` and the style-thumbnail assets in `static/styles/`
 
 **File(s):** `web/src/lib/ai/styles.ts` (`styleThumbPath`, lines 26–28) @ 9ae62ff1; assets in
