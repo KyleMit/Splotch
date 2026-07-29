@@ -207,6 +207,10 @@ let callbacks: Omit<InitOptions, 'initialColor'> = {};
 const MAX_RENDER_SCALE = 2;
 let renderScale = 1;
 
+function backingSizeOf(rect: DOMRect): { w: number; h: number } {
+  return { w: Math.round(rect.width * renderScale), h: Math.round(rect.height * renderScale) };
+}
+
 let canUndo = false;
 
 function setCanUndo(value: boolean) {
@@ -381,12 +385,8 @@ function adoptPaperUnlessLocked(rect: DOMRect): boolean {
   const angle = currentScreenAngle();
   const lockPaper = !canvasEmpty && rotationDelta(paperAngle, angle) !== 0;
   if (!lockPaper) {
-    paper = {
-      pxW: Math.round(rect.width * renderScale),
-      pxH: Math.round(rect.height * renderScale),
-      cssW: rect.width,
-      cssH: rect.height,
-    };
+    const { w, h } = backingSizeOf(rect);
+    paper = { pxW: w, pxH: h, cssW: rect.width, cssH: rect.height };
     paperAngle = angle;
   }
   return lockPaper;
@@ -436,8 +436,9 @@ function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
 
   // Resizing the backing store wipes the visible canvas and resets its context
   // state, so re-arm the round caps and repaint from the paper raster.
-  canvas.width = Math.round(rect.width * renderScale);
-  canvas.height = Math.round(rect.height * renderScale);
+  const { w, h } = backingSizeOf(rect);
+  canvas.width = w;
+  canvas.height = h;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   const overlays = crayonOverlays;
@@ -498,10 +499,8 @@ function handleResize() {
 function resyncOnReentry() {
   if (document.visibilityState !== 'visible') return;
   const rect = canvas.getBoundingClientRect();
-  const stale =
-    canvas.width !== Math.round(rect.width * renderScale) ||
-    canvas.height !== Math.round(rect.height * renderScale) ||
-    resizedAngle !== currentScreenAngle();
+  const { w, h } = backingSizeOf(rect);
+  const stale = canvas.width !== w || canvas.height !== h || resizedAngle !== currentScreenAngle();
   if (stale) resizeCanvas(rect);
   else refreshCanvasRect(rect);
 }

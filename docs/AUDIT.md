@@ -19,43 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Maintainability] Extract the CSS→backing-pixel size computation repeated at three resize sites
-
-**File(s):** `web/src/lib/drawing/engine.ts` (`adoptPaperUnlessLocked`, lines 375–380;
-`resizeCanvas`, lines 431–432; `resyncOnReentry`, lines 493–495) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`Math.round(rect.width * renderScale)` / `Math.round(rect.height * renderScale)` is written out
-independently three times:
-
-```ts
-// adoptPaperUnlessLocked
-pxW: Math.round(rect.width * renderScale),
-// resizeCanvas
-canvas.width = Math.round(rect.width * renderScale);
-// resyncOnReentry (as a staleness comparison)
-canvas.width !== Math.round(rect.width * renderScale) ||
-```
-
-The third site is the dangerous one: `resyncOnReentry` decides *whether the backing store is stale*
-by re-deriving the same formula, so if one site ever changes rounding (`Math.round` → `Math.floor`,
-or a devicePixelContentBox-based size), the staleness check can disagree with the rebuild and either
-loop rebuilds forever or never detect drift. That agreement is currently maintained by nothing.
-
-#### Proposed solution
-
-```ts
-function cssToBackingPx(css: number): number {
-  return Math.round(css * renderScale);
-}
-```
-
-(or `backingSizeOf(rect: DOMRect): { w: number; h: number }` to also collapse the width/height
-pairs). Purely mechanical; also slightly shrinks `resizeCanvas`, the file's densest function.
-
 ### [Types] `getUndoDebug` re-declares `getHistoryDebug`'s return shape instead of referencing it
 
 **File(s):** `web/src/lib/drawing/engine.ts` (`getUndoDebug`, lines 1136–1144) @ 9ae62ff1
