@@ -65,14 +65,19 @@ let paperCtx: CanvasRenderingContext2D | null = null;
 // ~500 ms inside the pointerup under the 4×-throttled software profile).
 let paperPristine = false;
 
+// The pixels a patch is holding right now: a hot raster, or (demoted) the
+// encoded blob they were re-encoded into. The in-flight flag belongs to the
+// tier that can leave it — an encode only starts from a raster, a decode only
+// from a blob — and each transition swaps the whole store in one assignment.
+type PatchStore =
+  | { tier: 'hot'; canvas: HTMLCanvasElement; encoding: boolean }
+  | { tier: 'cold'; blob: Blob; decoding: boolean };
+
 // One captured region of an entry's fold: its paper rect plus the pixels that
-// were there before the fold, as a hot raster or (demoted) an encoded blob.
+// were there before the fold.
 interface SnapshotPatch {
   rect: PatchRect;
-  canvas: HTMLCanvasElement | null;
-  blob: Blob | null;
-  encoding: boolean;
-  decoding: boolean;
+  store: PatchStore;
 }
 
 interface Snapshot {
@@ -342,7 +347,7 @@ function capturePatchesUnder(
   // swapping — a multi-rect plan still needs its per-rect copies.
   const adopted = wipesPaper && rects.length === 1 ? adoptPaperAsSnapshot() : null;
   if (adopted) {
-    return [{ rect: rects[0], canvas: adopted, blob: null, encoding: false, decoding: false }];
+    return [{ rect: rects[0], store: { tier: 'hot', canvas: adopted, encoding: false } }];
   }
   const patches: SnapshotPatch[] = [];
   for (const rect of rects) {
@@ -352,7 +357,7 @@ function capturePatchesUnder(
     const copyCtx = copy.getContext('2d');
     if (!copyCtx) return null;
     copyCtx.drawImage(paper, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
-    patches.push({ rect, canvas: copy, blob: null, encoding: false, decoding: false });
+    patches.push({ rect, store: { tier: 'hot', canvas: copy, encoding: false } });
   }
   return patches;
 }
@@ -445,16 +450,17 @@ function encodeColdSnapshots() {
   for (let i = 0; i < snapshotStack.length - MAX_HOT_RASTERS; i++) {
     const snap = snapshotStack[i];
     for (const patch of snap.patches) {
-      if (!patch.canvas || patch.blob || patch.encoding) continue;
-      const source = patch.canvas;
-      patch.encoding = true;
+      const store = patch.store;
+      if (store.tier !== 'hot' || store.encoding) continue;
+      const source = store.canvas;
+      store.encoding = true;
       source.toBlob(
         (blob) => {
-          patch.encoding = false;
+          const current = patch.store;
+          if (current.tier === 'hot') current.encoding = false;
           if (!isValidColdSnapshotBlob(blob)) return; // bad encode — keep the raster
-          if (patch.canvas === source && isInHotWindow(snap)) return;
-          patch.blob = blob;
-          if (patch.canvas === source) patch.canvas = null;
+          if (current.tier !== 'hot' || current.canvas !== source || isInHotWindow(snap)) return;
+          patch.store = { tier: 'cold', blob, decoding: false };
         },
         'image/webp',
         1
@@ -475,13 +481,15 @@ function reinflateHotSnapshots() {
   for (let i = Math.max(0, snapshotStack.length - MAX_HOT_RASTERS); i < snapshotStack.length; i++) {
     const snap = snapshotStack[i];
     for (const patch of snap.patches) {
-      if (patch.canvas || !patch.blob || patch.decoding) continue;
-      const source = patch.blob;
-      patch.decoding = true;
+      const store = patch.store;
+      if (store.tier !== 'cold' || store.decoding) continue;
+      const source = store.blob;
+      store.decoding = true;
       createImageBitmap(source).then(
         (bitmap) => {
-          patch.decoding = false;
-          if (patch.canvas || patch.blob !== source || !isInHotWindow(snap)) {
+          const current = patch.store;
+          if (current.tier === 'cold') current.decoding = false;
+          if (current.tier !== 'cold' || current.blob !== source || !isInHotWindow(snap)) {
             bitmap.close();
             return;
           }
@@ -495,11 +503,12 @@ function reinflateHotSnapshots() {
           }
           liveCtx.drawImage(bitmap, 0, 0);
           bitmap.close();
-          patch.canvas = live;
-          patch.blob = null;
+          patch.store = { tier: 'hot', canvas: live, encoding: false };
         },
         () => {
-          patch.decoding = false; // decode failed — keep the blob; deep undo retries it
+          // decode failed — keep the blob; deep undo retries it
+          const current = patch.store;
+          if (current.tier === 'cold') current.decoding = false;
         }
       );
     }
@@ -522,32 +531,23 @@ export function popSnapshot(): Promise<{ wasEmpty: boolean; rects: PatchRect[] }
   // No patches means this commit's fold never touched the paper, so undoing
   // it is just the pending-set reinstatement above.
   if (snap.patches.length === 0) return Promise.resolve({ wasEmpty: snap.wasEmpty, rects });
-  if (snap.patches.every((p) => p.canvas)) {
-    for (const p of snap.patches) restorePatch(p.canvas!, p.rect);
+  const hotCanvases = snap.patches.map((p) => (p.store.tier === 'hot' ? p.store.canvas : null));
+  if (hotCanvases.every((canvas) => canvas !== null)) {
+    hotCanvases.forEach((canvas, i) => restorePatch(canvas, snap.patches[i].rect));
     return Promise.resolve({ wasEmpty: snap.wasEmpty, rects });
   }
   // Decode every demoted patch, then restore the whole entry in one pass (the
-  // rects are disjoint, so within-entry order is immaterial). Invariant: a
-  // stacked patch always holds its canvas or its blob — encode drops the
-  // raster only after a validated blob lands (encodeColdSnapshots), and
-  // re-inflation drops the blob only after the raster lands
-  // (reinflateHotSnapshots), so the null-null branch is unreachable. It must
-  // stay that way: it skips that patch's restore blit, leaving the paper
-  // wrong. The error is a tripwire for a refactor that breaks the invariant;
-  // the return semantics are deliberately unchanged.
+  // rects are disjoint, so within-entry order is immaterial).
   return Promise.all(
     snap.patches.map(async (p) => {
-      if (p.canvas) return { source: p.canvas as CanvasImageSource, rect: p.rect, bitmap: null };
-      if (!p.blob) {
-        console.error('Undo snapshot lost both canvas and blob; restore blit skipped');
-        return null;
+      if (p.store.tier === 'hot') {
+        return { source: p.store.canvas as CanvasImageSource, rect: p.rect, bitmap: null };
       }
-      const bitmap = await createImageBitmap(p.blob);
+      const bitmap = await createImageBitmap(p.store.blob);
       return { source: bitmap as CanvasImageSource, rect: p.rect, bitmap };
     })
   ).then((restores) => {
     for (const r of restores) {
-      if (!r) continue;
       restorePatch(r.source, r.rect);
       r.bitmap?.close();
     }
@@ -659,15 +659,23 @@ export interface HistoryDebug {
 export function getHistoryDebug(): HistoryDebug {
   return {
     snapshots: snapshotStack.length,
-    liveRasters: snapshotStack.reduce((n, s) => n + (s.patches.some((p) => p.canvas) ? 1 : 0), 0),
+    liveRasters: snapshotStack.reduce(
+      (n, s) => n + (s.patches.some((p) => p.store.tier === 'hot') ? 1 : 0),
+      0
+    ),
     rasterBytes: snapshotStack.reduce(
       (n, s) =>
         n +
-        s.patches.reduce((m, p) => m + (p.canvas ? p.canvas.width * p.canvas.height * 4 : 0), 0),
+        s.patches.reduce(
+          (m, p) =>
+            m + (p.store.tier === 'hot' ? p.store.canvas.width * p.store.canvas.height * 4 : 0),
+          0
+        ),
       0
     ),
     blobBytes: snapshotStack.reduce(
-      (n, s) => n + s.patches.reduce((m, p) => m + (p.blob?.size ?? 0), 0),
+      (n, s) =>
+        n + s.patches.reduce((m, p) => m + (p.store.tier === 'cold' ? p.store.blob.size : 0), 0),
       0
     ),
     pendingCommands: pendingCommands.length,
