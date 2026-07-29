@@ -371,7 +371,10 @@ function capturePatchesUnder(
 // onto the paper — the two pointerup hitch candidates, kept apart so a hot
 // commit can be attributed to the right one.
 export function pushCommand(cmd: StrokeGroupCommand) {
-  if (!paperCanvas || !paperCtx) return;
+  if (!paperCanvas || !paperCtx) {
+    console.error('pushCommand: no paper context; dropping committed stroke');
+    return;
+  }
   if (PERF_MARKS) performance.mark('engine.snapshot:start');
   const prospective = [...pendingCommands, cmd];
   const foldCount = foldableCount(prospective);

@@ -571,4 +571,15 @@ describe('paper grow', () => {
     expect(logged).toHaveBeenCalledTimes(1);
     logged.mockRestore();
   });
+
+  it('logs and drops the committed stroke when there is no paper context at all', async () => {
+    vi.resetModules();
+    canvasStub.failNextGetContext();
+    const m = await import('./undoHistory');
+    m.ensurePaperCovers(64);
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    m.pushCommand(cmd('#a'));
+    expect(logged).toHaveBeenCalledTimes(1);
+    logged.mockRestore();
+  });
 });

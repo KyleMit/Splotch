@@ -23,33 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Correctness] `pushCommand`'s missing-paper early return drops a committed stroke with no tripwire
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`pushCommand`, line 480) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-export function pushCommand(cmd: StrokeGroupCommand) {
-  if (!paperCanvas || !paperCtx) return;
-```
-
-If the paper context is unavailable (creation-time `getContext` failure at line 165, or the
-grow-failure case above), a committed stroke group is silently discarded: it never folds, never
-enters `pendingCommands`, and vanishes on the next `repaintAll`. The module's own stated philosophy
-(lines 508–516) is that failures lose the undo entry, never the ink — and the comparable unreachable
-state in `popSnapshot` gets a `console.error` tripwire (line 679). This path loses ink with no
-signal at all.
-
-#### Proposed solution
-
-Minimum: add a `console.error('Undo history has no paper context; dropping committed stroke')`
-tripwire. Better: park the command in `pendingCommands` without folding — `repaintAll` already
-replays pending commands (line 772), so the drawing survives on screen and folds if a paper ever
-materializes; note the unbounded-growth caveat in a comment if taken.
-
 ### [Maintainability] Paper-surface creation boilerplate duplicated three times
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`ensurePaperCovers`, lines 162–170 and 174–181;
