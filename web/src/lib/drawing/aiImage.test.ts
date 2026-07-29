@@ -55,10 +55,21 @@ afterEach(() => {
 });
 
 describe('generateAiImage request ownership', () => {
-  it('starts the request timeout after canvas export finishes', async () => {
+  it('starts the request timeout after canvas export and transcoding finish', async () => {
     vi.useFakeTimers();
     const canvasExport = deferred<Blob | null>();
+    const webpEncoding = deferred<Blob | null>();
     mocks.exportCanvasBlob.mockReturnValueOnce(canvasExport.promise);
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(async () => ({ width: 8, height: 8, close: vi.fn() }))
+    );
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
+      void webpEncoding.promise.then(callback);
+    });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
 
     const { generateAiImage } = await import('./aiImage');
@@ -67,7 +78,12 @@ describe('generateAiImage request ownership', () => {
     await vi.advanceTimersByTimeAsync(CLIENT_REQUEST_TIMEOUT_MS + 1);
     expect(fetch).not.toHaveBeenCalled();
 
-    canvasExport.resolve(new Blob(['drawing']));
+    canvasExport.resolve(new Blob(['P'.repeat(200)], { type: 'image/png' }));
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(CLIENT_REQUEST_TIMEOUT_MS + 1);
+    expect(fetch).not.toHaveBeenCalled();
+
+    webpEncoding.resolve(new Blob(['webp'], { type: 'image/webp' }));
     await generation;
 
     expect(fetch).toHaveBeenCalledOnce();
