@@ -296,6 +296,10 @@
       `120 Hz frame budget 8.3 ms · NOTE WebKit clamps perf.now() to ~1 ms`
   );
   console.table(rows);
+  // Selecting the rendered table copies it fine; this is for the exact values
+  // (and for re-reading a run), which are otherwise trapped in this IIFE.
+  window.__perfRows = rows;
+  console.log('Exact values: copy(JSON.stringify(window.__perfRows, null, 2))');
   console.log(
     'Gates (ADR-0066): undo p95 < 50 ms · commit hitch (engine.commit max) ≈ one ' +
       '120 Hz frame ≈ 8.3 ms · history ≲ 150 MiB · no dropped frames while blobs ' +
