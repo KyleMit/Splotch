@@ -36,7 +36,7 @@
 // (ADR-0004).
 
 import { clearAllOf, renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
-import { foldRegionsForCommands, type PatchRect } from './foldRegions';
+import { foldRegionsForCommands, type PaperRect } from './foldRegions';
 import { resetCrayonStateForClear, resetLiveCrayonForReplay } from './crayonPassBuffer';
 import { isMagicSheetUnready } from './magicBrush';
 import { scheduleIdle } from '../idle';
@@ -96,7 +96,7 @@ type PatchStore =
 // One captured region of an entry's fold: its paper rect plus the pixels that
 // were there before the fold.
 interface SnapshotPatch {
-  rect: PatchRect;
+  rect: PaperRect;
   store: PatchStore;
 }
 
@@ -213,9 +213,9 @@ export function recordOp(op: StrokeOp) {
 // premultiplied rounding), so without the reconcile a rebuild would differ
 // from the live stamp at the byte level — imperceptibly, but undo and remount
 // must reproduce the screen exactly.
-export function activeCrayonRasterRects(): PatchRect[] {
+export function activeCrayonRasterRects(): PaperRect[] {
   if (!activeCommand) return [];
-  const rects: PatchRect[] = [];
+  const rects: PaperRect[] = [];
   for (const op of activeCommand.ops) {
     if (op.kind === 'crayonPassRaster') {
       rects.push({ x: op.x, y: op.y, w: op.canvas.width, h: op.canvas.height });
@@ -227,7 +227,7 @@ export function activeCrayonRasterRects(): PatchRect[] {
 // Copy a committed paper rect onto a target, replacing what the target showed
 // there. Coordinates are paper-space; the target's own transform places the
 // rect (identity on the visible canvas normally, the paper view when locked).
-export function blitPaperRect(target: CanvasRenderingContext2D, rect: PatchRect) {
+export function blitPaperRect(target: CanvasRenderingContext2D, rect: PaperRect) {
   const { x, y, w, h } = rect;
   if (!paperCanvas) return;
   const x0 = Math.max(0, x);
@@ -349,7 +349,7 @@ function foldableCount(commands: StrokeGroupCommand[]): number {
 // paper, so the entry legitimately carries no pixels.
 function capturePatchesUnder(
   paper: HTMLCanvasElement,
-  rects: PatchRect[],
+  rects: PaperRect[],
   wipesPaper: boolean
 ): SnapshotPatch[] | null {
   // A clear in the fold set claims the full paper AND never reads the
@@ -538,7 +538,7 @@ function reinflateHotSnapshots() {
 // touched the paper), so an eligible caller can repaint just those patches
 // instead of the whole canvas — see engine.undo. Null when nothing is
 // undoable.
-export function popSnapshot(): Promise<{ wasEmpty: boolean; rects: PatchRect[] }> | null {
+export function popSnapshot(): Promise<{ wasEmpty: boolean; rects: PaperRect[] }> | null {
   const snap = snapshotStack.pop();
   if (!snap) return null;
   pendingCommands = [...snap.pending];
@@ -575,7 +575,7 @@ export function popSnapshot(): Promise<{ wasEmpty: boolean; rects: PatchRect[] }
 // Pixels outside the rect were untouched by that fold — or were already
 // reverted by later pops, the stack being LIFO — so clearing and redrawing
 // just the rect reproduces the exact pre-stroke paper.
-function restorePatch(source: CanvasImageSource, rect: PatchRect) {
+function restorePatch(source: CanvasImageSource, rect: PaperRect) {
   if (!paperCtx) return;
   paperPristine = false;
   paperCtx.clearRect(rect.x, rect.y, rect.w, rect.h);

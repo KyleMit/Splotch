@@ -6,9 +6,8 @@ import { AA_PAD_PX, opGeometricExtent } from './opGeometry';
 import { getCrayonPasses } from './crayonBrush';
 import type { StrokeGroupCommand, StrokeOp } from './strokeOps';
 
-// The paper region a snapshot's patch covers, in whole paper pixels (so the
-// capture and restore blits are exact 1:1 copies, never resampled).
-export interface PatchRect {
+// A whole-pixel paper region (so blits are exact 1:1 copies, never resampled).
+export interface PaperRect {
   x: number;
   y: number;
   w: number;
@@ -94,7 +93,7 @@ export function foldRegionsForCommands(
   commands: StrokeGroupCommand[],
   paperW: number,
   paperH: number
-): { rects: PatchRect[]; wipesPaper: boolean } {
+): { rects: PaperRect[]; wipesPaper: boolean } {
   // Crayon density passes stroke at op.lineWidth × widthScale (dot radius ×
   // widthScale). The shipped passes never exceed 1, but the dev harness's
   // setCrayonParams accepts arbitrary passes — a widthScale > 1 experiment
@@ -141,7 +140,7 @@ export function foldRegionsForCommands(
     }
     if (boxes.length > PATCH_CLUSTER_CAP) boxes = [unionBoxes(boxes)];
   }
-  const rects: PatchRect[] = [];
+  const rects: PaperRect[] = [];
   for (const b of boxes) {
     const x = Math.max(0, Math.floor(b.x0));
     const y = Math.max(0, Math.floor(b.y0));

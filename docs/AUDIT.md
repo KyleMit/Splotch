@@ -19,29 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Readability] `PatchRect` is the module's general paper-space rect, not just a snapshot-patch rect
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`PatchRect`, lines 78–83; non-patch uses at
-`activeCrayonRasterRects`, line 210, and `blitPaperRect`, line 224) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`PatchRect` is defined as "the paper region a snapshot's patch covers" (lines 76–77), but two of its
-exported uses have nothing to do with snapshot patches: `activeCrayonRasterRects(): PatchRect[]`
-returns the live crayon pass rects the engine blits at commit, and
-`blitPaperRect(target, rect: PatchRect)` is the general paper→canvas copy used for those rects and
-for undo repaints alike. A reader of `engine.ts` line 642
-(`for (const r of rasterRects) blitPaperRect(ctx, r)`) reasonably infers snapshot machinery is
-involved when none is.
-
-#### Proposed solution
-
-Rename to `PaperRect` (whole-paper-pixel rect, which is what the type's own comment actually
-describes) across the module and `engine.ts`. Purely mechanical; if the fold-region extraction above
-happens, the rename rides along since the type moves anyway.
-
 ### [Types] `popSnapshot`'s deep path uses `as` upcasts and an anonymous result shape
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`popSnapshot`, lines 653, 677, 683) @ 9ae62ff1
