@@ -699,6 +699,12 @@ export interface HistoryDebug {
   liveRasters: number;
   rasterBytes: number;
   blobBytes: number;
+  // Every patch's pixel cost from its rect, cold entries included — what the
+  // stack would occupy resident if nothing were ever encoded. `rasterBytes`
+  // counts only what is resident *now*, so it cannot answer whether the
+  // encoding that costs a WebKit commit its whole budget is buying headroom the
+  // ≲150 MB gate still needs.
+  patchBytes: number;
   pendingCommands: number;
 }
 
@@ -722,6 +728,10 @@ export function getHistoryDebug(): HistoryDebug {
     blobBytes: snapshotStack.reduce(
       (n, s) =>
         n + s.patches.reduce((m, p) => m + (p.store.tier === 'cold' ? p.store.blob.size : 0), 0),
+      0
+    ),
+    patchBytes: snapshotStack.reduce(
+      (n, s) => n + s.patches.reduce((m, p) => m + p.rect.w * p.rect.h * 4, 0),
       0
     ),
     pendingCommands: pendingCommands.length,

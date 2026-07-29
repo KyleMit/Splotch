@@ -252,6 +252,15 @@ describe('memory tier transitions', () => {
     expect(blobBytes).toBeGreaterThan(0);
   });
 
+  it('reports patchBytes for every entry, so demotion does not shrink it', async () => {
+    const m = await stackPastTheHotWindow();
+    const { rasterBytes, patchBytes } = m.getHistoryDebug();
+    // rasterBytes drops as entries demote; patchBytes is what the same stack
+    // would cost fully resident, which is the figure the encode-vs-memory
+    // tradeoff is decided on.
+    expect(patchBytes).toBeGreaterThan(rasterBytes);
+  });
+
   it('restores a demoted snapshot through its blob decode', async () => {
     const m = await stackPastTheHotWindow();
     expect(repaintedContent(m)).toEqual(['#a', '#b', '#c', '#d']);

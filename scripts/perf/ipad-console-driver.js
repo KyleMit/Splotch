@@ -341,6 +341,11 @@
     // build that predates it. The +1 raster is the paper itself.
     const liveMB = dbg.rasterBytes != null ? dbg.rasterBytes / MIB : dbg.liveRasters * mbPerRaster;
     const historyMB = liveMB + mbPerRaster + dbg.blobBytes / MIB;
+    // What the same stack would cost with the encoding removed entirely: every
+    // patch resident, plus the paper. The encode is what makes a WebKit commit
+    // miss its frame budget, so this is the number that says whether the ≲150 MB
+    // gate still needs it. null on a build predating patchBytes.
+    const unencodedMB = dbg.patchBytes != null ? dbg.patchBytes / MIB + mbPerRaster : null;
     // A zero in a timing column means one of two opposite things: too fast to
     // measure, or nothing measured at all. `commits` disambiguates — it is the
     // sample count every timing column below is a max over, so commits=0 marks
@@ -369,6 +374,7 @@
       'undo p95 ms': un.p95,
       'undo max ms': un.max,
       'history MiB': +historyMB.toFixed(0),
+      'no-encode MiB': unencodedMB == null ? null : +unencodedMB.toFixed(0),
     };
   }
 
@@ -407,7 +413,10 @@
       'encodes in parallel as specified, a full main-thread block in WebKit, ' +
       'which encodes inside the call). A hot commit attributes to one of those; ' +
       'if it attributes to none, the remainder is unmarked work in ' +
-      'commitStrokeGroup. The Xcode memory gauge covers the snapshot tier. ' +
+      'commitStrokeGroup. "no-encode MiB" is what the same history would cost ' +
+      'with every patch resident and nothing encoded — under the 150 MiB gate ' +
+      'there, the encode is buying headroom nothing needs. ' +
+      'The Xcode memory gauge covers the snapshot tier. ' +
       'To see whether a frame actually dropped at finger-lift, record a ' +
       'Timeline over the hot row in timeline mode — never across this run:\n' +
       "  window.__perfTimeline = true; window.__perfScenarios = '<key>'"
