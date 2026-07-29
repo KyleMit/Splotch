@@ -93,20 +93,32 @@ describe('dirty-rect patch snapshots', () => {
 
 describe('disjoint multi-finger patches', () => {
   it('skips the merge fixpoint entirely past the raw-cluster input cap', () => {
-    // More than the raw-cluster cap — the magic-backlog shape —
-    // short-circuit to one union without running the O(n³) merge scan.
+    const groupCount = 4;
+    // More than the raw-cluster cap form four separated overlapping groups.
+    // The fixpoint would return four patches, but the input cap returns one union.
     const dots = Array.from({ length: MERGE_INPUT_CAP + 1 }, (_, i) => ({
       kind: 'dot' as const,
-      x: 10 + i * 10,
-      y: 10,
+      x: 10 + Math.floor(i / groupCount) * 4,
+      y: 10 + (i % groupCount) * 10,
       radius: 1,
       color: '#swarm',
       erase: false,
     }));
     expect(
-      foldRegionsForCommands([{ ops: dots, wasEmpty: true }], (MERGE_INPUT_CAP + 2) * 10, 32)
+      foldRegionsForCommands(
+        [{ ops: dots, wasEmpty: true }],
+        (MERGE_INPUT_CAP + 2) * 10,
+        (groupCount + 1) * 10
+      )
     ).toEqual({
-      rects: [{ x: 7, y: 7, w: MERGE_INPUT_CAP * 10 + 6, h: 6 }],
+      rects: [
+        {
+          x: 7,
+          y: 7,
+          w: Math.ceil((MERGE_INPUT_CAP + 1) / groupCount) * 4 + 2,
+          h: groupCount * 10 - 4,
+        },
+      ],
       wipesPaper: false,
     });
   });
