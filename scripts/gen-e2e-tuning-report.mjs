@@ -133,8 +133,16 @@ for rep in $(seq 1 8); do
   done
 done
 
-# 3. On CI hardware: re-run the worker-sweep workflow from ADR-0078's PR
-#    (KyleMit/Splotch#642), which does the same thing one runner per config.`;
+# 3. On CI hardware, the same sweep ran as a throwaway GitHub Actions workflow —
+#    one runner per worker count, so the configs never contend. It was NOT merged
+#    (an unused workflow only collects Dependabot bumps and rots), but it is
+#    recoverable verbatim from the PR that produced these numbers:
+#      git show dec6709:.github/workflows/worker-sweep.yml
+#      git show dec6709:scripts/ci-sweep-summary.mjs
+#    Two things it got wrong the first time, worth keeping if you restore it:
+#    the job must pass ALLOWED_TOKENS_LIST to the preview server it starts, and
+#    it must run the tests with CI unset so retries stay off and the server is
+#    reused rather than rebuilt per rep.`;
 
 const styles = `
   main.shell { display: flex; flex-direction: column; gap: 34px; padding-bottom: 64px; }
