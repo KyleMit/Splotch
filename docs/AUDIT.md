@@ -19,34 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Testing] Cap tests hard-code counts instead of deriving them from the (unexported) cap constants
-
-**File(s):** `web/src/lib/drawing/undoHistory.test.ts` (lines 477–492, 494–509);
-`web/src/lib/drawing/undoHistory.ts` (`PATCH_CLUSTER_CAP`, line 336; `MERGE_INPUT_CAP`, line 343) @
-9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The merge-skip test builds `65` dots with the comment "(> PATCH_CLUSTER_CAP × 8)" and the
-cluster-cap test builds `9` with "exceed PATCH_CLUSTER_CAP = 8" — both re-declare the constants'
-values in prose, which the testing rules forbid ("Parametrized tests import the constant they
-exercise — never re-declare"). The failure mode is concrete: if `MERGE_INPUT_CAP` were raised, the
-65 tightly-packed dots (4 px spacing, pad 3 → overlapping boxes) would go through the merge fixpoint
-and *still* collapse to the same single union — the test keeps passing while no longer exercising
-the skip path at all. The file already exports `MAX_UNDO_DEPTH` explicitly "as the depth-cap test
-seam" (line 57) and the depth tests correctly derive from it (test lines 127, 137); the other two
-caps got no seam.
-
-#### Proposed solution
-
-Export `PATCH_CLUSTER_CAP` and `MERGE_INPUT_CAP` (documented as test seams like `MAX_UNDO_DEPTH`),
-and derive fixture counts: `MERGE_INPUT_CAP + 1` dots for the skip test, `PATCH_CLUSTER_CAP + 1` for
-the union-fallback test. For the skip test, also space the dots so their boxes are disjoint, making
-"skipped the merge" observable as a behavioral difference rather than coincidentally identical
-output.
-
 ### [Testing] `blitPaperRect` and `ensurePaperCovers` have no unit coverage
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`blitPaperRect`, lines 224–238;

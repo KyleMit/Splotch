@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { PathOp } from './strokeOps';
-import { foldRegionsForCommands, MERGE_INPUT_CAP } from './foldRegions';
+import { foldRegionsForCommands, MERGE_INPUT_CAP, PATCH_CLUSTER_CAP } from './foldRegions';
 
 describe('dirty-rect patch snapshots', () => {
   // A snapshot captures only the paper under the regions its fold mutates
@@ -93,9 +93,9 @@ describe('dirty-rect patch snapshots', () => {
 
 describe('disjoint multi-finger patches', () => {
   it('skips the merge fixpoint entirely past the raw-cluster input cap', () => {
-    const groupCount = 4;
-    // More than the raw-cluster cap form four separated overlapping groups.
-    // The fixpoint would return four patches, but the input cap returns one union.
+    const groupCount = PATCH_CLUSTER_CAP;
+    // More than the raw-cluster cap form PATCH_CLUSTER_CAP separated overlapping groups.
+    // The fixpoint would retain those patches, but the input cap returns one union.
     const dots = Array.from({ length: MERGE_INPUT_CAP + 1 }, (_, i) => ({
       kind: 'dot' as const,
       x: 10 + Math.floor(i / groupCount) * 4,
