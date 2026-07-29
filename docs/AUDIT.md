@@ -19,33 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [DX] Harness `strokeSync` duplicates `multiStrokeSync`'s event scaffolding
-
-**File(s):** `web/src/routes/dev/engine/+page.svelte` (`strokeSync`, lines 174–190;
-`multiStrokeSync`, lines 199–229) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-Both build the same `PointerEvent` dispatcher (same `rect` math, same `bubbles/cancelable` init) and
-the same down→moves→up sequencing; `strokeSync` is exactly `multiStrokeSync` with one stroke. The
-only literal difference — `multiStrokeSync` sets `isPrimary: false` explicitly — is no difference at
-all: `PointerEventInit.isPrimary` defaults to `false`, so `strokeSync`'s events are also
-non-primary.
-
-#### Proposed solution
-
-```ts
-strokeSync(points, pointerType = 'mouse') {
-  this.multiStrokeSync([{ pointerId: 1, points }], pointerType);
-},
-```
-
-(or share a private `dispatchStroke(strokes, pointerType)` both call, since `__engine` members
-referencing `this` may be awkward through `page.evaluate`). Behavior-identical; deletes ~15 lines of
-parallel scaffolding that must otherwise be updated twice when the event init needs a new field.
-
 ### [Types] `getCanvasRect` leaks the engine's live mutable rect object
 
 **File(s):** `web/src/lib/drawing/engine.ts` (`getCanvasRect`, lines 360–362; `canvasRect`,
