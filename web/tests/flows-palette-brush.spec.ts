@@ -417,3 +417,52 @@ test('selecting the eraser repeatedly keeps it selected', async ({ page }) => {
   await expect(eraser).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#drawingCanvas')).toHaveClass(/erasing/);
 });
+
+// PointerHalos attaches its own pointer listeners to the canvas element in an
+// $effect (extracted from DrawingCanvas) rather than through template handlers
+// — a silent failure to attach would leave the bubble permanently invisible
+// with the rest of the suite still green, so pin the whole lifecycle here.
+test('the eraser bubble tracks the pointer and hides on leave or brush switch', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await pickBrush(page, '#eraserButton');
+  await expect(page.locator('#drawingCanvas')).toHaveClass(/erasing/);
+
+  const bubble = page.locator('.eraser-bubble');
+  const canvas = page.locator('#drawingCanvas');
+
+  // pointerleave doesn't bubble, so dispatch it straight at the canvas rather
+  // than relying on a real mouse move landing outside its box (the
+  // surrounding chrome varies with viewport size). This also gives the test a
+  // known starting state: picking the eraser can close the flyout right under
+  // the cursor, exposing the canvas beneath it and legitimately showing the
+  // bubble before any deliberate move.
+  const leaveCanvas = () =>
+    canvas.evaluate((el) =>
+      el.dispatchEvent(new PointerEvent('pointerleave', { cancelable: true }))
+    );
+  await leaveCanvas();
+  await expect(bubble).toHaveCount(0);
+
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.move(box.x + 150, box.y + 120);
+  await expect(bubble).toHaveCount(1);
+  const first = await bubble.evaluate((el) => (el as HTMLElement).style.transform);
+
+  await page.mouse.move(box.x + 250, box.y + 220);
+  await expect
+    .poll(() => bubble.evaluate((el) => (el as HTMLElement).style.transform))
+    .not.toBe(first);
+
+  await leaveCanvas();
+  await expect(bubble).toHaveCount(0);
+
+  // Re-enter, then switch to a drawing brush: the bubble must disappear even
+  // though the pointer never left the canvas.
+  await page.mouse.move(box.x + 150, box.y + 120);
+  await expect(bubble).toHaveCount(1);
+  await pickBrush(page, '#penBrushButton');
+  await expect(bubble).toHaveCount(0);
+});

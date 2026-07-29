@@ -237,14 +237,6 @@
     blendNudge = !blendNudge;
   }
 
-  function handleCanvasPointerDown(e: PointerEvent) {
-    nudgeBlendLayer(e);
-  }
-
-  function handleCanvasPointerMove(e: PointerEvent) {
-    nudgeBlendLayer(e);
-  }
-
   const paperViewTransform = $derived(
     `${paperTransform} translateZ(${blendNudge ? '0.01px' : '0'})`
   );
@@ -293,8 +285,8 @@
       bind:this={canvasEl}
       id="drawingCanvas"
       class:erasing={toolState.brush === 'eraser'}
-      onpointerdown={handleCanvasPointerDown}
-      onpointermove={handleCanvasPointerMove}
+      onpointerdown={nudgeBlendLayer}
+      onpointermove={nudgeBlendLayer}
     ></canvas>
     <!-- The engine's live crayon pass overlays (bottom darken layer, then the
          opacity-mixed top — see engine.ts's crayonOverlay notes). Rendered

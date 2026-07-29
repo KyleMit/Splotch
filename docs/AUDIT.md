@@ -19,36 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Architecture] Extract the pointer-halo UI (eraser bubble + brush rings) from DrawingCanvas
-
-**File(s):** `web/src/lib/components/DrawingCanvas.svelte` (lines 41–149, 405–421, 495–538) @
-9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-DrawingCanvas is 591 lines carrying at least five jobs: engine adoption/teardown, reactive state
-bridging, the coloring-overlay decode gate, the blend-nudge compositor workaround, and the
-pointer-following halos (eraser bubble + per-pointer brush rings). The halo feature alone spans
-state (lines 41–54), five handlers (91–149), two template blocks (405–421), and ~45 lines of scoped
-CSS (495–538) — a cohesive, purely-presentational unit whose only inputs are pointer events,
-`toolState.brush`, the two size deriveds, and `getCanvasRect()`. Interleaved with engine wiring, a
-reader tracing the adoption/callback flow keeps stepping over ring bookkeeping and vice versa.
-
-#### Proposed solution
-
-Extract a `PointerHalos.svelte` child rendered inside `.canvas-container`, receiving
-`eraserSizePx`/`brushRingSizePx` as props and owning its own state + handlers — with the canvas's
-pointer events forwarded (the component can attach its own listeners to the canvas element via a
-prop ref or a thin Svelte action, keeping the halo logic out of the parent's template handlers).
-Gotcha #1: the blend-nudge wrapper functions (`handleCanvasPointerDown`/`Move`, lines 328–336) exist
-precisely because nudge and ring handling share events — the split must keep the nudge in the parent
-(it belongs to the overlay, not the halos) and let both observe the same event, which plain DOM
-listeners do naturally. Gotcha #2: the WebKit adopted-stroke ring growth (lines 124–135) moves with
-the halos; if the engine-callback approach from the earlier P3 finding lands first, this extraction
-gets simpler. Do them together.
-
 ### [DX] Harness `strokeSync` duplicates `multiStrokeSync`'s event scaffolding
 
 **File(s):** `web/src/routes/dev/engine/+page.svelte` (`strokeSync`, lines 174–190;
