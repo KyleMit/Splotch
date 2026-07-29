@@ -19,44 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Correctness] `PERF_MARKS` start marks are left unmatched on early returns, skewing profiling attribution
-
-**File(s):** `web/src/lib/drawing/engine.ts` (`draw`, lines 891, 905–908; `commitStrokeGroup`, lines
-629–632); `web/src/lib/drawing/emptyScan.ts` (lines 19–24) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Three hot-path functions place a `performance.mark(':start')` and then return before their
-`performance.measure(...)`:
-
-* `draw()` marks `engine.draw:start` (line 891) but the edge-swipe-candidate branch returns at line
-  907 without measuring — so under `PERF_MARKS=true`, every buffered candidate move both goes
-  unmeasured *and* leaves a dangling start mark. Because `performance.measure(name, startMark)`
-  resolves against the **most recent** mark of that name, this particular pattern doesn't mis-time
-  the next stroke, but the mark stream the Safari Web Inspector export analysis reads
-  (`scripts/perf/analyze-webinspector.mjs` — the very reason `undo()` grows paired start/end marks
-  plus a `finally`, lines 1062–1099) now contains starts with no corresponding measure, and
-  candidate-move cost is invisible in profiles.
-* `commitStrokeGroup()` marks at line 629, then
-  `if (!commitActiveCommand(deferBehindRestore)) return;` (line 632) skips the measure at line 646 —
-  and this early return fires on **every** hover `pointerout` via the `stopDrawing` fall-through
-  (see the P2 finding), so profiling runs accumulate a stream of orphaned `engine.commit:start`
-  marks.
-* `scanCanvasIsEmpty` marks at line 19, then `if (!scratchCtx) return true;` (line 24) skips the
-  measure at line 44.
-
-#### Proposed solution
-
-Either move each mark below the early-out conditions (cheapest: in `commitStrokeGroup`, mark after
-the `commitActiveCommand` call succeeds is wrong for timing it — instead hoist the early-exit test;
-in `draw`, take the mark after the edge-swipe branch; in `emptyScan`, mark after the ctx check), or
-wrap body-with-early-returns functions in `try/finally` with paired start/end marks the way `undo()`
-already does. Keeping the pattern uniform (`undo`'s comment explains why pairs matter for the
-WebInspector export) argues for the mark-after-guards approach plus a measure at every exit that did
-real work.
-
 ### [Performance] Resize paths force duplicate `getBoundingClientRect` reflows
 
 **File(s):** `web/src/lib/drawing/engine.ts` (`resizeCanvas`, lines 415–458; `handleResize`, lines
