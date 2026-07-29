@@ -307,6 +307,12 @@ export function isMagicSheetUnready(): boolean {
 // Load the fill image, guarding against a page change that happened while it
 // decoded. On success stash it, then re-rasterize and repaint so already-recorded
 // magic ops pick up the colours.
+//
+// A failed load detaches the page entirely (as if it had been removed): the sheet
+// falls back to the gradient source, so the brush keeps painting and the undo
+// fold's isMagicSheetUnready gate reopens instead of deferring for the rest of the
+// session. Clearing fillUrl also re-arms setColorSheet's same-url guard, making a
+// re-applied page a real retry.
 function loadSheetImage(url: string) {
   const forFillUrl = fillUrl;
   const img = new Image();
@@ -314,6 +320,13 @@ function loadSheetImage(url: string) {
     // A newer page may have been requested while this one decoded — drop stale.
     if (fillUrl !== forFillUrl) return;
     fillImage = img;
+    rasterizeSheet();
+    host?.repaint();
+  };
+  img.onerror = () => {
+    if (fillUrl !== forFillUrl) return;
+    fillUrl = null;
+    fillImage = null;
     rasterizeSheet();
     host?.repaint();
   };

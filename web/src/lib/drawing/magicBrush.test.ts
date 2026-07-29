@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   createRainbowGradient,
   MAGIC_GRADIENT_COUNT,
@@ -59,6 +59,112 @@ describe('magic sheet readiness gate', () => {
     // render nothing, so the gate must stay closed and the fold defer.
     setColorSheet(null);
     expect(isMagicSheetUnready()).toBe(true);
+  });
+});
+
+describe('magic sheet fill-load failure', () => {
+  // happy-dom neither loads images nor has a real 2D context, so the fill decode is
+  // driven by hand through a stubbed Image and the sheet rasterizes into a fake
+  // context. The module is re-imported after vi.resetModules() so each case gets
+  // its own fill/gradient/sheet state instead of inheriting the previous one's.
+  const REAL_GET_CONTEXT = HTMLCanvasElement.prototype.getContext;
+  const PAGE_URL = '/coloring/first.light.webp';
+  const OTHER_PAGE_URL = '/coloring/second.light.webp';
+
+  const requested: FakeImage[] = [];
+
+  class FakeImage {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    naturalWidth = 0;
+    naturalHeight = 0;
+    src = '';
+    constructor() {
+      requested.push(this);
+    }
+  }
+
+  beforeEach(() => {
+    vi.resetModules();
+    requested.length = 0;
+    vi.stubGlobal('Image', FakeImage);
+    (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = () =>
+      ({
+        clearRect() {},
+        drawImage() {},
+        fillRect() {},
+        createLinearGradient: () => ({ addColorStop() {} }),
+        fillStyle: '',
+      }) as unknown as CanvasRenderingContext2D;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    HTMLCanvasElement.prototype.getContext = REAL_GET_CONTEXT;
+  });
+
+  const PAPER = { width: 400, height: 300 };
+
+  async function mountedMagicBrush() {
+    const magic = await import('./magicBrush');
+    magic.initMagicBrush({
+      paperSize: () => PAPER,
+      sheetBounds: () => ({ x: 0, y: 0, ...PAPER }),
+      repaint: () => {},
+    });
+    return magic;
+  }
+
+  function lastRequest(): FakeImage {
+    return requested[requested.length - 1];
+  }
+
+  it('reopens the readiness gate once a gradient source is available', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.setColorSheet(PAGE_URL);
+    expect(magic.isMagicSheetUnready()).toBe(true);
+
+    lastRequest().onerror!();
+
+    // The page is detached, so the brush can fall back to a rainbow — the gate the
+    // pending-decode case above leaves closed forever now clears.
+    magic.ensureMagicSheet();
+    expect(magic.isMagicSheetUnready()).toBe(false);
+  });
+
+  it('re-attempts the load when the same page is applied again', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.setColorSheet(PAGE_URL);
+    expect(requested).toHaveLength(1);
+
+    lastRequest().onerror!();
+
+    magic.setColorSheet(PAGE_URL);
+    expect(requested).toHaveLength(2);
+    expect(lastRequest().src).toBe(PAGE_URL);
+  });
+
+  it('ignores a superseded error so it cannot clobber a newer page', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.setColorSheet(PAGE_URL);
+    const superseded = lastRequest();
+
+    magic.setColorSheet(OTHER_PAGE_URL);
+    const current = lastRequest();
+    current.naturalWidth = 200;
+    current.naturalHeight = 100;
+    current.onload!();
+    expect(magic.isMagicSheetUnready()).toBe(false);
+
+    superseded.onerror!();
+
+    expect(magic.isMagicSheetUnready()).toBe(false);
+    // The newer page is still attached, so re-applying it stays a no-op.
+    magic.setColorSheet(OTHER_PAGE_URL);
+    expect(requested).toHaveLength(2);
   });
 });
 
