@@ -85,11 +85,6 @@
       : "Describe the feature or change you'd love to see…"}
     bind:value={message}></textarea>
 
-  <p class="report-public-note">
-    Heads up: your report is posted <strong>publicly</strong> on our GitHub issue tracker, so please don't
-    include personal details like names or email addresses.
-  </p>
-
   {#if kind === 'bug'}
     <div class="report-device" transition:slide={{ duration: 180 }}>
       <label class="report-check">
@@ -121,6 +116,14 @@
     </div>
   {/if}
   <input type="hidden" name="device" value={devicePayload} />
+
+  <!-- Last, so it sits directly above whichever submit button the host renders:
+       it is the one line a reporter must not miss, and mid-form it read as
+       fine print between two controls. -->
+  <p class="report-public-note">
+    Heads up: your report is posted <strong>publicly</strong> on our GitHub issue tracker, so please don't
+    include personal details like names or email addresses.
+  </p>
 
   <!-- Honeypot: off-screen and aria-hidden, so a person never sees it but a
        form-filling bot does. A filled value is quietly dropped server-side. -->
@@ -158,8 +161,8 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 8px 10px;
-    font-size: var(--font-size-sm);
+    padding: 10px 12px;
+    font-size: var(--font-size-md);
     font-weight: 600;
     color: var(--text-mid);
     background: transparent;
@@ -196,18 +199,26 @@
     color: var(--on-brand);
   }
 
+  /* A phone tightens the track rather than stacking the two options: stacked,
+     they stop reading as one control and the selected one looks like a button
+     someone already pressed. */
+  @media (max-width: 400px) {
+    .report-kind {
+      gap: 4px;
+      padding: 3px;
+    }
+
+    .report-kind-option {
+      padding: 9px 6px;
+      font-size: var(--font-size-xs);
+      white-space: nowrap;
+    }
+  }
+
   @media (hover: hover) {
     .report-kind-option:not(.active):hover {
       background: var(--surface-hover);
       color: var(--text-strong);
-    }
-  }
-
-  /* Below this the longer label wraps while its neighbour doesn't, leaving two
-     visibly different text blocks inside one pill. */
-  @media (max-width: 360px) {
-    .report-kind {
-      flex-direction: column;
     }
   }
 

@@ -31,10 +31,12 @@
   <div class="sheet">
     <div class="topbar">
       <a class="back" href="/">← Back to drawing</a>
-      <span class="brand">
+      <!-- The mark is the masthead's second way home; the strip is decorative
+           (aria-hidden), so the wordmark is the link's whole accessible name. -->
+      <a class="brand" href="/">
         <CrayonStrip />
         <span class="wordmark">{wordmark}</span>
-      </span>
+      </a>
     </div>
 
     <div class="hero">
@@ -104,21 +106,33 @@
     box-shadow: var(--page-shadow);
   }
 
-  /* Narrower than the sheet itself and the card has no room to read as a card —
-     the frame collapses to a hairline of ground either side, which looks like a
-     rendering fault rather than a decision. Below that the page goes wall to
-     wall. Threshold is the sheet width plus the ground padding it needs on both
-     sides to be visible at all. */
+  /* Tablet: the sheet stops being a fixed 880 and fills the ground instead,
+     keeping its frame — a card with an even band of ground either side still
+     reads as a card, and it is what stops a capped content column from sitting
+     left-aligned in a much wider sheet. */
   @media (max-width: 920px) {
     .page {
-      padding: 0;
-      /* The sheet now covers the ground everywhere, so anything that peeks
-         through (overscroll, a short viewport) has to match it. */
-      background: var(--page-sheet);
+      padding: var(--space-6);
     }
 
     .sheet {
       max-width: none;
+      /* The topbar brings its own 18px, so this lands the mark 30px down. */
+      padding: 12px 32px 36px;
+    }
+  }
+
+  /* Phone: no room for a frame at all, so the sheet goes wall to wall and takes
+     over the ground — anything that peeks through (overscroll, a short
+     viewport) has to match it. */
+  @media (max-width: 540px) {
+    .page {
+      padding: 0;
+      background: var(--page-sheet);
+    }
+
+    .sheet {
+      padding: 0 var(--page-gutter) 40px;
       border-radius: 0;
       box-shadow: none;
     }
@@ -134,7 +148,11 @@
     padding: 18px 0;
   }
 
+  /* Never wraps: the mark beside it shrinks first (its type and chips step down
+     on a phone), because a two-line back link reads as a layout fault. */
   .back {
+    flex-shrink: 0;
+    white-space: nowrap;
     color: var(--page-link);
     font-size: 15px;
     font-weight: 700;
@@ -146,18 +164,19 @@
   .brand {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    --crayon-width: 13px;
-    --crayon-height: 6px;
-    --crayon-gap: 3px;
+    gap: 8px;
+    text-decoration: none;
+    --crayon-width: 11px;
+    --crayon-height: 7px;
+    --crayon-gap: 4px;
   }
 
   .wordmark {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.13em;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--page-muted);
+    color: var(--page-body);
   }
 
   .hero {
@@ -192,20 +211,18 @@
   }
 
   @media (max-width: 540px) {
-    /* Chips alone are seven anonymous dots, so the wordmark stays and stacks
-       under them instead of competing with the back link for the same line. */
+    /* Small enough to stay on the back link's line rather than stacking under
+       it, which cost the topbar a whole row for one word. */
     .brand {
-      --crayon-width: 10px;
-      --crayon-height: 5px;
-
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
+      gap: 6px;
+      --crayon-width: 7px;
+      --crayon-height: 6px;
+      --crayon-gap: 2px;
     }
 
     .wordmark {
       font-size: 10px;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.08em;
     }
 
     .hero {

@@ -3,7 +3,6 @@
   import type { SubmitFunction } from '@sveltejs/kit';
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
-  import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import ReportFields from '$lib/components/report/ReportFields.svelte';
   import type { ReportKind } from '$lib/report';
   import { supportEmail } from '$lib/supportEmail';
@@ -87,10 +86,7 @@
   </aside>
 {/snippet}
 
-<PageShell
-  title={sent ? 'Thank you — your report is in.' : 'Send us feedback'}
-  wordmark="Splotch feedback"
->
+<PageShell title={sent ? 'Thank you — your report is in.' : 'Send us feedback'} wordmark="Splotch">
   {#snippet lede()}
     {#if sent}
       A real person reads every one of these. There's no account attached to it, so we can't write
@@ -100,8 +96,6 @@
       no sign-up, and nothing to install.
     {/if}
   {/snippet}
-
-  <RuleLabel>{sent ? 'What happens now' : 'Your report'}</RuleLabel>
 
   {#if sent}
     <div class="done">
@@ -140,7 +134,7 @@
              padded shape the beta page's step buttons wear, so the two
              standalone pages read as one set. -->
         <button class="submit" type="submit" disabled={submitting}>
-          {submitting ? 'Sending…' : 'Send report'}
+          {submitting ? 'Sending…' : kind === 'bug' ? 'Send report' : 'Send idea'}
         </button>
       </form>
 
@@ -160,19 +154,15 @@
     gap: 32px;
   }
 
-  /* The form sits on its own panel, exactly as it does inside the Parent Center:
-     ReportFields' inputs are --surface, so without a --surface-2 ground under
-     them a white field on a white sheet is separated only by a hairline and the
-     whole form reads as unstyled. */
+  /* No fill of its own: ground → sheet → form panel was three surfaces deep,
+     and the lavender callout should be the page's only tinted one. The fields
+     carry their own borders. */
   .card {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
     flex: 1 1 380px;
     max-width: var(--page-measure);
-    padding: 20px;
-    border-radius: var(--radius-lg);
-    background: var(--surface-2);
   }
 
   /* The page's own type scale, not the modal's: inside a settings card the
@@ -182,11 +172,6 @@
     font-size: 17px;
     font-weight: 700;
     color: var(--page-ink);
-  }
-
-  .card :global(.report-kind-option) {
-    font-size: 15px;
-    padding: 10px 12px;
   }
 
   .card :global(.report-public-note) {
@@ -340,12 +325,17 @@
   }
 
   /* The rail only earns its place when the form beside it is still comfortable.
-     Below this it drops under the form — after it, since it describes what
-     happens once the report is sent. */
+     Below this the page is one column, so both fill the sheet: a measure-capped
+     column inside a much wider sheet reads as left-aligned with a lopsided
+     gutter, not as a centered page. */
   @media (max-width: 1024px) {
+    .card,
+    .done {
+      max-width: none;
+    }
+
     .aside {
       flex: 1 1 100%;
-      max-width: var(--page-measure);
     }
   }
 
@@ -355,7 +345,7 @@
     }
 
     .card {
-      padding: 16px;
+      gap: 12px;
     }
 
     /* Full-width tap target, matching the beta page's step buttons. */

@@ -46,6 +46,8 @@ test('the kind picker swaps the prompt and hides the device opt-in for an idea',
   );
   // Device info only helps reproduce a bug, so it leaves with the bug kind.
   await expect(page.getByRole('checkbox')).toHaveCount(0);
+  // "Send report" reads wrong once the reporter is filing an idea.
+  await expect(page.getByRole('button', { name: 'Send idea' })).toBeVisible();
 });
 
 test('the kind picker is a real radio group, so it submits without JavaScript', async ({
