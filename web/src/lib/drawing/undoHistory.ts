@@ -137,6 +137,11 @@ export function finalizeDeferredCommand() {
   if (cmd) pushCommand(cmd);
 }
 
+function deferredCommandEmptyState(command: StrokeGroupCommand): boolean | null {
+  if (command.ops.length === 0) return null;
+  return command.ops.every((op) => op.kind === 'clear');
+}
+
 // A restore that lands beneath deferred commits becomes their baseline: the
 // earliest one's captured pre-stroke state now reflects the restored paper
 // (parallel to rebaseActiveCommand; later deferred commands sit on the
@@ -147,9 +152,8 @@ export function rebaseDeferredCommands(restoredEmpty: boolean): boolean {
   if (deferredCommands.length === 0) return restoredEmpty;
   deferredCommands[0].wasEmpty = restoredEmpty;
   for (let i = deferredCommands.length - 1; i >= 0; i--) {
-    const ops = deferredCommands[i].ops;
-    if (ops.some((op) => op.kind !== 'clear')) return false;
-    if (ops.length > 0) return true;
+    const emptyState = deferredCommandEmptyState(deferredCommands[i]);
+    if (emptyState !== null) return emptyState;
   }
   return restoredEmpty;
 }

@@ -19,38 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Readability] `rebaseDeferredCommands`' scan encodes "last clear wins" in an opaque some/length pair
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`rebaseDeferredCommands`, lines 138–147) @
-9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-for (let i = deferredCommands.length - 1; i >= 0; i--) {
-  const ops = deferredCommands[i].ops;
-  if (ops.some((op) => op.kind !== 'clear')) return false;
-  if (ops.length > 0) return true;
-}
-return restoredEmpty;
-```
-
-The two early returns encode "the newest deferred command that has any ops decides: any ink ⇒ not
-empty, all-clear ⇒ empty; zero-op commands are transparent" — but the reader has to simulate the
-loop to discover that, and to realize the second `if` is only reachable when *every* op was a
-`'clear'`. The 10-line comment above the function (lines 131–137) explains the *why* but not this
-decision table.
-
-#### Proposed solution
-
-Extract the per-command classification into a named helper, e.g.
-`function commandEmptiesCanvas(cmd: StrokeGroupCommand): boolean | null` returning `null` for a
-zero-op command, `true` for clear-only, `false` otherwise — then the loop reads as "find the newest
-decisive command". Alternatively keep the loop but name the conditions with intermediate
-`const hasInk` / `const isClearOnly` booleans.
-
 ### [Readability] `PatchRect` is the module's general paper-space rect, not just a snapshot-patch rect
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`PatchRect`, lines 78–83; non-patch uses at
