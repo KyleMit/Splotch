@@ -13,14 +13,15 @@
       zero history to keep counts honest, but that was unnecessary: `STROKES` exceeds
       `MAX_UNDO_DEPTH`, so the stack shifts out everything older before `drawEnd` anyway. Verified
       over three consecutive scenarios — no warnings, `snapshots=20` on every row.
-* [ ] **`multi-finger` zero row — still open, needs the device.** Not reproducible in Mac WebKit:
-      `multiStrokeSync` there produces a commit per gesture with real measures, all inside the draw
-      window. The driver now prints a `commits` column and warns when a row has snapshots but no
-      `engine.commit` samples, so the next device run says whether the zeros are missing data (and
-      dumps `rasterBytes`/`blobBytes`, where zero for both means patch-less snapshots — a fold
-      parked behind a pending paper restore).
-* [ ] **Clean on-device gates run** once the two above are fixed — four honest rows including
-      `encode max ms`. Every issue comment below cites these numbers.
+* [x] **`multi-finger` resolved — it passes, at 1 ms.** The original zero row was missing data from
+      the broken reset. With that fixed it read 176 ms, but that was a *new* artifact: the reset's
+      `clearCanvas()` snapshot holds the whole inked paper it wiped, and encodes as soon as two
+      further commits push it past `MAX_HOT_RASTERS` — inside the next scenario's window. Measured
+      in isolation on blank paper it is `encode 0 / commit 1`. The reset now spends those two
+      commits itself on tiny priming marks before `drawStart`; sequenced multi-finger then matches
+      its isolated value. Its snapshots carry no patches at all (`blob KB 0`, `history 28 MiB` = the
+      paper alone), which is exactly why it is the one scenario with nothing to encode and no hitch.
+* [x] **Clean on-device gates run** — done, four honest rows, recorded below.
 * [ ] **Update the issues** (outward-facing, needs a go-ahead):
   * [ ] \#446 — post the gates verdict, close it
   * [ ] \#444 — correct the premise: its items 1–2 target `engine.snapshot`, measured at 1 ms
@@ -33,17 +34,28 @@
       synchronous and carry the memory.
 * [ ] Delete this file.
 
-## Findings so far
+## Verdict — issue \#446, Part 1
 
-Gates run on a 12.9″ iPad Pro, `crayon-scribbles` isolated (clean reset):
+Full gates run on a 12.9″ iPad Pro, all four scenarios, clean resets:
 
-| Gate                | Threshold         | Measured                  |                |
-| ------------------- | ----------------- | ------------------------- | -------------- |
-| Undo restore        | avg < 50 ms       | 0.25 ms avg, 0.54 ms max  | pass           |
-| History memory      | ≲ 150 MB          | 28–34 MiB                 | pass           |
-| Live drawing        | unchanged         | 0.01 ms med, 3.40 ms max  | pass           |
-| **Commit hitch**    | ≈ 8.3 ms          | **2370 ms**               | **fail, 285×** |
-| **Encode overhead** | no dropped frames | 47 s frozen of a 59 s run | **fail**       |
+| Scenario         | blob KB | snap copy | fold | **encode max** | **commit max** | vs 8.3 ms |
+| ---------------- | ------- | --------- | ---- | -------------- | -------------- | --------- |
+| multi-finger     | 0       | 1 ms      | 0 ms | **0 ms**       | **1 ms**       | pass      |
+| long-squiggles   | 457     | 3 ms      | 1 ms | **111 ms**     | **112 ms**     | 13×       |
+| crayon-squiggles | 1179    | 1 ms      | 1 ms | **1149 ms**    | **1149 ms**    | 138×      |
+| crayon-scribbles | 2815    | 1 ms      | 0 ms | **2389 ms**    | **2390 ms**    | 288×      |
+
+`engine.encode` is 99–100% of `engine.commit` on every scenario that produces blobs, and the one
+scenario producing none (multi-finger) is the one with no hitch — the mechanism confirmed by its own
+negative control. This is not a crayon problem: plain pen strokes miss the budget by 13×.
+
+| Gate                | Threshold         | Measured                  |                      |
+| ------------------- | ----------------- | ------------------------- | -------------------- |
+| Undo restore        | p95 < 50 ms       | 0–1 ms                    | pass                 |
+| History memory      | ≲ 150 MB          | 28–34 MiB                 | pass                 |
+| Live drawing        | unchanged         | 0.01 ms med, 3.40 ms max  | pass                 |
+| **Commit hitch**    | ≈ 8.3 ms          | **112 / 1149 / 2390 ms**  | **fail, up to 288×** |
+| **Encode overhead** | no dropped frames | 47 s frozen of a 59 s run | **fail**             |
 
 **Root cause.** `toBlob` is specified to encode in parallel. Chromium honours it; WebKit encodes
 synchronously inside the call, and `encodeColdSnapshots()` runs inside `engine.commit`

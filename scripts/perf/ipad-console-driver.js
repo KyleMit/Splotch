@@ -281,14 +281,38 @@
   // canvasEmpty=false`. Drain first — a full drain lands on the pre-history
   // baseline, which is as blank as undo can get it — then clear whatever the
   // undo cap left permanently folded into the paper, and stop.
+  // Two commits of near-nothing, drawn a few px apart so each is its own stroke
+  // group. Small enough that the ink they leave is not a patch worth measuring.
+  const primingMark = (i) => {
+    const x = M + i * 8;
+    return [
+      { x, y: M },
+      { x: x + 2, y: M + 1 },
+      { x: x + 4, y: M + 2 },
+    ];
+  };
+
   const resetForScenario = async (label) => {
     await undoAll();
-    if (!E.isCanvasEmpty()) E.clearCanvas();
+    // A fresh page needs neither step: nothing to clear, so nothing to prime.
+    if (E.isCanvasEmpty()) return;
+    E.clearCanvas();
     if (!E.isCanvasEmpty()) {
       console.warn(
-        `[${label}] paper is not blank at scenario start — this row's patches, ` +
+        `[${label}] paper is not blank after clearCanvas — this row's patches, ` +
           'blob bytes and encode cost include pre-existing ink'
       );
+    }
+    // The clear's own snapshot holds the entire inked paper it just wiped, and
+    // it encodes the moment two further commits push it past MAX_HOT_RASTERS —
+    // landing a full-paper PNG inside the scenario's measurement window. Where
+    // the scenario's own encodes are cheap, that artifact *is* the reported max:
+    // multi-finger read 176 ms this way against 1 ms measured in isolation.
+    // Spend those two commits here, before drawStart, so the clear pays for
+    // itself outside the window.
+    for (let i = 0; i < 2; i++) {
+      E.strokeSync(primingMark(i), 'touch');
+      await new Promise((r) => requestAnimationFrame(r));
     }
   };
 
