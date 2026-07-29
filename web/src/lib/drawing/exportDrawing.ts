@@ -29,7 +29,10 @@ function loadPaperTexture(): Promise<HTMLImageElement | null> {
       paperTextureImage = img;
       resolve(img);
     };
-    img.onerror = () => resolve(null);
+    img.onerror = () => {
+      paperTexturePromise = null;
+      resolve(null);
+    };
     img.src = '/icons/handmade-paper.webp';
   });
   return paperTexturePromise;
