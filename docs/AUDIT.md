@@ -21,38 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Readability] `opDeviceBounds` is misnamed — it returns user-space bounds
-
-**File(s):** `web/src/lib/drawing/strokeOps.ts` (`opDeviceBounds`, lines 503–512) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The function's own doc comment contradicts its name:
-
-```ts
-// The op's user-space bounding box plus the pad that covers its stroke
-// half-width and AA bleed. Fed straight into unionCrayonBounds to grow a pass
-// buffer's dirty region.
-function opDeviceBounds(op: DotOp | PathOp): { ... }
-```
-
-The device-space mapping happens later, inside `unionCrayonBounds` (lines 343–379), which takes the
-transform matrix and maps the corners. A reader tracing the bounds math (this is exactly the code
-you read when chasing a wrong-crop bug in `closeLiveCrayonPass`) is told twice that this rect is in
-device px — once by the name here and again by `CrayonPassBuffer.bounds`'s "Device-px bounding box"
-comment (line 186) — when the value flowing in is user/paper-space. In `renderCrayonOp` (line 540)
-the same `bounds` object is reused for both the screen-space buffer (mapped through `matrix`) and
-the paper-space buffer (identity), which only makes sense once you realize the rect is user-space.
-
-#### Proposed solution
-
-Rename to `opPaddedUserBounds` (or `opPaddedExtent`) and keep the return shape. One-line rename plus
-call sites at 540/541; no behavior change.
-
----
-
 ### [Types] Return a discriminated union from `activeSource()` instead of a bare tag plus four non-null assertions
 
 **File(s):** `web/src/lib/drawing/magicBrush.ts` (`activeSource`, lines 112–116; `rasterizeSheet`,

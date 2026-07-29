@@ -69,7 +69,7 @@ export function opGeometricExtent(op: DotOp | PathOp): {
 // The op's user-space bounding box plus the pad that covers its stroke
 // half-width and AA bleed. Fed straight into unionCrayonBounds to grow a pass
 // buffer's dirty region.
-export function opDeviceBounds(op: DotOp | PathOp): {
+export function opPaddedUserBounds(op: DotOp | PathOp): {
   x0: number;
   y0: number;
   x1: number;

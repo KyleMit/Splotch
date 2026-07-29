@@ -11,7 +11,7 @@ import {
   crayonPatternFor,
   getCrayonMix,
 } from './crayonBrush';
-import { opDeviceBounds, paintOpShape } from './opGeometry';
+import { opPaddedUserBounds, paintOpShape } from './opGeometry';
 import type { StrokeOp } from './strokeOps';
 
 // Lay a crayon op down as textured wax: one pass per density band (widest first),
@@ -370,7 +370,7 @@ export function renderCrayonOp(
   paintCrayon(buf.ctx, op);
   if (buf.mirror) paintCrayon(buf.mirror, op);
   buf.dirty = true;
-  const bounds = opDeviceBounds(op);
+  const bounds = opPaddedUserBounds(op);
   unionCrayonBounds(buf, matrix, bounds);
   // The live stroke also accumulates in paper space, so the pass can close
   // into a 'crayonPassRaster' instead of leaving ops for the fold to
