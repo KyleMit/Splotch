@@ -24,10 +24,15 @@ Opus-tier work. Override with `MODEL_*` or `EFFORT_*` only when the run has a me
 
 Treat explicit invocation of this skill as user authorization to launch the in-scope `codex exec`
 subprocesses, make their expected outbound OpenAI calls, and provide them the repository context
-needed for their roles. Do not ask for a second conversational confirmation before the canary or
-each relaunch. The subprocesses use the same repository and tool environment as the supervising
-shell with no broader authority; their role sandboxes are narrower (`workspace-write` for verifier
-and implementer, read-only for reviewer) and interactive approvals stay disabled.
+needed for their roles. The subprocesses use the same repository and tool environment as the
+supervising shell with no broader authority; their role sandboxes are narrower (`workspace-write`
+for verifier and implementer, read-only for reviewer) and interactive approvals stay disabled.
+
+A managed host may distinguish workflow authorization from explicit consent to send repository
+context. When that approval mode is active, obtain one campaign-scoped confirmation before creating
+the branch or PR: “Do you approve sending each isolated audit role prompt and the repository files
+it reads to OpenAI for the canary and subsequent bounded burndown segments?” A direct affirmative
+covers the canary and relaunches. Do not ask again unless the payload, provider, or scope changes.
 
 The shell host can still require its own execution or network approval because an automated
 subprocess is making the calls. When it does, request one narrowly scoped reusable approval for the
@@ -284,6 +289,11 @@ Treat CI supervision as independent from comment posting:
   exact-head checkpoint. `STOP` is checked between findings, not between the active finding's review
   and repair rounds, so report that expected latency instead of implying an immediate stop. Do not
   reset the deadline because a role or fix round is still active.
+* Keep active-driver observation at tool boundaries no longer than 20 seconds. Prefer a yielded
+  event watcher or short status polls; do not combine a long `sleep` with a later `tail` or status
+  command. On hosts that deliver user steering only at tool boundaries, a longer blocking poll can
+  delay `pause` or `wrap up` until the next finding has already started. The 30–60 second cadence is
+  for independent CI polling, not for waiting on driver events.
 * Do not send a final response while the driver or a nested Codex role is active. A running burndown
   is ongoing work: give user-requested status in commentary, continue supervision, and yield only
   after the bounded segment has stopped. An explicit request to leave the process unattended is a

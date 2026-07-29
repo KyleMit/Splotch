@@ -4,7 +4,7 @@ Design history and open questions for the Codex implementation of the `burn-down
 note belongs only to the directly maintained Codex package under `.agents/`; it is not a shared
 contract with the Claude Code implementation.
 
-Current as of **2026-07-28**. The Codex runner was validated with direct CLI probes and a live
+Current as of **2026-07-29**. The Codex runner was validated with direct CLI probes and a live
 canary before its runbook was separated from the Claude Code skill.
 
 ## Invariants
@@ -263,6 +263,30 @@ The run also found and repaired the protected-generated-output and protected-his
 mechanisms already documented above. No further supervision prose is warranted for those now-tested
 driver contracts.
 
+## PR 630 supervision retrospective
+
+The continuation canary fixed five findings, and the bounded full segment fixed three more before a
+wrap request. One in-flight testing finding exhausted its repair rounds and deferred cleanly. The
+593 → 584 backlog delta reconciled to 8 fixes and 1 deferral; exact thread resumption, rollback,
+push-every-one, scoped E2E selection, comment batching, and `STOP` all behaved as designed.
+
+Two host-facing assumptions still caused avoidable friction:
+
+* Managed command review rejected the first canary even though the user had explicitly invoked the
+  skill. That host distinguishes workflow authorization from consent to send repository files read
+  by nested roles. Asking once with the exact payload, provider, and campaign scope succeeded. The
+  runbook now requests that confirmation before creating external checkpoint state whenever managed
+  approval mode is active; ordinary hosts continue to treat invocation as authorization.
+* The supervisor used compound 35–45 second `sleep`/`tail` polls while the driver was active. A wrap
+  message arrived during one of those calls but was not delivered until the next tool boundary, two
+  seconds after the driver had started another finding. The eventual `STOP` still bounded the run,
+  but active-driver waits now stay at 20 seconds or less and use a yielded watcher or short poll. CI
+  keeps its separate 30–60 second cadence.
+
+The multi-round testing reviews were useful rather than supervisory waste: they rejected cap
+fixtures that did not distinguish the guarded branch and a no-shrink assertion that reused stale
+target content. No relaxation or special-case prompt was added for those findings.
+
 ## Provider ownership
 
 The complete Codex package and this note are maintained directly:
@@ -307,3 +331,4 @@ the other.
 | 2026-07-28 | Move protected `.agents/` Ruler generation to the outer Codex driver    |
 | 2026-07-28 | Exclude protected historical patches from live completeness review      |
 | 2026-07-28 | Bound canaries and recognize nested Ruler sources after PR 583          |
+| 2026-07-29 | Front-load managed consent and shorten active-driver poll boundaries    |
