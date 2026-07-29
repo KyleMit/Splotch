@@ -21,49 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Architecture] screenshot.ts is three modules in one: filename/download utils, save dispatch, and the polaroid DOM animation
-
-**File(s):** `web/src/lib/drawing/screenshot.ts` (`timestamp`/`triggerDownload`/basenames, lines
-7–25; `saveImageBlob`, lines 71–92; `playPolaroidAnimation`, lines 103–151) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The module named `screenshot` currently owns:
-
-1. **Generic naming/download utilities** — `timestamp()` (lines 7–11), `triggerDownload()` (lines
-   13–20), `DRAWING_BASENAME`/`AI_IMAGE_BASENAME` (lines 24–25). `AiImageResult.svelte` line 10
-   imports exactly these three — and by doing so statically drags the whole save pipeline
-   (`folderSave.ts`, its `$lib/storage` and `$lib/idb` deps, plus `engine.ts` re-entry) into the
-   boot-hidden-overlay chunk, just to format a filename and click an `<a>`. `aiImage.ts` (lines
-   93–97) has to do an awkward triple-`let` destructure of a dynamic import for the same reason.
-2. **The save dispatcher** — `saveImageBlob` + native `saveToGallery` (lines 36–92), the module's
-   actual job.
-3. **A DOM feedback animation** — `playPolaroidAnimation` (lines 103–151) imperatively builds a
-   four-element overlay, reads the `#screenshotButton` geometry from `ActionsPanel.svelte`'s markup
-   (line 135), and is styled from global CSS in `app.css` lines 344–430. This is UI-feedback
-   presentation code living in the imperative drawing lib; nothing about it is "drawing engine".
-
-The mix hurts grepability (a reader hunting the polaroid finds it inside a save module), layering
-(drawing lib knows a specific ActionsPanel button id), and chunking (point 1).
-
-#### Proposed solution
-
-Three small moves, all mechanical:
-
-* `web/src/lib/saveNaming.ts` (or `downloadFile.ts`): `timestamp()`, `triggerDownload()`,
-  `DRAWING_BASENAME`, `AI_IMAGE_BASENAME`. `AiImageResult.svelte` and `aiImage.ts` import from here
-  — the dynamic-import destructure in `aiImage.ts` shrinks to just `saveImageBlob`.
-* `web/src/lib/drawing/polaroidAnimation.ts` (or under `lib/components/`): `playPolaroidAnimation`,
-  `getPolaroidFrameOffset`, `POLAROID_DURATION_MS`. `saveScreenshot` keeps calling it.
-* `screenshot.ts` keeps `saveImageBlob`/`saveToGallery`/`saveScreenshot` — arguably rename to
-  `saveImage.ts` while the imports are already churning (it never takes a screenshot of anything; it
-  exports the paper).
-
-Gotcha: `web/tests/startup-bundle.spec.ts` guards the modulepreload list (issue \#461) — verify
-chunk membership after the split.
-
 ### [Maintainability] DOM element ids are duplicated string literals across creator and consumer modules
 
 **File(s):** `web/src/lib/drawing/overlay.ts` (line 3), `web/src/lib/drawing/screenshot.ts` (line
