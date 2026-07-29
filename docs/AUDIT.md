@@ -21,48 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Readability] drawOverlayContained's source/composite selection hides a silent dark-mode failure in a short-circuit idiom
-
-**File(s):** `web/src/lib/drawing/exportDrawing.ts` (`drawOverlayContained`, lines 94–98) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const dark = theme === 'dark';
-const source: CanvasImageSource = (dark && invertedOverlay(overlay)) || overlay;
-target.globalCompositeOperation = source === overlay ? 'multiply' : 'screen';
-```
-
-Three things are packed into two lines: (a) a `(bool && x) || y` short-circuit whose type only works
-because `false || overlay` collapses; (b) the composite op inferred back from an object-identity
-comparison rather than stated alongside the decision that chose the source; and (c) a buried
-fallback — when `invertedOverlay` returns `null` (its `getContext` failed, line 71), dark mode
-silently falls back to *multiplying the original black line art over the dark paper*, which renders
-the line art essentially invisible. That fallback was almost certainly never chosen deliberately;
-it's an artifact of the idiom. A first-time reader has to execute the truth table in their head to
-discover it.
-
-#### Proposed solution
-
-Make the two legs explicit and decide the failure path on purpose:
-
-```ts
-if (theme === 'dark') {
-  const inverted = invertedOverlay(overlay);
-  if (!inverted) return; // canvas alloc failed: skip the overlay rather than paint it invisibly
-  target.globalCompositeOperation = 'screen';
-  target.drawImage(inverted, ...);
-} else {
-  target.globalCompositeOperation = 'multiply';
-  target.drawImage(overlay, ...);
-}
-```
-
-(Whether the failure path should skip the overlay or draw it un-inverted is a product call — but it
-becomes a visible, commented decision instead of an emergent one.)
-
 ### [Correctness] composeExportPng's `getContext('2d')!` turns an export-canvas allocation failure into a throw instead of the contracted null
 
 **File(s):** `web/src/lib/drawing/exportDrawing.ts` (`composeExportPng`, lines 123–126) @ 9ae62ff1

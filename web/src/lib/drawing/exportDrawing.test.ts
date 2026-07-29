@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const appearanceMock = vi.hoisted(() => ({
-  resolvedTheme: vi.fn<() => 'light' | 'dark'>()
+  resolvedTheme: vi.fn<() => 'light' | 'dark'>(),
 }));
 
 vi.mock('../state/appearance.svelte', () => appearanceMock);
@@ -54,7 +54,7 @@ function createOverlayImage(): HTMLImageElement {
   const overlay = document.createElement('img');
   Object.defineProperties(overlay, {
     naturalWidth: { value: 100 },
-    naturalHeight: { value: 50 }
+    naturalHeight: { value: 50 },
   });
   return overlay;
 }
@@ -78,7 +78,7 @@ function setupExportContexts(inversionContext: CanvasRenderingContext2D | null) 
     createPattern: vi.fn(() => null),
     drawImage: vi.fn((source: CanvasImageSource) => {
       draws.push({ source, compositeOperation: outputContext.globalCompositeOperation });
-    })
+    }),
   };
   let requestingOutputContext = true;
 
@@ -124,7 +124,7 @@ describe('composeExportPng overlay', () => {
 
     expect(contexts.draws[1]).toMatchObject({
       source: overlay,
-      compositeOperation: 'multiply'
+      compositeOperation: 'multiply',
     });
     expect(contexts.outputContext.globalCompositeOperation).toBe('source-over');
   });
@@ -139,7 +139,7 @@ describe('composeExportPng overlay', () => {
       scale: vi.fn(),
       fillRect: vi.fn(),
       createPattern: vi.fn(() => null),
-      drawImage: vi.fn()
+      drawImage: vi.fn(),
     });
     const contexts = setupExportContexts(inversionContext);
     const { composeExportPng } = await import('./exportDrawing');
@@ -159,7 +159,9 @@ describe('composeExportPng overlay', () => {
     contexts.outputContext.globalCompositeOperation = 'screen';
     const { composeExportPng } = await import('./exportDrawing');
 
-    await composeExportPng(createSnapshot(), 1, createOverlayImage(), { includePaperTexture: false });
+    await composeExportPng(createSnapshot(), 1, createOverlayImage(), {
+      includePaperTexture: false,
+    });
 
     expect(contexts.draws).toHaveLength(1);
     expect(contexts.outputContext.globalCompositeOperation).toBe('source-over');
