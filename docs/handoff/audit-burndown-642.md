@@ -194,6 +194,56 @@ sweep up later.
 * Tidy any emptied `## Source:` sections in `docs/AUDIT.md`; delete the file outright if drained.
 * Confirm CI green on the final push, then `mcp__github__update_pull_request` `draft: false`.
 
+## Open: a reproducible E2E flake that will tax every UI-touching finding
+
+**Unfixed.** Investigated at wrap-up and left alone deliberately — four candidate fixes were tried
+and all four falsified, and shipping unverified churn to a shared test harness is worse than leaving
+the evidence. Fix this **before** the next long run: `E2E_CMD` carries `--retries=1`, so it never
+reddens a gate, but every UI-touching finding pays its wall-clock and each implementer re-diagnoses
+it from scratch (the canary's first finding already did, reproducing it against a reverted tree).
+
+**Reproduce deterministically:**
+
+```bash
+npm run test:e2e -- tests/multitouch.spec.ts tests/engine-pointer-recovery.spec.ts \
+  --repeat-each=3 --retries=0 --project=chromium
+```
+
+**Evidence gathered:**
+
+* **6 of 60 fail together; 18 of 18 pass alone** (`multitouch.spec.ts --repeat-each=6`). So it is
+  cross-spec interference on the shared `/dev/engine` harness, not anything inherent to the spec.
+  Only `multitouch.spec.ts` ever fails; `engine-pointer-recovery.spec.ts` never does.
+* Two symptoms, one cause:
+  `TypeError: Cannot read properties of undefined (reading
+  'nonTransparentCount')` on the test's
+  *first* `__engine` call, and `#engineCanvas` never appearing within 30 s. Both mean the document
+  went away after `beforeEach`'s readiness poll succeeded.
+* A `framenavigated` probe showed **3 navigations to `/dev/engine` per test load**, so the page is
+  genuinely reloading after mount. The suspected source is the PWA service worker — the preview
+  build ships it and `web/src/lib/pwa/updates.ts:163` calls `window.location.reload()` on
+  `controllerchange` — but see the falsified list below; that link is **not** established.
+
+**Falsified — do not retry these without new evidence.** Each left the count at exactly 6/60:
+
+1. `waitUntil: 'load'` instead of `'commit'` (theory: the poll was answered by the outgoing
+   document).
+2. Polling the capability (`typeof window.__engine?.nonTransparentCount === 'function'`) rather than
+   the separate `__engineReady` flag.
+3. A 1 s continuous-readiness settle streak before handing the page to the spec.
+4. `test.use({ serviceWorkers: 'block' })` in `engine-harness.ts` — note this did not verify that
+   `test.use` from an imported helper actually applies, so the service-worker theory is untested
+   rather than disproven.
+
+**Next moves, cheapest first:** confirm whether `test.use` in the helper took effect (assert
+`context.serviceWorkers()` is empty) before writing the SW theory off; instrument *what* triggers
+the reloads rather than guessing; and note that `multitouch.spec.ts:44` violates the repo's own
+testing rule (`expect(await count()).toBe(n)` should be `await expect.poll(() => count())`), which
+would at least make one of the three failing tests ride through a transient.
+
+A wider signal worth chasing at the same time: the canary implementer reported the full suite at
+**159 passed / 24 flaky**. That is a lot of amortised cost across a 637-finding backlog.
+
 ## Inherited follow-ups from the merged PR #552 burndown
 
 `docs/handoff/audit-burndown-236.md` was deleted in this branch's first commit — its PR merged on
