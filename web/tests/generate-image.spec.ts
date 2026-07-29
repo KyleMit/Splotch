@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
 
+import { managedAccessTokenForRetry } from '../playwright.shared';
 import { tinyPngBuffer } from './fixtures';
 
 // Server-side guards on /api/generate-image. These hit the endpoint directly
@@ -22,9 +23,9 @@ const BYOK_LIMIT = 30;
 // Raw-body POST to the endpoint. A raw image body (Content-Type: image/*) is not
 // a form submission, so SvelteKit's CSRF guard — active in the production build
 // the e2e suite serves — ignores it; no Origin spoofing needed. `token` uses the
-// managed allowlist (`daycare-club` comes from the .env ALLOWED_TOKENS_LIST vite
-// dev loads; no other spec uses managed tokens, so its bucket stays ours),
-// `apiKey` takes the BYOK path.
+// managed allowlist (the code comes from the ALLOWED_TOKENS_LIST the web server
+// is started with; no other spec uses managed tokens, so its bucket stays
+// ours), `apiKey` takes the BYOK path.
 function postImage(
   request: APIRequestContext,
   buffer: Buffer,
@@ -108,8 +109,8 @@ test('throttles a managed token hammered in a burst', async ({ request }, testIn
   // starts inside that still-full window, so it would see the very first request
   // 429 and fail deterministically. Give each attempt its own token so every
   // attempt gets a fresh window. Local runs never retry, so testInfo.retry is
-  // always 0 there — they only ever need daycare-club.
-  const token = testInfo.retry === 0 ? 'daycare-club' : `daycare-club-retry${testInfo.retry}`;
+  // always 0 there — they only ever need the base code.
+  const token = managedAccessTokenForRetry(testInfo.retry);
 
   const statuses: number[] = [];
   for (let i = 0; i < GENERATE_LIMIT; i++) {
@@ -119,9 +120,10 @@ test('throttles a managed token hammered in a burst', async ({ request }, testIn
 
   // Requests within the limit clear the throttle (rejected only by the type guard).
   //
-  // A 403 here means the token is not in ALLOWED_TOKENS_LIST — copy .env.example
-  // to .env so the test server has the token available.
-  expect(statuses[0], 'token rejected (403) — copy .env.example to .env').not.toBe(403);
+  // A 403 here means the code never reached the server's allowlist — the web
+  // server's ALLOWED_TOKENS_LIST is set from this same helper
+  // (playwright.shared.ts), so the two have drifted apart.
+  expect(statuses[0], 'access code rejected (403) — check ALLOWED_TOKENS_LIST').not.toBe(403);
   expect(statuses).not.toContain(429);
 
   // The next request tips over the limit → 429 with a Retry-After.

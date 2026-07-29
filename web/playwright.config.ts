@@ -4,6 +4,7 @@ import { chromium, defineConfig, devices, webkit } from '@playwright/test';
 import {
   commonPlaywrightConfig,
   commonWebServer,
+  managedAccessTokenForRetry,
   playwrightPort,
   productionPreviewCommand,
 } from './playwright.shared';
@@ -63,7 +64,7 @@ function webkitAvailable(): boolean {
 const slowMo = Number(process.env.SLOWMO) || 0;
 const ciRetries = 2;
 const ciAllowedTokens = Array.from({ length: ciRetries + 1 }, (_, retry) =>
-  retry === 0 ? 'daycare-club' : `daycare-club-retry${retry}`
+  managedAccessTokenForRetry(retry)
 ).join(',');
 
 export default defineConfig({
