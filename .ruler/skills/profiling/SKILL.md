@@ -67,6 +67,12 @@ either — it is a desktop build with no throttle and `performance.now()` clampe
 gate is deliberately blunt (catch full-raster work reappearing on the pointerup path, not police
 drift). Absolute device milliseconds still come from `ipad-device-profiling.md`.
 
+> **Not available in a cloud session.** `.claude/cloud/setup.sh` installs Chromium only, so any
+> WebKit-driving command (`perf:undo:webkit`, `perf:ios`) fails there with Playwright's raw
+> `Executable doesn't exist`. `scripts/lib/playwright.mjs` self-heals a drifted *Chromium* revision
+> and has no WebKit equivalent. Run these locally, or `npx playwright install webkit` first if the
+> session's network allowlist covers `cdn.playwright.dev`.
+
 ## How capture works (so the numbers make sense)
 
 * **Session commands trace an already-loaded page.** `scenario.mjs` (and every other driver)

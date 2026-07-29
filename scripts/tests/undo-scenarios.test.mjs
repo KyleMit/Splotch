@@ -3,7 +3,13 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const state = vi.hoisted(() => ({ browser: null, outDir: '', stop: null, launched: [] }));
+const state = vi.hoisted(() => ({
+  browser: null,
+  outDir: '',
+  stop: null,
+  launched: [],
+  collectMeasures: () => [],
+}));
 
 // Both engines resolve to the same fake browser; `launched` records which
 // launcher the run reached for, since that is the seam --engine selects.
@@ -26,15 +32,21 @@ vi.mock('../perf/preview.mjs', () => ({
   buildAndPreview: async () => ({ base: 'http://profile.test/', stop: state.stop }),
 }));
 
-vi.mock('../perf/capture.mjs', () => ({
-  startTrace: async () => [],
-  stopTrace: async () => {},
-  collectMeasures: async () => [{ name: 'engine.commit', ph: 'X' }],
-  injectObservers: async () => {},
-  readObservers: async () => ({ longTasks: [], frames: [], heapBytes: 0 }),
-  heapBytes: async () => 0,
-  markPhase: async (_page, _label, work) => work(),
-}));
+// createMeasureTimeline stays real — it is the thing under test for the
+// multi-scenario WebKit trace, and stubbing it would test the stub.
+vi.mock('../perf/capture.mjs', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    startTrace: async () => [],
+    stopTrace: async () => {},
+    collectMeasures: async () => state.collectMeasures(),
+    createMeasureTimeline: actual.createMeasureTimeline,
+    injectObservers: async () => {},
+    readObservers: async () => ({ longTasks: [], frames: [], heapBytes: 0 }),
+    heapBytes: async () => 0,
+    markPhase: async (_page, _label, work) => work(),
+  };
+});
 
 vi.mock('../perf/paths.mjs', () => ({ profilePath: () => state.outDir }));
 
@@ -54,6 +66,15 @@ beforeEach(() => {
   state.outDir = fixtureDir;
   state.stop = vi.fn();
   state.launched = [];
+  // Each scenario's document reports its own timeline starting at 0 — which is
+  // exactly why the harness has to offset them as it stitches.
+  let collected = 0;
+  state.collectMeasures = () => {
+    collected++;
+    return [
+      { cat: 'blink.user_timing', name: `engine.scenario${collected}`, ph: 'X', ts: 0, dur: 1000 },
+    ];
+  };
   originalArgv = process.argv;
   // The gate signals a breach through process.exitCode, which would otherwise
   // outlive the test and fail the whole vitest run.
@@ -74,33 +95,64 @@ afterEach(() => {
   rmSync(fixtureDir, { recursive: true, force: true });
 });
 
+// A clock that advances one tick per read, so the harness's phase boundaries
+// (drawStart < drawEnd < settleEnd < undoStart < undoEnd) are distinguishable
+// and a measure query can be attributed to the window that asked for it.
+const mockTickingClock = () =>
+  (
+    (tick) => () =>
+      tick++
+  )(0);
+
 // A page whose engine.* measures are dictated by the caller, so a test can put
 // the run on either side of the commit gate without driving a real browser.
-function fakePage({ commitMaxMs = 1, encodeMaxMs = 0 } = {}) {
+//
+// `encodeInCommitMaxMs` and `deferredEncodeMaxMs` land in different windows on
+// purpose: the harness reads the encode cost from two disjoint spans (draw, then
+// drawEnd→settleEnd), and conflating them is exactly the misreport these tests
+// exist to pin down.
+function fakePage({
+  commitMaxMs = 1,
+  commitCount = 1,
+  encodeInCommitMaxMs = 0,
+  deferredEncodeMaxMs = 0,
+  blobBytes = 1,
+} = {}) {
+  const now = mockTickingClock();
+  let drawEnd = null;
   return {
     goto: vi.fn(async () => {}),
     waitForSelector: vi.fn(async () => {}),
     waitForFunction: vi.fn(async () => {}),
-    evaluate: vi.fn(async (fn) => {
+    evaluate: vi.fn(async (fn, arg) => {
       const source = fn.toString();
       if (source.includes('getUndoDebug')) {
-        return { snapshots: 22, liveRasters: 2, blobBytes: 1 };
+        return { snapshots: 22, liveRasters: 2, blobBytes };
       }
       if (source.includes('document.querySelector')) {
         return { backingW: 20, backingH: 20, side: 20, bytesPerRaster: 1600 };
       }
       if (source.includes("getEntriesByType('measure')")) {
+        // The draw window is the one starting at the phase's own start; the
+        // deferred window is the one that opens where the draw window closed.
+        const isPostDraw = drawEnd != null && arg?.from === drawEnd;
+        const encodeMs = isPostDraw ? deferredEncodeMaxMs : encodeInCommitMaxMs;
         return {
           'engine.draw': { count: 1, total: 1, max: 1 },
-          'engine.commit': { count: 1, total: commitMaxMs, max: commitMaxMs },
+          'engine.commit': { count: commitCount, total: commitMaxMs, max: commitMaxMs },
           'engine.snapshot': { count: 1, total: 1, max: 1 },
           'engine.fold': { count: 1, total: 1, max: 1 },
-          'engine.encode': { count: 1, total: encodeMaxMs, max: encodeMaxMs },
+          'engine.encode': { count: 1, total: encodeMs, max: encodeMs },
           'engine.undo': { count: 1, total: 1, max: 1 },
         };
       }
       if (source.includes('async (maxUndoSteps)')) return 1;
-      if (source.includes('performance.now')) return 0;
+      if (source.includes('performance.now')) {
+        const t = now();
+        // Second read per scenario is drawEnd (drawStart, drawEnd, settleEnd, …).
+        if (t % 5 === 1) drawEnd = t;
+        return t;
+      }
       return undefined;
     }),
     screenshot: vi.fn(async () => {}),
@@ -212,12 +264,7 @@ describe('engine selection', () => {
     process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
     const page = fakePage();
     const { context } = fakeBrowser(page, { withCdp: false });
-    vi.spyOn(Date, 'now').mockImplementation(
-      (
-        (c) => () =>
-          c++
-      )(0)
-    );
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
     const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
@@ -231,6 +278,34 @@ describe('engine selection', () => {
       throttle: 0,
       captureMode: 'user-timing (no CDP on WebKit)',
     });
+  });
+
+  it('stitches every scenario into the WebKit trace, not just the last one', async () => {
+    // Each scenario reloads /dev/engine, and a navigation clears the Performance
+    // API entries. Collecting once at the end would leave trace.json — and every
+    // trace-derived section of report.md — describing the final scenario while
+    // labelled as the whole run.
+    process.argv = [
+      ...process.argv,
+      '--engine=webkit',
+      '--scenarios=short-marks,mixed,multi-finger',
+    ];
+    fakeBrowser(fakePage(), { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    await runUndoScenarios();
+
+    const { traceEvents } = JSON.parse(readFileSync(join(fixtureDir, 'trace.json'), 'utf8'));
+    expect(traceEvents.map((e) => e.name)).toEqual([
+      'engine.scenario1',
+      'engine.scenario2',
+      'engine.scenario3',
+    ]);
+    // And they must not all sit on top of each other at ts 0, or the analyzer
+    // reads three scenarios as one overlapping instant.
+    expect(traceEvents.map((e) => e.ts)).toEqual([0, 1000, 2000]);
   });
 
   it('rejects an unknown engine instead of silently falling back to Chromium', async () => {
@@ -250,14 +325,9 @@ describe('the commit gate', () => {
     // #635's shape: an encode back on the commit path, so engine.commit carries
     // a full-raster encode instead of a rect-sized copy plus a fold.
     process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
-    const page = fakePage({ commitMaxMs: 56, encodeMaxMs: 55 });
+    const page = fakePage({ commitMaxMs: 56, encodeInCommitMaxMs: 55 });
     fakeBrowser(page, { withCdp: false });
-    vi.spyOn(Date, 'now').mockImplementation(
-      (
-        (c) => () =>
-          c++
-      )(0)
-    );
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -273,16 +343,34 @@ describe('the commit gate', () => {
     expect(error).toHaveBeenCalledWith(expect.stringContaining('encode 55.0'));
   });
 
+  it('blames the in-commit encode, never the healthy deferred one', async () => {
+    // The two encode figures come from disjoint windows. A breach caused by the
+    // fold must not print the (large, healthy) deferred encode as its cause —
+    // the failure text points at engine.encode, so a mixed-window reading here
+    // sends the reader after the one stage that is behaving.
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
+    const page = fakePage({ commitMaxMs: 30, encodeInCommitMaxMs: 0, deferredEncodeMaxMs: 193 });
+    fakeBrowser(page, { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    expect(gate.breaches).toHaveLength(1);
+    expect(gate.breaches[0].draw).toMatchObject({
+      encodeInCommitMaxMs: 0,
+      encodeMaxMs: 193,
+    });
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('encode 0.0; deferred 193.0'));
+  });
+
   it('passes the WebKit run when commits stay inside the budget', async () => {
     process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
-    const page = fakePage({ commitMaxMs: 8, encodeMaxMs: 208 });
+    const page = fakePage({ commitMaxMs: 8, deferredEncodeMaxMs: 208 });
     fakeBrowser(page, { withCdp: false });
-    vi.spyOn(Date, 'now').mockImplementation(
-      (
-        (c) => () =>
-          c++
-      )(0)
-    );
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
     const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
@@ -298,20 +386,9 @@ describe('the commit gate', () => {
     // A passing gate over scenarios that never encode is a vacuous pass, so the
     // run has to say so rather than report a clean bill of health.
     process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
-    const page = fakePage();
-    page.evaluate = vi.fn(async (fn) => {
-      if (fn.toString().includes('getUndoDebug')) {
-        return { snapshots: 22, liveRasters: 2, blobBytes: 0 };
-      }
-      return fakePage().evaluate(fn);
-    });
+    const page = fakePage({ blobBytes: 0 });
     fakeBrowser(page, { withCdp: false });
-    vi.spyOn(Date, 'now').mockImplementation(
-      (
-        (c) => () =>
-          c++
-      )(0)
-    );
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -324,16 +401,31 @@ describe('the commit gate', () => {
     );
   });
 
+  it('fails rather than certifies a run whose bundle carries no engine marks', async () => {
+    // Every measure absent reads as 0 ms, which is indistinguishable from a very
+    // fast commit — and neither warnIfNoPerfMarks (harness env, not the build)
+    // nor the encode-path warning (getUndoDebug works without marks) catches it.
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
+    const page = fakePage({ commitMaxMs: 0, commitCount: 0 });
+    fakeBrowser(page, { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    expect(gate).toMatchObject({ evaluated: false, breaches: [] });
+    expect(process.exitCode).toBe(1);
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('NOT EVALUATED on webkit'));
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('npm run perf:undo:webkit'));
+  });
+
   it('reports the gate as not evaluated on Chromium', async () => {
     process.argv = [...process.argv, '--scenarios=short-marks'];
     const page = fakePage({ commitMaxMs: 999 });
     fakeBrowser(page);
-    vi.spyOn(Date, 'now').mockImplementation(
-      (
-        (c) => () =>
-          c++
-      )(0)
-    );
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
