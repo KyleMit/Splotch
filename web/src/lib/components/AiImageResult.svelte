@@ -7,7 +7,7 @@
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
-  import { timestamp, triggerDownload, AI_IMAGE_BASENAME } from '$lib/drawing/screenshot';
+  import { timestamp, triggerDownload, AI_IMAGE_BASENAME } from '$lib/saveNaming';
 
   let dialogEl: HTMLDialogElement;
   let zoomLayerEl = $state<HTMLDivElement | undefined>();

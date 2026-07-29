@@ -15,6 +15,7 @@ import { exportCanvasBlob } from './engine';
 import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 import { getActiveOverlayImage } from './overlay';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
+import { AI_IMAGE_BASENAME, DRAWING_BASENAME } from '$lib/saveNaming';
 import type { StyleName } from '$lib/ai/styles';
 
 export const AI_SAFETY_REFUSAL_MESSAGE = "Let's try drawing something else!";
@@ -91,10 +92,8 @@ async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, runId: number) {
   // result modal, so it must degrade like any other silent save failure rather
   // than bubbling into generateAiImage's error UI.
   let saveImageBlob: (typeof import('./screenshot'))['saveImageBlob'];
-  let AI_IMAGE_BASENAME: string;
-  let DRAWING_BASENAME: string;
   try {
-    ({ saveImageBlob, AI_IMAGE_BASENAME, DRAWING_BASENAME } = await import('./screenshot'));
+    ({ saveImageBlob } = await import('./screenshot'));
   } catch (err) {
     console.error('Auto-save failed:', err);
     return;

@@ -1,28 +1,12 @@
 import type { MediaPlugin } from '@capacitor-community/media';
-import { exportCanvasBlob, getActiveCanvas } from './engine';
+import { exportCanvasBlob } from './engine';
 import { getActiveOverlayImage } from './overlay';
 import { isNative, getPlatform } from '$lib/platform';
+import { DRAWING_BASENAME, timestamp, triggerDownload } from '$lib/saveNaming';
 import { saveBlobToFolder } from './folderSave';
-
-export function timestamp() {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
-}
-
-export function triggerDownload(url: string, filename: string) {
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
+import { playPolaroidAnimation } from './polaroidAnimation';
 
 const ALBUM_NAME = 'Splotch';
-
-export const DRAWING_BASENAME = 'splotch';
-export const AI_IMAGE_BASENAME = 'splotch-ai';
 
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -98,54 +82,4 @@ export async function saveScreenshot() {
   // permission re-confirm dialog — that saveImageBlob may perform on the web.
   playPolaroidAnimation(URL.createObjectURL(blob));
   await saveImageBlob(blob, undefined, { allowPrompt: true });
-}
-
-const POLAROID_DURATION_MS = 1900;
-
-function getPolaroidFrameOffset(buttonRect: DOMRect): { fromX: number; fromY: number } {
-  const cx = (buttonRect.left + buttonRect.right) / 2;
-  const cy = (buttonRect.top + buttonRect.bottom) / 2;
-  const fromX = Math.round(cx - window.innerWidth / 2);
-  const fromY = Math.round(cy - window.innerHeight / 2);
-  return { fromX, fromY };
-}
-
-function playPolaroidAnimation(imageUrl: string) {
-  const overlay = document.createElement('div');
-  overlay.className = 'polaroid-overlay';
-
-  const flash = document.createElement('div');
-  flash.className = 'polaroid-flash';
-
-  const frame = document.createElement('div');
-  frame.className = 'polaroid-frame';
-
-  const img = document.createElement('img');
-  img.className = 'polaroid-image';
-  img.src = imageUrl;
-  img.alt = '';
-
-  // Match the polaroid photo to the drawing's aspect ratio instead of
-  // cropping it to a fixed shape.
-  const canvas = getActiveCanvas();
-  if (canvas && canvas.width > 0 && canvas.height > 0) {
-    img.style.setProperty('--polaroid-aspect', `${canvas.width} / ${canvas.height}`);
-  }
-
-  const button = document.getElementById('screenshotButton');
-  if (button) {
-    const { fromX, fromY } = getPolaroidFrameOffset(button.getBoundingClientRect());
-    frame.style.setProperty('--from-x', `${fromX}px`);
-    frame.style.setProperty('--from-y', `${fromY}px`);
-  }
-
-  frame.appendChild(img);
-  overlay.appendChild(flash);
-  overlay.appendChild(frame);
-  document.body.appendChild(overlay);
-
-  setTimeout(() => {
-    overlay.remove();
-    URL.revokeObjectURL(imageUrl);
-  }, POLAROID_DURATION_MS);
 }
