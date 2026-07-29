@@ -21,49 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Architecture] The crayon pass-buffer subsystem has outgrown `strokeOps.ts` — extract it to its own module
-
-**File(s):** `web/src/lib/drawing/strokeOps.ts` (lines 149–465: `CrayonPassBuffer` through
-`resetLiveCrayonForReplay`, plus `renderCrayonOp` at 519–555) @ 9ae62ff1
-
-**Priority:** P2
-
-> **Verified 2026-07-28** — claims hold. Two corrections: the file is 606 lines (not 607), and the
-> proposed 149–465 cut would also drag `clearAllOf` (lines 451–457), a non-crayon helper
-> `undoHistory` imports — the extraction boundary needs that one carve-out. Open issue #569 (dedupe
-> buffer-allocation blocks) is a narrower, distinct change, not a duplicate.
-
-#### Problem
-
-The file's own header (lines 1–8) declares it "The engine's op vocabulary and its single renderer."
-In reality ~360 of its 607 lines are a distinct subsystem: the crayon pass buffer —
-`CrayonPassBuffer`, the `bufferByTarget` WeakMap,
-`liveTarget`/`liveBuffer`/`livePaperBuffer`/`livePaperSide` module state, `setLiveCrayonBuffer`,
-`setCrayonPaperSpace`, `hasOpenLiveCrayonPass`, `resetLiveCrayonPass`, `closeLiveCrayonPass`,
-`crayonBufferFor`, `existingBufferFor`, `unionCrayonBounds`, `clearCrayonBounds`,
-`stampSubtractiveGlaze`, `flushCrayonBuffer`, `resetCrayonStateForClear`, `dropCrayonBuffer`,
-`resetLiveCrayonForReplay`, `renderCrayonOp`, and three multi-paragraph design essays. A first-time
-reader hunting for crayon behavior looks in `crayonBrush.ts` and finds only the *paint source*; the
-accumulation/stamp/close lifecycle — the half that owns state and has the subtle invariants — is
-buried in the op-model file. The existing `strokeOps.test.ts` tests exclusively this subsystem (the
-paper-space seam), not the op model.
-
-#### Proposed solution
-
-Extract lines 149–465 (+ `renderCrayonOp`) into `web/src/lib/drawing/crayonPassBuffer.ts`, leaving
-`strokeOps.ts` as the op vocabulary + `renderOp` dispatcher + `paintOpShape`/`paintCrayon` (or move
-`paintCrayon` too). Gotcha: circular imports — the new module needs `DotOp`/`PathOp`,
-`opGeometricExtent`, and `AA_PAD` from `strokeOps`, while `renderOp` calls into the new module.
-Cleanest cut: move the pure op-geometry helpers (`opGeometricExtent`, `opDeviceBounds`, `AA_PAD`)
-either into the new module or into a tiny `opGeometry.ts` so the dependency edge points one way
-(`strokeOps` → `crayonPassBuffer` → `opGeometry`). `undoHistory.ts` imports (`AA_PAD`,
-`opGeometricExtent`, `resetCrayonStateForClear`, `resetLiveCrayonForReplay`, lines 39–44) update
-mechanically. `strokeOps.test.ts` becomes `crayonPassBuffer.test.ts` almost verbatim. Note: issue
-\#569 covers deduplicating the buffer-allocation blocks — doing this extraction first (or together)
-gives that dedup a natural home.
-
----
-
 ### [Readability] `opDeviceBounds` is misnamed — it returns user-space bounds
 
 **File(s):** `web/src/lib/drawing/strokeOps.ts` (`opDeviceBounds`, lines 503–512) @ 9ae62ff1

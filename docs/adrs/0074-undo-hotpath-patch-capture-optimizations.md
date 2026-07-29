@@ -52,8 +52,8 @@ Three changes in `web/src/lib/drawing/undoHistory.ts` (+ a small `engine.ts` hoo
   profile rerun and guarded by `paperPristine`: the fold's `clearRect` on the just-created canvas
   would materialize its ~30 MB backing store *inside the pointerup* (measured ~500 ms throttled), so
   a clear folding onto a known-blank paper skips the wipe (crayon side effects preserved via
-  `strokeOps.resetCrayonStateForClear`); and the surface is instead materialized by a guarded 1×1
-  `clearRect` at idle, so the first post-clear stroke doesn't pay the allocation either.
+  `crayonPassBuffer.resetCrayonStateForClear`); and the surface is instead materialized by a guarded
+  1×1 `clearRect` at idle, so the first post-clear stroke doesn't pay the allocation either.
 * **Rect-limited undo repaint.** `popSnapshot` resolves the restored rects, and `engine.undo` blits
   just those patches (`blitPaperRect` each) instead of `repaintAll` — shrinking the per-tap work
   and, more importantly on device, the compositor damage from full-canvas to stroke-sized. The fast

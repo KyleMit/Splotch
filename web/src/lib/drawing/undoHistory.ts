@@ -231,7 +231,7 @@ export function blitPaperRect(target: CanvasRenderingContext2D, rect: PatchRect)
 }
 
 // Swap the just-closed crayon pass's recorded ops for its prerendered raster
-// op (see strokeOps' closeLiveCrayonPass). The pass is exactly the maximal
+// op (see crayonPassBuffer's closeLiveCrayonPass). The pass is exactly the maximal
 // trailing run of crayon ink ops: the engine closes an open pass before any
 // non-crayon ink op records (closeCrayonPassBeforeForeignOp — a mid-gesture
 // brush switch can interleave brushes within one group), so every op since
@@ -758,7 +758,7 @@ function replayCommands(target: CanvasRenderingContext2D, commands: StrokeGroupC
 export function repaintAll(target: CanvasRenderingContext2D) {
   // Replaying the open pass's ops below rebuilds its crayon accumulation from
   // scratch; the live buffers must start empty so a non-idempotent deposit
-  // can never double-composite on a repaint (see strokeOps).
+  // can never double-composite on a repaint (see crayonPassBuffer).
   resetLiveCrayonForReplay(target);
   clearAllOf(target);
   if (paperCanvas) target.drawImage(paperCanvas, 0, 0);
