@@ -57,6 +57,8 @@ const MAX_HOT_RASTERS = 2;
 let paperCanvas: HTMLCanvasElement | null = null;
 let paperCtx: CanvasRenderingContext2D | null = null;
 
+// Paper contexts use round line caps and joins because the fold path strokes
+// ops directly onto them.
 function createPaperSurface(width: number, height: number) {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -155,8 +157,7 @@ let activeCommand: StrokeGroupCommand | null = null;
 // loses pixels; anything larger (e.g. a resized desktop window) goes through
 // the grow path, copying existing pixels so no drawing is lost. Recorded ops
 // use the paper's coordinates, and content off the current viewport survives
-// here even though the visible canvas clips it. Fresh/grown contexts get the
-// round line cap/join because the fold path strokes ops directly onto them.
+// here even though the visible canvas clips it.
 export function ensurePaperCovers(squareSide: number) {
   if (!paperCanvas) {
     const paper = createPaperSurface(squareSide, squareSide);

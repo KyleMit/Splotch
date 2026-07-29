@@ -19,34 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Maintainability] Paper-surface creation boilerplate duplicated three times
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`ensurePaperCovers`, lines 162–170 and 174–181;
-`adoptPaperAsSnapshot`, lines 437–443) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The sequence "create canvas → set width/height → `getContext('2d')` → set `lineCap`/`lineJoin` to
-`'round'`" appears verbatim in three places. The round caps are load-bearing (the fold strokes ops
-directly onto these contexts, line 159), so a fourth site that forgets them produces subtly wrong
-ink — the duplication is exactly where that drift would happen. (`strokeOps.ts` has the same pattern
-at lines 242–248 and 315–320; a shared helper could serve both, but the three sites within this file
-alone justify it.)
-
-#### Proposed solution
-
-```ts
-function createPaperSurface(
-  w: number,
-  h: number,
-): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } | null;
-```
-
-returning null when `getContext` fails, with the round-caps WHY comment living on the helper. Each
-call site becomes a two-liner, and the grow/adopt failure handling gets uniform.
-
 ### [Maintainability] Name the lossless-encode literals and share the MIME vocabulary between encoder and validator
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`encodeColdSnapshots`, lines 596–597;
