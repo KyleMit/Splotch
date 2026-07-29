@@ -21,37 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Performance] `CrayonPassTracker`'s re-entry scan is O(anchors) per point — and its comment overclaims "bounded"
-
-**File(s):** `web/src/lib/drawing/crayonBrush.ts` (`reentryAt`, lines 521–531; anchor growth in
-`consume`, lines 549–554; the claim at lines 471–473) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`reentryAt` walks `this.anchors` from oldest to newest, breaking only when it reaches anchors inside
-the trailing exclusion window — i.e. it scans *all old anchors* on every `advance`. Anchors accrue
-every `anchorSpacing` px (width×0.25, min 2 px), and the doc comment asserts "Anchor state resets
-per pass, so the re-entry scan stays bounded on the pointer hot path" (lines 471–473) — but a pass
-only resets on a *split*, and the gestures that never split (a long arc, a slow non-crossing doodle
-spanning the canvas) are exactly the ones that grow the array without bound: a 10,000 px pass at 4
-px spacing is 2,500 anchors × every subsequent point → O(n²) within the pass. At today's magnitudes
-that's real but survivable (~10⁵–10⁶ cheap float ops over such a stroke, on the same frames that
-paint canvas patterns); the sharper defect is the comment stating a stable fact that isn't true.
-
-#### Proposed solution
-
-Minimum: correct the comment ("resets per pass; within one pass the scan grows with pass length —
-acceptable at current anchor densities"). Better: cap the scan — e.g. a coarse uniform grid (cell =
-`proximity`) mapping cells → newest anchor arc, making re-entry O(1) per point; or cap
-`anchors.length` with a named constant (dropping the *oldest* anchors changes behavior — a very long
-loop back to its start would stop splitting — so the grid is the faithful fix). Keep the
-pure-geometry class shape; `crayonBrush.test.ts`'s tracker suite already pins the behavioral
-contract to verify against.
-
----
-
 ### [Readability] Name the repeated `Extract<StrokeOp, …>` types
 
 **File(s):** `web/src/lib/drawing/strokeOps.ts` (lines 91–92, 108, 137, 290, 521) @ 9ae62ff1

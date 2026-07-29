@@ -519,8 +519,11 @@ export type CrayonPoint = Point;
 // (here: a fresh seed phase, so the new pass fills tooth the current one left
 // bare). Pure geometry — one instance per pass, fed points in order; on
 // 'split' the caller bumps the seed and re-seeds a tracker at the previous
-// point. Anchor state resets per pass, so the re-entry scan stays bounded on
-// the pointer hot path.
+// point. Anchor state resets per pass (a fresh tracker is constructed on
+// split), so the re-entry scan is bounded by pass length, not stroke length —
+// it grows unboundedly within one very long never-splitting pass (O(n^2)
+// over that pass), which is cheap at today's anchor spacing and stroke
+// lengths.
 export class CrayonPassTracker {
   private readonly dirStep: number;
   private readonly proximity: number;
