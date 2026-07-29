@@ -163,20 +163,22 @@ function buildRequest(
 }
 
 // Drive the run's terminal UI transition from the parsed response: fail on any of
-// the three error kinds, or commit the image. Returns 'committed' only when the
-// image landed and the run still owns the UI, so the caller knows whether to
-// auto-save.
-function applyResponse(runId: number, response: AiImageResponse): 'committed' | 'failed' {
+// the three error kinds, or commit the image. Returns the committed blob only when
+// the image landed and the run still owns the UI, proving it is safe to auto-save.
+function applyResponse(
+  runId: number,
+  response: AiImageResponse
+): { committedBlob: Blob } | null {
   switch (response.kind) {
     case 'safety':
       failAiGeneration(runId, AI_SAFETY_REFUSAL_MESSAGE, 'safety');
-      return 'failed';
+      return null;
     case 'throttled':
       failAiGeneration(runId, undefined, 'retry');
       console.error(
         `AI image request throttled (retry after ${response.retryAfter}s): ${response.detail}`
       );
-      return 'failed';
+      return null;
     case 'error':
       // A 5xx is transient — an upstream Gemini failure or the server aborting
       // a too-slow call under Netlify's 26s ceiling (ADR-0063) — so offer the
@@ -189,9 +191,11 @@ function applyResponse(runId: number, response: AiImageResponse): 'committed' | 
         undefined,
         response.status >= FIRST_SERVER_ERROR_STATUS ? 'retry' : 'generic'
       );
-      return 'failed';
+      return null;
   }
-  return finishAiGeneration(runId, URL.createObjectURL(response.blob)) ? 'committed' : 'failed';
+  return finishAiGeneration(runId, URL.createObjectURL(response.blob))
+    ? { committedBlob: response.blob }
+    : null;
 }
 
 export async function generateAiImage({
@@ -223,9 +227,9 @@ export async function generateAiImage({
       signal: controller.signal,
     });
     const response = await readAiImageResponse(res);
-    const committed = applyResponse(runId, response) === 'committed';
-    if (committed && response.kind === 'image' && settings.autoSaveAiEnabled) {
-      await autoSaveImages(response.blob, exported.preview, runId);
+    const committed = applyResponse(runId, response);
+    if (committed && settings.autoSaveAiEnabled) {
+      await autoSaveImages(committed.committedBlob, exported.preview, runId);
     }
   } catch (err) {
     if (!isAiGenerationActive(runId)) return;
