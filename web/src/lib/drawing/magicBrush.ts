@@ -27,6 +27,17 @@
 
 export const MAGIC_GRADIENT_COUNT = 10;
 
+// createRainbowGradient tuning: hue stop count is 5..8.
+const RAINBOW_STOPS_MIN = 5;
+const RAINBOW_STOPS_SPAN = 4;
+// Total hue span in degrees.
+const RAINBOW_HUE_SWEEP_MIN_DEG = 240;
+const RAINBOW_HUE_SWEEP_SPAN_DEG = 200;
+const RAINBOW_SATURATION_MIN_PCT = 70;
+const RAINBOW_SATURATION_SPAN_PCT = 25;
+const RAINBOW_LIGHTNESS_MIN_PCT = 55;
+const RAINBOW_LIGHTNESS_SPAN_PCT = 15;
+
 interface GradientStop {
   offset: number;
   color: string;
@@ -107,12 +118,12 @@ export function initMagicBrush(h: MagicBrushHost) {
 // pure generation stays unit-testable.
 export function createRainbowGradient(rand: () => number = Math.random): RainbowGradient {
   const angle = rand() * Math.PI * 2;
-  const stopCount = 5 + Math.floor(rand() * 4); // 5..8 hue stops
+  const stopCount = RAINBOW_STOPS_MIN + Math.floor(rand() * RAINBOW_STOPS_SPAN);
   const hueStart = rand() * 360;
   const direction = rand() < 0.5 ? 1 : -1;
-  const hueSweep = 240 + rand() * 200; // total hue span in degrees
-  const saturation = 70 + rand() * 25;
-  const lightness = 55 + rand() * 15;
+  const hueSweep = RAINBOW_HUE_SWEEP_MIN_DEG + rand() * RAINBOW_HUE_SWEEP_SPAN_DEG;
+  const saturation = RAINBOW_SATURATION_MIN_PCT + rand() * RAINBOW_SATURATION_SPAN_PCT;
+  const lightness = RAINBOW_LIGHTNESS_MIN_PCT + rand() * RAINBOW_LIGHTNESS_SPAN_PCT;
   const stops: GradientStop[] = [];
   for (let s = 0; s < stopCount; s++) {
     const t = s / (stopCount - 1);
@@ -176,6 +187,9 @@ function paintGradient(g: CanvasRenderingContext2D, w: number, h: number, spec: 
 // fill behind the outline, so the margin extends the picture's colour (sky stays blue)
 // with no line streak. Stretching a row/column (not a flat per-edge average) preserves
 // along-edge variation — a landscape scene keeps sky-at-top / grass-at-bottom.
+// The inset fraction referenced in the block comment above.
+const EDGE_SAMPLE_INSET_FRACTION = 0.02;
+
 export interface EdgeFill {
   /** Source rect in the sheet to sample (a 1px-thin edge strip). */
   sx: number;
@@ -203,7 +217,7 @@ export function edgeMargins(
   const right = Math.round(ox + bw);
   const bottomMargin = H - bottom;
   const rightMargin = W - right;
-  const inset = Math.max(1, Math.round(Math.min(bw, bh) * 0.02));
+  const inset = Math.max(1, Math.round(Math.min(bw, bh) * EDGE_SAMPLE_INSET_FRACTION));
   const fills: EdgeFill[] = [];
   // Pass 1 — vertical: box top/bottom rows stretched across the box width.
   if (top > 0)
