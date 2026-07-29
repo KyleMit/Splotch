@@ -94,6 +94,12 @@ const checks = [
     values: [['APP_ID', /^const APP_ID = ['"]([^'"]+)['"];\s*$/m]],
   },
   {
+    // The /android-beta page builds both Play Store URLs from this — a stale id
+    // sends beta testers to a listing that doesn't exist.
+    path: 'web/src/lib/components/androidBeta/androidBeta.ts',
+    values: [['PLAY_STORE_APP_ID', /^export const PLAY_STORE_APP_ID = ['"]([^'"]+)['"];\s*$/m]],
+  },
+  {
     path: '.maestro/smoke.yaml',
     values: [['appId', /^appId:\s*([^\s#]+)\s*$/m]],
   },
