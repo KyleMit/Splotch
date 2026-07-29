@@ -19,38 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Correctness] emptyScan caches a broken scratch forever and reports inked canvases as empty after a context failure
-
-**File(s):** `web/src/lib/drawing/emptyScan.ts` (lines 20–24) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-if (!scratchCanvas) {
-  scratchCanvas = document.createElement('canvas');
-  scratchCtx = scratchCanvas.getContext('2d', { willReadFrequently: true });
-}
-if (!scratchCtx) return true;
-```
-
-If `getContext` ever returns `null` (context-limit exhaustion on constrained WebViews is the
-realistic path), `scratchCanvas` is non-null but `scratchCtx` stays null — and because the retry is
-gated on `!scratchCanvas`, no later call ever attempts a new context. From then on every eraser lift
-reports `empty === true` regardless of ink, which flows into `setCanvasEmptyState(true)` in
-`stopDrawing` (engine.ts line 947): the paper re-adopt fires on a canvas that still has a drawing
-(engine.ts line 217), and downstream "empty" consumers (clear-button state, page-picker variant) go
-wrong. Returning "empty" is also the risky default: falsely *non*-empty is cosmetically stale;
-falsely empty triggers destructive-adjacent behavior.
-
-#### Proposed solution
-
-On context failure, null out `scratchCanvas` before returning so the next scan retries
-(`scratchCanvas = null; return false;`), and prefer `false` ("assume ink") as the failure default —
-an eraser stroke that can't be verified should leave the canvas treated as drawn-on. Two-line
-change; worth a unit case once the pure-predicate extraction lands.
-
 ### [Readability] DrawingCanvas hand-rolls the identity `EngineViewState` the engine already knows how to produce
 
 **File(s):** `web/src/lib/components/DrawingCanvas.svelte` (lines 61–70);

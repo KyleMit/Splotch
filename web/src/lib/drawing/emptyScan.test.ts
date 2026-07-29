@@ -1,5 +1,5 @@
-import { describe, it, expect, afterEach } from 'vitest';
-import { alphaDataHasInk, EMPTY_SCAN_ALPHA_THRESHOLD, scanCanvasIsEmpty } from './emptyScan';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { alphaDataHasInk, EMPTY_SCAN_ALPHA_THRESHOLD } from './emptyScan';
 
 describe('alphaDataHasInk', () => {
   const rgba = (pixels: number): Uint8ClampedArray => new Uint8ClampedArray(pixels * 4);
@@ -39,17 +39,22 @@ describe('alphaDataHasInk', () => {
 
 describe('scanCanvasIsEmpty', () => {
   // happy-dom's <canvas> has no real 2D context; these cases stub
-  // HTMLCanvasElement.getContext to simulate context-limit exhaustion, then
-  // restore it so the file's other tests (and later cases in this file) don't
-  // inherit the stub or a wedged module-scope scratch canvas.
-  let origGetContext: typeof HTMLCanvasElement.prototype.getContext;
+  // HTMLCanvasElement.getContext to simulate context-limit exhaustion. The
+  // real getContext is captured once (never re-captured from a stub), and
+  // scanCanvasIsEmpty is re-imported after vi.resetModules() so each case
+  // gets its own module-scope scratch-canvas singleton instead of leaking a
+  // stub-backed one into later tests.
+  const REAL_GET_CONTEXT = HTMLCanvasElement.prototype.getContext;
+
+  beforeEach(() => {
+    vi.resetModules();
+  });
 
   afterEach(() => {
-    HTMLCanvasElement.prototype.getContext = origGetContext;
+    HTMLCanvasElement.prototype.getContext = REAL_GET_CONTEXT;
   });
 
   function stubGetContext(returnValue: unknown): void {
-    origGetContext = HTMLCanvasElement.prototype.getContext;
     (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = () =>
       returnValue;
   }
@@ -73,7 +78,9 @@ describe('scanCanvasIsEmpty', () => {
     return canvas;
   }
 
-  it('treats an unrecoverable getContext failure as non-empty, then retries on the next call', () => {
+  it('treats an unrecoverable getContext failure as non-empty, then retries on the next call', async () => {
+    const { scanCanvasIsEmpty } = await import('./emptyScan');
+
     stubGetContext(null);
     expect(scanCanvasIsEmpty(sourceCanvas(), 1)).toBe(false);
 
