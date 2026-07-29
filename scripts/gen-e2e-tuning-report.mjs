@@ -346,10 +346,10 @@ ${masthead({
       </tbody>
     </table></div>
     <ul class="notes">
-      <li><b>At the shipped CI setting it worked</b> — 5/5 green where 3/5 had been, for ~4.6s of wall clock.</li>
+      <li><b>At the shipped CI setting it worked</b> — 5/5 green where 3/5 had been, for ~4.6s of wall clock. Not enough to keep it: see the last bullet.</li>
       <li><b>At one worker it did not.</b> Same three failures, but now costing far more: with <code>test.slow()</code> in play a non-converging reveal burns its full 90s budget instead of failing at 30s, which is what dragged the median run from 95.2s to 138.1s.</li>
       <li><b>What that means:</b> those failures were never time-starved. <code>drawMagicReveal</code> churns draw→check→undo→redraw, and a bigger budget just lets a non-converging loop churn longer. The budget helped where the reveal was merely slow, and did nothing where the loop never converges.</li>
-      <li><b>Accepted knowingly:</b> the setting that ships is clean, but a magic-brush failure on CI now costs up to 90s per attempt (×3 with retries). Revert the timeout if that trade looks wrong — the win is real but narrow.</li>
+      <li><b>Reverted.</b> At 4 workers the two failures it fixed were already invisible — <code>retries: 2</code> reaches red essentially never at a 2/1015 rate — so the win landed where retries had already paid, while the cost (a stuck reveal exceeding the suite's parallel floor and becoming its critical path) was real. The genuinely-slow cases are worth fixing by bounding the churn instead.</li>
     </ul>
 
   <section>

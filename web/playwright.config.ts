@@ -76,8 +76,8 @@ export default defineConfig({
   // CI retries absorb flakes cheaply and the measured flake rate barely moves
   // between 1 and 6 workers there, so wall clock decides: 4 was fastest.
   // Locally there are no retries, so a flake costs a re-run plus triage — 2
-  // workers cut the red-run rate for ~11s of wall clock, which the break-even
-  // says is worth it after ~15s of attention.
+  // workers cut the red-run rate for ~10.2s of wall clock (92.3s vs 82.1s),
+  // which the break-even says is worth it after ~15s of attention.
   //
   // Re-measure on new hardware; the shape transfers, the optimum does not.
   workers: process.env.CI ? 4 : 2,

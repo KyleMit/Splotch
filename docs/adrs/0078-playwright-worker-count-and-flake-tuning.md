@@ -46,7 +46,7 @@ run`:
 
 * **Locally** (`retries: 0`) a red run costs a re-run plus the attention to notice and triage it.
   The break-even is only **~15 seconds of attention** on top of the re-run, which triage always
-  exceeds. Two workers wins despite finishing ~11s later.
+  exceeds. Two workers wins despite finishing ~10.2s later.
 * **On CI** (`retries: 2`) flakes are absorbed cheaply, and the measured flake rate barely moves
   between 1 and 6 workers — so wall clock decides, and 4 workers is the fastest setting measured
   (60.2s, against 63.1s at 3 and 69.6s at 2).
@@ -89,24 +89,29 @@ reproduce the local flake curve:
 The rate is flat from 1 to 6 workers and only breaks at 8. **One worker was the second-worst
 setting** — three failures, two of them 30s timeouts — which rules contention out as the cause,
 because at one worker there is none. The runner has no GPU, so Chromium rasterizes the magic-brush
-reveal in software; the reveal sits near its 15s budget regardless of how many workers run. That is
-also why `MAGIC_REVEAL_TIMEOUT` was raised from 15s to 30s — on CI the failures landed *at* the
-budget (15.6s, 15.7s, 18.4s against 15s), not far past it.
+reveal in software; the reveal sits near its 15s budget regardless of how many workers run. That
+also prompted raising `MAGIC_REVEAL_TIMEOUT` from 15s to 30s, since the failures landed *at* the
+budget (15.6s, 15.7s, 18.4s against 15s) rather than far past it.
 
-That change was then re-measured, and the result is two-sided rather than clean:
+**That change was tried, measured, and reverted.** It is recorded here because the measurement is
+the useful part:
 
-| workers           | failures before → after | wall before → after |
-| ----------------- | ----------------------- | ------------------- |
-| 4 (what CI ships) | 2 → **0**               | 60.2s → 64.8s       |
-| 1                 | 3 → 3                   | 95.2s → **138.1s**  |
+|                                | for 30s                       | for 15s                                                                                                                        |
+| ------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Shipped CI setting (4 workers) | 2 failures → **0**, 5/5 green | —                                                                                                                              |
+| 1 worker                       | —                             | 3 failures → **3**: no contention to relieve, so no gain                                                                       |
+| Wall clock at 1 worker         | —                             | 95.2s → **138.1s**, one rep 230s                                                                                               |
+| Failure cost                   | —                             | a stuck reveal burns 90s, not 30s                                                                                              |
+| Suite critical path            | —                             | 90s exceeds the ~70s parallel floor at 4 workers, so one stuck test *becomes* the makespan; ×3 retries ≈ 270s, ~4× a clean run |
 
-It fixed the setting that ships and did nothing for one worker, where the same three failures now
-cost far more: with `test.slow()` in play a non-converging reveal burns its full 90s budget instead
-of failing at 30s. So those failures were never time-starved — `drawMagicReveal` churns
-draw→check→undo→redraw, and a larger budget lets a non-converging loop churn longer. The budget
-helped where the reveal was merely slow and not where the loop never converges. Kept because the
-shipped configuration is clean, but the cost is real: a magic-brush failure on CI is now up to 90s
-per attempt, tripled by retries.
+Two things decided it. First, at 4 workers the two failures it fixed were **already invisible** —
+with `retries: 2` a 2/1015 rate reaches red essentially never, so the win landed where retries had
+already paid. Second, a stuck reveal is not time-starved: `drawMagicReveal` churns
+draw→check→undo→redraw, so a wider window only lets a non-converging loop churn longer. The budget
+helped where the reveal was merely slow and did nothing where the loop is stuck.
+
+The genuinely-slow cases are worth fixing, but by stopping the churn sooner rather than widening the
+window — tracked in issue \#650.
 
 So the same suite is limited by different things in the two places: contention locally, raw canvas
 throughput on CI. Worker count fixes only the first.
@@ -144,10 +149,21 @@ in 10 is gone.
 \+ The three repaired tests removed a real defect, not just contention sensitivity: they could pass
 while asserting on a pen stroke, so they were under-testing the magic brush even when green.
 
+\+ **That claim only became true on review.** As first written it held for the eraser site alone —
+its assertion requires the pixel count to *fall*, which a magic pass cannot do. The two letterbox
+sites still could not tell the modes apart, because a pen sweep and a reveal paint the *identical*
+pixel count in both bands (measured 2845 left, 2065 top). Counting distinct colours does not rescue
+it either: the rotation-lock top margin is a flat extension of one edge colour, so both quantize to
+a single bucket. What separates them is *which* colour — a pen paints the active ink (171,113,225 =
+`TEST_PALETTE.purple`), a reveal paints the page's own edge colours (201,233,243 sky). Both bands
+now assert on non-ink pixels, and each test first asserts purple is still the active swatch, so the
+check cannot silently stop discriminating if that default changes.
+
 \+ The falsified hypotheses are recorded (in the scrapbook study and in 5f39e35's message), so the
 next person does not re-test input coalescing or baseline polling.
 
-− **Local runs are ~12s slower.** That is the deliberate trade: latency for signal.
+− **Local runs are ~10.2s slower** (92.3s at 2 workers vs 82.1s at 4, post-fix). That is the
+deliberate trade: latency for signal.
 
 − **The numbers are hardware-specific and will rot.** Nothing here transfers to a different runner
 without re-measuring. The shape (saturation near cores−1) should hold; the optimum will not.
@@ -156,14 +172,11 @@ without re-measuring. The shape (saturation near cores−1) should hold; the opt
 `retries: 2` absorbs the flakes is a local optimisation that also hides accumulating flakiness —
 which is how the magic-brush tests reached the state they were in.
 
-− **A magic-brush failure on CI is now expensive.** `test.slow()` plus the 30s reveal budget means a
-non-converging reveal burns 90s per attempt and up to ~4.5 minutes across retries. The measured
-failure rate at 4 workers is 0/1015, so this should be rare — but reverting the timeout is the fix
-if it is not.
-
 − **CI's real limit is canvas throughput, not workers.** A GPU-less runner rasterizes the magic
 reveal in software, so those specs sit near their budget at any worker count. Worker tuning cannot
-help there; only cheaper assertions or larger budgets can.
+help there, and — as the reverted experiment showed — neither does a larger budget when the retry
+loop is what is stuck. Cheaper assertions and a bounded retry (issue \#650) are the remaining
+levers.
 
 − **The deeper seam is unaddressed.** Tests can only observe when the *button* changes, not when the
 engine commits the brush mode. A dev-harness signal for the engine's committed mode would retire the
