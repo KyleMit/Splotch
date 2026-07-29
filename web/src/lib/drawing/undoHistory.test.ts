@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { StrokeGroupCommand, PathOp } from './strokeOps';
+import { cmd, createCanvasStub, freshHistory, repaintedContent } from './undoHistoryHarness';
 
 const magicSheet = vi.hoisted(() => ({ ready: true }));
 
@@ -12,126 +13,17 @@ vi.mock('./magicBrush', () => ({
   sheetPatternFor: () => (magicSheet.ready ? '#magic' : null),
 }));
 
-// happy-dom's <canvas> has no 2D context, so install a recording stub: each
-// canvas's "content" is the ordered list of stroke colors painted onto it,
-// drawImage copies a source canvas's content, and clearRect empties it. Giving
-// every command a unique color makes a canvas's content the drawing's
-// ground-truth in draw order — enough to assert the snapshot stack restores
-// exact pre-stroke states and the paper accumulates every fold.
-let origGetContext: typeof HTMLCanvasElement.prototype.getContext;
-let origToBlob: typeof HTMLCanvasElement.prototype.toBlob;
-
-// Every stub drawImage bumps this, so a test can assert a code path copied
-// pixels (patch capture) or didn't (the clear's swap capture).
-let drawImageCalls = 0;
+const canvasStub = createCanvasStub();
 
 beforeEach(() => {
   magicSheet.ready = true;
-  drawImageCalls = 0;
-  origGetContext = HTMLCanvasElement.prototype.getContext;
-  origToBlob = HTMLCanvasElement.prototype.toBlob;
-  // Every encode "fails" by default, so snapshots keep their rasters and stay
-  // synchronous; the cold-tier describe below installs a working stub codec to
-  // drive the demote/re-inflate/decode transitions.
-  HTMLCanvasElement.prototype.toBlob = function (cb: BlobCallback) {
-    cb(null);
-  };
-  (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = function (
-    this: HTMLCanvasElement,
-    kind: string
-  ) {
-    if (kind !== '2d') return null;
-    const canvas = this as HTMLCanvasElement & { _content?: string[]; _ctx?: unknown };
-    canvas._content ??= [];
-    if (canvas._ctx) return canvas._ctx;
-    const ctx = {
-      canvas,
-      lineCap: '',
-      lineJoin: '',
-      strokeStyle: '',
-      fillStyle: '',
-      lineWidth: 0,
-      globalCompositeOperation: '',
-      save() {},
-      restore() {},
-      setTransform() {},
-      getTransform: () => new DOMMatrix(),
-      beginPath() {},
-      moveTo() {},
-      lineTo() {},
-      bezierCurveTo() {},
-      quadraticCurveTo() {},
-      arc() {},
-      createPattern() {
-        return {};
-      },
-      clearRect() {
-        canvas._content!.length = 0;
-      },
-      stroke() {
-        canvas._content!.push(String(ctx.strokeStyle));
-      },
-      fill() {
-        canvas._content!.push(String(ctx.fillStyle));
-      },
-      drawImage(src: { _content?: string[] }) {
-        drawImageCalls++;
-        if (src?._content) canvas._content!.push(...src._content);
-      },
-    };
-    canvas._ctx = ctx;
-    return ctx;
-  };
+  canvasStub.install();
 });
 
 afterEach(() => {
-  HTMLCanvasElement.prototype.getContext = origGetContext;
-  HTMLCanvasElement.prototype.toBlob = origToBlob;
+  canvasStub.restore();
   vi.resetModules();
 });
-
-// A single-stroke command in a unique color.
-function cmd(color: string, magic = false, wasEmpty = false): StrokeGroupCommand {
-  const op: PathOp = {
-    kind: 'path',
-    pid: 1,
-    startX: 0,
-    startY: 0,
-    segs: [{ cx: 0, cy: 0, x: 1, y: 1 }],
-    color,
-    lineWidth: 8,
-    erase: false,
-    magic,
-  };
-  return { ops: [op], wasEmpty };
-}
-
-async function freshHistory() {
-  vi.resetModules();
-  const m = await import('./undoHistory');
-  m.ensurePaperCovers(64);
-  return m;
-}
-
-// The color sequence a fresh repaint paints — the visible drawing, ground-truth.
-function repaintedContent(m: Awaited<ReturnType<typeof freshHistory>>): string[] {
-  const target = document.createElement('canvas');
-  target.width = 64;
-  target.height = 64;
-  const ctx = target.getContext('2d')!;
-  m.repaintAll(ctx);
-  return [...(target as unknown as { _content: string[] })._content];
-}
-
-// Every canvas in a test shares the beforeEach stub, so starve exactly one
-// canvas of its context — the grown paper — and restore the stub immediately.
-function failNextGetContext() {
-  const stub = HTMLCanvasElement.prototype.getContext;
-  (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = function () {
-    HTMLCanvasElement.prototype.getContext = stub;
-    return null;
-  };
-}
 
 describe('snapshot stack depth', () => {
   it('caps retained snapshots at MAX_UNDO_DEPTH while the paper keeps every stroke', async () => {
@@ -191,11 +83,11 @@ describe("clear snapshot swap (swap-don't-copy)", () => {
   it('captures a clear with zero drawImage copies', async () => {
     const m = await freshHistory();
     m.pushCommand(cmd('#a', false, true));
-    const copiesBefore = drawImageCalls;
+    const copiesBefore = canvasStub.drawImageCalls;
     m.pushCommand(clearCmd());
     // The old paper is adopted as the snapshot raster and a fresh blank paper
     // takes its place — no pixel copy anywhere on the commit path.
-    expect(drawImageCalls).toBe(copiesBefore);
+    expect(canvasStub.drawImageCalls).toBe(copiesBefore);
     expect(m.getHistoryDebug().rasterBytes).toBe(7 * 7 * 4 + 64 * 64 * 4);
     expect(repaintedContent(m)).toEqual([]);
   });
@@ -569,74 +461,6 @@ describe('hasUnfoldedCommands', () => {
   });
 });
 
-describe('rebaseDeferredCommands', () => {
-  // A restore landing beneath deferred commits rebases the earliest one's
-  // captured pre-stroke state and reports whether the canvas is empty once the
-  // deferred set replays on the restored paper — the flag engine.ts sets after
-  // an undo. The scan runs newest-first: ink anywhere means not empty, an
-  // all-'clear' command means empty, an ops-less command is transparent.
-  const clearOnly = (): StrokeGroupCommand => ({ ops: [{ kind: 'clear' }], wasEmpty: false });
-
-  function deferInk(m: Awaited<ReturnType<typeof freshHistory>>, color: string) {
-    m.beginCommand(false);
-    m.recordOp(cmd(color).ops[0]);
-    m.commitActiveCommand(true);
-  }
-
-  it('passes the restored flag through when nothing is deferred', async () => {
-    const m = await freshHistory();
-    expect(m.rebaseDeferredCommands(true)).toBe(true);
-    expect(m.rebaseDeferredCommands(false)).toBe(false);
-  });
-
-  it('reports not-empty while a deferred command holds ink', async () => {
-    const m = await freshHistory();
-    deferInk(m, '#ink');
-    expect(m.rebaseDeferredCommands(true)).toBe(false);
-    expect(m.rebaseDeferredCommands(false)).toBe(false);
-  });
-
-  it('reports empty when a clear is deferred on top of the deferred ink', async () => {
-    const m = await freshHistory();
-    deferInk(m, '#ink');
-    m.deferCommand(clearOnly());
-    expect(m.rebaseDeferredCommands(false)).toBe(true);
-  });
-
-  it('sees past an ops-less deferred command to the ink under it', async () => {
-    const m = await freshHistory();
-    deferInk(m, '#ink');
-    // resetActiveCommandForClear leaves the straddling stroke open but empty,
-    // so its commit defers a command with no ops at all.
-    m.beginCommand(false);
-    m.recordOp(cmd('#straddling').ops[0]);
-    m.resetActiveCommandForClear();
-    m.commitActiveCommand(true);
-    expect(m.rebaseDeferredCommands(true)).toBe(false);
-  });
-
-  it('falls through to the restored flag when every deferred command is ops-less', async () => {
-    const m = await freshHistory();
-    m.beginCommand(false);
-    m.commitActiveCommand(true);
-    expect(m.rebaseDeferredCommands(true)).toBe(true);
-    expect(m.rebaseDeferredCommands(false)).toBe(false);
-  });
-
-  it('rebases only the earliest deferred command, through to its pushed snapshot', async () => {
-    const m = await freshHistory();
-    deferInk(m, '#first');
-    deferInk(m, '#second');
-    m.rebaseDeferredCommands(true);
-    m.finalizeDeferredCommand();
-    m.finalizeDeferredCommand();
-    // LIFO: the later command kept the flag it was begun with; the earliest one
-    // carries the restored paper's state into the snapshot its finalize pushed.
-    expect((await m.popSnapshot())?.wasEmpty).toBe(false);
-    expect((await m.popSnapshot())?.wasEmpty).toBe(true);
-  });
-});
-
 describe('closed crayon passes travel as rasters', () => {
   function crayonOp(seed: number): PathOp {
     const op = cmd('#wax').ops[0] as PathOp;
@@ -725,9 +549,9 @@ describe('paper grow', () => {
   it('copies the existing pixels onto the bigger paper', async () => {
     const m = await freshHistory();
     m.pushCommand(cmd('#a', false, true));
-    const copiesBefore = drawImageCalls;
+    const copiesBefore = canvasStub.drawImageCalls;
     m.ensurePaperCovers(128);
-    expect(drawImageCalls).toBe(copiesBefore + 1);
+    expect(canvasStub.drawImageCalls).toBe(copiesBefore + 1);
     expect(repaintedContent(m)).toEqual(['#a']);
     m.pushCommand(cmd('#b'));
     expect(repaintedContent(m)).toEqual(['#a', '#b']);
@@ -737,7 +561,7 @@ describe('paper grow', () => {
     const m = await freshHistory();
     m.pushCommand(cmd('#a', false, true));
     const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
-    failNextGetContext();
+    canvasStub.failNextGetContext();
     m.ensurePaperCovers(128);
     // Swapping in the blank, context-less canvas would lose '#a' outright and
     // make every later push a silent no-op.

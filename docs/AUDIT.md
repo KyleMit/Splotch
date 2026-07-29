@@ -23,33 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Testing] `rebaseDeferredCommands` has zero test coverage
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`rebaseDeferredCommands`, lines 138–147);
-`web/src/lib/drawing/undoHistory.test.ts` @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`rebaseDeferredCommands` never appears in the unit test file (the deferred-command describes at
-lines 529–537 exercise only `deferCommand`/`finalizeDeferredCommand` via `hasUnfoldedCommands`). Yet
-its return value directly drives the engine's canvas-empty flag after an undo (`engine.ts` line 1083
-→ `setCanvasEmptyState`), and its logic is the subtlest in the module: a newest-to-oldest scan where
-a command with any non-`'clear'` op means "not empty", an all-`'clear'` command means "empty", and
-an empty-ops command (possible after `resetActiveCommandForClear` left a command that committed with
-zero ops) is skipped. It also mutates `deferredCommands[0].wasEmpty` as a side effect. All of that —
-including the propagation through a later `finalizeDeferredCommand` → `pushCommand` — is unverified.
-
-#### Proposed solution
-
-Add a describe covering: (a) no deferred commands → returns `restoredEmpty` unchanged; (b) deferred
-ink → `false`; (c) deferred ink then a deferred clear-only command → `true` (last clear wins); (d)
-an empty-ops deferred command is transparent; (e) `deferredCommands[0].wasEmpty` is rebased and
-survives into the snapshot pushed by `finalizeDeferredCommand` (assert via
-`popSnapshot().wasEmpty`). All drivable through the existing public seams
-(`beginCommand`/`recordOp`/`commitActiveCommand(true)`).
-
 ### [Correctness] `pushCommand`'s missing-paper early return drops a committed stroke with no tripwire
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`pushCommand`, line 480) @ 9ae62ff1

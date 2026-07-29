@@ -193,14 +193,6 @@ export default tseslint.config(
     },
   },
   {
-    // The undo module's behavior table: one stubbed-canvas harness shared by every case, so the
-    // suite splits only by duplicating that harness. Cap sits at today's size — shrink, never grow.
-    files: ['web/src/lib/drawing/undoHistory.test.ts'],
-    rules: {
-      'max-lines': ['error', { max: 580, skipBlankLines: true, skipComments: true }],
-    },
-  },
-  {
     // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
     // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
     // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
