@@ -11,12 +11,25 @@
 // real hardware.
 //
 // WebKit clamps performance.now() to ~1 ms, so timings are coarse — but that is
-// plenty to tell a ~10 ms blit from a hundreds-of-ms replay hang. For the
-// frame/GPU picture, record a Web Inspector *Timeline* across the run and watch
-// for a dropped frame at finger-lift; export it and feed it to
-// `npm run perf:ios:analyze -- <export>.json` (the Web Inspector export is a
-// different, mark-only/ring-buffered format — NOT the Chrome-trace perf:analyze).
-// Peak memory wants the Xcode memory gauge on the same session.
+// plenty to tell a ~10 ms blit from a hundreds-of-ms replay hang. Peak memory
+// wants the Xcode memory gauge on the same session.
+//
+// TWO RUN MODES — see the block by the TIMELINE constant for why they can't be
+// the same run.
+//
+//   GATES (default). Paste this file alone. Full op volume, all four
+//   scenarios, no Timeline recording. Its table is the ADR-0066 verdict.
+//   Narrow it to some scenarios with:
+//     window.__perfScenarios = 'crayon-scribbles'
+//
+//   TIMELINE. For recording a Web Inspector Timeline over one row the gates
+//   run already flagged. Set both, then paste:
+//     window.__perfTimeline = true; window.__perfScenarios = 'crayon-scribbles'
+//   Export the recording and feed it to
+//   `npm run perf:ios:analyze -- <export>.json` (the Web Inspector export is a
+//   different, mark-only/ring-buffered format — NOT the Chrome-trace
+//   perf:analyze). Override the volume with window.__perfStrokes /
+//   window.__perfOps in either mode.
 (async () => {
   const E = window.__engine;
   const S = window.__engineState;
@@ -41,7 +54,37 @@
   const MIB = 1024 * 1024;
   const mbPerRaster = (side * side * 4) / MIB;
 
-  const longSquiggle = (row, pts = HZ * 10) => {
+  // Two run modes, because the gates run and a Web Inspector Timeline recording
+  // want opposite things from the same scenarios.
+  //
+  // GATES (default) — real op volume, so the absolute milliseconds are honest.
+  // This is the mode whose numbers answer ADR-0066. Never record a Timeline
+  // across it: Web Inspector has to stream, model, and render every pointer
+  // event and every engine.draw mark over USB, and a full run is ~53k markers
+  // (99.7% of them engine.draw) plus ~53k event records. That pins the Mac at
+  // 100% CPU and buries the ~135 marks the recording was for.
+  //
+  // TIMELINE (window.__perfTimeline = true) — same code path, ~20× less of it,
+  // so a recording stays small enough for Web Inspector to keep up. Draw marks
+  // and event records both scale with op count, so cutting ops cuts the noise
+  // at its source without changing what the engine does.
+  //
+  // TIMELINE MODE MEASURES SHAPE, NOT MAGNITUDE. Shorter strokes make smaller
+  // patches and cheaper encodes, so its milliseconds are not gate numbers —
+  // read it for *where* the time goes and whether a frame dropped, and quote
+  // the gates run for *how much*.
+  const TIMELINE = window.__perfTimeline === true;
+  // 22 strokes is two past MAX_UNDO_DEPTH (20, matching
+  // scripts/perf/undo-scenarios.mjs), so the gates run measures history with
+  // the stack full and exercises the oldest-entry fold + shift overflow path.
+  // Timeline mode only needs depth past MAX_HOT_RASTERS (2) for cold snapshots
+  // to exist and encode at all.
+  const STROKES = Number(window.__perfStrokes) || (TIMELINE ? 6 : 22);
+  const OPS = Number(window.__perfOps) || (TIMELINE ? 200 : HZ * 10);
+  const MULTI_FINGERS = 5;
+  const MULTI_PER_FINGER = Math.round(OPS * 0.4);
+
+  const longSquiggle = (row, pts = OPS) => {
     const x0 = M,
       span = W - 2 * M,
       cy = M + ((H - 2 * M) * (row + 0.5)) / 6,
@@ -55,7 +98,7 @@
   };
   // Back-and-forth triangle-wave scribble — with the crayon on, every reversal
   // splits a deposition pass and stamps a crayonFlush (the toddler fill case).
-  const scribble = (row, pts = HZ * 10) => {
+  const scribble = (row, pts = OPS) => {
     const sweeps = 8,
       x0 = M,
       span = W - 2 * M,
@@ -69,7 +112,7 @@
     }
     return a;
   };
-  const multiGesture = (gi, perFinger = HZ * 4, fingers = 5) => {
+  const multiGesture = (gi, perFinger = MULTI_PER_FINGER, fingers = MULTI_FINGERS) => {
     const out = [];
     for (let f = 0; f < fingers; f++) {
       const cy = M + ((H - 2 * M) * (f + 0.5)) / fingers,
@@ -127,6 +170,75 @@
     return n;
   };
 
+  // Keys mirror the `--scenarios=` keys of `npm run perf:undo`, so a row found
+  // hot here names the desktop scenario that reproduces it;
+  // scripts/tests/ipad-console-driver.test.mjs fails if the two drift apart.
+  const SCENARIOS = [
+    {
+      key: 'long-squiggles',
+      label: `${STROKES} long squiggles (~${OPS} ops each)`,
+      strokes: Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6)),
+    },
+    {
+      key: 'multi-finger',
+      label: `${STROKES} five-finger drags (~${MULTI_FINGERS * MULTI_PER_FINGER} ops each)`,
+      strokes: Array.from({ length: STROKES }, (_, i) => multiGesture(i)),
+    },
+    {
+      key: 'crayon-squiggles',
+      label: `${STROKES} crayon squiggles`,
+      strokes: Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6)),
+      crayon: true,
+    },
+    {
+      key: 'crayon-scribbles',
+      label: `${STROKES} crayon scribbles (pass splits)`,
+      strokes: Array.from({ length: STROKES }, (_, i) => scribble(i % 6)),
+      crayon: true,
+    },
+  ];
+
+  // Optional subset, set in the console BEFORE pasting this file:
+  //   window.__perfScenarios = 'crayon-scribbles'
+  // A Web Inspector Timeline keeps its marks in a ring buffer, so recording
+  // across all four scenarios drops the early ones off the front of the export
+  // — scope the run to the one being recorded. Unset runs everything.
+  const requested = window.__perfScenarios;
+  const requestedKeys = (
+    Array.isArray(requested) ? requested : typeof requested === 'string' ? requested.split(',') : []
+  )
+    .map((k) => k.trim())
+    .filter(Boolean);
+  const unknown = requestedKeys.filter((k) => !SCENARIOS.some((sc) => sc.key === k));
+  if (unknown.length) {
+    console.error(
+      `window.__perfScenarios has unknown key(s): ${unknown.join(', ')}. ` +
+        `Known keys: ${SCENARIOS.map((sc) => sc.key).join(', ')}`
+    );
+    return;
+  }
+  // A recording is always chasing one row that the gates run already flagged,
+  // and Web Inspector's marker ring buffer drops the front of a longer one, so
+  // timeline mode makes the choice explicit rather than guessing at a default.
+  if (TIMELINE && requestedKeys.length !== 1) {
+    console.error(
+      'Timeline mode records exactly one scenario. Set both, then paste again:\n' +
+        "  window.__perfTimeline = true; window.__perfScenarios = 'crayon-scribbles'\n" +
+        `Known keys: ${SCENARIOS.map((sc) => sc.key).join(', ')}`
+    );
+    return;
+  }
+  const selected = requestedKeys.length
+    ? SCENARIOS.filter((sc) => requestedKeys.includes(sc.key))
+    : SCENARIOS;
+  console.log(
+    (TIMELINE
+      ? 'TIMELINE mode — shape, not magnitude. Quote the gates run for numbers. '
+      : 'GATES mode — full op volume; do NOT record a Timeline across this. ') +
+      `${STROKES} strokes × ~${OPS} ops · ` +
+      `${selected.length}/${SCENARIOS.length} scenarios: ${selected.map((sc) => sc.key).join(', ')}`
+  );
+
   // Preflight the PERF_MARKS half of the build recipe. The harness checks above
   // prove PUBLIC_ENABLE_DEV_HARNESS is on, but a build made without
   // PERF_MARKS=true emits no marks/measures at all — undoAll's per-step wait
@@ -152,34 +264,59 @@
   performance.clearMeasures(); // drop the probe's own commit/snapshot/undo entries
   performance.clearMarks();
 
-  // Every scenario must start from blank paper AND zero history, so each row's
-  // snapshot / undo-step counts come only from its own strokes — 22 strokes
-  // against the depth-20 cap means every row reports 20 snapshots and drains
-  // 20 undo steps.
-  // A bare clearCanvas() can't be the last reset step: a clear runs the full
-  // pushCommand path (it IS an undoable action, engine.ts clearCanvas), so it
-  // would leave one phantom snapshot that pads every count, dilutes the undo
-  // average with a trivial blank-paper restore, and inflates history MB.
-  // Instead drain the history first (undo restores the pre-command snapshot,
-  // so a full drain lands on the pre-history baseline — blank unless the
-  // operator drew past the undo cap before pasting); only if ink remains,
-  // clear and drain the clear's own entry too, then assert the count is 0.
+  // Blank paper is the only thing a scenario needs from the reset: leftover ink
+  // makes this scenario's patches denser, which inflates blob bytes and the
+  // encode cost measured from them.
+  //
+  // Snapshot depth needs no reset and must not be chased. STROKES exceeds
+  // MAX_UNDO_DEPTH (undoHistory.ts caps the stack by shifting the oldest out),
+  // so by drawEnd the stack holds only this scenario's most recent commits no
+  // matter what preceded them — including the clear's own entry, which is long
+  // gone by then.
+  //
+  // Draining *after* the clear is the trap: a clear is itself undoable
+  // (engine.ts clearCanvas runs the full pushCommand path), so undoing it
+  // restores the very ink it just removed. That left every scenario after the
+  // first drawing on inherited ink while reporting `0 leftover snapshot(s),
+  // canvasEmpty=false`. Drain first — a full drain lands on the pre-history
+  // baseline, which is as blank as undo can get it — then clear whatever the
+  // undo cap left permanently folded into the paper, and stop.
+  // Two commits of near-nothing, drawn a few px apart so each is its own stroke
+  // group. Small enough that the ink they leave is not a patch worth measuring.
+  const primingMark = (i) => {
+    const x = M + i * 8;
+    return [
+      { x, y: M },
+      { x: x + 2, y: M + 1 },
+      { x: x + 4, y: M + 2 },
+    ];
+  };
+
   const resetForScenario = async (label) => {
     await undoAll();
+    // A fresh page needs neither step: nothing to clear, so nothing to prime.
+    if (E.isCanvasEmpty()) return;
+    E.clearCanvas();
     if (!E.isCanvasEmpty()) {
-      E.clearCanvas();
-      await undoAll();
-    }
-    const leftover = E.getUndoDebug().snapshots;
-    if (leftover !== 0 || !E.isCanvasEmpty()) {
       console.warn(
-        `[${label}] reset incomplete: ${leftover} leftover snapshot(s), ` +
-          `canvasEmpty=${E.isCanvasEmpty()} — this row's counts include pre-existing state`
+        `[${label}] paper is not blank after clearCanvas — this row's patches, ` +
+          'blob bytes and encode cost include pre-existing ink'
       );
+    }
+    // The clear's own snapshot holds the entire inked paper it just wiped, and
+    // it encodes the moment two further commits push it past MAX_HOT_RASTERS —
+    // landing a full-paper PNG inside the scenario's measurement window. Where
+    // the scenario's own encodes are cheap, that artifact *is* the reported max:
+    // multi-finger read 176 ms this way against 1 ms measured in isolation.
+    // Spend those two commits here, before drawStart, so the clear pays for
+    // itself outside the window.
+    for (let i = 0; i < 2; i++) {
+      E.strokeSync(primingMark(i), 'touch');
+      await new Promise((r) => requestAnimationFrame(r));
     }
   };
 
-  async function scenario(label, { strokes, crayon }) {
+  async function scenario({ key, label, strokes, crayon }) {
     await resetForScenario(label);
     if (E.setCrayonMode) E.setCrayonMode(!!crayon);
     const drawStart = performance.now();
@@ -197,18 +334,35 @@
     const snap = agg(drawStart, drawEnd, 'engine.snapshot');
     const fold = agg(drawStart, drawEnd, 'engine.fold');
     const commit = agg(drawStart, drawEnd, 'engine.commit');
+    const encode = agg(drawStart, drawEnd, 'engine.encode');
     const un = agg(undoStart, undoEnd, 'engine.undo');
     // rasterBytes is the live patches' real pixel cost (dirty-rect snapshots,
     // ADR-0069); the liveRasters × full-raster product is the fallback for a
     // build that predates it. The +1 raster is the paper itself.
     const liveMB = dbg.rasterBytes != null ? dbg.rasterBytes / MIB : dbg.liveRasters * mbPerRaster;
     const historyMB = liveMB + mbPerRaster + dbg.blobBytes / MIB;
+    // A zero in a timing column means one of two opposite things: too fast to
+    // measure, or nothing measured at all. `commits` disambiguates — it is the
+    // sample count every timing column below is a max over, so commits=0 marks
+    // the whole row as missing data rather than free.
+    if (commit.count === 0 && (dbg.snapshots ?? 0) > 0) {
+      console.warn(
+        `[${label}] ${dbg.snapshots} snapshot(s) but no engine.commit measure landed in ` +
+          "the draw window — this row's timings are missing, not zero. " +
+          `rasterBytes=${dbg.rasterBytes} blobBytes=${dbg.blobBytes}; zero for both means ` +
+          'the snapshots carry no patches, so the fold never touched the paper — ' +
+          'commitStrokeGroup parks the fold while a paper restore is still pending.'
+      );
+    }
     return {
+      key,
       scenario: label,
       snapshots: dbg.snapshots ?? 0,
+      commits: commit.count,
       'blob KB': Math.round((dbg.blobBytes ?? 0) / 1024),
       'snap copy max ms': snap.max,
       'fold max ms': fold.max,
+      'encode max ms': encode.max,
       'commit max ms': commit.max,
       'undo steps': steps,
       'undo avg ms': un.avg,
@@ -218,35 +372,9 @@
     };
   }
 
-  // 22 strokes — two past the depth-20 cap (MAX_UNDO_DEPTH, matching
-  // scripts/perf/undo-scenarios.mjs) — so history MB is measured with the
-  // stack full and the oldest-entry fold + shift overflow path runs on the
-  // real device.
-  const STROKES = 22;
-  const SCENARIOS = [
-    {
-      label: `${STROKES} long squiggles (~1200 ops each)`,
-      strokes: Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6)),
-    },
-    {
-      label: `${STROKES} five-finger drags (~2400 ops each)`,
-      strokes: Array.from({ length: STROKES }, (_, i) => multiGesture(i)),
-    },
-    {
-      label: `${STROKES} crayon squiggles`,
-      strokes: Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6)),
-      crayon: true,
-    },
-    {
-      label: `${STROKES} crayon scribbles (pass splits)`,
-      strokes: Array.from({ length: STROKES }, (_, i) => scribble(i % 6)),
-      crayon: true,
-    },
-  ];
-
   const rows = [];
-  for (const sc of SCENARIOS) {
-    rows.push(await scenario(sc.label, sc));
+  for (const sc of selected) {
+    rows.push(await scenario(sc));
   }
 
   console.log(
@@ -254,13 +382,34 @@
       `120 Hz frame budget 8.3 ms · NOTE WebKit clamps perf.now() to ~1 ms`
   );
   console.table(rows);
+  // Selecting the rendered table copies it fine; this is for the exact values
+  // (and for re-reading a run), which are otherwise trapped in this IIFE.
+  window.__perfRows = rows;
+  console.log('Exact values: copy(JSON.stringify(window.__perfRows, null, 2))');
+  if (TIMELINE) {
+    console.log(
+      'TIMELINE mode: stop the recording now and export it (Timelines tab → ' +
+        'export icon), then: npm run perf:ios:analyze -- <export>.json — NOT ' +
+        'perf:analyze, which reads a Chrome trace. These milliseconds are the ' +
+        'shape of the run at reduced volume, not gate numbers; re-run without ' +
+        'window.__perfTimeline for those. What the Timeline adds that the marks ' +
+        'cannot: whether a ProMotion frame actually dropped at finger-lift, and ' +
+        'the paint/composite cost of the canvas raster.'
+    );
+    return;
+  }
   console.log(
     'Gates (ADR-0066): undo p95 < 50 ms · commit hitch (engine.commit max) ≈ one ' +
       '120 Hz frame ≈ 8.3 ms · history ≲ 150 MiB · no dropped frames while blobs ' +
       'encode. Inside a commit, "snap copy" is engine.snapshot (the paper copy ' +
-      'alone) and "fold" is engine.fold (rendering the committed ops) — a hot ' +
-      'commit attributes to one of those. Watch a Web Inspector Timeline for a ' +
-      'dropped frame at finger-lift and during the blob encodes after it, and ' +
-      'the Xcode memory gauge for the snapshot tier.'
+      'alone), "fold" is engine.fold (rendering the committed ops), and "encode" ' +
+      'is engine.encode (demoting cold snapshots to blobs — free where toBlob ' +
+      'encodes in parallel as specified, a full main-thread block in WebKit, ' +
+      'which encodes inside the call). A hot commit attributes to one of those; ' +
+      'if it attributes to none, the remainder is unmarked work in ' +
+      'commitStrokeGroup. The Xcode memory gauge covers the snapshot tier. ' +
+      'To see whether a frame actually dropped at finger-lift, record a ' +
+      'Timeline over the hot row in timeline mode — never across this run:\n' +
+      "  window.__perfTimeline = true; window.__perfScenarios = '<key>'"
   );
 })();

@@ -228,8 +228,8 @@ list, the name alone should tell you whether invoking it is passive or starts a 
 
 Path-scoped **rules** in `.claude/rules/` (Claude Code loads them automatically on path match; other
 agents: read the matching rule before editing those paths): `svelte.md`, `server-api.md`,
-`testing.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`, `web/tests/`, `android/`,
-`scripts/`, `tools/asset-gen/`, and `docs/handoff/` cover those areas.
+`testing.md`, `ipad-profiling-docs.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`,
+`web/tests/`, `android/`, `scripts/`, `tools/asset-gen/`, and `docs/handoff/` cover those areas.
 
 The **live backlog is GitHub Issues** — when asked what to work on next, list the open issues and
 filter by label (`area:*`, `type:*`, `priority:*`); don't look for a backlog file. Capture a durable

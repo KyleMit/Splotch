@@ -14,7 +14,7 @@ It exists because the automated harness can't reach a physical iOS device:
 * Apple exposes no CDP/automation socket for a physical device, so the device path is **Safari Web
   Inspector remote debugging**, driven by hand or by a console script.
 
-Throughout, every step is tagged **[Mac]** or **[iPad]** so it's clear where the action happens.
+Throughout, every step is tagged **⟨Mac⟩** or **⟨iPad⟩** so it's clear where the action happens.
 
 ---
 
@@ -33,68 +33,68 @@ documented below.
 
 ## One-time setup
 
-**[iPad]** Enable Web Inspector: **Settings → Apps → Safari → Advanced → Web Inspector = ON** (on
+**⟨iPad⟩** Enable Web Inspector: **Settings → Apps → Safari → Advanced → Web Inspector = ON** (on
 older iOS: **Settings → Safari → Advanced → Web Inspector**).
 
-**[Mac]** Enable the Develop menu: **Safari → Settings… (⌘,) → Advanced tab →** check **"Show
+**⟨Mac⟩** Enable the Develop menu: **Safari → Settings… (⌘,) → Advanced tab →** check **"Show
 features for web developers"** (older macOS: **"Show Develop menu in menu bar"**). A new **Develop**
 menu appears in the menu bar between **Bookmarks** and **Window** — it is *not* inside the "Safari"
 application menu.
 
-**[Mac] + [iPad]** Connect the iPad to the Mac by **USB**, unlock the iPad, and tap **Trust This
+**⟨Mac⟩ + ⟨iPad⟩** Connect the iPad to the Mac by **USB**, unlock the iPad, and tap **Trust This
 Computer** when prompted. Put both devices on the **same Wi‑Fi** network.
 
 ---
 
 ## Approach A — Safari on iPad against the Mac's `/dev/engine` build
 
-### A1. Build the instrumented bundle — **[Mac]**
-
-The engine's `performance.mark/measure` calls only exist when built with `PERF_MARKS=true`, and the
-`/dev/engine` harness route (which exposes `window.__engine`, including `getUndoDebug()`) only loads
-when `PUBLIC_ENABLE_DEV_HARNESS=true`:
-
-```sh
-PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true npm run build
-```
-
-### A2. Serve it on the LAN — **[Mac]**
+### A1. Build and serve the instrumented bundle — **⟨Mac⟩**
 
 ```sh
 npm run perf:serve
 ```
 
-This serves the build on `0.0.0.0:4173` with the `/dev/*` harness routes unlocked
+One command does both. Its `preperf:serve` hook runs `npm run perf:build` — a production build with
+`PERF_MARKS=true`, which is what bakes in the engine's `performance.mark/measure` calls and keeps
+function names readable through minification — so the iPad always gets a fresh instrumented bundle
+rather than whatever was last built. Pass `--ignore-scripts` to skip the rebuild when the bundle on
+disk is already the one you want.
+
+It then serves that build on `0.0.0.0:4173` with the `/dev/*` harness routes unlocked, which is what
+makes `/dev/engine` (and its `window.__engine` / `getUndoDebug()`) reachable
 (`PUBLIC_ENABLE_DEV_HARNESS` is read at **runtime** via `$env/dynamic/public`, so it must be set for
-the server, which `perf:serve` does; `--host` exposes it beyond localhost). It prints the
-**Network** URL to use from the iPad. Leave it running in its own terminal — and stop it before
-`perf:replay` (same port).
+the server, which `perf:serve` does; `--host` exposes it beyond localhost). Leave it running in its
+own terminal — and stop it before `perf:replay` (same port).
 
-Find the Mac's LAN IP (Wi‑Fi is usually `en0`; try `en1` if blank):
+It prints the two URLs to open on the iPad:
 
-```sh
-ipconfig getifaddr en0
+```text
+➜  Network: http://192.168.40.75:4173/
+➜  Harness: http://192.168.40.75:4173/dev/engine
 ```
 
-### A3. Open the harness — **[iPad]**
+`scripts/perf/serve.mjs` wraps vite to print those. Bare `vite --host` advertises one URL per bound
+interface, including the `169.254.x.x` link-local address macOS self-assigns to the virtual
+interface it creates for a USB-tethered iPad — a dead end no browser can reach. The wrapper still
+binds every interface (so `localhost` keeps working); it only filters what it advertises.
 
-In **Safari on the iPad**, go to `http://<mac-lan-ip>:4173/dev/engine` (e.g.
-`http://192.168.1.42:4173/dev/engine`). You should see a blank canvas — that's the engine harness.
-Leave this tab in the foreground.
+### A2. Open the harness — **⟨iPad⟩**
 
-### A4. Attach the Web Inspector — **[Mac]**
+In **Safari on the iPad**, open the **Harness** URL from A1. You should see a blank canvas — that's
+the engine harness. Leave this tab in the foreground. (The **Network** URL is the real app at `/`,
+which is what Approach C records against.)
 
-**Develop → [your iPad's name] → `…/dev/engine`.** A Web Inspector window opens, remote-debugging
-that iPad page. (There's a **Develop → [device] → Connect via Network** toggle if you'd rather not
+### A3. Attach the Web Inspector — **⟨Mac⟩**
+
+**Develop → ⟨your iPad's name⟩ → `…/dev/engine`.** A Web Inspector window opens, remote-debugging
+that iPad page. (There's a **Develop → ⟨device⟩ → Connect via Network** toggle if you'd rather not
 stay tethered after the first connection.)
 
-### A5. Start a Timeline recording — **[Mac]**
+### A4. Gates run — **⟨Mac⟩**
 
-In Web Inspector → **Timelines** tab → click the record button. This captures the frame/GPU view, so
-you can *see* whether the commit's patch capture drops a ProMotion frame at finger-lift. (Optional
-but recommended — the console table in A6 gives the raw engine timings either way.)
-
-### A6. Drive the scenario — **[Mac]**
+The driver has **two modes, and they are separate runs.** This is the first: full op volume, **no
+Timeline recording**, and its table is the ADR-0066 verdict. A4 tells you *how much*; A5 tells you
+*where* and *whether a frame dropped*. Never try to get both from one run — the reasons are in A5.
 
 In Web Inspector → **Console** tab, paste the **entire contents** of
 [`scripts/perf/ipad-console-driver.js`](../../../scripts/perf/ipad-console-driver.js) and press
@@ -110,15 +110,74 @@ Enter. It runs on the iPad page and:
   each scenario resets to blank paper **and** zero history first so its counts are its own,
 * prints a `console.table` with, per scenario: `snapshots` / `blob KB`, **`snap copy max ms`** (the
   patch capture alone, `engine.snapshot`), **`fold max ms`** (rendering the committed ops,
-  `engine.fold`), **`commit max ms`** (the stroke-end hitch), **`undo avg/p95/max ms`** (live blit
-  vs deep blob decode), and the real `history MB` — then the ADR-0066 gates verbatim.
+  `engine.fold`), **`encode max ms`** (demoting cold snapshots to blobs, `engine.encode`),
+  **`commit max ms`** (the stroke-end hitch, which the previous three attribute),
+  **`undo
+  avg/p95/max ms`** (live blit vs deep blob decode), and the real `history MB` — then the
+  ADR-0066 gates verbatim.
 
-Keep the iPad screen awake and the tab foregrounded while it runs (a minute or two).
+Narrow it to some scenarios with `window.__perfScenarios = 'crayon-scribbles'` (comma-separated for
+several) set in its own console statement first; unset runs all four. Keep the iPad screen awake and
+the tab foregrounded while it runs (a minute or two).
 
-### A7. Stop and export — **[Mac]**
+Read the table against the gates in [Reading the results](#reading-the-results). If every row
+passes, you're done — Approach A's whole point is these numbers, and A5–A6 exist only to explain a
+row that doesn't pass.
 
-Stop the Timeline recording, then export it (**Timelines** tab → export icon → save a `.json`, e.g.
-under `perf-profiles/web-inspector-timeline/`) and analyze it with the **dedicated** Web Inspector
+### A5. Timeline run — **⟨Mac⟩**
+
+Only worth doing once A4 has named a row to chase. The Timeline sees what the engine marks
+structurally cannot: whether a ProMotion frame was actually **dropped** at finger-lift, and the
+**paint/composite** cost of the canvas raster — the canvas is GPU-accelerated, so issuing draw calls
+is cheap on the main thread and the marks *understate* the real cost.
+
+It is a **separate run from A4**, in the driver's other mode, for a blunt reason: a recorded gates
+run melts Web Inspector. Measured from one 117-second recording of a full run —
+
+| What Web Inspector had to ingest | Count  | Share                          |
+| -------------------------------- | ------ | ------------------------------ |
+| `engine.draw` markers            | 52,850 | 99.7% of all markers           |
+| Marks you were recording *for*   | 135    | 0.3%                           |
+| `event-dispatched` records       | 52,943 | 13.9 MB                        |
+| Screenshot records               | 68     | **34.8 MB of a 115 MB export** |
+
+Web Inspector streams every one of those over USB, models them, and renders them into a UI that is
+itself a WebKit app on your Mac. That is what pins it at 100% CPU — not your hardware.
+
+**1. Turn off the instruments you aren't reading.** In the **Timelines** tab, uncheck at minimum
+**Screenshots** (a third of the payload, and nothing here reads it) and **Network Requests**
+(irrelevant to a canvas workload). Keep **JavaScript & Events** — the marks live there — and
+**Layout & Rendering** for the paint/composite records.
+
+**2. Switch the driver to timeline mode.** In the **Console**, as its own statement before pasting:
+
+```js
+window.__perfTimeline = true;
+window.__perfScenarios = 'crayon-scribbles';
+```
+
+Timeline mode runs the same code path at roughly a twentieth of the volume — 6 strokes of ~200 ops
+instead of 22 of ~1200. Draw marks and event records both scale with op count, so cutting ops cuts
+the noise at its source. Six strokes still pushes snapshot depth past `MAX_HOT_RASTERS`, so cold
+snapshots exist and encode. Override with `window.__perfStrokes` / `window.__perfOps` in either
+mode.
+
+Scenario keys are the `key` column of the A4 table — `long-squiggles`, `multi-finger`,
+`crayon-squiggles`, `crayon-scribbles` — the same keys `npm run perf:undo --scenarios=` takes, so a
+row that's hot here names the desktop scenario that reproduces it. Timeline mode **requires exactly
+one**: you record because A4 flagged a specific row, and Web Inspector's marker ring buffer drops
+the front of a longer run anyway. It refuses with the key list if you forget.
+
+> **Timeline mode measures shape, not magnitude.** Shorter strokes make smaller patches and cheaper
+> encodes, so its milliseconds are *not* gate numbers. Read it for where the time goes and whether a
+> frame dropped; quote A4 for how much.
+
+**3. Record.** **Timelines** tab → record button → paste the driver → let it finish → stop.
+
+### A6. Export and analyze — **⟨Mac⟩**
+
+Export the recording (**Timelines** tab → export icon → save a `.json`, e.g. under
+`perf-profiles/web-inspector-timeline/`) and analyze it with the **dedicated** Web Inspector
 analyzer:
 
 ```sh
@@ -139,8 +198,8 @@ npm run perf:ios:analyze -- perf-profiles/web-inspector-timeline/<export>.json
 >   unmatched), but since those three stay single-slice, the analyzer only uses the pair to flag an
 >   orphaned start — their reported cost still comes from the enclosing record.
 > * `markers` is a **ring buffer** — a long session keeps only the most recent marks (the analyzer
->   warns when the first mark is far past the recording start). Keep the driven scenario short, or
->   run one scenario per recording.
+>   warns when the first mark is far past the recording start). This is one of the reasons A5 is a
+>   separate, smaller run than A4 — see its instrument and timeline-mode steps.
 > * `performance.now()` is clamped to **~1 ms**, so sub-ms values are at the clock floor — read them
 >   as "effectively free," not precise.
 >
@@ -157,29 +216,28 @@ device once and feed it into the profiler. The replay reproduces the real op str
 frame pacing, and reports exactly how the engine stored *your* strokes (snapshot depth / blob
 bytes).
 
-### C1. Serve the app on the LAN — **[Mac]**
+### C1. Serve the app on the LAN — **⟨Mac⟩**
 
-Build once, then serve (same as A1–A2):
+Same as A1 — build and serve in one command:
 
 ```sh
-PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true npm run build
 npm run perf:serve
 ```
 
 Recording uses the **real app at the root** (`/`), not `/dev/engine`.
 
-### C2. Record — **[iPad]** + **[Mac]**
+### C2. Record — **⟨iPad⟩** + **⟨Mac⟩**
 
-1. **[iPad]** Open `http://<mac-lan-ip>:4173/` (the normal app).
-2. **[Mac]** Attach Web Inspector (Develop → [iPad] → the page) and paste the whole of
+1. **⟨iPad⟩** Open `http://<mac-lan-ip>:4173/` (the normal app).
+2. **⟨Mac⟩** Attach Web Inspector (Develop → ⟨iPad⟩ → the page) and paste the whole of
    [`scripts/perf/ipad-recorder.js`](../../../scripts/perf/ipad-recorder.js) into the **Console**.
    It starts recording immediately.
-3. **[iPad]** Draw, change colors, erase, undo — with your fingers or the Apple Pencil, however a
+3. **⟨iPad⟩** Draw, change colors, erase, undo — with your fingers or the Apple Pencil, however a
    real session goes. The recorder captures **every pointer event on the page** (canvas strokes and
    UI-targeted events alike, each with its target element, `buttons`, and pen pressure),
    pointer-capture transitions, and the UI actions it recognizes (color / size / eraser / undo /
    clear).
-4. **[Mac]** When done, in the console: `__rec.stop()` then **`copy(__rec.json())`** (Safari's
+4. **⟨Mac⟩** When done, in the console: `__rec.stop()` then **`copy(__rec.json())`** (Safari's
    `copy()` puts it on the **Mac** clipboard). Paste into a file, e.g.
    `perf-profiles/recordings/my-session.json`.
 
@@ -192,7 +250,7 @@ Recording uses the **real app at the root** (`/`), not `/dev/engine`.
 > the merged tap started on. Only the canvas-targeted events are replayed by `perf:replay`; the
 > UI-targeted ones (`on` field present) are kept purely as diagnostics.
 
-### C3. Replay under the profiler — **[Mac]**
+### C3. Replay under the profiler — **⟨Mac⟩**
 
 ```sh
 npm run perf:replay -- --recording=perf-profiles/recordings/my-session.json
@@ -214,15 +272,15 @@ profile the replay or your live drawing on the iPad via Approach A/B).
 
 Use only to confirm the app shell behaves like Safari.
 
-1. **[Mac]** Build + run the native app with marks on: `PERF_MARKS=true npm run ios` (see the
+1. **⟨Mac⟩** Build + run the native app with marks on: `PERF_MARKS=true npm run ios` (see the
    `mobile` skill for the iOS toolchain and Simulator-vs-device specifics).
-2. **[iPad]** Launch the Splotch app; draw something so the canvas is live.
-3. **[Mac]** **Develop → [your iPad's name] → [the app's WebView entry]** to attach Web Inspector to
+2. **⟨iPad⟩** Launch the Splotch app; draw something so the canvas is live.
+3. **⟨Mac⟩** **Develop → ⟨your iPad's name⟩ → ⟨the app's WebView entry⟩** to attach Web Inspector to
    the app (not Safari).
-4. **[Mac]** Start a **Timelines** recording.
-5. **[iPad]** By hand: draw one long continuous scribble (several seconds), then tap **undo**.
+4. **⟨Mac⟩** Start a **Timelines** recording.
+5. **⟨iPad⟩** By hand: draw one long continuous scribble (several seconds), then tap **undo**.
    Repeat a few times; try a five-finger drag too.
-6. **[Mac]** Stop the recording. Read `engine.draw` / `engine.snapshot` / `engine.undo` in the
+6. **⟨Mac⟩** Stop the recording. Read `engine.draw` / `engine.snapshot` / `engine.undo` in the
    Timeline's user-timing track, or export and `npm run perf:ios:analyze -- <export>.json`.
 
 There's no `window.__engine` here (the real app doesn't expose the harness), so op counts aren't
@@ -258,10 +316,18 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
 * **iPad not under the Develop menu** → re-confirm the iPad's Web Inspector toggle, re-seat the USB
   cable, re-tap **Trust This Computer**, and make sure the iPad is unlocked with the Safari tab
   foregrounded.
-* **Page won't load over LAN** → confirm both devices are on the same Wi‑Fi, that
-  `npm run perf:serve` is running (it serves on `0.0.0.0:4173` — a plain `npm run preview` binds
-  localhost only and lacks the harness flag), and that you used the Mac's LAN IP (not `localhost`).
-  A firewall prompt on the Mac may need approving.
-* **`window.__engine` is undefined** → the build wasn't made with `PUBLIC_ENABLE_DEV_HARNESS=true`,
-  or you're not on the `/dev/engine` route.
-* **No `engine.*` marks in the export** → the build wasn't made with `PERF_MARKS=true`.
+* **More than one `Network:` URL** → `perf:serve` filters out link-local addresses but still prints
+  every genuinely-routable one, so a machine on a VPN or with a second active adapter shows several.
+  The Wi‑Fi one is the one the iPad can reach — `ipconfig getifaddr en0` names it. Whichever you
+  use, take it from the current run: it's a DHCP lease, not a fixed address.
+* **Page won't load over LAN** → confirm both devices are on the same Wi‑Fi (a guest SSID with
+  client isolation blocks this even though both say "same network"), that `npm run perf:serve` is
+  running (it serves on `0.0.0.0:4173` — a plain `npm run preview` binds localhost only and lacks
+  the harness flag), and that you used the Mac's LAN IP (not `localhost`). A firewall prompt on the
+  Mac may need approving.
+* **`window.__engine` is undefined** → you're serving with something other than `npm run perf:serve`
+  (`PUBLIC_ENABLE_DEV_HARNESS` gates the route at runtime, on the server), or you're not on the
+  `/dev/engine` route.
+* **No `engine.*` marks in the export** → the served build wasn't made with `PERF_MARKS=true`.
+  `npm run perf:serve` rebuilds with it via `preperf:serve`, so this means the rebuild was skipped
+  (`--ignore-scripts`) or the bundle is being served some other way.
