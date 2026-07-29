@@ -23,44 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Testing] The encode/reinflate tier's race guards have no coverage anywhere
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`encodeColdSnapshots`, lines 581–601;
-`reinflateHotSnapshots`, lines 611–644; deep path of `popSnapshot`, lines 675–693);
-`web/src/lib/drawing/undoHistory.test.ts` (toBlob stub, lines 33–37) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The unit suite stubs `toBlob` to always fail (lines 35–37, with the comment "The blob tier is
-exercised end-to-end by the engine E2E specs"), so under Vitest the encode success path, the
-demotion (`patch.canvas = null`, line 594), `reinflateHotSnapshots` in its entirety, and
-`popSnapshot`'s deep decode path (lines 675–693) never execute. The E2E spec
-(`web/tests/engine-snapshot-tier.spec.ts`) covers the happy tier flow, but E2E cannot
-deterministically produce the *interleavings* the code defends against, which are therefore tested
-nowhere:
-
-* an encode completing after its entry rose back into the hot window (guard at line 592:
-  `if (patch.canvas === source && isInHotWindow(snap)) return;`);
-* a reinflate decode completing after the entry was popped or its blob replaced (guard at lines
-  621–624);
-* a decode rejection keeping the blob for deep-undo retry (line 639);
-* an invalid encode keeping the raster (line 591).
-
-These guards are pure sequencing logic with observable outcomes
-(`getHistoryDebug().liveRasters`/`blobBytes`), i.e. ideal unit-test material.
-
-#### Proposed solution
-
-Keep the default always-fail stub for the existing tests, and add a focused describe that installs a
-*controllable* stub: capture each `toBlob` callback into an array and invoke it manually mid-test
-(`cb(new Blob(['x'], { type: 'image/webp' }))`), and stub `createImageBitmap` with manually-resolved
-deferreds. Then assert e.g.: push N+hot commits → release encodes → `liveRasters` drops to the
-window; undo before releasing an encode → release → raster kept (line 592 guard); pop an entry
-mid-reinflate → resolve decode → bitmap closed, entry state untouched. No production seams needed —
-both stubs are global-scope.
-
 ### [Testing] `rebaseDeferredCommands` has zero test coverage
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`rebaseDeferredCommands`, lines 138–147);
