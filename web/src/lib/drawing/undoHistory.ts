@@ -313,23 +313,31 @@ function foldableCount(commands: StrokeGroupCommand[]): number {
   return n;
 }
 
-// Capture the pre-fold paper pixels under each planned fold region, for the
-// paper pushCommand has already established is live. Null when a patch canvas
-// yields no 2D context: that loses this one undo entry, never the ink — the
-// caller's fold must still run or the stroke would vanish from the committed
-// paper. The degraded corner that comes with it: with no entry above that
-// fold, its ink outside LOWER entries' rects survives every deeper undo (a
-// full-paper snapshot used to wipe it). Accepted — keeping a child's stroke
-// while losing its undo step beats deleting ink — but it means the restore
-// induction (see restorePatch) is conditional on every fold having pushed its
-// entry (all patches or none — a partial capture couldn't cover the fold). No
-// rects isn't a failure: the fold won't touch the paper, so the entry
-// legitimately carries no pixels.
-function capturePatchesUnder(rects: PatchRect[], wipesPaper: boolean): SnapshotPatch[] | null {
+// Capture the pixels of `paper` under each planned fold region. The paper is
+// a parameter rather than a re-read of the module's canvas because the adopt
+// path below can install a fresh blank one mid-capture: the copy loop is
+// pinned to the pre-swap paper the caller handed in, which is the paper the
+// fold's rects were planned against.
+//
+// Null when a patch canvas yields no 2D context: that loses this one undo
+// entry, never the ink — the caller's fold must still run or the stroke would
+// vanish from the committed paper. The degraded corner that comes with it:
+// with no entry above that fold, its ink outside LOWER entries' rects survives
+// every deeper undo (a full-paper snapshot used to wipe it). Accepted —
+// keeping a child's stroke while losing its undo step beats deleting ink — but
+// it means the restore induction (see restorePatch) is conditional on every
+// fold having pushed its entry (all patches or none — a partial capture
+// couldn't cover the fold). No rects isn't a failure: the fold won't touch the
+// paper, so the entry legitimately carries no pixels.
+function capturePatchesUnder(
+  paper: HTMLCanvasElement,
+  rects: PatchRect[],
+  wipesPaper: boolean
+): SnapshotPatch[] | null {
   // A clear in the fold set claims the full paper AND never reads the
   // pre-fold pixels, so the paper itself becomes the patch (swap, not copy).
-  // Swapping only once the plan is exactly that one full-paper rect keeps the
-  // copy loop below reading the pre-swap paper, never a fresh blank one.
+  // Only a plan that is exactly that one full-paper rect can be captured by
+  // swapping — a multi-rect plan still needs its per-rect copies.
   const adopted = wipesPaper && rects.length === 1 ? adoptPaperAsSnapshot() : null;
   if (adopted) {
     return [{ rect: rects[0], canvas: adopted, blob: null, encoding: false, decoding: false }];
@@ -341,7 +349,7 @@ function capturePatchesUnder(rects: PatchRect[], wipesPaper: boolean): SnapshotP
     copy.height = rect.h;
     const copyCtx = copy.getContext('2d');
     if (!copyCtx) return null;
-    copyCtx.drawImage(paperCanvas!, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
+    copyCtx.drawImage(paper, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
     patches.push({ rect, canvas: copy, blob: null, encoding: false, decoding: false });
   }
   return patches;
@@ -366,7 +374,7 @@ export function pushCommand(cmd: StrokeGroupCommand) {
     paperCanvas.width,
     paperCanvas.height
   );
-  const patches = capturePatchesUnder(rects, wipesPaper);
+  const patches = capturePatchesUnder(paperCanvas, rects, wipesPaper);
   if (patches) {
     snapshotStack.push({
       wasEmpty: cmd.wasEmpty,
