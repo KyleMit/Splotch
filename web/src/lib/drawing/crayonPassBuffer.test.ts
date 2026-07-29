@@ -16,6 +16,7 @@ import {
   setCrayonPaperSpace,
   closeLiveCrayonPass,
   hasOpenLiveCrayonPass,
+  flushCrayonBuffer,
 } from './crayonPassBuffer';
 import { AA_PAD } from './opGeometry';
 import { renderOp, type StrokeOp } from './strokeOps';
@@ -41,12 +42,17 @@ beforeEach(() => {
       lineJoin: '',
       globalCompositeOperation: '',
       globalAlpha: 1,
+      // Recorded so tests can assert the exact source/dest rect a caller
+      // passed drawImage — the crop/blit math itself, not just its bookkeeping.
+      drawImageCalls: [] as unknown[][],
       save() {},
       restore() {},
       setTransform() {},
       getTransform: () => new DOMMatrix(),
       clearRect() {},
-      drawImage() {},
+      drawImage(...args: unknown[]) {
+        this.drawImageCalls.push(args);
+      },
     };
     canvas._ctx = ctx;
     return ctx;
@@ -136,6 +142,39 @@ describe('live crayon paper-space seam', () => {
     expect(raster!.y).toBe(32 - pad);
     expect(raster!.canvas.width).toBe(pad);
     expect(raster!.canvas.height).toBe(2 * pad);
+
+    // The crop itself: the 9-arg drawImage that fills the returned canvas must
+    // read the clamped rect from the paper buffer and write it at the
+    // destination's origin — not some swapped or unclamped rect.
+    const recorded = (raster!.canvas.getContext('2d') as unknown as { drawImageCalls: unknown[][] })
+      .drawImageCalls;
+    expect(recorded).toHaveLength(1);
+    const [source, sx, sy, sw, sh, dx, dy, dw, dh] = recorded[0];
+    expect(source).toBeInstanceOf(HTMLCanvasElement);
+    expect([sx, sy, sw, sh, dx, dy, dw, dh]).toEqual([
+      0,
+      32 - pad,
+      pad,
+      2 * pad,
+      0,
+      0,
+      pad,
+      2 * pad,
+    ]);
+  });
+
+  it('drops an op painted entirely off the registered paper square, leaving no raster to close', () => {
+    const target = ctx2d();
+    const buffer = ctx2d();
+    setLiveCrayonBuffer(target, buffer);
+    setCrayonPaperSpace(64);
+
+    // radius 5 + AA_PAD pads the bbox to [-107, -93] on x — entirely left of
+    // the paper square, so unionCrayonBounds' empty-rect guard must drop it
+    // rather than growing bounds to a zero/negative-width rect.
+    renderOp(target, crayonDot({ x: -100, y: 32, radius: 5 }));
+
+    expect(closeLiveCrayonPass()).toBeNull();
   });
 
   it('grows the closed raster to cover the union of two non-overlapping crayon ops', () => {
@@ -155,5 +194,30 @@ describe('live crayon paper-space seam', () => {
     expect(raster!.y).toBe(20 - pad);
     expect(raster!.canvas.width).toBe(200 + pad - (20 - pad));
     expect(raster!.canvas.height).toBe(200 + pad - (20 - pad));
+  });
+
+  it('unions transformed corners, not the untransformed bbox, under a non-identity target transform', () => {
+    // Not registered as the live buffer: this exercises the general
+    // crayonBufferFor(target) path, where the transform unioned is whatever
+    // the target ctx reports — unlike the live paper-space buffer, which is
+    // always painted through an identity transform.
+    const target = ctx2d();
+    const matrix = new DOMMatrix([2, 0, 0, 2, 10, 20]);
+    (target as unknown as { getTransform: () => DOMMatrix }).getTransform = () => matrix;
+
+    // Dot at (10, 10), radius 5 -> padded user-space bbox [3, 3]..[17, 17].
+    // Transformed corners (x' = 2x + 10, y' = 2y + 20) union to [16, 26]..[44, 54].
+    renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
+    flushCrayonBuffer(target);
+
+    const calls = (target as unknown as { drawImageCalls: unknown[][] }).drawImageCalls;
+    // stampSubtractiveGlaze blits the same rect twice (darken pass, then the
+    // 1-mix source-over pass).
+    expect(calls).toHaveLength(2);
+    for (const call of calls) {
+      const [source, sx, sy, sw, sh, dx, dy, dw, dh] = call;
+      expect(source).toBeInstanceOf(HTMLCanvasElement);
+      expect([sx, sy, sw, sh, dx, dy, dw, dh]).toEqual([16, 26, 28, 28, 16, 26, 28, 28]);
+    }
   });
 });
