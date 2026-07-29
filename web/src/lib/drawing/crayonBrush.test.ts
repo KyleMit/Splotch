@@ -4,12 +4,14 @@ import {
   getCrayonOptions,
   setCrayonOptions,
   getCrayonPasses,
+  getCrayonMix,
   crayonPassCount,
   crayonPassWidthScale,
   crayonColorMix,
   shadeShift,
   CrayonPassTracker,
   CRAYON_DEFAULTS,
+  MAX_CRAYON_MIX,
   type CrayonPoint,
 } from './crayonBrush';
 
@@ -115,10 +117,12 @@ describe('crayon options seam', () => {
 
   it('crayonColorMix returns the raw, unclamped stored mix (not getCrayonMix)', () => {
     expect(crayonColorMix()).toBe(getCrayonOptions().colorMix);
-    // getCrayonMix clamps to [0,0.9]; the raw getter must NOT — it drives the
-    // live overlay's top-plane opacity and needs the stored value verbatim.
+    // getCrayonMix clamps to [0, MAX_CRAYON_MIX]; the raw getter must NOT — it
+    // drives the live overlay's top-plane opacity and needs the stored value
+    // verbatim.
     setCrayonOptions({ colorMix: 0.95 });
     expect(crayonColorMix()).toBe(0.95);
+    expect(getCrayonMix()).toBe(MAX_CRAYON_MIX);
   });
 });
 

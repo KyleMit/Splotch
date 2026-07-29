@@ -21,39 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Maintainability] Name the `0.9` mix clamp in `getCrayonMix`
-
-**File(s):** `web/src/lib/drawing/crayonBrush.ts` (`getCrayonMix`, lines 266–268) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-export function getCrayonMix(): number {
-  return Math.min(0.9, Math.max(0, opts.colorMix));
-}
-```
-
-`0.9` is a tuning decision (the max glaze strength the renderer will honor) with no name and no WHY
-— in a module that otherwise names and documents every knob exhaustively (`CRAYON_DEFAULTS`,
-`SHADE_HEIGHT_MID`, the split-tracker fractions). It's also load-bearing for the API contract next
-door: `crayonColorMix`'s comment (lines 282–284) and its test (`crayonBrush.test.ts:116–122`) both
-cite "clamps to [0,0.9]" as prose — a mirrored fact that would silently rot if someone retuned the
-literal.
-
-#### Proposed solution
-
-```ts
-// Glaze strength ceiling: past this the two-blit stamp reads as paint blending,
-// not wax (see the colorMix note in CRAYON_DEFAULTS).
-const MAX_CRAYON_MIX = 0.9;
-```
-
-and use it in the clamp. Optionally import it in the test instead of restating 0.9.
-
----
-
 ### [Maintainability] Name `createRainbowGradient`'s and `edgeMargins`' tuning literals
 
 **File(s):** `web/src/lib/drawing/magicBrush.ts` (`createRainbowGradient`, lines 88–103;

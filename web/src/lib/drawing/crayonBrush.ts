@@ -272,9 +272,13 @@ export function getCrayonPasses(): CrayonPass[] {
   return opts.passes.map((p) => ({ ...p }));
 }
 
+// Glaze strength ceiling: past this the two-blit stamp reads as paint blending,
+// not wax (see the colorMix note in CRAYON_DEFAULTS).
+export const MAX_CRAYON_MIX = 0.9;
+
 // The glaze strength for a deposition pass's stamp (see CrayonOptions).
 export function getCrayonMix(): number {
-  return Math.min(0.9, Math.max(0, opts.colorMix));
+  return Math.min(MAX_CRAYON_MIX, Math.max(0, opts.colorMix));
 }
 
 // Non-cloning read accessors for internal hot-path callers. getCrayonPasses /
@@ -291,7 +295,7 @@ export function crayonPassWidthScale(i: number): number {
 
 // The RAW, unclamped colour mix — for reading the stored option (e.g. the live
 // overlay's top-plane opacity), NOT the glaze strength. getCrayonMix clamps to
-// [0,0.9]; this returns opts.colorMix verbatim.
+// [0, MAX_CRAYON_MIX]; this returns opts.colorMix verbatim.
 export function crayonColorMix(): number {
   return opts.colorMix;
 }
