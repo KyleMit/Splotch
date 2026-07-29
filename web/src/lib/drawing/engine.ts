@@ -112,9 +112,11 @@ interface InitOptions {
   onDrawStop?: (() => void) | null;
   onUndoStateChange?: ((canUndo: boolean) => void) | null;
   onCanvasEmptyChange?: ((empty: boolean) => void) | null;
-  // Every stroke the engine actually starts, the down-less pen streams it
-  // adopts mid-move included (see isOrphanPenContact) — those deliver no
-  // pointerdown to the owning component at all.
+  // Fires where the engine begins painting a stroke, the down-less pen streams
+  // it adopts mid-move included (see isOrphanPenContact) — those deliver no
+  // pointerdown to the owning component at all. A buffered edge-swipe candidate
+  // reports nothing, at start or at commitEdgeSwipe: its contact point is
+  // already stale by the time the swipe is judged a stroke.
   onStrokeStart?: ((stroke: StrokeStartData) => void) | null;
   onStrokeEnd?: (() => void) | null;
   onViewChange?: ((view: EngineViewState) => void) | null;

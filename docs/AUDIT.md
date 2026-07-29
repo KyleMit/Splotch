@@ -19,46 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Architecture] DrawingCanvas heuristically re-detects engine stroke adoption instead of being told
-
-**File(s):** `web/src/lib/components/DrawingCanvas.svelte` (`handlePointerMove`, lines 118–140);
-`web/src/lib/drawing/engine.ts` (`isOrphanPenContact`, lines 1000–1002) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-When the engine adopts a WebKit merged pen stream (`draw()` lines 884–888, `adoptStrayPenStream`
-lines 1011–1016), DrawingCanvas has to grow the missing brush ring. It does so by re-deriving the
-adoption from pointer heuristics (line 132):
-
-```ts
-if (e.pointerType === 'pen' && e.buttons !== 0 && canvasEl.hasPointerCapture(e.pointerId)) {
-  handlePointerDown(e);
-}
-```
-
-This is a shadow copy of engine-internal knowledge: it works only because (a) the engine's canvas
-`pointermove` listener was registered before hydration and therefore runs before the component's
-template handler on the same event, so the capture is already set, and (b) the
-`pen && buttons !== 0` clause matches `isOrphanPenContact`'s first two conditions. Neither
-dependency is checkable by the compiler; a change to the engine's quirk detection (or to listener
-registration order) breaks ring growth silently. The 12-line comment (lines 125–131) is the "keep in
-sync" prose CLAUDE.md calls a defect marker.
-
-#### Proposed solution
-
-Let the engine report what it already knows. `startDrawing` runs for adopted streams too — the
-engine can expose the fact either as a per-stroke callback
-(`onStrokeStart?: (info: { pointerId: number; clientX: number; clientY: number; magic: boolean }) => void`
-in `InitOptions`, fired from `renderStrokeStart`/`startDrawing`) or minimally as an exported
-predicate `engineTracksPointer(id: number): boolean` (a thin `activePointers.has(id)` view) that
-`handlePointerMove` consults instead of the capture heuristic. The callback route also lets rings
-work for strokes started by `adoptStrayPenStream`'s *window*-level flavor, which never delivers a
-move to the canvas handler at all — today those strokes draw with no ring. Gotcha: a new callback is
-new surface — wire DrawingCanvas as its production caller in the same change (the
-no-speculative-surface rule).
-
 ### [Correctness] `clearCanvas` is the only public entry point that will throw before engine init
 
 **File(s):** `web/src/lib/drawing/engine.ts` (`clearCanvas`, lines 1104–1128) @ 9ae62ff1

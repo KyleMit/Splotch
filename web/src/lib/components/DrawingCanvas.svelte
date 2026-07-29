@@ -40,11 +40,13 @@
   // pointer — toddlers draw with several fingers at once — sized to the stroke
   // width so the area of impact is visible around the fingertip. The magic
   // brush's ring is a rainbow so its reveal behavior is legible (issue #187);
-  // whether a ring is rainbow is captured at pointerdown, matching how the
-  // engine stamps `magic` onto ops at stroke start. Rings die with the stroke:
-  // up/cancel/leave, plus lostpointercapture for strokes the engine ends itself
-  // (releaseAllPointers — a second finger pressing a swatch or dragging the
-  // clear button never sends this canvas a pointerup).
+  // whether a ring is rainbow is captured at the engine's stroke start, the
+  // same moment it stamps `magic` onto the stroke's ops — a stream the engine
+  // adopts mid-move (see onStrokeStart) has no pointerdown to read it from.
+  // Rings die with the stroke: up/cancel/leave, plus lostpointercapture for
+  // strokes the engine ends itself (releaseAllPointers — a second finger
+  // pressing a swatch or dragging the clear button never sends this canvas a
+  // pointerup).
   let brushRings = $state<Record<number, { x: number; y: number; magic: boolean }>>({});
 
   // The engine's paper view (ADR-0050): identity in normal use; after a device
