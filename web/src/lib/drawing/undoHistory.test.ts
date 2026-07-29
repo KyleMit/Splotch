@@ -30,8 +30,9 @@ beforeEach(() => {
   drawImageCalls = 0;
   origGetContext = HTMLCanvasElement.prototype.getContext;
   origToBlob = HTMLCanvasElement.prototype.toBlob;
-  // The blob tier is exercised end-to-end by the engine E2E specs; here every
-  // encode "fails" so snapshots keep their rasters and stay synchronous.
+  // Every encode "fails" by default, so snapshots keep their rasters and stay
+  // synchronous; the cold-tier describe below installs a working stub codec to
+  // drive the demote/re-inflate/decode transitions.
   HTMLCanvasElement.prototype.toBlob = function (cb: BlobCallback) {
     cb(null);
   };
@@ -288,6 +289,109 @@ describe('cold-snapshot blob validation', () => {
     expect(m.isValidColdSnapshotBlob(new Blob([], { type: 'image/webp' }))).toBe(false);
     expect(m.isValidColdSnapshotBlob(new Blob(['x'], { type: 'image/jpeg' }))).toBe(false);
     expect(m.isValidColdSnapshotBlob(new Blob(['x'], { type: '' }))).toBe(false);
+  });
+});
+
+describe('memory tier transitions', () => {
+  // A patch holds its pixels as a hot raster or a cold blob, never both and
+  // never neither. These tests drive both transitions and the deep-undo
+  // restore that decodes a cold patch, with a stub codec: the encoder hands
+  // back a real PNG blob (the fallback Safari always takes) and remembers the
+  // canvas content behind it, so a decode reproduces that content exactly and
+  // a restore through the cold tier is still assertable against ground truth.
+  // Decodes resolve only when the test flushes them, which is what keeps a
+  // patch cold long enough for popSnapshot to have to decode it.
+  const encodedCanvases = new Map<Blob, { content: string[]; width: number; height: number }>();
+  let pendingDecodes: (() => void)[] = [];
+
+  // The number of most recent snapshots that stay hot rasters — MAX_HOT_RASTERS
+  // in undoHistory, a white-box invariant of the tier design (ADR-0066) shared
+  // with tests/engine-snapshot-tier.spec.ts.
+  const HOT_WINDOW = 2;
+
+  beforeEach(() => {
+    encodedCanvases.clear();
+    pendingDecodes = [];
+    HTMLCanvasElement.prototype.toBlob = function (this: HTMLCanvasElement, cb: BlobCallback) {
+      const content = [...((this as HTMLCanvasElement & { _content?: string[] })._content ?? [])];
+      const blob = new Blob([JSON.stringify(content)], { type: 'image/png' });
+      encodedCanvases.set(blob, { content, width: this.width, height: this.height });
+      cb(blob);
+    };
+    vi.stubGlobal(
+      'createImageBitmap',
+      (blob: Blob) =>
+        new Promise((resolve) => {
+          const encoded = encodedCanvases.get(blob);
+          pendingDecodes.push(() =>
+            resolve({ ...encoded, _content: encoded?.content ?? [], close() {} })
+          );
+        })
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  async function flushDecodes() {
+    for (const resolve of pendingDecodes.splice(0)) resolve();
+    await new Promise((r) => setTimeout(r, 0));
+  }
+
+  // Four commits: the two oldest snapshots fall out of the hot window and
+  // demote on the commit that pushed them below it.
+  async function stackPastTheHotWindow() {
+    const m = await freshHistory();
+    m.pushCommand(cmd('#a', false, true));
+    m.pushCommand(cmd('#b'));
+    m.pushCommand(cmd('#c'));
+    m.pushCommand(cmd('#d'));
+    return m;
+  }
+
+  it('demotes snapshots below the hot window to encoded blobs', async () => {
+    const m = await stackPastTheHotWindow();
+    const { snapshots, liveRasters, rasterBytes, blobBytes } = m.getHistoryDebug();
+    expect(snapshots).toBe(4);
+    expect(liveRasters).toBe(HOT_WINDOW);
+    expect(rasterBytes).toBeGreaterThan(0);
+    expect(blobBytes).toBeGreaterThan(0);
+  });
+
+  it('restores a demoted snapshot through its blob decode', async () => {
+    const m = await stackPastTheHotWindow();
+    expect(repaintedContent(m)).toEqual(['#a', '#b', '#c', '#d']);
+    // The two hot entries pop synchronously; leaving their decodes unflushed
+    // keeps the entry beneath them cold, so its pop must decode to restore.
+    await m.popSnapshot();
+    await m.popSnapshot();
+    expect(m.getHistoryDebug().liveRasters).toBe(0);
+
+    const restored = m.popSnapshot();
+    await flushDecodes();
+    expect((await restored)?.wasEmpty).toBe(false);
+    expect(repaintedContent(m)).toEqual(['#a']);
+  });
+
+  it('re-inflates an encoded snapshot that rises into the hot window', async () => {
+    const m = await stackPastTheHotWindow();
+    expect(m.getHistoryDebug().blobBytes).toBeGreaterThan(0); // the survivors start cold
+    await m.popSnapshot();
+    await flushDecodes();
+    await m.popSnapshot();
+    await flushDecodes();
+
+    // Both survivors were blobs; rising into the window turned them back into
+    // hot rasters, and the drawing they restore is unchanged by the round trip.
+    const { snapshots, liveRasters, blobBytes } = m.getHistoryDebug();
+    expect(snapshots).toBe(HOT_WINDOW);
+    expect(liveRasters).toBe(HOT_WINDOW);
+    expect(blobBytes).toBe(0);
+    expect(repaintedContent(m)).toEqual(['#a', '#b']);
+
+    await m.popSnapshot();
+    expect(repaintedContent(m)).toEqual(['#a']);
   });
 });
 
