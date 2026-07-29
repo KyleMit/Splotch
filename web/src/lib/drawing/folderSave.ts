@@ -34,10 +34,9 @@ interface FolderSaveDb extends DBSchema {
 
 const handleStore = idbKvStore<FolderSaveDb>(DB_NAME, STORE);
 
-// In-memory copy of the stored handle, so only the first save of a session
+// In-memory promise for the stored handle, so only the first save of a session
 // touches IndexedDB.
-let cachedHandle: FileSystemDirectoryHandle | null = null;
-let loadedHandle = false;
+let handlePromise: Promise<FileSystemDirectoryHandle | null> | null = null;
 
 let folderClearedListener: (() => void) | null = null;
 
@@ -48,23 +47,19 @@ export function onSaveFolderCleared(listener: () => void) {
   folderClearedListener = listener;
 }
 
-async function loadHandle(): Promise<FileSystemDirectoryHandle | null> {
-  if (loadedHandle) return cachedHandle;
-  if (!readBool(STORAGE_KEYS.saveFolderChosen, false)) {
-    cachedHandle = null;
-    loadedHandle = true;
-    return null;
-  }
-  let handle: FileSystemDirectoryHandle | null = null;
+async function readHandleFromIdb(): Promise<FileSystemDirectoryHandle | null> {
+  if (!readBool(STORAGE_KEYS.saveFolderChosen, false)) return null;
   try {
-    handle = (await handleStore.get(HANDLE_KEY)) ?? null;
+    return (await handleStore.get(HANDLE_KEY)) ?? null;
   } catch {
     // IndexedDB unavailable (corruption, embedded context, private mode):
     // behave as if no folder is set, so saves degrade to plain downloads.
+    return null;
   }
-  cachedHandle = handle;
-  loadedHandle = true;
-  return handle;
+}
+
+function loadHandle(): Promise<FileSystemDirectoryHandle | null> {
+  return (handlePromise ??= readHandleFromIdb());
 }
 
 async function storeHandle(handle: FileSystemDirectoryHandle): Promise<void> {
@@ -96,8 +91,7 @@ export async function chooseSaveFolder(): Promise<string | null> {
     // AbortError — the parent cancelled the picker.
     return null;
   }
-  cachedHandle = handle;
-  loadedHandle = true;
+  handlePromise = Promise.resolve(handle);
   writeBool(STORAGE_KEYS.saveFolderChosen, true);
   try {
     await storeHandle(handle);
@@ -112,8 +106,7 @@ export async function chooseSaveFolder(): Promise<string | null> {
 /** Forget the chosen folder, so web saves revert to plain downloads. */
 export async function clearSaveFolder(): Promise<void> {
   if (!browser) return;
-  cachedHandle = null;
-  loadedHandle = true;
+  handlePromise = Promise.resolve(null);
   removeKey(STORAGE_KEYS.saveFolderChosen);
   try {
     await handleStore.delete(HANDLE_KEY);

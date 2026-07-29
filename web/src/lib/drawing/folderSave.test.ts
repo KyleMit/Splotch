@@ -9,6 +9,7 @@ const store = new Map<string, unknown>();
 let openDbCalls = 0;
 let getCalls = 0;
 let failIdb = false;
+let pendingGet: Promise<unknown> | null = null;
 vi.mock('idb', () => ({
   openDB: async () => {
     openDbCalls++;
@@ -16,6 +17,7 @@ vi.mock('idb', () => ({
     return {
       get: async (_s: string, k: string) => {
         getCalls++;
+        if (pendingGet) return pendingGet;
         return store.get(k);
       },
       put: async (_s: string, v: unknown, k: string) => void store.set(k, v),
@@ -28,6 +30,14 @@ type FolderSave = typeof import('./folderSave');
 let folderSave: FolderSave;
 
 const blob = new Blob(['png'], { type: 'image/png' });
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
 
 function makeHandle(permission: PermissionState = 'granted', name = 'My Pictures') {
   const writable = { write: vi.fn(async () => {}), close: vi.fn(async () => {}) };
@@ -64,6 +74,7 @@ beforeEach(async () => {
   openDbCalls = 0;
   getCalls = 0;
   failIdb = false;
+  pendingGet = null;
   vi.resetModules();
   folderSave = await import('./folderSave');
 });
@@ -157,6 +168,42 @@ describe('getSaveFolderName', () => {
     setPicker(vi.fn());
     expect(await folderSave.getSaveFolderName()).toBeNull();
     expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(false);
+  });
+
+  it('does not restore a cleared folder when an earlier IndexedDB read resolves', async () => {
+    const { handle } = makeHandle('granted', 'Old Folder');
+    seedFolder(handle);
+    setPicker(vi.fn());
+    const delayedGet = deferred<unknown>();
+    pendingGet = delayedGet.promise;
+
+    const initialName = folderSave.getSaveFolderName();
+    await vi.waitFor(() => expect(getCalls).toBe(1));
+    await folderSave.clearSaveFolder();
+    delayedGet.resolve(handle);
+
+    expect(await initialName).toBe('Old Folder');
+    expect(await folderSave.getSaveFolderName()).toBeNull();
+    expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: false })).toBe(false);
+  });
+
+  it('does not restore an old folder after a replacement while its read is pending', async () => {
+    const { handle: oldHandle } = makeHandle('granted', 'Old Folder');
+    const { handle: newHandle, writable } = makeHandle('granted', 'New Folder');
+    seedFolder(oldHandle);
+    setPicker(vi.fn(async () => newHandle));
+    const delayedGet = deferred<unknown>();
+    pendingGet = delayedGet.promise;
+
+    const initialName = folderSave.getSaveFolderName();
+    await vi.waitFor(() => expect(getCalls).toBe(1));
+    expect(await folderSave.chooseSaveFolder()).toBe('New Folder');
+    delayedGet.resolve(oldHandle);
+
+    expect(await initialName).toBe('Old Folder');
+    expect(await folderSave.getSaveFolderName()).toBe('New Folder');
+    expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: false })).toBe(true);
+    expect(writable.write).toHaveBeenCalledWith(blob);
   });
 });
 
