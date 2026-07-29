@@ -26,9 +26,10 @@ import { applyFarmPage, openBrushMenu, openDrawer, pickBrush } from './flows-har
 // churning sooner (issue #650), not to widen the window.
 const MAGIC_REVEAL_TIMEOUT = 15_000;
 
-// How long a *correct* stroke may legitimately read flat before the fold-in
-// repaint lands, so a per-attempt poll waits the colours out instead of undoing
-// a valid-but-slow stroke.
+// How long a *correct* stroke may legitimately read unchanged before the fold-in
+// repaint lands, so a per-attempt poll waits it out instead of undoing a
+// valid-but-slow stroke. The eraser pass settles through the same path, so it
+// shares the window.
 const REVEAL_ATTEMPT_SETTLE_MS = 3000;
 
 // A magic reveal spans many fill colours; a flat pen pass yields ~one bucket.
@@ -548,7 +549,9 @@ test('the eraser removes magic-brush strokes and later colors override them', as
   // than poll a count that will never fall on its own.
   await expect(async () => {
     await draw(page, line);
-    await expect.poll(() => opaqueCount(page), { timeout: 3000 }).toBeLessThan(revealed / 2);
+    await expect
+      .poll(() => opaqueCount(page), { timeout: REVEAL_ATTEMPT_SETTLE_MS })
+      .toBeLessThan(revealed / 2);
   }).toPass({ timeout: MAGIC_REVEAL_TIMEOUT });
 
   // A solid color drawn afterward overrides the reveal: paint magic, then a
