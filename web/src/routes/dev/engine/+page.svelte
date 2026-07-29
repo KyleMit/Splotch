@@ -36,6 +36,12 @@
   // the undo/empty callbacks into a window object the Playwright spec inspects,
   // instead of into the Svelte stores.
   function wireEngine() {
+    win.__engineState = {
+      canUndo: false,
+      canvasEmpty: true,
+      drawStops: win.__engineState?.drawStops ?? 0,
+      strokeEnds: win.__engineState?.strokeEnds ?? 0,
+    };
     engine = initDrawingCanvas(canvasEl, {
       initialColor: '#ff0000',
       onUndoStateChange: (canUndo) => {
@@ -54,6 +60,8 @@
         win.__engineState.strokeEnds++;
       },
     });
+    win.__engineState.canvasEmpty = isCanvasEmpty();
+    win.__engineState.canUndo = getUndoDebug().snapshots > 0;
     setStrokeWidth(8);
   }
 
@@ -261,9 +269,6 @@
 
   onMount(() => {
     wireEngine();
-
-    win.__engineState = { canUndo: false, canvasEmpty: true, drawStops: 0, strokeEnds: 0 };
-
     win.__engine = buildEngineApi();
     win.__engineReady = true;
   });

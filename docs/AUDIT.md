@@ -19,53 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [DX] Engine dev harness: `__engineState` is created after `wireEngine` and never re-seeded, so callback-during-init or state-after-remount silently misreports
-
-**File(s):** `web/src/routes/dev/engine/+page.svelte` (`onMount`, lines 233–240; `remount`, lines
-86–89; `wireEngine`, lines 38–49) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-onMount(() => {
-  wireEngine();
-  win.__engineState = { canUndo: false, canvasEmpty: true };
-  ...
-});
-```
-
-`wireEngine()` attaches callbacks that write `win.__engineState.canUndo` — an object that does not
-exist yet. Today no callback fires synchronously inside `initDrawingCanvas`, so the ordering only
-*happens* to work; the day the engine gains an init-time notification (the real component's
-`adoptDrawingCanvas` already replays state at adoption, lines 1222–1225 of `engine.ts`), the harness
-throws on a property write to `undefined`. Separately, `remount()` (lines 86–89) re-inits the engine
-— whose drawing state deliberately persists — without re-seeding `__engineState`, relying on the
-stale window object still holding the right values; and the initial literal hard-codes
-`{ canUndo: false, canvasEmpty: true }` rather than reading the engine (`isCanvasEmpty()` is
-imported and available), which under dev HMR (state survives, canvas has ink) starts the mirror
-wrong until the next change.
-
-#### Proposed solution
-
-Create the mirror before wiring, and seed it from the engine inside `wireEngine` so `remount()`
-inherits the fix:
-
-```ts
-function wireEngine() {
-  win.__engineState ??= { canUndo: false, canvasEmpty: true };
-  engine = initDrawingCanvas(canvasEl, { ...callbacks });
-  win.__engineState.canvasEmpty = isCanvasEmpty();
-  setStrokeWidth(8);
-}
-```
-
-`canUndo` has no getter today — either add one (`getUndoDebug().snapshots > 0` approximates it) or
-accept the mirror updating on first change; the ordering fix alone removes the trap. While here, the
-trailing `$effect(() => () => engine?.teardown())` (lines 242–244) could simply be the `onMount`
-return value — one lifecycle idiom instead of two.
-
 ### [Architecture] Extract the WebKit merged-stream pen-quirk subsystem from engine.ts
 
 **File(s):** `web/src/lib/drawing/engine.ts` (lines 982–1016; consumption at `draw` lines 884–888
