@@ -21,49 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Types] Return a discriminated union from `activeSource()` instead of a bare tag plus four non-null assertions
-
-**File(s):** `web/src/lib/drawing/magicBrush.ts` (`activeSource`, lines 112–116; `rasterizeSheet`,
-lines 259–271) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`activeSource()` returns `'fill' | 'gradient' | null`, discarding the very values whose existence it
-just proved. `rasterizeSheet` then re-asserts them with `!` four times:
-
-```ts
-if (source === 'fill') {
-  const iw = fillImage!.naturalWidth;
-  const ih = fillImage!.naturalHeight;
-  ...
-  sheetCtx.drawImage(fillImage!, ox, oy, dw, dh);
-  ...
-} else {
-  paintGradient(sheetCtx, sheetCanvas.width, sheetCanvas.height, activeGradient!);
-}
-```
-
-Per the repo convention, `as`/`!` belongs at validated boundaries; here the invariant ("source is
-'fill' only when `fillImage` is decoded") lives in one function and is silently re-trusted in
-another. If `activeSource`'s condition ever drifts (e.g. someone weakens the `naturalWidth` check),
-the compiler can't help — the `!`s paper over it.
-
-#### Proposed solution
-
-```ts
-type SheetSource =
-  | { kind: 'fill'; image: HTMLImageElement }
-  | { kind: 'gradient'; gradient: RainbowGradient };
-function activeSource(): SheetSource | null;
-```
-
-`rasterizeSheet` narrows on `source.kind` and uses `source.image`/`source.gradient` directly — zero
-assertions, and the decoded-image invariant is enforced where it's established.
-
----
-
 ### [Maintainability] `magicBrush.ts`'s ten module-scope mutable `let`s sidestep the `createX()` convention with no stated rationale
 
 **File(s):** `web/src/lib/drawing/magicBrush.ts` (lines 55–78: `host`, `fillImage`, `fillUrl`,

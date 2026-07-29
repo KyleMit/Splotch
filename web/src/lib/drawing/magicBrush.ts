@@ -112,9 +112,15 @@ function buildGradientPool(): RainbowGradient[] {
 // Which source rasterizeSheet should draw. A pending fill (URL set but not yet
 // decoded) yields null so the brush reveals nothing until it loads, matching the
 // original behaviour — it never falls back to the gradient mid-load.
-function activeSource(): 'fill' | 'gradient' | null {
-  if (fillUrl) return fillImage && fillImage.naturalWidth ? 'fill' : null;
-  if (activeGradient) return 'gradient';
+type SheetSource =
+  | { kind: 'fill'; image: HTMLImageElement }
+  | { kind: 'gradient'; gradient: RainbowGradient };
+
+function activeSource(): SheetSource | null {
+  if (fillUrl) {
+    return fillImage && fillImage.naturalWidth ? { kind: 'fill', image: fillImage } : null;
+  }
+  if (activeGradient) return { kind: 'gradient', gradient: activeGradient };
   return null;
 }
 
@@ -259,19 +265,19 @@ export function rasterizeSheet() {
   sheetOriginX = bounds.x;
   sheetOriginY = bounds.y;
   sheetCtx.clearRect(0, 0, sheetCanvas.width, sheetCanvas.height);
-  if (source === 'fill') {
-    const iw = fillImage!.naturalWidth;
-    const ih = fillImage!.naturalHeight;
+  if (source.kind === 'fill') {
+    const iw = source.image.naturalWidth;
+    const ih = source.image.naturalHeight;
     const scale = Math.min(paper.width / iw, paper.height / ih);
     const dw = iw * scale;
     const dh = ih * scale;
     // Contain-fit box in paper coords, shifted into the (possibly offset) sheet.
     const ox = (paper.width - dw) / 2 - sheetOriginX;
     const oy = (paper.height - dh) / 2 - sheetOriginY;
-    sheetCtx.drawImage(fillImage!, ox, oy, dw, dh);
+    sheetCtx.drawImage(source.image, ox, oy, dw, dh);
     extendSheetEdges(sheetCtx, sheetCanvas.width, sheetCanvas.height, ox, oy, dw, dh);
   } else {
-    paintGradient(sheetCtx, sheetCanvas.width, sheetCanvas.height, activeGradient!);
+    paintGradient(sheetCtx, sheetCanvas.width, sheetCanvas.height, source.gradient);
   }
   sheetReady = true;
 }
