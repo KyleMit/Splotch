@@ -373,7 +373,7 @@ function sheetBoundsPaper(): { x: number; y: number; width: number; height: numb
 
 // The cached canvas client rect, so components can position pointer-following
 // UI (e.g. the eraser cursor) without their own per-move getBoundingClientRect.
-export function getCanvasRect(): CanvasRect {
+export function getCanvasRect(): Readonly<CanvasRect> {
   return canvasRect;
 }
 

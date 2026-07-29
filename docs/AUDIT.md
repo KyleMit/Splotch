@@ -19,34 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Types] `getCanvasRect` leaks the engine's live mutable rect object
-
-**File(s):** `web/src/lib/drawing/engine.ts` (`getCanvasRect`, lines 360–362; `canvasRect`,
-line 297) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-export function getCanvasRect(): CanvasRect {
-  return canvasRect;
-}
-```
-
-returns the engine's internal `canvasRect` by reference, typed fully mutable. Any consumer that
-writes to it (`rect.left = 0` in a well-meaning adjustment) corrupts the pointer→paper mapping for
-every subsequent stroke — the exact cached state the hot path depends on. DrawingCanvas currently
-only reads it (lines 95, 110, 137), so this is latent, but the type system is the cheap fence the
-repo's conventions favor.
-
-#### Proposed solution
-
-Annotate the return as `Readonly<CanvasRect>` (zero runtime cost; `refreshCanvasRect` replaces the
-object wholesale at line 307, so the engine never mutates it in place either — the freeze-in-types
-is honest). Copying (`{ ...canvasRect }`) would also work but allocates on paths called
-per-pointermove from DrawingCanvas, which the hot-path rule discourages.
-
 ### [Correctness] emptyScan caches a broken scratch forever and reports inked canvases as empty after a context failure
 
 **File(s):** `web/src/lib/drawing/emptyScan.ts` (lines 20–24) @ 9ae62ff1
