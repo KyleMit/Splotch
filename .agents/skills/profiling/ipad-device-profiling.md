@@ -158,9 +158,10 @@ window.__perfScenarios = 'crayon-scribbles';
 
 Timeline mode runs the same code path at roughly a twentieth of the volume — 6 strokes of ~200 ops
 instead of 22 of ~1200. Draw marks and event records both scale with op count, so cutting ops cuts
-the noise at its source. Six strokes still pushes snapshot depth past `MAX_HOT_RASTERS`, so cold
-snapshots exist and encode. Override with `window.__perfStrokes` / `window.__perfOps` in either
-mode.
+the noise at its source. Six strokes is plenty for the shape of a commit — since ADR-0078 the
+resident window is a byte budget, so thin strokes encode nothing at any depth, and a recording is
+for where the time goes rather than for watching the tier demote. Override with
+`window.__perfStrokes` / `window.__perfOps` in either mode.
 
 Scenario keys are the `key` column of the A4 table — `long-squiggles`, `multi-finger`,
 `crayon-squiggles`, `crayon-scribbles` — the same keys `npm run perf:undo --scenarios=` takes, so a
@@ -291,7 +292,7 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
 ## Reading the results
 
 * **`undo p95 ms` < 50** → the ADR-0066 undo gate (the driver computes p95 per scenario and prints
-  the gate line verbatim). Shallow undos (the MAX_HOT_RASTERS = 2 hot rasters) should be a near-free
+  the gate line verbatim). Undos inside the resident byte budget (ADR-0078) should be a near-free
   blit; deep undos add a lossless blob decode — both are one-off costs at button-press.
 * **`commit max ms` ≈ one 120 Hz frame ≈ 8.3 ms** → the ADR-0066 commit-hitch gate. The commit runs
   once at finger-lift, off the draw frame, but a commit slower than one frame can still drop a frame
@@ -325,9 +326,31 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
   running (it serves on `0.0.0.0:4173` — a plain `npm run preview` binds localhost only and lacks
   the harness flag), and that you used the Mac's LAN IP (not `localhost`). A firewall prompt on the
   Mac may need approving.
-* **`window.__engine` is undefined** → you're serving with something other than `npm run perf:serve`
-  (`PUBLIC_ENABLE_DEV_HARNESS` gates the route at runtime, on the server), or you're not on the
-  `/dev/engine` route.
+* **`window.__engine` is undefined** → paste this to see which case it is:
+
+  ```js
+  ({
+    url: location.href,
+    engine: typeof window.__engine,
+    sw: navigator.serviceWorker?.controller?.scriptURL ?? null,
+  });
+  ```
+
+  A `url` that isn't `/dev/engine` means you opened the **Network** URL (the plain app) instead of
+  the **Harness** one. The right `url` with no engine means the tab is stale — reload it. If `sw` is
+  non-null and a reload doesn't help, a service worker is serving the page from cache: the app is a
+  PWA whose NetworkFirst handler falls back to the cache, so a tab opened while the server was down
+  keeps serving a build with no harness on it. Unregister and reload:
+
+  ```js
+  navigator.serviceWorker.getRegistrations()
+    .then((rs) => Promise.all(rs.map((r) => r.unregister())))
+    .then(() => location.reload());
+  ```
+
+  Failing all that, confirm Web Inspector is attached to the `…/dev/engine` tab and not another one
+  — the Develop submenu lists every open tab. Serving with anything other than `npm run perf:serve`
+  also does it: `PUBLIC_ENABLE_DEV_HARNESS` gates the route at runtime, on the server.
 * **No `engine.*` marks in the export** → the served build wasn't made with `PERF_MARKS=true`.
   `npm run perf:serve` rebuilds with it via `preperf:serve`, so this means the rebuild was skipped
   (`--ignore-scripts`) or the bundle is being served some other way.

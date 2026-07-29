@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PATCH_CLUSTER_CAP } from './foldRegions';
 import type { StrokeGroupCommand, PathOp } from './strokeOps';
-import { cmd, createCanvasStub, freshHistory, repaintedContent } from './undoHistoryHarness';
+import {
+  cmd,
+  createCanvasStub,
+  freshHistory,
+  paperWideCmd,
+  repaintedContent,
+} from './undoHistoryHarness';
 
 const magicSheet = vi.hoisted(() => ({ ready: true }));
 
@@ -197,14 +203,24 @@ describe('memory tier transitions', () => {
   const encodedCanvases = new Map<Blob, { content: string[]; width: number; height: number }>();
   let pendingDecodes: (() => void)[] = [];
 
-  // The number of most recent snapshots that stay hot rasters — MAX_HOT_RASTERS
-  // in undoHistory, a white-box invariant of the tier design (ADR-0066) shared
-  // with tests/engine-snapshot-tier.spec.ts.
-  const HOT_WINDOW = 2;
+  // undoHistory sizes the resident tier as a byte budget — a multiple of the
+  // paper — so a stack only demotes once its patches exhaust it. cmd()'s
+  // hairline strokes never would, so these cases use paperWideCmd(), whose
+  // patch is the whole stub paper. Four of those overrun the budget, leaving
+  // the newest MIN_HOT_RASTERS resident.
 
   beforeEach(() => {
     encodedCanvases.clear();
     pendingDecodes = [];
+    // The encode is deferred to idle so it never lands on a commit's frame.
+    // These cases are about what tier an entry ends up in, not when the pass
+    // runs, so collapse the wait; `defers the encode off the commit` covers
+    // the scheduling itself.
+    vi.stubGlobal('requestIdleCallback', (fn: () => void) => {
+      fn();
+      return 1;
+    });
+    vi.stubGlobal('cancelIdleCallback', () => {});
     HTMLCanvasElement.prototype.toBlob = function (this: HTMLCanvasElement, cb: BlobCallback) {
       const content = [...((this as HTMLCanvasElement & { _content?: string[] })._content ?? [])];
       const blob = new Blob([JSON.stringify(content)], { type: 'image/png' });
@@ -232,33 +248,65 @@ describe('memory tier transitions', () => {
     await new Promise((r) => setTimeout(r, 0));
   }
 
-  // Four commits: the two oldest snapshots fall out of the hot window and
-  // demote on the commit that pushed them below it.
+  // Five paper-wide commits: each patch is one paper, so the budget holds the
+  // newest HOT_PATCH_BUDGET_PAPER_MULTIPLE and the two oldest demote on the
+  // commit that pushed them past it.
   async function stackPastTheHotWindow() {
     const m = await freshHistory();
-    m.pushCommand(cmd('#a', false, true));
-    m.pushCommand(cmd('#b'));
-    m.pushCommand(cmd('#c'));
-    m.pushCommand(cmd('#d'));
+    m.pushCommand(paperWideCmd('#a', true));
+    for (const c of ['#b', '#c', '#d', '#e']) m.pushCommand(paperWideCmd(c));
     return m;
   }
 
   it('demotes snapshots below the hot window to encoded blobs', async () => {
     const m = await stackPastTheHotWindow();
     const { snapshots, liveRasters, rasterBytes, blobBytes } = m.getHistoryDebug();
-    expect(snapshots).toBe(4);
-    expect(liveRasters).toBe(HOT_WINDOW);
+    expect(snapshots).toBe(5);
+    // Each paperWideCmd patch is exactly one paper, so the budget holds
+    // precisely HOT_PATCH_BUDGET_PAPER_MULTIPLE of them and the rest demote.
+    expect(liveRasters).toBe(m.HOT_PATCH_BUDGET_PAPER_MULTIPLE);
     expect(rasterBytes).toBeGreaterThan(0);
     expect(blobBytes).toBeGreaterThan(0);
   });
 
+  it('keeps a stack inside the budget entirely resident, encoding nothing', async () => {
+    // The defect this budget replaced: the old count-based window encoded
+    // everything past the two newest entries whether or not the memory was
+    // needed, and on WebKit each encode blocks the commit that triggered it.
+    // Ordinary strokes are patch-sized, so a full-depth stack of them now fits.
+    const m = await freshHistory();
+    for (let i = 0; i < m.MAX_UNDO_DEPTH; i++) m.pushCommand(cmd(`#s${i}`, false, i === 0));
+    const { snapshots, liveRasters, blobBytes } = m.getHistoryDebug();
+    expect(snapshots).toBe(m.MAX_UNDO_DEPTH);
+    expect(liveRasters).toBe(m.MAX_UNDO_DEPTH);
+    expect(blobBytes).toBe(0);
+  });
+
+  it('holds the resident tier within the budget once entries overrun it', async () => {
+    const m = await stackPastTheHotWindow();
+    const { rasterBytes, patchBytes } = m.getHistoryDebug();
+    // paperWideCmd patches are one paper each, so the budget is exactly
+    // HOT_PATCH_BUDGET_PAPER_MULTIPLE of them — and the stack overran it.
+    expect(rasterBytes).toBe((patchBytes / 5) * m.HOT_PATCH_BUDGET_PAPER_MULTIPLE);
+    expect(rasterBytes).toBeLessThan(patchBytes);
+  });
+
+  it('reports patchBytes for every entry, so demotion does not shrink it', async () => {
+    const m = await stackPastTheHotWindow();
+    const { rasterBytes, patchBytes } = m.getHistoryDebug();
+    // rasterBytes drops as entries demote; patchBytes is what the same stack
+    // would cost fully resident, which is the figure the encode-vs-memory
+    // tradeoff is decided on.
+    expect(patchBytes).toBeGreaterThan(rasterBytes);
+  });
+
   it('restores a demoted snapshot through its blob decode', async () => {
     const m = await stackPastTheHotWindow();
-    expect(repaintedContent(m)).toEqual(['#a', '#b', '#c', '#d']);
-    // The two hot entries pop synchronously; leaving their decodes unflushed
+    expect(repaintedContent(m)).toEqual(['#a', '#b', '#c', '#d', '#e']);
+
+    // The resident entries pop synchronously; leaving their decodes unflushed
     // keeps the entry beneath them cold, so its pop must decode to restore.
-    await m.popSnapshot();
-    await m.popSnapshot();
+    for (let i = 0; i < m.HOT_PATCH_BUDGET_PAPER_MULTIPLE; i++) await m.popSnapshot();
     expect(m.getHistoryDebug().liveRasters).toBe(0);
 
     const restored = m.popSnapshot();
@@ -275,16 +323,16 @@ describe('memory tier transitions', () => {
     await m.popSnapshot();
     await flushDecodes();
 
-    // Both survivors were blobs; rising into the window turned them back into
-    // hot rasters, and the drawing they restore is unchanged by the round trip.
+    // The demoted entries were blobs; rising into the window turned them back
+    // into hot rasters, and the drawing they restore is unchanged by the trip.
     const { snapshots, liveRasters, blobBytes } = m.getHistoryDebug();
-    expect(snapshots).toBe(HOT_WINDOW);
-    expect(liveRasters).toBe(HOT_WINDOW);
+    expect(snapshots).toBe(m.HOT_PATCH_BUDGET_PAPER_MULTIPLE);
+    expect(liveRasters).toBe(m.HOT_PATCH_BUDGET_PAPER_MULTIPLE);
     expect(blobBytes).toBe(0);
-    expect(repaintedContent(m)).toEqual(['#a', '#b']);
+    expect(repaintedContent(m)).toEqual(['#a', '#b', '#c']);
 
     await m.popSnapshot();
-    expect(repaintedContent(m)).toEqual(['#a']);
+    expect(repaintedContent(m)).toEqual(['#a', '#b']);
   });
 });
 

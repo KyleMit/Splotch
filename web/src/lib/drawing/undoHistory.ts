@@ -15,17 +15,18 @@
 // complexity and frees every brush from replay-determinism constraints
 // (ADR-0065's crayon was the forcing case).
 //
-// Memory is tiered on top of that: the MAX_HOT_RASTERS most recent snapshots
-// stay hot rasters (patch-sized — a stroke's bounding rect, worst case the
-// full ~30 MB paper at 2× DPR on a 13″ iPad for a canvas-spanning scribble or
-// a clear); older entries are encoded to a lossless blob and decoded again
-// only on deep undo. "Off the commit path" holds only where toBlob honours its
-// spec'd in-parallel encode: Chromium returns from the call in ~0 ms, WebKit
-// encodes synchronously inside it. engine.encode measures that block. The
-// tier re-balances in both
-// directions: undo (or a commit on an undo-shallowed stack) can raise an
-// encoded entry into the hot window, and it re-inflates back to a hot raster
-// off the interaction path (reinflateHotSnapshots), so the window holds after
+// Memory is tiered on top of that: snapshots stay hot rasters (patch-sized — a
+// stroke's bounding rect, worst case the full ~30 MB paper at 2× DPR on a 13″
+// iPad for a canvas-spanning scribble or a clear) while they fit a byte budget;
+// entries past it encode to a lossless blob and decode again only on deep undo.
+// The budget replaced a fixed hot-entry count because encoding is not free:
+// toBlob honours its spec'd in-parallel encode in Chromium but blocks inside
+// the call in WebKit, so a count encoded eagerly and charged every WebKit
+// commit for memory the budget did not need. engine.encode measures that block,
+// and the pass is scheduled off the commit either way. The tier re-balances in
+// both directions: undo (or a commit on an undo-shallowed stack) can raise an
+// encoded entry back inside the budget, and it re-inflates to a hot raster off
+// the interaction path (reinflateHotSnapshots), so the window holds after
 // undo-then-draw, not only while the stack grows.
 //
 // Commands are retained as ops (`pendingCommands`) only while the magic sheet
@@ -47,15 +48,55 @@ import { PERF_MARKS } from './perf';
 
 // The snapshot stack depth — how many strokes a child can take back. Depth 20
 // keeps a child from hitting the wall mid-correction (raised from 10 after
-// user feedback). Beyond MAX_HOT_RASTERS hot rasters the per-entry cost is an
+// user feedback). Past the resident byte budget the per-entry cost is an
 // encoded blob (single-digit MB even for crayon-heavy paper), so depth is
-// bounded by blob bytes, not raster count. Exported as the depth-cap test seam.
+// bounded by bytes, not raster count. Exported as the depth-cap test seam.
 export const MAX_UNDO_DEPTH = 20;
 
-// How many of the most recent snapshots stay hot rasters for instant undo;
-// everything deeper demotes to an encoded blob (encodeColdSnapshots), and a
-// blob rising back into the window re-inflates (reinflateHotSnapshots).
-const MAX_HOT_RASTERS = 2;
+// The hot window is a byte budget, not an entry count. Entries stay resident
+// rasters from newest backwards until their patches exhaust the budget;
+// everything past it demotes to an encoded blob (encodeColdSnapshots), and a
+// blob rising back inside re-inflates (reinflateHotSnapshots).
+//
+// It is a budget because encoding is not free the way ADR-0066 assumed. It
+// costs a WebKit commit its entire frame budget — `toBlob` encodes
+// synchronously inside the call there, and Safari has no canvas WebP encoder,
+// so every patch is a PNG of the paper's raster size. Counting entries encodes
+// eagerly whether or not the memory is needed; counting bytes encodes only when
+// it is.
+//
+// The budget scales with the paper rather than being absolute, so it tracks
+// device class: a bigger raster means a bigger device. At this multiple the
+// resident tier plus the paper stays at 4× the paper — ~114 MiB on the largest
+// iPad raster, inside ADR-0066's ≲150 MB gate with room for the encoded tail.
+// Exported as the budget test seam — the tier suites derive their expected
+// resident count from it rather than re-declaring a window size.
+export const HOT_PATCH_BUDGET_PAPER_MULTIPLE = 3;
+
+// Floor under the budget: the newest entries stay resident even if one patch is
+// larger than the whole budget, so undo's first steps are always a blit rather
+// than a decode.
+const MIN_HOT_RASTERS = 2;
+
+function patchBytesOf(snap: Snapshot): number {
+  return snap.patches.reduce((n, p) => n + p.rect.w * p.rect.h * 4, 0);
+}
+
+// Index of the oldest snapshot that stays resident. Walks newest → oldest,
+// accumulating patch bytes, and stops where the next entry would break the
+// budget — never keeping fewer than MIN_HOT_RASTERS.
+function hotWindowStart(): number {
+  const paperBytes = paperCanvas ? paperCanvas.width * paperCanvas.height * 4 : 0;
+  const budget = paperBytes * HOT_PATCH_BUDGET_PAPER_MULTIPLE;
+  let bytes = 0;
+  for (let i = snapshotStack.length - 1; i >= 0; i--) {
+    const kept = snapshotStack.length - 1 - i;
+    const entryBytes = patchBytesOf(snapshotStack[i]);
+    if (kept >= MIN_HOT_RASTERS && bytes + entryBytes > budget) return i + 1;
+    bytes += entryBytes;
+  }
+  return 0;
+}
 
 // Quality-1 WebP is lossless where supported; canvas falls back to lossless
 // PNG when an engine cannot encode WebP.
@@ -425,16 +466,7 @@ export function pushCommand(cmd: StrokeGroupCommand) {
   if (PERF_MARKS) performance.mark('engine.fold:start');
   foldPendingIntoPaper(foldCount);
   if (PERF_MARKS) performance.measure('engine.fold', 'engine.fold:start');
-  // Both tier re-balances are sub-slices of engine.commit, so they emit an
-  // :end mark and are timed by the pair — the enclosing record would charge
-  // them the whole stroke-end task. They read ~0 wherever toBlob encodes in
-  // parallel as specified, and carry the real cost where it encodes inline.
-  if (PERF_MARKS) performance.mark('engine.encode:start');
-  encodeColdSnapshots();
-  if (PERF_MARKS) {
-    performance.mark('engine.encode:end');
-    performance.measure('engine.encode', 'engine.encode:start', 'engine.encode:end');
-  }
+  scheduleColdEncode();
   if (PERF_MARKS) performance.mark('engine.reinflate:start');
   reinflateHotSnapshots();
   if (PERF_MARKS) {
@@ -466,7 +498,7 @@ function foldPendingIntoPaper(count: number) {
 
 function isInHotWindow(snap: Snapshot): boolean {
   const i = snapshotStack.indexOf(snap);
-  return i >= 0 && i >= snapshotStack.length - MAX_HOT_RASTERS;
+  return i >= 0 && i >= hotWindowStart();
 }
 
 // Demotion may only trust a blob that is plausibly the lossless encoding it
@@ -492,8 +524,30 @@ export function isValidColdSnapshotBlob(blob: Blob | null): blob is Blob {
 // The returned blob is validated before the raster is dropped — see
 // isValidColdSnapshotBlob. An entry that rose into the hot window while its
 // encode was in flight keeps the raster it never lost.
+// Coalesces the encodes the budget does not absorb onto an idle callback, so
+// the commit that pushed an entry past the budget still presents its frame.
+// The pass re-reads the stack when it runs and every transition re-checks the
+// window, so running late is safe; a second commit before it fires reuses the
+// pending one rather than queueing another.
+let coldEncodeScheduled = false;
+
+function scheduleColdEncode() {
+  if (coldEncodeScheduled) return;
+  coldEncodeScheduled = true;
+  scheduleIdle(() => {
+    coldEncodeScheduled = false;
+    if (PERF_MARKS) performance.mark('engine.encode:start');
+    encodeColdSnapshots();
+    if (PERF_MARKS) {
+      performance.mark('engine.encode:end');
+      performance.measure('engine.encode', 'engine.encode:start', 'engine.encode:end');
+    }
+  });
+}
+
 function encodeColdSnapshots() {
-  for (let i = 0; i < snapshotStack.length - MAX_HOT_RASTERS; i++) {
+  const coldEnd = hotWindowStart();
+  for (let i = 0; i < coldEnd; i++) {
     const snap = snapshotStack[i];
     for (const patch of snap.patches) {
       const store = patch.store;
@@ -517,14 +571,14 @@ function encodeColdSnapshots() {
 
 // Re-inflate encoded entries that rise into the hot window — undo popping the
 // stack, or a commit landing on an undo-shallowed one — so the
-// "MAX_HOT_RASTERS most recent snapshots are hot rasters" invariant survives
+// "entries inside the resident byte budget are hot rasters" invariant survives
 // undo-then-draw instead of only holding while the stack grows. Fire-and-forget
 // off the interaction path, like the encode tier; it never touches the paper,
 // so it cannot race the undo/paper chain — a re-inflating entry popped for undo
 // mid-decode fails the isInHotWindow re-check and popSnapshot's own decode
 // stays the single restore path.
 function reinflateHotSnapshots() {
-  for (let i = Math.max(0, snapshotStack.length - MAX_HOT_RASTERS); i < snapshotStack.length; i++) {
+  for (let i = hotWindowStart(); i < snapshotStack.length; i++) {
     const snap = snapshotStack[i];
     for (const patch of snap.patches) {
       const store = patch.store;
@@ -684,10 +738,10 @@ export function repaintAll(target: CanvasRenderingContext2D) {
 }
 
 // Test/profiling seam: how the undo history is currently stored. `liveRasters`
-// counts ENTRIES still holding any patch canvas (≤ MAX_HOT_RASTERS + entries
+// counts ENTRIES still holding any patch canvas (≤ the budget's entries +
 // whose encode hasn't landed — entry-level on purpose: the settle gates in
 // engine-snapshot-tier.spec.ts and scripts/perf/undo-scenarios.mjs compare it against
-// MAX_HOT_RASTERS, and a multi-patch entry would overshoot a patch-level
+// the budget, and a multi-patch entry would overshoot a patch-level
 // count) and
 // `rasterBytes` is the hot patches' actual pixel cost (w × h × 4 —
 // patch-sized since ADR-0069, per-cluster since ADR-0074); `blobBytes` is the
@@ -699,6 +753,12 @@ export interface HistoryDebug {
   liveRasters: number;
   rasterBytes: number;
   blobBytes: number;
+  // Every patch's pixel cost from its rect, cold entries included — what the
+  // stack would occupy resident if nothing were ever encoded. `rasterBytes`
+  // counts only what is resident *now*, so it cannot answer whether the
+  // encoding that costs a WebKit commit its whole budget is buying headroom the
+  // ≲150 MB gate still needs.
+  patchBytes: number;
   pendingCommands: number;
 }
 
@@ -722,6 +782,10 @@ export function getHistoryDebug(): HistoryDebug {
     blobBytes: snapshotStack.reduce(
       (n, s) =>
         n + s.patches.reduce((m, p) => m + (p.store.tier === 'cold' ? p.store.blob.size : 0), 0),
+      0
+    ),
+    patchBytes: snapshotStack.reduce(
+      (n, s) => n + s.patches.reduce((m, p) => m + p.rect.w * p.rect.h * 4, 0),
       0
     ),
     pendingCommands: pendingCommands.length,

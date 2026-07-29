@@ -3,7 +3,6 @@ paths:
   - ".ruler/skills/profiling/ipad-device-profiling.md"
   - ".claude/skills/profiling/ipad-device-profiling.md"
   - ".agents/skills/profiling/ipad-device-profiling.md"
-  - "docs/notes/ipad-perf-plan.md"
 ---
 
 # iPad profiling doc rules
