@@ -1,7 +1,5 @@
 import { expect, test } from '@playwright/test';
 
-import { STORAGE_KEYS } from '../src/lib/storageKeys';
-
 import { tinyPngBuffer } from './fixtures';
 import { draw, gotoApp } from './helpers';
 
@@ -10,12 +8,6 @@ import { openDrawer } from './flows-harness';
 // ── AI generation flow (mocked endpoint) ────────────────────────────────────
 
 test('the AI button posts the drawing and reveals the generated result', async ({ page }) => {
-  // Skip the style picker so the button generates directly.
-  await page.addInitScript(
-    (aiCustomizationEnabled) => localStorage.setItem(aiCustomizationEnabled, 'false'),
-    STORAGE_KEYS.aiCustomizationEnabled
-  );
-
   const png = tinyPngBuffer();
   let postedImage = false;
   await page.route('**/api/generate-image', async (route) => {
@@ -43,6 +35,10 @@ test('the AI button posts the drawing and reveals the generated result', async (
   await expect(ai).toBeVisible();
   await expect(ai).toBeEnabled();
   await ai.click();
+
+  const style = page.getByRole('button', { name: 'Magical' });
+  await expect(style).toBeEnabled();
+  await style.click();
 
   await expect(page.locator('dialog.ai-result-modal')).toBeVisible();
   await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
