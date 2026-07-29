@@ -52,6 +52,18 @@ interface MagicBrushHost {
   repaint: () => void;
 }
 
+// The state below is a deliberate module-scope singleton — one magic-brush engine
+// per app, driven directly by the drawing engine (ADR-0004, the same rationale as
+// undoHistory.ts's module-scope state) — not a createX() factory, so there is no
+// per-instance seam for tests.
+//
+// The reset path tests do have: setColorSheet(null) drops the fill source, and
+// clearMagicGradient() drops the held gradient. That pair does not restore host,
+// sheetCanvas, sheetCtx, sheetOriginX/sheetOriginY, or patternCache to their
+// pre-initMagicBrush state, and readiness stays false until a later
+// rasterizeSheet()/ensureMagicSheet() call. A test needing true isolation should
+// call initMagicBrush again (it only reassigns host) and rebuild the readiness it
+// expects, rather than relying on state left behind by an earlier describe block.
 let host: MagicBrushHost | null = null;
 
 // Source 1: the coloring page's colored fill — shipped fills-only (its outlines are
