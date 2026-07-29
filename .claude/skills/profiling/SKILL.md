@@ -22,13 +22,14 @@ re-runnable on any saved trace.
 | `npm run perf:android`                        | the **real Capacitor WebView** on a connected device/emulator, no throttle                                                                                                                                                                                                                               | full CDP trace                                                                                                                                   |
 | `npm run perf:ios`                            | Playwright **WebKit** (the iOS WKWebView engine), production preview                                                                                                                                                                                                                                     | engine marks + FPS (no CDP trace)                                                                                                                |
 | `npm run perf:undo`                           | the **undo** question specifically — drives `/dev/engine` (so it can read `getUndoDebug()`) through 7 shaped sessions (long squiggles, short marks, a mix, five-finger drags, pen scribbles, crayon squiggles, crayon reversal-scribbles); `--scenarios=a,b` runs a subset; tablet viewport, 4× throttle | CDP trace **+** per-scenario snapshot depth / live-raster / blob counts, commit + patch-capture + undo timing, and analytic raster + blob memory |
+| `npm run perf:undo:webkit`                    | the same 7 scenarios in Playwright **WebKit** — the engine family the iOS app ships. **Enforces the commit gate** (exits non-zero past `COMMIT_GATE_MS`); no throttle                                                                                                                                    | engine marks (no CDP trace, no JS-heap table) **+** the same per-scenario tables                                                                 |
 | `npm run perf:replay -- --recording=<f>`      | **real recorded finger input** instead of synthetic strokes — replays a recording captured on-device with `scripts/perf/ipad-recorder.js` (see `ipad-device-profiling.md`) at real timing                                                                                                                | CDP trace **+** how your input landed on the snapshot stack (`getUndoDebug`) + engine.draw/commit/undo cost                                      |
 | `npm run perf:analyze -- <dir or trace.json>` | re-summarize a saved trace                                                                                                                                                                                                                                                                               | —                                                                                                                                                |
 
 Flags (web/ios): `--device=phone\|tablet\|desktop`, `--no-build` (reuse the last build); web also
 `--throttle=N`. Android: `--no-build` (profile the installed app as-is). `perf:undo` takes
-`--throttle=N` / `--no-throttle` / `--no-build`. Interaction runs write
-`perf-profiles/<timestamp>-<target>-…/` with `trace.json`, `metrics.json`, `summary.json`,
+`--engine=chromium\|webkit` / `--throttle=N` / `--no-throttle` / `--no-build`. Interaction runs
+write `perf-profiles/<timestamp>-<target>-…/` with `trace.json`, `metrics.json`, `summary.json`,
 `report.md`, and `screenshot.png`; `perf:undo` also writes `undo-scenarios.json` /
 `undo-scenarios.md` (the per-scenario snapshot/undo-cost/memory tables). `perf:mount` initially
 writes only `trace.json` and `mount-summary.json`; running `perf:analyze` on that trace adds
@@ -43,6 +44,34 @@ flat. `perf:undo` reports the *real* cost analytically:
 `live patch bytes (rasterBytes) + the paper (max(w,h)² × 4 bytes) + encoded blob bytes`
 (ADR-0066/0069 — live snapshots are dirty-rect patches, so their bytes come from `getUndoDebug`, not
 raster count × full-raster size).
+
+### Which undo run to reach for
+
+Run **both** when you touch the commit or snapshot-tier path; they answer different questions and
+neither substitutes for the other.
+
+|         | `perf:undo` (Chromium)                                                       | `perf:undo:webkit`                                                          |
+| ------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Answers | how the stack *behaves* — depth, tiering, op-volume scaling, where time goes | whether a stroke-end **costs** what it should in the shipping engine family |
+| Has     | CDP trace, CPU throttle, JS-heap table, main-thread breakdown                | engine marks only                                                           |
+| Gate    | none — its ms are advisory                                                   | `engine.commit` max vs `COMMIT_GATE_MS`; exits non-zero                     |
+
+The split exists because a Chromium-only harness is **structurally blind** to a whole defect class:
+per-engine differences in canvas API behaviour. `toBlob` is the worked example — Chromium honours
+the spec'd in-parallel encode, WebKit encodes synchronously inside the call. #635 was a 2390 ms
+stroke-end freeze on iPad that `perf:undo` reported as a 4.6 ms commit, gate passing, for a year.
+Reverting that fix today still reads as a 2.5 ms encode in Chromium and a 47 ms one in WebKit.
+
+So: a number that must hold **on a user's device** is not settled by Chromium. WebKit is not an iPad
+either — it is a desktop build with no throttle and `performance.now()` clamped to ~1 ms — so its
+gate is deliberately blunt (catch full-raster work reappearing on the pointerup path, not police
+drift). Absolute device milliseconds still come from `ipad-device-profiling.md`.
+
+> **Not available in a cloud session.** `.claude/cloud/setup.sh` installs Chromium only, so any
+> WebKit-driving command (`perf:undo:webkit`, `perf:ios`) fails there with Playwright's raw
+> `Executable doesn't exist`. `scripts/lib/playwright.mjs` self-heals a drifted *Chromium* revision
+> and has no WebKit equivalent. Run these locally, or `npx playwright install webkit` first if the
+> session's network allowlist covers `cdn.playwright.dev`.
 
 ## How capture works (so the numbers make sense)
 

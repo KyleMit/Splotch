@@ -109,6 +109,34 @@ export async function collectMeasures(page) {
   );
 }
 
+// Stitch several collectMeasures() reads into one timeline.
+//
+// CDP tracing is a browser-level session, so it spans navigations and a
+// multi-scenario run needs no help. The Performance API is per *document*: a
+// navigation both clears the entries and restarts performance.now() at 0. So a
+// driver that reloads between scenarios must collect after each one — a single
+// read at the end returns the last scenario only — and shift each collection
+// past the previous, or every scenario would sit on top of the first.
+//
+// A factory rather than module state so each run (and each test) gets its own
+// clock.
+export function createMeasureTimeline() {
+  const events = [];
+  let baseUs = 0;
+  return {
+    events,
+    append(collected) {
+      let endUs = baseUs;
+      for (const event of collected) {
+        events.push({ ...event, ts: event.ts + baseUs });
+        endUs = Math.max(endUs, baseUs + event.ts + (event.dur ?? 0));
+      }
+      baseUs = endUs;
+      return events;
+    },
+  };
+}
+
 // Bracket a scenario beat with a user-timing measure (phase:<label>) so the
 // analyzer can slice trace time per beat from the same track as the engine.*
 // marks. The fn's own work happens between the start mark and the measure.
