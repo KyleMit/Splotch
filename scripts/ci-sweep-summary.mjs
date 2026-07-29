@@ -1,7 +1,7 @@
-// TEMPORARY — companion to .github/workflows/worker-sweep.yml. Collapses one
-// Playwright JSON report into a single greppable line, so the worker-count
-// numbers can be read straight out of the job log without downloading artifacts.
-// Delete alongside that workflow.
+// Companion to the manual-dispatch .github/workflows/worker-sweep.yml (ADR-0078).
+// Collapses one Playwright JSON report into a single greppable line, so a sweep's
+// worker-count numbers can be read straight out of the job log without
+// downloading artifacts.
 import { readFileSync } from 'node:fs';
 
 const [reportPath, workers, rep, seconds] = process.argv.slice(2);

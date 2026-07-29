@@ -90,8 +90,23 @@ The rate is flat from 1 to 6 workers and only breaks at 8. **One worker was the 
 setting** — three failures, two of them 30s timeouts — which rules contention out as the cause,
 because at one worker there is none. The runner has no GPU, so Chromium rasterizes the magic-brush
 reveal in software; the reveal sits near its 15s budget regardless of how many workers run. That is
-also why `MAGIC_REVEAL_TIMEOUT` was raised: on CI the failures land *at* the budget (15.6s, 15.7s,
-18.4s against 15s), not far past it.
+also why `MAGIC_REVEAL_TIMEOUT` was raised from 15s to 30s — on CI the failures landed *at* the
+budget (15.6s, 15.7s, 18.4s against 15s), not far past it.
+
+That change was then re-measured, and the result is two-sided rather than clean:
+
+| workers           | failures before → after | wall before → after |
+| ----------------- | ----------------------- | ------------------- |
+| 4 (what CI ships) | 2 → **0**               | 60.2s → 64.8s       |
+| 1                 | 3 → 3                   | 95.2s → **138.1s**  |
+
+It fixed the setting that ships and did nothing for one worker, where the same three failures now
+cost far more: with `test.slow()` in play a non-converging reveal burns its full 90s budget instead
+of failing at 30s. So those failures were never time-starved — `drawMagicReveal` churns
+draw→check→undo→redraw, and a larger budget lets a non-converging loop churn longer. The budget
+helped where the reveal was merely slow and not where the loop never converges. Kept because the
+shipped configuration is clean, but the cost is real: a magic-brush failure on CI is now up to 90s
+per attempt, tripled by retries.
 
 So the same suite is limited by different things in the two places: contention locally, raw canvas
 throughput on CI. Worker count fixes only the first.
@@ -140,6 +155,11 @@ without re-measuring. The shape (saturation near cores−1) should hold; the opt
 − **The CI setting leans on retries to stay cheap.** Choosing the fastest worker count on CI because
 `retries: 2` absorbs the flakes is a local optimisation that also hides accumulating flakiness —
 which is how the magic-brush tests reached the state they were in.
+
+− **A magic-brush failure on CI is now expensive.** `test.slow()` plus the 30s reveal budget means a
+non-converging reveal burns 90s per attempt and up to ~4.5 minutes across retries. The measured
+failure rate at 4 workers is 0/1015, so this should be rare — but reverting the timeout is the fix
+if it is not.
 
 − **CI's real limit is canvas throughput, not workers.** A GPU-less runner rasterizes the magic
 reveal in software, so those specs sit near their budget at any worker count. Worker tuning cannot

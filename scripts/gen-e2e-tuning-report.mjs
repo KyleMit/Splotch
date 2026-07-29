@@ -73,6 +73,15 @@ const CI_SWEEP = [
   { w: 8, wall: 60.4, runs: 5, execs: 1015, fails: 9, redRuns: 5, cpu: 401.9, infl: 4.35 },
 ];
 
+// Targeted re-measure after MAGIC_REVEAL_TIMEOUT went 15s -> 30s (run
+// 30476652762). Only 1 and 4 workers were re-extracted: 4 is what CI ships, and
+// 1 is the cleanest read on whether a change helps for reasons other than
+// contention. The result is genuinely two-sided, so both halves are recorded.
+const CI_POSTFIX = [
+  { w: 1, wall: 138.1, runs: 5, execs: 1015, failsBefore: 3, fails: 3, wallBefore: 95.2 },
+  { w: 4, wall: 64.8, runs: 5, execs: 1015, failsBefore: 2, fails: 0, wallBefore: 60.2 },
+];
+
 // Each hypothesis that was tested, and how it was killed or confirmed. The
 // falsified ones are the point: they are cheap to re-derive and expensive to
 // re-test.
@@ -315,6 +324,24 @@ ${masthead({
       <li><b>One worker was the second-WORST setting</b> — 3 failures, two of them 30s timeouts. With zero contention, that rules contention out as the cause: the runner has no GPU, so Chromium rasterizes the magic-brush reveal in software and the reveal sits near its 15s budget no matter how many workers are running.</li>
       <li><b>Wall clock bottoms out at 4 workers</b> (60.2s). 8 workers is no faster and carries 4.5× the failures.</li>
       <li><b>CI is faster than the local box overall</b> (60–95s vs 81–169s) while being slower at canvas work — a reminder that "faster hardware" is not one number.</li>
+    </ul>
+    <h2 style="margin-top:12px">Raising the reveal budget: a two-sided result</h2>
+    <p>
+      The 15s→30s change was made because the CI failures landed <em>at</em> the old budget. Re-measured
+      at the two most informative worker counts, it did not do one clean thing:
+    </p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Workers</th><th class="num">Failures before → after</th><th class="num">Wall before → after</th></tr></thead>
+      <tbody>
+        <tr class="pick"><td>4 (CI ships this)</td><td class="num">2 → <b>0</b></td><td class="num">60.2s → 64.8s</td></tr>
+        <tr><td>1</td><td class="num">3 → 3</td><td class="num">95.2s → <b>138.1s</b></td></tr>
+      </tbody>
+    </table></div>
+    <ul class="notes">
+      <li><b>At the shipped CI setting it worked</b> — 5/5 green where 3/5 had been, for ~4.6s of wall clock.</li>
+      <li><b>At one worker it did not.</b> Same three failures, but now costing far more: with <code>test.slow()</code> in play a non-converging reveal burns its full 90s budget instead of failing at 30s, which is what dragged the median run from 95.2s to 138.1s.</li>
+      <li><b>What that means:</b> those failures were never time-starved. <code>drawMagicReveal</code> churns draw→check→undo→redraw, and a bigger budget just lets a non-converging loop churn longer. The budget helped where the reveal was merely slow, and did nothing where the loop never converges.</li>
+      <li><b>Accepted knowingly:</b> the setting that ships is clean, but a magic-brush failure on CI now costs up to 90s per attempt (×3 with retries). Revert the timeout if that trade looks wrong — the win is real but narrow.</li>
     </ul>
 
   <section>
