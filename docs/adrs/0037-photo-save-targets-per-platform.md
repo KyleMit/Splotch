@@ -65,8 +65,8 @@ Folder management lives in a one-line **"Save drawings to"** row in the Parent C
 `settings.saveFolderName` (reactive, not persisted) backs the display; it's hydrated on boot from
 the stored handle by `hydrateSaveFolder()`, which has no side effects on any save feature. When a
 save discovers the folder itself is gone (moved/deleted), `folderSave` drops the stored handle and
-notifies the settings mirror via `onSaveFolderCleared`, so the pill never keeps naming a folder that
-no longer receives saves.
+notifies the settings mirror via `setSaveFolderClearedListener`, so the pill never keeps naming a
+folder that no longer receives saves.
 
 The `FileSystemDirectoryHandle` itself is structured-cloneable, so it lives in IndexedDB
 (`splotch-fs` / `handles`) rather than localStorage (string-only), through the shared lazy-`idb`

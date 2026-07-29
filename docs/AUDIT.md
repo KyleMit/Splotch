@@ -21,35 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Maintainability] onSaveFolderCleared is a silent last-write-wins single-listener slot
-
-**File(s):** `web/src/lib/drawing/folderSave.ts` (lines 42–49) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-let folderClearedListener: (() => void) | null = null;
-
-export function onSaveFolderCleared(listener: () => void) {
-  folderClearedListener = listener;
-}
-```
-
-The API reads like a subscription (`on...`), but a second registration silently unhooks the first —
-no error, no return of an unsubscribe. Today the sole subscriber is the settings mirror (per the
-comment at lines 44–46), so it works; the trap is for the next feature that also wants to hear about
-stale-folder clears (e.g. the "warn when save is blocked" issue \#199 direction) and quietly
-disconnects the settings UI instead.
-
-#### Proposed solution
-
-Cheapest honest fix: rename to `setSaveFolderClearedListener` so the single-slot semantics are in
-the name, and add a one-line comment stating single-subscriber-by-design. Alternatively hold a
-`Set<() => void>` and return an unsubscribe — but that adds surface with no second production caller
-today, which the no-speculative-surface rule counsels against. The rename is the right-sized change.
-
 ### [Readability] Dead truthiness check on getActiveCanvas's non-nullable return
 
 **File(s):** `web/src/lib/drawing/screenshot.ts` (`playPolaroidAnimation`, lines 130–133) @ 9ae62ff1

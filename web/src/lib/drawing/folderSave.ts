@@ -43,6 +43,7 @@ let folderClearedListener: (() => void) | null = null;
 // Lets whoever mirrors the folder into reactive state (settings.svelte.ts) hear
 // about the handle being dropped from *inside* a save (stale folder), which
 // would otherwise leave the UI naming a folder that no longer receives saves.
+// This is intentionally single-subscriber: later registrations replace earlier ones.
 export function setSaveFolderClearedListener(listener: () => void) {
   folderClearedListener = listener;
 }
