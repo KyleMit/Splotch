@@ -66,10 +66,11 @@ export function rotationDelta(paperAngle: number, currentAngle: number): ViewRot
 export function computePaperView(paper: Size, viewport: Size, rotate: ViewRotation): PaperView {
   const rotatedW = rotate % 180 === 0 ? paper.width : paper.height;
   const rotatedH = rotate % 180 === 0 ? paper.height : paper.width;
-  const { scale, offsetX: marginX, offsetY: marginY } = containFit(
-    { width: rotatedW, height: rotatedH },
-    viewport
-  );
+  const {
+    scale,
+    offsetX: marginX,
+    offsetY: marginY,
+  } = containFit({ width: rotatedW, height: rotatedH }, viewport);
   // The translation puts the rotated paper's bounding box at (marginX, marginY):
   // rotation is about the paper origin, so each quarter-turn shifts which mapped
   // corner is the box's top-left.

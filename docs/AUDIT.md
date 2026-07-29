@@ -21,55 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Maintainability] Contain-fit scale-and-center math is duplicated between drawOverlayContained and computePaperView
-
-**File(s):** `web/src/lib/drawing/exportDrawing.ts` (`drawOverlayContained`, lines 91–93) and
-`web/src/lib/drawing/paperView.ts` (`computePaperView`, lines 55–59) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-Both sites implement "uniformly scale a box to fit inside another and center the remainder":
-
-`exportDrawing.ts` 91–93:
-
-```ts
-const scale = Math.min(w / overlay.naturalWidth, h / overlay.naturalHeight);
-const drawnW = overlay.naturalWidth * scale;
-const drawnH = overlay.naturalHeight * scale;
-// centered via (w - drawnW) / 2, (h - drawnH) / 2 at line 97
-```
-
-`paperView.ts` 55–59:
-
-```ts
-const scale = Math.min(viewport.width / rotatedW, viewport.height / rotatedH);
-const marginX = (viewport.width - rotatedW * scale) / 2;
-const marginY = (viewport.height - rotatedH * scale) / 2;
-```
-
-The overlay one is semantically load-bearing beyond dedup: the export must contain-fit the overlay
-*exactly* as the on-screen presentation does (the `drawOverlayContained` doc comment at lines 79–82
-promises "matching how the overlay `<img>` renders above the canvas"), yet the agreement is
-currently maintained by two hand-written copies of the same math rather than one function. The
-exported copy is also untested, while `paperView` has thorough tests.
-
-#### Proposed solution
-
-Export a tiny helper from `paperView.ts` (already the pure-geometry home, `Size` type included):
-
-```ts
-export function containFit(
-  content: Size,
-  box: Size,
-): { scale: number; offsetX: number; offsetY: number };
-```
-
-Use it in `computePaperView` (feeding the rotated dims) and in `drawOverlayContained`. Unit tests
-come free with paperView's existing suite. Tradeoff: it's a three-line function — the win is the
-single-source guarantee between on-screen and export placement, not the line count.
-
 ### [Maintainability] onSaveFolderCleared is a silent last-write-wins single-listener slot
 
 **File(s):** `web/src/lib/drawing/folderSave.ts` (lines 42–49) @ 9ae62ff1
