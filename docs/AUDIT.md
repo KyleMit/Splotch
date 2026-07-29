@@ -19,31 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Correctness] `clearCanvas` is the only public entry point that will throw before engine init
-
-**File(s):** `web/src/lib/drawing/engine.ts` (`clearCanvas`, lines 1104–1128) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The public API guards uninitialized state inconsistently: `undo()` bails on
-`!canUndo || !canvas || !ctx` (line 1059), `exportCanvasBlob` on `!canvas || paper.pxW === 0` (line
-1477), `releaseAllPointers` on `!ctx` (line 960), `setCrayonParams` checks `if (ctx)` (line 1155) —
-but `clearCanvas` dereferences `ctx` unguarded (`clearAllOf(ctx)`, line 1116) and mutates the undo
-log (`pushCommand`, line 1113) even when no engine has ever run. `ctx` is a definite-assignment
-`let` (line 114), so a pre-init call is a `TypeError`, and worse, one that lands *after*
-`pushCommand` has already appended a clear command to the persistent history — corrupting state that
-deliberately survives teardown. Today's callers are all post-mount, but the module's own guard
-pattern says pre-init calls are an anticipated condition, and this is the one function where the
-failure mode is state corruption rather than a clean no-op.
-
-#### Proposed solution
-
-Add the same guard, first line: `if (!canvas || !ctx) return;`. One-line change; alternatively hoist
-a shared `engineReady()` predicate (`canvas != null && ctx != null`) used by all four guard sites so
-the next public function copies the right pattern by grep.
-
 ### [Correctness] `PERF_MARKS` start marks are left unmatched on early returns, skewing profiling attribution
 
 **File(s):** `web/src/lib/drawing/engine.ts` (`draw`, lines 891, 905–908; `commitStrokeGroup`, lines

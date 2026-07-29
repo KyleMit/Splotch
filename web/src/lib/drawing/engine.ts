@@ -1137,6 +1137,7 @@ export function undo(): Promise<void> {
 }
 
 export function clearCanvas() {
+  if (!canvas || !ctx) return;
   // The clear is its own undo command: folding it wipes the paper, and undoing
   // it restores the pre-clear snapshot in one blit. Mid-restore it defers like
   // a stroke commit; the visible wipe below still happens immediately.
