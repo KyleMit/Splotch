@@ -27,6 +27,23 @@
 
 export const MAGIC_GRADIENT_COUNT = 10;
 
+// Few enough hue stops that each is visually distinct, many enough that the ramp
+// between them reads as continuous rather than banded.
+const RAINBOW_STOPS_MIN = 5;
+const RAINBOW_STOPS_SPAN = 4;
+// A sweep past 360 lets the hue wrap; staying short of the full circle still leaves
+// some hues out of any one gradient, so pooled gradients read as distinct rainbows.
+const RAINBOW_HUE_SWEEP_MIN_DEG = 240;
+const RAINBOW_HUE_SWEEP_SPAN_DEG = 200;
+const RAINBOW_SATURATION_MIN_PCT = 70;
+const RAINBOW_SATURATION_SPAN_PCT = 25;
+const RAINBOW_LIGHTNESS_MIN_PCT = 55;
+const RAINBOW_LIGHTNESS_SPAN_PCT = 15;
+
+// Sample a hair inside the picture's border, not on it, so a coloring page's edge
+// outline doesn't smear across the extended margin.
+const EDGE_SAMPLE_INSET_FRACTION = 0.02;
+
 interface GradientStop {
   offset: number;
   color: string;
@@ -52,12 +69,32 @@ interface MagicBrushHost {
   repaint: () => void;
 }
 
+// The state below is a deliberate module-scope singleton — one magic-brush engine
+// per app, driven directly by the drawing engine (ADR-0004, the same rationale as
+// undoHistory.ts's module-scope state) — not a createX() factory, so there is no
+// per-instance seam for tests.
+//
+// The only in-module reset is partial: setColorSheet(null) drops the fill source
+// and clearMagicGradient() drops the held gradient. Only the no-fill case comes
+// back with a fresh patternCache — setColorSheet(null) rasterizes, which rebuilds
+// it, and clearMagicGradient() rebuilds it only inside its `if (!fillUrl)` branch,
+// so clearing the gradient while a page is applied leaves the cached patterns (and
+// readiness) as they were. Either way host, sheetCanvas, sheetCtx, and
+// sheetOriginX/sheetOriginY keep whatever the last rasterize left them, and
+// readiness stays false until some source is set *and* rasterized (a bare
+// rasterizeSheet() with no active source returns early, still unready). So a test
+// wanting real isolation gets fresh module state, not a reset call:
+// vi.resetModules() in beforeEach plus `await import('./magicBrush')`, the pattern
+// every stateful describe in magicBrush.test.ts uses.
 let host: MagicBrushHost | null = null;
 
 // Source 1: the coloring page's colored fill — shipped fills-only (its outlines are
 // already transparent, punched at build time), so it's drawn into the sheet directly.
 let fillImage: HTMLImageElement | null = null;
 let fillUrl: string | null = null;
+// The one in-flight fill decode. Its handlers are the only ones allowed to touch the
+// sheet state; every other load is superseded, whatever URL it was for.
+let pendingLoad: HTMLImageElement | null = null;
 
 // Source 2: the generated rainbow. The pool is built lazily and reused; the active
 // gradient is the one currently revealed, held until the canvas is cleared.
@@ -77,6 +114,11 @@ let sheetOriginX = 0;
 let sheetOriginY = 0;
 let patternCache = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
 
+function invalidateSheet() {
+  sheetReady = false;
+  patternCache = new WeakMap();
+}
+
 export function initMagicBrush(h: MagicBrushHost) {
   host = h;
 }
@@ -87,12 +129,12 @@ export function initMagicBrush(h: MagicBrushHost) {
 // pure generation stays unit-testable.
 export function createRainbowGradient(rand: () => number = Math.random): RainbowGradient {
   const angle = rand() * Math.PI * 2;
-  const stopCount = 5 + Math.floor(rand() * 4); // 5..8 hue stops
+  const stopCount = RAINBOW_STOPS_MIN + Math.floor(rand() * RAINBOW_STOPS_SPAN);
   const hueStart = rand() * 360;
   const direction = rand() < 0.5 ? 1 : -1;
-  const hueSweep = 240 + rand() * 200; // total hue span in degrees
-  const saturation = 70 + rand() * 25;
-  const lightness = 55 + rand() * 15;
+  const hueSweep = RAINBOW_HUE_SWEEP_MIN_DEG + rand() * RAINBOW_HUE_SWEEP_SPAN_DEG;
+  const saturation = RAINBOW_SATURATION_MIN_PCT + rand() * RAINBOW_SATURATION_SPAN_PCT;
+  const lightness = RAINBOW_LIGHTNESS_MIN_PCT + rand() * RAINBOW_LIGHTNESS_SPAN_PCT;
   const stops: GradientStop[] = [];
   for (let s = 0; s < stopCount; s++) {
     const t = s / (stopCount - 1);
@@ -109,9 +151,15 @@ function buildGradientPool(): RainbowGradient[] {
 // Which source rasterizeSheet should draw. A pending fill (URL set but not yet
 // decoded) yields null so the brush reveals nothing until it loads, matching the
 // original behaviour — it never falls back to the gradient mid-load.
-function activeSource(): 'fill' | 'gradient' | null {
-  if (fillUrl) return fillImage && fillImage.naturalWidth ? 'fill' : null;
-  if (activeGradient) return 'gradient';
+type SheetSource =
+  | { kind: 'fill'; image: HTMLImageElement }
+  | { kind: 'gradient'; gradient: RainbowGradient };
+
+function activeSource(): SheetSource | null {
+  if (fillUrl) {
+    return fillImage && fillImage.naturalWidth ? { kind: 'fill', image: fillImage } : null;
+  }
+  if (activeGradient) return { kind: 'gradient', gradient: activeGradient };
   return null;
 }
 
@@ -177,7 +225,7 @@ export function edgeMargins(
   const right = Math.round(ox + bw);
   const bottomMargin = H - bottom;
   const rightMargin = W - right;
-  const inset = Math.max(1, Math.round(Math.min(bw, bh) * 0.02));
+  const inset = Math.max(1, Math.round(Math.min(bw, bh) * EDGE_SAMPLE_INSET_FRACTION));
   const fills: EdgeFill[] = [];
   // Pass 1 — vertical: box top/bottom rows stretched across the box width.
   if (top > 0)
@@ -239,8 +287,7 @@ function extendSheetEdges(
 // fill every letterbox margin (the fill's own, and the rotation-lock margins around
 // the paper); the gradient fills the whole sheet. Re-run on load and every resize.
 export function rasterizeSheet() {
-  sheetReady = false;
-  patternCache = new WeakMap();
+  invalidateSheet();
   const paper = host?.paperSize();
   const bounds = host?.sheetBounds();
   if (!paper || !bounds || bounds.width <= 0 || bounds.height <= 0) return;
@@ -256,19 +303,19 @@ export function rasterizeSheet() {
   sheetOriginX = bounds.x;
   sheetOriginY = bounds.y;
   sheetCtx.clearRect(0, 0, sheetCanvas.width, sheetCanvas.height);
-  if (source === 'fill') {
-    const iw = fillImage!.naturalWidth;
-    const ih = fillImage!.naturalHeight;
+  if (source.kind === 'fill') {
+    const iw = source.image.naturalWidth;
+    const ih = source.image.naturalHeight;
     const scale = Math.min(paper.width / iw, paper.height / ih);
     const dw = iw * scale;
     const dh = ih * scale;
     // Contain-fit box in paper coords, shifted into the (possibly offset) sheet.
     const ox = (paper.width - dw) / 2 - sheetOriginX;
     const oy = (paper.height - dh) / 2 - sheetOriginY;
-    sheetCtx.drawImage(fillImage!, ox, oy, dw, dh);
+    sheetCtx.drawImage(source.image, ox, oy, dw, dh);
     extendSheetEdges(sheetCtx, sheetCanvas.width, sheetCanvas.height, ox, oy, dw, dh);
   } else {
-    paintGradient(sheetCtx, sheetCanvas.width, sheetCanvas.height, activeGradient!);
+    paintGradient(sheetCtx, sheetCanvas.width, sheetCanvas.height, source.gradient);
   }
   sheetReady = true;
 }
@@ -307,13 +354,34 @@ export function isMagicSheetUnready(): boolean {
 // Load the fill image, guarding against a page change that happened while it
 // decoded. On success stash it, then re-rasterize and repaint so already-recorded
 // magic ops pick up the colours.
+//
+// A failed load detaches the page entirely (as if it had been removed) and takes
+// over the gradient source, so the brush keeps painting and the undo fold's
+// isMagicSheetUnready gate reopens instead of deferring for the rest of the session
+// — a page session holds no gradient of its own, so merely clearing fillUrl would
+// leave rasterizeSheet with no source at all. Clearing fillUrl also re-arms
+// setColorSheet's same-url guard, making a re-applied page a real retry.
+//
+// Both handlers key on the image instance, not on the URL: a theme switch can cycle
+// the sheet A → B → A, and a URL comparison would let the first A load's late error
+// pass while the third load owns fillUrl — detaching the page and stranding that
+// load's own success behind the same guard.
 function loadSheetImage(url: string) {
-  const forFillUrl = fillUrl;
   const img = new Image();
+  pendingLoad = img;
   img.onload = () => {
-    // A newer page may have been requested while this one decoded — drop stale.
-    if (fillUrl !== forFillUrl) return;
+    if (pendingLoad !== img) return;
+    pendingLoad = null;
     fillImage = img;
+    rasterizeSheet();
+    host?.repaint();
+  };
+  img.onerror = () => {
+    if (pendingLoad !== img) return;
+    pendingLoad = null;
+    fillUrl = null;
+    fillImage = null;
+    holdRandomGradient();
     rasterizeSheet();
     host?.repaint();
   };
@@ -326,6 +394,8 @@ function loadSheetImage(url: string) {
 // ready reveal nothing until the load handler repaints.
 export function setColorSheet(colorUrl: string | null) {
   if (colorUrl === fillUrl) return;
+  // Whatever is still decoding is for the outgoing source — disown it.
+  pendingLoad = null;
   fillUrl = colorUrl;
   fillImage = null;
   if (!colorUrl) {
@@ -334,20 +404,27 @@ export function setColorSheet(colorUrl: string | null) {
     host?.repaint();
     return;
   }
-  sheetReady = false;
-  patternCache = new WeakMap();
+  invalidateSheet();
   loadSheetImage(colorUrl);
 }
 
-// Ensure the brush has something to reveal when it's selected. A coloring page's
-// fill takes priority and needs nothing here; otherwise pick a random rainbow from
-// the pool and hold it. A no-op once a gradient is already active, so re-selecting
-// the brush (or toggling pen↔magic) keeps the same rainbow until the next clear.
-export function ensureMagicSheet() {
-  if (fillUrl) return;
+// Pick a random rainbow from the pool and hold it, unless one is already held (so
+// re-selecting the brush keeps the same rainbow until the next clear). Rasterizing
+// is the caller's, since the callers differ on whether an already-held gradient
+// still needs to be drawn.
+function holdRandomGradient() {
   if (activeGradient) return;
   if (!gradientPool) gradientPool = buildGradientPool();
   activeGradient = gradientPool[Math.floor(Math.random() * gradientPool.length)];
+}
+
+// Ensure the brush has something to reveal when it's selected. A coloring page's
+// fill takes priority and needs nothing here; otherwise hold a rainbow. A no-op
+// once a gradient is already active, so re-selecting the brush (or toggling
+// pen↔magic) neither re-rolls the rainbow nor re-rasterizes.
+export function ensureMagicSheet() {
+  if (fillUrl || activeGradient) return;
+  holdRandomGradient();
   rasterizeSheet();
 }
 
@@ -356,7 +433,6 @@ export function ensureMagicSheet() {
 export function clearMagicGradient() {
   activeGradient = null;
   if (!fillUrl) {
-    sheetReady = false;
-    patternCache = new WeakMap();
+    invalidateSheet();
   }
 }

@@ -35,18 +35,10 @@
 // the rasters stay resident while no canvas is mounted — is accepted
 // (ADR-0004).
 
-import {
-  AA_PAD,
-  clearAllOf,
-  opGeometricExtent,
-  renderOp,
-  resetCrayonStateForClear,
-  resetLiveCrayonForReplay,
-  type StrokeGroupCommand,
-  type StrokeOp,
-} from './strokeOps';
+import { clearAllOf, renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
+import { foldRegionsForCommands, type PatchRect } from './foldRegions';
+import { resetCrayonStateForClear, resetLiveCrayonForReplay } from './crayonPassBuffer';
 import { isMagicSheetUnready } from './magicBrush';
-import { getCrayonPasses } from './crayonBrush';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
 
@@ -73,23 +65,19 @@ let paperCtx: CanvasRenderingContext2D | null = null;
 // ~500 ms inside the pointerup under the 4×-throttled software profile).
 let paperPristine = false;
 
-// The paper region a snapshot's patch covers, in whole paper pixels (so the
-// capture and restore blits are exact 1:1 copies, never resampled).
-export interface PatchRect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+// The pixels a patch is holding right now: a hot raster, or (demoted) the
+// encoded blob they were re-encoded into. The in-flight flag belongs to the
+// tier that can leave it — an encode only starts from a raster, a decode only
+// from a blob — and each transition swaps the whole store in one assignment.
+type PatchStore =
+  | { tier: 'hot'; canvas: HTMLCanvasElement; encoding: boolean }
+  | { tier: 'cold'; blob: Blob; decoding: boolean };
 
 // One captured region of an entry's fold: its paper rect plus the pixels that
-// were there before the fold, as a hot raster or (demoted) an encoded blob.
+// were there before the fold.
 interface SnapshotPatch {
   rect: PatchRect;
-  canvas: HTMLCanvasElement | null;
-  blob: Blob | null;
-  encoding: boolean;
-  decoding: boolean;
+  store: PatchStore;
 }
 
 interface Snapshot {
@@ -175,11 +163,13 @@ export function ensurePaperCovers(squareSide: number) {
   grown.width = Math.max(squareSide, paperCanvas.width);
   grown.height = Math.max(squareSide, paperCanvas.height);
   const grownCtx = grown.getContext('2d');
-  if (grownCtx) {
-    grownCtx.lineCap = 'round';
-    grownCtx.lineJoin = 'round';
-    grownCtx.drawImage(paperCanvas, 0, 0);
+  if (!grownCtx) {
+    console.error('ensurePaperCovers: grown canvas context unavailable, keeping existing paper');
+    return;
   }
+  grownCtx.lineCap = 'round';
+  grownCtx.lineJoin = 'round';
+  grownCtx.drawImage(paperCanvas, 0, 0);
   paperCanvas = grown;
   paperCtx = grownCtx;
   paperPristine = false;
@@ -238,7 +228,7 @@ export function blitPaperRect(target: CanvasRenderingContext2D, rect: PatchRect)
 }
 
 // Swap the just-closed crayon pass's recorded ops for its prerendered raster
-// op (see strokeOps' closeLiveCrayonPass). The pass is exactly the maximal
+// op (see crayonPassBuffer's closeLiveCrayonPass). The pass is exactly the maximal
 // trailing run of crayon ink ops: the engine closes an open pass before any
 // non-crayon ink op records (closeCrayonPassBeforeForeignOp — a mid-gesture
 // brush switch can interleave brushes within one group), so every op since
@@ -285,150 +275,10 @@ export function commitActiveCommand(defer = false): boolean {
   return true;
 }
 
-// Padded float bounding boxes, merged toward disjointness before they round
-// to patch rects.
-interface Box {
-  x0: number;
-  y0: number;
-  x1: number;
-  y1: number;
-}
-
-// An op's padded geometric bounds in paper space (pre-clamp floats). A path's
-// quadratic control points bound the curve's hull, so start + segs' points
-// padded by the stroke half-width cover the ink; a 'crayonPassRaster' stamps
-// exactly its canvas at its paper position, so its bounds are the raster's
-// rect; a 'crayonFlush' has no geometry of its own (its stamp is bounded by
-// the pass's crayon ops, already unioned) — null. 'clear' is the callers'
-// short-circuit, never passed here.
-function opPaddedBounds(op: StrokeOp, crayonScale: number): Box | null {
-  if (op.kind === 'clear' || op.kind === 'crayonFlush') return null;
-  if (op.kind === 'crayonPassRaster') {
-    return {
-      x0: op.x - AA_PAD,
-      y0: op.y - AA_PAD,
-      x1: op.x + op.canvas.width + AA_PAD,
-      y1: op.y + op.canvas.height + AA_PAD,
-    };
-  }
-  // Magic and erase render at base width (renderOp routes them before the
-  // crayon branch); only a crayon ink op picks up the pass scale.
-  const scale = op.crayon && !op.erase && !op.magic ? crayonScale : 1;
-  const { x0, y0, x1, y1, halfWidth } = opGeometricExtent(op);
-  const pad = halfWidth * scale + AA_PAD;
-  return { x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad };
-}
-
-function mergeInto(target: Box, b: Box) {
-  target.x0 = Math.min(target.x0, b.x0);
-  target.y0 = Math.min(target.y0, b.y0);
-  target.x1 = Math.max(target.x1, b.x1);
-  target.y1 = Math.max(target.y1, b.y1);
-}
-
-function boxesIntersect(a: Box, b: Box): boolean {
-  return a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
-}
-
-// More clusters than this and the capture degenerates to one union rect: the
-// per-patch bookkeeping (copies, encodes, restore blits) stops paying for
-// itself, and no real gesture produces more (five fingers → five clusters).
-const PATCH_CLUSTER_CAP = 8;
-
-// More RAW clusters than this and the capture skips the merge fixpoint
-// entirely and takes the union up front: the scan is O(n³) worst case on the
-// commit hot path, and only a magic-unready backlog folding under one commit
-// can push the count this high — a fold that large unions to ~the whole paper
-// after merging anyway, so nothing real is lost by not trying.
-const MERGE_INPUT_CAP = PATCH_CLUSTER_CAP * 8;
-
-function unionBoxes(boxes: Box[]): Box {
-  const union = boxes[0];
-  for (let i = 1; i < boxes.length; i++) mergeInto(union, boxes[i]);
-  return union;
-}
-
-// The disjoint paper regions folding `commands` will mutate, clamped to the
-// paper. Ops cluster per stroke (a path op's command index + pointer id;
-// dots and pass rasters seed their own cluster) and intersecting clusters
-// merge to a fixpoint, so a spread multi-finger gesture yields one band-sized
-// rect per finger instead of a near-full-paper union — the union bbox is the
-// worst case, never exceeded (ADR-0069's containment invariant holds per
-// cluster: every op's padded bounds sit inside its cluster's rect). A 'clear'
-// wipes everything, so it short-circuits to the full paper. Empty when
-// nothing would touch the paper — no foldable commands, or ink wholly outside
-// the paper square (margin ink is clipped at fold, ADR-0050). Exported as the
-// rect-math unit-test seam.
-export function foldRegionsForCommands(
-  commands: StrokeGroupCommand[],
-  paperW: number,
-  paperH: number
-): PatchRect[] {
-  // Crayon density passes stroke at op.lineWidth × widthScale (dot radius ×
-  // widthScale). The shipped passes never exceed 1, but the dev harness's
-  // setCrayonParams accepts arbitrary passes — a widthScale > 1 experiment
-  // would fold ink outside the base-width pad and undo would leave its fringe
-  // behind. Scale crayon ink pads by the widest pass so the containment
-  // invariant (ADR-0069) holds mid-experiment too.
-  let crayonScale = 1;
-  for (const p of getCrayonPasses()) crayonScale = Math.max(crayonScale, p.widthScale);
-  const clusters = new Map<string, Box>();
-  let solo = 0;
-  for (let c = 0; c < commands.length; c++) {
-    for (const op of commands[c].ops) {
-      if (op.kind === 'clear') return [{ x: 0, y: 0, w: paperW, h: paperH }];
-      const box = opPaddedBounds(op, crayonScale);
-      if (!box) continue;
-      const key = op.kind === 'path' ? `${c}:${op.pid}` : `solo:${solo++}`;
-      const cluster = clusters.get(key);
-      if (cluster) mergeInto(cluster, box);
-      else clusters.set(key, box);
-    }
-  }
-  let boxes = [...clusters.values()];
-  if (boxes.length > MERGE_INPUT_CAP) {
-    boxes = [unionBoxes(boxes)];
-  } else {
-    // Merge intersecting clusters to a fixpoint, so the returned rects are
-    // disjoint (a finger's start dot merges into its stroke; crossing fingers
-    // merge with each other).
-    let merged = true;
-    while (merged) {
-      merged = false;
-      for (let i = 0; i < boxes.length && !merged; i++) {
-        for (let j = i + 1; j < boxes.length; j++) {
-          if (boxesIntersect(boxes[i], boxes[j])) {
-            mergeInto(boxes[i], boxes[j]);
-            boxes.splice(j, 1);
-            merged = true;
-            break;
-          }
-        }
-      }
-    }
-    if (boxes.length > PATCH_CLUSTER_CAP) boxes = [unionBoxes(boxes)];
-  }
-  const rects: PatchRect[] = [];
-  for (const b of boxes) {
-    const x = Math.max(0, Math.floor(b.x0));
-    const y = Math.max(0, Math.floor(b.y0));
-    const w = Math.min(paperW, Math.ceil(b.x1)) - x;
-    const h = Math.min(paperH, Math.ceil(b.y1)) - y;
-    if (w > 0 && h > 0) rects.push({ x, y, w, h });
-  }
-  return rects;
-}
-
-// Whether the fold set wipes the paper: a 'clear' op discards every pixel
-// before it, and everything after renders onto blank — so the fold's result
-// never reads the pre-fold paper, licensing the swap capture in pushCommand.
-function foldContainsClear(commands: StrokeGroupCommand[]): boolean {
-  return commands.some((cmd) => cmd.ops.some((op) => op.kind === 'clear'));
-}
-
 // Capture-by-swap for a clear: adopt the current paper canvas as the snapshot
 // raster (its pixels ARE the full-paper patch a clear's fold region demands)
-// and install a fresh, already-blank paper for the fold to land on. O(1)
+// and install a fresh, already-blank paper for the fold to land on, licensed by
+// the fold plan being `wipesPaper` with exactly one rect. O(1)
 // pointer swap + allocation instead of drawImage-copying the whole 2×-DPR
 // paper — the worst fixed pointerup hitch in the 2026-07 profile. Null when
 // the fresh canvas yields no context; the caller falls back to the copy path.
@@ -468,6 +318,50 @@ function foldableCount(commands: StrokeGroupCommand[]): number {
   return n;
 }
 
+// Capture the pixels of `paper` under each planned fold region. Swapping and
+// copying are mutually exclusive: an adopted paper returns as the entry's one
+// patch, and adoptPaperAsSnapshot only installs the fresh canvas on the path
+// that succeeds, so the copy loop below always runs against a paper no swap
+// has touched. Taking that paper as a parameter pins the capture to the
+// caller's canvas — the one whose dimensions foldRegionsForCommands planned
+// these rects against — instead of re-reading mutable module state.
+//
+// Null when a patch canvas yields no 2D context: that loses this one undo
+// entry, never the ink — the caller's fold must still run or the stroke would
+// vanish from the committed paper. The degraded corner that comes with it:
+// with no entry above that fold, its ink outside LOWER entries' rects survives
+// every deeper undo (a full-paper snapshot used to wipe it). Accepted —
+// keeping a child's stroke while losing its undo step beats deleting ink — but
+// it means the restore induction (see restorePatch) is conditional on every
+// fold having pushed its entry (all patches or none — a partial capture
+// couldn't cover the fold). No rects isn't a failure: the fold won't touch the
+// paper, so the entry legitimately carries no pixels.
+function capturePatchesUnder(
+  paper: HTMLCanvasElement,
+  rects: PatchRect[],
+  wipesPaper: boolean
+): SnapshotPatch[] | null {
+  // A clear in the fold set claims the full paper AND never reads the
+  // pre-fold pixels, so the paper itself becomes the patch (swap, not copy).
+  // Only a plan that is exactly that one full-paper rect can be captured by
+  // swapping — a multi-rect plan still needs its per-rect copies.
+  const adopted = wipesPaper && rects.length === 1 ? adoptPaperAsSnapshot() : null;
+  if (adopted) {
+    return [{ rect: rects[0], store: { tier: 'hot', canvas: adopted, encoding: false } }];
+  }
+  const patches: SnapshotPatch[] = [];
+  for (const rect of rects) {
+    const copy = document.createElement('canvas');
+    copy.width = rect.w;
+    copy.height = rect.h;
+    const copyCtx = copy.getContext('2d');
+    if (!copyCtx) return null;
+    copyCtx.drawImage(paper, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
+    patches.push({ rect, store: { tier: 'hot', canvas: copy, encoding: false } });
+  }
+  return patches;
+}
+
 // Commit: capture the pre-stroke paper patch under the region the fold is
 // about to mutate, push it, then fold the new command in. The fold set (and
 // so the rect) is decided once, up front — capture and fold must agree on
@@ -477,44 +371,21 @@ function foldableCount(commands: StrokeGroupCommand[]): number {
 // onto the paper — the two pointerup hitch candidates, kept apart so a hot
 // commit can be attributed to the right one.
 export function pushCommand(cmd: StrokeGroupCommand) {
-  if (!paperCanvas || !paperCtx) return;
+  if (!paperCanvas || !paperCtx) {
+    console.error('pushCommand: no paper context; dropping committed stroke');
+    return;
+  }
   if (PERF_MARKS) performance.mark('engine.snapshot:start');
   const prospective = [...pendingCommands, cmd];
   const foldCount = foldableCount(prospective);
   const folding = prospective.slice(0, foldCount);
-  const rects = foldRegionsForCommands(folding, paperCanvas.width, paperCanvas.height);
-  const patches: SnapshotPatch[] = [];
-  let captureFailed = false;
-  // A clear in the fold set claims the full paper AND never reads the
-  // pre-fold pixels, so the paper itself becomes the patch (swap, not copy).
-  const adopted = foldContainsClear(folding) ? adoptPaperAsSnapshot() : null;
-  if (adopted && rects.length === 1) {
-    patches.push({ rect: rects[0], canvas: adopted, blob: null, encoding: false, decoding: false });
-  } else {
-    for (const rect of rects) {
-      const copy = document.createElement('canvas');
-      copy.width = rect.w;
-      copy.height = rect.h;
-      const copyCtx = copy.getContext('2d');
-      if (!copyCtx) {
-        captureFailed = true;
-        break;
-      }
-      copyCtx.drawImage(paperCanvas, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
-      patches.push({ rect, canvas: copy, blob: null, encoding: false, decoding: false });
-    }
-  }
-  // A failed patch context loses this one undo entry, never the ink — the fold
-  // below must still run or the stroke would vanish from the committed paper.
-  // The degraded corner that comes with it: with no entry above this fold, its
-  // ink outside LOWER entries' rects survives every deeper undo (a full-paper
-  // snapshot used to wipe it). Accepted — keeping a child's stroke while
-  // losing its undo step beats deleting ink — but it means the restore
-  // induction (see restorePatch) is conditional on every fold having pushed
-  // its entry (all patches or none — a partial capture couldn't cover the
-  // fold). No rects isn't a failure: the fold won't touch the paper, so the
-  // entry legitimately carries no pixels.
-  if (!captureFailed) {
+  const { rects, wipesPaper } = foldRegionsForCommands(
+    folding,
+    paperCanvas.width,
+    paperCanvas.height
+  );
+  const patches = capturePatchesUnder(paperCanvas, rects, wipesPaper);
+  if (patches) {
     snapshotStack.push({
       wasEmpty: cmd.wasEmpty,
       patches,
@@ -582,16 +453,17 @@ function encodeColdSnapshots() {
   for (let i = 0; i < snapshotStack.length - MAX_HOT_RASTERS; i++) {
     const snap = snapshotStack[i];
     for (const patch of snap.patches) {
-      if (!patch.canvas || patch.blob || patch.encoding) continue;
-      const source = patch.canvas;
-      patch.encoding = true;
+      const store = patch.store;
+      if (store.tier !== 'hot' || store.encoding) continue;
+      const source = store.canvas;
+      store.encoding = true;
       source.toBlob(
         (blob) => {
-          patch.encoding = false;
+          const current = patch.store;
+          if (current.tier === 'hot') current.encoding = false;
           if (!isValidColdSnapshotBlob(blob)) return; // bad encode — keep the raster
-          if (patch.canvas === source && isInHotWindow(snap)) return;
-          patch.blob = blob;
-          if (patch.canvas === source) patch.canvas = null;
+          if (current.tier !== 'hot' || current.canvas !== source || isInHotWindow(snap)) return;
+          patch.store = { tier: 'cold', blob, decoding: false };
         },
         'image/webp',
         1
@@ -612,13 +484,15 @@ function reinflateHotSnapshots() {
   for (let i = Math.max(0, snapshotStack.length - MAX_HOT_RASTERS); i < snapshotStack.length; i++) {
     const snap = snapshotStack[i];
     for (const patch of snap.patches) {
-      if (patch.canvas || !patch.blob || patch.decoding) continue;
-      const source = patch.blob;
-      patch.decoding = true;
+      const store = patch.store;
+      if (store.tier !== 'cold' || store.decoding) continue;
+      const source = store.blob;
+      store.decoding = true;
       createImageBitmap(source).then(
         (bitmap) => {
-          patch.decoding = false;
-          if (patch.canvas || patch.blob !== source || !isInHotWindow(snap)) {
+          const current = patch.store;
+          if (current.tier === 'cold') current.decoding = false;
+          if (current.tier !== 'cold' || current.blob !== source || !isInHotWindow(snap)) {
             bitmap.close();
             return;
           }
@@ -632,11 +506,12 @@ function reinflateHotSnapshots() {
           }
           liveCtx.drawImage(bitmap, 0, 0);
           bitmap.close();
-          patch.canvas = live;
-          patch.blob = null;
+          patch.store = { tier: 'hot', canvas: live, encoding: false };
         },
         () => {
-          patch.decoding = false; // decode failed — keep the blob; deep undo retries it
+          // decode failed — keep the blob; deep undo retries it
+          const current = patch.store;
+          if (current.tier === 'cold') current.decoding = false;
         }
       );
     }
@@ -659,32 +534,23 @@ export function popSnapshot(): Promise<{ wasEmpty: boolean; rects: PatchRect[] }
   // No patches means this commit's fold never touched the paper, so undoing
   // it is just the pending-set reinstatement above.
   if (snap.patches.length === 0) return Promise.resolve({ wasEmpty: snap.wasEmpty, rects });
-  if (snap.patches.every((p) => p.canvas)) {
-    for (const p of snap.patches) restorePatch(p.canvas!, p.rect);
+  const hotCanvases = snap.patches.map((p) => (p.store.tier === 'hot' ? p.store.canvas : null));
+  if (hotCanvases.every((canvas) => canvas !== null)) {
+    hotCanvases.forEach((canvas, i) => restorePatch(canvas, snap.patches[i].rect));
     return Promise.resolve({ wasEmpty: snap.wasEmpty, rects });
   }
   // Decode every demoted patch, then restore the whole entry in one pass (the
-  // rects are disjoint, so within-entry order is immaterial). Invariant: a
-  // stacked patch always holds its canvas or its blob — encode drops the
-  // raster only after a validated blob lands (encodeColdSnapshots), and
-  // re-inflation drops the blob only after the raster lands
-  // (reinflateHotSnapshots), so the null-null branch is unreachable. It must
-  // stay that way: it skips that patch's restore blit, leaving the paper
-  // wrong. The error is a tripwire for a refactor that breaks the invariant;
-  // the return semantics are deliberately unchanged.
+  // rects are disjoint, so within-entry order is immaterial).
   return Promise.all(
     snap.patches.map(async (p) => {
-      if (p.canvas) return { source: p.canvas as CanvasImageSource, rect: p.rect, bitmap: null };
-      if (!p.blob) {
-        console.error('Undo snapshot lost both canvas and blob; restore blit skipped');
-        return null;
+      if (p.store.tier === 'hot') {
+        return { source: p.store.canvas as CanvasImageSource, rect: p.rect, bitmap: null };
       }
-      const bitmap = await createImageBitmap(p.blob);
+      const bitmap = await createImageBitmap(p.store.blob);
       return { source: bitmap as CanvasImageSource, rect: p.rect, bitmap };
     })
   ).then((restores) => {
     for (const r of restores) {
-      if (!r) continue;
       restorePatch(r.source, r.rect);
       r.bitmap?.close();
     }
@@ -765,7 +631,7 @@ function replayCommands(target: CanvasRenderingContext2D, commands: StrokeGroupC
 export function repaintAll(target: CanvasRenderingContext2D) {
   // Replaying the open pass's ops below rebuilds its crayon accumulation from
   // scratch; the live buffers must start empty so a non-idempotent deposit
-  // can never double-composite on a repaint (see strokeOps).
+  // can never double-composite on a repaint (see crayonPassBuffer).
   resetLiveCrayonForReplay(target);
   clearAllOf(target);
   if (paperCanvas) target.drawImage(paperCanvas, 0, 0);
@@ -785,24 +651,34 @@ export function repaintAll(target: CanvasRenderingContext2D) {
 // encoded tier's total size — together the history memory the perf harness
 // reports; `pendingCommands` counts commands the unready magic sheet is
 // holding out of the paper.
-export function getHistoryDebug(): {
+export interface HistoryDebug {
   snapshots: number;
   liveRasters: number;
   rasterBytes: number;
   blobBytes: number;
   pendingCommands: number;
-} {
+}
+
+export function getHistoryDebug(): HistoryDebug {
   return {
     snapshots: snapshotStack.length,
-    liveRasters: snapshotStack.reduce((n, s) => n + (s.patches.some((p) => p.canvas) ? 1 : 0), 0),
+    liveRasters: snapshotStack.reduce(
+      (n, s) => n + (s.patches.some((p) => p.store.tier === 'hot') ? 1 : 0),
+      0
+    ),
     rasterBytes: snapshotStack.reduce(
       (n, s) =>
         n +
-        s.patches.reduce((m, p) => m + (p.canvas ? p.canvas.width * p.canvas.height * 4 : 0), 0),
+        s.patches.reduce(
+          (m, p) =>
+            m + (p.store.tier === 'hot' ? p.store.canvas.width * p.store.canvas.height * 4 : 0),
+          0
+        ),
       0
     ),
     blobBytes: snapshotStack.reduce(
-      (n, s) => n + s.patches.reduce((m, p) => m + (p.blob?.size ?? 0), 0),
+      (n, s) =>
+        n + s.patches.reduce((m, p) => m + (p.store.tier === 'cold' ? p.store.blob.size : 0), 0),
       0
     ),
     pendingCommands: pendingCommands.length,

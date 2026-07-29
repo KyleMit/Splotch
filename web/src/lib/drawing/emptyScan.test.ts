@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { alphaDataHasInk, EMPTY_SCAN_ALPHA_THRESHOLD } from './emptyScan';
 
 describe('alphaDataHasInk', () => {
@@ -34,5 +34,57 @@ describe('alphaDataHasInk', () => {
       data[i + 2] = 255;
     }
     expect(alphaDataHasInk(data)).toBe(false);
+  });
+});
+
+describe('scanCanvasIsEmpty', () => {
+  // happy-dom's <canvas> has no real 2D context; these cases stub
+  // HTMLCanvasElement.getContext to simulate context-limit exhaustion. The
+  // real getContext is captured once (never re-captured from a stub), and
+  // scanCanvasIsEmpty is re-imported after vi.resetModules() so each case
+  // gets its own module-scope scratch-canvas singleton instead of leaking a
+  // stub-backed one into later tests.
+  const REAL_GET_CONTEXT = HTMLCanvasElement.prototype.getContext;
+
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    HTMLCanvasElement.prototype.getContext = REAL_GET_CONTEXT;
+  });
+
+  function stubGetContext(returnValue: unknown): void {
+    (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = () =>
+      returnValue;
+  }
+
+  function stubWorkingContext(alpha: number): void {
+    stubGetContext({
+      clearRect() {},
+      drawImage() {},
+      getImageData(_x: number, _y: number, w: number, h: number) {
+        const data = new Uint8ClampedArray(w * h * 4);
+        data[3] = alpha;
+        return { data } as ImageData;
+      },
+    } as unknown as CanvasRenderingContext2D);
+  }
+
+  function sourceCanvas(): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    canvas.width = 8;
+    canvas.height = 8;
+    return canvas;
+  }
+
+  it('treats an unrecoverable getContext failure as non-empty, then retries on the next call', async () => {
+    const { scanCanvasIsEmpty } = await import('./emptyScan');
+
+    stubGetContext(null);
+    expect(scanCanvasIsEmpty(sourceCanvas(), 1)).toBe(false);
+
+    stubWorkingContext(0);
+    expect(scanCanvasIsEmpty(sourceCanvas(), 1)).toBe(true);
   });
 });

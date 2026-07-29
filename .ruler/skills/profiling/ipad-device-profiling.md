@@ -130,9 +130,14 @@ npm run perf:ios:analyze -- perf-profiles/web-inspector-timeline/<export>.json
 > things to know about the format, all handled by `perf:ios:analyze`:
 >
 > * It records `performance.mark()` as `markers` but **not** `performance.measure()`, so engine.\*
->   durations aren't stored directly — the analyzer recovers each op's main-thread cost from the
+>   durations aren't stored directly — the analyzer recovers most ops' main-thread cost from the
 >   smallest timeline **record** spanning the mark (the commit's patch capture lands inside the
->   pointerup record; an undo inside its rAF record).
+>   pointerup record). `engine.undo` is the one exception: a deep undo spans multiple tasks, so the
+>   analyzer pairs its own `:start`/`:end` marks instead of using a record.
+>   `engine.commit`/`engine.draw`/`engine.scanEmpty` also emit an `:end` mark now (closing on every
+>   early return, so a buffered edge-swipe candidate or a hover commit can't leave its `:start`
+>   unmatched), but since those three stay single-slice, the analyzer only uses the pair to flag an
+>   orphaned start — their reported cost still comes from the enclosing record.
 > * `markers` is a **ring buffer** — a long session keeps only the most recent marks (the analyzer
 >   warns when the first mark is far past the recording start). Keep the driven scenario short, or
 >   run one scenario per recording.

@@ -51,6 +51,7 @@
 // reproduces it by the same mechanism as everything else.
 
 import { scheduleIdle } from '../idle';
+import { PALETTE_COLORS } from '../palette';
 import type { Point } from './strokeMath';
 
 // A density pass: stroke the op at `widthScale` of its line width, filled with
@@ -100,7 +101,7 @@ export interface CrayonOptions {
   // multiply glaze goes green). Virgin paper is untouched by the glaze (the
   // wax lands fully opaque and exact), and same-colour overdraw deepens only
   // a few percent, converging — never compounding into mud. Low, not zero:
-  // real crayons barely mix. See strokeOps' pass buffer.
+  // real crayons barely mix. See crayonPassBuffer.ts.
   colorMix: number;
   // The density passes, widest first.
   passes: CrayonPass[];
@@ -218,38 +219,48 @@ function normalizeInPlace(a: Float32Array) {
 // `dither` is a fixed per-texel value in [0,1) that jitters the pit threshold so
 // a rim texel resolves to a stippled 0/1 instead of a grey ramp — the tooth stays
 // BINARY (undo-stable, see waxAlpha) while the rims read as grain, not hard dots.
-let tile = 0;
-let height: Float32Array | null = null;
-let body: Float32Array | null = null;
-let dither: Float32Array | null = null;
+interface CrayonFields {
+  tile: number;
+  height: Float32Array;
+  body: Float32Array;
+  dither: Float32Array;
+}
 
-function buildFields() {
-  tile = opts.tile;
-  const size = tile;
+function buildFields(): CrayonFields {
+  const size = opts.tile;
   const rand = mulberry32(0x5c1a1); // fixed — deterministic tooth every run
 
   const h = new Float32Array(size * size);
   const wsum = opts.octaves.reduce((s, o) => s + o.weight, 0) || 1;
   for (const o of opts.octaves) addOctave(h, size, o.cell, o.weight / wsum, rand);
   normalizeInPlace(h);
-  height = h;
 
   const b = new Float32Array(size * size);
   addOctave(b, size, opts.bodyVariationCell, 1, rand);
   normalizeInPlace(b);
-  body = b;
 
   const d = new Float32Array(size * size);
   const drand = mulberry32(0x0d17e); // fixed, independent of the tooth stream
   for (let i = 0; i < d.length; i++) d[i] = drand();
-  dither = d;
+
+  return { tile: size, height: h, body: b, dither: d };
 }
 
-buildFields();
+// Built lazily so the per-texel field passes stay off the drawing route's boot
+// path: the first reader builds them, and the idle prebuild below front-loads
+// that cost for the common case where the crayon does get picked.
+let fields: CrayonFields | null = null;
+
+function crayonFields(): CrayonFields {
+  if (!fields) fields = buildFields();
+  return fields;
+}
+
+scheduleIdle(() => crayonFields());
 
 export function setCrayonOptions(next: Partial<CrayonOptions>) {
-  opts = clone({ ...opts, ...next } as CrayonOptions);
-  buildFields();
+  opts = clone({ ...opts, ...next });
+  fields = buildFields();
   colorTileCache.clear();
   patternCache = new WeakMap();
 }
@@ -262,9 +273,13 @@ export function getCrayonPasses(): CrayonPass[] {
   return opts.passes.map((p) => ({ ...p }));
 }
 
+// Glaze strength ceiling: past this the two-blit stamp reads as paint blending,
+// not wax (see the colorMix note in CRAYON_DEFAULTS).
+export const MAX_CRAYON_MIX = 0.9;
+
 // The glaze strength for a deposition pass's stamp (see CrayonOptions).
 export function getCrayonMix(): number {
-  return Math.min(0.9, Math.max(0, opts.colorMix));
+  return Math.min(MAX_CRAYON_MIX, Math.max(0, opts.colorMix));
 }
 
 // Non-cloning read accessors for internal hot-path callers. getCrayonPasses /
@@ -281,7 +296,7 @@ export function crayonPassWidthScale(i: number): number {
 
 // The RAW, unclamped colour mix — for reading the stored option (e.g. the live
 // overlay's top-plane opacity), NOT the glaze strength. getCrayonMix clamps to
-// [0,0.9]; this returns opts.colorMix verbatim.
+// [0, MAX_CRAYON_MIX]; this returns opts.colorMix verbatim.
 export function crayonColorMix(): number {
   return opts.colorMix;
 }
@@ -314,9 +329,10 @@ function parseColor(color: string): [number, number, number] {
 // the dither field within an `edge`-wide band so rims stipple instead of aliasing,
 // then hard-decide bump (1) vs pit (0).
 function waxAlpha(i: number, coverage: number): number {
-  const h = height![i];
-  const t = 1 - coverage + opts.bodyVariation * (body![i] - 0.5);
-  const jitter = (dither![i] - 0.5) * 2 * Math.max(0, opts.edge);
+  const { height, body, dither } = crayonFields();
+  const h = height[i];
+  const t = 1 - coverage + opts.bodyVariation * (body[i] - 0.5);
+  const jitter = (dither[i] - 0.5) * 2 * Math.max(0, opts.edge);
   return h + jitter >= t ? 1 : 0;
 }
 
@@ -346,14 +362,26 @@ export function shadeShift(heightValue: number, bodyValue: number, amplitude: nu
 // per texel (identically for every pass), alpha = the pass's tooth field. Built
 // once and reused by every context's pattern.
 const colorTileCache = new Map<string, HTMLCanvasElement>();
+// Bounds resident wax-tile canvases to this many recent (colour, pass) keys — each tile is
+// tile*tile RGBA, so unbounded growth (issue #167, custom colours) would leak canvas memory.
+// Derived, not a flat number, so an added swatch or pass can't silently drop the fixed palette
+// below the cap and make every colour change evict, rebuild a tile, and wipe patternCache: covers
+// every PALETTE_COLORS swatch, +1 for the dark-mode black/white swap, at CRAYON_DEFAULTS' pass
+// count.
+// Exported for crayonBrush.test.ts only — no production caller needs the raw cap.
+export const MAX_COLOR_TILES = (PALETTE_COLORS.length + 1) * CRAYON_DEFAULTS.passes.length;
 
 function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
   const key = `${color}@${passIdx}`;
   const hit = colorTileCache.get(key);
-  if (hit) return hit;
-  if (!height) return null;
+  if (hit) {
+    colorTileCache.delete(key);
+    colorTileCache.set(key, hit);
+    return hit;
+  }
   const pass = opts.passes[passIdx];
   if (!pass) return null;
+  const { tile, height, body } = crayonFields();
   const c = document.createElement('canvas');
   c.width = tile;
   c.height = tile;
@@ -365,7 +393,7 @@ function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
   const amp = Math.max(0, opts.shadeVariation);
   for (let i = 0; i < height.length; i++) {
     const j = i * 4;
-    const s = amp ? shadeShift(height[i], body![i], amp) : 0;
+    const s = amp ? shadeShift(height[i], body[i], amp) : 0;
     if (s >= 0) {
       data[j] = Math.round(r + (255 - r) * s);
       data[j + 1] = Math.round(gr + (255 - gr) * s);
@@ -380,6 +408,15 @@ function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
   }
   g.putImageData(img, 0, 0);
   colorTileCache.set(key, c);
+  if (colorTileCache.size > MAX_COLOR_TILES) {
+    const oldest = colorTileCache.keys().next().value;
+    if (oldest !== undefined) colorTileCache.delete(oldest);
+    // createPattern copies the source bitmap, so every context's patternCache entry for the
+    // evicted key is an independent full-tile copy the WeakMap can't reach to purge — drop the
+    // whole cache rather than leave it retaining every colour ever drawn (same reset
+    // setCrayonOptions already does on a full option change).
+    patternCache = new WeakMap();
+  }
   return c;
 }
 
@@ -412,6 +449,21 @@ export function seedPhase(seed: number, tileSize: number): [number, number] {
   return [px, py];
 }
 
+// A live pointer-move frame calls crayonPatternFor up to passes × 3 times with
+// the same (seed, tile) pair (renderCrayonOp fans one op out to buf.ctx, its
+// mirror, and the paper-space buffer). seedPhase is pure, so a 1-entry cache
+// keyed on both inputs skips the re-hash for every call after the first.
+let lastSeedPhase: { seed: number; tileSize: number; px: number; py: number } | null = null;
+
+function cachedSeedPhase(seed: number, tileSize: number): [number, number] {
+  if (lastSeedPhase && lastSeedPhase.seed === seed && lastSeedPhase.tileSize === tileSize) {
+    return [lastSeedPhase.px, lastSeedPhase.py];
+  }
+  const [px, py] = seedPhase(seed, tileSize);
+  lastSeedPhase = { seed, tileSize, px, py };
+  return [px, py];
+}
+
 // The paint for one density pass of a crayon op: the colour's wax tile as a
 // repeating pattern, phase-shifted (in paper coordinates) by the stroke's seed.
 // Returns null only if the tile can't be built (no DOM canvas) — caller skips.
@@ -435,10 +487,8 @@ export function crayonPatternFor(
     if (!pattern) return null;
     byKey.set(key, pattern);
   }
-  if (typeof DOMMatrix !== 'undefined') {
-    const [px, py] = seedPhase(seed, tile);
-    pattern.setTransform(new DOMMatrix([1, 0, 0, 1, px, py]));
-  }
+  const [px, py] = cachedSeedPhase(seed, crayonFields().tile);
+  pattern.setTransform({ e: px, f: py });
   return pattern;
 }
 
@@ -469,8 +519,11 @@ export type CrayonPoint = Point;
 // (here: a fresh seed phase, so the new pass fills tooth the current one left
 // bare). Pure geometry — one instance per pass, fed points in order; on
 // 'split' the caller bumps the seed and re-seeds a tracker at the previous
-// point. Anchor state resets per pass, so the re-entry scan stays bounded on
-// the pointer hot path.
+// point. Anchor state resets per pass (a fresh tracker is constructed on
+// split), so the re-entry scan is bounded by pass length, not stroke length —
+// it grows unboundedly within one very long never-splitting pass (O(n^2)
+// over that pass), which is cheap at today's anchor spacing and stroke
+// lengths.
 export class CrayonPassTracker {
   private readonly dirStep: number;
   private readonly proximity: number;

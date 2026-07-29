@@ -1,11 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import {
-  createRainbowGradient,
-  MAGIC_GRADIENT_COUNT,
-  edgeMargins,
-  isMagicSheetUnready,
-  setColorSheet,
-} from './magicBrush';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createRainbowGradient, MAGIC_GRADIENT_COUNT, edgeMargins } from './magicBrush';
 
 // A deterministic pseudo-random sequence so gradient generation is reproducible
 // in the test (the module defaults to Math.random in the app).
@@ -18,8 +12,12 @@ function seededRand(seed: number): () => number {
 }
 
 describe('rainbow gradient generation', () => {
-  it('ships ten pooled gradients', () => {
-    expect(MAGIC_GRADIENT_COUNT).toBe(10);
+  it('produces a distinct rainbow for each of MAGIC_GRADIENT_COUNT seeds', () => {
+    const gradients = Array.from({ length: MAGIC_GRADIENT_COUNT }, (_, i) =>
+      createRainbowGradient(seededRand(i + 1))
+    );
+    const serialized = new Set(gradients.map((g) => JSON.stringify(g)));
+    expect(serialized.size).toBe(MAGIC_GRADIENT_COUNT);
   });
 
   it('produces a rainbow of ascending hsl stops from 0 to 1', () => {
@@ -47,7 +45,16 @@ describe('rainbow gradient generation', () => {
 });
 
 describe('magic sheet readiness gate', () => {
-  it('stays unready whenever the sheet cannot paint, not only while decoding', () => {
+  // The readiness flags are module-scope singleton state with no reset seam, so the
+  // module is re-imported after vi.resetModules() rather than inheriting whatever
+  // fill/gradient/sheet state an earlier test left behind.
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('stays unready whenever the sheet cannot paint, not only while decoding', async () => {
+    const { setColorSheet, isMagicSheetUnready } = await import('./magicBrush');
+
     // Requesting a page starts an async decode; the sheet is not ready to paint.
     setColorSheet('/coloring/test.light.webp');
     expect(isMagicSheetUnready()).toBe(true);
@@ -59,6 +66,151 @@ describe('magic sheet readiness gate', () => {
     // render nothing, so the gate must stay closed and the fold defer.
     setColorSheet(null);
     expect(isMagicSheetUnready()).toBe(true);
+  });
+});
+
+describe('magic sheet fill-load failure', () => {
+  // happy-dom neither loads images nor has a real 2D context, so the fill decode is
+  // driven by hand through a stubbed Image and the sheet rasterizes into a fake
+  // context. The module is re-imported after vi.resetModules() so each case gets
+  // its own fill/gradient/sheet state instead of inheriting the previous one's.
+  const REAL_GET_CONTEXT = HTMLCanvasElement.prototype.getContext;
+  const PAGE_URL = '/coloring/first.light.webp';
+  const OTHER_PAGE_URL = '/coloring/second.light.webp';
+
+  const requested: FakeImage[] = [];
+
+  class FakeImage {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    naturalWidth = 0;
+    naturalHeight = 0;
+    src = '';
+    constructor() {
+      requested.push(this);
+    }
+  }
+
+  beforeEach(() => {
+    vi.resetModules();
+    requested.length = 0;
+    vi.stubGlobal('Image', FakeImage);
+    (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = () =>
+      ({
+        clearRect() {},
+        drawImage() {},
+        fillRect() {},
+        createLinearGradient: () => ({ addColorStop() {} }),
+        fillStyle: '',
+      }) as unknown as CanvasRenderingContext2D;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    HTMLCanvasElement.prototype.getContext = REAL_GET_CONTEXT;
+  });
+
+  const PAPER = { width: 400, height: 300 };
+
+  async function mountedMagicBrush() {
+    const magic = await import('./magicBrush');
+    magic.initMagicBrush({
+      paperSize: () => PAPER,
+      sheetBounds: () => ({ x: 0, y: 0, ...PAPER }),
+      repaint: () => {},
+    });
+    return magic;
+  }
+
+  function lastRequest(): FakeImage {
+    return requested[requested.length - 1];
+  }
+
+  it('reopens the readiness gate with no further user action', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.setColorSheet(PAGE_URL);
+    expect(magic.isMagicSheetUnready()).toBe(true);
+
+    lastRequest().onerror!();
+
+    // A page session holds no gradient, so the error handler has to take one over
+    // itself — the gate the pending-decode case above leaves closed forever clears
+    // without the child toggling brushes or clearing the canvas.
+    expect(magic.isMagicSheetUnready()).toBe(false);
+  });
+
+  it('reopens the readiness gate when a rainbow was already held before the page', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.ensureMagicSheet();
+    magic.setColorSheet(PAGE_URL);
+
+    lastRequest().onerror!();
+
+    // The held rainbow is kept, but the sheet still carries the (never-drawn) fill
+    // source, so recovery has to re-rasterize rather than assume a gradient handoff.
+    expect(magic.isMagicSheetUnready()).toBe(false);
+  });
+
+  it('re-attempts the load when the same page is applied again', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.setColorSheet(PAGE_URL);
+    expect(requested).toHaveLength(1);
+
+    lastRequest().onerror!();
+
+    magic.setColorSheet(PAGE_URL);
+    expect(requested).toHaveLength(2);
+    expect(lastRequest().src).toBe(PAGE_URL);
+  });
+
+  it('ignores a superseded error so it cannot clobber a newer page', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.setColorSheet(PAGE_URL);
+    const superseded = lastRequest();
+
+    magic.setColorSheet(OTHER_PAGE_URL);
+    const current = lastRequest();
+    current.naturalWidth = 200;
+    current.naturalHeight = 100;
+    current.onload!();
+    expect(magic.isMagicSheetUnready()).toBe(false);
+
+    superseded.onerror!();
+
+    expect(magic.isMagicSheetUnready()).toBe(false);
+    // The newer page is still attached, so re-applying it stays a no-op.
+    magic.setColorSheet(OTHER_PAGE_URL);
+    expect(requested).toHaveLength(2);
+  });
+
+  // A theme switch cycles the sheet through the night fill and back
+  // (DrawingCanvas's resolvedTheme effect), so the current page's URL can equal an
+  // abandoned load's — only load identity separates them.
+  it('ignores a superseded error from an earlier load of the page now current again', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.setColorSheet(PAGE_URL);
+    const abandoned = lastRequest();
+    magic.setColorSheet(OTHER_PAGE_URL);
+    magic.setColorSheet(PAGE_URL);
+    const current = lastRequest();
+
+    abandoned.onerror!();
+
+    current.naturalWidth = 200;
+    current.naturalHeight = 100;
+    current.onload!();
+    expect(magic.isMagicSheetUnready()).toBe(false);
+
+    // The page is still attached — had the stale error detached it, this would
+    // start a fourth load instead of no-oping (and the gate above would have been
+    // cleared by a fallback rainbow rather than by the page's own fill).
+    magic.setColorSheet(PAGE_URL);
+    expect(requested).toHaveLength(3);
   });
 });
 

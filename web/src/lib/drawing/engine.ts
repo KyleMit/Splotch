@@ -11,11 +11,13 @@
 // delegates the rest:
 //
 //   strokeOps.ts        the op vocabulary + the one renderer every surface shares
+//   crayonPassBuffer.ts the crayon pass's accumulation buffers + glaze stamp
 //   undoHistory.ts      the paper raster + pre-stroke snapshot stack (ADR-0066)
 //   strokeMath.ts       pure gesture math (edge swipes, resume detection, speed)
 //   paperView.ts        pure rotation-lock view geometry (ADR-0050)
 //   magicBrush.ts       the magic brush's color sheet + paint pattern (ADR-0043)
 //   emptyScan.ts        cheap blank-canvas detection
+//   penStreamQuirks.ts  WebKit merged-stream pen-contact adoption
 //   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
 import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
@@ -49,18 +51,15 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
+import { renderOp, clearAllOf, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
 import {
-  renderOp,
-  clearAllOf,
   closeLiveCrayonPass,
   flushCrayonBuffer,
   hasOpenLiveCrayonPass,
   resetLiveCrayonPass,
   setCrayonPaperSpace,
   setLiveCrayonBuffer,
-  type StrokeGroupCommand,
-  type StrokeOp,
-} from './strokeOps';
+} from './crayonPassBuffer';
 import {
   setCrayonOptions,
   crayonColorMix,
@@ -77,6 +76,7 @@ import {
   ensurePaperCovers,
   finalizeDeferredCommand,
   getHistoryDebug,
+  type HistoryDebug,
   hasUnfoldedCommands,
   pendingCommandCount,
   popSnapshot,
@@ -90,6 +90,7 @@ import {
   snapshotCount,
 } from './undoHistory';
 import { scanCanvasIsEmpty } from './emptyScan';
+import { createPenStreamAdopter } from './penStreamQuirks';
 import type { ExportOptions } from './exportDrawing';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
@@ -103,13 +104,23 @@ export interface DrawSoundData {
   isStrokeStart: boolean;
 }
 
+export type StrokeStartData = Pick<PointerEvent, 'pointerId' | 'clientX' | 'clientY'> & {
+  magic: boolean;
+};
+
 interface InitOptions {
-  onDrawSound?: ((data: DrawSoundData) => void) | null;
-  onDrawStop?: (() => void) | null;
-  onUndoStateChange?: ((canUndo: boolean) => void) | null;
-  onCanvasEmptyChange?: ((empty: boolean) => void) | null;
-  onStrokeEnd?: (() => void) | null;
-  onViewChange?: ((view: EngineViewState) => void) | null;
+  onDrawSound?: (data: DrawSoundData) => void;
+  onDrawStop?: () => void;
+  onUndoStateChange?: (canUndo: boolean) => void;
+  onCanvasEmptyChange?: (empty: boolean) => void;
+  // Fires where the engine begins painting a stroke, the down-less pen streams
+  // it adopts mid-move included (see isOrphanPenContact) — those deliver no
+  // pointerdown to the owning component at all. A buffered edge-swipe candidate
+  // reports nothing, at start or at commitEdgeSwipe: its contact point is
+  // already stale by the time the swipe is judged a stroke.
+  onStrokeStart?: (stroke: StrokeStartData) => void;
+  onStrokeEnd?: () => void;
+  onViewChange?: (view: EngineViewState) => void;
   initialColor?: string;
 }
 
@@ -129,7 +140,7 @@ let lastColorChangeTime = 0;
 // composites with mix-blend-mode: darken and the top with CSS opacity
 // (1 - colorMix), so the browser's compositing of (darken, then lerp) shows
 // pixel-for-pixel the two-blit subtractive mix the pass's 'crayonFlush'
-// stamp will bake into the main canvas at close (see strokeOps' pass buffer)
+// stamp will bake into the main canvas at close (see crayonPassBuffer.ts)
 // — no visible snap. pointer-events: none, so input still lands on the canvas
 // beneath. The canvas's OWNING wrapper must set `isolation: isolate`
 // (DrawingCanvas's .canvas-stack; the dev harness's .canvas-wrapper): it
@@ -164,7 +175,7 @@ function syncCrayonOverlayMix() {
 // Close the current deposition pass: stamp the live buffer onto the canvas,
 // then swap the pass's recorded ops for the raster its paper-space
 // accumulation captured, so the commit fold BLITS the pass instead of
-// re-rendering it (strokeOps' closeLiveCrayonPass). When nothing accumulated
+// re-rendering it (crayonPassBuffer's closeLiveCrayonPass). When nothing accumulated
 // (the mix-0 direct-paint escape hatch, or a raster the crop couldn't build)
 // the raw ops stay and a plain flush op keeps the legacy re-render fold
 // correct. recordOp/replaceOpenCrayonPassOps no-op when no command is open,
@@ -187,12 +198,7 @@ function recordCrayonFlush() {
 // pixels regardless of the counter's position.
 let crayonSeedCounter = 1;
 
-let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
-let onDrawStopCallback: (() => void) | null = null;
-let onUndoStateChange: ((canUndo: boolean) => void) | null = null;
-let onCanvasEmptyChange: ((empty: boolean) => void) | null = null;
-let onStrokeEnd: (() => void) | null = null;
-let onViewChange: ((view: EngineViewState) => void) | null = null;
+let callbacks: Omit<InitOptions, 'initialColor'> = {};
 
 // Strokes rasterize at the device pixel ratio so they stay crisp on mobile
 // screens, capped at 2× — DPR-3 panels would cost 9× the pixels for detail a
@@ -202,11 +208,15 @@ let onViewChange: ((view: EngineViewState) => void) | null = null;
 const MAX_RENDER_SCALE = 2;
 let renderScale = 1;
 
+function backingSizeOf(rect: DOMRect): { w: number; h: number } {
+  return { w: Math.round(rect.width * renderScale), h: Math.round(rect.height * renderScale) };
+}
+
 let canUndo = false;
 
 function setCanUndo(value: boolean) {
   canUndo = value;
-  if (onUndoStateChange) onUndoStateChange(value);
+  callbacks.onUndoStateChange?.(value);
 }
 
 let canvasEmpty = true;
@@ -214,7 +224,7 @@ let canvasEmpty = true;
 function setCanvasEmptyState(empty: boolean) {
   if (canvasEmpty === empty) return;
   canvasEmpty = empty;
-  if (onCanvasEmptyChange) onCanvasEmptyChange(empty);
+  callbacks.onCanvasEmptyChange?.(empty);
   // A blank canvas frees the locked paper to match the live viewport again
   // (clear, undo-to-blank, erase-to-blank): re-adopt right away instead of
   // leaving the child a letterboxed blank page until the next rotation.
@@ -269,6 +279,19 @@ export interface EngineViewState {
   paperOrientation: 'portrait' | 'landscape';
 }
 
+// The pre-adoption SSR-shell value of EngineViewState, before getViewState() has
+// any paper/render-scale state to derive from.
+export const INITIAL_ENGINE_VIEW_STATE: EngineViewState = Object.freeze({
+  active: false,
+  scale: 1,
+  rotate: 0,
+  tx: 0,
+  ty: 0,
+  paperCssWidth: 0,
+  paperCssHeight: 0,
+  paperOrientation: 'portrait',
+});
+
 export function getViewState(): EngineViewState {
   return {
     active: !isIdentityView(paperView),
@@ -283,7 +306,7 @@ export function getViewState(): EngineViewState {
 }
 
 function notifyViewChange() {
-  if (onViewChange) onViewChange(getViewState());
+  callbacks.onViewChange?.(getViewState());
 }
 
 // --- Pointer → paper coordinate mapping ------------------------------------
@@ -305,9 +328,9 @@ let rectScaleY = 1;
 // Snapshot the canvas's client rect and the backing-pixel scale factors. Called
 // only off the hot path (resize/scroll/orientation), so the per-pointermove
 // pointerToScreen() can stay reflow-free.
-function refreshCanvasRect() {
+function refreshCanvasRect(rect?: DOMRect) {
   if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
+  rect ??= canvas.getBoundingClientRect();
   canvasRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
   rectScaleX = rect.width ? canvas.width / rect.width : 1;
   rectScaleY = rect.height ? canvas.height / rect.height : 1;
@@ -361,7 +384,7 @@ function sheetBoundsPaper(): { x: number; y: number; width: number; height: numb
 
 // The cached canvas client rect, so components can position pointer-following
 // UI (e.g. the eraser cursor) without their own per-move getBoundingClientRect.
-export function getCanvasRect(): CanvasRect {
+export function getCanvasRect(): Readonly<CanvasRect> {
   return canvasRect;
 }
 
@@ -376,12 +399,8 @@ function adoptPaperUnlessLocked(rect: DOMRect): boolean {
   const angle = currentScreenAngle();
   const lockPaper = !canvasEmpty && rotationDelta(paperAngle, angle) !== 0;
   if (!lockPaper) {
-    paper = {
-      pxW: Math.round(rect.width * renderScale),
-      pxH: Math.round(rect.height * renderScale),
-      cssW: rect.width,
-      cssH: rect.height,
-    };
+    const { w, h } = backingSizeOf(rect);
+    paper = { pxW: w, pxH: h, cssW: rect.width, cssH: rect.height };
     paperAngle = angle;
   }
   return lockPaper;
@@ -416,24 +435,24 @@ function applyPaperView(lockPaper: boolean) {
   }
 }
 
-function resizeCanvas() {
+function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
   if (PERF_MARKS) performance.mark('engine.resize:start');
-  const rect = canvas.getBoundingClientRect();
   const lockPaper = adoptPaperUnlessLocked(rect);
   resizedAngle = currentScreenAngle();
 
   // The paper raster is a max(w,h) square of the viewport so it covers both
   // orientations and rotation never loses pixels; anything larger (e.g. a
   // resized desktop window) goes through the grow path. The live crayon
-  // pass accumulation buffer mirrors the same square (strokeOps).
+  // pass accumulation buffer mirrors the same square (crayonPassBuffer).
   const paperSide = Math.ceil(Math.max(paper.pxW, paper.pxH));
   ensurePaperCovers(paperSide);
   setCrayonPaperSpace(paperSide);
 
   // Resizing the backing store wipes the visible canvas and resets its context
   // state, so re-arm the round caps and repaint from the paper raster.
-  canvas.width = Math.round(rect.width * renderScale);
-  canvas.height = Math.round(rect.height * renderScale);
+  const { w, h } = backingSizeOf(rect);
+  canvas.width = w;
+  canvas.height = h;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   const overlays = crayonOverlays;
@@ -455,7 +474,7 @@ function resizeCanvas() {
   rasterizeSheet();
   repaintAll(ctx);
 
-  refreshCanvasRect();
+  refreshCanvasRect(rect);
   notifyViewChange();
 
   if (PERF_MARKS) performance.measure('engine.resize', 'engine.resize:start');
@@ -472,11 +491,11 @@ export const RESIZE_SETTLE_MS = 150;
 let resizeSettleTimer: ReturnType<typeof setTimeout> | null = null;
 
 function handleResize() {
-  refreshCanvasRect();
   if (__IS_CAPACITOR__) {
     resizeCanvas();
     return;
   }
+  refreshCanvasRect();
   if (resizeSettleTimer !== null) clearTimeout(resizeSettleTimer);
   resizeSettleTimer = setTimeout(() => {
     resizeSettleTimer = null;
@@ -494,12 +513,10 @@ function handleResize() {
 function resyncOnReentry() {
   if (document.visibilityState !== 'visible') return;
   const rect = canvas.getBoundingClientRect();
-  const stale =
-    canvas.width !== Math.round(rect.width * renderScale) ||
-    canvas.height !== Math.round(rect.height * renderScale) ||
-    resizedAngle !== currentScreenAngle();
-  if (stale) resizeCanvas();
-  else refreshCanvasRect();
+  const { w, h } = backingSizeOf(rect);
+  const stale = canvas.width !== w || canvas.height !== h || resizedAngle !== currentScreenAngle();
+  if (stale) resizeCanvas(rect);
+  else refreshCanvasRect(rect);
 }
 
 // --- Stroke rendering -------------------------------------------------------
@@ -559,7 +576,7 @@ function renderStrokeStart(ps: PointerState) {
   ctx.beginPath();
   ctx.moveTo(ps.x, ps.y);
 
-  if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0, isStrokeStart: true });
+  callbacks.onDrawSound?.({ speed: 0, isStrokeStart: true });
 }
 
 // One quadratic segment per input point: the path runs midpoint-to-midpoint
@@ -631,23 +648,29 @@ function strokeSegments(ps: PointerState, points: Point[]) {
 // never do DOM work while a finger is mid-stroke.
 function commitStrokeGroup() {
   if (PERF_MARKS) performance.mark('engine.commit:start');
-  const deferBehindRestore = paperStepsPending > 0;
-  const rasterRects = activeCrayonRasterRects();
-  if (!commitActiveCommand(deferBehindRestore)) return;
-  if (deferBehindRestore) {
-    queueDeferredCommandFold();
-  } else if (rasterRects.length > 0 && pendingCommandCount() === 0) {
-    // The fold just stamped this stroke's pass rasters into the paper; blit
-    // those rects back so the screen shows the committed pixels exactly (see
-    // activeCrayonRasterRects). Skipped when the fold is parked — behind a
-    // pending restore or an unready magic sheet — where the paper doesn't
-    // hold this stroke yet; the op replay keeps the screen right there, and
-    // the eventual fold's next repaint reconciles.
-    for (const r of rasterRects) blitPaperRect(ctx, r);
+  try {
+    const deferBehindRestore = paperStepsPending > 0;
+    const rasterRects = activeCrayonRasterRects();
+    if (!commitActiveCommand(deferBehindRestore)) return;
+    if (deferBehindRestore) {
+      queueDeferredCommandFold();
+    } else if (rasterRects.length > 0 && pendingCommandCount() === 0) {
+      // The fold just stamped this stroke's pass rasters into the paper; blit
+      // those rects back so the screen shows the committed pixels exactly (see
+      // activeCrayonRasterRects). Skipped when the fold is parked — behind a
+      // pending restore or an unready magic sheet — where the paper doesn't
+      // hold this stroke yet; the op replay keeps the screen right there, and
+      // the eventual fold's next repaint reconciles.
+      for (const r of rasterRects) blitPaperRect(ctx, r);
+    }
+    setCanUndo(true);
+    callbacks.onStrokeEnd?.();
+  } finally {
+    if (PERF_MARKS) {
+      performance.mark('engine.commit:end');
+      performance.measure('engine.commit', 'engine.commit:start', 'engine.commit:end');
+    }
   }
-  setCanUndo(true);
-  if (onStrokeEnd) onStrokeEnd();
-  if (PERF_MARKS) performance.measure('engine.commit', 'engine.commit:start');
 }
 
 // The last pointer of a group is gone: reset the per-group flag, commit, and let
@@ -655,7 +678,7 @@ function commitStrokeGroup() {
 function finishStrokeGroup() {
   groupHasDrawn = false;
   commitStrokeGroup();
-  if (onDrawStopCallback) onDrawStopCallback();
+  callbacks.onDrawStop?.();
 }
 
 // --- Pointer tracking -------------------------------------------------------
@@ -794,7 +817,11 @@ function startDrawing(e: PointerEvent) {
   activePointers.set(e.pointerId, pointerState);
 
   // A candidate paints nothing yet — renderStrokeStart runs later, on commit.
-  if (!edgeSwipeGuard) renderStrokeStart(pointerState);
+  if (!edgeSwipeGuard) {
+    renderStrokeStart(pointerState);
+    const { pointerId, clientX, clientY } = e;
+    callbacks.onStrokeStart?.({ pointerId, clientX, clientY, magic: magicActive });
+  }
 
   // Capture every pointer — pen included — so a stroke keeps flowing to the
   // canvas when it crosses a floating control (Clear button, Actions Panel) or
@@ -893,10 +920,10 @@ function strokeSpeed(ps: PointerState, last: Point, now: number): number {
 function draw(e: PointerEvent) {
   const pointerState = activePointers.get(e.pointerId);
 
-  // Canvas-targeted flavor of the merged-stream quirk (see adoptStrayPenStream):
-  // adopt the down-less stream as the stroke start instead of dropping the
-  // whole first stroke after a color pick.
-  if (!pointerState && isOrphanPenContact(e)) {
+  // Canvas-targeted flavor of the merged-stream quirk (see penStreamQuirks.ts's
+  // adoptStrayPenStream): adopt the down-less stream as the stroke start
+  // instead of dropping the whole first stroke after a color pick.
+  if (!pointerState && penStreamAdopter.isOrphanPenContact(e)) {
     startDrawing(e);
     return;
   }
@@ -904,35 +931,39 @@ function draw(e: PointerEvent) {
   if (!pointerState) return;
 
   if (PERF_MARKS) performance.mark('engine.draw:start');
+  try {
+    e.preventDefault();
 
-  e.preventDefault();
+    // Browsers coalesce fast input to ~one pointermove per frame but keep the
+    // intermediate samples; replay them all so quick scribbles don't render as
+    // straight chords. Synthetic/untrusted events report an empty list — fall
+    // back to the event itself.
+    const coalesced = e.getCoalescedEvents?.() ?? [];
+    const events = coalesced.length > 0 ? coalesced : [e];
+    const screenPoints = events.map(pointerToScreen);
 
-  // Browsers coalesce fast input to ~one pointermove per frame but keep the
-  // intermediate samples; replay them all so quick scribbles don't render as
-  // straight chords. Synthetic/untrusted events report an empty list — fall
-  // back to the event itself.
-  const coalesced = e.getCoalescedEvents?.() ?? [];
-  const events = coalesced.length > 0 ? coalesced : [e];
-  const screenPoints = events.map(pointerToScreen);
+    const now = Date.now();
 
-  const now = Date.now();
+    if (pointerState.edgeSwipeGuard) {
+      advanceEdgeSwipeCandidate(pointerState, screenPoints, e);
+      return;
+    }
 
-  if (pointerState.edgeSwipeGuard) {
-    advanceEdgeSwipeCandidate(pointerState, screenPoints, e);
-    return;
+    const points = screenPoints.map(screenToPaper);
+    restartStrokeIfResumed(pointerState, points[0], now);
+    const speed = strokeSpeed(pointerState, points[points.length - 1], now);
+
+    strokeSegments(pointerState, points);
+
+    pointerState.lastTime = now;
+
+    callbacks.onDrawSound?.({ speed, isStrokeStart: false });
+  } finally {
+    if (PERF_MARKS) {
+      performance.mark('engine.draw:end');
+      performance.measure('engine.draw', 'engine.draw:start', 'engine.draw:end');
+    }
   }
-
-  const points = screenPoints.map(screenToPaper);
-  restartStrokeIfResumed(pointerState, points[0], now);
-  const speed = strokeSpeed(pointerState, points[points.length - 1], now);
-
-  strokeSegments(pointerState, points);
-
-  pointerState.lastTime = now;
-
-  if (onDrawSoundCallback) onDrawSoundCallback({ speed, isStrokeStart: false });
-
-  if (PERF_MARKS) performance.measure('engine.draw', 'engine.draw:start');
 }
 
 function stopDrawing(e: PointerEvent) {
@@ -998,40 +1029,14 @@ export function releaseAllPointers() {
 }
 
 // --- WebKit merged-stream pen quirks ---------------------------------------
+// See penStreamQuirks.ts for the quirk itself; the adopter below is wired to
+// this engine's canvas, pointer tracking, and stroke-start action.
 
-// Every pointerdown actually delivered anywhere in the document, until its
-// up/cancel arrives. A pen contact stream whose id is missing here never got a
-// pointerdown at all — the WebKit merged-stream signature — which is what
-// licenses adoption below without stealing pointers that legitimately began on
-// a UI control (drag-to-clear's uncaptured drag, the color picker's captured
-// drag, a slide off a swatch).
-const liveDownIds = new Set<number>();
-const trackPointerDown = (e: PointerEvent) => liveDownIds.add(e.pointerId);
-const trackPointerLift = (e: PointerEvent) => liveDownIds.delete(e.pointerId);
-
-// The WebKit merge quirk of POINTER_RESUME_GAP_MS, for a stream that began on a
-// UI control: a fast pen tap on e.g. a color swatch merged with the following
-// stroke drops the intervening pointerup + pointerdown, so the stroke arrives
-// as bare pointermoves — a down-less contact stream. Hover moves (buttons ===
-// 0) never match, and touch keeps its 100ms color-change debounce precisely to
-// absorb this kind of tap fallout.
-function isOrphanPenContact(e: PointerEvent) {
-  return e.pointerType === 'pen' && e.buttons !== 0 && !liveDownIds.has(e.pointerId);
-}
-
-// Pens get no implicit capture, so an orphaned stream's moves usually hit-test
-// onto the canvas (draw() adopts those directly) — but WebKit can also keep
-// delivering them to the control the merged stream started on. This
-// window-level listener catches that flavor: an orphaned pen contact move
-// physically over exposed canvas (elementFromPoint, so an open picker or a
-// floating control still wins) becomes the stroke start, and startDrawing's
-// setPointerCapture retargets the rest of the stream to the canvas.
-function adoptStrayPenStream(e: PointerEvent) {
-  if (e.target === canvas || activePointers.has(e.pointerId)) return;
-  if (!isOrphanPenContact(e)) return;
-  if (document.elementFromPoint(e.clientX, e.clientY) !== canvas) return;
-  startDrawing(e);
-}
+const penStreamAdopter = createPenStreamAdopter({
+  canvas: () => canvas,
+  isTracked: (pointerId) => activePointers.has(pointerId),
+  adopt: startDrawing,
+});
 
 const cancelTouch = (e: TouchEvent) => e.preventDefault();
 
@@ -1120,6 +1125,7 @@ export function undo(): Promise<void> {
 }
 
 export function clearCanvas() {
+  if (!canvas || !ctx) return;
   // The clear is its own undo command: folding it wipes the paper, and undoing
   // it restores the pre-clear snapshot in one blit. Mid-restore it defers like
   // a stroke commit; the visible wipe below still happens immediately.
@@ -1151,13 +1157,7 @@ export function isCanvasEmpty(): boolean {
 
 // Test/profiling seam: how the undo history is currently stored (see
 // undoHistory.getHistoryDebug).
-export function getUndoDebug(): {
-  snapshots: number;
-  liveRasters: number;
-  rasterBytes: number;
-  blobBytes: number;
-  pendingCommands: number;
-} {
+export function getUndoDebug(): HistoryDebug {
   return getHistoryDebug();
 }
 
@@ -1179,12 +1179,8 @@ let engineLive = false;
 let listenerRemovers: (() => void)[] = [];
 
 function attachCallbacks(options: InitOptions) {
-  onDrawSoundCallback = options.onDrawSound || null;
-  onDrawStopCallback = options.onDrawStop || null;
-  onUndoStateChange = options.onUndoStateChange || null;
-  onCanvasEmptyChange = options.onCanvasEmptyChange || null;
-  onStrokeEnd = options.onStrokeEnd || null;
-  onViewChange = options.onViewChange || null;
+  const { initialColor: _initialColor, ...rest } = options;
+  callbacks = rest;
 }
 
 function teardownEngine() {
@@ -1199,12 +1195,12 @@ function teardownEngine() {
   // Pointer-input state must not outlive the mount, unlike the drawing
   // state (see the persistence note in undoHistory.ts): a stale
   // activePointers entry surviving into a remount would let hover moves paint
-  // after a remount reuses its pointerId, and liveDownIds loses its
+  // after a remount reuses its pointerId, and the pen-stream adopter loses its
   // self-healing window trackers above. releaseAllPointers also commits any
   // mid-flight stroke into the log, so navigating away mid-stroke keeps
   // the ink.
   releaseAllPointers();
-  liveDownIds.clear();
+  penStreamAdopter.reset();
   setLiveCrayonBuffer(null, null);
   // Only engine-created overlays are removed — adopted ones belong to the
   // owner component's markup and die (or are re-adopted) with it.
@@ -1238,8 +1234,8 @@ export function engineOwnsCanvas(canvasElement: HTMLCanvasElement): boolean {
 export function adoptDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
   if (!engineOwnsCanvas(canvasElement)) return initDrawingCanvas(canvasElement, options);
   attachCallbacks(options);
-  if (onUndoStateChange) onUndoStateChange(canUndo);
-  if (onCanvasEmptyChange) onCanvasEmptyChange(canvasEmpty);
+  callbacks.onUndoStateChange?.(canUndo);
+  callbacks.onCanvasEmptyChange?.(canvasEmpty);
   notifyViewChange();
   return { teardown: teardownEngine };
 }
@@ -1337,8 +1333,8 @@ function registerEngineListeners(canvas: HTMLCanvasElement): void {
   listen(window, 'resize', handleResize);
   // Scroll/orientation move the canvas in the viewport without resizing it, so
   // refresh the cached rect (left/top) without the full backing-store rebuild.
-  listen(window, 'scroll', refreshCanvasRect, true);
-  listen(window, 'orientationchange', refreshCanvasRect);
+  listen(window, 'scroll', () => refreshCanvasRect(), true);
+  listen(window, 'orientationchange', () => refreshCanvasRect());
   // The paper view keys off the Screen Orientation angle (resizeCanvas). The
   // resize event usually lands after the angle updates, but ordering isn't
   // guaranteed everywhere — also funnel the orientation change itself through
@@ -1366,10 +1362,9 @@ function registerEngineListeners(canvas: HTMLCanvasElement): void {
   // the scribbleGuard action.
   listen(canvas, 'touchstart', cancelTouch, { passive: false });
   listen(canvas, 'touchmove', cancelTouch, { passive: false });
-  listen(window, 'pointerdown', trackPointerDown, true);
-  listen(window, 'pointerup', trackPointerLift, true);
-  listen(window, 'pointercancel', trackPointerLift, true);
-  listen(window, 'pointermove', adoptStrayPenStream, true);
+  penStreamAdopter.registerWindowListeners((type, handler, capture) =>
+    listen(window, type, handler, capture)
+  );
 }
 
 export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {

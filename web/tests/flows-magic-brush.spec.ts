@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { rotateViewportViaCdp } from './cdp';
 import {
@@ -188,47 +188,81 @@ test('a palette press mid-stroke removes the live brush ring', async ({ page }) 
   await page.mouse.up();
 });
 
+// Fire a down-less pen contact move from `target` at the canvas centre — the
+// merged stream the engine adopts as a stroke start (orphan-pen recovery) —
+// until it grows a ring, and answer the pointerId that did. Each attempt uses a
+// FRESH pointerId: the engine boots before hydration and only gains the
+// component's onStrokeStart when the component adopts it on mount (ADR-0072),
+// so under parallel load an early move can be adopted with no ring to show for
+// it, and only the move that STARTS a stroke reports one — re-dispatching an
+// already-live id could never grow the ring.
+async function adoptDownLessPenStream(page: Page, target: Locator, ring: Locator) {
+  const box = await page.locator('#drawingCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+  const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+  let pointerId = 88;
+  await expect(async () => {
+    pointerId++;
+    await target.evaluate(
+      (el, stream) => {
+        el.dispatchEvent(
+          new PointerEvent('pointermove', {
+            pointerId: stream.pointerId,
+            pointerType: 'pen',
+            buttons: 1,
+            clientX: stream.x,
+            clientY: stream.y,
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      },
+      { ...point, pointerId }
+    );
+    await expect(ring).toHaveCount(1, { timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
+  return pointerId;
+}
+
+// Adoption captures the stream to the canvas, so its pointerup lands there.
+async function liftAdoptedPen(page: Page, pointerId: number) {
+  await page.evaluate((id) => {
+    document
+      .getElementById('drawingCanvas')!
+      .dispatchEvent(
+        new PointerEvent('pointerup', { pointerId: id, pointerType: 'pen', bubbles: true })
+      );
+  }, pointerId);
+}
+
 // iOS/WebKit can merge a fast pen tap-then-stroke into one stream whose
 // pointerdown never arrives — the engine adopts the stroke from a pointermove
-// (orphan-pen recovery) and captures the pointer. The ring must grow from that
-// adopted move alone. Synthetic events can't acquire real pointer capture
-// (setPointerCapture rejects a fabricated pointerId), so the capture the engine
-// takes on adoption is stubbed.
+// that hit-tests onto the canvas (orphan-pen recovery in draw()) and reports it
+// through onStrokeStart. That report is the ring's only source here: this
+// component never sees such a stroke begin.
 test('an adopted down-less pen stream still grows a brush ring', async ({ page }) => {
   await gotoApp(page);
   const ring = page.locator('.brush-ring');
 
-  // The engine boots before hydration and binds its pointer listeners when a
-  // component adopts it on mount (ADR-0072); under parallel load the synthetic
-  // move can land before that binding and be dropped, growing no ring. Retry the
-  // down-less move until the engine adopts it — re-dispatching is safe, the same
-  // pointerId just continues the one adopted stream.
-  await expect(async () => {
-    await page.evaluate(() => {
-      const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-      canvas.hasPointerCapture = () => true;
-      canvas.dispatchEvent(
-        new PointerEvent('pointermove', {
-          pointerId: 88,
-          pointerType: 'pen',
-          buttons: 1,
-          clientX: 300,
-          clientY: 220,
-          bubbles: true,
-          cancelable: true,
-        })
-      );
-    });
-    await expect(ring).toHaveCount(1, { timeout: 1000 });
-  }).toPass({ timeout: 10_000 });
+  const pointerId = await adoptDownLessPenStream(page, page.locator('#drawingCanvas'), ring);
+  await liftAdoptedPen(page, pointerId);
+  await expect(ring).toHaveCount(0);
+});
 
-  await page.evaluate(() => {
-    document
-      .getElementById('drawingCanvas')!
-      .dispatchEvent(
-        new PointerEvent('pointerup', { pointerId: 88, pointerType: 'pen', bubbles: true })
-      );
-  });
+// The other flavor of the same merge: WebKit keeps delivering the down-less
+// stream to the control the merged tap began on, so the canvas's own listeners
+// never see the adopting move at all — only the engine's window-level
+// adoptStrayPenStream does, on a pen contact whose tip is over exposed canvas.
+// Nothing the component can observe itself marks that stroke's start.
+test('a down-less pen stream adopted from a UI control still grows a brush ring', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  const ring = page.locator('.brush-ring');
+
+  const pointerId = await adoptDownLessPenStream(page, swatch(page, TEST_PALETTE.blue), ring);
+  await liftAdoptedPen(page, pointerId);
   await expect(ring).toHaveCount(0);
 });
 

@@ -27,12 +27,12 @@ Alternatives considered for retiring that contract:
 
 **Closed crayon passes travel as prerendered rasters (`crayonPassRaster` ops), and the fold blits
 them.** Alongside the overlay preview, every live crayon op also paints into a PAPER-SPACE
-accumulation buffer (`strokeOps.ts`, "Live paper-space pass accumulation"). At pass close the engine
-crops that buffer's dirty rect into a standalone canvas and swaps the pass's recorded ops for one
-raster op (`closeLiveCrayonPass` + `replaceOpenCrayonPassOps`); rendering it is the same two-blit
-darken-min stamp a flush performs, but from pixels painted exactly once, live. The fold, repaints,
-snapshot pending-replay, and export all stay a single `renderOp` walk — ordering preserved by
-construction — but for crayon they **blit instead of re-render**. There is no re-render left that
+accumulation buffer (`crayonPassBuffer.ts`, "Live paper-space pass accumulation"). At pass close the
+engine crops that buffer's dirty rect into a standalone canvas and swaps the pass's recorded ops for
+one raster op (`closeLiveCrayonPass` + `replaceOpenCrayonPassOps`); rendering it is the same
+two-blit darken-min stamp a flush performs, but from pixels painted exactly once, live. The fold,
+repaints, snapshot pending-replay, and export all stay a single `renderOp` walk — ordering preserved
+by construction — but for crayon they **blit instead of re-render**. There is no re-render left that
 must reproduce the live pixels, so future deposits are free to be nondeterministic; only the open
 pass's short repaint window (mid-stroke resize, undo beneath a live stroke) still re-renders raw
 ops, and `repaintAll` resets the live accumulation first (`resetLiveCrayonForReplay`) so even a

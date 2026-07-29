@@ -75,8 +75,9 @@ const BASELINE = new Map(
     // in lib/design/tokens.ts). The at-rest fill is --clear-gradient-rest,
     // shared with the coachmark ghost.
     'lib/components/ClearButton.svelte': 2,
-    // Eraser-hole preview chrome and the rainbow conic gradient.
-    'lib/components/DrawingCanvas.svelte': 9,
+    // Eraser-hole preview chrome and the rainbow conic gradient (moved here
+    // from DrawingCanvas.svelte with the rest of the pointer-halo UI).
+    'lib/components/PointerHalos.svelte': 9,
     // Confetti particle colors are content, not chrome.
     'lib/components/AiConfetti.svelte': 1,
     // Paper-white backing behind the baked-light style-cover thumbnails.

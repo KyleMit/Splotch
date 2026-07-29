@@ -11,17 +11,27 @@
 //   - performance.now() is clamped to ~1 ms in WebKit, so sub-ms values are at or
 //     below the clock floor — treat <1 ms as "effectively free," not precise.
 //
-// We recover an engine op's cost two ways, preferring the first:
-//   1. Paired marks: an op that also emits `<name>:end` (engine.undo does, at
-//      restore completion) gets end−start per pair. This is the only correct
-//      attribution for ops spanning multiple tasks — post-ADR-0066 a deep undo
-//      runs mark + snapshot pop in one slice, awaits createImageBitmap(blob),
-//      then blits in a later continuation, so no single record bounds it.
-//   2. Enclosing record (fallback for start-only ops): each synthetic pointer
-//      event is its own `event-dispatched` script record, and the commit's
-//      paper copy runs inside the pointerup record — so the smallest record
-//      spanning the mark's timestamp bounds a single-slice op's main-thread
-//      cost.
+// We recover an engine op's cost two ways:
+//   1. Paired-mark duration: only `engine.undo` reports the end−start delta
+//      as its cost, because it's the one op that spans multiple tasks —
+//      post-ADR-0066 a deep undo runs mark + snapshot pop in one slice,
+//      awaits createImageBitmap(blob), then blits in a later continuation, so
+//      no single record bounds it. A mark delta is the only correct
+//      attribution for that shape, at the price of WebKit's ~1 ms
+//      `performance.now()` clamp.
+//   2. Enclosing record (every other op, including the paired ones below):
+//      each synthetic pointer event is its own `event-dispatched` script
+//      record, so the smallest record spanning the mark's timestamp bounds a
+//      single-slice op's main-thread cost — unclamped, at full record
+//      resolution, which a mark delta on these hottest sub-ms ops would lose.
+// `engine.commit`, `engine.draw`, and `engine.scanEmpty` also emit a
+// `finally`-closed `<name>:end` mark, so an early return (a buffered
+// edge-swipe candidate in `draw`, the deferred-restore/no-op paths in
+// `commitStrokeGroup`, a missing scratch context in `scanCanvasIsEmpty`)
+// can't leave its `:start` unmatched in the marker stream — but since these
+// three are synchronous and single-slice, their `:end` marks are used only
+// to flag an unpaired start, never to compute the reported duration; the
+// enclosing record stays their cost source.
 // GPU-side cost shows up in paint/composite records instead (the canvas is
 // GPU-accelerated, so issuing replay ops is cheap and rasterization is
 // deferred off the main thread).
@@ -83,18 +93,23 @@ const fmt = (s) =>
     ? `n=${s.n}  min=${s.min.toFixed(2)}  med=${s.med.toFixed(2)}  p90=${s.p90.toFixed(2)}  max=${s.max.toFixed(2)}`
     : 'none';
 
-// Prefer paired `<name>:start`/`<name>:end` marks (correct for ops spanning
-// multiple tasks, like an async deep undo); fall back to the enclosing record
-// for start-only ops. Steps that emit end marks run serialized (the engine's
-// paper chain), so pairing each start with the first end before the next start
-// is exact; a start whose end is missing (ring buffer, mid-op stop) is counted
-// as unpaired rather than misattributed.
+// The only op reporting paired-mark duration instead of the enclosing
+// record's — see the header comment for why `engine.undo` alone needs it.
+const PAIRED_DURATION_OPS = new Set(['engine.undo']);
+
+// Pairing each start with the first end before the next start is exact
+// whether or not the pairing is used for duration: `engine.undo`'s steps run
+// serialized on the engine's paper chain, and every other `:end`-emitting op
+// is synchronous and non-reentrant (one call completes, end mark included,
+// before the next can start). A start whose end is missing (ring buffer,
+// mid-op stop) is counted as unpaired rather than misattributed — reported
+// as a warning regardless of which cost source is used.
 function engineOp(name) {
   const starts = markers.filter((m) => m.details === `${name}:start`).map((m) => m.time);
   const ends = markers.filter((m) => m.details === `${name}:end`).map((m) => m.time);
+  let unpaired = 0;
+  const durs = [];
   if (ends.length) {
-    const durs = [];
-    let unpaired = 0;
     let j = 0;
     for (let i = 0; i < starts.length; i++) {
       const s = starts[i];
@@ -107,10 +122,12 @@ function engineOp(name) {
         unpaired++;
       }
     }
+  }
+  if (ends.length && PAIRED_DURATION_OPS.has(name)) {
     return { count: starts.length, task: stat(durs), source: 'paired marks', unpaired };
   }
   const tasks = starts.map((t) => enclosing(t)?.dur).filter((d) => d != null);
-  return { count: starts.length, task: stat(tasks), source: 'enclosing record', unpaired: 0 };
+  return { count: starts.length, task: stat(tasks), source: 'enclosing record', unpaired };
 }
 
 console.log(`# Web Inspector timeline — ${path}\n`);
@@ -128,7 +145,7 @@ if (markers.length) {
 }
 console.log('NOTE: WebKit clamps performance.now() to ~1 ms — treat <1 ms as effectively free.\n');
 
-console.log('## Engine ops (ms — paired :end marks when present, else enclosing record)\n');
+console.log('## Engine ops (ms — enclosing record, except engine.undo: paired :end marks)\n');
 for (const name of [
   'engine.undo',
   'engine.snapshot',
@@ -136,6 +153,7 @@ for (const name of [
   'engine.commit',
   'engine.resize',
   'engine.draw',
+  'engine.scanEmpty',
 ]) {
   const op = engineOp(name);
   if (op.count)

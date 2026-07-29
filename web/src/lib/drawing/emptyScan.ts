@@ -26,24 +26,32 @@ export function alphaDataHasInk(data: Uint8ClampedArray): boolean {
 export function scanCanvasIsEmpty(source: HTMLCanvasElement, renderScale: number): boolean {
   if (source.width === 0 || source.height === 0) return true;
   if (PERF_MARKS) performance.mark('engine.scanEmpty:start');
-  if (!scratchCanvas) {
-    scratchCanvas = document.createElement('canvas');
-    scratchCtx = scratchCanvas.getContext('2d', { willReadFrequently: true });
+  try {
+    if (!scratchCanvas) {
+      scratchCanvas = document.createElement('canvas');
+      scratchCtx = scratchCanvas.getContext('2d', { willReadFrequently: true });
+    }
+    if (!scratchCtx) {
+      scratchCanvas = null;
+      return false;
+    }
+    // Scan relative to CSS pixels so the readback loop stays the same size
+    // regardless of renderScale.
+    const w = Math.max(1, Math.ceil((source.width * EMPTY_SCAN_SCALE) / renderScale));
+    const h = Math.max(1, Math.ceil((source.height * EMPTY_SCAN_SCALE) / renderScale));
+    if (scratchCanvas.width !== w || scratchCanvas.height !== h) {
+      scratchCanvas.width = w;
+      scratchCanvas.height = h;
+    } else {
+      scratchCtx.clearRect(0, 0, w, h);
+    }
+    scratchCtx.drawImage(source, 0, 0, w, h);
+    const { data } = scratchCtx.getImageData(0, 0, w, h);
+    return !alphaDataHasInk(data);
+  } finally {
+    if (PERF_MARKS) {
+      performance.mark('engine.scanEmpty:end');
+      performance.measure('engine.scanEmpty', 'engine.scanEmpty:start', 'engine.scanEmpty:end');
+    }
   }
-  if (!scratchCtx) return true;
-  // Scan relative to CSS pixels so the readback loop stays the same size
-  // regardless of renderScale.
-  const w = Math.max(1, Math.ceil((source.width * EMPTY_SCAN_SCALE) / renderScale));
-  const h = Math.max(1, Math.ceil((source.height * EMPTY_SCAN_SCALE) / renderScale));
-  if (scratchCanvas.width !== w || scratchCanvas.height !== h) {
-    scratchCanvas.width = w;
-    scratchCanvas.height = h;
-  } else {
-    scratchCtx.clearRect(0, 0, w, h);
-  }
-  scratchCtx.drawImage(source, 0, 0, w, h);
-  const { data } = scratchCtx.getImageData(0, 0, w, h);
-  const empty = !alphaDataHasInk(data);
-  if (PERF_MARKS) performance.measure('engine.scanEmpty', 'engine.scanEmpty:start');
-  return empty;
 }

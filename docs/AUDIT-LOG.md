@@ -18,6 +18,7 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
+| 2026-07-29 | [burn-down-audits](#2026-07-29--burn-down-audits)               |
 | 2026-07-28 | [burn-down-audits](#2026-07-28--burn-down-audits-run-2)         |
 | 2026-07-28 | [code-audit](#2026-07-28--code-audit)                           |
 | 2026-07-28 | [burn-down-audits](#2026-07-28--burn-down-audits-run-1)         |
@@ -75,6 +76,54 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-07-03 | [code-audit](#2026-07-03--code-audit)                           |
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
+
+## 2026-07-29 · burn-down-audits
+
+Bulk burndown of the 636-finding backlog left by PR #616's merge, on
+`claude/burn-down-audit-skill-ecb5np` → [PR #627](https://github.com/KyleMit/Splotch/pull/627): **39
+fixed**, 4 dropped, 0 deferred across a 5-finding canary and a ~6-hour full run; backlog 636 → 593.
+Entry accounting is exact — no commit drained more than one finding, and 636 − 43 consumed = 593 =
+`pop.mjs --count`. All 39 fixes carry a per-commit PR comment (`capture` confirms
+`skipped 39 already posted`); CI green throughout.
+
+Work concentrated in the drawing engine and its neighbours, and several findings were structural
+rather than local: the WebKit merged-stream pen quirk, the crayon pass buffer, the pointer-halo UI,
+and the fold-region geometry each moved into their own module, and `engine.ts`'s six parallel
+callback `let`s collapsed into one record. The correctness fixes were the valuable half — a failed
+magic-sheet decode that wedged the brush and the undo fold forever, an `emptyScan` scratch that
+cached a broken context and then reported inked canvases as empty, and an `ensurePaperCovers` grow
+path that discarded the entire committed drawing when the grown context failed.
+
+Two things this run established that the previous one could not. **Impl-model tiering was verified
+before launch rather than after** — all 636 findings parsed a priority, 407 routing to the minor
+tier — and the `sonnet` path, unproven at the last wrap-up, held up: it took review rounds like any
+other and produced no deferrals. And **the gate list was re-derived from `test.yml`** (the Quality
+job is 11 steps now) with every candidate timed and run green at base, so no gate went red on a
+pre-existing failure. `lint:tokens` earned its place immediately, catching a raw-hex baseline left
+pointing at the wrong file after a component extraction.
+
+The adversarial reviewer did real work at a rate of roughly one rejection in three: it caught a
+default parameter evaluating `canvas.getBoundingClientRect()` before its own `if (!canvas) return`
+guard; a paired-marks change that would have moved the two hottest ops onto WebKit's ~1 ms-clamped
+mark deltas and destroyed ADR-0066's commit-hitch attribution; a four-corner-union test using a pure
+scale+translate matrix, under which two corners give the identical rect, so it passed without
+testing its own invariant; an LRU eviction that freed tile canvases while leaving full bitmap copies
+in the pattern cache; and — the case the design specifically anticipates — **acceptance criteria the
+verifier got wrong**, declaring no E2E spec covered a surface that `engine-snapshot-tier.spec.ts`
+did cover. The reviewer is handed the original finding precisely because the verifier has no other
+independent check.
+
+One pattern worth a follow-up: three findings raised an eslint `max-lines` cap (`engine.ts` 900 →
+913, `undoHistory.test.ts` 500 → 529) to fit their own additions. Each was pinned exactly and
+disclosed, but a ratchet that yields whenever it binds stops constraining. The loop began correcting
+this itself — a fourth attempt was **rejected on review** for contradicting the adjacent "shrink,
+never grow" comment, and the implementer extracted a shared test harness instead, which dropped the
+file under the default and let the grandfathered override be deleted outright. Worth a pass over the
+remaining caps.
+
+Left open: 593 findings, and a load-dependent `pwa-registration.spec.ts:60` flake found in the
+baseline E2E run (fails under full-suite parallelism, passes 3/3 isolated) recorded but deliberately
+not "fixed", since raising its timeout is wrong if the cause is a lost stroke.
 
 ## 2026-07-28 · burn-down-audits (run 2)
 

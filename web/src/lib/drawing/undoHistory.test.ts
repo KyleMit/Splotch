@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { StrokeGroupCommand, PathOp } from './strokeOps';
+import { cmd, createCanvasStub, freshHistory, repaintedContent } from './undoHistoryHarness';
 
 const magicSheet = vi.hoisted(() => ({ ready: true }));
 
@@ -12,114 +13,17 @@ vi.mock('./magicBrush', () => ({
   sheetPatternFor: () => (magicSheet.ready ? '#magic' : null),
 }));
 
-// happy-dom's <canvas> has no 2D context, so install a recording stub: each
-// canvas's "content" is the ordered list of stroke colors painted onto it,
-// drawImage copies a source canvas's content, and clearRect empties it. Giving
-// every command a unique color makes a canvas's content the drawing's
-// ground-truth in draw order — enough to assert the snapshot stack restores
-// exact pre-stroke states and the paper accumulates every fold.
-let origGetContext: typeof HTMLCanvasElement.prototype.getContext;
-let origToBlob: typeof HTMLCanvasElement.prototype.toBlob;
-
-// Every stub drawImage bumps this, so a test can assert a code path copied
-// pixels (patch capture) or didn't (the clear's swap capture).
-let drawImageCalls = 0;
+const canvasStub = createCanvasStub();
 
 beforeEach(() => {
   magicSheet.ready = true;
-  drawImageCalls = 0;
-  origGetContext = HTMLCanvasElement.prototype.getContext;
-  origToBlob = HTMLCanvasElement.prototype.toBlob;
-  // The blob tier is exercised end-to-end by the engine E2E specs; here every
-  // encode "fails" so snapshots keep their rasters and stay synchronous.
-  HTMLCanvasElement.prototype.toBlob = function (cb: BlobCallback) {
-    cb(null);
-  };
-  (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = function (
-    this: HTMLCanvasElement,
-    kind: string
-  ) {
-    if (kind !== '2d') return null;
-    const canvas = this as HTMLCanvasElement & { _content?: string[]; _ctx?: unknown };
-    canvas._content ??= [];
-    if (canvas._ctx) return canvas._ctx;
-    const ctx = {
-      canvas,
-      lineCap: '',
-      lineJoin: '',
-      strokeStyle: '',
-      fillStyle: '',
-      lineWidth: 0,
-      globalCompositeOperation: '',
-      save() {},
-      restore() {},
-      setTransform() {},
-      beginPath() {},
-      moveTo() {},
-      lineTo() {},
-      bezierCurveTo() {},
-      quadraticCurveTo() {},
-      arc() {},
-      createPattern() {
-        return {};
-      },
-      clearRect() {
-        canvas._content!.length = 0;
-      },
-      stroke() {
-        canvas._content!.push(String(ctx.strokeStyle));
-      },
-      fill() {
-        canvas._content!.push(String(ctx.fillStyle));
-      },
-      drawImage(src: { _content?: string[] }) {
-        drawImageCalls++;
-        if (src?._content) canvas._content!.push(...src._content);
-      },
-    };
-    canvas._ctx = ctx;
-    return ctx;
-  };
+  canvasStub.install();
 });
 
 afterEach(() => {
-  HTMLCanvasElement.prototype.getContext = origGetContext;
-  HTMLCanvasElement.prototype.toBlob = origToBlob;
+  canvasStub.restore();
   vi.resetModules();
 });
-
-// A single-stroke command in a unique color.
-function cmd(color: string, magic = false, wasEmpty = false): StrokeGroupCommand {
-  const op: PathOp = {
-    kind: 'path',
-    pid: 1,
-    startX: 0,
-    startY: 0,
-    segs: [{ cx: 0, cy: 0, x: 1, y: 1 }],
-    color,
-    lineWidth: 8,
-    erase: false,
-    magic,
-  };
-  return { ops: [op], wasEmpty };
-}
-
-async function freshHistory() {
-  vi.resetModules();
-  const m = await import('./undoHistory');
-  m.ensurePaperCovers(64);
-  return m;
-}
-
-// The color sequence a fresh repaint paints — the visible drawing, ground-truth.
-function repaintedContent(m: Awaited<ReturnType<typeof freshHistory>>): string[] {
-  const target = document.createElement('canvas');
-  target.width = 64;
-  target.height = 64;
-  const ctx = target.getContext('2d')!;
-  m.repaintAll(ctx);
-  return [...(target as unknown as { _content: string[] })._content];
-}
 
 describe('snapshot stack depth', () => {
   it('caps retained snapshots at MAX_UNDO_DEPTH while the paper keeps every stroke', async () => {
@@ -179,11 +83,11 @@ describe("clear snapshot swap (swap-don't-copy)", () => {
   it('captures a clear with zero drawImage copies', async () => {
     const m = await freshHistory();
     m.pushCommand(cmd('#a', false, true));
-    const copiesBefore = drawImageCalls;
+    const copiesBefore = canvasStub.drawImageCalls;
     m.pushCommand(clearCmd());
     // The old paper is adopted as the snapshot raster and a fresh blank paper
     // takes its place — no pixel copy anywhere on the commit path.
-    expect(drawImageCalls).toBe(copiesBefore);
+    expect(canvasStub.drawImageCalls).toBe(copiesBefore);
     expect(m.getHistoryDebug().rasterBytes).toBe(7 * 7 * 4 + 64 * 64 * 4);
     expect(repaintedContent(m)).toEqual([]);
   });
@@ -280,49 +184,113 @@ describe('cold-snapshot blob validation', () => {
   });
 });
 
+describe('memory tier transitions', () => {
+  // A patch holds its pixels as a hot raster or a cold blob, never both and
+  // never neither. These tests drive both transitions and the deep-undo
+  // restore that decodes a cold patch, with a stub codec: the encoder hands
+  // back a real PNG blob (the fallback Safari always takes) and remembers the
+  // canvas content behind it, so a decode reproduces that content exactly and
+  // a restore through the cold tier is still assertable against ground truth.
+  // Decodes resolve only when the test flushes them, which is what keeps a
+  // patch cold long enough for popSnapshot to have to decode it.
+  const encodedCanvases = new Map<Blob, { content: string[]; width: number; height: number }>();
+  let pendingDecodes: (() => void)[] = [];
+
+  // The number of most recent snapshots that stay hot rasters — MAX_HOT_RASTERS
+  // in undoHistory, a white-box invariant of the tier design (ADR-0066) shared
+  // with tests/engine-snapshot-tier.spec.ts.
+  const HOT_WINDOW = 2;
+
+  beforeEach(() => {
+    encodedCanvases.clear();
+    pendingDecodes = [];
+    HTMLCanvasElement.prototype.toBlob = function (this: HTMLCanvasElement, cb: BlobCallback) {
+      const content = [...((this as HTMLCanvasElement & { _content?: string[] })._content ?? [])];
+      const blob = new Blob([JSON.stringify(content)], { type: 'image/png' });
+      encodedCanvases.set(blob, { content, width: this.width, height: this.height });
+      cb(blob);
+    };
+    vi.stubGlobal(
+      'createImageBitmap',
+      (blob: Blob) =>
+        new Promise((resolve) => {
+          const encoded = encodedCanvases.get(blob);
+          pendingDecodes.push(() =>
+            resolve({ ...encoded, _content: encoded?.content ?? [], close() {} })
+          );
+        })
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  async function flushDecodes() {
+    for (const resolve of pendingDecodes.splice(0)) resolve();
+    await new Promise((r) => setTimeout(r, 0));
+  }
+
+  // Four commits: the two oldest snapshots fall out of the hot window and
+  // demote on the commit that pushed them below it.
+  async function stackPastTheHotWindow() {
+    const m = await freshHistory();
+    m.pushCommand(cmd('#a', false, true));
+    m.pushCommand(cmd('#b'));
+    m.pushCommand(cmd('#c'));
+    m.pushCommand(cmd('#d'));
+    return m;
+  }
+
+  it('demotes snapshots below the hot window to encoded blobs', async () => {
+    const m = await stackPastTheHotWindow();
+    const { snapshots, liveRasters, rasterBytes, blobBytes } = m.getHistoryDebug();
+    expect(snapshots).toBe(4);
+    expect(liveRasters).toBe(HOT_WINDOW);
+    expect(rasterBytes).toBeGreaterThan(0);
+    expect(blobBytes).toBeGreaterThan(0);
+  });
+
+  it('restores a demoted snapshot through its blob decode', async () => {
+    const m = await stackPastTheHotWindow();
+    expect(repaintedContent(m)).toEqual(['#a', '#b', '#c', '#d']);
+    // The two hot entries pop synchronously; leaving their decodes unflushed
+    // keeps the entry beneath them cold, so its pop must decode to restore.
+    await m.popSnapshot();
+    await m.popSnapshot();
+    expect(m.getHistoryDebug().liveRasters).toBe(0);
+
+    const restored = m.popSnapshot();
+    await flushDecodes();
+    expect((await restored)?.wasEmpty).toBe(false);
+    expect(repaintedContent(m)).toEqual(['#a']);
+  });
+
+  it('re-inflates an encoded snapshot that rises into the hot window', async () => {
+    const m = await stackPastTheHotWindow();
+    expect(m.getHistoryDebug().blobBytes).toBeGreaterThan(0); // the survivors start cold
+    await m.popSnapshot();
+    await flushDecodes();
+    await m.popSnapshot();
+    await flushDecodes();
+
+    // Both survivors were blobs; rising into the window turned them back into
+    // hot rasters, and the drawing they restore is unchanged by the round trip.
+    const { snapshots, liveRasters, blobBytes } = m.getHistoryDebug();
+    expect(snapshots).toBe(HOT_WINDOW);
+    expect(liveRasters).toBe(HOT_WINDOW);
+    expect(blobBytes).toBe(0);
+    expect(repaintedContent(m)).toEqual(['#a', '#b']);
+
+    await m.popSnapshot();
+    expect(repaintedContent(m)).toEqual(['#a']);
+  });
+});
+
 describe('dirty-rect patch snapshots', () => {
   // A snapshot captures only the paper under the regions its fold mutates
   // (foldRegionsForCommands), so per-entry memory scales with the stroke, not
   // the canvas.
-
-  it('bounds a path by its points padded with half the line width plus AA bleed', async () => {
-    const m = await freshHistory();
-    const op: PathOp = {
-      kind: 'path',
-      pid: 1,
-      startX: 20,
-      startY: 30,
-      segs: [{ cx: 24, cy: 34, x: 28, y: 38 }],
-      color: '#a',
-      lineWidth: 8,
-      erase: false,
-    };
-    // pad = 8/2 + 2 = 6: x spans 20−6..28+6, y spans 30−6..38+6.
-    expect(m.foldRegionsForCommands([{ ops: [op], wasEmpty: false }], 64, 64)).toEqual([
-      { x: 14, y: 24, w: 20, h: 20 },
-    ]);
-  });
-
-  it('bounds a dot by its radius plus AA bleed and clamps to the paper', async () => {
-    const m = await freshHistory();
-    const dot = { kind: 'dot' as const, x: 2, y: 62, radius: 5, color: '#a', erase: false };
-    // pad = 5 + 2 = 7: clamped at the left and bottom paper edges.
-    expect(m.foldRegionsForCommands([{ ops: [dot], wasEmpty: false }], 64, 64)).toEqual([
-      { x: 0, y: 55, w: 9, h: 9 },
-    ]);
-  });
-
-  it('a clear claims the whole paper; wholly off-paper ink claims nothing', async () => {
-    const m = await freshHistory();
-    expect(
-      m.foldRegionsForCommands([{ ops: [{ kind: 'clear' }], wasEmpty: false }], 64, 64)
-    ).toEqual([{ x: 0, y: 0, w: 64, h: 64 }]);
-    // Margin ink beyond the paper square is clipped at fold (ADR-0050), so the
-    // fold never touches the paper and no patch is owed.
-    const off = { kind: 'dot' as const, x: -40, y: 10, radius: 5, color: '#a', erase: false };
-    expect(m.foldRegionsForCommands([{ ops: [off], wasEmpty: false }], 64, 64)).toEqual([]);
-    expect(m.foldRegionsForCommands([], 64, 64)).toEqual([]);
-  });
 
   it('a magic-blocked commit captures no pixels, and its undo still restores the pending set', async () => {
     const m = await freshHistory();
@@ -348,33 +316,6 @@ describe('dirty-rect patch snapshots', () => {
     // cmd()'s ops span 0..1 with lineWidth 8 → pad 6 → clamped rect 0..7 both
     // axes: 7×7 px, nowhere near the 64×64 paper.
     expect(rasterBytes).toBe(7 * 7 * 4);
-  });
-
-  it('bounds a crayon pass raster by its rect plus AA bleed', async () => {
-    const m = await freshHistory();
-    const canvas = document.createElement('canvas');
-    canvas.width = 10;
-    canvas.height = 12;
-    const raster = { kind: 'crayonPassRaster', canvas, x: 20, y: 30, mix: 0.55 } as const;
-    // The stamp blits exactly the raster's rect; pad 2 covers any AA bleed.
-    expect(m.foldRegionsForCommands([{ ops: [raster], wasEmpty: false }], 64, 64)).toEqual([
-      { x: 18, y: 28, w: 14, h: 16 },
-    ]);
-  });
-
-  it('widens a crayon ink op pad by the widest dev-harness pass', async () => {
-    // setCrayonParams accepts arbitrary passes; a widthScale > 1 experiment
-    // strokes wider than the op's line width, so the rect must scale with it
-    // or undo would leave the widened fringe behind.
-    const m = await freshHistory();
-    const { setCrayonOptions } = await import('./crayonBrush');
-    setCrayonOptions({ passes: [{ widthScale: 2, coverage: 1 }] });
-    const op = cmd('#wax').ops[0] as PathOp;
-    op.crayon = true;
-    // pad = (8/2)×2 + 2 = 10 (vs 6 at base width): span 0..1 grows to 0..11.
-    expect(m.foldRegionsForCommands([{ ops: [op], wasEmpty: false }], 64, 64)).toEqual([
-      { x: 0, y: 0, w: 11, h: 11 },
-    ]);
   });
 
   it('covers every command folding under one commit, then unwinds the round trip', async () => {
@@ -472,23 +413,6 @@ describe('disjoint multi-finger patches', () => {
     // Boxes 14..28 and 18..32 intersect → one merged 14..32 patch.
     expect(m.getHistoryDebug().liveRasters).toBe(1);
     expect(m.getHistoryDebug().rasterBytes).toBe(18 * 18 * 4);
-  });
-
-  it('skips the merge fixpoint entirely past the raw-cluster input cap', async () => {
-    // 65 solo clusters (> PATCH_CLUSTER_CAP × 8) — the magic-backlog shape —
-    // short-circuit to one union without running the O(n³) merge scan.
-    const m = await freshHistory();
-    const dots = Array.from({ length: 65 }, (_, i) => ({
-      kind: 'dot' as const,
-      x: 10 + (i % 13) * 4,
-      y: 10 + Math.floor(i / 13) * 4,
-      radius: 1,
-      color: '#swarm',
-      erase: false,
-    }));
-    expect(m.foldRegionsForCommands([{ ops: dots, wasEmpty: true }], 64, 64)).toEqual([
-      { x: 7, y: 7, w: 54, h: 22 },
-    ]);
   });
 
   it('falls back to one union patch past the cluster cap', async () => {
@@ -618,5 +542,44 @@ describe('in-flight strokes', () => {
     m.recordOp(cmd('#live').ops[0]);
     expect(m.resetActiveCommandForClear()).toBe(true);
     expect(repaintedContent(m)).toEqual([]);
+  });
+});
+
+describe('paper grow', () => {
+  it('copies the existing pixels onto the bigger paper', async () => {
+    const m = await freshHistory();
+    m.pushCommand(cmd('#a', false, true));
+    const copiesBefore = canvasStub.drawImageCalls;
+    m.ensurePaperCovers(128);
+    expect(canvasStub.drawImageCalls).toBe(copiesBefore + 1);
+    expect(repaintedContent(m)).toEqual(['#a']);
+    m.pushCommand(cmd('#b'));
+    expect(repaintedContent(m)).toEqual(['#a', '#b']);
+  });
+
+  it('keeps the old paper when the grown canvas has no context', async () => {
+    const m = await freshHistory();
+    m.pushCommand(cmd('#a', false, true));
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    canvasStub.failNextGetContext();
+    m.ensurePaperCovers(128);
+    // Swapping in the blank, context-less canvas would lose '#a' outright and
+    // make every later push a silent no-op.
+    expect(repaintedContent(m)).toEqual(['#a']);
+    m.pushCommand(cmd('#b'));
+    expect(repaintedContent(m)).toEqual(['#a', '#b']);
+    expect(logged).toHaveBeenCalledTimes(1);
+    logged.mockRestore();
+  });
+
+  it('logs and drops the committed stroke when there is no paper context at all', async () => {
+    vi.resetModules();
+    canvasStub.failNextGetContext();
+    const m = await import('./undoHistory');
+    m.ensurePaperCovers(64);
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    m.pushCommand(cmd('#a'));
+    expect(logged).toHaveBeenCalledTimes(1);
+    logged.mockRestore();
   });
 });
