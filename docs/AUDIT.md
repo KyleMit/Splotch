@@ -21,66 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Correctness] Handle fill-image load failure — a failed magic-sheet decode wedges the brush and the fold forever
-
-**File(s):** `web/src/lib/drawing/magicBrush.ts` (`loadSheetImage`, lines 310–321; `setColorSheet`,
-lines 327–340) @ 9ae62ff1
-
-**Priority:** P1
-
-#### Problem
-
-`loadSheetImage` installs only an `onload` handler:
-
-```ts
-function loadSheetImage(url: string) {
-  const forFillUrl = fillUrl;
-  const img = new Image();
-  img.onload = () => {
-    if (fillUrl !== forFillUrl) return;
-    fillImage = img;
-    rasterizeSheet();
-    host?.repaint();
-  };
-  img.src = url;
-}
-```
-
-There is no `onerror` (and no timeout). If the fill webp fails to load — flaky network, an offline
-PWA whose cache is missing this one asset, a 404 — the module is left in the state `setColorSheet`
-put it in at lines 337–338: `sheetReady = false`, `fillImage = null`, `fillUrl` still set.
-Consequences:
-
-1. The magic brush silently reveals nothing, forever (`sheetPatternFor` returns null while
-   `!sheetReady`, magicBrush.ts:282–293).
-2. The commit fold stalls: `undoHistory.ts:465` does
-   `if (commandHasMagic(cmd) && isMagicSheetUnready()) break;` — every command at or behind a magic
-   command stops folding for the rest of the session, so snapshots/pending ops accumulate with no
-   way to drain.
-3. There is no retry path: `setColorSheet` early-returns on the same URL
-   (`if (colorUrl === fillUrl) return;`, line 328), so even re-applying the same coloring page
-   cannot restart the load. Only switching to a *different* page recovers.
-
-The neighboring crayon module treats "pattern unavailable" as a transient skip; here unavailability
-is permanent yet treated as transient by every consumer.
-
-#### Proposed solution
-
-Add an `img.onerror` handler (same stale-URL guard) that resolves the wedge explicitly. Two
-reasonable policies:
-
-* Retry-friendly: clear `fillUrl`/`fillImage` back to null and `rasterizeSheet(); host?.repaint();`
-  — the sheet falls back to the gradient source (or stays inert with no page), and re-applying the
-  page retries because the `colorUrl === fillUrl` early-return no longer matches.
-* Or a bounded retry (one `scheduleIdle` re-attempt) before falling back.
-
-Either way the fold's `isMagicSheetUnready()` gate reopens. Add a unit test in `magicBrush.test.ts`:
-simulate `onerror` and assert `isMagicSheetUnready()` recovers / `setColorSheet(sameUrl)`
-re-attempts. Gotcha: keep the stale-guard so an error from a superseded load can't clobber a newer
-page's state.
-
----
-
 ### [Performance] `buildFields()` runs eagerly at module import — ~400k texel-loop iterations on the boot path
 
 **File(s):** `web/src/lib/drawing/crayonBrush.ts` (`buildFields`, lines 226–246; module-scope call,

@@ -119,7 +119,7 @@ describe('magic sheet fill-load failure', () => {
     return requested[requested.length - 1];
   }
 
-  it('reopens the readiness gate once a gradient source is available', async () => {
+  it('reopens the readiness gate with no further user action', async () => {
     const magic = await mountedMagicBrush();
 
     magic.setColorSheet(PAGE_URL);
@@ -127,9 +127,22 @@ describe('magic sheet fill-load failure', () => {
 
     lastRequest().onerror!();
 
-    // The page is detached, so the brush can fall back to a rainbow — the gate the
-    // pending-decode case above leaves closed forever now clears.
+    // A page session holds no gradient, so the error handler has to take one over
+    // itself — the gate the pending-decode case above leaves closed forever clears
+    // without the child toggling brushes or clearing the canvas.
+    expect(magic.isMagicSheetUnready()).toBe(false);
+  });
+
+  it('reopens the readiness gate when a rainbow was already held before the page', async () => {
+    const magic = await mountedMagicBrush();
+
     magic.ensureMagicSheet();
+    magic.setColorSheet(PAGE_URL);
+
+    lastRequest().onerror!();
+
+    // The held rainbow is kept, but the sheet still carries the (never-drawn) fill
+    // source, so recovery has to re-rasterize rather than assume a gradient handoff.
     expect(magic.isMagicSheetUnready()).toBe(false);
   });
 
@@ -165,6 +178,32 @@ describe('magic sheet fill-load failure', () => {
     // The newer page is still attached, so re-applying it stays a no-op.
     magic.setColorSheet(OTHER_PAGE_URL);
     expect(requested).toHaveLength(2);
+  });
+
+  // A theme switch cycles the sheet through the night fill and back
+  // (DrawingCanvas's resolvedTheme effect), so the current page's URL can equal an
+  // abandoned load's — only load identity separates them.
+  it('ignores a superseded error from an earlier load of the page now current again', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.setColorSheet(PAGE_URL);
+    const abandoned = lastRequest();
+    magic.setColorSheet(OTHER_PAGE_URL);
+    magic.setColorSheet(PAGE_URL);
+    const current = lastRequest();
+
+    abandoned.onerror!();
+
+    current.naturalWidth = 200;
+    current.naturalHeight = 100;
+    current.onload!();
+    expect(magic.isMagicSheetUnready()).toBe(false);
+
+    // The page is still attached — had the stale error detached it, this would
+    // start a fourth load instead of no-oping (and the gate above would have been
+    // cleared by a fallback rainbow rather than by the page's own fill).
+    magic.setColorSheet(PAGE_URL);
+    expect(requested).toHaveLength(3);
   });
 });
 
