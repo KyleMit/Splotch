@@ -21,36 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Maintainability] calculateStrokeSpeed's 1ms span floor is an unnamed tuning literal
-
-**File(s):** `web/src/lib/drawing/strokeMath.ts` (`calculateStrokeSpeed`, line 115) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-const windowSpan = Math.max(newSample.t - samples[0].t, 1);
-```
-
-The `1` encodes a decision — floor the elapsed span at 1ms so same-timestamp samples don't divide by
-zero (the dedicated test at `strokeMath.test.ts` lines 135–138 even names it: "floors the span at
-1ms"). Every other threshold in this file follows the convention (`EDGE_SWIPE_BAND_PX`,
-`POINTER_RESUME_GAP_MS`, etc., lines 23–25, 90–91, all with units and WHY comments); this is the one
-literal that escaped. It also silently caps reported speed at `distance px/ms`, which a future tuner
-of the speed-driven brush should be able to see at the top of the module.
-
-#### Proposed solution
-
-```ts
-// Floor for the elapsed span so coincident timestamps can't divide by zero
-// (caps reported speed at distance/1ms).
-export const MIN_SPEED_SPAN_MS = 1;
-```
-
-and use it in the `Math.max`. The test should import it rather than re-deriving `5` (per the
-parametrized-test rule), or keep the literal assertion as the deliberate test-side exception.
-
 ### [Types] IDENTITY_PAPER_VIEW is frozen at runtime but mutable in the type
 
 **File(s):** `web/src/lib/drawing/paperView.ts` (`IDENTITY_PAPER_VIEW`, lines 31–36) @ 9ae62ff1
