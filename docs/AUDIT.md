@@ -21,43 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Performance] `crayonPatternFor` recomputes `seedPhase` and allocates a `DOMMatrix` on every call
-
-**File(s):** `web/src/lib/drawing/crayonBrush.ts` (`crayonPatternFor`, lines 438–442) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-if (typeof DOMMatrix !== 'undefined') {
-  const [px, py] = seedPhase(seed, tile);
-  pattern.setTransform(new DOMMatrix([1, 0, 0, 1, px, py]));
-}
-```
-
-`crayonPatternFor` is called per pass per surface per op: with 2 passes and up to 3 surfaces (screen
-buffer, mirror, paper buffer — `renderCrayonOp`, strokeOps.ts:537–553), that's 6 calls per
-pointer-move frame, each hashing the seed again (the seed is constant for the whole pass),
-allocating a tuple array, and constructing a new `DOMMatrix` (plus the `[1,0,0,1,px,py]` array).
-`seedPhase` is pure in `(seed, tile)`; within a pass every call returns the same pair.
-
-#### Proposed solution
-
-Two independent improvements:
-
-1. `CanvasPattern.setTransform` accepts a plain `DOMMatrix2DInit` dict —
-   `pattern.setTransform({ e: px, f: py })` — eliminating both the `DOMMatrix` construction and the
-   `typeof DOMMatrix !== 'undefined'` guard (verify against the browser floor in
-   `docs/COMPATIBILITY.md`; the dict overload is long-baseline).
-2. Memoize the last `(seed → [px, py])` pair (a 1-entry cache suffices, since a frame's calls share
-   one seed).
-
-Gotcha: the guard also shields happy-dom unit runs; the dict form removes that need. Small win, but
-×6 per frame on the hot path.
-
----
-
 ### [Types] `setCrayonOptions` uses an `as CrayonOptions` cast that is not at a boundary — and masks a real hole
 
 **File(s):** `web/src/lib/drawing/crayonBrush.ts` (`setCrayonOptions`, lines 250–255) @ 9ae62ff1

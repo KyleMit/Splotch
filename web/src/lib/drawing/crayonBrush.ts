@@ -427,6 +427,21 @@ export function seedPhase(seed: number, tileSize: number): [number, number] {
   return [px, py];
 }
 
+// A live pointer-move frame calls crayonPatternFor up to passes × 3 times with
+// the same (seed, tile) pair (renderCrayonOp fans one op out to buf.ctx, its
+// mirror, and the paper-space buffer). seedPhase is pure, so a 1-entry cache
+// keyed on both inputs skips the re-hash for every call after the first.
+let lastSeedPhase: { seed: number; tileSize: number; px: number; py: number } | null = null;
+
+function cachedSeedPhase(seed: number, tileSize: number): [number, number] {
+  if (lastSeedPhase && lastSeedPhase.seed === seed && lastSeedPhase.tileSize === tileSize) {
+    return [lastSeedPhase.px, lastSeedPhase.py];
+  }
+  const [px, py] = seedPhase(seed, tileSize);
+  lastSeedPhase = { seed, tileSize, px, py };
+  return [px, py];
+}
+
 // The paint for one density pass of a crayon op: the colour's wax tile as a
 // repeating pattern, phase-shifted (in paper coordinates) by the stroke's seed.
 // Returns null only if the tile can't be built (no DOM canvas) — caller skips.
@@ -450,10 +465,8 @@ export function crayonPatternFor(
     if (!pattern) return null;
     byKey.set(key, pattern);
   }
-  if (typeof DOMMatrix !== 'undefined') {
-    const [px, py] = seedPhase(seed, crayonFields().tile);
-    pattern.setTransform(new DOMMatrix([1, 0, 0, 1, px, py]));
-  }
+  const [px, py] = cachedSeedPhase(seed, crayonFields().tile);
+  pattern.setTransform({ e: px, f: py });
   return pattern;
 }
 
