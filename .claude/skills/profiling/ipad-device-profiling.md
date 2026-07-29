@@ -48,53 +48,55 @@ Computer** when prompted. Put both devices on the **same Wi‑Fi** network.
 
 ## Approach A — Safari on iPad against the Mac's `/dev/engine` build
 
-### A1. Build the instrumented bundle — **[Mac]**
-
-The engine's `performance.mark/measure` calls only exist when built with `PERF_MARKS=true`, and the
-`/dev/engine` harness route (which exposes `window.__engine`, including `getUndoDebug()`) only loads
-when `PUBLIC_ENABLE_DEV_HARNESS=true`:
-
-```sh
-PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true npm run build
-```
-
-### A2. Serve it on the LAN — **[Mac]**
+### A1. Build and serve the instrumented bundle — **[Mac]**
 
 ```sh
 npm run perf:serve
 ```
 
-This serves the build on `0.0.0.0:4173` with the `/dev/*` harness routes unlocked
+One command does both. Its `preperf:serve` hook runs `npm run perf:build` — a production build with
+`PERF_MARKS=true`, which is what bakes in the engine's `performance.mark/measure` calls and keeps
+function names readable through minification — so the iPad always gets a fresh instrumented bundle
+rather than whatever was last built. Pass `--ignore-scripts` to skip the rebuild when the bundle on
+disk is already the one you want.
+
+It then serves that build on `0.0.0.0:4173` with the `/dev/*` harness routes unlocked, which is what
+makes `/dev/engine` (and its `window.__engine` / `getUndoDebug()`) reachable
 (`PUBLIC_ENABLE_DEV_HARNESS` is read at **runtime** via `$env/dynamic/public`, so it must be set for
-the server, which `perf:serve` does; `--host` exposes it beyond localhost). It prints the
-**Network** URL to use from the iPad. Leave it running in its own terminal — and stop it before
-`perf:replay` (same port).
+the server, which `perf:serve` does; `--host` exposes it beyond localhost). Leave it running in its
+own terminal — and stop it before `perf:replay` (same port).
 
-Find the Mac's LAN IP (Wi‑Fi is usually `en0`; try `en1` if blank):
+It prints the two URLs to open on the iPad:
 
-```sh
-ipconfig getifaddr en0
+```text
+➜  Network: http://192.168.40.75:4173/
+➜  Harness: http://192.168.40.75:4173/dev/engine
 ```
 
-### A3. Open the harness — **[iPad]**
+`scripts/perf/serve.mjs` wraps vite to print those. Bare `vite --host` advertises one URL per bound
+interface, including the `169.254.x.x` link-local address macOS self-assigns to the virtual
+interface it creates for a USB-tethered iPad — a dead end no browser can reach. The wrapper still
+binds every interface (so `localhost` keeps working); it only filters what it advertises.
 
-In **Safari on the iPad**, go to `http://<mac-lan-ip>:4173/dev/engine` (e.g.
-`http://192.168.1.42:4173/dev/engine`). You should see a blank canvas — that's the engine harness.
-Leave this tab in the foreground.
+### A2. Open the harness — **[iPad]**
 
-### A4. Attach the Web Inspector — **[Mac]**
+In **Safari on the iPad**, open the **Harness** URL from A1. You should see a blank canvas — that's
+the engine harness. Leave this tab in the foreground. (The **Network** URL is the real app at `/`,
+which is what Approach C records against.)
+
+### A3. Attach the Web Inspector — **[Mac]**
 
 **Develop → [your iPad's name] → `…/dev/engine`.** A Web Inspector window opens, remote-debugging
 that iPad page. (There's a **Develop → [device] → Connect via Network** toggle if you'd rather not
 stay tethered after the first connection.)
 
-### A5. Start a Timeline recording — **[Mac]**
+### A4. Drive the scenarios — **[Mac]**
 
-In Web Inspector → **Timelines** tab → click the record button. This captures the frame/GPU view, so
-you can *see* whether the commit's patch capture drops a ProMotion frame at finger-lift. (Optional
-but recommended — the console table in A6 gives the raw engine timings either way.)
-
-### A6. Drive the scenario — **[Mac]**
+**Do this pass with no Timeline recording running.** The driver is the workload, not a profiler: it
+reads the `engine.*` measures the `PERF_MARKS` build already emits. A Timeline recording is a second
+observer whose overhead lands *inside* those numbers, and `commit max ms` is judged against an 8.3
+ms budget — so take the gate numbers from a clean run and use the Timeline (A5) only to explain a
+hot row.
 
 In Web Inspector → **Console** tab, paste the **entire contents** of
 [`scripts/perf/ipad-console-driver.js`](../../../scripts/perf/ipad-console-driver.js) and press
@@ -115,10 +117,36 @@ Enter. It runs on the iPad page and:
 
 Keep the iPad screen awake and the tab foregrounded while it runs (a minute or two).
 
-### A7. Stop and export — **[Mac]**
+Read the table against the gates in [Reading the results](#reading-the-results). If every row
+passes, you're done — Approach A's whole point is these numbers, and A5–A6 exist only to explain a
+row that doesn't pass.
 
-Stop the Timeline recording, then export it (**Timelines** tab → export icon → save a `.json`, e.g.
-under `perf-profiles/web-inspector-timeline/`) and analyze it with the **dedicated** Web Inspector
+### A5. Record a Timeline over the hot row — **[Mac]**
+
+Only worth doing once A4 has named a row to chase. The Timeline sees what the engine marks
+structurally cannot: whether a ProMotion frame was actually **dropped** at finger-lift, and the
+**paint/composite** cost of the canvas raster — the canvas is GPU-accelerated, so issuing draw calls
+is cheap on the main thread and the marks *understate* the real cost.
+
+Scope the run to that one row first, because Web Inspector stores marks in a **ring buffer** and a
+recording across all four scenarios drops the early ones off the front of the export. In the
+**Console**, as its own statement before pasting the driver again:
+
+```js
+window.__perfScenarios = 'crayon-scribbles';
+```
+
+Valid keys are the `key` column of the A4 table — `long-squiggles`, `multi-finger`,
+`crayon-squiggles`, `crayon-scribbles` — the same keys `npm run perf:undo --scenarios=` takes, so a
+row that's hot here names the desktop scenario that reproduces it. An unknown key fails immediately
+with the list of valid ones; unset runs all four.
+
+Then: **Timelines** tab → record button → paste the driver → let it finish → stop the recording.
+
+### A6. Export and analyze — **[Mac]**
+
+Export the recording (**Timelines** tab → export icon → save a `.json`, e.g. under
+`perf-profiles/web-inspector-timeline/`) and analyze it with the **dedicated** Web Inspector
 analyzer:
 
 ```sh
@@ -139,8 +167,8 @@ npm run perf:ios:analyze -- perf-profiles/web-inspector-timeline/<export>.json
 >   unmatched), but since those three stay single-slice, the analyzer only uses the pair to flag an
 >   orphaned start — their reported cost still comes from the enclosing record.
 > * `markers` is a **ring buffer** — a long session keeps only the most recent marks (the analyzer
->   warns when the first mark is far past the recording start). Keep the driven scenario short, or
->   run one scenario per recording.
+>   warns when the first mark is far past the recording start). This is why A5 records one scenario
+>   at a time via `window.__perfScenarios`.
 > * `performance.now()` is clamped to **~1 ms**, so sub-ms values are at the clock floor — read them
 >   as "effectively free," not precise.
 >
@@ -159,10 +187,9 @@ bytes).
 
 ### C1. Serve the app on the LAN — **[Mac]**
 
-Build once, then serve (same as A1–A2):
+Same as A1 — build and serve in one command:
 
 ```sh
-PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true npm run build
 npm run perf:serve
 ```
 
@@ -258,10 +285,18 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
 * **iPad not under the Develop menu** → re-confirm the iPad's Web Inspector toggle, re-seat the USB
   cable, re-tap **Trust This Computer**, and make sure the iPad is unlocked with the Safari tab
   foregrounded.
-* **Page won't load over LAN** → confirm both devices are on the same Wi‑Fi, that
-  `npm run perf:serve` is running (it serves on `0.0.0.0:4173` — a plain `npm run preview` binds
-  localhost only and lacks the harness flag), and that you used the Mac's LAN IP (not `localhost`).
-  A firewall prompt on the Mac may need approving.
-* **`window.__engine` is undefined** → the build wasn't made with `PUBLIC_ENABLE_DEV_HARNESS=true`,
-  or you're not on the `/dev/engine` route.
-* **No `engine.*` marks in the export** → the build wasn't made with `PERF_MARKS=true`.
+* **More than one `Network:` URL** → `perf:serve` filters out link-local addresses but still prints
+  every genuinely-routable one, so a machine on a VPN or with a second active adapter shows several.
+  The Wi‑Fi one is the one the iPad can reach — `ipconfig getifaddr en0` names it. Whichever you
+  use, take it from the current run: it's a DHCP lease, not a fixed address.
+* **Page won't load over LAN** → confirm both devices are on the same Wi‑Fi (a guest SSID with
+  client isolation blocks this even though both say "same network"), that `npm run perf:serve` is
+  running (it serves on `0.0.0.0:4173` — a plain `npm run preview` binds localhost only and lacks
+  the harness flag), and that you used the Mac's LAN IP (not `localhost`). A firewall prompt on the
+  Mac may need approving.
+* **`window.__engine` is undefined** → you're serving with something other than `npm run perf:serve`
+  (`PUBLIC_ENABLE_DEV_HARNESS` gates the route at runtime, on the server), or you're not on the
+  `/dev/engine` route.
+* **No `engine.*` marks in the export** → the served build wasn't made with `PERF_MARKS=true`.
+  `npm run perf:serve` rebuilds with it via `preperf:serve`, so this means the rebuild was skipped
+  (`--ignore-scripts`) or the bundle is being served some other way.

@@ -17,6 +17,11 @@
 // `npm run perf:ios:analyze -- <export>.json` (the Web Inspector export is a
 // different, mark-only/ring-buffered format — NOT the Chrome-trace perf:analyze).
 // Peak memory wants the Xcode memory gauge on the same session.
+//
+// Run every scenario by pasting this file alone. To run a subset — which a
+// Timeline recording wants, since its mark ring buffer can't hold the whole
+// run — set the keys first, in their own console statement:
+//   window.__perfScenarios = 'crayon-scribbles'
 (async () => {
   const E = window.__engine;
   const S = window.__engineState;
@@ -127,6 +132,68 @@
     return n;
   };
 
+  // 22 strokes — two past the depth-20 cap (MAX_UNDO_DEPTH, matching
+  // scripts/perf/undo-scenarios.mjs) — so history MB is measured with the
+  // stack full and the oldest-entry fold + shift overflow path runs on the
+  // real device.
+  const STROKES = 22;
+  // Keys mirror the `--scenarios=` keys of `npm run perf:undo`, so a row found
+  // hot here names the desktop scenario that reproduces it;
+  // scripts/tests/ipad-console-driver.test.mjs fails if the two drift apart.
+  const SCENARIOS = [
+    {
+      key: 'long-squiggles',
+      label: `${STROKES} long squiggles (~1200 ops each)`,
+      strokes: Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6)),
+    },
+    {
+      key: 'multi-finger',
+      label: `${STROKES} five-finger drags (~2400 ops each)`,
+      strokes: Array.from({ length: STROKES }, (_, i) => multiGesture(i)),
+    },
+    {
+      key: 'crayon-squiggles',
+      label: `${STROKES} crayon squiggles`,
+      strokes: Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6)),
+      crayon: true,
+    },
+    {
+      key: 'crayon-scribbles',
+      label: `${STROKES} crayon scribbles (pass splits)`,
+      strokes: Array.from({ length: STROKES }, (_, i) => scribble(i % 6)),
+      crayon: true,
+    },
+  ];
+
+  // Optional subset, set in the console BEFORE pasting this file:
+  //   window.__perfScenarios = 'crayon-scribbles'
+  // A Web Inspector Timeline keeps its marks in a ring buffer, so recording
+  // across all four scenarios drops the early ones off the front of the export
+  // — scope the run to the one being recorded. Unset runs everything.
+  const requested = window.__perfScenarios;
+  const requestedKeys = (
+    Array.isArray(requested) ? requested : typeof requested === 'string' ? requested.split(',') : []
+  )
+    .map((k) => k.trim())
+    .filter(Boolean);
+  const unknown = requestedKeys.filter((k) => !SCENARIOS.some((sc) => sc.key === k));
+  if (unknown.length) {
+    console.error(
+      `window.__perfScenarios has unknown key(s): ${unknown.join(', ')}. ` +
+        `Known keys: ${SCENARIOS.map((sc) => sc.key).join(', ')}`
+    );
+    return;
+  }
+  const selected = requestedKeys.length
+    ? SCENARIOS.filter((sc) => requestedKeys.includes(sc.key))
+    : SCENARIOS;
+  if (selected.length !== SCENARIOS.length) {
+    console.log(
+      `Running ${selected.length} of ${SCENARIOS.length} scenarios: ` +
+        selected.map((sc) => sc.key).join(', ')
+    );
+  }
+
   // Preflight the PERF_MARKS half of the build recipe. The harness checks above
   // prove PUBLIC_ENABLE_DEV_HARNESS is on, but a build made without
   // PERF_MARKS=true emits no marks/measures at all — undoAll's per-step wait
@@ -179,7 +246,7 @@
     }
   };
 
-  async function scenario(label, { strokes, crayon }) {
+  async function scenario({ key, label, strokes, crayon }) {
     await resetForScenario(label);
     if (E.setCrayonMode) E.setCrayonMode(!!crayon);
     const drawStart = performance.now();
@@ -204,6 +271,7 @@
     const liveMB = dbg.rasterBytes != null ? dbg.rasterBytes / MIB : dbg.liveRasters * mbPerRaster;
     const historyMB = liveMB + mbPerRaster + dbg.blobBytes / MIB;
     return {
+      key,
       scenario: label,
       snapshots: dbg.snapshots ?? 0,
       'blob KB': Math.round((dbg.blobBytes ?? 0) / 1024),
@@ -218,35 +286,9 @@
     };
   }
 
-  // 22 strokes — two past the depth-20 cap (MAX_UNDO_DEPTH, matching
-  // scripts/perf/undo-scenarios.mjs) — so history MB is measured with the
-  // stack full and the oldest-entry fold + shift overflow path runs on the
-  // real device.
-  const STROKES = 22;
-  const SCENARIOS = [
-    {
-      label: `${STROKES} long squiggles (~1200 ops each)`,
-      strokes: Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6)),
-    },
-    {
-      label: `${STROKES} five-finger drags (~2400 ops each)`,
-      strokes: Array.from({ length: STROKES }, (_, i) => multiGesture(i)),
-    },
-    {
-      label: `${STROKES} crayon squiggles`,
-      strokes: Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6)),
-      crayon: true,
-    },
-    {
-      label: `${STROKES} crayon scribbles (pass splits)`,
-      strokes: Array.from({ length: STROKES }, (_, i) => scribble(i % 6)),
-      crayon: true,
-    },
-  ];
-
   const rows = [];
-  for (const sc of SCENARIOS) {
-    rows.push(await scenario(sc.label, sc));
+  for (const sc of selected) {
+    rows.push(await scenario(sc));
   }
 
   console.log(
@@ -261,6 +303,7 @@
       'alone) and "fold" is engine.fold (rendering the committed ops) — a hot ' +
       'commit attributes to one of those. Watch a Web Inspector Timeline for a ' +
       'dropped frame at finger-lift and during the blob encodes after it, and ' +
-      'the Xcode memory gauge for the snapshot tier.'
+      'the Xcode memory gauge for the snapshot tier. To record a Timeline over ' +
+      "one hot row, rerun it alone: window.__perfScenarios = '<key>'"
   );
 })();
