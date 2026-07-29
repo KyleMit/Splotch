@@ -9,7 +9,7 @@
     supportEmail,
   } from './androidBeta';
   import Icon from '$lib/components/Icon.svelte';
-  import { paletteHex } from '$lib/palette';
+  import { paletteHex, type PaletteLabel } from '$lib/palette';
 
   // Composed after hydration so the support address never appears in the
   // prerendered HTML, which is what address harvesters scrape. Without JS the
@@ -23,10 +23,18 @@
   // installing, and the store listing stays a 404 until it is done — and step 4
   // is the optional ask afterwards.
   //
-  // Each numeral takes its own crayon hue, tying the list back to the masthead
-  // strip. Read out of palette.ts rather than written as hexes here, which
-  // palette-source.test.mjs requires and which makes a renamed swatch fail loudly.
-  const NUMERAL_INK = ['Red', 'Orange', 'Green', 'Blue'].map(paletteHex);
+  // Each step carries its own crayon hue on the bar of its callout, tying the
+  // list back to the masthead strip. Read out of palette.ts rather than written
+  // as hexes here, which palette-source.test.mjs requires and which makes a
+  // renamed swatch fail loudly.
+  //
+  // The numerals do NOT use these: three of the four raw hues are 2.0-2.7:1 on
+  // the sheet, under the 3:1 that large text needs. They take the darkened
+  // --beta-*-ink of the same step instead (5.0-5.8:1), which is the color of
+  // that step's callout label anyway.
+  const CARD_ACCENT: string[] = (['Red', 'Orange', 'Green', 'Blue'] as PaletteLabel[]).map(
+    paletteHex
+  );
 
   // Colors come from the --beta-* custom properties the route declares; they
   // inherit through the component boundary, so this stays light-only with the
@@ -35,7 +43,7 @@
 
 <ol class="steps">
   <li>
-    <span class="num" style="color:{NUMERAL_INK[0]}">1</span>
+    <span class="num alert">1</span>
     <div class="content">
       <div class="head"><h3>Join the testers group</h3></div>
       <p class="body">
@@ -52,7 +60,7 @@
           Google may ask you to sign in or to request access before it lets you in.
         </p>
       </div>
-      <div class="card" style="--card-accent:{NUMERAL_INK[0]}">
+      <div class="card" style="--card-accent:{CARD_ACCENT[0]}">
         <span class="bar"></span>
         <div>
           <p class="card-label alert">Double check your account</p>
@@ -66,7 +74,7 @@
   </li>
 
   <li>
-    <span class="num" style="color:{NUMERAL_INK[1]}">2</span>
+    <span class="num warn">2</span>
     <div class="content">
       <div class="head"><h3>Opt in on Google Play</h3></div>
       <p class="body">
@@ -79,7 +87,7 @@
           Become a tester
         </a>
       </div>
-      <div class="card" style="--card-accent:{NUMERAL_INK[1]}">
+      <div class="card" style="--card-accent:{CARD_ACCENT[1]}">
         <span class="bar"></span>
         <div>
           <p class="card-label warn">If a link doesn't work yet</p>
@@ -94,7 +102,7 @@
   </li>
 
   <li>
-    <span class="num" style="color:{NUMERAL_INK[2]}">3</span>
+    <span class="num go">3</span>
     <div class="content">
       <div class="head"><h3>Install Splotch</h3></div>
       <p class="body">
@@ -111,7 +119,7 @@
           (API {MIN_ANDROID_API_LEVEL}) or newer.
         </p>
       </div>
-      <div class="card" style="--card-accent:{NUMERAL_INK[2]}">
+      <div class="card" style="--card-accent:{CARD_ACCENT[2]}">
         <span class="bar"></span>
         <div>
           <p class="card-label go">Please stay for 14 days</p>
@@ -128,7 +136,7 @@
   </li>
 
   <li>
-    <span class="num" style="color:{NUMERAL_INK[3]}">4</span>
+    <span class="num info">4</span>
     <div class="content">
       <div class="head">
         <h3>Tell us what you think</h3>
@@ -143,7 +151,7 @@
         useful.
       </p>
       {#if support}
-        <div class="card" style="--card-accent:{NUMERAL_INK[3]}">
+        <div class="card" style="--card-accent:{CARD_ACCENT[3]}">
           <span class="bar"></span>
           <div>
             <p class="card-label info">Or just email me</p>

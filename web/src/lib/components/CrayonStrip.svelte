@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { paletteHex } from '$lib/palette';
+  import { paletteHex, type PaletteLabel } from '$lib/palette';
 
   // The brand crayon strip, matching the scrapbook pages' masthead
   // (scripts/lib/scrapbook-chrome.mjs). Decorative — it carries no information
@@ -9,7 +9,15 @@
   // the drawing palette's own trim priority (purple first, bonus swatches
   // interleaved). Hues are looked up by label rather than copied as hexes so
   // the strip can't drift from the app's palette.
-  const CRAYON_LABELS = ['Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Purple', 'Pink'];
+  const CRAYON_LABELS: PaletteLabel[] = [
+    'Red',
+    'Orange',
+    'Yellow',
+    'Green',
+    'Blue',
+    'Purple',
+    'Pink',
+  ];
 </script>
 
 <span class="crayons" aria-hidden="true">

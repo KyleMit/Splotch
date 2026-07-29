@@ -4,26 +4,37 @@ import { ADMIN_ACCESS_TOKEN } from './admin-helpers';
 import { openParentCenter } from './helpers';
 
 // Axe-core scans for the adult-facing surfaces (issue #458): /privacy,
-// /android-beta, /admin (both auth states), and the Parent Center dialog. The toddler-facing canvas
-// chrome is deliberately out of scope — its UX rules (giant wordless buttons,
-// no reading order) aren't WCAG's — so the Parent Center scan is scoped to the
-// dialog itself rather than the whole drawing page.
+// /android-beta, /admin (both auth states), and the Parent Center dialog. The
+// toddler-facing canvas chrome is deliberately out of scope — its UX rules
+// (giant wordless buttons, no reading order) aren't WCAG's — so the Parent
+// Center scan is scoped to the dialog itself rather than the whole drawing page.
 //
 // Only serious/critical violations fail the test, but the failure message
 // reports every violation axe found so the full picture is one run away.
+//
+// It also reports axe's `incomplete` results, which are checks axe could not
+// decide and therefore never counts as violations. They are easy to mistake for
+// a clean bill: a one-character text node ("1", "2") always lands there with
+// "Element content is too short to determine if it is actual text content", so a
+// page whose color decisions ride on short labels would scan green with no
+// contrast checked at all. Anything that matters is asserted explicitly by the
+// owning spec — see android-beta.spec.ts.
 
 async function expectNoSeriousViolations(page: Page, include?: string) {
   let builder = new AxeBuilder({ page });
   if (include) builder = builder.include(include);
-  const { violations } = await builder.analyze();
+  const { violations, incomplete } = await builder.analyze();
 
-  const report = violations
-    .map(
-      (v) =>
-        `[${v.impact}] ${v.id}: ${v.help} (${v.helpUrl})\n` +
-        v.nodes.map((n) => `  ${n.target.join(' ')}\n    ${n.failureSummary}`).join('\n')
-    )
-    .join('\n');
+  const describe = (results: typeof violations) =>
+    results
+      .map(
+        (v) =>
+          `[${v.impact}] ${v.id}: ${v.help} (${v.helpUrl})\n` +
+          v.nodes.map((n) => `  ${n.target.join(' ')}\n    ${n.failureSummary}`).join('\n')
+      )
+      .join('\n');
+
+  const report = `${describe(violations)}\n\nincomplete (undecided by axe, not failures):\n${describe(incomplete)}`;
 
   const serious = violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   expect(

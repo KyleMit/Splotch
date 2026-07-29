@@ -67,3 +67,44 @@ test('the masthead crayon strip renders every palette hue it names', async ({ pa
     expect(background).not.toBe('rgba(0, 0, 0, 0)');
   }
 });
+
+// axe cannot check these: a one-character text node always lands in `incomplete`
+// ("content is too short to determine if it is actual text content"), and the
+// chevron is an SVG fill. Both carry real WCAG minimums, so they are measured
+// here from the rendered page rather than assumed.
+const CONTRAST = `(fg, bg) => {
+  const lum = (c) => {
+    const [r, g, b] = c.match(/\\d+(\\.\\d+)?/g).slice(0, 3)
+      .map(Number).map((v) => v / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const [hi, lo] = [lum(fg), lum(bg)].sort((a, b) => b - a);
+  return (hi + 0.05) / (lo + 0.05);
+}`;
+
+test('the step numerals clear the 3:1 large-text minimum', async ({ page }) => {
+  await page.goto('/android-beta');
+  const ratios = await page.evaluate(`(() => {
+    const contrast = ${CONTRAST};
+    return [...document.querySelectorAll('.num')].map((el) => ({
+      step: el.textContent.trim(),
+      ratio: contrast(getComputedStyle(el).color, getComputedStyle(el.closest('.sheet')).backgroundColor),
+    }));
+  })()`);
+  expect(ratios).toHaveLength(4);
+  for (const { step, ratio } of ratios as { step: string; ratio: number }[]) {
+    expect(ratio, `step ${step} numeral contrast`).toBeGreaterThanOrEqual(3);
+  }
+});
+
+test('the troubleshooting chevron clears the 3:1 non-text minimum', async ({ page }) => {
+  // WCAG 1.4.11: the chevron's rotation is the only visual open/closed signal.
+  await page.goto('/android-beta');
+  const ratio = await page.evaluate(`(() => {
+    const contrast = ${CONTRAST};
+    const svg = document.querySelector('.chev svg');
+    return contrast(getComputedStyle(svg).fill, getComputedStyle(svg.closest('details')).backgroundColor);
+  })()`);
+  expect(ratio as number).toBeGreaterThanOrEqual(3);
+});

@@ -122,11 +122,9 @@
     --beta-note: #4a4a54; /* ~ --text on the warm tint */
     /* The spec's muted ink was #9a98a3 (~ --text-faint). That is 2.8:1 on the
        sheet and fails WCAG AA everywhere it carries text — the wordmark, the
-       hero note, fine print, aside labels and bodies. This is the darkest value
-       that still reads as recessive and clears 4.5:1. --beta-faint keeps the
-       specced tone for the one non-text use, the chevron glyph. */
+       hero note, fine print, and callout labels. This is the darkest value that
+       still reads as recessive and clears 4.5:1. */
     --beta-muted: #6c6c76; /* ~ --text-mid (#666), light */
-    --beta-faint: #9a98a3; /* ~ --text-faint (#999), light — icon fill only */
     /* Darker than --brand, whose 3.4:1 fails WCAG AA for body-size text; this
        clears 4.5:1 as a link and as a white-on-purple button fill. Same value
        /privacy pins for the same reason. */
@@ -134,7 +132,6 @@
     --beta-link-hover: #6b3fbf;
     --beta-warm: #f7f3ee; /* ~ --surface-warm-hover (#f4f0ea), light */
     --beta-rule: #eeeae4; /* ~ --border-warm (#ddd6cc), lightened */
-    --beta-note-rule: #e6e1d9;
     --beta-row: #faf8f5;
     --beta-row-hover: #f4f0ea;
     /* One darkened tint per crayon hue for the card labels — the raw palette
@@ -313,8 +310,11 @@
     transition: transform var(--duration-base) ease;
   }
 
+  /* The rotation is the only visual signal of the panel's state, so this is a
+     non-text contrast case (WCAG 1.4.11, 3:1) rather than a decorative one.
+     --beta-muted is 4.9:1 on the row and 4.6:1 on its hover. */
   .trouble :global(.chev svg) {
-    fill: var(--beta-faint);
+    fill: var(--beta-muted);
   }
 
   .trouble :global(.beta-disclosure[open] .chev) {
