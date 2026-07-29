@@ -21,43 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Types] IDENTITY_PAPER_VIEW is frozen at runtime but mutable in the type
-
-**File(s):** `web/src/lib/drawing/paperView.ts` (`IDENTITY_PAPER_VIEW`, lines 31–36) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-export const IDENTITY_PAPER_VIEW: PaperView = Object.freeze({
-  scale: 1,
-  rotate: 0 as ViewRotation,
-  tx: 0,
-  ty: 0,
-});
-```
-
-The runtime contract (frozen) and the declared type (`PaperView`, mutable fields) disagree:
-`IDENTITY_PAPER_VIEW.tx = 5` type-checks but throws `TypeError` in strict mode. The
-`0 as ViewRotation` cast is also a workaround for the annotation shape — `Object.freeze`'s inference
-widens `rotate` to `number` before the annotation can contextualize it.
-
-#### Proposed solution
-
-```ts
-export const IDENTITY_PAPER_VIEW: Readonly<PaperView> = Object.freeze<PaperView>({
-  scale: 1,
-  rotate: 0,
-  tx: 0,
-  ty: 0,
-});
-```
-
-`Object.freeze<PaperView>` contextually types the literal (killing the cast), and
-`Readonly<PaperView>` makes the immutability compiler-visible. Consumers all read fields, so no
-call-site churn; anywhere that needs a mutable copy already must spread it.
-
 ### [Maintainability] Contain-fit scale-and-center math is duplicated between drawOverlayContained and computePaperView
 
 **File(s):** `web/src/lib/drawing/exportDrawing.ts` (`drawOverlayContained`, lines 91–93) and

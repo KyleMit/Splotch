@@ -28,9 +28,9 @@ export interface Size {
   height: number;
 }
 
-export const IDENTITY_PAPER_VIEW: PaperView = Object.freeze({
+export const IDENTITY_PAPER_VIEW: Readonly<PaperView> = Object.freeze<PaperView>({
   scale: 1,
-  rotate: 0 as ViewRotation,
+  rotate: 0,
   tx: 0,
   ty: 0,
 });
