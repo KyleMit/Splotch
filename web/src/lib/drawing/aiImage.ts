@@ -165,10 +165,7 @@ function buildRequest(
 // Drive the run's terminal UI transition from the parsed response: fail on any of
 // the three error kinds, or commit the image. Returns the committed blob only when
 // the image landed and the run still owns the UI, proving it is safe to auto-save.
-function applyResponse(
-  runId: number,
-  response: AiImageResponse
-): { committedBlob: Blob } | null {
+function applyResponse(runId: number, response: AiImageResponse): { committedBlob: Blob } | null {
   switch (response.kind) {
     case 'safety':
       failAiGeneration(runId, AI_SAFETY_REFUSAL_MESSAGE, 'safety');

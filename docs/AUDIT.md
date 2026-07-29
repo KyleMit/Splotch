@@ -23,51 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Types] `applyResponse`'s string return forces the caller to re-narrow the response it already classified
-
-**File(s):** `web/src/lib/drawing/aiImage.ts` (`applyResponse`, lines 170–196; caller lines 226–229)
-@ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`applyResponse` returns `'committed' | 'failed'`, where `'committed'` is only ever returned for
-`response.kind === 'image'` (line 195). But the type system doesn't know that, so the caller must
-re-check the discriminant to reach the blob:
-
-```ts
-const committed = applyResponse(runId, response) === 'committed';
-if (committed && response.kind === 'image' && settings.autoSaveAiEnabled) {
-  await autoSaveImages(response.blob, exported.preview, runId);
-}
-```
-
-(lines 226–229). The `response.kind === 'image'` test is semantically redundant — `committed`
-already implies it — but it can't be removed because `AiImageResponse` doesn't narrow through the
-string result. A first-time reader has to work out whether the double condition encodes a real state
-(a committed non-image?) or is just type appeasement.
-
-#### Proposed solution
-
-Make the return carry the proof, e.g.:
-
-```ts
-function applyResponse(runId: number, response: AiImageResponse): { committedBlob: Blob } | null;
-```
-
-returning `{ committedBlob: response.blob }` on commit and `null` on every failure path. The caller
-becomes:
-
-```ts
-const committed = applyResponse(runId, response);
-if (committed && settings.autoSaveAiEnabled) {
-  await autoSaveImages(committed.committedBlob, exported.preview, runId);
-}
-```
-
-One condition, no re-narrowing, and the invariant "committed ⇒ image" is now structural.
-
 ### [Maintainability] `!important` used to beat a sibling rule in AiImageResult, against the Svelte component rules
 
 **File(s):** `web/src/lib/components/AiImageResult.svelte` (lines 328–333) @ 9ae62ff1
