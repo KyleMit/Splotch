@@ -23,53 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Performance] AiImagePrompt creates and manages an object URL for a preview that is never rendered
-
-**File(s):** `web/src/lib/components/AiImagePrompt.svelte` (lines 11–32, 72),
-`web/src/lib/components/aiPreview.ts` (`createAiPreviewLoader`, lines 1–23),
-`web/src/lib/components/aiPreview.test.ts` @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-`AiImagePrompt.svelte` holds `previewUrl` in `$state` (line 11), commits it from the loader (lines
-14–20), revokes it in `cleanupPreview` (lines 27–32), and has a teardown `$effect` (line 37) whose
-stated purpose is "so the preview's object URL doesn't outlive the component". But nothing in the
-template ever *displays* `previewUrl` — its only read is as a readiness flag:
-
-```svelte
-disabled={!previewUrl}
-```
-
-(line 72). Git history confirms the URL was never rendered in this component. Meanwhile, when a
-style is picked, `generateAiImage({ blob, style })` creates a *second* object URL for the very same
-blob (`aiImage.ts` line 211) — that one is the URL actually shown blurred behind the dial.
-
-So the whole URL half of this machinery is dead weight: `createAiPreviewLoader` exists largely to
-race-guard the creation/revocation of a URL nothing uses (`aiPreview.ts` lines 12–16), and
-`aiPreview.test.ts`'s single test verifies revocation of that unused URL. Every open of the style
-picker allocates an object URL purely to throw it away.
-
-#### Proposed solution
-
-Drop the URL from the loader entirely. Make the loader commit the blob only:
-
-```ts
-export function createAiPreviewLoader(
-  exportDrawing: () => Promise<Blob | null>,
-  commit: (blob: Blob) => void,
-);
-```
-
-In `AiImagePrompt.svelte`, promote `drawingBlob` to `$state<Blob | null>` (it must become reactive
-since `disabled` will now derive from it), delete `previewUrl`, and simplify `cleanupPreview` to
-`previewLoader.invalidate(); drawingBlob = null;`. The stale-load race guard (`activeLoadId`) is
-still needed so a late export doesn't re-enable buttons after close — keep it and update
-`aiPreview.test.ts` to assert `commit` is not called after `invalidate()` (no URL assertions). This
-deletes the component's URL-lifecycle comment block (lines 34–37) and its `URL.revokeObjectURL`
-bookkeeping.
-
 ### [Types] `applyResponse`'s string return forces the caller to re-narrow the response it already classified
 
 **File(s):** `web/src/lib/drawing/aiImage.ts` (`applyResponse`, lines 170–196; caller lines 226–229)

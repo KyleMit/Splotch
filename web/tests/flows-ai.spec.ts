@@ -10,7 +10,7 @@ import { openDrawer } from './flows-harness';
 test('the AI button posts the drawing and reveals the generated result', async ({ page }) => {
   const png = tinyPngBuffer();
   let postedImage = false;
-  await page.route('**/api/generate-image', async (route) => {
+  await page.route('**/api/generate-image?style=Magical', async (route) => {
     const req = route.request();
     // The client sends the raw image bytes as the body (no multipart envelope)
     // with the credential in a header — and a WebP upload (issue #345), which
