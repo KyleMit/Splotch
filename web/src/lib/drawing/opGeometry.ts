@@ -4,7 +4,7 @@
 // (strokeOps.ts) and the crayon pass buffer (crayonPassBuffer.ts) can share it
 // without either importing the other.
 
-import type { DotOp, PathOp, StrokeOp } from './strokeOps';
+import type { DotOp, PathOp } from './strokeOps';
 
 // Stroke or dot the op's bare geometry onto a target using `paint` as the
 // fill/stroke style — a solid colour for a normal op, the sheet pattern for a
@@ -12,7 +12,7 @@ import type { DotOp, PathOp, StrokeOp } from './strokeOps';
 // crayon density pass (1 = the op's full size).
 export function paintOpShape(
   target: CanvasRenderingContext2D,
-  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>,
+  op: DotOp | PathOp,
   paint: string | CanvasPattern,
   widthScale = 1
 ) {

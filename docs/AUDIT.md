@@ -21,32 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Readability] Name the repeated `Extract<StrokeOp, …>` types
-
-**File(s):** `web/src/lib/drawing/strokeOps.ts` (lines 91–92, 108, 137, 290, 521) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The file already defines `PathOp`/`DotOp` aliases (lines 91–92), but three signatures still spell
-out `Extract<StrokeOp, { kind: 'dot' | 'path' }>` (`paintOpShape` line 108, `paintCrayon` line 137,
-`renderCrayonOp` line 521) and `closeLiveCrayonPass` returns
-`Extract<StrokeOp, { kind: 'crayonPassRaster' }> | null` (line 290). The inline `Extract`s are noise
-at every read and drift-prone (a fourth ink kind would need each site touched).
-
-#### Proposed solution
-
-```ts
-export type InkOp = DotOp | PathOp; // or Extract<StrokeOp, { kind: 'dot' | 'path' }>
-export type CrayonPassRasterOp = Extract<StrokeOp, { kind: 'crayonPassRaster' }>;
-```
-
-and use them in the four signatures (and in `undoHistory.ts` if it repeats the raster extract). Pure
-type-level rename.
-
----
-
 ### [Readability] `AA_PAD` lacks its unit suffix
 
 **File(s):** `web/src/lib/drawing/strokeOps.ts` (line 471) @ 9ae62ff1

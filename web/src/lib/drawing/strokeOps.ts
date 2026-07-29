@@ -92,6 +92,7 @@ export type StrokeOp =
 
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
 export type DotOp = Extract<StrokeOp, { kind: 'dot' }>;
+export type CrayonPassRasterOp = Extract<StrokeOp, { kind: 'crayonPassRaster' }>;
 
 // One stroke-group (all fingers down together) = one undo unit. `wasEmpty` is
 // the canvas-empty state before the group drew, so undo can restore the flag

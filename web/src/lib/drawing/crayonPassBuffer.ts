@@ -12,7 +12,7 @@ import {
   getCrayonMix,
 } from './crayonBrush';
 import { opPaddedUserBounds, paintOpShape } from './opGeometry';
-import type { StrokeOp } from './strokeOps';
+import type { CrayonPassRasterOp, DotOp, PathOp } from './strokeOps';
 
 // Lay a crayon op down as textured wax: one pass per density band (widest first),
 // each filled with the paper-tooth pattern for the op's colour + seed. Opaque
@@ -20,10 +20,7 @@ import type { StrokeOp } from './strokeOps';
 // strokes build up coverage without shifting hue (ADR-0065). No-op until the
 // tooth tile is buildable (a DOM canvas exists), matching the magic sheet's
 // decode-pending skip.
-function paintCrayon(
-  target: CanvasRenderingContext2D,
-  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
-) {
+function paintCrayon(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
   const seed = op.seed ?? 0;
   const passCount = crayonPassCount();
   target.globalCompositeOperation = 'source-over';
@@ -175,7 +172,7 @@ export function resetLiveCrayonPass() {
 // ops and recording a plain 'crayonFlush'. The buffer is cleared on EVERY
 // close, success or not: a stale dirty region bleeding into the next pass's
 // crop would stamp this pass's ink twice.
-export function closeLiveCrayonPass(): Extract<StrokeOp, { kind: 'crayonPassRaster' }> | null {
+export function closeLiveCrayonPass(): CrayonPassRasterOp | null {
   const pb = livePaperBuffer;
   if (!pb || !pb.dirty || !pb.bounds) return null;
   const b = pb.bounds;
@@ -347,10 +344,7 @@ export function resetLiveCrayonForReplay(target: CanvasRenderingContext2D) {
 // transform, grows the buffer's dirty region by the op's bounds, and — for the
 // live target — mirrors the paint into the paper-space buffer so the pass can
 // close into a 'crayonPassRaster'.
-export function renderCrayonOp(
-  target: CanvasRenderingContext2D,
-  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
-) {
+export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
   // Zero mix = the pre-mixing pipeline exactly: paint the target directly
   // (opaque wax, no buffer, no stamp) — the dev harness's A/B baseline and a
   // cheap escape hatch. Flushes become no-ops on a clean buffer.
