@@ -122,6 +122,16 @@ function repaintedContent(m: Awaited<ReturnType<typeof freshHistory>>): string[]
   return [...(target as unknown as { _content: string[] })._content];
 }
 
+// Every canvas in a test shares the beforeEach stub, so starve exactly one
+// canvas of its context — the grown paper — and restore the stub immediately.
+function failNextGetContext() {
+  const stub = HTMLCanvasElement.prototype.getContext;
+  (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = function () {
+    HTMLCanvasElement.prototype.getContext = stub;
+    return null;
+  };
+}
+
 describe('snapshot stack depth', () => {
   it('caps retained snapshots at MAX_UNDO_DEPTH while the paper keeps every stroke', async () => {
     const m = await freshHistory();
@@ -627,5 +637,33 @@ describe('in-flight strokes', () => {
     m.recordOp(cmd('#live').ops[0]);
     expect(m.resetActiveCommandForClear()).toBe(true);
     expect(repaintedContent(m)).toEqual([]);
+  });
+});
+
+describe('paper grow', () => {
+  it('copies the existing pixels onto the bigger paper', async () => {
+    const m = await freshHistory();
+    m.pushCommand(cmd('#a', false, true));
+    const copiesBefore = drawImageCalls;
+    m.ensurePaperCovers(128);
+    expect(drawImageCalls).toBe(copiesBefore + 1);
+    expect(repaintedContent(m)).toEqual(['#a']);
+    m.pushCommand(cmd('#b'));
+    expect(repaintedContent(m)).toEqual(['#a', '#b']);
+  });
+
+  it('keeps the old paper when the grown canvas has no context', async () => {
+    const m = await freshHistory();
+    m.pushCommand(cmd('#a', false, true));
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    failNextGetContext();
+    m.ensurePaperCovers(128);
+    // Swapping in the blank, context-less canvas would lose '#a' outright and
+    // make every later push a silent no-op.
+    expect(repaintedContent(m)).toEqual(['#a']);
+    m.pushCommand(cmd('#b'));
+    expect(repaintedContent(m)).toEqual(['#a', '#b']);
+    expect(logged).toHaveBeenCalledTimes(1);
+    logged.mockRestore();
   });
 });

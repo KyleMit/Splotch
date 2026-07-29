@@ -168,11 +168,13 @@ export function ensurePaperCovers(squareSide: number) {
   grown.width = Math.max(squareSide, paperCanvas.width);
   grown.height = Math.max(squareSide, paperCanvas.height);
   const grownCtx = grown.getContext('2d');
-  if (grownCtx) {
-    grownCtx.lineCap = 'round';
-    grownCtx.lineJoin = 'round';
-    grownCtx.drawImage(paperCanvas, 0, 0);
+  if (!grownCtx) {
+    console.error('ensurePaperCovers: grown canvas context unavailable, keeping existing paper');
+    return;
   }
+  grownCtx.lineCap = 'round';
+  grownCtx.lineJoin = 'round';
+  grownCtx.drawImage(paperCanvas, 0, 0);
   paperCanvas = grown;
   paperCtx = grownCtx;
   paperPristine = false;

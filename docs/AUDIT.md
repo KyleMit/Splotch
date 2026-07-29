@@ -23,49 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Correctness] `ensurePaperCovers` grow path discards the whole drawing when the grown context fails
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`ensurePaperCovers`, lines 174–185) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-const grown = document.createElement('canvas');
-...
-const grownCtx = grown.getContext('2d');
-if (grownCtx) {
-  ...
-  grownCtx.drawImage(paperCanvas, 0, 0);
-}
-paperCanvas = grown;
-paperCtx = grownCtx;
-```
-
-When `getContext('2d')` returns null (real on iOS under canvas-memory pressure — exactly the
-situation a 2×-DPR grow provokes), the copy of the existing drawing is skipped but the swap still
-happens: `paperCanvas` becomes the blank `grown` canvas and `paperCtx` becomes `null`. The entire
-committed drawing is lost, every subsequent `pushCommand` early-returns (line 480), and `repaintAll`
-blits a blank paper — permanent, silent data loss. This contradicts the module's own philosophy
-stated at lines 508–516 ("keeping a child's stroke while losing its undo step beats deleting ink"):
-here a *resize* deletes all ink. The rest of the file treats a failed context as "degrade, keep
-pixels" (`adoptPaperAsSnapshot` returns null pre-swap, line 441; the patch-capture fallback, lines
-499–501).
-
-#### Proposed solution
-
-Bail out keeping the old paper when the grown context can't be created:
-
-```ts
-const grownCtx = grown.getContext('2d');
-if (!grownCtx) return;
-```
-
-The old, smaller paper keeps working — worst case new ink beyond the old square is clipped at fold
-(the already-accepted ADR-0050 margin behavior), which strictly beats wiping the drawing. Consider a
-`console.error` tripwire matching the pattern at line 679.
-
 ### [Architecture] Extract the fold-region geometry into its own module
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`Box` through `foldRegionsForCommands`, lines
