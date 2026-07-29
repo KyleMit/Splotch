@@ -19,26 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [DX] Unit suite resets the module registry twice per test
-
-**File(s):** `web/src/lib/drawing/undoHistory.test.ts` (`afterEach`, lines 85–89; `freshHistory`,
-lines 107–112) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`afterEach` calls `vi.resetModules()` (line 88) and every test's first act is `freshHistory()`,
-which calls `vi.resetModules()` again (line 108) before the dynamic import. The `afterEach` reset is
-fully shadowed — any state it would clear is re-cleared before the next import — so it's dead weight
-that also implies (falsely) that tests would leak state without it. Minor, but in a 623-line suite
-everyone copies patterns from, redundant lifecycle code propagates.
-
-#### Proposed solution
-
-Drop the `vi.resetModules()` from `afterEach`, keeping the prototype restores. One-line deletion;
-`freshHistory` remains the single isolation mechanism (worth a one-line comment there saying so).
-
 ### [Testing] Depth-cap test floats `popSnapshot` promises instead of awaiting them
 
 **File(s):** `web/src/lib/drawing/undoHistory.test.ts` (lines 139–144) @ 9ae62ff1

@@ -29,7 +29,6 @@ beforeEach(() => {
 
 afterEach(() => {
   canvasStub.restore();
-  vi.resetModules();
 });
 
 describe('snapshot stack depth', () => {
