@@ -169,6 +169,16 @@ the first place:
   good stroke remains. A metric that a wrong-mode action still satisfies (a canvas-fill pixel count
   — a pen stroke fills the band too) won't catch the race, so assert on something only the right
   mode produces.
+* **Shared per-test setup belongs in a fixture, never in a helper module's top-level
+  `test.beforeEach`.** A helper is evaluated once per worker process, so a hook it registers at
+  import time attaches only to the *first* spec file in that worker that imports it; every later
+  spec file gets no setup at all and runs against `about:blank`. That was issue \#624 — ~12
+  `/dev/engine` specs "flaking" with a missing `#engineCanvas` or an undefined `window.__engine`,
+  green on retry (a retry re-runs the file alone) and green in isolation. Extend `test` in the
+  helper instead (`base.extend({ page: async ({ page }, use) => { …setup…; await use(page) } })`,
+  see `tests/engine-harness.ts`) and have specs import `test`/`expect` from the helper;
+  `scripts/tests/e2e-harness-imports.test.mjs` fails the build if one imports `test` from
+  `@playwright/test` instead.
 * **Prove it's fixed under load, not in isolation.** Flakes only appear under contention, so verify
   with `npm run test:e2e -- <spec> --repeat-each=10` (which still fans out across the 4 workers)
   before trusting green — a single isolated pass proves nothing. A stubborn one may only show every

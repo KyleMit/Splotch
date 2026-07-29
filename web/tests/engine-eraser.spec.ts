@@ -1,6 +1,4 @@
-import { expect, test } from '@playwright/test';
-
-import { count, drawStroke, state } from './engine-harness';
+import { count, drawStroke, expect, state, test } from './engine-harness';
 
 test('the eraser removes pixels and re-scans empty on stroke end', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();

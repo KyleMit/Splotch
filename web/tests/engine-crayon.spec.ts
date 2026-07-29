@@ -1,6 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
-import { count } from './engine-harness';
+import { count, expect, test } from './engine-harness';
 import { TEST_PALETTE } from './helpers';
 
 // --- Crayon brush (ADR-0065) ------------------------------------------------
