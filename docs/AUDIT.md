@@ -21,39 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Types] getActiveOverlayImage casts getElementById without validating the element is an image
-
-**File(s):** `web/src/lib/drawing/overlay.ts` (`getActiveOverlayImage`, lines 1–6) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const el = document.getElementById('coloringOverlay') as HTMLImageElement | null;
-if (!el || el.hidden || !el.naturalWidth) return null;
-```
-
-The cast is at a genuinely untyped DOM boundary, but the convention requires the cast to follow
-*runtime validation* — and there is none. If the id ever lands on a non-`<img>` element (a wrapper
-`div` during a refactor of `DrawingCanvas.svelte`'s overlay stack, lines 359–374, which already
-nests the img inside a positioned div), `naturalWidth` is `undefined`, the guard coincidentally
-returns `null`, and every export silently loses the coloring page — indistinguishable from "no
-overlay active". The accidental safety is the problem: it converts a wiring bug into a silent
-feature downgrade.
-
-#### Proposed solution
-
-```ts
-const el = document.getElementById(COLORING_OVERLAY_ID);
-if (!(el instanceof HTMLImageElement)) return null;
-if (el.hidden || !el.naturalWidth) return null;
-return el;
-```
-
-The `instanceof` check narrows without any cast, satisfies the boundary rule, and (combined with the
-shared-id-constant finding above) makes the wiring contract explicit.
-
 ### [Maintainability] Name the export-scale floor instead of an inline `2`
 
 **File(s):** `web/src/lib/drawing/exportDrawing.ts` (`composeExportPng`, lines 116–119) @ 9ae62ff1
