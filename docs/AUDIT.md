@@ -21,36 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Maintainability] Duplicated per-context pattern-cache + invalidation idiom across `crayonBrush` and `magicBrush`
-
-**File(s):** `web/src/lib/drawing/crayonBrush.ts` (lines 400, 427–437, 254);
-`web/src/lib/drawing/magicBrush.ts` (lines 78, 282–293, and the thrice-repeated
-`sheetReady = false; patternCache = new WeakMap();` at 242–243, 337–338, 359–360) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Both brush modules implement the same machinery independently: a
-`WeakMap<CanvasRenderingContext2D, …>` pattern cache keyed per target, a `createPattern`-then-cache
-dance with null-bail, a translate-only `DOMMatrix` `setTransform`, and invalidation by reassigning a
-fresh `WeakMap` ("a WeakMap can't be cleared", magicBrush.ts:69). Inside `magicBrush.ts` alone, the
-two-line invalidation (`sheetReady = false; patternCache = new WeakMap();`) is copy-pasted at three
-sites — a fourth caller forgetting one of the two lines is an easy stale-pattern bug (exactly the
-failure mode the comment at lines 68–69 warns about).
-
-#### Proposed solution
-
-Two-step, smallest-first: (1) inside `magicBrush.ts`, extract
-`function invalidateSheet() { sheetReady = false; patternCache = new WeakMap(); }` and call it from
-the three sites. (2) Optionally, a tiny shared helper module (e.g. `patternCache.ts` with
-`createPatternCache<K>()` returning `get(target, key, build)` / `invalidate()`) consumed by both
-brushes — worthwhile only if a third pattern consumer appears; the two current shapes differ enough
-(keyed-by-string vs single-value) that forcing them together now may cost more than the duplication.
-Step 1 is unambiguous value; step 2 is a judgment call.
-
----
-
 ### [Performance] `CrayonPassTracker`'s re-entry scan is O(anchors) per point — and its comment overclaims "bounded"
 
 **File(s):** `web/src/lib/drawing/crayonBrush.ts` (`reentryAt`, lines 521–531; anchor growth in

@@ -114,6 +114,11 @@ let sheetOriginX = 0;
 let sheetOriginY = 0;
 let patternCache = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
 
+function invalidateSheet() {
+  sheetReady = false;
+  patternCache = new WeakMap();
+}
+
 export function initMagicBrush(h: MagicBrushHost) {
   host = h;
 }
@@ -282,8 +287,7 @@ function extendSheetEdges(
 // fill every letterbox margin (the fill's own, and the rotation-lock margins around
 // the paper); the gradient fills the whole sheet. Re-run on load and every resize.
 export function rasterizeSheet() {
-  sheetReady = false;
-  patternCache = new WeakMap();
+  invalidateSheet();
   const paper = host?.paperSize();
   const bounds = host?.sheetBounds();
   if (!paper || !bounds || bounds.width <= 0 || bounds.height <= 0) return;
@@ -400,8 +404,7 @@ export function setColorSheet(colorUrl: string | null) {
     host?.repaint();
     return;
   }
-  sheetReady = false;
-  patternCache = new WeakMap();
+  invalidateSheet();
   loadSheetImage(colorUrl);
 }
 
@@ -430,7 +433,6 @@ export function ensureMagicSheet() {
 export function clearMagicGradient() {
   activeGradient = null;
   if (!fillUrl) {
-    sheetReady = false;
-    patternCache = new WeakMap();
+    invalidateSheet();
   }
 }
