@@ -6,9 +6,8 @@ import { AA_PAD_PX, opGeometricExtent } from './opGeometry';
 import { getCrayonPasses } from './crayonBrush';
 import type { StrokeGroupCommand, StrokeOp } from './strokeOps';
 
-// The paper region a snapshot's patch covers, in whole paper pixels (so the
-// capture and restore blits are exact 1:1 copies, never resampled).
-export interface PatchRect {
+// A whole-pixel paper region (so blits are exact 1:1 copies, never resampled).
+export interface PaperRect {
   x: number;
   y: number;
   w: number;
@@ -63,17 +62,19 @@ function boxesIntersect(a: Box, b: Box): boolean {
 // More clusters than this and the capture degenerates to one union rect: the
 // per-patch bookkeeping (copies, encodes, restore blits) stops paying for
 // itself, and no real gesture produces more (five fingers → five clusters).
-const PATCH_CLUSTER_CAP = 8;
+// Exported as a test seam for cap-boundary fixtures.
+export const PATCH_CLUSTER_CAP = 8;
 
 // More RAW clusters than this and the capture skips the merge fixpoint
 // entirely and takes the union up front: the scan is O(n³) worst case on the
 // commit hot path, and only a magic-unready backlog folding under one commit
 // can push the count this high — a fold that large unions to ~the whole paper
 // after merging anyway, so nothing real is lost by not trying.
-const MERGE_INPUT_CAP = PATCH_CLUSTER_CAP * 8;
+// Exported as a test seam for cap-boundary fixtures.
+export const MERGE_INPUT_CAP = PATCH_CLUSTER_CAP * 8;
 
 function unionBoxes(boxes: Box[]): Box {
-  const union = boxes[0];
+  const union = { ...boxes[0] };
   for (let i = 1; i < boxes.length; i++) mergeInto(union, boxes[i]);
   return union;
 }
@@ -94,7 +95,7 @@ export function foldRegionsForCommands(
   commands: StrokeGroupCommand[],
   paperW: number,
   paperH: number
-): { rects: PatchRect[]; wipesPaper: boolean } {
+): { rects: PaperRect[]; wipesPaper: boolean } {
   // Crayon density passes stroke at op.lineWidth × widthScale (dot radius ×
   // widthScale). The shipped passes never exceed 1, but the dev harness's
   // setCrayonParams accepts arbitrary passes — a widthScale > 1 experiment
@@ -141,7 +142,7 @@ export function foldRegionsForCommands(
     }
     if (boxes.length > PATCH_CLUSTER_CAP) boxes = [unionBoxes(boxes)];
   }
-  const rects: PatchRect[] = [];
+  const rects: PaperRect[] = [];
   for (const b of boxes) {
     const x = Math.max(0, Math.floor(b.x0));
     const y = Math.max(0, Math.floor(b.y0));

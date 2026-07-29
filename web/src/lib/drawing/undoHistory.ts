@@ -36,7 +36,7 @@
 // (ADR-0004).
 
 import { clearAllOf, renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
-import { foldRegionsForCommands, type PatchRect } from './foldRegions';
+import { foldRegionsForCommands, type PaperRect } from './foldRegions';
 import { resetCrayonStateForClear, resetLiveCrayonForReplay } from './crayonPassBuffer';
 import { isMagicSheetUnready } from './magicBrush';
 import { scheduleIdle } from '../idle';
@@ -54,8 +54,28 @@ export const MAX_UNDO_DEPTH = 20;
 // blob rising back into the window re-inflates (reinflateHotSnapshots).
 const MAX_HOT_RASTERS = 2;
 
+// Quality-1 WebP is lossless where supported; canvas falls back to lossless
+// PNG when an engine cannot encode WebP.
+const COLD_SNAPSHOT_WEBP_MIME = 'image/webp';
+const COLD_SNAPSHOT_PNG_MIME = 'image/png';
+const COLD_SNAPSHOT_LOSSLESS_WEBP_QUALITY = 1;
+
 let paperCanvas: HTMLCanvasElement | null = null;
 let paperCtx: CanvasRenderingContext2D | null = null;
+
+// Paper contexts use round line caps and joins because the fold path strokes
+// ops directly onto them.
+function createPaperSurface(width: number, height: number) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  }
+  return { canvas, ctx };
+}
 
 // True while every paper pixel is transparent-black AND nothing has forced the
 // canvas's lazily-allocated backing store into existence — a freshly created
@@ -76,7 +96,7 @@ type PatchStore =
 // One captured region of an entry's fold: its paper rect plus the pixels that
 // were there before the fold.
 interface SnapshotPatch {
-  rect: PatchRect;
+  rect: PaperRect;
   store: PatchStore;
 }
 
@@ -94,6 +114,18 @@ interface Snapshot {
   // sheet unready) — replayed on top of the raster to reproduce the state.
   pending: StrokeGroupCommand[];
 }
+
+export interface RestoredSnapshot {
+  wasEmpty: boolean;
+  rects: PaperRect[];
+}
+
+interface RestoredPatch {
+  source: CanvasImageSource;
+  rect: PaperRect;
+  bitmap: ImageBitmap | null;
+}
+
 const snapshotStack: Snapshot[] = [];
 let pendingCommands: StrokeGroupCommand[] = [];
 
@@ -117,6 +149,11 @@ export function finalizeDeferredCommand() {
   if (cmd) pushCommand(cmd);
 }
 
+function deferredCommandEmptyState(command: StrokeGroupCommand): boolean | null {
+  if (command.ops.length === 0) return null;
+  return command.ops.every((op) => op.kind === 'clear');
+}
+
 // A restore that lands beneath deferred commits becomes their baseline: the
 // earliest one's captured pre-stroke state now reflects the restored paper
 // (parallel to rebaseActiveCommand; later deferred commands sit on the
@@ -127,9 +164,8 @@ export function rebaseDeferredCommands(restoredEmpty: boolean): boolean {
   if (deferredCommands.length === 0) return restoredEmpty;
   deferredCommands[0].wasEmpty = restoredEmpty;
   for (let i = deferredCommands.length - 1; i >= 0; i--) {
-    const ops = deferredCommands[i].ops;
-    if (ops.some((op) => op.kind !== 'clear')) return false;
-    if (ops.length > 0) return true;
+    const emptyState = deferredCommandEmptyState(deferredCommands[i]);
+    if (emptyState !== null) return emptyState;
   }
   return restoredEmpty;
 }
@@ -143,35 +179,27 @@ let activeCommand: StrokeGroupCommand | null = null;
 // loses pixels; anything larger (e.g. a resized desktop window) goes through
 // the grow path, copying existing pixels so no drawing is lost. Recorded ops
 // use the paper's coordinates, and content off the current viewport survives
-// here even though the visible canvas clips it. Fresh/grown contexts get the
-// round line cap/join because the fold path strokes ops directly onto them.
+// here even though the visible canvas clips it.
 export function ensurePaperCovers(squareSide: number) {
   if (!paperCanvas) {
-    paperCanvas = document.createElement('canvas');
-    paperCanvas.width = squareSide;
-    paperCanvas.height = squareSide;
-    paperCtx = paperCanvas.getContext('2d');
-    if (paperCtx) {
-      paperCtx.lineCap = 'round';
-      paperCtx.lineJoin = 'round';
-    }
+    const paper = createPaperSurface(squareSide, squareSide);
+    paperCanvas = paper.canvas;
+    paperCtx = paper.ctx;
     paperPristine = true;
     return;
   }
   if (squareSide <= paperCanvas.width && squareSide <= paperCanvas.height) return;
-  const grown = document.createElement('canvas');
-  grown.width = Math.max(squareSide, paperCanvas.width);
-  grown.height = Math.max(squareSide, paperCanvas.height);
-  const grownCtx = grown.getContext('2d');
-  if (!grownCtx) {
+  const grown = createPaperSurface(
+    Math.max(squareSide, paperCanvas.width),
+    Math.max(squareSide, paperCanvas.height)
+  );
+  if (!grown.ctx) {
     console.error('ensurePaperCovers: grown canvas context unavailable, keeping existing paper');
     return;
   }
-  grownCtx.lineCap = 'round';
-  grownCtx.lineJoin = 'round';
-  grownCtx.drawImage(paperCanvas, 0, 0);
-  paperCanvas = grown;
-  paperCtx = grownCtx;
+  grown.ctx.drawImage(paperCanvas, 0, 0);
+  paperCanvas = grown.canvas;
+  paperCtx = grown.ctx;
   paperPristine = false;
 }
 
@@ -197,9 +225,9 @@ export function recordOp(op: StrokeOp) {
 // premultiplied rounding), so without the reconcile a rebuild would differ
 // from the live stamp at the byte level — imperceptibly, but undo and remount
 // must reproduce the screen exactly.
-export function activeCrayonRasterRects(): PatchRect[] {
+export function activeCrayonRasterRects(): PaperRect[] {
   if (!activeCommand) return [];
-  const rects: PatchRect[] = [];
+  const rects: PaperRect[] = [];
   for (const op of activeCommand.ops) {
     if (op.kind === 'crayonPassRaster') {
       rects.push({ x: op.x, y: op.y, w: op.canvas.width, h: op.canvas.height });
@@ -211,7 +239,7 @@ export function activeCrayonRasterRects(): PatchRect[] {
 // Copy a committed paper rect onto a target, replacing what the target showed
 // there. Coordinates are paper-space; the target's own transform places the
 // rect (identity on the visible canvas normally, the paper view when locked).
-export function blitPaperRect(target: CanvasRenderingContext2D, rect: PatchRect) {
+export function blitPaperRect(target: CanvasRenderingContext2D, rect: PaperRect) {
   const { x, y, w, h } = rect;
   if (!paperCanvas) return;
   const x0 = Math.max(0, x);
@@ -284,16 +312,11 @@ export function commitActiveCommand(defer = false): boolean {
 // the fresh canvas yields no context; the caller falls back to the copy path.
 function adoptPaperAsSnapshot(): HTMLCanvasElement | null {
   if (!paperCanvas) return null;
-  const fresh = document.createElement('canvas');
-  fresh.width = paperCanvas.width;
-  fresh.height = paperCanvas.height;
-  const freshCtx = fresh.getContext('2d');
-  if (!freshCtx) return null;
-  freshCtx.lineCap = 'round';
-  freshCtx.lineJoin = 'round';
+  const fresh = createPaperSurface(paperCanvas.width, paperCanvas.height);
+  if (!fresh.ctx) return null;
   const adopted = paperCanvas;
-  paperCanvas = fresh;
-  paperCtx = freshCtx;
+  paperCanvas = fresh.canvas;
+  paperCtx = fresh.ctx;
   paperPristine = true;
   // Materialize the fresh paper's backing store off the interaction path, so
   // the first post-clear stroke's fold doesn't pay the surface allocation
@@ -310,9 +333,10 @@ function adoptPaperAsSnapshot(): HTMLCanvasElement | null {
 // command the unready magic sheet would render blank (nothing after it folds
 // either, preserving cross-command ordering — eraser, crayon mix).
 function foldableCount(commands: StrokeGroupCommand[]): number {
+  if (!isMagicSheetUnready()) return commands.length;
   let n = 0;
   for (const cmd of commands) {
-    if (commandHasMagic(cmd) && isMagicSheetUnready()) break;
+    if (commandHasMagic(cmd)) break;
     n++;
   }
   return n;
@@ -338,7 +362,7 @@ function foldableCount(commands: StrokeGroupCommand[]): number {
 // paper, so the entry legitimately carries no pixels.
 function capturePatchesUnder(
   paper: HTMLCanvasElement,
-  rects: PatchRect[],
+  rects: PaperRect[],
   wipesPaper: boolean
 ): SnapshotPatch[] | null {
   // A clear in the fold set claims the full paper AND never reads the
@@ -437,7 +461,9 @@ function isInHotWindow(snap: Snapshot): boolean {
 // stays byte-exact. Exported as the unit-test seam for the validation rule.
 export function isValidColdSnapshotBlob(blob: Blob | null): blob is Blob {
   return (
-    blob !== null && blob.size > 0 && (blob.type === 'image/webp' || blob.type === 'image/png')
+    blob !== null &&
+    blob.size > 0 &&
+    (blob.type === COLD_SNAPSHOT_WEBP_MIME || blob.type === COLD_SNAPSHOT_PNG_MIME)
   );
 }
 
@@ -465,8 +491,8 @@ function encodeColdSnapshots() {
           if (current.tier !== 'hot' || current.canvas !== source || isInHotWindow(snap)) return;
           patch.store = { tier: 'cold', blob, decoding: false };
         },
-        'image/webp',
-        1
+        COLD_SNAPSHOT_WEBP_MIME,
+        COLD_SNAPSHOT_LOSSLESS_WEBP_QUALITY
       );
     }
   }
@@ -525,7 +551,7 @@ function reinflateHotSnapshots() {
 // touched the paper), so an eligible caller can repaint just those patches
 // instead of the whole canvas — see engine.undo. Null when nothing is
 // undoable.
-export function popSnapshot(): Promise<{ wasEmpty: boolean; rects: PatchRect[] }> | null {
+export function popSnapshot(): Promise<RestoredSnapshot> | null {
   const snap = snapshotStack.pop();
   if (!snap) return null;
   pendingCommands = [...snap.pending];
@@ -542,12 +568,12 @@ export function popSnapshot(): Promise<{ wasEmpty: boolean; rects: PatchRect[] }
   // Decode every demoted patch, then restore the whole entry in one pass (the
   // rects are disjoint, so within-entry order is immaterial).
   return Promise.all(
-    snap.patches.map(async (p) => {
+    snap.patches.map(async (p): Promise<RestoredPatch> => {
       if (p.store.tier === 'hot') {
-        return { source: p.store.canvas as CanvasImageSource, rect: p.rect, bitmap: null };
+        return { source: p.store.canvas, rect: p.rect, bitmap: null };
       }
       const bitmap = await createImageBitmap(p.store.blob);
-      return { source: bitmap as CanvasImageSource, rect: p.rect, bitmap };
+      return { source: bitmap, rect: p.rect, bitmap };
     })
   ).then((restores) => {
     for (const r of restores) {
@@ -562,7 +588,7 @@ export function popSnapshot(): Promise<{ wasEmpty: boolean; rects: PatchRect[] }
 // Pixels outside the rect were untouched by that fold — or were already
 // reverted by later pops, the stack being LIFO — so clearing and redrawing
 // just the rect reproduces the exact pre-stroke paper.
-function restorePatch(source: CanvasImageSource, rect: PatchRect) {
+function restorePatch(source: CanvasImageSource, rect: PaperRect) {
   if (!paperCtx) return;
   paperPristine = false;
   paperCtx.clearRect(rect.x, rect.y, rect.w, rect.h);

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { PATCH_CLUSTER_CAP } from './foldRegions';
 import type { StrokeGroupCommand, PathOp } from './strokeOps';
 import { cmd, createCanvasStub, freshHistory, repaintedContent } from './undoHistoryHarness';
 
@@ -417,8 +418,8 @@ describe('disjoint multi-finger patches', () => {
 
   it('falls back to one union patch past the cluster cap', async () => {
     const m = await freshHistory();
-    // Nine spread dots (each its own cluster) exceed PATCH_CLUSTER_CAP = 8.
-    const dots = Array.from({ length: 9 }, (_, i) => ({
+    // More than the cluster cap of spread dots each form their own cluster.
+    const dots = Array.from({ length: PATCH_CLUSTER_CAP + 1 }, (_, i) => ({
       kind: 'dot' as const,
       x: 3 + i * 7,
       y: 3,

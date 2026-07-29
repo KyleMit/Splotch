@@ -18,7 +18,8 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
-| 2026-07-29 | [burn-down-audits](#2026-07-29--burn-down-audits)               |
+| 2026-07-29 | [burn-down-audits](#2026-07-29--burn-down-audits-run-2)         |
+| 2026-07-29 | [burn-down-audits](#2026-07-29--burn-down-audits-run-1)         |
 | 2026-07-28 | [burn-down-audits](#2026-07-28--burn-down-audits-run-2)         |
 | 2026-07-28 | [code-audit](#2026-07-28--code-audit)                           |
 | 2026-07-28 | [burn-down-audits](#2026-07-28--burn-down-audits-run-1)         |
@@ -77,7 +78,26 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
 
-## 2026-07-29 · burn-down-audits
+## 2026-07-29 · burn-down-audits (run 2)
+
+Codex continuation on
+[`audit/burndown-2026-07-29-codex`](https://github.com/KyleMit/Splotch/pull/630): **8 fixed**, 0
+dropped, 1 deferred across a 5-finding canary and a bounded full-run segment; backlog 593 → 584.
+Scoped log accounting is exact, all 8 accepted fixes have per-commit PR comments, and the remaining
+testing finding preserved its rejected three-commit draft under `docs/audit-deferred/`.
+
+The fixes concentrated on drawing-history internals: paper-surface creation, cold-snapshot
+vocabulary and result types, fold-region naming and mutation, cheap magic-sheet gating, and
+cap-boundary tests that derive from their production constants. The adversarial loop forced a cap
+fixture to distinguish the guarded branch and deferred a paper-growth test whose no-shrink assertion
+could pass on stale target content.
+
+The session also self-healed the direct Codex runbook: managed hosts now request explicit
+campaign-scoped repository-context consent before creating external checkpoint state, and
+active-driver observation uses tool boundaries no longer than 20 seconds so pause/wrap messages are
+not delayed behind compound sleep polls.
+
+## 2026-07-29 · burn-down-audits (run 1)
 
 Bulk burndown of the 636-finding backlog left by PR #616's merge, on
 `claude/burn-down-audit-skill-ecb5np` → [PR #627](https://github.com/KyleMit/Splotch/pull/627): **39
