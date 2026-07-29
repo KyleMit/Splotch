@@ -57,7 +57,11 @@
 </script>
 
 <div class="report-fields">
-  <div class="report-kind">
+  <!-- Native radios group themselves by `name`, but that group has no
+       accessible name unless one is given: without this a screen reader reaches
+       "Something's broken, radio button, 1 of 2" with nothing saying what the
+       two choose between. No axe rule covers it. -->
+  <div class="report-kind" role="radiogroup" aria-label="Report type">
     {#each REPORT_KINDS as option (option.value)}
       <label class="report-kind-option" class:active={kind === option.value}>
         <input type="radio" name="kind" value={option.value} bind:group={kind} />

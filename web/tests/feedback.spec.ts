@@ -143,6 +143,10 @@ test('the thank-you page is a GET, so reloading it cannot file a second issue', 
     /\/issues\/1234$/
   );
 
+  // The URL is what a reporter passes on next, so the confirmation strips the
+  // query it arrived with rather than leaving a stranger's issue number in it.
+  await expect.poll(() => new URL(page.url()).search).toBe('');
+
   // The param is visitor-controlled, so anything but a plain number links nowhere.
   await page.goto('/feedback?sent=1&issue=javascript:alert(1)');
   await expect(page.getByRole('heading', { name: 'Thank you — your report is in.' })).toBeVisible();

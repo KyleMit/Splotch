@@ -43,6 +43,20 @@
   // /android-beta — a prerendered GET — has to wait for hydration.
   const supportHref = `mailto:${supportEmail()}?subject=${encodeURIComponent('Splotch feedback')}`;
 
+  // Being copied and pasted is this page's whole purpose, and the post-submit
+  // URL is the one a reporter has in front of them when they go to pass the
+  // link on — so drop the query once the confirmation is on screen. Left alone,
+  // /feedback?sent=1&issue=1234 hands the next person a thank-you for someone
+  // else's report with no form anywhere on the page.
+  //
+  // Plain history.replaceState, like the ?v= strip in pwa/updates.ts: nothing
+  // here reads page.url (the view comes from `data`, resolved before this runs),
+  // so there is no router state to keep in step. A reload after the strip lands
+  // on the form, which is the right page for whoever reloads.
+  $effect(() => {
+    if (sent) history.replaceState(null, '', '/feedback');
+  });
+
   const submit: SubmitFunction = () => {
     submitting = true;
     return async ({ update }) => {
