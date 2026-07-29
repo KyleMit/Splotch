@@ -57,6 +57,18 @@ const MAX_HOT_RASTERS = 2;
 let paperCanvas: HTMLCanvasElement | null = null;
 let paperCtx: CanvasRenderingContext2D | null = null;
 
+function createPaperSurface(width: number, height: number) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  }
+  return { canvas, ctx };
+}
+
 // True while every paper pixel is transparent-black AND nothing has forced the
 // canvas's lazily-allocated backing store into existence — a freshly created
 // or freshly swapped-in paper. While it holds, a folding 'clear' op can skip
@@ -147,31 +159,24 @@ let activeCommand: StrokeGroupCommand | null = null;
 // round line cap/join because the fold path strokes ops directly onto them.
 export function ensurePaperCovers(squareSide: number) {
   if (!paperCanvas) {
-    paperCanvas = document.createElement('canvas');
-    paperCanvas.width = squareSide;
-    paperCanvas.height = squareSide;
-    paperCtx = paperCanvas.getContext('2d');
-    if (paperCtx) {
-      paperCtx.lineCap = 'round';
-      paperCtx.lineJoin = 'round';
-    }
+    const paper = createPaperSurface(squareSide, squareSide);
+    paperCanvas = paper.canvas;
+    paperCtx = paper.ctx;
     paperPristine = true;
     return;
   }
   if (squareSide <= paperCanvas.width && squareSide <= paperCanvas.height) return;
-  const grown = document.createElement('canvas');
-  grown.width = Math.max(squareSide, paperCanvas.width);
-  grown.height = Math.max(squareSide, paperCanvas.height);
-  const grownCtx = grown.getContext('2d');
-  if (!grownCtx) {
+  const grown = createPaperSurface(
+    Math.max(squareSide, paperCanvas.width),
+    Math.max(squareSide, paperCanvas.height)
+  );
+  if (!grown.ctx) {
     console.error('ensurePaperCovers: grown canvas context unavailable, keeping existing paper');
     return;
   }
-  grownCtx.lineCap = 'round';
-  grownCtx.lineJoin = 'round';
-  grownCtx.drawImage(paperCanvas, 0, 0);
-  paperCanvas = grown;
-  paperCtx = grownCtx;
+  grown.ctx.drawImage(paperCanvas, 0, 0);
+  paperCanvas = grown.canvas;
+  paperCtx = grown.ctx;
   paperPristine = false;
 }
 
@@ -284,16 +289,11 @@ export function commitActiveCommand(defer = false): boolean {
 // the fresh canvas yields no context; the caller falls back to the copy path.
 function adoptPaperAsSnapshot(): HTMLCanvasElement | null {
   if (!paperCanvas) return null;
-  const fresh = document.createElement('canvas');
-  fresh.width = paperCanvas.width;
-  fresh.height = paperCanvas.height;
-  const freshCtx = fresh.getContext('2d');
-  if (!freshCtx) return null;
-  freshCtx.lineCap = 'round';
-  freshCtx.lineJoin = 'round';
+  const fresh = createPaperSurface(paperCanvas.width, paperCanvas.height);
+  if (!fresh.ctx) return null;
   const adopted = paperCanvas;
-  paperCanvas = fresh;
-  paperCtx = freshCtx;
+  paperCanvas = fresh.canvas;
+  paperCtx = fresh.ctx;
   paperPristine = true;
   // Materialize the fresh paper's backing store off the interaction path, so
   // the first post-clear stroke's fold doesn't pay the surface allocation
