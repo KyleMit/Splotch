@@ -103,11 +103,19 @@ export interface DrawSoundData {
   isStrokeStart: boolean;
 }
 
+export type StrokeStartData = Pick<PointerEvent, 'pointerId' | 'clientX' | 'clientY'> & {
+  magic: boolean;
+};
+
 interface InitOptions {
   onDrawSound?: ((data: DrawSoundData) => void) | null;
   onDrawStop?: (() => void) | null;
   onUndoStateChange?: ((canUndo: boolean) => void) | null;
   onCanvasEmptyChange?: ((empty: boolean) => void) | null;
+  // Every stroke the engine actually starts, the down-less pen streams it
+  // adopts mid-move included (see isOrphanPenContact) — those deliver no
+  // pointerdown to the owning component at all.
+  onStrokeStart?: ((stroke: StrokeStartData) => void) | null;
   onStrokeEnd?: (() => void) | null;
   onViewChange?: ((view: EngineViewState) => void) | null;
   initialColor?: string;
@@ -191,6 +199,7 @@ let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
 let onDrawStopCallback: (() => void) | null = null;
 let onUndoStateChange: ((canUndo: boolean) => void) | null = null;
 let onCanvasEmptyChange: ((empty: boolean) => void) | null = null;
+let onStrokeStartCallback: ((stroke: StrokeStartData) => void) | null = null;
 let onStrokeEnd: (() => void) | null = null;
 let onViewChange: ((view: EngineViewState) => void) | null = null;
 
@@ -794,7 +803,13 @@ function startDrawing(e: PointerEvent) {
   activePointers.set(e.pointerId, pointerState);
 
   // A candidate paints nothing yet — renderStrokeStart runs later, on commit.
-  if (!edgeSwipeGuard) renderStrokeStart(pointerState);
+  if (!edgeSwipeGuard) {
+    renderStrokeStart(pointerState);
+    if (onStrokeStartCallback) {
+      const { pointerId, clientX, clientY } = e;
+      onStrokeStartCallback({ pointerId, clientX, clientY, magic: magicActive });
+    }
+  }
 
   // Capture every pointer — pen included — so a stroke keeps flowing to the
   // canvas when it crosses a floating control (Clear button, Actions Panel) or
@@ -1183,6 +1198,7 @@ function attachCallbacks(options: InitOptions) {
   onDrawStopCallback = options.onDrawStop || null;
   onUndoStateChange = options.onUndoStateChange || null;
   onCanvasEmptyChange = options.onCanvasEmptyChange || null;
+  onStrokeStartCallback = options.onStrokeStart || null;
   onStrokeEnd = options.onStrokeEnd || null;
   onViewChange = options.onViewChange || null;
 }

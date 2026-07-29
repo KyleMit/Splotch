@@ -8,6 +8,7 @@
     setSafeAreaInsets,
     getCanvasRect,
     type EngineViewState,
+    type StrokeStartData,
   } from '$lib/drawing/engine';
   import { pushToolStateToEngine } from '$lib/drawing/earlyBoot';
   import { viewMatrix } from '$lib/drawing/paperView';
@@ -95,17 +96,26 @@
     eraserCursor.visible = false;
   }
 
+  function growBrushRing(stroke: StrokeStartData) {
+    const rect = getCanvasRect();
+    brushRings[stroke.pointerId] = {
+      x: stroke.clientX - rect.left,
+      y: stroke.clientY - rect.top,
+      magic: stroke.magic,
+    };
+  }
+
   function handlePointerDown(e: PointerEvent) {
     if (toolState.brush === 'eraser') {
       updateEraserCursor(e);
       return;
     }
-    const rect = getCanvasRect();
-    brushRings[e.pointerId] = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+    growBrushRing({
+      pointerId: e.pointerId,
+      clientX: e.clientX,
+      clientY: e.clientY,
       magic: toolState.brush === 'magic',
-    };
+    });
   }
 
   function handlePointerMove(e: PointerEvent) {
@@ -114,19 +124,7 @@
       return;
     }
     const ring = brushRings[e.pointerId];
-    if (!ring) {
-      // WebKit can merge a fast pen tap-then-stroke into one down-less stream:
-      // the engine adopts the stroke mid-move (see isOrphanPenContact) and
-      // captures the pointer to the canvas, so no pointerdown ever reaches this
-      // handler. Pressed pen buttons + the engine's capture is that adopted
-      // stroke's signature — grow its missing ring here. The capture check also
-      // keeps a stroke the engine already ended (releaseAllPointers) from
-      // regrowing its ring on later moves.
-      if (e.pointerType === 'pen' && e.buttons !== 0 && canvasEl.hasPointerCapture(e.pointerId)) {
-        handlePointerDown(e);
-      }
-      return;
-    }
+    if (!ring) return;
     const rect = getCanvasRect();
     ring.x = e.clientX - rect.left;
     ring.y = e.clientY - rect.top;
@@ -157,6 +155,14 @@
       },
       onCanvasEmptyChange: (empty) => {
         canvasState.canvasEmpty = empty;
+      },
+      // The engine tells us where a stroke really began, so a down-less pen
+      // stream it adopts mid-move (WebKit merges a fast tap-then-stroke into
+      // one, dropping the pointerdown) grows its ring like any other stroke.
+      // Ordinary strokes reach handlePointerDown too and land the same ring.
+      onStrokeStart: (stroke) => {
+        if (toolState.brush === 'eraser') return;
+        growBrushRing(stroke);
       },
       onStrokeEnd: () => {
         canvasState.strokeCount++;
@@ -306,10 +312,9 @@
   }
 
   // The nudge wraps the ring handlers at the template level instead of living
-  // inside them: an adopted stroke's first move routes handlePointerMove into
-  // handlePointerDown to grow its missing ring, and a nudge inside each would
-  // toggle twice before Svelte flushes — a net no-op that would leave exactly
-  // that first adopted frame on the stale backdrop.
+  // inside them, so each input event toggles the blend layer exactly once
+  // whatever path the ring handler takes — two toggles before Svelte flushes
+  // are a net no-op that would leave that frame on the stale backdrop.
   function handleCanvasPointerDown(e: PointerEvent) {
     nudgeBlendLayer(e);
     handlePointerDown(e);
