@@ -94,10 +94,19 @@ function drawOverlayContained(
   const scale = Math.min(w / overlay.naturalWidth, h / overlay.naturalHeight);
   const drawnW = overlay.naturalWidth * scale;
   const drawnH = overlay.naturalHeight * scale;
-  const dark = theme === 'dark';
-  const source: CanvasImageSource = (dark && invertedOverlay(overlay)) || overlay;
-  target.globalCompositeOperation = source === overlay ? 'multiply' : 'screen';
-  target.drawImage(source, (w - drawnW) / 2, (h - drawnH) / 2, drawnW, drawnH);
+  if (theme === 'dark') {
+    const inverted = invertedOverlay(overlay);
+    if (!inverted) {
+      // No 2D context was available for the temporary inversion surface.
+      target.globalCompositeOperation = 'source-over';
+      return;
+    }
+    target.globalCompositeOperation = 'screen';
+    target.drawImage(inverted, (w - drawnW) / 2, (h - drawnH) / 2, drawnW, drawnH);
+  } else {
+    target.globalCompositeOperation = 'multiply';
+    target.drawImage(overlay, (w - drawnW) / 2, (h - drawnH) / 2, drawnW, drawnH);
+  }
   target.globalCompositeOperation = 'source-over';
 }
 
