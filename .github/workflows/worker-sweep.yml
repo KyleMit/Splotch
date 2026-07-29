@@ -1,0 +1,97 @@
+# TEMPORARY — worker-count measurement, not a production gate.
+#
+# Runs the E2E suite N times at each worker count on real GHA hardware, to check
+# whether the locally-measured saturation point (~3 workers on 4 physical cores)
+# transfers to an `ubuntu-latest` runner. Delete this file once the numbers are
+# recorded in the ADR and the scrapbook report.
+#
+# Each matrix job gets its own runner, so worker counts never contend with each
+# other. Inside a job the reps run sequentially against one preview server, which
+# mirrors how the local sweep was measured.
+name: Worker sweep (temporary)
+
+on:
+  workflow_dispatch:
+    inputs:
+      reps:
+        description: Runs per worker count
+        required: false
+        default: '5'
+  push:
+    branches: [claude/e2e-test-benchmarks-60wfs2]
+    paths: ['.github/workflows/worker-sweep.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    name: ${{ matrix.workers }} workers
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        workers: [1, 2, 3, 4, 6, 8]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node
+
+      # The local measurements ran Chromium only (no WebKit binary present), so
+      # the WebKit project drops out of both and the suites stay comparable.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Record hardware
+        run: |
+          echo "HARDWARE nproc=$(nproc)"
+          lscpu | grep -E "^CPU\(s\)|Thread\(s\) per core|Core\(s\) per socket|Model name" || true
+          free -g | head -2 || true
+
+      # PUBLIC_ENABLE_DEV_HARNESS must be set at BUILD time — it gates the /dev/*
+      # harness routes the specs drive.
+      - name: Build preview bundle
+        run: node scripts/web.mjs vite build
+        env:
+          PUBLIC_ENABLE_DEV_HARNESS: 'true'
+          ADMIN_ACCESS_TOKEN: test-admin-secret
+
+      - name: Start preview server
+        run: |
+          cd web
+          PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \
+            nohup npx vite preview --port 4173 > /tmp/preview.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:4173/; then echo "preview up"; exit 0; fi
+            sleep 1
+          done
+          echo "preview server never came up"; cat /tmp/preview.log; exit 1
+
+      # CI is deliberately unset for the runs themselves: it turns OFF the two
+      # config branches that would corrupt the measurement — `retries: 2` (which
+      # would mask the flake rate this job exists to measure) and
+      # `reuseExistingServer: false` (which would rebuild per rep instead of
+      # reusing the server started above).
+      - name: Run sweep
+        env:
+          WORKERS: ${{ matrix.workers }}
+          REPS: ${{ github.event.inputs.reps || '5' }}
+        run: |
+          mkdir -p /tmp/sweep
+          for rep in $(seq 1 "$REPS"); do
+            out="/tmp/sweep/w${WORKERS}-rep${rep}.json"
+            start=$(date +%s)
+            env -u CI -u GITHUB_ACTIONS PLAYWRIGHT_JSON_OUTPUT_NAME="$out" \
+              node scripts/web.mjs playwright test --workers="$WORKERS" --reporter=json \
+              > /dev/null 2>"/tmp/sweep/w${WORKERS}-rep${rep}.err" || true
+            node scripts/ci-sweep-summary.mjs "$out" "$WORKERS" "$rep" "$(( $(date +%s) - start ))"
+          done
+
+      - name: Upload raw reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sweep-w${{ matrix.workers }}
+          path: /tmp/sweep/
+          retention-days: 7
