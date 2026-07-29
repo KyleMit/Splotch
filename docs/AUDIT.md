@@ -19,45 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — orchestration & canvas integration
 
-### [Readability] DrawingCanvas hand-rolls the identity `EngineViewState` the engine already knows how to produce
-
-**File(s):** `web/src/lib/components/DrawingCanvas.svelte` (lines 61–70);
-`web/src/lib/drawing/engine.ts` (`getViewState`, lines 268–279) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-let paperView = $state<EngineViewState>({
-  active: false,
-  scale: 1,
-  rotate: 0,
-  tx: 0,
-  ty: 0,
-  paperCssWidth: 0,
-  paperCssHeight: 0,
-  paperOrientation: 'portrait',
-});
-```
-
-The eight-field literal re-encodes "identity view, unsized paper" — knowledge owned by the engine
-(`IDENTITY_PAPER_VIEW` in `paperView.ts` plus `getViewState`'s mapping). New fields are caught by
-the type, but wrong *values* aren't: an inattentive edit (`scale: 0`) would compile and quietly
-break the pre-adoption `$derived` transforms. `adoptDrawingCanvas` replays the real view immediately
-on mount, so this literal only styles the SSR shell — all the more reason for it to be a named
-constant whose comment says exactly that.
-
-#### Proposed solution
-
-Export `export const INITIAL_ENGINE_VIEW_STATE: EngineViewState = Object.freeze({ ... })` beside
-`EngineViewState` in `engine.ts` and initialize with a spread
-(`$state<EngineViewState>({ ...INITIAL_ENGINE_VIEW_STATE })` — the spread matters: `$state`
-deep-proxies, and the component must not proxy/mutate a shared frozen constant). Low stakes, but it
-puts the identity-view fact in one file instead of two.
-
-# 02 — Drawing engine: stroke model & brush rendering
-
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
 ### [Correctness] Handle fill-image load failure — a failed magic-sheet decode wedges the brush and the fold forever

@@ -6,6 +6,7 @@
     setEraserMode,
     setColorSheet,
     setSafeAreaInsets,
+    INITIAL_ENGINE_VIEW_STATE,
     type EngineViewState,
   } from '$lib/drawing/engine';
   import { pushToolStateToEngine } from '$lib/drawing/earlyBoot';
@@ -37,16 +38,7 @@
   // contain-fit and centered (scaled down when it doesn't fit). The overlay
   // wrapper below is positioned with the exact same transform the canvas paints
   // through, so page art and strokes stay aligned.
-  let paperView = $state<EngineViewState>({
-    active: false,
-    scale: 1,
-    rotate: 0,
-    tx: 0,
-    ty: 0,
-    paperCssWidth: 0,
-    paperCssHeight: 0,
-    paperOrientation: 'portrait',
-  });
+  let paperView = $state<EngineViewState>({ ...INITIAL_ENGINE_VIEW_STATE });
 
   const paperTransform = $derived(
     `matrix(${viewMatrix({

@@ -281,6 +281,19 @@ export interface EngineViewState {
   paperOrientation: 'portrait' | 'landscape';
 }
 
+// The pre-adoption SSR-shell value of EngineViewState, before getViewState() has
+// any paper/render-scale state to derive from.
+export const INITIAL_ENGINE_VIEW_STATE: EngineViewState = Object.freeze({
+  active: false,
+  scale: 1,
+  rotate: 0,
+  tx: 0,
+  ty: 0,
+  paperCssWidth: 0,
+  paperCssHeight: 0,
+  paperOrientation: 'portrait',
+});
+
 export function getViewState(): EngineViewState {
   return {
     active: !isIdentityView(paperView),
