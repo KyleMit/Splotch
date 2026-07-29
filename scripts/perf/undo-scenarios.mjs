@@ -14,16 +14,17 @@
 // don't coalesce, so one dispatched pointermove == one engine draw() == one
 // recorded op — real 120 Hz input volume, deterministically.
 
-import { chromium } from '@playwright/test';
+import { chromium, webkit } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
-import { isMain, runMain, sleep } from '../lib/proc.mjs';
+import { fail, isMain, runMain, sleep } from '../lib/proc.mjs';
 import { parsePerfArgs } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import {
   startTrace,
   stopTrace,
+  collectMeasures,
   injectObservers,
   readObservers,
   heapBytes,
@@ -44,6 +45,7 @@ const { flag, throttle, port, build } = parsePerfArgs({
   throttleDefault: 4,
   extra: [
     'cold-tier-timeout-ms',
+    'engine',
     'hz',
     'long-seconds',
     'long-ops',
@@ -55,6 +57,35 @@ const { flag, throttle, port, build } = parsePerfArgs({
 });
 const COLD_TIER_TIMEOUT_MS = Number(flag('cold-tier-timeout-ms', '10000'));
 
+// Which browser engine drives the scenarios. Chromium is the default because it
+// carries the instruments (CDP trace, CPU throttle, performance.memory); WebKit
+// carries the engine family the iOS app actually ships (WebKit +
+// JavaScriptCore), where per-engine canvas API behaviour differs in ways no
+// amount of Chromium precision can see — see the encode gate below.
+const ENGINES = {
+  chromium: {
+    launcher: chromium,
+    launchOptions: () => ({ headless: true, executablePath: chromiumExecutablePath(chromium) }),
+    // CDP is Chromium-only: it carries the Chrome trace, the CPU throttle, and
+    // the RunTask/CPU-sampler sections of report.md.
+    hasCdp: true,
+    label: 'headless Chromium (Blink/V8) — not WebKit/JavaScriptCore or the iPad GPU',
+  },
+  webkit: {
+    launcher: webkit,
+    launchOptions: () => ({ headless: true }),
+    hasCdp: false,
+    label: "Playwright WebKit (WebKit/JavaScriptCore) — the iOS app's engine family, desktop build",
+  },
+};
+const engineName = flag('engine', 'chromium');
+const engine = ENGINES[engineName];
+if (!engine) {
+  fail(
+    `--engine=${engineName} is not a known engine — expected one of ${Object.keys(ENGINES).join(', ')}`
+  );
+}
+
 // Op volume = refresh rate × stroke duration. A 120 Hz ProMotion iPad Pro
 // captures ~120 ops/second, so a sustained multi-second scribble is
 // ~1,000–2,400 ops in ONE undo command. Default to a ~10 s single-finger
@@ -62,6 +93,9 @@ const COLD_TIER_TIMEOUT_MS = Number(flag('cold-tier-timeout-ms', '10000'));
 // harness MUST reproduce — it's what made the replay era's stroke-end
 // keyframe builds hitch, and what the commit fold now absorbs.
 const HZ = Number(flag('hz', '120'));
+// One frame at the target refresh — 8.3 ms on a 120 Hz ProMotion iPad. ADR-0066
+// states the commit gate in these terms ("commit max ≈ one 120 Hz frame").
+const FRAME_BUDGET_MS = 1000 / HZ;
 const LONG_SECONDS = Number(flag('long-seconds', '10'));
 const LONG_OPS = Number(flag('long-ops', String(Math.round(HZ * LONG_SECONDS)))); // ≈1200
 // A multi-finger gesture is a SINGLE undo unit accumulating every finger's ops.
@@ -351,6 +385,13 @@ export async function runUndoScenario(
   const drawEnd = await now(page);
 
   const debug = await settleColdTier(page, coldTierTimeoutMs);
+  // The cold encode is scheduled off the commit (scheduleColdEncode →
+  // scheduleIdle), and the draw phase is one synchronous batch with no idle
+  // gaps, so a correctly-deferred encode lands between drawEnd and here. Read
+  // the encode marks over the wider window or the deferred pass is invisible —
+  // while an encode that regressed back onto the commit path still shows up,
+  // inside the draw window and inside engine.commit.
+  const settleEnd = await now(page);
   const heapAfterDraw = await heapBytes(page);
 
   const undoStart = await now(page);
@@ -362,14 +403,19 @@ export async function runUndoScenario(
   const heapAfterUndo = await heapBytes(page);
 
   const drawMarks = await engineMeasuresIn(page, drawStart, drawEnd);
+  const settleMarks = await engineMeasuresIn(page, drawStart, settleEnd);
   const undoMarks = await engineMeasuresIn(page, undoStart, undoEnd);
 
   const draw = drawMarks['engine.draw'] || { count: 0, total: 0, max: 0 };
-  // engine.commit wraps the whole stroke-end pipeline (paper copy → fold),
-  // so its max is the pointerup hitch the user feels. engine.snapshot
-  // isolates the paper copy inside it.
+  // engine.commit wraps the whole stroke-end pipeline (paper copy → fold), so
+  // its max is the pointerup hitch the user feels; engine.snapshot (the paper
+  // copy), engine.fold (rendering the committed ops), and engine.encode
+  // (demoting cold patches to blobs) are the candidates it decomposes into, so
+  // a hot commit attributes to one of them rather than to the pipeline at large.
   const commit = drawMarks['engine.commit'] || { count: 0, total: 0, max: 0 };
   const snapshot = drawMarks['engine.snapshot'] || { count: 0, total: 0, max: 0 };
+  const fold = drawMarks['engine.fold'] || { count: 0, total: 0, max: 0 };
+  const encode = settleMarks['engine.encode'] || { count: 0, total: 0, max: 0 };
   const undoM = undoMarks['engine.undo'] || { count: 0, total: 0, max: 0 };
 
   // History raster memory the way it actually lives — off the JS heap, in
@@ -400,6 +446,10 @@ export async function runUndoScenario(
       commitMaxMs: commit.max,
       snapshotMs: snapshot.total,
       snapshotMaxMs: snapshot.max,
+      foldMs: fold.total,
+      foldMaxMs: fold.max,
+      encodeMs: encode.total,
+      encodeMaxMs: encode.max,
     },
     undo: {
       steps: undoM.count,
@@ -416,7 +466,8 @@ export async function runUndoScenario(
   console.log(
     `  snapshots=${debug?.snapshots ?? 'n/a'} liveRasters=${debug?.liveRasters ?? 'n/a'} ` +
       `blobKB=${debug ? Math.round(debug.blobBytes / 1024) : 'n/a'} | ` +
-      `commit max ${commit.max.toFixed(1)}ms (copy max ${snapshot.max.toFixed(1)}ms) | ` +
+      `commit max ${commit.max.toFixed(1)}ms (copy ${snapshot.max.toFixed(1)} ` +
+      `fold ${fold.max.toFixed(1)} encode ${encode.max.toFixed(1)}) | ` +
       `undo ${undoM.count} steps ` +
       `avg ${(undoM.count ? undoM.total / undoM.count : 0).toFixed(1)}ms max ${undoM.max.toFixed(1)}ms`
   );
@@ -425,15 +476,18 @@ export async function runUndoScenario(
 
 function buildUndoSettings({ throttle, build, geom, t0 }) {
   return {
-    target: 'web/dev-engine (headless Chromium — not WebKit/real GPU)',
+    target: `web/dev-engine (${engine.label})`,
+    engine: engineName,
     device: IPAD_PRO.label,
     viewport: IPAD_PRO,
-    throttle: throttle.forSettings,
+    // WebKit exposes no CPU-throttling control, so a WebKit run is always
+    // unthrottled regardless of --throttle (see the warning in runUndoScenarios).
+    throttle: engine.hasCdp ? throttle.forSettings : 0,
     refreshHz: HZ,
-    frameBudgetMs: 1000 / HZ,
+    frameBudgetMs: FRAME_BUDGET_MS,
     longOps: LONG_OPS,
     buildMode: build ? 'production-preview' : 'production-preview (reused build)',
-    captureMode: 'cdp-trace',
+    captureMode: engine.hasCdp ? 'cdp-trace' : 'user-timing (no CDP on WebKit)',
     raster: { ...geom, mbPerRaster: toMiB(geom.bytesPerRaster) },
     startedAt: new Date(t0).toISOString(),
     durationMs: Date.now() - t0,
@@ -446,14 +500,11 @@ export async function runUndoScenarios() {
   process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
   warnIfNoPerfMarks('npm run perf:undo');
 
-  const outDir = profilePath('undo-scenarios', throttle.tag);
+  const outDir = profilePath('undo-scenarios', engineName, throttle.tag);
   mkdirSync(outDir, { recursive: true });
 
   const { base, stop } = await buildAndPreview(port, { build });
-  const browser = await chromium.launch({
-    headless: true,
-    executablePath: chromiumExecutablePath(chromium),
-  });
+  const browser = await engine.launcher.launch(engine.launchOptions());
   const t0 = Date.now();
   try {
     const ctx = await browser.newContext({
@@ -464,14 +515,22 @@ export async function runUndoScenarios() {
     const page = await ctx.newPage();
     await resetEngine(page, base, IPAD_PRO.width, IPAD_PRO.height);
 
-    const cdp = await ctx.newCDPSession(page);
+    // No CDP outside Chromium: no Chrome trace, no CPU throttle, no
+    // performance.memory. The engine.* user-timing marks — the primary signal
+    // here — come from the Performance API and survive, so a WebKit run gives
+    // up the report.md trace sections and the JS-heap table, not the gates.
+    const cdp = engine.hasCdp ? await ctx.newCDPSession(page) : null;
     if (throttle.active) {
-      await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle.rate });
+      if (cdp) await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle.rate });
+      else
+        console.warn(
+          `! --throttle is Chromium-only (CDP Emulation) — the ${engineName} run is unthrottled.`
+        );
     }
 
     await injectObservers(page);
     const geom = await rasterGeometry(page);
-    const events = await startTrace(cdp);
+    const events = cdp ? await startTrace(cdp) : null;
     // --scenarios=key1,key2 runs a subset (fast iteration on one question).
     const only = flag('scenarios', '');
     let scenarios = buildScenarios(IPAD_PRO.width, IPAD_PRO.height);
@@ -500,7 +559,9 @@ export async function runUndoScenarios() {
     }
 
     const obs = await readObservers(page);
-    await stopTrace(cdp);
+    // Without CDP there is no Chrome trace to stop; collectMeasures synthesizes
+    // the minimal user-timing trace the shared analyzer needs instead.
+    const traceEvents = cdp ? (await stopTrace(cdp), events) : await collectMeasures(page);
 
     // Standard trace artifacts (engine hot paths, frame health) via the shared
     // analyzer, plus the bespoke per-scenario undo summary.
@@ -514,7 +575,7 @@ export async function runUndoScenarios() {
     });
     writeProfileArtifacts({
       outDir,
-      traceEvents: events,
+      traceEvents,
       metrics,
     });
 
@@ -525,10 +586,93 @@ export async function runUndoScenarios() {
 
     console.log(`\n${md}\n`);
     console.log(`Artifacts: ${outDir}`);
+    return reportCommitGate(results);
   } finally {
     await browser.close();
     stop();
   }
+}
+
+// The commit gate, and why only WebKit gets it.
+//
+// ADR-0066 states the product gate as "commit max ≈ one 120 Hz frame" (8.3 ms),
+// but that is a claim about an iPad and this is a desktop build. What a desktop
+// run can still decide is a question of *shape*: does the stroke-end commit do
+// work that scales with the whole raster, or only with the dirty rect the stroke
+// touched? Those regimes are far enough apart to separate with a blunt
+// threshold. Measured on this harness, both endpoints on the same machine:
+//
+//   healthy    commit max 1–8 ms   (8 ms = crayon-scribbles, all fold)
+//   #635 shape commit max 47–56 ms (98% of it engine.encode, run to run)
+//
+// so the gate sits ~3× above the healthy worst case and ~2× below the cheapest
+// observed regression. It is deliberately blunt: the point is to catch a
+// full-raster operation reappearing on the pointerup path, not to police
+// millisecond drift, which only the on-device run can honestly judge.
+//
+// Chromium is deliberately NOT gated. Its absolute milliseconds are unfaithful
+// in both directions — SwiftShader exaggerates full-canvas blits, and its
+// spec-compliant in-parallel toBlob reports almost nothing for an encode that
+// costs WebKit its whole frame budget. Reverting the #635 fix and running both
+// engines shows exactly that: WebKit reports a 47 ms commit with a 47 ms encode
+// inside it, Chromium a 11.4 ms commit with a 2.5 ms encode. Gating Chromium on
+// numbers it cannot measure would rebuild the false assurance that let #635 hide
+// behind a passing profile for a year.
+const COMMIT_GATE_MS = 25;
+
+function reportCommitGate(results) {
+  const budgetMs = COMMIT_GATE_MS;
+  const gated = !engine.hasCdp;
+  const measured = results.filter((s) => !s.skipped);
+  const breaches = gated ? measured.filter((s) => s.draw.commitMaxMs > budgetMs) : [];
+
+  if (!gated) {
+    console.log(
+      `Commit gate: not evaluated on ${engineName} — its absolute ms are advisory ` +
+        `(see COMMIT_GATE_MS). Run \`npm run perf:undo:webkit\` for the gated engine.`
+    );
+    return { engine: engineName, gated, budgetMs, breaches };
+  }
+
+  // The encode path only runs for a scenario whose patches exhaust the resident
+  // byte budget (ADR-0078). Today that is multi-finger alone, so the gate's
+  // cover for #635's defect class rests on one scenario producing blobs. If a
+  // tiering change ever stops it, the gate keeps passing while testing nothing —
+  // say so rather than let the silence read as a clean bill of health.
+  const encoding = measured.filter((s) => (s.debug?.blobBytes ?? 0) > 0);
+  if (encoding.length === 0) {
+    console.warn(
+      `! No scenario demoted a patch to a blob, so this run did not exercise the encode ` +
+        `path at all — the commit gate cannot see a #635-class regression. Check whether ` +
+        `the resident byte budget (HOT_PATCH_BUDGET_PAPER_MULTIPLE) now covers every scenario.`
+    );
+  }
+
+  if (breaches.length === 0) {
+    console.log(
+      `✓ Commit gate: every scenario's commit max is within ${budgetMs} ms on ${engineName} ` +
+        `(${measured.length} measured, ${encoding.length} exercising the encode path).`
+    );
+    return { engine: engineName, gated, budgetMs, breaches, encoding: encoding.length };
+  }
+
+  process.exitCode = 1;
+  console.error(
+    `\n✗ Commit gate FAILED on ${engineName}: ${breaches.length} scenario(s) exceeded ` +
+      `${budgetMs} ms of synchronous stroke-end work.\n` +
+      `  A commit this hot is doing full-raster work on the pointerup path. Compare the\n` +
+      `  snapshot / fold / encode columns above to see which — an engine.encode that\n` +
+      `  dominates engine.commit is #635 recurring (the cold encode belongs off the\n` +
+      `  commit, on scheduleIdle).\n`
+  );
+  for (const s of breaches) {
+    console.error(
+      `  ${s.key}: commit max ${f1(s.draw.commitMaxMs)} ms ` +
+        `(copy ${f1(s.draw.snapshotMaxMs)} · fold ${f1(s.draw.foldMaxMs)} · ` +
+        `encode ${f1(s.draw.encodeMaxMs)})`
+    );
+  }
+  return { engine: engineName, gated, budgetMs, breaches };
 }
 
 const f1 = (n) => (n == null ? 'n/a' : n.toFixed(1));
@@ -543,12 +687,24 @@ function renderUndoReport({ settings, scenarios }) {
       `CPU throttle **${settings.throttle ? settings.throttle + '×' : 'none'}** · ` +
       `build **${settings.buildMode}**\n`
   );
+  const fidelity =
+    settings.engine === 'webkit'
+      ? `Playwright's WebKit is the engine family the iOS app ships (WebKit/JavaScriptCore), ` +
+        `so per-engine canvas API behaviour — the synchronous \`toBlob\` encode behind #635 — ` +
+        `is reproduced here and cannot be on Chromium at any precision. It is still a desktop ` +
+        `build on desktop silicon, not an iPad: it has no CPU throttle and no ` +
+        `\`performance.memory\`, so the JS-heap table below reads n/a. WebKit also clamps ` +
+        `\`performance.now()\` to ~1 ms, so every duration here is quantized to whole ` +
+        `milliseconds — read them as coarse magnitudes, never as sub-ms comparisons.`
+      : `Headless Chromium (Blink/V8) is **not** WebKit/JavaScriptCore or the iPad GPU — ` +
+        `SwiftShader software rendering exaggerates full-canvas blits (the paper copy, ` +
+        `restores, blob decodes) heavily, and its spec-compliant in-parallel \`toBlob\` ` +
+        `reports ~0 ms for an encode that costs WebKit a whole frame budget (#635). ` +
+        `CPU throttle models a slow CPU, not the tighter ${f1(settings.frameBudgetMs)} ms ` +
+        `ProMotion frame.`;
   out.push(
     `> Fidelity: long strokes are ~${settings.longOps} ops (≈ ${settings.refreshHz}Hz × ` +
-      `stroke seconds) to mirror real input volume. Headless Chromium (Blink/V8) is **not** ` +
-      `WebKit/JavaScriptCore or the iPad GPU — SwiftShader software rendering exaggerates ` +
-      `full-canvas blits (the paper copy, restores, blob decodes) heavily — and CPU throttle ` +
-      `models a slow CPU, not the tighter ${f1(settings.frameBudgetMs)} ms ProMotion frame. ` +
+      `stroke seconds) to mirror real input volume. ${fidelity} ` +
       `Absolute ms want the on-device run (\`scripts/perf/ipad-console-driver.js\` / the ` +
       `\`profiling\` skill); this run is for stack behavior, op-volume scaling, and relative cost.\n`
   );
@@ -576,21 +732,26 @@ function renderUndoReport({ settings, scenarios }) {
   }
   out.push('\n## Drawing cost (engine.draw + the stroke-end pipeline)\n');
   out.push(
-    'engine.commit wraps the whole stroke-end pipeline (paper copy → fold), so **commit max** ' +
-      'is the pointerup hitch the user feels; engine.snapshot isolates the paper copy inside it.\n'
+    'engine.commit wraps the whole stroke-end pipeline, so **commit max** is the pointerup ' +
+      'hitch the user feels. Inside it, engine.snapshot is the pre-stroke patch copy and ' +
+      'engine.fold is rendering the committed ops. engine.encode — demoting cold patches to ' +
+      'blobs — is measured over the wider draw+settle window because it is scheduled *off* the ' +
+      'commit (scheduleIdle); an encode max that rivals commit max means it landed back on the ' +
+      'commit path, which is #635.\n'
   );
   out.push(
-    '| Scenario | draw() calls | draw total | snapshot copy max | **commit max (1 stroke end)** |'
+    '| Scenario | draw() calls | draw total | snapshot copy max | fold max | encode max | **commit max (1 stroke end)** |'
   );
-  out.push('| --- | --- | --- | --- | --- |');
+  out.push('| --- | --- | --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
     if (s.skipped) {
-      out.push(`| ${s.label} | n/a | n/a | n/a | **n/a** |`);
+      out.push(`| ${s.label} | n/a | n/a | n/a | n/a | n/a | **n/a** |`);
       continue;
     }
     out.push(
       `| ${s.label} | ${s.draw.ops} | ${f1(s.draw.totalMs)} ms | ` +
-        `${f1(s.draw.snapshotMaxMs)} ms | **${f1(s.draw.commitMaxMs)} ms** |`
+        `${f1(s.draw.snapshotMaxMs)} ms | ${f1(s.draw.foldMaxMs)} ms | ` +
+        `${f1(s.draw.encodeMaxMs)} ms | **${f1(s.draw.commitMaxMs)} ms** |`
     );
   }
   out.push('\n## Undo cost (engine.undo)\n');

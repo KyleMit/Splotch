@@ -3,10 +3,23 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const state = vi.hoisted(() => ({ browser: null, outDir: '', stop: null }));
+const state = vi.hoisted(() => ({ browser: null, outDir: '', stop: null, launched: [] }));
 
+// Both engines resolve to the same fake browser; `launched` records which
+// launcher the run reached for, since that is the seam --engine selects.
 vi.mock('@playwright/test', () => ({
-  chromium: { launch: (...args) => state.browser.launch(...args) },
+  chromium: {
+    launch: (...args) => {
+      state.launched.push('chromium');
+      return state.browser.launch(...args);
+    },
+  },
+  webkit: {
+    launch: (...args) => {
+      state.launched.push('webkit');
+      return state.browser.launch(...args);
+    },
+  },
 }));
 
 vi.mock('../perf/preview.mjs', () => ({
@@ -16,6 +29,7 @@ vi.mock('../perf/preview.mjs', () => ({
 vi.mock('../perf/capture.mjs', () => ({
   startTrace: async () => [],
   stopTrace: async () => {},
+  collectMeasures: async () => [{ name: 'engine.commit', ph: 'X' }],
   injectObservers: async () => {},
   readObservers: async () => ({ longTasks: [], frames: [], heapBytes: 0 }),
   heapBytes: async () => 0,
@@ -33,23 +47,75 @@ vi.mock('../lib/proc.mjs', async (importOriginal) => {
 
 let fixtureDir;
 let originalArgv;
+let originalExitCode;
 
 beforeEach(() => {
   fixtureDir = mkdtempSync(join(tmpdir(), 'splotch-undo-scenarios-'));
   state.outDir = fixtureDir;
   state.stop = vi.fn();
+  state.launched = [];
   originalArgv = process.argv;
+  // The gate signals a breach through process.exitCode, which would otherwise
+  // outlive the test and fail the whole vitest run.
+  originalExitCode = process.exitCode;
   // Enough budget for a quiesced tier to produce its consecutive identical
   // samples (Date.now is mocked to tick once per call, sleep is a no-op), while
   // still expiring for the scenario whose tier never stops changing.
   process.argv = [...process.argv, '--cold-tier-timeout-ms=20'];
+  // The entry module reads argv at module scope, so each test needs its own
+  // evaluation rather than the first test's flags.
+  vi.resetModules();
 });
 
 afterEach(() => {
   process.argv = originalArgv;
+  process.exitCode = originalExitCode;
   vi.restoreAllMocks();
   rmSync(fixtureDir, { recursive: true, force: true });
 });
+
+// A page whose engine.* measures are dictated by the caller, so a test can put
+// the run on either side of the commit gate without driving a real browser.
+function fakePage({ commitMaxMs = 1, encodeMaxMs = 0 } = {}) {
+  return {
+    goto: vi.fn(async () => {}),
+    waitForSelector: vi.fn(async () => {}),
+    waitForFunction: vi.fn(async () => {}),
+    evaluate: vi.fn(async (fn) => {
+      const source = fn.toString();
+      if (source.includes('getUndoDebug')) {
+        return { snapshots: 22, liveRasters: 2, blobBytes: 1 };
+      }
+      if (source.includes('document.querySelector')) {
+        return { backingW: 20, backingH: 20, side: 20, bytesPerRaster: 1600 };
+      }
+      if (source.includes("getEntriesByType('measure')")) {
+        return {
+          'engine.draw': { count: 1, total: 1, max: 1 },
+          'engine.commit': { count: 1, total: commitMaxMs, max: commitMaxMs },
+          'engine.snapshot': { count: 1, total: 1, max: 1 },
+          'engine.fold': { count: 1, total: 1, max: 1 },
+          'engine.encode': { count: 1, total: encodeMaxMs, max: encodeMaxMs },
+          'engine.undo': { count: 1, total: 1, max: 1 },
+        };
+      }
+      if (source.includes('async (maxUndoSteps)')) return 1;
+      if (source.includes('performance.now')) return 0;
+      return undefined;
+    }),
+    screenshot: vi.fn(async () => {}),
+  };
+}
+
+function fakeBrowser(page, { withCdp = true } = {}) {
+  const context = {
+    newPage: vi.fn(async () => page),
+    newCDPSession: withCdp ? vi.fn(async () => ({ send: vi.fn(async () => {}) })) : undefined,
+  };
+  const browser = { newContext: vi.fn(async () => context), close: vi.fn(async () => {}) };
+  state.browser = { launch: vi.fn(async () => browser) };
+  return { browser, context };
+}
 
 describe('undo scenario profiling', () => {
   it('writes artifacts and continues after a cold-tier timeout', async () => {
@@ -135,5 +201,148 @@ describe('undo scenario profiling', () => {
     );
     expect(state.stop).toHaveBeenCalledOnce();
     expect(browser.close).toHaveBeenCalledOnce();
+  });
+});
+
+describe('engine selection', () => {
+  it('drives WebKit without a CDP session and records that it was unthrottled', async () => {
+    // The WebKit run's whole reason to exist is the engine, so the assertion is
+    // that it reached the WebKit launcher — and that it never asked for a CDP
+    // session, which would throw on a real WebKit context.
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
+    const page = fakePage();
+    const { context } = fakeBrowser(page, { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(
+      (
+        (c) => () =>
+          c++
+      )(0)
+    );
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    await runUndoScenarios();
+
+    expect(state.launched).toEqual(['webkit']);
+    expect(context.newCDPSession).toBeUndefined();
+    const summary = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
+    expect(summary.settings).toMatchObject({
+      engine: 'webkit',
+      throttle: 0,
+      captureMode: 'user-timing (no CDP on WebKit)',
+    });
+  });
+
+  it('rejects an unknown engine instead of silently falling back to Chromium', async () => {
+    process.argv = [...process.argv, '--engine=firefox'];
+    const exit = vi.spyOn(process, 'exit').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await import('../perf/undo-scenarios.mjs');
+
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('--engine=firefox is not a known'));
+    expect(exit).toHaveBeenCalledWith(1);
+  });
+});
+
+describe('the commit gate', () => {
+  it('fails the WebKit run when a commit exceeds the budget', async () => {
+    // #635's shape: an encode back on the commit path, so engine.commit carries
+    // a full-raster encode instead of a rect-sized copy plus a fold.
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
+    const page = fakePage({ commitMaxMs: 56, encodeMaxMs: 55 });
+    fakeBrowser(page, { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(
+      (
+        (c) => () =>
+          c++
+      )(0)
+    );
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    expect(gate).toMatchObject({ engine: 'webkit', gated: true, budgetMs: 25 });
+    expect(gate.breaches.map((s) => s.key)).toEqual(['short-marks']);
+    expect(process.exitCode).toBe(1);
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('Commit gate FAILED on webkit'));
+    // The breach has to name its own cause, or the run says "too slow" and
+    // leaves the reader where #444 was left — guessing at which stage.
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('encode 55.0'));
+  });
+
+  it('passes the WebKit run when commits stay inside the budget', async () => {
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
+    const page = fakePage({ commitMaxMs: 8, encodeMaxMs: 208 });
+    fakeBrowser(page, { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(
+      (
+        (c) => () =>
+          c++
+      )(0)
+    );
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    // A large encode is not itself a breach: deferred off the commit is exactly
+    // where ADR-0078 puts it, and only its landing *inside* a commit is #635.
+    expect(gate.breaches).toEqual([]);
+    expect(process.exitCode).toBe(originalExitCode);
+  });
+
+  it('warns when no scenario exercised the encode path', async () => {
+    // A passing gate over scenarios that never encode is a vacuous pass, so the
+    // run has to say so rather than report a clean bill of health.
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
+    const page = fakePage();
+    page.evaluate = vi.fn(async (fn) => {
+      if (fn.toString().includes('getUndoDebug')) {
+        return { snapshots: 22, liveRasters: 2, blobBytes: 0 };
+      }
+      return fakePage().evaluate(fn);
+    });
+    fakeBrowser(page, { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(
+      (
+        (c) => () =>
+          c++
+      )(0)
+    );
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    expect(gate).toMatchObject({ breaches: [], encoding: 0 });
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('did not exercise the encode path at all')
+    );
+  });
+
+  it('reports the gate as not evaluated on Chromium', async () => {
+    process.argv = [...process.argv, '--scenarios=short-marks'];
+    const page = fakePage({ commitMaxMs: 999 });
+    fakeBrowser(page);
+    vi.spyOn(Date, 'now').mockImplementation(
+      (
+        (c) => () =>
+          c++
+      )(0)
+    );
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    // Chromium cannot measure the cost this gate is about, so a hot commit here
+    // must not fail the run — see COMMIT_GATE_MS.
+    expect(gate).toMatchObject({ engine: 'chromium', gated: false, breaches: [] });
+    expect(process.exitCode).toBe(originalExitCode);
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('not evaluated on chromium'));
   });
 });
