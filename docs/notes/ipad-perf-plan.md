@@ -22,12 +22,14 @@
       its isolated value. Its snapshots carry no patches at all (`blob KB 0`, `history 28 MiB` = the
       paper alone), which is exactly why it is the one scenario with nothing to encode and no hitch.
 * [x] **Clean on-device gates run** — done, four honest rows, recorded below.
-* [ ] **Update the issues** (outward-facing, needs a go-ahead):
-  * [ ] \#446 — post the gates verdict, close it
-  * [ ] \#444 — correct the premise: its items 1–2 target `engine.snapshot`, measured at 1 ms
-  * [ ] New issue for the encode bug — different mechanism, different remedies
-  * [ ] \#494 — comment that this run does not answer it (`undoAll` waits per step, so it never
-        tests the rapid-tap case) and leave it open
+* [x] **Issues updated.**
+  * [x] \#446 — verdict posted, closed as completed (Part 2, the historical replay A/B, was not run)
+  * [x] \#444 — premise corrected: its items 1–2 target `engine.snapshot`, measured at 1–3 ms.
+        Suggested wont-do for those two and folding item 3 into \#494; awaiting a call
+  * [x] \#635 filed — the encode bug, labelled `type:bug` / `type:perf` / `priority:high` /
+        `needs-adr`
+  * [x] \#494 — noted that this run does not answer it (`undoAll` waits per step, so rapid taps are
+        never tested), left open
 * [ ] **Merge PR \#634.**
 * [ ] **ADR for the fix**, then implement. Options trade differently: defer encoding to idle, cap
       encodes per commit, `OffscreenCanvas` in a worker, or skip encoding where `toBlob` is
