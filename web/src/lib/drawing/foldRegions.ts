@@ -62,14 +62,16 @@ function boxesIntersect(a: Box, b: Box): boolean {
 // More clusters than this and the capture degenerates to one union rect: the
 // per-patch bookkeeping (copies, encodes, restore blits) stops paying for
 // itself, and no real gesture produces more (five fingers → five clusters).
-const PATCH_CLUSTER_CAP = 8;
+// Exported as a test seam for cap-boundary fixtures.
+export const PATCH_CLUSTER_CAP = 8;
 
 // More RAW clusters than this and the capture skips the merge fixpoint
 // entirely and takes the union up front: the scan is O(n³) worst case on the
 // commit hot path, and only a magic-unready backlog folding under one commit
 // can push the count this high — a fold that large unions to ~the whole paper
 // after merging anyway, so nothing real is lost by not trying.
-const MERGE_INPUT_CAP = PATCH_CLUSTER_CAP * 8;
+// Exported as a test seam for cap-boundary fixtures.
+export const MERGE_INPUT_CAP = PATCH_CLUSTER_CAP * 8;
 
 function unionBoxes(boxes: Box[]): Box {
   const union = { ...boxes[0] };

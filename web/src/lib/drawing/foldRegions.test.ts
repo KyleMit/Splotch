@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { PathOp } from './strokeOps';
-import { foldRegionsForCommands } from './foldRegions';
+import { foldRegionsForCommands, MERGE_INPUT_CAP } from './foldRegions';
 
 describe('dirty-rect patch snapshots', () => {
   // A snapshot captures only the paper under the regions its fold mutates
@@ -93,18 +93,20 @@ describe('dirty-rect patch snapshots', () => {
 
 describe('disjoint multi-finger patches', () => {
   it('skips the merge fixpoint entirely past the raw-cluster input cap', () => {
-    // 65 solo clusters (> PATCH_CLUSTER_CAP × 8) — the magic-backlog shape —
+    // More than the raw-cluster cap — the magic-backlog shape —
     // short-circuit to one union without running the O(n³) merge scan.
-    const dots = Array.from({ length: 65 }, (_, i) => ({
+    const dots = Array.from({ length: MERGE_INPUT_CAP + 1 }, (_, i) => ({
       kind: 'dot' as const,
-      x: 10 + (i % 13) * 4,
-      y: 10 + Math.floor(i / 13) * 4,
+      x: 10 + i * 10,
+      y: 10,
       radius: 1,
       color: '#swarm',
       erase: false,
     }));
-    expect(foldRegionsForCommands([{ ops: dots, wasEmpty: true }], 64, 64)).toEqual({
-      rects: [{ x: 7, y: 7, w: 54, h: 22 }],
+    expect(
+      foldRegionsForCommands([{ ops: dots, wasEmpty: true }], (MERGE_INPUT_CAP + 2) * 10, 32)
+    ).toEqual({
+      rects: [{ x: 7, y: 7, w: MERGE_INPUT_CAP * 10 + 6, h: 6 }],
       wipesPaper: false,
     });
   });
