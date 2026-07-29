@@ -21,49 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Performance] `unionCrayonBounds` allocates arrays/points via spread-over-map on the pointer hot path
-
-**File(s):** `web/src/lib/drawing/strokeOps.ts` (`unionCrayonBounds`, lines 352–362) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const corners = [
-  matrix.transformPoint({ x: x0, y: y0 }),
-  ...
-];
-x0 = Math.min(...corners.map((p) => p.x));
-y0 = Math.min(...corners.map((p) => p.y));
-x1 = Math.max(...corners.map((p) => p.x));
-y1 = Math.max(...corners.map((p) => p.y));
-```
-
-This runs once per crayon op per frame while drawing (from `renderCrayonOp`, line 541 — and the live
-visible ctx's transform is non-identity whenever the paper view/DPR transform is active, so the
-branch is the common case). Each call allocates 4 `DOMPoint`s, 4 object literals, 1 corners array,
-and 4 throwaway `.map` arrays + spreads — ~13 allocations per pointer-move frame purely for a
-4-corner min/max. The drawing loop is this codebase's most GC-sensitive path (see the module's own
-hot-path notes and `crayonPassCount`'s "no throwaway array" rationale in crayonBrush.ts:270–276).
-
-#### Proposed solution
-
-Unroll: transform the four corners into scalars (or reuse one scratch `DOMPoint`) and take
-`Math.min(ax, bx, cx, dx)` directly — zero allocations, arguably clearer:
-
-```ts
-const p1 = matrix.transformPoint({ x: x0, y: y0 }); // …p2..p4
-x0 = Math.min(p1.x, p2.x, p3.x, p4.x); // etc.
-```
-
-(Still 4 DOMPoint + 4 literal allocs; going fully alloc-free means multiplying the affine components
-manually — `m.a*x + m.c*y + m.e` — which is trivial for a 2D matrix and drops `transformPoint`
-entirely.) Micro-optimization, but it sits on the same hot path the module already micro-optimizes
-deliberately.
-
----
-
 ### [Performance] `crayonPatternFor` recomputes `seedPhase` and allocates a `DOMMatrix` on every call
 
 **File(s):** `web/src/lib/drawing/crayonBrush.ts` (`crayonPatternFor`, lines 438–442) @ 9ae62ff1

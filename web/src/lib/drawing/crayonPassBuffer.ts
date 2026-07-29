@@ -238,16 +238,14 @@ function unionCrayonBounds(
   x1 += pad;
   y1 += pad;
   if (matrix && !matrix.isIdentity) {
-    const corners = [
-      matrix.transformPoint({ x: x0, y: y0 }),
-      matrix.transformPoint({ x: x1, y: y0 }),
-      matrix.transformPoint({ x: x0, y: y1 }),
-      matrix.transformPoint({ x: x1, y: y1 }),
-    ];
-    x0 = Math.min(...corners.map((p) => p.x));
-    y0 = Math.min(...corners.map((p) => p.y));
-    x1 = Math.max(...corners.map((p) => p.x));
-    y1 = Math.max(...corners.map((p) => p.y));
+    const p1 = matrix.transformPoint({ x: x0, y: y0 });
+    const p2 = matrix.transformPoint({ x: x1, y: y0 });
+    const p3 = matrix.transformPoint({ x: x0, y: y1 });
+    const p4 = matrix.transformPoint({ x: x1, y: y1 });
+    x0 = Math.min(p1.x, p2.x, p3.x, p4.x);
+    y0 = Math.min(p1.y, p2.y, p3.y, p4.y);
+    x1 = Math.max(p1.x, p2.x, p3.x, p4.x);
+    y1 = Math.max(p1.y, p2.y, p3.y, p4.y);
   }
   const w = buf.ctx.canvas.width;
   const h = buf.ctx.canvas.height;
