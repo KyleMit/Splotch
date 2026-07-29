@@ -21,35 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Types] saveImageBlob's `Blob | null` parameter is speculative — every production caller already null-checks
-
-**File(s):** `web/src/lib/drawing/screenshot.ts` (`saveImageBlob`, lines 71–76) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-export async function saveImageBlob(
-  blob: Blob | null,
-  ...
-) {
-  if (!blob) return;
-```
-
-All three production callers guard before calling: `saveScreenshot` (lines 95–96:
-`if (!blob) return;`), `saveOnDelete.saveDrawingIfEnabled` (lines 15–16, same), and
-`aiImage.autoSaveImages` (line 86 — its parameters are already typed `Blob`). The null-accepting
-signature therefore has no caller that exercises it — CLAUDE.md's "no speculative surface" rule —
-and it weakens the type: a future caller can pass a maybe-null export result and get a silent no-op
-where a compile error should have forced the decision of what "nothing to save" means at that call
-site.
-
-#### Proposed solution
-
-Tighten to `blob: Blob` and delete the internal guard. TypeScript will confirm at compile time that
-no caller breaks; `aiImage.test.ts` mocks the function loosely so no test churn is expected.
-
 ### [Maintainability] chooseSaveFolder's catch-all is labeled "AbortError" but swallows every error
 
 **File(s):** `web/src/lib/drawing/folderSave.ts` (`chooseSaveFolder`, lines 92–98) @ 9ae62ff1

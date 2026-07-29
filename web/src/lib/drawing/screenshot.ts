@@ -55,11 +55,10 @@ async function saveToGallery(blob: Blob, baseName = DRAWING_BASENAME) {
 // permission; background saves (AI auto-save, save-on-delete) leave it falsy. No
 // polaroid animation — the caller owns its own feedback.
 export async function saveImageBlob(
-  blob: Blob | null,
+  blob: Blob,
   baseName = DRAWING_BASENAME,
   opts?: { allowPrompt?: boolean }
 ) {
-  if (!blob) return;
   // __IS_CAPACITOR__ makes the gallery path compile-time dead on web so Rollup
   // drops the media plugin chunk (isNative() alone can't tree-shake across modules).
   if (__IS_CAPACITOR__ && isNative()) {
