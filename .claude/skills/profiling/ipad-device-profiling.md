@@ -325,9 +325,31 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
   running (it serves on `0.0.0.0:4173` — a plain `npm run preview` binds localhost only and lacks
   the harness flag), and that you used the Mac's LAN IP (not `localhost`). A firewall prompt on the
   Mac may need approving.
-* **`window.__engine` is undefined** → you're serving with something other than `npm run perf:serve`
-  (`PUBLIC_ENABLE_DEV_HARNESS` gates the route at runtime, on the server), or you're not on the
-  `/dev/engine` route.
+* **`window.__engine` is undefined** → paste this to see which case it is:
+
+  ```js
+  ({
+    url: location.href,
+    engine: typeof window.__engine,
+    sw: navigator.serviceWorker?.controller?.scriptURL ?? null,
+  });
+  ```
+
+  A `url` that isn't `/dev/engine` means you opened the **Network** URL (the plain app) instead of
+  the **Harness** one. The right `url` with no engine means the tab is stale — reload it. If `sw` is
+  non-null and a reload doesn't help, a service worker is serving the page from cache: the app is a
+  PWA whose NetworkFirst handler falls back to the cache, so a tab opened while the server was down
+  keeps serving a build with no harness on it. Unregister and reload:
+
+  ```js
+  navigator.serviceWorker.getRegistrations()
+    .then((rs) => Promise.all(rs.map((r) => r.unregister())))
+    .then(() => location.reload());
+  ```
+
+  Failing all that, confirm Web Inspector is attached to the `…/dev/engine` tab and not another one
+  — the Develop submenu lists every open tab. Serving with anything other than `npm run perf:serve`
+  also does it: `PUBLIC_ENABLE_DEV_HARNESS` gates the route at runtime, on the server.
 * **No `engine.*` marks in the export** → the served build wasn't made with `PERF_MARKS=true`.
   `npm run perf:serve` rebuilds with it via `preperf:serve`, so this means the rebuild was skipped
   (`--ignore-scripts`) or the bundle is being served some other way.
