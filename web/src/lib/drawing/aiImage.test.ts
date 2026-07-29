@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 
 const mocks = vi.hoisted(() => ({
   exportCanvasBlob: vi.fn(),
@@ -48,11 +49,32 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
 describe('generateAiImage request ownership', () => {
+  it('starts the request timeout after canvas export finishes', async () => {
+    vi.useFakeTimers();
+    const canvasExport = deferred<Blob | null>();
+    mocks.exportCanvasBlob.mockReturnValueOnce(canvasExport.promise);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+
+    const { generateAiImage } = await import('./aiImage');
+
+    const generation = generateAiImage();
+    await vi.advanceTimersByTimeAsync(CLIENT_REQUEST_TIMEOUT_MS + 1);
+    expect(fetch).not.toHaveBeenCalled();
+
+    canvasExport.resolve(new Blob(['drawing']));
+    await generation;
+
+    expect(fetch).toHaveBeenCalledOnce();
+    const requestSignal = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).signal;
+    expect(requestSignal?.aborted).toBe(false);
+  });
+
   it('turns a rejected canvas export into an error instead of leaving the spinner stuck', async () => {
     const exportError = new Error('export failed');
     mocks.exportCanvasBlob.mockRejectedValueOnce(exportError);

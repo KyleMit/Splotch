@@ -208,13 +208,14 @@ export async function generateAiImage({
   // the preview in once the canvas export finishes — so the spinner never waits
   // on the export, even when customization is off and we skip the picker.
   const runId = startAiGeneration(blob ? URL.createObjectURL(blob) : null, controller);
-  const timeoutId = setTimeout(() => controller.abort(), CLIENT_REQUEST_TIMEOUT_MS);
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   try {
     const exported = await exportUploadImage(blob, runId);
     if (!exported) return;
 
     const { endpoint, headers, body } = buildRequest(exported.upload, style);
+    timeoutId = setTimeout(() => controller.abort(), CLIENT_REQUEST_TIMEOUT_MS);
     const res = await fetch(endpoint, {
       method: 'POST',
       headers,
@@ -236,7 +237,7 @@ export async function generateAiImage({
     );
     console.error(err);
   } finally {
-    clearTimeout(timeoutId);
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
     endAiGeneration(runId);
   }
 }
