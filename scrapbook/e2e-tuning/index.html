@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E2E tuning — Splotch scrapbook</title>
+<style>
+:root{
+  color-scheme: light dark;
+  --paper:#f5f3ee; --paper-2:#efece5; --card:#fdfbf6; --card-2:#f6f3ec;
+  --ink:#23212a; --muted:#6b6774; --faint:#948f9c;
+  --hair:#e6e1d8; --hair-strong:#d9d3c8;
+  --accent:#2f6fed; --accent-ink:#1e50c4; --accent-wash:#e8effe;
+  --gold:#b1780a;
+  --ok:#3f9d55; --warn:#e08a1e; --bad:#d24b3f;
+  --c-red:#ec534e; --c-orange:#f89c45; --c-yellow:#f9d24f;
+  --c-green:#8cc864; --c-blue:#62a2e9; --c-purple:#ab71e1; --c-pink:#f47cb0;
+  --shadow-sm:0 1px 2px rgba(30,28,40,.05);
+  --shadow-md:0 1px 2px rgba(30,28,40,.05), 0 10px 26px rgba(30,28,40,.07);
+  --shadow-lg:0 2px 6px rgba(30,28,40,.06), 0 22px 48px rgba(30,28,40,.12);
+  --r-sm:9px; --r-md:16px; --r-lg:18px;
+  --shell:1160px;
+  --font: ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#131418; --paper-2:#0f1013; --card:#1d1f27; --card-2:#181a20;
+    --ink:#e9e7e2; --muted:#a8a4af; --faint:#807d89;
+    --hair:#34373f; --hair-strong:#464a55;
+    --accent:#7aa8ff; --accent-ink:#a9c6ff; --accent-wash:#1b2536;
+    --gold:#d9a441;
+    --ok:#5cc078; --warn:#e6a545; --bad:#e8695c;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+    --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
+    --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme=light]{
+  color-scheme: light;
+  --paper:#f5f3ee; --paper-2:#efece5; --card:#fdfbf6; --card-2:#f6f3ec;
+  --ink:#23212a; --muted:#6b6774; --faint:#948f9c;
+  --hair:#e6e1d8; --hair-strong:#d9d3c8;
+  --accent:#2f6fed; --accent-ink:#1e50c4; --accent-wash:#e8effe; --gold:#b1780a;
+  --ok:#3f9d55; --warn:#e08a1e; --bad:#d24b3f;
+  --shadow-sm:0 1px 2px rgba(30,28,40,.05);
+  --shadow-md:0 1px 2px rgba(30,28,40,.05), 0 10px 26px rgba(30,28,40,.07);
+  --shadow-lg:0 2px 6px rgba(30,28,40,.06), 0 22px 48px rgba(30,28,40,.12);
+}
+:root[data-theme=dark]{
+  color-scheme: dark;
+  --paper:#131418; --paper-2:#0f1013; --card:#1c1e24; --card-2:#191b20;
+  --ink:#e9e7e2; --muted:#a19da8; --faint:#797682;
+  --hair:#2b2e36; --hair-strong:#3a3e48;
+  --accent:#7aa8ff; --accent-ink:#a9c6ff; --accent-wash:#1b2536; --gold:#d9a441;
+  --ok:#5cc078; --warn:#e6a545; --bad:#e8695c;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--font); font-size:16px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent-ink); text-decoration:none}
+a:hover{text-decoration:underline}
+.shell{width:100%; max-width:var(--shell); margin:0 auto; padding:0 clamp(16px,4vw,44px)}
+
+/* ---- Masthead ------------------------------------------------------------ */
+.masthead{
+  position:relative; overflow:hidden;
+  background:
+    radial-gradient(120% 140% at 100% 0, color-mix(in srgb,var(--accent-wash) 55%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--card-2), var(--paper));
+  border-bottom:1px solid var(--hair);
+}
+.masthead .shell{padding-top:clamp(16px,3vw,26px); padding-bottom:clamp(20px,3.5vw,34px)}
+.topbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap; min-height:34px}
+.brand{
+  display:inline-flex; align-items:center; gap:10px;
+  color:var(--ink); font-weight:700; letter-spacing:-.01em;
+}
+.brand:hover{text-decoration:none}
+.brand:hover .brand-name{color:var(--accent-ink)}
+.brand-name{font-size:15px; transition:color .12s}
+.brand-name .brand-sub{color:var(--muted); font-weight:600}
+.brand-name .brand-sub::before{content:"/"; margin:0 5px; color:var(--faint); font-weight:400}
+.crayons{display:inline-flex; gap:4px; flex:0 0 auto}
+.crayons i{display:block; border-radius:99px}
+.crayons-lg i{width:22px; height:7px}
+.crayons-sm i{width:15px; height:5px}
+.brand .crayons-lg i{width:16px; height:6px}
+
+.crumbs{margin-left:auto; display:flex; align-items:center; gap:2px; font-size:13px; color:var(--muted); flex-wrap:wrap}
+.crumbs a{color:var(--muted)}
+.crumbs a:hover{color:var(--accent-ink)}
+.crumbs .sep{color:var(--faint); margin:0 5px}
+.crumbs .here{color:var(--ink); font-weight:650}
+
+.masthead-body{margin-top:clamp(16px,3vw,26px); position:relative; z-index:1}
+.masthead h1{
+  font-size:clamp(1.85rem,4.4vw,2.7rem); line-height:1.03; margin:0;
+  letter-spacing:-.032em; text-wrap:balance; font-weight:800;
+}
+.tagline{color:var(--muted); max-width:58ch; margin:.55rem 0 0; font-size:clamp(1rem,1.4vw,1.08rem)}
+.masthead-deco{position:absolute; top:-8px; right:clamp(-20px,-1vw,0px); width:clamp(150px,20vw,240px); pointer-events:none; opacity:.14; filter:saturate(1.1); z-index:0}
+.masthead-deco svg{width:100%; height:auto; display:block}
+@media (prefers-color-scheme:dark){.masthead-deco{opacity:.2}}
+:root[data-theme=dark] .masthead-deco{opacity:.2}
+@media (max-width:640px){.masthead-deco{display:none}}
+.tagline b{color:var(--ink); font-weight:650}
+.tagline a{color:var(--accent-ink); text-decoration:underline; text-underline-offset:2px}
+.masthead .stat-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px}
+
+/* ---- Content ------------------------------------------------------------- */
+main{display:block}
+main .shell{padding-top:clamp(24px,4vw,40px); padding-bottom:clamp(48px,7vw,84px)}
+.section-head{display:flex; align-items:baseline; gap:10px; margin:clamp(30px,5vw,46px) 0 14px}
+.section-head:first-child{margin-top:0}
+.section-head h2{font-size:1.18rem; margin:0; letter-spacing:-.01em; font-weight:750}
+.section-head .desc{color:var(--muted); font-size:.9rem}
+.eyebrow{font-size:.72rem; text-transform:uppercase; letter-spacing:.12em; color:var(--gold); font-weight:700}
+
+/* chips / pills */
+.chip{
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+  font-size:.76rem; font-weight:600; padding:4px 11px; border-radius:999px;
+  background:var(--card); border:1px solid var(--hair); color:var(--muted);
+}
+.chip b{color:var(--ink); font-weight:700}
+.chip.accent{background:var(--accent-wash); border-color:transparent; color:var(--accent-ink)}
+.chip .dot{width:7px; height:7px; border-radius:99px; background:var(--accent)}
+
+/* card grid — each card carries a single collection --hue (a crayon color) that
+   tints its top edge and icon plaque; the full rainbow is reserved for the
+   masthead brand + footer so the motif stays a signature, not wallpaper. */
+.card-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(288px,1fr)); gap:clamp(14px,2vw,20px)}
+.card{
+  --hue:var(--accent); position:relative; display:flex; flex-direction:column;
+  background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+  box-shadow:var(--shadow-sm); overflow:hidden; transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+.card:hover{transform:translateY(-3px); box-shadow:var(--shadow-lg); border-color:color-mix(in srgb,var(--hue) 45%, var(--hair-strong))}
+.card > a.card-hit{position:absolute; inset:0; z-index:1}
+.card-top{height:5px; background:linear-gradient(90deg,var(--hue),color-mix(in srgb,var(--hue) 40%, transparent))}
+.card-body{padding:18px 18px 16px; display:flex; flex-direction:column; gap:9px; flex:1}
+.card-emoji{
+  width:46px; height:46px; border-radius:13px; display:grid; place-items:center;
+  background:color-mix(in srgb,var(--hue) 13%, var(--card-2));
+  border:1px solid color-mix(in srgb,var(--hue) 26%, var(--hair)); color:var(--hue);
+}
+.card-emoji svg{width:26px; height:26px; display:block}
+.card-emoji.is-emoji{font-size:24px}
+.card h3{margin:2px 0 0; font-size:1.14rem; letter-spacing:-.01em; font-weight:750}
+.card p{margin:0; color:var(--muted); font-size:.92rem; flex:1}
+.card-meta{margin-top:2px; font-size:.78rem; color:var(--faint)}
+.card-meta .kind{color:var(--muted); font-weight:650}
+.card-links{position:relative; z-index:2; display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:2px; font-size:.82rem}
+.card .go{position:relative; z-index:2; margin-top:4px; align-self:flex-start; display:inline-flex; align-items:center; gap:6px; font-weight:700; color:var(--accent-ink); font-size:.9rem}
+.card:hover .go .arrow{transform:translateX(3px)}
+.go .arrow{transition:transform .14s ease}
+
+/* footer */
+.site-foot{border-top:1px solid var(--hair); background:var(--card-2)}
+.site-foot .shell{display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding-top:22px; padding-bottom:26px; color:var(--muted); font-size:.85rem}
+.site-foot .crayons{opacity:.9}
+.site-foot p{margin:0}
+.site-foot a{color:var(--accent-ink); text-decoration:none}
+.site-foot a:hover{text-decoration:underline; text-underline-offset:2px}
+
+.empty{color:var(--muted); background:var(--card); border:1px dashed var(--hair-strong); border-radius:var(--r-md); padding:22px}
+code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42em; border-radius:5px; font-size:.88em}
+
+@media (max-width:560px){
+  .crumbs{width:100%; margin-left:0; margin-top:6px}
+  .card-grid{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  .card,.go .arrow{transition:none}
+}
+
+/* page */
+
+  main.shell { display: flex; flex-direction: column; gap: 34px; padding-bottom: 64px; }
+  .lede { font-size: 17px; color: var(--muted); max-width: 66ch; margin: 0; }
+  section { display: flex; flex-direction: column; gap: 14px; }
+  section > h2 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+  section > p { margin: 0; color: var(--muted); max-width: 74ch; }
+  .panel { background: var(--card); border: 1px solid var(--hair); border-radius: var(--r-md); padding: 20px 22px; box-shadow: var(--shadow-sm); }
+  .verdict { border-left: 4px solid var(--accent); }
+  .verdict h3 { margin: 0 0 8px; font-size: 20px; }
+  .verdict p { margin: 0 0 10px; color: var(--muted); max-width: 72ch; }
+  .verdict p:last-child { margin-bottom: 0; }
+  pre { margin: 0; overflow-x: auto; background: var(--card-2); border: 1px solid var(--hair); border-radius: var(--r-sm); padding: 12px 14px; font-size: 12.5px; line-height: 1.5; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.92em; }
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--hair); border-radius: var(--r-md); background: var(--card); box-shadow: var(--shadow-sm); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 560px; }
+  th { background: var(--card-2); border-bottom: 1px solid var(--hair-strong); text-align: left; padding: 10px 13px; font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); font-weight: 700; white-space: nowrap; }
+  td { padding: 9px 13px; border-bottom: 1px solid var(--hair); }
+  tr:last-child td { border-bottom: none; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.pick { background: var(--accent-wash); }
+  tr.pick td:first-child::after { content: " ← pick"; color: var(--accent-ink); font-weight: 700; font-size: 11px; }
+  .bars { display: grid; grid-template-columns: repeat(var(--n), minmax(38px, 1fr)); gap: 8px; align-items: end; height: 150px; padding-top: 18px; border-bottom: 1px solid var(--hair-strong); }
+  .bar { position: relative; background: var(--c-purple); border-radius: 4px 4px 0 0; min-height: 2px; }
+  .bar.best { background: var(--ok); }
+  .bar.bad { background: var(--bad); }
+  .bar span { position: absolute; top: -17px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar-axis { display: grid; grid-template-columns: repeat(var(--n), minmax(38px, 1fr)); gap: 8px; font-size: 11px; color: var(--faint); text-align: center; margin-top: 6px; }
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .chart-title { font-size: 13px; font-weight: 700; margin: 0 0 2px; }
+  .chart-sub { font-size: 12px; color: var(--faint); margin: 0 0 10px; }
+  .hyp { display: flex; flex-direction: column; gap: 12px; }
+  .hyp-item { border: 1px solid var(--hair); border-radius: var(--r-sm); padding: 14px 16px; background: var(--card); }
+  .hyp-item.confirmed { border-left: 4px solid var(--ok); }
+  .hyp-item.falsified { border-left: 4px solid var(--bad); }
+  .hyp-claim { font-weight: 700; margin: 0 0 6px; }
+  .hyp-item dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 3px 12px; font-size: 13.5px; }
+  .hyp-item dt { color: var(--faint); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 3px; }
+  .hyp-item dd { margin: 0; color: var(--muted); }
+  ul.notes { margin: 0; padding-left: 20px; color: var(--muted); display: flex; flex-direction: column; gap: 7px; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid; }
+  .pill.confirmed { color: var(--ok); border-color: var(--ok); }
+  .pill.falsified { color: var(--bad); border-color: var(--bad); }
+  .empty-note { color: var(--faint); font-style: italic; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  
+  <div class="shell">
+    <div class="topbar">
+      <a class="brand" href="../index.html"><span class="crayons crayons-lg" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span><span class="brand-name">Splotch<span class="brand-sub">Scrapbook</span></span></a>
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="../index.html">Scrapbook</a><span class="sep">/</span><span class="here" aria-current="page">E2E tuning</span></nav>
+    </div>
+    <div class="masthead-body">
+      <h1>E2E tuning — workers, retries, and three real flakes</h1>
+      <p class="tagline">How many Playwright workers the suite should run with, measured rather than guessed — plus the flake investigation that ran alongside it.</p>
+      <div class="stat-row"><span class="chip">2026-07-29</span><span class="chip">59 local runs</span><span class="chip">203 tests each</span></div>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+  <p class="lede">
+    The suite ran at 1, 2, 3, 4, 6 and 8 workers, eight repetitions each, round-robin so machine
+    drift could not favour any one configuration. Wall clock stops improving long before the flake
+    rate stops rising — this page records where that crossover sits, on which hardware, and what it
+    took to separate genuine test bugs from contention.
+  </p>
+
+  <section>
+    <div class="panel verdict">
+      <h3>Two workers locally, three on CI</h3>
+      <p>
+        Wall clock saturates at ~3 workers on 4 physical cores, but the useful setting depends on
+        whether retries are absorbing the flakes. Locally (<code>retries: 0</code>) a red run costs a
+        re-run plus attention, and the break-even is only ~25 seconds of attention — so 2 workers
+        wins despite being ~12s slower. On CI (<code>retries: 2</code>) a flake costs ~1.5s of retry
+        work, so 3 workers wins by ~11s.
+      </p>
+      <p>
+        The measured saturation point has a simple explanation: past 2 workers, per-test latency
+        inflation tracks <strong>w/2</strong> almost exactly, which means each Playwright worker
+        demands about <strong>2 cores</strong> to run unthrottled — a Chromium is several processes,
+        not one. That is why <code>workers: '100%'</code> (1 worker per core) oversubscribes.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Local sweep — before the test fixes</h2>
+    <p>
+      Intel Xeon @ 2.80GHz · 4 physical cores · no SMT (1 thread/core) · 15 GB. Latency inflation is each test's mean duration divided by its
+      own mean at 1 worker. CPU work is the summed duration of every test in the run — it should be
+      flat (same 203 tests) and is not, which is the contention tax made visible.
+    </p>
+    <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Workers</th><th class="num">Wall (median)</th><th class="num">Red runs</th>
+      <th class="num">Failures</th><th class="num">Per-test rate</th>
+      <th class="num">Latency inflation</th><th class="num">CPU work</th>
+    </tr></thead>
+    <tbody><tr>
+      <td>1</td>
+      <td class="num">168.7s</td>
+      <td class="num">1/3</td>
+      <td class="num">1</td>
+      <td class="num">0.164%</td>
+      <td class="num">1.00×</td>
+      <td class="num">152.4s</td>
+    </tr><tr>
+      <td>2</td>
+      <td class="num">94.6s</td>
+      <td class="num">0/8</td>
+      <td class="num">0</td>
+      <td class="num">0.000%</td>
+      <td class="num">1.27×</td>
+      <td class="num">179.5s</td>
+    </tr><tr class="pick">
+      <td>3</td>
+      <td class="num">85.3s</td>
+      <td class="num">2/8</td>
+      <td class="num">3</td>
+      <td class="num">0.185%</td>
+      <td class="num">1.67×</td>
+      <td class="num">225.4s</td>
+    </tr><tr>
+      <td>4</td>
+      <td class="num">80.2s</td>
+      <td class="num">3/8</td>
+      <td class="num">3</td>
+      <td class="num">0.185%</td>
+      <td class="num">2.13×</td>
+      <td class="num">293.3s</td>
+    </tr><tr>
+      <td>6</td>
+      <td class="num">81.4s</td>
+      <td class="num">8/8</td>
+      <td class="num">17</td>
+      <td class="num">1.047%</td>
+      <td class="num">3.06×</td>
+      <td class="num">—</td>
+    </tr><tr>
+      <td>8</td>
+      <td class="num">85.8s</td>
+      <td class="num">8/8</td>
+      <td class="num">27</td>
+      <td class="num">1.663%</td>
+      <td class="num">4.10×</td>
+      <td class="num">—</td>
+    </tr></tbody>
+  </table></div>
+    <div class="panel charts">
+      <div>
+        <p class="chart-title">Median wall clock</p>
+        <p class="chart-sub">lower is better</p>
+        <div class="bars" style="--n:6"><div class="bar" style="height:100%"><span>169s</span></div><div class="bar" style="height:56.075874333135744%"><span>95s</span></div><div class="bar" style="height:50.56312981624185%"><span>85s</span></div><div class="bar best" style="height:47.540011855364554%"><span>80s</span></div><div class="bar" style="height:48.25133372851216%"><span>81s</span></div><div class="bar" style="height:50.859513930053346%"><span>86s</span></div></div>
+    <div class="bar-axis" style="--n:6"><span>1w</span><span>2w</span><span>3w</span><span>4w</span><span>6w</span><span>8w</span></div>
+      </div>
+      <div>
+        <p class="chart-title">Runs with at least one failure</p>
+        <p class="chart-sub">lower is better · out of 8 (w=1: 3)</p>
+        <div class="bars" style="--n:6"><div class="bar" style="height:12.5%"><span>1</span></div><div class="bar best" style="height:2px"><span>0</span></div><div class="bar" style="height:25%"><span>2</span></div><div class="bar" style="height:37.5%"><span>3</span></div><div class="bar bad" style="height:100%"><span>8</span></div><div class="bar bad" style="height:100%"><span>8</span></div></div>
+    <div class="bar-axis" style="--n:6"><span>1w</span><span>2w</span><span>3w</span><span>4w</span><span>6w</span><span>8w</span></div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li><strong>Returns collapse immediately.</strong> 1→2 saves 74.1s; 2→3 saves 9.3s; 3→4 saves 5.1s; 4→6 saves nothing; 6→8 costs 4.4s.</li>
+      <li><strong>Fragility becomes systemic past saturation.</strong> Distinct failing tests go 2 → 2 → 10 → 18 across 3, 4, 6, 8 workers — at 8 the failures reach specs with no canvas-timing character at all.</li>
+      <li><strong>One worker still flaked</strong> (1 failure in 3 runs), so reducing parallelism alone never reaches a clean suite.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Local sweep — after the test fixes</h2>
+    <p>Same hardware, freshly restarted preview server, three magic-brush tests repaired.</p>
+    <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Workers</th><th class="num">Wall (median)</th><th class="num">Red runs</th>
+      <th class="num">Failures</th><th class="num">Per-test rate</th>
+      <th class="num">Latency inflation</th><th class="num">CPU work</th>
+    </tr></thead>
+    <tbody><tr class="pick">
+      <td>3</td>
+      <td class="num">82.0s</td>
+      <td class="num">1/8</td>
+      <td class="num">1</td>
+      <td class="num">0.062%</td>
+      <td class="num">—</td>
+      <td class="num">—</td>
+    </tr><tr>
+      <td>4</td>
+      <td class="num">82.1s</td>
+      <td class="num">4/8</td>
+      <td class="num">5</td>
+      <td class="num">0.308%</td>
+      <td class="num">—</td>
+      <td class="num">—</td>
+    </tr></tbody>
+  </table></div>
+    <ul class="notes">
+      <li>The fixes cleared magic-brush out of the 3- and 4-worker failure lists entirely, and took 6 workers from 0/8 green to 5/8.</li>
+      <li>They did <strong>not</strong> move the optimum. At 4 workers the post-fix rate (5/1624) is statistically indistinguishable from the pre-fix rate (3/1624) — a different thin-margin tail simply took over. Contention level dominates; test fixes raise the ceiling.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>CI sweep — GitHub Actions ubuntu-latest</h2>
+    <p>
+      Run one worker count per runner, so configurations never contend with each other. Retries are
+      disabled for the measurement (the production config sets <code>retries: 2</code> on CI, which
+      would mask the rate being measured).
+    </p>
+    <p class="empty-note">CI sweep pending — re-run <code>npm run gen:e2e-tuning-report</code> once the numbers land.</p>
+  </section>
+
+  <section>
+    <h2>What was tried</h2>
+    <p>
+      Three of these four hypotheses were wrong. They are recorded because they are cheap to think
+      of again and expensive to re-test.
+    </p>
+    <div class="hyp">
+      <div class="hyp-item falsified">
+        <p class="hyp-claim">CPU contention makes Chromium drop or coalesce pointer events, changing stroke geometry <span class="pill falsified">falsified</span></p>
+        <dl>
+          <dt>How</dt><dd>Instrumented the page to count pointermove events and getCoalescedEvents() samples, then repeated the stroke with 12 busy-loop processes saturating every core.</dd>
+          <dt>Result</dt><dd>Identical to idle — 2 pointermove events, 2 coalesced samples, every time. Input delivery is lossless under load.</dd>
+        </dl>
+      </div><div class="hyp-item falsified">
+        <p class="hyp-claim">The eraser test under-counts its baseline because `revealed` is captured with a bare, un-polled canvas read <span class="pill falsified">falsified</span></p>
+        <dl>
+          <dt>How</dt><dd>Replaced the bare read with a poll that settles on two equal readings, then re-ran 200 instances at 8 workers.</dd>
+          <dt>Result</dt><dd>Failure rate moved 16/200 → 15/200, i.e. not at all. (The bare read is still an anti-pattern per .claude/rules/testing.md — it just was not this bug.)</dd>
+        </dl>
+      </div><div class="hyp-item falsified">
+        <p class="hyp-claim">pickBrush() returns before the brush is active, so asserting aria-pressed will fix it <span class="pill falsified">falsified</span></p>
+        <dl>
+          <dt>How</dt><dd>Added `await expect(entry).toHaveAttribute(&quot;aria-pressed&quot;, &quot;true&quot;)` inside pickBrush() and re-ran 200 instances at 8 workers.</dd>
+          <dt>Result</dt><dd>16/200 before, 16/200 after. The spec file header already explains why: the mode reaches the engine through a Svelte $effect, so the BUTTON is correct while the engine is not. Reverted rather than left in as a wait that buys nothing.</dd>
+        </dl>
+      </div><div class="hyp-item confirmed">
+        <p class="hyp-claim">The strokes commit in the wrong brush mode, and a canvas-fill count cannot detect it <span class="pill confirmed">confirmed</span></p>
+        <dl>
+          <dt>How</dt><dd>Read the actual assertion values out of the failing reports.</dd>
+          <dt>Result</dt><dd>`revealed` came back as discrete values — 132, 874, 895, 2314 — where ~2314 is a real magic reveal and 132 is a thin pen line. The value never moved through a full 5s poll, because the wrong-mode stroke was already committed. Fixing all three sites to redraw took the file from 16/200 to 4/200.</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Re-tuning later</h2>
+    <p>
+      The numbers above are specific to their hardware. The shape of the curve (saturation near
+      cores−1) should transfer; the optimum will not. To re-measure:
+    </p>
+    <pre><code># 1. Build once and serve, so the sweep measures tests rather than rebuilds.
+PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \
+  node scripts/web.mjs vite build
+cd web &amp;&amp; PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \
+  npx vite preview --port 4173 &amp;
+
+# 2. Sweep. Round-robin the worker counts INSIDE the rep loop so machine drift
+#    spreads across configs instead of landing on one of them.
+for rep in $(seq 1 8); do
+  for w in 1 2 3 4 6 8; do
+    PLAYWRIGHT_JSON_OUTPUT_NAME=runs/w${w}-rep${rep}.json \
+      node scripts/web.mjs playwright test --workers=$w --reporter=json &gt;/dev/null
+  done
+done
+
+# 3. On CI hardware: re-run the worker-sweep workflow from ADR-0078&#39;s PR
+#    (KyleMit/Splotch#642), which does the same thing one runner per config.</code></pre>
+    <p>
+      Then replace the datasets at the top of <code>scripts/gen-e2e-tuning-report.mjs</code> and run
+      <code>npm run gen:e2e-tuning-report</code>. The decision and its reasoning live in
+      <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0078-playwright-worker-count-and-flake-tuning.md">ADR-0078</a>.
+    </p>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="shell">
+    <span class="crayons crayons-sm" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span>
+    <p>Committed run outputs from the Splotch generators — see <code>scrapbook/README.md</code>. · <a href="https://github.com/KyleMit/Splotch">GitHub</a> · <a href="../index.html">All collections</a></p>
+  </div>
+</footer>
+</body>
+</html>

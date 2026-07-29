@@ -57,10 +57,16 @@ jobs:
           PUBLIC_ENABLE_DEV_HARNESS: 'true'
           ADMIN_ACCESS_TOKEN: test-admin-secret
 
+      # ALLOWED_TOKENS_LIST is what playwright.config.ts hands its own webServer on
+      # CI. This job starts the server itself, so it has to supply the token too —
+      # without it generate-image.spec.ts's throttle test 403s deterministically on
+      # every run. (It passed locally only because the dev container happens to
+      # carry the var in its environment.)
       - name: Start preview server
         run: |
           cd web
           PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \
+          ALLOWED_TOKENS_LIST=daycare-club,daycare-club-retry1,daycare-club-retry2 \
             nohup npx vite preview --port 4173 > /tmp/preview.log 2>&1 &
           for i in $(seq 1 60); do
             if curl -sf -o /dev/null http://localhost:4173/; then echo "preview up"; exit 0; fi
