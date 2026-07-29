@@ -100,8 +100,26 @@ Deliberately **excluded**, each for a reason:
   **unproven**. Read the first few `impl model: sonnet (P4)` findings of this run closely.
 * That the E2E flake tracked in [#624](https://github.com/KyleMit/Splotch/issues/624) is genuinely
   fixed. PR [#626](https://github.com/KyleMit/Splotch/pull/626) landed
-  `test(e2e): make the /dev/engine harness setup a fixture, not a shared hook` in main; a full E2E
-  baseline run at base is the check.
+  `test(e2e): make the /dev/engine harness setup a fixture, not a shared hook` in main. The full E2E
+  baseline at base no longer reproduces it — but it surfaced a *different* flake, below.
+
+## Known E2E flake at base — not caused by any finding
+
+`tests/pwa-registration.spec.ts:60` — "a repeat visit is controlled by the service worker with no
+stroke gate" — **failed once in the full-suite baseline at base** (1 failed, 189 passed) and
+**passed 3/3 when re-run in isolation**. It is load-dependent, not deterministic.
+
+It fails at `expect.poll(() => hasRegistration(page), { timeout: 15_000 })` on line 71. The
+registration is armed by the third stroke and lands at the next idle, so the two candidate causes
+are a `draw()` stroke lost to a canvas-readiness race (leaving the 3-stroke gate unmet, in which
+case no timeout is long enough) or idle starvation under parallel-worker CPU contention. **Which one
+was not established** — do not "fix" it by raising the timeout without first checking whether all
+three strokes registered.
+
+Why it was recorded rather than fixed before launch: it does not gate this run. The driver's
+`E2E_CMD` runs only the *targeted* specs a verifier names, under light load, and carries
+`--retries=1`. The exposure is CI, which runs the full suite — so **a red CI run naming this spec is
+the flake, not your finding.** Check that before diagnosing anything else.
 
 ## Done & verified
 
