@@ -20,6 +20,10 @@ export interface ExportOptions {
 let paperTextureImage: HTMLImageElement | null = null;
 let paperTexturePromise: Promise<HTMLImageElement | null> | null = null;
 
+// The 2× export floor preserves crisp paper-texture and overlay resampling on
+// 1x screens while balancing PNG size and canvas-memory use.
+const MIN_EXPORT_SCALE = 2;
+
 function loadPaperTexture(): Promise<HTMLImageElement | null> {
   if (paperTextureImage) return Promise.resolve(paperTextureImage);
   if (paperTexturePromise) return paperTexturePromise;
@@ -125,10 +129,7 @@ export async function composeExportPng(
   // and the night-fill reveals already baked into the replayed strokes.
   const theme = resolvedTheme();
 
-  // Compose in CSS-pixel coordinates at an export scale of at least 2×, so the
-  // paper texture and overlay keep their on-screen proportions while the
-  // already-high-res strokes pass through with minimal resampling.
-  const exportScale = Math.max(window.devicePixelRatio || 1, 2);
+  const exportScale = Math.max(window.devicePixelRatio || 1, MIN_EXPORT_SCALE);
   const w = snapshot.width / renderScale;
   const h = snapshot.height / renderScale;
 

@@ -21,41 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Maintainability] Name the export-scale floor instead of an inline `2`
-
-**File(s):** `web/src/lib/drawing/exportDrawing.ts` (`composeExportPng`, lines 116–119) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-// Compose in CSS-pixel coordinates at an export scale of at least 2×, so the
-// paper texture and overlay keep their on-screen proportions while the
-// already-high-res strokes pass through with minimal resampling.
-const exportScale = Math.max(window.devicePixelRatio || 1, 2);
-```
-
-The `2` is precisely what CLAUDE.md defines as a tuning literal — a tunable quality/size tradeoff
-(bigger floor = crisper exports on 1× screens but larger PNGs and more canvas memory) — and the
-convention says it "gets a named module-scope constant with the unit in the name; the WHY comment
-lives on the constant". Today the WHY comment is attached to the expression inside the function, and
-anyone profiling export memory on low-end devices has to find the knob inside `composeExportPng`
-rather than at the top of the module where its siblings would live.
-
-#### Proposed solution
-
-```ts
-// Floor the export at 2× so 1×-screen exports still get crisp texture/overlay
-// resampling; strokes are already high-res and pass through nearly 1:1.
-const MIN_EXPORT_SCALE = 2;
-...
-const exportScale = Math.max(window.devicePixelRatio || 1, MIN_EXPORT_SCALE);
-```
-
-(Unit is a scale factor, so no `_PX`/`_MS` suffix applies — the `SNAP_BAND_FRACTION` precedent
-covers unitless ratios.)
-
 ### [Testing] screenshot.ts has zero unit coverage despite containing pure, unit-testable logic
 
 **File(s):** `web/src/lib/drawing/screenshot.ts` (`timestamp`, lines 7–11; `saveImageBlob`, lines
