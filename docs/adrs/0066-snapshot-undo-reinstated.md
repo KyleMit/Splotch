@@ -1,7 +1,10 @@
 # ADR-0066: Snapshot Undo Reinstated — Paper Raster + Tiered Pre-Stroke Snapshots
 
 **Status:** Active — supersedes ADR-0033 (and with it ADR-0035 keyframing and ADR-0036
-simplification); device verification of the perf gates is pending (tracked on PR 442). Amended by
+simplification); device verification of the perf gates is complete (issue 446) — undo, memory and
+live drawing passed, the commit hitch failed on WebKit for the reason this ADR flagged as the open
+risk, and [ADR-0078](0078-resident-snapshot-tier-byte-budget.md) (2026-07) resizes the resident tier
+by bytes and moves the encode off the commit in response. Amended by
 [ADR-0068](0068-crayon-raster-pass-commit.md) (2026-07): the crayon's "live-equals-fold" contract
 narrows again — closed passes commit as live-captured rasters the fold blits, so only the open
 pass's short repaint window re-renders (and is allowed to re-roll nondeterministic texture). Amended

@@ -55,6 +55,7 @@ The decisions that shape everything else, in rough order of importance. All are 
 | [0069](0069-dirty-rect-patch-snapshots.md)                 | Undo Snapshots Shrink to Dirty-Rect Patches of the Fold Region                          | Active (amended by [0074](0074-undo-hotpath-patch-capture-optimizations.md))                                                                          |
 | [0072](0072-early-engine-boot-adopt-contract.md)           | Early Engine Boot at Module Evaluation — Components Adopt the Running Engine            | Active (amends [0004](0004-imperative-canvas-engine.md))                                                                                              |
 | [0074](0074-undo-hotpath-patch-capture-optimizations.md)   | Undo Hot-Path Optimizations — Clustered Patches, Clear Paper Swap, Rect-Limited Repaint | Active (amends [0069](0069-dirty-rect-patch-snapshots.md))                                                                                            |
+| [0078](0078-resident-snapshot-tier-byte-budget.md)         | Size the Resident Snapshot Tier by Bytes, and Encode Off the Commit                     | Active (amends [0066](0066-snapshot-undo-reinstated.md))                                                                                              |
 
 ## UI & theming
 
