@@ -23,37 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Architecture] Extract the fold-region geometry into its own module
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`Box` through `foldRegionsForCommands`, lines
-288–420) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`undoHistory.ts` is 810 lines carrying five distinguishable concerns: the paper raster lifecycle
-(`ensurePaperCovers`, `blitPaperRect`, `repaintAll`), the active-command lifecycle
-(`beginCommand`/`recordOp`/`replaceOpenCrayonPassOps`/`commitActiveCommand`), deferred/pending
-command bookkeeping, the snapshot stack + hot/cold tiering, and ~133 lines of pure rectangle
-geometry (lines 288–420: `Box`, `opPaddedBounds`, `mergeInto`, `boxesIntersect`,
-`PATCH_CLUSTER_CAP`, `MERGE_INPUT_CAP`, `unionBoxes`, `foldRegionsForCommands`). The geometry block
-is self-contained pure math — it touches no module state, is already exported as "the rect-math
-unit-test seam" (line 361), and has its own tuning constants and clustering algorithm. A first-time
-reader looking for "how does undo decide what to capture" has to find it embedded mid-file between
-the crayon raster plumbing and the clear-swap capture.
-
-#### Proposed solution
-
-Move lines 288–420 (plus the `PatchRect` interface, lines 78–83, which the geometry owns
-conceptually) to a sibling `web/src/lib/drawing/foldRegions.ts`, exporting `foldRegionsForCommands`
-and `PatchRect`; `undoHistory.ts` re-exports or callers import directly. The corresponding
-`foldRegionsForCommands` unit tests (the "dirty-rect patch snapshots" and "disjoint multi-finger
-patches" describes) move to a colocated `foldRegions.test.ts`, which also frees them from the
-heavyweight canvas-stub `beforeEach` they don't need. Update the `architecture` skill's source map
-in the same change. Tradeoff: one more module in `lib/drawing/` — justified by the clean seam and
-the test simplification.
-
 ### [Readability] `pushCommand` inlines four phases; extract the patch-capture step
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts` (`pushCommand`, lines 479–532) @ 9ae62ff1

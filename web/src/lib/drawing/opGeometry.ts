@@ -35,7 +35,7 @@ export function paintOpShape(
 
 // AA bleed pad in paper px around an op's geometric bounds: it covers
 // anti-aliased edges and keeps the crayon flush stamp inside the rect (the pass
-// buffer bounds its stamp with this same pad). Shared with undoHistory's
+// buffer bounds its stamp with this same pad). Shared with foldRegions'
 // opPaddedBounds so the dirty-rect and undo-patch math stay single-sourced.
 export const AA_PAD_PX = 2;
 
