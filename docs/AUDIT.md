@@ -21,38 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Maintainability] `magicBrush.ts`'s ten module-scope mutable `let`s sidestep the `createX()` convention with no stated rationale
-
-**File(s):** `web/src/lib/drawing/magicBrush.ts` (lines 55–78: `host`, `fillImage`, `fillUrl`,
-`gradientPool`, `activeGradient`, `sheetCanvas`, `sheetCtx`, `sheetReady`, `sheetOriginX`,
-`sheetOriginY`, `patternCache`) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-CLAUDE.md: "Module-scope mutable `let` is either a pure memoization cache or lives behind a
-`createX()` factory so tests get fresh instances." `magicBrush.ts` holds eleven mutable module lets
-that are neither — they are live drawing state (which page is applied, which rainbow is active,
-whether the sheet is ready). `strokeOps.ts` faces the same tension and *documents* its exception
-(lines 191–193: "Intentionally has no reset seam: a WeakMap keyed by each target's own context
-self-cleans per key…"); `magicBrush.ts` says nothing. The cost is visible in `magicBrush.test.ts`:
-the "readiness gate" test (lines 49–62) mutates module state via `setColorSheet` and depends on no
-earlier test having called `ensureMagicSheet` — test-order coupling with no reset seam if the suite
-grows. A second engine instance (e.g. a future thumbnail/preview canvas) is silently impossible.
-
-#### Proposed solution
-
-Either (a) wrap the state in a `createMagicBrush()` factory whose singleton instance the engine owns
-(mirrors how `undoHistory` is structured), or (b) if the module-singleton is deliberate (one engine
-per app, per ADR-0004), add the same kind of explicit "intentionally singleton, here's why, here's
-the reset story" comment `strokeOps.ts` carries, and give tests a legitimate reset path (e.g.
-`setColorSheet(null)` + `clearMagicGradient()` documented as the full reset). Option (b) is much
-cheaper and may be all that's warranted; the finding is the *undocumented* deviation, not
-necessarily the singleton itself.
-
----
-
 ### [Types] `StrokeOp`'s optional `magic?`/`crayon?` booleans make impossible brush combinations representable
 
 **File(s):** `web/src/lib/drawing/strokeOps.ts` (`StrokeOp`, lines 55–89; `renderOp` precedence,

@@ -58,8 +58,11 @@ interface MagicBrushHost {
 // per-instance seam for tests.
 //
 // The only in-module reset is partial: setColorSheet(null) drops the fill source
-// and clearMagicGradient() drops the held gradient, and both leave a fresh
-// patternCache behind — but host, sheetCanvas, sheetCtx, and
+// and clearMagicGradient() drops the held gradient. Only the no-fill case comes
+// back with a fresh patternCache — setColorSheet(null) rasterizes, which rebuilds
+// it, and clearMagicGradient() rebuilds it only inside its `if (!fillUrl)` branch,
+// so clearing the gradient while a page is applied leaves the cached patterns (and
+// readiness) as they were. Either way host, sheetCanvas, sheetCtx, and
 // sheetOriginX/sheetOriginY keep whatever the last rasterize left them, and
 // readiness stays false until some source is set *and* rasterized (a bare
 // rasterizeSheet() with no active source returns early, still unready). So a test
