@@ -1,9 +1,63 @@
 <!-- markdownlint-disable-file MD029 -->
 
-# iPad performance profiling — quick reference
+# iPad performance profiling — working notes
 
-> Reference card, not in-flight work. The full runbook is
-> `.agents/skills/profiling/ipad-device-profiling.md` (Approach A).
+> Session scratchpad: the runbook shorthand plus the live TODO list for the ADR-0066 on-device
+> verification (issue \#446, branch `ipad-perf`, PR \#634). Delete it when that work closes. The
+> durable runbook is `.agents/skills/profiling/ipad-device-profiling.md` (Approach A).
+
+## TODO
+
+* [ ] **Fix the driver's `resetForScenario`.** It drains history, sees leftover ink, calls
+      `clearCanvas()`, then drains again — which undoes the clear and restores the ink. 22 strokes
+      against the depth-20 cap always leaves 2 strokes folded into the paper, so every scenario
+      after the first inherits ink and warns `reset incomplete`. Blocks a citable gates run.
+* [ ] **Explain the `multi-finger` zero row.** 20 snapshots and 20 undo steps, but no
+      `engine.commit` measures land in the draw window, so every timing column reads 0. Either the
+      multi-touch commit path skips the measure or the measures fall outside `[drawStart, drawEnd]`.
+      One of four gate scenarios currently reports nothing.
+* [ ] **Clean on-device gates run** once the two above are fixed — four honest rows including
+      `encode max ms`. Every issue comment below cites these numbers.
+* [ ] **Update the issues** (outward-facing, needs a go-ahead):
+  * [ ] \#446 — post the gates verdict, close it
+  * [ ] \#444 — correct the premise: its items 1–2 target `engine.snapshot`, measured at 1 ms
+  * [ ] New issue for the encode bug — different mechanism, different remedies
+  * [ ] \#494 — comment that this run does not answer it (`undoAll` waits per step, so it never
+        tests the rapid-tap case) and leave it open
+* [ ] **Merge PR \#634.**
+* [ ] **ADR for the fix**, then implement. Options trade differently: defer encoding to idle, cap
+      encodes per commit, `OffscreenCanvas` in a worker, or skip encoding where `toBlob` is
+      synchronous and carry the memory.
+* [ ] Delete this file.
+
+## Findings so far
+
+Gates run on a 12.9″ iPad Pro, `crayon-scribbles` isolated (clean reset):
+
+| Gate                | Threshold         | Measured                  |                |
+| ------------------- | ----------------- | ------------------------- | -------------- |
+| Undo restore        | avg < 50 ms       | 0.25 ms avg, 0.54 ms max  | pass           |
+| History memory      | ≲ 150 MB          | 28–34 MiB                 | pass           |
+| Live drawing        | unchanged         | 0.01 ms med, 3.40 ms max  | pass           |
+| **Commit hitch**    | ≈ 8.3 ms          | **2370 ms**               | **fail, 285×** |
+| **Encode overhead** | no dropped frames | 47 s frozen of a 59 s run | **fail**       |
+
+**Root cause.** `toBlob` is specified to encode in parallel. Chromium honours it; WebKit encodes
+synchronously inside the call, and `encodeColdSnapshots()` runs inside `engine.commit`
+(`undoHistory.ts`). Safari has no canvas WebP encoder, so every cold patch is a PNG encode of a
+2732² raster. Same code, same workload, `engine.encode` measured through `/dev/engine`:
+
+| Engine   | `commit` total | `encode` total | encode share |
+| -------- | -------------- | -------------- | ------------ |
+| WebKit   | 4639 ms        | 4636 ms        | **99.94%**   |
+| Chromium | 92.5 ms        | 0.7 ms         | 0.8%         |
+
+Chromium's worst commit is 4.6 ms — inside the frame budget, gate passing. That is why `perf:undo`
+never caught this, and why \#444's remedies were aimed at the paper copy.
+
+Ruled out by the Timeline: paint (`max 0.04 ms`), GC (22 collections, 3.1 ms worst), the drawing
+path (26,425 draws at 0.01 ms median). The 2411 ms composite is the compositor blocked behind the JS
+task, not a cause.
 
 ## One-time setup
 
