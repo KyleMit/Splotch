@@ -14,11 +14,10 @@ vi.mock('./crayonBrush', () => ({
 import {
   setLiveCrayonBuffer,
   setCrayonPaperSpace,
-  renderOp,
   closeLiveCrayonPass,
   hasOpenLiveCrayonPass,
-  type StrokeOp,
-} from './strokeOps';
+} from './crayonPassBuffer';
+import { renderOp, type StrokeOp } from './strokeOps';
 
 // happy-dom's <canvas> has no 2D context; install a no-op recording stub so the
 // buffer/paper canvases the render path allocates behave like real contexts for

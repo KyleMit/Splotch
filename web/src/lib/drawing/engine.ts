@@ -11,6 +11,7 @@
 // delegates the rest:
 //
 //   strokeOps.ts        the op vocabulary + the one renderer every surface shares
+//   crayonPassBuffer.ts the crayon pass's accumulation buffers + glaze stamp
 //   undoHistory.ts      the paper raster + pre-stroke snapshot stack (ADR-0066)
 //   strokeMath.ts       pure gesture math (edge swipes, resume detection, speed)
 //   paperView.ts        pure rotation-lock view geometry (ADR-0050)
@@ -50,18 +51,15 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
+import { renderOp, clearAllOf, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
 import {
-  renderOp,
-  clearAllOf,
   closeLiveCrayonPass,
   flushCrayonBuffer,
   hasOpenLiveCrayonPass,
   resetLiveCrayonPass,
   setCrayonPaperSpace,
   setLiveCrayonBuffer,
-  type StrokeGroupCommand,
-  type StrokeOp,
-} from './strokeOps';
+} from './crayonPassBuffer';
 import {
   setCrayonOptions,
   crayonColorMix,
@@ -142,7 +140,7 @@ let lastColorChangeTime = 0;
 // composites with mix-blend-mode: darken and the top with CSS opacity
 // (1 - colorMix), so the browser's compositing of (darken, then lerp) shows
 // pixel-for-pixel the two-blit subtractive mix the pass's 'crayonFlush'
-// stamp will bake into the main canvas at close (see strokeOps' pass buffer)
+// stamp will bake into the main canvas at close (see crayonPassBuffer.ts)
 // — no visible snap. pointer-events: none, so input still lands on the canvas
 // beneath. The canvas's OWNING wrapper must set `isolation: isolate`
 // (DrawingCanvas's .canvas-stack; the dev harness's .canvas-wrapper): it
@@ -177,7 +175,7 @@ function syncCrayonOverlayMix() {
 // Close the current deposition pass: stamp the live buffer onto the canvas,
 // then swap the pass's recorded ops for the raster its paper-space
 // accumulation captured, so the commit fold BLITS the pass instead of
-// re-rendering it (strokeOps' closeLiveCrayonPass). When nothing accumulated
+// re-rendering it (crayonPassBuffer's closeLiveCrayonPass). When nothing accumulated
 // (the mix-0 direct-paint escape hatch, or a raster the crop couldn't build)
 // the raw ops stay and a plain flush op keeps the legacy re-render fold
 // correct. recordOp/replaceOpenCrayonPassOps no-op when no command is open,
@@ -445,7 +443,7 @@ function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
   // The paper raster is a max(w,h) square of the viewport so it covers both
   // orientations and rotation never loses pixels; anything larger (e.g. a
   // resized desktop window) goes through the grow path. The live crayon
-  // pass accumulation buffer mirrors the same square (strokeOps).
+  // pass accumulation buffer mirrors the same square (crayonPassBuffer).
   const paperSide = Math.ceil(Math.max(paper.pxW, paper.pxH));
   ensurePaperCovers(paperSide);
   setCrayonPaperSpace(paperSide);

@@ -35,16 +35,9 @@
 // the rasters stay resident while no canvas is mounted — is accepted
 // (ADR-0004).
 
-import {
-  AA_PAD,
-  clearAllOf,
-  opGeometricExtent,
-  renderOp,
-  resetCrayonStateForClear,
-  resetLiveCrayonForReplay,
-  type StrokeGroupCommand,
-  type StrokeOp,
-} from './strokeOps';
+import { clearAllOf, renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
+import { AA_PAD, opGeometricExtent } from './opGeometry';
+import { resetCrayonStateForClear, resetLiveCrayonForReplay } from './crayonPassBuffer';
 import { isMagicSheetUnready } from './magicBrush';
 import { getCrayonPasses } from './crayonBrush';
 import { scheduleIdle } from '../idle';

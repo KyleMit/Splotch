@@ -100,7 +100,7 @@ export interface CrayonOptions {
   // multiply glaze goes green). Virgin paper is untouched by the glaze (the
   // wax lands fully opaque and exact), and same-colour overdraw deepens only
   // a few percent, converging — never compounding into mud. Low, not zero:
-  // real crayons barely mix. See strokeOps' pass buffer.
+  // real crayons barely mix. See crayonPassBuffer.ts.
   colorMix: number;
   // The density passes, widest first.
   passes: CrayonPass[];
