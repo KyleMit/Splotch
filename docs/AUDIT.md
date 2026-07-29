@@ -21,52 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Correctness] folderSave's two-variable handle cache can resurrect a cleared/replaced folder mid-save
-
-**File(s):** `web/src/lib/drawing/folderSave.ts` (`loadHandle`, lines 39–40 and 51–68;
-`chooseSaveFolder`, lines 99–100; `clearSaveFolder`, lines 115–116) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The cache is a `cachedHandle`/`loadedHandle` pair, and `loadHandle` assigns them *after* an `await`:
-
-```ts
-let handle: FileSystemDirectoryHandle | null = null;
-try {
-  handle = (await handleStore.get(HANDLE_KEY)) ?? null;   // line 60
-} catch { ... }
-cachedHandle = handle;   // line 65 — runs after the await
-loadedHandle = true;
-```
-
-If a background save (AI auto-save, save-on-delete) kicks off `loadHandle` and, while the IndexedDB
-read is in flight, the parent runs `clearSaveFolder()` (sets `cachedHandle = null`,
-`loadedHandle = true`, lines 115–116) or `chooseSaveFolder()` (sets the new handle, lines 99–100),
-the resuming read then overwrites `cachedHandle` with the stale pre-clear handle at line 65. Result:
-the parent just cleared the save folder in the Parent Center, yet subsequent saves keep writing into
-it for the rest of the session — the UI says "no folder" while files silently keep landing there.
-Same shape for a just-replaced folder. Two concurrent first saves also both open IndexedDB (benign,
-but the test at `folderSave.test.ts` line 188–197 only pins the sequential case).
-
-Separately, the pair-of-booleans memoization is exactly the shape the repo already solved with a
-memoized promise in `web/src/lib/idb.ts` (`lazyIdbDatabase`), which the module conventions point at.
-
-#### Proposed solution
-
-Replace the pair with a single
-`let handlePromise: Promise<FileSystemDirectoryHandle | null> | null`:
-
-* `loadHandle()` becomes `handlePromise ??= readHandleFromIdb();` and returns it.
-* `chooseSaveFolder()` sets `handlePromise = Promise.resolve(handle)` (before the `storeHandle`
-  await), and `clearSaveFolder()` sets `handlePromise = Promise.resolve(null)`.
-
-An in-flight read can no longer clobber a later choose/clear because the later call replaces the
-promise itself; the stale read resolves into an abandoned promise. The existing tests pass unchanged
-(they exercise the public surface); add one test for "clear during an in-flight first load leaves
-the folder cleared".
-
 ### [Architecture] screenshot.ts is three modules in one: filename/download utils, save dispatch, and the polaroid DOM animation
 
 **File(s):** `web/src/lib/drawing/screenshot.ts` (`timestamp`/`triggerDownload`/basenames, lines

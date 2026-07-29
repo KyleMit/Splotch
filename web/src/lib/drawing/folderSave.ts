@@ -58,8 +58,10 @@ async function readHandleFromIdb(): Promise<FileSystemDirectoryHandle | null> {
   }
 }
 
-function loadHandle(): Promise<FileSystemDirectoryHandle | null> {
-  return (handlePromise ??= readHandleFromIdb());
+async function loadHandle(): Promise<FileSystemDirectoryHandle | null> {
+  const requestedHandlePromise = (handlePromise ??= readHandleFromIdb());
+  const handle = await requestedHandlePromise;
+  return requestedHandlePromise === handlePromise ? handle : loadHandle();
 }
 
 async function storeHandle(handle: FileSystemDirectoryHandle): Promise<void> {
