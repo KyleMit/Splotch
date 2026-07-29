@@ -359,12 +359,9 @@ export function renderCrayonOp(
     return;
   }
   const buf = crayonBufferFor(target);
-  let matrix: DOMMatrix | null = null;
-  if (typeof target.getTransform === 'function') {
-    matrix = target.getTransform();
-    buf.ctx.setTransform(matrix);
-    buf.mirror?.setTransform(matrix);
-  }
+  const matrix = target.getTransform();
+  buf.ctx.setTransform(matrix);
+  buf.mirror?.setTransform(matrix);
   paintCrayon(buf.ctx, op);
   if (buf.mirror) paintCrayon(buf.mirror, op);
   buf.dirty = true;

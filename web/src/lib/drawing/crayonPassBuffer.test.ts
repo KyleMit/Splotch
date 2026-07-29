@@ -43,6 +43,7 @@ beforeEach(() => {
       save() {},
       restore() {},
       setTransform() {},
+      getTransform: () => new DOMMatrix(),
       clearRect() {},
       drawImage() {},
     };

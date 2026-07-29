@@ -21,39 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Readability] The `typeof target.getTransform === 'function'` guard is an undeclared test-only seam
-
-**File(s):** `web/src/lib/drawing/strokeOps.ts` (`renderCrayonOp`, lines 531–536) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-let matrix: DOMMatrix | null = null;
-if (typeof target.getTransform === 'function') {
-  matrix = target.getTransform();
-  ...
-}
-```
-
-`CanvasRenderingContext2D.getTransform` is long-baseline (every browser at or above the repo's
-support floor has it), so in production this guard never fails. Its actual reason to exist is the
-stub 2D context in `strokeOps.test.ts` (lines 38–49) / `undoHistory.test.ts`, which omit
-`getTransform` — silently taking the `matrix = null` path in unit runs. CLAUDE.md: "a seam kept only
-for tests gets a comment saying so at the declaration." A reader (or the next auditor) otherwise
-burns time asking which legacy browser this protects.
-
-#### Proposed solution
-
-Either add `getTransform: () => new DOMMatrix()` (or an identity-shaped stub) to the test contexts
-and drop the guard, or keep the guard with a one-line comment:
-`// test-only: the unit-test 2D stubs omit getTransform`. Dropping the guard is preferable — it
-removes a fake branch from production code; check `docs/COMPATIBILITY.md` first to confirm no floor
-concern.
-
----
-
 ### [Performance] `colorTileCache` grows without eviction — ~262 KB of canvas per (color, pass) forever
 
 **File(s):** `web/src/lib/drawing/crayonBrush.ts` (`colorTileCache`, line 348; `colorTile`, lines

@@ -54,6 +54,7 @@ beforeEach(() => {
       save() {},
       restore() {},
       setTransform() {},
+      getTransform: () => new DOMMatrix(),
       beginPath() {},
       moveTo() {},
       lineTo() {},
