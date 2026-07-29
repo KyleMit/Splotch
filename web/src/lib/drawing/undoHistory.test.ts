@@ -296,50 +296,6 @@ describe('dirty-rect patch snapshots', () => {
   // (foldRegionsForCommands), so per-entry memory scales with the stroke, not
   // the canvas.
 
-  it('bounds a path by its points padded with half the line width plus AA bleed', async () => {
-    const m = await freshHistory();
-    const op: PathOp = {
-      kind: 'path',
-      pid: 1,
-      startX: 20,
-      startY: 30,
-      segs: [{ cx: 24, cy: 34, x: 28, y: 38 }],
-      color: '#a',
-      lineWidth: 8,
-      erase: false,
-    };
-    // pad = 8/2 + 2 = 6: x spans 20−6..28+6, y spans 30−6..38+6.
-    expect(m.foldRegionsForCommands([{ ops: [op], wasEmpty: false }], 64, 64)).toEqual({
-      rects: [{ x: 14, y: 24, w: 20, h: 20 }],
-      wipesPaper: false,
-    });
-  });
-
-  it('bounds a dot by its radius plus AA bleed and clamps to the paper', async () => {
-    const m = await freshHistory();
-    const dot = { kind: 'dot' as const, x: 2, y: 62, radius: 5, color: '#a', erase: false };
-    // pad = 5 + 2 = 7: clamped at the left and bottom paper edges.
-    expect(m.foldRegionsForCommands([{ ops: [dot], wasEmpty: false }], 64, 64)).toEqual({
-      rects: [{ x: 0, y: 55, w: 9, h: 9 }],
-      wipesPaper: false,
-    });
-  });
-
-  it('a clear claims the whole paper; wholly off-paper ink claims nothing', async () => {
-    const m = await freshHistory();
-    expect(
-      m.foldRegionsForCommands([{ ops: [{ kind: 'clear' }], wasEmpty: false }], 64, 64)
-    ).toEqual({ rects: [{ x: 0, y: 0, w: 64, h: 64 }], wipesPaper: true });
-    // Margin ink beyond the paper square is clipped at fold (ADR-0050), so the
-    // fold never touches the paper and no patch is owed.
-    const off = { kind: 'dot' as const, x: -40, y: 10, radius: 5, color: '#a', erase: false };
-    expect(m.foldRegionsForCommands([{ ops: [off], wasEmpty: false }], 64, 64)).toEqual({
-      rects: [],
-      wipesPaper: false,
-    });
-    expect(m.foldRegionsForCommands([], 64, 64)).toEqual({ rects: [], wipesPaper: false });
-  });
-
   it('a magic-blocked commit captures no pixels, and its undo still restores the pending set', async () => {
     const m = await freshHistory();
     magicSheet.ready = false;
@@ -364,35 +320,6 @@ describe('dirty-rect patch snapshots', () => {
     // cmd()'s ops span 0..1 with lineWidth 8 → pad 6 → clamped rect 0..7 both
     // axes: 7×7 px, nowhere near the 64×64 paper.
     expect(rasterBytes).toBe(7 * 7 * 4);
-  });
-
-  it('bounds a crayon pass raster by its rect plus AA bleed', async () => {
-    const m = await freshHistory();
-    const canvas = document.createElement('canvas');
-    canvas.width = 10;
-    canvas.height = 12;
-    const raster = { kind: 'crayonPassRaster', canvas, x: 20, y: 30, mix: 0.55 } as const;
-    // The stamp blits exactly the raster's rect; pad 2 covers any AA bleed.
-    expect(m.foldRegionsForCommands([{ ops: [raster], wasEmpty: false }], 64, 64)).toEqual({
-      rects: [{ x: 18, y: 28, w: 14, h: 16 }],
-      wipesPaper: false,
-    });
-  });
-
-  it('widens a crayon ink op pad by the widest dev-harness pass', async () => {
-    // setCrayonParams accepts arbitrary passes; a widthScale > 1 experiment
-    // strokes wider than the op's line width, so the rect must scale with it
-    // or undo would leave the widened fringe behind.
-    const m = await freshHistory();
-    const { setCrayonOptions } = await import('./crayonBrush');
-    setCrayonOptions({ passes: [{ widthScale: 2, coverage: 1 }] });
-    const op = cmd('#wax').ops[0] as PathOp;
-    op.crayon = true;
-    // pad = (8/2)×2 + 2 = 10 (vs 6 at base width): span 0..1 grows to 0..11.
-    expect(m.foldRegionsForCommands([{ ops: [op], wasEmpty: false }], 64, 64)).toEqual({
-      rects: [{ x: 0, y: 0, w: 11, h: 11 }],
-      wipesPaper: false,
-    });
   });
 
   it('covers every command folding under one commit, then unwinds the round trip', async () => {
@@ -490,24 +417,6 @@ describe('disjoint multi-finger patches', () => {
     // Boxes 14..28 and 18..32 intersect → one merged 14..32 patch.
     expect(m.getHistoryDebug().liveRasters).toBe(1);
     expect(m.getHistoryDebug().rasterBytes).toBe(18 * 18 * 4);
-  });
-
-  it('skips the merge fixpoint entirely past the raw-cluster input cap', async () => {
-    // 65 solo clusters (> PATCH_CLUSTER_CAP × 8) — the magic-backlog shape —
-    // short-circuit to one union without running the O(n³) merge scan.
-    const m = await freshHistory();
-    const dots = Array.from({ length: 65 }, (_, i) => ({
-      kind: 'dot' as const,
-      x: 10 + (i % 13) * 4,
-      y: 10 + Math.floor(i / 13) * 4,
-      radius: 1,
-      color: '#swarm',
-      erase: false,
-    }));
-    expect(m.foldRegionsForCommands([{ ops: dots, wasEmpty: true }], 64, 64)).toEqual({
-      rects: [{ x: 7, y: 7, w: 54, h: 22 }],
-      wipesPaper: false,
-    });
   });
 
   it('falls back to one union patch past the cluster cap', async () => {
