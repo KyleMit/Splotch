@@ -4,13 +4,14 @@ import {
   PLAY_STORE_LISTING_URL,
   TESTERS_GROUP_URL,
 } from '../src/lib/components/androidBeta/androidBeta';
+import { SITE_ORIGIN } from '../src/lib/siteUrl';
 import { supportEmail } from '../src/lib/supportEmail';
 
 // The /android-beta page is a set of sign-up links; a link that points at the
 // wrong place is the only way it can fail, and nothing else in the suite would
 // notice.
 
-test('the beta sign-up steps link to the group, the opt-in page, and the listing', async ({
+test('the beta sign-up steps link to the group, the opt-in page, the listing, and /feedback', async ({
   page,
 }) => {
   await page.goto('/android-beta');
@@ -28,6 +29,31 @@ test('the beta sign-up steps link to the group, the opt-in page, and the listing
     'href',
     PLAY_STORE_LISTING_URL
   );
+  await expect(page.getByRole('link', { name: 'Send feedback' })).toHaveAttribute(
+    'href',
+    '/feedback'
+  );
+});
+
+// Step 4 prints the address rather than hiding it behind link text, because the
+// reader is often on a different device from the one they will report from. A
+// relative href that rendered as its own path would still work on every click
+// and be useless to copy, so the visible string is asserted, not just the href.
+test('the feedback address is shown in full and points at the form', async ({ page }) => {
+  await page.goto('/android-beta');
+  const address = page.getByRole('link', { name: `${SITE_ORIGIN}/feedback` });
+  await expect(address).toBeVisible();
+  await expect(address).toHaveAttribute('href', '/feedback');
+});
+
+// /android-beta is prerendered and /feedback is not (it has a form action), so
+// the one link between them is the pairing a build-time crawl or a stale
+// adapter config could turn into a 404 with nothing else noticing.
+test('the feedback button reaches the form', async ({ page }) => {
+  await page.goto('/android-beta');
+  await page.getByRole('link', { name: 'Send feedback' }).click();
+  await expect(page).toHaveURL('/feedback');
+  await expect(page.getByRole('heading', { name: 'Send us feedback' })).toBeVisible();
 });
 
 test('the support address is absent from the served HTML and added after hydration', async ({
