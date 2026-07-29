@@ -264,6 +264,7 @@
     const snap = agg(drawStart, drawEnd, 'engine.snapshot');
     const fold = agg(drawStart, drawEnd, 'engine.fold');
     const commit = agg(drawStart, drawEnd, 'engine.commit');
+    const encode = agg(drawStart, drawEnd, 'engine.encode');
     const un = agg(undoStart, undoEnd, 'engine.undo');
     // rasterBytes is the live patches' real pixel cost (dirty-rect snapshots,
     // ADR-0069); the liveRasters × full-raster product is the fallback for a
@@ -277,6 +278,7 @@
       'blob KB': Math.round((dbg.blobBytes ?? 0) / 1024),
       'snap copy max ms': snap.max,
       'fold max ms': fold.max,
+      'encode max ms': encode.max,
       'commit max ms': commit.max,
       'undo steps': steps,
       'undo avg ms': un.avg,
@@ -304,8 +306,12 @@
     'Gates (ADR-0066): undo p95 < 50 ms · commit hitch (engine.commit max) ≈ one ' +
       '120 Hz frame ≈ 8.3 ms · history ≲ 150 MiB · no dropped frames while blobs ' +
       'encode. Inside a commit, "snap copy" is engine.snapshot (the paper copy ' +
-      'alone) and "fold" is engine.fold (rendering the committed ops) — a hot ' +
-      'commit attributes to one of those. Watch a Web Inspector Timeline for a ' +
+      'alone), "fold" is engine.fold (rendering the committed ops), and "encode" ' +
+      'is engine.encode (demoting cold snapshots to blobs — free where toBlob ' +
+      'encodes in parallel as specified, a full main-thread block in WebKit, ' +
+      'which encodes inside the call). A hot commit attributes to one of those; ' +
+      'if it attributes to none, the remainder is unmarked work in ' +
+      'commitStrokeGroup. Watch a Web Inspector Timeline for a ' +
       'dropped frame at finger-lift and during the blob encodes after it, and ' +
       'the Xcode memory gauge for the snapshot tier. To record a Timeline over ' +
       "one hot row, rerun it alone: window.__perfScenarios = '<key>'"

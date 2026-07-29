@@ -96,9 +96,9 @@ committed source of truth, with a depth-20 stack of pre-stroke snapshots. The ha
 capture paths, and the analyzer are untouched; what changes is the engine mark set the Decision's
 first bullet lists:
 
-* **Current set:** `engine.draw`, `engine.commit`, `engine.snapshot`, `engine.fold`, `engine.undo`,
-  `engine.resize`, `engine.scanEmpty` (`web/src/lib/drawing/engine.ts`, `undoHistory.ts`,
-  `emptyScan.ts`).
+* **Current set:** `engine.draw`, `engine.commit`, `engine.snapshot`, `engine.fold`,
+  `engine.encode`, `engine.reinflate`, `engine.undo`, `engine.resize`, `engine.scanEmpty`
+  (`web/src/lib/drawing/engine.ts`, `undoHistory.ts`, `emptyScan.ts`).
 * **`engine.foldBaseline` is deleted** with the replay system, as is ADR-0035's `engine.keyframe` —
   there is no baseline fold or keyframing left to measure.
 * **`engine.snapshot` and `engine.fold` sit inside `engine.commit`** and split the commit cost by

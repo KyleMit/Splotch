@@ -18,8 +18,11 @@
 // Memory is tiered on top of that: the MAX_HOT_RASTERS most recent snapshots
 // stay hot rasters (patch-sized — a stroke's bounding rect, worst case the
 // full ~30 MB paper at 2× DPR on a 13″ iPad for a canvas-spanning scribble or
-// a clear); older entries are encoded to a lossless blob off the commit path
-// and decoded again only on deep undo. The tier re-balances in both
+// a clear); older entries are encoded to a lossless blob and decoded again
+// only on deep undo. "Off the commit path" holds only where toBlob honours its
+// spec'd in-parallel encode: Chromium returns from the call in ~0 ms, WebKit
+// encodes synchronously inside it. engine.encode measures that block. The
+// tier re-balances in both
 // directions: undo (or a commit on an undo-shallowed stack) can raise an
 // encoded entry into the hot window, and it re-inflates back to a hot raster
 // off the interaction path (reinflateHotSnapshots), so the window holds after
@@ -422,8 +425,22 @@ export function pushCommand(cmd: StrokeGroupCommand) {
   if (PERF_MARKS) performance.mark('engine.fold:start');
   foldPendingIntoPaper(foldCount);
   if (PERF_MARKS) performance.measure('engine.fold', 'engine.fold:start');
+  // Both tier re-balances are sub-slices of engine.commit, so they emit an
+  // :end mark and are timed by the pair — the enclosing record would charge
+  // them the whole stroke-end task. They read ~0 wherever toBlob encodes in
+  // parallel as specified, and carry the real cost where it encodes inline.
+  if (PERF_MARKS) performance.mark('engine.encode:start');
   encodeColdSnapshots();
+  if (PERF_MARKS) {
+    performance.mark('engine.encode:end');
+    performance.measure('engine.encode', 'engine.encode:start', 'engine.encode:end');
+  }
+  if (PERF_MARKS) performance.mark('engine.reinflate:start');
   reinflateHotSnapshots();
+  if (PERF_MARKS) {
+    performance.mark('engine.reinflate:end');
+    performance.measure('engine.reinflate', 'engine.reinflate:start', 'engine.reinflate:end');
+  }
 }
 
 // Fold the first `count` pending commands into the paper, oldest first. The
