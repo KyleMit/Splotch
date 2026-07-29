@@ -30,7 +30,13 @@
         `needs-adr`
   * [x] \#494 — noted that this run does not answer it (`undoAll` waits per step, so rapid taps are
         never tested), left open
-* [ ] **Merge PR \#634.**
+* [x] **Merge PR \#634** — merged, main synced, branch deleted.
+* [ ] **Measure `no-encode MiB`** on device (branch `perf/encode-memory-headroom`, commit ba920cec).
+      Decides \#635's fix: comfortably under the 150 MiB gate means the encode is buying headroom
+      nothing needs and can mostly go; near it means the fix has to move the block rather than
+      remove it. Watch `crayon-scribbles` — biggest patches set the ceiling.
+* [ ] \#636 filed — spike programmatic iPad driving (iPadOS 26.5 rules out `ios-webkit-debug-proxy`;
+      `pymobiledevice3` is the candidate). Deliberately not blocking the ADR.
 * [ ] **ADR for the fix**, then implement. Options trade differently: defer encoding to idle, cap
       encodes per commit, `OffscreenCanvas` in a worker, or skip encoding where `toBlob` is
       synchronous and carry the memory.
