@@ -6,6 +6,7 @@
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import ReportFields from '$lib/components/report/ReportFields.svelte';
   import type { ReportKind } from '$lib/report';
+  import { supportEmail } from '$lib/supportEmail';
   import type { PageProps } from './$types';
 
   // The shareable half of the Parent Center's Send Feedback section: same fields
@@ -34,6 +35,13 @@
   // the redirected URL rather than the action's return value (see +page.server),
   // so a reload of the thank-you can't re-post the report.
   let sent = $derived(data.sent);
+
+  // Offered only alongside a failure, so the address never reaches a document a
+  // crawler could fetch: this block renders in an action's POST response (or,
+  // with use:enhance, client-side after one), and a GET of /feedback has no
+  // `form`. That is why it can be composed on the server here while
+  // /android-beta — a prerendered GET — has to wait for hydration.
+  const supportHref = `mailto:${supportEmail()}?subject=${encodeURIComponent('Splotch feedback')}`;
 
   const submit: SubmitFunction = () => {
     submitting = true;
@@ -103,7 +111,14 @@
              they just pressed, and an error under a full-width button on a phone
              lands at or past the fold. -->
         {#if form?.error}
-          <StatusMessage status="error">{form.error}</StatusMessage>
+          <StatusMessage status="error">
+            {form.error}
+            <span class="fallback">
+              You can also email it to <a class="fallback-link" href={supportHref}
+                >{supportEmail()}</a
+              > instead — we read that too.
+            </span>
+          </StatusMessage>
         {/if}
 
         <!-- Not the Button primitive: that one is sized for a modal's settings
@@ -209,6 +224,22 @@
   /* A callout in the step ledger's language rather than three lines floating in
      the corner — the same left-ruled, washed block /android-beta closes each
      step with, so the two pages share a second element besides the button. */
+  /* Its own line inside the banner: the error is one sentence and the way out is
+     another, and running them together reads as a single long apology. */
+  .fallback {
+    display: block;
+    margin-top: 6px;
+  }
+
+  .fallback-link {
+    color: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    /* The address is the one string here a reporter may have to read out or
+       retype, so it never breaks mid-word. */
+    white-space: nowrap;
+  }
+
   .aside {
     flex: 0 1 250px;
     min-width: 0;

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { supportEmail } from '../src/lib/supportEmail';
 
 // /feedback is the standalone, link-shareable twin of the Parent Center's Send
 // Feedback section: the same fields, posted to a form action instead of
@@ -89,23 +90,42 @@ test('the message field is required, so an empty report never reaches the server
   await expect(page).toHaveURL(/\/feedback$/);
 });
 
-test('a failed submit surfaces the error and hands back what was typed', async ({ browser }) => {
+test('the failure state explains itself, offers email, and keeps what was typed', async ({
+  browser,
+}) => {
   // Run with JavaScript off: that is the path where the server has to echo the
   // submitted values, since the page is re-rendered from scratch rather than
   // patched by use:enhance. With JS on, client state alone would keep the text,
-  // so this assertion would pass without the server doing anything.
+  // so that assertion would pass without the server doing anything.
   //
   // The test server runs without GITHUB_ISSUE_TOKEN, so a well-formed report
   // gets the graceful "not available" 503 rather than opening a real issue.
+  //
+  // One test, three assertions, because they are one behaviour — what the
+  // reporter is left with when the tracker can't be reached — and because the
+  // shared 5/min report bucket has no room for a second submitting test.
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   await page.goto('/feedback');
   await page.locator('#reportMessage').fill('The purple crayon draws green');
   await page.getByRole('button', { name: 'Send report' }).click();
 
-  await expect(page.getByRole('alert')).toContainText('Reporting is not available right now');
+  const alert = page.getByRole('alert');
+  await expect(alert).toContainText('Reporting is not available right now');
+  await expect(alert.getByRole('link', { name: supportEmail() })).toHaveAttribute(
+    'href',
+    new RegExp(`^mailto:${supportEmail()}\\?subject=`)
+  );
   await expect(page.locator('#reportMessage')).toHaveValue('The purple crayon draws green');
   await context.close();
+});
+
+test('the support address reaches no document a crawler could fetch', async ({ request }) => {
+  // Unlike /android-beta, this page is meant to be indexed, so the address must
+  // not ride along in a GET — it is offered only in the POST response that
+  // carries a failure. Address harvesters scrape markup, and they issue GETs.
+  const html = await (await request.get('/feedback')).text();
+  expect(html).not.toContain(supportEmail());
 });
 
 test('the thank-you page is a GET, so reloading it cannot file a second issue', async ({

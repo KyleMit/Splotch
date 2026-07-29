@@ -6,8 +6,8 @@
     MIN_ANDROID_RELEASE,
     PLAY_STORE_LISTING_URL,
     TESTERS_GROUP_URL,
-    supportEmail,
   } from './androidBeta';
+  import { supportEmail } from '$lib/supportEmail';
   import Icon from '$lib/components/Icon.svelte';
   import { paletteHex, type PaletteLabel } from '$lib/palette';
 
