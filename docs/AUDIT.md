@@ -21,35 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Types] `setCrayonOptions` uses an `as CrayonOptions` cast that is not at a boundary — and masks a real hole
-
-**File(s):** `web/src/lib/drawing/crayonBrush.ts` (`setCrayonOptions`, lines 250–255) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-export function setCrayonOptions(next: Partial<CrayonOptions>) {
-  opts = clone({ ...opts, ...next } as CrayonOptions);
-```
-
-`{ ...opts, ...next }` with `opts: CrayonOptions` and `next: Partial<CrayonOptions>` already types
-as `CrayonOptions` — the cast is dead weight, and the convention reserves `as` for validated
-boundaries. Worse, it papers over the one case where the spread *isn't* safe: a caller passing an
-explicitly-`undefined` property (`setCrayonOptions({ octaves: undefined })`) makes `clone` throw on
-`o.octaves.map` at runtime, and the cast is what keeps the compiler from flagging that class of call
-under stricter settings.
-
-#### Proposed solution
-
-Delete the cast (it should compile as-is). If explicit-`undefined` robustness is wanted for the dev
-harness, strip `undefined` values before merging, or type the param as
-`{ [K in keyof CrayonOptions]?: CrayonOptions[K] }` with `exactOptionalPropertyTypes` semantics in
-mind. Verify with `npm run check`.
-
----
-
 ### [Readability] The `typeof target.getTransform === 'function'` guard is an undeclared test-only seam
 
 **File(s):** `web/src/lib/drawing/strokeOps.ts` (`renderCrayonOp`, lines 531–536) @ 9ae62ff1

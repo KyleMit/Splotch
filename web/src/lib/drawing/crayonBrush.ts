@@ -258,7 +258,7 @@ function crayonFields(): CrayonFields {
 scheduleIdle(() => crayonFields());
 
 export function setCrayonOptions(next: Partial<CrayonOptions>) {
-  opts = clone({ ...opts, ...next } as CrayonOptions);
+  opts = clone({ ...opts, ...next });
   fields = buildFields();
   colorTileCache.clear();
   patternCache = new WeakMap();
