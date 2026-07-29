@@ -1,6 +1,4 @@
-import { expect, test } from '@playwright/test';
-
-import { count, drawStroke, state } from './engine-harness';
+import { count, drawStroke, expect, state, test } from './engine-harness';
 
 // ── teardown / re-init lifecycle (ADR-0004) ──────────────────────────────────
 // Client-side navigation (`/` → `/privacy` → `/`) tears the engine down and

@@ -1,6 +1,4 @@
-import { expect, test } from '@playwright/test';
-
-import { count, drawStroke } from './engine-harness';
+import { count, drawStroke, expect, test } from './engine-harness';
 
 test('an export started just before a clear still captures the drawing (save-on-delete race)', async ({
   page,

@@ -42,6 +42,11 @@ paths:
 * One behavior per test: a spec accumulating assertion clusters across behaviors gets split, with
   setup-only helpers carrying zero assertions. Imperative logic whose only coverage is E2E (inline
   in a component or config) is an extraction candidate: pure injectable module + unit tests.
+* Shared per-test setup lives in a Playwright **fixture**, never in a top-level `test.beforeEach` in
+  a helper module: a helper is evaluated once per worker, so such a hook attaches only to the first
+  spec file that imports it and every later spec file in that worker silently runs with no setup.
+  Extend `test` in the helper and import `test`/`expect` from it (`tests/engine-harness.ts`);
+  `scripts/tests/e2e-harness-imports.test.mjs` guards the import.
 * **Flake-resistance (the suite runs 4 parallel workers, so specs share the CPU):** never assert on
   a single interaction against a lazily-wired control — wrap open-then-assert in
   `expect(...).toPass()` or reuse a retrying helper

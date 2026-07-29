@@ -16,9 +16,11 @@
   `frontmatter.mjs` the release frontmatter/semver parsing; `vite-server.mjs` spawns a throwaway
   vite dev/preview server in a detached process group so `stop()` can't orphan the vite grandchild;
   `smoke.mjs` has the `check()`/`fatal()`/`summarize()` pass-fail reporter shared by the smoke
-  tests, and `adminClient.mjs` the `/api/admin` login + token-CRUD request plumbing they both drive.
-  Check there before writing new glue. A new helper joins the purpose-named module that owns its
-  concern (or gets a new purpose-named file) — never a `utils`/`misc`/`helpers` grab-bag.
+  tests; `adminClient.mjs` the `/api/admin` login + token-CRUD request plumbing they both drive; and
+  `native-export.mjs` owns what the native static export drops — the web-only static file list plus
+  the head-tag rewrite that keeps `strip-native-assets.mjs` from leaving a tag pointing at a file it
+  deleted. Check there before writing new glue. A new helper joins the purpose-named module that
+  owns its concern (or gets a new purpose-named file) — never a `utils`/`misc`/`helpers` grab-bag.
 * Every CLI script gates execution behind `isMain(import.meta)` (`scripts/lib/proc.mjs`) and exports
   a distinctly named entry function.
 * Script options are flags via `parseArgs`; an env var is at most a documented fallback.

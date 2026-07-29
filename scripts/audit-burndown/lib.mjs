@@ -15,14 +15,19 @@ export const PROMPTS = 'scripts/audit-burndown/prompts';
 
 export const auditFile = () => process.env.AUDIT_FILE || 'docs/AUDIT.md';
 
-// Findings are titled `[P3][consistency] …`. The priority drives impl-model
-// tiering: P4/P5 are the mechanical tail (dead code, renames, dedup) that a
-// cheaper model implements fine under the same adversarial review. Returns null
-// for a title with no [P<n>] tag so the caller falls back to the safe model
-// rather than guessing a priority the finding never claimed.
-export function findingPriority(title) {
-  const match = /^\[P(\d)\]/.exec(title ?? '');
-  return match ? Number(match[1]) : null;
+// The priority drives impl-model tiering: P4/P5 are the mechanical tail (dead
+// code, renames, dedup) that a cheaper model implements fine under the same
+// adversarial review. Two staging formats carry it, so both are read: a
+// `[P3][consistency] …` title tag, and a `**Priority:** P3` line in the body
+// (the whole-repo code-audit format, which tags titles by category instead).
+// The title tag wins where both appear. Returns null when neither states one,
+// so the caller falls back to the safe model rather than guessing a priority
+// the finding never claimed.
+export function findingPriority(title, body = '') {
+  const tagged = /^\[P(\d)\]/.exec(title ?? '');
+  if (tagged) return Number(tagged[1]);
+  const stated = /^\*\*Priority:\*\*\s*P(\d)\b/m.exec(body ?? '');
+  return stated ? Number(stated[1]) : null;
 }
 
 // The implementer reports the sha of the commit it made. Even with a required

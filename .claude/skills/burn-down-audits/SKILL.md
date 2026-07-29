@@ -143,6 +143,27 @@ as possible:
   `CHECK_CMD='npm run check && npm run lint:tokens && npm run gen:tokens:check'` — both ratchets
   cost ~0.3s each — and check `.github/workflows/` for any other bespoke gate before a long run.
 
+  **Derive that list from `test.yml` each time rather than copying the one above; it grows.** By
+  2026-07-28 the Quality job ran ten steps, and a run configured from this paragraph alone would
+  have gated on two of them. Read the job, time each candidate, and gate on everything cheap that a
+  finding could plausibly break — the whole set cost 12s end to end on that run, against a 5–35
+  minute finding. Two worth calling out because their failure mode is not obvious:
+
+  * **`npm run lint:dead` (knip)** is the highest-value addition for an audit backlog specifically.
+    A `/code-audit` tail is mostly extraction, dedup, and dead-code findings, and removing the last
+    caller of an export is exactly what turns knip red — a fix that is *correct* and still breaks
+    CI. It is also the one gate where a red result may be pre-existing rather than caused by the
+    finding, since knip reports repo-wide: run it at the base commit first, and if it starts
+    producing unrecoverable fix rounds, drop it and let CI catch it.
+  * **A test tier CI runs that `TEST_CMD` does not.** `npm run test:unit` is the default, but a repo
+    with sibling suites (`test:scripts`, `test:asset-gen`) leaves whole trees ungated — and a
+    backlog that audits those trees will edit them. Add the suites that cover the areas your backlog
+    actually touches.
+
+  Whatever you choose, run the full composed `CHECK_CMD` and `TEST_CMD` **at the base commit** and
+  confirm every one exits 0 before launching. That is what makes a red gate mid-run attributable to
+  a finding instead of a mystery, and it takes one command.
+
   Two of CI's Quality gates deliberately stay **out** of `CHECK_CMD`, and it is worth knowing why so
   the next run doesn't re-litigate it. `npm run format:check` costs ~23s (≈3 hours over a
   450-finding backlog) and is already covered: the repo's `format-edited-file.sh` `PostToolUse` hook
@@ -614,6 +635,18 @@ state in the conversation:
 
   The first two answer different questions, which is why the ordering flipped: ask `audit:status`
   what is true *now*, and the snapshot how the run was *started*.
+
+  **A checkpoint you find is not necessarily about the run you are starting.** These packets outlive
+  their run: a handoff whose PR already merged still sits in `docs/handoff/` describing a backlog
+  that no longer exists, and a fresh `/code-audit` re-stages `docs/AUDIT.md` from scratch — so its
+  branch, PR, and "N remaining" can all be confidently, invisibly wrong. On 2026-07-28 the packet on
+  disk said 183 findings remained while preflight counted 642, because the packet's PR had merged
+  the day before and a new audit had since staged a whole new backlog. **Reconcile before trusting
+  anything in it**: check the packet's PR state (merged/closed → the packet is spent), and compare
+  its remaining-count against `pop.mjs --count`. A disagreement means the packet describes a
+  *different* run, not that the count drifted. Delete a spent packet as part of your first commit —
+  carrying its still-owed follow-ups forward — rather than leaving the next session to re-litigate
+  the same contradiction.
 * Keep the supervising context small so it lasts: monitor the run **event-driven** — not by polling
   `audit:status` in a loop, and don't read per-finding logs or the PR back unless you're diagnosing
   something specific. Watch for every terminal *and* degraded state, so silence really does mean
@@ -746,11 +779,29 @@ Notes from real runs — set these before a large run rather than discovering th
   trivially mechanical (P4/P5 dead-code, rename, dedup), so the driver routes those findings to
   `MODEL_IMPL_MINOR` (default `sonnet`) and keeps P1–P3 on `MODEL_IMPL`. The Opus review still gates
   every fix, so the cheaper model buys wall-clock at a sliver of impl-correctness margin exactly
-  where the stakes are lowest. The priority comes from the finding's leading `[P<n>]` tag
-  (`findingPriority` in `lib.mjs`, unit-tested); a title with no tag is treated as unknown and stays
-  on the stronger model. Set `MODEL_IMPL_MINOR=claude-opus-5` to switch tiering off for a run where
-  correctness dominates. Bigger throughput (parallel git worktrees per finding) is a real redesign,
-  not a knob.
+  where the stakes are lowest. `findingPriority` in `lib.mjs` (unit-tested) reads the priority from
+  either staging format — a leading `[P<n>]` **title** tag, or a `**Priority:** P4` **body** line,
+  which is what the whole-repo code-audit writes while tagging titles by category
+  (`[Maintainability] …`). A finding stating neither is unknown and stays on the stronger model. Set
+  `MODEL_IMPL_MINOR=claude-opus-5` to switch tiering off for a run where correctness dominates.
+  Bigger throughput (parallel git worktrees per finding) is a real redesign, not a knob.
+
+  **Confirm tiering actually fires before a long run — its failure is silent.** The driver logs
+  `impl model: …` only when tiering *fires*, so a backlog whose priorities it cannot parse looks
+  exactly like one with no P4/P5 findings, and every mechanical finding quietly bills the expensive
+  model at `EFFORT_IMPL=high`. That is what a 2026-07-28 run hit: 642 findings, every one of them
+  routed to Opus, discovered only by reading a canary title and noticing it had no `[P<n>]` tag. A
+  staging format is free to move the priority again, so check the backlog parses rather than
+  assuming — the fastest read is to run `findingPriority` over the whole file and confirm no entry
+  scores `null`:
+
+  ```bash
+  node -e "import('./scripts/audit-burndown/lib.mjs').then(({findingPriority})=>{
+    const b=require('fs').readFileSync('docs/AUDIT.md','utf8').split(/^### /m).slice(1);
+    const n=b.filter(x=>findingPriority(x.split('\n',1)[0],'### '+x)===null).length;
+    console.log(b.length+' findings, '+n+' with no parsable priority');
+  })"
+  ```
 * **The PR is the fragile part of the run; the commits are not.** Pushing is plain git and is
   reliable; anything touching the GitHub API is not. That asymmetry is why the driver was taken out
   of the GitHub business altogether rather than being taught to retry: it used to create the draft
@@ -767,6 +818,30 @@ Notes from real runs — set these before a large run rather than discovering th
   `E2E_CMD` carries `--retries=1`: a genuine flake clears on retry, a real regression still fails
   both attempts. Give `PUSH_TEST_CMD` the same treatment if you re-enable the local full-suite gate
   (`npm test` runs Playwright without retries).
+* **Retries keep a flake from *failing* the gate; they do nothing about what it costs. Fix a known
+  flake before the run, not after.** This is the one defect class whose price is multiplied by the
+  backlog: a pre-existing flake in a commonly-gated spec is re-hit by every UI-touching finding for
+  the rest of the run, and each one pays for it three times over — the retried spec's wall-clock, an
+  implementer that stops to diagnose a failure it did not cause, and the review round it burns
+  arguing the point. The 2026-07-28 canary watched its very first finding do exactly that: the
+  implementer independently reproduced a `multitouch.spec.ts` readiness flake against a reverted
+  working tree to prove it was pre-existing — correct, thorough, and pure waste to repeat 400 more
+  times. `--retries=1` actively hides this, because the gate goes green and the run logs nothing.
+
+  So treat the flake baseline as a preflight artifact, not a mid-run surprise. Run the full E2E
+  suite once at the base commit and **read the flaky count, not just the pass/fail** — Playwright
+  reports `N flaky` separately, and a suite can be "green" with dozens. Fix what you find, or at
+  minimum record the flaky spec names in the durable checkpoint so the next implementer that trips
+  one recognises it instead of re-deriving it. If a flake surfaces mid-run and is cheap to fix,
+  **pause** (`touch .audit-work/STOP`), fix it, relaunch — the arithmetic favours the interrupt
+  almost immediately, and this is the rare case where the fix is *not* attributable to any finding,
+  so it belongs in its own commit.
+
+  When the flake is a readiness race in a **test harness**, prefer fixing the seam over adding a
+  wait: a harness that signals readiness with a boolean separate from the API the specs then call
+  can always be observed in the window where the flag is set and the API is not. Poll the capability
+  itself (`typeof window.__x?.someMethod === 'function'`), and type the harness global as optional
+  so the compiler stops vouching for something that is genuinely absent until mount.
 * **Never let a tooling failure masquerade as a model verdict.** This bit twice in one day, in two
   different roles, and it is the single most expensive class of bug in this driver:
   * `sha` is optional in `SCHEMA_IMPL` (a `success: false` return has no commit to point at), and

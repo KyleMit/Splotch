@@ -3,26 +3,19 @@
   import {
     adoptDrawingCanvas,
     setColor,
-    setStrokeWidth,
     setEraserMode,
-    setMagicMode,
-    setCrayonMode,
     setColorSheet,
     setSafeAreaInsets,
     getCanvasRect,
     type EngineViewState,
   } from '$lib/drawing/engine';
+  import { pushToolStateToEngine } from '$lib/drawing/earlyBoot';
   import { viewMatrix } from '$lib/drawing/paperView';
   import { layout } from '$lib/state/layout.svelte';
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
-  import {
-    strokeState,
-    activeStrokeSize,
-    getStrokeWidthPx,
-    getEraserWidthPx,
-  } from '$lib/state/strokeWidth.svelte';
+  import { strokeState, getStrokeWidthPx, getEraserWidthPx } from '$lib/state/strokeWidth.svelte';
   import {
     overlayUrl,
     chalkUrl,
@@ -174,8 +167,6 @@
       },
     });
 
-    setStrokeWidth(getStrokeWidthPx(activeStrokeSize()));
-
     // Apple Pencil double-tap → toggle eraser (iOS native only). Not needed for the
     // first paint or first stroke (a toddler draws with a finger, and even a pencil
     // user won't double-tap in the opening frames), so its chunk load + native bridge
@@ -225,10 +216,12 @@
     setColor(colors.activeColor);
   });
 
-  // Push the active tool's level into the engine; re-runs when the level or the
-  // tool changes, so switching pen↔eraser restores that tool's width.
+  // Push the toolState-derived engine settings the pre-hydration boot also
+  // pushes (the helper's reads of toolState.brush and activeStrokeSize() are
+  // this effect's dependencies), so switching pen↔eraser restores that tool's
+  // width and the crayon/magic modifiers follow the brush.
   $effect(() => {
-    setStrokeWidth(getStrokeWidthPx(activeStrokeSize()));
+    pushToolStateToEngine();
   });
 
   $effect(() => {
@@ -248,14 +241,6 @@
   $effect(() => {
     const nightUrl = resolvedTheme() === 'dark' ? nightSheetUrl() : null;
     setColorSheet(nightUrl ?? colorSheetUrl());
-  });
-
-  $effect(() => {
-    setMagicMode(toolState.brush === 'magic');
-  });
-
-  $effect(() => {
-    setCrayonMode(toolState.brush === 'crayon');
   });
 
   // The overlay's line art is theme-aware: dark mode shows the page's CHALK

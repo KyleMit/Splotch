@@ -6,7 +6,15 @@ export {};
 declare global {
   interface Window {
     __engineReady?: boolean;
-    __engineState: { canUndo: boolean; canvasEmpty: boolean };
+    // drawStops/strokeEnds count the engine's onDrawStop and onStrokeEnd
+    // callbacks, so a spec can assert an event completed a stroke group —
+    // or, for an untracked pointer, that it completed nothing.
+    __engineState: {
+      canUndo: boolean;
+      canvasEmpty: boolean;
+      drawStops: number;
+      strokeEnds: number;
+    };
     __engine: {
       setColor(color: string): void;
       setStrokeWidth(width: number): void;
@@ -59,6 +67,15 @@ declare global {
       strokeSync(points: { x: number; y: number }[], pointerType?: string): void;
       multiStrokeSync(
         strokes: { pointerId: number; points: { x: number; y: number }[] }[],
+        pointerType?: string
+      ): void;
+      pointerEventsSync(
+        events: {
+          type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel' | 'pointerout';
+          pointerId: number;
+          x: number;
+          y: number;
+        }[],
         pointerType?: string
       ): void;
     };

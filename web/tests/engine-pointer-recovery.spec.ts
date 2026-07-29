@@ -1,5 +1,3 @@
-import { expect, test } from '@playwright/test';
-
 import {
   EDGE_SWIPE_BAND_PX,
   EDGE_SWIPE_DECISION_PX,
@@ -7,7 +5,7 @@ import {
   POINTER_RESUME_GAP_MS,
   POINTER_RESUME_JUMP_RATIO,
 } from '$lib/drawing/strokeMath';
-import { state } from './engine-harness';
+import { expect, state, test } from './engine-harness';
 import { COLOR_CHANGE_DEBOUNCE_SETTLE_MS, touchEventPrevented } from './helpers';
 
 // The harness canvas is 300×300 at the viewport origin (renderScale 1).
@@ -310,6 +308,90 @@ test('a stationary tap at a guarded edge still leaves a dot', async ({ page }) =
     [BAND_START_PX]
   );
   expect(painted).toBeGreaterThan(0);
+});
+
+// A discarded edge swipe can be the LAST live pointer of a multi-touch group:
+// a finger painting normally lifts while an edge-band candidate is still
+// undecided, then that candidate flicks inward and is dropped. The discard is
+// what empties the pointer map, so the discard has to complete the group —
+// otherwise the painted stroke sits uncommitted until some unrelated later
+// pointer event happens to close it.
+test('a stroke commits when a discarded edge swipe is what ends the group', async ({ page }) => {
+  const painted = await page.evaluate(
+    ([startY, travel]) => {
+      window.__engine.pointerEventsSync([
+        { type: 'pointerdown', pointerId: 1, x: 60, y: 60 },
+        { type: 'pointermove', pointerId: 1, x: 220, y: 60 },
+        { type: 'pointerdown', pointerId: 2, x: 150, y: startY },
+        // The painting finger lifts first — the group is not over, pointer 2 is
+        // still live and still undecided.
+        { type: 'pointerup', pointerId: 1, x: 220, y: 60 },
+        // The candidate flicks inward: an OS edge swipe, discarded.
+        { type: 'pointermove', pointerId: 2, x: 150, y: startY - travel },
+      ]);
+      return window.__engine.nonTransparentCount();
+    },
+    [BAND_START_PX, SWIPE_TRAVEL_PX]
+  );
+  expect(painted).toBeGreaterThan(0);
+
+  const s = await state(page);
+  expect(s.canUndo).toBe(true);
+  expect(s.strokeEnds).toBe(1);
+  expect(s.drawStops).toBe(1);
+
+  // One group, so a single undo clears the canvas.
+  await page.evaluate(() => window.__engine.undo());
+  await expect.poll(() => page.evaluate(() => window.__engine.nonTransparentCount())).toBe(0);
+});
+
+test('a trailing pointercancel for an already-discarded pointer completes nothing', async ({
+  page,
+}) => {
+  // The OS takes the gesture over and cancels the pointer the engine already
+  // dropped at the discard. That cancel is for an id the engine no longer
+  // tracks: it must not run the group-completion tail a second time.
+  const afterDiscard = await page.evaluate(
+    ([startY, travel]) => {
+      window.__engine.pointerEventsSync([
+        { type: 'pointerdown', pointerId: 1, x: 150, y: startY },
+        { type: 'pointermove', pointerId: 1, x: 150, y: startY - travel },
+      ]);
+      return { ...window.__engineState };
+    },
+    [BAND_START_PX, SWIPE_TRAVEL_PX]
+  );
+  // Nothing was painted, so the discard's completion committed no group.
+  expect(afterDiscard.strokeEnds).toBe(0);
+
+  const afterCancel = await page.evaluate(
+    ([startY]) => {
+      window.__engine.pointerEventsSync([
+        { type: 'pointercancel', pointerId: 1, x: 150, y: startY },
+      ]);
+      return { ...window.__engineState };
+    },
+    [BAND_START_PX]
+  );
+  expect(afterCancel).toEqual(afterDiscard);
+  expect(afterCancel.canUndo).toBe(false);
+});
+
+test('a hovering mouse leaving an idle canvas completes nothing', async ({ page }) => {
+  // The canvas listens to pointerout with the same handler as pointerup, so a
+  // plain hover-out arrives for a pointer that never drew. It must not commit
+  // or fire the drawing-stop callback.
+  const s = await page.evaluate(() => {
+    window.__engine.pointerEventsSync(
+      [{ type: 'pointerout', pointerId: 1, x: 150, y: 150 }],
+      'mouse'
+    );
+    return { ...window.__engineState };
+  });
+  expect(s.drawStops).toBe(0);
+  expect(s.strokeEnds).toBe(0);
+  expect(s.canUndo).toBe(false);
+  expect(s.canvasEmpty).toBe(true);
 });
 
 test('in phone landscape the guard moves to the short side edges, not the long bottom', async ({

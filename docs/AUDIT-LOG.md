@@ -18,7 +18,9 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
-| 2026-07-28 | [burn-down-audits](#2026-07-28--burn-down-audits)               |
+| 2026-07-28 | [burn-down-audits](#2026-07-28--burn-down-audits-run-2)         |
+| 2026-07-28 | [code-audit](#2026-07-28--code-audit)                           |
+| 2026-07-28 | [burn-down-audits](#2026-07-28--burn-down-audits-run-1)         |
 | 2026-07-28 | [deferred-triage](#2026-07-28--deferred-triage)                 |
 | 2026-07-27 | [deferred-triage](#2026-07-27--deferred-triage)                 |
 | 2026-07-27 | [session-audit](#2026-07-27--session-audit)                     |
@@ -74,7 +76,71 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
 
-## 2026-07-28 · burn-down-audits
+## 2026-07-28 · burn-down-audits (run 2)
+
+Opening canary of the bulk burndown of the 642-finding backlog staged by the same day's code-audit,
+on `claude/audit-burn-down-skill-1s5jty` → [PR #616](https://github.com/KyleMit/Splotch/pull/616):
+**5 fixed**, 0 dropped, 0 deferred; backlog 642 → 637. All five were in the drawing engine —
+`stopDrawing`'s untracked-pointer fall-through, the duplicated toolState→engine push, an extracted
+`alphaDataHasInk` predicate, a shipped test-only reset export, and the engine's unlinked default
+line width. Each landed one commit that drained exactly one finding, with a per-commit PR comment;
+CI green on the final head.
+
+The canary audit found no behavior smuggled inside a refactor, and confirmed the adversarial loop
+working: one finding was rejected on review for relocating an untested behaviour the existing E2E
+harness structurally could not exercise, and the resumed implementer built the missing seam and
+three differentially-verified specs.
+
+It also surfaced a **silent tiering outage**: `findingPriority()` read the priority from a leading
+`[P<n>]` title tag, but this backlog's staging format tags titles by category and states the
+priority on a `**Priority:**` body line, so all 642 findings fell back to the expensive model.
+Nothing logs this — the tiering line only prints when tiering fires. Fixed in the same PR with a
+body-line fallback; 407 of the remaining findings now route to the minor tier. The full run was not
+launched — the session was wrapped after the canary.
+
+## 2026-07-28 · code-audit
+
+Comprehensive per-section quality pass over the whole codebase: 31 parallel section auditors, one
+per `docs/CODE-MAP.md` area (using the subcategory splits for the drawing engine, the other web/src
+domains, asset-gen, and scripts), each applying the performance / readability / maintainability /
+architecture lenses plus the repo conventions, deduping against the 163 open issues. **642
+findings** (649 raw, less six merged by a dedup sweep and one refuted on verification) staged into
+`docs/AUDIT.md` under one `## Source: Code audit — <section>` header per section, each pinned to
+commit 9ae62ff1 with file/function/line citations and ranked P1–P5.
+
+The dominant theme, by a wide margin and in nearly every section, is the repo's own "cross-file
+agreement is never maintained by prose" convention being violated: mirrored constants and
+vocabularies linked only by "keep in sync" comments — the `app.html` boot script's `data-*` names
+and brush/theme literals, engine constants copied across the perf harness, server policy values
+re-declared in E2E specs, dev/preview ports, token values baked into CSS, `chromiumExecutablePath`
+in four copies, asset-gen gate thresholds re-declared in test mocks. Several have already drifted
+(the scrapbook palette disagrees on six values; four asset-gen test constants no longer match their
+source). Secondary themes: unnamed tuning literals against the named-constant rule; long functions
+and files mixing concerns that want extraction (`engine.ts` at 1,487 lines, `undoHistory.ts`
+spanning five concerns, `burndown.mjs`'s numbered-step main loop, the crayon pass-buffer subsystem
+inside `strokeOps.ts`); module-scope mutable state outside a `createX()` factory forcing
+`vi.resetModules` gymnastics; and CLI scripts skipping the documented `isMain` gate (~30 of 42 in
+`scripts/`, none of the eight in `audit-burndown/`).
+
+An adversarial verification sample re-checked 26 findings — every P1 plus a P2 sample — against the
+cited code: 23 confirmed, 2 partial, 1 refuted. The refuted one (`forgetKey()` fire-and-forgets a
+secure-storage clear) was removed: `clearSecret()` is a documented best-effort swallow that never
+rejects. One P1 was narrowed — the scribbleGuard gap is real for `ClearButton` but not
+`FullscreenToggle`, which never renders on a WebKit surface, the only place iPadOS Scribble exists.
+Verified findings carry a dated blockquote in `docs/AUDIT.md`; the remaining ~95% are unvalidated
+and still belong to `/vet-audits`.
+
+Eleven P1s, five spot-verified against the code: a `perf:mount` crash (`join` used but never
+imported — invisible because the `no-undef` lint carve-out covers `tools/asset-gen` but not
+`scripts/**`), two Active ADRs both numbered 0077 (`create-adr`'s count-based numbering rule is
+broken), an internal coloring-book planning doc listing trademarked characters publicly served from
+`web/static/`, a missing `onerror` in `magicBrush.ts` that wedges the magic sheet forever, and token
+mutations reporting success into the per-request memory fallback during transient Blobs failures —
+including revocations that never persist. Also notable: `FullscreenToggle`/`ClearButton` violate
+ADR-0038's scribbleGuard rule, and dark mode never reached the native layer (Android theme
+hard-coded Light, both platforms pinning a white WebView background).
+
+## 2026-07-28 · burn-down-audits (run 1)
 
 OpenAI Codex bulk burndown of the 45-finding backlog re-staged from deferred-audit triage on
 `audit/burndown-20260727-codex-2` → [PR #583](https://github.com/KyleMit/Splotch/pull/583): **27

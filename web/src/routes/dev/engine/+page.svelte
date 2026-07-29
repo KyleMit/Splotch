@@ -25,7 +25,7 @@
 
   // The Playwright engine spec reaches the harness through these window globals.
   interface EngineHarnessWindow {
-    __engineState: { canUndo: boolean; canvasEmpty: boolean };
+    __engineState: Window['__engineState'];
     __engine: ReturnType<typeof buildEngineApi>;
     __engineReady: boolean;
   }
@@ -44,8 +44,38 @@
       onCanvasEmptyChange: (empty) => {
         win.__engineState.canvasEmpty = empty;
       },
+      // Counted, not mirrored: a spec asserting that an event ran NO group
+      // completion needs to see that neither callback fired again, and
+      // onStrokeEnd fires only when a group really committed.
+      onDrawStop: () => {
+        win.__engineState.drawStops++;
+      },
+      onStrokeEnd: () => {
+        win.__engineState.strokeEnds++;
+      },
     });
     setStrokeWidth(8);
+  }
+
+  // Every synchronous input seam below dispatches through here, onto the canvas
+  // the engine bound its listeners to. Coordinates are canvas-space.
+  function firePointerEvent(
+    type: string,
+    pointerId: number,
+    p: { x: number; y: number },
+    pointerType: string
+  ) {
+    const rect = canvasEl.getBoundingClientRect();
+    canvasEl.dispatchEvent(
+      new PointerEvent(type, {
+        pointerId,
+        pointerType,
+        clientX: rect.left + p.x,
+        clientY: rect.top + p.y,
+        bubbles: true,
+        cancelable: true,
+      })
+    );
   }
 
   // Expose the real engine API + a few read helpers. The spec drives strokes
@@ -172,18 +202,8 @@
       // input can't reliably hit a sub-100ms window). Goes through the same
       // pointerdown/move/up handlers the engine binds.
       strokeSync(points: { x: number; y: number }[], pointerType = 'mouse') {
-        const rect = canvasEl.getBoundingClientRect();
         const ev = (type: string, p: { x: number; y: number }) =>
-          canvasEl.dispatchEvent(
-            new PointerEvent(type, {
-              pointerId: 1,
-              pointerType,
-              clientX: rect.left + p.x,
-              clientY: rect.top + p.y,
-              bubbles: true,
-              cancelable: true,
-            })
-          );
+          firePointerEvent(type, 1, p, pointerType);
         ev('pointerdown', points[0]);
         for (let i = 1; i < points.length; i++) ev('pointermove', points[i]);
         ev('pointerup', points[points.length - 1]);
@@ -200,19 +220,8 @@
         strokes: { pointerId: number; points: { x: number; y: number }[] }[],
         pointerType = 'touch'
       ) {
-        const rect = canvasEl.getBoundingClientRect();
         const ev = (type: string, pointerId: number, p: { x: number; y: number }) =>
-          canvasEl.dispatchEvent(
-            new PointerEvent(type, {
-              pointerId,
-              pointerType,
-              isPrimary: false,
-              clientX: rect.left + p.x,
-              clientY: rect.top + p.y,
-              bubbles: true,
-              cancelable: true,
-            })
-          );
+          firePointerEvent(type, pointerId, p, pointerType);
 
         for (const s of strokes) ev('pointerdown', s.pointerId, s.points[0]);
 
@@ -227,13 +236,33 @@
           ev('pointerup', s.pointerId, s.points[s.points.length - 1]);
         }
       },
+
+      // Synchronous synthetic pointer script — an arbitrary ordered sequence,
+      // each step naming its own event type and pointer. This is the seam for
+      // orderings the two lockstep seams above cannot express: interleaving one
+      // pointer's lift with another pointer's moves (multiStrokeSync lifts
+      // everything only after every move), and firing a bare pointercancel or
+      // pointerout for an id the engine is not tracking.
+      pointerEventsSync(
+        events: {
+          type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel' | 'pointerout';
+          pointerId: number;
+          x: number;
+          y: number;
+        }[],
+        pointerType = 'touch'
+      ) {
+        for (const e of events) {
+          firePointerEvent(e.type, e.pointerId, { x: e.x, y: e.y }, pointerType);
+        }
+      },
     };
   }
 
   onMount(() => {
     wireEngine();
 
-    win.__engineState = { canUndo: false, canvasEmpty: true };
+    win.__engineState = { canUndo: false, canvasEmpty: true, drawStops: 0, strokeEnds: 0 };
 
     win.__engine = buildEngineApi();
     win.__engineReady = true;
