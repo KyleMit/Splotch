@@ -21,56 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Maintainability] Guard the polaroid-overlay lifetime against the CSS animation duration it silently mirrors
-
-**File(s):** `web/src/lib/drawing/screenshot.ts` (`POLAROID_DURATION_MS`, lines 103, 147–150) and
-`web/src/app.css` (`.polaroid-frame`, line 393) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-The overlay teardown timer in `screenshot.ts`:
-
-```ts
-const POLAROID_DURATION_MS = 1900;
-...
-setTimeout(() => {
-  overlay.remove();
-  URL.revokeObjectURL(imageUrl);
-}, POLAROID_DURATION_MS);
-```
-
-must agree with the animation length declared in `web/src/app.css` line 393:
-
-```css
-animation: polaroid-show 1.9s var(--ease-glide) forwards;
-```
-
-Nothing links the two values — no imported constant, no drift-guard test, not even a "keep in sync"
-comment (which the repo conventions call "a defect, not a mitigation" anyway). CLAUDE.md is
-explicit: "Cross-file agreement is never maintained by prose... when the agreeing sites can't share
-code... add a drift-guard test that reads both sides and fails on divergence — the pattern of
-`web/src/app.html.test.ts`". Someone tuning the polaroid feel in `app.css` (say, to 2.5s) gets an
-animation that is cut off mid-flight when the JS timer removes the overlay at 1.9s — a bug no test
-catches and that only shows up by eyeballing the animation.
-
-#### Proposed solution
-
-Two options, either satisfies the convention:
-
-1. **Eliminate the duplicated value**: listen for `animationend` on the `frame` element
-   (`e.animationName === 'polaroid-show'`) and remove the overlay + revoke the URL there. `app.css`
-   becomes the single owner of the duration. Keep a generous fallback `setTimeout` (e.g. 2× the
-   expected duration) only as a leak guard for the case where the animation never runs (element
-   removed from a hidden tab, future `prefers-reduced-motion` override); the fallback must be
-   idempotent with the `animationend` path.
-2. **Drift-guard test**: export `POLAROID_DURATION_MS`, and add a unit test that reads
-   `web/src/app.css`, extracts the `polaroid-show <n>s` duration with a regex, and asserts
-   `n * 1000 === POLAROID_DURATION_MS` — same shape as `web/src/app.html.test.ts`.
-
-Option 1 is structurally cleaner; option 2 is a five-line test with zero behavior risk.
-
 ### [Correctness] A single failed paper-texture load permanently disables the texture for the session
 
 **File(s):** `web/src/lib/drawing/exportDrawing.ts` (`loadPaperTexture`, lines 20–36) @ 9ae62ff1

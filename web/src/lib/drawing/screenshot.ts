@@ -100,7 +100,7 @@ export async function saveScreenshot() {
   await saveImageBlob(blob, undefined, { allowPrompt: true });
 }
 
-const POLAROID_DURATION_MS = 1900;
+export const POLAROID_DURATION_MS = 1900;
 
 function getPolaroidFrameOffset(buttonRect: DOMRect): { fromX: number; fromY: number } {
   const cx = (buttonRect.left + buttonRect.right) / 2;
