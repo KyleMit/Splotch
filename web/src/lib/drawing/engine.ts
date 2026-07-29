@@ -642,23 +642,29 @@ function strokeSegments(ps: PointerState, points: Point[]) {
 // never do DOM work while a finger is mid-stroke.
 function commitStrokeGroup() {
   if (PERF_MARKS) performance.mark('engine.commit:start');
-  const deferBehindRestore = paperStepsPending > 0;
-  const rasterRects = activeCrayonRasterRects();
-  if (!commitActiveCommand(deferBehindRestore)) return;
-  if (deferBehindRestore) {
-    queueDeferredCommandFold();
-  } else if (rasterRects.length > 0 && pendingCommandCount() === 0) {
-    // The fold just stamped this stroke's pass rasters into the paper; blit
-    // those rects back so the screen shows the committed pixels exactly (see
-    // activeCrayonRasterRects). Skipped when the fold is parked — behind a
-    // pending restore or an unready magic sheet — where the paper doesn't
-    // hold this stroke yet; the op replay keeps the screen right there, and
-    // the eventual fold's next repaint reconciles.
-    for (const r of rasterRects) blitPaperRect(ctx, r);
+  try {
+    const deferBehindRestore = paperStepsPending > 0;
+    const rasterRects = activeCrayonRasterRects();
+    if (!commitActiveCommand(deferBehindRestore)) return;
+    if (deferBehindRestore) {
+      queueDeferredCommandFold();
+    } else if (rasterRects.length > 0 && pendingCommandCount() === 0) {
+      // The fold just stamped this stroke's pass rasters into the paper; blit
+      // those rects back so the screen shows the committed pixels exactly (see
+      // activeCrayonRasterRects). Skipped when the fold is parked — behind a
+      // pending restore or an unready magic sheet — where the paper doesn't
+      // hold this stroke yet; the op replay keeps the screen right there, and
+      // the eventual fold's next repaint reconciles.
+      for (const r of rasterRects) blitPaperRect(ctx, r);
+    }
+    setCanUndo(true);
+    if (onStrokeEnd) onStrokeEnd();
+  } finally {
+    if (PERF_MARKS) {
+      performance.mark('engine.commit:end');
+      performance.measure('engine.commit', 'engine.commit:start', 'engine.commit:end');
+    }
   }
-  setCanUndo(true);
-  if (onStrokeEnd) onStrokeEnd();
-  if (PERF_MARKS) performance.measure('engine.commit', 'engine.commit:start');
 }
 
 // The last pointer of a group is gone: reset the per-group flag, commit, and let
@@ -921,35 +927,39 @@ function draw(e: PointerEvent) {
   if (!pointerState) return;
 
   if (PERF_MARKS) performance.mark('engine.draw:start');
+  try {
+    e.preventDefault();
 
-  e.preventDefault();
+    // Browsers coalesce fast input to ~one pointermove per frame but keep the
+    // intermediate samples; replay them all so quick scribbles don't render as
+    // straight chords. Synthetic/untrusted events report an empty list — fall
+    // back to the event itself.
+    const coalesced = e.getCoalescedEvents?.() ?? [];
+    const events = coalesced.length > 0 ? coalesced : [e];
+    const screenPoints = events.map(pointerToScreen);
 
-  // Browsers coalesce fast input to ~one pointermove per frame but keep the
-  // intermediate samples; replay them all so quick scribbles don't render as
-  // straight chords. Synthetic/untrusted events report an empty list — fall
-  // back to the event itself.
-  const coalesced = e.getCoalescedEvents?.() ?? [];
-  const events = coalesced.length > 0 ? coalesced : [e];
-  const screenPoints = events.map(pointerToScreen);
+    const now = Date.now();
 
-  const now = Date.now();
+    if (pointerState.edgeSwipeGuard) {
+      advanceEdgeSwipeCandidate(pointerState, screenPoints, e);
+      return;
+    }
 
-  if (pointerState.edgeSwipeGuard) {
-    advanceEdgeSwipeCandidate(pointerState, screenPoints, e);
-    return;
+    const points = screenPoints.map(screenToPaper);
+    restartStrokeIfResumed(pointerState, points[0], now);
+    const speed = strokeSpeed(pointerState, points[points.length - 1], now);
+
+    strokeSegments(pointerState, points);
+
+    pointerState.lastTime = now;
+
+    if (onDrawSoundCallback) onDrawSoundCallback({ speed, isStrokeStart: false });
+  } finally {
+    if (PERF_MARKS) {
+      performance.mark('engine.draw:end');
+      performance.measure('engine.draw', 'engine.draw:start', 'engine.draw:end');
+    }
   }
-
-  const points = screenPoints.map(screenToPaper);
-  restartStrokeIfResumed(pointerState, points[0], now);
-  const speed = strokeSpeed(pointerState, points[points.length - 1], now);
-
-  strokeSegments(pointerState, points);
-
-  pointerState.lastTime = now;
-
-  if (onDrawSoundCallback) onDrawSoundCallback({ speed, isStrokeStart: false });
-
-  if (PERF_MARKS) performance.measure('engine.draw', 'engine.draw:start');
 }
 
 function stopDrawing(e: PointerEvent) {
