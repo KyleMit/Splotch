@@ -52,6 +52,9 @@ test('/privacy has no serious accessibility violations', async ({ page }) => {
 test('/android-beta has no serious accessibility violations', async ({ page }) => {
   await page.goto('/android-beta');
   await expect(page.getByRole('heading', { name: 'Join the Android Beta' })).toBeVisible();
+  // The heading is prerendered, so it is visible at first paint; step 4's
+  // callout is composed after hydration and would otherwise race the scan.
+  await expect(page.locator('.step-4 .card')).toBeVisible();
   await expectNoSeriousViolations(page);
 });
 

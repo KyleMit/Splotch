@@ -31,9 +31,8 @@
   // Nothing that carries text uses these: three of the four raw hues are
   // 2.0-2.7:1 on the sheet. The numeral and the callout label take the darkened
   // --beta-step-*-ink of the same step instead, over its --beta-step-*-wash.
-  const CARD_ACCENT: string[] = (['Red', 'Orange', 'Green', 'Blue'] as PaletteLabel[]).map(
-    paletteHex
-  );
+  const CARD_ACCENT_LABELS: PaletteLabel[] = ['Red', 'Orange', 'Green', 'Blue'];
+  const CARD_ACCENT = CARD_ACCENT_LABELS.map(paletteHex);
 
   // Colors come from the --beta-* custom properties the route declares; they
   // inherit through the component boundary, so this stays light-only with the

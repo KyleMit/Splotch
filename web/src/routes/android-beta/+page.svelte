@@ -30,10 +30,7 @@
       <a class="back" href="/">← Back to drawing</a>
       <span class="brand">
         <CrayonStrip />
-        <!-- The separating space lives inside the lead so it disappears with it;
-             Svelte trims a trailing space at an element boundary, so it has to
-             be a non-breaking one. Same shape as the troubleshooting subtitle. -->
-        <span class="wordmark"><span class="wordmark-lead">Splotch&nbsp;</span>for Android</span>
+        <span class="wordmark">Splotch for Android</span>
       </span>
     </div>
 
@@ -54,7 +51,7 @@
       <Disclosure class="beta-disclosure">
         {#snippet summary()}
           <span class="trouble-heading">
-            <span class="trouble-label">Troubleshooting</span>
+            <h2 class="trouble-label">Troubleshooting</h2>
             <span class="trouble-sub">
               Beta not showing up, <span class="trouble-sub-clause">“item not found”,&nbsp;</span>or
               stuck on step 2?
@@ -336,7 +333,10 @@
     gap: 2px;
   }
 
+  /* A heading, not a span: without it the five <h3> rows inside the panel land
+     under "How to join" and nothing marks where the sign-up path ends. */
   .trouble-label {
+    margin: 0;
     font-size: 17px;
     font-weight: 700;
     color: var(--beta-ink);
@@ -443,10 +443,6 @@
     .wordmark {
       font-size: 10px;
       letter-spacing: 0.12em;
-    }
-
-    .wordmark-lead {
-      display: none;
     }
 
     .hero {
