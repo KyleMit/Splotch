@@ -56,7 +56,7 @@ Alternatives considered:
   (ADR-0068's live-captured closed pass) by exactly its raster's rect at its paper position, plus
   the AA pad; a `clear` short-circuits to the full paper; a `crayonFlush` contributes nothing (its
   stamp is bounded by the pass's crayon ops, whose padding matches `unionCrayonBounds` in
-  `crayonPassBuffer.ts` — the same `+2` AA convention, `AA_PAD` in `opGeometry.ts`).
+  `crayonPassBuffer.ts` — the same `+2` AA convention, `AA_PAD_PX` in `opGeometry.ts`).
 * **A null rect is a zero-cost snapshot**: a wholly magic-blocked commit, or ink entirely outside
   the paper square (margin ink, clipped at fold per ADR-0050), never touches the paper — the entry
   stores no pixels and its undo just reinstates the captured pending set.

@@ -21,26 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Readability] `AA_PAD` lacks its unit suffix
-
-**File(s):** `web/src/lib/drawing/strokeOps.ts` (line 471) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-CLAUDE.md's tuning-literal rule puts the unit in the constant's name (`_MS`, `_PX`, …). `AA_PAD = 2`
-is documented as "AA bleed pad in paper px" (line 467) but named unitless, and it crosses a module
-boundary (imported by `undoHistory.ts:39` and mixed into pad arithmetic with other px values at
-undoHistory.ts:308–318) — exactly where a unit-bearing name earns its keep.
-
-#### Proposed solution
-
-Rename to `AA_PAD_PX` (two files, ~8 references). Trivial; bundle it with any other touch of these
-files rather than as a standalone PR.
-
----
-
 ### [Testing] `MAGIC_GRADIENT_COUNT` test mirrors the constant instead of exercising it
 
 **File(s):** `web/src/lib/drawing/magicBrush.test.ts` (lines 21–23) @ 9ae62ff1
