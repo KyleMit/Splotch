@@ -21,41 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Maintainability] DOM element ids are duplicated string literals across creator and consumer modules
-
-**File(s):** `web/src/lib/drawing/overlay.ts` (line 3), `web/src/lib/drawing/screenshot.ts` (line
-135), `web/src/lib/components/DrawingCanvas.svelte` (line 369),
-`web/src/lib/components/ActionsPanel.svelte` (lines 337, 501) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-Two boundary strings tie the drawing lib to component markup by repeated literal:
-
-* `'coloringOverlay'` — set in `DrawingCanvas.svelte` line 369 (`id="coloringOverlay"`), looked up
-  in `overlay.ts` line 3 (`document.getElementById('coloringOverlay')`).
-* `'screenshotButton'` — set in `ActionsPanel.svelte` line 337, looked up in `screenshot.ts` line
-  135, and also used as a CSS selector at `ActionsPanel.svelte` line 501.
-
-CLAUDE.md is explicit that boundary strings (it lists "special-case ids") are "declared once,
-imported everywhere (tests deliberately excepted)". A rename in one Svelte file silently breaks
-`getActiveOverlayImage()` — every export then composes without the coloring page — with no type
-error and no test failure; the polaroid case merely degrades (the frame animates from center). The
-repo already has the pattern: `InstallBanner.svelte` line 64 imports `PARENT_HELP_BUTTON_ID` instead
-of repeating the literal.
-
-#### Proposed solution
-
-Export the ids from the module that conceptually owns each element's contract — e.g.
-`export const COLORING_OVERLAY_ID = 'coloringOverlay';` in `overlay.ts` (imported by
-`DrawingCanvas.svelte` as `id={COLORING_OVERLAY_ID}`), and `SCREENSHOT_BUTTON_ID` alongside the
-polaroid code, imported by `ActionsPanel.svelte`. The CSS selector at `ActionsPanel.svelte` line 501
-can't import a constant — switch it to selecting the same element via a class, or accept it and note
-the template on the id attribute is the single source the selector rides on (same file, adjacent
-lines). `earlyBoot.ts` line 36 (`'drawingCanvas'`) has the same problem and could share the
-constants module, but that file belongs to another section.
-
 ### [Correctness] saveScreenshot has no in-flight guard — a mashed camera button runs parallel full exports and stacked polaroids
 
 **File(s):** `web/src/lib/drawing/screenshot.ts` (`saveScreenshot`, lines 94–101) @ 9ae62ff1

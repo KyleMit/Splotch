@@ -1,5 +1,7 @@
 import { getActiveCanvas } from './engine';
 
+export const SCREENSHOT_BUTTON_ID = 'screenshotButton';
+
 const POLAROID_DURATION_MS = 1900;
 
 function getPolaroidFrameOffset(buttonRect: DOMRect): { fromX: number; fromY: number } {
@@ -32,7 +34,7 @@ export function playPolaroidAnimation(imageUrl: string) {
     img.style.setProperty('--polaroid-aspect', `${canvas.width} / ${canvas.height}`);
   }
 
-  const button = document.getElementById('screenshotButton');
+  const button = document.getElementById(SCREENSHOT_BUTTON_ID);
   if (button) {
     const { fromX, fromY } = getPolaroidFrameOffset(button.getBoundingClientRect());
     frame.style.setProperty('--from-x', `${fromX}px`);
