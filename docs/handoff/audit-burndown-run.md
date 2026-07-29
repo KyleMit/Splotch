@@ -1,6 +1,7 @@
 # Handoff — audit burndown run
 
-> 2026-07-29 · branch `audit/burndown-2026-07-29-codex` · supervise a bounded Codex audit burndown
+> 2026-07-29 · branch `audit/burndown-2026-07-29-codex` · PR
+> [#630](https://github.com/KyleMit/Splotch/pull/630) · supervise a bounded Codex audit burndown
 
 ## Objective & non-goals
 
@@ -13,11 +14,15 @@ driver's isolated `codex exec` roles with in-session subagents.
 ## State
 
 * Branch: `audit/burndown-2026-07-29-codex`
-* PR: pending
+* PR: [#630](https://github.com/KyleMit/Splotch/pull/630)
 * Initial backlog: 593 findings
 * `run.log` baseline: 2511 lines
 * Driver state: idle; no matching host process before branch creation
-* Commits: initial checkpoint pending
+* Commits:
+
+  | SHA      | What                                       |
+  | -------- | ------------------------------------------ |
+  | 098e43c0 | Create the initial burndown run checkpoint |
 * Files touched: `docs/handoff/audit-burndown-run.md`
 
 Durable relaunch command:
@@ -52,7 +57,6 @@ AGENT_RUNNER=codex \
 
 ## Unverified assumptions
 
-* Codex authentication and origin reachability will pass preflight.
 * The first canary will exercise at least one accepted fix through commit, gates, review, push, and
   comment capture.
 * GitHub Actions will accept and complete checks for the fresh branch.
@@ -64,6 +68,9 @@ AGENT_RUNNER=codex \
 * `node scripts/audit-burndown/pop.mjs --count` reported 593.
 * `wc -l .audit-work/logs/run.log` reported 2511.
 * `pgrep -fl 'scripts/audit-burndown/(overnight|burndown)\.mjs'` found no active driver.
+* Audit preflight passed with runner `codex`, the expected branch, authenticated Codex, reachable
+  origin, 593 parsed findings, and the repository-specific deterministic check gate.
+* Draft PR [#630](https://github.com/KyleMit/Splotch/pull/630) is open.
 
 ## Risks & next 3 steps
 
