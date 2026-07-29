@@ -21,44 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Types] rotationDelta casts unvalidated arithmetic to ViewRotation, letting a bad angle fall through computePaperView's exhaustive switch
-
-**File(s):** `web/src/lib/drawing/paperView.ts` (`rotationDelta`, lines 47–49; `computePaperView`,
-lines 63–72) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-export function rotationDelta(paperAngle: number, currentAngle: number): ViewRotation {
-  return ((((paperAngle - currentAngle) % 360) + 360) % 360) as ViewRotation;
-}
-```
-
-The inputs are plain `number`s (they come from `engine.ts`'s `currentScreenAngle()`, which returns
-`window.screen?.orientation?.angle` or a dev-harness `screenAngleOverride` — both unvalidated). The
-result is only a member of `0 | 90 | 180 | 270` when both inputs are quarter-turn multiples; for
-anything else (a buggy WebView reporting 45, a harness override typo) the cast manufactures a
-`ViewRotation` that isn't one. Downstream, `computePaperView`'s `switch` (lines 63–72) and
-`viewMatrix`'s (lines 80–89) have no `default` — correctly, because TS proves exhaustiveness — so an
-invalid value returns `undefined` at runtime while the signature still promises `PaperView`, and the
-crash surfaces far away in the engine's transform code. CLAUDE.md: "`as` is a boundary tool. Cast
-only where typed code meets untyped input... **after runtime validation**".
-
-#### Proposed solution
-
-Keep the arithmetic but make the boundary honest — either:
-
-* Type the parameters as `ViewRotation` (the modular difference of two quarter-turns is provably a
-  quarter-turn) and move the one runtime validation to `currentScreenAngle()` in `engine.ts`, which
-  is the actual untyped-input boundary; or
-* Validate in place: snap to the nearest quarter turn (`Math.round(delta / 90) * 90 % 360`) or
-  assert membership before the cast.
-
-The first option is cleaner but touches `engine.ts` (another section); the second is self-contained.
-Add a test row for a non-quarter input once behavior is defined.
-
 ### [Readability] drawOverlayContained's source/composite selection hides a silent dark-mode failure in a short-circuit idiom
 
 **File(s):** `web/src/lib/drawing/exportDrawing.ts` (`drawOverlayContained`, lines 94–98) @ 9ae62ff1
