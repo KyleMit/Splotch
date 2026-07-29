@@ -21,41 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — stroke model & brush rendering
 
-### [Maintainability] Name `createRainbowGradient`'s and `edgeMargins`' tuning literals
-
-**File(s):** `web/src/lib/drawing/magicBrush.ts` (`createRainbowGradient`, lines 88–103;
-`edgeMargins`, line 180) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Per CLAUDE.md, "a numeric literal that encodes a tunable decision … gets a named module-scope
-constant with the unit in the name; the WHY comment lives on the constant." `createRainbowGradient`
-carries five such decisions as inline literals with trailing comments:
-
-```ts
-const stopCount = 5 + Math.floor(rand() * 4); // 5..8 hue stops
-const hueSweep = 240 + rand() * 200; // total hue span in degrees
-const saturation = 70 + rand() * 25;
-const lightness = 55 + rand() * 15;
-```
-
-and `edgeMargins` hides its sampling inset in an expression:
-`const inset = Math.max(1, Math.round(Math.min(bw, bh) * 0.02));` (line 180) — the `0.02` is
-precisely the "sample a hair inside the border so an edge outline doesn't smear" decision the block
-comment above (lines 148–152) spends a paragraph explaining, yet the number itself is unnamed and
-un-greppable.
-
-#### Proposed solution
-
-Hoist module-scope constants, e.g. `RAINBOW_STOPS_MIN`/`RAINBOW_STOPS_SPAN`,
-`RAINBOW_HUE_SWEEP_MIN_DEG`/`RAINBOW_HUE_SWEEP_SPAN_DEG`, `RAINBOW_SATURATION_MIN_PCT`/`…_SPAN_PCT`,
-`RAINBOW_LIGHTNESS_MIN_PCT`/`…_SPAN_PCT`, and `EDGE_SAMPLE_INSET_FRACTION = 0.02` (WHY comment moves
-onto it). Pure rename-and-hoist; no behavior change.
-
----
-
 ### [Performance] `unionCrayonBounds` allocates arrays/points via spread-over-map on the pointer hot path
 
 **File(s):** `web/src/lib/drawing/strokeOps.ts` (`unionCrayonBounds`, lines 352–362) @ 9ae62ff1
