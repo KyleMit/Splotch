@@ -43,16 +43,20 @@ const BASELINE = new Map(
     // Light-only page, same reasoning as /admin.
     'routes/privacy/+page.svelte': 8,
     // Light-only page, same reasoning as /admin — a palette pinned to a light
-    // ground, declared once as local custom properties at the top of its <style>
-    // block. Shares /privacy's AA-safe #7c4dcf link, and adds each step's crayon
-    // hue in two strengths: a wash behind the numeral and under the callout, and
-    // a darkened ink for both of those texts (the raw palette hues fail contrast
-    // on either ground). The rest are the neutral furniture of the sheet — the
-    // step rail, and the troubleshooting panel's fill, border and hover pair.
-    // The crayon chips and the callout accent rails are NOT here: those read
-    // their hexes out of lib/palette.ts at render, which palette-source.test.mjs
-    // requires.
-    'routes/android-beta/+page.svelte': 24,
+    // ground, declared once as custom properties at the top of its <style>
+    // block. Its eleven pin PageShell's themed --page-* defaults (whose dark
+    // values would half-dark-theme the page), including /privacy's AA-safe
+    // #7c4dcf link and the step buttons' fill; the other five are the
+    // troubleshooting panel's fill, border, hover pair, and chevron disc border.
+    'routes/android-beta/+page.svelte': 16,
+    // The beta page's step ledger, light-only with the page it renders on: each
+    // step's crayon hue in two strengths — a wash behind the numeral and under
+    // the callout, and a darkened ink for both of those texts (the raw palette
+    // hues fail contrast on either ground) — plus the connector rail and the
+    // callout body ink. The crayon chips and the callout accent rails are NOT
+    // here: those read their hexes out of lib/palette.ts at render, which
+    // palette-source.test.mjs requires.
+    'lib/components/androidBeta/StepLedger.svelte': 10,
     // Deliberate constant: #666 is contrast-pinned for the one light-only host
     // (/admin), where --text-mid's dark value would be 1.9:1. Themed hosts (the
     // /dev harnesses) override it — see the note on .crumb-current.

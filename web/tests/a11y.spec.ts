@@ -4,7 +4,8 @@ import { ADMIN_ACCESS_TOKEN } from './admin-helpers';
 import { openParentCenter } from './helpers';
 
 // Axe-core scans for the adult-facing surfaces (issue #458): /privacy,
-// /android-beta, /admin (both auth states), and the Parent Center dialog. The
+// /android-beta, /feedback, /admin (both auth states), and the Parent Center
+// dialog. The
 // toddler-facing canvas chrome is deliberately out of scope — its UX rules
 // (giant wordless buttons, no reading order) aren't WCAG's — so the Parent
 // Center scan is scoped to the dialog itself rather than the whole drawing page.
@@ -55,6 +56,16 @@ test('/android-beta has no serious accessibility violations', async ({ page }) =
   // The heading is prerendered, so it is visible at first paint; step 4's
   // callout is composed after hydration and would otherwise race the scan.
   await expect(page.locator('.step-4 .card')).toBeVisible();
+  await expectNoSeriousViolations(page);
+});
+
+test('/feedback has no serious accessibility violations', async ({ page }) => {
+  await page.goto('/feedback');
+  await expect(page.getByRole('heading', { name: 'Send us feedback' })).toBeVisible();
+  // Scan the device-info panel too — it is half the form's markup and is only
+  // in the DOM once the parent opts in.
+  await page.getByRole('checkbox').check();
+  await expect(page.getByText('What will be sent?')).toBeVisible();
   await expectNoSeriousViolations(page);
 });
 

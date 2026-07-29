@@ -6,8 +6,8 @@
     MIN_ANDROID_RELEASE,
     PLAY_STORE_LISTING_URL,
     TESTERS_GROUP_URL,
-    supportEmail,
   } from './androidBeta';
+  import { supportEmail } from '$lib/supportEmail';
   import Icon from '$lib/components/Icon.svelte';
   import { paletteHex, type PaletteLabel } from '$lib/palette';
 
@@ -30,13 +30,14 @@
   //
   // Nothing that carries text uses these: three of the four raw hues are
   // 2.0-2.7:1 on the sheet. The numeral and the callout label take the darkened
-  // --beta-step-*-ink of the same step instead, over its --beta-step-*-wash.
+  // --step-*-ink of the same step instead, over its --step-*-wash.
   const CARD_ACCENT_LABELS: PaletteLabel[] = ['Red', 'Orange', 'Green', 'Blue'];
   const CARD_ACCENT = CARD_ACCENT_LABELS.map(paletteHex);
 
-  // Colors come from the --beta-* custom properties the route declares; they
-  // inherit through the component boundary, so this stays light-only with the
-  // page rather than carrying a second palette.
+  // Ink, body, muted, link and measure come from the --page-* palette PageShell
+  // declares and /android-beta pins to light-only values; they inherit through
+  // the component boundary. The step washes below are this ledger's own, so
+  // they live in its style block rather than on the route.
 </script>
 
 <ol class="steps">
@@ -154,6 +155,27 @@
      rail's geometry is derived from these, which is why they are named — the
      segment under each step has to land exactly on the next step's numeral. */
   .steps {
+    /* Each step is a crayon hue in two strengths: a 5% wash behind its numeral
+       and under its callout, and a darkened ink for the numeral and the callout
+       label. The raw palette hues are ~2.6:1 and carry no text; these deeper
+       shades measure 5.3, 4.9, 4.7, 4.9:1 on their own wash. Neither is a
+       palette value, so palette-source.test.mjs does not own them — the full
+       hues on the callout rails are read out of lib/palette.ts instead.
+       Light-only, like the page they render on. */
+    --step-1-wash: #fdf3f2; /* Red */
+    --step-1-ink: #b03f3b;
+    --step-2-wash: #fdf7ef; /* Orange */
+    --step-2-ink: #a35a00;
+    --step-3-wash: #f3f9ef; /* Green */
+    --step-3-ink: #4f7a36;
+    --step-4-wash: #f0f6fc; /* Blue */
+    --step-4-ink: #2a6db8;
+    /* The connector between the step numerals. Decorative — the numerals and
+       their order carry the sequence, so this sits below the 3:1 floor by
+       design. */
+    --rail-color: #efeced;
+    --callout-ink: #4a4a54; /* ~ --text on a callout wash */
+
     --step-gap: 52px;
     --num-size: 32px;
     /* The numeral plus the space between it and the text column. */
@@ -176,23 +198,23 @@
   }
 
   .step-1 {
-    --step-wash: var(--beta-step-1-wash);
-    --step-ink: var(--beta-step-1-ink);
+    --step-wash: var(--step-1-wash);
+    --step-ink: var(--step-1-ink);
   }
 
   .step-2 {
-    --step-wash: var(--beta-step-2-wash);
-    --step-ink: var(--beta-step-2-ink);
+    --step-wash: var(--step-2-wash);
+    --step-ink: var(--step-2-ink);
   }
 
   .step-3 {
-    --step-wash: var(--beta-step-3-wash);
-    --step-ink: var(--beta-step-3-ink);
+    --step-wash: var(--step-3-wash);
+    --step-ink: var(--step-3-ink);
   }
 
   .step-4 {
-    --step-wash: var(--beta-step-4-wash);
-    --step-ink: var(--beta-step-4-ink);
+    --step-wash: var(--step-4-wash);
+    --step-ink: var(--step-4-ink);
   }
 
   /* One segment per step rather than one rail down the whole list: the bottom
@@ -205,7 +227,7 @@
     top: calc(var(--num-size) + var(--rail-inset));
     bottom: calc(var(--rail-inset) - var(--step-gap));
     width: var(--rail-width);
-    background: var(--beta-rail);
+    background: var(--rail-color);
   }
 
   /* The head is exactly one numeral tall, so the numeral it holds on desktop can
@@ -242,7 +264,7 @@
     font-size: 21px;
     font-weight: 700;
     line-height: 1.25;
-    color: var(--beta-ink);
+    color: var(--page-ink);
   }
 
   .optional {
@@ -250,21 +272,21 @@
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--beta-muted);
+    color: var(--page-muted);
   }
 
   .body {
     margin: 14px 0 0;
-    max-width: var(--beta-measure);
+    max-width: var(--page-measure);
     font-size: 16px;
     font-weight: 500;
     line-height: 1.65;
-    color: var(--beta-body);
+    color: var(--page-body);
     text-wrap: pretty;
   }
 
   .body strong {
-    color: var(--beta-ink);
+    color: var(--page-ink);
   }
 
   /* Fine print sits beside its button rather than under it, so a step reads as
@@ -283,8 +305,8 @@
     display: inline-block;
     padding: 15px 24px;
     border-radius: 14px;
-    background: var(--beta-link);
-    color: var(--beta-on-accent);
+    background: var(--page-accent);
+    color: var(--page-on-accent);
     font-size: 15px;
     font-weight: 700;
     text-decoration: none;
@@ -303,14 +325,14 @@
     font-size: 14px;
     font-weight: 500;
     line-height: 1.5;
-    color: var(--beta-muted);
+    color: var(--page-muted);
   }
 
   /* Every step closes on a callout washed in its own crayon hue, so the four
      read as one system rather than as four notes on the same grey. The rail is
      the full hue; the fill is the same hue at wash strength. */
   .card {
-    max-width: var(--beta-measure);
+    max-width: var(--page-measure);
     margin-top: 22px;
     padding: 14px 18px;
     border-left: 3px solid var(--card-accent);
@@ -332,11 +354,11 @@
     font-size: 15px;
     font-weight: 500;
     line-height: 1.6;
-    color: var(--beta-note);
+    color: var(--callout-ink);
   }
 
   .card-body strong {
-    color: var(--beta-ink);
+    color: var(--page-ink);
   }
 
   /* The real Parent Center glyph, sized to the surrounding text so the sentence
@@ -349,7 +371,7 @@
   }
 
   a:not(.btn) {
-    color: var(--beta-link);
+    color: var(--page-link);
     text-underline-offset: 3px;
     text-decoration-thickness: 1px;
   }
@@ -358,11 +380,11 @@
      keep it stuck until the next tap elsewhere. */
   @media (hover: hover) {
     .btn:hover {
-      background: var(--beta-link-hover);
+      background: var(--page-accent-hover);
     }
 
     a:not(.btn):hover {
-      color: var(--beta-link-hover);
+      color: var(--page-link-hover);
     }
   }
 

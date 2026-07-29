@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { SECURITY_HEADERS } from './securityHeaders';
+import { SECURITY_HEADERS, securityHeadersFor } from './securityHeaders';
 
 // The security headers live in two places that must agree: this module (stamped
 // onto SSR responses by hooks.server.ts) and the root netlify.toml
@@ -67,4 +67,25 @@ describe('SECURITY_HEADERS mirrors the netlify.toml `for = "/*"` block', () => {
       expect(tomlHeaders[name]).toBe(normalize(value));
     });
   }
+});
+
+// The one per-route override. It exists because /feedback is the only page that
+// posts a form without JavaScript, and `no-referrer` opaques the Origin header
+// that SvelteKit's CSRF guard checks — verified end to end by
+// tests/feedback.spec.ts's no-JS submit, which 403s without this.
+describe('securityHeadersFor', () => {
+  it('relaxes only the referrer policy, and only on /feedback', () => {
+    const feedback = securityHeadersFor('/feedback');
+    expect(feedback['Referrer-Policy']).toBe('same-origin');
+    expect({ ...feedback, 'Referrer-Policy': SECURITY_HEADERS['Referrer-Policy'] }).toEqual(
+      SECURITY_HEADERS
+    );
+  });
+
+  it.each(['/', '/admin', '/privacy', '/android-beta', '/feedback/', '/feedback/extra'])(
+    'leaves %s on the site-wide no-referrer',
+    (pathname) => {
+      expect(securityHeadersFor(pathname)).toEqual(SECURITY_HEADERS);
+    }
+  );
 });

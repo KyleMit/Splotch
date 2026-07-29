@@ -3,7 +3,7 @@ import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
 import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
-import { SECURITY_HEADERS } from '$lib/server/securityHeaders';
+import { securityHeadersFor } from '$lib/server/securityHeaders';
 
 // The native apps load from a WebView origin (https://localhost on Android,
 // capacitor://localhost on iOS) but call the hosted /api/* endpoints. Those are
@@ -60,7 +60,7 @@ const handleSecurityHeaders: Handle = async ({ event, resolve }) => {
   // netlify.toml headers — the function only serves SSR routes like `/admin`,
   // and those are the responses that need this set.
   if (!building && !event.url.pathname.startsWith('/api/')) {
-    applyHeaders(response, SECURITY_HEADERS);
+    applyHeaders(response, securityHeadersFor(event.url.pathname));
   }
 
   return response;

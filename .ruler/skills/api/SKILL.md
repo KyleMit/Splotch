@@ -124,6 +124,13 @@ Opens a GitHub issue from the in-app "report a bug / suggest a feature" form (Pa
 tight budget (5/min, vs the oracles' 10). Every issue is labelled `user-report` plus `type:bug` /
 `type:feature` (`docs/ISSUE-WORKFLOW.md`; both labels also live in `.github/labels.yml`).
 
+This endpoint is one of **two** front doors onto the same core. Validation, the honeypot, the issue
+Markdown, and the error wording all live in `$lib/server/report.ts`; the `/feedback` page's form
+action calls it too, and throttles into the same `reportBucket` so the pair shares one budget rather
+than doubling it. Change the behaviour there, not here — this route only adds the JSON wire shape.
+The page's action additionally echoes the submitted values back on failure and answers success with
+a 303 redirect, neither of which a JSON endpoint needs.
+
 ```json
 // request
 {

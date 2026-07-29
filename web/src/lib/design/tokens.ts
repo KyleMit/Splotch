@@ -199,6 +199,21 @@ export interface ThemeTokens {
   /** one step stronger, for hovering washed elements */
   brandWashHover: string;
   brandText: string;
+  /**
+   * The brand as a FILL that carries text. `--brand` itself is the identity
+   * hue and only clears 3.4:1 against --on-brand, so a solid purple control
+   * with a white label fails WCAG AA at body size; this is the darkened step
+   * that clears 4.5:1 in both themes. Use it wherever brand-colored background
+   * sits under words (the report kind picker, a page's primary call to
+   * action); keep `--brand` for hairlines, focus rings, accent-color and tints,
+   * where the 3:1 non-text floor applies instead.
+   */
+  brandSolid: string;
+  /**
+   * The hovered step of --brand-solid. Both themes darken rather than lighten:
+   * a brighter purple cannot hold 4.5:1 against the white label it carries.
+   */
+  brandSolidHover: string;
   /** verification / feedback banners */
   successWash: string;
   successText: string;
@@ -281,6 +296,8 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     brandWash: '#ede7f6',
     brandWashHover: '#e3d7f5',
     brandText: '#7c50bb',
+    brandSolid: '#7c50bb',
+    brandSolidHover: '#6b3fbf',
     successWash: '#e9f7ec',
     successText: '#2e7d4f',
     successAccent: '#4caf50',
@@ -322,6 +339,8 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     brandWash: '#3b2f4f',
     brandWashHover: '#46395c',
     brandText: '#c9a9f0',
+    brandSolid: '#8058c0',
+    brandSolidHover: '#6f47b0',
     successWash: '#24382b',
     successText: '#8bcfa4',
     successAccent: '#4caf50',

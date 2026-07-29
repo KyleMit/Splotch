@@ -43,13 +43,22 @@ export function stringField(body: unknown, name: string): string {
 }
 
 /**
+ * The one throttling sentence a visitor ever sees. Exported so a rate-limited
+ * form action — which returns `fail()` rather than a Response — words it
+ * identically to every JSON endpoint.
+ */
+export function throttledMessage(retryAfter: number): string {
+  return `Too many attempts. Please wait ${retryAfter}s.`;
+}
+
+/**
  * The one true 429. Every rate-limited endpoint returns this shape (JSON
  * `{ ok:false, error }` plus a `Retry-After` header) so clients can surface
  * the same `error` field they already read from other failure responses.
  */
 export function throttled(retryAfter: number) {
   return json(
-    { ok: false, error: `Too many attempts. Please wait ${retryAfter}s.` },
+    { ok: false, error: throttledMessage(retryAfter) },
     { status: 429, headers: { 'Retry-After': String(retryAfter) } }
   );
 }
