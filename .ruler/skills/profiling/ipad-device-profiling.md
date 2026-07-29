@@ -158,9 +158,10 @@ window.__perfScenarios = 'crayon-scribbles';
 
 Timeline mode runs the same code path at roughly a twentieth of the volume — 6 strokes of ~200 ops
 instead of 22 of ~1200. Draw marks and event records both scale with op count, so cutting ops cuts
-the noise at its source. Six strokes still pushes snapshot depth past `MAX_HOT_RASTERS`, so cold
-snapshots exist and encode. Override with `window.__perfStrokes` / `window.__perfOps` in either
-mode.
+the noise at its source. Six strokes is plenty for the shape of a commit — since ADR-0078 the
+resident window is a byte budget, so thin strokes encode nothing at any depth, and a recording is
+for where the time goes rather than for watching the tier demote. Override with
+`window.__perfStrokes` / `window.__perfOps` in either mode.
 
 Scenario keys are the `key` column of the A4 table — `long-squiggles`, `multi-finger`,
 `crayon-squiggles`, `crayon-scribbles` — the same keys `npm run perf:undo --scenarios=` takes, so a
@@ -291,7 +292,7 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
 ## Reading the results
 
 * **`undo p95 ms` < 50** → the ADR-0066 undo gate (the driver computes p95 per scenario and prints
-  the gate line verbatim). Shallow undos (the MAX_HOT_RASTERS = 2 hot rasters) should be a near-free
+  the gate line verbatim). Undos inside the resident byte budget (ADR-0078) should be a near-free
   blit; deep undos add a lossless blob decode — both are one-off costs at button-press.
 * **`commit max ms` ≈ one 120 Hz frame ≈ 8.3 ms** → the ADR-0066 commit-hitch gate. The commit runs
   once at finger-lift, off the draw frame, but a commit slower than one frame can still drop a frame

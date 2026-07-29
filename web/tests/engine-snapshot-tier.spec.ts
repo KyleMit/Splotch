@@ -225,10 +225,12 @@ test('drawing immediately after rapid undos folds onto the restored paper (undo 
 });
 
 test('encoded snapshots rising into the hot window re-inflate to hot rasters', async ({ page }) => {
-  // The hot-window invariant must survive undo-then-draw, not just monotonic
-  // growth: after deep undos the entries that rise into the top-2 window
-  // decode back to hot rasters off the interaction path, so the *second* undo
-  // tap after a new stroke is a synchronous blit, not a blob decode.
+  // The resident-window invariant must survive undo-then-draw, not just
+  // monotonic growth: after deep undos the entries that rise back inside the
+  // byte budget decode to hot rasters off the interaction path, so the undo
+  // taps that follow a new stroke are synchronous blits, not blob decodes.
+  // Which tap would first hit a decode depends on patch size, not on a fixed
+  // position in the stack.
   // Eight, for the same reason as the spec above: a spanning patch is ~0.56 of
   // the paper, so demotion needs more than five of them.
   const BANDS = 8;

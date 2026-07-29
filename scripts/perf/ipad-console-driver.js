@@ -77,8 +77,10 @@
   // 22 strokes is two past MAX_UNDO_DEPTH (20, matching
   // scripts/perf/undo-scenarios.mjs), so the gates run measures history with
   // the stack full and exercises the oldest-entry fold + shift overflow path.
-  // Timeline mode only needs depth past MAX_HOT_RASTERS (2) for cold snapshots
-  // to exist and encode at all.
+  // Timeline mode is sized for legibility, not for the tier: since ADR-0078 the
+  // resident window is a byte budget, so a handful of thin strokes encodes
+  // nothing at all. A recorded run is for where the time goes and whether a
+  // frame dropped, which does not depend on the tier demoting.
   const STROKES = Number(window.__perfStrokes) || (TIMELINE ? 6 : 22);
   const OPS = Number(window.__perfOps) || (TIMELINE ? 200 : HZ * 10);
   const MULTI_FINGERS = 5;
@@ -303,13 +305,16 @@
           'blob bytes and encode cost include pre-existing ink'
       );
     }
-    // The clear's own snapshot holds the entire inked paper it just wiped, and
-    // it encodes the moment two further commits push it past MAX_HOT_RASTERS —
-    // landing a full-paper PNG inside the scenario's measurement window. Where
-    // the scenario's own encodes are cheap, that artifact *is* the reported max:
+    // The clear's own snapshot holds the entire inked paper it just wiped. It is
+    // also the oldest entry, and the byte budget evicts oldest-first, so in any
+    // scenario that does reach the budget it is the first thing to encode — a
+    // full-paper PNG landing inside the measurement window. Where the
+    // scenario's own encodes are cheap that artifact *is* the reported max:
     // multi-finger read 176 ms this way against 1 ms measured in isolation.
-    // Spend those two commits here, before drawStart, so the clear pays for
-    // itself outside the window.
+    // Push it down with a couple of throwaway commits here, before drawStart.
+    // The count is a heuristic rather than a derived number now that the window
+    // is bytes rather than entries; scenarios currently stay inside the budget
+    // and encode nothing, so this is a guard, not a load-bearing step.
     for (let i = 0; i < 2; i++) {
       E.strokeSync(primingMark(i), 'touch');
       await new Promise((r) => requestAnimationFrame(r));

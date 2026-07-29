@@ -69,12 +69,14 @@ export const MAX_UNDO_DEPTH = 20;
 // device class: a bigger raster means a bigger device. At this multiple the
 // resident tier plus the paper stays at 4× the paper — ~114 MiB on the largest
 // iPad raster, inside ADR-0066's ≲150 MB gate with room for the encoded tail.
+// Exported as the budget test seam — the tier suites derive their expected
+// resident count from it rather than re-declaring a window size.
 export const HOT_PATCH_BUDGET_PAPER_MULTIPLE = 3;
 
 // Floor under the budget: the newest entries stay resident even if one patch is
 // larger than the whole budget, so undo's first steps are always a blit rather
 // than a decode.
-export const MIN_HOT_RASTERS = 2;
+const MIN_HOT_RASTERS = 2;
 
 function patchBytesOf(snap: Snapshot): number {
   return snap.patches.reduce((n, p) => n + p.rect.w * p.rect.h * 4, 0);
@@ -544,7 +546,8 @@ function scheduleColdEncode() {
 }
 
 function encodeColdSnapshots() {
-  for (let i = 0; i < hotWindowStart(); i++) {
+  const coldEnd = hotWindowStart();
+  for (let i = 0; i < coldEnd; i++) {
     const snap = snapshotStack[i];
     for (const patch of snap.patches) {
       const store = patch.store;

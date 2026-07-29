@@ -132,6 +132,6 @@ Non-obvious invariants:
 * − The budget is a multiple of the paper, so it is only as well-calibrated as the assumption that
   raster size proxies for device memory. A device with a large screen and little RAM would be served
   badly.
-* − Two constants (`HOT_PATCH_BUDGET_PAPER_MULTIPLE`, `MIN_HOT_RASTERS`) are now exported so tests
-  derive from them instead of re-declaring the window size. That is a wider surface than the single
-  private constant it replaced.
+* − `HOT_PATCH_BUDGET_PAPER_MULTIPLE` is exported so the tier suites derive their expected resident
+  count from it instead of re-declaring a window size. That is a wider surface than the private
+  constant it replaced, and the reason it is public is worth keeping stated at the declaration.
