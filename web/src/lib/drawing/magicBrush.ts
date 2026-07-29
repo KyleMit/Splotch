@@ -57,13 +57,15 @@ interface MagicBrushHost {
 // undoHistory.ts's module-scope state) — not a createX() factory, so there is no
 // per-instance seam for tests.
 //
-// The reset path tests do have: setColorSheet(null) drops the fill source, and
-// clearMagicGradient() drops the held gradient. That pair does not restore host,
-// sheetCanvas, sheetCtx, sheetOriginX/sheetOriginY, or patternCache to their
-// pre-initMagicBrush state, and readiness stays false until a later
-// rasterizeSheet()/ensureMagicSheet() call. A test needing true isolation should
-// call initMagicBrush again (it only reassigns host) and rebuild the readiness it
-// expects, rather than relying on state left behind by an earlier describe block.
+// The only in-module reset is partial: setColorSheet(null) drops the fill source
+// and clearMagicGradient() drops the held gradient, and both leave a fresh
+// patternCache behind — but host, sheetCanvas, sheetCtx, and
+// sheetOriginX/sheetOriginY keep whatever the last rasterize left them, and
+// readiness stays false until some source is set *and* rasterized (a bare
+// rasterizeSheet() with no active source returns early, still unready). So a test
+// wanting real isolation gets fresh module state, not a reset call:
+// vi.resetModules() in beforeEach plus `await import('./magicBrush')`, the pattern
+// every stateful describe in magicBrush.test.ts uses.
 let host: MagicBrushHost | null = null;
 
 // Source 1: the coloring page's colored fill — shipped fills-only (its outlines are

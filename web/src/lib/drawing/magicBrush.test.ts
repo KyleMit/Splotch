@@ -1,11 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import {
-  createRainbowGradient,
-  MAGIC_GRADIENT_COUNT,
-  edgeMargins,
-  isMagicSheetUnready,
-  setColorSheet,
-} from './magicBrush';
+import { createRainbowGradient, MAGIC_GRADIENT_COUNT, edgeMargins } from './magicBrush';
 
 // A deterministic pseudo-random sequence so gradient generation is reproducible
 // in the test (the module defaults to Math.random in the app).
@@ -47,7 +41,16 @@ describe('rainbow gradient generation', () => {
 });
 
 describe('magic sheet readiness gate', () => {
-  it('stays unready whenever the sheet cannot paint, not only while decoding', () => {
+  // The readiness flags are module-scope singleton state with no reset seam, so the
+  // module is re-imported after vi.resetModules() rather than inheriting whatever
+  // fill/gradient/sheet state an earlier test left behind.
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('stays unready whenever the sheet cannot paint, not only while decoding', async () => {
+    const { setColorSheet, isMagicSheetUnready } = await import('./magicBrush');
+
     // Requesting a page starts an async decode; the sheet is not ready to paint.
     setColorSheet('/coloring/test.light.webp');
     expect(isMagicSheetUnready()).toBe(true);
