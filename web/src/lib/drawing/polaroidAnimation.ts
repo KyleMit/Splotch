@@ -30,7 +30,7 @@ export function playPolaroidAnimation(imageUrl: string) {
   // Match the polaroid photo to the drawing's aspect ratio instead of
   // cropping it to a fixed shape.
   const canvas = getActiveCanvas();
-  if (canvas && canvas.width > 0 && canvas.height > 0) {
+  if (canvas.width > 0 && canvas.height > 0) {
     img.style.setProperty('--polaroid-aspect', `${canvas.width} / ${canvas.height}`);
   }
 

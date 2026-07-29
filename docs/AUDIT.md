@@ -21,35 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Readability] Dead truthiness check on getActiveCanvas's non-nullable return
-
-**File(s):** `web/src/lib/drawing/screenshot.ts` (`playPolaroidAnimation`, lines 130–133) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-const canvas = getActiveCanvas();
-if (canvas && canvas.width > 0 && canvas.height > 0) {
-```
-
-`getActiveCanvas()` is declared to return `HTMLCanvasElement` (engine.ts line 1484), so the
-`canvas &&` clause is statically dead — yet it survives because the engine's
-`let canvas!: HTMLCanvasElement` (engine.ts line 113) is a definite-assignment assertion that is
-genuinely `undefined` before engine init. The check documents distrust of a type the codebase
-asserts. Since `playPolaroidAnimation` only runs after `exportCanvasBlob` returned a blob (which
-requires an initialized canvas, engine.ts line 1477), the runtime risk is nil either way; the cost
-is a reader stopping to work out which side is lying.
-
-#### Proposed solution
-
-Drop the truthiness clause (`if (canvas.width > 0 && canvas.height > 0)`), trusting the declared
-type at this call site. The deeper fix — making `getActiveCanvas` honestly return
-`HTMLCanvasElement | null` or documenting the boots-before-hydration guarantee at the `canvas!`
-declaration — lives in `engine.ts` (another section) and is worth a cross-reference rather than
-action here.
-
 ## Source: Code audit — AI image generation (client + state + UI)
 
 ### [Correctness] Client request timeout starts before the canvas export, eroding the deadline-ladder invariant
