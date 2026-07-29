@@ -36,6 +36,52 @@ won't hold back a feature for it.
   even on Android 7 — runs a current Chromium (≥ 111). The OS floor only governs native-shell APIs,
   not the web content.
 
+### Why the Android floor is not raised to API 29
+
+Raising `minSdkVersion` to 29 (Android 10) comes up because it would delete the last conditional
+permission in the manifest: `WRITE_EXTERNAL_STORAGE` is declared with `android:maxSdkVersion="28"`
+purely to cover API 24–28, since writing to MediaStore needs no permission from API 29 on. The trade
+does not pay off, and this records why so the question isn't re-derived from scratch each time.
+
+**What raising would buy**
+
+* The `WRITE_EXTERNAL_STORAGE` declaration goes away, and with it the runtime consent dialog the
+  gallery save triggers on API 24–28. That dialog is the only permission prompt the app can still
+  put in front of a user, which matters for an app whose point is that a child can save a drawing in
+  one tap and no reading.
+* Scoped storage becomes unconditional, so the photo-save path (ADR-0037) has one behavior rather
+  than a pre-/post-29 split.
+
+It buys nothing on the Play Store listing. Play does not display a permission capped by
+`maxSdkVersion` below the app's target, so the store page's permission list reads identically either
+way.
+
+**What raising would cost**
+
+* Devices on Android 7.0–9 stop receiving updates. Installed copies keep working, but they freeze at
+  whatever version they already have.
+* Splotch's audience skews *older* than the Android install base at large. The phone a two-year-old
+  is handed is disproportionately the one the household retired — which is exactly the API 24–28
+  population. A global version-distribution table is the wrong input for this app.
+* The benefit is circular: the one substantive win is removing a prompt that only the dropped users
+  ever see.
+
+Underneath all of that, no native-shell API the app wants requires API 29 or newer. The shell asks
+for very little — haptics, gallery save, orientation, status bar, secure storage — and the web
+layer, which is nearly all of Splotch, is governed by the WebView's Chromium version rather than the
+OS.
+
+**What would change the answer**
+
+* A native capability the app actually wants that is unavailable below API 29.
+* Play Console → Statistics showing the sub-29 share of *Splotch's own* installs has gone
+  negligible. That figure, not a global distribution table, is the deciding input.
+
+The mechanical change is small — `android/variables.gradle`, this document, the `mobile` skill's
+Android page, and the context-anchored API-level assertions in
+`scripts/tests/android-config.test.mjs` — but it moves a published support floor, so it warrants an
+ADR rather than a quiet bump.
+
 ## How the floor is enforced
 
 The web build floor has one declaration: `web/browserTargets.ts`, imported by `web/vite.config.ts`
@@ -144,3 +190,7 @@ Chrome 111 / Safari 16.4. The deliberate non-polyfill choices:
   (`web/src/browserFloor.test.ts` fails otherwise).
 * When adding a new web API, check its Baseline status against this floor and either confirm it's
   covered or feature-detect it — then add a row here.
+* Change the native Android floor in `android/variables.gradle` → `minSdkVersion`, and update the
+  API-level assertions in `scripts/tests/android-config.test.mjs` and the `mobile` skill's Android
+  page with it. Read "Why the Android floor is not raised to API 29" above first — it records the
+  standing trade-off and the two conditions that would justify moving it.
