@@ -59,6 +59,7 @@ describe('generateAiImage request ownership', () => {
     vi.useFakeTimers();
     const canvasExport = deferred<Blob | null>();
     const webpEncoding = deferred<Blob | null>();
+    const request = deferred<Response>();
     mocks.exportCanvasBlob.mockReturnValueOnce(canvasExport.promise);
     vi.stubGlobal(
       'createImageBitmap',
@@ -70,7 +71,7 @@ describe('generateAiImage request ownership', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
       void webpEncoding.promise.then(callback);
     });
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(request.promise));
 
     const { generateAiImage } = await import('./aiImage');
 
@@ -84,11 +85,16 @@ describe('generateAiImage request ownership', () => {
     expect(fetch).not.toHaveBeenCalled();
 
     webpEncoding.resolve(new Blob(['webp'], { type: 'image/webp' }));
-    await generation;
-
+    await vi.advanceTimersByTimeAsync(0);
     expect(fetch).toHaveBeenCalledOnce();
     const requestSignal = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).signal;
     expect(requestSignal?.aborted).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(CLIENT_REQUEST_TIMEOUT_MS);
+    expect(requestSignal?.aborted).toBe(true);
+
+    request.resolve(okResponse(new Blob(['result'])));
+    await generation;
   });
 
   it('turns a rejected canvas export into an error instead of leaving the spinner stuck', async () => {

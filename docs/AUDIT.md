@@ -23,60 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Correctness] Client request timeout starts before the canvas export, eroding the deadline-ladder invariant
-
-**File(s):** `web/src/lib/drawing/aiImage.ts` (`generateAiImage`, lines 204–215) @ 9ae62ff1;
-invariant documented in `web/src/lib/ai/limits.ts` (lines 25–28)
-
-**Priority:** P2
-
-#### Problem
-
-`limits.ts` documents the deadline ladder's invariant (lines 9–11, 25–28): the client aborts *just
-past* the platform ceiling "so the server's controlled error always arrives first" —
-`CLIENT_REQUEST_TIMEOUT_MS` (27 s) is sized to be 1 s past `NETLIFY_SYNC_TIMEOUT_MS` (26 s), and
-`limits.test.ts` guards the ordering of the constants.
-
-But `generateAiImage` starts the abort timer before any of the pre-request work runs:
-
-```ts
-const runId = startAiGeneration(blob ? URL.createObjectURL(blob) : null, controller);
-const timeoutId = setTimeout(() => controller.abort(), CLIENT_REQUEST_TIMEOUT_MS);
-
-try {
-  const exported = await exportUploadImage(blob, runId);
-  ...
-  const res = await fetch(endpoint, { ... signal: controller.signal });
-```
-
-(lines 211–224). The 27 s budget therefore also covers `exportCanvasBlob` plus the
-`createImageBitmap` → canvas → `toBlob` WebP transcode in `encodeWebpUpload` (lines 30–53) — work
-that can take a second or more on the low-end tablets this app targets — plus the upload transfer
-time. The server's ~24 s (`GENERATE_DEADLINE_MS`) clock only starts once the request arrives. So
-whenever export + encode + upload latency exceeds ~1 s of the built-in headroom, the client timer
-fires *before* the server's controlled 502 arrives, and the child sees the generic client-side
-`AI_TIMEOUT_MESSAGE` instead of the server's classified error — exactly the failure mode the ladder
-exists to prevent. The 1 s margin the constants encode is silently consumed by unrelated local work.
-
-#### Proposed solution
-
-Start the timeout immediately before the `fetch` call:
-
-```ts
-const exported = await exportUploadImage(blob, runId);
-if (!exported) return;
-const timeoutId = setTimeout(() => controller.abort(), CLIENT_REQUEST_TIMEOUT_MS);
-const res = await fetch(...);
-```
-
-(keep `clearTimeout(timeoutId)` in `finally`; initialize `timeoutId` to `undefined` so the `finally`
-stays safe when the export bails early). Tradeoff: a canvas export that hangs forever would no
-longer be caught by the 27 s timer and would leave the spinner up until the user closes the modal —
-but the export is local, synchronous-ish work that has no realistic hang mode, and a rejected export
-is already handled by the `catch`. Alternatively keep a separate, generous export bound if that risk
-is deemed real. Extend `aiImage.test.ts` with a fake-timers test proving the timer does not run
-during the export phase.
-
 ### [Performance] AiImagePrompt creates and manages an object URL for a preview that is never rendered
 
 **File(s):** `web/src/lib/components/AiImagePrompt.svelte` (lines 11–32, 72),
