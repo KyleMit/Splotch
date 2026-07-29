@@ -72,7 +72,7 @@ const PATCH_CLUSTER_CAP = 8;
 const MERGE_INPUT_CAP = PATCH_CLUSTER_CAP * 8;
 
 function unionBoxes(boxes: Box[]): Box {
-  const union = boxes[0];
+  const union = { ...boxes[0] };
   for (let i = 1; i < boxes.length; i++) mergeInto(union, boxes[i]);
   return union;
 }

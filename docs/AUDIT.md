@@ -19,36 +19,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — undo & snapshot history
 
-### [Readability] `unionBoxes` mutates its first element while reading as pure
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts` (`unionBoxes`, lines 345–349; call sites lines
-390, 409) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-function unionBoxes(boxes: Box[]): Box {
-  const union = boxes[0];
-  for (let i = 1; i < boxes.length; i++) mergeInto(union, boxes[i]);
-  return union;
-}
-```
-
-The name and signature read as a pure fold, but the returned box *is* `boxes[0]`, mutated in place.
-Both current call sites immediately discard the input array (`boxes = [unionBoxes(boxes)]`) so
-nothing breaks today, but a future caller holding a reference to the first cluster box gets silently
-corrupted geometry — the same class of aliasing bug the file's careful patch invariants exist to
-prevent. Also assumes non-empty input without saying so (`boxes[0]` on `[]` returns `undefined`
-typed as `Box`).
-
-#### Proposed solution
-
-Copy first: `const union = { ...boxes[0] };` — one spread on a cold path (both call sites run only
-past the cluster caps). Or, if the in-place mutation is deliberately kept, rename to
-`unionIntoFirst` so the contract is in the name.
-
 ### [Testing] Cap tests hard-code counts instead of deriving them from the (unexported) cap constants
 
 **File(s):** `web/src/lib/drawing/undoHistory.test.ts` (lines 477–492, 494–509);
