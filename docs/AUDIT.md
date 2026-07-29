@@ -21,44 +21,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Drawing engine — export/save, paper view & pointer math
 
-### [Performance] saveDrawingIfEnabled serializes the screenshot-chunk fetch behind the export
-
-**File(s):** `web/src/lib/drawing/saveOnDelete.ts` (`saveDrawingIfEnabled`, lines 11–19) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-const blob = await exportCanvasBlob(getActiveOverlayImage());
-if (!blob) return;
-const { saveImageBlob } = await import('./screenshot');
-await saveImageBlob(blob);
-```
-
-The `./screenshot` chunk fetch only starts after the full export (which itself awaits the
-`./exportDrawing` chunk plus the ~226ms texture decode noted at `exportDrawing.ts` line 38)
-completes. On a slow connection the two network waits are strictly sequential. This is a background
-save, so no one is watching a spinner — but the longer the save takes, the wider the window in which
-app teardown (tab close after the delete) can abort it and lose the drawing this feature exists to
-keep.
-
-#### Proposed solution
-
-Start the module fetch before awaiting the export so network overlaps compositing:
-
-```ts
-const screenshotModule = import('./screenshot');
-const blob = await exportCanvasBlob(getActiveOverlayImage());
-if (!blob) return;
-const { saveImageBlob } = await screenshotModule;
-```
-
-Gotcha: an early `return` (empty blob) leaves the import promise dangling — harmless (the chunk is
-cached for the next save), but if the connection is dead the rejection becomes unhandled; attach a
-no-op `.catch` or hoist the try/catch. Verify `web/tests/startup-bundle.spec.ts` still passes (the
-import stays dynamic, so it should).
-
 ### [Maintainability] calculateStrokeSpeed's 1ms span floor is an unnamed tuning literal
 
 **File(s):** `web/src/lib/drawing/strokeMath.ts` (`calculateStrokeSpeed`, line 115) @ 9ae62ff1
