@@ -4,6 +4,29 @@
 > the visible drawing lag on `/` on a physical iPad, where the ADR-0066 engine gates pass but the
 > screen does not keep up.
 
+## START HERE — the three things worth doing next, in order
+
+The instruments are built and every hypothesis a machine can test is eliminated. What is left needs
+a hand on the device, and each of these is minutes of work.
+
+1. **Turn iPadOS Scribble off and hand-draw once.** Settings → Apple Pencil → Scribble = OFF, then
+   `npm run perf:ipad:frames -- --phases=page --contact-seconds=20` and draw the way that lags. If
+   the stalls vanish, that is the cause and everything below is moot. It is the only remaining
+   candidate that is invisible to every instrument here *and* present only under real input.
+2. **Hand-draw a paired A/B.**
+   `npm run perf:ipad:frames -- --phases=page,page-no-halos,page,page-no-halos --contact-seconds=20`.
+   Repeated phases are how a hand-drawn comparison survives an operator who cannot repeat themselves
+   (repeats are labelled `page#2`), and the per-bucket table shows onset within each phase. A single
+   unpaired sweep already produced and then withdrew one false finding — do not trust an unpaired
+   one.
+3. **Record a Web Inspector Timeline on `/` by hand** and run `npm run perf:ios:analyze` on it. It
+   is the only instrument that shows **paint** and **composite** records, which is where the
+   evidence says the time goes. The recipe is in the runbook's "Timeline on `/`" section.
+
+Also open from this work: **issue #663** — on a coloring page the screen sometimes goes black
+mid-stroke and then snaps back, which is the same blend layer compositing *unblended*. It may be the
+visible face of the same compositor event.
+
 ## Objective & non-goals
 
 **Objective.** Build instruments that make the felt lag visible as numbers on the **real app surface
