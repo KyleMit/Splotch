@@ -23,6 +23,14 @@ on:
         description: Runs per worker count
         required: false
         default: '5'
+      workers:
+        # A JSON list so a re-tune can spend all its reps on one configuration.
+        # The full curve answers "how many workers"; a single count with many
+        # reps is what a retry decision needs, because that rests on the red-run
+        # rate at the count CI actually ships.
+        description: Worker counts to sweep (JSON list)
+        required: false
+        default: '[1, 2, 3, 4, 6, 8]'
 
 permissions:
   contents: read
@@ -35,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        workers: [1, 2, 3, 4, 6, 8]
+        workers: ${{ fromJSON(github.event.inputs.workers || '[1, 2, 3, 4, 6, 8]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
