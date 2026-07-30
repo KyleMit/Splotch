@@ -80,12 +80,13 @@ const cores = availableParallelism();
 // re-run plus the attention to triage it, which no wall-clock saving covers.
 const saturation = cores / CORES_PER_WORKER;
 
-// How far past capacity CI goes: twice it, i.e. `cores`. Retries make a flake
-// cheap there, so wall clock decides among settings whose flake rates don't
-// differ — and at 4 cores they don't. Measured 35 reps each with retries off
-// (ADR-0078 §4): 4 workers went 1/35 runs red against 3 workers' 3/35, for 3.2s
-// less per run. `cores` is also self-limiting at twice capacity, which is the
-// most oversubscription ever measured as safe.
+// How far past capacity CI goes. Retries make a flake cheap there, so wall clock
+// decides among settings whose flake rates don't differ — and at 4 cores they
+// don't. Measured 35 reps each with retries off (ADR-0078 §4): 4 workers went
+// 1/35 runs red against 3 workers' 3/35, for 3.2s less per run. Twice capacity is
+// also the most oversubscription ever measured as safe, so this doubles as the
+// ceiling — a re-tune edits this constant rather than re-deriving why `cores`
+// meant twice capacity.
 //
 // Worth knowing before re-tuning: an earlier pass of that same re-measure put
 // this at 1.5× on a 15-rep sweep where 3 workers were 0/15 and 4 were 6/15. Both
@@ -105,20 +106,28 @@ const saturation = cores / CORES_PER_WORKER;
 //     number there. On 8 logical / 4 physical this says 8 where physical capacity
 //     argues 4 — the likeliest place it is wrong.
 // Override with `--workers=N`; re-measure with .github/workflows/worker-sweep.yml.
-const workers = process.env.CI ? Math.max(2, cores) : Math.max(1, Math.floor(saturation));
+const CI_OVERSUBSCRIPTION = 2;
+
+const workers = process.env.CI
+  ? Math.max(2, Math.floor(saturation * CI_OVERSUBSCRIPTION))
+  : Math.max(1, Math.floor(saturation));
 
 const slowMo = Number(process.env.SLOWMO) || 0;
 
-// Two, and re-measured rather than inherited (issue #653, ADR-0078 §4). The
-// residual unretried red-run rate at the shipped worker count is ~5.7% — 4 red
-// runs in 70, spread over three zoom/pinch specs, the worst at 2/35 attempts.
+// Two, and re-measured rather than inherited (issue #653, ADR-0078 §4). At the
+// shipped worker count, 1 of 35 unretried runs went red — 2.9%, but with a 95%
+// confidence interval reaching 12.9%, because one observed failure in 35 cannot
+// establish a rate. (3 workers, which CI never selects, was 3/35. Pooling the two
+// into "4 in 70" would be quoting a number for a configuration that was measured
+// 35 times.)
 //
-// So `0` would redden about one run in eighteen. `1` looks sufficient on paper
-// (5.7%² ≈ 0.3% per spec) but that squaring assumes the two attempts are
-// independent, and a retry runs immediately afterwards on the same starved
-// machine — precisely the correlation the assumption denies. At a per-attempt
-// rate this close to the threshold, the cost of being wrong is a red PR gate on
-// work that is fine.
+// That interval is the whole argument. `0` reddens a run whenever the residual
+// does, with no evidence it is rare enough to bear. `1` needs a spec to fail
+// twice, which looks like ~0.1% if the attempts are independent — and they are
+// not: a retry runs immediately afterwards on the same starved machine, so the
+// squaring flatters exactly the failure mode being retried. Dropping to 1 on a
+// point estimate whose interval spans 12.9% would be choosing a knob against a
+// number the data doesn't support, which is the mistake §4 records above.
 //
 // What changes instead is that the debt is no longer silent: every retried pass
 // is annotated (playwright-flaky-reporter.ts). Reducing this number is downstream

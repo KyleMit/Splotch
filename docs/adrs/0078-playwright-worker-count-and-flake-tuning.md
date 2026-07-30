@@ -323,8 +323,14 @@ why the curve is a U and not a slope, and why worker tuning alone was never goin
 
 ### The retry count
 
-The residual at the shipped configuration is **~5.7% of unretried runs going red** — 4 red in 70,
-across three specs, all of them zoom/pinch gestures:
+The residual at the shipped configuration — 4 workers — is **1 of 35 unretried runs going red**.
+That is 2.9%, with a 95% confidence interval reaching **12.9%**: one observed failure in 35 does not
+establish a rate. Three workers, which the formula never selects on CI, was 3/35. The two are worth
+keeping apart — pooling them into "4 red in 70" quotes a figure for a configuration that was
+measured 35 times, and the pooled 5.7% then collides with the worst spec's own 2/35 two sentences
+later.
+
+Across both counts the failures belong to three specs, all zoom/pinch gestures:
 
 | spec                                                                    | reps failed |
 | ----------------------------------------------------------------------- | ----------- |
@@ -332,21 +338,22 @@ across three specs, all of them zoom/pinch gestures:
 | `navigating to another section resets the zoom`                         | 1/35 (w=4)  |
 | `a pinch swallows the trailing click, so it never toggles the control…` | 1/35 (w=3)  |
 
-**`retries: 2` stays.** `0` would redden about one run in eighteen, which is not a gate. `1` looks
-sufficient on paper — the worst spec's 5.7% squared is ~0.3% — but that squaring assumes the two
-attempts are independent, and a retry runs immediately afterwards on the same starved machine, which
-is precisely the correlation the assumption denies. At a per-attempt rate this close to the
-threshold, being wrong costs a red gate on work that is fine.
+**`retries: 2` stays, and the interval is the whole argument.** `0` reddens a run whenever the
+residual does, with no evidence it is rare enough to bear. `1` needs a spec to fail twice, which
+looks like ~0.1% *if the attempts are independent* — and they are not: a retry runs immediately
+afterwards on the same starved machine, so the squaring flatters exactly the failure mode being
+retried. Dropping to `1` on a point estimate whose interval spans 12.9% would be choosing a knob
+against a number the data does not support — the mistake this same section records above.
 
 What changes is that the debt stops being silent. `web/playwright-flaky-reporter.ts` turns every
 retried pass into a GitHub Actions annotation plus a job-summary table, so "green, but only on
 attempt 2" is visible on the run page. That is the standing objection in the Consequences below —
 retries hiding what they compensate for — answered without pretending the rate is lower than it is.
 
-**Reducing the count is downstream of those three specs** (issue \#665), not of another sweep. Fixing
-one spec took 4 workers from 6/15 red to 1/35; three more of the same kind is what makes `retries: 1`
-a measurement rather than an assumption. They are a coherent cluster (zoom/pinch gesture state), which
-is a better starting point than a rate.
+**Reducing the count is downstream of those three specs** (issue \#665), not of another sweep.
+Fixing one spec took 4 workers from 6/15 red to 1/35; three more of the same kind is what makes
+`retries: 1` a measurement rather than an assumption. They are a coherent cluster (zoom/pinch
+gesture state), which is a better starting point than a rate.
 
 ## Consequences
 

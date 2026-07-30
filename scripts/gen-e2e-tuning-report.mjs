@@ -137,8 +137,8 @@ const CI_POST_SPEC_FIX = [
   { w: 4, wall: 66.5, runs: 35, execs: 7175, fails: 1, redRuns: 1, recommended: true },
 ];
 
-// The three specs those 4 red runs in 70 belong to. All zoom/pinch gesture state,
-// which is a better starting point for the next pass than a rate is.
+// The specs those red runs belong to, across both counts. All zoom/pinch gesture
+// state, which is a better starting point for the next pass than a rate is.
 const RESIDUAL_SPECS = [
   ['closing the overlay resets the zoom for the next open', '2/35 (3 workers)'],
   ['navigating to another section resets the zoom', '1/35 (4 workers)'],
@@ -516,7 +516,7 @@ ${masthead({
     ${postSpecFixSection}
     <ul class="notes">
       <li><b>The gradient was the spec, not the worker count.</b> Three and four workers are indistinguishable (Fisher p = 0.61) and four is 3.2s faster, which puts the coefficient back at twice capacity — <code>cores</code>, as originally proposed. The 1.5× detour is kept in the record because the mistake generalises: a worker count tuned against a rate one bad spec dominates is tuning around the spec.</li>
-      <li><b>Retries stay at 2.</b> The residual is ~5.7% of unretried runs going red (4 in 70). <code>0</code> would redden about one run in eighteen. <code>1</code> looks sufficient on paper — the worst spec's 5.7% squared is ~0.3% — but that squaring assumes the two attempts are independent, and a retry runs immediately afterwards on the same starved machine.</li>
+      <li><b>Retries stay at 2, and the interval is the argument.</b> At the shipped count the residual is <b>1 of 35</b> unretried runs going red — 2.9%, but with a 95% confidence interval reaching <b>12.9%</b>, because one failure in 35 does not establish a rate. (The 3-worker column is kept separate on purpose: pooling the two into “4 in 70” quotes a figure for a configuration measured 35 times.) <code>0</code> reddens a run whenever the residual does. <code>1</code> needs a spec to fail twice — ~0.1% <i>if the attempts are independent</i>, and they are not: a retry runs immediately afterwards on the same starved machine, so the squaring flatters exactly the failure mode being retried.</li>
       <li><b>What changes is that the debt is visible.</b> Every retried pass becomes a GitHub Actions annotation plus a job-summary table, so “green, but only on attempt 2” shows on the run page instead of in a log nobody opens.</li>
       <li><b>Reducing the count is downstream of those three specs</b>, not of another sweep — fixing one spec took 4 workers from 6/15 red to 1/35.</li>
     </ul>
