@@ -110,22 +110,80 @@ already paid. Second, a stuck reveal is not time-starved: `drawMagicReveal` chur
 draw→check→undo→redraw, so a wider window only lets a non-converging loop churn longer. The budget
 helped where the reveal was merely slow and did nothing where the loop is stuck.
 
-The genuinely-slow cases are worth fixing, but by stopping the churn sooner rather than widening the
-window — tracked in issue \#650.
-
 So the same suite is limited by different things in the two places: contention locally, raw canvas
 throughput on CI. Worker count fixes only the first.
+
+### 2c. The redraw loop is bounded by attempts, not by wall clock
+
+The reverted experiment above left one lever: stop the churn sooner. `drawMagicReveal` and the three
+sibling redraw loops in `flows-magic-brush.spec.ts` were bounded only by a `toPass({ timeout })`
+wrapper, and wall clock is the wrong bound for this failure. A wrong-mode stroke is already
+committed, so a redraw loop has exactly two futures: it recovers on the next attempt, because the
+`$effect` has since landed and the mode is now correct for good, or it is stuck and no further
+attempt can change that. A timeout cannot tell those apart — it spends the whole budget either way.
+
+Distinguishing them needs the attempts-until-success distribution, not a guess: picking a cap blind
+risks failing the valid-but-slow reveals the loop exists to rescue. The helper was instrumented to
+log attempts and elapsed time per call, and `flows-magic-brush.spec.ts` was run at
+`--repeat-each=10` across four worker counts on the local profile above (328 recorded calls across
+all four redraw sites):
+
+| workers | calls | landed on attempt 1 | on attempt 2 | on attempt 3+ | never converged |
+| ------- | ----- | ------------------- | ------------ | ------------- | --------------- |
+| 1       | 90    | 90                  | 0            | 0             | 0               |
+| 2       | 79    | 79                  | 0            | 0             | 0               |
+| 4       | 79    | 77                  | 1            | 0             | 1               |
+| 8       | 80    | 71                  | 9            | 0             | 0               |
+
+The distribution has no tail. Every one of the 327 successes landed by the second attempt, and the
+second attempt is only ever needed under contention — it appears at 4 and 8 workers and never at 1
+or 2. The single non-converging call is the whole pathology in one data point: it ran **4 attempts
+and 14.05s**, i.e. it churned until the budget expired and then failed anyway.
+
+So `MAGIC_REVEAL_MAX_ATTEMPTS = 3` — one spare attempt above the measured distribution, keeping the
+second chance a valid-but-slow reveal needs while refusing to pay for a fourth that has never once
+helped.
+
+Measured against a forced non-converging reveal (the magic brush deliberately never selected, so
+every attempt paints one flat pen colour), the failure cost drops from **15.00s — the entire budget,
+on all three runs — to 9.19s**. The number matters less than the shape: the cost is now a function
+of the cap, not of a clock, so the objection that killed the 30s bump — that widening the window
+widened the stuck case with it — no longer applies to anything.
+
+**The cap is the loop's only bound, and getting there took two tries.** The first version kept
+`MAGIC_REVEAL_TIMEOUT` alongside the cap as a "backstop", exiting the loop on whichever bound came
+first. Review killed it, and the reason generalises past this helper:
+
+* **A between-attempts deadline cannot do the job that would justify it.** It never interrupts an
+  attempt, so it cannot rescue "one attempt runs long" — the case it was there for. It can only cut
+  the loop *shorter*, and the loop can still overrun it by a full attempt. Probed on the shipped
+  loop shape: a 4s always-failing attempt under a 5s deadline failed at **8009ms**, where
+  `toPass({ timeout: 5000 })` hard-stops mid-attempt at 5013ms. So relative to `main` the budget had
+  quietly stopped being a ceiling at all.
+* **Worse, it made the effective cap a function of machine speed.** A slower runner spends the
+  budget inside earlier attempts and silently loses the third. That is exactly the
+  deadline-exhaustion failure §3 names, reintroduced inside the fix for it — and it is invisible,
+  because both exits produced the *cap's* diagnosis. The same probe exited at `tries=2` on the
+  deadline and still reported "never landed in 2 attempt(s)", pointing a future tuner at the cap
+  when the truth was the clock.
+
+So the deadline is gone and `MAGIC_REVEAL_TIMEOUT` with it — nothing polls against it any more,
+since each attempt's own wait is `REVEAL_ATTEMPT_SETTLE_MS`. Playwright's per-test timeout is the
+real outer ceiling, and unlike a deadline inside the loop it *can* stop a hung attempt mid-flight.
+Two bounds remain, each owning one decision: how long one attempt waits, and how many attempts there
+are.
 
 ### 3. Contention breaks tests two different ways, and only one is a timeout problem
 
 This distinction is the reason the flakes resisted three separate fixes.
 
-**Deadline exhaustion.** Fixed wall-clock budgets (`MAGIC_REVEAL_TIMEOUT = 15_000`,
+**Deadline exhaustion.** Fixed wall-clock budgets (the magic reveal's since-removed 15s window,
 `click({ timeout: 1000 })`, the 30s test timeout) against latency that inflates with contention.
 Each test has a headroom ratio — budget ÷ normal duration — and fails when inflation exceeds *its*
 headroom. That predicts the observed shape: distinct failing tests go 2 → 2 → 10 → 18 across 3, 4, 6
 and 8 workers, sweeping a rising threshold through the suite's distribution of headroom rather than
-breaking the same tests harder.
+breaking the same tests harder. 2c is a worked example of how easily this class hides: a deadline
+added as a *safety net* beside an attempt cap turned the cap itself into a headroom ratio.
 
 **Commit-order races.** The brush→engine mode toggle flows through a Svelte `$effect`, so a stroke
 dispatched shortly after `pickBrush()` can commit while the engine is still in the previous mode.
@@ -175,8 +233,43 @@ which is how the magic-brush tests reached the state they were in.
 − **CI's real limit is canvas throughput, not workers.** A GPU-less runner rasterizes the magic
 reveal in software, so those specs sit near their budget at any worker count. Worker tuning cannot
 help there, and — as the reverted experiment showed — neither does a larger budget when the retry
-loop is what is stuck. Cheaper assertions and a bounded retry (issue \#650) are the remaining
-levers.
+loop is what is stuck. The attempt cap (2c) removes the churn; cheaper assertions are the remaining
+lever.
+
+\+ **The failure reports evidence instead of prescribing a fix.** With one bound, the message can
+state what actually happened — how many attempts ran and how long each took — and name the two
+readings of it. That matters because the durations discriminate: attempts that each ran out the full
+settle window mean the reveal never rasterized (more attempts cannot help), while quick failures
+mean the mode race the retry exists for. An earlier draft said "raise `MAGIC_REVEAL_MAX_ATTEMPTS`",
+which the cold measurement below showed to be the wrong advice for the only non-convergence seen in
+the wild.
+
+− **The attempt cap is measured on one hardware profile and inherits that limit.** The distribution
+in 2c comes from the local 4-core container; CI's GPU-less runner is the environment where reveals
+sit nearest their budget, and the sweep there would need a throwaway workflow like the worker sweep
+did.
+
+− **The 2c distribution is warm-server-dominated, and the cold path fails differently.** That sweep
+ran `--repeat-each=10` against an already-running preview server, so all but a handful of the 328
+calls are warm repeats — while *every* CI run is cold. Review reported a cold-container failure at
+the post-clear reveal in "reveals a rainbow gradient when no coloring page is applied", the slowest
+reveal in the file. A dedicated cold sweep — fresh preview-server process per iteration, the spec
+run first against it, 22 iterations and 102 recorded calls — **reproduced it twice**, and the
+per-attempt durations say it is not the cap's problem:
+
+* Cold calls are bimodal. 100 of 102 landed on attempt 1 in ~100–200ms; the 2 failures spent the
+  **entire** settle window on all three attempts (`3018/3033/3029ms` and `3064/3017/3014ms`).
+  Nothing cold ever succeeded on attempt 2 or 3 — the warm distribution's recoveries have no cold
+  counterpart.
+* So this failure is retry-insensitive, and that was checked rather than inferred: re-running the
+  same cold protocol with the cap raised to **8** still failed, twice in 14 iterations, with all
+  eight attempts at the ceiling (`3092/3041/3044/3037/3051/3034/3031/3035ms`). Raising the cap buys
+  nothing and makes the failure proportionally slower, which is why the message no longer recommends
+  it.
+* It is not a regression from this change. The per-attempt logic and settle window are unchanged
+  from `main`; `main` would have run more identically-failing attempts and gone red at its 15s
+  budget instead of at 9s. Whether it is the settle window or the post-clear regeneration itself is
+  unresolved and tracked as issue \#658 — 2c's cap is not the lever either way.
 
 − **The deeper seam is unaddressed.** Tests can only observe when the *button* changes, not when the
 engine commits the brush mode. A dev-harness signal for the engine's committed mode would retire the
@@ -192,3 +285,18 @@ were falsified — is committed at
 [`scrapbook/e2e-tuning/`](https://kylemit.github.io/Splotch/e2e-tuning/), regenerated with
 `npm run gen:e2e-tuning-report` from the datasets recorded in `scripts/gen-e2e-tuning-report.mjs`.
 That page carries the exact commands for a re-sweep.
+
+To re-measure the attempt distribution in 2c, wrap each redraw site's callback in a counter that
+appends `{site, attempts, ok, ms}` to a log file, then round-robin the worker counts over
+`npm run test:e2e -- flows-magic-brush.spec.ts --workers=$w --repeat-each=10` against an
+already-running preview server (step 1 of the re-sweep commands). Only the per-call counter needs
+adding — `redrawUntilPasses` already collects each attempt's duration for its failure message. Force
+the stuck case by calling `drawMagicReveal` **without** selecting the magic brush: every attempt
+then paints one flat pen colour, so the loop cannot converge and the time to fail is the cap's cost.
+
+The **cold** protocol is a different harness and finds a different failure, so keep them separate:
+per iteration, kill and restart the preview server, wait for it to answer, then run the spec as the
+first thing to touch it. Twenty-odd iterations is enough to see the post-clear rainbow failure at a
+few percent. Point it at `-g "rainbow gradient" --workers=1` to isolate that test, or run the whole
+spec at `--workers=4` for cold plus contention. Temporarily sourcing the cap from an env var is what
+makes the "would more attempts help?" question cheap to answer.
