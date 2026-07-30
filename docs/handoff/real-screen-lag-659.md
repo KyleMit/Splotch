@@ -10,17 +10,27 @@
 The instruments are built and every hypothesis a machine can test is eliminated. What is left needs
 a hand on the device, and each of these is minutes of work.
 
-1. **Turn iPadOS Scribble off and hand-draw once.** Settings → Apple Pencil → Scribble = OFF, then
-   `npm run perf:ipad:frames -- --phases=page --contact-seconds=20` and draw the way that lags. If
-   the stalls vanish, that is the cause and everything below is moot. It is the only remaining
-   candidate that is invisible to every instrument here *and* present only under real input.
-2. **Hand-draw a paired A/B.**
+1. **Hand-draw one run with the current probe** —
+   `npm run perf:ipad:frames -- --phases=page --contact-seconds=20 --timeline`, drawing the way that
+   lags. The only capture of the lag so far predates the probe recording **pointer type**, so nobody
+   knows whether it was finger or Pencil, and that decides the whole suspect list. Twenty seconds of
+   drawing removes the ambiguity.
+
+   **Do this before the Scribble test below.** Every phase of that capture sustained **115–134 moves
+   per second** — a steady ~120 Hz, consistent with a finger on a 120 Hz digitizer, and the reporter
+   described single-finger drawing. iPadOS Scribble is a **Pencil-only** feature, so if the lag
+   reproduces with a finger, Scribble cannot be the cause and toggling it proves nothing.
+2. **If (and only if) that run says `kind: pen`: turn Scribble off and repeat.** Settings → Apple
+   Pencil → Scribble = OFF. It remains the best candidate *for a Pencil session* — `scribbleGuard`
+   and ADR-0038 exist because a stylus tap can arm it, and recognition would be main-thread work
+   inside the browser, invisible to every instrument here and present only under real stylus input.
+3. **Hand-draw a paired A/B.**
    `npm run perf:ipad:frames -- --phases=page,page-no-halos,page,page-no-halos --contact-seconds=20`.
    Repeated phases are how a hand-drawn comparison survives an operator who cannot repeat themselves
    (repeats are labelled `page#2`), and the per-bucket table shows onset within each phase. A single
    unpaired sweep already produced and then withdrew one false finding — do not trust an unpaired
    one.
-3. **Record a Web Inspector Timeline on `/` by hand** and run `npm run perf:ios:analyze` on it. It
+4. **Record a Web Inspector Timeline on `/` by hand** and run `npm run perf:ios:analyze` on it. It
    is the only instrument that shows **paint** and **composite** records, which is where the
    evidence says the time goes. The recipe is in the runbook's "Timeline on `/`" section.
 
@@ -309,18 +319,37 @@ looked like a clean 104 ms-vs-17 ms split; as a rate it is an occasional ~120 ms
 
 Only things a synthetic `dispatchEvent` cannot fake — the **real iOS touch pipeline**:
 
-1. **iPadOS Scribble / handwriting recognition.** ADR-0038 and `scribbleGuard` exist because a
-   stylus tap can arm Scribble. If recognition runs over the canvas during drawing it is main-thread
-   work in the *browser*, invisible to every instrument here, present only under a real Pencil. It
-   fits every observation: handlers dispatched on time at 8.3 ms while frame production starves.
-   **Cheapest possible test, and the top next step:** iPadOS Settings → Apple Pencil → Scribble OFF,
-   then one hand-drawn run. If the stalls vanish, that is the cause.
-2. **Gesture/hit-test machinery on real touch** — WebKit deciding scrollability, tap candidates, and
-   touch-region work per contact on a 4.7 Mpx canvas page.
-3. **The render server's touch prioritisation** on iOS.
-4. **A confound I introduced:** hand runs had the on-device HUD (two repaints/second), synthetic
-   runs did not. `--hud` now forces it on for a driven run so this is ruled out rather than assumed
-   harmless. Result pending.
+Only things a synthetic `dispatchEvent` cannot fake, and the ordering below **changed** once the
+capture's own input rate was read back — see the note after the list.
+
+1. **Gesture/hit-test machinery on real touch** — WebKit deciding scrollability, tap candidates, and
+   touch-region work per contact on a 4.7 Mpx canvas page. Applies to a finger as much as a stylus,
+   which is why it is now first.
+2. **The render server's touch prioritisation** on iOS.
+3. **iPadOS Scribble / handwriting recognition** — *only if the lag reproduces with a Pencil.*
+   ADR-0038 and `scribbleGuard` exist because a stylus tap can arm Scribble, and recognition would
+   be main-thread work in the *browser*, invisible to every instrument here. It fits the shape of
+   the observations (handlers on time at 8.3 ms while frame production starves) but it is
+   **Pencil-only**.
+4. **Ruled out:** the on-device HUD, a confound I introduced by running it in hand mode and not in
+   driven mode. `--hud` on a driven run at 240 Hz stayed clean (max 33 ms, zero stalls).
+
+> **Why Scribble was demoted.** It was the prime suspect until the hand capture's input rate was
+> read back: **every phase sustained 115–134 moves per second**, a steady ~120 Hz, which is what a
+> finger on a 120 Hz digitizer looks like — and the reporter described single-finger drawing.
+> Scribble is a Pencil feature, so on a finger session it cannot be the cause and toggling it proves
+> nothing. That capture predates the probe recording pointer type, so this is inference, not
+> measurement, which is exactly why step 1 of START HERE is now "capture one run that says which it
+> was".
+>
+> The same read-back also confirms something useful: **~120 moves/second was sustained *through* the
+> stalls**, so real input never faltered even while frames stopped.
+
+> **A correlation NOT to trust, recorded so nobody rediscovers it.** Across the hand phases,
+> moves-per-frame correlates almost perfectly with stall share (Spearman 0.943) and lost ms (Pearson
+> 0.996). That is an artifact: `moves/frame` is moves ÷ in-contact frames, and a stall removes
+> frames from the denominator, so the two are the same fact twice. `movesPerSec` is the honest rate
+> column, and it is flat.
 
 ## FINDING 10 — everything reproducible is eliminated
 

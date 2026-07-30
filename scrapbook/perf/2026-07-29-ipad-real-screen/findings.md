@@ -30,13 +30,15 @@ So a drawing loop pacing at 17 ms is **at the ceiling, not failing**. Two conseq
 * **ADR-0066's "commit hitch ≈ one 120 Hz frame" gate is stricter than the platform** on
   Safari/iPad, where the presentable frame is 16.7 ms. The gate is deliberately left as the tighter
   of the two (the native WKWebView target is unmeasured); ADR-0066 carries the amendment.
-* The digitizer runs **ahead** of the frame: a hand delivers 1.9–4.2 `pointermove` per presentable
-  frame, so per-event work runs 2–4× per frame it can possibly be shown in.
+* The digitizer runs **ahead** of the frame: a hand delivered a steady **115–134 `pointermove` per
+  second** against a ~59 Hz presentable frame, so per-event work runs about twice per frame it can
+  possibly be shown in — and more than that whenever a frame runs late.
 
 ## 2. Hand-drawn capture — the lag, measured
 
-6 phases × 15 s of banked finger-down time, single finger/Pencil. 10,281 frames, 11,725 pointer
-events, 11,976 engine measures. Frame beat observed: 16 ms.
+6 phases × 15 s of banked finger-down time. 10,281 frames, 11,725 pointer events, 11,976 engine
+measures. Frame beat observed: 16 ms. The input kind was not recorded by this build (see §7) — the
+sustained ~120 moves/second is consistent with a finger.
 
 | phase           | dt p50 |     p95 |      max | late % | stall % | lost ms | moves/frame |
 | --------------- | -----: | ------: | -------: | -----: | ------: | ------: | ----------: |
@@ -46,6 +48,10 @@ events, 11,976 engine measures. Frame beat observed: 16 ms.
 | `page-no-blend` |     17 | **168** |      693 |    9.5 |     9.3 |    8176 |        4.24 |
 | `page-no-halos` |     17 |      18 | **1422** |    3.4 |     3.4 |    5886 |        3.60 |
 | `page-bare`     |     17 |      17 |       21 |    0.0 |     0.0 |       0 |        2.05 |
+
+The `moves/frame` column is included because it is what the verdict logic reads, but **read it with
+care**: it is moves ÷ in-contact frames, so a stall inflates it by removing frames from the
+denominator. `movesPerSec` was flat at 115–134 across every phase.
 
 `lost ms` is time a child waited through: the sum of each late frame's overshoot.
 
@@ -148,13 +154,29 @@ Two things fall out:
 Attribution to a named subsystem is still open, and it is blocked on real touch input rather than on
 tooling. The remaining candidates are the parts of the input path a `dispatchEvent` cannot enter:
 
-1. **iPadOS Scribble / handwriting recognition** — the prime suspect. `scribbleGuard` and ADR-0038
-   exist because a stylus tap can arm it; recognition would be main-thread work *inside the
-   browser*, invisible to every instrument here, and present only under a real Pencil. It fits every
-   observation: handlers dispatched on time while frame production starves. The decisive test is a
-   settings toggle plus one hand-drawn run.
-2. Gesture/hit-test machinery on real touch, over a 4.7 Mpx canvas page.
-3. iOS's render server prioritising differently during touch.
+1. **Gesture/hit-test machinery on real touch** — WebKit deciding scrollability, tap candidates and
+   touch-region work per contact, over a 4.7 Mpx canvas page. Applies to a finger as much as a
+   stylus.
+2. **iOS's render server prioritising differently during touch.**
+3. **iPadOS Scribble / handwriting recognition** — *only if the lag reproduces with a Pencil.*
+   `scribbleGuard` and ADR-0038 exist because a stylus tap can arm it, and recognition would be
+   main-thread work *inside the browser*, invisible to every instrument here. It fits the shape of
+   the observations, but it is **Pencil-only**.
+
+> **On input kind, which decides that ordering.** Every phase of the hand capture sustained
+> **115-134 moves per second** — a steady ~120 Hz, consistent with a finger on a 120 Hz digitizer,
+> and the reporter described single-finger drawing. That capture predates the probe recording
+> pointer type, so this is inference rather than measurement; the first thing worth doing is one
+> hand-drawn run that says `kind: touch` or `kind: pen` outright. If it is a finger, Scribble cannot
+> be the cause.
+>
+> The same read-back confirms that **~120 moves/second was sustained *through* the stalls** — real
+> input never faltered while frames stopped.
+
+> **One correlation not to trust.** Across the hand phases, moves-per-frame tracks stall share
+> (Spearman 0.943) and lost ms (Pearson 0.996) almost perfectly. It is an artifact: `moves/frame` is
+> moves ÷ in-contact frames, and a stall removes frames from the denominator, so the two are one
+> fact counted twice. `movesPerSec` is the honest rate, and it is flat.
 
 Also opened from this session: **#663** — on a coloring page the screen sometimes goes black
 mid-stroke and then snaps back, which is this same blend layer compositing *unblended* (dark mode
