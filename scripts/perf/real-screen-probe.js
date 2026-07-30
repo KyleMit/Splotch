@@ -903,6 +903,8 @@
   }
   console.log(
     `● Real-screen probe running — ${plan.length} phase(s), ` +
-      `${(contactTargetMs / 1000).toFixed(0)}s of drawing each.`
+      (freeDrawMs
+        ? `${(freeDrawMs / 1000).toFixed(0)}s free-draw window each (tap START).`
+        : `${(contactTargetMs / 1000).toFixed(0)}s of drawing each.`)
   );
 })();
