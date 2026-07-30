@@ -7,7 +7,8 @@
 // The probe's row schemas (see its header for the full story). Columns are read
 // by POSITION here, so this list and the probe's writers move together:
 //   frames   [t, dt, contact]
-//   events   [stamp, at, type, id, buttons, coalesced, onCanvas, kind]
+//   events   [stamp, at, type, id, buttons, coalesced, onCanvas, kind,
+//             trusted, pressure, width, height, coalescedFirst, coalescedLast]
 //   measures [start, dur, nameIndex]
 //
 // MEASURED ON DEVICE, and load-bearing for how everything here is defined:
@@ -49,6 +50,7 @@ export const LONG_STROKE_MS = 1000;
 // in the run that first reproduced the reported lag). Lift frames are now reported
 // whole; this only marks the ones worth calling out.
 export const NOTABLE_LIFT_MS = 100;
+export const REAL_SCREEN_SCHEMA_VERSION = 2;
 
 export const POINTER_DOWN = 0;
 export const POINTER_MOVE = 1;
@@ -66,6 +68,12 @@ const EVENT_BUTTONS = 4;
 const EVENT_COALESCED = 5;
 const EVENT_ON_CANVAS = 6;
 const EVENT_KIND = 7;
+const EVENT_TRUSTED = 8;
+const EVENT_PRESSURE = 9;
+const EVENT_WIDTH = 10;
+const EVENT_HEIGHT = 11;
+const EVENT_COALESCED_FIRST = 12;
+const EVENT_COALESCED_LAST = 13;
 const POINTER_KIND_NAMES = ['touch', 'pen', 'mouse'];
 const MEASURE_START = 0;
 const MEASURE_DUR = 1;
@@ -366,6 +374,21 @@ export function summarizePhase(phase, tables) {
       event[EVENT_ON_CANVAS] && event[EVENT_TYPE] === POINTER_MOVE && event[EVENT_BUTTONS] !== 0
   );
   const queueDelays = canvasMoves.map((event) => round(event[EVENT_AT] - event[EVENT_STAMP]));
+  const trustedMoves = canvasMoves.filter((event) => event[EVENT_TRUSTED] === 1).length;
+  const untrustedMoves = canvasMoves.filter((event) => event[EVENT_TRUSTED] === 0).length;
+  const unknownTrustMoves = canvasMoves.length - trustedMoves - untrustedMoves;
+  const pressure = canvasMoves
+    .map((event) => event[EVENT_PRESSURE])
+    .filter((value) => Number.isFinite(value));
+  const widths = canvasMoves
+    .map((event) => event[EVENT_WIDTH])
+    .filter((value) => Number.isFinite(value));
+  const heights = canvasMoves
+    .map((event) => event[EVENT_HEIGHT])
+    .filter((value) => Number.isFinite(value));
+  const coalescedSpans = canvasMoves
+    .filter((event) => event[EVENT_COALESCED_FIRST] >= 0 && event[EVENT_COALESCED_LAST] >= 0)
+    .map((event) => round(event[EVENT_COALESCED_LAST] - event[EVENT_COALESCED_FIRST]));
 
   const phaseMeasures = measures.filter((measure) => inWindow(measure[MEASURE_START], from, to));
   const contactFrames = contactDeltas.length;
@@ -396,6 +419,7 @@ export function summarizePhase(phase, tables) {
   const trend = longStrokeTrend(longStrokes, frames);
 
   const movesPerFrame = contactFrames ? round(canvasMoves.length / contactFrames) : 0;
+  const contactSeconds = (phase.contactMs ?? 0) / 1000;
   const pacing = frameStats(contactDeltas, intervalMs);
 
   return {
@@ -404,7 +428,7 @@ export function summarizePhase(phase, tables) {
     paperActive: phase.paperActive,
     abandoned: phase.abandoned ?? false,
     halos: { seen: phase.halosSeen ?? 0, hidden: phase.halosHidden ?? null },
-    contactSeconds: round((phase.contactMs ?? 0) / 1000, 1),
+    contactSeconds: round(contactSeconds, 1),
     pacing,
     betweenStrokes: frameStats(betweenDeltas, intervalMs),
     wholeWindow: frameStats(allDeltas, intervalMs),
@@ -422,6 +446,7 @@ export function summarizePhase(phase, tables) {
     input: {
       moves: canvasMoves.length,
       movesPerFrame,
+      movesPerSecond: contactSeconds ? round(canvasMoves.length / contactSeconds) : 0,
       // Absent in captures taken before the probe recorded it.
       kinds: [
         ...new Set(
@@ -431,6 +456,35 @@ export function summarizePhase(phase, tables) {
       coalescedPerMove: canvasMoves.length
         ? round(sum(canvasMoves.map((event) => event[EVENT_COALESCED])) / canvasMoves.length)
         : 0,
+      coalescedSpanMs: {
+        p50: percentile(coalescedSpans, 0.5),
+        p95: percentile(coalescedSpans, 0.95),
+        max: max(coalescedSpans),
+      },
+      trust: {
+        trusted: trustedMoves,
+        untrusted: untrustedMoves,
+        unknown: unknownTrustMoves,
+        share:
+          trustedMoves + untrustedMoves
+            ? round(trustedMoves / (trustedMoves + untrustedMoves), 4)
+            : undefined,
+      },
+      pressure: {
+        p50: percentile(pressure, 0.5),
+        p95: percentile(pressure, 0.95),
+        max: max(pressure),
+      },
+      contactWidth: {
+        p50: percentile(widths, 0.5),
+        p95: percentile(widths, 0.95),
+        max: max(widths),
+      },
+      contactHeight: {
+        p50: percentile(heights, 0.5),
+        p95: percentile(heights, 0.95),
+        max: max(heights),
+      },
       moveGapP95Ms: percentile(gaps, 0.95),
       moveGapMaxMs: max(gaps),
     },
@@ -585,7 +639,16 @@ export function inputRows(summaries) {
     moves: phase.input?.moves,
     kind: phase.input?.kinds || undefined,
     'mv/frame': phase.input?.movesPerFrame,
+    'mv/s': phase.input?.movesPerSecond,
+    trusted: phase.input?.trust
+      ? `${phase.input.trust.trusted}/${phase.input.trust.trusted + phase.input.trust.untrusted}` +
+        (phase.input.trust.unknown ? ` (+${phase.input.trust.unknown} old)` : '')
+      : undefined,
     'coal/mv': phase.input?.coalescedPerMove,
+    'coal span p95': phase.input?.coalescedSpanMs?.p95,
+    'pressure p50': phase.input?.pressure?.p50,
+    'width p50': phase.input?.contactWidth?.p50,
+    'height p50': phase.input?.contactHeight?.p50,
     'gap p95': phase.input?.moveGapP95Ms,
     'gap max': phase.input?.moveGapMaxMs,
     'queue p50': phase.queueDelayMs?.p50,

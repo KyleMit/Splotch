@@ -6,6 +6,7 @@ import {
   LATE_FRAME_MULTIPLE,
   comparisonRows,
   NOTABLE_LIFT_MS,
+  REAL_SCREEN_SCHEMA_VERSION,
   STALL_FRAME_MS,
   classifyPhase,
   frameStats,
@@ -25,7 +26,23 @@ const DOWN = 0;
 const MOVE = 1;
 const UP = 2;
 
-const move = (stamp, { at = stamp + 6, id = 1, buttons = 1, coalesced = 0, onCanvas = 1 } = {}) => [
+const move = (
+  stamp,
+  {
+    at = stamp + 6,
+    id = 1,
+    buttons = 1,
+    coalesced = 0,
+    onCanvas = 1,
+    kind = 0,
+    trusted = 1,
+    pressure = 0.5,
+    width = 30,
+    height = 30,
+    coalescedFirst = -1,
+    coalescedLast = -1,
+  } = {}
+) => [
   stamp,
   at,
   MOVE,
@@ -33,6 +50,13 @@ const move = (stamp, { at = stamp + 6, id = 1, buttons = 1, coalesced = 0, onCan
   buttons,
   coalesced,
   onCanvas,
+  kind,
+  trusted,
+  pressure,
+  width,
+  height,
+  coalescedFirst,
+  coalescedLast,
 ];
 const down = (stamp, id = 1) => [stamp, stamp + 6, DOWN, id, 1, 0, 1];
 const up = (stamp, id = 1) => [stamp, stamp + 6, UP, id, 0, 0, 1];
@@ -209,6 +233,31 @@ describe('summarizePhase via summarizeRun', () => {
     expect(phase.pacing.p50).toBeCloseTo(16.7, 1);
     expect(phase.input.moves).toBe(50);
     expect(phase.strokes.count).toBe(1);
+  });
+
+  it('reports the trusted touch-input signature and contact geometry', () => {
+    const [phase] = summarizeRun(capture()).phases;
+
+    expect(phase.input.kinds).toBe('touch');
+    expect(phase.input.trust).toEqual({ trusted: 50, untrusted: 0, unknown: 0, share: 1 });
+    expect(phase.input.pressure.p50).toBe(0.5);
+    expect(phase.input.contactWidth.p50).toBe(30);
+    expect(phase.input.contactHeight.p50).toBe(30);
+  });
+
+  it('retains coalesced-event timestamp span', () => {
+    const report = capture();
+    report.events[1] = move(1010, {
+      coalesced: 3,
+      coalescedFirst: 1002,
+      coalescedLast: 1010,
+    });
+
+    expect(summarizeRun(report).phases[0].input.coalescedSpanMs).toMatchObject({
+      p50: 8,
+      p95: 8,
+      max: 8,
+    });
   });
 
   // A phase's clock runs while the finger is down, so it always ends mid-stroke;
@@ -391,6 +440,12 @@ describe('probe selectors still match the app', () => {
 describe('constants the metrics rest on', () => {
   it('flags a notable lift well above the stall floor', () => {
     expect(NOTABLE_LIFT_MS).toBeGreaterThan(STALL_FRAME_MS);
+  });
+
+  it('keeps the probe and analyzer on the same raw schema version', () => {
+    const probeSchema = Number(/schema: (\d+)/.exec(PROBE)?.[1]);
+
+    expect(probeSchema).toBe(REAL_SCREEN_SCHEMA_VERSION);
   });
 });
 

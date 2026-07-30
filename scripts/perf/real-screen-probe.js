@@ -21,7 +21,8 @@
 // real-screen-stats.mjs, so these layouts and its column constants move together:
 //
 //   frames[]   [t, dt, contact]                  one row per rAF callback
-//   events[]   [stamp, at, type, id, buttons, coalesced, onCanvas, kind]
+//   events[]   [stamp, at, type, id, buttons, coalesced, onCanvas, kind,
+//               trusted, pressure, width, height, coalescedFirst, coalescedLast]
 //              `stamp` is the event's own timestamp (when the input happened),
 //              `at` is performance.now() inside the handler (when the page got
 //              to it) — their difference is INPUT QUEUE DELAY, the main-thread
@@ -224,25 +225,33 @@
     // getCoalescedEvents is how many hardware samples WebKit merged into this
     // one dispatch — the difference between input the page never saw and input
     // it saw late.
-    let coalesced = 0;
+    let coalescedEvents = [];
     try {
-      coalesced = event.getCoalescedEvents?.().length ?? 0;
+      coalescedEvents = event.getCoalescedEvents?.() ?? [];
     } catch {
-      coalesced = 0;
+      coalescedEvents = [];
     }
+    const coalescedFirst = coalescedEvents[0];
+    const coalescedLast = coalescedEvents.at(-1);
     events.push([
       round(event.timeStamp),
       round(performance.now()),
       type,
       event.pointerId,
       event.buttons,
-      coalesced,
+      coalescedEvents.length,
       onCanvas ? 1 : 0,
       // An Apple Pencil is a different input path from a finger (higher sample
       // rate, pressure, and the merged-stream quirk penStreamQuirks.ts adopts).
       // The first capture could not say which one it recorded, which left the
       // biggest difference between it and a synthetic run unmeasured.
       POINTER_KINDS[event.pointerType] ?? -1,
+      event.isTrusted ? 1 : 0,
+      round(event.pressure),
+      round(event.width),
+      round(event.height),
+      coalescedFirst ? round(coalescedFirst.timeStamp) : -1,
+      coalescedLast ? round(coalescedLast.timeStamp) : -1,
     ]);
     if ((type === 2 || type === 3) && onCanvas) onLift(event);
   };
@@ -799,7 +808,7 @@
     const rect = canvas.getBoundingClientRect();
     return {
       meta: {
-        schema: 1,
+        schema: 2,
         url: location.href,
         ua: navigator.userAgent,
         dpr: window.devicePixelRatio,
