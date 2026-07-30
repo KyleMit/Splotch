@@ -5,7 +5,7 @@ import { ROOT } from '../lib/proc.mjs';
 import {
   LATE_FRAME_MULTIPLE,
   comparisonRows,
-  MAX_CREDIBLE_HITCH_MS,
+  NOTABLE_LIFT_MS,
   STALL_FRAME_MS,
   classifyPhase,
   frameStats,
@@ -389,9 +389,50 @@ describe('probe selectors still match the app', () => {
 });
 
 describe('constants the metrics rest on', () => {
-  // A hitch that is counted has to be able to register as a stall; the other way
-  // round, every credible hitch would be silently below the stall floor.
-  it('keeps the credible-hitch ceiling above the stall floor', () => {
-    expect(MAX_CREDIBLE_HITCH_MS).toBeGreaterThan(STALL_FRAME_MS);
+  it('flags a notable lift well above the stall floor', () => {
+    expect(NOTABLE_LIFT_MS).toBeGreaterThan(STALL_FRAME_MS);
+  });
+});
+
+describe('lift frames and the between-stroke window', () => {
+  // A stroke ending at 200 ms, then the very next frame arrives 400 ms later —
+  // the shape of a real finger-lift stall. Hand-built so the big frame is the one
+  // that actually follows the lift.
+  const frames = [
+    [100, -1, 1],
+    [116.7, 16.7, 1],
+    [133.4, 16.7, 1],
+    [150.1, 16.7, 1],
+    [550.1, 400, 0],
+    [566.8, 16.7, 0],
+    [583.5, 16.7, 0],
+  ];
+  const events = [down(100), move(116.7), move(133.4), up(200)];
+  const report = {
+    meta: { measureNames: [] },
+    phases: [{ key: 'p', suppress: [], startedAt: 100, endedAt: 900, contactMs: 90 }],
+    frames,
+    events,
+    measures: [],
+  };
+
+  // The cap this replaces discarded any lift frame over 250 ms as "the page went
+  // idle", which threw away the largest stalls in the capture that first
+  // reproduced the reported lag.
+  it('keeps a lift frame that a credibility cap would have discarded', () => {
+    const [phase] = summarizeRun(report).phases;
+
+    expect(phase.strokes.liftMs.max).toBe(400);
+    expect(phase.strokes.notableLifts).toBe(1);
+  });
+
+  // Reporting only in-contact frames hid 3142 ms of lost time between strokes in a
+  // real capture against 1763 ms during them.
+  it('reports the between-stroke and whole-window populations too', () => {
+    const [phase] = summarizeRun(report).phases;
+
+    expect(phase.betweenStrokes.max).toBe(400);
+    expect(phase.wholeWindow.max).toBe(400);
+    expect(phase.pacing.max).toBeLessThan(400);
   });
 });
