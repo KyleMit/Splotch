@@ -39,7 +39,20 @@ jobs:
     env:
       BASE_REF: ${{ github.base_ref || github.event.repository.default_branch }}
     steps:
+      # Sparse rather than for speed — the job runs alongside a ~3.5min Tests job,
+      # so the few seconds saved reach nobody. It states what this check depends
+      # on, so a new dependency fails loudly here instead of working by accident:
+      # docs/adrs for the records themselves, scripts for the checker.
+      #
+      # Paths only, no blob filter. The check needs real content on both sides —
+      # it reads every record's first line, and -M rename detection compares
+      # similarity across base and head — so filtering blobs would trade written
+      # bytes for lazy per-object fetches.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            docs/adrs
+            scripts
 
       # The base branch as it stands now, not as this run's merge commit
       # remembers it: GitHub stops recomputing the merge ref once a pull request
