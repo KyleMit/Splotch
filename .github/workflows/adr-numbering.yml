@@ -1,0 +1,49 @@
+# Guards the one invariant docs/adrs/ cannot repair after the fact: an ADR number
+# identifies exactly one record, permanently. Two records sharing a number makes
+# every "ADR-NNNN" reference ambiguous, including references already written into
+# merged records and commit messages that cannot be rewritten.
+#
+# The check reads the base branch at run time rather than trusting the pull
+# request's merge commit. GitHub does not re-run a check that already passed, so a
+# branch that went green before a colliding record landed on the base would
+# otherwise merge on a stale result — which is how 0077 and 0078 each ended up
+# held by two records, hours apart.
+#
+# NOTE: because this is path-filtered it does not report on pull requests that
+# leave docs/adrs/ alone. Marking the job required in branch protection as-is
+# would block those pull requests forever waiting for a check that never runs.
+# Either leave it unrequired, or pair it with merge queue / a companion
+# graceful-skip job before requiring it.
+name: ADR Numbering
+
+on:
+  pull_request:
+    paths: ['docs/adrs/**']
+  merge_group:
+  workflow_dispatch: # allow ad-hoc runs (e.g. auditing the numbering on main)
+
+permissions:
+  contents: read
+
+concurrency:
+  group: adr-numbering-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  numbering:
+    name: Every ADR number identifies one record
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASE_REF: ${{ github.base_ref || github.event.repository.default_branch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The base branch as it stands now, not as the merge commit remembers it.
+      - name: Fetch the base branch
+        run: |
+          git fetch --depth=1 origin \
+            "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+
+      - name: Check ADR numbering
+        run: node scripts/check-adr-numbering.mjs --base "origin/${BASE_REF}"
