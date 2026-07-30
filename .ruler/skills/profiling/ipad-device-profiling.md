@@ -454,11 +454,90 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
 
 ---
 
+## What the `engine.*` marks structurally cannot see
+
+Recorded so the next person doesn't re-derive it: **the gates can pass while the app feels slow, and
+that is not a gates bug.** Measured on iPad13,8 / iPadOS 26.5, drawing on `/`:
+
+|                                             | measured                |                            |
+| ------------------------------------------- | ----------------------- | -------------------------- |
+| `engine.draw`                               | ~0.06 ms mean, 1 ms max | per `pointermove`          |
+| `engine.commit`                             | 1–3 ms max              | the finger-lift path       |
+| `engine.*` **total inside a 1422 ms frame** | **5 ms**                | —                          |
+| that frame's actual duration                | **1422 ms**             | 154 pointermoves inside it |
+
+Every marked span is at or under the clock floor while frames stop arriving for over a second. The
+marks are not wrong — they measure main-thread spans inside the engine, and the cost is neither.
+What they cannot see:
+
+* **Compositing and paint.** The canvas is GPU-accelerated, so issuing draw calls is cheap and
+  rasterization is deferred; a `mix-blend-mode` plate that has to re-read its backdrop, or a
+  compositing tree that churns per stroke, costs nothing a mark can hold.
+* **Unmarked main-thread work** — Svelte reactivity, style recalc, layout — on the same paths.
+* **Frame production itself.** Safari exposes no `longtask` entry type and no frame-timing API, so
+  rAF deltas are the only proxy, and they measure when rAF *ran*, not when a pixel reached the
+  glass.
+
+The practical rule: `perf:ipad` answers "is an engine operation expensive". `perf:ipad:frames`
+answers "did the screen keep up". A regression hunt that starts with the first one on a felt-lag
+report will find nothing, comfortably.
+
+---
+
+## Timeline on `/`, hand-drawn — **⟨Mac⟩** + **⟨iPad⟩**
+
+The definitive instrument for the compositor side, and the only one that shows **paint** and
+**composite** records directly. Do this when `perf:ipad:frames` has named a phase to chase and you
+need to know what the rendering pipeline was doing inside its stalls.
+
+It is A5–A6's procedure pointed at `/` instead of `/dev/engine`, with two differences that make it
+*more* tractable than the gates-run Timeline the runbook warns about:
+
+1. **Hand-drawing is required, not a compromise.** `perf:ios:analyze` carries its own warning that
+   frame durations are unreliable when input came from the synchronous console driver (a whole
+   stroke dispatched in one blocking tick). A hand-drawn session on `/` has no such problem — and
+   the real-screen findings only reproduce under a real hand anyway.
+2. **The volume is manageable.** A few hundred ops in a hand-drawn session, against the ~53k
+   `engine.draw` markers that pin Web Inspector at 100% CPU on a gates run.
+
+Still uncheck **Screenshots** (34.8 MB of a 115 MB export) and **Network Requests** in the
+**Timelines** tab, and keep **Layout & Rendering** — the paint/composite records are the entire
+point here.
+
+```sh
+npm run perf:serve                                    # ⟨Mac⟩ serve the instrumented build
+# ⟨iPad⟩ open the Network URL (the app at /, NOT the Harness URL)
+# ⟨Mac⟩ Develop → ⟨iPad⟩ → the page → Timelines → record
+# ⟨iPad⟩ draw by hand: long slow strokes, then rapid short ones, on a coloring page
+# ⟨Mac⟩ stop, export the .json, then:
+npm run perf:ios:analyze -- perf-profiles/web-inspector-timeline/<export>.json
+```
+
+Read the **paint** and **composite** rows against the engine rows: the shape to expect from the
+findings above is negligible engine cost beside long rendering-side records.
+
+---
+
 ## Caveats & troubleshooting
 
+* **Safari gives web content a 60 Hz `requestAnimationFrame` beat — even on a 120 Hz ProMotion iPad
+  Pro.** Measured on iPad13,8 / iPadOS 26.5: a bare rAF sampler reports **16–17 ms both idle and
+  while animating**. So a drawing loop pacing at 17 ms is *at the ceiling*, not failing, and a fixed
+  8.33 ms budget reports a perfectly-paced capture as 64% late — which the first version of
+  `perf:ipad:frames` did. `perf:frames:analyze` derives the beat per capture from the observed
+  deltas instead of assuming one.
+
+  Two consequences worth carrying: **ADR-0066's 8.3 ms commit-hitch gate is stricter than the
+  platform** on Safari/iPad (the presentable frame is 16.7 ms), and **input outruns frames** — a
+  digitizer delivering 120 Hz+ into a 60 Hz frame means per-`pointermove` work runs 2–4× per frame
+  it can possibly be shown in.
 * **WebKit clamps `performance.now()` to ~1 ms**, so sub-millisecond marks read as 0. Fine at our
   scale (telling a ~10 ms patch capture from a hundreds-of-ms hang), but don't trust the second
   decimal.
+* **A synthetic-input run is not a substitute for a hand.** One `pointermove` per frame measured
+  *perfectly clean* on device — zero stalls in every phase — on the same build where a hand stalled
+  for 1.4 s. Use `--drive` for A/B attribution (identical input per phase) and a hand-drawn run to
+  establish that the lag is present at all.
 * **Safari ≠ WKWebView**, but the engine is identical; the difference is the app shell, which
   Approach B checks if needed.
 * **iPad not under the Develop menu** → re-confirm the iPad's Web Inspector toggle, re-seat the USB

@@ -13,12 +13,17 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fail, isMain, runMain } from '../lib/proc.mjs';
 import {
+  bucketRows,
   comparisonRows,
   engineRows,
   inputRows,
   pacingRows,
   summarizeRun,
 } from './real-screen-stats.mjs';
+
+// Long enough that a bucket holds a few hundred frames, short enough to show an
+// onset inside one phase.
+const BUCKET_SECONDS = 5;
 
 export function printRun(capture, { forensics = true } = {}) {
   const summaries = summarizeRun(capture.report);
@@ -55,6 +60,14 @@ export function printRun(capture, { forensics = true } = {}) {
         )
       );
     }
+  }
+
+  // A phase compared to itself earlier: the only comparison a hand-drawn run
+  // supports, and the "worse the more ink is on the page" claim as a measurement.
+  const buckets = bucketRows(capture.report, BUCKET_SECONDS);
+  if (buckets.length > 1) {
+    console.log(`\nPacing over time, ${BUCKET_SECONDS}s buckets within each phase`);
+    console.table(buckets);
   }
 
   if (forensics) {

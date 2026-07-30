@@ -128,6 +128,7 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         'device-id',
         'no-serve',
         'no-hud',
+        'hud',
       ],
     },
     argv
@@ -169,8 +170,11 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         brush,
         // The HUD repaints twice a second, and a repaint damages the very blend
         // layer some phases exist to isolate. A driven run has nobody to read
-        // it, so it costs nothing to leave off.
-        hud: !has('no-hud') && !drive,
+        // it, so it costs nothing to leave off — but `--hud` forces it back on,
+        // because "hand runs had the HUD and synthetic runs did not" is a
+        // difference between the two that has to be ruled out rather than
+        // assumed harmless.
+        hud: has('hud') || (!has('no-hud') && !drive),
       })
     );
     await session.evaluate(readFileSync(PROBE_FILE, 'utf8'));

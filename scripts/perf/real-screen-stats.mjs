@@ -453,6 +453,54 @@ export function classifyPhase({ pacing, movesPerFrame, queueDelays, latencies, i
   return findings.length ? findings.join(' + ') : 'clean';
 }
 
+// Splits a phase into wall-clock buckets and paces each one. Two things need
+// this. A hand-drawn phase cannot be compared to another hand-drawn phase — the
+// operator draws differently each time — but it can be compared to ITSELF
+// earlier, which is the "worse the more ink is on the page" claim stated as a
+// measurement. And a phase's single p95 hides an onset: 15 s that are clean for
+// 10 and fall apart for 5 read as mildly late.
+export function bucketPhase(phase, { frames, intervalMs }, bucketSeconds = 5) {
+  const from = phase.startedAt;
+  if (from === null || from === undefined) return [];
+  const to = phase.endedAt ?? Infinity;
+  const bucketMs = bucketSeconds * 1000;
+  const buckets = new Map();
+  for (let i = 1; i < frames.length; i++) {
+    const time = frames[i][FRAME_T];
+    if (time < from || time > to) continue;
+    const delta = frames[i][FRAME_DT];
+    if (delta < 0 || !frames[i][FRAME_CONTACT] || !frames[i - 1][FRAME_CONTACT]) continue;
+    const bucket = Math.floor((time - from) / bucketMs);
+    if (!buckets.has(bucket)) buckets.set(bucket, []);
+    buckets.get(bucket).push(delta);
+  }
+  return [...buckets.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([bucket, deltas]) => ({
+      phase: phase.key,
+      'from s': bucket * bucketSeconds,
+      ...frameStats(deltas, intervalMs),
+    }));
+}
+
+export function bucketRows(report, bucketSeconds = 5) {
+  const frames = report.frames ?? [];
+  const tables = { frames, intervalMs: observedFrameIntervalMs(frames) };
+  return (report.phases ?? []).flatMap((phase) => bucketPhase(phase, tables, bucketSeconds));
+}
+
+// A phase key may repeat — an A/B/A/B plan is how a hand-drawn comparison
+// survives an operator who draws differently every time — so each repeat is
+// labelled rather than silently shadowing the first.
+function labelPhases(phases) {
+  const seen = new Map();
+  return phases.map((phase) => {
+    const count = (seen.get(phase.key) ?? 0) + 1;
+    seen.set(phase.key, count);
+    return count === 1 ? phase : { ...phase, key: `${phase.key}#${count}` };
+  });
+}
+
 export function summarizeRun(report) {
   const { phases = [], meta = {} } = report;
   const frames = report.frames ?? [];
@@ -463,7 +511,7 @@ export function summarizeRun(report) {
     measureNames: meta.measureNames ?? [],
     intervalMs: observedFrameIntervalMs(frames),
   };
-  const summaries = phases.map((phase) => summarizePhase(phase, tables));
+  const summaries = labelPhases(phases).map((phase) => summarizePhase(phase, tables));
   summaries.intervalMs = tables.intervalMs;
   return summaries;
 }

@@ -247,6 +247,40 @@ compositor, the same stall, and a user-visible rendering defect in its own right
 records the theme and the computed `mix-blend-mode` so a capture says whether the symptom was even
 reachable in it.
 
+## FINDINGS from the input-rate experiments — the rate hypothesis is DEAD
+
+| run                             | moves/frame | pointer    | stalls          | late %   |
+| ------------------------------- | ----------- | ---------- | --------------- | -------- |
+| hand-drawn                      | 1.9–4.2     | pen/finger | **335–1422 ms** | 0.7–9.5% |
+| synthetic, 1 per frame          | 1.00        | touch      | none            | 0        |
+| synthetic, "120 Hz" (really 83) | 1.39        | touch      | none            | 0        |
+| **synthetic, 240 Hz**           | **4.03**    | **pen**    | **none**        | **0**    |
+
+At and above the hand's own rate, with `pointerType: 'pen'`, on a coloring page, with all the
+per-event work live: `dt` p50/p95 = 17 ms, zero late frames, zero lost ms. **Per-event work volume
+is not the cause.** The app absorbs 4× the work per presentable frame without dropping anything.
+
+Also withdrawn: **the halo lift finding (8) does not hold.** Reported as a p95 over 19–27 strokes it
+looked like a clean 104 ms-vs-17 ms split; as a rate it is an occasional ~120 ms outlier present in
+*every* configuration. The metric now reports `stalled lifts` out of measured lifts for that reason.
+
+### What is left
+
+Only things a synthetic `dispatchEvent` cannot fake — the **real iOS touch pipeline**:
+
+1. **iPadOS Scribble / handwriting recognition.** ADR-0038 and `scribbleGuard` exist because a
+   stylus tap can arm Scribble. If recognition runs over the canvas during drawing it is main-thread
+   work in the *browser*, invisible to every instrument here, present only under a real Pencil. It
+   fits every observation: handlers dispatched on time at 8.3 ms while frame production starves.
+   **Cheapest possible test, and the top next step:** iPadOS Settings → Apple Pencil → Scribble OFF,
+   then one hand-drawn run. If the stalls vanish, that is the cause.
+2. **Gesture/hit-test machinery on real touch** — WebKit deciding scrollability, tap candidates, and
+   touch-region work per contact on a 4.7 Mpx canvas page.
+3. **The render server's touch prioritisation** on iOS.
+4. **A confound I introduced:** hand runs had the on-device HUD (two repaints/second), synthetic
+   runs did not. `--hud` now forces it on for a driven run so this is ruled out rather than assumed
+   harmless. Result pending.
+
 ## Unverified assumptions
 
 * Synthetic (rAF-paced `dispatchEvent`) input on `/` reproduces enough of the lag to be worth
