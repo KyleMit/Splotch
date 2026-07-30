@@ -56,11 +56,8 @@ run`:
 
 ```ts
 const CORES_PER_WORKER = 2; // §2
-const CI_OVERSUBSCRIPTION = 1.5; // §4
 const saturation = availableParallelism() / CORES_PER_WORKER;
-workers: process.env.CI
-  ? Math.max(2, Math.floor(saturation * CI_OVERSUBSCRIPTION))
-  : Math.max(1, Math.floor(saturation));
+workers: process.env.CI ? Math.max(2, cores) : Math.max(1, Math.floor(saturation));
 ```
 
 `workers: process.env.CI ? 4 : 2` is right for the 4-core boxes measured above and wrong everywhere
@@ -72,26 +69,25 @@ container. `--workers=N` still overrides.
 
 The CI/local split survives derivation because it encodes flake *cost*, not hardware: locally a
 flake costs a re-run plus triage, so local sits *at* capacity, while retries make a flake cheap
-enough on CI that some oversubscription buys wall clock. **How much** is the coefficient §4 measures
-— 1.5× capacity, not the ~2× (`≈ cores`) this record first claimed. At 4 cores that is 3 workers on
-CI, where 4 went 6/15 runs red for 2.9s of wall clock.
+enough on CI that wall clock decides among settings whose flake rates don't differ. §4 measures that
+they don't, at 4 cores: 4 workers went 1/35 runs red against 3 workers' 3/35, and 3.2s faster per
+run. So CI goes to **twice** capacity — `cores` — which is also the most oversubscription measured
+as safe.
 
-Three edges it cannot claim, recorded rather than smoothed over:
+Two edges it cannot claim, recorded rather than smoothed over:
 
 * **SMT is untested, and is the likeliest place the formula is wrong.** `availableParallelism()`
   counts *logical* CPUs, and both measurement boxes ran one thread per core — so `cores / 2` and
   "physical cores" were indistinguishable there. On an 8-logical / 4-physical laptop the formula
-  says 6 where physical capacity argues 2. Settling it needs a real SMT machine, which a cloud
+  says 8 where physical capacity argues 4. Settling it needs a real SMT machine, which a cloud
   container is not.
-* **Only one core count was ever measured**, so the coefficients are a ratio fitted at a single
-  point. Worse, 4 cores cannot distinguish the *shape*: `cores - 1`, `floor(cores / 2) + 1` and
-  `1.5 × cores / 2` all give 3 there and diverge hard at 8 (7, 5, 6). The ratio form is chosen
-  because the failure mode is contention-driven deadline exhaustion, whose severity tracks the
-  oversubscription *ratio* (§3) rather than any absolute worker count — but that is mechanism, not
-  measurement.
-* **The floor of 2 on CI contradicts the coefficient above it.** On a 2-core runner it is twice
-  capacity, the ratio §4 measures as the bad one. It stays because one worker roughly doubles CI's
-  wall clock and this repo's runners are 4-core — a known-wrong branch on hardware nobody here uses.
+* **Above 2× capacity there are no clean numbers at all.** Only 4 cores was ever measured, so bigger
+  machines are extrapolation from a ratio fitted at one point — and 6 and 8 workers were measured
+  only *before* §4's spec fix, so what breaks at 3× and 4× capacity is unknown rather than merely
+  untested. `cores` never exceeds 2×, which keeps the formula inside the measured region on any
+  machine. The ratio form is chosen because the failure mode is contention-driven deadline
+  exhaustion, whose severity tracks the oversubscription *ratio* (§3) rather than any absolute
+  worker count — mechanism, not measurement.
 
 ### 2. Each worker costs ~2 cores, which is why `'100%'` oversubscribed
 
@@ -262,15 +258,17 @@ Issue \#653 asked for the flake rate to be re-measured once #650 and #651 landed
 count to be chosen against it. Re-measuring came first, and it changed the question: the sweep that
 produced §2b's rates was generating most of them.
 
-**Mechanism.** Reps ran back to back against one preview server, and the suite deliberately fills two
-60-second per-IP rate-limit windows — `generate-image.spec.ts` exhausts the BYOK bucket (30 hits) and
-bursts the managed token's (15). A rep takes about as long as those windows last, so a rep inherited
-the previous rep's spent budget and its guard tests took a 429 where they assert a 415 or a 413.
-Nothing to do with the app or the specs: the sweep protocol alone.
+**Mechanism.** Reps ran back to back against one preview server, and the suite deliberately fills
+two 60-second per-IP rate-limit windows — `generate-image.spec.ts` exhausts the BYOK bucket (30
+hits) and bursts the managed token's (15). A rep takes about as long as those windows last, so a rep
+inherited the previous rep's spent budget and its guard tests took a 429 where they assert a 415 or
+a 413. Nothing to do with the app or the specs: the sweep protocol alone.
 
-**It is not a rounding error.** On `ubuntu-latest` at 4 workers, `throttles a managed token hammered
-in a burst` failed in **12 of 12** reps. Locally at 4 workers the BYOK guard tests were 4 of 5
-failures across 7 reps. Those are the same specs §2b's counts are made of.
+**It is not a rounding error.** On `ubuntu-latest` at 4 workers,
+`throttles a managed token hammered
+in a burst` failed in **12 of 12** reps. Locally at 4 workers
+the BYOK guard tests were 4 of 5 failures across 7 reps. Those are the same specs §2b's counts are
+made of.
 
 **Fix.** `scripts/e2e-sweep.mjs` owns the protocol — a fresh preview server per rep, `CI` unset for
 the run, one summary line per rep — and both the local sweep and the workflow drive it. That is the
@@ -280,32 +278,75 @@ it.
 
 **Re-measured**, 15 reps per configuration, one runner each, retries off (run 30512081902):
 
-| workers          | 1      | 2     | 3            | 4     | 6     | 8     |
-| ---------------- | ------ | ----- | ------------ | ----- | ----- | ----- |
-| runs gone red    | 6/15   | 2/15  | **0/15**     | 6/15  | 15/15 | 15/15 |
-| failures / 3060  | 6      | 3     | **0**        | 6     | 15    | 23    |
-| per-test rate    | 0.20%  | 0.10% | **0%**       | 0.20% | 0.49% | 0.75% |
-| seconds per rep  | 140.2  | 84.2  | 69.7         | 66.5  | 65.3  | 63.9  |
+| workers         | 1     | 2     | 3        | 4     | 6     | 8     |
+| --------------- | ----- | ----- | -------- | ----- | ----- | ----- |
+| runs gone red   | 6/15  | 2/15  | **0/15** | 6/15  | 15/15 | 15/15 |
+| failures / 3060 | 6     | 3     | **0**    | 6     | 15    | 23    |
+| per-test rate   | 0.20% | 0.10% | **0%**   | 0.20% | 0.49% | 0.75% |
+| seconds per rep | 140.2 | 84.2  | 69.7     | 66.5  | 65.3  | 63.9  |
 
 Seconds per rep come from the sweep step's own duration, so they include the ~4s the driver spends
 booting a fresh server — compare the shape against §2b's column, not the absolute values.
 
-Two of §2b's conclusions do not survive this.
+**That table is one spec.** Read on its own it says the rate rises steeply with workers and that 4
+is significantly worse than 3 — and a first pass of this record said exactly that, setting §1b's
+coefficient to 1.5× capacity on the strength of it. The tell that it was wrong is in the table: 6
+workers failed in **15 of 15** reps, which is a deterministic failure, not a flake rate. It was
+`a burst of screenshot taps shares one save before allowing the next`, whose fixed 500ms sleep was
+waiting for a save to *happen*; the more starved the worker, the more reliably it missed. It is
+fixed here (a poll for the positive half, a named idle window for the negative one).
 
-* **The rate is not flat from 1 to 6.** It breaks at **6**, not 8, and 4 workers is already
-  significantly worse than 3 (Fisher p = 0.017). §2b read it as flat because the artifact fired at
-  every worker count alike, which buried the differences between them under a constant.
-* **So "wall clock decides on CI" was resting on that flatness**, and it cannot. Going past three
-  workers buys almost nothing: 3→4 saves **3.2s** per run and 4→8 another 2.6s, against 0/15 red runs
-  becoming 6/15 and then 15/15. The wall-clock curve is flat exactly where the flake curve turns
-  steep, so §1b's coefficient is 1.5× capacity because of this row, not ~2×.
+Re-measured after that fix, 35 reps at each of the two candidate counts:
 
-One of them does survive, and is worth keeping for the same reason it was surprising the first time:
-**one worker is among the worst settings** (6/15), with no contention to blame. The GPU-less runner
-rasterizes canvas work in software, so those specs sit near their budgets however few workers run —
-which is why the curve is a U and not a slope, and why worker tuning alone was never going to reach
-zero.
+| workers         | 3     | 4        |
+| --------------- | ----- | -------- |
+| runs gone red   | 3/35  | **1/35** |
+| failures / 7175 | 3     | 1        |
+| median wall     | 69.7s | 66.5s    |
 
+**So the gradient was the spec, not the worker count.** Three and four are indistinguishable (Fisher
+p = 0.61) and four is 3.2s faster, which puts the coefficient back at 2× capacity — `cores`, as
+first proposed in issue \#649. The 1.5× detour is recorded rather than quietly reverted, because the
+mistake generalises: **a worker count tuned against a rate that one bad spec dominates is tuning
+around the spec.** ADR-0080 reached the same conclusion from the other direction, and this record
+had already made the error once in §2b.
+
+What that leaves genuinely unknown is the ceiling. Six and eight workers were only ever measured
+*before* the fix, so 3× and 4× capacity have no clean numbers at all — the one hint is that w=8
+carried 8 failures beyond the deterministic one where w=6 carried none, so something does break
+further up. `cores` never exceeds 2× capacity, which is the most that has been measured as safe.
+
+One earlier surprise survives, and is worth keeping because it was surprising twice: **one worker is
+among the worst settings** (6/15), with no contention to blame. The GPU-less runner rasterizes
+canvas work in software, so those specs sit near their budgets however few workers run — which is
+why the curve is a U and not a slope, and why worker tuning alone was never going to reach zero.
+
+### The retry count
+
+The residual at the shipped configuration is **~5.7% of unretried runs going red** — 4 red in 70,
+across three specs, all of them zoom/pinch gestures:
+
+| spec                                                                    | reps failed |
+| ----------------------------------------------------------------------- | ----------- |
+| `closing the overlay resets the zoom for the next open`                 | 2/35 (w=3)  |
+| `navigating to another section resets the zoom`                         | 1/35 (w=4)  |
+| `a pinch swallows the trailing click, so it never toggles the control…` | 1/35 (w=3)  |
+
+**`retries: 2` stays.** `0` would redden about one run in eighteen, which is not a gate. `1` looks
+sufficient on paper — the worst spec's 5.7% squared is ~0.3% — but that squaring assumes the two
+attempts are independent, and a retry runs immediately afterwards on the same starved machine, which
+is precisely the correlation the assumption denies. At a per-attempt rate this close to the
+threshold, being wrong costs a red gate on work that is fine.
+
+What changes is that the debt stops being silent. `web/playwright-flaky-reporter.ts` turns every
+retried pass into a GitHub Actions annotation plus a job-summary table, so "green, but only on
+attempt 2" is visible on the run page. That is the standing objection in the Consequences below —
+retries hiding what they compensate for — answered without pretending the rate is lower than it is.
+
+**Reducing the count is downstream of those three specs**, not of another sweep. Fixing one spec
+took 4 workers from 6/15 red to 1/35; three more of the same kind is what makes `retries: 1` a
+measurement rather than an assumption. They are a coherent cluster (zoom/pinch gesture state), which
+is a better starting point than a rate.
 
 ## Consequences
 

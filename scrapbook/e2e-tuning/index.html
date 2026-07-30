@@ -538,7 +538,7 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
       <td class="num">0.098%</td>
       <td class="num">—</td>
       <td class="num">—</td>
-    </tr><tr class="pick">
+    </tr><tr>
       <td>3</td>
       <td class="num">69.7s</td>
       <td class="num">0/15</td>
@@ -572,7 +572,46 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
       <td class="num">—</td>
     </tr></tbody>
   </table></div>
-    <ul class="notes"><li><b>The rate is not flat from 1 to 6 workers.</b> It breaks at <b>6</b>, not 8, and 4 workers is already significantly worse than 3 (Fisher p = 0.017). The earlier sweep read it as flat because the artifact fired at every worker count alike, burying the differences under a constant.</li><li><b>So “wall clock decides on CI” cannot rest on that flatness.</b> Four workers buys 2.9s over three (60.2s vs 63.1s) and costs 6/15 unretried-red runs. The shipped coefficient is 1.5× capacity because of this row.</li><li><b>One worker is still among the worst settings</b> (6/15), with no contention to blame — the GPU-less runner rasterizes canvas work in software, so those specs sit near their budgets however few workers run. That is why the curve is a U rather than a slope, and why worker tuning alone was never going to reach zero.</li><li><b>Going past three workers buys almost nothing.</b> 3→4 saves 3.2s per run, 4→8 another 2.6s — against 0/15 red runs becoming 6/15 and then 15/15. The wall-clock curve is flat exactly where the flake curve turns steep.</li></ul>
+    <ul class="notes"><li><b>Nearly all of this table is one spec.</b> Six workers failing in 15 of 15 reps is a deterministic failure, not a flake rate: “a burst of screenshot taps shares one save before allowing the next” waited for a save with a fixed 500ms sleep, so the more starved the worker the more reliably it missed. Read on its own the table says the rate rises steeply with workers, and a first pass of this study believed it.</li><li><b>One worker is still among the worst settings</b> (6/15), with no contention to blame — the GPU-less runner rasterizes canvas work in software, so those specs sit near their budgets however few workers run. That is why the curve is a U rather than a slope, and why worker tuning alone was never going to reach zero.</li></ul>
+
+    <h2 style="margin-top:12px">After fixing that spec — the numbers that decide both knobs</h2>
+    <p>
+      Same runner image, 35 reps at each of the two candidate worker counts, retries still off.
+    </p>
+    <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Workers</th><th class="num">Wall (median)</th><th class="num">Red runs</th>
+      <th class="num">Failures</th><th class="num">Per-test rate</th>
+      <th class="num">Latency inflation</th><th class="num">CPU work</th>
+    </tr></thead>
+    <tbody><tr>
+      <td>3</td>
+      <td class="num">69.7s</td>
+      <td class="num">3/35</td>
+      <td class="num">3</td>
+      <td class="num">0.042%</td>
+      <td class="num">—</td>
+      <td class="num">—</td>
+    </tr><tr class="pick">
+      <td>4</td>
+      <td class="num">66.5s</td>
+      <td class="num">1/35</td>
+      <td class="num">1</td>
+      <td class="num">0.014%</td>
+      <td class="num">—</td>
+      <td class="num">—</td>
+    </tr></tbody>
+  </table></div>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Residual flake</th><th class="num">Reps it failed in</th></tr></thead>
+  <tbody><tr><td><code>closing the overlay resets the zoom for the next open</code></td><td class="num">2/35 (3 workers)</td></tr><tr><td><code>navigating to another section resets the zoom</code></td><td class="num">1/35 (4 workers)</td></tr><tr><td><code>a pinch swallows the trailing click, so it never toggles the control beneath it</code></td><td class="num">1/35 (3 workers)</td></tr></tbody>
+</table></div>
+    <ul class="notes">
+      <li><b>The gradient was the spec, not the worker count.</b> Three and four workers are indistinguishable (Fisher p = 0.61) and four is 3.2s faster, which puts the coefficient back at twice capacity — <code>cores</code>, as originally proposed. The 1.5× detour is kept in the record because the mistake generalises: a worker count tuned against a rate one bad spec dominates is tuning around the spec.</li>
+      <li><b>Retries stay at 2.</b> The residual is ~5.7% of unretried runs going red (4 in 70). <code>0</code> would redden about one run in eighteen. <code>1</code> looks sufficient on paper — the worst spec's 5.7% squared is ~0.3% — but that squaring assumes the two attempts are independent, and a retry runs immediately afterwards on the same starved machine.</li>
+      <li><b>What changes is that the debt is visible.</b> Every retried pass becomes a GitHub Actions annotation plus a job-summary table, so “green, but only on attempt 2” shows on the run page instead of in a log nobody opens.</li>
+      <li><b>Reducing the count is downstream of those three specs</b>, not of another sweep — fixing one spec took 4 workers from 6/15 red to 1/35.</li>
+    </ul>
   </section>
 
   <section>

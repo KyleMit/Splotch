@@ -123,10 +123,29 @@ const REVEAL_BUDGET_EXPERIMENT = [
 const CI_RESIDUAL = [
   { w: 1, wall: 140.2, runs: 15, execs: 3060, fails: 6, redRuns: 6 },
   { w: 2, wall: 84.2, runs: 15, execs: 3060, fails: 3, redRuns: 2 },
-  { w: 3, wall: 69.7, runs: 15, execs: 3060, fails: 0, redRuns: 0, recommended: true },
+  { w: 3, wall: 69.7, runs: 15, execs: 3060, fails: 0, redRuns: 0 },
   { w: 4, wall: 66.5, runs: 15, execs: 3060, fails: 6, redRuns: 6 },
   { w: 6, wall: 65.3, runs: 15, execs: 3060, fails: 15, redRuns: 15 },
   { w: 8, wall: 63.9, runs: 15, execs: 3060, fails: 23, redRuns: 15 },
+];
+
+// …and the same two candidate counts again, 35 reps each, after the one spec that
+// dominated the table above was fixed (runs 30512301335 and 30513168659). This is
+// what the shipped worker count and retry count are chosen against.
+const CI_POST_SPEC_FIX = [
+  { w: 3, wall: 69.7, runs: 35, execs: 7175, fails: 3, redRuns: 3 },
+  { w: 4, wall: 66.5, runs: 35, execs: 7175, fails: 1, redRuns: 1, recommended: true },
+];
+
+// The three specs those 4 red runs in 70 belong to. All zoom/pinch gesture state,
+// which is a better starting point for the next pass than a rate is.
+const RESIDUAL_SPECS = [
+  ['closing the overlay resets the zoom for the next open', '2/35 (3 workers)'],
+  ['navigating to another section resets the zoom', '1/35 (4 workers)'],
+  [
+    'a pinch swallows the trailing click, so it never toggles the control beneath it',
+    '1/35 (3 workers)',
+  ],
 ];
 
 // What that re-measure found first, before it could measure anything: the sweep
@@ -151,20 +170,15 @@ const HARNESS_ARTIFACT = {
 // What the re-measured numbers mean, and the retry count they settle. Raw HTML so
 // a note can mark up a value; keep them factual and short.
 const RESIDUAL_NOTES = [
-  '<b>The rate is not flat from 1 to 6 workers.</b> It breaks at <b>6</b>, not 8, and 4 workers is ' +
-    'already significantly worse than 3 (Fisher p = 0.017). The earlier sweep read it as flat ' +
-    'because the artifact fired at every worker count alike, burying the differences under a ' +
-    'constant.',
-  '<b>So “wall clock decides on CI” cannot rest on that flatness.</b> Four workers buys 2.9s over ' +
-    'three (60.2s vs 63.1s) and costs 6/15 unretried-red runs. The shipped coefficient is 1.5× ' +
-    'capacity because of this row.',
+  '<b>Nearly all of this table is one spec.</b> Six workers failing in 15 of 15 reps is a ' +
+    'deterministic failure, not a flake rate: “a burst of screenshot taps shares one save before ' +
+    'allowing the next” waited for a save with a fixed 500ms sleep, so the more starved the worker ' +
+    'the more reliably it missed. Read on its own the table says the rate rises steeply with ' +
+    'workers, and a first pass of this study believed it.',
   '<b>One worker is still among the worst settings</b> (6/15), with no contention to blame — the ' +
     'GPU-less runner rasterizes canvas work in software, so those specs sit near their budgets ' +
     'however few workers run. That is why the curve is a U rather than a slope, and why worker ' +
     'tuning alone was never going to reach zero.',
-  '<b>Going past three workers buys almost nothing.</b> 3→4 saves 3.2s per run, 4→8 another 2.6s — ' +
-    'against 0/15 red runs becoming 6/15 and then 15/15. The wall-clock curve is flat exactly where ' +
-    'the flake curve turns steep.',
 ];
 
 // Each hypothesis that was tested, and how it was killed or confirmed. The
@@ -352,6 +366,17 @@ const residualSection = CI_RESIDUAL.length
   ? sweepTable(CI_RESIDUAL, { pick: CI_RESIDUAL.find((r) => r.recommended)?.w })
   : `<p class="empty-note">Re-measure pending — re-run <code>npm run gen:e2e-tuning-report</code> once the numbers land.</p>`;
 
+const postSpecFixSection = `${sweepTable(CI_POST_SPEC_FIX, {
+  pick: CI_POST_SPEC_FIX.find((r) => r.recommended)?.w,
+})}
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Residual flake</th><th class="num">Reps it failed in</th></tr></thead>
+  <tbody>${RESIDUAL_SPECS.map(
+    ([name, share]) =>
+      `<tr><td><code>${esc(name)}</code></td><td class="num">${esc(share)}</td></tr>`
+  ).join('')}</tbody>
+</table></div>`;
+
 const ciSection = CI_SWEEP.length
   ? `${sweepTable(CI_SWEEP, { pick: CI_SWEEP.find((r) => r.recommended)?.w })}`
   : `<p class="empty-note">CI sweep pending — re-run <code>npm run gen:e2e-tuning-report</code> once the numbers land.</p>`;
@@ -483,6 +508,18 @@ ${masthead({
     </p>
     ${residualSection}
     ${RESIDUAL_NOTES.length ? `<ul class="notes">${RESIDUAL_NOTES.map((n) => `<li>${n}</li>`).join('')}</ul>` : ''}
+
+    <h2 style="margin-top:12px">After fixing that spec — the numbers that decide both knobs</h2>
+    <p>
+      Same runner image, 35 reps at each of the two candidate worker counts, retries still off.
+    </p>
+    ${postSpecFixSection}
+    <ul class="notes">
+      <li><b>The gradient was the spec, not the worker count.</b> Three and four workers are indistinguishable (Fisher p = 0.61) and four is 3.2s faster, which puts the coefficient back at twice capacity — <code>cores</code>, as originally proposed. The 1.5× detour is kept in the record because the mistake generalises: a worker count tuned against a rate one bad spec dominates is tuning around the spec.</li>
+      <li><b>Retries stay at 2.</b> The residual is ~5.7% of unretried runs going red (4 in 70). <code>0</code> would redden about one run in eighteen. <code>1</code> looks sufficient on paper — the worst spec's 5.7% squared is ~0.3% — but that squaring assumes the two attempts are independent, and a retry runs immediately afterwards on the same starved machine.</li>
+      <li><b>What changes is that the debt is visible.</b> Every retried pass becomes a GitHub Actions annotation plus a job-summary table, so “green, but only on attempt 2” shows on the run page instead of in a log nobody opens.</li>
+      <li><b>Reducing the count is downstream of those three specs</b>, not of another sweep — fixing one spec took 4 workers from 6/15 red to 1/35.</li>
+    </ul>
   </section>
 
   <section>

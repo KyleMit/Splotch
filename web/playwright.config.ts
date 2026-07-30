@@ -80,35 +80,50 @@ const cores = availableParallelism();
 // re-run plus the attention to triage it, which no wall-clock saving covers.
 const saturation = cores / CORES_PER_WORKER;
 
-// How far past capacity CI goes. Retries make a flake cheap there, so *some*
-// oversubscription buys wall clock — but only some, and this is the coefficient
-// the 2026-07-30 re-measure exists to pin down (ADR-0078 §4). At 4 cores, i.e.
-// capacity 2: three workers went 0/15 runs red and four went 6/15, to save 3.2s
-// per run. One-and-a-half times capacity pays; twice does not, because the
-// wall-clock curve goes flat exactly where the flake curve turns steep.
+// How far past capacity CI goes: twice it, i.e. `cores`. Retries make a flake
+// cheap there, so wall clock decides among settings whose flake rates don't
+// differ — and at 4 cores they don't. Measured 35 reps each with retries off
+// (ADR-0078 §4): 4 workers went 1/35 runs red against 3 workers' 3/35, for 3.2s
+// less per run. `cores` is also self-limiting at twice capacity, which is the
+// most oversubscription ever measured as safe.
 //
-// ADR-0078 originally read this as ~cores, on a sweep whose own shared-server
-// protocol was generating most of the failures it counted — which flattened the
-// curve and hid the difference between three workers and four.
-const CI_OVERSUBSCRIPTION = 1.5;
-
-// Three caveats, none of them settled by the hardware this ran on:
-//   • Only 4 cores was ever measured, so the coefficients are a ratio fitted at
-//     one point. 8 and 16 cores are extrapolation.
+// Worth knowing before re-tuning: an earlier pass of that same re-measure put
+// this at 1.5× on a 15-rep sweep where 3 workers were 0/15 and 4 were 6/15. Both
+// numbers were real; nearly all of the difference was ONE spec whose fixed sleep
+// failed more often the more starved the worker (the tell was 6 workers failing
+// in exactly 15 of 15 reps — deterministic, not flaky). Fixing that spec removed
+// the gradient. A worker count tuned against a rate one bad spec dominates is
+// tuning around the spec.
+//
+// Two caveats the hardware here cannot settle:
+//   • Only 4 cores was ever measured, so bigger machines are extrapolation from a
+//     ratio fitted at one point. 6 and 8 workers on 4 cores — 3× and 4× capacity
+//     — were only ever measured *before* that spec was fixed, so the ceiling
+//     above 2× is genuinely unknown rather than merely untested.
 //   • availableParallelism() counts LOGICAL CPUs, and both measurement boxes ran
-//     one thread per core — so "cores / 2" and "physical cores" were the same
-//     number there. On 8 logical / 4 physical this says 6 where physical capacity
-//     argues 2, which is the likeliest place it is wrong.
-//   • The floor of 2 on CI is itself unmeasured, and on a 2-core runner it *is*
-//     twice capacity — the ratio measured above as the bad one. It stays because
-//     one worker would roughly double CI's wall clock, and this repo's runners
-//     are 4-core.
+//     one thread per core, so "cores / 2" and "physical cores" were the same
+//     number there. On 8 logical / 4 physical this says 8 where physical capacity
+//     argues 4 — the likeliest place it is wrong.
 // Override with `--workers=N`; re-measure with .github/workflows/worker-sweep.yml.
-const workers = process.env.CI
-  ? Math.max(2, Math.floor(saturation * CI_OVERSUBSCRIPTION))
-  : Math.max(1, Math.floor(saturation));
+const workers = process.env.CI ? Math.max(2, cores) : Math.max(1, Math.floor(saturation));
 
 const slowMo = Number(process.env.SLOWMO) || 0;
+
+// Two, and re-measured rather than inherited (issue #653, ADR-0078 §4). The
+// residual unretried red-run rate at the shipped worker count is ~5.7% — 4 red
+// runs in 70, spread over three zoom/pinch specs, the worst at 2/35 attempts.
+//
+// So `0` would redden about one run in eighteen. `1` looks sufficient on paper
+// (5.7%² ≈ 0.3% per spec) but that squaring assumes the two attempts are
+// independent, and a retry runs immediately afterwards on the same starved
+// machine — precisely the correlation the assumption denies. At a per-attempt
+// rate this close to the threshold, the cost of being wrong is a red PR gate on
+// work that is fine.
+//
+// What changes instead is that the debt is no longer silent: every retried pass
+// is annotated (playwright-flaky-reporter.ts). Reducing this number is downstream
+// of fixing those three specs, the way fixing one spec took 4 workers from 6/15
+// red to 1/35.
 const ciRetries = 2;
 const ciAllowedTokens = allowedTokensList(
   ...Array.from({ length: ciRetries + 1 }, (_, retry) => managedAccessTokenForRetry(retry))
