@@ -141,6 +141,12 @@
     return;
   }
   const contactTargetMs = Number(window.__probeContactMs) || DEFAULT_CONTACT_MS;
+  // Free-draw mode: a START button and then a fixed WALL-CLOCK window, instead of
+  // banking finger-down time. Contact-banking measures only the stroke, and the
+  // reported lag turned out to live at the finger-lift and between strokes — a
+  // capture spent 8753 ms of lost time there against 2422 ms during the strokes.
+  // A wall-clock window records the gaps as first-class.
+  const freeDrawMs = Number(window.__probeFreeDraw) * 1000 || 0;
 
   const paperView = document.querySelector(PAPER_VIEW_SELECTOR);
   if (!paperView) {
@@ -595,6 +601,33 @@
     hud.textContent = text;
   };
 
+  // The one interactive element on the HUD. `pointer-events` is off for the bar so
+  // it can never swallow a stroke; the button turns it back on for itself alone,
+  // and removes itself the moment the window starts.
+  let startButton = null;
+  const showStartButton = (label, onStart) => {
+    if (!hud || startButton) return;
+    startButton = document.createElement('button');
+    startButton.id = '__probeStart';
+    startButton.textContent = label;
+    startButton.style.cssText = [
+      'pointer-events:auto',
+      'margin-left:12px',
+      'padding:6px 18px',
+      'font:600 15px/1.2 -apple-system,system-ui,sans-serif',
+      'color:#101014',
+      'background:#7fe08a',
+      'border:0',
+      'border-radius:6px',
+    ].join(';');
+    startButton.addEventListener('click', () => {
+      startButton?.remove();
+      startButton = null;
+      onStart();
+    });
+    hud.append(startButton);
+  };
+
   // ── phase state machine ───────────────────────────────────────────────────
   const records = [];
   let index = -1;
@@ -650,7 +683,14 @@
   // events arriving that nothing counted as contact. Those need different fixes.
   const progressText = () => {
     if (done) return 'done';
-    const where = phase.startedAt === null ? `waiting for ${phase.paper} paper` : 'drawing';
+    const where =
+      phase.startedAt === null
+        ? freeDrawMs
+          ? 'waiting for the START tap'
+          : `waiting for ${phase.paper} paper`
+        : freeDrawMs
+          ? 'recording'
+          : 'drawing';
     const banked = (phase.contactMs / 1000).toFixed(1);
     const target = (contactTargetMs / 1000).toFixed(0);
     return (
@@ -676,7 +716,8 @@
     const measured = delta !== null && contact && lastContact;
 
     if (!done) {
-      if (phase.startedAt === null && paperReady()) phase.startedAt = round(ts);
+      // Free-draw waits for the START tap; the phase sweep waits for the paper.
+      if (phase.startedAt === null && !freeDrawMs && paperReady()) phase.startedAt = round(ts);
       if (phase.startedAt !== null && measured) {
         phase.contactMs += delta;
         phase.frames++;
@@ -710,7 +751,9 @@
     // an explicit rate the pump owns the input instead.
     if (driveCycle && !driveHz && !done) stepHand(ts);
 
-    if (!done && phase.startedAt !== null) {
+    if (!done && phase.startedAt !== null && freeDrawMs) {
+      if (ts - phase.startedAt >= freeDrawMs) finishPhase(ts);
+    } else if (!done && phase.startedAt !== null) {
       const banked = phase.contactMs >= contactTargetMs;
       const abandoned =
         phase.contactMs >= contactTargetMs * IDLE_ABANDON_FLOOR &&
@@ -725,7 +768,19 @@
     if (hud && ts >= nextHudAt) {
       nextHudAt = ts + HUD_TICK_MS;
       if (done) setHud(`Done — ${plan.length} phase(s). Check the Mac.`);
-      else if (driveCycle) {
+      else if (freeDrawMs) {
+        if (phase.startedAt === null) {
+          setHud(`${index + 1}/${plan.length} ${phase.key} — ready when you are:`);
+          showStartButton(`START ${Math.round(freeDrawMs / 1000)}s`, () => {
+            phase.startedAt = round(performance.now());
+          });
+        } else {
+          const left = Math.max(0, freeDrawMs - (ts - phase.startedAt)) / 1000;
+          setHud(
+            `${index + 1}/${plan.length} ${phase.key} — RECORDING, draw freely  ${left.toFixed(0)}s left`
+          );
+        }
+      } else if (driveCycle) {
         const banked = (phase.contactMs / 1000).toFixed(1);
         setHud(`${index + 1}/${plan.length} ${phase.key} — driving ${banked}s (hands off)`);
       } else if (phase.startedAt === null) {
@@ -752,6 +807,7 @@
         canvasCss: { w: round(rect.width), h: round(rect.height) },
         canvasBacking: { w: canvas.width, h: canvas.height },
         contactTargetMs,
+        freeDrawMs,
         hud: hudEnabled,
         drive: driveShape,
         driveHz,

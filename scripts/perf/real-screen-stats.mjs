@@ -40,10 +40,15 @@ export const QUEUE_DELAY_LAG_MS = 16.67;
 // grows one op buffer, rapid strokes pay commit + history + reactivity per
 // lift — so they are summarized apart.
 export const LONG_STROKE_MS = 1000;
-// Past this, the frame straddling a finger-lift is not a commit hitch: the page
-// went idle because nothing was animating, and rAF simply stopped being called.
-// Counted separately rather than reported as a 2.4-second hitch.
-export const MAX_CREDIBLE_HITCH_MS = 250;
+// NOT a cap on what counts as a hitch. An earlier version discarded any
+// finger-lift frame above 250 ms as "the page went idle with nothing to animate",
+// which was wrong twice over: the ceiling measurement shows rAF firing at ~17 ms
+// on a completely idle page, and a hand capture recorded 13,195 frames BETWEEN
+// strokes at a steady 17 ms p50 — rAF never stops. The cap was silently throwing
+// away the largest stalls in the capture (a 487 ms lift, and every 250-568 ms one
+// in the run that first reproduced the reported lag). Lift frames are now reported
+// whole; this only marks the ones worth calling out.
+export const NOTABLE_LIFT_MS = 100;
 
 export const POINTER_DOWN = 0;
 export const POINTER_MOVE = 1;
@@ -176,25 +181,24 @@ export function segmentStrokes(events) {
   return strokes;
 }
 
-// The frame that first rendered after a stroke ended — where the commit runs,
-// off the draw path, invisible to the pacing numbers. Past
-// MAX_CREDIBLE_HITCH_MS it is not a hitch at all but the page going idle with
-// nothing left to animate, so those are counted, not averaged in.
-// Reported as a RATE, not a percentile. A phase holds only 20-40 strokes, so a
-// p95 over them is the second-worst sample dressed up as a distribution: two
-// otherwise identical device runs disagreed about whether the pointer halos cost
-// 100 ms at each lift purely because one phase had 19 strokes and the next had 27.
-// "How many lifts in this phase stalled, out of how many" survives that.
+// The frame that first rendered after a stroke ended — where the commit runs, off
+// the draw path and outside the in-contact pacing numbers entirely. This is where
+// the reported lag turned out to live (250-568 ms frames at `up +2..22ms`), so
+// nothing here is filtered: every lift frame is kept whole.
+//
+// Counts are reported as a RATE rather than a percentile. A phase holds only 20-40
+// strokes, so a p95 over them is the second-worst sample dressed up as a
+// distribution — two otherwise identical device runs disagreed about whether the
+// pointer halos cost 100 ms at each lift purely because one phase had 19 strokes
+// and the next had 27.
 function endHitches(strokes, frames) {
   const hitches = [];
-  let idleAfterLift = 0;
   for (const stroke of strokes) {
     const frame = frames.find((row) => row[FRAME_T] >= stroke.end);
     if (!frame || frame[FRAME_DT] < 0) continue;
-    if (frame[FRAME_DT] > MAX_CREDIBLE_HITCH_MS) idleAfterLift++;
-    else hitches.push(frame[FRAME_DT]);
+    hitches.push(frame[FRAME_DT]);
   }
-  return { hitches, idleAfterLift };
+  return { hitches, notableLifts: hitches.filter((ms) => ms > NOTABLE_LIFT_MS).length };
 }
 
 // How long a child waits between moving their finger and the next frame that
@@ -332,18 +336,28 @@ export function summarizePhase(phase, tables) {
   }
 
   const phaseFrames = frames.filter((frame) => inWindow(frame[FRAME_T], from, to));
-  // Both ends of the interval must be in contact — the delta into the first
-  // frame of a stroke carries however long the page sat idle before it.
+  // THREE populations, because reporting only the first hid where the lag actually
+  // was. `contact` is the stroke itself (both ends of the interval in contact — the
+  // delta into a stroke's first frame carries whatever preceded it). `between` is
+  // the rest of the window, which is where the finger-lift stalls live: a hand
+  // capture spent 3142 ms of lost time between strokes against 1763 ms during them,
+  // and only the second number was on the table.
   const contactDeltas = [];
+  const betweenDeltas = [];
+  const allDeltas = [];
   const lateWindows = [];
   const lateThreshold = intervalMs * LATE_FRAME_MULTIPLE;
   for (let i = 1; i < phaseFrames.length; i++) {
     const delta = phaseFrames[i][FRAME_DT];
     if (delta < 0) continue;
-    if (!phaseFrames[i][FRAME_CONTACT] || !phaseFrames[i - 1][FRAME_CONTACT]) continue;
-    contactDeltas.push(delta);
-    if (delta > lateThreshold)
+    allDeltas.push(delta);
+    const drawing = phaseFrames[i][FRAME_CONTACT] && phaseFrames[i - 1][FRAME_CONTACT];
+    (drawing ? contactDeltas : betweenDeltas).push(delta);
+    // Attribution windows span the whole phase now, not just the stroke: the worst
+    // frames sit at the lift, which is not an in-contact interval.
+    if (delta > lateThreshold) {
       lateWindows.push([phaseFrames[i - 1][FRAME_T], phaseFrames[i][FRAME_T]]);
+    }
   }
 
   const phaseEvents = events.filter((event) => inWindow(event[EVENT_STAMP], from, to));
@@ -374,7 +388,7 @@ export function summarizePhase(phase, tables) {
   // last stroke of every phase — and with it the stroke-end hitch, which is
   // exactly what a rapid-repeated-strokes complaint is about.
   const strokes = segmentStrokes(events).filter((stroke) => inWindow(stroke.start, from, to));
-  const { hitches, idleAfterLift } = endHitches(strokes, frames);
+  const { hitches, notableLifts } = endHitches(strokes, frames);
   const latencies = paintLatencies(strokes, frames);
   const gaps = moveGaps(strokes);
   const longStrokes = strokes.filter((stroke) => stroke.durationMs >= LONG_STROKE_MS);
@@ -392,6 +406,8 @@ export function summarizePhase(phase, tables) {
     halos: { seen: phase.halosSeen ?? 0, hidden: phase.halosHidden ?? null },
     contactSeconds: round((phase.contactMs ?? 0) / 1000, 1),
     pacing,
+    betweenStrokes: frameStats(betweenDeltas, intervalMs),
+    wholeWindow: frameStats(allDeltas, intervalMs),
     paintLatencyMs: {
       p50: percentile(latencies, 0.5),
       p95: percentile(latencies, 0.95),
@@ -438,7 +454,12 @@ export function summarizePhase(phase, tables) {
       endHitchMaxMs: max(hitches),
       stalledLifts: hitches.filter((hitch) => hitch > STALL_FRAME_MS).length,
       measuredLifts: hitches.length,
-      idleAfterLift,
+      notableLifts,
+      liftMs: {
+        p50: percentile(hitches, 0.5),
+        p95: percentile(hitches, 0.95),
+        max: max(hitches),
+      },
       longStrokeTrend: trend,
     },
     worstFrames: worstFrames({ frames, events, measures, measureNames, from, to }),
@@ -550,6 +571,10 @@ export function pacingRows(summaries) {
     'late %': phase.pacing ? round(phase.pacing.lateShare * 100, 1) : undefined,
     'stall %': phase.pacing ? round(phase.pacing.stallShare * 100, 1) : undefined,
     'lost ms': phase.pacing?.lostMs,
+    // The two columns that stop a lift stall from hiding: everything in the
+    // window, and everything that is not the stroke itself.
+    'lost ms between': phase.betweenStrokes?.lostMs,
+    'window max': phase.wholeWindow?.max,
     verdict: phase.verdict ?? phase.skipped,
   }));
 }
@@ -586,7 +611,8 @@ export function engineRows(summaries) {
     'stalled lifts': phase.strokes
       ? `${phase.strokes.stalledLifts}/${phase.strokes.measuredLifts}`
       : undefined,
-    'hitch max': phase.strokes?.endHitchMaxMs,
+    'lift p95': phase.strokes?.liftMs?.p95,
+    'lift max': phase.strokes?.liftMs?.max,
     'long dt 1st→3rd': phase.strokes?.longStrokeTrend
       ? `${phase.strokes.longStrokeTrend.firstThirdP50 ?? '–'}→${phase.strokes.longStrokeTrend.lastThirdP50 ?? '–'}`
       : undefined,

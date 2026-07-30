@@ -64,6 +64,7 @@ const TABLE_CHUNK_ROWS = 2_000;
 export function probeConfigScript({
   phases,
   contactMs,
+  freeDrawSeconds,
   drive,
   driveHz,
   pointerType,
@@ -75,6 +76,7 @@ export function probeConfigScript({
   return [
     assign('__probePhases', phases),
     assign('__probeContactMs', contactMs),
+    assign('__probeFreeDraw', freeDrawSeconds),
     assign('__probeDrive', drive),
     assign('__probeDriveHz', driveHz),
     assign('__probePointerType', pointerType),
@@ -122,6 +124,7 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         'url',
         'phases',
         'contact-seconds',
+        'free-draw',
         'drive',
         'drive-hz',
         'pointer-type',
@@ -142,6 +145,8 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
   const server = await ensurePreviewServer(appUrl, port, !has('no-serve'));
   const { device, stopProxy } = await connectDevice(flag('device-id'));
   const contactSeconds = Number(flag('contact-seconds', DEFAULT_CONTACT_SECONDS));
+  // Wall-clock window behind a START tap, rather than banked finger-down time.
+  const freeDrawSeconds = flag('free-draw') && Number(flag('free-draw'));
   // `--drive` with no value is the useful default: one long stroke then a burst
   // of short ones, the two shapes the lag report names.
   const drive = has('drive') ? 'mixed' : flag('drive');
@@ -176,6 +181,7 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
       probeConfigScript({
         phases: flag('phases'),
         contactMs: contactSeconds * 1000,
+        freeDrawSeconds,
         drive,
         driveHz,
         pointerType,
@@ -205,6 +211,19 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         `\nDriving synthetic input (${drive}${driveHz ? ` at ${driveHz} Hz` : ' at one move per frame'}) — ` +
           `hands off the iPad, keep it unlocked and ` +
           `Safari foregrounded.\nUndo-history seam: ${seam ? 'available' : 'ABSENT (history table will be empty)'}`
+      );
+    } else if (freeDrawSeconds) {
+      console.log(
+        [
+          '',
+          '── Free-draw capture ────────────────────────────────────────────────',
+          'On the iPad: tap the green START button in the banner, then draw however',
+          `you like for ${freeDrawSeconds}s. Everything in that window is recorded —`,
+          'the gaps between strokes and the finger-lifts included, which is where',
+          'the stalls have been hiding.',
+          '─────────────────────────────────────────────────────────────────────',
+          '',
+        ].join('\n')
       );
     } else {
       printHandInstructions(flag('phases') ?? 'all', contactSeconds);
