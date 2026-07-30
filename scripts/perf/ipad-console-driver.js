@@ -77,7 +77,7 @@
   // 22 strokes is two past MAX_UNDO_DEPTH (20, matching
   // scripts/perf/undo-scenarios.mjs), so the gates run measures history with
   // the stack full and exercises the oldest-entry fold + shift overflow path.
-  // Timeline mode is sized for legibility, not for the tier: since ADR-0078 the
+  // Timeline mode is sized for legibility, not for the tier: since ADR-0082 the
   // resident window is a byte budget, so a handful of thin strokes encodes
   // nothing at all. A recorded run is for where the time goes and whether a
   // frame dropped, which does not depend on the tier demoting.
