@@ -23,41 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Maintainability] Dev-harness artifact filenames are duplicated boundary strings between the page and its endpoint
-
-**File(s):** `web/src/routes/dev/ai-timer/+page.svelte` (lines 17–18) and
-`web/src/routes/dev/ai-timer/artifacts/[name]/+server.ts` (lines 11–12) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The page hardcodes:
-
-```ts
-const drawingInputUrl = '/dev/ai-timer/artifacts/drawing-input.jpeg';
-const aiOutputUrl = '/dev/ai-timer/artifacts/ai-output.jpeg';
-```
-
-and the sibling endpoint independently hardcodes the allowlist:
-
-```ts
-const ALLOWED = new Set(['drawing-input.jpeg', 'ai-output.jpeg']);
-```
-
-CLAUDE.md: boundary strings are "declared once, imported everywhere (tests deliberately excepted)".
-These two files must agree byte-for-byte or the dev page 404s its own artifacts; a rename of an
-artifact under `tests/artifacts/` must be repeated in two more places. This is a dev-only surface,
-so severity is low, but it's exactly the drift class the convention targets, and there's a natural
-shared home.
-
-#### Proposed solution
-
-Add a small module beside the route (e.g. `web/src/routes/dev/ai-timer/artifactNames.ts`) exporting
-`export const AI_TIMER_ARTIFACTS = ['drawing-input.jpeg', 'ai-output.jpeg'] as const;`. The endpoint
-builds its `Set` from it; the page maps names to URLs. (`tests/ai-timer.spec.ts` may keep its own
-literals per the tests exception.)
-
 ### [Maintainability] AiConfetti's fall keyframes are hardcoded to a ~540 px stage; leaves vanish mid-air on taller stages
 
 **File(s):** `web/src/lib/components/AiConfetti.svelte` (`@keyframes leafFall`, lines 97–121) @
