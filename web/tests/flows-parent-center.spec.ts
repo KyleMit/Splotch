@@ -2,7 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
-import { gotoApp, openParentCenter, retryOpen } from './helpers';
+import { gotoApp, openParentCenter } from './helpers';
+import { retryOpen } from './retry';
 
 async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
   await openParentCenter(page);

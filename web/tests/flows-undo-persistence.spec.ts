@@ -2,7 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
-import { draw, firstOpaquePixel, gotoApp, retryOpen } from './helpers';
+import { draw, firstOpaquePixel, gotoApp } from './helpers';
+import { retryOpen } from './retry';
 
 import { openBrushMenu, openDrawer, pickBrush } from './flows-harness';
 

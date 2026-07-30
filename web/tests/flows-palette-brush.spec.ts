@@ -8,12 +8,12 @@ import {
   gotoApp,
   isBlueDominant,
   PICKER_GREEN,
-  retryOpen,
   swatch,
   TEST_PALETTE,
   touchEventPrevented,
   type Rgba,
 } from './helpers';
+import { retryOpen } from './retry';
 
 import { openBrushMenu, openDrawer, pickBrush } from './flows-harness';
 
