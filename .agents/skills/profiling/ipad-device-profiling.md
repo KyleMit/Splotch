@@ -180,6 +180,34 @@ gate as `routes/dev/*` (`PUBLIC_ENABLE_DEV_HARNESS`, which the Netlify deploy ne
 Nothing else about the app is touched — the synthetic hand loads a coloring page by clicking the
 real UI.
 
+### Counting the rendering work — `--timeline`
+
+```sh
+npm run perf:ipad:frames -- --drive --timeline --phases=page --contact-seconds=10
+```
+
+`Timeline.enable` + `Timeline.start` **do** work over the protocol and stream the full record tree —
+`RenderingFrame`, `Composite`, `Paint`, `RecalculateStyles`, `Layout`, `EventDispatch`,
+`FireAnimationFrame`. So the compositor side is reachable without a Web Inspector recording, with
+one hard limit: **every record arrives with `startTime: 0` and `endTime: 0`**, mid-recording ones
+included.
+
+That means counts and structure, never durations — and no record can be placed in time, which is why
+`--timeline` requires exactly one `--phases` key. It is also the specific reason the hand-driven
+Timeline export above remains the only source of paint/composite **durations**.
+(`Timeline.setInstruments` with an explicit list, and `setAutoCaptureEnabled: false`, were tried:
+the rendering records stop arriving entirely.)
+
+Counts still compare across conditions, which is what makes them worth having. Two results from the
+first use, both against identical synthetic input:
+
+* Suppressing the per-event blend nudge leaves `Composite` at **1.29 per frame either way**. WebKit
+  composites once per frame no matter how many times the layer is damaged inside it, so a per-event
+  nudge never multiplied recomposites — only style recalculations, which sat at **3.43 per frame**,
+  tracking the input rate exactly.
+* Coalescing that work to once per frame (PR #662) took `RecalculateStyles` from 3.43 to **1.32**
+  per frame, left `Composite`/`Paint` unchanged, and added ~2 `FireAnimationFrame` per frame.
+
 ### Re-reading a capture
 
 The probe records raw tables and computes nothing, so `perf:frames:analyze` recomputes every metric
