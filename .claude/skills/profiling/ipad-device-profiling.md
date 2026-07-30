@@ -546,7 +546,55 @@ findings above is negligible engine cost beside long rendering-side records.
 
 ---
 
+## A/B-ing two builds on one device — **⟨Mac⟩**
+
+Bisecting a rendering cost means recording the same hand-drawn gesture against several builds. Doing
+that by switching branches wastes the session on rebuilds and invites comparing a build to itself,
+so serve every build at once — a **git worktree per branch, `node_modules` symlinked in, one port
+each**:
+
+```sh
+git worktree add /tmp/splotch-main origin/main
+ln -s "$PWD/node_modules" /tmp/splotch-main/node_modules
+(cd /tmp/splotch-main && npm run perf:build \
+  && PUBLIC_ENABLE_DEV_HARNESS=true node scripts/perf/serve.mjs --port=4174 --strict-port &)
+```
+
+`--strict-port` is load-bearing: without it a taken port silently slides to the next one and the two
+URLs you then hand the iPad are not the builds you think. Remove the worktrees
+(`git worktree
+remove`) when the comparison is done.
+
+**Verify each build by behavior before recording against it.** Two ways this rig produces a
+meaningless A/B, both of which look completely normal in the output:
+
+* **A single `cd` ahead of two backgrounded launches puts both servers on the same worktree** — an
+  "A/B" comparing a commit to itself. Check each server's actual working directory, not the command
+  you meant to type.
+* **Grepping the served bundle is not verification.** Fetching a build's entry scripts to check for
+  a change reported "absent" for a build that had it — the code was in a lazily-loaded chunk. Assert
+  on behavior through the seam instead: `window.__drawingDebug.getUndoDebug().rasterBytes` after a
+  stroke, `document.querySelector('#drawingCanvas').width` for a render-scale change.
+
+Then compare the two exports on the rate that survives a different amount of drawing in each:
+
+```sh
+npm run perf:ipad:strip-layers                     # bisect rung: drop the optional layers, no reload
+# record the Timeline on each build by hand, export both, then:
+npm run perf:timeline:compare -- <baseline>.json <candidate>.json
+```
+
+`perf:timeline:compare`'s headline row is **long composites per commit** — read that, not the
+totals. `perf:ipad:strip-layers` injects `display: none` for the optional compositing layers over
+the inspector connection, so record the Timeline immediately afterwards; a reload undoes it.
+
+---
+
 ## Caveats & troubleshooting
+
+* **Stop the perf servers before running Playwright.** `perf:serve` holds **4173**, which is also
+  the port the E2E suite's preview server wants; with one running, `npm run test:e2e` fails to start
+  rather than reporting a port conflict.
 
 * **Safari gives web content a 60 Hz `requestAnimationFrame` beat — even on a 120 Hz ProMotion iPad
   Pro.** Measured on iPad13,8 / iPadOS 26.5: a bare rAF sampler reports **16–17 ms both idle and

@@ -149,12 +149,95 @@ then catches up in a jump".
 
 **No synthetic input reproduces it.** Ruled out on device, all clean: 1 move/frame, 4.03 moves/frame
 at `pointerType: 'pen'` on a coloring page, the on-device HUD as a confound, accumulated undo-history
-rasters to 33.9 MB, and every CSS suppression of the blend nudge / `mix-blend-mode` / halos. What
-remains is what `dispatchEvent` cannot fake — the real iOS touch pipeline, with **iPadOS Scribble** the
-prime suspect (ADR-0038 and `scribbleGuard` exist because a stylus tap can arm it; recognition would
-be main-thread work inside the browser, invisible to every instrument here, present only under a real
-Pencil). The cheap decisive test is Settings → Apple Pencil → Scribble OFF followed by one hand-drawn
-run.
+rasters to 33.9 MB, and every CSS suppression of the blend nudge / `mix-blend-mode` / halos. Why
+`dispatchEvent` cannot provoke a stall the same app work provokes under a hand is **still
+unexplained**, and it is the single biggest hole in this instrument: it means every A/B has to be
+hand-drawn, which is what makes the sample sizes small enough to mislead (above).
+
+**iPadOS Scribble was the prime suspect and is not the cause.** It was ranked first because it is
+main-thread work inside the browser that no instrument here can see. Two readings retired it: the
+probe records `kind`, and the hand runs come back `touch`, not `pen` — Scribble is Pencil-only — and
+the stalls are now attributed to compositing (below), which has nothing to do with recognition. Left
+here because the reasoning that promoted it was sound and someone will re-derive it otherwise.
+
+### What the stalls actually are: compositing at the stroke commit
+
+A hand-drawn Web Inspector Timeline export on `/` (9.3 s) splits like this:
+
+| eventType          |   n |       total |          max |
+| ------------------ | --: | ----------: | -----------: |
+| **composite**      | 293 | **5047 ms** | **255.9 ms** |
+| recalculate-styles | 572 |      195 ms |       1.7 ms |
+| layout             |  52 |        8 ms |       0.5 ms |
+| paint              | 251 |    **3 ms** |       0.5 ms |
+
+15 stroke commits produced 15 long composites, each beginning 2–192 ms *after* its `engine.commit`
+mark closed. That is the whole reason the ADR-0066 gates pass on a device that visibly lags: **the
+cost lands in the compositor after the marked work returns**, so an instrument that measures marked
+work is structurally blind to it. Any future "the gates are green, so the frame is fine" inference is
+wrong on this platform.
+
+Removing all undo-snapshot capture drops long composites per commit from 1.0 to 0.2, so reading a
+patch back out of the GPU-backed paper canvas is most of the per-commit cost. Pooling the patch
+canvases changed nothing (1.0 → 0.9) — allocation was never the expense, the readback is.
+
+### Timeline: the export has durations, the protocol domain does not
+
+`--timeline` counts rendering records over the protocol, and that is all it can do: the `Timeline`
+domain delivers every record with `startTime`/`endTime` zeroed. Counts still discriminate (they are
+how the blend-nudge claim below was falsified), but **any question of the form "how long did
+compositing take" requires a Web Inspector export**, recorded by hand and analyzed separately. This
+is also why `--timeline` refuses more than one `--phases=` key: with no timestamps, records cannot be
+attributed to a phase.
+
+### Two more metric definitions that were measuring the operator
+
+Both survived the first four fixes above and were caught by the reporter, not by the instrument:
+
+* **Only in-contact frames were reported.** The same capture had 8753 ms of frame-time loss *between*
+  strokes against 2422 ms during them — so the headline number omitted the larger half. Deltas are now
+  banked into three populations (in-contact, between-strokes, all).
+* **Lift stalls were capped at 250 ms** as "implausible, the page went idle". They were real: rAF
+  never idles here (13,195 frames between strokes at 17 ms p50), so the cap was discarding exactly
+  the worst events. Replaced with `NOTABLE_LIFT_MS = 100` as a reporting threshold, not a filter.
+
+The lesson is the one the raw-tables design already encodes: a metric that *filters* is a metric that
+can hide the finding. Prefer classifying and reporting every population.
+
+### Free-draw mode, because contact-banking hid the gaps
+
+A phase that banks N seconds of finger-down time pauses its clock on lift — which is precisely when
+the stalls happen. `--free-draw` (a START button, then a fixed wall-clock window) makes the
+between-stroke time first-class. Use it for any hand run hunting a stall; use contact-banking only
+when comparing per-stroke costs.
+
+### Claims this instrument produced that were wrong
+
+Kept as a list because each one looked like a finding and cost a cycle:
+
+* **"Halos cost ~100 ms per lift"** — a p95 over 19–27 strokes. Withdrawn (above).
+* **"The blend nudge forces 3–4 extra recomposites per frame"** — motivated a whole PR, then measured
+  false: `Composite` records came back at 1.29 per frame with the nudge and without it. The PR's real
+  effect is on `RecalculateStyles` (3.43 → 1.32 per frame), which the Timeline then showed to be
+  195 ms of a 9.3 s recording — a genuine micro-optimization that is not the lag.
+* **"Contact detection is broken"** — diagnosed from a HUD reading 0.0/15s, before asking whether
+  anyone had drawn yet. Nobody had. Do not diagnose an instrument from the absence of input.
+
+### Verifying which build the device is on
+
+Two rig failures, both of which silently produced a meaningless A/B:
+
+* **Grep is not verification.** Checking whether a served build carried a fix by fetching its entry
+  scripts reported "no" for a build that definitely had it — the code was in a lazily-loaded chunk.
+  Verify a build by its *behavior* through the seam instead (`getUndoDebug().rasterBytes` is 0 on the
+  no-snapshot build and non-zero on baseline; read `canvas.width` to confirm a render-scale change).
+* **Two servers can serve the same commit.** A single `cd` ahead of two backgrounded launches put
+  both on the same worktree, so an "A/B" compared a build to itself. Check each server's actual
+  working directory, not the command you believe you typed.
+
+Serving several builds at once is otherwise the right rig: a git worktree per branch with
+`node_modules` symlinked in, one port each, so a comparison costs no rebuild and no mid-session
+branch switch.
 
 ### The one production seam, and why it is read-only
 
@@ -166,6 +249,16 @@ are drift-guarded by a test, since prose cannot hold that agreement.
 
 ## Open / unvalidated
 
+* **Composite is attributed to the commit, not yet to a layer.** After snapshot capture is removed a
+  continuous ~9.6 ms of compositing per frame remains — one frame's whole budget, roughly. Whether
+  that is the two always-mounted `.crayon-overlay` canvases (one blended, both full-size regardless
+  of the selected brush) or simply what a 4.7 Mpx canvas costs to composite on this device is the
+  open question, and the two bisect rungs for it are a layer-strip run and a quarter-resolution run.
+* **Web Inspector's composite durations are probably generous.** The 245 ms records are the basis for
+  the attribution but not for the magnitude; the probe independently measured 250–764 ms lift stalls
+  with no inspector attached, which is what makes the attribution safe to keep.
+* The `--free-draw` window and the three-population deltas were validated by use on device, not by a
+  test, and have not been through review.
 * Only ever run against one device (iPadOS 26.5). `--device-id=` exists for multi-device machines
   but has not been exercised with two attached.
 * The gates thresholds are not enforced by `perf:ipad` — it prints the table and the gate text, like
