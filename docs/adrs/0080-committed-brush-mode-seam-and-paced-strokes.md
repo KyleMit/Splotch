@@ -151,10 +151,14 @@ one reading of one pixel count. The probe that settled it (engine mode, sheet re
 gradient, and the dominant painted colour, dumped at each failure) is the technique worth reusing:
 read the *engine's* state at the moment of failure, not the assertion's.
 
-− **The rainbow reveal's margin is measured, not proven.** Six-bit quantization with a threshold of
-5 sits two buckets clear on both sides across 45 samples per case. A gradient pool change, a shorter
-stroke, or a different canvas size could narrow it, and the failure mode would be a red test rather
-than a silent pass.
+− **The rainbow reveal's margin is measured, not proven, and it is asymmetric.** The measured
+populations — a pen pass at 1-3 buckets, the narrowest reveal at 7 — leave a four-wide gap with no
+centre, so no boundary splits it evenly. Accepting from 5 inclusive gives the reveal side two
+buckets and the pen side one, and the spare bucket goes to the reveal side on purpose: that is the
+tail that bit (#658), and its spread is real (a random gradient crossed by a short stroke) where a
+flat pass is pinned near one bucket by construction. A gradient pool change, a shorter stroke, or a
+different canvas size could still narrow it, and the failure mode would be a red test rather than a
+silent pass.
 
 − **Paced strokes cost wall clock.** A 180px hop becomes ~11 dispatched moves on a phone-sized
 viewport, each a protocol round-trip. The install-banner spec draws eight of them, which is most of

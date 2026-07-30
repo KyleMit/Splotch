@@ -22,12 +22,24 @@ import { applyFarmPage, openBrushMenu, openDrawer, pickBrush } from './flows-har
 // path, so it shares the window.
 const REVEAL_SETTLE_MS = 3000;
 
-// Distinct colour buckets a reveal must span to be a reveal rather than a flat
-// pen pass. Both sides were measured over 45 samples each, at the quantization
-// distinctOpaqueColors uses (issue #651): a pen pass lands at 1-3 buckets, while
-// the narrowest reveal — the post-clear rainbow, whose short stroke crosses the
-// least of the ramp — lands at 7. Five sits two buckets clear of both, so
-// neither side has to be right to within one bucket.
+// Distinct colour buckets a reveal must reach to be a reveal rather than a flat
+// pen pass. An INCLUSIVE floor — the assertion below is
+// toBeGreaterThanOrEqual — so this constant is the decision boundary itself
+// rather than one below it.
+//
+// Both sides are measured, at the quantization distinctOpaqueColors uses (issue
+// #651): a flat pen pass lands at 1-3 buckets over 90 samples, and the narrowest
+// reveal — the post-clear rainbow, whose short stroke crosses the least of the
+// ramp — lands at 7 over 45. Those two leave a four-wide gap with no centre, so
+// the margins cannot be symmetric wherever the boundary goes. Accepting from 5
+// gives the reveal side two buckets (it would have to fall to 4 to false-red) and
+// the pen side one (it would have to reach 5 to false-pass).
+//
+// The spare bucket goes to the reveal side deliberately. That is the tail that
+// actually bit (#658), and its spread is real — a random gradient crossed by a
+// short stroke. A flat pass has no comparable spread: one colour is one bucket,
+// and only anti-aliasing rounding lifts it off 1, which is why the pen figure
+// held at 1-3 across 4, 5 and 6 bits alike.
 const MAGIC_REVEAL_MIN_COLORS = 5;
 
 // A correct reveal repaints essentially the whole band (measured 2845 left,
@@ -51,7 +63,7 @@ async function drawMagicReveal(page: Page, points: { x: number; y: number }[]) {
   await draw(page, points);
   await expect
     .poll(() => distinctOpaqueColors(page), { timeout: REVEAL_SETTLE_MS })
-    .toBeGreaterThan(MAGIC_REVEAL_MIN_COLORS);
+    .toBeGreaterThanOrEqual(MAGIC_REVEAL_MIN_COLORS);
 }
 
 /** Perform the drag-to-clear gesture: pull the clear button past its accept
