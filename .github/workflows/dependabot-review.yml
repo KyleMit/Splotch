@@ -18,9 +18,10 @@
 #    tracking or result comment of its own. Claude publishes the verdict itself
 #    via `gh pr comment` — granted in allowedTools, instructed in the prompt.
 # 5. `github_token:` keeps the action off its default authentication path.
-#    Given no token, it exchanges a GitHub OIDC token for a Claude GitHub App
-#    installation token and aborts the run with "Could not fetch an OIDC token.
-#    Did you remember to add `id-token: write`?". Granting that permission is
+#    Given no token, it mints one by exchanging a GitHub OIDC token for a
+#    Claude GitHub App installation token — which needs `id-token: write`, so
+#    the run aborts before the exchange: "Could not fetch an OIDC token. Did
+#    you remember to add `id-token: write`?". Granting that permission is
 #    the fix the message asks for and the wrong one here: it would run the job
 #    on an installation token whose scope lives in an app installation rather
 #    than in this file, undoing (2) as the auditable statement of what this job
@@ -91,13 +92,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # Anthropic auth (above) and GitHub auth (here) are separate. Without
-          # this input the action mints its GitHub token by exchanging an OIDC
-          # token for a Claude App installation token, which needs
-          # `id-token: write` and puts the job's real scope outside this file —
-          # see (5) at the top. The same token already runs `gh pr comment`
-          # below, so one identity does the whole job under the permissions
-          # declared above.
+          # GitHub auth is separate from the Anthropic auth above, and its
+          # default path is an OIDC exchange — see (5) at the top.
           github_token: ${{ github.token }}
           allowed_bots: dependabot[bot]
           # Supplying `prompt:` puts the action in automation mode, which
