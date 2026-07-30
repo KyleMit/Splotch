@@ -26,6 +26,29 @@ function baseEntries(baseRef) {
   }
 }
 
+/**
+ * Workflow-command annotations, which GitHub reads off stdout and renders inline
+ * on the offending file in the pull request diff. Emitted as raw strings rather
+ * than through @actions/core so this script keeps its only-node-builtins
+ * dependency profile, which is what lets its workflow skip installing anything.
+ */
+function annotate({ duplicates, collisions }) {
+  if (!process.env.GITHUB_ACTIONS) return;
+  for (const { number, files } of duplicates) {
+    for (const file of files) {
+      const others = files.filter((other) => other !== file).join(', ');
+      console.log(
+        `::error file=${ADR_DIR}/${file},line=1::ADR number ${number} is also held by ${others}`
+      );
+    }
+  }
+  for (const { number, baseFile, headFile } of collisions) {
+    console.log(
+      `::error file=${ADR_DIR}/${headFile},line=1::ADR number ${number} is already held by ${baseFile} on the base branch`
+    );
+  }
+}
+
 export function checkAdrNumbering() {
   const baseRef = argFlag('base', DEFAULT_BASE_REF);
   const head = readdirSync(join(ROOT, ADR_DIR));
@@ -38,16 +61,16 @@ export function checkAdrNumbering() {
     );
   }
 
-  const problems = formatProblems({
-    duplicates: duplicateNumbers(head),
-    collisions: base === null ? [] : collisionsAgainstBase(base, head),
-    baseRef,
-  });
+  const duplicates = duplicateNumbers(head);
+  const collisions = base === null ? [] : collisionsAgainstBase(base, head);
+  const problems = formatProblems({ duplicates, collisions, baseRef });
 
   if (problems.length === 0) {
     console.log(`ADR numbering OK — every record in ${ADR_DIR} holds a unique number.`);
     return;
   }
+
+  annotate({ duplicates, collisions });
 
   const free = nextAdrNumber([...head, ...(base ?? [])]);
   console.error('ADR numbering check failed:\n');

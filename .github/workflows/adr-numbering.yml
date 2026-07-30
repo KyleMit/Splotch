@@ -3,22 +3,24 @@
 # every "ADR-NNNN" reference ambiguous, including references already written into
 # merged records and commit messages that cannot be rewritten.
 #
-# The check reads the base branch at run time rather than trusting the pull
-# request's merge commit. GitHub does not re-run a check that already passed, so a
-# branch that went green before a colliding record landed on the base would
-# otherwise merge on a stale result — which is how 0077 and 0078 each ended up
-# held by two records, hours apart.
+# Deliberately NOT path-filtered, so it reports on every pull request and is safe
+# to mark required. A workflow skipped by a path filter leaves its check Pending
+# forever and blocks any pull request that does not match, which is why GitHub
+# advises against path filtering a required workflow. The work is gated at the
+# step below instead, so the job always runs and always reports.
 #
-# NOTE: because this is path-filtered it does not report on pull requests that
-# leave docs/adrs/ alone. Marking the job required in branch protection as-is
-# would block those pull requests forever waiting for a check that never runs.
-# Either leave it unrequired, or pair it with merge queue / a companion
-# graceful-skip job before requiring it.
+# No setup-node step: scripts/check-adr-numbering.mjs imports only node: builtins
+# and its own siblings, and the runner ships Node, so installing dependencies
+# would cost ~15s to change nothing (setup-node measured at 14-20s in the Quality
+# job, against well under a second for the check itself). node is invoked directly
+# rather than through npm run for the same reason. The constraint that buys: this
+# script and its lib may use only APIs present in the runner image's default Node,
+# which is not the >=22.13 that package.json asks of contributors — anything
+# newer means adding setup-node back and paying for it.
 name: ADR Numbering
 
 on:
   pull_request:
-    paths: ['docs/adrs/**']
   merge_group:
   workflow_dispatch: # allow ad-hoc runs (e.g. auditing the numbering on main)
 
@@ -39,11 +41,37 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # The base branch as it stands now, not as the merge commit remembers it.
+      # The base branch as it stands now, not as this run's merge commit
+      # remembers it: GitHub stops recomputing the merge ref once a pull request
+      # conflicts, and a workflow that checked out the head ref would see no
+      # base at all.
       - name: Fetch the base branch
         run: |
           git fetch --depth=1 origin \
             "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
 
+      # Two-dot diff on purpose: --depth=1 leaves no merge base for a three-dot
+      # range. Comparing the base tip against the tree under test can also flag a
+      # record the base itself moved, which only costs one needless run of a
+      # one-second check — it never misses a change this branch made.
+      #
+      # git rather than a changed-files action: this is one command, and a
+      # third-party action here would be supply-chain exposure for no gain
+      # (tj-actions/changed-files, CVE-2025-30066, had every version retagged to
+      # malicious code in 2025).
+      - name: Look for ADR changes
+        id: adrs
+        run: |
+          if git diff --quiet "origin/${BASE_REF}" HEAD -- docs/adrs/; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo 'No docs/adrs/ changes against the base — numbering check not needed.'
+          else
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      # Gated at the step, not the job: a skipped job's effect on a required
+      # check depends on how GitHub scores a "skipped" conclusion, while a job
+      # that runs and exits 0 reports success unambiguously.
       - name: Check ADR numbering
+        if: steps.adrs.outputs.changed == 'true'
         run: node scripts/check-adr-numbering.mjs "--base=origin/${BASE_REF}"
