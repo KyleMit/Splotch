@@ -23,43 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Types] Style plumbing widens the closed `StyleName` union back to `string` mid-flight
-
-**File(s):** `web/src/lib/drawing/aiImage.ts` (`buildRequest`, lines 151–154) and
-`web/src/lib/ai/prompt.ts` (`buildPromptForStyle`, lines 7–10) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-CLAUDE.md: closed value sets are "threaded end to end — never bare `string`… plus a runtime
-fallback." `generateAiImage` correctly accepts `style?: StyleName | ''` (line 201), but the very
-next hop drops the union:
-
-```ts
-function buildRequest(
-  uploadBlob: Blob,
-  style: string,
-): { endpoint: string; headers: Record<string, string>; body: Blob };
-```
-
-(lines 151–154). Similarly
-`buildPromptForStyle(style: string | null, suffixes: Record<string, string>)` (`prompt.ts` lines
-7–10) types both parameters loosely and re-derives membership at runtime via `Object.hasOwn` — on
-the *server* that's a legitimate boundary (the style arrives as an unvalidated query param), but the
-suffix map could still be typed as the concrete `STYLE_SUFFIXES` shape without breaking the
-asset-gen import (the module stays dependency-free; a generic constraint is erased by
-`--experimental-strip-types`).
-
-#### Proposed solution
-
-Type `buildRequest`'s `style` as `StyleName | ''` (zero-cost, one token). For `prompt.ts`, keep
-`style: string | null` (genuine boundary input) but tighten the map:
-`buildPromptForStyle<S extends Record<string, string>>(style: string | null, suffixes: S)` — or
-simply accept `Readonly<Record<string, string>>` and leave a WHY comment that `style` is
-deliberately unvalidated because the server treats an unknown style as "no suffix". The current code
-half-implies that policy; the type should state it.
-
 ### [Correctness] Download filename hardcodes `.png` while the AI result can be WebP or JPEG
 
 **File(s):** `web/src/lib/components/AiImageResult.svelte` (`handleDownload`, lines 62–69, filename
