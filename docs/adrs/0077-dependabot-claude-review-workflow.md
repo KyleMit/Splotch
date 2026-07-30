@@ -43,8 +43,8 @@ Alternatives considered:
 ## Decision
 
 `.github/workflows/dependabot-review.yml` runs `anthropics/claude-code-action` on `pull_request`
-(`opened`/`reopened`), gated by `if: github.actor == 'dependabot[bot]'`. Four settings are
-load-bearing and each fails *silently* if dropped:
+(`opened`/`reopened`), gated by `if: github.actor == 'dependabot[bot]'`. Five settings are
+load-bearing; the first four fail *silently* if dropped, the fifth fails loudly and misdirects:
 
 1. **`CLAUDE_CODE_OAUTH_TOKEN` lives in the Dependabot secret store** (Settings → Secrets and
    variables → **Dependabot**), not Actions. That store is the only one injected into these runs. A
@@ -59,6 +59,15 @@ load-bearing and each fails *silently* if dropped:
    tracking comment nor a result comment. Nothing publishes the review but Claude itself, so without
    the tool the verdict is written to the run log and seen by nobody — the same
    green-with-no-comment symptom as (3), from the opposite end.
+5. **`github_token: ${{ github.token }}`.** `claude_code_oauth_token` authenticates to Anthropic;
+   the action needs a GitHub token as well, and its default is to exchange a GitHub OIDC token for a
+   Claude GitHub App installation token — which requires `id-token: write` and aborts the run
+   without it. Granting that permission is the fix the error message names, and was rejected:
+   running on an installation token moves the job's real scope out of the workflow file and into an
+   app installation, which undoes (2) as the auditable statement of what this job may do, and it
+   stakes the run on an OIDC exchange inside GitHub's Dependabot sandbox. Passing the workflow's own
+   token skips the exchange, keeps `permissions:` the whole story, and gives the run a single
+   identity — the same token already runs `gh pr comment`.
 
 The token is generated with `claude setup-token` and bills the Pro/Max subscription rather than API
 credits.

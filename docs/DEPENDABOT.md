@@ -43,22 +43,33 @@ problem. What GitHub restricts is what the resulting run is *allowed to do*: on 
 receives a **read-only `GITHUB_TOKEN`** and **cannot read Actions secrets at all**. A secret
 reference there doesn't error — it resolves to an empty string.
 
-Four settings in the workflow exist solely to work within that sandbox and around the action's
-automation-mode defaults, and **each one fails silently if removed.** The job goes green having
-achieved nothing, which is the failure mode to watch for:
+Five settings in the workflow exist solely to work within that sandbox and around the action's
+defaults. **The first four fail silently if removed** — the job goes green having achieved nothing,
+which is the failure mode to watch for:
 
-| Setting                         | Why it's there                                                       | Symptom if missing              |
-| ------------------------------- | -------------------------------------------------------------------- | ------------------------------- |
-| Secret in the Dependabot store  | The only secret store injected into these runs                       | Auth failure — empty token      |
-| `permissions:` block            | Re-grants write to the read-only token so the comment can be posted  | Comment never appears           |
-| `allowed_bots: dependabot[bot]` | `claude-code-action` ignores bot actors by default (default: *none*) | Job succeeds, Claude never runs |
-| `Bash(gh pr comment:*)` granted | Automation mode posts nothing on its own — Claude posts the verdict  | Review written only to the log  |
+| Setting                             | Why it's there                                                        | Symptom if missing                         |
+| ----------------------------------- | --------------------------------------------------------------------- | ------------------------------------------ |
+| Secret in the Dependabot store      | The only secret store injected into these runs                        | Auth failure — empty token                 |
+| `permissions:` block                | Re-grants write to the read-only token so the comment can be posted   | Comment never appears                      |
+| `allowed_bots: dependabot[bot]`     | `claude-code-action` ignores bot actors by default (default: *none*)  | Job succeeds, Claude never runs            |
+| `Bash(gh pr comment:*)` granted     | Automation mode posts nothing on its own — Claude posts the verdict   | Review written only to the log             |
+| `github_token: ${{ github.token }}` | Keeps the action off its OIDC → Claude-App token exchange (see below) | Job fails: "Could not fetch an OIDC token" |
 
-The last two are the sleepers, and they produce the *same* green-with-no-comment symptom from
+The middle two are the sleepers, and they produce the *same* green-with-no-comment symptom from
 opposite ends. `allowed_bots` defaults to empty, meaning no bot may trigger the action — and the
 actor here is `dependabot[bot]`. Supplying a `prompt:` puts the action in automation mode, which
 deliberately creates no tracking or result comment, so the only reason a verdict reaches the PR is
 that Claude is granted `gh pr comment` and told to run it.
+
+The last row is the one that announces itself. `claude_code_oauth_token` authenticates to Anthropic;
+the action needs a *GitHub* token as well, and by default it mints one by exchanging a GitHub OIDC
+token for a Claude GitHub App installation token — which requires `id-token: write` and fails the
+run without it. Passing `github_token` skips that exchange, and skipping it is the point: the
+workflow's `permissions:` block then remains the complete, auditable statement of what the job can
+do, rather than deferring to whatever an app installation happens to grant. It also keeps one
+identity across the run, since `gh pr comment` already posts with that same token. If the run log
+ends at **"Could not fetch an OIDC token. Did you remember to add `id-token: write`?"**, the input
+has gone missing — add it back rather than granting the permission the error asks for.
 
 ## Verifying the first pass
 
@@ -123,14 +134,15 @@ that's a human step by design.
 
 ## Troubleshooting
 
-| Symptom                               | Likely cause                                                                                                                                                                                  |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Job green, no comment                 | Either `allowed_bots` didn't match (run log nearly empty) or `Bash(gh pr comment:*)` is missing from `--allowedTools` (run log has the full review). Automation mode posts nothing on its own |
-| Auth / credential error in the log    | Secret is in the Actions store instead of Dependabot, misnamed, or the OAuth token expired                                                                                                    |
-| Sudden run of auth failures           | **The `claude setup-token` token expires (~1 year) with no warning.** Regenerate and update the Dependabot secret                                                                             |
-| Comment posted but truncated or vague | Upstream published thin release notes, or `--max-turns` was hit. The prompt is instructed to admit thin evidence rather than fake confidence                                                  |
-| Job shows as *skipped*                | `github.actor` isn't `dependabot[bot]` — the gate reads the event's actor, not the PR's author, so a human-triggered event on a Dependabot PR skips by design                                 |
-| Workflow doesn't appear at all        | The workflow file isn't on the default branch yet, or the event type isn't in the trigger list                                                                                                |
+| Symptom                                  | Likely cause                                                                                                                                                                                  |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Job green, no comment                    | Either `allowed_bots` didn't match (run log nearly empty) or `Bash(gh pr comment:*)` is missing from `--allowedTools` (run log has the full review). Automation mode posts nothing on its own |
+| Auth / credential error in the log       | Secret is in the Actions store instead of Dependabot, misnamed, or the OAuth token expired                                                                                                    |
+| Job red, "Could not fetch an OIDC token" | The `github_token:` input is missing, so the action fell back to the OIDC → Claude-App exchange. Restore the input; don't add `id-token: write`                                               |
+| Sudden run of auth failures              | **The `claude setup-token` token expires (~1 year) with no warning.** Regenerate and update the Dependabot secret                                                                             |
+| Comment posted but truncated or vague    | Upstream published thin release notes, or `--max-turns` was hit. The prompt is instructed to admit thin evidence rather than fake confidence                                                  |
+| Job shows as *skipped*                   | `github.actor` isn't `dependabot[bot]` — the gate reads the event's actor, not the PR's author, so a human-triggered event on a Dependabot PR skips by design                                 |
+| Workflow doesn't appear at all           | The workflow file isn't on the default branch yet, or the event type isn't in the trigger list                                                                                                |
 
 ## Tuning
 
