@@ -17,6 +17,9 @@ import { chromeStyle, masthead, siteFooter } from './lib/scrapbook-chrome.mjs';
 const OUT = join(ROOT, 'scrapbook/e2e-tuning/index.html');
 
 const RUN_DATE = '2026-07-29';
+// The re-measure behind the retry decision (issue #653), run after the harness
+// defect below was fixed.
+const RE_MEASURE_DATE = '2026-07-30';
 
 const HARDWARE = {
   local: {
@@ -54,6 +57,11 @@ const LOCAL_POSTFIX = [
 // the magic-brush fixes in place and retries disabled. `cpu` is the summed
 // duration of every passing test; `infl` divides it by the uncontended w=1
 // figure. Raw reports: run 30474047690 artifacts.
+//
+// The `fails`/`redRuns` columns here are contaminated and kept for the record
+// rather than as a rate — every rep shared one preview server, so it inherited
+// the previous rep's spent rate-limit windows (see HARNESS_ARTIFACT and the
+// re-measure below). The wall-clock column is unaffected.
 const CI_SWEEP = [
   { w: 1, wall: 95.2, runs: 5, execs: 1015, fails: 3, redRuns: 3, cpu: 92.3, infl: 1.0 },
   { w: 2, wall: 69.6, runs: 5, execs: 1015, fails: 2, redRuns: 2, cpu: 127.7, infl: 1.38 },
@@ -76,10 +84,101 @@ const CI_SWEEP = [
 // Targeted re-measure after MAGIC_REVEAL_TIMEOUT went 15s -> 30s (run
 // 30476652762). Only 1 and 4 workers were re-extracted: 4 is what CI ships, and
 // 1 is the cleanest read on whether a change helps for reasons other than
-// contention. The result is genuinely two-sided, so both halves are recorded.
-const CI_POSTFIX = [
-  { w: 1, wall: 138.1, runs: 5, execs: 1015, failsBefore: 3, fails: 3, wallBefore: 95.2 },
-  { w: 4, wall: 64.8, runs: 5, execs: 1015, failsBefore: 2, fails: 0, wallBefore: 60.2 },
+// contention. The result is genuinely two-sided, so both halves are recorded —
+// `shows` names which half its row is the evidence for, and is what the rendered
+// table emphasises.
+const REVEAL_BUDGET_EXPERIMENT = [
+  {
+    w: 4,
+    shipped: true,
+    wall: 64.8,
+    runs: 5,
+    execs: 1015,
+    failsBefore: 2,
+    fails: 0,
+    wallBefore: 60.2,
+    shows: 'fails',
+  },
+  {
+    w: 1,
+    wall: 138.1,
+    runs: 5,
+    execs: 1015,
+    failsBefore: 3,
+    fails: 3,
+    wallBefore: 95.2,
+    shows: 'wall',
+  },
+];
+
+// The re-measure #653 asked for, on the same runner image with the sweep driver
+// starting a fresh preview server per rep. `redRuns` is the quantity a retry
+// count is chosen against: how often an unretried run would go red.
+// Run 30512081902, 15 reps per worker count, retries off. `execs` is 15 × 204.
+//
+// `wall` is seconds per rep from the sweep step's own duration, so unlike the
+// CI_SWEEP column above it INCLUDES the ~4s the driver spends starting and
+// probing a fresh preview server. Compare shapes, not absolute values, across the
+// two tables.
+const CI_RESIDUAL = [
+  { w: 1, wall: 140.2, runs: 15, execs: 3060, fails: 6, redRuns: 6 },
+  { w: 2, wall: 84.2, runs: 15, execs: 3060, fails: 3, redRuns: 2 },
+  { w: 3, wall: 69.7, runs: 15, execs: 3060, fails: 0, redRuns: 0 },
+  { w: 4, wall: 66.5, runs: 15, execs: 3060, fails: 6, redRuns: 6 },
+  { w: 6, wall: 65.3, runs: 15, execs: 3060, fails: 15, redRuns: 15 },
+  { w: 8, wall: 63.9, runs: 15, execs: 3060, fails: 23, redRuns: 15 },
+];
+
+// …and the same two candidate counts again, 35 reps each, after the one spec that
+// dominated the table above was fixed (runs 30512301335 and 30513168659). This is
+// what the shipped worker count and retry count are chosen against.
+const CI_POST_SPEC_FIX = [
+  { w: 3, wall: 69.7, runs: 35, execs: 7175, fails: 3, redRuns: 3 },
+  { w: 4, wall: 66.5, runs: 35, execs: 7175, fails: 1, redRuns: 1, recommended: true },
+];
+
+// The specs those red runs belong to, across both counts. All zoom/pinch gesture
+// state, which is a better starting point for the next pass than a rate is.
+const RESIDUAL_SPECS = [
+  ['closing the overlay resets the zoom for the next open', '2/35 (3 workers)'],
+  ['navigating to another section resets the zoom', '1/35 (4 workers)'],
+  [
+    'a pinch swallows the trailing click, so it never toggles the control beneath it',
+    '1/35 (3 workers)',
+  ],
+];
+
+// What that re-measure found first, before it could measure anything: the sweep
+// was manufacturing most of its own flake rate.
+const HARNESS_ARTIFACT = {
+  cause:
+    'Every rep ran against one shared preview server, and the suite deliberately fills 60-second ' +
+    'per-IP rate-limit windows — generate-image.spec.ts exhausts the BYOK bucket and bursts the ' +
+    'managed token’s. A rep takes about as long as those windows last, so the next rep inherited a ' +
+    'spent budget and its guard tests took a 429 where they assert a 415.',
+  evidence: [
+    'On ubuntu-latest at 4 workers, “throttles a managed token hammered in a burst” failed in 12 of ' +
+      '12 reps — a deterministic failure counted as a flake rate.',
+    'Locally at 4 workers, the BYOK guard tests were 4 of 5 failures across 7 reps.',
+    'Both are specs the earlier per-worker-count failure columns are largely made of.',
+  ],
+  fix:
+    'scripts/e2e-sweep.mjs starts and stops a preview server per rep, which clears the in-memory ' +
+    'limiter and matches what CI does anyway: one server, one suite run.',
+};
+
+// What the re-measured numbers mean, and the retry count they settle. Raw HTML so
+// a note can mark up a value; keep them factual and short.
+const RESIDUAL_NOTES = [
+  '<b>Nearly all of this table is one spec.</b> Six workers failing in 15 of 15 reps is a ' +
+    'deterministic failure, not a flake rate: “a burst of screenshot taps shares one save before ' +
+    'allowing the next” waited for a save with a fixed 500ms sleep, so the more starved the worker ' +
+    'the more reliably it missed. Read on its own the table says the rate rises steeply with ' +
+    'workers, and a first pass of this study believed it.',
+  '<b>One worker is still among the worst settings</b> (6/15), with no contention to blame — the ' +
+    'GPU-less runner rasterizes canvas work in software, so those specs sit near their budgets ' +
+    'however few workers run. That is why the curve is a U rather than a slope, and why worker ' +
+    'tuning alone was never going to reach zero.',
 ];
 
 // Each hypothesis that was tested, and how it was killed or confirmed. The
@@ -118,31 +217,30 @@ const HYPOTHESES = [
   },
 ];
 
-const RE_TUNE = `# 1. Build once and serve, so the sweep measures tests rather than rebuilds.
+const RE_TUNE = `# 1. Build once. The sweep driver builds nothing, so this is the only build, and
+#    PUBLIC_ENABLE_DEV_HARNESS has to be set HERE — it gates the /dev/* routes
+#    the specs drive.
 PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \\
   node scripts/web.mjs vite build
-cd web && PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \\
-  npx vite preview --port 4173 &
 
-# 2. Sweep. Round-robin the worker counts INSIDE the rep loop so machine drift
-#    spreads across configs instead of landing on one of them.
-for rep in $(seq 1 8); do
-  for w in 1 2 3 4 6 8; do
-    PLAYWRIGHT_JSON_OUTPUT_NAME=runs/w\${w}-rep\${rep}.json \\
-      node scripts/web.mjs playwright test --workers=$w --reporter=json >/dev/null
-  done
+# 2. Sweep. The driver owns the whole protocol: a fresh preview server per rep,
+#    CI unset for the run, and one SWEEPRESULT line per rep.
+for w in 1 2 3 4 6 8; do
+  node scripts/e2e-sweep.mjs --workers=$w --reps=30 --out=runs
 done
 
-# 3. On CI hardware, the same sweep ran as a throwaway GitHub Actions workflow —
-#    one runner per worker count, so the configs never contend. It was NOT merged
-#    (an unused workflow only collects Dependabot bumps and rots), but it is
-#    recoverable verbatim from the PR that produced these numbers:
-#      git show dec6709:.github/workflows/worker-sweep.yml
-#      git show dec6709:scripts/ci-sweep-summary.mjs
-#    Two things it got wrong the first time, worth keeping if you restore it:
-#    the job must pass ALLOWED_TOKENS_LIST to the preview server it starts, and
-#    it must run the tests with CI unset so retries stay off and the server is
-#    reused rather than rebuilt per rep.`;
+# 3. On CI hardware the same driver runs from .github/workflows/worker-sweep.yml
+#    (manual dispatch, one runner per worker count so configs never contend):
+#      Actions -> "Worker sweep (manual)" -> Run workflow -> reps
+#    Read the numbers straight out of each job log:
+#      grep SWEEPRESULT
+
+# Why the driver rather than a loop over \`playwright test\`: reps that share one
+# server are not independent. generate-image.spec.ts deliberately fills the
+# per-IP BYOK rate-limit bucket, which takes 60s to clear, and a rep takes about
+# that long — so the next rep's guard tests take a 429 where they expect a 415
+# and the sweep measures a flake it manufactured. A fresh server per rep clears
+# the in-memory limiter and matches what CI does: one server, one suite run.`;
 
 const styles = `
   main.shell { display: flex; flex-direction: column; gap: 34px; padding-bottom: 64px; }
@@ -215,7 +313,7 @@ function sweepTable(rows, { pick } = {}) {
     .map(
       (r) => `<tr${r.w === pick ? ' class="pick"' : ''}>
       <td>${r.w}</td>
-      <td class="num">${s1(r.wall)}s</td>
+      <td class="num">${r.wall ? s1(r.wall) + 's' : '—'}</td>
       <td class="num">${r.redRuns}/${r.runs}</td>
       <td class="num">${r.fails}</td>
       <td class="num">${pctFail(r)}%</td>
@@ -233,6 +331,51 @@ function sweepTable(rows, { pick } = {}) {
     <tbody>${body}</tbody>
   </table></div>`;
 }
+
+// The reverted reveal-budget experiment, emphasising per row whichever column
+// that row is the evidence for.
+function beforeAfterTable(rows) {
+  const cell = (row, column, text) =>
+    `<td class="num">${row.shows === column ? `<b>${text}</b>` : text}</td>`;
+  const body = rows
+    .map(
+      (r) => `<tr${r.shipped ? ' class="pick"' : ''}>
+      <td>${r.w}${r.shipped ? ' (CI ships this)' : ''}</td>
+      ${cell(r, 'fails', `${r.failsBefore} → ${r.fails}`)}
+      ${cell(r, 'wall', `${s1(r.wallBefore)}s → ${s1(r.wall)}s`)}
+    </tr>`
+    )
+    .join('');
+  return `<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Workers</th><th class="num">Failures before → after</th>
+      <th class="num">Wall before → after</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+  </table></div>`;
+}
+
+const harnessPanel = `<div class="panel verdict">
+  <h3>First finding: the sweep was measuring itself</h3>
+  <p>${esc(HARNESS_ARTIFACT.cause)}</p>
+  <ul class="notes">${HARNESS_ARTIFACT.evidence.map((e) => `<li>${esc(e)}</li>`).join('')}</ul>
+  <p>${esc(HARNESS_ARTIFACT.fix)}</p>
+</div>`;
+
+const residualSection = CI_RESIDUAL.length
+  ? sweepTable(CI_RESIDUAL, { pick: CI_RESIDUAL.find((r) => r.recommended)?.w })
+  : `<p class="empty-note">Re-measure pending — re-run <code>npm run gen:e2e-tuning-report</code> once the numbers land.</p>`;
+
+const postSpecFixSection = `${sweepTable(CI_POST_SPEC_FIX, {
+  pick: CI_POST_SPEC_FIX.find((r) => r.recommended)?.w,
+})}
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Residual flake</th><th class="num">Reps it failed in</th></tr></thead>
+  <tbody>${RESIDUAL_SPECS.map(
+    ([name, share]) =>
+      `<tr><td><code>${esc(name)}</code></td><td class="num">${esc(share)}</td></tr>`
+  ).join('')}</tbody>
+</table></div>`;
 
 const ciSection = CI_SWEEP.length
   ? `${sweepTable(CI_SWEEP, { pick: CI_SWEEP.find((r) => r.recommended)?.w })}`
@@ -341,19 +484,43 @@ ${masthead({
       The 15s→30s change was made because the CI failures landed <em>at</em> the old budget. Re-measured
       at the two most informative worker counts, it did not do one clean thing:
     </p>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>Workers</th><th class="num">Failures before → after</th><th class="num">Wall before → after</th></tr></thead>
-      <tbody>
-        <tr class="pick"><td>4 (CI ships this)</td><td class="num">2 → <b>0</b></td><td class="num">60.2s → 64.8s</td></tr>
-        <tr><td>1</td><td class="num">3 → 3</td><td class="num">95.2s → <b>138.1s</b></td></tr>
-      </tbody>
-    </table></div>
+    ${beforeAfterTable(REVEAL_BUDGET_EXPERIMENT)}
     <ul class="notes">
       <li><b>At the shipped CI setting it worked</b> — 5/5 green where 3/5 had been, for ~4.6s of wall clock. Not enough to keep it: see the last bullet.</li>
       <li><b>At one worker it did not.</b> Same three failures, but now costing far more: with <code>test.slow()</code> in play a non-converging reveal burns its full 90s budget instead of failing at 30s, which is what dragged the median run from 95.2s to 138.1s.</li>
       <li><b>What that means:</b> those failures were never time-starved. <code>drawMagicReveal</code> churns draw→check→undo→redraw, and a bigger budget just lets a non-converging loop churn longer. The budget helped where the reveal was merely slow, and did nothing where the loop never converges.</li>
       <li><b>Reverted.</b> At 4 workers the two failures it fixed were already invisible — <code>retries: 2</code> reaches red essentially never at a 2/1015 rate — so the win landed where retries had already paid, while the cost (a stuck reveal exceeding the suite's parallel floor and becoming its critical path) was real. The genuinely-slow cases are worth fixing by bounding the churn instead.</li>
     </ul>
+  </section>
+
+  <section>
+    <h2>Re-measured, ${esc(RE_MEASURE_DATE)} — and the retry decision</h2>
+    <p>
+      Every rate above was measured with one preview server shared across a configuration's reps.
+      That turned out to be most of what was being measured, so the retry question could not be
+      answered until the harness was fixed.
+    </p>
+    ${harnessPanel}
+    <p>
+      Re-run on the same runner image with an independent server per rep. <b>Red runs</b> is the
+      column a retry count is chosen against: retries only pay for themselves against the rate at
+      which an unretried run goes red.
+    </p>
+    ${residualSection}
+    ${RESIDUAL_NOTES.length ? `<ul class="notes">${RESIDUAL_NOTES.map((n) => `<li>${n}</li>`).join('')}</ul>` : ''}
+
+    <h2 style="margin-top:12px">After fixing that spec — the numbers that decide both knobs</h2>
+    <p>
+      Same runner image, 35 reps at each of the two candidate worker counts, retries still off.
+    </p>
+    ${postSpecFixSection}
+    <ul class="notes">
+      <li><b>The gradient was the spec, not the worker count.</b> Three and four workers are indistinguishable (Fisher p = 0.61) and four is 3.2s faster, which puts the coefficient back at twice capacity — <code>cores</code>, as originally proposed. The 1.5× detour is kept in the record because the mistake generalises: a worker count tuned against a rate one bad spec dominates is tuning around the spec.</li>
+      <li><b>Retries stay at 2, and the interval is the argument.</b> At the shipped count the residual is <b>1 of 35</b> unretried runs going red — 2.9%, but with a 95% confidence interval reaching <b>12.9%</b>, because one failure in 35 does not establish a rate. (The 3-worker column is kept separate on purpose: pooling the two into “4 in 70” quotes a figure for a configuration measured 35 times.) <code>0</code> reddens a run whenever the residual does. <code>1</code> needs a spec to fail twice — ~0.1% <i>if the attempts are independent</i>, and they are not: a retry runs immediately afterwards on the same starved machine, so the squaring flatters exactly the failure mode being retried.</li>
+      <li><b>What changes is that the debt is visible.</b> Every retried pass becomes a GitHub Actions annotation plus a job-summary table, so “green, but only on attempt 2” shows on the run page instead of in a log nobody opens.</li>
+      <li><b>Reducing the count is downstream of those three specs</b>, not of another sweep — fixing one spec took 4 workers from 6/15 red to 1/35.</li>
+    </ul>
+  </section>
 
   <section>
     <h2>What was tried</h2>

@@ -6,6 +6,12 @@ import { draw, firstOpaquePixel, gotoApp, retryOpen } from './helpers';
 
 import { openBrushMenu, openDrawer, pickBrush } from './flows-harness';
 
+// How long a second screenshot save gets to show up after the first has landed,
+// for the burst test's negative half. It only has to outlast the coalescing
+// window the button applies to a rapid tap burst, so it is an idle-past — the
+// one job a fixed sleep is right for.
+const SECOND_SAVE_WINDOW_MS = 500;
+
 // Open the stroke-width flyout robustly. Its sentinel is present whenever the
 // menu is open — the label is tool-aware (issue #286).
 async function openStrokeMenu(page: Page) {
@@ -106,10 +112,17 @@ test('a burst of screenshot taps shares one save before allowing the next', asyn
     }
   });
 
-  // This is a negative assertion: let every tap's asynchronous save path begin.
-  await page.waitForTimeout(500);
-  expect(downloads).toHaveLength(1);
+  // Two different waits, because this asserts two different things and one fixed
+  // sleep cannot do both. Wait for the save that MUST happen (a starved worker
+  // takes longer than any sleep sized on an idle one — this is what failed 3 of
+  // 12 CI reps at 4 workers, issue #653)…
+  await expect.poll(() => downloads.length).toBe(1);
   await expect(page.locator('.polaroid-overlay')).toHaveCount(1);
+
+  // …then idle past the window a second save would have arrived in, which is
+  // what proves the burst was coalesced rather than merely slow.
+  await page.waitForTimeout(SECOND_SAVE_WINDOW_MS);
+  expect(downloads).toHaveLength(1);
 
   const nextDownload = page.waitForEvent('download');
   await shot.click();

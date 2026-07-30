@@ -57,13 +57,13 @@ paths:
   spec file that imports it and every later spec file in that worker silently runs with no setup.
   Extend `test` in the helper and import `test`/`expect` from it (`tests/engine-harness.ts`);
   `scripts/tests/e2e-harness-imports.test.mjs` guards the import.
-* **Flake-resistance (the suite runs 2 workers locally and 4 on CI — ADR-0078 — so specs share the
-  CPU):** never assert on a single interaction against a lazily-wired control — wrap
-  open-then-assert in `expect(...).toPass()` or reuse a retrying helper
-  (`openParentCenter`/`openDrawer`/`openStrokeMenu`); use `expect.poll` / web-first assertions
-  instead of a fixed `waitForTimeout` to wait for something to happen (a fixed sleep is fine only to
-  idle *past* a known threshold or to prove a state does *not* change); poll async canvas/relayout
-  state through a retrying assertion with a window sized for a starved worker
+* **Flake-resistance (worker count is derived from the machine — capacity is `cores / 2`; local sits
+  there, CI goes to twice it, ADR-0078 — so specs share the CPU):** never assert on a single
+  interaction against a lazily-wired control — wrap open-then-assert in `expect(...).toPass()` or
+  reuse a retrying helper (`openParentCenter`/`openDrawer`/`openStrokeMenu`); use `expect.poll` /
+  web-first assertions instead of a fixed `waitForTimeout` to wait for something to happen (a fixed
+  sleep is fine only to idle *past* a known threshold or to prove a state does *not* change); poll
+  async canvas/relayout state through a retrying assertion with a window sized for a starved worker
   (`expect(await count()).toBe(n)` races the repaint — use `await expect.poll(() => count())`); wait
   on the *engine's* state rather than the button that requests it (`pickBrush` polls
   `window.__committedBrushMode`, ADR-0080); drive strokes through `draw`/`dragStroke`, which pace
