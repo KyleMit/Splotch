@@ -59,6 +59,8 @@ const EVENT_ID = 3;
 const EVENT_BUTTONS = 4;
 const EVENT_COALESCED = 5;
 const EVENT_ON_CANVAS = 6;
+const EVENT_KIND = 7;
+const POINTER_KIND_NAMES = ['touch', 'pen', 'mouse'];
 const MEASURE_START = 0;
 const MEASURE_DUR = 1;
 const MEASURE_NAME = 2;
@@ -171,6 +173,11 @@ export function segmentStrokes(events) {
 // off the draw path, invisible to the pacing numbers. Past
 // MAX_CREDIBLE_HITCH_MS it is not a hitch at all but the page going idle with
 // nothing left to animate, so those are counted, not averaged in.
+// Reported as a RATE, not a percentile. A phase holds only 20-40 strokes, so a
+// p95 over them is the second-worst sample dressed up as a distribution: two
+// otherwise identical device runs disagreed about whether the pointer halos cost
+// 100 ms at each lift purely because one phase had 19 strokes and the next had 27.
+// "How many lifts in this phase stalled, out of how many" survives that.
 function endHitches(strokes, frames) {
   const hitches = [];
   let idleAfterLift = 0;
@@ -387,6 +394,12 @@ export function summarizePhase(phase, tables) {
     input: {
       moves: canvasMoves.length,
       movesPerFrame,
+      // Absent in captures taken before the probe recorded it.
+      kinds: [
+        ...new Set(
+          canvasMoves.map((event) => POINTER_KIND_NAMES[event[EVENT_KIND]]).filter(Boolean)
+        ),
+      ].join('+'),
       coalescedPerMove: canvasMoves.length
         ? round(sum(canvasMoves.map((event) => event[EVENT_COALESCED])) / canvasMoves.length)
         : 0,
@@ -411,6 +424,8 @@ export function summarizePhase(phase, tables) {
         : 0,
       endHitchP95Ms: percentile(hitches, 0.95),
       endHitchMaxMs: max(hitches),
+      stalledLifts: hitches.filter((hitch) => hitch > STALL_FRAME_MS).length,
+      measuredLifts: hitches.length,
       idleAfterLift,
       longStrokeTrend: trend,
     },
@@ -476,6 +491,7 @@ export function inputRows(summaries) {
   return summaries.map((phase) => ({
     phase: phase.key,
     moves: phase.input?.moves,
+    kind: phase.input?.kinds || undefined,
     'mv/frame': phase.input?.movesPerFrame,
     'coal/mv': phase.input?.coalescedPerMove,
     'gap p95': phase.input?.moveGapP95Ms,
@@ -500,7 +516,9 @@ export function engineRows(summaries) {
     strokes: phase.strokes?.count,
     'long/short': phase.strokes ? `${phase.strokes.long}/${phase.strokes.short}` : undefined,
     adopted: phase.strokes?.adopted,
-    'hitch p95': phase.strokes?.endHitchP95Ms,
+    'stalled lifts': phase.strokes
+      ? `${phase.strokes.stalledLifts}/${phase.strokes.measuredLifts}`
+      : undefined,
     'hitch max': phase.strokes?.endHitchMaxMs,
     'long dt 1st→3rd': phase.strokes?.longStrokeTrend
       ? `${phase.strokes.longStrokeTrend.firstThirdP50 ?? '–'}→${phase.strokes.longStrokeTrend.lastThirdP50 ?? '–'}`

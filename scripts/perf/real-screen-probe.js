@@ -84,6 +84,17 @@
   // and costs two repaints a second against a per-input-event nudge.
   const HUD_TICK_MS = 500;
   const POINTER_TYPES = { pointerdown: 0, pointermove: 1, pointerup: 2, pointercancel: 3 };
+  const POINTER_KINDS = { touch: 0, pen: 1, mouse: 2 };
+  // Which brush is selected changes what a pointermove costs: the crayon runs two
+  // extra full-size overlay canvases with their own blend modes, and the magic
+  // brush's ring is a conic gradient behind a radial mask. A capture that does
+  // not say which brush it used cannot be compared to one that used another.
+  const BRUSH_BUTTONS = {
+    pen: '#penBrushButton',
+    crayon: '#crayonBrushButton',
+    magic: '#magicBrushButton',
+    eraser: '#eraserButton',
+  };
 
   // Each phase names the paper state it needs and what it suppresses. Order
   // minimizes paper switching for the human: blank first, then everything that
@@ -214,6 +225,11 @@
       event.buttons,
       coalesced,
       onCanvas ? 1 : 0,
+      // An Apple Pencil is a different input path from a finger (higher sample
+      // rate, pressure, and the merged-stream quirk penStreamQuirks.ts adopts).
+      // The first capture could not say which one it recorded, which left the
+      // biggest difference between it and a synthetic run unmeasured.
+      POINTER_KINDS[event.pointerType] ?? -1,
     ]);
     if (type === 1 && onCanvas && event.buttons !== 0) {
       newestMoveStamp = event.timeStamp;
@@ -324,6 +340,8 @@
   const STROKE_INSET = 0.08;
   const UI_SETTLE_MS = 350;
   const OVERLAY_DECODE_MS = 1_200;
+  // Timers clamp, so asking for less buys nothing and only spins the loop.
+  const PUMP_TIMER_FLOOR_MS = 4;
 
   const DRIVE_SHAPES = {
     long: [{ kind: 'long', strokeMs: LONG_STROKE_MS, gapMs: LONG_STROKE_GAP_MS }],
@@ -382,6 +400,10 @@
     };
   };
 
+  // `pen` is selectable because an Apple Pencil is what the lag was reported
+  // with, and the app treats a pen stream differently (penStreamQuirks.ts) than a
+  // finger.
+  const drivePointerType = window.__probePointerType ?? 'touch';
   const dispatchPointer = (type, x, y, buttons) => {
     canvas.dispatchEvent(
       new PointerEvent(type, {
@@ -390,7 +412,7 @@
         composed: true,
         view: window,
         pointerId: SYNTHETIC_POINTER_ID,
-        pointerType: 'touch',
+        pointerType: drivePointerType,
         isPrimary: true,
         buttons,
         pressure: buttons ? 0.5 : 0,
@@ -401,6 +423,24 @@
       })
     );
   };
+
+  // The Brush Menu is a hidden `<div>`, not a modal, so its buttons are in the DOM
+  // whether or not the flyout is open — one click on the brush is enough. Opening
+  // the flyout first is not just unnecessary: it leaves the panel in a state where
+  // the next tap closes the flyout instead of reaching the coloring-book button,
+  // which stalled the whole setup.
+  const driveBrush = window.__probeBrush ?? null;
+  async function selectBrush(brush) {
+    const target = BRUSH_BUTTONS[brush];
+    if (!target) {
+      console.error(
+        `Unknown __probeBrush "${brush}" — known: ${Object.keys(BRUSH_BUTTONS).join(', ')}`
+      );
+      return;
+    }
+    if (!clickSelector(target)) console.error(`No ${target} — cannot select a brush unattended.`);
+    await settle(UI_SETTLE_MS);
+  }
 
   // A synthetic pointerId has no real capture target, so the engine's
   // setPointerCapture would throw inside its own pointerdown handler and abort
@@ -478,8 +518,17 @@
     hand = null;
   };
 
+  let brushSelected = false;
   const stepHand = (ts) => {
     if (paperFixInFlight) return;
+    if (driveBrush && !brushSelected) {
+      brushSelected = true;
+      paperFixInFlight = true;
+      selectBrush(driveBrush).finally(() => {
+        paperFixInFlight = false;
+      });
+      return;
+    }
     if (!paperReady()) {
       fixPaper(phase.paper);
       return;
@@ -694,6 +743,8 @@
         hud: hudEnabled,
         drive: driveShape,
         driveHz,
+        drivePointerType: driveCycle ? drivePointerType : null,
+        brush: driveBrush,
         // The reported "goes black on a coloring page, then snaps back" is what
         // an UNBLENDED line-art plate looks like: dark mode inverts the art to
         // white-on-black and `screen` is what makes that black disappear. Which
@@ -753,12 +804,34 @@
   startPhase(0);
   requestAnimationFrame(tick);
   if (driveCycle && driveHz) {
+    // A digitizer's cadence is finer than a timer can hold: asked for 8.3 ms,
+    // setTimeout delivered 13 ms on device (1.39 moves per frame, against a
+    // hand's 1.9-4.2). A MessageChannel spin loop hits the rate but starves the
+    // event loop — it stopped the app's own UI from settling, and starving the
+    // loop is exactly the thing being measured, so the pump would have written
+    // its own result.
+    //
+    // So: a timer at the frame rate, dispatching however many moves the elapsed
+    // time earned. Task granularity is coarser than real input's, but the
+    // per-frame work count — the thing under test — is right.
+    const intervalMs = 1000 / driveHz;
+    const MAX_CATCH_UP_MOVES = 8;
+    let nextMoveAt = performance.now();
     const pump = () => {
       if (!running || done) return;
-      stepHand(performance.now());
-      setTimeout(pump, 1000 / driveHz);
+      const now = performance.now();
+      let dispatched = 0;
+      while (now >= nextMoveAt && dispatched < MAX_CATCH_UP_MOVES) {
+        nextMoveAt += intervalMs;
+        stepHand(now);
+        dispatched++;
+      }
+      // Never carry a backlog across a stall: real input coalesces rather than
+      // arriving as a burst of hundreds.
+      if (now > nextMoveAt) nextMoveAt = now;
+      setTimeout(pump, Math.max(1, Math.min(intervalMs, PUMP_TIMER_FLOOR_MS)));
     };
-    setTimeout(pump, 1000 / driveHz);
+    setTimeout(pump, intervalMs);
   }
   console.log(
     `● Real-screen probe running — ${plan.length} phase(s), ` +

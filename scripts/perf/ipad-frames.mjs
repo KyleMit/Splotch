@@ -60,7 +60,15 @@ const TABLE_CHUNK_ROWS = 2_000;
 // guarantee `perf:ipad`'s overrides script makes, for the same reason — a
 // leftover config silently changes what a run measured and the output looks
 // completely normal.
-export function probeConfigScript({ phases, contactMs, drive, driveHz, hud = true } = {}) {
+export function probeConfigScript({
+  phases,
+  contactMs,
+  drive,
+  driveHz,
+  pointerType,
+  brush,
+  hud = true,
+} = {}) {
   const assign = (name, value) =>
     `window.${name} = ${value === undefined ? 'undefined' : JSON.stringify(value)};`;
   return [
@@ -68,6 +76,8 @@ export function probeConfigScript({ phases, contactMs, drive, driveHz, hud = tru
     assign('__probeContactMs', contactMs),
     assign('__probeDrive', drive),
     assign('__probeDriveHz', driveHz),
+    assign('__probePointerType', pointerType),
+    assign('__probeBrush', brush),
     assign('__probeHud', hud === true ? undefined : hud),
     assign('__probeReport', undefined),
     assign('__probeProgress', undefined),
@@ -113,6 +123,8 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         'contact-seconds',
         'drive',
         'drive-hz',
+        'pointer-type',
+        'brush',
         'device-id',
         'no-serve',
         'no-hud',
@@ -131,6 +143,8 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
   // of short ones, the two shapes the lag report names.
   const drive = has('drive') ? 'mixed' : flag('drive');
   const driveHz = flag('drive-hz') && Number(flag('drive-hz'));
+  const pointerType = flag('pointer-type');
+  const brush = flag('brush');
   const deviceConsole = createDeviceConsole();
 
   let session;
@@ -151,6 +165,8 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         contactMs: contactSeconds * 1000,
         drive,
         driveHz,
+        pointerType,
+        brush,
         // The HUD repaints twice a second, and a repaint damages the very blend
         // layer some phases exist to isolate. A driven run has nobody to read
         // it, so it costs nothing to leave off.
