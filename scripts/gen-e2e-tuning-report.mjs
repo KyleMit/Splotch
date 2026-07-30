@@ -137,8 +137,42 @@ const CI_POST_SPEC_FIX = [
   { w: 4, wall: 66.5, runs: 35, execs: 7175, fails: 1, redRuns: 1, recommended: true },
 ];
 
+// The three zoom/pinch specs above turned out to be ONE bug, and fixing it did not
+// move the rate — the next spec down took over. Run 30581020210, 35 reps at the
+// shipped count, retries off. `execs` is 35 × 204.
+const CI_POST_ZOOM_FIX = [
+  { w: 4, wall: 74.7, runs: 35, execs: 7140, fails: 1, redRuns: 1, recommended: true },
+];
+
+// What that sweep leaves as the residual: one spec, in a different subsystem, that
+// had not failed once in the 70 reps behind the table above.
+const ZOOM_FIX_RESIDUAL_SPECS = [
+  ['pointer exploration still snaps a hexagon gap and commits the highlighted color', '1/35'],
+];
+
+const ZOOM_FIX_NOTES = [
+  '<b>The cluster was one missing wait, shared by the helper all three specs called.</b> ' +
+    '<code>dialogFlyFromOrigin</code> opens a modal at <code>scale(0.05)</code> translated onto the ' +
+    'button that opened it, and <code>modalDialog</code> arms a launch dead zone at that same point ' +
+    '(72px, 600ms) whose capture-phase <code>pointerdown</code> handler swallows everything inside ' +
+    'it — dialog content included, deliberately. So for the opening frames the whole dialog sits in ' +
+    'that dead zone: the Parent Center’s pane centers <b>6px</b> from the launch origin at the first ' +
+    'keyframe and only clears the radius ~13ms in. The specs read that pane’s live rect and ' +
+    'dispatched synthetic pointer events at it, skipping the actionability checks a real click ' +
+    'performs — so they aimed into the guard and the pinch did nothing.',
+  '<b>A CSS animation advances with rendered frames</b>, which is the contention coupling: a starved ' +
+    'worker parks the dialog on that first keyframe far longer than 13ms of wall clock. The tell was ' +
+    '<code>a two-finger pinch enlarges the pane</code> — structurally identical, 0 failures in 70 ' +
+    'reps — whose one extra round trip lets the fly-in advance first.',
+  '<b>Fixing it did not move the retry count.</b> The three specs are 0/35, but the same sweep put ' +
+    '1 of 35 runs red on a colour-picker spec that had never failed before. The red-run rate at the ' +
+    'shipped count is where it was, so <code>retries: 2</code> stays and the next attempt starts ' +
+    'from that spec instead. A rate one spec dominates is still not a rate.',
+];
+
 // The specs those red runs belong to, across both counts. All zoom/pinch gesture
-// state, which is a better starting point for the next pass than a rate is.
+// state, which is a better starting point for the next pass than a rate is. All
+// three are fixed as of CI_POST_ZOOM_FIX below.
 const RESIDUAL_SPECS = [
   ['closing the overlay resets the zoom for the next open', '2/35 (3 workers)'],
   ['navigating to another section resets the zoom', '1/35 (4 workers)'],
@@ -377,6 +411,17 @@ const postSpecFixSection = `${sweepTable(CI_POST_SPEC_FIX, {
   ).join('')}</tbody>
 </table></div>`;
 
+const postZoomFixSection = `${sweepTable(CI_POST_ZOOM_FIX, {
+  pick: CI_POST_ZOOM_FIX.find((r) => r.recommended)?.w,
+})}
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Residual flake</th><th class="num">Reps it failed in</th></tr></thead>
+  <tbody>${ZOOM_FIX_RESIDUAL_SPECS.map(
+    ([name, share]) =>
+      `<tr><td><code>${esc(name)}</code></td><td class="num">${esc(share)}</td></tr>`
+  ).join('')}</tbody>
+</table></div>`;
+
 const ciSection = CI_SWEEP.length
   ? `${sweepTable(CI_SWEEP, { pick: CI_SWEEP.find((r) => r.recommended)?.w })}`
   : `<p class="empty-note">CI sweep pending — re-run <code>npm run gen:e2e-tuning-report</code> once the numbers land.</p>`;
@@ -520,6 +565,13 @@ ${masthead({
       <li><b>What changes is that the debt is visible.</b> Every retried pass becomes a GitHub Actions annotation plus a job-summary table, so “green, but only on attempt 2” shows on the run page instead of in a log nobody opens.</li>
       <li><b>Reducing the count is downstream of those three specs</b>, not of another sweep — fixing one spec took 4 workers from 6/15 red to 1/35.</li>
     </ul>
+
+    <h2 style="margin-top:12px">The three zoom/pinch specs were one bug — and the rate stayed put</h2>
+    <p>
+      Same runner image, 35 reps at the shipped worker count, retries still off.
+    </p>
+    ${postZoomFixSection}
+    <ul class="notes">${ZOOM_FIX_NOTES.map((n) => `<li>${n}</li>`).join('')}</ul>
   </section>
 
   <section>

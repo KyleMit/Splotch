@@ -130,9 +130,16 @@ const slowMo = Number(process.env.SLOWMO) || 0;
 // number the data doesn't support, which is the mistake §4 records above.
 //
 // What changes instead is that the debt is no longer silent: every retried pass
-// is annotated (playwright-flaky-reporter.ts). Reducing this number is downstream
-// of fixing those three specs (issue #665), the way fixing one spec took 4
-// workers from 6/15 red to 1/35.
+// is annotated (playwright-flaky-reporter.ts).
+//
+// Those three specs are fixed and re-measured (ADR-0078 §4a): they were one bug —
+// a pinch aimed at a dialog still flying in, so the modal's launch dead zone
+// swallowed it — and they are 0/35 now. The rate did not move with them. The same
+// sweep put 1 of 35 runs red on `pointer exploration still snaps a hexagon gap
+// and commits the highlighted color`, a spec that had not failed in the 70 reps
+// behind the numbers above. So the red-run rate at the shipped count is where it
+// was, every argument above still holds, and reducing this number is downstream
+// of that spec rather than of another sweep.
 const ciRetries = 2;
 const ciAllowedTokens = allowedTokensList(
   ...Array.from({ length: ciRetries + 1 }, (_, retry) => managedAccessTokenForRetry(retry))
