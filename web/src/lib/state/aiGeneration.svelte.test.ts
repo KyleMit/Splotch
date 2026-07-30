@@ -35,17 +35,31 @@ describe('createAiGenerationMachine', () => {
     expect(machineB.isAiGenerationActive(runB)).toBe(true);
   });
 
-  it('aborts the prior controller without letting its end clear the replacement', () => {
-    const machine = createAiGenerationMachine(createUiState());
+  it('aborts the prior controller and clears its stale UI without letting its end clear the replacement', () => {
+    const uiState = createUiState();
+    const machine = createAiGenerationMachine(uiState);
     const firstController = new AbortController();
-    const firstRun = machine.startAiGeneration(null, firstController);
+    const firstRun = machine.startAiGeneration('blob:first-preview', firstController);
+    machine.finishAiGeneration(firstRun, 'blob:first-result');
+    machine.failAiGeneration(firstRun, 'Try again', 'retry');
 
-    const secondRun = machine.startAiGeneration(null);
+    const secondRun = machine.startAiGeneration('blob:second-preview');
     machine.endAiGeneration(firstRun);
 
     expect(firstController.signal.aborted).toBe(true);
     expect(machine.isAiGenerationActive(firstRun)).toBe(false);
     expect(machine.isAiGenerationActive(secondRun)).toBe(true);
+    expect(uiState).toMatchObject({
+      aiGenerating: true,
+      aiResultOpen: true,
+      aiResultUrl: null,
+      aiPreviewUrl: 'blob:second-preview',
+      aiError: false,
+      aiErrorMessage: null,
+      aiErrorKind: 'generic',
+    });
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:first-result');
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:first-preview');
   });
 
   it('closes the active result and allows a fresh run to start', () => {

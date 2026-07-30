@@ -23,51 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Maintainability] `startAiGeneration` and `closeAiResult` duplicate the six-field UI reset block
-
-**File(s):** `web/src/lib/state/aiGeneration.svelte.ts` (`startAiGeneration`, lines 31–37;
-`closeAiResult`, lines 82–89) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The two lifecycle endpoints reset the same `ui` fields with slightly different orderings and values:
-
-```ts
-// startAiGeneration (31–37)
-ui.aiPreviewUrl = swapObjectUrl(ui.aiPreviewUrl, previewUrl);
-ui.aiResultUrl = swapObjectUrl(ui.aiResultUrl);
-ui.aiError = false;
-ui.aiErrorMessage = null;
-ui.aiErrorKind = 'generic';
-ui.aiGenerating = true;
-ui.aiResultOpen = true;
-```
-
-```ts
-// closeAiResult (83–89)
-ui.aiResultOpen = false;
-ui.aiGenerating = false;
-ui.aiError = false;
-ui.aiErrorMessage = null;
-ui.aiErrorKind = 'generic';
-ui.aiResultUrl = swapObjectUrl(ui.aiResultUrl);
-ui.aiPreviewUrl = swapObjectUrl(ui.aiPreviewUrl);
-```
-
-Five of the seven assignments are shared. Adding a new AI-run UI field (e.g. the retry affordance
-from issue #180, or `retryAfter` surfacing) requires remembering to touch both blocks; forgetting
-one leaks stale error state into the next open or leaves state behind after close.
-
-#### Proposed solution
-
-Extract a named helper, e.g. `resetAiRunUi(previewUrl: string | null)` covering the error trio + URL
-swaps, with `startAiGeneration` then setting `aiGenerating = true; aiResultOpen = true` and
-`closeAiResult` setting both false. While in there, `swapObjectUrl`'s `return next ?? null`
-(line 18) is redundant — `next` is already `string | null` with a `null` default — and can become
-`return next`.
-
 ### [Docs] Stale "radio picker" comment in styles.ts — the picker has been buttons for a long time
 
 **File(s):** `web/src/lib/ai/styles.ts` (lines 1–4) @ 9ae62ff1; actual UI in

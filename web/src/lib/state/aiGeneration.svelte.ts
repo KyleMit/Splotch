@@ -12,12 +12,20 @@ interface ActiveAiGeneration {
 // without leaking the old blob. Call with `next` omitted to revoke and clear.
 function swapObjectUrl(prev: string | null, next: string | null = null): string | null {
   if (prev && prev !== next) URL.revokeObjectURL(prev);
-  return next ?? null;
+  return next;
 }
 
 export function createAiGenerationMachine(uiState: UiState) {
   let nextAiGenerationId = 0;
   let activeAiGeneration: ActiveAiGeneration | null = null;
+
+  function resetAiRunUi(previewUrl: string | null) {
+    uiState.aiPreviewUrl = swapObjectUrl(uiState.aiPreviewUrl, previewUrl);
+    uiState.aiResultUrl = swapObjectUrl(uiState.aiResultUrl);
+    uiState.aiError = false;
+    uiState.aiErrorMessage = null;
+    uiState.aiErrorKind = 'generic';
+  }
 
   // Open the result modal in its loading state. `previewUrl` is an object URL of
   // the child's own drawing — shown blurred behind the progress dial while the
@@ -29,11 +37,7 @@ export function createAiGenerationMachine(uiState: UiState) {
     activeAiGeneration?.controller.abort();
     const id = ++nextAiGenerationId;
     activeAiGeneration = { id, controller };
-    uiState.aiPreviewUrl = swapObjectUrl(uiState.aiPreviewUrl, previewUrl);
-    uiState.aiResultUrl = swapObjectUrl(uiState.aiResultUrl);
-    uiState.aiError = false;
-    uiState.aiErrorMessage = null;
-    uiState.aiErrorKind = 'generic';
+    resetAiRunUi(previewUrl);
     uiState.aiGenerating = true;
     uiState.aiResultOpen = true;
     return id;
@@ -83,11 +87,7 @@ export function createAiGenerationMachine(uiState: UiState) {
     activeAiGeneration = null;
     uiState.aiResultOpen = false;
     uiState.aiGenerating = false;
-    uiState.aiError = false;
-    uiState.aiErrorMessage = null;
-    uiState.aiErrorKind = 'generic';
-    uiState.aiResultUrl = swapObjectUrl(uiState.aiResultUrl);
-    uiState.aiPreviewUrl = swapObjectUrl(uiState.aiPreviewUrl);
+    resetAiRunUi(null);
   }
 
   return {
