@@ -1,0 +1,210 @@
+// Real-screen profiling entry: measure frame pacing, input delay and paint
+// latency on the app users actually touch (`/`) on a USB-connected iPad.
+//
+//   npm run perf:ipad:frames                       hand-drawn, full phase sweep
+//   npm run perf:ipad:frames -- --phases=blank,page
+//   npm run perf:ipad:frames -- --contact-seconds=15
+//
+// The sibling `npm run perf:ipad` drives /dev/engine and answers "how expensive
+// is an engine operation". This answers "does the screen keep up", which is a
+// different question with different instruments: the gates run passes every
+// ADR-0066 threshold on hardware while the real screen visibly lags, because
+// the real screen pays for the line-art blend recomposite, PointerHalos' DOM
+// writes, per-stroke Svelte reactivity and the real paper geometry — none of
+// which make an `engine.*` measure larger.
+//
+// The measuring happens in scripts/perf/real-screen-probe.js on the device; the
+// maths is in real-screen-stats.mjs; this file is the plumbing between them.
+//
+// Local-only, same device prerequisites as `perf:ipad` (see the profiling
+// skill's ipad-device-profiling.md).
+
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { ROOT, isMain, runMain } from '../lib/proc.mjs';
+import { parsePerfArgs } from './args.mjs';
+import { profilePath } from './paths.mjs';
+import { warnIfNoPerfMarks } from './warnings.mjs';
+import {
+  connectDevice,
+  createDeviceConsole,
+  ensurePreviewServer,
+  openDevicePage,
+  requireInspectorProxy,
+  resolveDeviceUrl,
+  waitForGlobal,
+} from './ipad-session.mjs';
+import {
+  comparisonRows,
+  engineRows,
+  inputRows,
+  pacingRows,
+  summarizeRun,
+} from './real-screen-stats.mjs';
+
+const APP_PATH = '/';
+const PROBE_FILE = join(ROOT, 'scripts', 'perf', 'real-screen-probe.js');
+
+// A human drawing six phases at 25 s of contact each, plus the paper switching
+// between them, is a few minutes; the budget is loose enough that a slow hand
+// is never mistaken for a hung page.
+const HAND_RUN_TIMEOUT_MS = 45 * 60_000;
+const DEFAULT_CONTACT_SECONDS = 25;
+// One Runtime.evaluate carrying a multi-hundred-KB JSON string across the USB
+// relay is the one failure that would land AFTER the drawing is done, so the
+// tables come back in slices.
+const TABLE_CHUNK_ROWS = 2_000;
+
+// Assigns every global the probe reads, including the ones not requested: the
+// page is freshly navigated so nothing should be left over, but this is the same
+// guarantee `perf:ipad`'s overrides script makes, for the same reason — a
+// leftover config silently changes what a run measured and the output looks
+// completely normal.
+export function probeConfigScript({ phases, contactMs, hud = true } = {}) {
+  const assign = (name, value) =>
+    `window.${name} = ${value === undefined ? 'undefined' : JSON.stringify(value)};`;
+  return [
+    assign('__probePhases', phases),
+    assign('__probeContactMs', contactMs),
+    assign('__probeHud', hud === true ? undefined : hud),
+    assign('__probeReport', undefined),
+    assign('__probeProgress', undefined),
+  ].join('\n');
+}
+
+async function readTable(session, accessor, total) {
+  const rows = [];
+  while (rows.length < total) {
+    const slice = await session.readJson(
+      `window.__probe.${accessor}(${rows.length}, ${TABLE_CHUNK_ROWS})`
+    );
+    if (!slice?.length) break;
+    rows.push(...slice);
+  }
+  return rows;
+}
+
+function printHandInstructions(phases, contactSeconds) {
+  console.log(
+    [
+      '',
+      '── Draw on the iPad now ──────────────────────────────────────────────',
+      "The iPad's own banner is the instruction — you do not need this terminal.",
+      `  1. It asks for blank paper or a coloring page (${phases} phase(s) total).`,
+      '  2. When it says "draw!", reproduce the lag you feel: long slow strokes',
+      '     for the first half of a phase, rapid short strokes for the second.',
+      `  3. Each phase banks ${contactSeconds}s of FINGER-DOWN time — lifting pauses the clock.`,
+      '  4. Keep the device unlocked and Safari foregrounded throughout.',
+      '──────────────────────────────────────────────────────────────────────',
+      '',
+    ].join('\n')
+  );
+}
+
+export async function runIpadFrames(argv = process.argv.slice(2)) {
+  const { flag, has, port } = parsePerfArgs(
+    {
+      entry: true,
+      extra: ['url', 'phases', 'contact-seconds', 'device-id', 'no-serve', 'no-hud'],
+    },
+    argv
+  );
+  requireInspectorProxy();
+  warnIfNoPerfMarks('npm run perf:ipad:frames');
+
+  const appUrl = resolveDeviceUrl(flag('url'), port, APP_PATH);
+  const server = await ensurePreviewServer(appUrl, port, !has('no-serve'));
+  const { device, stopProxy } = await connectDevice(flag('device-id'));
+  const contactSeconds = Number(flag('contact-seconds', DEFAULT_CONTACT_SECONDS));
+  const deviceConsole = createDeviceConsole();
+
+  let session;
+  try {
+    session = await openDevicePage(device, appUrl, {
+      onConsole: deviceConsole.onConsole,
+      // The real screen has no window.__engine to wait for — a live canvas with
+      // a sized backing store is what "the app is running" looks like here.
+      ready:
+        "(() => { const c = document.querySelector('#drawingCanvas'); return c && c.width > 0; })()",
+      readyHint:
+        'never showed a sized #drawingCanvas. Confirm the tab is the real app at / ' +
+        '(not /dev/engine) and that the page finished hydrating.',
+    });
+    await session.evaluate(
+      probeConfigScript({
+        phases: flag('phases'),
+        contactMs: contactSeconds * 1000,
+        hud: !has('no-hud'),
+      })
+    );
+    await session.evaluate(readFileSync(PROBE_FILE, 'utf8'));
+
+    const planned = await session.readJson('window.__probe ? 1 : 0');
+    if (!planned) {
+      throw new Error(
+        'The probe did not install. Its own console error above says why (usually a ' +
+          'selector it depends on is gone from the app).'
+      );
+    }
+    printHandInstructions(flag('phases') ?? 'all', contactSeconds);
+
+    const report = await waitForGlobal(session, 'window.__probeReport', {
+      stalled: deviceConsole.errorText,
+      timeoutMs: HAND_RUN_TIMEOUT_MS,
+      timeoutHint:
+        'Nobody finished the phases. Draw until the banner says done, or call ' +
+        '__probe.finish() in a Web Inspector console to publish what was banked.',
+      progress: () => session.readJson('window.__probeProgress ?? null'),
+    });
+
+    const counts = report.meta.counts;
+    console.log(
+      `\nReading back ${counts.frames} frames, ${counts.events} pointer events, ` +
+        `${counts.measures} engine measures…`
+    );
+    report.frames = await readTable(session, 'frames', counts.frames);
+    report.events = await readTable(session, 'events', counts.events);
+    report.measures = await readTable(session, 'measures', counts.measures);
+    await session.evaluate('window.__probe.stop()');
+
+    const summaries = summarizeRun(report);
+    console.log('\nFrame pacing (in-contact frames only)');
+    console.table(pacingRows(summaries));
+    console.log('\nInput delivery and paint latency');
+    console.table(inputRows(summaries));
+    console.log('\nEngine cost inside those frames, and the stroke-end hitch');
+    console.table(engineRows(summaries));
+    const comparisons = comparisonRows(summaries);
+    if (comparisons.length) {
+      console.log('\nWhat each suppression bought (negative is better)');
+      console.table(comparisons);
+    }
+
+    const outDir = profilePath('ipad-frames', device.deviceName.replace(/[^\w.-]+/g, '-'));
+    mkdirSync(outDir, { recursive: true });
+    const artifact = join(outDir, 'real-screen.json');
+    writeFileSync(
+      artifact,
+      `${JSON.stringify(
+        {
+          device: { name: device.deviceName, os: device.deviceOSVersion, id: device.deviceId },
+          appUrl,
+          mode: 'hand',
+          summaries,
+          report,
+          console: deviceConsole.forReport(),
+        },
+        null,
+        2
+      )}\n`
+    );
+    console.log(`\nWrote ${artifact}`);
+    return { summaries, report };
+  } finally {
+    session?.close();
+    stopProxy();
+    server?.stop();
+  }
+}
+
+if (isMain(import.meta.url)) runMain(runIpadFrames);
