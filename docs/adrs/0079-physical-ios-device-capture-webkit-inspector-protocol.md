@@ -11,7 +11,7 @@ of reach:
 > Device-accurate iOS profiling stays a documented manual step.
 
 The physical iPad is the highest-fidelity target we have (real WebKit/JavaScriptCore, Apple GPU, 120
-Hz ProMotion), and it is the target ADR-0066's gates and ADR-0078's byte budget are ultimately
+Hz ProMotion), and it is the target ADR-0066's gates and ADR-0082's byte budget are ultimately
 decided on. Reaching it cost a human round trip per measurement: reload the tab, re-attach Web
 Inspector, re-copy `scripts/perf/ipad-console-driver.js` from disk, paste, wait, copy the table
 back. The issue #446 verification took roughly six of those and hit two failure modes that are
@@ -88,7 +88,7 @@ one). It cannot run in CI or a cloud session, like the Android path before it.
 * **−** On iPadOS 26.5 every measured column came back at or under 2 ms against WebKit's ~1 ms
   `performance.now()` clamp, so the table currently confirms the plumbing more than it
   discriminates. It also showed the encode tier never firing on that raster — real information about
-  ADR-0078's budget, and a sign that the interesting costs on device are compositor-side, where the
+  ADR-0082's budget, and a sign that the interesting costs on device are compositor-side, where the
   engine marks cannot see them.
 
 The runbook (Approach A of the `profiling` skill's `ipad-device-profiling.md`) documents both the

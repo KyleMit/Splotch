@@ -377,7 +377,7 @@ describe('the commit gate', () => {
     const gate = await runUndoScenarios();
 
     // A large encode is not itself a breach: deferred off the commit is exactly
-    // where ADR-0078 puts it, and only its landing *inside* a commit is #635.
+    // where ADR-0082 puts it, and only its landing *inside* a commit is #635.
     expect(gate.breaches).toEqual([]);
     expect(process.exitCode).toBe(originalExitCode);
   });

@@ -17603,7 +17603,7 @@ workflow & docs).
 
 The ambiguity is already live in prose references that use the bare number:
 
-* `docs/DEPENDABOT.md:6` — "[ADR-0077](adrs/0077-dependabot-claude-review-workflow.md)" (means the
+* `docs/DEPENDABOT.md:6` — `[ADR-0077](adrs/0077-dependabot-claude-review-workflow.md)` (means the
   Dependabot one).
 * `releases/README.md:43` — "three ordered phases — release, build, publish (ADR-0077)" (means the
   release one).

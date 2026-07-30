@@ -13,7 +13,7 @@ closed behind an issue."
 **This is the human-side pass, downstream of the automated one.** The
 `.github/workflows/dependabot-review.yml` workflow already posts an advisory APPROVE/FLAG comment on
 each PR as it opens — see [`docs/DEPENDABOT.md`](../../../docs/DEPENDABOT.md) and
-[ADR-0077](../../../docs/adrs/0077-dependabot-claude-review-workflow.md). Read that verdict as an
+[ADR-0081](../../../docs/adrs/0081-dependabot-claude-review-workflow.md). Read that verdict as an
 input, and re-derive anything it asserts. It cannot install, cannot run tests, and usually posts
 *before CI finishes*, so its CI column commonly reads "still running" — treat that as unknown, never
 as green.

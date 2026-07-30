@@ -1,4 +1,4 @@
-# ADR-0077: Auto-Review Dependabot PRs with Claude, Authenticated from the Dependabot Secret Store
+# ADR-0081: Auto-Review Dependabot PRs with Claude, Authenticated from the Dependabot Secret Store
 
 **Status:** Active **Date:** 2026-07
 

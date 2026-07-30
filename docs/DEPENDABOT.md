@@ -3,7 +3,7 @@
 How dependency bumps arrive, who reviews them, and what to do when the review doesn't show up.
 
 The architectural decision and the rejected alternatives are in
-[ADR-0077](adrs/0077-dependabot-claude-review-workflow.md); this document is the operational side —
+[ADR-0081](adrs/0081-dependabot-claude-review-workflow.md); this document is the operational side —
 setup, verification, troubleshooting.
 
 **To actually work through the PRs**, use the `triage-dependabot-prs` skill — it covers verifying

@@ -346,7 +346,7 @@ const undoDebug = (page) =>
 //
 // What the harness needs is that the tier has *quiesced*, not that it reached
 // any particular shape. An earlier version waited for `liveRasters <= 2`,
-// mirroring the hot-entry count undoHistory used at the time; ADR-0078 replaced
+// mirroring the hot-entry count undoHistory used at the time; ADR-0082 replaced
 // that count with a byte budget and the predicate became unreachable, skipping
 // every scenario with an all-`n/a` report (docs/AUDIT.md had already filed the
 // mirror as a drift risk). Polling for a stable reading instead is independent
@@ -719,7 +719,7 @@ function reportCommitGate(results) {
   }
 
   // The encode path only runs for a scenario whose patches exhaust the resident
-  // byte budget (ADR-0078). Today that is multi-finger alone, so the gate's
+  // byte budget (ADR-0082). Today that is multi-finger alone, so the gate's
   // cover for #635's defect class rests on one scenario producing blobs. If a
   // tiering change ever stops it, the gate keeps passing while testing nothing —
   // say so rather than let the silence read as a clean bill of health.
