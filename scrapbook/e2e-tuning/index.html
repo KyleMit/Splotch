@@ -508,7 +508,7 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
     <div class="panel verdict">
   <h3>First finding: the sweep was measuring itself</h3>
   <p>Every rep ran against one shared preview server, and the suite deliberately fills 60-second per-IP rate-limit windows — generate-image.spec.ts exhausts the BYOK bucket and bursts the managed token’s. A rep takes about as long as those windows last, so the next rep inherited a spent budget and its guard tests took a 429 where they assert a 415.</p>
-  <ul class="notes"></ul>
+  <ul class="notes"><li>On ubuntu-latest at 4 workers, “throttles a managed token hammered in a burst” failed in 12 of 12 reps — a deterministic failure counted as a flake rate.</li><li>Locally at 4 workers, the BYOK guard tests were 4 of 5 failures across 7 reps.</li><li>Both are specs the earlier per-worker-count failure columns are largely made of.</li></ul>
   <p>scripts/e2e-sweep.mjs starts and stops a preview server per rep, which clears the in-memory limiter and matches what CI does anyway: one server, one suite run.</p>
 </div>
     <p>
@@ -516,8 +516,63 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
       column a retry count is chosen against: retries only pay for themselves against the rate at
       which an unretried run goes red.
     </p>
-    <p class="empty-note">Re-measure pending — re-run <code>npm run gen:e2e-tuning-report</code> once the numbers land.</p>
-    
+    <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Workers</th><th class="num">Wall (median)</th><th class="num">Red runs</th>
+      <th class="num">Failures</th><th class="num">Per-test rate</th>
+      <th class="num">Latency inflation</th><th class="num">CPU work</th>
+    </tr></thead>
+    <tbody><tr>
+      <td>1</td>
+      <td class="num">—</td>
+      <td class="num">6/15</td>
+      <td class="num">6</td>
+      <td class="num">0.196%</td>
+      <td class="num">—</td>
+      <td class="num">—</td>
+    </tr><tr>
+      <td>2</td>
+      <td class="num">—</td>
+      <td class="num">2/15</td>
+      <td class="num">3</td>
+      <td class="num">0.098%</td>
+      <td class="num">—</td>
+      <td class="num">—</td>
+    </tr><tr class="pick">
+      <td>3</td>
+      <td class="num">—</td>
+      <td class="num">0/15</td>
+      <td class="num">0</td>
+      <td class="num">0.000%</td>
+      <td class="num">—</td>
+      <td class="num">—</td>
+    </tr><tr>
+      <td>4</td>
+      <td class="num">—</td>
+      <td class="num">6/15</td>
+      <td class="num">6</td>
+      <td class="num">0.196%</td>
+      <td class="num">—</td>
+      <td class="num">—</td>
+    </tr><tr>
+      <td>6</td>
+      <td class="num">—</td>
+      <td class="num">15/15</td>
+      <td class="num">15</td>
+      <td class="num">0.490%</td>
+      <td class="num">—</td>
+      <td class="num">—</td>
+    </tr><tr>
+      <td>8</td>
+      <td class="num">—</td>
+      <td class="num">15/15</td>
+      <td class="num">23</td>
+      <td class="num">0.752%</td>
+      <td class="num">—</td>
+      <td class="num">—</td>
+    </tr></tbody>
+  </table></div>
+    <ul class="notes"><li><b>The rate is not flat from 1 to 6 workers.</b> It breaks at <b>6</b>, not 8, and 4 workers is already significantly worse than 3 (Fisher p = 0.017). The earlier sweep read it as flat because the artifact fired at every worker count alike, burying the differences under a constant.</li><li><b>So “wall clock decides on CI” cannot rest on that flatness.</b> Four workers buys 2.9s over three (60.2s vs 63.1s) and costs 6/15 unretried-red runs. The shipped coefficient is 1.5× capacity because of this row.</li><li><b>One worker is still among the worst settings</b> (6/15), with no contention to blame — the GPU-less runner rasterizes canvas work in software, so those specs sit near their budgets however few workers run. That is why the curve is a U rather than a slope, and why worker tuning alone was never going to reach zero.</li><li>Wall clock is not re-reported per configuration here: the summary line this run emitted carried the rates only. It carries a median now, so the next sweep has both.</li></ul>
   </section>
 
   <section>

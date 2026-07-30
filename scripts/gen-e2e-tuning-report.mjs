@@ -114,7 +114,15 @@ const REVEAL_BUDGET_EXPERIMENT = [
 // The re-measure #653 asked for, on the same runner image with the sweep driver
 // starting a fresh preview server per rep. `redRuns` is the quantity a retry
 // count is chosen against: how often an unretried run would go red.
-const CI_RESIDUAL = [];
+// Run 30512081902, 15 reps per worker count, retries off. `execs` is 15 × 204.
+const CI_RESIDUAL = [
+  { w: 1, runs: 15, execs: 3060, fails: 6, redRuns: 6 },
+  { w: 2, runs: 15, execs: 3060, fails: 3, redRuns: 2 },
+  { w: 3, runs: 15, execs: 3060, fails: 0, redRuns: 0, recommended: true },
+  { w: 4, runs: 15, execs: 3060, fails: 6, redRuns: 6 },
+  { w: 6, runs: 15, execs: 3060, fails: 15, redRuns: 15 },
+  { w: 8, runs: 15, execs: 3060, fails: 23, redRuns: 15 },
+];
 
 // What that re-measure found first, before it could measure anything: the sweep
 // was manufacturing most of its own flake rate.
@@ -124,7 +132,12 @@ const HARNESS_ARTIFACT = {
     'per-IP rate-limit windows — generate-image.spec.ts exhausts the BYOK bucket and bursts the ' +
     'managed token’s. A rep takes about as long as those windows last, so the next rep inherited a ' +
     'spent budget and its guard tests took a 429 where they assert a 415.',
-  evidence: [],
+  evidence: [
+    'On ubuntu-latest at 4 workers, “throttles a managed token hammered in a burst” failed in 12 of ' +
+      '12 reps — a deterministic failure counted as a flake rate.',
+    'Locally at 4 workers, the BYOK guard tests were 4 of 5 failures across 7 reps.',
+    'Both are specs the earlier per-worker-count failure columns are largely made of.',
+  ],
   fix:
     'scripts/e2e-sweep.mjs starts and stops a preview server per rep, which clears the in-memory ' +
     'limiter and matches what CI does anyway: one server, one suite run.',
@@ -132,7 +145,21 @@ const HARNESS_ARTIFACT = {
 
 // What the re-measured numbers mean, and the retry count they settle. Raw HTML so
 // a note can mark up a value; keep them factual and short.
-const RESIDUAL_NOTES = [];
+const RESIDUAL_NOTES = [
+  '<b>The rate is not flat from 1 to 6 workers.</b> It breaks at <b>6</b>, not 8, and 4 workers is ' +
+    'already significantly worse than 3 (Fisher p = 0.017). The earlier sweep read it as flat ' +
+    'because the artifact fired at every worker count alike, burying the differences under a ' +
+    'constant.',
+  '<b>So “wall clock decides on CI” cannot rest on that flatness.</b> Four workers buys 2.9s over ' +
+    'three (60.2s vs 63.1s) and costs 6/15 unretried-red runs. The shipped coefficient is 1.5× ' +
+    'capacity because of this row.',
+  '<b>One worker is still among the worst settings</b> (6/15), with no contention to blame — the ' +
+    'GPU-less runner rasterizes canvas work in software, so those specs sit near their budgets ' +
+    'however few workers run. That is why the curve is a U rather than a slope, and why worker ' +
+    'tuning alone was never going to reach zero.',
+  'Wall clock is not re-reported per configuration here: the summary line this run emitted carried ' +
+    'the rates only. It carries a median now, so the next sweep has both.',
+];
 
 // Each hypothesis that was tested, and how it was killed or confirmed. The
 // falsified ones are the point: they are cheap to re-derive and expensive to
@@ -266,7 +293,7 @@ function sweepTable(rows, { pick } = {}) {
     .map(
       (r) => `<tr${r.w === pick ? ' class="pick"' : ''}>
       <td>${r.w}</td>
-      <td class="num">${s1(r.wall)}s</td>
+      <td class="num">${r.wall ? s1(r.wall) + 's' : '—'}</td>
       <td class="num">${r.redRuns}/${r.runs}</td>
       <td class="num">${r.fails}</td>
       <td class="num">${pctFail(r)}%</td>

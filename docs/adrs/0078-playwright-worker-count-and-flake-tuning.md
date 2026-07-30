@@ -256,6 +256,52 @@ why the failing assertion sat unchanged through a full 5s poll. The fix is to **
 the `drawMagicReveal` pattern the file already established — measured at 16/200 failures before and
 4/200 after, at 8 workers.
 
+### 4. Most of the measured flake rate was the harness
+
+Issue \#653 asked for the flake rate to be re-measured once #650 and #651 landed, and for the retry
+count to be chosen against it. Re-measuring came first, and it changed the question: the sweep that
+produced §2b's rates was generating most of them.
+
+**Mechanism.** Reps ran back to back against one preview server, and the suite deliberately fills two
+60-second per-IP rate-limit windows — `generate-image.spec.ts` exhausts the BYOK bucket (30 hits) and
+bursts the managed token's (15). A rep takes about as long as those windows last, so a rep inherited
+the previous rep's spent budget and its guard tests took a 429 where they assert a 415 or a 413.
+Nothing to do with the app or the specs: the sweep protocol alone.
+
+**It is not a rounding error.** On `ubuntu-latest` at 4 workers, `throttles a managed token hammered
+in a burst` failed in **12 of 12** reps. Locally at 4 workers the BYOK guard tests were 4 of 5
+failures across 7 reps. Those are the same specs §2b's counts are made of.
+
+**Fix.** `scripts/e2e-sweep.mjs` owns the protocol — a fresh preview server per rep, `CI` unset for
+the run, one summary line per rep — and both the local sweep and the workflow drive it. That is the
+general lesson too: every defect the shell-in-YAML version shipped with (a missing managed code, a
+missing harness probe code, this) existed because only one of its two callers could ever have caught
+it.
+
+**Re-measured**, 15 reps per configuration, one runner each, retries off (run 30512081902):
+
+| workers            | 1     | 2     | 3         | 4     | 6      | 8      |
+| ------------------ | ----- | ----- | --------- | ----- | ------ | ------ |
+| runs gone red      | 6/15  | 2/15  | **0/15**  | 6/15  | 15/15  | 15/15  |
+| failures / 3060    | 6     | 3     | **0**     | 6     | 15     | 23     |
+| per-test rate      | 0.20% | 0.10% | **0%**    | 0.20% | 0.49%  | 0.75%  |
+
+Two of §2b's conclusions do not survive this.
+
+* **The rate is not flat from 1 to 6.** It breaks at **6**, not 8, and 4 workers is already
+  significantly worse than 3 (Fisher p = 0.017). §2b read it as flat because the artifact fired at
+  every worker count alike, which buried the differences between them under a constant.
+* **So "wall clock decides on CI" was resting on that flatness**, and it cannot. Four workers buys
+  2.9s over three (60.2s vs 63.1s) and costs 6/15 unretried-red. §1b's coefficient is 1.5× capacity
+  because of this row, not ~2×.
+
+One of them does survive, and is worth keeping for the same reason it was surprising the first time:
+**one worker is among the worst settings** (6/15), with no contention to blame. The GPU-less runner
+rasterizes canvas work in software, so those specs sit near their budgets however few workers run —
+which is why the curve is a U and not a slope, and why worker tuning alone was never going to reach
+zero.
+
+
 ## Consequences
 
 \+ The worker count is now defensible: 91 local runs and 30 CI runs, with the hardware recorded
