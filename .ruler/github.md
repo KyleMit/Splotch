@@ -1,10 +1,25 @@
 ## Writing on GitHub
 
-The pull request template is `.github/pull_request_template.md`, and it is the only one — there is
-no `PULL_REQUEST_TEMPLATE.md`, no `docs/` copy, and no `.github/PULL_REQUEST_TEMPLATE/` directory,
-so don't probe for them. Its headings are the floor for a PR body, not the ceiling: keep them, then
-add your own sections for the mechanism, the measurements, what was rejected, what is out of scope,
-and which ADRs or docs moved. The `pr-screenshots` skill governs the Screenshots section.
+### The pull request body
+
+**There is deliberately no PR template** — no `.github/pull_request_template.md`, no
+`PULL_REQUEST_TEMPLATE.md`, no `docs/` copy, no `.github/PULL_REQUEST_TEMPLATE/` directory. Don't
+probe for one. A template's headings get mirrored into every body, and that is the opposite of what
+these PRs want: the sections belong to the change, so a UI fix carries before/after shots, a
+protocol spike carries the three facts that shaped its client, and a small refactor carries neither.
+
+Shape the body around what the change actually needs, over this floor:
+
+* Open with the issue reference (`Fixes #NNN.`) and a short paragraph on what changed and why.
+* Name the changes under a heading of your choosing, then add sections for whatever needs explaining
+  — the mechanism, what was measured, what was rejected, what is out of scope, which ADRs or docs
+  moved.
+* Include a **Verification** section — the checks actually run and their results, usually a table.
+  This is the one worth keeping even when the PR is small.
+* Visuals whenever the change is visible, and an explicit note when it isn't. The `pr-screenshots`
+  skill decides which shots and how to host them.
+
+### Auto-linking
 
 GitHub auto-links a `#` followed by digits (`#12`) into a reference to the issue or pull request
 with that number. So a plain list like "#1 done, #2 pass" in a PR body or comment silently turns
