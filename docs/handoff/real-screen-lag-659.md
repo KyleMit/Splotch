@@ -281,6 +281,82 @@ Only things a synthetic `dispatchEvent` cannot fake — the **real iOS touch pip
    runs did not. `--hud` now forces it on for a driven run so this is ruled out rather than assumed
    harmless. Result pending.
 
+## FINDING 10 — everything reproducible is eliminated
+
+A **4-minute continuous soak** on device (240 Hz pen input, coloring page loaded, 14,575 in-contact
+frames): `dt` p50/p95 **17 ms**, max **23 ms**, **zero** late frames, **zero** stalls, **zero** lost
+ms. So accumulation is out too — the app is perfectly smooth under four minutes of sustained drawing
+while a human stalls it for 1.4 s in fifteen seconds.
+
+The full elimination list, all measured on the device, all clean:
+
+| hypothesis                                 | how it was killed                                   |
+| ------------------------------------------ | --------------------------------------------------- |
+| per-event work volume                      | 4.03 moves/frame, `pointerType: pen` — 0 stalls     |
+| accumulated ink / undo rasters             | 4-minute soak, 33.9 MB of rasters — 0 stalls        |
+| the blend nudge / `mix-blend-mode` / halos | every CSS suppression, no effect                    |
+| the probe's own HUD                        | `--hud` on a driven run — 0 stalls                  |
+| marked engine work                         | 0–5 ms inside a 1422 ms stall                       |
+| input delivery, queueing, coalescing       | 8.3 ms cadence, 6 ms queue delay, 0 adopted strokes |
+| the encode tier                            | fires per commit, finds nothing cold, 0 ms          |
+
+**The lag requires real touch input, and nothing synthetic reproduces it.** That is a real result,
+and it is also where unattended work runs out: what is left is the part of the input path a
+`dispatchEvent` cannot enter.
+
+## Fix candidates, ranked by what the evidence actually supports
+
+Nothing here is validated against the felt lag, because **no synthetic input reproduces it** — so
+every candidate's "how to validate" is a hand-drawn run, and the honest status of all of them is
+*unvalidated*. Ranked by strength of evidence, not by appeal.
+
+### 1. Coalesce per-event work to once per frame (evidence: measured, mechanism: certain)
+
+Measured: 1.9–4.2 `pointermove` per presentable frame, every one of which does a full
+`nudgeBlendLayer` `$state` toggle (compositor damage on a full-paper blend layer) and a
+`PointerHalos` `$state` write (a DOM transform). **The app cannot show more than one frame per
+frame**, so 3 of every 4 of those are provably wasted — that part needs no further measurement.
+
+* `DrawingCanvas.nudgeBlendLayer` → toggle at most once per `requestAnimationFrame`. One damage per
+  frame is exactly what issue #307 needs (the blend must be current *per frame*), so this should not
+  regress it.
+* `PointerHalos` → write the ring position at most once per frame; the intermediate positions are
+  never seen.
+
+Low risk, and correct on first principles regardless of whether it moves the felt lag. **Validate:**
+hand-drawn A/B of this build vs `main`, plus confirm #307's dark-mode staleness has not returned.
+
+### 2. Turn off iPadOS Scribble and re-measure (evidence: elimination, cost: a settings toggle)
+
+Everything reproducible has been eliminated (see finding 10). Scribble is main-thread work inside
+the browser, invisible to every instrument here, and present only under a real Pencil — which is the
+only condition that reproduces. If it is the cause, the "fix" is not ours to write, but knowing it
+changes what we tell users and whether ADR-0038's guard needs widening.
+
+### 3. Reduce the canvas backing store on huge screens (evidence: circumstantial)
+
+The backing store is 2564 × 1830 = **4.7 Mpx (~19 MB)** at `renderScale = min(dpr, 2)`. Every
+compositor operation that touches it — a blend recomposite reading it as backdrop, a texture
+re-upload — scales with that area. Dropping to `renderScale = 1.5` on very large surfaces would cut
+it ~44% at some cost in line crispness. **Only worth trying if a Timeline shows large
+paint/composite records**; nothing measured so far points here directly.
+
+### 4. Don't nudge the blend layer at all — invalidate the canvas instead (evidence: none yet)
+
+The nudge exists because painting into the 2D canvas does not invalidate the `mix-blend-mode` layer
+above it (#307). A cheaper trigger for the same invalidation, if one exists, removes a full-paper
+recomposite per event rather than per frame. Related: the reported "goes black, then snaps back" is
+this layer failing to blend at all (finding 9), so this area has a correctness bug in it too and is
+worth understanding regardless.
+
+### Explicitly not worth pursuing on current evidence
+
+* **The undo/history tier.** `engine.encode` fires per commit and its loop finds nothing cold (0
+  ms); rasters grew to 33.9 MB across 20 snapshots during a run that never dropped a frame. #494's
+  decode-stall concern is unreachable at this depth.
+* **Anything inside `engine.*`.** 0–5 ms of marked work inside a 1422 ms stall. Optimizing the
+  drawing engine cannot fix this.
+
 ## Unverified assumptions
 
 * Synthetic (rAF-paced `dispatchEvent`) input on `/` reproduces enough of the lag to be worth
