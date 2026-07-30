@@ -109,13 +109,25 @@ decodes asynchronously, so a *correct* stroke reads flat until the fold-in repai
 That retires ADR-0078 §2c (the attempt cap) entirely, including its measured attempt distribution —
 those 10-of-328 second-attempt recoveries were the truncation, not the mode race.
 
-### 4. Two budgets sized from measured headroom
+### 4. Budgets sized from measured headroom
 
 `install-banner`'s exit assertion had the thinnest headroom ratio in the suite, and mostly against
 itself: ~4.6s of it is InstallBanner's fixed parting message plus shrink transition, which
 contention cannot compress, inside a 10s budget that measured 5.0s at 8 workers. It is now 20s, and
-the test is `test.slow()` because the whole test measured 17.7s there against a 30s default. Every
-other assertion in that spec has ~20x headroom.
+the test is `test.slow()` because the whole test measured 17.7s there against a 30s default.
+
+Its *appearance* assertion turned out to be thin for a different and more interesting reason, caught
+by a full-suite run after this branch merged `main`. The banner is the last of five overlays the
+idle pump mounts, one per `requestIdleCallback` **with no timeout option**, so its mount waits for a
+genuinely idle frame however long that takes — and the third stroke, the one that makes the banner
+eligible, is also what releases the deferred service-worker registration in the same flush, whose
+~39 MB precache is precisely what keeps the page from going idle. That wait is thin by construction
+rather than by inflation, which is why it survives isolation: the same test passes 20/20 at 4
+workers alone and failed once in three full-suite runs. Also 20s now.
+
+The lesson generalises past this spec: a budget covering an *idle-scheduled* mount is not a headroom
+ratio at all, because `requestIdleCallback` promises nothing. Either wait generously or give the
+callback a timeout.
 
 Two un-retried opens against lazily-wired controls are now retried, per the flake checklist in
 `.claude/rules/testing.md`: the colour picker in `flows-palette-brush` (`gotoApp` returns on the

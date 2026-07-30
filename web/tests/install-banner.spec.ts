@@ -21,6 +21,17 @@ test.use({
 // that the failure it predicts), against ~20x for every assertion around it.
 const PARTING_EXIT_TIMEOUT_MS = 20_000;
 
+// The banner is the LAST of five overlays the idle pump mounts, one per
+// requestIdleCallback with no timeout option (boot/bootHiddenOverlays.ts,
+// lib/idle.ts), so its mount waits for a genuinely idle frame however long that
+// takes. And the third stroke — the one that makes the banner eligible — is also
+// what releases the deferred service-worker registration in the same flush
+// (routes/+page.svelte), whose ~39 MB precache is exactly what keeps the page
+// from going idle. So this wait is thin by construction, not by inflation: under
+// full-suite load it exceeded the default 5s, while the same test passes 20/20
+// in isolation at 4 workers.
+const BANNER_MOUNT_TIMEOUT_MS = 20_000;
+
 test('the install banner parts after five additional strokes', async ({ page }) => {
   // Eight strokes plus that fixed ~4.6s exit measured 17.7s at 8 workers, so the
   // default 30s per-test budget is the tightest bound in the spec once latency
@@ -42,7 +53,9 @@ test('the install banner parts after five additional strokes', async ({ page }) 
     { x: 100, y: 200 },
     { x: 280, y: 220 },
   ]);
-  await expect(banner).toContainText('Add Splotch to your home screen');
+  await expect(banner).toContainText('Add Splotch to your home screen', {
+    timeout: BANNER_MOUNT_TIMEOUT_MS,
+  });
 
   for (let stroke = 3; stroke < 8; stroke += 1) {
     const y = 120 + stroke * 40;
