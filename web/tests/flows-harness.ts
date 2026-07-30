@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 
-import { retryOpen } from './retry';
+import { retryOpen } from './helpers';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
 // Svelte component wiring (palette, action drawer, tool/stroke state, AI fetch,
