@@ -30,6 +30,19 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref || github.event.repository.default_branch }}
 
+      # TEMPORARY diagnostic, removed once its answer is recorded: is the tree
+      # under test the merge result or the branch head? main carries a
+      # @capacitor/cli bump this branch predates, and this branch adds
+      # check:adrs, so the pair in package.json identifies which tree CI has.
+      - name: Merge-result diagnostic
+        run: |
+          echo "HEAD                 $(git rev-parse --short HEAD)"
+          echo "HEAD parents         $(git rev-parse --short HEAD^@ | tr '\n' ' ')"
+          echo "tree capacitor/cli   $(grep -o '\"@capacitor/cli\": \"[^\"]*\"' package.json)"
+          echo "tree check:adrs hits $(grep -c 'check:adrs' package.json)"
+          echo "origin/main          $(git rev-parse --short origin/main)"
+          echo "main capacitor/cli   $(git show origin/main:package.json | grep -o '\"@capacitor/cli\": \"[^\"]*\"')"
+
       - uses: ./.github/actions/setup-node
 
       # Fast-fail the cheapest, most-common failure first: a formatting-only
