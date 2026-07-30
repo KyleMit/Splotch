@@ -7,6 +7,8 @@ import {
   comparisonRows,
   NOTABLE_LIFT_MS,
   REAL_SCREEN_SCHEMA_VERSION,
+  STARVATION_FRAME_MULTIPLE,
+  STARVATION_MAX_ENGINE_SHARE,
   STALL_FRAME_MS,
   classifyPhase,
   frameStats,
@@ -14,6 +16,7 @@ import {
   observedFrameIntervalMs,
   percentile,
   segmentStrokes,
+  starvationEpisodes,
   summarizeRun,
 } from '../perf/real-screen-stats.mjs';
 import { probeConfigScript } from '../perf/ipad-frames.mjs';
@@ -58,8 +61,8 @@ const move = (
   coalescedFirst,
   coalescedLast,
 ];
-const down = (stamp, id = 1) => [stamp, stamp + 6, DOWN, id, 1, 0, 1];
-const up = (stamp, id = 1) => [stamp, stamp + 6, UP, id, 0, 0, 1];
+const down = (stamp, id = 1) => [stamp, stamp + 6, DOWN, id, 1, 0, 1, 0, 1, 0.5, 30, 30, -1, -1];
+const up = (stamp, id = 1) => [stamp, stamp + 6, UP, id, 0, 0, 1, 0, 1, 0, 30, 30, -1, -1];
 
 // A 60 Hz capture, since that is what Safari actually gives web content on the
 // ProMotion iPad this exists to measure.
@@ -115,6 +118,93 @@ describe('frameStats', () => {
     expect(stats.lateShare).toBe(0);
     expect(stats.stallShare).toBe(0);
     expect(stats.lostMs).toBe(0);
+  });
+});
+
+describe('starvationEpisodes', () => {
+  const intervalMs = 16.7;
+  const framesWithGap = (gapMs, { beforeContact = 1, afterContact = 1 } = {}) => {
+    const frames = beat(20, { interval: intervalMs, contact: beforeContact });
+    const start = frames.at(-1)[0];
+    frames.push([start + gapMs, gapMs, afterContact]);
+    return { frames, start, end: start + gapMs };
+  };
+  const trustedMoves = (start, end) => {
+    const events = [];
+    for (let stamp = start + 2; stamp + 6 < end; stamp += 8.3) events.push(move(stamp));
+    return events;
+  };
+
+  it('detects the real 1422 ms low-engine-work signature', () => {
+    const { frames, start, end } = framesWithGap(1422);
+    const events = [down(start - 20), ...trustedMoves(start, end), up(end - 20)];
+    const measures = [
+      [start + 10, 5, 0],
+      [start + 30, 2, 1],
+    ];
+    const [episode] = starvationEpisodes({
+      frames,
+      events,
+      measures,
+      measureNames: ['engine.draw', 'engine.commit'],
+      intervalMs,
+    });
+
+    expect(episode.gapMs).toBe(1422);
+    expect(episode.trustedMoves).toBeGreaterThan(100);
+    expect(episode.engineMs).toBe(7);
+    expect(episode.engineShare).toBeLessThan(STARVATION_MAX_ENGINE_SHARE);
+    expect(episode.population).toBe('inContact');
+    expect(episode.nearestLift).toBeDefined();
+    expect(episode.nearestCommit).toBeDefined();
+  });
+
+  it('does not classify a clean drawing frame', () => {
+    const gapMs = intervalMs * STARVATION_FRAME_MULTIPLE;
+    const { frames, start, end } = framesWithGap(gapMs);
+
+    expect(
+      starvationEpisodes({
+        frames,
+        events: trustedMoves(start, end),
+        measures: [],
+        intervalMs,
+      })
+    ).toEqual([]);
+  });
+
+  it('does not classify an idle frame with no trusted touch moves', () => {
+    const { frames } = framesWithGap(1422, { beforeContact: 0, afterContact: 0 });
+
+    expect(starvationEpisodes({ frames, events: [], measures: [], intervalMs })).toEqual([]);
+  });
+
+  it('retains and labels a starvation episode between strokes', () => {
+    const { frames, start, end } = framesWithGap(400, { afterContact: 0 });
+    const [episode] = starvationEpisodes({
+      frames,
+      events: [...trustedMoves(start, end), up(start + 80)],
+      measures: [[start + 60, 2, 0]],
+      measureNames: ['engine.commit'],
+      intervalMs,
+    });
+
+    expect(episode.population).toBe('betweenStrokes');
+    expect(episode.nearestLift).toBeDefined();
+  });
+
+  it('rejects a long frame explained by marked engine work', () => {
+    const { frames, start, end } = framesWithGap(400);
+
+    expect(
+      starvationEpisodes({
+        frames,
+        events: trustedMoves(start, end),
+        measures: [[start, 200, 0]],
+        measureNames: ['engine.draw'],
+        intervalMs,
+      })
+    ).toEqual([]);
   });
 });
 

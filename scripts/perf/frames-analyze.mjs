@@ -18,6 +18,7 @@ import {
   engineRows,
   inputRows,
   pacingRows,
+  starvationRows,
   summarizeRun,
 } from './real-screen-stats.mjs';
 
@@ -39,6 +40,8 @@ export function printRun(capture, { forensics = true } = {}) {
   console.table(inputRows(phases));
   console.log('\nEngine cost inside those frames, and the stroke-end hitch');
   console.table(engineRows(phases));
+  console.log('\nTrusted-input render-starvation episodes');
+  console.table(starvationRows(phases));
 
   const comparisons = comparisonRows(phases);
   if (comparisons.length) {

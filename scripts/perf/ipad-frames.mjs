@@ -40,6 +40,7 @@ import {
   engineRows,
   inputRows,
   pacingRows,
+  starvationRows,
   summarizeRun,
 } from './real-screen-stats.mjs';
 
@@ -257,6 +258,8 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
     console.table(inputRows(summaries.phases));
     console.log('\nEngine cost inside those frames, and the stroke-end hitch');
     console.table(engineRows(summaries.phases));
+    console.log('\nTrusted-input render-starvation episodes');
+    console.table(starvationRows(summaries.phases));
     const timelineSummary = timeline?.summary();
     if (timelineSummary) {
       console.log(

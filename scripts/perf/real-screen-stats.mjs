@@ -50,6 +50,17 @@ export const LONG_STROKE_MS = 1000;
 // in the run that first reproduced the reported lag). Lift frames are now reported
 // whole; this only marks the ones worth calling out.
 export const NOTABLE_LIFT_MS = 100;
+// Four missed presentation opportunities distinguishes a visible freeze from
+// ordinary scheduling jitter while still deriving the budget from the device.
+export const STARVATION_FRAME_MULTIPLE = 4;
+// Engine spans above this share can explain the missing frame themselves. The
+// signal sought here is input being handled while presentation is starved.
+export const STARVATION_MAX_ENGINE_SHARE = 0.1;
+// Compositor work in the device traces began up to 192 ms after commit closed.
+// Attribution is reported, never used to discard an otherwise valid episode.
+export const STARVATION_ATTRIBUTION_WINDOW_MS = 250;
+// One move can be a boundary event; two proves input delivery continued.
+export const STARVATION_TRUSTED_MOVE_FLOOR = 2;
 export const REAL_SCREEN_SCHEMA_VERSION = 2;
 
 export const POINTER_DOWN = 0;
@@ -291,6 +302,138 @@ function measureBreakdown(measures, names) {
   return Object.fromEntries([...byName].sort(([a], [b]) => a.localeCompare(b)));
 }
 
+function coveredDurationMs(measures, from, to) {
+  const intervals = measures
+    .map((measure) => [
+      Math.max(from, measure[MEASURE_START]),
+      Math.min(to, measure[MEASURE_START] + measure[MEASURE_DUR]),
+    ])
+    .filter(([start, end]) => end > start)
+    .sort(([a], [b]) => a - b);
+  let covered = 0;
+  let currentStart;
+  let currentEnd;
+  for (const [start, end] of intervals) {
+    if (currentStart === undefined) {
+      currentStart = start;
+      currentEnd = end;
+    } else if (start <= currentEnd) {
+      currentEnd = Math.max(currentEnd, end);
+    } else {
+      covered += currentEnd - currentStart;
+      currentStart = start;
+      currentEnd = end;
+    }
+  }
+  if (currentStart !== undefined) covered += currentEnd - currentStart;
+  return round(covered);
+}
+
+function nearestAttribution(signals, start, end) {
+  const candidates = signals
+    .map((signal) => {
+      const distance =
+        signal.at < start ? start - signal.at : signal.at > end ? signal.at - end : 0;
+      return { ...signal, distance };
+    })
+    .filter((signal) => signal.distance <= STARVATION_ATTRIBUTION_WINDOW_MS)
+    .sort(
+      (a, b) =>
+        a.distance - b.distance || Math.abs(a.at - start) - Math.abs(b.at - start) || a.at - b.at
+    );
+  const nearest = candidates[0];
+  return nearest
+    ? {
+        index: nearest.index,
+        atMs: round(nearest.at),
+        offsetFromStartMs: round(nearest.at - start),
+        distanceMs: round(nearest.distance),
+      }
+    : undefined;
+}
+
+export function starvationEpisodes({
+  frames,
+  events,
+  measures,
+  measureNames = [],
+  intervalMs = observedFrameIntervalMs(frames),
+  from = -Infinity,
+  to = Infinity,
+}) {
+  const thresholdMs = intervalMs * STARVATION_FRAME_MULTIPLE;
+  const trustedTouchMoves = events.filter(
+    (event) =>
+      event[EVENT_ON_CANVAS] &&
+      event[EVENT_TYPE] === POINTER_MOVE &&
+      event[EVENT_BUTTONS] !== 0 &&
+      event[EVENT_KIND] === 0 &&
+      event[EVENT_TRUSTED] === 1
+  );
+  const lifts = events
+    .filter(
+      (event) =>
+        event[EVENT_ON_CANVAS] &&
+        event[EVENT_TYPE] === POINTER_UP &&
+        event[EVENT_KIND] === 0 &&
+        event[EVENT_TRUSTED] === 1
+    )
+    .map((event, index) => ({ index, at: event[EVENT_AT] }));
+  const commits = measures
+    .map((measure, index) => ({ measure, index }))
+    .filter(({ measure }) => measureNames[measure[MEASURE_NAME]] === 'engine.commit')
+    .map(({ measure, index }) => ({ index, at: measure[MEASURE_START] + measure[MEASURE_DUR] }));
+  const episodes = [];
+
+  for (let index = 1; index < frames.length; index++) {
+    const previous = frames[index - 1];
+    const frame = frames[index];
+    const start = previous[FRAME_T];
+    const end = frame[FRAME_T];
+    const gapMs = frame[FRAME_DT];
+    if (!inWindow(start, from, to) || !inWindow(end, from, to) || gapMs <= thresholdMs) continue;
+
+    const moves = trustedTouchMoves.filter((event) => inWindow(event[EVENT_AT], start, end));
+    if (moves.length < STARVATION_TRUSTED_MOVE_FLOOR) continue;
+
+    const engineMs = coveredDurationMs(measures, start, end);
+    const engineShare = engineMs / gapMs;
+    if (engineShare > STARVATION_MAX_ENGINE_SHARE) continue;
+
+    episodes.push({
+      frameIndex: index,
+      startMs: round(start),
+      endMs: round(end),
+      gapMs: round(gapMs),
+      starvationMs: round(gapMs - intervalMs),
+      population: previous[FRAME_CONTACT] && frame[FRAME_CONTACT] ? 'inContact' : 'betweenStrokes',
+      trustedMoves: moves.length,
+      engineMs,
+      engineShare: round(engineShare, 4),
+      nearestLift: nearestAttribution(lifts, start, end),
+      nearestCommit: nearestAttribution(commits, start, end),
+    });
+  }
+
+  return episodes;
+}
+
+function starvationPopulation(episodes, commitCount, contactSeconds) {
+  const starvationMs = round(sum(episodes.map((episode) => episode.starvationMs)));
+  const attributedCommits = new Set(
+    episodes.map((episode) => episode.nearestCommit?.index).filter((index) => index !== undefined)
+  );
+  return {
+    episodes: episodes.length,
+    episodesPerCommit: commitCount ? round(episodes.length / commitCount, 4) : undefined,
+    starvationMs,
+    starvationMsPerDrawingSecond: contactSeconds ? round(starvationMs / contactSeconds) : undefined,
+    worstFrameGapMs: max(episodes.map((episode) => episode.gapMs)),
+    commitsFollowedByStarvation: attributedCommits.size,
+    commits: commitCount,
+  };
+}
+
 // The forensic list: the worst frames in a phase, each with what surrounded it.
 // A share and a p99 say a freeze happened; this says WHERE — mid-stroke, at
 // finger-lift, right after a stroke started — and what marked work was inside
@@ -421,6 +564,18 @@ export function summarizePhase(phase, tables) {
   const movesPerFrame = contactFrames ? round(canvasMoves.length / contactFrames) : 0;
   const contactSeconds = (phase.contactMs ?? 0) / 1000;
   const pacing = frameStats(contactDeltas, intervalMs);
+  const commits = phaseMeasures.filter(
+    (measure) => measureNames[measure[MEASURE_NAME]] === 'engine.commit'
+  );
+  const episodes = starvationEpisodes({
+    frames,
+    events,
+    measures,
+    measureNames,
+    intervalMs,
+    from,
+    to,
+  });
 
   return {
     key: phase.key,
@@ -432,6 +587,23 @@ export function summarizePhase(phase, tables) {
     pacing,
     betweenStrokes: frameStats(betweenDeltas, intervalMs),
     wholeWindow: frameStats(allDeltas, intervalMs),
+    starvation: {
+      thresholdMs: round(intervalMs * STARVATION_FRAME_MULTIPLE),
+      maxEngineShare: STARVATION_MAX_ENGINE_SHARE,
+      attributionWindowMs: STARVATION_ATTRIBUTION_WINDOW_MS,
+      all: starvationPopulation(episodes, commits.length, contactSeconds),
+      inContact: starvationPopulation(
+        episodes.filter((episode) => episode.population === 'inContact'),
+        commits.length,
+        contactSeconds
+      ),
+      betweenStrokes: starvationPopulation(
+        episodes.filter((episode) => episode.population === 'betweenStrokes'),
+        commits.length,
+        contactSeconds
+      ),
+      episodes,
+    },
     paintLatencyMs: {
       p50: percentile(latencies, 0.5),
       p95: percentile(latencies, 0.95),
@@ -680,6 +852,26 @@ export function engineRows(summaries) {
       ? `${phase.strokes.longStrokeTrend.firstThirdP50 ?? '–'}→${phase.strokes.longStrokeTrend.lastThirdP50 ?? '–'}`
       : undefined,
   }));
+}
+
+export function starvationRows(summaries) {
+  return summaries.flatMap((phase) =>
+    ['all', 'inContact', 'betweenStrokes'].map((population) => {
+      const stats = phase.starvation?.[population];
+      return {
+        phase: phase.key,
+        population,
+        episodes: stats?.episodes,
+        'episodes/commit': stats?.episodesPerCommit,
+        'starvation ms': stats?.starvationMs,
+        'ms/draw s': stats?.starvationMsPerDrawingSecond,
+        'worst gap': stats?.worstFrameGapMs,
+        'commits followed': stats
+          ? `${stats.commitsFollowedByStarvation}/${stats.commits}`
+          : undefined,
+      };
+    })
+  );
 }
 
 // What each suppression bought against the phase it is a variant of, which is
