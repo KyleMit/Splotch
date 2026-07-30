@@ -1,8 +1,9 @@
 # Handoff — real-screen lag on iPad (issue #659)
 
-> 2026-07-29 · branch `capture-real-screen-perf` · PR pending · Instrument, capture and attribute
-> the visible drawing lag on `/` on a physical iPad, where the ADR-0066 engine gates pass but the
-> screen does not keep up.
+> 2026-07-29 · branch `capture-real-screen-perf` · PR
+> [#660](https://github.com/KyleMit/Splotch/pull/660) · Instrument, capture and attribute the
+> visible drawing lag on `/` on a physical iPad, where the ADR-0066 engine gates pass but the screen
+> does not keep up. Instruments done; attribution needs a hand on the device — see START HERE.
 
 ## START HERE — the three things worth doing next, in order
 
@@ -63,27 +64,44 @@ All four are compositor/paint or unmarked-JS costs: they make the device slower 
 
 ## State
 
-| sha | what |
-| --- | ---- |
+Branch `capture-real-screen-perf` → **PR #660** (the instruments, pushed). Branch
+`coalesce-per-frame-work` → **PR #662** (fix candidate, stacked on #660). Also filed: **#663** (the
+black-flash rendering bug).
 
-(unpushed work in progress — see Next steps)
+Commits on #660, oldest first:
+
+| sha      | what                                                                                          |
+| -------- | --------------------------------------------------------------------------------------------- |
+| 925bc111 | the probe, the stats module, `perf:ipad:frames`, `ipad-session.mjs` extracted from `ipad.mjs` |
+| cec796b8 | contact derived from the move stream, not just `pointerdown`                                  |
+| 3810a8f6 | derive the frame budget; add worst-frame forensics; `perf:frames:analyze`                     |
+| f95045b9 | the synthetic hand, the undo-history seam, finger-up→halo-gone                                |
+| 2c7c6581 | tests over the metrics + the selector drift guard; split the halo's two costs                 |
+| 061323b0 | the pump that holds a digitizer's rate without starving the loop; hitch as a rate             |
+| 91616a1f | runbook: the real-screen section, the 60 Hz ceiling, what the marks can't see                 |
+| d3b7fbdf | the soak result; fix candidates ranked by evidence                                            |
+| 81e3fa0b | `perf:frames:local` registered; "start here" for the next session                             |
+| d0960c9d | the ipad URL test, for the shared session module                                              |
+| 82ef6396 | ADR-0081 + the ADR-0066 frame-budget amendment                                                |
+| (merge)  | main's `devHarnessSeam.ts` absorbs the profiling seam; ADR renumbered 0080→0081               |
 
 Files added:
 
-* `scripts/perf/real-screen-probe.js` — browser probe injected into `/`. Records four numeric
-  tables: `frames [t, dt, contact]`, `events [stamp, at, type, id, buttons, coalesced, onCanvas]`,
-  `measures [start, dur, nameIndex]`, plus per-phase metadata. Deliberately a **recorder only**.
-* `scripts/perf/real-screen-stats.mjs` — all the maths (percentiles, per-phase summaries, the
-  input-vs-frame verdict, the long-stroke degradation trend). Pure, unit-testable, shared by the
-  device path and the planned Playwright path.
-* `scripts/perf/ipad-frames.mjs` — `npm run perf:ipad:frames`. Serves the build, attaches over the
-  WebKit Inspector Protocol, navigates to `/`, injects the probe, reads the tables back in slices,
-  prints four tables, writes `perf-profiles/<stamp>-ipad-frames-<device>/real-screen.json`.
-* `scripts/perf/ipad-session.mjs` — device-session plumbing extracted from `ipad.mjs` (relay, LAN
-  server, suspended-tab-aware tab choice, navigation, readiness gate, poll-for-a-global).
+* `scripts/perf/real-screen-probe.js` — browser probe injected into `/`. Records numeric tables
+  (`frames`, `events`, `measures`, plus `history` and `liftLatencies`) and **computes nothing**.
+* `scripts/perf/real-screen-stats.mjs` — all the maths: percentiles, per-phase summaries, the
+  input-vs-frame verdict, worst-frame forensics, per-bucket pacing, the long-stroke trend.
+* `scripts/perf/ipad-frames.mjs` — `npm run perf:ipad:frames` (device).
+* `scripts/perf/frames-local.mjs` — `npm run perf:frames:local` (no iPad).
+* `scripts/perf/frames-analyze.mjs` — `npm run perf:frames:analyze` (re-read a saved capture).
+* `scripts/perf/ipad-session.mjs` — device-session plumbing extracted from `ipad.mjs`.
+* `scripts/tests/perf-real-screen.test.mjs` — 36 tests over the metrics + the selector drift guard.
+* `docs/adrs/0081-real-screen-capture-on-device.md`.
 
-Files changed: `scripts/perf/ipad.mjs` (now uses the shared module), `package.json` (script +
-`scripts-info`).
+Files changed: `scripts/perf/ipad.mjs` (uses the shared module), `scripts/tests/perf-ipad.test.mjs`,
+`web/src/lib/boot/devHarnessSeam.ts` (+ its test) — the profiling seam lives there rather than in a
+module of its own, because main landed the same pattern independently, `web/src/app.d.ts`,
+`web/src/routes/+page.svelte`, `package.json`, and the profiling skill + notes.
 
 ## What the probe measures, and why each metric is there
 
