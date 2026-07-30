@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
 
+import { managedAccessTokenForRetry } from '../playwright.shared';
 import { tinyPngBuffer } from './fixtures';
 
 // Server-side guards on /api/generate-image. These hit the endpoint directly
@@ -18,13 +19,14 @@ test.describe.configure({ mode: 'default' });
 // Mirrors of generateToken / generateByok in src/lib/server/rateLimitPolicy.ts.
 const GENERATE_LIMIT = 15;
 const BYOK_LIMIT = 30;
+const UNSUPPORTED_TYPE_STATUS = 415;
 
 // Raw-body POST to the endpoint. A raw image body (Content-Type: image/*) is not
 // a form submission, so SvelteKit's CSRF guard — active in the production build
 // the e2e suite serves — ignores it; no Origin spoofing needed. `token` uses the
-// managed allowlist (`daycare-club` comes from the .env ALLOWED_TOKENS_LIST vite
-// dev loads; no other spec uses managed tokens, so its bucket stays ours),
-// `apiKey` takes the BYOK path.
+// managed allowlist (the code comes from the ALLOWED_TOKENS_LIST the web server
+// is started with; no other spec uses managed tokens, so its bucket stays
+// ours), `apiKey` takes the BYOK path.
 function postImage(
   request: APIRequestContext,
   buffer: Buffer,
@@ -46,7 +48,7 @@ test('rejects an oversized upload with 413', async ({ request }) => {
 
 test('rejects an unsupported image type with 415', async ({ request }) => {
   const res = await postImage(request, tinyPngBuffer(), 'image/gif');
-  expect(res.status()).toBe(415);
+  expect(res.status()).toBe(UNSUPPORTED_TYPE_STATUS);
 });
 
 test('lets a normal-sized, allowed upload past the guards', async ({ request }) => {
@@ -108,8 +110,8 @@ test('throttles a managed token hammered in a burst', async ({ request }, testIn
   // starts inside that still-full window, so it would see the very first request
   // 429 and fail deterministically. Give each attempt its own token so every
   // attempt gets a fresh window. Local runs never retry, so testInfo.retry is
-  // always 0 there — they only ever need daycare-club.
-  const token = testInfo.retry === 0 ? 'daycare-club' : `daycare-club-retry${testInfo.retry}`;
+  // always 0 there — they only ever need the base code.
+  const token = managedAccessTokenForRetry(testInfo.retry);
 
   const statuses: number[] = [];
   for (let i = 0; i < GENERATE_LIMIT; i++) {
@@ -117,12 +119,14 @@ test('throttles a managed token hammered in a burst', async ({ request }, testIn
     statuses.push(res.status());
   }
 
-  // Requests within the limit clear the throttle (rejected only by the type guard).
-  //
-  // A 403 here means the token is not in ALLOWED_TOKENS_LIST — copy .env.example
-  // to .env so the test server has the token available.
-  expect(statuses[0], 'token rejected (403) — copy .env.example to .env').not.toBe(403);
-  expect(statuses).not.toContain(429);
+  // Requests within the limit clear the throttle, and the type guard is what
+  // rejects them — assert that rather than merely "not throttled", or the burst
+  // still passes when something upstream of the guard (a 403 from an allowlist
+  // that lost this code, a 500 from a server with no GEMINI_API_KEY) rejects
+  // every request for a reason this test isn't about.
+  expect(new Set(statuses), 'each in-limit request must reach the image-type guard').toEqual(
+    new Set([UNSUPPORTED_TYPE_STATUS])
+  );
 
   // The next request tips over the limit → 429 with a Retry-After.
   const res = await postImage(request, tinyPngBuffer(), 'image/gif', { token });

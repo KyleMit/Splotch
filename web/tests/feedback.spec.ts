@@ -100,8 +100,9 @@ test('the failure state explains itself, offers email, and keeps what was typed'
   // patched by use:enhance. With JS on, client state alone would keep the text,
   // so that assertion would pass without the server doing anything.
   //
-  // The test server runs without GITHUB_ISSUE_TOKEN, so a well-formed report
-  // gets the graceful "not available" 503 rather than opening a real issue.
+  // The web server is started with GITHUB_ISSUE_TOKEN blanked
+  // (playwright.shared.ts), so a well-formed report gets the graceful "not
+  // available" 503 rather than opening a real issue in the tracker.
   //
   // One test, three assertions, because they are one behaviour — what the
   // reporter is left with when the tracker can't be reached — and because the

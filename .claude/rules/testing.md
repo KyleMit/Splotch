@@ -23,8 +23,18 @@ paths:
   `test:ios`) are deliberately excluded (need an emulator/simulator + native toolchain).
 * Playwright builds the production artifact and serves it with `vite preview` by default; set
   `DEV_SERVER=1` to iterate against `vite dev` instead.
-* The admin specs rely on the Playwright web server starting with
-  `ADMIN_ACCESS_TOKEN=test-admin-secret` (`playwright.config.ts`).
+* The Playwright web server **declares** every private env var `web/src` reads, never inherits it —
+  `commonWebServer.env` in `playwright.shared.ts` supplies the known test credentials
+  (`ADMIN_ACCESS_TOKEN=test-admin-secret`, the managed access code), blanks `GITHUB_ISSUE_TOKEN` —
+  the value that forces `/api/report`'s graceful 503 — and sets `GEMINI_API_KEY` to a key that
+  cannot authenticate. That one is **non-blank on purpose**: with no key at all the managed-code
+  path 500s in `authorizeGenerationRequest` before the request guards the generate-image specs
+  assert. Vite gives that env precedence over `web/.env`, so a developer's real dotenv can't change
+  what a spec exercises or reaches. Add each new private var to that object (and to the one
+  `scripts/api-smoke.mjs` spawns its server with) — `scripts/tests/e2e-server-env.test.mjs` fails
+  when either is missing a name. `reuseExistingServer` can still hand the suite a server nobody here
+  started, so `tests/global-setup.ts` probes `/api/verify-access-code` for a harness-only access
+  code and aborts the run when the server on the port doesn't know it.
 * `tests/webkit-smoke.spec.ts` is a WebKit critical-path subset (boot, stroke, the two dialogs) run
   by the `webkit` Playwright project — CI installs WebKit so it always gates there; locally it only
   runs if the WebKit binary is installed. Keep that spec free of CDP and dev-harness dependencies.

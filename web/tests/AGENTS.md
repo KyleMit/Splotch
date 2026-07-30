@@ -14,8 +14,12 @@
 * Specs here are Playwright E2E (`*.spec.ts`). Unit tests are Vitest, colocated with source as
   `web/src/**/*.test.ts`. Pick the lowest layer that can catch the regression.
 * Playwright builds the production artifact and serves it with `vite preview` by default; set
-  `DEV_SERVER=1` to iterate against `vite dev` instead. The admin specs rely on the web server
-  starting with `ADMIN_ACCESS_TOKEN=test-admin-secret` (`playwright.config.ts`).
+  `DEV_SERVER=1` to iterate against `vite dev` instead. The server's private env is declared by
+  `commonWebServer.env` (`playwright.shared.ts`) — known test credentials in, `GITHUB_ISSUE_TOKEN`
+  blank and `GEMINI_API_KEY` set to a key that cannot authenticate (blank would 500 upstream of the
+  guards the specs assert) — and it wins over `web/.env`, so never write a spec that depends on an
+  ambient credential. `global-setup.ts` proves the server that answered the port is the one
+  Playwright started (`reuseExistingServer` can adopt another) and aborts the run otherwise.
 * `webkit-smoke.spec.ts` is the WebKit critical-path subset — the only spec the `webkit` project
   runs (the project joins the run only when the WebKit binary is installed; CI always installs it).
   Keep it free of CDP sessions, dev-harness routes, and Chromium-rasterizer-specific assertions —

@@ -393,15 +393,23 @@ let stop;
 try {
   console.log('Starting test dev server…');
   ({ stop } = spawnViteServer(PORT, {
+    // Every private env var the app reads is declared, never inherited from the
+    // ambient env or web/.env — a value passed here wins over any .env one, and a
+    // name left out is a credential this script's checks would run against for real.
+    // scripts/tests/e2e-server-env.test.mjs holds this list to the app's reads.
     env: {
       ADMIN_ACCESS_TOKEN: ADMIN_SECRET,
       ALLOWED_TOKENS_LIST: SEED_TOKENS,
-      // Force reporting unconfigured regardless of the ambient env or web/.env, so the
-      // report contract cases assert the 503 path and never create a real GitHub issue.
-      // An empty value passed here wins over any .env token (same precedence
-      // ADMIN_ACCESS_TOKEN above relies on). Removing this makes the smoke test open
-      // live issues for anyone with a GITHUB_ISSUE_TOKEN in their local env.
+      // A key Gemini refuses, so the generate-image cases stop at the request
+      // guards they are checking without spending anyone's quota. It has to be
+      // non-empty: with no key the managed-token path answers 500 from the
+      // authorization step and never reaches those guards.
+      GEMINI_API_KEY: 'not-a-usable-gemini-key',
+      // Reporting stays unconfigured so the report cases assert the graceful 503
+      // rather than opening a real GitHub issue.
       GITHUB_ISSUE_TOKEN: '',
+      // A repo that does not exist — blank falls back to the real one.
+      GITHUB_ISSUE_REPO: 'splotch-tests/nowhere',
     },
   }));
 

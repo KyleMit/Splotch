@@ -186,7 +186,7 @@
     "test:unit": "Unit tests, one-shot (Vitest, happy-dom)",
     "test:unit:watch": "Vitest watch mode",
     "test:asset-gen": "Asset-gen pipeline tests (Vitest, Node env): image-analysis helpers against committed fixtures plus mocked generator CLI workflows — no Gemini/network",
-    "test:scripts": "Repo-automation script tests (Vitest, Node env, scripts/tests/): audit-burndown state/runner seams, complete Ruler skill-fork replacement, and the Android emulator API-level drift invariant (every literal must match ANDROID_API_LEVEL in scripts/lib/android.mjs)",
+    "test:scripts": "Repo-automation script tests (Vitest, Node env, scripts/tests/): audit-burndown state/runner seams, complete Ruler skill-fork replacement, the Android emulator API-level drift invariant (every literal must match ANDROID_API_LEVEL in scripts/lib/android.mjs), and the throwaway-server env guard (both test servers must declare every private env var web/src reads instead of inheriting it from web/.env)",
     "test:e2e": "Playwright E2E tests, headless",
     "test:e2e:ui": "Playwright UI mode",
     "test:e2e:headed": "Playwright with browser visible, slowed down (SLOWMO=500)",
