@@ -103,9 +103,9 @@ describe('pointerWasResumed', () => {
     expect(pointerWasResumed(200, 100, minSide)).toBe(false); // jump == 100px
   });
 
-  it('scales the jump threshold with the canvas size', () => {
-    // Smaller canvas (minSide 500 → threshold 50px) decides on a jump that a
-    // larger canvas would treat as continuous contact.
+  it('scales the jump threshold with the paper size', () => {
+    // Smaller paper (minSide 500 → threshold 50px) decides on a jump that a
+    // larger paper would treat as continuous contact.
     expect(pointerWasResumed(200, 60, 500)).toBe(true);
     expect(pointerWasResumed(200, 60, 1000)).toBe(false);
   });

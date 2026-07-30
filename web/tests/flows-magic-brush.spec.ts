@@ -17,111 +17,53 @@ import { applyFarmPage, openBrushMenu, openDrawer, pickBrush } from './flows-har
 // before the sheet is ready holds its ops out of the paper until the fold-in
 // repaint fires, so on a starved parallel worker the reveal can finish painting
 // well past a few seconds. This is how long a *correct* stroke may legitimately
-// read unchanged before that repaint lands, so a per-attempt poll waits it out
-// instead of undoing a valid-but-slow stroke — see issue #498. The eraser pass
-// settles through the same path, so it shares the window.
-//
-// This window and MAGIC_REVEAL_MAX_ATTEMPTS are the only two bounds on a reveal:
-// how long one attempt waits, and how many attempts there are. A whole-loop
-// wall-clock budget was tried as a third and removed — see
-// MAGIC_REVEAL_MAX_ATTEMPTS.
-const REVEAL_ATTEMPT_SETTLE_MS = 3000;
+// read unchanged before that repaint lands, so the colour count is polled rather
+// than read once — see issue #498. The eraser pass settles through the same
+// path, so it shares the window.
+const REVEAL_SETTLE_MS = 3000;
 
-// A magic reveal spans many fill colours; a flat pen pass yields ~one bucket.
-const MAGIC_REVEAL_MIN_COLORS = 4;
+// Distinct colour buckets a reveal must reach to be a reveal rather than a flat
+// pen pass. An INCLUSIVE floor — the assertion below is
+// toBeGreaterThanOrEqual — so this constant is the decision boundary itself
+// rather than one below it.
+//
+// Both sides are measured, at the quantization distinctOpaqueColors uses (issue
+// #651): a flat pen pass lands at 1-3 buckets over 90 samples, and the narrowest
+// reveal — the post-clear rainbow, whose short stroke crosses the least of the
+// ramp — lands at 7 over 45. Those two leave a four-wide gap with no centre, so
+// the margins cannot be symmetric wherever the boundary goes. Accepting from 5
+// gives the reveal side two buckets (it would have to fall to 4 to false-red) and
+// the pen side one (it would have to reach 5 to false-pass).
+//
+// The spare bucket goes to the reveal side deliberately. That is the tail that
+// actually bit (#658), and its spread is real — a random gradient crossed by a
+// short stroke. A flat pass has no comparable spread: one colour is one bucket,
+// and only anti-aliasing rounding lifts it off 1, which is why the pen figure
+// held at 1-3 across 4, 5 and 6 bits alike.
+const MAGIC_REVEAL_MIN_COLORS = 5;
 
 // A correct reveal repaints essentially the whole band (measured 2845 left,
 // 2065 top); a wrong-mode pen pass leaves none of it, so this only has to clear
 // the anti-aliasing noise floor.
 const BAND_MIN_REVEALED_PX = 500;
 
-// Attempts, not wall clock, is the bound on a redraw loop. A wrong-mode stroke is
-// already committed, so a loop that keeps redrawing either recovers on the next
-// attempt — once the $effect has landed the mode is correct for good — or it is
-// stuck and no further attempt can change that. Wall clock cannot tell those
-// apart, so a `toPass({ timeout })` wrapper spends the entire budget on the stuck
-// case and fails anyway, and at 4 workers a job that long becomes the suite's
-// makespan (ADR-0078).
-//
-// Measured over 328 samples across 1/2/4/8 workers (issue #650): every success
-// landed by attempt 2 (317 on the first, 10 on the second), while the one
-// non-converging case ran 4 attempts and burned the full budget. Three leaves a
-// spare attempt above that tail, so a valid-but-slow reveal keeps its second
-// chance and the stuck case stops paying for it. Going higher was tried and
-// rejected: at a cap of 8, the one failure that survives on a cold server still
-// failed, every attempt running out the settle window (ADR-0078 consequences).
-//
-// This is the loop's ONLY bound, deliberately. A whole-loop wall-clock deadline
-// alongside it made the effective cap a function of machine speed — a slower
-// runner spends the budget inside earlier attempts and silently loses the third —
-// which is the deadline-exhaustion failure ADR-0078 §3 names, reintroduced inside
-// the fix for it. A between-attempts deadline also cannot do the one job that
-// would justify it: it never interrupts a long attempt, so the loop can run a
-// full attempt past it. Playwright's per-test timeout is the real outer ceiling,
-// and unlike a deadline here it can stop a hung attempt mid-flight.
-const MAGIC_REVEAL_MAX_ATTEMPTS = 3;
-
-// Retry a draw-and-check that a wrong brush mode can defeat. `what` names the
-// pass in the failure message; the underlying assertion rides along as `cause`.
-//
-// The message reports each attempt's duration rather than prescribing a fix,
-// because two different failures end up here and the durations are what separate
-// them. Attempts that each ran out the full REVEAL_ATTEMPT_SETTLE_MS mean the
-// reveal never rasterized at all — more attempts cannot help, and the two cold
-// failures measured for issue #650 were both this. Attempts that failed quickly
-// mean the engine stayed in the previous brush mode, which is what the retry is
-// for and what a cap raise could plausibly rescue.
-async function redrawUntilPasses(what: string, attempt: () => Promise<void>) {
-  const spans: number[] = [];
-  for (let tries = 1; ; tries++) {
-    const started = Date.now();
-    try {
-      await attempt();
-      return;
-    } catch (error) {
-      spans.push(Date.now() - started);
-      if (tries < MAGIC_REVEAL_MAX_ATTEMPTS) continue;
-      throw new Error(
-        `${what} never landed in ${tries} attempt(s), each taking ${spans.join('/')}ms. ` +
-          `Attempts at the full ${REVEAL_ATTEMPT_SETTLE_MS}ms settle window mean the reveal never ` +
-          `rasterized; quick ones mean the engine stayed in the previous brush mode.`,
-        { cause: error }
-      );
-    }
-  }
-}
-
 // Draw a magic-brush stroke and confirm its reveal actually landed (more than a
-// flat pen colour), retrying the whole stroke on a miss. The brush→engine
-// magic-mode toggle flows through a Svelte $effect (DrawingCanvas), so for a
-// spell after the button reads `aria-pressed=true` the engine can still be in
-// pen mode under parallel load — a stroke drawn then paints one flat pen colour
-// that never folds in (its pixels are already committed). Each missed attempt is
-// undone so exactly the one successful magic stroke remains on the canvas,
-// keeping any downstream undo/clear assertion valid. Use this instead of a bare
-// `draw` + a single colour-count poll whenever the assertion needs the reveal's
-// many colours (a canvas-fill count is immune — a pen stroke fills it too).
+// flat pen colour). Use this instead of a bare `draw` plus a canvas-fill count
+// whenever the assertion needs the reveal's many colours — a fill count is
+// immune, a pen stroke fills the canvas too.
 //
-// The two waits are distinct and both needed. A *correct* stroke can read flat
-// for a moment — a coloring-page fill sheet rasterizes async, holding the ops
-// out of the paper until the fold-in repaint (see REVEAL_ATTEMPT_SETTLE_MS) — so
-// a per-attempt poll waits the colours out before judging. Only a stroke that
-// stays flat past that inner window is a real pen-mode miss; undo it and let the
-// outer retry redraw. Reading the colour count once instead would undo those
-// valid-but-slow strokes and churn draw→undo→draw through every attempt.
+// The stroke is drawn once. Two things a redraw used to rescue are gone at the
+// source (ADR-0080): pickBrush() returns only once the ENGINE holds the brush, so
+// a stroke can no longer commit under the previous one, and `draw` paces its
+// samples so the engine no longer reads the stroke as a lifted finger and paints
+// a stub of it. Polling stays for a third reason those never covered — a correct
+// stroke reads flat until an async fill sheet decodes and repaints (see
+// REVEAL_SETTLE_MS).
 async function drawMagicReveal(page: Page, points: { x: number; y: number }[]) {
-  await redrawUntilPasses('magic reveal', async () => {
-    await draw(page, points);
-    try {
-      await expect
-        .poll(() => distinctOpaqueColors(page), { timeout: REVEAL_ATTEMPT_SETTLE_MS })
-        .toBeGreaterThan(MAGIC_REVEAL_MIN_COLORS);
-    } catch {
-      await page.locator('#undoButton').click();
-      await expect.poll(() => distinctOpaqueColors(page)).toBe(0);
-      throw new Error('magic reveal came up flat (engine still in pen mode)');
-    }
-  });
+  await draw(page, points);
+  await expect
+    .poll(() => distinctOpaqueColors(page), { timeout: REVEAL_SETTLE_MS })
+    .toBeGreaterThanOrEqual(MAGIC_REVEAL_MIN_COLORS);
 }
 
 /** Perform the drag-to-clear gesture: pull the clear button past its accept
@@ -145,8 +87,16 @@ async function clearViaGesture(page: Page) {
 
 // Distinct strongly-opaque canvas colors, quantized to `bits` per channel. A
 // solid stroke yields ~one bucket; a magic reveal spanning several fill regions
-// yields many — the signal that the brush painted the sheet, not a flat color.
-function distinctOpaqueColors(page: Page, bits = 4): Promise<number> {
+// — or a slice of the rainbow — yields many.
+//
+// Six bits (buckets 4 wide) rather than a coarser grid because a rainbow reveal
+// can cross only a narrow slice of the ramp: the post-clear stroke measured 3-4
+// buckets at 4 bits, overlapping MAGIC_REVEAL_MIN_COLORS and failing a few
+// percent of randomly generated gradients even though the reveal had painted
+// correctly (issue #658). Finer quantization costs nothing on the other side —
+// a flat pen pass measured 1-3 buckets at 4, 5 and 6 bits alike, since one
+// colour is one bucket however narrow the buckets are.
+function distinctOpaqueColors(page: Page, bits = 6): Promise<number> {
   return page.evaluate((b) => {
     const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
     const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
@@ -448,28 +398,21 @@ test('the magic brush paints the letterbox margin by extending the edge colour',
   await pickBrush(page, '#magicBrushButton');
 
   // The margin reveals the extended edge colour instead of staying transparent.
-  // The stroke is redrawn rather than merely polled: magic mode reaches the
-  // engine through a Svelte $effect, so a stroke dispatched too early commits as
-  // a flat pen pass, and no amount of polling recovers a stroke that already
-  // painted in the wrong mode. Accumulating strokes is harmless here — nothing
-  // downstream depends on the canvas holding exactly one.
-  await redrawUntilPasses('left-band reveal', async () => {
-    // Hug the far-left edge, well inside the letterbox band, sweeping top to bottom.
-    await draw(page, [
-      { x: 3, y: 40 },
-      { x: 3, y: 200 },
-      { x: 3, y: 360 },
-      { x: 3, y: 520 },
-    ]);
-    // Non-ink pixels, not opacity, is the mode signal — see bandNonInkPixels.
-    // Polling lets a valid-but-slow reveal settle; a stroke still reading as ink
-    // past that window really did commit in pen mode, and only a redraw fixes it.
-    await expect
-      .poll(() => bandNonInkPixels(page, 'left', 0.04, TEST_PALETTE.purple), {
-        timeout: REVEAL_ATTEMPT_SETTLE_MS,
-      })
-      .toBeGreaterThan(BAND_MIN_REVEALED_PX);
-  });
+  // Hug the far-left edge, well inside the letterbox band, sweeping top to bottom.
+  await draw(page, [
+    { x: 3, y: 40 },
+    { x: 3, y: 200 },
+    { x: 3, y: 360 },
+    { x: 3, y: 520 },
+  ]);
+  // Non-ink pixels, not opacity, is the mode signal — see bandNonInkPixels.
+  // Polling lets a valid-but-slow reveal settle; the brush mode itself needs no
+  // retry, since pickBrush() returned only once the engine held it (ADR-0080).
+  await expect
+    .poll(() => bandNonInkPixels(page, 'left', 0.04, TEST_PALETTE.purple), {
+      timeout: REVEAL_SETTLE_MS,
+    })
+    .toBeGreaterThan(BAND_MIN_REVEALED_PX);
 });
 
 // The case the user hit: after a rotation-with-ink the paper LOCKS (ADR-0050) and is
@@ -499,36 +442,29 @@ test('the magic brush paints the rotation-lock letterbox margin', async ({ page 
   // to reject.
   await expect(swatch(page, TEST_PALETTE.purple)).toHaveClass(/active/);
   await pickBrush(page, '#magicBrushButton');
-  // Redrawn rather than polled for the same reason as the left-band case above:
-  // a stroke that commits before the engine leaves pen mode can only be fixed by
-  // drawing again. This margin is reachable by a pen too (see the note above), so
-  // the colour count is doing the discriminating.
-  await redrawUntilPasses('top-band reveal', async () => {
-    // Sweep along the very top of the canvas — inside the rotation-lock top margin.
-    await draw(page, [
-      { x: 40, y: 6 },
-      { x: 240, y: 6 },
-      { x: 440, y: 6 },
-      { x: 660, y: 6 },
-    ]);
-    // Non-ink pixels, not opacity, is the mode signal — see bandNonInkPixels.
-    // Polling lets a valid-but-slow reveal settle; a stroke still reading as ink
-    // past that window really did commit in pen mode, and only a redraw fixes it.
-    await expect
-      .poll(() => bandNonInkPixels(page, 'top', 0.05, TEST_PALETTE.purple), {
-        timeout: REVEAL_ATTEMPT_SETTLE_MS,
-      })
-      .toBeGreaterThan(BAND_MIN_REVEALED_PX);
-  });
+  // Sweep along the very top of the canvas — inside the rotation-lock top margin.
+  await draw(page, [
+    { x: 40, y: 6 },
+    { x: 240, y: 6 },
+    { x: 440, y: 6 },
+    { x: 660, y: 6 },
+  ]);
+  // Non-ink pixels, not opacity, is the mode signal — see bandNonInkPixels. This
+  // margin is reachable by a pen too, so that discrimination is load-bearing here.
+  await expect
+    .poll(() => bandNonInkPixels(page, 'top', 0.05, TEST_PALETTE.purple), {
+      timeout: REVEAL_SETTLE_MS,
+    })
+    .toBeGreaterThan(BAND_MIN_REVEALED_PX);
 });
 
 test('the magic brush reveals a rainbow gradient when no coloring page is applied', async ({
   page,
 }) => {
-  // Two drawMagicReveal calls, each bounded by MAGIC_REVEAL_MAX_ATTEMPTS, can
-  // together approach the default 30s per-test budget under load — the clear
-  // gesture and asserts still need room. test.slow() triples it so a worst-case
-  // pair of slow reveals can't trip a test-level timeout.
+  // Two reveals, each polled for up to REVEAL_SETTLE_MS, plus the clear gesture
+  // and its asserts: comfortable alone, but the measured 4x latency inflation on
+  // a saturated box (ADR-0078 §2) puts that inside the default 30s per-test
+  // budget. test.slow() triples the budget rather than shortening the waits.
   test.slow();
   await gotoApp(page);
   await openDrawer(page);
@@ -572,9 +508,9 @@ function opaqueCount(page: Page): Promise<number> {
 }
 
 test('the eraser removes magic-brush strokes and later colors override them', async ({ page }) => {
-  // Two bounded redraw loops compose here — the reveal, then the eraser pass,
-  // which lags through the same $effect — so a worst case would reach the default
-  // per-test budget with the setup still to pay for.
+  // A page apply, a reveal, and an eraser pass — each polled for up to
+  // REVEAL_SETTLE_MS — reach the default per-test budget once contention inflates
+  // them (ADR-0078 §2), so buy budget rather than shorten the waits.
   test.slow();
   await gotoApp(page);
   await openDrawer(page);
@@ -594,16 +530,14 @@ test('the eraser removes magic-brush strokes and later colors override them', as
   // Eraser wipes magic pixels like any other — dragging back along the stroke
   // removes most of it.
   await pickBrush(page, '#eraserButton');
-  // Eraser mode reaches the engine through the same Svelte $effect as the magic
-  // toggle, so a stroke drawn too early is still a magic pass and ADDS ink
-  // instead of removing it. That stroke is already committed, so redraw rather
-  // than poll a count that will never fall on its own.
-  await redrawUntilPasses('eraser pass', async () => {
-    await draw(page, line);
-    await expect
-      .poll(() => opaqueCount(page), { timeout: REVEAL_ATTEMPT_SETTLE_MS })
-      .toBeLessThan(revealed / 2);
-  });
+  // An eraser stroke that commits while the engine still holds the magic brush
+  // ADDS ink instead of removing it, and the count then never falls — so this
+  // waits on the engine's own mode rather than the button (pickBrush, ADR-0080).
+  // The poll that remains is for the erase to land, not for the mode.
+  await draw(page, line);
+  await expect
+    .poll(() => opaqueCount(page), { timeout: REVEAL_SETTLE_MS })
+    .toBeLessThan(revealed / 2);
 
   // A solid color drawn afterward overrides the reveal: paint magic, then a
   // single palette color on top, and confirm that flat color is present.

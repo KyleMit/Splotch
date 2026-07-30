@@ -15,7 +15,7 @@ import { dragStroke } from './helpers';
 /** Drag a stroke through the given canvas-space points using real mouse input. */
 export async function drawStroke(
   page: Page,
-  box: { x: number; y: number } | null,
+  box: { x: number; y: number; width: number; height: number } | null,
   points: { x: number; y: number }[]
 ) {
   await dragStroke(page, box, points);

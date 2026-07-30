@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 import { COLOR_FAMILIES } from '../src/lib/hexPickerLayout';
+import { POINTER_RESUME_JUMP_RATIO } from '../src/lib/drawing/strokeMath';
 
 // Shared E2E helpers used across specs. Keep this module WebKit-portable — no
 // CDP sessions or dev-harness routes — because webkit-smoke.spec.ts imports it
@@ -97,17 +98,43 @@ export async function openParentCenter(page: Page) {
   return modal;
 }
 
+// How much of the engine's dropped-pointer jump threshold one dispatched sample
+// may cover. The engine reads "far from the previous sample AND more than
+// POINTER_RESUME_GAP_MS after it" as a finger that lifted and set down
+// (strokeMath.pointerWasResumed), restarts the stroke at the new point, and never
+// paints the span between the two — so a four-point sweep can come back as its
+// start dot alone (measured 132 of 2314 opaque px at 8 workers, revealing one
+// flat fill region). A starved worker spends 100ms between two moves whatever a
+// spec does, so the jump is the only half of that predicate a test can hold:
+// subdivide every hop into samples inside the threshold.
+//
+// The fraction is sized for the worst mapping rather than the nominal one. The
+// threshold is a fraction of the PAPER's shorter side, while this paces in CSS px
+// across the canvas: under a rotation lock the paper is contain-fit into the
+// canvas, so one CSS hop is a proportionally LARGER jump in paper space (÷0.6 in
+// the rotation specs' geometry). Two fifths keeps even that inside the threshold.
+const RESUME_JUMP_BUDGET_FRACTION = 0.4;
+
 /** Drag a stroke through the given canvas-space points using real mouse input. */
 export async function dragStroke(
   page: Page,
-  box: { x: number; y: number } | null,
+  box: { x: number; y: number; width: number; height: number } | null,
   points: { x: number; y: number }[]
 ) {
   if (!box) throw new Error('canvas has no bounding box');
   if (points.length === 0) throw new Error('cannot draw a stroke without points');
+  const hopBudgetPx =
+    Math.min(box.width, box.height) * POINTER_RESUME_JUMP_RATIO * RESUME_JUMP_BUDGET_FRACTION;
   await page.mouse.move(box.x + points[0].x, box.y + points[0].y);
   await page.mouse.down();
-  for (const p of points.slice(1)) await page.mouse.move(box.x + p.x, box.y + p.y);
+  let from = points[0];
+  for (const p of points.slice(1)) {
+    const hop = Math.hypot(p.x - from.x, p.y - from.y);
+    await page.mouse.move(box.x + p.x, box.y + p.y, {
+      steps: Math.max(1, Math.ceil(hop / hopBudgetPx)),
+    });
+    from = p;
+  }
   await page.mouse.up();
 }
 
