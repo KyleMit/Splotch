@@ -23,28 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Readability] `aiKey.svelte.ts` carries the `.svelte.ts` suffix but contains no runes
-
-**File(s):** `web/src/lib/state/aiKey.svelte.ts` (whole file) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The `.svelte.ts` suffix signals "this module uses Svelte 5 runes and needs the Svelte compiler."
-`aiKey.svelte.ts` declares no `$state`/`$derived`/`$effect` anywhere — it only *mutates* the
-reactive `settings` object imported from `settings.svelte.ts`, which works from any plain module.
-The suffix misleads a reader into hunting for reactive state that isn't there, and needlessly routes
-the file through the Svelte compile step. The repo already has precedent for rune-free state modules
-without the suffix: `web/src/lib/state/books.ts`.
-
-#### Proposed solution
-
-Rename to `web/src/lib/state/aiKey.ts` (and `aiKey.test.ts`), updating the two importers
-(`lib/boot/persistedState.ts` line 1, `lib/components/parent/AiKeyManager.svelte` line 13). Gotcha:
-verify no tooling globs on `state/*.svelte.ts` specifically (test config uses generic `*.test.ts`,
-so this should be safe).
-
 ### [Testing] "Never mutates UI state" test is tautological and drags a reactive state module into a node-env pure test
 
 **File(s):** `web/src/lib/drawing/aiImageResponse.test.ts` (lines 1–4, 48–60) @ 9ae62ff1

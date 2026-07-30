@@ -20,7 +20,7 @@ vi.mock('../idb', () => ({
 }));
 
 import { settings } from './settings.svelte';
-import { createAiKeyWriteCoordinator, hydrateApiKey, setAiUserApiKey } from './aiKey.svelte';
+import { createAiKeyWriteCoordinator, hydrateApiKey, setAiUserApiKey } from './aiKey';
 import { saveApiKey } from '../secureStorage';
 import { requestPersistentStorage } from '../idb';
 import { STORAGE_KEYS } from '../storage';
