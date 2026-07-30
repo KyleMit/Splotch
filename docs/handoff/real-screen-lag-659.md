@@ -111,6 +111,87 @@ A phase ends on banked **finger-down** time, so phases stay comparable under a h
   phase — and with it the end hitch, which is the rapid-repeated-strokes case.
 * **Idle bail-out (60 s with ≥25% banked)** so an interrupted or unattended run still publishes.
 
+## FINDINGS from the first hand-drawn capture (2026-07-29, iPad13,8, iPadOS 26.5)
+
+Capture: 6 phases × 15 s of banked finger-down time, single finger, Apple Pencil/finger on the real
+app. 10281 frames, 11725 pointer events, 11976 engine measures.
+
+### 1. Safari gives web content 60 Hz on a 120 Hz ProMotion iPad Pro
+
+Measured directly (`perf-profiles/refresh-ceiling.mjs`, throwaway): a bare rAF sampler reports
+**16–17 ms both idle and while animating**. So `dt p50 = 17 ms` during drawing is **the ceiling, not
+a failure**, and any 8.33 ms frame budget reports a perfectly-paced capture as 64% late — which is
+exactly what the first version of the stats module did. Frame budgets are now derived per capture
+(`observedFrameIntervalMs`, the p10 of observed deltas).
+
+**This also bears on ADR-0066's 8.3 ms commit-hitch gate**: on Safari/iPad the presentable frame is
+16.7 ms, so the gate is stricter than the platform.
+
+### 2. The lag is rAF/render starvation, not slow JS and not lost input
+
+The decisive measurement (`perf-profiles/burst-anatomy.mjs`, throwaway — fold into the stats
+module): inside the worst frames, across every phase,
+
+|                                                 | value                          | meaning                                                |
+| ----------------------------------------------- | ------------------------------ | ------------------------------------------------------ |
+| `mean handle gap`                               | **8.3 ms**, everywhere         | moves are handled at 120 Hz, evenly — no backlog flush |
+| queue delay, first *and* last move in the frame | **5–7 ms**, constant           | input is not queuing up                                |
+| `handled span` vs `dt`                          | ~equal (e.g. 1417 of 1422 ms)  | handlers ran throughout the stall                      |
+| engine.* inside the frame                       | **0–5 ms** total               | marked engine work is absent from the stall            |
+| worst `dt`                                      | 335 / 693 / 1164 / **1422** ms | frames simply stop being produced                      |
+
+So: **`pointermove` arrives every 8.3 ms and is handled within 6 ms while `requestAnimationFrame`
+does not fire for hundreds of milliseconds.** The main thread is keeping up; frame *production* is
+not. That is precisely the reported symptom — "it freezes, then catches up in a jump": every stroke
+point is drawn into the canvas on time, and none of it reaches the screen until the compositor
+catches up.
+
+Corollary: rAF deltas measure **render starvation** here, not JS blocking. Do not read them as "long
+tasks".
+
+### 3. What the reporter sees (their words, 2026-07-29)
+
+* "It freezes, then catches up in a jump" → the stalls, not steady latency. Read `stall %`, `dt max`
+  and `lost ms`; **paint p95 is a red herring** (and is confounded — see below).
+* "Worse the more ink is already on the page" → something scaling with accumulated content.
+* "Takes a long time from finger up for the halo to go away and the app to snap back" → the
+  finger-lift path. The halo is removed by a Svelte state write on pointerup.
+* Little multi-finger use — single-finger is the case to chase first.
+
+### 4. The hand-drawn A/B cannot attribute anything — phases are not comparable
+
+Stroke counts per phase ran 7 / 17 / 20 / 21 / 25 / 45 and moves-per-frame 1.9–4.2, because a human
+draws differently each time. The suppression deltas come out non-monotonic (suppressing halos looked
+*worse* than baseline), which is noise, not signal. The worst phase (`page-no-halos`, 1422 ms stall)
+is also the one with 41 short strokes — i.e. it reproduces the *rapid short strokes* case rather
+than telling us anything about halos.
+
+**Attribution therefore requires the synthetic driver** (identical input per phase). The hand
+capture's value is: it proves the harness, establishes the 60 Hz ceiling, and rules out JS and input
+delivery.
+
+### 5. Ruled out
+
+* **Input loss / coalescing** — 0 adopted strokes, no within-stroke gaps beyond 9 ms p95,
+  `getCoalescedEvents()` returns 0 on this device.
+* **Input queue delay** — flat 6 ms p50/p95 in every phase, including inside 1.4 s stalls.
+* **Marked engine work** — `engine.draw` mean ~0.06 ms, `commit max` 1–3 ms, `snapshot`/`fold` ≤ 1
+  ms.
+* **The encode tier** — `engine.encode` fires once per commit but its loop finds nothing cold (count
+  24, total 0 ms), confirming #655's finding that the byte budget is never exceeded here. Not the
+  cause, and #494's decode-stall concern is unreachable at this depth.
+
+### 6. Leading hypothesis: GPU/compositor memory pressure from undo-history rasters
+
+The canvas backing store is **2564 × 1830 = 4.7 Mpx (~19 MB)** at dpr 2. Every stroke pushes a
+dirty-rect patch raster onto the undo stack (ADR-0069/0074), and a long sweeping stroke's dirty rect
+approaches the whole paper. 20–45 strokes of that is hundreds of MB of canvas-backed textures, which
+would starve the compositor and scales with accumulated ink — matching "worse the more ink".
+
+**Next test:** sample `getUndoDebug()` (already an exported profiling seam in `engine.ts`) per
+stroke on `/` and correlate `rasterBytes`/`snapshots` against stall onset. That needs the seam
+exposed on the real route, which is the one dev seam worth adding.
+
 ## Unverified assumptions
 
 * Synthetic (rAF-paced `dispatchEvent`) input on `/` reproduces enough of the lag to be worth

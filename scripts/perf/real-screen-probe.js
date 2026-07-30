@@ -217,6 +217,220 @@
   };
 
   const paperActive = () => !paperView.hasAttribute('hidden');
+  // For a page phase the ART has to be showing, not merely selected:
+  // DrawingCanvas hides the <img> until the new file decodes, and the blend cost
+  // being measured does not exist until it paints. Gating on the wrapper alone
+  // would start a phase's clock during the decode.
+  const pageArtShowing = () => {
+    const img = document.getElementById(COLORING_OVERLAY_ID);
+    return !!img && !!img.getAttribute('src') && !img.hasAttribute('hidden');
+  };
+
+  // ── synthetic hand (unattended mode) ──────────────────────────────────────
+  // Real finger input is the fidelity reference, but it needs a human awake.
+  // The synthetic hand dispatches ONE pointermove per frame — the rate WebKit
+  // coalesces real touch input down to — from inside the frame loop. That is the
+  // whole difference from `ipad-console-driver.js`, which pushes an entire stroke
+  // through in one blocking tick and makes every frame duration in a recording
+  // meaningless (its own analyzer says so).
+  //
+  // What synthetic input CANNOT reproduce, and must be read from a hand-drawn
+  // run instead: touch coalescing, ProMotion's input pacing, and queue delay — a
+  // constructed event's timeStamp is set when the probe builds it, so
+  // `at - stamp` is ~0 by construction.
+  const driveShape = window.__probeDrive ?? null;
+  const SYNTHETIC_POINTER_ID = 1;
+  const LONG_STROKE_MS = 4_000;
+  const LONG_STROKE_GAP_MS = 150;
+  const LONG_STROKE_WAVES = 6;
+  const LONG_STROKE_AMPLITUDE = 0.35;
+  const SHORT_STROKE_MS = 250;
+  const SHORT_STROKE_GAP_MS = 90;
+  const SHORT_STROKE_DAB_PX = 90;
+  // One long stroke then a burst of short ones: the two shapes the lag report
+  // names, alternating inside every phase so one phase covers both.
+  const SHORTS_PER_BURST = 8;
+  const STROKE_INSET = 0.08;
+  const UI_SETTLE_MS = 350;
+  const OVERLAY_DECODE_MS = 1_200;
+
+  const DRIVE_SHAPES = {
+    long: [{ kind: 'long', strokeMs: LONG_STROKE_MS, gapMs: LONG_STROKE_GAP_MS }],
+    short: [{ kind: 'short', strokeMs: SHORT_STROKE_MS, gapMs: SHORT_STROKE_GAP_MS }],
+    mixed: [
+      { kind: 'long', strokeMs: LONG_STROKE_MS, gapMs: LONG_STROKE_GAP_MS },
+      ...Array.from({ length: SHORTS_PER_BURST }, () => ({
+        kind: 'short',
+        strokeMs: SHORT_STROKE_MS,
+        gapMs: SHORT_STROKE_GAP_MS,
+      })),
+    ],
+  };
+  const driveCycle = driveShape ? DRIVE_SHAPES[driveShape] : null;
+  if (driveShape && !driveCycle) {
+    console.error(
+      `Unknown __probeDrive "${driveShape}" — known: ${Object.keys(DRIVE_SHAPES).join(', ')}`
+    );
+    return;
+  }
+
+  // Deterministic, so two runs of the same shape draw the same strokes and their
+  // numbers are comparable.
+  let randomState = 1;
+  const nextRandom = () => {
+    randomState = (randomState * 1103515245 + 12345) % 2147483648;
+    return randomState / 2147483648;
+  };
+
+  const drawArea = () => {
+    const box = (paperActive() ? paperView : canvas).getBoundingClientRect();
+    return {
+      x: box.left + box.width * STROKE_INSET,
+      y: box.top + box.height * STROKE_INSET,
+      w: box.width * (1 - 2 * STROKE_INSET),
+      h: box.height * (1 - 2 * STROKE_INSET),
+    };
+  };
+
+  const strokePoint = (progress, stroke) => {
+    const { area } = stroke;
+    if (stroke.kind === 'short') {
+      return {
+        x:
+          area.x + area.w * stroke.originX + Math.cos(progress * Math.PI * 2) * SHORT_STROKE_DAB_PX,
+        y: area.y + area.h * stroke.originY + progress * SHORT_STROKE_DAB_PX,
+      };
+    }
+    return {
+      x: area.x + area.w * progress,
+      y:
+        area.y +
+        area.h *
+          (0.5 +
+            LONG_STROKE_AMPLITUDE * Math.sin(progress * Math.PI * LONG_STROKE_WAVES + stroke.seed)),
+    };
+  };
+
+  const dispatchPointer = (type, x, y, buttons) => {
+    canvas.dispatchEvent(
+      new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        view: window,
+        pointerId: SYNTHETIC_POINTER_ID,
+        pointerType: 'touch',
+        isPrimary: true,
+        buttons,
+        pressure: buttons ? 0.5 : 0,
+        clientX: x,
+        clientY: y,
+        width: 30,
+        height: 30,
+      })
+    );
+  };
+
+  // A synthetic pointerId has no real capture target, so the engine's
+  // setPointerCapture would throw inside its own pointerdown handler and abort
+  // the stroke it was starting. Wrapped rather than replaced, so real input from
+  // a hand still gets real capture.
+  const capturedMethods = [];
+  if (driveCycle) {
+    for (const name of ['setPointerCapture', 'releasePointerCapture']) {
+      const original = canvas[name];
+      capturedMethods.push([name, original]);
+      canvas[name] = function guarded(id) {
+        try {
+          return original.call(this, id);
+        } catch {
+          return undefined;
+        }
+      };
+    }
+  }
+
+  const clickSelector = (selector) => {
+    const el = document.querySelector(selector);
+    el?.click();
+    return !!el;
+  };
+  const settle = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  // Drives the app's own coloring-book UI by selector rather than reaching into
+  // its state, so the synthetic path exercises what a child's tap does — and the
+  // app needs no probe-only seam to make a page loadable.
+  let paperFixInFlight = false;
+  async function fixPaper(need) {
+    paperFixInFlight = true;
+    try {
+      if (!clickSelector(COLORING_BOOK_BUTTON)) {
+        console.error(`No ${COLORING_BOOK_BUTTON} — cannot set up paper unattended.`);
+        return;
+      }
+      await settle(UI_SETTLE_MS);
+      if (need === 'blank') {
+        clickSelector(CLEAR_PAGE_BUTTON);
+      } else if (clickSelector(BOOK_TILE)) {
+        await settle(UI_SETTLE_MS);
+        clickSelector(PAGE_TILE);
+      }
+      await settle(OVERLAY_DECODE_MS);
+    } finally {
+      paperFixInFlight = false;
+    }
+  }
+
+  let hand = null;
+  let handStep = 0;
+  let nextStrokeAt = 0;
+
+  const startHandStroke = (ts) => {
+    const shape = driveCycle[handStep % driveCycle.length];
+    handStep++;
+    hand = {
+      ...shape,
+      startedAt: ts,
+      area: drawArea(),
+      seed: nextRandom() * Math.PI * 2,
+      originX: 0.15 + nextRandom() * 0.7,
+      originY: 0.15 + nextRandom() * 0.7,
+    };
+    const { x, y } = strokePoint(0, hand);
+    dispatchPointer('pointerdown', x, y, 1);
+  };
+
+  const endHandStroke = (ts) => {
+    const { x, y } = strokePoint(1, hand);
+    dispatchPointer('pointerup', x, y, 0);
+    nextStrokeAt = ts + hand.gapMs;
+    hand = null;
+  };
+
+  const stepHand = (ts) => {
+    if (paperFixInFlight) return;
+    if (!paperReady()) {
+      fixPaper(phase.paper);
+      return;
+    }
+    if (!hand) {
+      if (ts >= nextStrokeAt) startHandStroke(ts);
+      return;
+    }
+    const progress = (ts - hand.startedAt) / hand.strokeMs;
+    if (progress >= 1) {
+      endHandStroke(ts);
+      return;
+    }
+    const { x, y } = strokePoint(progress, hand);
+    dispatchPointer('pointermove', x, y, 1);
+  };
+
+  // A stroke in flight when a phase ends would otherwise keep painting into the
+  // next phase's window under the previous phase's suppressions.
+  const liftHand = () => {
+    if (hand) endHandStroke(performance.now());
+  };
 
   // ── HUD ───────────────────────────────────────────────────────────────────
   // The operator is holding the iPad, not reading the Mac's terminal, so the
