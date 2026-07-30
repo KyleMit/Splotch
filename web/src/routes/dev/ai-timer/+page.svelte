@@ -9,13 +9,14 @@
     closeAiResult,
   } from '$lib/state/aiGeneration.svelte';
   import { AI_SAFETY_REFUSAL_MESSAGE, AI_TIMEOUT_MESSAGE } from '$lib/drawing/aiImage';
+  import { AI_TIMER_ARTIFACTS } from './artifactNames';
 
   // Sample artifacts stand in for a real generation: the child's drawing (shown
   // blurred behind the dial) and the finished "AI" image that's revealed. They
   // live under tests/ so the Playwright spec can share them, and are streamed by
   // the sibling dev-only endpoint — so this route never reaches out to Gemini.
-  const drawingInputUrl = '/dev/ai-timer/artifacts/drawing-input.jpeg';
-  const aiOutputUrl = '/dev/ai-timer/artifacts/ai-output.jpeg';
+  const drawingInputUrl = `/dev/ai-timer/artifacts/${AI_TIMER_ARTIFACTS[0]}`;
+  const aiOutputUrl = `/dev/ai-timer/artifacts/${AI_TIMER_ARTIFACTS[1]}`;
 
   // We drive AiImageResult.svelte through the exact ui.svelte.ts seam the real
   // generate flow uses (see src/lib/drawing/aiImage.ts): open in the loading
@@ -39,14 +40,14 @@
     clearPending();
     closeAiResult();
     runId = startAiGeneration(drawingInputUrl);
-    pending = setTimeout(() => finishAiGeneration(runId, aiOutputUrl), ms);
+    pending = setTimeout(() => finishAiGeneration(runId, aiOutputUrl, 'image/jpeg'), ms);
   }
 
   // Skip the wait and reveal immediately.
   function finishNow() {
     clearPending();
     if (!ui.aiResultOpen) runId = startAiGeneration(drawingInputUrl);
-    finishAiGeneration(runId, aiOutputUrl);
+    finishAiGeneration(runId, aiOutputUrl, 'image/jpeg');
   }
 
   // Scaffold each real failure mode so the error UI can be reviewed without a

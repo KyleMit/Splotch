@@ -2,11 +2,12 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 
-// Issue #461: the save pipeline (the export compositor, screenshot/polaroid,
-// folder save) loads on demand at save time. Nothing else stops a future
-// static import from silently merging it back onto the startup critical path,
-// so this spec pins the prerendered `/` page's modulepreload list: no chunk
-// the browser must fetch before hydration may contain the save modules' code.
+// Issue #461: the save pipeline (the export compositor, screenshot persistence,
+// folder save, polaroid animation) loads on demand at save time. Nothing else
+// stops a future static import from silently merging it back onto the startup
+// critical path, so this spec pins the prerendered `/` page's modulepreload list:
+// no chunk the browser must fetch before hydration may contain the save modules'
+// code.
 //
 // It reads the build output on disk — the default Playwright web server runs
 // `vite build` first, so the output is fresh. Skipped under DEV_SERVER=1 (the
@@ -19,8 +20,9 @@ const clientDir = `${outputDir}/client`;
 // One minification-proof string literal per lazily-loaded save module.
 const SAVE_MODULE_MARKERS: Record<string, string> = {
   'exportDrawing.ts': 'handmade-paper',
-  'screenshot.ts': 'polaroid-flash',
+  'screenshot.ts': 'allowPrompt',
   'folderSave.ts': 'Persisting the save folder failed:',
+  'polaroidAnimation.ts': 'polaroid-flash',
 };
 
 test.skip(!!process.env.DEV_SERVER, 'guards the production build output');

@@ -10,6 +10,7 @@
     type EngineViewState,
   } from '$lib/drawing/engine';
   import { pushToolStateToEngine } from '$lib/drawing/earlyBoot';
+  import { COLORING_OVERLAY_ID } from '$lib/drawing/overlay';
   import { viewMatrix } from '$lib/drawing/paperView';
   import { layout } from '$lib/state/layout.svelte';
   import { colors } from '$lib/state/colors.svelte';
@@ -260,7 +261,7 @@
     <img
       class="coloring-overlay"
       class:overlay-ready={!!displayedOverlayUrl}
-      id="coloringOverlay"
+      id={COLORING_OVERLAY_ID}
       src={displayedOverlayUrl ?? ''}
       alt=""
       hidden={!overlayUrl()}

@@ -15,6 +15,7 @@ import { exportCanvasBlob } from './engine';
 import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 import { getActiveOverlayImage } from './overlay';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
+import { AI_IMAGE_BASENAME, DRAWING_BASENAME } from '$lib/saveNaming';
 import type { StyleName } from '$lib/ai/styles';
 
 export const AI_SAFETY_REFUSAL_MESSAGE = "Let's try drawing something else!";
@@ -91,10 +92,8 @@ async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, runId: number) {
   // result modal, so it must degrade like any other silent save failure rather
   // than bubbling into generateAiImage's error UI.
   let saveImageBlob: (typeof import('./screenshot'))['saveImageBlob'];
-  let AI_IMAGE_BASENAME: string;
-  let DRAWING_BASENAME: string;
   try {
-    ({ saveImageBlob, AI_IMAGE_BASENAME, DRAWING_BASENAME } = await import('./screenshot'));
+    ({ saveImageBlob } = await import('./screenshot'));
   } catch (err) {
     console.error('Auto-save failed:', err);
     return;
@@ -164,20 +163,19 @@ function buildRequest(
 }
 
 // Drive the run's terminal UI transition from the parsed response: fail on any of
-// the three error kinds, or commit the image. Returns 'committed' only when the
-// image landed and the run still owns the UI, so the caller knows whether to
-// auto-save.
-function applyResponse(runId: number, response: AiImageResponse): 'committed' | 'failed' {
+// the three error kinds, or commit the image. Returns the committed blob only when
+// the image landed and the run still owns the UI, proving it is safe to auto-save.
+function applyResponse(runId: number, response: AiImageResponse): { committedBlob: Blob } | null {
   switch (response.kind) {
     case 'safety':
       failAiGeneration(runId, AI_SAFETY_REFUSAL_MESSAGE, 'safety');
-      return 'failed';
+      return null;
     case 'throttled':
       failAiGeneration(runId, undefined, 'retry');
       console.error(
         `AI image request throttled (retry after ${response.retryAfter}s): ${response.detail}`
       );
-      return 'failed';
+      return null;
     case 'error':
       // A 5xx is transient — an upstream Gemini failure or the server aborting
       // a too-slow call under Netlify's 26s ceiling (ADR-0063) — so offer the
@@ -190,9 +188,11 @@ function applyResponse(runId: number, response: AiImageResponse): 'committed' | 
         undefined,
         response.status >= FIRST_SERVER_ERROR_STATUS ? 'retry' : 'generic'
       );
-      return 'failed';
+      return null;
   }
-  return finishAiGeneration(runId, URL.createObjectURL(response.blob)) ? 'committed' : 'failed';
+  return finishAiGeneration(runId, URL.createObjectURL(response.blob), response.blob.type)
+    ? { committedBlob: response.blob }
+    : null;
 }
 
 export async function generateAiImage({
@@ -209,13 +209,14 @@ export async function generateAiImage({
   // the preview in once the canvas export finishes — so the spinner never waits
   // on the export, even when customization is off and we skip the picker.
   const runId = startAiGeneration(blob ? URL.createObjectURL(blob) : null, controller);
-  const timeoutId = setTimeout(() => controller.abort(), CLIENT_REQUEST_TIMEOUT_MS);
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   try {
     const exported = await exportUploadImage(blob, runId);
     if (!exported) return;
 
     const { endpoint, headers, body } = buildRequest(exported.upload, style);
+    timeoutId = setTimeout(() => controller.abort(), CLIENT_REQUEST_TIMEOUT_MS);
     const res = await fetch(endpoint, {
       method: 'POST',
       headers,
@@ -223,9 +224,9 @@ export async function generateAiImage({
       signal: controller.signal,
     });
     const response = await readAiImageResponse(res);
-    const committed = applyResponse(runId, response) === 'committed';
-    if (committed && response.kind === 'image' && settings.autoSaveAiEnabled) {
-      await autoSaveImages(response.blob, exported.preview, runId);
+    const committed = applyResponse(runId, response);
+    if (committed && settings.autoSaveAiEnabled) {
+      await autoSaveImages(committed.committedBlob, exported.preview, runId);
     }
   } catch (err) {
     if (!isAiGenerationActive(runId)) return;
@@ -237,7 +238,7 @@ export async function generateAiImage({
     );
     console.error(err);
   } finally {
-    clearTimeout(timeoutId);
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
     endAiGeneration(runId);
   }
 }

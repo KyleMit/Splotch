@@ -8,15 +8,11 @@
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { createAiPreviewLoader } from './aiPreview';
 
-  let previewUrl = $state<string | null>(null);
-  let drawingBlob: Blob | null = null;
+  let drawingBlob = $state<Blob | null>(null);
 
   const previewLoader = createAiPreviewLoader(
     () => exportCanvasBlob(getActiveOverlayImage(), { includePaperTexture: false }),
-    (blob, url) => {
-      drawingBlob = blob;
-      previewUrl = url;
-    }
+    (blob) => (drawingBlob = blob)
   );
 
   async function loadPreview() {
@@ -26,14 +22,11 @@
 
   function cleanupPreview() {
     previewLoader.invalidate();
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    previewUrl = null;
     drawingBlob = null;
   }
 
-  // The modalDialog action's onClose only revokes on an explicit close. This
-  // teardown effect covers the component being unmounted while the picker is
-  // still open, so the preview's object URL doesn't outlive the component.
+  // The modalDialog action's onClose only invalidates on an explicit close.
+  // This teardown prevents a late export from committing after unmount.
   $effect(() => () => cleanupPreview());
 
   function handleSelectStyle(style: StyleName) {
@@ -69,7 +62,7 @@
             type="button"
             class="ai-style-option"
             onclick={() => handleSelectStyle(s)}
-            disabled={!previewUrl}
+            disabled={!drawingBlob}
           >
             <img
               class="ai-style-thumb"

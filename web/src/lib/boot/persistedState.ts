@@ -1,4 +1,4 @@
-import { hydrateApiKey } from '$lib/state/aiKey.svelte';
+import { hydrateApiKey } from '$lib/state/aiKey';
 import { hydrateSaveFolder } from '$lib/state/saveFolder.svelte';
 import { settings } from '$lib/state/settings.svelte';
 import { hydrateDurableStorage } from '$lib/storage';

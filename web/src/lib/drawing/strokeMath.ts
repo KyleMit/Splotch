@@ -90,6 +90,9 @@ export function edgeSwipeDirectionDecided(travel: number, renderScale: number): 
 export const POINTER_RESUME_GAP_MS = 100;
 export const POINTER_RESUME_JUMP_RATIO = 0.1;
 
+// Prevents a zero elapsed span and caps the resulting stroke speed.
+const MIN_SPEED_SPAN_MS = 1;
+
 export function pointerWasResumed(
   idleMs: number,
   jumpDistance: number,
@@ -112,6 +115,6 @@ export function calculateStrokeSpeed(
   while (samples.length > 1 && samples[0].t < cutoff) samples.shift();
   let windowDistance = 0;
   for (let i = 1; i < samples.length; i++) windowDistance += samples[i].distance;
-  const windowSpan = Math.max(newSample.t - samples[0].t, 1);
+  const windowSpan = Math.max(newSample.t - samples[0].t, MIN_SPEED_SPAN_MS);
   return windowDistance / windowSpan;
 }

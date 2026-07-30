@@ -2,7 +2,7 @@ import type { AiErrorKind } from './aiGeneration.svelte';
 import { createModal } from './modal.svelte';
 import type { Origin } from './modal.svelte';
 
-interface UiState {
+export interface UiState {
   // True while the parent is dragging the button-size slider. The Parent Center
   // hides everything but the slider so the live-resizing action buttons show.
   resizingActionButtons: boolean;
@@ -10,6 +10,7 @@ interface UiState {
   aiGenerating: boolean;
   aiResultOpen: boolean;
   aiResultUrl: string | null;
+  aiResultType: string | null;
   aiPreviewUrl: string | null;
   aiError: boolean;
   aiErrorMessage: string | null;
@@ -25,6 +26,7 @@ export const ui: UiState = $state({
   aiGenerating: false,
   aiResultOpen: false,
   aiResultUrl: null,
+  aiResultType: null,
   aiPreviewUrl: null,
   aiError: false,
   aiErrorMessage: null,

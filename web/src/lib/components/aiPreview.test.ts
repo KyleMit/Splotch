@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { createAiPreviewLoader } from './aiPreview';
 
 function deferred<T>() {
@@ -10,16 +10,7 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-beforeEach(() => {
-  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:late-preview');
-  vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-});
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
-
-it('revokes a style preview that finishes after its owner is invalidated', async () => {
+it('does not commit a style preview that finishes after its owner is invalidated', async () => {
   const pendingExport = deferred<Blob | null>();
   const commit = vi.fn();
   const loader = createAiPreviewLoader(() => pendingExport.promise, commit);
@@ -30,5 +21,4 @@ it('revokes a style preview that finishes after its owner is invalidated', async
   await load;
 
   expect(commit).not.toHaveBeenCalled();
-  expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:late-preview');
 });

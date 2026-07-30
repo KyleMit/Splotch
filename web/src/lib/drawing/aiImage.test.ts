@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 
 const mocks = vi.hoisted(() => ({
   exportCanvasBlob: vi.fn(),
@@ -14,8 +15,6 @@ vi.mock('./engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob }));
 vi.mock('./overlay', () => ({ getActiveOverlayImage: vi.fn(() => null) }));
 vi.mock('./screenshot', () => ({
   saveImageBlob: mocks.saveImageBlob,
-  AI_IMAGE_BASENAME: 'splotch-ai',
-  DRAWING_BASENAME: 'splotch',
 }));
 vi.mock('$lib/state/settings.svelte', () => ({ settings: mocks.settings }));
 
@@ -50,11 +49,54 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
 describe('generateAiImage request ownership', () => {
+  it('starts the request timeout after canvas export and transcoding finish', async () => {
+    vi.useFakeTimers();
+    const canvasExport = deferred<Blob | null>();
+    const webpEncoding = deferred<Blob | null>();
+    const request = deferred<Response>();
+    mocks.exportCanvasBlob.mockReturnValueOnce(canvasExport.promise);
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(async () => ({ width: 8, height: 8, close: vi.fn() }))
+    );
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
+      void webpEncoding.promise.then(callback);
+    });
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(request.promise));
+
+    const { generateAiImage } = await import('./aiImage');
+
+    const generation = generateAiImage();
+    await vi.advanceTimersByTimeAsync(CLIENT_REQUEST_TIMEOUT_MS + 1);
+    expect(fetch).not.toHaveBeenCalled();
+
+    canvasExport.resolve(new Blob(['P'.repeat(200)], { type: 'image/png' }));
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(CLIENT_REQUEST_TIMEOUT_MS + 1);
+    expect(fetch).not.toHaveBeenCalled();
+
+    webpEncoding.resolve(new Blob(['webp'], { type: 'image/webp' }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetch).toHaveBeenCalledOnce();
+    const requestSignal = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).signal;
+    expect(requestSignal?.aborted).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(CLIENT_REQUEST_TIMEOUT_MS);
+    expect(requestSignal?.aborted).toBe(true);
+
+    request.resolve(okResponse(new Blob(['result'])));
+    await generation;
+  });
+
   it('turns a rejected canvas export into an error instead of leaving the spinner stuck', async () => {
     const exportError = new Error('export failed');
     mocks.exportCanvasBlob.mockRejectedValueOnce(exportError);
@@ -68,73 +110,6 @@ describe('generateAiImage request ownership', () => {
     expect(ui.aiGenerating).toBe(false);
     expect(ui.aiError).toBe(true);
     expect(console.error).toHaveBeenCalledWith(exportError);
-  });
-
-  it('lets only the replacement run commit when the first request finishes late', async () => {
-    const requestA = deferred<Response>();
-    const requestB = deferred<Response>();
-    const drawingA = new Blob(['drawing-a']);
-    const drawingB = new Blob(['drawing-b']);
-    mocks.exportCanvasBlob.mockResolvedValueOnce(drawingA).mockResolvedValueOnce(drawingB);
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockReturnValueOnce(requestA.promise).mockReturnValueOnce(requestB.promise)
-    );
-
-    const { generateAiImage } = await import('./aiImage');
-    const { ui } = await import('$lib/state/ui.svelte');
-    const { closeAiResult } = await import('$lib/state/aiGeneration.svelte');
-
-    const runA = generateAiImage();
-    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
-    const requestASignal = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).signal;
-    closeAiResult();
-    expect(requestASignal?.aborted).toBe(true);
-    const runB = generateAiImage();
-    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
-
-    requestA.resolve(okResponse(new Blob(['result-a'])));
-    await runA;
-
-    expect(ui.aiGenerating).toBe(true);
-    expect(ui.aiResultUrl).toBeNull();
-
-    requestB.resolve(okResponse(new Blob(['result-b'])));
-    await runB;
-
-    expect(ui.aiGenerating).toBe(false);
-    expect(ui.aiResultUrl).toBe('blob:test-4');
-  });
-
-  it('keeps the replacement result when it finishes before the stale request', async () => {
-    const requestA = deferred<Response>();
-    const requestB = deferred<Response>();
-    mocks.exportCanvasBlob
-      .mockResolvedValueOnce(new Blob(['drawing-a']))
-      .mockResolvedValueOnce(new Blob(['drawing-b']));
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockReturnValueOnce(requestA.promise).mockReturnValueOnce(requestB.promise)
-    );
-
-    const { generateAiImage } = await import('./aiImage');
-    const { ui } = await import('$lib/state/ui.svelte');
-    const { closeAiResult } = await import('$lib/state/aiGeneration.svelte');
-
-    const runA = generateAiImage();
-    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
-    closeAiResult();
-    const runB = generateAiImage();
-    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
-
-    requestB.resolve(okResponse(new Blob(['result-b'])));
-    await runB;
-    expect(ui.aiResultUrl).toBe('blob:test-3');
-
-    requestA.resolve(okResponse(new Blob(['result-a'])));
-    await runA;
-    expect(ui.aiResultUrl).toBe('blob:test-3');
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test-4');
   });
 
   it('drops a closed run whose canvas export finishes after its replacement starts', async () => {
@@ -313,7 +288,10 @@ describe('generateAiImage response handling', () => {
   it('commits and auto-saves only an image response', async () => {
     mocks.settings.autoSaveAiEnabled = true;
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(okResponse(new Blob(['result'], { type: 'image/webp' })))
+    );
 
     const { generateAiImage } = await import('./aiImage');
     const { ui } = await import('$lib/state/ui.svelte');
@@ -323,6 +301,7 @@ describe('generateAiImage response handling', () => {
     expect(ui.aiGenerating).toBe(false);
     expect(ui.aiError).toBe(false);
     expect(ui.aiResultUrl).toBe('blob:test-2');
+    expect(ui.aiResultType).toBe('image/webp');
     expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
   });
 });

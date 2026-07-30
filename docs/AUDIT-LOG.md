@@ -18,6 +18,7 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
+| 2026-07-29 | [burn-down-audits](#2026-07-29--burn-down-audits-run-3)         |
 | 2026-07-29 | [burn-down-audits](#2026-07-29--burn-down-audits-run-2)         |
 | 2026-07-29 | [burn-down-audits](#2026-07-29--burn-down-audits-run-1)         |
 | 2026-07-28 | [burn-down-audits](#2026-07-28--burn-down-audits-run-2)         |
@@ -77,6 +78,27 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-07-03 | [code-audit](#2026-07-03--code-audit)                           |
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
+
+## 2026-07-29 · burn-down-audits (run 3)
+
+OpenAI Codex continuation on
+[`audit/burndown-2026-07-29-codex-2`](https://github.com/KyleMit/Splotch/pull/656): **34 fixed**, 1
+dropped, and 2 deferred across a five-finding canary and seven bounded supervised segments; backlog
+584 → 547. Scoped post-baseline accounting is exact, every accepted fix has a per-commit PR comment,
+and no commit removed more than one finding.
+
+The run concentrated on drawing export and save correctness, AI-generation lifecycle and response
+typing, MIME-aware filenames, module-state isolation, cross-file drift guards, and small
+readability/design-system repairs. Adversarial review forced repairs for stale navigation and
+architecture docs, asynchronous save-folder races, request-timeout accounting, E2E behavior, and
+generated Ruler outputs. One finding was dropped because its claimed rotation crash path did not
+exist at the pinned commit. Two findings whose verifiers returned no usable brief were preserved in
+`docs/AUDIT-DEFERRED.md`.
+
+Every bounded segment stopped for comment and exact-head CI checkpoints. One Tests job was cancelled
+when an unusually slow Playwright dependency install consumed almost all of its 15-minute job
+timeout; the exact-SHA rerun completed cleanly, including E2E and app-driver smoke. The session
+closed on request with the remaining 547 findings still staged for a future continuation.
 
 ## 2026-07-29 · burn-down-audits (run 2)
 

@@ -342,7 +342,7 @@ body {
 }
 
 /* Polaroid screenshot animation. The overlay/frame/img elements are created
-   imperatively in src/lib/drawing/screenshot.ts and appended to <body>, so
+   imperatively in src/lib/drawing/polaroidAnimation.ts and appended to <body>, so
    these styles must be global. */
 .polaroid-overlay {
   position: fixed;

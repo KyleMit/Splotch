@@ -9,6 +9,7 @@ const store = new Map<string, unknown>();
 let openDbCalls = 0;
 let getCalls = 0;
 let failIdb = false;
+let pendingGet: Promise<unknown> | null = null;
 vi.mock('idb', () => ({
   openDB: async () => {
     openDbCalls++;
@@ -16,6 +17,7 @@ vi.mock('idb', () => ({
     return {
       get: async (_s: string, k: string) => {
         getCalls++;
+        if (pendingGet) return pendingGet;
         return store.get(k);
       },
       put: async (_s: string, v: unknown, k: string) => void store.set(k, v),
@@ -28,6 +30,14 @@ type FolderSave = typeof import('./folderSave');
 let folderSave: FolderSave;
 
 const blob = new Blob(['png'], { type: 'image/png' });
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
 
 function makeHandle(permission: PermissionState = 'granted', name = 'My Pictures') {
   const writable = { write: vi.fn(async () => {}), close: vi.fn(async () => {}) };
@@ -64,6 +74,7 @@ beforeEach(async () => {
   openDbCalls = 0;
   getCalls = 0;
   failIdb = false;
+  pendingGet = null;
   vi.resetModules();
   folderSave = await import('./folderSave');
 });
@@ -108,6 +119,7 @@ describe('chooseSaveFolder', () => {
   });
 
   it('returns null when the parent cancels the picker', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     setPicker(
       vi.fn(async () => {
         throw new DOMException('cancelled', 'AbortError');
@@ -116,6 +128,20 @@ describe('chooseSaveFolder', () => {
 
     expect(await folderSave.chooseSaveFolder()).toBeNull();
     expect(await folderSave.getSaveFolderName()).toBeNull();
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('warns when the picker fails unexpectedly', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = new DOMException('activation expired', 'SecurityError');
+    setPicker(
+      vi.fn(async () => {
+        throw error;
+      })
+    );
+
+    expect(await folderSave.chooseSaveFolder()).toBeNull();
+    expect(warn).toHaveBeenCalledWith('Choosing a save folder failed:', error);
   });
 
   it('keeps the folder for the session when persisting it fails', async () => {
@@ -196,6 +222,46 @@ describe('saveBlobToFolder', () => {
     expect(openDbCalls).toBe(1);
   });
 
+  it('does not write to a folder cleared while its IndexedDB read is pending', async () => {
+    const { handle, writable } = makeHandle('granted', 'Old Folder');
+    seedFolder(handle);
+    setPicker(vi.fn());
+    const delayedGet = deferred<unknown>();
+    pendingGet = delayedGet.promise;
+
+    const save = folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: false });
+    await vi.waitFor(() => expect(getCalls).toBe(1));
+    await folderSave.clearSaveFolder();
+    delayedGet.resolve(handle);
+
+    expect(await save).toBe(false);
+    expect(handle.queryPermission).not.toHaveBeenCalled();
+    expect(writable.write).not.toHaveBeenCalled();
+    expect(await folderSave.getSaveFolderName()).toBeNull();
+  });
+
+  it('uses a replacement folder when the old IndexedDB read resolves during a save', async () => {
+    const { handle: oldHandle } = makeHandle('granted', 'Old Folder');
+    oldHandle.getFileHandle = vi.fn(async () => {
+      throw new DOMException('gone', 'NotFoundError');
+    });
+    const { handle: newHandle, writable } = makeHandle('granted', 'New Folder');
+    seedFolder(oldHandle);
+    setPicker(vi.fn(async () => newHandle));
+    const delayedGet = deferred<unknown>();
+    pendingGet = delayedGet.promise;
+
+    const save = folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: false });
+    await vi.waitFor(() => expect(getCalls).toBe(1));
+    expect(await folderSave.chooseSaveFolder()).toBe('New Folder');
+    delayedGet.resolve(oldHandle);
+
+    expect(await save).toBe(true);
+    expect(oldHandle.queryPermission).not.toHaveBeenCalled();
+    expect(writable.write).toHaveBeenCalledWith(blob);
+    expect(await folderSave.getSaveFolderName()).toBe('New Folder');
+  });
+
   it('suffixes the filename instead of overwriting an existing file', async () => {
     const { handle, files, writable } = makeHandle('granted');
     files.add('b.png');
@@ -236,7 +302,7 @@ describe('saveBlobToFolder', () => {
     seedFolder(handle);
     setPicker(vi.fn());
     const cleared = vi.fn();
-    folderSave.onSaveFolderCleared(cleared);
+    folderSave.setSaveFolderClearedListener(cleared);
 
     expect(await folderSave.saveBlobToFolder(blob, 'e.png', { allowPrompt: false })).toBe(false);
     expect(store.has('saveDir')).toBe(false);

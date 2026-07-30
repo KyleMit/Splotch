@@ -10,38 +10,49 @@ import { settings } from './settings.svelte';
 // storage (Keychain/Keystore on native, an encrypted IndexedDB payload on the
 // web).
 
-let aiKeyWriteVersion = 0;
-// Keep secure writes ordered so an older save already in flight cannot finish
-// after a replacement and become the credential restored on the next launch.
-let aiKeyWriteQueue = Promise.resolve();
-
 async function persistAiUserApiKey(v: string) {
   if (v) await saveApiKey(v);
   else await clearApiKey();
 }
 
-export function setAiUserApiKey(v: string, ownsRequest: () => boolean = () => true) {
-  const writeVersion = ++aiKeyWriteVersion;
-  const operation = aiKeyWriteQueue.then(async () => {
-    if (writeVersion !== aiKeyWriteVersion || !ownsRequest()) return false;
+export function createAiKeyWriteCoordinator(
+  aiKeyState: { aiUserApiKey: string },
+  persistKey: (value: string) => Promise<void>
+) {
+  let writeVersion = 0;
+  // Keep secure writes ordered so an older save already in flight cannot finish
+  // after a replacement and become the credential restored on the next launch.
+  let writeQueue = Promise.resolve();
 
-    await persistAiUserApiKey(v);
+  function setAiUserApiKey(v: string, ownsRequest: () => boolean = () => true) {
+    const version = ++writeVersion;
+    const operation = writeQueue.then(async () => {
+      if (version !== writeVersion || !ownsRequest()) return false;
 
-    if (writeVersion !== aiKeyWriteVersion) return false;
-    if (!ownsRequest()) {
-      await persistAiUserApiKey(settings.aiUserApiKey);
-      return false;
-    }
+      await persistKey(v);
 
-    settings.aiUserApiKey = v;
-    return true;
-  });
-  aiKeyWriteQueue = operation.then(
-    () => undefined,
-    () => undefined
-  );
-  return operation;
+      if (version !== writeVersion) return false;
+      if (!ownsRequest()) {
+        await persistKey(aiKeyState.aiUserApiKey);
+        return false;
+      }
+
+      aiKeyState.aiUserApiKey = v;
+      return true;
+    });
+    writeQueue = operation.then(
+      () => undefined,
+      () => undefined
+    );
+    return operation;
+  }
+
+  return { setAiUserApiKey };
 }
+
+const aiKeyWriteCoordinator = createAiKeyWriteCoordinator(settings, persistAiUserApiKey);
+
+export const { setAiUserApiKey } = aiKeyWriteCoordinator;
 
 // Pull the saved Gemini key out of secure storage into the live store on boot.
 // One-time migration: if an earlier build left a plaintext key in localStorage,

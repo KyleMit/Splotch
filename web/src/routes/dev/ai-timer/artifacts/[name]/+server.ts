@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { requireDevHarness } from '$lib/devHarness';
+import { AI_TIMER_ARTIFACTS } from '../../artifactNames';
 import type { RequestHandler } from './$types';
 
 // Dev-only: streams the sample artifacts (which live under tests/, outside
@@ -9,7 +10,7 @@ import type { RequestHandler } from './$types';
 // Gemini. Gated by the shared requireDevHarness() (same gate as the
 // /dev/ai-timer page), so this 404s in production.
 const DIR = 'tests/artifacts';
-const ALLOWED = new Set(['drawing-input.jpeg', 'ai-output.jpeg']);
+const ALLOWED = new Set<string>(AI_TIMER_ARTIFACTS);
 
 export const GET: RequestHandler = async ({ params }) => {
   requireDevHarness();

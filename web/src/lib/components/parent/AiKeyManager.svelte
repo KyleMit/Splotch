@@ -10,7 +10,7 @@
     setAiAccessToken,
     aiCredentialKind,
   } from '$lib/state/settings.svelte';
-  import { setAiUserApiKey } from '$lib/state/aiKey.svelte';
+  import { setAiUserApiKey } from '$lib/state/aiKey';
   import { verifyCredential } from '$lib/aiCredential';
   import { createLatestRequest } from '$lib/latestRequest';
   import { getPlatform, type Platform } from '$lib/platform';

@@ -7,7 +7,12 @@
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
-  import { timestamp, triggerDownload, AI_IMAGE_BASENAME } from '$lib/drawing/screenshot';
+  import {
+    timestamp,
+    triggerDownload,
+    extensionForImageType,
+    AI_IMAGE_BASENAME,
+  } from '$lib/saveNaming';
 
   let dialogEl: HTMLDialogElement;
   let zoomLayerEl = $state<HTMLDivElement | undefined>();
@@ -61,7 +66,10 @@
 
   function handleDownload() {
     if (!ui.aiResultUrl || exiting) return;
-    triggerDownload(ui.aiResultUrl, `${AI_IMAGE_BASENAME}-${timestamp()}.png`);
+    triggerDownload(
+      ui.aiResultUrl,
+      `${AI_IMAGE_BASENAME}-${timestamp()}.${extensionForImageType(ui.aiResultType ?? '')}`
+    );
 
     // Morph the modal into a polaroid, hold it in the center, then let it fly
     // off to the bottom-left. The fly-out animation's end dismisses the modal.
@@ -325,9 +333,9 @@
     font-size: var(--font-size-lg);
     font-weight: 600;
   }
-  .ai-result-error-sub {
-    font-size: var(--font-size-md) !important;
-    font-weight: 500 !important;
+  .ai-result-error p.ai-result-error-sub {
+    font-size: var(--font-size-md);
+    font-weight: 500;
     color: var(--text-muted);
     max-width: 280px;
   }
