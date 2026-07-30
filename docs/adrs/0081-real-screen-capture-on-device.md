@@ -58,7 +58,7 @@ table, since a hand-drawn phase can only fairly be compared to *itself earlier*.
 gives identical input per phase but cannot reproduce touch coalescing, ProMotion input pacing, or
 queue delay — a constructed event's `timeStamp` is set when the probe builds it.
 
-**One production seam, read-only.** `web/src/lib/boot/drawingProbeSeam.ts` exposes the
+**One production seam, read-only.** `web/src/lib/boot/devHarnessSeam.ts` exposes the
 already-exported `getUndoDebug()` on `/` behind the same gate as `routes/dev/*`
 (`PUBLIC_ENABLE_DEV_HARNESS`, which the Netlify deploy never sets). It exposes no mutation
 deliberately: a probe that can change the app can invalidate its own measurement. Everything else

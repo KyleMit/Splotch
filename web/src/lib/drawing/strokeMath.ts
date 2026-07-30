@@ -85,8 +85,13 @@ export function edgeSwipeDirectionDecided(travel: number, renderScale: number): 
 // A pointer reappearing after an idle gap (POINTER_RESUME_GAP_MS) AND far enough
 // that continuous finger contact is implausible was really lifted and set down
 // again — a dropped pointerup/pointerdown pair (see engine.ts). The jump
-// threshold is a fraction of the canvas's shorter backing-store side, so it
-// scales with canvas size and renderScale.
+// threshold is a fraction of the PAPER's shorter backing-store side, so it scales
+// with paper size and renderScale. Paper, not canvas: the caller passes
+// `min(paper.pxW, paper.pxH)`, and a rotation lock leaves the paper at its
+// pre-rotation dimensions while the canvas takes the new viewport's
+// (adoptPaperUnlessLocked), so the two genuinely diverge there. tests/helpers.ts
+// imports the ratio to pace its own strokes under this threshold, and derives
+// paper-space geometry from it.
 export const POINTER_RESUME_GAP_MS = 100;
 export const POINTER_RESUME_JUMP_RATIO = 0.1;
 
@@ -96,9 +101,9 @@ const MIN_SPEED_SPAN_MS = 1;
 export function pointerWasResumed(
   idleMs: number,
   jumpDistance: number,
-  minCanvasSide: number
+  minPaperSide: number
 ): boolean {
-  return idleMs > POINTER_RESUME_GAP_MS && jumpDistance > POINTER_RESUME_JUMP_RATIO * minCanvasSide;
+  return idleMs > POINTER_RESUME_GAP_MS && jumpDistance > POINTER_RESUME_JUMP_RATIO * minPaperSide;
 }
 
 // Honest sliding window: stamp each move's distance with its time, drop samples

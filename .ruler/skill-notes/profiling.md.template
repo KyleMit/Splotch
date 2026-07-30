@@ -158,7 +158,7 @@ run.
 
 ### The one production seam, and why it is read-only
 
-`lib/boot/drawingProbeSeam.ts` exposes the already-exported `getUndoDebug()` on `/` behind the
+`lib/boot/devHarnessSeam.ts` exposes the already-exported `getUndoDebug()` on `/` behind the
 `routes/dev/*` gate. It exposes no mutation deliberately: a probe that can change the app can
 invalidate its own measurement. Everything else the probe needs it gets by driving the real UI by
 selector (coloring page, brush), so there is no probe-only surface in production — and the selectors

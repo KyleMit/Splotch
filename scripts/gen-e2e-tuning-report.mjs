@@ -111,10 +111,10 @@ const HYPOTHESES = [
   },
   {
     claim: 'The strokes commit in the wrong brush mode, and a canvas-fill count cannot detect it',
-    verdict: 'confirmed',
-    how: 'Read the actual assertion values out of the failing reports.',
+    verdict: 'overturned',
+    how: 'Read the actual assertion values out of the failing reports — then, once the engine could be asked directly (ADR-0080), read its committed mode and the painted colours at each failure.',
     result:
-      '`revealed` came back as discrete values — 132, 874, 895, 2314 — where ~2314 is a real magic reveal and 132 is a thin pen line. The value never moved through a full 5s poll, because the wrong-mode stroke was already committed. Fixing all three sites to redraw took the file from 16/200 to 4/200.',
+      "`revealed` came back as discrete values — 132, 874, 895, 2314 — where ~2314 is a real magic reveal. Redrawing all three sites did take the file from 16/200 to 4/200, so the FIX worked. The reading of 132 did not: those pixels are the coloring page's own colours, not ink, and the engine reported the right mode at every failure across ~700 recorded reveals. It is a magic stroke the engine TRUNCATED — a sample >100ms and >10% of the paper apart reads as a lifted finger (strokeMath.pointerWasResumed), which is exactly what a starved worker dispatching 180px hops produces. Redrawing rescued it by getting a second, luckier stroke. Pacing the samples fixes it at the source, and the retries are gone.",
   },
 ];
 
@@ -178,6 +178,7 @@ const styles = `
   .hyp-item { border: 1px solid var(--hair); border-radius: var(--r-sm); padding: 14px 16px; background: var(--card); }
   .hyp-item.confirmed { border-left: 4px solid var(--ok); }
   .hyp-item.falsified { border-left: 4px solid var(--bad); }
+  .hyp-item.overturned { border-left: 4px solid var(--warn); }
   .hyp-claim { font-weight: 700; margin: 0 0 6px; }
   .hyp-item dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 3px 12px; font-size: 13.5px; }
   .hyp-item dt { color: var(--faint); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 3px; }
@@ -186,6 +187,7 @@ const styles = `
   .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid; }
   .pill.confirmed { color: var(--ok); border-color: var(--ok); }
   .pill.falsified { color: var(--bad); border-color: var(--bad); }
+  .pill.overturned { color: var(--warn); border-color: var(--warn); }
   .empty-note { color: var(--faint); font-style: italic; }
 `;
 

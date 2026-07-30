@@ -18,7 +18,7 @@ test('dragStroke rejects empty strokes before mouse input', async () => {
     },
   } as unknown as Page;
 
-  await expect(dragStroke(page, { x: 0, y: 0 }, [])).rejects.toThrow(
+  await expect(dragStroke(page, { x: 0, y: 0, width: 100, height: 100 }, [])).rejects.toThrow(
     'cannot draw a stroke without points'
   );
   expect(mouseCalls).toBe(0);

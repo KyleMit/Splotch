@@ -2,15 +2,21 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
-import { gotoApp, openParentCenter } from './helpers';
+import { gotoApp, openParentCenter, retryOpen } from './helpers';
 
 async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
   await openParentCenter(page);
   // The Parent Center is a section list — a sidebar item on tablet/desktop, a
   // hub row on phone. Either way the control carries the section label; opening
   // it (sidebar select or phone drill-in) reveals the section content.
-  await page.getByRole('button', { name: 'AI Art' }).click();
-  await expect(page.locator(expectedField)).toBeVisible();
+  //
+  // Retried rather than clicked once: the dialog itself mounts on first open
+  // (ADR-0049) and flies in, so this click lands on markup that is still
+  // arriving, and a lost one would leave the section closed with nothing to
+  // re-open it — the same hazard openParentCenter above rides out.
+  await retryOpen(page.locator(expectedField), () =>
+    page.getByRole('button', { name: 'AI Art' }).click({ timeout: 3000 })
+  );
 }
 
 async function submitAiKey(page: Page, value: string) {

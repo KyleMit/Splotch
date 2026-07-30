@@ -147,7 +147,7 @@
   const measures = [];
   const measureNames = [];
   // How the undo history is stored, sampled once per finger-lift from the
-  // read-only seam `lib/boot/drawingProbeSeam.ts` exposes on `/`. The reported
+  // read-only seam `lib/boot/devHarnessSeam.ts` exposes on `/`. The reported
   // lag grows with how much has been drawn, and every stroke pushes a
   // canvas-backed dirty-rect patch (ADR-0069/0074) — this is the table that
   // says whether stall onset tracks that growth.

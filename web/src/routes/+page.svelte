@@ -23,7 +23,7 @@
   import { installContextMenuGuard } from '$lib/boot/contextMenuGuard';
   import { hydratePersistedState } from '$lib/boot/persistedState';
   import { initWebOnlyServices } from '$lib/boot/webOnlyServices';
-  import { exposeDrawingProbeSeam } from '$lib/boot/drawingProbeSeam';
+  import { installDevHarnessSeam } from '$lib/boot/devHarnessSeam';
 
   $effect(() => {
     applyDeviceOrientationPreference(
@@ -89,7 +89,7 @@
       installContextMenuGuard(),
       installWakeLock(),
       initWebOnlyServices(),
-      exposeDrawingProbeSeam(),
+      installDevHarnessSeam(),
     ];
     return () => teardowns.forEach((teardown) => teardown());
   });
