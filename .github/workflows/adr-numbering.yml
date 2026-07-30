@@ -46,4 +46,4 @@ jobs:
             "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
 
       - name: Check ADR numbering
-        run: node scripts/check-adr-numbering.mjs --base "origin/${BASE_REF}"
+        run: node scripts/check-adr-numbering.mjs "--base=origin/${BASE_REF}"

@@ -7,7 +7,7 @@ export function adrNumber(filename) {
   return match ? match[1] : null;
 }
 
-export function adrFilenames(entries) {
+function adrFilenames(entries) {
   return entries.filter((entry) => adrNumber(entry) !== null).sort();
 }
 
