@@ -23,41 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Testing] No drift guard between `STYLE_SUFFIXES` and the style-thumbnail assets in `static/styles/`
-
-**File(s):** `web/src/lib/ai/styles.ts` (`styleThumbPath`, lines 26–28) @ 9ae62ff1; assets in
-`web/static/styles/`
-
-**Priority:** P3
-
-#### Problem
-
-`styleThumbPath` derives a URL by convention:
-
-```ts
-export function styleThumbPath(style: StyleName): string {
-  return `/styles/${style.toLowerCase()}.webp`;
-}
-```
-
-The agreement between the `STYLE_SUFFIXES` keys and the files in `web/static/styles/` (currently
-`cartoon.webp`, `clay.webp`, `crayon.webp`, `felt.webp`, `magical.webp`, `paper.webp`,
-`sticker.webp`, `watercolor.webp`) is maintained by nothing. CLAUDE.md's convention: when agreeing
-sites can't share code, "add a drift-guard test that reads both sides and fails on divergence." No
-unit test or E2E asserts the thumbs resolve — `flows-ai.spec.ts` deliberately skips the style picker
-(line 13), and no test references `styleThumbPath` or `static/styles`. Adding a style (open issue
-#300 proposes "Realistic", #169 proposes custom styles) without dropping the matching webp would
-ship a silently broken tile: the `<img>` has `alt=""` (`AiImagePrompt.svelte` lines 74–80), so the
-404 renders as a blank square with no test or console signal.
-
-#### Proposed solution
-
-Add `web/src/lib/ai/styles.test.ts` (node environment) that iterates `STYLE_NAMES`, maps each
-through `styleThumbPath`, and asserts the corresponding file exists under `web/static`
-(`fs.existsSync(join(staticDir, 'styles',`${name.toLowerCase()}.webp`))`). Optionally assert the
-reverse direction too (every `*.webp` in the directory except `source.svg` corresponds to a style)
-to catch orphaned assets.
-
 ### [Maintainability] `startAiGeneration` and `closeAiResult` duplicate the six-field UI reset block
 
 **File(s):** `web/src/lib/state/aiGeneration.svelte.ts` (`startAiGeneration`, lines 31–37;
