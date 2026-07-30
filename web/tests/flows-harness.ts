@@ -32,11 +32,43 @@ export async function openBrushMenu(page: Page) {
   );
 }
 
+// The Brush Menu's four entries, and the engine mode each one commits. Closed
+// as a union so a call site can't name a button that has no expected mode.
+type BrushButtonId = keyof typeof ENGINE_MODE_BY_BUTTON;
+const ENGINE_MODE_BY_BUTTON = {
+  '#penBrushButton': 'pen',
+  '#crayonBrushButton': 'crayon',
+  '#magicBrushButton': 'magic',
+  '#eraserButton': 'eraser',
+} as const;
+
+// The engine has ~nothing to do to adopt a mode — it assigns a flag — so this
+// only has to outlast a starved worker's Svelte flush, not any real work.
+const BRUSH_COMMIT_TIMEOUT_MS = 10_000;
+
+// Answer the mode the ENGINE holds, or a legible stand-in when the dev-harness
+// seam isn't there to ask (a build without PUBLIC_ENABLE_DEV_HARNESS, or a page
+// that hasn't hydrated). Returning the stand-in rather than throwing puts it in
+// the poll's "received" line, so the failure names the real problem.
+function committedBrushMode(page: Page): Promise<string> {
+  return page.evaluate(() => window.__committedBrushMode?.() ?? 'dev-harness-seam-missing');
+}
+
 // Select a brush from the Brush Menu by its entry id (e.g. '#eraserButton',
 // '#magicBrushButton'). Selecting closes the flyout.
-export async function pickBrush(page: Page, id: string) {
+//
+// Returns once the ENGINE has committed the mode, not merely once the button
+// reports it (ADR-0079). The brush→engine toggle flows through a Svelte
+// $effect, so between the two a stroke commits under the PREVIOUS brush — a
+// wrong-mode stroke that is already painted by the time anything can observe it,
+// which is why polling the button (`aria-pressed`) measured no improvement at
+// all: 16/200 failures before and after (ADR-0078 §3).
+export async function pickBrush(page: Page, id: BrushButtonId) {
   await openBrushMenu(page);
   await page.locator(id).click();
+  await expect
+    .poll(() => committedBrushMode(page), { timeout: BRUSH_COMMIT_TIMEOUT_MS })
+    .toBe(ENGINE_MODE_BY_BUTTON[id]);
 }
 
 // Open the coloring-book dialog robustly — same retry shape as openDrawer: a

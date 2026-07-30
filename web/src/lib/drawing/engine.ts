@@ -21,6 +21,7 @@
 //   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
 import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
+import type { BrushType } from '$lib/state/tool.svelte';
 import {
   DEFAULT_SIZE,
   ERASER_SIZE_MULTIPLIER,
@@ -1433,6 +1434,26 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+// The brush mode the engine has COMMITTED — the mode a stroke started right now
+// would paint in, resolved with renderOp's own precedence (magic outranks the
+// eraser, which outranks crayon's texture; see strokeOps.renderOp), so it can
+// never claim a mode the renderer would not honour.
+//
+// Test-only seam (ADR-0079). The mode toggles above are pushed from a Svelte
+// $effect, so the button reports the new brush before the engine holds it, and a
+// stroke dispatched in that window commits under the PREVIOUS brush. Nothing
+// observable from the DOM distinguishes the two — a pen stroke fills the canvas
+// exactly like a reveal — so the E2E harness waits on this instead of on
+// `aria-pressed`. Reached only through lib/boot/devHarnessSeam.ts, which
+// publishes it on `window` when PUBLIC_ENABLE_DEV_HARNESS is set; production has
+// no caller.
+export function committedBrushMode(): BrushType {
+  if (magicActive) return 'magic';
+  if (crayonActive && !eraserActive) return 'crayon';
+  if (eraserActive) return 'eraser';
+  return 'pen';
 }
 
 // Crayon brush on/off (ADR-0065). Like the eraser/magic it's a modifier the
