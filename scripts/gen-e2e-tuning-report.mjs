@@ -17,6 +17,9 @@ import { chromeStyle, masthead, siteFooter } from './lib/scrapbook-chrome.mjs';
 const OUT = join(ROOT, 'scrapbook/e2e-tuning/index.html');
 
 const RUN_DATE = '2026-07-29';
+// The re-measure behind the retry decision (issue #653), run after the harness
+// defect below was fixed.
+const RE_MEASURE_DATE = '2026-07-30';
 
 const HARDWARE = {
   local: {
@@ -54,6 +57,11 @@ const LOCAL_POSTFIX = [
 // the magic-brush fixes in place and retries disabled. `cpu` is the summed
 // duration of every passing test; `infl` divides it by the uncontended w=1
 // figure. Raw reports: run 30474047690 artifacts.
+//
+// The `fails`/`redRuns` columns here are contaminated and kept for the record
+// rather than as a rate — every rep shared one preview server, so it inherited
+// the previous rep's spent rate-limit windows (see HARNESS_ARTIFACT and the
+// re-measure below). The wall-clock column is unaffected.
 const CI_SWEEP = [
   { w: 1, wall: 95.2, runs: 5, execs: 1015, fails: 3, redRuns: 3, cpu: 92.3, infl: 1.0 },
   { w: 2, wall: 69.6, runs: 5, execs: 1015, fails: 2, redRuns: 2, cpu: 127.7, infl: 1.38 },
@@ -102,6 +110,29 @@ const REVEAL_BUDGET_EXPERIMENT = [
     shows: 'wall',
   },
 ];
+
+// The re-measure #653 asked for, on the same runner image with the sweep driver
+// starting a fresh preview server per rep. `redRuns` is the quantity a retry
+// count is chosen against: how often an unretried run would go red.
+const CI_RESIDUAL = [];
+
+// What that re-measure found first, before it could measure anything: the sweep
+// was manufacturing most of its own flake rate.
+const HARNESS_ARTIFACT = {
+  cause:
+    'Every rep ran against one shared preview server, and the suite deliberately fills 60-second ' +
+    'per-IP rate-limit windows — generate-image.spec.ts exhausts the BYOK bucket and bursts the ' +
+    'managed token’s. A rep takes about as long as those windows last, so the next rep inherited a ' +
+    'spent budget and its guard tests took a 429 where they assert a 415.',
+  evidence: [],
+  fix:
+    'scripts/e2e-sweep.mjs starts and stops a preview server per rep, which clears the in-memory ' +
+    'limiter and matches what CI does anyway: one server, one suite run.',
+};
+
+// What the re-measured numbers mean, and the retry count they settle. Raw HTML so
+// a note can mark up a value; keep them factual and short.
+const RESIDUAL_NOTES = [];
 
 // Each hypothesis that was tested, and how it was killed or confirmed. The
 // falsified ones are the point: they are cheap to re-derive and expensive to
@@ -277,6 +308,17 @@ function beforeAfterTable(rows) {
   </table></div>`;
 }
 
+const harnessPanel = `<div class="panel verdict">
+  <h3>First finding: the sweep was measuring itself</h3>
+  <p>${esc(HARNESS_ARTIFACT.cause)}</p>
+  <ul class="notes">${HARNESS_ARTIFACT.evidence.map((e) => `<li>${esc(e)}</li>`).join('')}</ul>
+  <p>${esc(HARNESS_ARTIFACT.fix)}</p>
+</div>`;
+
+const residualSection = CI_RESIDUAL.length
+  ? sweepTable(CI_RESIDUAL, { pick: CI_RESIDUAL.find((r) => r.recommended)?.w })
+  : `<p class="empty-note">Re-measure pending — re-run <code>npm run gen:e2e-tuning-report</code> once the numbers land.</p>`;
+
 const ciSection = CI_SWEEP.length
   ? `${sweepTable(CI_SWEEP, { pick: CI_SWEEP.find((r) => r.recommended)?.w })}`
   : `<p class="empty-note">CI sweep pending — re-run <code>npm run gen:e2e-tuning-report</code> once the numbers land.</p>`;
@@ -391,6 +433,24 @@ ${masthead({
       <li><b>What that means:</b> those failures were never time-starved. <code>drawMagicReveal</code> churns draw→check→undo→redraw, and a bigger budget just lets a non-converging loop churn longer. The budget helped where the reveal was merely slow, and did nothing where the loop never converges.</li>
       <li><b>Reverted.</b> At 4 workers the two failures it fixed were already invisible — <code>retries: 2</code> reaches red essentially never at a 2/1015 rate — so the win landed where retries had already paid, while the cost (a stuck reveal exceeding the suite's parallel floor and becoming its critical path) was real. The genuinely-slow cases are worth fixing by bounding the churn instead.</li>
     </ul>
+  </section>
+
+  <section>
+    <h2>Re-measured, ${esc(RE_MEASURE_DATE)} — and the retry decision</h2>
+    <p>
+      Every rate above was measured with one preview server shared across a configuration's reps.
+      That turned out to be most of what was being measured, so the retry question could not be
+      answered until the harness was fixed.
+    </p>
+    ${harnessPanel}
+    <p>
+      Re-run on the same runner image with an independent server per rep. <b>Red runs</b> is the
+      column a retry count is chosen against: retries only pay for themselves against the rate at
+      which an unretried run goes red.
+    </p>
+    ${residualSection}
+    ${RESIDUAL_NOTES.length ? `<ul class="notes">${RESIDUAL_NOTES.map((n) => `<li>${n}</li>`).join('')}</ul>` : ''}
+  </section>
 
   <section>
     <h2>What was tried</h2>

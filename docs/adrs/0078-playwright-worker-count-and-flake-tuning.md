@@ -52,6 +52,35 @@ run`:
   between 1 and 6 workers — so wall clock decides, and 4 workers is the fastest setting measured
   (60.2s, against 63.1s at 3 and 69.6s at 2).
 
+### 1b. The count is derived from the ratio — the literals were never the finding
+
+```ts
+const CORES_PER_WORKER = 2;
+const cores = availableParallelism();
+workers: process.env.CI ? Math.max(2, cores) : Math.max(1, Math.floor(cores / CORES_PER_WORKER));
+```
+
+`workers: process.env.CI ? 4 : 2` is right for the 4-core boxes measured above and wrong everywhere
+else: `2` on a 10-core laptop leaves most of the machine idle, a regression against the `'100%'` it
+replaced for anyone on bigger hardware. §2's **ratio** is the part that reproduced across two
+unrelated machines, so that is what the count derives from.
+
+The CI/local split survives derivation because it encodes flake *cost*, not hardware — flakes
+expensive (`retries: 0`) → sit at saturation, `cores / 2`; flakes cheap (retries absorb them) →
+oversubscribe for wall clock, `~cores`. At 4 cores this reproduces both measured optima exactly.
+`availableParallelism()` rather than `cpus().length`, because it respects cgroup CPU quotas and so
+does not over-report inside a container. `--workers=N` still overrides.
+
+Two edges it cannot claim, recorded rather than smoothed over:
+
+* **SMT is untested, and is the likeliest place the formula is wrong.** `availableParallelism()`
+  counts *logical* CPUs, and both measurement boxes ran one thread per core — so `cores / 2` and
+  "physical cores" were indistinguishable there. On an 8-logical / 4-physical laptop the formula
+  says 4 where physical capacity argues 2. Settling it needs a real SMT machine, which a cloud
+  container is not.
+* **Only one core count was ever measured.** 8 and 16 cores are extrapolation from a ratio, not
+  measurements.
+
 ### 2. Each worker costs ~2 cores, which is why `'100%'` oversubscribed
 
 Per-test latency inflation (each test's mean duration ÷ its own mean at one worker) tracks **w/2**
@@ -77,6 +106,13 @@ should be flat (it is the same 203 tests) and is not: 179.5s at 2 workers, 225.4
 4** against the 152.4s an uncontended run needs.
 
 ### 2b. On CI, contention is not the dominant flake driver
+
+> **The failure columns below are contaminated — see
+> [§4](#4-most-of-the-measured-flake-rate-was-the-harness).** Every rep in this sweep shared one
+> preview server, and the suite deliberately fills 60-second per-IP rate-limit windows, so a rep
+> inherited the previous rep's spent budget. The wall-clock column and the conclusion drawn from it
+> (4 workers, and the shape of the curve) stand; the flake rates are an upper bound on something
+> that was mostly the harness.
 
 The CI sweep (`ubuntu-latest`, 5 reps per worker count, one runner each, retries off) did **not**
 reproduce the local flake curve:

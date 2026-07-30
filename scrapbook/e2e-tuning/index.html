@@ -496,6 +496,29 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
       <li><b>What that means:</b> those failures were never time-starved. <code>drawMagicReveal</code> churns draw→check→undo→redraw, and a bigger budget just lets a non-converging loop churn longer. The budget helped where the reveal was merely slow, and did nothing where the loop never converges.</li>
       <li><b>Reverted.</b> At 4 workers the two failures it fixed were already invisible — <code>retries: 2</code> reaches red essentially never at a 2/1015 rate — so the win landed where retries had already paid, while the cost (a stuck reveal exceeding the suite's parallel floor and becoming its critical path) was real. The genuinely-slow cases are worth fixing by bounding the churn instead.</li>
     </ul>
+  </section>
+
+  <section>
+    <h2>Re-measured, 2026-07-30 — and the retry decision</h2>
+    <p>
+      Every rate above was measured with one preview server shared across a configuration's reps.
+      That turned out to be most of what was being measured, so the retry question could not be
+      answered until the harness was fixed.
+    </p>
+    <div class="panel verdict">
+  <h3>First finding: the sweep was measuring itself</h3>
+  <p>Every rep ran against one shared preview server, and the suite deliberately fills 60-second per-IP rate-limit windows — generate-image.spec.ts exhausts the BYOK bucket and bursts the managed token’s. A rep takes about as long as those windows last, so the next rep inherited a spent budget and its guard tests took a 429 where they assert a 415.</p>
+  <ul class="notes"></ul>
+  <p>scripts/e2e-sweep.mjs starts and stops a preview server per rep, which clears the in-memory limiter and matches what CI does anyway: one server, one suite run.</p>
+</div>
+    <p>
+      Re-run on the same runner image with an independent server per rep. <b>Red runs</b> is the
+      column a retry count is chosen against: retries only pay for themselves against the rate at
+      which an unretried run goes red.
+    </p>
+    <p class="empty-note">Re-measure pending — re-run <code>npm run gen:e2e-tuning-report</code> once the numbers land.</p>
+    
+  </section>
 
   <section>
     <h2>What was tried</h2>
@@ -538,31 +561,30 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
       The numbers above are specific to their hardware. The shape of the curve (saturation near
       cores−1) should transfer; the optimum will not. To re-measure:
     </p>
-    <pre><code># 1. Build once and serve, so the sweep measures tests rather than rebuilds.
+    <pre><code># 1. Build once. The sweep driver builds nothing, so this is the only build, and
+#    PUBLIC_ENABLE_DEV_HARNESS has to be set HERE — it gates the /dev/* routes
+#    the specs drive.
 PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \
   node scripts/web.mjs vite build
-cd web &amp;&amp; PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \
-  npx vite preview --port 4173 &amp;
 
-# 2. Sweep. Round-robin the worker counts INSIDE the rep loop so machine drift
-#    spreads across configs instead of landing on one of them.
-for rep in $(seq 1 8); do
-  for w in 1 2 3 4 6 8; do
-    PLAYWRIGHT_JSON_OUTPUT_NAME=runs/w${w}-rep${rep}.json \
-      node scripts/web.mjs playwright test --workers=$w --reporter=json &gt;/dev/null
-  done
+# 2. Sweep. The driver owns the whole protocol: a fresh preview server per rep,
+#    CI unset for the run, and one SWEEPRESULT line per rep.
+for w in 1 2 3 4 6 8; do
+  node scripts/e2e-sweep.mjs --workers=$w --reps=30 --out=runs
 done
 
-# 3. On CI hardware, the same sweep ran as a throwaway GitHub Actions workflow —
-#    one runner per worker count, so the configs never contend. It was NOT merged
-#    (an unused workflow only collects Dependabot bumps and rots), but it is
-#    recoverable verbatim from the PR that produced these numbers:
-#      git show dec6709:.github/workflows/worker-sweep.yml
-#      git show dec6709:scripts/ci-sweep-summary.mjs
-#    Two things it got wrong the first time, worth keeping if you restore it:
-#    the job must pass ALLOWED_TOKENS_LIST to the preview server it starts, and
-#    it must run the tests with CI unset so retries stay off and the server is
-#    reused rather than rebuilt per rep.</code></pre>
+# 3. On CI hardware the same driver runs from .github/workflows/worker-sweep.yml
+#    (manual dispatch, one runner per worker count so configs never contend):
+#      Actions -&gt; &quot;Worker sweep (manual)&quot; -&gt; Run workflow -&gt; reps
+#    Read the numbers straight out of each job log:
+#      grep SWEEPRESULT
+
+# Why the driver rather than a loop over `playwright test`: reps that share one
+# server are not independent. generate-image.spec.ts deliberately fills the
+# per-IP BYOK rate-limit bucket, which takes 60s to clear, and a rep takes about
+# that long — so the next rep&#39;s guard tests take a 429 where they expect a 415
+# and the sweep measures a flake it manufactured. A fresh server per rep clears
+# the in-memory limiter and matches what CI does: one server, one suite run.</code></pre>
     <p>
       Then replace the datasets at the top of <code>scripts/gen-e2e-tuning-report.mjs</code> and run
       <code>npm run gen:e2e-tuning-report</code>. The decision and its reasoning live in
