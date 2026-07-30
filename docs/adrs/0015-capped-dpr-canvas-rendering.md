@@ -94,7 +94,7 @@ multiplies — the cap itself, the propagation rules, and the per-session invari
   live backing store + the paper + the resident snapshot tier, with anything past it as
   single-digit-MB lossless blobs — a managed budget inside ADR-0066's device-gated ≲ 150 MB, so more
   than two surfaces but nothing like the naïve twenty.
-  [ADR-0078](0078-resident-snapshot-tier-byte-budget.md) (2026-07) resized that tier: it was a fixed
+  [ADR-0082](0082-resident-snapshot-tier-byte-budget.md) (2026-07) resized that tier: it was a fixed
   two hot rasters, and is now a byte budget of three times the paper, so this bound roughly triples
   — up to ~85 MiB of patches on the 2732² raster rather than two ~30 MB snapshots. Measured on
   device at 28–60 MiB, still inside the gate. The encode that the old count bought was costing a

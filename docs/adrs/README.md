@@ -5,10 +5,16 @@ documents the context, the decision, and the consequences so future contributors
 things are the way they are.
 
 ADR numbers and filenames are **immutable** — records are never renumbered, deleted, or rewritten
-once superseded. This index is the curated presentation layer on top of that append-only history:
-start with the load-bearing decisions, then browse your area. Superseded, rejected, and moved
-records live in the [Historical](#historical) section at the bottom. When adding an ADR, slot its
-row into the matching section (see the `create-adr` skill).
+once superseded. The single exception is a number issued twice by mistake: uniqueness is the
+property immutability exists to guarantee, so a collision is repaired by renumbering whichever
+record has fewer inbound references, not left standing. Issue #676 repaired the only two — the
+Dependabot review workflow moved to 0081 and the resident byte budget to 0082, which is why commits
+before it name those records by their original numbers.
+
+This index is the curated presentation layer on top of that append-only history: start with the
+load-bearing decisions, then browse your area. Superseded, rejected, and moved records live in the
+[Historical](#historical) section at the bottom. When adding an ADR, slot its row into the matching
+section (see the `create-adr` skill).
 
 ## Start here
 
@@ -55,7 +61,7 @@ The decisions that shape everything else, in rough order of importance. All are 
 | [0069](0069-dirty-rect-patch-snapshots.md)                 | Undo Snapshots Shrink to Dirty-Rect Patches of the Fold Region                          | Active (amended by [0074](0074-undo-hotpath-patch-capture-optimizations.md))                                                                          |
 | [0072](0072-early-engine-boot-adopt-contract.md)           | Early Engine Boot at Module Evaluation — Components Adopt the Running Engine            | Active (amends [0004](0004-imperative-canvas-engine.md))                                                                                              |
 | [0074](0074-undo-hotpath-patch-capture-optimizations.md)   | Undo Hot-Path Optimizations — Clustered Patches, Clear Paper Swap, Rect-Limited Repaint | Active (amends [0069](0069-dirty-rect-patch-snapshots.md))                                                                                            |
-| [0078](0078-resident-snapshot-tier-byte-budget.md)         | Size the Resident Snapshot Tier by Bytes, and Encode Off the Commit                     | Active (amends [0066](0066-snapshot-undo-reinstated.md))                                                                                              |
+| [0082](0082-resident-snapshot-tier-byte-budget.md)         | Size the Resident Snapshot Tier by Bytes, and Encode Off the Commit                     | Active (amends [0066](0066-snapshot-undo-reinstated.md))                                                                                              |
 
 ## UI & theming
 
@@ -141,7 +147,7 @@ The decisions that shape everything else, in rough order of importance. All are 
 | [0021](0021-cloud-session-tunneling.md)                 | Tunneling the Dev Server from Claude Code Cloud Sessions (self-hosted chisel reverse tunnel)                  | Active |
 | [0046](0046-pr-screenshot-hosting-via-orphan-branch.md) | Host PR Screenshots on a `pr-assets` Orphan Branch                                                            | Active |
 | [0059](0059-committed-run-artifacts-github-pages.md)    | Committed Run Artifacts in `/scrapbook`, Published Live via GitHub Pages (amended: renamed from `/artifacts`) | Active |
-| [0077](0077-dependabot-claude-review-workflow.md)       | Auto-Review Dependabot PRs with Claude, Authenticated from the Dependabot Secret Store                        | Active |
+| [0081](0081-dependabot-claude-review-workflow.md)       | Auto-Review Dependabot PRs with Claude, Authenticated from the Dependabot Secret Store                        | Active |
 
 ## Historical
 

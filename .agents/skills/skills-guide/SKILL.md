@@ -68,7 +68,7 @@ All three augment the built-in PR flows rather than replacing them.
 
 `triage-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
 (`.github/workflows/dependabot-review.yml`, `docs/DEPENDABOT.md`, and
-[ADR-0077 on the Dependabot review workflow](../../../docs/adrs/0077-dependabot-claude-review-workflow.md)),
+[ADR-0081 on the Dependabot review workflow](../../../docs/adrs/0081-dependabot-claude-review-workflow.md)),
 which posts an advisory verdict but never merges. It pairs with `dependency-update-audit` in the
 audit table above and the two do not overlap: that skill picks packages the repo is behind on and
 drives the bumps itself, this one triages PRs Dependabot has already opened.

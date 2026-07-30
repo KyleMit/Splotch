@@ -72,7 +72,7 @@ superseding commit.
 
 ## Open questions
 
-* **Overlap with the automated review** (`dependabot-review.yml`, ADR-0077, merged as \#598 during
+* **Overlap with the automated review** (`dependabot-review.yml`, ADR-0081, merged as \#598 during
   the same session). That workflow posts a per-PR APPROVE/FLAG verdict, so some of step 2 may be
   redundant once its verdicts are trusted in practice. Unvalidated: the session predated its first
   real run. If those verdicts prove reliable, step 2 could shrink to "verify the FLAGs and
