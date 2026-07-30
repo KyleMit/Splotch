@@ -170,6 +170,20 @@ specs that can't race in the first place:
   ADR-0080); prefer that shape — a signal for the state you actually depend on — over retrying an
   action until its effect appears. Where you must assert instead, pick a metric a wrong-mode action
   can't satisfy: a canvas-fill pixel count is not one, since a pen stroke fills the band too.
+* **Let a fly-in dialog land before reading a coordinate off it.** A real Playwright `.click()`
+  waits for its target to stop moving; an `evaluate` that reads `getBoundingClientRect()` and
+  dispatches synthetic pointer events there does not. `dialogFlyFromOrigin` (app.css) starts a modal
+  at `scale(0.05)` **on the button that opened it**, and `modalDialog` arms a launch dead zone at
+  that same point (`launchGuard`: 72px, 600ms) whose capture-phase `pointerdown` handler swallows
+  everything inside it — dialog content included, by design (issue \#308's ghost click). So for the
+  opening frames the whole dialog sits in the dead zone: the Parent Center's content pane centers
+  **6px** from the launch origin at the first keyframe and only clears the radius ~13ms into the
+  animation. A CSS animation advances with *rendered frames*, so a starved worker parks the dialog
+  on that keyframe for far longer than 13ms of wall clock, and the gesture is aimed straight into
+  the guard and silently does nothing. That was issue \#665 — the three zoom/pinch specs that were
+  the entire residual flake rate (ADR-0078 §4), all failing as "the pinch produced no zoom".
+  `openParentCenter` now awaits the fly-in's `Animation.finished` (`settleFlyIn`), which puts the
+  pane 574px from the origin and removes the dependency on animation progress instead of timing it.
 * **Drive strokes through `draw`/`dragStroke`, never a hand-rolled run of `mouse.move`s.** The
   engine reads a sample far from the previous one and more than `POINTER_RESUME_GAP_MS` later as a
   finger that lifted and set down (`strokeMath.pointerWasResumed`), restarts the stroke there, and
