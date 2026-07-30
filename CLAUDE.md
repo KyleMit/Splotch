@@ -160,24 +160,13 @@ one-line entry in the `scripts-info` block of `package.json`.
 
 ## Writing on GitHub
 
-### The pull request body
+### Pull requests
 
 **There is deliberately no PR template** — no `.github/pull_request_template.md`, no
 `PULL_REQUEST_TEMPLATE.md`, no `docs/` copy, no `.github/PULL_REQUEST_TEMPLATE/` directory. Don't
 probe for one. A template's headings get mirrored into every body, and that is the opposite of what
-these PRs want: the sections belong to the change, so a UI fix carries before/after shots, a
-protocol spike carries the three facts that shaped its client, and a small refactor carries neither.
-
-Shape the body around what the change actually needs, over this floor:
-
-* Open with the issue reference (`Fixes #NNN.`) and a short paragraph on what changed and why.
-* Name the changes under a heading of your choosing, then add sections for whatever needs explaining
-  — the mechanism, what was measured, what was rejected, what is out of scope, which ADRs or docs
-  moved.
-* Include a **Verification** section — the checks actually run and their results, usually a table.
-  This is the one worth keeping even when the PR is small.
-* Visuals whenever the change is visible, and an explicit note when it isn't. The `pr-screenshots`
-  skill decides which shots and how to host them.
+these PRs want: the sections belong to the change. The expectations live in the `create-pr` skill —
+read it before writing a PR body, and `pr-screenshots` too when the change is visible.
 
 ### Auto-linking
 
@@ -223,6 +212,7 @@ sources maintained independently.
 | `profiling`                             | measuring drawing/canvas performance, investigating jank, or checking for perf regressions (`npm run perf:*`)                                                                                                            |
 | `lighthouse-audit`                      | auditing page-load performance / Core Web Vitals on a throttled device (Lighthouse, first vs repeat visit)                                                                                                               |
 | `adrs`                                  | proposing or discussing any architectural approach                                                                                                                                                                       |
+| `create-pr`                             | opening/creating any pull request — what the body must carry, and what it should admit (there is deliberately no PR template)                                                                                            |
 | `pr-screenshots`                        | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow                                                                                                           |
 | `leave-pr-review` / `address-pr-review` | authoring a review of a PR (`leave-pr-review` — local checkout, empirical verification, gated posting, augments the built-in review flow), or working through the review feedback received on a PR (`address-pr-review`) |
 | `create-handoff` / `resume-handoff`     | pausing in-flight work for a later session (`create-handoff`), or picking it back up (`resume-handoff`) — transfer packets live in `docs/handoff/`                                                                       |

@@ -1,23 +1,12 @@
 ## Writing on GitHub
 
-### The pull request body
+### Pull requests
 
 **There is deliberately no PR template** — no `.github/pull_request_template.md`, no
 `PULL_REQUEST_TEMPLATE.md`, no `docs/` copy, no `.github/PULL_REQUEST_TEMPLATE/` directory. Don't
 probe for one. A template's headings get mirrored into every body, and that is the opposite of what
-these PRs want: the sections belong to the change, so a UI fix carries before/after shots, a
-protocol spike carries the three facts that shaped its client, and a small refactor carries neither.
-
-Shape the body around what the change actually needs, over this floor:
-
-* Open with the issue reference (`Fixes #NNN.`) and a short paragraph on what changed and why.
-* Name the changes under a heading of your choosing, then add sections for whatever needs explaining
-  — the mechanism, what was measured, what was rejected, what is out of scope, which ADRs or docs
-  moved.
-* Include a **Verification** section — the checks actually run and their results, usually a table.
-  This is the one worth keeping even when the PR is small.
-* Visuals whenever the change is visible, and an explicit note when it isn't. The `pr-screenshots`
-  skill decides which shots and how to host them.
+these PRs want: the sections belong to the change. The expectations live in the `create-pr` skill —
+read it before writing a PR body, and `pr-screenshots` too when the change is visible.
 
 ### Auto-linking
 

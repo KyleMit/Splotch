@@ -57,10 +57,11 @@ staging file, `fix-audits` burns the issues down.
 
 ## Pull requests — author, review, respond
 
-All three augment the built-in PR flows rather than replacing them.
+All four augment the built-in PR flows rather than replacing them.
 
 | Skill               | Use when you are…                                                               |
 | ------------------- | ------------------------------------------------------------------------------- |
+| `create-pr`         | **Opening** any PR — body shape, the Verification section, what to admit        |
 | `pr-screenshots`    | **Opening** a PR that touches UI — screenshot/before-after/gif conventions      |
 | `leave-pr-review`   | **Authoring** a review of someone's PR — local checkout, empirical verification |
 | `address-pr-review` | **Receiving** a review — triage every comment, fix or rebut, reply and resolve  |

@@ -88,9 +88,9 @@ Runs only when the issue was actually completed (step 5 above), not when it was 
 this skill is the user's standing approval to open the PR** — don't pause to ask.
 
 1. **Open the PR.** Create a pull request from the working branch into `main`, with `Fixes #<NN>` in
-   the body so the issue closes on merge. Follow the `pr-screenshots` skill if the change touches
-   anything visible in the UI. The body must be a **rich summary** — as complete as a full session
-   summary (see "PR body" below), never a one-liner.
+   the body so the issue closes on merge. Follow the `create-pr` skill for the body's shape, and
+   `pr-screenshots` too if the change touches anything visible in the UI. The body must be a **rich
+   summary** — as complete as a full session summary (see "PR body" below), never a one-liner.
 
 2. **Independent review — fresh subagent, PR number only.** Spawn a `general-purpose` subagent and
    have it run the `leave-pr-review` skill. It must start with **no context from this conversation**
