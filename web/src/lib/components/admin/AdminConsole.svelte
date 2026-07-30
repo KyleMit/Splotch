@@ -31,6 +31,7 @@
 </script>
 
 <script lang="ts">
+  import { onMount } from 'svelte';
   import Icon from '../Icon.svelte';
   import Breadcrumb from '../Breadcrumb.svelte';
   import InviteMenu from './InviteMenu.svelte';
@@ -64,6 +65,28 @@
   let newToken = $state('');
   // Guard against double-submits while a request is in flight.
   let busy = $state(false);
+
+  // Every form here submits through a callback and cancels the native submit, so
+  // before hydration there is nothing to cancel it: the browser default-submits
+  // the form, and with no `action`/`method` that is a GET to the current URL with
+  // each field as a query param. Both doors leak a secret that way — the login
+  // card puts the admin access key in the address bar, browser history and every
+  // access log en route, and the authed page does the same with a freshly minted
+  // AI access code — while in neither case doing the thing that was asked.
+  //
+  // So `submitDisabled` gates *every* submit in this component, not each one on
+  // its own: the rule is "no submit is live before hydration", and stating it once
+  // is what stops the next form from being added without it. Playwright's own
+  // actionability wait then makes hydration the gate a spec waits on for free
+  // (issue #615, whose reported failure was this GET:
+  // `navigated to "/admin?access-key=…"`). Both flows already required JS, so
+  // nothing that worked stops working — it just fails visibly instead of leaking.
+  let hydrated = $state(false);
+  onMount(() => {
+    hydrated = true;
+  });
+
+  let submitDisabled = $derived(busy || !hydrated);
 
   // Callbacks that reject (e.g. a fetch failing offline) would otherwise be
   // unhandled rejections with no UI feedback, so catch here and surface a
@@ -164,7 +187,7 @@
             required
             bind:value={loginKey}
           />
-          <button type="submit" class="btn btn-primary" disabled={busy}>Sign in</button>
+          <button type="submit" class="btn btn-primary" disabled={submitDisabled}>Sign in</button>
         </form>
       </section>
     {:else}
@@ -201,7 +224,7 @@
         <button
           type="submit"
           class="btn btn-primary add-button"
-          disabled={busy}
+          disabled={submitDisabled}
           aria-label="Add code"
         >
           <span class="add-label">Add code</span>

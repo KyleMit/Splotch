@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
-import { ADMIN_ACCESS_TOKEN } from './admin-helpers';
+import { adminConsole, ADMIN_ACCESS_TOKEN, signInToAdmin, submitAdminKey } from './admin-helpers';
 
 // The admin console has two front doors over one shared core ($lib/server/admin
 // + $lib/server/tokens): the server-rendered /admin (form actions + HTTP-only
@@ -10,15 +10,8 @@ import { ADMIN_ACCESS_TOKEN } from './admin-helpers';
 // Token names are unique per test because the preview server's in-memory list
 // is shared across the parallel workers.
 
-async function signIn(page: Page, path: string) {
-  await page.goto(path);
-  await page.getByPlaceholder('Admin access key').fill(ADMIN_ACCESS_TOKEN);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByPlaceholder('Add a code…')).toBeVisible();
-}
-
 async function addsAndRemovesToken(page: Page, token: string) {
-  await page.getByPlaceholder('Add a code…').fill(token);
+  await adminConsole(page).fill(token);
   await page.getByRole('button', { name: 'Add code' }).click();
   await expect(page.getByText(`Added “${token}”`)).toBeVisible();
   // The invite row shows the raw token and exposes its prebuilt invite link
@@ -34,13 +27,12 @@ async function addsAndRemovesToken(page: Page, token: string) {
 
 test('web /admin rejects a wrong key', async ({ page }) => {
   await page.goto('/admin');
-  await page.getByPlaceholder('Admin access key').fill('wrong-key');
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await submitAdminKey(page, 'wrong-key');
   await expect(page.getByRole('alert')).toContainText('Incorrect access key');
 });
 
 test('web /admin signs in via cookie session, manages tokens, signs out', async ({ page }) => {
-  await signIn(page, '/admin');
+  await signInToAdmin(page, '/admin');
   // The preview server has no Netlify Blobs, so the token list is the in-memory
   // env-seeded fallback — the console must warn that edits won't persist.
   await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
@@ -56,7 +48,7 @@ test('web /admin signs in via cookie session, manages tokens, signs out', async 
 });
 
 test('native console /admin/native signs in via the API and manages tokens', async ({ page }) => {
-  await signIn(page, '/admin/native');
+  await signInToAdmin(page, '/admin/native');
   // The preview server has no Netlify Blobs, and the API snapshot carries that
   // fallback status to the native console just as the web page data does.
   await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
@@ -64,7 +56,7 @@ test('native console /admin/native signs in via the API and manages tokens', asy
 
   // The bearer session persists in secure storage, so a reload stays signed in.
   await page.reload();
-  await expect(page.getByPlaceholder('Add a code…')).toBeVisible();
+  await expect(adminConsole(page)).toBeVisible();
 
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
@@ -86,21 +78,21 @@ test('native console updates persistence status from every API snapshot', async 
     });
   });
 
-  await signIn(page, '/admin/native');
+  await signInToAdmin(page, '/admin/native');
   await expect(page.getByText('Netlify Blobs is unavailable')).toBeHidden();
 
-  await page.getByPlaceholder('Add a code…').fill(token);
+  await adminConsole(page).fill(token);
   await page.getByRole('button', { name: 'Add code' }).click();
   await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
 });
 
 test('web /admin surfaces a network failure instead of failing silently', async ({ page }) => {
-  await signIn(page, '/admin');
+  await signInToAdmin(page, '/admin');
   await page.route(
     (url) => url.pathname === '/admin' && url.search === '?/add',
     (route) => route.abort()
   );
-  await page.getByPlaceholder('Add a code…').fill(`e2e-offline-${Date.now()}`);
+  await adminConsole(page).fill(`e2e-offline-${Date.now()}`);
   await page.getByRole('button', { name: 'Add code' }).click();
   // The preview server's Blobs-fallback warning is also role="alert", so pick
   // out the error flash by its text.
@@ -114,14 +106,13 @@ test('native console reports a failed post-login snapshot and recovers on reload
   // Let the login POST through but kill the follow-up tokens GET: the session
   // is already saved by then, so the login card must say what went wrong…
   await page.route('**/api/admin/tokens', (route) => route.abort());
-  await page.getByPlaceholder('Admin access key').fill(ADMIN_ACCESS_TOKEN);
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await submitAdminKey(page, ADMIN_ACCESS_TOKEN);
   await expect(page.getByRole('alert')).toContainText('Could not reach the server');
 
   // …and once the network is back, a reload signs in from the stored session.
   await page.unroute('**/api/admin/tokens');
   await page.reload();
-  await expect(page.getByPlaceholder('Add a code…')).toBeVisible();
+  await expect(adminConsole(page)).toBeVisible();
 });
 
 test('admin API requires a valid bearer session', async ({ request }) => {

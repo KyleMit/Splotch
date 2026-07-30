@@ -1,5 +1,6 @@
 // cSpell:ignore SLOWMO
 import { existsSync, readdirSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
 import { chromium, defineConfig, devices, webkit } from '@playwright/test';
 import {
   allowedTokensList,
@@ -62,7 +63,76 @@ function webkitAvailable(): boolean {
   return false;
 }
 
+// A Playwright worker is a whole Chromium (browser, renderer, GPU, network and
+// utility processes) plus a Node runner, and demands ~2 cores to run
+// unthrottled: per-test latency inflation tracked w/2 past saturation on two
+// unrelated 4-core machines — 2.0–2.5 locally, 2.2–2.8 on CI (ADR-0078 §2, full
+// study in scrapbook/e2e-tuning/). That ratio is what generalises, so the count
+// is derived from it rather than hardcoded, and a percentage is the wrong shape
+// for the knob entirely: "one worker per core" oversubscribes on any machine.
+const CORES_PER_WORKER = 2;
+
+// availableParallelism() rather than cpus().length — it respects cgroup CPU
+// quotas, so it does not over-report inside a container.
+const cores = availableParallelism();
+
+// Capacity in workers. Local runs sit here: with retries off a flake costs a
+// re-run plus the attention to triage it, which no wall-clock saving covers.
+const saturation = cores / CORES_PER_WORKER;
+
+// How far past capacity CI goes. Retries make a flake cheap there, so wall clock
+// decides among settings whose flake rates don't differ — and at 4 cores they
+// don't. Measured 35 reps each with retries off (ADR-0078 §4): 4 workers went
+// 1/35 runs red against 3 workers' 3/35, for 3.2s less per run. Twice capacity is
+// also the most oversubscription ever measured as safe, so this doubles as the
+// ceiling — a re-tune edits this constant rather than re-deriving why `cores`
+// meant twice capacity.
+//
+// Worth knowing before re-tuning: an earlier pass of that same re-measure put
+// this at 1.5× on a 15-rep sweep where 3 workers were 0/15 and 4 were 6/15. Both
+// numbers were real; nearly all of the difference was ONE spec whose fixed sleep
+// failed more often the more starved the worker (the tell was 6 workers failing
+// in exactly 15 of 15 reps — deterministic, not flaky). Fixing that spec removed
+// the gradient. A worker count tuned against a rate one bad spec dominates is
+// tuning around the spec.
+//
+// Two caveats the hardware here cannot settle:
+//   • Only 4 cores was ever measured, so bigger machines are extrapolation from a
+//     ratio fitted at one point. 6 and 8 workers on 4 cores — 3× and 4× capacity
+//     — were only ever measured *before* that spec was fixed, so the ceiling
+//     above 2× is genuinely unknown rather than merely untested.
+//   • availableParallelism() counts LOGICAL CPUs, and both measurement boxes ran
+//     one thread per core, so "cores / 2" and "physical cores" were the same
+//     number there. On 8 logical / 4 physical this says 8 where physical capacity
+//     argues 4 — the likeliest place it is wrong.
+// Override with `--workers=N`; re-measure with .github/workflows/worker-sweep.yml.
+const CI_OVERSUBSCRIPTION = 2;
+
+const workers = process.env.CI
+  ? Math.max(2, Math.floor(saturation * CI_OVERSUBSCRIPTION))
+  : Math.max(1, Math.floor(saturation));
+
 const slowMo = Number(process.env.SLOWMO) || 0;
+
+// Two, and re-measured rather than inherited (issue #653, ADR-0078 §4). At the
+// shipped worker count, 1 of 35 unretried runs went red — 2.9%, but with a 95%
+// confidence interval reaching 12.9%, because one observed failure in 35 cannot
+// establish a rate. (3 workers, which CI never selects, was 3/35. Pooling the two
+// into "4 in 70" would be quoting a number for a configuration that was measured
+// 35 times.)
+//
+// That interval is the whole argument. `0` reddens a run whenever the residual
+// does, with no evidence it is rare enough to bear. `1` needs a spec to fail
+// twice, which looks like ~0.1% if the attempts are independent — and they are
+// not: a retry runs immediately afterwards on the same starved machine, so the
+// squaring flatters exactly the failure mode being retried. Dropping to 1 on a
+// point estimate whose interval spans 12.9% would be choosing a knob against a
+// number the data doesn't support, which is the mistake §4 records above.
+//
+// What changes instead is that the debt is no longer silent: every retried pass
+// is annotated (playwright-flaky-reporter.ts). Reducing this number is downstream
+// of fixing those three specs (issue #665), the way fixing one spec took 4
+// workers from 6/15 red to 1/35.
 const ciRetries = 2;
 const ciAllowedTokens = allowedTokensList(
   ...Array.from({ length: ciRetries + 1 }, (_, retry) => managedAccessTokenForRetry(retry))
@@ -70,22 +140,12 @@ const ciAllowedTokens = allowedTokensList(
 
 export default defineConfig({
   ...commonPlaywrightConfig,
-  // Measured per environment, not assumed (ADR-0078; full study in
-  // scrapbook/e2e-tuning/). A percentage is the wrong shape for this knob: a
-  // Playwright worker is a whole Chromium plus a Node runner and costs ~2 cores,
-  // so "one worker per core" oversubscribes on any machine.
-  //
-  // CI retries absorb flakes cheaply and the measured flake rate barely moves
-  // between 1 and 6 workers there, so wall clock decides: 4 was fastest.
-  // Locally there are no retries, so a flake costs a re-run plus triage — 2
-  // workers cut the red-run rate for ~10.2s of wall clock (92.3s vs 82.1s),
-  // which the break-even says is worth it after ~15s of attention.
-  //
-  // Re-measure on new hardware; the shape transfers, the optimum does not.
-  workers: process.env.CI ? 4 : 2,
+  workers,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? ciRetries : 0,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  // The flaky reporter collects nothing when retries are off, so it needs no
+  // branch — it only has anything to say where retries can mask a failure.
+  reporter: [['list'], ['html', { open: 'never' }], ['./playwright-flaky-reporter.ts']],
   use: {
     ...commonPlaywrightConfig.use,
     trace: 'on-first-retry',

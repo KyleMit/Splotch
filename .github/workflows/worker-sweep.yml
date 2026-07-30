@@ -1,0 +1,85 @@
+# Manual-dispatch only — worker-count measurement, not a production gate.
+# Nothing here runs automatically; trigger it from the Actions tab when
+# re-tuning (ADR-0078). Results live in scrapbook/e2e-tuning/.
+#
+# Runs the E2E suite N times at each worker count on real GHA hardware. It is
+# kept rather than deleted because the numbers it produces are hardware-specific
+# and go stale: a runner-image change, a big spec addition, or a suspicion that
+# the flake rate has drifted are all reasons to run it again and refresh the
+# datasets in scripts/gen-e2e-tuning-report.mjs.
+#
+# Each matrix job gets its own runner, so worker counts never contend with each
+# other. Everything inside a job — the server lifecycle, unsetting CI, the
+# per-rep summary — belongs to scripts/e2e-sweep.mjs rather than to this file,
+# so a local re-tune and this workflow measure the same thing. The first version
+# of this sweep put that logic in shell here, and shipped three defects only the
+# other half could have caught.
+name: Worker sweep (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      reps:
+        description: Runs per worker count
+        required: false
+        default: '5'
+      workers:
+        # A JSON list so a re-tune can spend all its reps on one configuration.
+        # The full curve answers "how many workers"; a single count with many
+        # reps is what a retry decision needs, because that rests on the red-run
+        # rate at the count CI actually ships.
+        description: Worker counts to sweep (JSON list)
+        required: false
+        default: '[1, 2, 3, 4, 6, 8]'
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    name: ${{ matrix.workers }} workers
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        workers: ${{ fromJSON(github.event.inputs.workers || '[1, 2, 3, 4, 6, 8]') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node
+
+      # The local measurements ran Chromium only (no WebKit binary present), so
+      # the WebKit project drops out of both and the suites stay comparable.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Record hardware
+        run: |
+          echo "HARDWARE nproc=$(nproc)"
+          lscpu | grep -E "^CPU\(s\)|Thread\(s\) per core|Core\(s\) per socket|Model name" || true
+          free -g | head -2 || true
+
+      # PUBLIC_ENABLE_DEV_HARNESS must be set at BUILD time — it gates the /dev/*
+      # harness routes the specs drive. The sweep driver builds nothing, so this
+      # is the only build.
+      - name: Build preview bundle
+        run: node scripts/web.mjs vite build
+        env:
+          PUBLIC_ENABLE_DEV_HARNESS: 'true'
+          ADMIN_ACCESS_TOKEN: test-admin-secret
+
+      - name: Run sweep
+        run: |
+          node scripts/e2e-sweep.mjs \
+            --workers=${{ matrix.workers }} \
+            --reps=${{ github.event.inputs.reps || '5' }} \
+            --out=/tmp/sweep
+
+      - name: Upload raw reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sweep-w${{ matrix.workers }}
+          path: /tmp/sweep/
+          retention-days: 7

@@ -1,4 +1,4 @@
-# ADR-0078: Size the Resident Snapshot Tier by Bytes, and Encode Off the Commit
+# ADR-0082: Size the Resident Snapshot Tier by Bytes, and Encode Off the Commit
 
 **Status:** Active **Date:** 2026-07
 

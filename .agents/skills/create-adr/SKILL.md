@@ -84,7 +84,8 @@ an ADR with only upsides is not credible and not useful.
 
 When an ADR's status changes to Superseded, Rejected, or Deprecated, also move its row in
 `docs/adrs/README.md` to the Historical section (keep the supersession links intact). Never
-renumber, rename, or delete the ADR file itself.
+renumber, rename, or delete the ADR file itself — the sole exception is a number issued twice by
+mistake (see `docs/adrs/README.md`).
 
 ## Output
 

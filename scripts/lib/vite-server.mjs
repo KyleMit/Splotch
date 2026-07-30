@@ -41,7 +41,7 @@ export function spawnViteServer(port, { env = {}, command = 'dev', stdout = 'ign
     detached: true,
   });
 
-  const stop = () => {
+  const kill = () => {
     try {
       process.kill(-server.pid, 'SIGTERM');
     } catch {
@@ -52,11 +52,21 @@ export function spawnViteServer(port, { env = {}, command = 'dev', stdout = 'ign
       }
     }
   };
-  process.on('exit', stop);
-  process.on('SIGINT', () => {
-    stop();
+  const onInterrupt = () => {
+    kill();
     process.exit(1);
-  });
+  };
+
+  // stop() drops its own safety-net listeners, so a caller that boots one server
+  // per iteration (scripts/e2e-sweep.mjs) doesn't accumulate a listener and a
+  // captured child per rep — Node starts warning about the leak at eleven.
+  const stop = () => {
+    process.off('exit', kill);
+    process.off('SIGINT', onInterrupt);
+    kill();
+  };
+  process.on('exit', kill);
+  process.on('SIGINT', onInterrupt);
 
   return { server, stop };
 }

@@ -1,0 +1,141 @@
+<!-- Source: .ruler/skill-notes/triage-dependabot-prs.md.template -->
+
+# triage-dependabot-prs — design notes
+
+Design history for the skill. Not linked from `SKILL.md` by design — see the README in this
+directory.
+
+## Where it came from
+
+Written after a 2026-07-28 session that triaged a batch of nine open Dependabot PRs (\#573–\#581).
+Outcome: seven merged, one closed as blocked upstream, one closed pending a required fix, two
+tracking issues filed. Every rule in the skill is something that session paid for; nothing in it is
+speculative.
+
+Revised after a 2026-07-30 run on a five-PR batch (\#666–\#670): all five merged, one rebase. That
+run added the tarball diff, the open-PR cap, the nested-advisory trap, and the cloud-session wait —
+each marked below.
+
+## Why it exists separately from `dependency-update-audit`
+
+The obvious objection is that the repo already has a dependency-upgrade skill. They are inverses:
+
+* `dependency-update-audit` — *you* choose what to upgrade, from `npm outdated`. One package per
+  commit, driven by migration guides. Proactive.
+* `triage-dependabot-prs` — the PRs already exist and each is a merge/hold/close decision. The work
+  is verification and **sequencing**, not authoring. Reactive.
+
+The sequencing half has no analogue in the other skill and is where the session actually spent its
+time, which is what settled it as a separate skill rather than a section.
+
+## Rules that earned their place
+
+**Read upstream source, not release notes.** `WebFetch` on GitHub release pages returned a v4.0.0
+dated before the v3.0.1 that preceded it, and an abbreviated 2.69.2 changelog that the PR body
+showed was missing half its entries. The `upload-pages-artifact` finding only became actionable by
+diffing `action.yml` at both tags and seeing `--exclude=.[^/]*`. Treating release notes as a lead
+rather than evidence is the single highest-value rule here.
+
+**`npm audit` before/after.** This was nearly skipped as bureaucratic and turned out to reclassify
+SvelteKit from routine bump to security fix (two moderate advisories, `<=2.69.0`). It changed the
+merge order. The count-goes-up-while-posture-improves wrinkle is included because it genuinely looks
+like a regression at a glance: 21 → 23, because kit's moderate resolved and the masked transitive
+`cookie` low resurfaced on kit plus both adapters.
+
+**Simulate the merge sequence, not just each branch.** All six branches tested clean against `main`
+individually. After status-bar landed, quicksand conflicted — adjacent lines in the lockfile root
+block. Pairwise-clean is a genuinely misleading signal and the loop that catches it is three lines.
+
+**Never push a fix to a Dependabot branch.** The next rebase discards it. This is why \#574 became
+an issue instead of a one-line edit, and it is the non-obvious constraint that shapes the whole
+"handle the ones that can't just be merged" section.
+
+**Closing suppresses that version.** Dependabot won't re-raise a manually closed PR — only a newer
+version reopens the topic. Without an issue, closing silently drops the work. This is *why* the
+skill insists on file-issue-then-close rather than close-and-move-on.
+
+**Environmental vs. real test failures.** 17 E2E canvas specs failed locally; they fail identically
+on unmodified `main` (no GPU in the container). Without the baseline re-run the obvious conclusion
+is "the bump broke drawing," which would have been wrong and expensive.
+
+**`cancelled` ≠ failed.** Cost a wrong statement to the user mid-session: a `main` run was reported
+as still running when it had already been cancelled by the concurrency group after an unrelated PR
+landed behind it. Hence the explicit instruction to re-check rather than assume, and to find the
+superseding commit.
+
+**Diff the published tarballs** *(2026-07-30)*. Three of the five PRs were `@capacitor/*` 8.4.1 →
+8.4.2 — exactly the case the traps list flags as possible native-rebuild work. Extracting both
+tarballs showed the only content difference across core, cli, and ios was the `"version"` string in
+`package.json`. That turned the batch's highest-uncertainty items into provable no-ops and retired
+the rebuild question without a judgement call. The gzip sub-trap is in the skill because the cli's
+five bundled platform tarballs *did* differ as binary blobs while extracting byte-identical; a
+checksum-level check would have manufactured a native-rebuild finding out of repack metadata.
+
+**The open-PR cap truncates the batch** *(2026-07-30)*. Exactly five PRs were open — the npm default
+`open-pull-requests-limit`, since `.github/dependabot.yml` sets none. `@capacitor/android` 8.4.2 was
+published, had no PR, and appeared in no listing. It also held the release's *only* real code change
+(`fix(android): explicitly grant URI permissions for image capture intent`); core, cli, and ios were
+version-only republishes of it. So the batch wasn't merely incomplete — the part it omitted was the
+only part that did anything, and "all five merged" read as finishing a job that had barely started.
+
+**`--ignore-scripts` and `--no-dereference` on the tarball diff** *(2026-07-30)*. Added after asking
+what the new technique exposes, since it unpacks a payload in order to decide whether to trust it.
+Three vectors were tested rather than reasoned about, and two came back clean:
+
+* *Execution* — `npm pack` on a registry spec downloads the published tarball and runs no lifecycle
+  hooks; confirmed by packing esbuild, whose postinstall is `node install.js`, and observing nothing
+  run. (A git spec *would* run `prepare`, which is why the recipe uses registry specs only.)
+  `--ignore-scripts` is belt-and-braces, not a fix for an observed hole.
+* *Filesystem escape* — GNU tar refuses both classics by default, verified with purpose-built
+  tarballs: a `..` member (`Member name contains '..'`, exit 2) and a symlink written through
+  (`Cannot open: Not a directory`, exit 2, target untouched). Worth remembering this is GNU tar
+  specifically; Node's `tar` and Python's `tarfile` are the ones with tar-slip history, so a
+  scripted version of this step would not inherit the protection.
+* *The diff output* — the one real finding, in two parts. `diff -r` **dereferences symlinks**, so an
+  extracted `README.md -> /etc/hostname` prints that file's contents as package content; anything
+  the process can read reaches the output, and from there a summary or a PR comment. Extraction
+  refuses to *write* through a symlink but still extracts the symlink, so the leak is in the read.
+  Confirmed directly, and `--no-dereference` reports the type mismatch instead. Separately, the diff
+  is attacker-controlled text landing in the exact context where a merge verdict forms — unusual in
+  that the data *is* the subject under judgement, with no separation between them.
+
+That last point is why the merge-authorization rule now carries a security rationale: it was written
+for blast radius, and it turns out to be the control that makes planted text face a second reader.
+
+**An advisory can name a package it isn't about** *(2026-07-30)*. `npm audit` reported a moderate on
+`@capacitor/cli` while \#666 bumped `@capacitor/cli`, which invites the inference that the bump
+clears it. The advisory was against a vendored 5.7.8 copy nested under `@capacitor/assets`, range
+topping out at `8.0.2-nightly`; the top-level 8.4.1 was already outside it. Totals were 22 before
+and 22 after.
+
+## Deliberately not included
+
+* **A fixed merge order by ecosystem.** Tried and rejected — the right order depends on which
+  branches actually conflict this week and what `npm audit` flags. The skill teaches deriving the
+  order instead of prescribing one.
+* **`gh` CLI recipes.** Cloud sessions have no `gh`; the GitHub MCP tools are the interface. The
+  local-git steps (`merge-tree`, the simulation loop) work in both environments, which is why the
+  verification steps lean on git rather than the API wherever there's a choice.
+* **Auto-merge / `@dependabot merge`.** The session's whole value was the two PRs that shouldn't
+  merge. Automating the merge step optimizes the part that was never the bottleneck.
+
+## Open questions
+
+* **Overlap with the automated review** (`dependabot-review.yml`, ADR-0081, merged as \#598 during
+  the same session). That workflow posts a per-PR APPROVE/FLAG verdict, so some of step 2 may be
+  redundant once its verdicts are trusted in practice. If those verdicts prove reliable, step 2
+  could shrink to "verify the FLAGs and spot-check the APPROVEs" — but note it cannot install,
+  cannot run tests, and usually posts before CI finishes, so the `npm audit` diff and the local
+  `npm ci` verification have no automated equivalent today. **Still unvalidated after 2026-07-30,
+  for a new reason:** there was no verdict to weigh on any of the five PRs, because every run failed
+  in `setupGitHubToken` — it requested an OIDC token in a Dependabot context that has none, despite
+  the workflow passing `github_token`. Step 2 ran entirely unassisted. The workflow has therefore
+  still never completed against a real batch. Practical consequence for the skill: treat a *missing*
+  advisory comment as a broken workflow worth checking, not as a PR too new to have been reviewed.
+* **Batch size.** The flow was exercised on nine PRs, then five. Note the two interact: the default
+  `open-pull-requests-limit` of 5 caps a batch at five unless the config raises it, so nine is
+  reachable only across ecosystems or with an explicit limit. A grouped github-actions PR (per
+  `.github/dependabot.yml`, minor+patch bumps arrive as one PR) may want per-action verdicts inside
+  a single comment; untested.
+* Whether the merge-sequence simulation should just be a repo script rather than an inline loop. It
+  would need to enumerate Dependabot branches itself; not obviously worth it below ~10 PRs.

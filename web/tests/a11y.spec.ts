@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { ADMIN_ACCESS_TOKEN } from './admin-helpers';
+import { adminConsole, signInToAdmin } from './admin-helpers';
 import { openParentCenter } from './helpers';
 
 // Axe-core scans for the adult-facing surfaces (issue #458): /privacy,
@@ -76,14 +76,11 @@ test('/admin logged out has no serious accessibility violations', async ({ page 
 });
 
 test('/admin logged in has no serious accessibility violations', async ({ page }) => {
-  await page.goto('/admin');
-  await page.getByPlaceholder('Admin access key').fill(ADMIN_ACCESS_TOKEN);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByPlaceholder('Add a code…')).toBeVisible();
+  await signInToAdmin(page);
 
   // Populate an invite row so the token list UI is part of the scan.
   const token = `e2e-a11y-${Date.now()}`;
-  await page.getByPlaceholder('Add a code…').fill(token);
+  await adminConsole(page).fill(token);
   await page.getByRole('button', { name: 'Add code' }).click();
   await expect(page.getByText(token, { exact: true })).toBeVisible();
 
