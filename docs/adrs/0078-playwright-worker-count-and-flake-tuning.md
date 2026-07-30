@@ -280,20 +280,25 @@ it.
 
 **Re-measured**, 15 reps per configuration, one runner each, retries off (run 30512081902):
 
-| workers            | 1     | 2     | 3         | 4     | 6      | 8      |
-| ------------------ | ----- | ----- | --------- | ----- | ------ | ------ |
-| runs gone red      | 6/15  | 2/15  | **0/15**  | 6/15  | 15/15  | 15/15  |
-| failures / 3060    | 6     | 3     | **0**     | 6     | 15     | 23     |
-| per-test rate      | 0.20% | 0.10% | **0%**    | 0.20% | 0.49%  | 0.75%  |
+| workers          | 1      | 2     | 3            | 4     | 6     | 8     |
+| ---------------- | ------ | ----- | ------------ | ----- | ----- | ----- |
+| runs gone red    | 6/15   | 2/15  | **0/15**     | 6/15  | 15/15 | 15/15 |
+| failures / 3060  | 6      | 3     | **0**        | 6     | 15    | 23    |
+| per-test rate    | 0.20%  | 0.10% | **0%**       | 0.20% | 0.49% | 0.75% |
+| seconds per rep  | 140.2  | 84.2  | 69.7         | 66.5  | 65.3  | 63.9  |
+
+Seconds per rep come from the sweep step's own duration, so they include the ~4s the driver spends
+booting a fresh server — compare the shape against §2b's column, not the absolute values.
 
 Two of §2b's conclusions do not survive this.
 
 * **The rate is not flat from 1 to 6.** It breaks at **6**, not 8, and 4 workers is already
   significantly worse than 3 (Fisher p = 0.017). §2b read it as flat because the artifact fired at
   every worker count alike, which buried the differences between them under a constant.
-* **So "wall clock decides on CI" was resting on that flatness**, and it cannot. Four workers buys
-  2.9s over three (60.2s vs 63.1s) and costs 6/15 unretried-red. §1b's coefficient is 1.5× capacity
-  because of this row, not ~2×.
+* **So "wall clock decides on CI" was resting on that flatness**, and it cannot. Going past three
+  workers buys almost nothing: 3→4 saves **3.2s** per run and 4→8 another 2.6s, against 0/15 red runs
+  becoming 6/15 and then 15/15. The wall-clock curve is flat exactly where the flake curve turns
+  steep, so §1b's coefficient is 1.5× capacity because of this row, not ~2×.
 
 One of them does survive, and is worth keeping for the same reason it was surprising the first time:
 **one worker is among the worst settings** (6/15), with no contention to blame. The GPU-less runner

@@ -83,8 +83,9 @@ const saturation = cores / CORES_PER_WORKER;
 // How far past capacity CI goes. Retries make a flake cheap there, so *some*
 // oversubscription buys wall clock — but only some, and this is the coefficient
 // the 2026-07-30 re-measure exists to pin down (ADR-0078 §4). At 4 cores, i.e.
-// capacity 2: three workers went 0/15 runs red and four went 6/15, for 2.9s of
-// wall clock. One-and-a-half times capacity pays; twice does not.
+// capacity 2: three workers went 0/15 runs red and four went 6/15, to save 3.2s
+// per run. One-and-a-half times capacity pays; twice does not, because the
+// wall-clock curve goes flat exactly where the flake curve turns steep.
 //
 // ADR-0078 originally read this as ~cores, on a sweep whose own shared-server
 // protocol was generating most of the failures it counted — which flattened the

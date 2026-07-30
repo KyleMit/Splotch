@@ -115,13 +115,18 @@ const REVEAL_BUDGET_EXPERIMENT = [
 // starting a fresh preview server per rep. `redRuns` is the quantity a retry
 // count is chosen against: how often an unretried run would go red.
 // Run 30512081902, 15 reps per worker count, retries off. `execs` is 15 × 204.
+//
+// `wall` is seconds per rep from the sweep step's own duration, so unlike the
+// CI_SWEEP column above it INCLUDES the ~4s the driver spends starting and
+// probing a fresh preview server. Compare shapes, not absolute values, across the
+// two tables.
 const CI_RESIDUAL = [
-  { w: 1, runs: 15, execs: 3060, fails: 6, redRuns: 6 },
-  { w: 2, runs: 15, execs: 3060, fails: 3, redRuns: 2 },
-  { w: 3, runs: 15, execs: 3060, fails: 0, redRuns: 0, recommended: true },
-  { w: 4, runs: 15, execs: 3060, fails: 6, redRuns: 6 },
-  { w: 6, runs: 15, execs: 3060, fails: 15, redRuns: 15 },
-  { w: 8, runs: 15, execs: 3060, fails: 23, redRuns: 15 },
+  { w: 1, wall: 140.2, runs: 15, execs: 3060, fails: 6, redRuns: 6 },
+  { w: 2, wall: 84.2, runs: 15, execs: 3060, fails: 3, redRuns: 2 },
+  { w: 3, wall: 69.7, runs: 15, execs: 3060, fails: 0, redRuns: 0, recommended: true },
+  { w: 4, wall: 66.5, runs: 15, execs: 3060, fails: 6, redRuns: 6 },
+  { w: 6, wall: 65.3, runs: 15, execs: 3060, fails: 15, redRuns: 15 },
+  { w: 8, wall: 63.9, runs: 15, execs: 3060, fails: 23, redRuns: 15 },
 ];
 
 // What that re-measure found first, before it could measure anything: the sweep
@@ -157,8 +162,9 @@ const RESIDUAL_NOTES = [
     'GPU-less runner rasterizes canvas work in software, so those specs sit near their budgets ' +
     'however few workers run. That is why the curve is a U rather than a slope, and why worker ' +
     'tuning alone was never going to reach zero.',
-  'Wall clock is not re-reported per configuration here: the summary line this run emitted carried ' +
-    'the rates only. It carries a median now, so the next sweep has both.',
+  '<b>Going past three workers buys almost nothing.</b> 3→4 saves 3.2s per run, 4→8 another 2.6s — ' +
+    'against 0/15 red runs becoming 6/15 and then 15/15. The wall-clock curve is flat exactly where ' +
+    'the flake curve turns steep.',
 ];
 
 // Each hypothesis that was tested, and how it was killed or confirmed. The
