@@ -81,7 +81,10 @@ export async function listPages(device) {
   return fetchJson(`http://${device.url}/json`).catch(() => []);
 }
 
-export async function attachToPage(webSocketDebuggerUrl, { onConsole } = {}) {
+export async function attachToPage(
+  webSocketDebuggerUrl,
+  { onConsole, commandTimeoutMs = COMMAND_TIMEOUT_MS } = {}
+) {
   const socket = new WebSocket(webSocketDebuggerUrl);
   const pending = new Map();
   let outerId = 0;
@@ -104,7 +107,11 @@ export async function attachToPage(webSocketDebuggerUrl, { onConsole } = {}) {
       return;
     }
     if (envelope.method === 'Target.targetCreated') {
-      targetId = envelope.params.targetInfo.targetId;
+      // A tab announces a `frame` target alongside its `page` target, in no
+      // guaranteed order — taking whichever arrives last can leave every
+      // command addressed to a frame instead of the page.
+      if (envelope.params.targetInfo.type === 'page')
+        targetId = envelope.params.targetInfo.targetId;
       return;
     }
     if (envelope.method !== 'Target.dispatchMessageFromTarget') return;
@@ -136,10 +143,13 @@ export async function attachToPage(webSocketDebuggerUrl, { onConsole } = {}) {
   function command(method, params = {}) {
     const id = ++innerId;
     return new Promise((resolve, reject) => {
+      // A suspended tab acks the outer envelope and then never answers, so a
+      // missing reply is the signal that the page isn't running — not an error
+      // the protocol reports.
       const timer = setTimeout(() => {
         pending.delete(id);
-        reject(new Error(`${method} got no reply within ${COMMAND_TIMEOUT_MS}ms`));
-      }, COMMAND_TIMEOUT_MS);
+        reject(new Error(`${method} got no reply within ${commandTimeoutMs}ms`));
+      }, commandTimeoutMs);
       pending.set(id, (message) => {
         clearTimeout(timer);
         resolve(message);
@@ -169,8 +179,13 @@ export async function attachToPage(webSocketDebuggerUrl, { onConsole } = {}) {
     return value === undefined ? undefined : JSON.parse(value);
   }
 
-  await command('Runtime.enable');
-  await command('Console.enable');
+  try {
+    await command('Runtime.enable');
+    await command('Console.enable');
+  } catch (error) {
+    socket.close();
+    throw error;
+  }
 
   return {
     evaluate,

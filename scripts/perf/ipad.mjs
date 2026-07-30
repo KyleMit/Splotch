@@ -44,6 +44,9 @@ const PAGE_LIST_POLL_INTERVAL_MS = 500;
 const NAVIGATION_SETTLE_MS = 1_500;
 const HARNESS_READY_TIMEOUT_MS = 60_000;
 const HARNESS_POLL_INTERVAL_MS = 500;
+// Long enough for a live tab under load to answer a trivial evaluate, short
+// enough that walking several suspended tabs stays quick.
+const LIVENESS_PROBE_TIMEOUT_MS = 5_000;
 // Four scenarios × 22 strokes at real op volume runs a couple of minutes; the
 // cap is loose enough that a slow device is not mistaken for a hung one.
 const GATES_TIMEOUT_MS = 20 * 60_000;
@@ -73,22 +76,47 @@ const reachable = (url, timeoutMs) =>
     () => false
   );
 
-async function ensureServer(harnessUrl, allowSpawn) {
+async function ensureServer(harnessUrl, port, allowSpawn) {
   if (await reachable(harnessUrl, EXISTING_SERVER_PROBE_MS)) {
     console.log(`Serving already: ${harnessUrl}`);
     return null;
   }
   if (!allowSpawn) fail(`Nothing is serving ${harnessUrl}. Start it with: npm run perf:serve`);
   console.log('Starting the preview server…');
-  const server = spawnPerfServe();
+  // The same port harnessUrl was derived from, strictly: a fall-forward would
+  // leave this waiting out its whole budget on a URL nothing ever binds.
+  const server = spawnPerfServe(port);
   await waitForUrl(harnessUrl, SERVER_READY_TIMEOUT_MS);
   console.log(`Serving: ${harnessUrl}`);
   return server;
 }
 
-// Navigates whichever tab is open to the harness rather than trusting one that
-// already shows it: a tab left over from an earlier run keeps serving that
-// run's bundle, and nothing about its URL says so.
+// iOS suspends a backgrounded Safari tab: it still lists, and still announces an
+// inspector target, but it never runs JS — so a command against it hangs instead
+// of failing, and the first-listed tab is not reliably the foreground one. A
+// short-budget probe is the only way to tell them apart.
+async function findResponsivePage(device, accept = () => true) {
+  for (const page of await listPages(device)) {
+    if (!accept(page)) continue;
+    let session;
+    try {
+      session = await attachToPage(page.webSocketDebuggerUrl, {
+        commandTimeoutMs: LIVENESS_PROBE_TIMEOUT_MS,
+      });
+      await session.evaluate('1');
+      return page;
+    } catch {
+      // Suspended, or the tab went away mid-probe.
+    } finally {
+      session?.close();
+    }
+  }
+  return null;
+}
+
+// Navigates the live tab to the harness rather than trusting one that already
+// shows it: a tab left over from an earlier run keeps serving that run's bundle,
+// and nothing about its URL says so.
 async function openHarness(device, harnessUrl, onConsole) {
   const pages = await pollUntil(
     async () => {
@@ -105,20 +133,35 @@ async function openHarness(device, harnessUrl, onConsole) {
     );
   }
 
-  const opener = await attachToPage(pages[0].webSocketDebuggerUrl);
+  const live = await pollUntil(
+    () => findResponsivePage(device),
+    PAGE_LIST_TIMEOUT_MS,
+    PAGE_LIST_POLL_INTERVAL_MS
+  );
+  if (!live) {
+    fail(
+      `None of the iPad's ${pages.length} Safari tab(s) answered. Bring Safari to the ` +
+        'foreground, unlock the device, and keep the screen awake — iOS suspends a ' +
+        'backgrounded tab, and a suspended tab never runs the driver.'
+    );
+  }
+
+  const opener = await attachToPage(live.webSocketDebuggerUrl);
   await opener.evaluate(`location.replace(${JSON.stringify(harnessUrl)})`);
   opener.close();
   await sleep(NAVIGATION_SETTLE_MS);
 
+  // Matched on URL *and* responsiveness: with several tabs open, the one showing
+  // the harness URL is not necessarily the one that will run anything.
   const loaded = await pollUntil(
-    async () => (await listPages(device)).find((page) => page.url === harnessUrl) ?? null,
+    () => findResponsivePage(device, (page) => page.url === harnessUrl),
     HARNESS_READY_TIMEOUT_MS,
     HARNESS_POLL_INTERVAL_MS
   );
   if (!loaded) {
     fail(
-      `The iPad never reported a tab on ${harnessUrl}. Check that the device is on the ` +
-        'same Wi-Fi as this Mac and can reach that address.'
+      `The iPad never reported a responsive tab on ${harnessUrl}. Check that the device is ` +
+        'on the same Wi-Fi as this Mac and can reach that address.'
     );
   }
 
@@ -185,7 +228,7 @@ export async function runIpadProfile(argv = process.argv.slice(2)) {
   warnIfNoPerfMarks('npm run perf:ipad');
 
   const harnessUrl = resolveHarnessUrl(flag('url'), port);
-  const server = await ensureServer(harnessUrl, !has('no-serve'));
+  const server = await ensureServer(harnessUrl, port, !has('no-serve'));
 
   const { stop: stopProxy } = startInspectorProxy();
   const device = await waitForDevice(flag('device-id'));

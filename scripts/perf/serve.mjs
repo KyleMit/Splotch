@@ -3,7 +3,7 @@
 // the profiling skill's ipad-device-profiling.md.
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
-import { ROOT, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, argFlag, isMain, runMain } from '../lib/proc.mjs';
 import { lanAddresses } from '../lib/net.mjs';
 
 const SERVE_ENTRY = join(ROOT, 'scripts', 'perf', 'serve.mjs');
@@ -17,11 +17,21 @@ const PREVIEW_PORT = 4173;
 // eslint-disable-next-line no-control-regex
 const stripAnsi = (line) => line.replace(/\u001B\[[0-9;]*m/g, '');
 
-export function runPerfServe() {
+export function runPerfServe({ port = PREVIEW_PORT, strictPort = false } = {}) {
   const addresses = lanAddresses();
   const child = spawn(
     process.execPath,
-    [join(ROOT, 'scripts', 'web.mjs'), 'vite', 'preview', '--host', '--port', String(PREVIEW_PORT)],
+    [
+      join(ROOT, 'scripts', 'web.mjs'),
+      'vite',
+      'preview',
+      '--host',
+      '--port',
+      String(port),
+      // A caller that derived a URL from `port` before starting the server
+      // can't discover a fall-forward, so it asks to fail loudly instead.
+      ...(strictPort ? ['--strictPort'] : []),
+    ],
     {
       cwd: ROOT,
       // vite drops color when its stdout is a pipe rather than a terminal, and
@@ -40,12 +50,12 @@ export function runPerfServe() {
     process.stdout.write(`${line}\n`);
     if (announced || !addresses.length || !plain.includes('Local:')) return;
     announced = true;
-    // vite falls forward to the next free port when PREVIEW_PORT is taken, so
-    // take the port it actually bound rather than the one we asked for.
-    const port = plain.match(/:(\d+)\//)?.[1] ?? String(PREVIEW_PORT);
+    // vite falls forward to the next free port when the requested one is taken,
+    // so take the port it actually bound rather than the one we asked for.
+    const boundPort = plain.match(/:(\d+)\//)?.[1] ?? String(port);
     for (const address of addresses) {
-      process.stdout.write(`  ➜  Network: http://${address}:${port}/\n`);
-      process.stdout.write(`  ➜  Harness: http://${address}:${port}/dev/engine\n`);
+      process.stdout.write(`  ➜  Network: http://${address}:${boundPort}/\n`);
+      process.stdout.write(`  ➜  Harness: http://${address}:${boundPort}/dev/engine\n`);
     }
   };
 
@@ -72,8 +82,8 @@ export function runPerfServe() {
 // the length of its own run (perf:ipad). It goes into its own process group so
 // stop() reaches the vite grandchild this module spawns rather than orphaning
 // it on the port.
-export function spawnPerfServe() {
-  const child = spawn(process.execPath, [SERVE_ENTRY], {
+export function spawnPerfServe(port = PREVIEW_PORT) {
+  const child = spawn(process.execPath, [SERVE_ENTRY, `--port=${port}`, '--strict-port'], {
     cwd: ROOT,
     env: { ...process.env, PUBLIC_ENABLE_DEV_HARNESS: 'true' },
     stdio: ['ignore', 'ignore', 'inherit'],
@@ -96,4 +106,14 @@ export function spawnPerfServe() {
   return { child, stop };
 }
 
-if (isMain(import.meta.url)) runMain(runPerfServe);
+// A spawning caller passes --strict-port because it derived a URL from --port
+// before the server existed; a human running `npm run perf:serve` keeps the
+// fall-forward and reads the port off the printed Network line.
+if (isMain(import.meta.url)) {
+  runMain(() =>
+    runPerfServe({
+      port: Number(argFlag('port', PREVIEW_PORT)),
+      strictPort: process.argv.includes('--strict-port'),
+    })
+  );
+}
