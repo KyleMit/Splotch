@@ -20,6 +20,12 @@ import {
   summarizeRun,
 } from '../perf/real-screen-stats.mjs';
 import { probeConfigScript } from '../perf/ipad-frames.mjs';
+import {
+  appiumCapabilities,
+  inputFidelity,
+  nativeCanvasBounds,
+  trustedGestureActions,
+} from '../perf/ipad-xcuitest.mjs';
 
 const PROBE = readFileSync(join(ROOT, 'scripts', 'perf', 'real-screen-probe.js'), 'utf8');
 const component = (name) =>
@@ -475,6 +481,79 @@ describe('probeConfigScript', () => {
     expect(script).toContain('window.__probePhases = "blank,page";');
     expect(script).toContain('window.__probeContactMs = 20000;');
     expect(script).toContain('window.__probeDrive = "mixed";');
+  });
+
+  it('retains a wall-clock anchor for system-trace correlation', () => {
+    expect(PROBE).toContain('timeOriginUnixMs: performance.timeOrigin');
+  });
+});
+
+describe('trusted XCUITest input', () => {
+  const webGeometry = {
+    canvas: { x: 84, y: 0, width: 1282, height: 934 },
+    viewport: { width: 1366, height: 934 },
+  };
+  const webViewBounds = { x: 0, y: 0, width: 1366, height: 1024 };
+  const nativeWindow = { x: 0, y: 0, width: 1366, height: 1024 };
+
+  it('maps CSS canvas coordinates below Safari chrome', () => {
+    expect(nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow })).toEqual({
+      x: 84,
+      y: 90,
+      width: 1282,
+      height: 934,
+    });
+  });
+
+  it('builds two long and eight short native strokes inside the canvas', () => {
+    const bounds = nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow });
+    const actions = trustedGestureActions(bounds);
+    const moves = actions.filter((action) => action.type === 'pointerMove');
+
+    expect(actions.filter((action) => action.type === 'pointerDown')).toHaveLength(10);
+    expect(actions.filter((action) => action.type === 'pointerUp')).toHaveLength(10);
+    expect(moves.reduce((total, action) => total + action.duration, 0)).toBe(5920);
+    expect(
+      moves.every(
+        (action) =>
+          action.x >= bounds.x &&
+          action.x <= bounds.x + bounds.width &&
+          action.y >= bounds.y &&
+          action.y <= bounds.y + bounds.height
+      )
+    ).toBe(true);
+  });
+
+  it('only permits Apple-account provisioning when explicitly requested', () => {
+    const base = {
+      deviceId: 'device',
+      xcodeConfigFile: '/tmp/local.xcconfig',
+      wdaBundleId: 'art.splotch.WebDriverAgentRunner',
+    };
+
+    expect(appiumCapabilities(base)).not.toHaveProperty(
+      'appium:allowProvisioningDeviceRegistration'
+    );
+    expect(appiumCapabilities({ ...base, allowProvisioning: true })).toHaveProperty(
+      'appium:allowProvisioningDeviceRegistration',
+      true
+    );
+  });
+
+  it('accepts the calibrated trusted-touch signature and rejects untrusted input', () => {
+    const input = {
+      kinds: 'touch',
+      movesPerSecond: 121,
+      moveGapP95Ms: 9,
+      coalescedPerMove: 0,
+      trust: { share: 1 },
+      pressure: { p50: 0 },
+      contactWidth: { p50: 73.76 },
+      contactHeight: { p50: 73.76 },
+    };
+
+    expect(inputFidelity(input).passed).toBe(true);
+    expect(inputFidelity({ ...input, trust: { share: 0 } }).passed).toBe(false);
   });
 });
 

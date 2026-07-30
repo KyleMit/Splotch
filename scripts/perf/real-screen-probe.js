@@ -809,6 +809,7 @@
     return {
       meta: {
         schema: 2,
+        timeOriginUnixMs: performance.timeOrigin,
         url: location.href,
         ua: navigator.userAgent,
         dpr: window.devicePixelRatio,

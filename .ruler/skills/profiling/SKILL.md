@@ -3,7 +3,7 @@ name: profiling
 description: Capture and read an automated performance profile of the drawing app (web, Android, iOS). Use when measuring drawing/canvas performance, investigating jank or a slow interaction, verifying a perf change, or checking for regressions over time. Covers the `npm run perf:*` harness, how to read report.md/summary.json, and the bottleneck decision guide.
 ---
 
-<!-- cspell:ignore adb webview chromium devtools simctl iwdp keepNames toplevel -->
+<!-- cspell:ignore adb appium webview chromium devtools simctl iwdp keepNames toplevel xcuitest -->
 
 # Splotch — Performance Profiling
 
@@ -23,6 +23,7 @@ re-runnable on any saved trace.
 | `npm run perf:ios`                            | Playwright **WebKit** (the iOS WKWebView engine), production preview                                                                                                                                                                                                                                                                                                                                                                               | engine marks + FPS (no CDP trace)                                                                                                                |
 | `npm run perf:ipad`                           | a **real USB-connected iPad** — the ADR-0066 gates on real WebKit + Apple GPU + 120 Hz ProMotion. Serves the instrumented build, attaches over the WebKit Inspector Protocol (`brew install ios-webkit-debug-proxy`), and drives `/dev/engine`. Needs Safari open on a tab; see `ipad-device-profiling.md`                                                                                                                                         | the per-scenario gates table (`ipad-gates.json`) — no trace, and no Timeline: recording one stays manual                                         |
 | `npm run perf:ipad:frames`                    | the **real screen** on a real USB-connected iPad — the app at `/`, not `/dev/engine`. Frame pacing, input queue delay, paint latency, `pointermove` delivery, finger-up→halo-gone, and undo-history growth, with a CSS A/B sweep over the blend nudge / `mix-blend-mode` / `PointerHalos` and blank-vs-coloring-page. `--drive` runs it with no human hand; see `ipad-device-profiling.md`                                                         | four tables + worst-frame forensics + the raw tables (`real-screen.json`), re-readable with `perf:frames:analyze`                                |
+| `npm run perf:ipad:xcuitest`                  | the same real iPad screen with **trusted OS-mediated touch** — Appium owns MobileSafari, injects the existing probe, switches to XCUITest native coordinates for two long and eight short strokes, and refuses a lag score unless trust/type/cadence/coalescing/pressure/contact geometry match the hand baseline                                                                                                                                  | fidelity verdict + trusted-input starvation score + raw tables (`real-screen.json`)                                                              |
 | `npm run perf:frames:local`                   | the same real-screen probe **without an iPad** — driven against `/` in Playwright at iPad Pro 12.9" geometry, so a frame-pacing baseline costs a command instead of a USB cable. `--engine=webkit` is the iOS engine family; `--engine=chromium` adds `--throttle=N`. Compositor-side findings may not survive a different compositor — a stall that reproduces here is a cheap regression signal, one that does not says nothing about the device | the same tables + `summaries.json`                                                                                                               |
 | `npm run perf:frames:analyze -- <file>`       | re-reads a saved `real-screen.json` and recomputes every metric from the raw tables — the probe records and computes nothing, so a capture outlives the metric definitions taken with it                                                                                                                                                                                                                                                           | the same tables, plus `summaries.json`                                                                                                           |
 | `npm run perf:undo`                           | the **undo** question specifically — drives `/dev/engine` (so it can read `getUndoDebug()`) through 7 shaped sessions (long squiggles, short marks, a mix, five-finger drags, pen scribbles, crayon squiggles, crayon reversal-scribbles); `--scenarios=a,b` runs a subset; tablet viewport, 4× throttle                                                                                                                                           | CDP trace **+** per-scenario snapshot depth / live-raster / blob counts, commit + patch-capture + undo timing, and analytic raster + blob memory |
@@ -35,13 +36,16 @@ Flags (web/ios): `--device=phone\|tablet\|desktop`, `--no-build` (reuse the last
 `--engine=chromium\|webkit` / `--throttle=N` / `--no-throttle` / `--no-build`. `perf:ipad` takes
 `--scenarios=a,b` / `--strokes=N` / `--ops=N` / `--url=` / `--port=N` / `--device-id=` /
 `--no-serve`, and skips its rebuild with `--ignore-scripts` rather than `--no-build` (the build is a
-pre-hook). Interaction runs write `perf-profiles/<timestamp>-<target>-…/` with `trace.json`,
-`metrics.json`, `summary.json`, `report.md`, and `screenshot.png`; `perf:undo` also writes
-`undo-scenarios.json` / `undo-scenarios.md` (the per-scenario snapshot/undo-cost/memory tables).
-`perf:mount` initially writes only `trace.json` and `mount-summary.json`; running `perf:analyze` on
-that trace adds `summary.json` and `report.md`. The raw mount trace does not retain the harness
-settings metadata, so the regenerated report's Settings table can say `n/a` / `none`; use the
-command and output-directory suffix (for example, `mount-phone-4x`) for the actual capture profile.
+pre-hook). `perf:ipad:xcuitest` requires `--device-id=` and an existing Appium 3 server with the
+XCUITest driver; it also takes `--appium-url=` / `--xcode-config=` / `--wda-bundle-id=` /
+`--allow-provisioning` / `--label=` / `--output=` / `--url=` / `--no-serve`. Interaction runs write
+`perf-profiles/<timestamp>-<target>-…/` with `trace.json`, `metrics.json`, `summary.json`,
+`report.md`, and `screenshot.png`; `perf:undo` also writes `undo-scenarios.json` /
+`undo-scenarios.md` (the per-scenario snapshot/undo-cost/memory tables). `perf:mount` initially
+writes only `trace.json` and `mount-summary.json`; running `perf:analyze` on that trace adds
+`summary.json` and `report.md`. The raw mount trace does not retain the harness settings metadata,
+so the regenerated report's Settings table can say `n/a` / `none`; use the command and
+output-directory suffix (for example, `mount-phone-4x`) for the actual capture profile.
 `perf-profiles/` is gitignored.
 
 **Undo memory caveat:** history rasters (the paper and the live snapshot tier) live in **canvas
@@ -190,9 +194,11 @@ session + the seven `perf:undo` scenarios, with a ranked findings write-up) live
   `performance.now()` to ~1 ms, so its engine-mark timings are coarse.
 * **Real iPad** (the highest-fidelity target — real WebKit + GPU + 120 Hz ProMotion): the gates run
   is automated — **`npm run perf:ipad`** (ADR-0079) attaches over the WebKit Inspector Protocol and
-  drives the same `perf:undo` scenarios through `scripts/perf/ipad-console-driver.js`. There is no
-  *CDP* endpoint on a device, which is why this is its own transport rather than the Android path.
+  drives the same `perf:undo` scenarios through `scripts/perf/ipad-console-driver.js`; trusted-touch
+  real-screen capture is automated separately by **`npm run perf:ipad:xcuitest`** (ADR-0084),
+  because Appium's temporary Safari window is not visible to the Inspector relay. There is no *CDP*
+  endpoint on a device, which is why these are their own transports rather than the Android path.
   **A Timeline recording is still a manual Safari Web Inspector flow** — the protocol's `Timeline`
   domain isn't the export shape `perf:ios:analyze` parses. Full step-by-step runbook (Mac-vs-iPad
-  tagged), including the by-hand fallback, in
+  tagged), including the by-hand fallback and Appium setup, in
   [`ipad-device-profiling.md`](ipad-device-profiling.md).
