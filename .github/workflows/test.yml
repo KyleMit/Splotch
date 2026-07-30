@@ -20,6 +20,16 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # Timing probe for the ADR numbering guard: that check has to compare
+      # against the base branch as it stands now, not as this run's merge commit
+      # remembers it. Measuring the fetch alone, before the check that needs it.
+      - name: Fetch the base branch
+        run: |
+          git fetch --depth=1 origin \
+            "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+        env:
+          BASE_REF: ${{ github.base_ref || github.event.repository.default_branch }}
+
       - uses: ./.github/actions/setup-node
 
       # Fast-fail the cheapest, most-common failure first: a formatting-only
