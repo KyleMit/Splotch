@@ -217,18 +217,36 @@
   // something else repaints — which used to be the pointerup Svelte writes,
   // making dark-mode ink under the chalk lines look dim until the finger
   // lifted (issue #307). Toggling an imperceptible translateZ epsilon on the
-  // wrapper damages the blend layer once per input event (pointermoves are
-  // coalesced to ~one per frame), forcing the screen/multiply blend to
+  // wrapper damages the blend layer, forcing the screen/multiply blend to
   // recompute against the current canvas pixels mid-stroke. The two transform
   // values must differ NUMERICALLY — alternating `translateZ(0)` with nothing
   // flattens to the same matrix and the compositor would skip the damage.
+  //
+  // Damaged at most once per FRAME, not once per input event. `perf:ipad:frames`
+  // measured 1.9-4.2 pointermoves per presentable frame on an iPad Pro (Safari
+  // gives web content a 60 Hz rAF beat while the digitizer runs at 120 Hz+), so
+  // an event-driven nudge asked the compositor for three or four full-paper blend
+  // recomposites that no frame could ever show. One per frame is exactly what
+  // #307 needs — the blend has to be current in each frame that paints, and there
+  // is no finer unit than that. Scheduling in rAF also puts the damage before the
+  // rendering update it belongs to.
   let blendNudge = $state(false);
+  // Deliberately untracked: a scheduling latch the template never reads.
+  let blendNudgeFrame: number | null = null;
 
   function nudgeBlendLayer(e: PointerEvent) {
     if (!overlayUrl()) return;
     if (e.type === 'pointermove' && e.buttons === 0) return;
-    blendNudge = !blendNudge;
+    if (blendNudgeFrame !== null) return;
+    blendNudgeFrame = requestAnimationFrame(() => {
+      blendNudgeFrame = null;
+      blendNudge = !blendNudge;
+    });
   }
+
+  $effect(() => () => {
+    if (blendNudgeFrame !== null) cancelAnimationFrame(blendNudgeFrame);
+  });
 
   const paperViewTransform = $derived(
     `${paperTransform} translateZ(${blendNudge ? '0.01px' : '0'})`

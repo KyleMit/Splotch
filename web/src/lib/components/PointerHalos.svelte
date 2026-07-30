@@ -69,20 +69,54 @@
     });
   }
 
+  // Moved at most once per FRAME, not once per input event. A ring has exactly one
+  // visible position per painted frame, and `perf:ipad:frames` measured 1.9-4.2
+  // pointermoves per presentable frame on an iPad Pro (a 120 Hz+ digitizer against
+  // Safari's 60 Hz rAF beat), so an event-driven write spent three or four DOM
+  // transform updates producing one visible position. The latest pending position
+  // per pointer wins, so the ring still lands where the finger is.
+  // Two plain coordinate records, deliberately NOT `$state` and deliberately not
+  // a Map: this is scheduling state the template never reads, so a SvelteMap's
+  // reactivity would be pure cost on the hottest path in the component, and a
+  // `{x, y}` literal per event would break the hot-path rule's no-allocation
+  // requirement. The flush allocates a key list, but it runs once a frame.
+  const pendingRingX: Record<number, number> = {};
+  const pendingRingY: Record<number, number> = {};
+  // Deliberately untracked: scheduling state the template never reads.
+  let ringMoveFrame: number | null = null;
+
+  function flushRingMoves() {
+    ringMoveFrame = null;
+    for (const key of Object.keys(pendingRingX)) {
+      const pointerId = Number(key);
+      const ring = brushRings[pointerId];
+      if (ring) {
+        ring.x = pendingRingX[pointerId];
+        ring.y = pendingRingY[pointerId];
+      }
+      delete pendingRingX[pointerId];
+      delete pendingRingY[pointerId];
+    }
+  }
+
   function handlePointerMove(e: PointerEvent) {
     if (toolState.brush === 'eraser') {
       updateEraserCursor(e);
       return;
     }
-    const ring = brushRings[e.pointerId];
-    if (!ring) return;
+    if (!brushRings[e.pointerId]) return;
     const rect = getCanvasRect();
-    ring.x = e.clientX - rect.left;
-    ring.y = e.clientY - rect.top;
+    pendingRingX[e.pointerId] = e.clientX - rect.left;
+    pendingRingY[e.pointerId] = e.clientY - rect.top;
+    if (ringMoveFrame === null) ringMoveFrame = requestAnimationFrame(flushRingMoves);
   }
 
   function removeBrushRing(e: PointerEvent) {
     delete brushRings[e.pointerId];
+    // A queued move for a ring that is gone would otherwise be flushed onto the
+    // next stroke that reuses the pointerId.
+    delete pendingRingX[e.pointerId];
+    delete pendingRingY[e.pointerId];
   }
 
   function handlePointerLeave(e: PointerEvent) {
@@ -110,6 +144,7 @@
       canvasEl.removeEventListener('pointerup', removeBrushRing);
       canvasEl.removeEventListener('pointercancel', removeBrushRing);
       canvasEl.removeEventListener('lostpointercapture', removeBrushRing);
+      if (ringMoveFrame !== null) cancelAnimationFrame(ringMoveFrame);
     };
   });
 
