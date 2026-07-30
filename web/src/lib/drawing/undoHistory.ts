@@ -129,6 +129,50 @@ function createPaperSurface(width: number, height: number) {
 // ~500 ms inside the pointerup under the 4×-throttled software profile).
 let paperPristine = false;
 
+// Patch canvases are pooled rather than allocated per commit. Measured on an
+// iPad Pro (iPad13,8, iPadOS 26.5) with a Web Inspector Timeline: every stroke
+// commit produced a ~245 ms `composite` record — 15 commits, 15 composites,
+// each starting 2-192 ms after its commit — while `paint` totalled 3 ms, `layout`
+// 8 ms and every `engine.*` op stayed under 1.2 ms across the whole recording.
+// The cost is not in the marked work; it lands in compositing after it returns,
+// which is why the ADR-0066 gates never saw it. A fresh `<canvas>` gets a
+// GPU-backed surface, and the commit path minted one per patch.
+//
+// Reuse is by "at least as large", not exact size: assigning width/height
+// reallocates the backing store, which is the cost being avoided. A patch
+// therefore lives in the TOP-LEFT of a possibly larger canvas, and `restorePatch`
+// draws that sub-rect rather than the whole source. The encode/decode tier stays
+// correct for the same reason — a blob of an oversized canvas still carries the
+// patch at its top-left.
+const patchCanvasPool: HTMLCanvasElement[] = [];
+// One per undo entry plus headroom for multi-cluster commits (ADR-0074); past
+// this, dropped canvases are left to the collector rather than held forever.
+const PATCH_POOL_MAX = MAX_UNDO_DEPTH + 8;
+
+function acquirePatchCanvas(w: number, h: number): HTMLCanvasElement {
+  const index = patchCanvasPool.findIndex((canvas) => canvas.width >= w && canvas.height >= h);
+  if (index !== -1) {
+    const [canvas] = patchCanvasPool.splice(index, 1);
+    // Only the region about to be written needs clearing; the rest is never read.
+    canvas.getContext('2d')?.clearRect(0, 0, w, h);
+    return canvas;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  return canvas;
+}
+
+// Called only where a patch's canvas is provably unreachable: an entry evicted
+// past the depth cap, or one popped and already restored.
+function releasePatches(snap: Snapshot) {
+  for (const patch of snap.patches) {
+    if (patch.store.tier !== 'hot' || patch.store.encoding) continue;
+    if (patchCanvasPool.length >= PATCH_POOL_MAX) return;
+    patchCanvasPool.push(patch.store.canvas);
+  }
+}
+
 // The pixels a patch is holding right now: a hot raster, or (demoted) the
 // encoded blob they were re-encoded into. The in-flight flag belongs to the
 // tier that can leave it — an encode only starts from a raster, a decode only
@@ -419,9 +463,7 @@ function capturePatchesUnder(
   }
   const patches: SnapshotPatch[] = [];
   for (const rect of rects) {
-    const copy = document.createElement('canvas');
-    copy.width = rect.w;
-    copy.height = rect.h;
+    const copy = acquirePatchCanvas(rect.w, rect.h);
     const copyCtx = copy.getContext('2d');
     if (!copyCtx) return null;
     copyCtx.drawImage(paper, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
@@ -459,7 +501,10 @@ export function pushCommand(cmd: StrokeGroupCommand) {
       patches,
       pending: [...pendingCommands],
     });
-    while (snapshotStack.length > MAX_UNDO_DEPTH) snapshotStack.shift();
+    while (snapshotStack.length > MAX_UNDO_DEPTH) {
+      const evicted = snapshotStack.shift();
+      if (evicted) releasePatches(evicted);
+    }
   }
   if (PERF_MARKS) performance.measure('engine.snapshot', 'engine.snapshot:start');
   pendingCommands.push(cmd);
@@ -634,6 +679,11 @@ export function popSnapshot(): Promise<RestoredSnapshot> | null {
   const hotCanvases = snap.patches.map((p) => (p.store.tier === 'hot' ? p.store.canvas : null));
   if (hotCanvases.every((canvas) => canvas !== null)) {
     hotCanvases.forEach((canvas, i) => restorePatch(canvas, snap.patches[i].rect));
+    // The entry is off the stack and its pixels are on the paper, so its canvases
+    // are unreachable. The async (decode) path below deliberately does not
+    // release: its restore finishes later, and an early release would hand out a
+    // canvas still being read.
+    releasePatches(snap);
     return Promise.resolve({ wasEmpty: snap.wasEmpty, rects });
   }
   // Decode every demoted patch, then restore the whole entry in one pass (the
@@ -663,7 +713,9 @@ function restorePatch(source: CanvasImageSource, rect: PaperRect) {
   if (!paperCtx) return;
   paperPristine = false;
   paperCtx.clearRect(rect.x, rect.y, rect.w, rect.h);
-  paperCtx.drawImage(source, rect.x, rect.y);
+  // Sub-rect, not the whole source: a pooled canvas can be larger than the patch
+  // it holds, and the patch always sits at its top-left.
+  paperCtx.drawImage(source, 0, 0, rect.w, rect.h, rect.x, rect.y, rect.w, rect.h);
 }
 
 export function snapshotCount(): number {
