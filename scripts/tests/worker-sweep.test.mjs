@@ -2,7 +2,13 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { SWEEP_SERVER_ENV, summarizeReport, tallyFailures } from '../e2e-sweep.mjs';
+import {
+  SWEEP_SERVER_ENV,
+  summarizeReport,
+  summarizeSweep,
+  sweepSummaryMarkdown,
+  tallyFailures,
+} from '../e2e-sweep.mjs';
 import { commonWebServer } from '../../web/playwright.shared.ts';
 
 // scripts/e2e-sweep.mjs is the harness behind ADR-0078's worker count, driven
@@ -127,5 +133,53 @@ describe('tallyFailures', () => {
 
   it('has nothing to say about a clean sweep', () => {
     expect(tallyFailures([rep(), rep()])).toEqual([]);
+  });
+});
+
+describe('summarizeSweep', () => {
+  const rep = (wallMs, failed, ...names) => ({
+    wallMs,
+    tests: 204,
+    failed,
+    failures: names.map((n) => ({ n })),
+  });
+
+  it('reports the rates a retry count is chosen against', () => {
+    expect(
+      summarizeSweep([rep(60_000, 1, 'burst'), rep(70_000, 0), rep(65_000, 2, 'burst', 'reveal')], {
+        workers: 4,
+        reps: 3,
+      })
+    ).toEqual({
+      w: 4,
+      reps: 3,
+      redRuns: 2,
+      failures: 3,
+      execs: 612,
+      medianWallMs: 65_000,
+      byTest: { burst: '2/3', reveal: '1/3' },
+    });
+  });
+
+  // A rep that never produced a report has no `failed` — counting it as green
+  // would understate the very rate the sweep exists to measure.
+  it('counts a rep that produced no report as red', () => {
+    const total = summarizeSweep([{ w: 4, rep: 1, error: 'boom' }], { workers: 4, reps: 1 });
+    expect(total).toMatchObject({ redRuns: 1, medianWallMs: null });
+  });
+
+  it('renders a step summary that names the specs', () => {
+    const markdown = sweepSummaryMarkdown(
+      summarizeSweep([rep(60_000, 1, 'burst')], { workers: 8, reps: 1 })
+    );
+    expect(markdown).toContain('### 8 workers — 1/1 runs went red');
+    expect(markdown).toContain('| burst | 1/1 |');
+    expect(markdown).toContain('median wall 60.0s');
+  });
+
+  it('says so plainly when a sweep was clean', () => {
+    expect(
+      sweepSummaryMarkdown(summarizeSweep([rep(60_000, 0)], { workers: 2, reps: 1 }))
+    ).toContain('No failures.');
   });
 });

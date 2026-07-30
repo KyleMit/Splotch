@@ -26,7 +26,7 @@
 //
 // `node scripts/e2e-sweep.mjs --workers=4 --reps=12 --out=/tmp/sweep`
 
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { argFlag, fail, isMain, ROOT, runMain } from './lib/proc.mjs';
@@ -166,15 +166,46 @@ export async function runSweep({ workers, reps, outDir }) {
     summaries.push(summary);
     console.log('SWEEPRESULT ' + JSON.stringify(summary));
   }
-  const failed = summaries.reduce((total, s) => total + (s.failed ?? 0), 0);
-  const red = summaries.filter((s) => (s.failed ?? 1) > 0).length;
-  console.log(
-    `SWEEPTOTAL w=${workers} reps=${reps} redRuns=${red} failures=${failed} ` +
-      JSON.stringify(
-        Object.fromEntries(tallyFailures(summaries).map(([n, c]) => [n, `${c}/${reps}`]))
-      )
-  );
+  const total = summarizeSweep(summaries, { workers, reps });
+  console.log(`SWEEPTOTAL ${JSON.stringify(total)}`);
+  // A sweep's conclusion should not need log spelunking. On GitHub Actions the
+  // step summary renders on the run page itself, where the whole matrix is one
+  // screen instead of six job logs.
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    appendFileSync(process.env.GITHUB_STEP_SUMMARY, sweepSummaryMarkdown(total));
+  }
   return summaries;
+}
+
+/** The whole sweep in one object: the rates, and which specs they belong to. */
+export function summarizeSweep(summaries, { workers, reps }) {
+  const wall = summaries.map((s) => s.wallMs).filter((ms) => typeof ms === 'number');
+  wall.sort((a, b) => a - b);
+  return {
+    w: workers,
+    reps,
+    redRuns: summaries.filter((s) => (s.failed ?? 1) > 0).length,
+    failures: summaries.reduce((sum, s) => sum + (s.failed ?? 0), 0),
+    execs: summaries.reduce((sum, s) => sum + (s.tests ?? 0), 0),
+    medianWallMs: wall.length ? wall[Math.floor(wall.length / 2)] : null,
+    byTest: Object.fromEntries(tallyFailures(summaries).map(([name, n]) => [name, `${n}/${reps}`])),
+  };
+}
+
+export function sweepSummaryMarkdown(total) {
+  const rows = Object.entries(total.byTest)
+    .map(([name, share]) => `| ${name} | ${share} |`)
+    .join('\n');
+  return [
+    `### ${total.w} workers — ${total.redRuns}/${total.reps} runs went red`,
+    '',
+    `${total.failures} failing test executions of ${total.execs}; median wall ` +
+      `${total.medianWallMs === null ? 'n/a' : (total.medianWallMs / 1000).toFixed(1) + 's'}. ` +
+      'Retries are off, so these are the unretried rates.',
+    '',
+    ...(rows ? ['| Test | Reps it failed in |', '| --- | --- |', rows] : ['No failures.']),
+    '',
+  ].join('\n');
 }
 
 if (isMain(import.meta.url)) {
