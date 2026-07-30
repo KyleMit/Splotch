@@ -149,7 +149,7 @@ there until a double-flake turns CI red. Write specs that can't race in the firs
 * **Poll async render/canvas state; size the window for a *starved* worker.** Canvas reveals and
   debounced relayouts settle asynchronously and lag hard under contention. The magic brush samples a
   sheet that rasterizes async, holding a stroke's ops out of the paper until a fold-in repaint
-  (`MAGIC_REVEAL_TIMEOUT` in `flows-magic-brush.spec.ts`); the engine debounces resize by
+  (`REVEAL_ATTEMPT_SETTLE_MS` in `flows-magic-brush.spec.ts`); the engine debounces resize by
   `RESIZE_SETTLE_MS`. Use `expect.poll` with a generous timeout, not a one-shot
   `await page.evaluate(...)` + `expect(...)`.
 * **Read reactive/engine state *through* a retrying assertion.** `expect(await count(page)).toBe(n)`
@@ -169,14 +169,18 @@ there until a double-flake turns CI red. Write specs that can't race in the firs
   exactly one good stroke remains. A metric that a wrong-mode action still satisfies (a canvas-fill
   pixel count — a pen stroke fills the band too) won't catch the race, so assert on something only
   the right mode produces.
-* **Bound a redraw retry by *attempts*, not only by wall clock.** A retry that redraws a committed
+* **Bound a redraw retry by *attempts*, and by attempts alone.** A retry that redraws a committed
   action has two futures and a timeout can't tell them apart: it recovers on the next attempt, or
   the engine never left the old mode and no attempt ever will. `toPass({ timeout })` alone spends
   the whole budget on the second case and fails anyway — and a job that long can exceed the suite's
   parallel floor and *become* the makespan (ADR-0078). Measure attempts-until-success before picking
   the cap (`MAGIC_REVEAL_MAX_ATTEMPTS` in `flows-magic-brush.spec.ts` sits one attempt above a
-  328-sample distribution) so the cap can't fail the valid-but-slow cases the retry exists for, and
-  keep the timeout as the outer backstop.
+  328-sample distribution) so the cap can't fail the valid-but-slow cases the retry exists for. Then
+  make the cap the *only* bound: keeping a wall-clock deadline beside it as a "backstop" is a trap
+  (ADR-0078 §2c). Checked only between attempts, it can never interrupt the long attempt it was
+  added for, yet it silently drops later attempts on a slow machine — so the effective cap becomes a
+  headroom ratio, and one message ends up describing two different exits. The per-test timeout is
+  the outer ceiling; it can actually stop a hung attempt.
 * **Shared per-test setup belongs in a fixture, never in a helper module's top-level
   `test.beforeEach`.** A helper is evaluated once per worker process, so a hook it registers at
   import time attaches only to the *first* spec file in that worker that imports it; every later
