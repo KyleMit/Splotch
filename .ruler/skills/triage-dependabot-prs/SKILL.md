@@ -10,13 +10,13 @@ other, they merge in an order that matters, and the two or three that *aren't* s
 point of doing this by hand. This skill takes a batch from "9 open" to "every one merged, held, or
 closed behind an issue."
 
-**This is the human-side pass, downstream of the automated one.**
-`.github/workflows/
-dependabot-review.yml` already posts an advisory APPROVE/FLAG comment on each PR
-as it opens — see [`docs/DEPENDABOT.md`](../../../docs/DEPENDABOT.md) and ADR-0077. Read that
-verdict as an input, and re-derive anything it asserts. It cannot install, cannot run tests, and
-usually posts *before CI finishes*, so its CI column commonly reads "still running" — treat that as
-unknown, never as green.
+**This is the human-side pass, downstream of the automated one.** The
+`.github/workflows/dependabot-review.yml` workflow already posts an advisory APPROVE/FLAG comment on
+each PR as it opens — see [`docs/DEPENDABOT.md`](../../../docs/DEPENDABOT.md) and
+[ADR-0077](../../../docs/adrs/0077-dependabot-claude-review-workflow.md). Read that verdict as an
+input, and re-derive anything it asserts. It cannot install, cannot run tests, and usually posts
+*before CI finishes*, so its CI column commonly reads "still running" — treat that as unknown, never
+as green.
 
 For upgrading dependencies the repo is behind on — where *you* pick the packages and drive the bumps
 — use [`dependency-update-audit`](../dependency-update-audit/SKILL.md) instead. This skill only
@@ -61,12 +61,29 @@ a removed export matters only if it's imported.
 
 ### Run `npm audit` before and after
 
-This is the step most likely to *change a verdict*, and it is easy to skip. Install the batch
-locally and diff the advisory list:
+This is the step most likely to *change a verdict*, and it is easy to skip. It needs two
+measurements — the tree as it is now, and the tree with the whole batch applied.
+
+Apply the batch by **setting the versions directly**, not by merging the branches: you want one
+combined tree, and merging is exactly where the lockfile conflicts of step 3 bite. `npm pkg set`
+sidesteps them because it never touches a lockfile hunk.
 
 ```sh
-npm audit --json   # baseline, then again after applying the bumps
+npm ci && npm audit --json > /tmp/audit-before.json
+
+# every npm bump in the batch, in one command — action-pin PRs have nothing to measure
+npm pkg set 'dependencies.<pkg>=^<new>' 'devDependencies.<pkg>=^<new>'
+npm install
+npm audit --json > /tmp/audit-after.json
+
+git checkout -- package.json package-lock.json && npm ci   # restore
 ```
+
+Diff the two by package and severity — `metadata.vulnerabilities` for the totals,
+`vulnerabilities.<name>.severity` and `.via[].title` for what actually changed.
+
+This install doubles as the compatibility check step 5 repeats after merging: if the batch can't
+resolve together, you learn it here rather than from a red `main`.
 
 A bump that silently fixes a CVE is no longer routine housekeeping — it's the one to merge first.
 
@@ -103,8 +120,15 @@ branch:
 
 ```sh
 git checkout -B sim-merge origin/main
-for b in <branches in intended order>; do git merge --no-edit -q origin/$b || break; done
+for b in <branches in intended order>; do
+  git merge --no-edit -q origin/$b || { echo "collides: $b"; break; }
+done
+git merge --abort 2>/dev/null; git checkout - && git branch -D sim-merge   # always clean up
 ```
+
+The cleanup line is not optional: a collision is the loop *succeeding*, and it leaves the worktree
+mid-merge with conflict markers staged. Leaving it there breaks the next command you run and trips
+the stop-hook git check.
 
 Then order the real merges:
 
@@ -159,10 +183,14 @@ Sync to the merged `main` and confirm it actually holds together — the combina
 by any individual PR's CI:
 
 ```sh
-git fetch origin main && git checkout -B <branch> origin/main
+git fetch origin main && git checkout -B verify-merged-main origin/main
 npm ci          # proves package.json ↔ package-lock.json agree post-merge
 npm run check
 ```
+
+Use a **named scratch branch**, not the branch you were working on: `-B` force-moves whatever you
+name onto `origin/main` and discards anything on it. Delete it when done, or keep it — it holds no
+commits of its own.
 
 Then confirm CI on `main`. Two traps when reading it:
 
