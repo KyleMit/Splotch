@@ -1,10 +1,12 @@
 # ADR-0032: Automated Performance Profiling Harness
 
-**Status:** Active — amended by ADR-0066 (2026-07): the harness, the three capture paths, and the
-analyzer stand unchanged, but the mark set below is replay-era — `engine.foldBaseline` (and
-ADR-0035's `engine.keyframe`) were deleted with the replay system; a commit now splits into
-`engine.snapshot` + `engine.fold`, and `engine.undo` pairs an explicit end mark. See the amendment
-at the end. **Date:** 2026-06
+**Status:** Active — amended by ADR-0066 (2026-07): the harness and the analyzer stand unchanged,
+but the mark set below is replay-era — `engine.foldBaseline` (and ADR-0035's `engine.keyframe`) were
+deleted with the replay system; a commit now splits into `engine.snapshot` + `engine.fold`, and
+`engine.undo` pairs an explicit end mark. Further amended by ADR-0079 (2026-07): a **fourth capture
+path** drives a physical iOS device over the WebKit Inspector Protocol, so "device-accurate iOS
+profiling stays a documented manual step" below now holds only for Timeline recording. See the
+amendments at the end. **Date:** 2026-06
 
 ## Context
 
@@ -48,7 +50,8 @@ A profiling harness in `scripts/perf/`, built on the existing Playwright app-dri
     WebKit exposes no CDP/Chrome trace, so capture falls back to reading the `engine.*` marks via
     the Performance API + FPS. This profiles the *engine*, not the Simulator's app shell;
     device-accurate numbers come from a manual Safari Web Inspector Timeline export fed to the same
-    analyzer.
+    analyzer. *(ADR-0079 added a fourth path that drives a physical device directly; the Timeline
+    export remains the manual half.)*
 
 * **A pure analyzer.** `analyze.mjs` takes only a saved `trace.json` (+ optional `metrics.json`) and
   is re-runnable standalone — so a native-exported trace, or an old capture, re-summarizes without
@@ -83,7 +86,8 @@ A profiling harness in `scripts/perf/`, built on the existing Playwright app-dri
   modes by accident.
 * **−** The iOS path measures the WebKit engine, not the Simulator app, and WebKit clamps
   `performance.now()` to ~1 ms so its marks are coarse. Device-accurate iOS profiling stays a
-  documented manual step.
+  documented manual step. *(Superseded in part by ADR-0079: the gates run is automated on a physical
+  device; the Timeline recording is what stays manual.)*
 * **−** `perf:android` / `perf:ios` are local-only (need the device/emulator + toolchain and a
   `PERF_MARKS` native build); they can't run in CI or a cloud session.
 
@@ -122,3 +126,20 @@ first bullet lists:
 
 ADR-0066 also deleted the `perf:sweep`/`perf:units` harnesses that tuned the replay machinery; the
 platform commands this ADR ships (`perf:web`/`perf:android`/`perf:ios`) are unchanged.
+
+## Amendment (ADR-0079, 2026-07)
+
+The Decision's capture list gains a **fourth path**. `npm run perf:ipad` drives a physical iOS
+device over the **WebKit Inspector Protocol** (relayed by `ios-webkit-debug-proxy`), reusing the
+same `/dev/engine` scenarios and the same ADR-0066 gates that `perf:undo` drives — only the
+transport is new. So this ADR's "device-accurate iOS profiling stays a documented manual step" now
+holds **only for Timeline recording**: the protocol's `Timeline` domain does not emit the Web
+Inspector *export* shape `perf:ios:analyze` parses, so paint/composite and dropped-frame questions
+still route through the manual runbook.
+
+This ADR's premise that a physical device offers no automation socket was true of **CDP** and
+overstated for automation generally. ADR-0079 records the protocol's non-obvious shapes (Target
+multiplexing, no `awaitPromise`, `page`-vs-`frame` targets, suspended background tabs) and why
+`ios-webkit-debug-proxy` was chosen over `pymobiledevice3`.
+
+The analyzer, the mark set, and the three original paths are untouched.

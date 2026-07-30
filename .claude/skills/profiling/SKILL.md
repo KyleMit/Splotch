@@ -185,7 +185,11 @@ session + the seven `perf:undo` scenarios, with a ranked findings write-up) live
   `npm run perf:ios:analyze -- <export>.json` (the Web Inspector export is mark-only/ring-buffered —
   a different format from `perf:analyze`; see `ipad-device-profiling.md`). WebKit clamps
   `performance.now()` to ~1 ms, so its engine-mark timings are coarse.
-* **Real iPad** (the highest-fidelity target — real WebKit + GPU + 120 Hz ProMotion): there's no
-  automation socket, so it's a manual Safari Web Inspector flow. Full step-by-step runbook
-  (Mac-vs-iPad tagged) in [`ipad-device-profiling.md`](ipad-device-profiling.md); it drives the same
-  `perf:undo` scenarios via the pasteable console driver `scripts/perf/ipad-console-driver.js`.
+* **Real iPad** (the highest-fidelity target — real WebKit + GPU + 120 Hz ProMotion): the gates run
+  is automated — **`npm run perf:ipad`** (ADR-0079) attaches over the WebKit Inspector Protocol and
+  drives the same `perf:undo` scenarios through `scripts/perf/ipad-console-driver.js`. There is no
+  *CDP* endpoint on a device, which is why this is its own transport rather than the Android path.
+  **A Timeline recording is still a manual Safari Web Inspector flow** — the protocol's `Timeline`
+  domain isn't the export shape `perf:ios:analyze` parses. Full step-by-step runbook (Mac-vs-iPad
+  tagged), including the by-hand fallback, in
+  [`ipad-device-profiling.md`](ipad-device-profiling.md).
