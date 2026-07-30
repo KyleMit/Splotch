@@ -343,9 +343,9 @@ retried pass into a GitHub Actions annotation plus a job-summary table, so "gree
 attempt 2" is visible on the run page. That is the standing objection in the Consequences below —
 retries hiding what they compensate for — answered without pretending the rate is lower than it is.
 
-**Reducing the count is downstream of those three specs**, not of another sweep. Fixing one spec
-took 4 workers from 6/15 red to 1/35; three more of the same kind is what makes `retries: 1` a
-measurement rather than an assumption. They are a coherent cluster (zoom/pinch gesture state), which
+**Reducing the count is downstream of those three specs** (issue \#665), not of another sweep. Fixing
+one spec took 4 workers from 6/15 red to 1/35; three more of the same kind is what makes `retries: 1`
+a measurement rather than an assumption. They are a coherent cluster (zoom/pinch gesture state), which
 is a better starting point than a rate.
 
 ## Consequences

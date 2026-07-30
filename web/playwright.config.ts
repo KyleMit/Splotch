@@ -122,8 +122,8 @@ const slowMo = Number(process.env.SLOWMO) || 0;
 //
 // What changes instead is that the debt is no longer silent: every retried pass
 // is annotated (playwright-flaky-reporter.ts). Reducing this number is downstream
-// of fixing those three specs, the way fixing one spec took 4 workers from 6/15
-// red to 1/35.
+// of fixing those three specs (issue #665), the way fixing one spec took 4
+// workers from 6/15 red to 1/35.
 const ciRetries = 2;
 const ciAllowedTokens = allowedTokensList(
   ...Array.from({ length: ciRetries + 1 }, (_, retry) => managedAccessTokenForRetry(retry))
