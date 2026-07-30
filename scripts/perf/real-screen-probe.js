@@ -140,17 +140,29 @@
   }
 
   // ── pointer input ─────────────────────────────────────────────────────────
-  // "Contact" means a pointer whose DOWN landed on the canvas: a finger on a
-  // swatch or in the book picker is real input but not drawing, and must not
-  // bank a phase's contact time.
+  // "Contact" means a live drawing stream, and it is derived from the MOVES, not
+  // only from a pointerdown: WebKit merges a tap-then-draw into one stream and
+  // drops the down entirely (the down-less pen stream `penStreamQuirks.ts`
+  // exists to adopt). A pointerdown-only definition banks nothing at all for
+  // such a stroke while ink is visibly painting — which is exactly how this
+  // probe failed its first device run.
   const drawingPointers = new Set();
   let newestMoveStamp = null;
   let movesSinceFrame = 0;
 
+  // Identity would be enough today, but a re-queried element keeps the probe
+  // honest if the canvas is ever replaced under it, and `closest` covers a
+  // touch that lands on something the canvas contains.
+  const onCanvasTarget = (target) =>
+    target === canvas ||
+    (target instanceof Element && (target.id === canvas.id || !!target.closest(`#${canvas.id}`)));
+
   const recordPointer = (event) => {
-    const onCanvas = event.target === canvas;
+    const onCanvas = onCanvasTarget(event.target);
     const type = POINTER_TYPES[event.type];
-    if (type === 0 && onCanvas) drawingPointers.add(event.pointerId);
+    if (onCanvas && (type === 0 || (type === 1 && event.buttons !== 0))) {
+      drawingPointers.add(event.pointerId);
+    }
     if (type === 2 || type === 3) drawingPointers.delete(event.pointerId);
     // getCoalescedEvents is how many hardware samples WebKit merged into this
     // one dispatch — the difference between input the page never saw and input
@@ -283,11 +295,19 @@
       ? 'Open the coloring book → tap any page'
       : 'Open the coloring book → Clear Page';
 
+  // Carries enough to diagnose a stalled run from the driver's heartbeat alone:
+  // the first device run showed "0.0/15s" for four minutes, which could equally
+  // have meant the paper gate never opened, no pointer events arriving, or
+  // events arriving that nothing counted as contact. Those need different fixes.
   const progressText = () => {
     if (done) return 'done';
+    const where = phase.startedAt === null ? `waiting for ${phase.paper} paper` : 'drawing';
     const banked = (phase.contactMs / 1000).toFixed(1);
     const target = (contactTargetMs / 1000).toFixed(0);
-    return `${index + 1}/${plan.length} ${phase.key} ${banked}/${target}s`;
+    return (
+      `${index + 1}/${plan.length} ${phase.key} ${where} ${banked}/${target}s ` +
+      `(ev ${events.length}, down ${drawingPointers.size})`
+    );
   };
 
   // ── frame loop ────────────────────────────────────────────────────────────

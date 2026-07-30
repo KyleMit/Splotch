@@ -81,9 +81,14 @@ export function frameStats(deltas) {
   };
 }
 
-// One drawing gesture: pointerdown on the canvas through the up/cancel that
-// ends it. A stroke left open at the end of the recording is dropped rather
+// One drawing gesture: a live contact stream on the canvas through the up/cancel
+// that ends it. A stroke left open at the end of the recording is dropped rather
 // than guessed at.
+//
+// A contact move with no preceding pointerdown OPENS a stroke rather than being
+// discarded: WebKit merges a tap-then-draw into one stream and drops the down
+// (the case `penStreamQuirks.ts` adopts), and those strokes paint ink, so
+// leaving them out would under-report exactly the sessions that hit the quirk.
 export function segmentStrokes(events) {
   const open = new Map();
   const strokes = [];
@@ -92,13 +97,15 @@ export function segmentStrokes(events) {
     const id = event[EVENT_ID];
     const type = event[EVENT_TYPE];
     if (type === POINTER_DOWN) {
-      open.set(id, { start: event[EVENT_STAMP], moves: 0, coalesced: 0 });
+      open.set(id, { start: event[EVENT_STAMP], moves: 0, coalesced: 0, adopted: false });
     } else if (type === POINTER_MOVE && event[EVENT_BUTTONS] !== 0) {
-      const stroke = open.get(id);
-      if (stroke) {
-        stroke.moves++;
-        stroke.coalesced += event[EVENT_COALESCED];
+      let stroke = open.get(id);
+      if (!stroke) {
+        stroke = { start: event[EVENT_STAMP], moves: 0, coalesced: 0, adopted: true };
+        open.set(id, stroke);
       }
+      stroke.moves++;
+      stroke.coalesced += event[EVENT_COALESCED];
     } else if (type === POINTER_UP || type === POINTER_CANCEL) {
       const stroke = open.get(id);
       if (!stroke) continue;
@@ -109,6 +116,7 @@ export function segmentStrokes(events) {
         durationMs: round(event[EVENT_STAMP] - stroke.start),
         moves: stroke.moves,
         coalesced: stroke.coalesced,
+        adopted: stroke.adopted,
       });
     }
   }
@@ -300,6 +308,9 @@ export function summarizePhase(phase, { frames, events, measures, measureNames =
       count: strokes.length,
       long: longStrokes.length,
       short: shortStrokes.length,
+      // Strokes WebKit delivered with no pointerdown — the merged-stream quirk.
+      // A non-zero count here is an input-delivery finding in its own right.
+      adopted: strokes.filter((stroke) => stroke.adopted).length,
       movesPerLongStroke: longStrokes.length
         ? round(sum(longStrokes.map((stroke) => stroke.moves)) / longStrokes.length)
         : 0,
