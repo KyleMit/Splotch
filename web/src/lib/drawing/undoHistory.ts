@@ -129,6 +129,9 @@ function createPaperSurface(width: number, height: number) {
 // ~500 ms inside the pointerup under the 4×-throttled software profile).
 let paperPristine = false;
 
+// DIAGNOSTIC BUILD — NOT FOR MERGE. See capturePatchesUnder.
+const SKIP_SNAPSHOT_CAPTURE = true;
+
 // The pixels a patch is holding right now: a hot raster, or (demoted) the
 // encoded blob they were re-encoded into. The in-flight flag belongs to the
 // tier that can leave it — an encode only starts from a raster, a decode only
@@ -417,6 +420,16 @@ function capturePatchesUnder(
   if (adopted) {
     return [{ rect: rects[0], store: { tier: 'hot', canvas: adopted, encoding: false } }];
   }
+  // DIAGNOSTIC BUILD — NOT FOR MERGE. Undo is deliberately broken here.
+  //
+  // Pooling the patch canvases changed nothing (long composites per commit 1.0 ->
+  // 0.9, mean 246 ms -> 278 ms), so allocation is not the cost. This removes ALL
+  // snapshot work — the copy out of the paper and the canvas both — to find out
+  // whether the ~250 ms per-commit composite belongs to the snapshot subsystem at
+  // all. If it survives this, the cost is the fold onto the paper, and undo is
+  // exonerated entirely.
+  if (SKIP_SNAPSHOT_CAPTURE) return [];
+
   const patches: SnapshotPatch[] = [];
   for (const rect of rects) {
     const copy = document.createElement('canvas');
