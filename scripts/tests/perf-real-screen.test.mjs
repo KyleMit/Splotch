@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { ROOT } from '../lib/proc.mjs';
 import {
   LATE_FRAME_MULTIPLE,
+  comparisonRows,
   MAX_CREDIBLE_HITCH_MS,
   STALL_FRAME_MS,
   classifyPhase,
@@ -202,7 +203,7 @@ describe('summarizePhase via summarizeRun', () => {
   };
 
   it('summarizes a phase against the beat the capture observed', () => {
-    const [phase] = summarizeRun(capture());
+    const [phase] = summarizeRun(capture()).phases;
 
     expect(phase.key).toBe('page');
     expect(phase.pacing.p50).toBeCloseTo(16.7, 1);
@@ -217,18 +218,96 @@ describe('summarizePhase via summarizeRun', () => {
     const report = capture();
     report.phases[0].endedAt = 1300;
 
-    expect(summarizeRun(report)[0].strokes.count).toBe(1);
+    expect(summarizeRun(report).phases[0].strokes.count).toBe(1);
   });
 
   it('marks a phase that never met its paper requirement as skipped', () => {
     const report = capture();
     report.phases[0].startedAt = null;
 
-    expect(summarizeRun(report)[0].skipped).toBe('never started');
+    expect(summarizeRun(report).phases[0].skipped).toBe('never started');
   });
 
   it('surfaces the observed beat on the summary set', () => {
     expect(summarizeRun(capture()).intervalMs).toBeCloseTo(16.7, 1);
+  });
+
+  // The beat used to ride on the returned array as a property, and
+  // JSON.stringify drops non-index properties of an array — so the one number
+  // every lateThresholdMs hangs off vanished from every saved summaries file,
+  // in an artifact whose whole purpose is outliving the maths that made it.
+  it('survives the JSON round-trip a saved capture puts it through', () => {
+    const roundTripped = JSON.parse(JSON.stringify(summarizeRun(capture())));
+
+    expect(roundTripped.intervalMs).toBeCloseTo(16.7, 1);
+    expect(roundTripped.phases).toHaveLength(1);
+  });
+});
+
+// The blocking finding of PR #660's review. segmentStrokes emits strokes in LIFT
+// order, so two contacts on the paper at once put the earlier-STARTING stroke
+// second; a single forward-only cursor then matched its moves against frames from
+// seconds later. Measured 3056 ms p95 against 0 for the same input on one pointer,
+// and classifyPhase picked up a fabricated `paint latency` verdict from it.
+describe('paint latency with overlapping contacts', () => {
+  const interval = 16.7;
+  // Pointer 1 spans the whole window; pointer 2 opens and closes inside it, so it
+  // is pushed FIRST by segmentStrokes.
+  const stream = (id, from, to) => {
+    const out = [down(from, id)];
+    for (let t = from + interval; t < to; t += interval) out.push(move(round1(t), { id }));
+    out.push(up(round1(to), id));
+    return out;
+  };
+  const round1 = (v) => Math.round(v * 10) / 10;
+  const frames = beat(260, { from: 100, interval });
+  const run = (events) =>
+    summarizeRun({
+      meta: { measureNames: [] },
+      phases: [{ key: 'p', suppress: [], startedAt: 100, endedAt: 4300, contactMs: 3900 }],
+      frames,
+      events: [...events].sort((a, b) => a[0] - b[0]),
+      measures: [],
+    }).phases[0];
+
+  it('matches each move to its own next frame regardless of stroke order', () => {
+    const overlapping = run([...stream(1, 100, 4000), ...stream(2, 3000, 3400)]);
+    const single = run(stream(1, 100, 4000));
+
+    // Both hands drew at the frame rate, so neither can wait longer than a beat.
+    expect(overlapping.paintLatencyMs.p95).toBeLessThanOrEqual(interval);
+    expect(overlapping.paintLatencyMs.max).toBeLessThanOrEqual(interval);
+    expect(overlapping.paintLatencyMs.p95).toBeCloseTo(single.paintLatencyMs.p95, 0);
+  });
+
+  it('does not invent a paint-latency verdict from the interleaving', () => {
+    expect(run([...stream(1, 100, 4000), ...stream(2, 3000, 3400)]).verdict).not.toContain(
+      'paint latency'
+    );
+  });
+});
+
+describe('comparisonRows', () => {
+  const phase = (key, latencies) => ({
+    key,
+    pacing: frameStats([16.7, 16.7], 16.7),
+    paintLatencyMs: { p95: percentile(latencies, 0.95), p99: percentile(latencies, 0.99) },
+  });
+
+  it('reports a delta when both sides measured something', () => {
+    const [row] = comparisonRows([phase('page', [10, 10]), phase('page-bare', [4, 4])], 'page');
+
+    expect(row['Δ paint p95 vs page']).toBeCloseTo(-6, 1);
+  });
+
+  // percentile() returns undefined for an empty sample precisely so absence reads
+  // as absent; a `?? 0` here turned a phase that banked no strokes into a clean
+  // win under a table captioned "negative is better".
+  it('leaves the delta absent when a phase measured nothing, rather than showing a win', () => {
+    const [row] = comparisonRows([phase('page', [10, 10]), phase('page-bare', [])], 'page');
+
+    expect(row['Δ paint p95 vs page']).toBeUndefined();
+    expect(row['Δ paint p99']).toBeUndefined();
   });
 });
 

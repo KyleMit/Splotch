@@ -59,7 +59,15 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     {
       entry: true,
       throttleDefault: 1,
-      extra: ['engine', 'phases', 'contact-seconds', 'drive', 'drive-hz', 'no-serve'],
+      extra: [
+        'engine',
+        'phases',
+        'contact-seconds',
+        'drive',
+        'drive-hz',
+        'no-serve',
+        'no-forensics',
+      ],
     },
     argv
   );

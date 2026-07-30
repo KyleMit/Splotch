@@ -26,27 +26,27 @@ import {
 const BUCKET_SECONDS = 5;
 
 export function printRun(capture, { forensics = true } = {}) {
-  const summaries = summarizeRun(capture.report);
+  const { intervalMs, phases } = summarizeRun(capture.report);
   const device = capture.device ?? {};
   console.log(
     `${device.name ?? 'unknown device'} (iOS ${device.os ?? '?'}) · ${capture.mode ?? '?'} input · ` +
-      `observed frame beat ${summaries.intervalMs} ms (${(1000 / summaries.intervalMs).toFixed(0)} Hz)`
+      `observed frame beat ${intervalMs} ms (${(1000 / intervalMs).toFixed(0)} Hz)`
   );
 
   console.log('\nFrame pacing (in-contact frames only)');
-  console.table(pacingRows(summaries));
+  console.table(pacingRows(phases));
   console.log('\nInput delivery and paint latency');
-  console.table(inputRows(summaries));
+  console.table(inputRows(phases));
   console.log('\nEngine cost inside those frames, and the stroke-end hitch');
-  console.table(engineRows(summaries));
+  console.table(engineRows(phases));
 
-  const comparisons = comparisonRows(summaries);
+  const comparisons = comparisonRows(phases);
   if (comparisons.length) {
     console.log('\nWhat each suppression bought against `page` (negative is better)');
     console.table(comparisons);
   }
 
-  for (const phase of summaries) {
+  for (const phase of phases) {
     if (!phase.engine) continue;
     const marks = Object.entries(phase.engine.byName);
     if (marks.length) {
@@ -71,13 +71,13 @@ export function printRun(capture, { forensics = true } = {}) {
   }
 
   if (forensics) {
-    for (const phase of summaries) {
+    for (const phase of phases) {
       if (!phase.worstFrames?.length) continue;
       console.log(`\nWorst frames in ${phase.key} — where the freeze sat`);
       console.table(phase.worstFrames);
     }
   }
-  return summaries;
+  return { intervalMs, phases };
 }
 
 export async function analyzeCapture(argv = process.argv.slice(2)) {
@@ -93,6 +93,8 @@ export async function analyzeCapture(argv = process.argv.slice(2)) {
 
   const summaries = printRun(capture, { forensics: !argv.includes('--no-forensics') });
   const out = join(dirname(path), 'summaries.json');
+  // `{ intervalMs, phases }`, so the saved file carries the derived beat — the
+  // whole point of this entry point is a capture outliving its maths.
   writeFileSync(out, `${JSON.stringify(summaries, null, 2)}\n`);
   console.log(`\nWrote ${out}`);
   return summaries;

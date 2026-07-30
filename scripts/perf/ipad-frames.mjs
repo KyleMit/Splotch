@@ -233,21 +233,21 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
 
     const summaries = summarizeRun(report);
     console.log('\nFrame pacing (in-contact frames only)');
-    console.table(pacingRows(summaries));
+    console.table(pacingRows(summaries.phases));
     console.log('\nInput delivery and paint latency');
-    console.table(inputRows(summaries));
+    console.table(inputRows(summaries.phases));
     console.log('\nEngine cost inside those frames, and the stroke-end hitch');
-    console.table(engineRows(summaries));
+    console.table(engineRows(summaries.phases));
     const timelineSummary = timeline?.summary();
     if (timelineSummary) {
       console.log(
         '\nRendering records (counts only — the protocol zeroes every timestamp, so this ' +
           'says how much\nrendering work happened, never how long it took)'
       );
-      console.table(timelineRows(timelineSummary, summaries[0]?.pacing?.frames));
+      console.table(timelineRows(timelineSummary, summaries.phases[0]?.pacing?.frames));
     }
 
-    const comparisons = comparisonRows(summaries);
+    const comparisons = comparisonRows(summaries.phases);
     if (comparisons.length) {
       console.log('\nWhat each suppression bought (negative is better)');
       console.table(comparisons);

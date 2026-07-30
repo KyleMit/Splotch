@@ -2,11 +2,12 @@
 // reads. Pure functions, no I/O: the device driver (`perf:ipad:frames`), the
 // re-analyzer (`perf:frames:analyze`) and the Playwright replication feed it the
 // same shapes, and the maths is unit-tested in
-// scripts/tests/perf-ipad-frames.test.mjs rather than trusted on a device.
+// scripts/tests/perf-real-screen.test.mjs rather than trusted on a device.
 //
-// The probe's row schemas (see its header for the full story):
+// The probe's row schemas (see its header for the full story). Columns are read
+// by POSITION here, so this list and the probe's writers move together:
 //   frames   [t, dt, contact]
-//   events   [stamp, at, type, id, buttons, coalesced, onCanvas]
+//   events   [stamp, at, type, id, buttons, coalesced, onCanvas, kind]
 //   measures [start, dur, nameIndex]
 //
 // MEASURED ON DEVICE, and load-bearing for how everything here is defined:
@@ -80,6 +81,12 @@ export function percentile(values, fraction) {
   const rank = Math.min(sorted.length - 1, Math.max(0, Math.ceil(fraction * sorted.length) - 1));
   return round(sorted[rank]);
 }
+
+// Absence propagates rather than collapsing to zero: `percentile` returns
+// undefined for an empty sample on purpose, and a `?? 0` here turned a phase that
+// banked no strokes into a clean win under a table captioned "negative is better".
+const delta = (value, against) =>
+  value === undefined || against === undefined ? undefined : round(value - against);
 
 const share = (count, total) => (total ? round(count / total, 4) : 0);
 const max = (values) => (values.length ? round(Math.max(...values)) : undefined);
@@ -194,16 +201,21 @@ function endHitches(strokes, frames) {
 // could show it. Measured per MOVE (not per frame) and only for moves that have
 // another move after them in the same stroke: the last move of a stroke is
 // followed by a finger-lift, and the idle gap after that is not latency.
+// Flattened and sorted before the walk, because `segmentStrokes` emits strokes in
+// LIFT order (they are pushed at the pointerup that closes them) while the cursor
+// only ever moves forward. Two contacts on the paper at once — a palm plus a
+// finger, routine for a toddler — put the earlier-STARTING stroke after the one
+// that lifted first, and its moves then matched frames seconds later: a measured
+// p95 of 3056 ms against 0 for the same input on one pointer, which also
+// fabricated a `paint latency` verdict in classifyPhase.
 function paintLatencies(strokes, frames) {
+  const stamps = strokes.flatMap((stroke) => stroke.moveStamps.slice(0, -1)).sort((a, b) => a - b);
   const latencies = [];
   let cursor = 0;
-  for (const stroke of strokes) {
-    for (let i = 0; i < stroke.moveStamps.length - 1; i++) {
-      const stamp = stroke.moveStamps[i];
-      while (cursor < frames.length && frames[cursor][FRAME_T] < stamp) cursor++;
-      if (cursor >= frames.length) return latencies;
-      latencies.push(round(frames[cursor][FRAME_T] - stamp));
-    }
+  for (const stamp of stamps) {
+    while (cursor < frames.length && frames[cursor][FRAME_T] < stamp) cursor++;
+    if (cursor >= frames.length) return latencies;
+    latencies.push(round(frames[cursor][FRAME_T] - stamp));
   }
   return latencies;
 }
@@ -501,6 +513,12 @@ function labelPhases(phases) {
   });
 }
 
+// Returns `{ intervalMs, phases }` rather than the phase array with the beat
+// riding on it as a property: `JSON.stringify` drops non-index properties of an
+// array, so the derived beat — the number every `lateThresholdMs` hangs off, and
+// the one an artifact exists to outlive its maths with — vanished from every
+// saved `summaries`. The row builders below still take the phase array, so they
+// stay pure and independently testable.
 export function summarizeRun(report) {
   const { phases = [], meta = {} } = report;
   const frames = report.frames ?? [];
@@ -511,9 +529,10 @@ export function summarizeRun(report) {
     measureNames: meta.measureNames ?? [],
     intervalMs: observedFrameIntervalMs(frames),
   };
-  const summaries = labelPhases(phases).map((phase) => summarizePhase(phase, tables));
-  summaries.intervalMs = tables.intervalMs;
-  return summaries;
+  return {
+    intervalMs: tables.intervalMs,
+    phases: labelPhases(phases).map((phase) => summarizePhase(phase, tables)),
+  };
 }
 
 // Console-friendly projections. Narrow tables beat one that wraps: each answers
@@ -583,11 +602,12 @@ export function comparisonRows(summaries, baselineKey = 'page') {
     .filter((phase) => phase.key !== baselineKey && phase.pacing)
     .map((phase) => ({
       phase: phase.key,
-      [`Δ paint p95 vs ${baselineKey}`]: round(
-        (phase.paintLatencyMs.p95 ?? 0) - (baseline.paintLatencyMs.p95 ?? 0)
+      [`Δ paint p95 vs ${baselineKey}`]: delta(
+        phase.paintLatencyMs.p95,
+        baseline.paintLatencyMs.p95
       ),
-      'Δ paint p99': round((phase.paintLatencyMs.p99 ?? 0) - (baseline.paintLatencyMs.p99 ?? 0)),
-      'Δ dt p95': round((phase.pacing.p95 ?? 0) - (baseline.pacing.p95 ?? 0)),
+      'Δ paint p99': delta(phase.paintLatencyMs.p99, baseline.paintLatencyMs.p99),
+      'Δ dt p95': delta(phase.pacing.p95, baseline.pacing.p95),
       'Δ late %': round((phase.pacing.lateShare - baseline.pacing.lateShare) * 100, 1),
       'Δ lost ms': round(phase.pacing.lostMs - baseline.pacing.lostMs),
       'Δ stall %': round((phase.pacing.stallShare - baseline.pacing.stallShare) * 100, 1),
