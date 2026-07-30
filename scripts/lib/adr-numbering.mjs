@@ -57,6 +57,21 @@ export function nextAdrNumber(filenames) {
   return String(highest + 1).padStart(4, '0');
 }
 
+/**
+ * Reports what this branch did to docs/adrs/ without deciding whether to check.
+ * Scanning the tree costs a directory read, so skipping it on "nothing changed"
+ * would buy nothing and would report success against a tree that already holds
+ * duplicates — which is exactly the state an audit run needs to surface.
+ */
+export function describeAdrChanges(changedFiles) {
+  if (changedFiles === null) return null;
+  if (changedFiles.length === 0) {
+    return `No record in ${ADR_DIR} changed here — verifying the resulting tree anyway.`;
+  }
+  const names = changedFiles.map((file) => file.replace(`${ADR_DIR}/`, '')).join(', ');
+  return `${changedFiles.length === 1 ? '1 record' : `${changedFiles.length} records`} changed in ${ADR_DIR}: ${names}`;
+}
+
 export function formatProblems({ duplicates, collisions, baseRef }) {
   const lines = [];
   for (const { number, files } of duplicates) {

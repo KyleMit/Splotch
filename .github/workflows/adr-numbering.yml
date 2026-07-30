@@ -50,28 +50,10 @@ jobs:
           git fetch --depth=1 origin \
             "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
 
-      # Two-dot diff on purpose: --depth=1 leaves no merge base for a three-dot
-      # range. Comparing the base tip against the tree under test can also flag a
-      # record the base itself moved, which only costs one needless run of a
-      # one-second check — it never misses a change this branch made.
-      #
-      # git rather than a changed-files action: this is one command, and a
-      # third-party action here would be supply-chain exposure for no gain
-      # (tj-actions/changed-files, CVE-2025-30066, had every version retagged to
-      # malicious code in 2025).
-      - name: Look for ADR changes
-        id: adrs
-        run: |
-          if git diff --quiet "origin/${BASE_REF}" HEAD -- docs/adrs/; then
-            echo 'changed=false' >> "$GITHUB_OUTPUT"
-            echo 'No docs/adrs/ changes against the base — numbering check not needed.'
-          else
-            echo 'changed=true' >> "$GITHUB_OUTPUT"
-          fi
-
-      # Gated at the step, not the job: a skipped job's effect on a required
-      # check depends on how GitHub scores a "skipped" conclusion, while a job
-      # that runs and exits 0 reports success unambiguously.
+      # Runs every time and reports what changed itself, rather than a step
+      # gating it: reading the directory is cheaper than the git call that would
+      # decide whether to bother, and a gate that exits early on "no ADRs
+      # changed" would report success against a tree that already holds
+      # duplicates — the exact state a workflow_dispatch audit exists to find.
       - name: Check ADR numbering
-        if: steps.adrs.outputs.changed == 'true'
         run: node scripts/check-adr-numbering.mjs "--base=origin/${BASE_REF}"
