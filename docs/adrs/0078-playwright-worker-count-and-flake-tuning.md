@@ -385,11 +385,11 @@ swallowing content that is momentarily sitting on the launch button is what it i
 
 **Re-measured**, 35 reps at 4 workers, retries off (run 30581020210):
 
-| spec cluster                                | before    | after |
-| ------------------------------------------- | --------- | ----- |
-| the three zoom/pinch specs                  | 4/70 reps | 0/35  |
-| `pointer exploration still snaps a hexagon` | 0/70 reps | 1/35  |
-| runs gone red (4 workers)                   | 1/35      | 1/35  |
+| spec cluster                                                                      | before    | after |
+| --------------------------------------------------------------------------------- | --------- | ----- |
+| the three zoom/pinch specs                                                        | 4/70 reps | 0/35  |
+| `pointer exploration still snaps a hexagon gap and commits the highlighted color` | 0/70 reps | 1/35  |
+| runs gone red (4 workers)                                                         | 1/35      | 1/35  |
 
 **So the cluster is gone and the rate is not.** The red run belongs to a spec in a different
 subsystem — the colour picker's gap snap, where a `mouse.move` into the gap between hexagons left

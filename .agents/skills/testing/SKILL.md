@@ -181,9 +181,14 @@ specs that can't race in the first place:
   animation. A CSS animation advances with *rendered frames*, so a starved worker parks the dialog
   on that keyframe for far longer than 13ms of wall clock, and the gesture is aimed straight into
   the guard and silently does nothing. That was issue \#665 — the three zoom/pinch specs that were
-  the entire residual flake rate (ADR-0078 §4), all failing as "the pinch produced no zoom".
-  `openParentCenter` now awaits the fly-in's `Animation.finished` (`settleFlyIn`), which puts the
-  pane 574px from the origin and removes the dependency on animation progress instead of timing it.
+  the entire residual flake rate (ADR-0078 §4), all failing as "the pinch produced no zoom". The fix
+  is to await the dialog's `Animation.finished` before reading any coordinate off it —
+  `openParentCenter` does this, which puts the pane 574px from the origin and removes the dependency
+  on animation progress instead of timing it. Three other dialogs carry `modal-fly-in`
+  (`#color-picker`, `#coloring-book-dialog`, `.ai-prompt-modal`); the helper is private to
+  `tests/helpers.ts` until a second caller needs it, so lift it there rather than copying the wait.
+  Query `getAnimations()` on the dialog element alone — the fly-in animates it directly, and
+  `{ subtree: true }` would start waiting on unrelated descendant animations too.
 * **Drive strokes through `draw`/`dragStroke`, never a hand-rolled run of `mouse.move`s.** The
   engine reads a sample far from the previous one and more than `POINTER_RESUME_GAP_MS` later as a
   finger that lifted and set down (`strokeMath.pointerWasResumed`), restarts the stroke there, and

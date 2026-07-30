@@ -90,26 +90,22 @@ export async function retryOpen(
 // Wait for a fly-in dialog to land on its resting position before anything reads
 // a coordinate off it.
 //
-// `dialogFlyFromOrigin` (app.css) starts the dialog at `scale(0.05)` translated
-// onto the button that opened it, and modalDialog arms a launch dead zone at that
-// same point (launchGuard: 72px, 600ms) whose capture-phase pointerdown handler
-// swallows every event landing inside it — dialog content included, by design, so
-// a toddler's repeat taps can't work the controls that painted under the finger.
-// So for the opening frames the *whole* dialog sits inside that dead zone: at the
-// first keyframe the Parent Center's content pane centers 6px from the launch
-// origin, and it only clears the 72px radius about 13ms into the animation.
+// `dialogFlyFromOrigin` (app.css) starts the dialog scaled down onto the button
+// that opened it, and modalDialog arms a launch dead zone at that same point
+// (launchGuard's DEFAULT_RADIUS / DEFAULT_DURATION_MS) whose capture-phase
+// pointerdown handler swallows every event landing inside it — dialog content
+// included, by design, so a toddler's repeat taps can't work the controls that
+// painted under the finger. So for the opening frames the *whole* dialog sits
+// inside that dead zone.
 //
 // A CSS animation advances with rendered frames, so a starved worker can leave
-// the dialog parked on that first keyframe for far longer than 13ms of wall
-// clock. A spec that reads the pane's live rect and dispatches synthetic pointer
-// events there — bypassing the actionability checks a real Playwright click
-// performs — then aims its gesture straight into the dead zone and gets it
-// swallowed. That was issue #665: three zoom/pinch specs whose pinch silently
-// did nothing, together the whole residual flake rate (ADR-0078 §4).
-//
-// Once the fly-in has finished the pane rests 574px from the launch origin, well
-// outside any dead zone, so waiting here removes the dependency on animation
-// progress rather than timing it.
+// the dialog parked on that first keyframe far longer than the animation's own
+// timeline suggests. A spec that reads an element's live rect and dispatches
+// synthetic pointer events there — bypassing the actionability checks a real
+// Playwright click performs — then aims straight into the dead zone and gets
+// swallowed. Waiting for the landing removes the dependency on animation
+// progress rather than timing it. Measurements and the failure it caused:
+// ADR-0078 §4a.
 async function settleFlyIn(dialog: Locator) {
   await dialog.evaluate((el) =>
     // A cancelled animation (the dialog closing under us) rejects `finished`;

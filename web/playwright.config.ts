@@ -132,14 +132,13 @@ const slowMo = Number(process.env.SLOWMO) || 0;
 // What changes instead is that the debt is no longer silent: every retried pass
 // is annotated (playwright-flaky-reporter.ts).
 //
-// Those three specs are fixed and re-measured (ADR-0078 §4a): they were one bug —
-// a pinch aimed at a dialog still flying in, so the modal's launch dead zone
-// swallowed it — and they are 0/35 now. The rate did not move with them. The same
-// sweep put 1 of 35 runs red on `pointer exploration still snaps a hexagon gap
-// and commits the highlighted color`, a spec that had not failed in the 70 reps
-// behind the numbers above. So the red-run rate at the shipped count is where it
-// was, every argument above still holds, and reducing this number is downstream
-// of that spec rather than of another sweep.
+// Those three specs are fixed and re-measured at 0/35 (ADR-0078 §4a): they were
+// one bug — a pinch aimed at a dialog still flying in, so the modal's launch dead
+// zone swallowed it. The red-run rate did not move with them; the same sweep put a
+// run red on `pointer exploration still snaps a hexagon gap and commits the
+// highlighted color`, a spec in a different subsystem. So every argument above
+// still holds, and reducing this number is downstream of that spec rather than of
+// another sweep.
 const ciRetries = 2;
 const ciAllowedTokens = allowedTokensList(
   ...Array.from({ length: ciRetries + 1 }, (_, retry) => managedAccessTokenForRetry(retry))

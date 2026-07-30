@@ -69,8 +69,8 @@ paths:
   `window.__committedBrushMode`, ADR-0080); let a fly-in dialog **land** before reading a coordinate
   off it and dispatching synthetic events there — a real `.click()` waits for the element to stop
   moving, an `evaluate` does not, and a dialog still flying in sits inside the launch dead zone that
-  swallows the gesture (`settleFlyIn` in `tests/helpers.ts`, issue \#665); drive strokes through
-  `draw`/`dragStroke`, which pace their samples inside the engine's dropped-pointer threshold — a
-  hand-rolled run of far-apart `mouse.move`s gets read as a lifted finger and paints a stub of the
-  stroke; and verify a fix with `--repeat-each=10`, never in isolation. Full checklist with
-  examples: the `testing` skill, "Writing flake-resistant specs."
+  swallows the gesture; await its `Animation.finished` first, as `openParentCenter` does (ADR-0078
+  §4a); drive strokes through `draw`/`dragStroke`, which pace their samples inside the engine's
+  dropped-pointer threshold — a hand-rolled run of far-apart `mouse.move`s gets read as a lifted
+  finger and paints a stub of the stroke; and verify a fix with `--repeat-each=10`, never in
+  isolation. Full checklist with examples: the `testing` skill, "Writing flake-resistant specs."

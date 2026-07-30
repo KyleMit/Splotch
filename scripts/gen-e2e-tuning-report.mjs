@@ -172,7 +172,7 @@ const ZOOM_FIX_NOTES = [
 
 // The specs those red runs belong to, across both counts. All zoom/pinch gesture
 // state, which is a better starting point for the next pass than a rate is. All
-// three are fixed as of CI_POST_ZOOM_FIX below.
+// three are fixed as of CI_POST_ZOOM_FIX.
 const RESIDUAL_SPECS = [
   ['closing the overlay resets the zoom for the next open', '2/35 (3 workers)'],
   ['navigating to another section resets the zoom', '1/35 (4 workers)'],
