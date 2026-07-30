@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { applyRulerSkillForks } from '../apply-ruler-skill-forks.mjs';
+import { sharedNoteSource } from '../mirror-skill-notes.mjs';
 
 const roots = [];
 
@@ -108,5 +109,38 @@ describe('applyRulerSkillForks', () => {
     write(root, '.ruler/skill-forks/codex/skill-notes/provider-workflow.md.template', 'orphan\n');
 
     expect(() => applyRulerSkillForks(root)).toThrow('ruler skill fork note has no matching skill');
+  });
+
+  // The collision check looked for a bare .md shared note until shared notes
+  // moved to SHARED_NOTE_SUFFIX, so a fork could silently coexist with a shared
+  // note authored under the canonical suffix — the ADR-0058 isolation this guard
+  // exists to enforce.
+  it('rejects a fork whose skill also has a shared note at the canonical suffix', () => {
+    const root = makeRoot();
+    write(
+      root,
+      '.ruler/skill-forks/claude/skills/provider-workflow/SKILL.md.template',
+      'claude skill\n'
+    );
+    write(
+      root,
+      '.ruler/skill-forks/codex/skills/provider-workflow/SKILL.md.template',
+      'codex skill\n'
+    );
+    write(
+      root,
+      '.ruler/skill-forks/claude/skill-notes/provider-workflow.md.template',
+      'claude note\n'
+    );
+    write(
+      root,
+      '.ruler/skill-forks/codex/skill-notes/provider-workflow.md.template',
+      'codex note\n'
+    );
+    write(root, `.ruler/skill-notes/${sharedNoteSource('provider-workflow')}`, 'shared note\n');
+
+    expect(() => applyRulerSkillForks(root)).toThrow(
+      'ruler skill fork must not also have a shared note'
+    );
   });
 });

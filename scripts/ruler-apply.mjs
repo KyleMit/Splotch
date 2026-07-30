@@ -7,6 +7,7 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ROOT } from './lib/proc.mjs';
+import { sharedNoteSource } from './mirror-skill-notes.mjs';
 
 export const DIRECT_PROVIDER_PATHS = [
   '.claude/skills/burn-down-audits',
@@ -17,7 +18,11 @@ export const DIRECT_PROVIDER_PATHS = [
 
 export const FORBIDDEN_DIRECT_PROVIDER_SOURCES = [
   '.ruler/skills/burn-down-audits',
+  // A shared note is authored with SHARED_NOTE_SUFFIX; the bare .md stays listed
+  // so a stray one is rejected here, by the guard that names the actual rule,
+  // rather than downstream by the mirror's generic suffix check.
   '.ruler/skill-notes/burn-down-audits.md',
+  `.ruler/skill-notes/${sharedNoteSource('burn-down-audits')}`,
   '.ruler/skill-forks/claude/skills/burn-down-audits',
   '.ruler/skill-forks/codex/skills/burn-down-audits',
   '.ruler/skill-forks/claude/skill-notes/burn-down-audits.md.template',

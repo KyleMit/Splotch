@@ -3,11 +3,17 @@
 Design history and open questions for the shared agent **skills** in this repo — one file per skill,
 named after it.
 
-Authored in `.ruler/skill-notes/` and mirrored to `.claude/skill-notes/` and `.agents/skill-notes/`
-by `scripts/mirror-skill-notes.mjs` on every `npm run ruler:apply` — **edit the `.ruler/` copy**,
-the other two are generated and carry a `<!-- Source: ... -->` marker saying so. Both agent trees
-get them for the same reason both get the skills: a Codex session working on a skill needs its
-design history as much as a Claude session does.
+Authored here as `<name>.md.template` and mirrored, suffix stripped, to `.claude/skill-notes/` and
+`.agents/skill-notes/` by `scripts/mirror-skill-notes.mjs` on every `npm run ruler:apply` — **edit
+the `.ruler/` copy**, the other two are generated and carry a `<!-- Source: ... -->` marker saying
+so. Both agent trees get them for the same reason both get the skills: a Codex session working on a
+skill needs its design history as much as a Claude session does.
+
+**The `.md.template` suffix is not decoration.** Ruler's recursive rule loader concatenates every
+`.md` under `.ruler/` into the root `CLAUDE.md` / `AGENTS.md`, so a note saved as a plain `.md`
+gets published into every session's context window — the precise outcome this whole tree is built
+to prevent, and one that grows with every note added. The mirror script fails rather than mirror a
+plain `.md`. Skill forks carry the suffix on their Markdown for the same reason.
 
 A fully forked skill keeps its independent notes beside its independent packages:
 

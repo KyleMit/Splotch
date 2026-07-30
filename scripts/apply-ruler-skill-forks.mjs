@@ -11,6 +11,7 @@ import {
 import { fileURLToPath } from 'node:url';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { ROOT } from './lib/proc.mjs';
+import { sharedNoteSource } from './mirror-skill-notes.mjs';
 
 const FORK_ROOT = join('.ruler', 'skill-forks');
 const SHARED_SKILLS_ROOT = join('.ruler', 'skills');
@@ -145,7 +146,7 @@ export function applyRulerSkillForks(root = ROOT) {
         throw new Error(`ruler skill fork note has no matching skill: ${noteFile}`);
       }
 
-      const sharedNote = join(root, SHARED_NOTES_ROOT, `${skillName}.md`);
+      const sharedNote = join(root, SHARED_NOTES_ROOT, sharedNoteSource(skillName));
       if (existsSync(sharedNote)) {
         throw new Error(`ruler skill fork must not also have a shared note: ${sharedNote}`);
       }

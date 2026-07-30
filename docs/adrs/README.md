@@ -108,12 +108,13 @@ The decisions that shape everything else, in rough order of importance. All are 
 
 ## Testing & quality
 
-| #                                                       | Title                                                                                                     | Status                                                       |
-| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| [0009](0009-happy-dom-over-jsdom.md)                    | happy-dom Over jsdom for Vitest Unit Tests                                                                | Active                                                       |
-| [0023](0023-redteam-ai-safety-integration-test.md)      | Red-Team Integration Test for AI Image Safety (Manual, Token-Gated, Encrypted Fixtures, Excluded from CI) | Active                                                       |
-| [0031](0031-linting-formatting-and-ci-quality-gates.md) | Linting, Formatting, and CI Quality Gates (ESLint + Prettier, critical-only audit)                        | Active                                                       |
-| [0032](0032-performance-profiling-harness.md)           | Automated Performance Profiling Harness (build-flag marks + CDP/WebKit capture, web + Android + iOS)      | Active (amended by [0066](0066-snapshot-undo-reinstated.md)) |
+| #                                                                     | Title                                                                                                     | Status                                                                                                                              |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [0009](0009-happy-dom-over-jsdom.md)                                  | happy-dom Over jsdom for Vitest Unit Tests                                                                | Active                                                                                                                              |
+| [0023](0023-redteam-ai-safety-integration-test.md)                    | Red-Team Integration Test for AI Image Safety (Manual, Token-Gated, Encrypted Fixtures, Excluded from CI) | Active                                                                                                                              |
+| [0031](0031-linting-formatting-and-ci-quality-gates.md)               | Linting, Formatting, and CI Quality Gates (ESLint + Prettier, critical-only audit)                        | Active                                                                                                                              |
+| [0032](0032-performance-profiling-harness.md)                         | Automated Performance Profiling Harness (build-flag marks + CDP/WebKit capture, web + Android + iOS)      | Active (amended by [0066](0066-snapshot-undo-reinstated.md), [0079](0079-physical-ios-device-capture-webkit-inspector-protocol.md)) |
+| [0079](0079-physical-ios-device-capture-webkit-inspector-protocol.md) | Drive a Physical iOS Device Over the WebKit Inspector Protocol (`perf:ipad`)                              | Active (amends [0032](0032-performance-profiling-harness.md))                                                                       |
 
 ## Build & tooling
 
