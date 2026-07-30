@@ -10,6 +10,7 @@ export interface UiState {
   aiGenerating: boolean;
   aiResultOpen: boolean;
   aiResultUrl: string | null;
+  aiResultType: string | null;
   aiPreviewUrl: string | null;
   aiError: boolean;
   aiErrorMessage: string | null;
@@ -25,6 +26,7 @@ export const ui: UiState = $state({
   aiGenerating: false,
   aiResultOpen: false,
   aiResultUrl: null,
+  aiResultType: null,
   aiPreviewUrl: null,
   aiError: false,
   aiErrorMessage: null,

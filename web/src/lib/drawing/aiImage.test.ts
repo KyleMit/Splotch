@@ -288,7 +288,10 @@ describe('generateAiImage response handling', () => {
   it('commits and auto-saves only an image response', async () => {
     mocks.settings.autoSaveAiEnabled = true;
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(okResponse(new Blob(['result'], { type: 'image/webp' })))
+    );
 
     const { generateAiImage } = await import('./aiImage');
     const { ui } = await import('$lib/state/ui.svelte');
@@ -298,6 +301,7 @@ describe('generateAiImage response handling', () => {
     expect(ui.aiGenerating).toBe(false);
     expect(ui.aiError).toBe(false);
     expect(ui.aiResultUrl).toBe('blob:test-2');
+    expect(ui.aiResultType).toBe('image/webp');
     expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
   });
 });

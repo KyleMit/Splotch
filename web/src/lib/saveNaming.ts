@@ -13,5 +13,17 @@ export function triggerDownload(url: string, filename: string) {
   a.remove();
 }
 
+export function extensionForImageType(imageType: string) {
+  switch (imageType) {
+    case 'image/webp':
+      return 'webp';
+    case 'image/jpeg':
+      return 'jpg';
+    case 'image/png':
+    default:
+      return 'png';
+  }
+}
+
 export const DRAWING_BASENAME = 'splotch';
 export const AI_IMAGE_BASENAME = 'splotch-ai';

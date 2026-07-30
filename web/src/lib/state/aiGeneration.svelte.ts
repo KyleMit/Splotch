@@ -22,6 +22,7 @@ export function createAiGenerationMachine(uiState: UiState) {
   function resetAiRunUi(previewUrl: string | null) {
     uiState.aiPreviewUrl = swapObjectUrl(uiState.aiPreviewUrl, previewUrl);
     uiState.aiResultUrl = swapObjectUrl(uiState.aiResultUrl);
+    uiState.aiResultType = null;
     uiState.aiError = false;
     uiState.aiErrorMessage = null;
     uiState.aiErrorKind = 'generic';
@@ -64,12 +65,13 @@ export function createAiGenerationMachine(uiState: UiState) {
 
   // The finished image has arrived — hand it to the modal so the dial can race to
   // completion and reveal it.
-  function finishAiGeneration(id: number, url: string): boolean {
+  function finishAiGeneration(id: number, url: string, imageType: string): boolean {
     if (!isAiGenerationActive(id) || !uiState.aiResultOpen) {
       URL.revokeObjectURL(url);
       return false;
     }
     uiState.aiResultUrl = swapObjectUrl(uiState.aiResultUrl, url);
+    uiState.aiResultType = imageType;
     uiState.aiGenerating = false;
     return true;
   }

@@ -190,7 +190,7 @@ function applyResponse(runId: number, response: AiImageResponse): { committedBlo
       );
       return null;
   }
-  return finishAiGeneration(runId, URL.createObjectURL(response.blob))
+  return finishAiGeneration(runId, URL.createObjectURL(response.blob), response.blob.type)
     ? { committedBlob: response.blob }
     : null;
 }

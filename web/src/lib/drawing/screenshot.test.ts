@@ -91,3 +91,18 @@ describe('saveScreenshot', () => {
     expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('saveImageBlob', () => {
+  it('uses the blob MIME type for web filenames', async () => {
+    mocks.saveBlobToFolder.mockResolvedValue(true);
+    const { saveImageBlob } = await import('./screenshot');
+
+    await saveImageBlob(new Blob(['image'], { type: 'image/webp' }), 'splotch-ai');
+
+    expect(mocks.saveBlobToFolder).toHaveBeenCalledWith(
+      expect.any(Blob),
+      expect.stringMatching(/^splotch-ai-.+\.webp$/),
+      undefined
+    );
+  });
+});

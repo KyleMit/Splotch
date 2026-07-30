@@ -9,6 +9,7 @@ function createUiState(): UiState {
     aiGenerating: false,
     aiResultOpen: false,
     aiResultUrl: null,
+    aiResultType: null,
     aiPreviewUrl: null,
     aiError: false,
     aiErrorMessage: null,
@@ -40,7 +41,7 @@ describe('createAiGenerationMachine', () => {
     const machine = createAiGenerationMachine(uiState);
     const firstController = new AbortController();
     const firstRun = machine.startAiGeneration('blob:first-preview', firstController);
-    machine.finishAiGeneration(firstRun, 'blob:first-result');
+    machine.finishAiGeneration(firstRun, 'blob:first-result', 'image/png');
     machine.failAiGeneration(firstRun, 'Try again', 'retry');
 
     const secondRun = machine.startAiGeneration('blob:second-preview');
@@ -53,6 +54,7 @@ describe('createAiGenerationMachine', () => {
       aiGenerating: true,
       aiResultOpen: true,
       aiResultUrl: null,
+      aiResultType: null,
       aiPreviewUrl: 'blob:second-preview',
       aiError: false,
       aiErrorMessage: null,
@@ -67,7 +69,7 @@ describe('createAiGenerationMachine', () => {
     const machine = createAiGenerationMachine(uiState);
     const controller = new AbortController();
     const firstRun = machine.startAiGeneration('blob:preview', controller);
-    machine.finishAiGeneration(firstRun, 'blob:result');
+    machine.finishAiGeneration(firstRun, 'blob:result', 'image/webp');
     machine.closeAiResult();
 
     expect(controller.signal.aborted).toBe(true);
@@ -76,6 +78,7 @@ describe('createAiGenerationMachine', () => {
       aiGenerating: false,
       aiResultOpen: false,
       aiResultUrl: null,
+      aiResultType: null,
       aiPreviewUrl: null,
       aiError: false,
       aiErrorMessage: null,
@@ -97,7 +100,7 @@ describe('createAiGenerationMachine', () => {
     const activeRun = machine.startAiGeneration('blob:active-preview');
 
     machine.setAiPreview(staleRun, 'blob:stale-preview');
-    const committed = machine.finishAiGeneration(staleRun, 'blob:stale-result');
+    const committed = machine.finishAiGeneration(staleRun, 'blob:stale-result', 'image/png');
 
     expect(committed).toBe(false);
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:first-preview');
@@ -106,6 +109,7 @@ describe('createAiGenerationMachine', () => {
     expect(machine.isAiGenerationActive(activeRun)).toBe(true);
     expect(uiState.aiPreviewUrl).toBe('blob:active-preview');
     expect(uiState.aiResultUrl).toBeNull();
+    expect(uiState.aiResultType).toBeNull();
     expect(uiState.aiGenerating).toBe(true);
   });
 
@@ -114,8 +118,9 @@ describe('createAiGenerationMachine', () => {
     const machine = createAiGenerationMachine(uiState);
     const run = machine.startAiGeneration(null);
 
-    expect(machine.finishAiGeneration(run, 'blob:result')).toBe(true);
+    expect(machine.finishAiGeneration(run, 'blob:result', 'image/jpeg')).toBe(true);
     expect(uiState.aiResultUrl).toBe('blob:result');
+    expect(uiState.aiResultType).toBe('image/jpeg');
     expect(uiState.aiGenerating).toBe(false);
     expect(uiState.aiError).toBe(false);
   });

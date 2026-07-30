@@ -2,7 +2,12 @@ import type { MediaPlugin } from '@capacitor-community/media';
 import { exportCanvasBlob } from './engine';
 import { getActiveOverlayImage } from './overlay';
 import { isNative, getPlatform } from '$lib/platform';
-import { DRAWING_BASENAME, timestamp, triggerDownload } from '$lib/saveNaming';
+import {
+  DRAWING_BASENAME,
+  extensionForImageType,
+  timestamp,
+  triggerDownload,
+} from '$lib/saveNaming';
 import { saveBlobToFolder } from './folderSave';
 import { playPolaroidAnimation } from './polaroidAnimation';
 
@@ -68,7 +73,7 @@ export async function saveImageBlob(
       console.error('Save to gallery failed:', err);
     }
   } else {
-    const filename = `${baseName}-${timestamp()}.png`;
+    const filename = `${baseName}-${timestamp()}.${extensionForImageType(blob.type)}`;
     if (await saveBlobToFolder(blob, filename, opts)) return;
     const url = URL.createObjectURL(blob);
     triggerDownload(url, filename);
