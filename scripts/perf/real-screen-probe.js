@@ -191,8 +191,6 @@
   // such a stroke while ink is visibly painting — which is exactly how this
   // probe failed its first device run.
   const drawingPointers = new Set();
-  let newestMoveStamp = null;
-  let movesSinceFrame = 0;
 
   // Identity would be enough today, but a re-queried element keeps the probe
   // honest if the canvas is ever replaced under it, and `closest` covers a
@@ -231,10 +229,6 @@
       // biggest difference between it and a synthetic run unmeasured.
       POINTER_KINDS[event.pointerType] ?? -1,
     ]);
-    if (type === 1 && onCanvas && event.buttons !== 0) {
-      newestMoveStamp = event.timeStamp;
-      movesSinceFrame++;
-    }
     if ((type === 2 || type === 3) && onCanvas) onLift(event);
   };
 
@@ -691,7 +685,6 @@
     frames.push([round(ts), delta === null ? -1 : round(delta), contact ? 1 : 0]);
     lastTs = ts;
     lastContact = contact;
-    movesSinceFrame = 0;
 
     // After the frame is accounted for, so a synthetic move belongs to the
     // interval it is about to be drawn in rather than the one just closed. With
