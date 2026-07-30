@@ -23,7 +23,8 @@ The decisions that shape everything else, in rough order of importance. All are 
   [0072](0072-early-engine-boot-adopt-contract.md)).
 * **[0066 — Snapshot Undo Reinstated](0066-snapshot-undo-reinstated.md)** — undo is a snapshot stack
   again (paper raster + tiered pre-stroke snapshots), ending the command-replay era (amended by
-  [0068](0068-crayon-raster-pass-commit.md), [0069](0069-dirty-rect-patch-snapshots.md)).
+  [0068](0068-crayon-raster-pass-commit.md), [0069](0069-dirty-rect-patch-snapshots.md),
+  [0080](0080-real-screen-capture-on-device.md)).
 * **[0002 — Svelte 5 Runes Over Legacy Stores](0002-svelte-5-runes.md)** — runes everywhere; no
   `writable`/`readable`/`derived` from `svelte/store`.
 * **[0024 — Web App in web/ Subdirectory](0024-web-app-subdirectory-for-netlify-watcher.md)** — the
@@ -108,13 +109,14 @@ The decisions that shape everything else, in rough order of importance. All are 
 
 ## Testing & quality
 
-| #                                                                     | Title                                                                                                     | Status                                                                                                                              |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| [0009](0009-happy-dom-over-jsdom.md)                                  | happy-dom Over jsdom for Vitest Unit Tests                                                                | Active                                                                                                                              |
-| [0023](0023-redteam-ai-safety-integration-test.md)                    | Red-Team Integration Test for AI Image Safety (Manual, Token-Gated, Encrypted Fixtures, Excluded from CI) | Active                                                                                                                              |
-| [0031](0031-linting-formatting-and-ci-quality-gates.md)               | Linting, Formatting, and CI Quality Gates (ESLint + Prettier, critical-only audit)                        | Active                                                                                                                              |
-| [0032](0032-performance-profiling-harness.md)                         | Automated Performance Profiling Harness (build-flag marks + CDP/WebKit capture, web + Android + iOS)      | Active (amended by [0066](0066-snapshot-undo-reinstated.md), [0079](0079-physical-ios-device-capture-webkit-inspector-protocol.md)) |
-| [0079](0079-physical-ios-device-capture-webkit-inspector-protocol.md) | Drive a Physical iOS Device Over the WebKit Inspector Protocol (`perf:ipad`)                              | Active (amends [0032](0032-performance-profiling-harness.md))                                                                       |
+| #                                                                     | Title                                                                                                     | Status                                                                                                                                                                             |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [0009](0009-happy-dom-over-jsdom.md)                                  | happy-dom Over jsdom for Vitest Unit Tests                                                                | Active                                                                                                                                                                             |
+| [0023](0023-redteam-ai-safety-integration-test.md)                    | Red-Team Integration Test for AI Image Safety (Manual, Token-Gated, Encrypted Fixtures, Excluded from CI) | Active                                                                                                                                                                             |
+| [0031](0031-linting-formatting-and-ci-quality-gates.md)               | Linting, Formatting, and CI Quality Gates (ESLint + Prettier, critical-only audit)                        | Active                                                                                                                                                                             |
+| [0032](0032-performance-profiling-harness.md)                         | Automated Performance Profiling Harness (build-flag marks + CDP/WebKit capture, web + Android + iOS)      | Active (amended by [0066](0066-snapshot-undo-reinstated.md), [0079](0079-physical-ios-device-capture-webkit-inspector-protocol.md), [0080](0080-real-screen-capture-on-device.md)) |
+| [0079](0079-physical-ios-device-capture-webkit-inspector-protocol.md) | Drive a Physical iOS Device Over the WebKit Inspector Protocol (`perf:ipad`)                              | Active (amends [0032](0032-performance-profiling-harness.md))                                                                                                                      |
+| [0080](0080-real-screen-capture-on-device.md)                         | Measure the Real Screen on Device as a Separate Instrument (`perf:ipad:frames`)                           | Active (amends [0032](0032-performance-profiling-harness.md))                                                                                                                      |
 
 ## Build & tooling
 
