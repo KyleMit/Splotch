@@ -1,5 +1,11 @@
 ## Writing on GitHub
 
+The pull request template is `.github/pull_request_template.md`, and it is the only one — there is
+no `PULL_REQUEST_TEMPLATE.md`, no `docs/` copy, and no `.github/PULL_REQUEST_TEMPLATE/` directory,
+so don't probe for them. Its headings are the floor for a PR body, not the ceiling: keep them, then
+add your own sections for the mechanism, the measurements, what was rejected, what is out of scope,
+and which ADRs or docs moved. The `pr-screenshots` skill governs the Screenshots section.
+
 GitHub auto-links a `#` followed by digits (`#12`) into a reference to the issue or pull request
 with that number. So a plain list like "#1 done, #2 pass" in a PR body or comment silently turns
 into links to unrelated issues/PRs.
