@@ -16,16 +16,21 @@
 // verbatim; every percentile, verdict and comparison is computed in Node by
 // ipad-frames.mjs, where it can be unit-tested.
 //
-// Four tables come back (all times in ms, all in the page's time origin so they
-// are directly comparable):
+// Six tables come back (all times in ms, all in the page's time origin so they
+// are directly comparable). The numeric rows are read by POSITION in
+// real-screen-stats.mjs, so these layouts and its column constants move together:
 //
 //   frames[]   [t, dt, contact]                  one row per rAF callback
-//   events[]   [stamp, at, type, id, buttons, coalesced, onCanvas]
+//   events[]   [stamp, at, type, id, buttons, coalesced, onCanvas, kind]
 //              `stamp` is the event's own timestamp (when the input happened),
 //              `at` is performance.now() inside the handler (when the page got
 //              to it) — their difference is INPUT QUEUE DELAY, the main-thread
 //              congestion a child feels as lag with no dropped frame anywhere.
-//   measures[] [start, dur, name]                engine.* performance measures
+//              `kind` is the pointer type (0 touch, 1 pen, 2 mouse).
+//   measures[] [start, dur, nameIndex]            engine.* performance measures
+//   history[]  [at, snapshots, liveRasters, rasterBytes, patchBytes, blobBytes]
+//              one row per finger-lift, from the read-only undo-history seam
+//   liftLatencies[] [at, waitedMs, phaseIndex]    finger-up to halo-gone
 //   phases[]   {key, suppress, paperActive, …}   which condition owned which span
 //
 // Frame-vs-JS attribution falls out of the join: a frame interval with a 25 ms
@@ -36,13 +41,17 @@
 //   hand mode      — an on-device HUD walks a human through each phase; a phase
 //                    ends once it has banked enough FINGER-DOWN time, so phases
 //                    are comparable even though the pace is human.
-//   synthetic mode — the driver calls __probe.drive() to generate rAF-paced
-//                    pointer input (see ipad-frames.mjs), so a run needs no hand.
+//   synthetic mode — __probeDrive generates pointer input (one per frame, or
+//                    timer-paced at __probeDriveHz), so a run needs no hand.
 //
 // Config globals, all optional, assigned by the driver before injection:
 //   __probePhases      'page,blank' | phase spec array (see PHASES)
 //   __probeContactMs   banked contact time each phase needs (default 25 s)
 //   __probeHud         false to suppress the on-device HUD
+//   __probeDrive       'long' | 'short' | 'mixed' — run the synthetic hand
+//   __probeDriveHz     moves per second for the synthetic hand (else one/frame)
+//   __probePointerType 'touch' | 'pen' for synthetic events
+//   __probeBrush       'pen' | 'crayon' | 'magic' | 'eraser' to select first
 (() => {
   if (window.__probe) {
     console.warn('Probe already running — call __probe.stop() first.');
@@ -58,7 +67,7 @@
   }
 
   // Selectors into the app's own DOM. The probe cannot import the app's
-  // constants, so scripts/tests/perf-ipad-frames.test.mjs asserts every one of
+  // constants, so scripts/tests/perf-real-screen.test.mjs asserts every one of
   // them still matches its component — a silent rename here would report a
   // suppression as applied while measuring nothing.
   const PAPER_VIEW_SELECTOR = '.paper-view';
@@ -249,7 +258,14 @@
 
   let pendingLift = null;
   const onLift = (event) => {
-    sampleHistory(event.timeStamp);
+    // Deferred a microtask, keeping the lift's own timestamp for the row. This
+    // probe listens on `window` in the CAPTURE phase while the engine's
+    // `pointerup` is on the canvas in the bubble phase (engine.ts
+    // registerEngineListeners) and commits synchronously — capture on an ancestor
+    // always precedes the target-phase handler, so reading here directly sampled
+    // the history from one lift EARLIER. A microtask runs once the whole dispatch
+    // unwinds, which is after the commit.
+    queueMicrotask(() => sampleHistory(event.timeStamp));
     // Only track the last pointer up: with several fingers down the halos of the
     // others are legitimately still there.
     if (drawingPointers.size === 0) pendingLift = { at: performance.now(), phase: index };
@@ -334,8 +350,11 @@
   const STROKE_INSET = 0.08;
   const UI_SETTLE_MS = 350;
   const OVERLAY_DECODE_MS = 1_200;
-  // Timers clamp, so asking for less buys nothing and only spins the loop.
-  const PUMP_TIMER_FLOOR_MS = 4;
+  // The pump deliberately wakes FASTER than the target rate, so the dispatch
+  // condition sets the cadence rather than the timer's clamp — that is what holds
+  // 8.3 ms spacing after `setTimeout(8.3)` measured 13 ms on device. Lower than
+  // this buys nothing (timers clamp around here) and only spins the loop.
+  const PUMP_POLL_MS = 4;
 
   const DRIVE_SHAPES = {
     long: [{ kind: 'long', strokeMs: LONG_STROKE_MS, gapMs: LONG_STROKE_GAP_MS }],
@@ -822,7 +841,7 @@
       // Never carry a backlog across a stall: real input coalesces rather than
       // arriving as a burst of hundreds.
       if (now > nextMoveAt) nextMoveAt = now;
-      setTimeout(pump, Math.max(1, Math.min(intervalMs, PUMP_TIMER_FLOOR_MS)));
+      setTimeout(pump, Math.min(intervalMs, PUMP_POLL_MS));
     };
     setTimeout(pump, intervalMs);
   }
