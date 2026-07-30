@@ -118,7 +118,7 @@ async function findResponsivePage(device, accept = () => true) {
 // device until it answers truthy — each entry point knows a different thing
 // about the page it opened (the harness exposes window.__engine; the real screen
 // has only its live canvas), so the gate is the caller's to supply.
-export async function openDevicePage(device, url, { onConsole, ready, readyHint }) {
+export async function openDevicePage(device, url, { onConsole, onEvent, ready, readyHint }) {
   const pages = await pollUntil(
     async () => {
       const open = await listPages(device);
@@ -166,7 +166,7 @@ export async function openDevicePage(device, url, { onConsole, ready, readyHint 
     );
   }
 
-  const session = await attachToPage(loaded.webSocketDebuggerUrl, { onConsole });
+  const session = await attachToPage(loaded.webSocketDebuggerUrl, { onConsole, onEvent });
   const isReady = await pollUntil(
     () => session.readJson(`!!(${ready})`).catch(() => false),
     PAGE_READY_TIMEOUT_MS,

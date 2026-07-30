@@ -345,6 +345,52 @@ The full elimination list, all measured on the device, all clean:
 and it is also where unattended work runs out: what is left is the part of the input path a
 `dispatchEvent` cannot enter.
 
+## FINDING 11 — the compositor side IS reachable unattended, as counts
+
+`Timeline.enable` + `Timeline.start` work over the WebKit Inspector Protocol and stream the full
+record tree: `RenderingFrame`, `Composite`, `Paint`, `RecalculateStyles`, `Layout`, `EventDispatch`,
+`FireAnimationFrame`. **But every record arrives with `startTime: 0` and `endTime: 0`**,
+mid-recording ones included, so there are counts and structure and never durations — and no record
+can be placed in time or attributed to a phase. (`Timeline.setInstruments` with an explicit list,
+and `setAutoCaptureEnabled: false`, were tried: the rendering records stop arriving altogether.)
+
+That is the specific reason the Web Inspector *export* is still the only source of paint/composite
+**durations** — the skill notes previously said only that the stream "is not the shape the analyzer
+parses". Counts are exposed as `--timeline` on `perf:ipad:frames`, single-phase only.
+
+### What the counts immediately overturned
+
+`page` vs `page-no-nudge`, identical synthetic input, 10 s each:
+
+| record            | `page` /frame | `page-no-nudge` /frame |
+| ----------------- | ------------- | ---------------------- |
+| Composite         | 1.29          | 1.29                   |
+| Paint             | 1.44          | 1.47                   |
+| RecalculateStyles | 3.43          | 3.42                   |
+
+**The per-event blend nudge never cost extra composites.** WebKit composites once per frame no
+matter how many times the layer is damaged within it — which is obvious in hindsight and was still
+the premise of the first version of PR #662's rationale ("three or four full-paper recomposites per
+frame"). Withdrawn.
+
+What *is* real is `RecalculateStyles` at **3.43 per frame**, tracking the move rate exactly.
+
+### And what they measured about the fix
+
+PR #662's build, same input:
+
+| record                    | before | after    |                   |
+| ------------------------- | ------ | -------- | ----------------- |
+| RecalculateStyles /frame  | 3.43   | **1.32** | −61%, as designed |
+| Composite /frame          | 1.29   | 1.29     | unchanged         |
+| Paint /frame              | 1.44   | 1.46     | unchanged         |
+| FireAnimationFrame /frame | 1.29   | **3.34** | the cost it adds  |
+
+So #662 trades ~2 style recalculations per frame for ~2 rAF callbacks per frame. Pacing is unchanged
+(17 ms, zero stalls) because synthetic input never stalls in the first place. Defensible as "stop
+doing work no frame can show", now with numbers on both sides of the ledger — still **not**
+demonstrated to help the felt lag.
+
 ## Fix candidates, ranked by what the evidence actually supports
 
 Nothing here is validated against the felt lag, because **no synthetic input reproduces it** — so

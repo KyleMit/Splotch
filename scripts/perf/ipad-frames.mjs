@@ -21,7 +21,7 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, fail, isMain, runMain } from '../lib/proc.mjs';
 import { parsePerfArgs } from './args.mjs';
 import { profilePath } from './paths.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
@@ -34,6 +34,7 @@ import {
   resolveDeviceUrl,
   waitForGlobal,
 } from './ipad-session.mjs';
+import { createTimelineCounter, timelineRows } from './timeline-records.mjs';
 import {
   comparisonRows,
   engineRows,
@@ -129,6 +130,7 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         'no-serve',
         'no-hud',
         'hud',
+        'timeline',
       ],
     },
     argv
@@ -147,11 +149,21 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
   const pointerType = flag('pointer-type');
   const brush = flag('brush');
   const deviceConsole = createDeviceConsole();
+  // Records carry no timestamps over the protocol, so their counts only mean
+  // something for a single phase — see timeline-records.mjs.
+  const timeline = has('timeline') ? createTimelineCounter() : null;
+  if (timeline && (flag('phases') ?? '').split(',').filter(Boolean).length !== 1) {
+    fail(
+      '--timeline needs exactly one --phases= key: protocol Timeline records arrive with ' +
+        'zeroed timestamps, so they cannot be attributed to a phase.'
+    );
+  }
 
   let session;
   try {
     session = await openDevicePage(device, appUrl, {
       onConsole: deviceConsole.onConsole,
+      onEvent: timeline?.onEvent,
       // The real screen has no window.__engine to wait for — a live canvas with
       // a sized backing store is what "the app is running" looks like here.
       ready:
@@ -177,6 +189,7 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         hud: has('hud') || (!has('no-hud') && !drive),
       })
     );
+    await timeline?.start(session);
     await session.evaluate(readFileSync(PROBE_FILE, 'utf8'));
 
     const planned = await session.readJson('window.__probe ? 1 : 0');
@@ -207,6 +220,7 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
       progress: () => session.readJson('window.__probeProgress ?? null'),
     });
 
+    await timeline?.stop(session);
     const counts = report.meta.counts;
     console.log(
       `\nReading back ${counts.frames} frames, ${counts.events} pointer events, ` +
@@ -224,6 +238,15 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
     console.table(inputRows(summaries));
     console.log('\nEngine cost inside those frames, and the stroke-end hitch');
     console.table(engineRows(summaries));
+    const timelineSummary = timeline?.summary();
+    if (timelineSummary) {
+      console.log(
+        '\nRendering records (counts only — the protocol zeroes every timestamp, so this ' +
+          'says how much\nrendering work happened, never how long it took)'
+      );
+      console.table(timelineRows(timelineSummary, summaries[0]?.pacing?.frames));
+    }
+
     const comparisons = comparisonRows(summaries);
     if (comparisons.length) {
       console.log('\nWhat each suppression bought (negative is better)');
@@ -241,6 +264,7 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
           appUrl,
           mode: drive ? `synthetic:${drive}${driveHz ? `@${driveHz}hz` : ''}` : 'hand',
           summaries,
+          timeline: timelineSummary ?? null,
           report,
           console: deviceConsole.forReport(),
         },
