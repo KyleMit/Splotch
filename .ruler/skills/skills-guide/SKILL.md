@@ -59,11 +59,19 @@ staging file, `fix-audits` burns the issues down.
 
 All three augment the built-in PR flows rather than replacing them.
 
-| Skill               | Use when you are…                                                               |
-| ------------------- | ------------------------------------------------------------------------------- |
-| `pr-screenshots`    | **Opening** a PR that touches UI — screenshot/before-after/gif conventions      |
-| `leave-pr-review`   | **Authoring** a review of someone's PR — local checkout, empirical verification |
-| `address-pr-review` | **Receiving** a review — triage every comment, fix or rebut, reply and resolve  |
+| Skill                   | Use when you are…                                                                  |
+| ----------------------- | ---------------------------------------------------------------------------------- |
+| `pr-screenshots`        | **Opening** a PR that touches UI — screenshot/before-after/gif conventions         |
+| `leave-pr-review`       | **Authoring** a review of someone's PR — local checkout, empirical verification    |
+| `address-pr-review`     | **Receiving** a review — triage every comment, fix or rebut, reply and resolve     |
+| `triage-dependabot-prs` | **Clearing** the open Dependabot PRs — verify, sequence the merges, close the rest |
+
+`triage-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
+(`.github/workflows/dependabot-review.yml`, `docs/DEPENDABOT.md`, and
+[ADR-0077 on the Dependabot review workflow](../../../docs/adrs/0077-dependabot-claude-review-workflow.md)),
+which posts an advisory verdict but never merges. It pairs with `dependency-update-audit` in the
+audit table above and the two do not overlap: that skill picks packages the repo is behind on and
+drives the bumps itself, this one triages PRs Dependabot has already opened.
 
 ## Session continuity — pause ↔ resume
 

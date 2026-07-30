@@ -6,6 +6,11 @@ The architectural decision and the rejected alternatives are in
 [ADR-0077](adrs/0077-dependabot-claude-review-workflow.md); this document is the operational side —
 setup, verification, troubleshooting.
 
+**To actually work through the PRs**, use the `triage-dependabot-prs` skill — it covers verifying
+each bump, sequencing the merges around lockfile conflicts, and closing the ones that can't merge
+behind a tracking issue. The auto-review described here is advisory input to that pass, not a
+substitute for it.
+
 ## What's configured
 
 **`.github/dependabot.yml`** opens PRs on two ecosystems, both weekly:

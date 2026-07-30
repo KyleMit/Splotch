@@ -12,6 +12,11 @@ There is **one root `package.json`** for the whole repo (web + Capacitor native)
 lives in `web/` but its dependencies are declared at the root (see `CLAUDE.md`). Run npm tooling
 from the repo root.
 
+**Wrong skill if Dependabot already opened the PRs.** This one picks the packages itself from
+`npm outdated` and drives each bump. To clear a queue of open Dependabot PRs — verify each, merge
+the safe ones in a conflict-aware order, close the rest behind a tracking issue — use
+[`triage-dependabot-prs`](../triage-dependabot-prs/SKILL.md) instead.
+
 If an argument is given, scope the entire run to just that one package and skip straight to step 3
 for it.
 
