@@ -117,7 +117,13 @@ async function runOneRep({ workers, rep, outDir }) {
   const reportPath = join(outDir, `w${workers}-rep${rep}.json`);
   const startedAt = Date.now();
   try {
-    await waitForUrl(`http://localhost:${PORT}/`, SERVER_BOOT_BUDGET_MS);
+    // A server that never answers is one bad rep too, not just a report that
+    // never got written — and on a 35-rep sweep a port still held by the previous
+    // rep is a realistic way to get there. Letting it throw would lose SWEEPTOTAL
+    // and the job summary for every rep already measured.
+    await waitForUrl(`http://localhost:${PORT}/`, SERVER_BOOT_BUDGET_MS).catch((error) => {
+      throw new Error(`preview server never came up: ${error.message ?? error}`);
+    });
     spawnSync(
       process.execPath,
       [
@@ -130,12 +136,14 @@ async function runOneRep({ workers, rep, outDir }) {
       { cwd: ROOT, env: runnerEnv(reportPath), stdio: ['ignore', 'ignore', 'inherit'] }
     );
     const meta = { workers, rep, jobSeconds: Math.round((Date.now() - startedAt) / 1000) };
-    // A run that died before writing its report is one bad rep, not a reason to
-    // abandon the other thirty — an unattended sweep has to survive it and say so.
-    if (!existsSync(reportPath)) {
-      return { w: workers, rep, error: 'playwright wrote no JSON report' };
-    }
+    // Whatever went wrong with a rep — no server, no report, a crash — it is one
+    // bad rep, not a reason to abandon the other thirty. An unattended sweep has
+    // to survive it and say so, and summarizeSweep counts a rep with no `failed`
+    // as red, which is the right accounting for a rep that never ran.
+    if (!existsSync(reportPath)) throw new Error('playwright wrote no JSON report');
     return summarizeReport(readFileSync(reportPath, 'utf8'), meta);
+  } catch (error) {
+    return { w: workers, rep, error: String(error.message ?? error) };
   } finally {
     stop();
   }
