@@ -164,7 +164,7 @@ there until a double-flake turns CI red. Write specs that can't race in the firs
   prove the engine switched, and a stroke drawn in that window would commit under the previous brush
   — already painted before anything can observe it. `pickBrush()` closes it by polling the engine's
   own `window.__committedBrushMode` (the dev-harness seam in `lib/boot/devHarnessSeam.ts`,
-  ADR-0079); prefer that shape — a signal for the state you actually depend on — over retrying an
+  ADR-0080); prefer that shape — a signal for the state you actually depend on — over retrying an
   action until its effect appears. Where you must assert instead, pick a metric a wrong-mode action
   can't satisfy: a canvas-fill pixel count is not one, since a pen stroke fills the band too.
 * **Drive strokes through `draw`/`dragStroke`, never a hand-rolled run of `mouse.move`s.** The
@@ -173,7 +173,7 @@ there until a double-flake turns CI red. Write specs that can't race in the firs
   never paints the span between — so under contention a four-point sweep can come back as its start
   dot alone. A starved worker owns the timing half of that predicate; the helper holds the other
   half by subdividing every hop with `mouse.move`'s `steps`, sized from `POINTER_RESUME_JUMP_RATIO`
-  imported from the engine's own module (ADR-0079).
+  imported from the engine's own module (ADR-0080).
 * **Calibrate a discriminating threshold against measured distributions on *both* sides.** The magic
   reveal's colour count had to reject a flat pen pass (measured 1-3 buckets) and accept a rainbow
   slice (measured min 3 at the old quantization) — the two overlapped, so a correct reveal failed a

@@ -2,7 +2,7 @@ import { committedBrushMode } from '$lib/drawing/engine';
 import { devHarnessEnabled } from '$lib/devHarness';
 
 // Publish the engine's committed brush mode on `window` for the E2E harness
-// (ADR-0079): the toolState→engine bridge runs in a $effect, so a spec that
+// (ADR-0080): the toolState→engine bridge runs in a $effect, so a spec that
 // clicks a brush and draws immediately can commit the stroke under the previous
 // brush, and no DOM state distinguishes the two. tests/flows-harness.ts's
 // pickBrush() polls this, so the wait is on the engine rather than the button.

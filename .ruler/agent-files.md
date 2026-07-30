@@ -21,11 +21,15 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   Claude implementation and design note live under `.claude/`; its Codex implementation and note
   live under `.agents/`. They are provider forks, not mirrors: edit each directly and independently,
   never through `.ruler/` and never by copying one provider's package over the other.
-* Skill notes are authored in `.ruler/skill-notes/<name>.md` and mirrored to `.claude/skill-notes/`
-  and `.agents/skill-notes/` by `scripts/mirror-skill-notes.mjs`. A forked skill's independent note
-  instead lives under `.ruler/skill-forks/<runner>/skill-notes/` and must be absent from the shared
-  note tree. The direct `burn-down-audits` notes stay beside their direct provider trees. Notes are
-  deliberately *not* part of a skill — see below.
+* Skill notes are authored in `.ruler/skill-notes/<name>.md.template` and mirrored, suffix stripped,
+  to `.claude/skill-notes/` and `.agents/skill-notes/` by `scripts/mirror-skill-notes.mjs`. The
+  `.template` suffix is load-bearing for the same reason it is on a skill fork's Markdown: ruler's
+  recursive rule loader concatenates every `.md` under `.ruler/` into the root instruction files, so
+  a plain `.md` note would land in every session's context — exactly what this tree exists to avoid.
+  The mirror script refuses to run if it finds one. A forked skill's independent note instead lives
+  under `.ruler/skill-forks/<runner>/skill-notes/` and must be absent from the shared note tree. The
+  direct `burn-down-audits` notes stay beside their direct provider trees. Notes are deliberately
+  *not* part of a skill — see below.
 * `npm run ruler:apply` snapshots the direct `burn-down-audits` provider paths, runs Ruler, mirrors
   shared skill notes, applies managed skill forks, restores the direct paths even on failure, and
   dprint-formats the output. `npm run ruler:check` repeats that pipeline and fails if generated
@@ -47,4 +51,4 @@ what was rejected, what is still unvalidated. They are deliberately *not* linked
 `SKILL.md`: a skill pays context for everything it references, and this material is for someone
 working on the skill, not running it. Notes live beside skills rather than inside a skill package,
 which would file design history inside the very skill it is kept out of. See
-`.ruler/skill-notes/README.md` for the convention.
+`.ruler/skill-notes/README.md.template` for the convention.

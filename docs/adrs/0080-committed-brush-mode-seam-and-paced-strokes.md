@@ -1,4 +1,4 @@
-# ADR-0079: Tests Observe the Engine's Committed Brush Mode, and Pace Their Own Strokes
+# ADR-0080: Tests Observe the Engine's Committed Brush Mode, and Pace Their Own Strokes
 
 **Status:** Active **Date:** 2026-07 **Amends:**
 [0078](0078-playwright-worker-count-and-flake-tuning.md) (the Playwright tuning record)

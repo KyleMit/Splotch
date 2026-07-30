@@ -1,28 +1,19 @@
 import type { MediaPlugin } from '@capacitor-community/media';
-import { exportCanvasBlob, getActiveCanvas } from './engine';
+import { exportCanvasBlob } from './engine';
 import { getActiveOverlayImage } from './overlay';
 import { isNative, getPlatform } from '$lib/platform';
+import {
+  DRAWING_BASENAME,
+  extensionForImageType,
+  timestamp,
+  triggerDownload,
+} from '$lib/saveNaming';
 import { saveBlobToFolder } from './folderSave';
-
-export function timestamp() {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
-}
-
-export function triggerDownload(url: string, filename: string) {
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
+import { playPolaroidAnimation } from './polaroidAnimation';
 
 const ALBUM_NAME = 'Splotch';
 
-export const DRAWING_BASENAME = 'splotch';
-export const AI_IMAGE_BASENAME = 'splotch-ai';
+let activeScreenshotSave: Promise<void> | null = null;
 
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -38,7 +29,7 @@ async function findAlbumId(Media: MediaPlugin, name: string): Promise<string | u
   return albums.find((a) => a.name === name)?.identifier;
 }
 
-// Native: drop the PNG straight into the device photo library. Android requires
+// Native: drop the image blob straight into the device photo library. Android requires
 // an album identifier, so we tuck drawings into a "Splotch" album (creating it
 // once); iOS saves to the camera roll with add-only permission.
 async function saveToGallery(blob: Blob, baseName = DRAWING_BASENAME) {
@@ -61,7 +52,7 @@ async function saveToGallery(blob: Blob, baseName = DRAWING_BASENAME) {
   }
 }
 
-// Persist a PNG blob: native drops it into the photo gallery; the web writes it
+// Persist a PNG, WebP, or JPEG blob: native drops it into the photo gallery; the web writes it
 // silently into the parent-chosen folder when one is set (File System Access
 // API, desktop Chromium), otherwise triggers a file download. The folder is
 // optional and decoupled from saving — no folder just means a download.
@@ -69,11 +60,10 @@ async function saveToGallery(blob: Blob, baseName = DRAWING_BASENAME) {
 // permission; background saves (AI auto-save, save-on-delete) leave it falsy. No
 // polaroid animation — the caller owns its own feedback.
 export async function saveImageBlob(
-  blob: Blob | null,
+  blob: Blob,
   baseName = DRAWING_BASENAME,
   opts?: { allowPrompt?: boolean }
 ) {
-  if (!blob) return;
   // __IS_CAPACITOR__ makes the gallery path compile-time dead on web so Rollup
   // drops the media plugin chunk (isNative() alone can't tree-shake across modules).
   if (__IS_CAPACITOR__ && isNative()) {
@@ -83,7 +73,7 @@ export async function saveImageBlob(
       console.error('Save to gallery failed:', err);
     }
   } else {
-    const filename = `${baseName}-${timestamp()}.png`;
+    const filename = `${baseName}-${timestamp()}.${extensionForImageType(blob.type)}`;
     if (await saveBlobToFolder(blob, filename, opts)) return;
     const url = URL.createObjectURL(blob);
     triggerDownload(url, filename);
@@ -91,7 +81,7 @@ export async function saveImageBlob(
   }
 }
 
-export async function saveScreenshot() {
+async function saveScreenshotImage() {
   const blob = await exportCanvasBlob(getActiveOverlayImage());
   if (!blob) return;
   // Feedback first: the polaroid must not wait behind the folder write — or the
@@ -100,52 +90,9 @@ export async function saveScreenshot() {
   await saveImageBlob(blob, undefined, { allowPrompt: true });
 }
 
-const POLAROID_DURATION_MS = 1900;
-
-function getPolaroidFrameOffset(buttonRect: DOMRect): { fromX: number; fromY: number } {
-  const cx = (buttonRect.left + buttonRect.right) / 2;
-  const cy = (buttonRect.top + buttonRect.bottom) / 2;
-  const fromX = Math.round(cx - window.innerWidth / 2);
-  const fromY = Math.round(cy - window.innerHeight / 2);
-  return { fromX, fromY };
-}
-
-function playPolaroidAnimation(imageUrl: string) {
-  const overlay = document.createElement('div');
-  overlay.className = 'polaroid-overlay';
-
-  const flash = document.createElement('div');
-  flash.className = 'polaroid-flash';
-
-  const frame = document.createElement('div');
-  frame.className = 'polaroid-frame';
-
-  const img = document.createElement('img');
-  img.className = 'polaroid-image';
-  img.src = imageUrl;
-  img.alt = '';
-
-  // Match the polaroid photo to the drawing's aspect ratio instead of
-  // cropping it to a fixed shape.
-  const canvas = getActiveCanvas();
-  if (canvas && canvas.width > 0 && canvas.height > 0) {
-    img.style.setProperty('--polaroid-aspect', `${canvas.width} / ${canvas.height}`);
-  }
-
-  const button = document.getElementById('screenshotButton');
-  if (button) {
-    const { fromX, fromY } = getPolaroidFrameOffset(button.getBoundingClientRect());
-    frame.style.setProperty('--from-x', `${fromX}px`);
-    frame.style.setProperty('--from-y', `${fromY}px`);
-  }
-
-  frame.appendChild(img);
-  overlay.appendChild(flash);
-  overlay.appendChild(frame);
-  document.body.appendChild(overlay);
-
-  setTimeout(() => {
-    overlay.remove();
-    URL.revokeObjectURL(imageUrl);
-  }, POLAROID_DURATION_MS);
+export function saveScreenshot(): Promise<void> {
+  activeScreenshotSave ??= saveScreenshotImage().finally(() => {
+    activeScreenshotSave = null;
+  });
+  return activeScreenshotSave;
 }

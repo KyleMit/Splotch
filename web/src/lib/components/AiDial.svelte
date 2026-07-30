@@ -15,6 +15,11 @@
   // tail beyond this up to the ~24s server deadline in ai/limits.ts. Not derived from that
   // constant — this paces the UI's fill curve, not a hard timeout.
   const ESTIMATE_MS = 10000;
+  const HUE_START_DEG = 282;
+  const HUE_SWEEP_DEG = 132;
+  const HUE_SECOND_STOP_OFFSET_DEG = 46;
+  const DIAL_EXIT_MS = 480;
+  const DIAL_EXIT_START_SCALE = 1.35;
 
   let waiting = $state(false);
   let rafId = 0;
@@ -76,9 +81,9 @@
   });
 
   // A friendly violet → blue → teal → green sweep as the dial fills.
-  const hueA = $derived(282 - 132 * progress);
+  const hueA = $derived(HUE_START_DEG - HUE_SWEEP_DEG * progress);
   const dialColor = $derived(`hsl(${hueA}, 82%, 62%)`);
-  const dialColor2 = $derived(`hsl(${hueA + 46}, 88%, 67%)`);
+  const dialColor2 = $derived(`hsl(${hueA + HUE_SECOND_STOP_OFFSET_DEG}, 88%, 67%)`);
   const wedgeAngle = $derived(`${(1 - progress) * 360}deg`);
 </script>
 
@@ -87,7 +92,12 @@
     class="dial"
     class:waiting
     style="--c1: {dialColor}; --c2: {dialColor2}; --angle: {wedgeAngle};"
-    out:scale={{ duration: 480, start: 1.35, opacity: 0, easing: backOut }}
+    out:scale={{
+      duration: DIAL_EXIT_MS,
+      start: DIAL_EXIT_START_SCALE,
+      opacity: 0,
+      easing: backOut,
+    }}
   >
     <div class="dial-glow"></div>
     <div class="dial-pie"></div>

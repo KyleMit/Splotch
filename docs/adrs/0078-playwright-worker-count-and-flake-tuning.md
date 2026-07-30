@@ -1,6 +1,6 @@
 # ADR-0078: Playwright Worker Count Is Measured, Not Assumed
 
-**Status:** Active, partly superseded by [0079](0079-committed-brush-mode-seam-and-paced-strokes.md)
+**Status:** Active, partly superseded by [0080](0080-committed-brush-mode-seam-and-paced-strokes.md)
 **Date:** 2026-07
 
 ## Context
@@ -116,7 +116,7 @@ throughput on CI. Worker count fixes only the first.
 
 ### 2c. The redraw loop is bounded by attempts, not by wall clock
 
-> **Superseded by [ADR-0079](0079-committed-brush-mode-seam-and-paced-strokes.md).** The redraw
+> **Superseded by [ADR-0080](0080-committed-brush-mode-seam-and-paced-strokes.md).** The redraw
 > loops and `MAGIC_REVEAL_MAX_ATTEMPTS` are gone: with the engine's committed mode observable and
 > the specs' own strokes paced inside the engine's dropped-pointer threshold, a redraw has nothing
 > left to rescue. The reasoning below about *what a wall-clock bound cannot do* still holds and is
@@ -194,7 +194,7 @@ breaking the same tests harder. 2c is a worked example of how easily this class 
 added as a *safety net* beside an attempt cap turned the cap itself into a headroom ratio.
 
 **Commit-order races.** *(Diagnosis corrected in
-[ADR-0079](0079-committed-brush-mode-seam-and-paced-strokes.md): once the engine's mode became
+[ADR-0080](0080-committed-brush-mode-seam-and-paced-strokes.md): once the engine's mode became
 observable, no failure in ~700 recorded reveals was in the wrong mode. The 132px stroke below is a
 stroke the engine truncated — it paints the page's colours, not ink — and the fix that measured
 16/200 → 4/200 was rescuing that by redrawing.)* The brush→engine mode toggle flows through a Svelte
@@ -282,14 +282,14 @@ per-attempt durations say it is not the cap's problem:
   from `main`; `main` would have run more identically-failing attempts and gone red at its 15s
   budget instead of at 9s. Whether it is the settle window or the post-clear regeneration itself is
   unresolved and tracked as issue \#658 — 2c's cap is not the lever either way. *(Resolved in
-  [ADR-0079](0079-committed-brush-mode-seam-and-paced-strokes.md): neither of the two. The
+  [ADR-0080](0080-committed-brush-mode-seam-and-paced-strokes.md): neither of the two. The
   post-clear reveal painted correctly every time — the colour-count threshold overlapped the
   reveal's own measured distribution, which is also why no number of attempts ever helped.)*
 
 − **The deeper seam is unaddressed.** Tests can only observe when the *button* changes, not when the
 engine commits the brush mode. A dev-harness signal for the engine's committed mode would retire the
 commit-order class outright; until then, affected specs carry redraw retries. *(Built in
-[ADR-0079](0079-committed-brush-mode-seam-and-paced-strokes.md) — where it retired the hypothesis
+[ADR-0080](0080-committed-brush-mode-seam-and-paced-strokes.md) — where it retired the hypothesis
 rather than the failures.)*
 
 − Setting `workers` per environment means the two paths can diverge in behaviour, so a flake that

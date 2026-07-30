@@ -1441,7 +1441,7 @@ export function setMagicMode(active: boolean) {
 // eraser, which outranks crayon's texture; see strokeOps.renderOp), so it can
 // never claim a mode the renderer would not honour.
 //
-// Test-only seam (ADR-0079). The mode toggles above are pushed from a Svelte
+// Test-only seam (ADR-0080). The mode toggles above are pushed from a Svelte
 // $effect, so the button reports the new brush before the engine holds it, and a
 // stroke dispatched in that window commits under the PREVIOUS brush. Nothing
 // observable from the DOM distinguishes the two — a pen stroke fills the canvas

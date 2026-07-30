@@ -7,6 +7,7 @@ import {
   FORBIDDEN_DIRECT_PROVIDER_SOURCES,
   withPreservedDirectProviderPaths,
 } from '../ruler-apply.mjs';
+import { sharedNoteSource } from '../mirror-skill-notes.mjs';
 
 const roots = [];
 
@@ -67,6 +68,31 @@ describe('withPreservedDirectProviderPaths', () => {
     const root = makeRoot();
     const source = join(root, FORBIDDEN_DIRECT_PROVIDER_SOURCES[0]);
     mkdirSync(source, { recursive: true });
+
+    expect(() => withPreservedDirectProviderPaths(root, () => {})).toThrow(
+      'direct provider skill must not have a Ruler source'
+    );
+  });
+
+  // The guard listed only the bare .md path until shared notes moved to
+  // SHARED_NOTE_SUFFIX, which left a note authored under the canonical suffix
+  // able to shadow the direct provider package unnoticed.
+  it('rejects a shared note source for the direct provider skill at the canonical suffix', () => {
+    const root = makeRoot();
+    const source = join(root, '.ruler', 'skill-notes', sharedNoteSource('burn-down-audits'));
+    mkdirSync(join(source, '..'), { recursive: true });
+    writeFileSync(source, 'competing shared note\n');
+
+    expect(() => withPreservedDirectProviderPaths(root, () => {})).toThrow(
+      'direct provider skill must not have a Ruler source'
+    );
+  });
+
+  it('still rejects a stray bare-.md shared note for the direct provider skill', () => {
+    const root = makeRoot();
+    const source = join(root, '.ruler', 'skill-notes', 'burn-down-audits.md');
+    mkdirSync(join(source, '..'), { recursive: true });
+    writeFileSync(source, 'competing shared note\n');
 
     expect(() => withPreservedDirectProviderPaths(root, () => {})).toThrow(
       'direct provider skill must not have a Ruler source'

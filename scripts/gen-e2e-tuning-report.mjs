@@ -112,7 +112,7 @@ const HYPOTHESES = [
   {
     claim: 'The strokes commit in the wrong brush mode, and a canvas-fill count cannot detect it',
     verdict: 'overturned',
-    how: 'Read the actual assertion values out of the failing reports — then, once the engine could be asked directly (ADR-0079), read its committed mode and the painted colours at each failure.',
+    how: 'Read the actual assertion values out of the failing reports — then, once the engine could be asked directly (ADR-0080), read its committed mode and the painted colours at each failure.',
     result:
       "`revealed` came back as discrete values — 132, 874, 895, 2314 — where ~2314 is a real magic reveal. Redrawing all three sites did take the file from 16/200 to 4/200, so the FIX worked. The reading of 132 did not: those pixels are the coloring page's own colours, not ink, and the engine reported the right mode at every failure across ~700 recorded reveals. It is a magic stroke the engine TRUNCATED — a sample >100ms and >10% of the paper apart reads as a lifted finger (strokeMath.pointerWasResumed), which is exactly what a starved worker dispatching 180px hops produces. Redrawing rescued it by getting a second, luckier stroke. Pacing the samples fixes it at the source, and the retries are gone.",
   },

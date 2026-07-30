@@ -62,7 +62,7 @@ declare global {
 
   interface Window {
     // Test-only seam, installed by lib/boot/devHarnessSeam.ts only while
-    // PUBLIC_ENABLE_DEV_HARNESS is set (ADR-0079) — hence optional: production
+    // PUBLIC_ENABLE_DEV_HARNESS is set (ADR-0080) — hence optional: production
     // never defines it, and the E2E harness treats its absence as a failure.
     __committedBrushMode?: () => import('$lib/state/tool.svelte').BrushType;
     showDirectoryPicker(options?: {

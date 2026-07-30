@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import {
+  containFit,
   computePaperView,
   isIdentityView,
   IDENTITY_PAPER_VIEW,
@@ -13,6 +14,24 @@ import {
 } from './paperView';
 
 const ROTATIONS: ViewRotation[] = [0, 90, 180, 270];
+
+describe('containFit', () => {
+  it('returns identity geometry for an exact fit', () => {
+    expect(containFit({ width: 400, height: 800 }, { width: 400, height: 800 })).toEqual({
+      scale: 1,
+      offsetX: 0,
+      offsetY: 0,
+    });
+  });
+
+  it('centers letterboxed content at a uniform scale', () => {
+    expect(containFit({ width: 600, height: 300 }, { width: 500, height: 400 })).toEqual({
+      scale: 500 / 600,
+      offsetX: 0,
+      offsetY: 75,
+    });
+  });
+});
 
 describe('rotationDelta', () => {
   it('is the adoption angle minus the current angle, normalized to 0–270', () => {

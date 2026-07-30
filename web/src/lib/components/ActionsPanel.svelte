@@ -27,6 +27,7 @@
   } from '$lib/actionButtonLayout';
   import { undo } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
+  import { SCREENSHOT_BUTTON_ID } from '$lib/drawing/polaroidAnimation';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
 
   let brushWrapperEl: HTMLDivElement | undefined = $state();
@@ -332,9 +333,9 @@
       </button>
 
       <button
-        class="action-button"
+        class="action-button screenshot-button"
         class:disabled={canvasState.canvasEmpty}
-        id="screenshotButton"
+        id={SCREENSHOT_BUTTON_ID}
         aria-label="Save screenshot"
         disabled={canvasState.canvasEmpty}
         use:scribbleTap={handleScreenshotClick}
@@ -498,7 +499,7 @@
   :global(html[data-off-coloring]) #coloringBookButton {
     display: none;
   }
-  :global(html[data-off-screenshot]) #screenshotButton {
+  :global(html[data-off-screenshot]) .screenshot-button {
     display: none;
   }
   :global(html[data-off-undo]) #undoButton {

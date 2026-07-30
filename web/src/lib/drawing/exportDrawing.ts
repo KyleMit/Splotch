@@ -12,6 +12,7 @@
 
 import { PAPER_COLORS, type ResolvedTheme } from '../theme';
 import { resolvedTheme } from '../state/appearance.svelte';
+import { containFit } from './paperView';
 
 export interface ExportOptions {
   includePaperTexture?: boolean;
@@ -19,6 +20,10 @@ export interface ExportOptions {
 
 let paperTextureImage: HTMLImageElement | null = null;
 let paperTexturePromise: Promise<HTMLImageElement | null> | null = null;
+
+// The 2× export floor preserves crisp paper-texture and overlay resampling on
+// 1x screens while balancing PNG size and canvas-memory use.
+const MIN_EXPORT_SCALE = 2;
 
 function loadPaperTexture(): Promise<HTMLImageElement | null> {
   if (paperTextureImage) return Promise.resolve(paperTextureImage);
@@ -29,7 +34,10 @@ function loadPaperTexture(): Promise<HTMLImageElement | null> {
       paperTextureImage = img;
       resolve(img);
     };
-    img.onerror = () => resolve(null);
+    img.onerror = () => {
+      paperTexturePromise = null;
+      resolve(null);
+    };
     img.src = '/icons/handmade-paper.webp';
   });
   return paperTexturePromise;
@@ -88,13 +96,25 @@ function drawOverlayContained(
   theme: ResolvedTheme
 ) {
   if (overlay.naturalWidth === 0 || overlay.naturalHeight === 0) return;
-  const scale = Math.min(w / overlay.naturalWidth, h / overlay.naturalHeight);
+  const { scale, offsetX, offsetY } = containFit(
+    { width: overlay.naturalWidth, height: overlay.naturalHeight },
+    { width: w, height: h }
+  );
   const drawnW = overlay.naturalWidth * scale;
   const drawnH = overlay.naturalHeight * scale;
-  const dark = theme === 'dark';
-  const source: CanvasImageSource = (dark && invertedOverlay(overlay)) || overlay;
-  target.globalCompositeOperation = source === overlay ? 'multiply' : 'screen';
-  target.drawImage(source, (w - drawnW) / 2, (h - drawnH) / 2, drawnW, drawnH);
+  if (theme === 'dark') {
+    const inverted = invertedOverlay(overlay);
+    if (!inverted) {
+      // No 2D context was available for the temporary inversion surface.
+      target.globalCompositeOperation = 'source-over';
+      return;
+    }
+    target.globalCompositeOperation = 'screen';
+    target.drawImage(inverted, offsetX, offsetY, drawnW, drawnH);
+  } else {
+    target.globalCompositeOperation = 'multiply';
+    target.drawImage(overlay, offsetX, offsetY, drawnW, drawnH);
+  }
   target.globalCompositeOperation = 'source-over';
 }
 
@@ -113,17 +133,15 @@ export async function composeExportPng(
   // and the night-fill reveals already baked into the replayed strokes.
   const theme = resolvedTheme();
 
-  // Compose in CSS-pixel coordinates at an export scale of at least 2×, so the
-  // paper texture and overlay keep their on-screen proportions while the
-  // already-high-res strokes pass through with minimal resampling.
-  const exportScale = Math.max(window.devicePixelRatio || 1, 2);
+  const exportScale = Math.max(window.devicePixelRatio || 1, MIN_EXPORT_SCALE);
   const w = snapshot.width / renderScale;
   const h = snapshot.height / renderScale;
 
   const out = document.createElement('canvas');
   out.width = Math.round(w * exportScale);
   out.height = Math.round(h * exportScale);
-  const outCtx = out.getContext('2d')!;
+  const outCtx = out.getContext('2d');
+  if (!outCtx) return null;
   outCtx.imageSmoothingEnabled = true;
   outCtx.imageSmoothingQuality = 'high';
   outCtx.scale(exportScale, exportScale);

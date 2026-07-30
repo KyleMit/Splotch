@@ -3,7 +3,7 @@ import { beforeEach, expect, it } from 'vitest';
 import { committedBrushMode, setCrayonMode, setEraserMode, setMagicMode } from './engine';
 
 // committedBrushMode is the E2E harness's answer to "what would a stroke started
-// now paint as" (ADR-0079), so its precedence has to be renderOp's — not the
+// now paint as" (ADR-0080), so its precedence has to be renderOp's — not the
 // UI's, where the brushes are one exclusive axis. These cases are the overlaps
 // the UI cannot produce but a mid-flush engine can, while the two $effects that
 // push the flags land.

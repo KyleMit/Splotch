@@ -1206,3 +1206,79 @@ The rolled-back draft is kept at
 `docs/audit-deferred/testing-blitpaperrect-and-ensurepapercovers-have-no-unit-coverage.patch` (3
 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/testing-blitpaperrect-and-ensurepapercovers-have-no-unit-coverage.patch`.
+
+### [Testing] screenshot.ts has zero unit coverage despite containing pure, unit-testable logic
+
+**File(s):** `web/src/lib/drawing/screenshot.ts` (`timestamp`, lines 7–11; `saveImageBlob`, lines
+71–92; `getPolaroidFrameOffset`, lines 105–111) @ 9ae62ff1
+
+**Priority:** P4
+
+#### Problem
+
+The sibling modules in this section all have colocated tests (`folderSave.test.ts`,
+`paperView.test.ts`, `strokeMath.test.ts`), but `screenshot.ts` has none, and it contains exactly
+the kind of logic the testing rules assign to Vitest:
+
+* `timestamp()` — a pure formatter whose zero-padding and `YYYY-MM-DD_HH-MM-SS` shape downstream
+  filenames (and the `folderSave.ts` line 126–127 comment's "second-resolution" collision reasoning)
+  depend on. A regression to unpadded fields breaks filename sorting silently.
+* `saveImageBlob`'s web dispatch chain (lines 85–91): folder write attempted first, `true`
+  short-circuits the download, `false` falls back to `triggerDownload` + `URL.revokeObjectURL`. This
+  branching is the seam between two tested modules and is itself untested — `folderSave.test.ts`
+  tests below it, `aiImage.test.ts` mocks it away above.
+* `getPolaroidFrameOffset` (pure given a `DOMRect` and window size).
+
+#### Proposed solution
+
+Add `screenshot.test.ts` (happy-dom, since the module's imports touch `document` at load): assert
+`timestamp()` against a mocked `Date`; mock `./folderSave` and `./engine` to drive `saveImageBlob`
+through the folder-hit, folder-miss→download, and native branches (`__IS_CAPACITOR__` is
+compile-time `false` under Vitest web config — the native branch may need the test to stay web-only,
+which is fine and worth a comment). If the architecture split proposed above happens first, the
+naming/download utils test drops to `// @vitest-environment node`.
+
+#### Why it was deferred
+
+verifier gave no usable brief
+
+### [Types] Style plumbing widens the closed `StyleName` union back to `string` mid-flight
+
+**File(s):** `web/src/lib/drawing/aiImage.ts` (`buildRequest`, lines 151–154) and
+`web/src/lib/ai/prompt.ts` (`buildPromptForStyle`, lines 7–10) @ 9ae62ff1
+
+**Priority:** P4
+
+#### Problem
+
+CLAUDE.md: closed value sets are "threaded end to end — never bare `string`… plus a runtime
+fallback." `generateAiImage` correctly accepts `style?: StyleName | ''` (line 201), but the very
+next hop drops the union:
+
+```ts
+function buildRequest(
+  uploadBlob: Blob,
+  style: string,
+): { endpoint: string; headers: Record<string, string>; body: Blob };
+```
+
+(lines 151–154). Similarly
+`buildPromptForStyle(style: string | null, suffixes: Record<string, string>)` (`prompt.ts` lines
+7–10) types both parameters loosely and re-derives membership at runtime via `Object.hasOwn` — on
+the *server* that's a legitimate boundary (the style arrives as an unvalidated query param), but the
+suffix map could still be typed as the concrete `STYLE_SUFFIXES` shape without breaking the
+asset-gen import (the module stays dependency-free; a generic constraint is erased by
+`--experimental-strip-types`).
+
+#### Proposed solution
+
+Type `buildRequest`'s `style` as `StyleName | ''` (zero-cost, one token). For `prompt.ts`, keep
+`style: string | null` (genuine boundary input) but tighten the map:
+`buildPromptForStyle<S extends Record<string, string>>(style: string | null, suffixes: S)` — or
+simply accept `Readonly<Record<string, string>>` and leave a WHY comment that `style` is
+deliberately unvalidated because the server treats an unknown style as "no suffix". The current code
+half-implies that policy; the type should state it.
+
+#### Why it was deferred
+
+verifier gave no usable brief

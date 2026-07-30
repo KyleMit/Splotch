@@ -1,6 +1,6 @@
 export function createAiPreviewLoader(
   exportDrawing: () => Promise<Blob | null>,
-  commit: (blob: Blob, url: string) => void
+  commit: (blob: Blob) => void
 ) {
   let activeLoadId = 0;
 
@@ -9,12 +9,8 @@ export function createAiPreviewLoader(
       const loadId = ++activeLoadId;
       const blob = await exportDrawing();
       if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      if (loadId !== activeLoadId) {
-        URL.revokeObjectURL(url);
-        return;
-      }
-      commit(blob, url);
+      if (loadId !== activeLoadId) return;
+      commit(blob);
     },
     invalidate() {
       activeLoadId++;

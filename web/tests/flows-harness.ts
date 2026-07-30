@@ -58,7 +58,7 @@ function committedBrushMode(page: Page): Promise<string> {
 // '#magicBrushButton'). Selecting closes the flyout.
 //
 // Returns once the ENGINE has committed the mode, not merely once the button
-// reports it (ADR-0079). The brush→engine toggle flows through a Svelte
+// reports it (ADR-0080). The brush→engine toggle flows through a Svelte
 // $effect, so between the two a stroke commits under the PREVIOUS brush — a
 // wrong-mode stroke that is already painted by the time anything can observe it,
 // which is why polling the button (`aria-pressed`) measured no improvement at

@@ -41,7 +41,7 @@ const BAND_MIN_REVEALED_PX = 500;
 // immune, a pen stroke fills the canvas too.
 //
 // The stroke is drawn once. Two things a redraw used to rescue are gone at the
-// source (ADR-0079): pickBrush() returns only once the ENGINE holds the brush, so
+// source (ADR-0080): pickBrush() returns only once the ENGINE holds the brush, so
 // a stroke can no longer commit under the previous one, and `draw` paces its
 // samples so the engine no longer reads the stroke as a lifted finger and paints
 // a stub of it. Polling stays for a third reason those never covered — a correct
@@ -395,7 +395,7 @@ test('the magic brush paints the letterbox margin by extending the edge colour',
   ]);
   // Non-ink pixels, not opacity, is the mode signal — see bandNonInkPixels.
   // Polling lets a valid-but-slow reveal settle; the brush mode itself needs no
-  // retry, since pickBrush() returned only once the engine held it (ADR-0079).
+  // retry, since pickBrush() returned only once the engine held it (ADR-0080).
   await expect
     .poll(() => bandNonInkPixels(page, 'left', 0.04, TEST_PALETTE.purple), {
       timeout: REVEAL_SETTLE_MS,
@@ -520,7 +520,7 @@ test('the eraser removes magic-brush strokes and later colors override them', as
   await pickBrush(page, '#eraserButton');
   // An eraser stroke that commits while the engine still holds the magic brush
   // ADDS ink instead of removing it, and the count then never falls — so this
-  // waits on the engine's own mode rather than the button (pickBrush, ADR-0079).
+  // waits on the engine's own mode rather than the button (pickBrush, ADR-0080).
   // The poll that remains is for the erase to land, not for the mode.
   await draw(page, line);
   await expect
