@@ -55,7 +55,7 @@ which is the failure mode to watch for:
 | `Bash(gh pr comment:*)` granted     | Automation mode posts nothing on its own — Claude posts the verdict   | Review written only to the log             |
 | `github_token: ${{ github.token }}` | Keeps the action off its OIDC → Claude-App token exchange (see below) | Job fails: "Could not fetch an OIDC token" |
 
-The middle two are the sleepers, and they produce the *same* green-with-no-comment symptom from
+Rows 3 and 4 are the sleepers, and they produce the *same* green-with-no-comment symptom from
 opposite ends. `allowed_bots` defaults to empty, meaning no bot may trigger the action — and the
 actor here is `dependabot[bot]`. Supplying a `prompt:` puts the action in automation mode, which
 deliberately creates no tracking or result comment, so the only reason a verdict reaches the PR is
