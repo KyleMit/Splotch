@@ -76,6 +76,30 @@ published, had no PR, and appeared in no listing. It also held the release's *on
 version-only republishes of it. So the batch wasn't merely incomplete — the part it omitted was the
 only part that did anything, and "all five merged" read as finishing a job that had barely started.
 
+**`--ignore-scripts` and `--no-dereference` on the tarball diff** *(2026-07-30)*. Added after asking
+what the new technique exposes, since it unpacks a payload in order to decide whether to trust it.
+Three vectors were tested rather than reasoned about, and two came back clean:
+
+* *Execution* — `npm pack` on a registry spec downloads the published tarball and runs no lifecycle
+  hooks; confirmed by packing esbuild, whose postinstall is `node install.js`, and observing nothing
+  run. (A git spec *would* run `prepare`, which is why the recipe uses registry specs only.)
+  `--ignore-scripts` is belt-and-braces, not a fix for an observed hole.
+* *Filesystem escape* — GNU tar refuses both classics by default, verified with purpose-built
+  tarballs: a `..` member (`Member name contains '..'`, exit 2) and a symlink written through
+  (`Cannot open: Not a directory`, exit 2, target untouched). Worth remembering this is GNU tar
+  specifically; Node's `tar` and Python's `tarfile` are the ones with tar-slip history, so a scripted
+  version of this step would not inherit the protection.
+* *The diff output* — the one real finding, in two parts. `diff -r` **dereferences symlinks**, so an
+  extracted `README.md -> /etc/hostname` prints that file's contents as package content; anything the
+  process can read reaches the output, and from there a summary or a PR comment. Extraction refuses
+  to *write* through a symlink but still extracts the symlink, so the leak is in the read. Confirmed
+  directly, and `--no-dereference` reports the type mismatch instead. Separately, the diff is
+  attacker-controlled text landing in the exact context where a merge verdict forms — unusual in that
+  the data *is* the subject under judgement, with no separation between them.
+
+That last point is why the merge-authorization rule now carries a security rationale: it was written
+for blast radius, and it turns out to be the control that makes planted text face a second reader.
+
 **An advisory can name a package it isn't about** *(2026-07-30)*. `npm audit` reported a moderate on
 `@capacitor/cli` while \#666 bumped `@capacitor/cli`, which invites the inference that the bump
 clears it. The advisory was against a vendored 5.7.8 copy nested under `@capacitor/assets`, range
