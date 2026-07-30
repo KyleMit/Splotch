@@ -13,8 +13,10 @@ test.use({
 });
 
 // The banner's exit is mostly a fixed in-app wait, not work: InstallBanner
-// spends PARTING_MESSAGE_MS (4s) showing the parting note, then BANNER_EXIT_MS
-// shrinking the pill into the Parent Help button. So ~4.6s of any budget here is
+// spends PARTING_MESSAGE_MS (4s) showing the parting note, then
+// BANNER_SHRINK_EXIT_MS (550ms) shrinking the pill into the Parent Help button —
+// the auto-clear path this test drives sets exitIntoParentButton, so it takes
+// that exit rather than the shorter plain fly-down. So ~4.6s of any budget here is
 // floor that contention cannot compress, and only what is left absorbs
 // inflation. Measured at 8 workers this step took up to 5.0s — half of the 10s it
 // used to be given, the thinnest headroom ratio in the spec (ADR-0078 §3 names
