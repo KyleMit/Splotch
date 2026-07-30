@@ -65,6 +65,9 @@ declare global {
       mode?: FileSystemPermissionMode;
       startIn?: string;
     }): Promise<FileSystemDirectoryHandle>;
+    // Read-only profiling seam on the drawing route, attached only where the dev
+    // harness is unlocked — see lib/boot/drawingProbeSeam.ts.
+    __drawingDebug?: { getUndoDebug: typeof import('$lib/drawing/engine').getUndoDebug };
   }
 
   interface FileSystemHandle {

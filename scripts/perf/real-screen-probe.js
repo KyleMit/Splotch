@@ -65,6 +65,12 @@
   const HALO_SELECTORS = '.brush-ring, .eraser-bubble';
   const COLORING_BOOK_BUTTON = '#coloringBookButton';
   const CLEAR_PAGE_BUTTON = '[aria-label="Clear Page"]';
+  // The picker shows books first and a book's pages only after one is picked, so
+  // loading a page unattended is two taps. Matched on the aria-label suffix the
+  // component builds per book/page rather than on a nth-child position.
+  const BOOK_TILE = 'button[aria-label$="coloring book"]';
+  const PAGE_TILE = 'button[aria-label$="coloring page"]';
+  const COLORING_OVERLAY_ID = 'coloringOverlay';
 
   const DEFAULT_CONTACT_MS = 25_000;
   // A phase that has banked something real and then sees no drawing for this
@@ -82,6 +88,12 @@
   // Each phase names the paper state it needs and what it suppresses. Order
   // minimizes paper switching for the human: blank first, then everything that
   // needs a page loaded.
+  // Nothing clears the paper between phases, so ink and undo history accumulate
+  // across the whole run — which is a confound for the suppression comparison and
+  // the very effect the reported lag scales with. `page-again` repeats `page`
+  // verbatim at the end so the drift is measured instead of assumed: whatever
+  // separates the two is accumulation, and every suppression delta has to be
+  // read against it.
   const PHASES = [
     { key: 'blank', paper: 'blank', suppress: [] },
     { key: 'page', paper: 'page', suppress: [] },
@@ -89,6 +101,7 @@
     { key: 'page-no-blend', paper: 'page', suppress: ['blend'] },
     { key: 'page-no-halos', paper: 'page', suppress: ['halos'] },
     { key: 'page-bare', paper: 'page', suppress: ['nudge', 'blend', 'halos'] },
+    { key: 'page-again', paper: 'page', suppress: [] },
   ];
 
   const requested = window.__probePhases;
@@ -114,6 +127,18 @@
   const events = [];
   const measures = [];
   const measureNames = [];
+  // How the undo history is stored, sampled once per finger-lift from the
+  // read-only seam `lib/boot/drawingProbeSeam.ts` exposes on `/`. The reported
+  // lag grows with how much has been drawn, and every stroke pushes a
+  // canvas-backed dirty-rect patch (ADR-0069/0074) — this is the table that
+  // says whether stall onset tracks that growth.
+  const history = [];
+  // Finger-up to the pointer halo actually leaving the DOM. A directly felt
+  // symptom ("it takes a long time from finger up for the halo to go away and
+  // the app to snap back") and a clean probe of the whole lift path: the halo is
+  // removed by a Svelte state write on pointerup, so it cannot disappear until
+  // the reactivity, the commit, and a rendering update have all gone through.
+  const liftLatencies = [];
   const nameId = (name) => {
     const seen = measureNames.indexOf(name);
     if (seen !== -1) return seen;
@@ -186,6 +211,30 @@
       newestMoveStamp = event.timeStamp;
       movesSinceFrame++;
     }
+    if ((type === 2 || type === 3) && onCanvas) onLift(event);
+  };
+
+  // Sampled at the lift rather than per frame: getUndoDebug walks the whole
+  // snapshot stack, so calling it on the hot path would be measuring the probe.
+  const sampleHistory = (at) => {
+    const debug = window.__drawingDebug?.getUndoDebug?.();
+    if (!debug) return;
+    history.push([
+      round(at),
+      debug.snapshots,
+      debug.liveRasters,
+      debug.rasterBytes,
+      debug.patchBytes ?? -1,
+      debug.blobBytes,
+    ]);
+  };
+
+  let pendingLift = null;
+  const onLift = (event) => {
+    sampleHistory(event.timeStamp);
+    // Only track the last pointer up: with several fingers down the halos of the
+    // others are legitimately still there.
+    if (drawingPointers.size === 0) pendingLift = { at: performance.now(), phase: index };
   };
 
   const pointerOptions = { capture: true, passive: true };
@@ -490,6 +539,7 @@
   };
 
   const finishPhase = (now) => {
+    liftHand();
     phase.endedAt = round(now);
     phase.paperActive = paperActive();
     if (index + 1 < plan.length) startPhase(index + 1);
@@ -502,7 +552,8 @@
     }
   };
 
-  const paperReady = () => (phase.paper === 'page' ? paperActive() : !paperActive());
+  const paperReady = () =>
+    phase.paper === 'page' ? paperActive() && pageArtShowing() : !paperActive();
 
   const paperInstruction = () =>
     phase.paper === 'page'
@@ -554,12 +605,26 @@
           phase.halosHidden = getComputedStyle(halos[0]).display === 'none';
         }
       }
+      // The halo is gone once the lift's state write has been rendered. A phase
+      // whose halos are suppressed by CSS still has the elements, so this stays
+      // a measurement of the lift path rather than of visibility.
+      if (pendingLift && !document.querySelector(HALO_SELECTORS)) {
+        // A rAF timestamp is the frame's start, which can precede the lift's
+        // performance.now(); that reads as a negative wait rather than a fast one.
+        const waited = Math.max(0, ts - pendingLift.at);
+        liftLatencies.push([round(pendingLift.at), round(waited), pendingLift.phase]);
+        pendingLift = null;
+      }
     }
 
     frames.push([round(ts), delta === null ? -1 : round(delta), contact ? 1 : 0]);
     lastTs = ts;
     lastContact = contact;
     movesSinceFrame = 0;
+
+    // After the frame is accounted for, so a synthetic move belongs to the
+    // interval it is about to be drawn in rather than the one just closed.
+    if (driveCycle && !done) stepHand(ts);
 
     if (!done && phase.startedAt !== null) {
       const banked = phase.contactMs >= contactTargetMs;
@@ -576,7 +641,10 @@
     if (hud && ts >= nextHudAt) {
       nextHudAt = ts + HUD_TICK_MS;
       if (done) setHud(`Done — ${plan.length} phase(s). Check the Mac.`);
-      else if (phase.startedAt === null) {
+      else if (driveCycle) {
+        const banked = (phase.contactMs / 1000).toFixed(1);
+        setHud(`${index + 1}/${plan.length} ${phase.key} — driving ${banked}s (hands off)`);
+      } else if (phase.startedAt === null) {
         setHud(`${index + 1}/${plan.length} ${phase.key} — ${paperInstruction()}`);
       } else {
         const banked = (phase.contactMs / 1000).toFixed(1);
@@ -601,16 +669,24 @@
         canvasBacking: { w: canvas.width, h: canvas.height },
         contactTargetMs,
         hud: hudEnabled,
+        drive: driveShape,
+        historySeam: !!window.__drawingDebug,
         measureNames,
         counts: { frames: frames.length, events: events.length, measures: measures.length },
       },
       phases: records,
+      // Small enough to travel whole; only the per-frame and per-event tables
+      // need slicing.
+      history,
+      liftLatencies,
     };
   }
 
   const detach = () => {
+    liftHand();
     running = false;
     for (const name of POINTER_EVENTS) removeEventListener(name, recordPointer, pointerOptions);
+    for (const [name, original] of capturedMethods) canvas[name] = original;
     measureObserver?.disconnect();
     styleEl.remove();
     hud?.remove();

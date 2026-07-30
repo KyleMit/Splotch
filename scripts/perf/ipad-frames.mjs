@@ -60,12 +60,13 @@ const TABLE_CHUNK_ROWS = 2_000;
 // guarantee `perf:ipad`'s overrides script makes, for the same reason — a
 // leftover config silently changes what a run measured and the output looks
 // completely normal.
-export function probeConfigScript({ phases, contactMs, hud = true } = {}) {
+export function probeConfigScript({ phases, contactMs, drive, hud = true } = {}) {
   const assign = (name, value) =>
     `window.${name} = ${value === undefined ? 'undefined' : JSON.stringify(value)};`;
   return [
     assign('__probePhases', phases),
     assign('__probeContactMs', contactMs),
+    assign('__probeDrive', drive),
     assign('__probeHud', hud === true ? undefined : hud),
     assign('__probeReport', undefined),
     assign('__probeProgress', undefined),
@@ -105,7 +106,7 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
   const { flag, has, port } = parsePerfArgs(
     {
       entry: true,
-      extra: ['url', 'phases', 'contact-seconds', 'device-id', 'no-serve', 'no-hud'],
+      extra: ['url', 'phases', 'contact-seconds', 'drive', 'device-id', 'no-serve', 'no-hud'],
     },
     argv
   );
@@ -116,6 +117,9 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
   const server = await ensurePreviewServer(appUrl, port, !has('no-serve'));
   const { device, stopProxy } = await connectDevice(flag('device-id'));
   const contactSeconds = Number(flag('contact-seconds', DEFAULT_CONTACT_SECONDS));
+  // `--drive` with no value is the useful default: one long stroke then a burst
+  // of short ones, the two shapes the lag report names.
+  const drive = has('drive') ? 'mixed' : flag('drive');
   const deviceConsole = createDeviceConsole();
 
   let session;
@@ -134,7 +138,11 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
       probeConfigScript({
         phases: flag('phases'),
         contactMs: contactSeconds * 1000,
-        hud: !has('no-hud'),
+        drive,
+        // The HUD repaints twice a second, and a repaint damages the very blend
+        // layer some phases exist to isolate. A driven run has nobody to read
+        // it, so it costs nothing to leave off.
+        hud: !has('no-hud') && !drive,
       })
     );
     await session.evaluate(readFileSync(PROBE_FILE, 'utf8'));
@@ -146,14 +154,23 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
           'selector it depends on is gone from the app).'
       );
     }
-    printHandInstructions(flag('phases') ?? 'all', contactSeconds);
+    if (drive) {
+      const seam = await session.readJson('!!window.__drawingDebug');
+      console.log(
+        `\nDriving synthetic input (${drive}) — hands off the iPad, keep it unlocked and ` +
+          `Safari foregrounded.\nUndo-history seam: ${seam ? 'available' : 'ABSENT (history table will be empty)'}`
+      );
+    } else {
+      printHandInstructions(flag('phases') ?? 'all', contactSeconds);
+    }
 
     const report = await waitForGlobal(session, 'window.__probeReport', {
       stalled: deviceConsole.errorText,
       timeoutMs: HAND_RUN_TIMEOUT_MS,
-      timeoutHint:
-        'Nobody finished the phases. Draw until the banner says done, or call ' +
-        '__probe.finish() in a Web Inspector console to publish what was banked.',
+      timeoutHint: drive
+        ? 'The synthetic hand never finished. Check that the tab stayed foregrounded.'
+        : 'Nobody finished the phases. Draw until the banner says done, or call ' +
+          '__probe.finish() in a Web Inspector console to publish what was banked.',
       progress: () => session.readJson('window.__probeProgress ?? null'),
     });
 
@@ -189,7 +206,7 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         {
           device: { name: device.deviceName, os: device.deviceOSVersion, id: device.deviceId },
           appUrl,
-          mode: 'hand',
+          mode: drive ? `synthetic:${drive}` : 'hand',
           summaries,
           report,
           console: deviceConsole.forReport(),
