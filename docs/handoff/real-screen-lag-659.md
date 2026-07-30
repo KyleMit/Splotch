@@ -408,6 +408,16 @@ worth understanding regardless.
 * The 120 Hz assumption: ProMotion adapts refresh rate, so a phase could legitimately pace at 60 Hz.
   `dt p50` distinguishes them; do not read `late %` without it.
 
+## Known-flaky spec, already flaky on main
+
+`tests/parent-zoom.spec.ts` → "navigating to another section resets the zoom" fails ~2 of 3 repeats
+**under concurrent load on `main` as well as on this branch** — verified by running the identical
+4-spec × `--repeat-each=3` grep on both. It passes 3/3 run alone. Not caused by this work; don't
+chase it here.
+
+Method note worth keeping: the first comparison ran 12 tests on the branch against 3 on main and
+therefore "proved" the branch broke it. A flake comparison has to hold the worker load equal.
+
 ## Done & verified
 
 * Probe validated end to end locally in headless Chromium against the real `/` (installs, phase
