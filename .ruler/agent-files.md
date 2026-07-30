@@ -51,4 +51,4 @@ what was rejected, what is still unvalidated. They are deliberately *not* linked
 `SKILL.md`: a skill pays context for everything it references, and this material is for someone
 working on the skill, not running it. Notes live beside skills rather than inside a skill package,
 which would file design history inside the very skill it is kept out of. See
-`.ruler/skill-notes/README.md` for the convention.
+`.ruler/skill-notes/README.md.template` for the convention.
