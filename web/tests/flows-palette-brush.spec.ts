@@ -226,10 +226,17 @@ test('pointer exploration still snaps a hexagon gap and commits the highlighted 
   page,
 }) => {
   await gotoApp(page);
-  await page.getByRole('button', { name: 'Custom Color' }).click();
 
+  // gotoApp returns on the PRERENDERED canvas, which is visible before the route
+  // hydrates, and this swatch opens the picker through a Svelte action
+  // (scribbleTap) that only exists once it has. So the first click can land on a
+  // button with no handler yet and be lost outright — retryOpen re-clicks until
+  // the dialog is really up, and skips the click when it already is (the same
+  // reason the keyboard-activation test above opens the picker this way).
   const dialog = page.locator('#color-picker');
-  await expect(dialog).toBeVisible();
+  await retryOpen(dialog, () =>
+    page.getByRole('button', { name: 'Custom Color' }).click({ timeout: 1000 })
+  );
   const start = dialog.locator('.grid.landscape .row.r5 .hexagon.c3');
   const target = dialog.locator('.grid.landscape .row.r5 .hexagon.c1');
 

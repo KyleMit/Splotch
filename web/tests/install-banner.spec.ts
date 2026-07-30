@@ -12,7 +12,20 @@ test.use({
   isMobile: true,
 });
 
+// The banner's exit is mostly a fixed in-app wait, not work: InstallBanner
+// spends PARTING_MESSAGE_MS (4s) showing the parting note, then BANNER_EXIT_MS
+// shrinking the pill into the Parent Help button. So ~4.6s of any budget here is
+// floor that contention cannot compress, and only what is left absorbs
+// inflation. Measured at 8 workers this step took up to 5.0s — half of the 10s it
+// used to be given, the thinnest headroom ratio in the spec (ADR-0078 §3 names
+// that the failure it predicts), against ~20x for every assertion around it.
+const PARTING_EXIT_TIMEOUT_MS = 20_000;
+
 test('the install banner parts after five additional strokes', async ({ page }) => {
+  // Eight strokes plus that fixed ~4.6s exit measured 17.7s at 8 workers, so the
+  // default 30s per-test budget is the tightest bound in the spec once latency
+  // inflates (ADR-0078 §2). test.slow() triples it.
+  test.slow();
   await gotoApp(page);
   const banner = page.locator('.install-banner');
 
@@ -45,5 +58,5 @@ test('the install banner parts after five additional strokes', async ({ page }) 
   await expect
     .poll(() => page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS.installDismissed))
     .toBe('true');
-  await expect(banner).toBeHidden({ timeout: 10_000 });
+  await expect(banner).toBeHidden({ timeout: PARTING_EXIT_TIMEOUT_MS });
 });
