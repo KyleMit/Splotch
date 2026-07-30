@@ -1,4 +1,4 @@
-// Style options for AI image generation. The client renders the radio picker
+// Style options for AI image generation. The client renders the style picker
 // in the order these keys are defined, and the server appends the matching
 // suffix to the base prompt. "Magical" is the lead style: a light sprinkle of
 // enchantment over the base prompt so the plain option still feels like magic.

@@ -23,33 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Docs] Stale "radio picker" comment in styles.ts — the picker has been buttons for a long time
-
-**File(s):** `web/src/lib/ai/styles.ts` (lines 1–4) @ 9ae62ff1; actual UI in
-`web/src/lib/components/AiImagePrompt.svelte` (lines 64–85)
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-// Style options for AI image generation. The client renders the radio picker
-// in the order these keys are defined, ...
-```
-
-The client renders a grid of `<button>` tiles (`AiImagePrompt.svelte` lines 67–83), not radios.
-CLAUDE.md's comment rule bans restating mutable facts owned elsewhere — the comment names a UI
-widget that no longer exists, which misleads anyone grepping for the "radio picker". Relatedly,
-`AiImagePrompt` still wraps the buttons in `<fieldset>`/`<legend>` (lines 64–65), form-semantics
-remnants of the radio era that now group plain buttons.
-
-#### Proposed solution
-
-Reword the comment to the stable fact: "The client renders the style picker in the order these keys
-are defined". Optionally, in `AiImagePrompt.svelte`, replace the `fieldset`/`legend` with a `div` +
-heading (or keep them deliberately with a role rationale) — the current markup implies a form
-control group that isn't one.
-
 ### [Types] Style plumbing widens the closed `StyleName` union back to `string` mid-flight
 
 **File(s):** `web/src/lib/drawing/aiImage.ts` (`buildRequest`, lines 151–154) and
