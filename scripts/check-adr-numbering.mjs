@@ -7,29 +7,12 @@ import {
   ADR_DIR,
   adrNumber,
   collisionsAgainstBase,
-  describeAdrChanges,
   duplicateNumbers,
   formatProblems,
   nextAdrNumber,
 } from './lib/adr-numbering.mjs';
 
 const DEFAULT_BASE_REF = 'origin/main';
-
-// Diffs the base against the working tree rather than HEAD, so an uncommitted
-// record counts as changed when this runs locally. In CI the tree is clean and
-// the two are identical.
-function changedAdrRecords(baseRef) {
-  try {
-    const listing = execFileSync('git', ['diff', '--name-only', baseRef, '--', ADR_DIR], {
-      cwd: ROOT,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    return listing.split('\n').filter(Boolean);
-  } catch {
-    return null;
-  }
-}
 
 function baseEntries(baseRef) {
   try {
@@ -78,9 +61,6 @@ export function checkAdrNumbering() {
         `Fetch the base ref to also catch a number this branch takes from it.`
     );
   }
-
-  const changes = describeAdrChanges(changedAdrRecords(baseRef));
-  if (changes) console.log(changes);
 
   const duplicates = duplicateNumbers(head);
   const collisions = base === null ? [] : collisionsAgainstBase(base, head);

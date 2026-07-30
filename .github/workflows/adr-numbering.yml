@@ -50,10 +50,10 @@ jobs:
           git fetch --depth=1 origin \
             "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
 
-      # Runs every time and reports what changed itself, rather than a step
-      # gating it: reading the directory is cheaper than the git call that would
-      # decide whether to bother, and a gate that exits early on "no ADRs
-      # changed" would report success against a tree that already holds
-      # duplicates — the exact state a workflow_dispatch audit exists to find.
+      # Unconditional. Deciding whether to run costs more than running: the check
+      # is a directory read, while detecting whether docs/adrs/ changed needs a
+      # git diff. Skipping on "no ADR records changed" would also report success
+      # against a tree that already holds duplicates, which is the exact state a
+      # workflow_dispatch audit exists to find.
       - name: Check ADR numbering
         run: node scripts/check-adr-numbering.mjs "--base=origin/${BASE_REF}"

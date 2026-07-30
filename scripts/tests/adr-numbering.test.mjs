@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   adrNumber,
   collisionsAgainstBase,
-  describeAdrChanges,
   duplicateNumbers,
   formatProblems,
   nextAdrNumber,
@@ -99,29 +98,5 @@ describe('formatProblems', () => {
 
   it('says nothing when the numbering is clean', () => {
     expect(formatProblems({ duplicates: [], collisions: [], baseRef: 'origin/main' })).toEqual([]);
-  });
-});
-
-describe('describeAdrChanges', () => {
-  it('says nothing when the base could not be read', () => {
-    expect(describeAdrChanges(null)).toBeNull();
-  });
-
-  it('reports an untouched directory without implying the check was skipped', () => {
-    expect(describeAdrChanges([])).toBe(
-      'No record in docs/adrs changed here — verifying the resulting tree anyway.'
-    );
-  });
-
-  it('names a single changed record in the singular', () => {
-    expect(describeAdrChanges(['docs/adrs/0081-new.md'])).toBe(
-      '1 record changed in docs/adrs: 0081-new.md'
-    );
-  });
-
-  it('names several changed records', () => {
-    expect(describeAdrChanges(['docs/adrs/0081-a.md', 'docs/adrs/0082-b.md'])).toBe(
-      '2 records changed in docs/adrs: 0081-a.md, 0082-b.md'
-    );
   });
 });
