@@ -31,6 +31,24 @@ test('web /admin rejects a wrong key', async ({ page }) => {
   await expect(page.getByRole('alert')).toContainText('Incorrect access key');
 });
 
+// The login form submits through a callback that cancels the native submit, and
+// carries no action/method — so before hydration a click default-submits it as a
+// GET to /admin with the key as a query param: nobody is logged in and the admin
+// access key is in the URL, browser history, and every access log en route. That
+// is the failure issue #615 reported ("navigated to
+// /admin?access-key=test-admin-secret"), read as a slow round trip. Asserting on
+// the SERVED markup is what makes this checkable at all: the pre-hydration state
+// is the response body, so there is no window to race.
+test('web /admin ships the login submit disabled until hydration', async ({ request }) => {
+  const html = await (await request.get('/admin')).text();
+  const submits = html.match(/<button[^>]*type="submit"[^>]*>/g) ?? [];
+  expect(submits, 'the logged-out page has exactly one submit — the login button').toHaveLength(1);
+  expect(submits[0]).toContain('disabled');
+  // If the form ever gains an action, a native submit becomes a real login and
+  // the disabled gate is the wrong fix — this is here so that change is noticed.
+  expect(html.match(/<form[^>]*>/)?.[0]).not.toMatch(/\baction=|\bmethod=/);
+});
+
 test('web /admin signs in via cookie session, manages tokens, signs out', async ({ page }) => {
   await signInToAdmin(page, '/admin');
   // The preview server has no Netlify Blobs, so the token list is the in-memory

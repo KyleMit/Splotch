@@ -37,6 +37,13 @@ export async function submitAdminKey(page: Page, key: string) {
 // (issue #615) — so the submit is retried like any other open-then-assert.
 // Re-submitting is safe: retryOpen skips the action once the console is up, and
 // a submit that already landed leaves no sign-in form to fill.
+//
+// A retry does spend a hit from rateLimitPolicy.adminLogin, which is 10 per IP
+// per minute against the ~8 sign-ins the whole suite performs from one IP. That
+// headroom is why the retry stays a fallback rather than a routine second try:
+// the pre-hydration submit it used to cover is now closed off in AdminConsole
+// itself, so under normal conditions the first attempt is the only attempt. A
+// spec that adds sign-ins should count them against that 10.
 export async function signInToAdmin(page: Page, path = '/admin') {
   await page.goto(path);
   await retryOpen(adminConsole(page), () => submitAdminKey(page, ADMIN_ACCESS_TOKEN), {
