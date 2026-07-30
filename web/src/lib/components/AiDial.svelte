@@ -92,7 +92,12 @@
     class="dial"
     class:waiting
     style="--c1: {dialColor}; --c2: {dialColor2}; --angle: {wedgeAngle};"
-    out:scale={{ duration: DIAL_EXIT_MS, start: DIAL_EXIT_START_SCALE, opacity: 0, easing: backOut }}
+    out:scale={{
+      duration: DIAL_EXIT_MS,
+      start: DIAL_EXIT_START_SCALE,
+      opacity: 0,
+      easing: backOut,
+    }}
   >
     <div class="dial-glow"></div>
     <div class="dial-pie"></div>

@@ -23,40 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Readability] AiDial's hue sweep and exit transition are unnamed tuning literals
-
-**File(s):** `web/src/lib/components/AiDial.svelte` (lines 79–82, 90) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-// A friendly violet → blue → teal → green sweep as the dial fills.
-const hueA = $derived(282 - 132 * progress);
-const dialColor = $derived(`hsl(${hueA}, 82%, 62%)`);
-const dialColor2 = $derived(`hsl(${hueA + 46}, 88%, 67%)`);
-```
-
-and in the template: `out:scale={{ duration: 480, start: 1.35, ... }}` (line 90). Per CLAUDE.md, "a
-numeric literal that encodes a tunable decision — threshold, duration, … curve shaping — gets a
-named module-scope constant with the unit in the name." `282`, `132`, `46`, `480`, and `1.35` are
-all curve-shaping/duration knobs someone will want to retune (the file already names `ESTIMATE_MS`
-for exactly this reason at line 17). The comment mitigates but doesn't name which literal is the
-start hue vs. the sweep span vs. the second-stop offset.
-
-#### Proposed solution
-
-```ts
-const HUE_START_DEG = 282; // violet
-const HUE_SWEEP_DEG = 132; // → green at full
-const HUE_SECOND_STOP_OFFSET_DEG = 46;
-const DIAL_EXIT_MS = 480;
-const DIAL_EXIT_START_SCALE = 1.35;
-```
-
-with the sweep comment moved onto the constants.
-
 ### [Maintainability] Dev-harness artifact filenames are duplicated boundary strings between the page and its endpoint
 
 **File(s):** `web/src/routes/dev/ai-timer/+page.svelte` (lines 17–18) and
