@@ -17,6 +17,11 @@ export default tseslint.config(
       '**/build/',
       '**/.netlify/',
       '**/node_modules/',
+      // Playwright's own output. Gitignored but not previously ignored here, so
+      // `npm run lint` failed for anyone who had run the E2E suite locally —
+      // invisible on CI, where lint and e2e are separate jobs.
+      '**/playwright-report/',
+      '**/test-results/',
       'android/',
       'ios/',
       'scrapbook/',

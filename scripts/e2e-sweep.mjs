@@ -11,10 +11,11 @@
 // Three things this owns that a `playwright test` loop cannot:
 //
 // 1. **A fresh server per rep.** The suite leaves per-IP rate-limit windows full
-//    — tests/generate-image.spec.ts deliberately exhausts the BYOK bucket, which
-//    then takes RATE_LIMIT_WINDOW_MS to clear. Reps run back to back in about
-//    that time, so a shared server hands the next rep a 429 where it expects a
-//    415, and the sweep measures a flake it manufactured. Restarting clears the
+//    — tests/generate-image.spec.ts deliberately exhausts the BYOK bucket and
+//    bursts the managed token's, each of which then takes the window in
+//    lib/server/rateLimitPolicy.ts to clear. Reps run back to back in about that
+//    time, so a shared server hands the next rep a 429 where it expects a 415,
+//    and the sweep measures a flake it manufactured. Restarting clears the
 //    in-memory limiter, and it also matches what CI actually does: one server,
 //    one suite run.
 // 2. **CI unset for the run.** `CI` turns on the two config branches that would
@@ -25,7 +26,7 @@
 //
 // `node scripts/e2e-sweep.mjs --workers=4 --reps=12 --out=/tmp/sweep`
 
-import { mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { argFlag, fail, isMain, ROOT, runMain } from './lib/proc.mjs';
@@ -128,11 +129,13 @@ async function runOneRep({ workers, rep, outDir }) {
       ],
       { cwd: ROOT, env: runnerEnv(reportPath), stdio: ['ignore', 'ignore', 'inherit'] }
     );
-    return summarizeReport(readFileSync(reportPath, 'utf8'), {
-      workers,
-      rep,
-      jobSeconds: Math.round((Date.now() - startedAt) / 1000),
-    });
+    const meta = { workers, rep, jobSeconds: Math.round((Date.now() - startedAt) / 1000) };
+    // A run that died before writing its report is one bad rep, not a reason to
+    // abandon the other thirty — an unattended sweep has to survive it and say so.
+    if (!existsSync(reportPath)) {
+      return { w: workers, rep, error: 'playwright wrote no JSON report' };
+    }
+    return summarizeReport(readFileSync(reportPath, 'utf8'), meta);
   } finally {
     stop();
   }

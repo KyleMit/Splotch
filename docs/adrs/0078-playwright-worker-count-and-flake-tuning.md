@@ -275,8 +275,20 @@ deliberate trade: latency for signal.
 without re-measuring. The shape (saturation near cores−1) should hold; the optimum will not.
 
 − **The CI setting leans on retries to stay cheap.** Choosing the fastest worker count on CI because
-`retries: 2` absorbs the flakes is a local optimisation that also hides accumulating flakiness —
-which is how the magic-brush tests reached the state they were in.
+retries absorb the flakes is a local optimisation that also hides accumulating flakiness — which is
+how the magic-brush tests reached the state they were in. *(Mitigated, not removed:
+`web/playwright-flaky-reporter.ts` annotates every retried pass, so the hiding is now visible. §4.)*
+
+\+ **The count is derived, so new hardware needs no edit** — but two edges are untested and stay
+untested until someone runs the suite on the machines that would settle them: SMT, and any core
+count other than 4 (§1b).
+
+− **A measurement harness is code, and this one was wrong for two months.** §4's contamination was
+invisible because the sweep lived as shell inside a workflow that only ever ran on CI, while the
+local half was a different loop entirely — so neither could check the other, and three separate
+defects shipped that way. The protocol now lives in one driver both callers use, with the parts that
+can be asserted asserted (`scripts/tests/worker-sweep.test.mjs`). The general form: a measurement
+you cannot run in two places is a measurement nobody has reviewed.
 
 − **CI's real limit is canvas throughput, not workers.** A GPU-less runner rasterizes the magic
 reveal in software, so those specs sit near their budget at any worker count. Worker tuning cannot
@@ -338,6 +350,24 @@ were falsified — is committed at
 [`scrapbook/e2e-tuning/`](https://kylemit.github.io/Splotch/e2e-tuning/), regenerated with
 `npm run gen:e2e-tuning-report` from the datasets recorded in `scripts/gen-e2e-tuning-report.mjs`.
 That page carries the exact commands for a re-sweep.
+
+Both halves of the sweep now run one driver, so a local re-tune and the CI one measure the same
+thing (§4). Build once, then:
+
+```sh
+node scripts/e2e-sweep.mjs --workers=4 --reps=30 --out=runs
+```
+
+On CI hardware it is **Actions → "Worker sweep (manual)" → Run workflow**, whose `workers` input
+takes a JSON list. Two different questions want two different shapes there: the full
+`[1, 2, 3, 4, 6, 8]` curve answers *how many workers*, while `[4]` with a large `reps` is what a
+**retry** count needs, because that rests on the red-run rate at the one configuration CI ships.
+Read either from `grep SWEEPTOTAL` in the job log — it names the specs the failures belonged to,
+which is usually the actual finding.
+
+One thing the local half cannot measure honestly: if the box running the sweep is also running the
+session that dispatched it, its own tooling shows up as contention. The numbers in §4 are from CI
+for that reason.
 
 The attempt-distribution recipe below is kept for the technique; the loops it measures no longer
 exist (2c). To re-measure the attempt distribution in 2c, wrap each redraw site's callback in a
