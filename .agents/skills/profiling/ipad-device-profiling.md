@@ -174,7 +174,7 @@ against it.
 
 ### The one dev seam
 
-`lib/boot/drawingProbeSeam.ts` exposes the already-exported `getUndoDebug()` on `/` behind the same
+`lib/boot/devHarnessSeam.ts` exposes the already-exported `getUndoDebug()` on `/` behind the same
 gate as `routes/dev/*` (`PUBLIC_ENABLE_DEV_HARNESS`, which the Netlify deploy never sets). It is
 **read-only on purpose**: a probe that can change the app can invalidate its own measurement.
 Nothing else about the app is touched — the synthetic hand loads a coloring page by clicking the
