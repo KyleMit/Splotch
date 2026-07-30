@@ -121,6 +121,8 @@ a test that exists to protect a tool, and it will need updating when the compone
 read as "long tasks" — the first capture's stalls contain almost no JS at all.
 
 − Synthetic input reproduced none of the reported lag on device (clean at 4.03 moves/frame with
-`pointerType: pen`, and across a four-minute soak). The instrument therefore cannot close the loop
-unattended for this class of problem, and the remaining candidates live in the real touch pipeline,
-which only a hand can enter.
+`pointerType: pen`, and across a four-minute soak), so this class of problem still cannot close its
+loop unattended. The required hand-drawn Timeline later attributed the stalls to compositing after
+stroke commit: snapshot readback caused the per-commit spike, and the continuous cost scaled with
+canvas pixel area rather than the optional layers. ADR-0015 carries the resulting 1.5× render-scale
+cap.

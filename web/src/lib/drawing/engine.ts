@@ -201,12 +201,12 @@ let crayonSeedCounter = 1;
 
 let callbacks: Omit<InitOptions, 'initialColor'> = {};
 
-// Strokes rasterize at the device pixel ratio so they stay crisp on mobile
-// screens, capped at 2× — DPR-3 panels would cost 9× the pixels for detail a
-// finger-drawn stroke can't use (see ADR 0015). Fixed for the session at init:
-// a mid-session DPR change (desktop zoom, monitor move) would otherwise need
-// every pixel surface (visible canvas, paper) rescaled in place.
-const MAX_RENDER_SCALE = 2;
+// Strokes rasterize above CSS resolution so they stay crisp on mobile screens,
+// capped at 1.5×: the physical-iPad A/B found compositing proportional to
+// backing-store area, and 1.5× retains supersampling with 44% fewer pixels than
+// 2× (see ADR 0015). Fixed for the session at init: a mid-session DPR change
+// would otherwise need every pixel surface rescaled in place.
+const MAX_RENDER_SCALE = 1.5;
 let renderScale = 1;
 
 function backingSizeOf(rect: DOMRect): { w: number; h: number } {

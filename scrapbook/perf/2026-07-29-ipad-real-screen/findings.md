@@ -189,12 +189,30 @@ canvas ([`undoHistory.ts`](../../../web/src/lib/drawing/undoHistory.ts)) — a G
 stalls the compositor. Reusing the destination canvases does not help, because the allocation was
 never the expense.
 
-**What remains after that** is a separate, continuous cost: 3608 ms of compositing across 9.1 s,
+**What remained after that** was a separate, continuous cost: 3608 ms of compositing across 9.1 s,
 ~375 records averaging 9.6 ms — about one per frame, consuming 60% of a 16.7 ms budget before the
-app runs at all. Whether that is the two always-mounted `.crayon-overlay` canvases (one carrying
-`mix-blend-mode: darken`, both full-size regardless of the selected brush) or the irreducible cost
-of compositing a 4.7 Mpx canvas on this device is open, and it is what issue #659's remaining work
-measures.
+app runs at all. Two final hand-drawn rungs separated the always-mounted optional layers from canvas
+pixel area:
+
+| build                                            | long composites / commit | composite ms / drawing second | operator read |
+| ------------------------------------------------ | -----------------------: | ----------------------------: | ------------- |
+| 2× baseline                                      |                     1.00 |                         543.7 | visible lag   |
+| 2×, no snapshot capture                          |                     0.15 |                         395.9 | —             |
+| 2×, no snapshot capture, optional layers hidden  |                     0.17 |                         464.1 | worst run     |
+| 1× diagnostic (quarter the baseline pixel count) |                     0.02 |                         171.4 | “not too bad” |
+| 1.5× production candidate                        |                     0.13 |                         422.6 | —             |
+
+The layer-strip rung hid both `.crayon-overlay` canvases, the coloring-page wrapper, paper texture,
+and pointer halos without reloading. It did not lower the continuous composite cost and felt worse.
+The 1× rung nearly eliminated long composites and cut normalized composite time by roughly
+two-thirds. The remaining cost is therefore **proportional to backing-store pixel area**, not an
+optional layer.
+
+ADR-0015 records the production compromise: cap the render scale at 1.5×. That retains supersampling
+while reducing DPR-2 backing stores from 4 to 2.25 pixels per CSS pixel, 43.75% fewer pixels. The 1×
+diagnostic remains the measured floor, not the shipped setting. The final candidate, with production
+snapshot capture restored, recorded 2 long composites across 16 commits versus 15 across 15 commits
+for the 2× baseline.
 
 **Caveat on magnitude.** Web Inspector's composite durations are likely generous. The attribution is
 safe — the probe measured 250–764 ms lift stalls with no inspector attached — but 245 ms should not
@@ -217,7 +235,8 @@ be quoted as the true cost of one composite.
 Also opened from this session: **#663** — on a coloring page the screen sometimes goes black
 mid-stroke and then snaps back, which is this same blend layer compositing *unblended* (dark mode
 inverts the art to white-on-black; `screen` is what hides the black plate). Possibly the visible
-face of the same compositor event.
+face of the same compositor event, but the layer-strip result shows those layers are not the
+continuous lag's source.
 
 ---
 

@@ -247,13 +247,29 @@ invalidate its own measurement. Everything else the probe needs it gets by drivi
 selector (coloring page, brush), so there is no probe-only surface in production — and the selectors
 are drift-guarded by a test, since prose cannot hold that agreement.
 
+### The final bisect rung: pixel area, not optional layers
+
+Two hand-drawn Timeline rungs closed the remaining continuous-compositing question:
+
+| build                                            | long composites / commit | composite ms / drawing second | operator read |
+| ------------------------------------------------ | -----------------------: | ----------------------------: | ------------- |
+| 2× baseline                                      |                     1.00 |                         543.7 | visible lag   |
+| 2×, no snapshot capture                          |                     0.15 |                         395.9 | —             |
+| 2×, no snapshot capture, optional layers hidden  |                     0.17 |                         464.1 | worst run     |
+| 1× diagnostic (quarter the baseline pixel count) |                     0.02 |                         171.4 | “not too bad” |
+| 1.5× production candidate                        |                     0.13 |                         422.6 | —             |
+
+Hiding both `.crayon-overlay` canvases, `.paper-view`, `.paper-sheet`, and the pointer halos did not
+reduce the continuous cost. Quartering the backing-store area nearly eliminated long composites and
+felt substantially smoother. The overlays are exonerated; compositing scales with canvas pixel area.
+
+The production result is ADR-0015's 1.5× cap: 2.25 pixels per CSS pixel instead of 4 on DPR-2+
+displays, retaining supersampling with 43.75% fewer pixels. Its physical-device verification
+recorded 2 long composites across 16 commits, versus 15 across 15 commits at 2×. The 1× rung was
+diagnostic, not a recommendation to return to CSS-pixel rendering.
+
 ## Open / unvalidated
 
-* **Composite is attributed to the commit, not yet to a layer.** After snapshot capture is removed a
-  continuous ~9.6 ms of compositing per frame remains — one frame's whole budget, roughly. Whether
-  that is the two always-mounted `.crayon-overlay` canvases (one blended, both full-size regardless
-  of the selected brush) or simply what a 4.7 Mpx canvas costs to composite on this device is the
-  open question, and the two bisect rungs for it are a layer-strip run and a quarter-resolution run.
 * **Web Inspector's composite durations are probably generous.** The 245 ms records are the basis for
   the attribution but not for the magnitude; the probe independently measured 250–764 ms lift stalls
   with no inspector attached, which is what makes the attribution safe to keep.

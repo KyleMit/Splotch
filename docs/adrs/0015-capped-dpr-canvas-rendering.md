@@ -1,9 +1,9 @@
-# ADR-0015: Capped-DPR Canvas Rendering (min(devicePixelRatio, 2))
+# ADR-0015: Capped-DPR Canvas Rendering
 
-**Status:** Active — amended by ADR-0066 (2026-07): the capped scale factor stands unchanged, but
-the memory math below derives from the replay-era "baseline + tiny command log"; under snapshot undo
-the 4× factor multiplies the paper raster + tiered snapshot stack instead. See the amendment at the
-end. **Date:** 2026-06
+**Status:** Active — the cap was amended from 2× to 1.5× after the 2026-07 real-screen iPad
+compositing bisect; amended by ADR-0066 (2026-07): the memory math below derives from the replay-era
+"baseline + tiny command log"; under snapshot undo the scale factor multiplies the paper raster +
+tiered snapshot stack instead. See the amendments at the end. **Date:** 2026-06
 
 ## Context
 
@@ -32,8 +32,9 @@ cheaply.
 
 ## Decision
 
-Render the canvas backing store at `renderScale = min(devicePixelRatio, 2)`, fixed for the session
-at `initDrawingCanvas()` (`src/lib/drawing/engine.ts`).
+Render the canvas backing store at `renderScale = min(devicePixelRatio, 1.5)`, fixed for the session
+at `initDrawingCanvas()` (`src/lib/drawing/engine.ts`). The original decision used a 2× cap; the
+physical-device amendment below lowered it after measuring that fill-rate cost on the real screen.
 
 How the factor propagates — most surfaces inherit it for free:
 
@@ -64,27 +65,23 @@ Non-obvious invariants:
 
 ## Consequences
 
-* **+** Strokes rasterize at native (or 2×) resolution — crisp on virtually every device users own.
+* **+** Strokes rasterize above CSS resolution on high-DPR screens, retaining supersampled edges.
 * **+** Exports contain real stroke detail instead of interpolated blur; the AI image upload also
   sends a sharper source.
 * **+** Rollback is trivial if on-device profiling shows regressions: `MAX_RENDER_SCALE` is a single
   constant (set it to 1).
-* **-** 4× the pixels on every surface. This *was* dominated by the undo stack (10 full-canvas
-  snapshots, ADR-0004): roughly ~44 MB on a typical phone and up to ~160 MB on a 10″ tablet, versus
-  a quarter of that at 1×. **Superseded by ADR-0033 + ADR-0034:** undo now keeps a single baseline
-  raster plus a tiny command log, and the virtual canvas is gone, so the remaining 4× cost is just
-  the live backing store + the baseline (two surfaces, not twelve).
-* **-** 4× fill rate per stroke segment. The per-stroke full-canvas copies (snapshot, virtual-canvas
-  sync) that also paid this multiplier are **both removed** — by ADR-0033 (no snapshot) and ADR-0034
-  (no virtual-canvas sync). The live fill rate was expected to be absorbed by the GPU
-  post-perf-work, but **not yet verified on a real device** — the `chrome://inspect` profiling
-  workflow in the mobile guide (`.claude/skills/mobile/android.md`) is the follow-up.
+* **-** 2.25× the pixels and fill rate of CSS-pixel rendering on DPR-2+ screens. The live canvas,
+  paper raster, and resident undo patches all pay that multiplier; ADR-0066 and ADR-0082 bound the
+  undo tier by bytes.
+* **-** Physical-device verification still measures more continuous compositing than the 1×
+  diagnostic floor. The 1.5× cap deliberately spends some frame budget to retain supersampling.
 * **-** Mid-session DPR changes render at the stale scale until reload.
 
 ## Amendment (ADR-0066, 2026-07)
 
-ADR-0066 replaced command-replay undo with snapshot undo, which changes what the 4× pixel factor
-multiplies — the cap itself, the propagation rules, and the per-session invariants are untouched:
+ADR-0066 replaced command-replay undo with snapshot undo. At the time, that changed what the
+original 2× cap's 4× pixel factor multiplied; the later physical-device amendment changes the cap
+without changing these propagation rules or per-session invariants:
 
 * The Decision's "undo baseline + command-log replay" surface is now the **paper raster + snapshot
   stack**: the paper's square side scales with `renderScale` the same way, snapshots inherit it by
@@ -99,7 +96,38 @@ multiplies — the cap itself, the propagation rules, and the per-session invari
   — up to ~85 MiB of patches on the 2732² raster rather than two ~30 MB snapshots. Measured on
   device at 28–60 MiB, still inside the gate. The encode that the old count bought was costing a
   WebKit commit its entire frame budget, which is what forced the change.
-* The fill-rate consequence's "per-stroke full-canvas copies are **both removed**" is
-  half-reinstated: each commit again pays one full-canvas `drawImage` at pointerup (the snapshot
-  copy) — deliberate, once per commit rather than per gesture start, and it is ADR-0066's open
-  on-device perf gate.
+* Each commit again pays a paper-patch `drawImage` readback at pointerup — deliberate, once per
+  commit rather than per gesture start. The physical-device amendment below measures its effect
+  separately from continuous compositing.
+
+## Amendment (real-screen iPad compositing bisect, 2026-07)
+
+The 2× cap does not survive real-screen verification. On an iPad13,8 running iPadOS 26.5, hand-drawn
+Safari Web Inspector Timeline recordings attributed the visible lag to compositing after the
+engine's marked work returned:
+
+| build                                           | long composites / commit | composite ms / drawing second |
+| ----------------------------------------------- | -----------------------: | ----------------------------: |
+| 2× baseline                                     |                     1.00 |                         543.7 |
+| 2×, no snapshot capture                         |                     0.15 |                         395.9 |
+| 2×, no snapshot capture, optional layers hidden |                     0.17 |                         464.1 |
+| 1× diagnostic                                   |                     0.02 |                         171.4 |
+| 1.5× production candidate                       |                     0.13 |                         422.6 |
+
+Removing the always-mounted crayon, line-art, paper, and pointer-halo layers did not lower the
+continuous cost and felt worse to the operator. Quartering the backing-store area nearly eliminated
+long composites and felt substantially smoother. The cost is therefore proportional to canvas pixel
+area, not to those optional compositing layers.
+
+Set `MAX_RENDER_SCALE = 1.5`, so the shipped backing stores use 2.25 pixels per CSS pixel instead of
+4 on DPR-2+ displays — **43.75% fewer pixels** while retaining supersampling. The 1× rung remains a
+diagnostic floor rather than the product setting because it gives up the sharpness and export-detail
+benefit that motivated this ADR. Exports keep their independent `exportScale`, so saved images still
+compose at `max(devicePixelRatio, 2)`.
+
+The final 1.5× production build was verified on the same device with snapshot capture enabled. It
+recorded 2 long composites across 16 commits, versus 15 across 15 commits for the 2× baseline.
+
+This amendment closes the original decision's unverified fill-rate consequence with physical-device
+evidence. It also reduces the area of every paper and snapshot patch readback by the same ratio,
+helping the separate per-commit cost attributed to undo snapshot capture.

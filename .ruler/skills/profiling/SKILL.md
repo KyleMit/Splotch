@@ -161,10 +161,11 @@ The drawing path is already well-optimized; treat these as the baseline:
   `engine.draw` well under one frame and no long tasks; 0 forced reflows.
 * **Deferred — real user tradeoffs, NOT low-risk oversights:**
   * **Capped-DPR canvas compositing (ADR-0015).** The dominant cost on-device is raster/paint of the
-    4×-pixel canvas (~4970 ms/session on the Android emulator vs ~210 ms throttled-desktop).
-    Changing it (`MAX_RENDER_SCALE`) alters rendered crispness — needs a deliberate decision, not a
-    drive-by edit. Undo memory is tiered (ADR-0066): the paper + 2 live snapshot rasters, with
-    deeper history as encoded blobs — single-digit MB per entry, not full rasters.
+    backing store. A hand-drawn physical-iPad Timeline bisect found 2× rendering visibly lagged,
+    while a 1× diagnostic nearly eliminated long composites; hiding every optional layer at 2× did
+    not help. Production uses a measured 1.5× compromise (`MAX_RENDER_SCALE`): 43.75% fewer pixels
+    than 2× while retaining supersampling. Undo memory is tiered (ADR-0066): the paper + resident
+    patch budget, with deeper history as encoded blobs.
   * `engine.scanEmpty` ~14 ms on-device per erase-stroke-end — low impact (once per stroke), noted
     for the future.
 
