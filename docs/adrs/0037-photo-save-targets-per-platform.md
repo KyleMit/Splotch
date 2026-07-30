@@ -28,13 +28,13 @@ facts forced a decision worth recording:
 
 Keep a single save entry point and branch by target. The full matrix:
 
-| Target                                                                                    | Path                                                                             | Result                                                       |
-| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| **Native — Android**                                                                      | `@capacitor-community/media` `savePhoto` into a `"Splotch"` album (created once) | Drawing appears in the gallery's Splotch album               |
-| **Native — iOS**                                                                          | `@capacitor-community/media` `savePhoto` (add-only permission)                   | Drawing appears in the camera roll                           |
-| **Web — desktop Chromium** (Chrome/Edge, tab *or* installed PWA) **with a folder chosen** | `saveBlobToFolder` → File System Access writable into the parent-chosen folder   | PNG written silently into that folder, **no download shelf** |
-| **Web — desktop Chromium, no folder chosen**                                              | `triggerDownload` (`<a download>`)                                               | Normal browser download                                      |
-| **Web — Firefox / Safari / all mobile browsers**                                          | `triggerDownload`                                                                | Normal browser download (the folder row is hidden)           |
+| Target                                                                                    | Path                                                                             | Result                                                                      |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **Native — Android**                                                                      | `@capacitor-community/media` `savePhoto` into a `"Splotch"` album (created once) | Drawing appears in the gallery's Splotch album                              |
+| **Native — iOS**                                                                          | `@capacitor-community/media` `savePhoto` (add-only permission)                   | Drawing appears in the camera roll                                          |
+| **Web — desktop Chromium** (Chrome/Edge, tab *or* installed PWA) **with a folder chosen** | `saveBlobToFolder` → File System Access writable into the parent-chosen folder   | PNG, WebP, or JPEG written silently into that folder, **no download shelf** |
+| **Web — desktop Chromium, no folder chosen**                                              | `triggerDownload` (`<a download>`)                                               | Normal browser download                                                     |
+| **Web — Firefox / Safari / all mobile browsers**                                          | `triggerDownload`                                                                | Normal browser download (the folder row is hidden)                          |
 
 `isNative()` selects the native branch (unchanged). On the web, `saveImageBlob` always tries
 `saveBlobToFolder` first and falls back to `triggerDownload` whenever it returns `false` — which is

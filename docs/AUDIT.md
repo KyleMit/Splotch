@@ -23,35 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Correctness] Download filename hardcodes `.png` while the AI result can be WebP or JPEG
-
-**File(s):** `web/src/lib/components/AiImageResult.svelte` (`handleDownload`, lines 62–69, filename
-at line 64) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-triggerDownload(ui.aiResultUrl, `${AI_IMAGE_BASENAME}-${timestamp()}.png`);
-```
-
-The result blob's MIME type is whatever `/api/generate-image` relayed from the provider —
-`geminiSafety.ts` (line 39) passes through `imagePart.inlineData.mimeType`, and `gemini.test.ts`
-(lines 35–41) explicitly exercises an `image/webp` result. A WebP or JPEG payload downloaded as
-`splotch-ai-….png` opens fine in most viewers (they sniff), but breaks tools that trust extensions
-and mislabels the child's keepsake. The blob's type is known at commit time (`aiImage.ts` line 195
-has the blob), but only the object URL string reaches `ui.aiResultUrl`, so the component has no way
-to know the real type today.
-
-#### Proposed solution
-
-Smallest fix: track the result MIME alongside the URL (e.g. `ui.aiResultType`) set in
-`finishAiGeneration`, and derive the extension via a tiny map (`image/png → png`,
-`image/webp → webp`, `image/jpeg → jpg`, default `png`). Note the sibling gallery path
-(`screenshot.ts` line 86, another section) has the same hardcoded `.png` — if this is fixed, fix
-both through one shared `extensionForImageType()` helper so the two agree.
-
 ### [Readability] `aiKey.svelte.ts` carries the `.svelte.ts` suffix but contains no runes
 
 **File(s):** `web/src/lib/state/aiKey.svelte.ts` (whole file) @ 9ae62ff1

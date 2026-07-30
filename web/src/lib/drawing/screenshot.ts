@@ -29,7 +29,7 @@ async function findAlbumId(Media: MediaPlugin, name: string): Promise<string | u
   return albums.find((a) => a.name === name)?.identifier;
 }
 
-// Native: drop the PNG straight into the device photo library. Android requires
+// Native: drop the image blob straight into the device photo library. Android requires
 // an album identifier, so we tuck drawings into a "Splotch" album (creating it
 // once); iOS saves to the camera roll with add-only permission.
 async function saveToGallery(blob: Blob, baseName = DRAWING_BASENAME) {
@@ -52,7 +52,7 @@ async function saveToGallery(blob: Blob, baseName = DRAWING_BASENAME) {
   }
 }
 
-// Persist a PNG blob: native drops it into the photo gallery; the web writes it
+// Persist a PNG, WebP, or JPEG blob: native drops it into the photo gallery; the web writes it
 // silently into the parent-chosen folder when one is set (File System Access
 // API, desktop Chromium), otherwise triggers a file download. The folder is
 // optional and decoupled from saving — no folder just means a download.
