@@ -148,3 +148,79 @@ test('rotating the viewport swaps the coloring overlay to the matching art', asy
   await page.setViewportSize({ width: 900, height: 600 });
   await expect(overlay).toHaveAttribute('src', /-wide\.outline\.webp$/);
 });
+
+// The line-art overlay's mix-blend-mode composites against a STALE canvas while a
+// stroke is live, so DrawingCanvas damages the blend layer with a translateZ
+// epsilon to force it to re-evaluate (issue #307). This pins the CONTRACT that
+// damage runs on: at least once while drawing (or #307 is back), and at most once
+// per animation frame (or the compositor is asked for work no frame can show).
+//
+// It drives pointermoves from inside the page rather than through `draw()`: a CDP
+// mouse.move costs ~10 ms round-trip, so 40 of them land in 41 frames and a
+// per-event nudge is indistinguishable from a per-frame one. Real input is not so
+// polite — `perf:ipad:frames` measured 1.9-4.2 pointermoves per presentable frame
+// on an iPad Pro, because Safari gives web content a 60 Hz rAF beat while the
+// digitizer runs at 120 Hz+. Each move is dispatched in its OWN task, since a
+// single task would let Svelte batch the writes and hide the difference either way.
+//
+// `nudgeBlendLayer` is bound straight to the canvas and takes any contact move, so
+// no pointerdown or pointer capture is involved. The nudge is gated on an overlay
+// being loaded, hence the coloring page first.
+test('the blend layer is damaged once per frame while drawing, not once per input', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await applyFarmPage(page);
+
+  const { transforms, frames, moves } = await page.evaluate(async () => {
+    const wrapper = document.querySelector('.paper-view');
+    const canvas = document.querySelector('#drawingCanvas');
+    if (!wrapper || !canvas) throw new Error('no .paper-view / #drawingCanvas to drive');
+
+    let transforms = 0;
+    let frames = 0;
+    let running = true;
+    const observer = new MutationObserver((records) => {
+      transforms += records.length;
+    });
+    observer.observe(wrapper, { attributes: true, attributeFilter: ['style'] });
+    const tick = () => {
+      frames++;
+      if (running) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+
+    const box = canvas.getBoundingClientRect();
+    let moves = 0;
+    const started = performance.now();
+    // ~2 ms apart: several separate tasks inside every 16.7 ms frame.
+    while (performance.now() - started < 400) {
+      canvas.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          pointerId: 1,
+          pointerType: 'touch',
+          isPrimary: true,
+          buttons: 1,
+          clientX: box.left + 60 + (moves % 50),
+          clientY: box.top + 80 + (moves % 30),
+        })
+      );
+      moves++;
+      await new Promise((resolve) => setTimeout(resolve, 2));
+    }
+
+    running = false;
+    observer.disconnect();
+    return { transforms, frames, moves };
+  });
+
+  // The premise of the assertion below: the driving really did outrun the frames.
+  expect(moves).toBeGreaterThan(frames);
+  // At least one damage, or the blend goes stale mid-stroke again (#307).
+  expect(transforms).toBeGreaterThan(0);
+  // Never more than the frames that could have shown them. Pre-coalescing this
+  // was one per move, i.e. `moves` of them.
+  expect(transforms).toBeLessThanOrEqual(frames);
+});
