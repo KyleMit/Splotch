@@ -1,0 +1,72 @@
+# Guards the one invariant docs/adrs/ cannot repair after the fact: an ADR number
+# identifies exactly one record, permanently. Two records sharing a number makes
+# every "ADR-NNNN" reference ambiguous, including references already written into
+# merged records and commit messages that cannot be rewritten.
+#
+# Deliberately NOT path-filtered, so it reports on every pull request and is safe
+# to mark required. A workflow skipped by a path filter leaves its check Pending
+# forever and blocks any pull request that does not match, which is why GitHub
+# advises against path filtering a required workflow. The check itself is
+# unconditional, so the job always runs and always reports.
+#
+# No setup-node step: scripts/check-adr-numbering.mjs imports only node: builtins
+# and its own siblings, and the runner ships Node, so installing dependencies
+# would cost ~15s to change nothing (setup-node measured at 14-20s in the Quality
+# job, against well under a second for the check itself). node is invoked directly
+# rather than through npm run for the same reason. The constraint that buys: this
+# script and its lib may use only APIs present in the runner image's default Node,
+# which is not the >=22.13 that package.json asks of contributors — anything
+# newer means adding setup-node back and paying for it.
+name: ADR Numbering
+
+on:
+  pull_request:
+  merge_group:
+  workflow_dispatch: # allow ad-hoc runs (e.g. auditing the numbering on main)
+
+permissions:
+  contents: read
+
+concurrency:
+  group: adr-numbering-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  numbering:
+    name: Every ADR number identifies one record
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASE_REF: ${{ github.base_ref || github.event.repository.default_branch }}
+    steps:
+      # Sparse rather than for speed — the job runs alongside a ~3.5min Tests job,
+      # so the few seconds saved reach nobody. It states what this check depends
+      # on, so a new dependency fails loudly here instead of working by accident:
+      # docs/adrs for the records themselves, scripts for the checker.
+      #
+      # Paths only, no blob filter. The check needs real content on both sides —
+      # it reads every record's first line, and -M rename detection compares
+      # similarity across base and head — so filtering blobs would trade written
+      # bytes for lazy per-object fetches.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            docs/adrs
+            scripts
+
+      # The base branch as it stands now, not as this run's merge commit
+      # remembers it: GitHub stops recomputing the merge ref once a pull request
+      # conflicts, and a workflow that checked out the head ref would see no
+      # base at all.
+      - name: Fetch the base branch
+        run: |
+          git fetch --depth=1 origin \
+            "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+
+      # Unconditional. Deciding whether to run costs more than running: the check
+      # is a directory read, while detecting whether docs/adrs/ changed needs a
+      # git diff. Skipping on "no ADR records changed" would also report success
+      # against a tree that already holds duplicates, which is the exact state a
+      # workflow_dispatch audit exists to find.
+      - name: Check ADR numbering
+        run: node scripts/check-adr-numbering.mjs "--base=origin/${BASE_REF}"
