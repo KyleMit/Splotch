@@ -10,7 +10,9 @@ gates cannot see.
 
 **Headline:** the lag is **render starvation**. Input keeps arriving and being handled on time while
 frame production stops for hundreds of milliseconds, with almost no marked engine work inside the
-stall. It reproduces **only under a real hand** — no synthetic input path reproduces it at all.
+stall. It reproduces **only under a real hand** — no synthetic input path reproduces it at all. The
+starvation is **compositing at the stroke commit**, most of it the undo snapshot's readback off the
+paper canvas — see §7, which supersedes this session's original candidate list.
 
 ---
 
@@ -149,26 +151,60 @@ Two things fall out:
 * A hand-drawn phase can only fairly be compared **to itself earlier** (the per-bucket table), or to
   a repeated phase in a paired A/B/A/B plan.
 
-## 7. What is left, and what it needs
+## 7. Attribution — compositing at the stroke commit
 
-Attribution to a named subsystem is still open, and it is blocked on real touch input rather than on
-tooling. The remaining candidates are the parts of the input path a `dispatchEvent` cannot enter:
+> **Updated 2026-07-30.** This section previously said attribution was open and ranked **iPadOS
+> Scribble** first among the candidates. That is retired: the probe now records pointer kind and the
+> hand runs come back `touch`, not `pen`, and Scribble is Pencil-only. The candidate list it
+> replaced (gesture/hit-test machinery, render-server prioritization, Scribble) is preserved in the
+> profiling skill notes, since the reasoning that produced it was sound and is worth not
+> re-deriving.
 
-1. **Gesture/hit-test machinery on real touch** — WebKit deciding scrollability, tap candidates and
-   touch-region work per contact, over a 4.7 Mpx canvas page. Applies to a finger as much as a
-   stylus.
-2. **iOS's render server prioritising differently during touch.**
-3. **iPadOS Scribble / handwriting recognition** — *only if the lag reproduces with a Pencil.*
-   `scribbleGuard` and ADR-0038 exist because a stylus tap can arm it, and recognition would be
-   main-thread work *inside the browser*, invisible to every instrument here. It fits the shape of
-   the observations, but it is **Pencil-only**.
+A hand-drawn Web Inspector Timeline export on `/` — 9.3 s, ending in the burst of short strokes that
+provokes the worst of it:
 
-> **On input kind, which decides that ordering.** Every phase of the hand capture sustained
-> **115-134 moves per second** — a steady ~120 Hz, consistent with a finger on a 120 Hz digitizer,
-> and the reporter described single-finger drawing. That capture predates the probe recording
-> pointer type, so this is inference rather than measurement; the first thing worth doing is one
-> hand-drawn run that says `kind: touch` or `kind: pen` outright. If it is a finger, Scribble cannot
-> be the cause.
+| eventType          |   n |       total |          max |
+| ------------------ | --: | ----------: | -----------: |
+| **composite**      | 293 | **5047 ms** | **255.9 ms** |
+| recalculate-styles | 572 |      195 ms |       1.7 ms |
+| layout             |  52 |        8 ms |       0.5 ms |
+| paint              | 251 |    **3 ms** |       0.5 ms |
+
+**15 stroke commits, 15 long composites**, each starting 2–192 ms after its `engine.commit` mark
+closed, while every `engine.*` operation stayed under 1.2 ms. Painting the stroke is free;
+presenting it is not. This is the mechanism behind §3's stalls and the reason the ADR-0066 gates
+stay green throughout — the cost lands in the compositor *after* the marked work returns, where no
+`engine.*` measure can reach it.
+
+**Bisecting the per-commit cost**, hand-drawn Timeline against each build:
+
+| build                    |                                                long composites / commit |
+| ------------------------ | ----------------------------------------------------------------------: |
+| baseline                 |                                                                     1.0 |
+| pooled patch canvases    |                                    0.9 — **allocation is not the cost** |
+| no undo-snapshot capture | **0.2** — the readback out of the GPU-backed paper is ~80% of the stall |
+
+So the dominant per-commit cost is `capturePatchesUnder` reading a rectangle back off the paper
+canvas ([`undoHistory.ts`](../../../web/src/lib/drawing/undoHistory.ts)) — a GPU→CPU readback that
+stalls the compositor. Reusing the destination canvases does not help, because the allocation was
+never the expense.
+
+**What remains after that** is a separate, continuous cost: 3608 ms of compositing across 9.1 s,
+~375 records averaging 9.6 ms — about one per frame, consuming 60% of a 16.7 ms budget before the
+app runs at all. Whether that is the two always-mounted `.crayon-overlay` canvases (one carrying
+`mix-blend-mode: darken`, both full-size regardless of the selected brush) or the irreducible cost
+of compositing a 4.7 Mpx canvas on this device is open, and it is what issue #659's remaining work
+measures.
+
+**Caveat on magnitude.** Web Inspector's composite durations are likely generous. The attribution is
+safe — the probe measured 250–764 ms lift stalls with no inspector attached — but 245 ms should not
+be quoted as the true cost of one composite.
+
+> **On input kind.** Every phase of the hand capture sustained **115-134 moves per second** — a
+> steady ~120 Hz, consistent with a finger on a 120 Hz digitizer, and the reporter described
+> single-finger drawing. That capture predates the probe recording pointer type, so it was inference
+> — since confirmed by a later run that reports `kind: touch` outright, which is what retired
+> Scribble as a candidate.
 >
 > The same read-back confirms that **~120 moves/second was sustained *through* the stalls** — real
 > input never faltered while frames stopped.

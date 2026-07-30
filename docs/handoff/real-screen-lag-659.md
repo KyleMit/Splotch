@@ -30,10 +30,15 @@ from "Restoring the rig" below, then have Kyle record. His subjective read has b
    );
    ```
 
-Compare each against the baseline with
-`node perf-profiles/compare-timelines.mjs perf-profiles/recordings/192.168.40.75-recording-2.json <new>`.
+Compare each against the baseline:
+
+```sh
+npm run perf:timeline:compare -- perf-profiles/recordings/192.168.40.75-recording-2.json <new>.json
+```
+
 The metric that decides it is **long composites per commit**, not totals — totals move with how much
-Kyle happened to draw.
+Kyle happened to draw. (Rung 1's CSS is also `npm run perf:ipad:strip-layers`, if the iPad is on the
+cable; the console paste above needs no USB.)
 
 **What each outcome means** (committed to in advance, so the next session can't rationalise):
 
@@ -171,14 +176,15 @@ foregrounded — a suspended tab answers nothing and the failure message says so
 
 ## Reread first
 
-* `perf-profiles/compare-timelines.mjs` — the comparison tool (gitignored; recreate from the handoff
-  history if lost)
+* `.ruler/skill-notes/profiling.md.template` — **the dead-ends ledger.** Every wrong turn this
+  investigation took, why each looked right, and what retired it (including Scribble, which was the
+  prime suspect and is not the cause). Read before re-deriving a hypothesis.
+* `scrapbook/perf/2026-07-29-ipad-real-screen/findings.md` §7 — the published attribution, with the
+  Timeline table and the bisect ladder
+* `scripts/perf/timeline-compare.mjs` — the A/B instrument (`npm run perf:timeline:compare`)
 * `web/src/lib/drawing/undoHistory.ts:407` `capturePatchesUnder` — the commit-path copy
 * `web/src/lib/components/DrawingCanvas.svelte:291` — the always-present crayon overlays
-* `.ruler/skills/profiling/ipad-device-profiling.md` — the runbook, incl. the Timeline recipe and
-  the 60 Hz ceiling
-* `.ruler/skill-notes/profiling.md.template` — design history; the metric definitions that were
-  wrong and why
-* `scrapbook/perf/2026-07-29-ipad-real-screen/findings.md` — the published baseline
+* `.ruler/skills/profiling/ipad-device-profiling.md` — the runbook: the Timeline recipe, the 60 Hz
+  ceiling, and the multi-build A/B rig (worktree per branch, one port each, verify by behavior)
 * ADR-0083 (the instrument), ADR-0066 (+ its frame-budget amendment), ADR-0069/0074 (patch
   snapshots)
