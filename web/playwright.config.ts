@@ -1,5 +1,6 @@
 // cSpell:ignore SLOWMO
 import { existsSync, readdirSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
 import { chromium, defineConfig, devices, webkit } from '@playwright/test';
 import {
   allowedTokensList,
@@ -62,6 +63,38 @@ function webkitAvailable(): boolean {
   return false;
 }
 
+// A Playwright worker is a whole Chromium (browser, renderer, GPU, network and
+// utility processes) plus a Node runner, and demands ~2 cores to run
+// unthrottled: per-test latency inflation tracked w/2 past saturation on two
+// unrelated 4-core machines — 2.0–2.5 locally, 2.2–2.8 on CI (ADR-0078 §2, full
+// study in scrapbook/e2e-tuning/). That ratio is what generalises, so the count
+// is derived from it rather than hardcoded, and a percentage is the wrong shape
+// for the knob entirely: "one worker per core" oversubscribes on any machine.
+const CORES_PER_WORKER = 2;
+
+// availableParallelism() rather than cpus().length — it respects cgroup CPU
+// quotas, so it does not over-report inside a container.
+const cores = availableParallelism();
+
+// The CI/local split encodes flake COST, not hardware, which is why it survives
+// the derivation:
+//   • Locally flakes are expensive (retries: 0 — a re-run plus the attention to
+//     notice and triage it), so sit at saturation: cores / CORES_PER_WORKER.
+//   • On CI retries absorb them cheaply and the measured flake rate barely moves
+//     between 1 and 6 workers, so wall clock decides and oversubscribing pays:
+//     2→4 workers bought 9.4s there despite being past saturation.
+// At 4 cores this reproduces both measured optima exactly (local 2, CI 4).
+//
+// Two limits to respect before trusting it on new hardware. Only 4 cores was
+// ever measured, so 8 and 16 are extrapolation; and availableParallelism()
+// counts LOGICAL CPUs while the measurement box had one thread per core, so SMT
+// is untested and is where the formula is most likely to be wrong — on 8
+// logical / 4 physical it says 4 where physical capacity argues 2. Override with
+// `--workers=N`; re-measure with .github/workflows/worker-sweep.yml.
+const workers = process.env.CI
+  ? Math.max(2, cores)
+  : Math.max(1, Math.floor(cores / CORES_PER_WORKER));
+
 const slowMo = Number(process.env.SLOWMO) || 0;
 const ciRetries = 2;
 const ciAllowedTokens = allowedTokensList(
@@ -70,19 +103,7 @@ const ciAllowedTokens = allowedTokensList(
 
 export default defineConfig({
   ...commonPlaywrightConfig,
-  // Measured per environment, not assumed (ADR-0078; full study in
-  // scrapbook/e2e-tuning/). A percentage is the wrong shape for this knob: a
-  // Playwright worker is a whole Chromium plus a Node runner and costs ~2 cores,
-  // so "one worker per core" oversubscribes on any machine.
-  //
-  // CI retries absorb flakes cheaply and the measured flake rate barely moves
-  // between 1 and 6 workers there, so wall clock decides: 4 was fastest.
-  // Locally there are no retries, so a flake costs a re-run plus triage — 2
-  // workers cut the red-run rate for ~10.2s of wall clock (92.3s vs 82.1s),
-  // which the break-even says is worth it after ~15s of attention.
-  //
-  // Re-measure on new hardware; the shape transfers, the optimum does not.
-  workers: process.env.CI ? 4 : 2,
+  workers,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? ciRetries : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
