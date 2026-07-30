@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { SWEEP_SERVER_ENV, summarizeReport } from '../e2e-sweep.mjs';
+import { SWEEP_SERVER_ENV, summarizeReport, tallyFailures } from '../e2e-sweep.mjs';
 import { commonWebServer } from '../../web/playwright.shared.ts';
 
 // scripts/e2e-sweep.mjs is the harness behind ADR-0078's worker count, driven
@@ -104,5 +104,28 @@ describe('summarizeReport', () => {
 
   it('reports an unreadable report as itself', () => {
     expect(summarizeReport('not json', { workers: 4, rep: 1, jobSeconds: 1 }).error).toBeTruthy();
+  });
+});
+
+describe('tallyFailures', () => {
+  const rep = (...names) => ({ failures: names.map((n) => ({ n })) });
+
+  it('ranks tests by how many reps they failed in', () => {
+    expect(
+      tallyFailures([rep('slow save'), rep('slow save', 'reveal'), rep('slow save'), rep()])
+    ).toEqual([
+      ['slow save', 3],
+      ['reveal', 1],
+    ]);
+  });
+
+  // Two failures of one test inside one rep is one flaky test, not two — the
+  // distinction is the whole reason to count reps rather than executions.
+  it('counts a test once per rep however often it failed in it', () => {
+    expect(tallyFailures([rep('burst', 'burst')])).toEqual([['burst', 1]]);
+  });
+
+  it('has nothing to say about a clean sweep', () => {
+    expect(tallyFailures([rep(), rep()])).toEqual([]);
   });
 });

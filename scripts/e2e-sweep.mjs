@@ -138,6 +138,23 @@ async function runOneRep({ workers, rep, outDir }) {
   }
 }
 
+/**
+ * How many reps each failing test accounted for, worst first. A sweep's answer is
+ * rarely "the suite is N% flaky" — it is usually one or two specs carrying nearly
+ * all of it, and that distinction is what decides whether to fix a spec or change
+ * the retry count. Reported per test rather than per execution, so a spec that
+ * fails twice in one rep can't look like two flaky specs.
+ */
+export function tallyFailures(summaries) {
+  const reps = new Map();
+  for (const summary of summaries) {
+    for (const name of new Set((summary.failures ?? []).map((f) => f.n))) {
+      reps.set(name, (reps.get(name) ?? 0) + 1);
+    }
+  }
+  return [...reps].sort((a, b) => b[1] - a[1]);
+}
+
 export async function runSweep({ workers, reps, outDir }) {
   mkdirSync(outDir, { recursive: true });
   const summaries = [];
@@ -148,7 +165,12 @@ export async function runSweep({ workers, reps, outDir }) {
   }
   const failed = summaries.reduce((total, s) => total + (s.failed ?? 0), 0);
   const red = summaries.filter((s) => (s.failed ?? 1) > 0).length;
-  console.log(`SWEEPTOTAL w=${workers} reps=${reps} redRuns=${red} failures=${failed}`);
+  console.log(
+    `SWEEPTOTAL w=${workers} reps=${reps} redRuns=${red} failures=${failed} ` +
+      JSON.stringify(
+        Object.fromEntries(tallyFailures(summaries).map(([n, c]) => [n, `${c}/${reps}`]))
+      )
+  );
   return summaries;
 }
 
