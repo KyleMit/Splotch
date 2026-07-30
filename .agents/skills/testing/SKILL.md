@@ -123,13 +123,14 @@ Android smoke test is for.
 
 ### Writing flake-resistant specs
 
-The full suite runs parallel workers, derived from the machine: **`cores / 2` locally and `cores` on
-CI**, because a worker costs ~2 cores (`playwright.config.ts`, ADR-0078 — on the 4-core boxes that
-were measured, 2 and 4). So every spec shares the CPU with the others, and a test that passes alone
-but fails in the full run is almost always a timing race under that contention, not a real
-regression. Locally `retries: 0` surfaces it immediately; CI retries, so a flake can still ship
-green — which is why a retried pass is annotated (`playwright-flaky-reporter.ts`) rather than left
-silent in the log of a job nobody opens. Write specs that can't race in the first place:
+The full suite runs parallel workers, derived from the machine rather than hardcoded: a worker costs
+~2 cores, so capacity is **`cores / 2`** — local runs sit there and CI goes **1.5×** past it
+(`playwright.config.ts`, ADR-0078; on the 4-core boxes measured, 2 and 3). So every spec shares the
+CPU with the others, and a test that passes alone but fails in the full run is almost always a
+timing race under that contention, not a real regression. Locally `retries: 0` surfaces it
+immediately; CI retries, so a flake can still ship green — which is why a retried pass is annotated
+(`playwright-flaky-reporter.ts`) rather than left silent in the log of a job nobody opens. Write
+specs that can't race in the first place:
 
 * **Never assert on a single interaction against a lazily-wired control.** Overlays that idle-mount
   (the Parent Center, ADR-0049) can drop the first click before their handler is attached, so a bare

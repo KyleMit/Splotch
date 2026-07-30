@@ -55,31 +55,43 @@ run`:
 ### 1b. The count is derived from the ratio — the literals were never the finding
 
 ```ts
-const CORES_PER_WORKER = 2;
-const cores = availableParallelism();
-workers: process.env.CI ? Math.max(2, cores) : Math.max(1, Math.floor(cores / CORES_PER_WORKER));
+const CORES_PER_WORKER = 2; // §2
+const CI_OVERSUBSCRIPTION = 1.5; // §4
+const saturation = availableParallelism() / CORES_PER_WORKER;
+workers: process.env.CI
+  ? Math.max(2, Math.floor(saturation * CI_OVERSUBSCRIPTION))
+  : Math.max(1, Math.floor(saturation));
 ```
 
 `workers: process.env.CI ? 4 : 2` is right for the 4-core boxes measured above and wrong everywhere
 else: `2` on a 10-core laptop leaves most of the machine idle, a regression against the `'100%'` it
 replaced for anyone on bigger hardware. §2's **ratio** is the part that reproduced across two
-unrelated machines, so that is what the count derives from.
+unrelated machines, so that is what the count derives from. `availableParallelism()` rather than
+`cpus().length`, because it respects cgroup CPU quotas and so does not over-report inside a
+container. `--workers=N` still overrides.
 
-The CI/local split survives derivation because it encodes flake *cost*, not hardware — flakes
-expensive (`retries: 0`) → sit at saturation, `cores / 2`; flakes cheap (retries absorb them) →
-oversubscribe for wall clock, `~cores`. At 4 cores this reproduces both measured optima exactly.
-`availableParallelism()` rather than `cpus().length`, because it respects cgroup CPU quotas and so
-does not over-report inside a container. `--workers=N` still overrides.
+The CI/local split survives derivation because it encodes flake *cost*, not hardware: locally a
+flake costs a re-run plus triage, so local sits *at* capacity, while retries make a flake cheap
+enough on CI that some oversubscription buys wall clock. **How much** is the coefficient §4 measures
+— 1.5× capacity, not the ~2× (`≈ cores`) this record first claimed. At 4 cores that is 3 workers on
+CI, where 4 went 6/15 runs red for 2.9s of wall clock.
 
-Two edges it cannot claim, recorded rather than smoothed over:
+Three edges it cannot claim, recorded rather than smoothed over:
 
 * **SMT is untested, and is the likeliest place the formula is wrong.** `availableParallelism()`
   counts *logical* CPUs, and both measurement boxes ran one thread per core — so `cores / 2` and
   "physical cores" were indistinguishable there. On an 8-logical / 4-physical laptop the formula
-  says 4 where physical capacity argues 2. Settling it needs a real SMT machine, which a cloud
+  says 6 where physical capacity argues 2. Settling it needs a real SMT machine, which a cloud
   container is not.
-* **Only one core count was ever measured.** 8 and 16 cores are extrapolation from a ratio, not
-  measurements.
+* **Only one core count was ever measured**, so the coefficients are a ratio fitted at a single
+  point. Worse, 4 cores cannot distinguish the *shape*: `cores - 1`, `floor(cores / 2) + 1` and
+  `1.5 × cores / 2` all give 3 there and diverge hard at 8 (7, 5, 6). The ratio form is chosen
+  because the failure mode is contention-driven deadline exhaustion, whose severity tracks the
+  oversubscription *ratio* (§3) rather than any absolute worker count — but that is mechanism, not
+  measurement.
+* **The floor of 2 on CI contradicts the coefficient above it.** On a 2-core runner it is twice
+  capacity, the ratio §4 measures as the bad one. It stays because one worker roughly doubles CI's
+  wall clock and this repo's runners are 4-core — a known-wrong branch on hardware nobody here uses.
 
 ### 2. Each worker costs ~2 cores, which is why `'100%'` oversubscribed
 

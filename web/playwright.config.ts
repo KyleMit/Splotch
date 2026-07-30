@@ -76,24 +76,36 @@ const CORES_PER_WORKER = 2;
 // quotas, so it does not over-report inside a container.
 const cores = availableParallelism();
 
-// The CI/local split encodes flake COST, not hardware, which is why it survives
-// the derivation:
-//   • Locally flakes are expensive (retries: 0 — a re-run plus the attention to
-//     notice and triage it), so sit at saturation: cores / CORES_PER_WORKER.
-//   • On CI retries absorb them cheaply and the measured flake rate barely moves
-//     between 1 and 6 workers, so wall clock decides and oversubscribing pays:
-//     2→4 workers bought 9.4s there despite being past saturation.
-// At 4 cores this reproduces both measured optima exactly (local 2, CI 4).
+// Capacity in workers. Local runs sit here: with retries off a flake costs a
+// re-run plus the attention to triage it, which no wall-clock saving covers.
+const saturation = cores / CORES_PER_WORKER;
+
+// How far past capacity CI goes. Retries make a flake cheap there, so *some*
+// oversubscription buys wall clock — but only some, and this is the coefficient
+// the 2026-07-30 re-measure exists to pin down (ADR-0078 §4). At 4 cores, i.e.
+// capacity 2: three workers went 0/15 runs red and four went 6/15, for 2.9s of
+// wall clock. One-and-a-half times capacity pays; twice does not.
 //
-// Two limits to respect before trusting it on new hardware. Only 4 cores was
-// ever measured, so 8 and 16 are extrapolation; and availableParallelism()
-// counts LOGICAL CPUs while the measurement box had one thread per core, so SMT
-// is untested and is where the formula is most likely to be wrong — on 8
-// logical / 4 physical it says 4 where physical capacity argues 2. Override with
-// `--workers=N`; re-measure with .github/workflows/worker-sweep.yml.
+// ADR-0078 originally read this as ~cores, on a sweep whose own shared-server
+// protocol was generating most of the failures it counted — which flattened the
+// curve and hid the difference between three workers and four.
+const CI_OVERSUBSCRIPTION = 1.5;
+
+// Three caveats, none of them settled by the hardware this ran on:
+//   • Only 4 cores was ever measured, so the coefficients are a ratio fitted at
+//     one point. 8 and 16 cores are extrapolation.
+//   • availableParallelism() counts LOGICAL CPUs, and both measurement boxes ran
+//     one thread per core — so "cores / 2" and "physical cores" were the same
+//     number there. On 8 logical / 4 physical this says 6 where physical capacity
+//     argues 2, which is the likeliest place it is wrong.
+//   • The floor of 2 on CI is itself unmeasured, and on a 2-core runner it *is*
+//     twice capacity — the ratio measured above as the bad one. It stays because
+//     one worker would roughly double CI's wall clock, and this repo's runners
+//     are 4-core.
+// Override with `--workers=N`; re-measure with .github/workflows/worker-sweep.yml.
 const workers = process.env.CI
-  ? Math.max(2, cores)
-  : Math.max(1, Math.floor(cores / CORES_PER_WORKER));
+  ? Math.max(2, Math.floor(saturation * CI_OVERSUBSCRIPTION))
+  : Math.max(1, Math.floor(saturation));
 
 const slowMo = Number(process.env.SLOWMO) || 0;
 const ciRetries = 2;
