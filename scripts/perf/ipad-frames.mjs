@@ -60,13 +60,14 @@ const TABLE_CHUNK_ROWS = 2_000;
 // guarantee `perf:ipad`'s overrides script makes, for the same reason — a
 // leftover config silently changes what a run measured and the output looks
 // completely normal.
-export function probeConfigScript({ phases, contactMs, drive, hud = true } = {}) {
+export function probeConfigScript({ phases, contactMs, drive, driveHz, hud = true } = {}) {
   const assign = (name, value) =>
     `window.${name} = ${value === undefined ? 'undefined' : JSON.stringify(value)};`;
   return [
     assign('__probePhases', phases),
     assign('__probeContactMs', contactMs),
     assign('__probeDrive', drive),
+    assign('__probeDriveHz', driveHz),
     assign('__probeHud', hud === true ? undefined : hud),
     assign('__probeReport', undefined),
     assign('__probeProgress', undefined),
@@ -106,7 +107,16 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
   const { flag, has, port } = parsePerfArgs(
     {
       entry: true,
-      extra: ['url', 'phases', 'contact-seconds', 'drive', 'device-id', 'no-serve', 'no-hud'],
+      extra: [
+        'url',
+        'phases',
+        'contact-seconds',
+        'drive',
+        'drive-hz',
+        'device-id',
+        'no-serve',
+        'no-hud',
+      ],
     },
     argv
   );
@@ -120,6 +130,7 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
   // `--drive` with no value is the useful default: one long stroke then a burst
   // of short ones, the two shapes the lag report names.
   const drive = has('drive') ? 'mixed' : flag('drive');
+  const driveHz = flag('drive-hz') && Number(flag('drive-hz'));
   const deviceConsole = createDeviceConsole();
 
   let session;
@@ -139,6 +150,7 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         phases: flag('phases'),
         contactMs: contactSeconds * 1000,
         drive,
+        driveHz,
         // The HUD repaints twice a second, and a repaint damages the very blend
         // layer some phases exist to isolate. A driven run has nobody to read
         // it, so it costs nothing to leave off.
@@ -157,7 +169,8 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
     if (drive) {
       const seam = await session.readJson('!!window.__drawingDebug');
       console.log(
-        `\nDriving synthetic input (${drive}) — hands off the iPad, keep it unlocked and ` +
+        `\nDriving synthetic input (${drive}${driveHz ? ` at ${driveHz} Hz` : ' at one move per frame'}) — ` +
+          `hands off the iPad, keep it unlocked and ` +
           `Safari foregrounded.\nUndo-history seam: ${seam ? 'available' : 'ABSENT (history table will be empty)'}`
       );
     } else {
@@ -206,7 +219,7 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         {
           device: { name: device.deviceName, os: device.deviceOSVersion, id: device.deviceId },
           appUrl,
-          mode: drive ? `synthetic:${drive}` : 'hand',
+          mode: drive ? `synthetic:${drive}${driveHz ? `@${driveHz}hz` : ''}` : 'hand',
           summaries,
           report,
           console: deviceConsole.forReport(),

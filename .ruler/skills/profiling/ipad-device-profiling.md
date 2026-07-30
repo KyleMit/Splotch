@@ -97,6 +97,97 @@ meanings are identical to the hand-driven run.
 its event stream is not the shape `npm run perf:ios:analyze` parses, so a recording still means Web
 Inspector by hand — A5 and A6 below.
 
+It also cannot see the real screen at all. That is the next section.
+
+---
+
+## The real screen — `npm run perf:ipad:frames` — **⟨Mac⟩**
+
+```sh
+npm run perf:ipad:frames                              # hand-drawn, full phase sweep
+npm run perf:ipad:frames -- --drive                    # synthetic input, no human hand
+npm run perf:ipad:frames -- --phases=blank,page --contact-seconds=20
+npm run perf:frames:analyze -- perf-profiles/<dir>/real-screen.json
+```
+
+**Why this exists.** `perf:ipad` reports every column ≤ 2 ms and clears every ADR-0066 gate on
+hardware while the real app at `/` visibly lags. Both are true, because `/dev/engine` is a bare
+canvas: no line-art overlay, no `PointerHalos`, no per-stroke Svelte reactivity. Those costs are
+compositor/paint and unmarked-JS work — they make the device slower **without making any `engine.*`
+measure larger**, so no amount of gates tuning can surface them. This command measures the screen
+instead of the engine, on the surface users touch.
+
+It opens `/` (not `/dev/engine`), injects `scripts/perf/real-screen-probe.js`, and records four raw
+numeric tables which Node then turns into numbers (`real-screen-stats.mjs`):
+
+| Metric                                                                  | What it answers                                                                                       |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| rAF delta over in-contact frames                                        | is the screen keeping up — see the 60 Hz caveat below                                                 |
+| **input queue delay** (`event.timeStamp` → handler `performance.now()`) | did input sit waiting. Felt as lag with every frame on time                                           |
+| **paint latency** (per move → next frame)                               | how stale the ink is when a frame runs                                                                |
+| moves per in-contact frame, `getCoalescedEvents()`                      | input never delivered vs delivered merged vs **per-event work repeated within one presentable frame** |
+| `engine.*` ms **inside late frames**                                    | is the drawing engine even in the stall                                                               |
+| **finger-up → halo-gone**                                               | the whole lift path (reactivity + commit + a rendering update) in one number                          |
+| undo history per lift (`getUndoDebug`)                                  | does stall onset track accumulated raster bytes                                                       |
+| worst-frame forensics                                                   | *where* each freeze sat: after which event, with how many moves and which marks inside                |
+
+### Hand-drawn vs `--drive`
+
+Both matter, for opposite reasons.
+
+* **Hand-drawn** (default) is the fidelity reference — real touch coalescing, real digitizer rate,
+  real queue delay. An on-device banner drives the operator (they are holding the iPad, not reading
+  the Mac's terminal): it asks for blank paper or a coloring page, waits until the DOM agrees, then
+  says "draw!". A phase ends on banked **finger-down** time, so lifting pauses the clock.
+* **`--drive`** dispatches one `pointermove` per frame — the rate WebKit coalesces real touch down
+  to — from inside the frame loop, and drives the app's own coloring-book UI by selector to set up
+  each phase. It needs no human, so it is the only way to get **identical input per phase**, which
+  attribution requires.
+
+> **A hand-drawn A/B cannot attribute anything.** In the first capture a human ran 7 to 45 strokes
+> per phase; the suppression deltas came out non-monotonic and the "worst" phase was simply the one
+> where the operator happened to do 41 short strokes. Use hand-drawn runs to establish *what the lag
+> is*, and `--drive` to establish *what causes it*.
+
+> **What `--drive` cannot measure:** touch coalescing, ProMotion input pacing, and queue delay — a
+> constructed event's `timeStamp` is set when the probe builds it, so `at - stamp` is ~0 by
+> construction. Read those columns from a hand-drawn run only.
+
+### The phase sweep
+
+`blank` → `page` → `page-no-nudge` → `page-no-blend` → `page-no-halos` → `page-bare` → `page-again`.
+
+Suppressions are stylesheet rules with `!important`, which beat the app's inline styles, so
+**production carries no probe-only surface**:
+
+* `nudge` pins `.paper-view`'s computed transform, so `DrawingCanvas.nudgeBlendLayer`'s per-event
+  `translateZ` epsilon no longer changes a computed value. The style write still happens; the
+  compositor damage it exists to cause does not. **Do not rotate the device during a pinned phase**
+  — the paper transform is frozen with it.
+* `blend` forces `mix-blend-mode: normal` on `.paper-view`.
+* `halos` sets `display: none` on `.brush-ring, .eraser-bubble`.
+
+Nothing clears the paper between phases, so ink and undo history accumulate across a run. That is a
+confound *and* the effect the reported lag scales with, so `page-again` repeats `page` verbatim at
+the end: whatever separates the two is accumulation, and every suppression delta has to be read
+against it.
+
+### The one dev seam
+
+`lib/boot/drawingProbeSeam.ts` exposes the already-exported `getUndoDebug()` on `/` behind the same
+gate as `routes/dev/*` (`PUBLIC_ENABLE_DEV_HARNESS`, which the Netlify deploy never sets). It is
+**read-only on purpose**: a probe that can change the app can invalidate its own measurement.
+Nothing else about the app is touched — the synthetic hand loads a coloring page by clicking the
+real UI.
+
+### Re-reading a capture
+
+The probe records raw tables and computes nothing, so `perf:frames:analyze` recomputes every metric
+from a saved `real-screen.json`. This is not a convenience: four metric definitions were wrong in
+the first device capture (see the 60 Hz caveat, plus move gaps that spanned stroke boundaries, paint
+latency that counted the idle after a finger-lift, and a finger-lift into an idle page reported as a
+2.4-second hitch). All four were corrected against that capture with no re-drawing.
+
 ---
 
 ## Approach A — Safari on iPad against the Mac's `/dev/engine` build

@@ -192,6 +192,61 @@ would starve the compositor and scales with accumulated ink — matching "worse 
 stroke on `/` and correlate `rasterBytes`/`snapshots` against stall onset. That needs the seam
 exposed on the real route, which is the one dev seam worth adding.
 
+## FINDINGS from the first synthetic sweep (identical input per phase)
+
+7 phases × 20 s banked contact, one `pointermove` per frame, `--drive`. Same device, same build.
+
+### 7. Synthetic input at one move per frame does not reproduce the lag at all
+
+**Every phase came back clean**: `dt` p50/p95/p99 all 17 ms, max 17–25 ms, 0% late, 0 stalls, 0 lost
+ms — including `page-again` after the whole run's ink had accumulated. Against a hand-drawn capture
+with 335–1422 ms stalls, on the same build and device.
+
+The difference is the **input rate**. A hand delivers 1.9–4.2 moves per *presentable* frame (a 120
+Hz+ digitizer against Safari's 60 Hz frame); the synthetic hand delivered exactly 1. So the
+hypothesis is now specific: **per-event work performed 2–4× per frame it can never be shown in** is
+what turns into a stall. `--drive-hz=120` exists to test exactly that and is the experiment in
+flight.
+
+Corollary already banked: **accumulated ink alone does not cause stalls.** `rasterBytes` grew to
+33.9 MB across 20 snapshots during a run that never dropped a frame, which weakens the
+GPU-memory-pressure hypothesis (finding 6) as a *sufficient* cause.
+
+### 8. Every finger-lift blocks frame production for ~100 ms, and the halo is why
+
+With identical input, `hitch p95` was **104–107 ms in every phase except the two with halos
+suppressed, where it was 17 ms** (one frame). `lift→halo-gone` agrees: p50 97 ms, p95 107 ms, max
+125 ms — and that is the reporter's "long time from finger up for the halo to go away and the app to
+snap back", measured.
+
+The discriminator that makes this a finding rather than an artifact is the **frames-in-gap** count
+across the ~100 ms pause between synthetic strokes:
+
+| phase                                             | halos           | frames observed during the gap |
+| ------------------------------------------------- | --------------- | ------------------------------ |
+| `blank`, `page`, `page-no-nudge`, `page-no-blend` | visible         | **0–1**                        |
+| `page-no-halos`, `page-bare`                      | `display: none` | **5–6**                        |
+
+rAF is *not* idle-throttled on this device — the ceiling measurement fires at 17 ms on a completely
+idle page with nothing animating. So an empty gap is blocked frame production, not absence of work.
+
+The halo itself is a bordered circle with a 1 px box-shadow: too cheap to cost 100 ms in paint. What
+it also does is **appear and vanish once per stroke inside a stacking context holding a 4.7 Mpx
+canvas layer** (`.canvas-stack` is `isolation: isolate`, `.paper-view` is `will-change: transform`),
+which points at compositing-tree churn rather than pixels. `page-halos-hidden` (`visibility: hidden`
+— box kept, not painted) vs `page-halos-transparent` (`opacity: 0` — painted and composited, just
+invisible) separate those two, and are in the run in flight.
+
+### 9. The "goes black, then snaps back" symptom names the mechanism
+
+Reported mid-session: on a coloring page the screen sometimes goes black with no visible strokes,
+then the whole drawing snaps back. That is what an **unblended line-art plate** looks like: dark
+mode inverts the art to white-on-black and `mix-blend-mode: screen` is what makes the black
+disappear. If WebKit falls behind on that blend it shows the raw plate, then corrects — the same
+compositor, the same stall, and a user-visible rendering defect in its own right. The probe now
+records the theme and the computed `mix-blend-mode` so a capture says whether the symptom was even
+reachable in it.
+
 ## Unverified assumptions
 
 * Synthetic (rAF-paced `dispatchEvent`) input on `/` reproduces enough of the lag to be worth

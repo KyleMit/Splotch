@@ -102,6 +102,14 @@
     { key: 'page-no-halos', paper: 'page', suppress: ['halos'] },
     { key: 'page-bare', paper: 'page', suppress: ['nudge', 'blend', 'halos'] },
     { key: 'page-again', paper: 'page', suppress: [] },
+    // `halos` removes the halo's box entirely, which conflates two costs: the
+    // element's paint, and the stacking/compositing churn of a box appearing and
+    // vanishing per stroke. These two separate them — `hidden` keeps the box and
+    // its layout but skips painting it; `transparent` keeps it painted and
+    // composited and only makes it invisible. If only `display:none` recovers the
+    // frames, the cost is the churn, not the pixels.
+    { key: 'page-halos-hidden', paper: 'page', suppress: ['halos-hidden'] },
+    { key: 'page-halos-transparent', paper: 'page', suppress: ['halos-transparent'] },
   ];
 
   const requested = window.__probePhases;
@@ -255,6 +263,12 @@
   const applySuppressions = (suppress) => {
     const rules = [];
     if (suppress.includes('halos')) rules.push(`${HALO_SELECTORS} { display: none !important; }`);
+    if (suppress.includes('halos-hidden')) {
+      rules.push(`${HALO_SELECTORS} { visibility: hidden !important; }`);
+    }
+    if (suppress.includes('halos-transparent')) {
+      rules.push(`${HALO_SELECTORS} { opacity: 0 !important; }`);
+    }
     if (suppress.includes('blend')) {
       rules.push(`${PAPER_VIEW_SELECTOR} { mix-blend-mode: normal !important; }`);
     }
@@ -288,6 +302,14 @@
   // constructed event's timeStamp is set when the probe builds it, so
   // `at - stamp` is ~0 by construction.
   const driveShape = window.__probeDrive ?? null;
+  // Moves per second. Unset drives one move per frame from the frame loop, which
+  // is what a 60 Hz presentable frame can show — and which measured perfectly
+  // clean on device while a real hand stalled for over a second. A real Apple
+  // Pencil/finger delivers 120 Hz+ into that same 60 Hz frame, so this exists to
+  // test whether the input RATE is what turns per-event work into a stall.
+  // Timer-driven rather than frame-driven so each move is its own task, as real
+  // input is, instead of a burst inside one callback.
+  const driveHz = Number(window.__probeDriveHz) || 0;
   const SYNTHETIC_POINTER_ID = 1;
   const LONG_STROKE_MS = 4_000;
   const LONG_STROKE_GAP_MS = 150;
@@ -623,8 +645,9 @@
     movesSinceFrame = 0;
 
     // After the frame is accounted for, so a synthetic move belongs to the
-    // interval it is about to be drawn in rather than the one just closed.
-    if (driveCycle && !done) stepHand(ts);
+    // interval it is about to be drawn in rather than the one just closed. With
+    // an explicit rate the pump owns the input instead.
+    if (driveCycle && !driveHz && !done) stepHand(ts);
 
     if (!done && phase.startedAt !== null) {
       const banked = phase.contactMs >= contactTargetMs;
@@ -670,6 +693,14 @@
         contactTargetMs,
         hud: hudEnabled,
         drive: driveShape,
+        driveHz,
+        // The reported "goes black on a coloring page, then snaps back" is what
+        // an UNBLENDED line-art plate looks like: dark mode inverts the art to
+        // white-on-black and `screen` is what makes that black disappear. Which
+        // theme and blend a capture ran under decides whether that symptom is
+        // even reachable in it.
+        theme: document.documentElement.dataset.theme ?? null,
+        lineartBlend: getComputedStyle(paperView).mixBlendMode,
         historySeam: !!window.__drawingDebug,
         measureNames,
         counts: { frames: frames.length, events: events.length, measures: measures.length },
@@ -721,6 +752,14 @@
 
   startPhase(0);
   requestAnimationFrame(tick);
+  if (driveCycle && driveHz) {
+    const pump = () => {
+      if (!running || done) return;
+      stepHand(performance.now());
+      setTimeout(pump, 1000 / driveHz);
+    };
+    setTimeout(pump, 1000 / driveHz);
+  }
   console.log(
     `● Real-screen probe running — ${plan.length} phase(s), ` +
       `${(contactTargetMs / 1000).toFixed(0)}s of drawing each.`
