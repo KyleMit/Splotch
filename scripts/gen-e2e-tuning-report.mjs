@@ -76,10 +76,31 @@ const CI_SWEEP = [
 // Targeted re-measure after MAGIC_REVEAL_TIMEOUT went 15s -> 30s (run
 // 30476652762). Only 1 and 4 workers were re-extracted: 4 is what CI ships, and
 // 1 is the cleanest read on whether a change helps for reasons other than
-// contention. The result is genuinely two-sided, so both halves are recorded.
-const CI_POSTFIX = [
-  { w: 1, wall: 138.1, runs: 5, execs: 1015, failsBefore: 3, fails: 3, wallBefore: 95.2 },
-  { w: 4, wall: 64.8, runs: 5, execs: 1015, failsBefore: 2, fails: 0, wallBefore: 60.2 },
+// contention. The result is genuinely two-sided, so both halves are recorded —
+// `shows` names which half its row is the evidence for, and is what the rendered
+// table emphasises.
+const REVEAL_BUDGET_EXPERIMENT = [
+  {
+    w: 4,
+    shipped: true,
+    wall: 64.8,
+    runs: 5,
+    execs: 1015,
+    failsBefore: 2,
+    fails: 0,
+    wallBefore: 60.2,
+    shows: 'fails',
+  },
+  {
+    w: 1,
+    wall: 138.1,
+    runs: 5,
+    execs: 1015,
+    failsBefore: 3,
+    fails: 3,
+    wallBefore: 95.2,
+    shows: 'wall',
+  },
 ];
 
 // Each hypothesis that was tested, and how it was killed or confirmed. The
@@ -118,31 +139,30 @@ const HYPOTHESES = [
   },
 ];
 
-const RE_TUNE = `# 1. Build once and serve, so the sweep measures tests rather than rebuilds.
+const RE_TUNE = `# 1. Build once. The sweep driver builds nothing, so this is the only build, and
+#    PUBLIC_ENABLE_DEV_HARNESS has to be set HERE — it gates the /dev/* routes
+#    the specs drive.
 PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \\
   node scripts/web.mjs vite build
-cd web && PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \\
-  npx vite preview --port 4173 &
 
-# 2. Sweep. Round-robin the worker counts INSIDE the rep loop so machine drift
-#    spreads across configs instead of landing on one of them.
-for rep in $(seq 1 8); do
-  for w in 1 2 3 4 6 8; do
-    PLAYWRIGHT_JSON_OUTPUT_NAME=runs/w\${w}-rep\${rep}.json \\
-      node scripts/web.mjs playwright test --workers=$w --reporter=json >/dev/null
-  done
+# 2. Sweep. The driver owns the whole protocol: a fresh preview server per rep,
+#    CI unset for the run, and one SWEEPRESULT line per rep.
+for w in 1 2 3 4 6 8; do
+  node scripts/e2e-sweep.mjs --workers=$w --reps=30 --out=runs
 done
 
-# 3. On CI hardware, the same sweep ran as a throwaway GitHub Actions workflow —
-#    one runner per worker count, so the configs never contend. It was NOT merged
-#    (an unused workflow only collects Dependabot bumps and rots), but it is
-#    recoverable verbatim from the PR that produced these numbers:
-#      git show dec6709:.github/workflows/worker-sweep.yml
-#      git show dec6709:scripts/ci-sweep-summary.mjs
-#    Two things it got wrong the first time, worth keeping if you restore it:
-#    the job must pass ALLOWED_TOKENS_LIST to the preview server it starts, and
-#    it must run the tests with CI unset so retries stay off and the server is
-#    reused rather than rebuilt per rep.`;
+# 3. On CI hardware the same driver runs from .github/workflows/worker-sweep.yml
+#    (manual dispatch, one runner per worker count so configs never contend):
+#      Actions -> "Worker sweep (manual)" -> Run workflow -> reps
+#    Read the numbers straight out of each job log:
+#      grep SWEEPRESULT
+
+# Why the driver rather than a loop over \`playwright test\`: reps that share one
+# server are not independent. generate-image.spec.ts deliberately fills the
+# per-IP BYOK rate-limit bucket, which takes 60s to clear, and a rep takes about
+# that long — so the next rep's guard tests take a 429 where they expect a 415
+# and the sweep measures a flake it manufactured. A fresh server per rep clears
+# the in-memory limiter and matches what CI does: one server, one suite run.`;
 
 const styles = `
   main.shell { display: flex; flex-direction: column; gap: 34px; padding-bottom: 64px; }
@@ -229,6 +249,29 @@ function sweepTable(rows, { pick } = {}) {
       <th>Workers</th><th class="num">Wall (median)</th><th class="num">Red runs</th>
       <th class="num">Failures</th><th class="num">Per-test rate</th>
       <th class="num">Latency inflation</th><th class="num">CPU work</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+  </table></div>`;
+}
+
+// The reverted reveal-budget experiment, emphasising per row whichever column
+// that row is the evidence for.
+function beforeAfterTable(rows) {
+  const cell = (row, column, text) =>
+    `<td class="num">${row.shows === column ? `<b>${text}</b>` : text}</td>`;
+  const body = rows
+    .map(
+      (r) => `<tr${r.shipped ? ' class="pick"' : ''}>
+      <td>${r.w}${r.shipped ? ' (CI ships this)' : ''}</td>
+      ${cell(r, 'fails', `${r.failsBefore} → ${r.fails}`)}
+      ${cell(r, 'wall', `${s1(r.wallBefore)}s → ${s1(r.wall)}s`)}
+    </tr>`
+    )
+    .join('');
+  return `<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Workers</th><th class="num">Failures before → after</th>
+      <th class="num">Wall before → after</th>
     </tr></thead>
     <tbody>${body}</tbody>
   </table></div>`;
@@ -341,13 +384,7 @@ ${masthead({
       The 15s→30s change was made because the CI failures landed <em>at</em> the old budget. Re-measured
       at the two most informative worker counts, it did not do one clean thing:
     </p>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>Workers</th><th class="num">Failures before → after</th><th class="num">Wall before → after</th></tr></thead>
-      <tbody>
-        <tr class="pick"><td>4 (CI ships this)</td><td class="num">2 → <b>0</b></td><td class="num">60.2s → 64.8s</td></tr>
-        <tr><td>1</td><td class="num">3 → 3</td><td class="num">95.2s → <b>138.1s</b></td></tr>
-      </tbody>
-    </table></div>
+    ${beforeAfterTable(REVEAL_BUDGET_EXPERIMENT)}
     <ul class="notes">
       <li><b>At the shipped CI setting it worked</b> — 5/5 green where 3/5 had been, for ~4.6s of wall clock. Not enough to keep it: see the last bullet.</li>
       <li><b>At one worker it did not.</b> Same three failures, but now costing far more: with <code>test.slow()</code> in play a non-converging reveal burns its full 90s budget instead of failing at 30s, which is what dragged the median run from 95.2s to 138.1s.</li>

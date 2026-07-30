@@ -2,47 +2,107 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { allowedTokensList, managedAccessTokenForRetry } from '../../web/playwright.shared.ts';
+import { SWEEP_SERVER_ENV, summarizeReport } from '../e2e-sweep.mjs';
+import { commonWebServer } from '../../web/playwright.shared.ts';
 
-// .github/workflows/worker-sweep.yml is the manual-dispatch flake/wall-clock
-// sweep behind ADR-0078's worker count. It starts its own preview server and runs
-// the suite against it, which puts it outside everything playwright.config.ts
-// arranges — so the two things the config does for a measurement run have to be
-// re-done by hand there, and both were missing the first time the sweep ran:
-// the server's managed-code allowlist, and unsetting CI so the run measures the
-// unretried flake rate against a reused server.
-//
-// YAML can't import the TypeScript that owns the allowlist, so this guard reads
-// both sides (the pattern in CLAUDE.md, "Cross-file agreement is never
-// maintained by prose").
-const workflow = readFileSync(
-  join(import.meta.dirname, '..', '..', '.github', 'workflows', 'worker-sweep.yml'),
-  'utf8'
-);
+// scripts/e2e-sweep.mjs is the harness behind ADR-0078's worker count, driven
+// locally and by .github/workflows/worker-sweep.yml. It boots its own preview
+// server, which puts it outside everything playwright.config.ts arranges — and
+// every defect the first version shipped with was a consequence of re-doing that
+// setup by hand. So the parts that can be checked, are.
 
-// The strictest list the config ever hands its own server: the managed code plus
-// one per retry attempt, plus the harness probe code allowedTokensList() appends.
-// A sweep runs with retries off and needs only the first and last, but matching
-// the CI list keeps the server correct whatever the run turns on.
-const CI_RETRIES = 2;
-const expectedTokens = allowedTokensList(
-  ...Array.from({ length: CI_RETRIES + 1 }, (_, retry) => managedAccessTokenForRetry(retry))
-);
+describe('sweep server env', () => {
+  // The sweep cannot import commonWebServer.env: that module reaches the specs'
+  // helpers through extensionless imports, which node --experimental-strip-types
+  // does not resolve. So it declares a mirror, and this is what holds the mirror
+  // to it — the pattern in CLAUDE.md, "Cross-file agreement is never maintained
+  // by prose". Adding a private env var goes red here rather than silently
+  // letting a developer's web/.env supply it during a measurement.
+  it('declares exactly what the Playwright web server declares', () => {
+    expect(SWEEP_SERVER_ENV).toEqual(commonWebServer.env);
+  });
+});
 
-describe('worker sweep workflow', () => {
-  it('hands the preview server the allowlist playwright.shared.ts computes', () => {
-    const declared = workflow.match(/^\s*ALLOWED_TOKENS_LIST=(\S+)/m)?.[1];
-    expect(
-      declared,
-      'the sweep starts its own preview server, so it must declare ALLOWED_TOKENS_LIST itself'
-    ).toBe(expectedTokens);
+describe('sweep workflow', () => {
+  const workflow = readFileSync(
+    join(import.meta.dirname, '..', '..', '.github', 'workflows', 'worker-sweep.yml'),
+    'utf8'
+  );
+
+  // The workflow's job is to supply hardware and a build; the measurement
+  // protocol belongs to the driver, where the local half runs it too. A rep loop
+  // reappearing in YAML is the regression this catches.
+  it('delegates the whole rep loop to the driver', () => {
+    expect(workflow).toMatch(/node scripts\/e2e-sweep\.mjs/);
+    expect(workflow).not.toMatch(/playwright test/);
+    expect(workflow).not.toMatch(/vite preview/);
+  });
+});
+
+describe('summarizeReport', () => {
+  /** A Playwright JSON report with one suite of one spec per given result. */
+  const report = (results) =>
+    JSON.stringify({
+      stats: { duration: 61_800 },
+      suites: [
+        {
+          title: 'chromium',
+          suites: [
+            {
+              title: 'flows.spec.ts',
+              specs: results.map(({ title, status, duration, retry = 0 }) => ({
+                file: 'flows.spec.ts',
+                title,
+                tests: [{ results: [{ status, duration, retry }] }],
+              })),
+            },
+          ],
+        },
+      ],
+    });
+
+  it('counts first attempts and names what failed', () => {
+    const summary = summarizeReport(
+      report([
+        { title: 'passes', status: 'passed', duration: 900 },
+        { title: 'breaks', status: 'failed', duration: 14 },
+      ]),
+      { workers: 4, rep: 3, jobSeconds: 63 }
+    );
+    expect(summary).toMatchObject({ w: 4, rep: 3, wallMs: 61_800, tests: 2, failed: 1 });
+    expect(summary.failures).toEqual([
+      { f: 'flows.spec.ts', n: 'flows.spec.ts > breaks', s: 'failed', d: 14 },
+    ]);
   });
 
-  it('runs the suite with CI unset', () => {
-    // CI on would turn on the two branches that corrupt the measurement:
-    // `retries: 2` masks the flake rate the sweep exists to measure, and
-    // `reuseExistingServer: false` rebuilds per rep instead of reusing the
-    // server started above.
-    expect(workflow).toMatch(/env -u CI\b/);
+  // Retries are off for a sweep, so a retry row means the measurement was run
+  // misconfigured; counting it would inflate the execution count it divides by.
+  it('ignores retry attempts', () => {
+    const summary = summarizeReport(
+      report([
+        { title: 'flaky', status: 'failed', duration: 10, retry: 0 },
+        { title: 'flaky', status: 'passed', duration: 20, retry: 1 },
+      ]),
+      { workers: 1, rep: 1, jobSeconds: 9 }
+    );
+    expect(summary).toMatchObject({ tests: 1, failed: 1 });
+  });
+
+  // cpuMs is the contention tax made visible, so it must sum passing work only —
+  // a test that failed fast would otherwise pull the number down.
+  it('sums passing durations only', () => {
+    const summary = summarizeReport(
+      report([
+        { title: 'a', status: 'passed', duration: 100 },
+        { title: 'b', status: 'passed', duration: 250 },
+        { title: 'c', status: 'failed', duration: 9000 },
+      ]),
+      { workers: 2, rep: 1, jobSeconds: 70 }
+    );
+    expect(summary.cpuMs).toBe(350);
+  });
+
+  it('reports an unreadable report as itself', () => {
+    expect(summarizeReport('not json', { workers: 4, rep: 1, jobSeconds: 1 }).error).toBeTruthy();
   });
 });

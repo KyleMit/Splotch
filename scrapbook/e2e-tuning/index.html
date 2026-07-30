@@ -476,12 +476,20 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
       at the two most informative worker counts, it did not do one clean thing:
     </p>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>Workers</th><th class="num">Failures before → after</th><th class="num">Wall before → after</th></tr></thead>
-      <tbody>
-        <tr class="pick"><td>4 (CI ships this)</td><td class="num">2 → <b>0</b></td><td class="num">60.2s → 64.8s</td></tr>
-        <tr><td>1</td><td class="num">3 → 3</td><td class="num">95.2s → <b>138.1s</b></td></tr>
-      </tbody>
-    </table></div>
+    <thead><tr>
+      <th>Workers</th><th class="num">Failures before → after</th>
+      <th class="num">Wall before → after</th>
+    </tr></thead>
+    <tbody><tr class="pick">
+      <td>4 (CI ships this)</td>
+      <td class="num"><b>2 → 0</b></td>
+      <td class="num">60.2s → 64.8s</td>
+    </tr><tr>
+      <td>1</td>
+      <td class="num">3 → 3</td>
+      <td class="num"><b>95.2s → 138.1s</b></td>
+    </tr></tbody>
+  </table></div>
     <ul class="notes">
       <li><b>At the shipped CI setting it worked</b> — 5/5 green where 3/5 had been, for ~4.6s of wall clock. Not enough to keep it: see the last bullet.</li>
       <li><b>At one worker it did not.</b> Same three failures, but now costing far more: with <code>test.slow()</code> in play a non-converging reveal burns its full 90s budget instead of failing at 30s, which is what dragged the median run from 95.2s to 138.1s.</li>
@@ -517,7 +525,7 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
       </div><div class="hyp-item overturned">
         <p class="hyp-claim">The strokes commit in the wrong brush mode, and a canvas-fill count cannot detect it <span class="pill overturned">overturned</span></p>
         <dl>
-          <dt>How</dt><dd>Read the actual assertion values out of the failing reports — then, once the engine could be asked directly (ADR-0079), read its committed mode and the painted colours at each failure.</dd>
+          <dt>How</dt><dd>Read the actual assertion values out of the failing reports — then, once the engine could be asked directly (ADR-0080), read its committed mode and the painted colours at each failure.</dd>
           <dt>Result</dt><dd>`revealed` came back as discrete values — 132, 874, 895, 2314 — where ~2314 is a real magic reveal. Redrawing all three sites did take the file from 16/200 to 4/200, so the FIX worked. The reading of 132 did not: those pixels are the coloring page&#39;s own colours, not ink, and the engine reported the right mode at every failure across ~700 recorded reveals. It is a magic stroke the engine TRUNCATED — a sample &gt;100ms and &gt;10% of the paper apart reads as a lifted finger (strokeMath.pointerWasResumed), which is exactly what a starved worker dispatching 180px hops produces. Redrawing rescued it by getting a second, luckier stroke. Pacing the samples fixes it at the source, and the retries are gone.</dd>
         </dl>
       </div>
