@@ -1,3 +1,6 @@
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import FlakyPassReporter, {
@@ -57,16 +60,31 @@ describe('flaky job summary', () => {
 });
 
 describe('FlakyPassReporter', () => {
-  function collect(results) {
+  /**
+   * Run a reporter to completion and return the lines it logged.
+   *
+   * GITHUB_STEP_SUMMARY is unset for the duration, not just captured: every step
+   * on GitHub Actions has it set, and .github/workflows/test.yml runs
+   * `npm run test:scripts` — so without this the fixtures below append a
+   * fabricated flaky-test table, naming a real spec, to the Tests job summary of
+   * every CI run. That would be a permanent false positive on the one signal this
+   * reporter exists to provide.
+   */
+  function collect(results, { summaryPath } = {}) {
     const reporter = new FlakyPassReporter();
     for (const [test, result] of results) reporter.onTestEnd(test, result);
     const lines = [];
     const log = console.log;
+    const realSummary = process.env.GITHUB_STEP_SUMMARY;
+    if (summaryPath) process.env.GITHUB_STEP_SUMMARY = summaryPath;
+    else delete process.env.GITHUB_STEP_SUMMARY;
     console.log = (line) => lines.push(line);
     try {
       reporter.onEnd();
     } finally {
       console.log = log;
+      if (realSummary === undefined) delete process.env.GITHUB_STEP_SUMMARY;
+      else process.env.GITHUB_STEP_SUMMARY = realSummary;
     }
     return lines;
   }
@@ -80,6 +98,24 @@ describe('FlakyPassReporter', () => {
       '::warning title=Flaky test::chromium › admin.spec.ts › signs in — passed on attempt 2 ' +
         '(1 earlier attempt failed)',
     ]);
+  });
+
+  // The branch that made the pollution above possible, now covered rather than
+  // merely avoided: with the env set, the summary is appended to.
+  it('appends the summary when GitHub gives it somewhere to write', () => {
+    const summaryPath = join(mkdtempSync(join(tmpdir(), 'flaky-')), 'summary.md');
+    writeFileSync(summaryPath, '# existing\n');
+    collect([[testCase('chromium', 'flaky'), attempt(1)]], { summaryPath });
+    const written = readFileSync(summaryPath, 'utf8');
+    expect(written).toContain('# existing');
+    expect(written).toContain('### 1 flaky test (passed on retry)');
+  });
+
+  it('writes no summary when a clean run has nothing to report', () => {
+    const summaryPath = join(mkdtempSync(join(tmpdir(), 'flaky-')), 'summary.md');
+    writeFileSync(summaryPath, '');
+    collect([[testCase('chromium', 'clean'), attempt(0)]], { summaryPath });
+    expect(readFileSync(summaryPath, 'utf8')).toBe('');
   });
 
   // A first-attempt pass is the whole suite on a good day, and a test that
