@@ -149,7 +149,7 @@ there until a double-flake turns CI red. Write specs that can't race in the firs
 * **Poll async render/canvas state; size the window for a *starved* worker.** Canvas reveals and
   debounced relayouts settle asynchronously and lag hard under contention. The magic brush samples a
   sheet that rasterizes async, holding a stroke's ops out of the paper until a fold-in repaint
-  (`REVEAL_ATTEMPT_SETTLE_MS` in `flows-magic-brush.spec.ts`); the engine debounces resize by
+  (`REVEAL_SETTLE_MS` in `flows-magic-brush.spec.ts`); the engine debounces resize by
   `RESIZE_SETTLE_MS`. Use `expect.poll` with a generous timeout, not a one-shot
   `await page.evaluate(...)` + `expect(...)`.
 * **Read reactive/engine state *through* a retrying assertion.** `expect(await count(page)).toBe(n)`
@@ -158,29 +158,28 @@ there until a double-flake turns CI red. Write specs that can't race in the firs
 * **A sequence that must land inside a timing window must retry as a whole.** A triple-tap that has
   to fall inside dragToClear's 1000ms multi-click window (`clear-tutorial.spec.ts`) can straddle it
   under load — wrap the entire burst in `toPass()`, don't just add a longer wait between taps.
-* **A control's UI state commits a tick before the imperative engine adopts it — an action taken
-  immediately after can hit the *old* mode.** The tool buttons update `aria-pressed` reactively, but
-  the engine enters that mode through a Svelte `$effect` (e.g. `setMagicMode` in `DrawingCanvas`);
-  under load that effect can lag hundreds of ms behind the button, so a stroke drawn right after
-  selecting the magic brush can paint as a flat **pen** stroke whose pixels are then committed for
-  good (a later mode change never repaints them). Asserting `aria-pressed=true` does **not** prove
-  the engine switched. Retry the whole action until its *effect* is visible — `drawMagicReveal` in
-  `flows-magic-brush.spec.ts` redraws until the reveal shows many colours, undoing each flat miss so
-  exactly one good stroke remains. A metric that a wrong-mode action still satisfies (a canvas-fill
-  pixel count — a pen stroke fills the band too) won't catch the race, so assert on something only
-  the right mode produces.
-* **Bound a redraw retry by *attempts*, and by attempts alone.** A retry that redraws a committed
-  action has two futures and a timeout can't tell them apart: it recovers on the next attempt, or
-  the engine never left the old mode and no attempt ever will. `toPass({ timeout })` alone spends
-  the whole budget on the second case and fails anyway — and a job that long can exceed the suite's
-  parallel floor and *become* the makespan (ADR-0078). Measure attempts-until-success before picking
-  the cap (`MAGIC_REVEAL_MAX_ATTEMPTS` in `flows-magic-brush.spec.ts` sits one attempt above a
-  328-sample distribution) so the cap can't fail the valid-but-slow cases the retry exists for. Then
-  make the cap the *only* bound: keeping a wall-clock deadline beside it as a "backstop" is a trap
-  (ADR-0078 §2c). Checked only between attempts, it can never interrupt the long attempt it was
-  added for, yet it silently drops later attempts on a slow machine — so the effective cap becomes a
-  headroom ratio, and one message ends up describing two different exits. The per-test timeout is
-  the outer ceiling; it can actually stop a hung attempt.
+* **A control's UI state commits a tick before the imperative engine adopts it, so wait on the
+  engine.** The tool buttons update `aria-pressed` reactively, but the engine enters that mode
+  through a Svelte `$effect` (`setMagicMode` in `DrawingCanvas`), so `aria-pressed=true` does not
+  prove the engine switched, and a stroke drawn in that window would commit under the previous brush
+  — already painted before anything can observe it. `pickBrush()` closes it by polling the engine's
+  own `window.__committedBrushMode` (the dev-harness seam in `lib/boot/devHarnessSeam.ts`,
+  ADR-0079); prefer that shape — a signal for the state you actually depend on — over retrying an
+  action until its effect appears. Where you must assert instead, pick a metric a wrong-mode action
+  can't satisfy: a canvas-fill pixel count is not one, since a pen stroke fills the band too.
+* **Drive strokes through `draw`/`dragStroke`, never a hand-rolled run of `mouse.move`s.** The
+  engine reads a sample far from the previous one and more than `POINTER_RESUME_GAP_MS` later as a
+  finger that lifted and set down (`strokeMath.pointerWasResumed`), restarts the stroke there, and
+  never paints the span between — so under contention a four-point sweep can come back as its start
+  dot alone. A starved worker owns the timing half of that predicate; the helper holds the other
+  half by subdividing every hop with `mouse.move`'s `steps`, sized from `POINTER_RESUME_JUMP_RATIO`
+  imported from the engine's own module (ADR-0079).
+* **Calibrate a discriminating threshold against measured distributions on *both* sides.** The magic
+  reveal's colour count had to reject a flat pen pass (measured 1-3 buckets) and accept a rainbow
+  slice (measured min 3 at the old quantization) — the two overlapped, so a correct reveal failed a
+  few percent of the time and no retry could help, since a redraw repaints the same gradient. Sample
+  both populations before picking the number, and leave margin on each side, rather than reasoning
+  about what the value "should" be.
 * **Shared per-test setup belongs in a fixture, never in a helper module's top-level
   `test.beforeEach`.** A helper is evaluated once per worker process, so a hook it registers at
   import time attaches only to the *first* spec file in that worker that imports it; every later

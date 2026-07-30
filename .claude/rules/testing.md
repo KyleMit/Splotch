@@ -64,6 +64,10 @@ paths:
   instead of a fixed `waitForTimeout` to wait for something to happen (a fixed sleep is fine only to
   idle *past* a known threshold or to prove a state does *not* change); poll async canvas/relayout
   state through a retrying assertion with a window sized for a starved worker
-  (`expect(await count()).toBe(n)` races the repaint — use `await expect.poll(() => count())`); and
-  verify a fix with `--repeat-each=10`, never in isolation. Full checklist with examples: the
-  `testing` skill, "Writing flake-resistant specs."
+  (`expect(await count()).toBe(n)` races the repaint — use `await expect.poll(() => count())`); wait
+  on the *engine's* state rather than the button that requests it (`pickBrush` polls
+  `window.__committedBrushMode`, ADR-0079); drive strokes through `draw`/`dragStroke`, which pace
+  their samples inside the engine's dropped-pointer threshold — a hand-rolled run of far-apart
+  `mouse.move`s gets read as a lifted finger and paints a stub of the stroke; and verify a fix with
+  `--repeat-each=10`, never in isolation. Full checklist with examples: the `testing` skill,
+  "Writing flake-resistant specs."
