@@ -12,6 +12,10 @@ Outcome: seven merged, one closed as blocked upstream, one closed pending a requ
 tracking issues filed. Every rule in the skill is something that session paid for; nothing in it is
 speculative.
 
+Revised after a 2026-07-30 run on a five-PR batch (\#666–\#670): all five merged, one rebase. That
+run added the tarball diff, the open-PR cap, the nested-advisory trap, and the cloud-session wait —
+each marked below.
+
 ## Why it exists separately from `dependency-update-audit`
 
 The obvious objection is that the repo already has a dependency-upgrade skill. They are inverses:
@@ -59,6 +63,51 @@ as still running when it had already been cancelled by the concurrency group aft
 landed behind it. Hence the explicit instruction to re-check rather than assume, and to find the
 superseding commit.
 
+**Diff the published tarballs** *(2026-07-30)*. Three of the five PRs were `@capacitor/*` 8.4.1 →
+8.4.2 — exactly the case the traps list flags as possible native-rebuild work. Extracting both
+tarballs showed the only content difference across core, cli, and ios was the `"version"` string in
+`package.json`. That turned the batch's highest-uncertainty items into provable no-ops and retired
+the rebuild question without a judgement call. The gzip sub-trap is in the skill because the cli's
+five bundled platform tarballs *did* differ as binary blobs while extracting byte-identical; a
+checksum-level check would have manufactured a native-rebuild finding out of repack metadata.
+
+**The open-PR cap truncates the batch** *(2026-07-30)*. Exactly five PRs were open — the npm default
+`open-pull-requests-limit`, since `.github/dependabot.yml` sets none. `@capacitor/android` 8.4.2 was
+published, had no PR, and appeared in no listing. It also held the release's *only* real code change
+(`fix(android): explicitly grant URI permissions for image capture intent`); core, cli, and ios were
+version-only republishes of it. So the batch wasn't merely incomplete — the part it omitted was the
+only part that did anything, and "all five merged" read as finishing a job that had barely started.
+
+**`--ignore-scripts` and `--no-dereference` on the tarball diff** *(2026-07-30)*. Added after asking
+what the new technique exposes, since it unpacks a payload in order to decide whether to trust it.
+Three vectors were tested rather than reasoned about, and two came back clean:
+
+* *Execution* — `npm pack` on a registry spec downloads the published tarball and runs no lifecycle
+  hooks; confirmed by packing esbuild, whose postinstall is `node install.js`, and observing nothing
+  run. (A git spec *would* run `prepare`, which is why the recipe uses registry specs only.)
+  `--ignore-scripts` is belt-and-braces, not a fix for an observed hole.
+* *Filesystem escape* — GNU tar refuses both classics by default, verified with purpose-built
+  tarballs: a `..` member (`Member name contains '..'`, exit 2) and a symlink written through
+  (`Cannot open: Not a directory`, exit 2, target untouched). Worth remembering this is GNU tar
+  specifically; Node's `tar` and Python's `tarfile` are the ones with tar-slip history, so a
+  scripted version of this step would not inherit the protection.
+* *The diff output* — the one real finding, in two parts. `diff -r` **dereferences symlinks**, so an
+  extracted `README.md -> /etc/hostname` prints that file's contents as package content; anything
+  the process can read reaches the output, and from there a summary or a PR comment. Extraction
+  refuses to *write* through a symlink but still extracts the symlink, so the leak is in the read.
+  Confirmed directly, and `--no-dereference` reports the type mismatch instead. Separately, the diff
+  is attacker-controlled text landing in the exact context where a merge verdict forms — unusual in
+  that the data *is* the subject under judgement, with no separation between them.
+
+That last point is why the merge-authorization rule now carries a security rationale: it was written
+for blast radius, and it turns out to be the control that makes planted text face a second reader.
+
+**An advisory can name a package it isn't about** *(2026-07-30)*. `npm audit` reported a moderate on
+`@capacitor/cli` while \#666 bumped `@capacitor/cli`, which invites the inference that the bump
+clears it. The advisory was against a vendored 5.7.8 copy nested under `@capacitor/assets`, range
+topping out at `8.0.2-nightly`; the top-level 8.4.1 was already outside it. Totals were 22 before
+and 22 after.
+
 ## Deliberately not included
 
 * **A fixed merge order by ecosystem.** Tried and rejected — the right order depends on which
@@ -74,12 +123,18 @@ superseding commit.
 
 * **Overlap with the automated review** (`dependabot-review.yml`, ADR-0081, merged as \#598 during
   the same session). That workflow posts a per-PR APPROVE/FLAG verdict, so some of step 2 may be
-  redundant once its verdicts are trusted in practice. Unvalidated: the session predated its first
-  real run. If those verdicts prove reliable, step 2 could shrink to "verify the FLAGs and
-  spot-check the APPROVEs" — but note it cannot install, cannot run tests, and usually posts before
-  CI finishes, so the `npm audit` diff and the local `npm ci` verification have no automated
-  equivalent today.
-* **Batch size.** The flow was exercised on nine PRs. A grouped github-actions PR (per
+  redundant once its verdicts are trusted in practice. If those verdicts prove reliable, step 2
+  could shrink to "verify the FLAGs and spot-check the APPROVEs" — but note it cannot install,
+  cannot run tests, and usually posts before CI finishes, so the `npm audit` diff and the local
+  `npm ci` verification have no automated equivalent today. **Still unvalidated after 2026-07-30,
+  for a new reason:** there was no verdict to weigh on any of the five PRs, because every run failed
+  in `setupGitHubToken` — it requested an OIDC token in a Dependabot context that has none, despite
+  the workflow passing `github_token`. Step 2 ran entirely unassisted. The workflow has therefore
+  still never completed against a real batch. Practical consequence for the skill: treat a *missing*
+  advisory comment as a broken workflow worth checking, not as a PR too new to have been reviewed.
+* **Batch size.** The flow was exercised on nine PRs, then five. Note the two interact: the default
+  `open-pull-requests-limit` of 5 caps a batch at five unless the config raises it, so nine is
+  reachable only across ecosystems or with an explicit limit. A grouped github-actions PR (per
   `.github/dependabot.yml`, minor+patch bumps arrive as one PR) may want per-action verdicts inside
   a single comment; untested.
 * Whether the merge-sequence simulation should just be a repo script rather than an inline loop. It
