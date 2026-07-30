@@ -50,7 +50,7 @@ complicate production. Also asked for: a device-free replication (Playwright) so
 require plugging in an iPad.
 
 **Non-goals.** Raising or re-tuning the ADR-0066 gates. Touching the undo/history tiering
-(ADR-0078). Shipping a fix as part of the capture work — a fix lands only with a measured
+(ADR-0082). Shipping a fix as part of the capture work — a fix lands only with a measured
 before/after.
 
 ## Why the existing numbers are clean while the screen lags
@@ -92,7 +92,7 @@ Commits on #660, oldest first:
 | d3b7fbdf | the soak result; fix candidates ranked by evidence                                            |
 | 81e3fa0b | `perf:frames:local` registered; "start here" for the next session                             |
 | d0960c9d | the ipad URL test, for the shared session module                                              |
-| 82ef6396 | ADR-0081 + the ADR-0066 frame-budget amendment                                                |
+| 82ef6396 | ADR-0083 + the ADR-0066 frame-budget amendment                                                |
 | (merge)  | main's `devHarnessSeam.ts` absorbs the profiling seam; ADR renumbered 0080→0081               |
 
 Files added:
@@ -106,7 +106,7 @@ Files added:
 * `scripts/perf/frames-analyze.mjs` — `npm run perf:frames:analyze` (re-read a saved capture).
 * `scripts/perf/ipad-session.mjs` — device-session plumbing extracted from `ipad.mjs`.
 * `scripts/tests/perf-real-screen.test.mjs` — 36 tests over the metrics + the selector drift guard.
-* `docs/adrs/0081-real-screen-capture-on-device.md`.
+* `docs/adrs/0083-real-screen-capture-on-device.md`.
 
 Files changed: `scripts/perf/ipad.mjs` (uses the shared module), `scripts/tests/perf-ipad.test.mjs`,
 `web/src/lib/boot/devHarnessSeam.ts` (+ its test) — the profiling seam lives there rather than in a

@@ -21,7 +21,7 @@ import { devHarnessEnabled } from '$lib/devHarness';
 //     and draws immediately can commit the stroke under the previous brush, and
 //     no DOM state distinguishes the two. tests/flows-harness.ts's pickBrush()
 //     polls this, so the wait is on the engine rather than the button.
-//   __drawingDebug (ADR-0081) — how the undo history is currently stored, for
+//   __drawingDebug (ADR-0083) — how the undo history is currently stored, for
 //     `npm run perf:ipad:frames`. The reported real-screen lag scales with how
 //     much has been drawn, and every stroke pushes a canvas-backed dirty-rect
 //     patch (ADR-0069/0074), so correlating stall onset against `rasterBytes` is

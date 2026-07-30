@@ -1,6 +1,6 @@
 # Real-screen performance on a physical iPad (2026-07-29)
 
-The first captures from `npm run perf:ipad:frames` (ADR-0081) — the instrument that measures the app
+The first captures from `npm run perf:ipad:frames` (ADR-0083) — the instrument that measures the app
 users actually touch (`/`) rather than the `/dev/engine` harness. Twelve runs on one device in one
 session, chasing a reported "the drawing freezes and then catches up in a jump" that the ADR-0066
 gates cannot see.
