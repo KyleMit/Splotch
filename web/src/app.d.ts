@@ -69,6 +69,9 @@ declare global {
       mode?: FileSystemPermissionMode;
       startIn?: string;
     }): Promise<FileSystemDirectoryHandle>;
+    // Read-only profiling seam, installed by the same gated boot step as
+    // __committedBrushMode (ADR-0083) — see lib/boot/devHarnessSeam.ts.
+    __drawingDebug?: { getUndoDebug: typeof import('$lib/drawing/engine').getUndoDebug };
   }
 
   interface FileSystemHandle {

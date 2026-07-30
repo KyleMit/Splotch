@@ -83,7 +83,7 @@ export async function listPages(device) {
 
 export async function attachToPage(
   webSocketDebuggerUrl,
-  { onConsole, commandTimeoutMs = COMMAND_TIMEOUT_MS } = {}
+  { onConsole, onEvent, commandTimeoutMs = COMMAND_TIMEOUT_MS } = {}
 ) {
   const socket = new WebSocket(webSocketDebuggerUrl);
   const pending = new Map();
@@ -128,6 +128,10 @@ export async function attachToPage(
       return;
     }
     if (message.method === 'Console.messageAdded') onConsole?.(message.params.message);
+    // Every other domain event, for a caller that enabled one. The Timeline
+    // domain in particular reports its records this way rather than as command
+    // replies, so a recording is a subscription, not a return value.
+    else if (message.method) onEvent?.(message.method, message.params);
   });
 
   const announced = await pollUntil(
@@ -190,6 +194,9 @@ export async function attachToPage(
   return {
     evaluate,
     readJson,
+    // Raw domain access, for a caller driving something other than Runtime —
+    // pair it with `onEvent` for a domain that reports through events.
+    command,
     close: () => socket.close(),
   };
 }

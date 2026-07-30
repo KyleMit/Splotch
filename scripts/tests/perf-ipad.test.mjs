@@ -5,15 +5,24 @@ vi.mock('../lib/net.mjs', async (importOriginal) => {
   return { ...actual, lanAddresses: () => ['10.0.0.5', '192.168.1.9'] };
 });
 
-const { resolveHarnessUrl, runOverridesScript } = await import('../perf/ipad.mjs');
+const { runOverridesScript } = await import('../perf/ipad.mjs');
+// Shared with perf:ipad:frames, which opens `/` instead — the path is the caller's.
+const { resolveDeviceUrl } = await import('../perf/ipad-session.mjs');
 
-describe('resolveHarnessUrl', () => {
-  it('points at the harness route on the first reachable LAN address', () => {
-    expect(resolveHarnessUrl(undefined, 4173)).toBe('http://10.0.0.5:4173/dev/engine');
+describe('resolveDeviceUrl', () => {
+  it('points at the requested route on the first reachable LAN address', () => {
+    expect(resolveDeviceUrl(undefined, 4173, '/dev/engine')).toBe(
+      'http://10.0.0.5:4173/dev/engine'
+    );
+  });
+
+  // The iPad opens this URL, so localhost would name the wrong machine entirely.
+  it('uses a LAN address, never localhost', () => {
+    expect(resolveDeviceUrl(undefined, 4173, '/')).toBe('http://10.0.0.5:4173/');
   });
 
   it('honours an explicit --url over the derived one', () => {
-    expect(resolveHarnessUrl('http://elsewhere:9999/dev/engine', 4173)).toBe(
+    expect(resolveDeviceUrl('http://elsewhere:9999/dev/engine', 4173, '/dev/engine')).toBe(
       'http://elsewhere:9999/dev/engine'
     );
   });

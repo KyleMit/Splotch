@@ -96,6 +96,14 @@ blob budget); the **absolute** gates — undo p95 < 50 ms, commit hitch ≈ one 
 full-canvas blits) and are verified on-device with `scripts/perf/ipad-console-driver.js` (profiling
 skill runbook).
 
+> **Amendment (ADR-0083, 2026-07): the commit-hitch gate is stricter than the platform on
+> Safari/iPad.** "One 120 Hz frame" reads as 8.3 ms, but Safari gives web content a **60 Hz**
+> `requestAnimationFrame` beat even on a 120 Hz ProMotion iPad Pro — measured at 16–17 ms both idle
+> and while animating (iPad13,8 / iPadOS 26.5). The presentable frame there is 16.7 ms, so a commit
+> between 8.3 and 16.7 ms cannot cost a frame in Safari. The gate is left as-is deliberately: it is
+> the tighter of the two, and the native WKWebView target has not been measured for this. Do not
+> "fix" a commit that is inside 16.7 ms on the strength of the 8.3 ms figure alone.
+
 ## Alternatives rejected
 
 * **Keep replay, patch the crayon path** (crayon-aware keyframe threshold, rolling one-undo-back

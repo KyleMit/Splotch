@@ -75,6 +75,95 @@ the device is more machinery than the guarantee is worth.
   nothing to attach to and no protocol call that creates one. So a human still unlocks the iPad and
   opens Safari once. Everything after that is automated.
 
+## The real-screen probe (`perf:ipad:frames`) — what the measurements cost to learn
+
+Design history for `scripts/perf/real-screen-probe.js` + `real-screen-stats.mjs` + `ipad-frames.mjs`
+(issue #659). The shape of all three is dictated by wrong readings that had to be corrected against
+real device captures, which is also why the probe **records raw tables and computes nothing**: every
+metric definition below was fixed without re-drawing anything.
+
+### Safari gives web content 60 Hz on a 120 Hz ProMotion iPad
+
+Measured on iPad13,8 / iPadOS 26.5: a bare rAF sampler reports 16–17 ms **idle and animating**. The
+first version of the stats module assumed the 8.33 ms ProMotion beat and duly reported a
+perfectly-paced capture as **64% late frames**. Budgets are now derived per capture
+(`observedFrameIntervalMs`, p10 of observed deltas).
+
+Two consequences outlive the probe: ADR-0066's 8.3 ms commit-hitch gate is stricter than the platform
+on Safari/iPad, and a 120 Hz+ digitizer feeding a 60 Hz frame means per-`pointermove` work runs 2–4×
+per presentable frame.
+
+### Four metrics that measured the operator instead of the app
+
+Each looked like a finding first:
+
+* **Move gaps** spanned stroke boundaries, so a human pausing between strokes read as a 4.5-second
+  input gap. Now within-stroke only.
+* **Paint latency** was per frame (frame → newest move), so a finger held still grew it without
+  limit. Now per move, skipping each stroke's last move, because the idle after a finger-lift is not
+  latency.
+* **The stroke-end hitch** reported a page going idle with nothing to animate as a 2.4-second hitch.
+  Now capped, with the implausible ones counted as `idleAfterLift`.
+* **Stroke segmentation** windowed events per phase, which dropped the last stroke of *every* phase —
+  a phase's clock runs while the finger is down, so it always ends mid-stroke. Strokes are now
+  segmented over the whole recording and claimed by the phase their pointerdown fell in.
+
+### A p95 over 20–40 samples is not a distribution
+
+The costliest wrong turn. Two otherwise identical device runs disagreed about whether the pointer
+halos cost ~100 ms at every finger-lift: run 1 showed a clean 104 ms-vs-17 ms split along
+halos-visible/hidden, run 2 showed 17 ms almost everywhere with a ~120 ms outlier in *every*
+configuration. The difference was sample size — 19 strokes in one phase, 27 in the next, so the p95
+picked a different rank. Per-stroke figures are reported as **rates** now (`stalled lifts` out of
+measured lifts). The halo claim was withdrawn.
+
+### A hand-drawn A/B cannot attribute anything
+
+A human ran 7 to 45 strokes per phase at 1.9–4.2 moves per frame. The suppression deltas came out
+non-monotonic (hiding the halos looked *worse* than baseline) purely because that phase happened to
+be the one with 41 short strokes. Hand-drawn runs establish that the lag exists; `--drive` establishes
+what causes it. For a hand-drawn comparison, repeat phases (`page,page-no-halos,page,page-no-halos`)
+so variability cancels — repeats are labelled `key#2` rather than shadowing each other — and read the
+per-bucket table, since a phase can only fairly be compared to *itself earlier*.
+
+### Two ways of driving synthetic input at a real rate, both wrong
+
+The rate matters because a hand delivers 1.9–4.2 moves per presentable frame and one-per-frame
+measured perfectly clean.
+
+* `setTimeout(8.3)` delivers ~13 ms on device (nested-timer clamping), so a run labelled "120 Hz"
+  actually ran at 83 Hz and its clean result meant nothing.
+* A `MessageChannel` spin loop hits any rate and **starves the event loop** — it stopped the app's own
+  coloring-page setup from settling, and starving the loop is precisely what was under measurement.
+  An instrument that writes its own result is not an instrument.
+
+Now: a timer at the frame rate dispatching however many moves the elapsed time earned, bounded so a
+stall is never followed by a burst real coalescing would never produce.
+
+### The finding, and the wall
+
+Frame production stalls for 335–1422 ms while `pointermove` keeps being **handled on time** — 8.3 ms
+apart, 5–7 ms queue delay, with 0–5 ms of `engine.*` inside the whole stall. So it is neither slow JS
+nor lost input: the app is starving the rendering pipeline, which is exactly the reported "freezes,
+then catches up in a jump".
+
+**No synthetic input reproduces it.** Ruled out on device, all clean: 1 move/frame, 4.03 moves/frame
+at `pointerType: 'pen'` on a coloring page, the on-device HUD as a confound, accumulated undo-history
+rasters to 33.9 MB, and every CSS suppression of the blend nudge / `mix-blend-mode` / halos. What
+remains is what `dispatchEvent` cannot fake — the real iOS touch pipeline, with **iPadOS Scribble** the
+prime suspect (ADR-0038 and `scribbleGuard` exist because a stylus tap can arm it; recognition would
+be main-thread work inside the browser, invisible to every instrument here, present only under a real
+Pencil). The cheap decisive test is Settings → Apple Pencil → Scribble OFF followed by one hand-drawn
+run.
+
+### The one production seam, and why it is read-only
+
+`lib/boot/devHarnessSeam.ts` exposes the already-exported `getUndoDebug()` on `/` behind the
+`routes/dev/*` gate. It exposes no mutation deliberately: a probe that can change the app can
+invalidate its own measurement. Everything else the probe needs it gets by driving the real UI by
+selector (coloring page, brush), so there is no probe-only surface in production — and the selectors
+are drift-guarded by a test, since prose cannot hold that agreement.
+
 ## Open / unvalidated
 
 * Only ever run against one device (iPadOS 26.5). `--device-id=` exists for multi-device machines
