@@ -106,7 +106,9 @@ export default defineConfig({
   workers,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? ciRetries : 0,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  // The flaky reporter collects nothing when retries are off, so it needs no
+  // branch — it only has anything to say where retries can mask a failure.
+  reporter: [['list'], ['html', { open: 'never' }], ['./playwright-flaky-reporter.ts']],
   use: {
     ...commonPlaywrightConfig.use,
     trace: 'on-first-retry',
