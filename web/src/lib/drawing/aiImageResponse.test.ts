@@ -1,6 +1,5 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import { ui } from '$lib/state/ui.svelte';
 import { readAiImageResponse } from './aiImageResponse';
 
 describe('readAiImageResponse', () => {
@@ -43,19 +42,5 @@ describe('readAiImageResponse', () => {
       status: 503,
       detail: '',
     });
-  });
-
-  it('never mutates UI state', async () => {
-    const before = JSON.stringify(ui);
-
-    const responses = [
-      new Response('image', { status: 200 }),
-      new Response('blocked', { status: 422 }),
-      new Response('Please wait', { status: 429, headers: { 'Retry-After': '7' } }),
-      new Response('unavailable', { status: 502 }),
-    ];
-    for (const response of responses) await readAiImageResponse(response);
-
-    expect(JSON.stringify(ui)).toBe(before);
   });
 });

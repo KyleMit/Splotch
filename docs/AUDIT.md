@@ -23,40 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Testing] "Never mutates UI state" test is tautological and drags a reactive state module into a node-env pure test
-
-**File(s):** `web/src/lib/drawing/aiImageResponse.test.ts` (lines 1–4, 48–60) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-// @vitest-environment node
-import { ui } from '$lib/state/ui.svelte';
-...
-it('never mutates UI state', async () => {
-  const before = JSON.stringify(ui);
-  ...
-  expect(JSON.stringify(ui)).toBe(before);
-});
-```
-
-`readAiImageResponse` (`aiImageResponse.ts`) does not import `ui` — or anything at all beyond the
-`Response` it's handed. The test asserts a module cannot mutate state it has no reference to; it can
-only fail if someone first adds a `ui` import to `aiImageResponse.ts`, at which point the *import
-diff itself* is the reviewable signal. Meanwhile the test file pays a real cost for the assertion:
-it pulls `$lib/state/ui.svelte` (and transitively `modal.svelte`'s rune state) into an otherwise
-dependency-free `node`-environment spec, coupling a pure-parser test to the state layer. The testing
-rules favor one behavior per test with the lowest-cost setup; this one covers a non-behavior.
-
-#### Proposed solution
-
-Delete the test and the `ui` import. If the intent was to document the design rule "response parsing
-owns no UI transitions" (the split that `applyResponse` in `aiImage.ts` handles), state it in a
-one-line comment atop `aiImageResponse.ts` instead — that's where a future contributor adding UI
-writes would see it.
-
 ### [Readability] AiDial's hue sweep and exit transition are unnamed tuning literals
 
 **File(s):** `web/src/lib/components/AiDial.svelte` (lines 79–82, 90) @ 9ae62ff1
