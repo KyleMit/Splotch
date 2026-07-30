@@ -10,9 +10,10 @@ gates cannot see.
 
 **Headline:** the lag is **render starvation**. Input keeps arriving and being handled on time while
 frame production stops for hundreds of milliseconds, with almost no marked engine work inside the
-stall. It reproduces **only under a real hand** — no synthetic input path reproduces it at all. The
-starvation is **compositing at the stroke commit**, most of it the undo snapshot's readback off the
-paper canvas — see §7, which supersedes this session's original candidate list.
+stall. It reproduces **only under a real hand** — no synthetic input path reproduces it at all.
+Manual Timeline captures make long composites after stroke commits the strongest current
+correlation; snapshot capture and backing-store area are the leading candidates, not a final
+root-cause finding. See §7.
 
 ---
 
@@ -151,7 +152,7 @@ Two things fall out:
 * A hand-drawn phase can only fairly be compared **to itself earlier** (the per-bucket table), or to
   a repeated phase in a paired A/B/A/B plan.
 
-## 7. Attribution — compositing at the stroke commit
+## 7. Strongest current attribution — compositing after the stroke commit
 
 > **Updated 2026-07-30.** This section previously said attribution was open and ranked **iPadOS
 > Scribble** first among the candidates. That is retired: the probe now records pointer kind and the
@@ -171,23 +172,23 @@ provokes the worst of it:
 | paint              | 251 |    **3 ms** |       0.5 ms |
 
 **15 stroke commits, 15 long composites**, each starting 2–192 ms after its `engine.commit` mark
-closed, while every `engine.*` operation stayed under 1.2 ms. Painting the stroke is free;
-presenting it is not. This is the mechanism behind §3's stalls and the reason the ADR-0066 gates
-stay green throughout — the cost lands in the compositor *after* the marked work returns, where no
-`engine.*` measure can reach it.
+closed, while every `engine.*` operation stayed under 1.2 ms. The measured cost lands in the
+compositor *after* the marked work returns, where no `engine.*` measure can reach it. This explains
+why the ADR-0066 gates can stay green during a bad Timeline run, but does not prove that every felt
+stall has this mechanism.
 
 **Bisecting the per-commit cost**, hand-drawn Timeline against each build:
 
-| build                    |                                                long composites / commit |
-| ------------------------ | ----------------------------------------------------------------------: |
-| baseline                 |                                                                     1.0 |
-| pooled patch canvases    |                                    0.9 — **allocation is not the cost** |
-| no undo-snapshot capture | **0.2** — the readback out of the GPU-backed paper is ~80% of the stall |
+| build                    |                                              long composites / commit |
+| ------------------------ | --------------------------------------------------------------------: |
+| baseline                 |                                                                   1.0 |
+| pooled patch canvases    |                                  0.9 — **allocation is not the cost** |
+| no undo-snapshot capture | **0.2** — removing the readback path cuts the normalized rate by ~80% |
 
-So the dominant per-commit cost is `capturePatchesUnder` reading a rectangle back off the paper
-canvas ([`undoHistory.ts`](../../../web/src/lib/drawing/undoHistory.ts)) — a GPU→CPU readback that
-stalls the compositor. Reusing the destination canvases does not help, because the allocation was
-never the expense.
+The strongest per-commit candidate is `capturePatchesUnder` reading a rectangle back off the paper
+canvas ([`undoHistory.ts`](../../../web/src/lib/drawing/undoHistory.ts)). Reusing the destination
+canvases does not help, arguing against allocation. Because these are separate hand-drawn runs, the
+rate change is evidence for the readback path, not a causal percentage.
 
 **What remained after that** was a separate, continuous cost: 3608 ms of compositing across 9.1 s,
 ~375 records averaging 9.6 ms — about one per frame, consuming 60% of a 16.7 ms budget before the
@@ -205,18 +206,20 @@ pixel area:
 The layer-strip rung hid both `.crayon-overlay` canvases, the coloring-page wrapper, paper texture,
 and pointer halos without reloading. It did not lower the continuous composite cost and felt worse.
 The 1× rung nearly eliminated long composites and cut normalized composite time by roughly
-two-thirds. The remaining cost is therefore **proportional to backing-store pixel area**, not an
-optional layer.
+two-thirds. Backing-store area is therefore the strongest measured continuous-cost signal; the
+optional layers alone are not sufficient to explain this result.
 
-ADR-0015 records the production compromise: cap the render scale at 1.5×. That retains supersampling
+ADR-0015 records the production mitigation: cap the render scale at 1.5×. That retains supersampling
 while reducing DPR-2 backing stores from 4 to 2.25 pixels per CSS pixel, 43.75% fewer pixels. The 1×
 diagnostic remains the measured floor, not the shipped setting. The final candidate, with production
 snapshot capture restored, recorded 2 long composites across 16 commits versus 15 across 15 commits
 for the 2× baseline.
 
-**Caveat on magnitude.** Web Inspector's composite durations are likely generous. The attribution is
-safe — the probe measured 250–764 ms lift stalls with no inspector attached — but 245 ms should not
-be quoted as the true cost of one composite.
+**Caveat on inference and magnitude.** Web Inspector's composite durations are likely generous. The
+probe independently measured 250–764 ms lift stalls with no inspector attached, but the two
+instruments do not prove they observed the same event, and hand-drawn input differs between runs.
+The evidence justifies the mitigation; it does not close the root-cause investigation. A 245 ms
+Timeline record should not be quoted as the true cost of one composite.
 
 > **On input kind.** Every phase of the hand capture sustained **115-134 moves per second** — a
 > steady ~120 Hz, consistent with a finger on a 120 Hz digitizer, and the reporter described
@@ -235,8 +238,8 @@ be quoted as the true cost of one composite.
 Also opened from this session: **#663** — on a coloring page the screen sometimes goes black
 mid-stroke and then snaps back, which is this same blend layer compositing *unblended* (dark mode
 inverts the art to white-on-black; `screen` is what hides the black plate). Possibly the visible
-face of the same compositor event, but the layer-strip result shows those layers are not the
-continuous lag's source.
+face of the same compositor event, but the layer-strip result shows those layers are not the only
+requirement for the measured continuous cost.
 
 ---
 

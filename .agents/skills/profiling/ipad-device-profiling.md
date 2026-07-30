@@ -588,13 +588,13 @@ npm run perf:timeline:compare -- <baseline>.json <candidate>.json
 totals. `perf:ipad:strip-layers` injects `display: none` for the optional compositing layers over
 the inspector connection, so record the Timeline immediately afterwards; a reload undoes it.
 
-The 2026-07 iPad bisect used this rig to close the visible-lag investigation. A 1× render-scale
-diagnostic reduced long composites from 1.0 to 0.02 per commit and active-window composite time from
-543.7 to 171.4 ms per second; the operator described it as “not too bad.” Hiding every optional
-layer at 2× did not improve normalized composite time and felt worse. ADR-0015 therefore caps
-production rendering at 1.5×: its physical-device verification recorded 0.13 long composites per
-commit and 422.6 composite ms per drawing second. The cost scales with backing-store area, not the
-optional layers.
+The 2026-07 iPad bisect used this rig to identify backing-store area as the strongest measured
+rendering-side signal. A 1× diagnostic reduced long composites from 1.0 to 0.02 per commit and
+active-window composite time from 543.7 to 171.4 ms per second; the operator described it as “not
+too bad.” Hiding every optional layer at 2× did not improve normalized composite time and felt
+worse. ADR-0015 therefore selects a 1.5× mitigation: its physical-device verification recorded 0.13
+long composites per commit and 422.6 composite ms per drawing second. These hand-drawn runs do not
+establish the complete cause of the felt lag.
 
 ---
 

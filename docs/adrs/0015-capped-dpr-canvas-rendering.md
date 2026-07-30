@@ -103,8 +103,8 @@ without changing these propagation rules or per-session invariants:
 ## Amendment (real-screen iPad compositing bisect, 2026-07)
 
 The 2× cap does not survive real-screen verification. On an iPad13,8 running iPadOS 26.5, hand-drawn
-Safari Web Inspector Timeline recordings attributed the visible lag to compositing after the
-engine's marked work returned:
+Safari Web Inspector Timeline recordings found long composite records after the engine's marked work
+returned:
 
 | build                                           | long composites / commit | composite ms / drawing second |
 | ----------------------------------------------- | -----------------------: | ----------------------------: |
@@ -116,8 +116,10 @@ engine's marked work returned:
 
 Removing the always-mounted crayon, line-art, paper, and pointer-halo layers did not lower the
 continuous cost and felt worse to the operator. Quartering the backing-store area nearly eliminated
-long composites and felt substantially smoother. The cost is therefore proportional to canvas pixel
-area, not to those optional compositing layers.
+long composites and felt substantially smoother. Within these runs, backing-store area is the
+strongest measured continuous-cost signal, while the optional layers alone are not sufficient to
+explain it. Because the input was hand-drawn and therefore not identical between runs, this does not
+establish the complete cause of the felt lag.
 
 Set `MAX_RENDER_SCALE = 1.5`, so the shipped backing stores use 2.25 pixels per CSS pixel instead of
 4 on DPR-2+ displays — **43.75% fewer pixels** while retaining supersampling. The 1× rung remains a
@@ -125,9 +127,10 @@ diagnostic floor rather than the product setting because it gives up the sharpne
 benefit that motivated this ADR. Exports keep their independent `exportScale`, so saved images still
 compose at `max(devicePixelRatio, 2)`.
 
-The final 1.5× production build was verified on the same device with snapshot capture enabled. It
+The 1.5× production candidate was verified on the same device with snapshot capture enabled. It
 recorded 2 long composites across 16 commits, versus 15 across 15 commits for the 2× baseline.
 
-This amendment closes the original decision's unverified fill-rate consequence with physical-device
-evidence. It also reduces the area of every paper and snapshot patch readback by the same ratio,
-helping the separate per-commit cost attributed to undo snapshot capture.
+This amendment replaces the original decision's unverified fill-rate assumption with enough
+physical-device evidence to justify a lower-risk mitigation; it does not close the broader felt-lag
+investigation. The cap also reduces the area of every paper and snapshot patch readback by the same
+ratio, helping the separate per-commit candidate around undo snapshot capture.

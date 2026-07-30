@@ -160,10 +160,11 @@ hand-drawn, which is what makes the sample sizes small enough to mislead (above)
 **iPadOS Scribble was the prime suspect and is not the cause.** It was ranked first because it is
 main-thread work inside the browser that no instrument here can see. Two readings retired it: the
 probe records `kind`, and the hand runs come back `touch`, not `pen` — Scribble is Pencil-only — and
-the stalls are now attributed to compositing (below), which has nothing to do with recognition. Left
-here because the reasoning that promoted it was sound and someone will re-derive it otherwise.
+the longest measured stalls align with composite records (below), which has nothing to do with
+recognition. Left here because the reasoning that promoted it was sound and someone will re-derive
+it otherwise.
 
-### What the stalls actually are: compositing at the stroke commit
+### Strongest current attribution: compositing after the stroke commit
 
 A hand-drawn Web Inspector Timeline export on `/` (9.3 s) splits like this:
 
@@ -180,9 +181,11 @@ cost lands in the compositor after the marked work returns**, so an instrument t
 work is structurally blind to it. Any future "the gates are green, so the frame is fine" inference
 is wrong on this platform.
 
-Removing all undo-snapshot capture drops long composites per commit from 1.0 to 0.2, so reading a
-patch back out of the GPU-backed paper canvas is most of the per-commit cost. Pooling the patch
-canvases changed nothing (1.0 → 0.9) — allocation was never the expense, the readback is.
+Removing all undo-snapshot capture drops long composites per commit from 1.0 to 0.2. That makes
+reading a patch back out of the GPU-backed paper canvas the strongest per-commit candidate. Pooling
+the patch canvases changed almost nothing (1.0 → 0.9), arguing against allocation. These are
+separate hand-drawn runs, so the rate change is evidence for the readback path, not a causal
+percentage.
 
 ### Timeline: the export has durations, the protocol domain does not
 
@@ -251,9 +254,9 @@ invalidate its own measurement. Everything else the probe needs it gets by drivi
 selector (coloring page, brush), so there is no probe-only surface in production — and the selectors
 are drift-guarded by a test, since prose cannot hold that agreement.
 
-### The final bisect rung: pixel area, not optional layers
+### The strongest continuous-cost signal: pixel area
 
-Two hand-drawn Timeline rungs closed the remaining continuous-compositing question:
+Two hand-drawn Timeline rungs tested the remaining continuous-compositing candidates:
 
 | build                                            | long composites / commit | composite ms / drawing second | operator read |
 | ------------------------------------------------ | -----------------------: | ----------------------------: | ------------- |
@@ -265,18 +268,26 @@ Two hand-drawn Timeline rungs closed the remaining continuous-compositing questi
 
 Hiding both `.crayon-overlay` canvases, `.paper-view`, `.paper-sheet`, and the pointer halos did not
 reduce the continuous cost. Quartering the backing-store area nearly eliminated long composites and
-felt substantially smoother. The overlays are exonerated; compositing scales with canvas pixel area.
+felt substantially smoother. This makes backing-store area the strongest measured continuous-cost
+signal and shows that the optional layers alone are not sufficient to explain the result. It does
+not establish the complete cause of the felt lag: the hand input differs between runs, and Web
+Inspector may perturb compositor timing.
 
-The production result is ADR-0015's 1.5× cap: 2.25 pixels per CSS pixel instead of 4 on DPR-2+
-displays, retaining supersampling with 43.75% fewer pixels. Its physical-device verification
+The evidence-backed mitigation is ADR-0015's 1.5× cap: 2.25 pixels per CSS pixel instead of 4 on
+DPR-2+ displays, retaining supersampling with 43.75% fewer pixels. Its physical-device verification
 recorded 2 long composites across 16 commits, versus 15 across 15 commits at 2×. The 1× rung was
 diagnostic, not a recommendation to return to CSS-pixel rendering.
 
 ## Open / unvalidated
 
+* **The complete felt-lag cause remains open.** The 1.5× candidate objectively reduced long
+  composites, but its normalized composite time remains much closer to 2× than to the 1× floor and
+  it has no final subjective comparison. Treat the cap as a measured mitigation, not closure of
+  issue #659.
 * **Web Inspector's composite durations are probably generous.** The 245 ms records are the basis
-  for the attribution but not for the magnitude; the probe independently measured 250–764 ms lift
-  stalls with no inspector attached, which is what makes the attribution safe to keep.
+  for the correlation but not for the magnitude; the probe independently measured 250–764 ms lift
+  stalls with no inspector attached, but the two instruments do not prove they observed the same
+  event.
 * The `--free-draw` window and the three-population deltas were validated by use on device, not by a
   test, and have not been through review.
 * Only ever run against one device (iPadOS 26.5). `--device-id=` exists for multi-device machines

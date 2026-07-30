@@ -160,12 +160,13 @@ The drawing path is already well-optimized; treat these as the baseline:
 * **Healthy**: web (4× throttle) and Android (real WebView) both run at frame rate with
   `engine.draw` well under one frame and no long tasks; 0 forced reflows.
 * **Deferred — real user tradeoffs, NOT low-risk oversights:**
-  * **Capped-DPR canvas compositing (ADR-0015).** The dominant cost on-device is raster/paint of the
-    backing store. A hand-drawn physical-iPad Timeline bisect found 2× rendering visibly lagged,
-    while a 1× diagnostic nearly eliminated long composites; hiding every optional layer at 2× did
-    not help. Production uses a measured 1.5× compromise (`MAX_RENDER_SCALE`): 43.75% fewer pixels
-    than 2× while retaining supersampling. Undo memory is tiered (ADR-0066): the paper + resident
-    patch budget, with deeper history as encoded blobs.
+  * **Capped-DPR canvas compositing (ADR-0015).** Backing-store area is the strongest measured
+    rendering-side signal on-device. A hand-drawn physical-iPad Timeline bisect found 2× rendering
+    visibly lagged, while a 1× diagnostic nearly eliminated long composites; hiding every optional
+    layer at 2× did not help. The selected 1.5× mitigation (`MAX_RENDER_SCALE`) uses 43.75% fewer
+    pixels than 2× while retaining supersampling. This is not proof of the complete felt-lag cause.
+    Undo memory is tiered (ADR-0066): the paper + resident patch budget, with deeper history as
+    encoded blobs.
   * `engine.scanEmpty` ~14 ms on-device per erase-stroke-end — low impact (once per stroke), noted
     for the future.
 

@@ -96,7 +96,8 @@ does not reproduce says nothing about the device.
 \+ A felt-lag report is now answerable with numbers on the surface users actually touch, instead of
 with gates that pass comfortably. The first capture established that the lag is **render
 starvation** — input handled every 8.3 ms with 6 ms queue delay while frames stop for 335–1422 ms —
-which is neither slow JS nor lost input, and rules out the entire drawing engine as the cause.
+which is neither slow marked JS nor lost input, and rules out the measured drawing-engine work as
+the direct blocker.
 
 \+ Two facts fell out that outlive the instrument: Safari's 60 Hz ceiling for web content (which
 makes **ADR-0066's 8.3 ms commit-hitch gate stricter than the platform** on Safari/iPad), and that
@@ -122,7 +123,7 @@ read as "long tasks" — the first capture's stalls contain almost no JS at all.
 
 − Synthetic input reproduced none of the reported lag on device (clean at 4.03 moves/frame with
 `pointerType: pen`, and across a four-minute soak), so this class of problem still cannot close its
-loop unattended. The required hand-drawn Timeline later attributed the stalls to compositing after
-stroke commit: snapshot readback caused the per-commit spike, and the continuous cost scaled with
-canvas pixel area rather than the optional layers. ADR-0015 carries the resulting 1.5× render-scale
-cap.
+loop unattended. The required hand-drawn Timeline later found long composite records after stroke
+commit: removing snapshot capture reduced the per-commit rate, and lower render scales reduced the
+continuous rate more than hiding optional layers. ADR-0015 carries the resulting 1.5× mitigation,
+but these hand-drawn runs do not establish the complete cause of the felt lag.
