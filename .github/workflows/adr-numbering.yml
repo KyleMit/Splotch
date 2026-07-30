@@ -6,8 +6,8 @@
 # Deliberately NOT path-filtered, so it reports on every pull request and is safe
 # to mark required. A workflow skipped by a path filter leaves its check Pending
 # forever and blocks any pull request that does not match, which is why GitHub
-# advises against path filtering a required workflow. The work is gated at the
-# step below instead, so the job always runs and always reports.
+# advises against path filtering a required workflow. The check itself is
+# unconditional, so the job always runs and always reports.
 #
 # No setup-node step: scripts/check-adr-numbering.mjs imports only node: builtins
 # and its own siblings, and the runner ships Node, so installing dependencies
