@@ -30,7 +30,8 @@ export function createTiledUndoPatches() {
     command: StrokeGroupCommand,
     tile: SnapshotTile,
     index: number,
-    dirty: TileDirtyBounds = { x0: 0, y0: 0, x1: tile.width, y1: tile.height }
+    dirty: TileDirtyBounds = { x0: 0, y0: 0, x1: tile.width, y1: tile.height },
+    hidden = tile.canvas.hidden === true
   ) {
     let snapshots = byCommand.get(command);
     if (!snapshots) {
@@ -56,7 +57,7 @@ export function createTiledUndoPatches() {
       tileWidth: tile.width,
       tileHeight: tile.height,
       dirty: { ...dirty },
-      hidden: tile.canvas.hidden === true,
+      hidden,
     });
   }
 

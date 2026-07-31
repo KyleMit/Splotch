@@ -150,8 +150,10 @@ describe('idle tiled canvas visibility', () => {
       (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
       0
     );
-    expect(tiledHistoryDebug().patchBytes - patchBytesBeforeClear).toBe(100 * 100 * 4);
+    expect(tiledHistoryDebug().patchBytes - patchBytesBeforeClear).toBe(0);
     expect(clearCallsAfter - clearCallsBefore).toBe(0);
+    deferredFrames.shift()?.(0);
+    expect(tiledHistoryDebug().patchBytes - patchBytesBeforeClear).toBe(100 * 100 * 4);
 
     undoTiledCommand(1);
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
@@ -211,6 +213,35 @@ describe('idle tiled canvas visibility', () => {
     );
     expect(snapshot?.tiles[0]).toMatchObject({ x: 0, y: 0 });
     expect(snapshot?.tiles[1]).toMatchObject({ x: 100, y: 100 });
+  });
+
+  it('spreads clear snapshots across separate animation frames', () => {
+    const { host, canvas } = rendererElements();
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
+    for (const tile of tiles.slice(0, 4)) tile.hidden = false;
+    const deferredFrames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      deferredFrames.push(callback);
+      return deferredFrames.length;
+    });
+
+    clearTiledRenderer(false);
+    const tileBytes = 100 * 100 * 4;
+    let previousBytes = 0;
+    let captureFrames = 0;
+    while (tiledHistoryDebug().patchBytes < tileBytes * 4) {
+      deferredFrames.shift()?.(0);
+      const bytes = tiledHistoryDebug().patchBytes;
+      expect(bytes - previousBytes).toBeLessThanOrEqual(tileBytes);
+      if (bytes > previousBytes) captureFrames++;
+      previousBytes = bytes;
+    }
+    expect(captureFrames).toBe(4);
   });
 
   it('hides and invalidates an open crayon pass before the tile is reused', () => {
@@ -301,14 +332,16 @@ describe('idle tiled canvas visibility', () => {
     const patchBytesBeforeResize = tiledHistoryDebug().patchBytes;
 
     resizeTiledRenderer(800, 400, 1, true);
+    const patchBytesAfterResize = tiledHistoryDebug().patchBytes;
     applyTiledView(IDENTITY_PAPER_VIEW);
     expect(tiles.some((tile) => tile.width !== 200 || tile.height !== 100)).toBe(true);
     while (deferredFrames.length) deferredFrames.shift()!(0);
 
     expect(tiles.every((tile) => tile.width === 200 && tile.height === 100)).toBe(true);
-    expect(tiledHistoryDebug().patchBytes).toBe(patchBytesBeforeResize);
+    expect(patchBytesAfterResize).toBeGreaterThan(patchBytesBeforeResize);
+    expect(tiledHistoryDebug().patchBytes).toBe(patchBytesAfterResize);
     expect(undoTiledCommand(1)).toMatchObject({ empty: false, canUndo: true });
-    expect(tiledHistoryDebug().patchBytes).toBeLessThan(patchBytesBeforeResize);
+    expect(tiledHistoryDebug().patchBytes).toBeLessThan(patchBytesAfterResize);
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
   });
 

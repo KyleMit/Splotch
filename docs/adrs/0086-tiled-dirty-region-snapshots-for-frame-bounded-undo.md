@@ -76,6 +76,24 @@ The clear gesture's 725–731 ms “ready observed” time includes the drag and
 It is not synchronous clear work. The scored frame stream starts at trusted pointerdown and covers
 the full gesture plus deferred wipe, so the retained result cannot hide a delayed long frame.
 
+A later cross-target sweep exposed the other half of the same boundary. A stroke spanning four
+visible tiles made clear create four full-tile undo snapshots in the pointerup task. The physical
+iPad reached a 56 ms maximum gap and the iPad web simulator reached 37 ms. Removing clear snapshots
+entirely proved that capture owned the simulator tail, but made clear undo fall back to vector
+replay and was rejected. The retained implementation captures at most one visible tile per presented
+frame and promotes the clear-preview opacity layer before the gesture begins:
+
+| Target / strategy                                   | First-frame P95 ms | Frame P95 ms | Max gap ms | Result                         |
+| --------------------------------------------------- | -----------------: | -----------: | ---------: | ------------------------------ |
+| Physical iPad native, synchronous snapshots         |                  7 |           17 |         56 | Fail                           |
+| iPad web simulator, synchronous snapshots           |                  3 |           17 |         37 | Fail                           |
+| iPad web simulator, no clear snapshots              |                  4 |           17 |         32 | Diagnostic only; undo rejected |
+| Physical iPad native, progressive snapshots (10×)   |                  6 |           17 |         22 | Pass; retained                 |
+| Physical iPad web, progressive snapshots (5×)       |                 13 |           17 |         21 | Pass                           |
+| iPad web simulator, progressive snapshots (10×)     |                  3 |           17 |         32 | Pass                           |
+| Android native emulator, progressive snapshots (5×) |               15.3 |         16.7 |       16.8 | Pass                           |
+| Mac WebKit, progressive snapshots (5×)              |                 15 |           19 |         31 | Pass                           |
+
 ## Decision
 
 Production tiled undo restores pre-command dirty-region patches. Vector commands remain, but undo
@@ -94,14 +112,17 @@ does not replay them in the ordinary path.
 5. Ordinary undo publishes the popped command's captured `wasEmpty` state. A tile scan remains only
    when another pointer is actively drawing and the captured pre-command state cannot describe the
    composite result.
-6. Clear captures only visible normal-ink tiles, because hidden tiles contain no presented committed
-   pixels. It hides affected normal and crayon layers immediately, then clears their backing stores
-   after two presented frames. A tile reused before that callback clears synchronously before its
-   first new op; undo cancels the pending wipe by restoring the patch and visibility first. Export
-   snapshots include visible tiles only, so a hidden stale backing can never leak into a save. Clear
-   remains one undoable command. If another pointer is still drawing, clear discards that active
-   command's old patches so its continued segment captures the cleared paper, not the pixels clear
-   removed.
+6. Clear targets only visible normal-ink tiles, because hidden tiles contain no presented committed
+   pixels. It hides affected normal and crayon layers immediately, then captures at most one full
+   pre-clear tile per `requestAnimationFrame`. Each captured backing clears after two further
+   presented frames. A tile reused before its scheduled capture snapshots the pre-clear pixels,
+   clears synchronously, and only then captures the new command's blank pre-state. Immediate undo
+   restores completed patches and simply unhides still-preserved pending backings; either route
+   cancels the deferred wipe. Resize resolves pending captures before changing tile geometry, while
+   repaint and detach discard the pending schedule. Export snapshots include visible tiles only, so
+   a hidden stale backing can never leak into a save. Clear remains one undoable command. If another
+   pointer is still drawing, clear discards that active command's old patches so its continued
+   segment captures the cleared paper, not the pixels clear removed.
 
 Patch coordinates are local to the current tile backing stores. Resize or rotation can change tile
 dimensions, and an asynchronous magic sheet can change what an earlier command should reveal without
@@ -142,8 +163,9 @@ Resident patches use an adaptive byte budget:
   or historical op volume. The final normal run measured 0 ms engine P95 and 10 ms next-frame P95.
 * \+ All four brushes, post-rotation undo, and twenty deep undos after tiled-base compaction pass
   the physical-iPad response gates.
-* \+ Clear improved from 75–83 ms maximum frame gaps to 23–28 ms without reducing output scale, undo
-  depth, or visual quality.
+* \+ Clear improved from the original 75–83 ms maximum frame gaps to 23–28 ms, then kept a later
+  four-tile case to 22 ms on physical iPad and 32 ms on the iPad web simulator by spreading undo
+  capture across frames. Output scale, undo behavior, and visual quality remain intact.
 * \+ Live drawing remains full-resolution and starve-free. No brush, audio, visual quality, or
   normal twenty-step depth was removed.
 * \+ Typical twenty-step patch history is about 20 MiB on the target iPad. Fully compacted history
@@ -282,12 +304,20 @@ To separate snapshot cost from backing-store mutation:
 3. Productize the diagnostic by marking the hidden tile dirty and clearing it after two
    `requestAnimationFrame` callbacks. If a new op reaches the tile first, clear before rendering
    that op. If undo restores it first, cancel the pending wipe by clearing the dirty marker.
+4. Exercise more than one visible tile. If all undo copies still occur at pointerup, the four-tile
+   case reproduces the later 37–56 ms regression even though the one-tile case passes. As a
+   diagnostic, remove only the clear-command patch capture; a passing result attributes the tail to
+   snapshots but is not shippable because undo can return to unbounded replay.
+5. Queue one visible-tile snapshot per `requestAnimationFrame`. Preserve the hidden backing until
+   its copy exists, then use the existing deferred wipe. Promote only the clear-preview opacity
+   layer; promoting the confirmation ripple does not cover the early drag-preview composition gap.
 
 An open crayon pass is a second presentation plane even when the normal tile is hidden. Treat a
 dirty crayon buffer as affected by clear, hide both preview canvases immediately, and invalidate the
 same backing. Otherwise a second finger can draw after the clear drag begins and leave wax visible
 when the gesture commits. Unit coverage must exercise clear, immediate undo, reuse before the
-deferred callback, crayon-buffer reuse, and visible-only export capture.
+deferred callback, one-snapshot-per-frame pacing, resize during pending capture, crayon-buffer
+reuse, and visible-only export capture.
 
 Do not infer clear completion from the Undo button: clear itself is undoable. The production action
 probe waits for Screenshot to become disabled, while the frame gate—not that readiness

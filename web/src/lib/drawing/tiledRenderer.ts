@@ -2,6 +2,7 @@ import { crayonBufferIsDirty, resetCrayonStateForClear } from './crayonPassBuffe
 import { scanCanvasIsEmpty } from './emptyScan';
 import { setMagicPatternRegion } from './magicBrush';
 import { viewMatrix, viewToPaper, type PaperView } from './paperView';
+import { createProgressiveClearCapture } from './progressiveClearCapture';
 import { renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
 import { type HistoryDebug, MAX_UNDO_DEPTH } from './undoHistory';
 import { geometryIntersectsTile, opDeviceBounds, tilesIntersect } from './tiledGeometry';
@@ -90,6 +91,7 @@ export function resizeTiledRenderer(
   if (rendererWidth === width && rendererHeight === height && rendererScale === renderScale) {
     return false;
   }
+  clearCapture.resolve();
   rendererWidth = width;
   rendererHeight = height;
   rendererScale = renderScale;
@@ -199,13 +201,30 @@ function enforceUndoPatchBudget() {
   }
 }
 
+const clearCapture = createProgressiveClearCapture<StrokeGroupCommand>({
+  tileCount: () => liveTiles.length,
+  capture(command, index) {
+    const tile = liveTiles[index];
+    if (!tile) return false;
+    undoPatches.capture(command, tile, index, undefined, false);
+    deferHiddenTileClear(tile);
+    return true;
+  },
+  onComplete: enforceUndoPatchBudget,
+});
+
+function prepareTileForMutation(tile: LiveTile, index: number) {
+  if (!tile.needsClear) return;
+  clearCapture.captureBeforeMutation(index);
+  clearTileBacking(tile);
+}
+
 function showTileForOp(tile: LiveTile, op: StrokeOp) {
   if (op.kind === 'clear') {
     tile.canvas.hidden = true;
     tile.needsClear = false;
     return;
   }
-  if (tile.needsClear) clearTileBacking(tile);
   if ((op.kind === 'dot' || op.kind === 'path') && op.crayon && !op.erase) return;
   if (op.kind === 'crayonFlush' && !crayonBufferIsDirty(tile.ctx)) return;
   tile.canvas.hidden = false;
@@ -217,6 +236,7 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
       if (op.kind !== 'crayonFlush' || crayonBufferIsDirty(tile.ctx)) {
         ensureNormalTileBacking(tile);
       }
+      prepareTileForMutation(tile, index);
       if (command && op.kind !== 'crayonFlush') {
         undoPatches.capture(command, tile, index);
       }
@@ -229,6 +249,7 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
     if (geometryIntersectsTile(op, tile)) {
       ensureNormalTileBacking(tile);
       if (op.crayon && !op.erase) ensureCrayonTileBacking(tile);
+      prepareTileForMutation(tile, index);
       if (command) undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
       showTileForOp(tile, op);
       renderOp(tile.ctx, op);
@@ -305,6 +326,7 @@ export function scheduleTiledHistoryFold() {
 }
 
 export function repaintTiledRenderer(rebuildUndoPatches = true) {
+  clearCapture.cancel();
   const undoableStart = history.length - undoableCommands;
   const rebuildUndo = rebuildUndoPatches && (undoableCommands > 0 || activeCommand !== null);
   for (const tile of liveTiles) {
@@ -350,15 +372,16 @@ export function commitTiledCommand() {
 export function undoTiledCommand(renderScale: number) {
   const undone = history.pop();
   undoableCommands = Math.max(0, undoableCommands - 1);
+  const pendingIndices = undone ? clearCapture.takePendingIndices(undone) : [];
   const snapshots = undone && undoPatches.get(undone);
   const snapshotsFit =
-    snapshots &&
-    [...snapshots].every(([index, snapshot]) => {
+    (snapshots || pendingIndices.length > 0) &&
+    [...(snapshots ?? [])].every(([index, snapshot]) => {
       const tile = liveTiles[index];
       return snapshot.tileWidth === tile?.width && snapshot.tileHeight === tile?.height;
     });
   if (snapshotsFit) {
-    for (const [index, snapshot] of snapshots) {
+    for (const [index, snapshot] of snapshots ?? []) {
       const tile = liveTiles[index];
       resetCrayonStateForClear(tile.ctx);
       tile.ctx.save();
@@ -368,6 +391,11 @@ export function undoTiledCommand(renderScale: number) {
       tile.ctx.restore();
       tile.needsClear = false;
       tile.canvas.hidden = snapshot.hidden;
+    }
+    for (const index of pendingIndices) {
+      const tile = liveTiles[index];
+      tile.needsClear = false;
+      tile.canvas.hidden = false;
     }
   } else {
     repaintTiledRenderer(snapshots === undefined);
@@ -383,20 +411,25 @@ export function undoTiledCommand(renderScale: number) {
 
 export function clearTiledRenderer(wasEmpty: boolean) {
   const clearCommand: StrokeGroupCommand = { ops: [{ kind: 'clear' }], wasEmpty };
-  for (const [index, tile] of liveTiles.entries()) {
-    if (!tile.canvas.hidden) undoPatches.capture(clearCommand, tile, index);
-  }
+  const captureIndices: number[] = [];
   history.push(clearCommand);
   undoableCommands = Math.min(MAX_UNDO_DEPTH, undoableCommands + 1);
   enforceUndoPatchBudget();
   scheduleTiledHistoryFold();
-  for (const tile of liveTiles) {
-    if (tile.canvas.hidden && !crayonBufferIsDirty(tile.ctx)) continue;
+  for (const [index, tile] of liveTiles.entries()) {
+    const wasVisible = !tile.canvas.hidden;
+    if (!wasVisible && !crayonBufferIsDirty(tile.ctx)) continue;
     tile.canvas.hidden = true;
     tile.crayonBottom.hidden = true;
     tile.crayonTop.hidden = true;
-    deferHiddenTileClear(tile);
+    if (wasVisible) {
+      tile.needsClear = true;
+      captureIndices.push(index);
+    } else {
+      deferHiddenTileClear(tile);
+    }
   }
+  clearCapture.schedule(clearCommand, captureIndices);
   if (activeCommand) {
     undoPatches.delete(activeCommand);
     activeCommand.ops.length = 0;
@@ -474,6 +507,7 @@ export function renderTiledSnapshot(target: CanvasRenderingContext2D) {
 
 export function detachTiledRenderer() {
   cancelHistoryFold();
+  clearCapture.cancel();
   backingMigrationRevision++;
   canvas = null;
   host = null;
