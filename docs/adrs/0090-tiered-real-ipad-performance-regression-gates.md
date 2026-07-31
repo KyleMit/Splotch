@@ -1,7 +1,8 @@
 # ADR-0090: Gate iPad Performance with In-Page Timings Driven by Real XCUITest Input
 
 **Status:** Active — amends [ADR-0032](0032-performance-profiling-harness.md) and
-[ADR-0084](0084-trusted-xcuitest-input-for-ipad-real-screen-profiling.md). **Date:** 2026-07
+[ADR-0084](0084-trusted-xcuitest-input-for-ipad-real-screen-profiling.md); amended by
+[ADR-0092](0092-direct-cdp-android-browser-action-profiling.md). **Date:** 2026-07
 
 ## Context
 

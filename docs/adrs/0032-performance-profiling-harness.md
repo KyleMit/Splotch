@@ -7,8 +7,9 @@ deleted with the replay system; a commit now splits into `engine.snapshot` + `en
 path** drives a physical iOS device over the WebKit Inspector Protocol, so "device-accurate iOS
 profiling stays a documented manual step" below now holds only for Timeline recording. Further
 amended by ADR-0090 (2026-07): calibrated physical-iPad drawing and discrete-action measurements are
-absolute regression gates, while shared-runner browser profiles remain on-demand diagnostics. See
-the amendments at the end. **Date:** 2026-06
+absolute regression gates, while shared-runner browser profiles remain on-demand diagnostics.
+Further amended by ADR-0092 (2026-07): Android Chrome discrete-action profiles use direct CDP rather
+than Appium. See the amendments at the end. **Date:** 2026-06
 
 ## Context
 

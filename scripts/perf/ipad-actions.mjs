@@ -108,7 +108,7 @@ async function clickWebElement(client, sessionId, selector) {
 async function clickSetupElement(execute, selector) {
   await execute(`
     const target = document.querySelector(${JSON.stringify(selector)});
-    if (!target) throw new Error('Missing setup target');
+    if (!target) throw new Error(${JSON.stringify(`Missing setup target ${selector}`)});
     target.click();
     return true;
   `);
@@ -277,7 +277,7 @@ async function nativeBoundsForSelector(client, sessionId, execute, selector) {
     webGeometry,
     webViewBounds,
     nativeWindow,
-    includeBrowserChrome: !client.nativeApp,
+    includeBrowserChrome: client.includeBrowserChrome ?? !client.nativeApp,
   });
   await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
   return { bounds, nativeWindow, webContext };
@@ -383,11 +383,12 @@ async function ensureStableTrustedStroke(client, sessionId, execute) {
 }
 
 async function measureClear(client, sessionId, execute, label = 'clear drawing') {
-  const { bounds, nativeWindow, webContext } = client.nativeApp
-    ? await nativeBoundsForSelector(client, sessionId, execute, '#clearButton')
-    : await nativeAccessibilityBounds(client, sessionId, 'Clear drawing').catch(() =>
-        nativeBoundsForSelector(client, sessionId, execute, '#clearButton')
-      );
+  const { bounds, nativeWindow, webContext } =
+    client.nativeApp || client.useWebGeometryForClear
+      ? await nativeBoundsForSelector(client, sessionId, execute, '#clearButton')
+      : await nativeAccessibilityBounds(client, sessionId, 'Clear drawing').catch(() =>
+          nativeBoundsForSelector(client, sessionId, execute, '#clearButton')
+        );
   const startX = Math.round(bounds.x + bounds.width / 2);
   const startY = Math.round(bounds.y + bounds.height / 2);
   const distance = Math.min(nativeWindow.width, nativeWindow.height) * 0.48;
@@ -672,6 +673,18 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     );
   }
 
+  if (
+    actions.has('parent-center') ||
+    actions.has('parent-sections') ||
+    actions.has('parent-settings') ||
+    actions.has('theme')
+  ) {
+    await waitForReady(
+      execute,
+      `document.querySelector('#parentHelpModal .pc-nav-item') !== null || document.querySelector('#parentHelpModal .hub-list') !== null`,
+      'Parent Center navigation'
+    );
+  }
   const parentCenterUsesSidebar = await execute(
     `return document.querySelector('#parentHelpModal .pc-nav-item') !== null;`
   );

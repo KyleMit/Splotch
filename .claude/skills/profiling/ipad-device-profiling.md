@@ -281,7 +281,7 @@ npm run perf:ipad:actions --ignore-scripts -- --device-id=<UDID> \
 The default three-repeat suite covers the action drawer, palette, brushes, stroke width, Parent
 Center and every section, themes, coloring-page selection/removal, screenshot, undo, drag-to-clear,
 and rotation. It writes `actions.json` and fails a grouped action when frame P95 exceeds 20 ms or
-the first/worst frame exceeds 32 ms. Use `--report-only` for a broad discovery sweep, then
+the first/worst frame exceeds 33.5 ms. Use `--report-only` for a broad discovery sweep, then
 `--actions=` for one-change trials against the failing family.
 
 The rAF recorder runs inside MobileSafari, so WebDriver's Mac/device round-trip is not part of the

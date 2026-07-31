@@ -9,13 +9,13 @@ import { buildAndPreview } from './preview.mjs';
 import { ROOT, fail, isMain, runMain, sleep } from '../lib/proc.mjs';
 import { waitForUrl } from '../lib/net.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
+import { PlaywrightWebDriver } from './playwright-webdriver.mjs';
 
 const ACTION_PROBE_FILE = join(ROOT, 'scripts', 'perf', 'action-probe.js');
 const DEFAULT_VIEWPORT = { width: 1512, height: 982 };
 const DEFAULT_DEVICE_SCALE_FACTOR = 2;
 const READY_TIMEOUT_MS = 60_000;
 const REPEAT_SETTLE_MS = 500;
-const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
 const SESSION_ID = 'desktop';
 
 const ENGINES = {
@@ -43,117 +43,6 @@ function resolveViewport(value) {
     width: positiveInteger(match[1], 'viewport width'),
     height: positiveInteger(match[2], 'viewport height'),
   };
-}
-
-function cssAttributeValue(value) {
-  return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
-}
-
-class DesktopWebDriver {
-  constructor(page) {
-    this.page = page;
-    this.elements = new Map();
-    this.elementSequence = 0;
-    this.pointer = { x: 0, y: 0 };
-  }
-
-  orientation() {
-    const viewport = this.page.viewportSize();
-    return viewport.width > viewport.height ? 'LANDSCAPE' : 'PORTRAIT';
-  }
-
-  async registerElement(locator) {
-    if ((await locator.count()) === 0) throw new Error('Desktop element was not found');
-    const id = `desktop-element-${++this.elementSequence}`;
-    this.elements.set(id, locator.first());
-    return { [ELEMENT_KEY]: id };
-  }
-
-  async elementRect(id) {
-    if (id === 'desktop-webview') return this.windowRect();
-    const bounds = await this.elements.get(id)?.boundingBox();
-    if (!bounds) throw new Error(`Desktop element ${id} has no visible bounds`);
-    return bounds;
-  }
-
-  windowRect() {
-    const viewport = this.page.viewportSize();
-    return { x: 0, y: 0, width: viewport.width, height: viewport.height };
-  }
-
-  async movePointer(x, y, durationMs) {
-    const steps = Math.max(1, Math.round(durationMs / 16));
-    const start = this.pointer;
-    for (let step = 1; step <= steps; step++) {
-      const progress = step / steps;
-      const next = {
-        x: start.x + (x - start.x) * progress,
-        y: start.y + (y - start.y) * progress,
-      };
-      await this.page.mouse.move(next.x, next.y);
-      if (durationMs > 0) await sleep(durationMs / steps);
-    }
-    this.pointer = { x, y };
-  }
-
-  async performActions(sources) {
-    const actions = sources.find((source) => source.type === 'pointer')?.actions ?? [];
-    for (const action of actions) {
-      if (action.type === 'pointerMove') {
-        await this.movePointer(action.x, action.y, action.duration ?? 0);
-      } else if (action.type === 'pointerDown') {
-        await this.page.mouse.down();
-      } else if (action.type === 'pointerUp') {
-        await this.page.mouse.up();
-      } else if (action.type === 'pause') {
-        await sleep(action.duration ?? 0);
-      }
-    }
-  }
-
-  async setOrientation(orientation) {
-    if (orientation === this.orientation()) return;
-    const viewport = this.page.viewportSize();
-    await this.page.setViewportSize({ width: viewport.height, height: viewport.width });
-  }
-
-  async request(method, path, body = {}) {
-    if (method === 'GET' && path.endsWith('/contexts')) return ['WEBVIEW_desktop'];
-    if (method === 'POST' && path.endsWith('/context')) return null;
-    if (method === 'GET' && path.endsWith('/orientation')) return this.orientation();
-    if (method === 'POST' && path.endsWith('/orientation')) {
-      await this.setOrientation(body.orientation);
-      return null;
-    }
-    if (method === 'GET' && path.endsWith('/window/rect')) return this.windowRect();
-    if (method === 'POST' && path.endsWith('/actions')) {
-      await this.performActions(body.actions);
-      return null;
-    }
-    if (method === 'POST' && path.endsWith('/element')) {
-      if (body.using === 'class name' && body.value === 'XCUIElementTypeWebView') {
-        return { [ELEMENT_KEY]: 'desktop-webview' };
-      }
-      if (body.using === 'accessibility id') {
-        const value = cssAttributeValue(body.value);
-        return this.registerElement(this.page.locator(`[aria-label="${value}"]`));
-      }
-      if (body.using === 'css selector') {
-        return this.registerElement(this.page.locator(body.value));
-      }
-    }
-    const elementMatch = /\/element\/([^/]+)\/(rect|click)$/.exec(path);
-    if (elementMatch?.[2] === 'rect' && method === 'GET') {
-      return this.elementRect(elementMatch[1]);
-    }
-    if (elementMatch?.[2] === 'click' && method === 'POST') {
-      const locator = this.elements.get(elementMatch[1]);
-      if (!locator) throw new Error(`Unknown desktop element ${elementMatch[1]}`);
-      await locator.click();
-      return null;
-    }
-    throw new Error(`Unsupported desktop WebDriver request: ${method} ${path}`);
-  }
 }
 
 function browserLaunchOptions(engineName, headless) {
@@ -204,9 +93,9 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
     browser = await engine.launch(browserLaunchOptions(engineName, headless));
     const context = await browser.newContext({ viewport, deviceScaleFactor });
     const page = await context.newPage();
-    const client = new DesktopWebDriver(page);
+    const client = new PlaywrightWebDriver(page);
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
-    const originalOrientation = client.orientation();
+    const originalOrientation = await client.orientation();
     const samples = [];
 
     for (let repeat = 1; repeat <= repeats; repeat++) {
