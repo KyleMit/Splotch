@@ -178,6 +178,7 @@ async function measureClick({
     activation === 'native' && !client.webdriverClicks
       ? await nativeBoundsForSelector(client, sessionId, execute, selector)
       : null;
+  await ensureActionProbe(execute);
   await execute(
     `return window.__actionProbe.begin(${JSON.stringify(label)}, ${JSON.stringify(
       selector
@@ -348,6 +349,13 @@ async function installActionProbe(execute) {
   await execute(readFileSync(ACTION_PROBE_FILE, 'utf8'));
 }
 
+async function ensureActionProbe(execute) {
+  const ready = await execute(`return typeof window.__actionProbe?.begin === 'function';`).catch(
+    () => false
+  );
+  if (!ready) await installActionProbe(execute);
+}
+
 async function ensureStableTrustedStroke(client, sessionId, execute) {
   for (let attempt = 0; attempt < MAX_SETUP_RECOVERY_ATTEMPTS; attempt++) {
     const ready = await pollUntil(
@@ -359,8 +367,7 @@ async function ensureStableTrustedStroke(client, sessionId, execute) {
       POLL_MS
     );
     if (!ready) throw new Error('The drawing canvas did not recover after native setup');
-    const probeReady = await execute(`return typeof window.__actionProbe?.begin === 'function';`);
-    if (!probeReady) await installActionProbe(execute);
+    await ensureActionProbe(execute);
     const hasInk = await execute(
       `return document.querySelector('#undoButton')?.getAttribute('aria-disabled') === 'false';`
     );
@@ -386,6 +393,7 @@ async function measureClear(client, sessionId, execute, label = 'clear drawing')
   const distance = Math.min(nativeWindow.width, nativeWindow.height) * 0.48;
   const endX = Math.max(20, Math.round(startX - distance * 0.72));
   const endY = Math.min(nativeWindow.height - 20, Math.round(startY + distance * 0.72));
+  await ensureActionProbe(execute);
   await execute(
     `return window.__actionProbe.begin(${JSON.stringify(label)}, '#clearButton', ['pointerdown']);`
   );
@@ -435,6 +443,7 @@ async function measureClear(client, sessionId, execute, label = 'clear drawing')
 }
 
 async function measureRotation(client, sessionId, execute, from, to, label) {
+  await ensureActionProbe(execute);
   await execute(
     `return window.__actionProbe.beginExternal(${JSON.stringify(label)}, ['orientationchange', 'resize']);`
   );
