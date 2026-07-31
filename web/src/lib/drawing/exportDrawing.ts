@@ -1,8 +1,8 @@
 // Composes the shareable PNG of the current drawing: the theme's paper color,
 // the handmade-paper texture, the strokes (snapshotted by the engine), and the
-// coloring-page overlay on top — the same stack the child sees on screen. In
-// dark mode the paper fill is the dark paper and the line art is inverted and
-// screened, matching the on-screen --paper / --lineart-* tokens.
+// coloring-page overlay on top — the same stack the child sees on screen. The
+// overlay is generated as transparent black or white ink for its theme, so the
+// export uses ordinary source-over composition.
 //
 // Save-time-only, so the engine loads this module on demand (issue #461) —
 // keep it free of static importers or it silently merges back into the startup
@@ -26,6 +26,10 @@ export type ExportSnapshot = ExportCanvas | TiledExportSnapshot;
 
 export interface ExportOptions {
   includePaperTexture?: boolean;
+}
+
+function getExportContext(canvas: ExportCanvas): ExportContext | null {
+  return canvas instanceof HTMLCanvasElement ? canvas.getContext('2d') : canvas.getContext('2d');
 }
 
 let paperTextureImage: HTMLImageElement | null = null;
@@ -76,32 +80,13 @@ async function paintPaperBackground(
   target.globalCompositeOperation = 'source-over';
 }
 
-// Invert the (opaque) line art the way the on-screen --lineart-filter does.
-// `ctx.filter = 'invert(1)'` isn't available at the Safari 16.4 floor, but a
-// 'difference' fill with white is the same per-channel math.
-function invertedOverlay(overlay: HTMLImageElement): HTMLCanvasElement | null {
-  const inv = document.createElement('canvas');
-  inv.width = overlay.naturalWidth;
-  inv.height = overlay.naturalHeight;
-  const ctx = inv.getContext('2d');
-  if (!ctx) return null;
-  ctx.drawImage(overlay, 0, 0);
-  ctx.globalCompositeOperation = 'difference';
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, inv.width, inv.height);
-  return inv;
-}
-
 // The coloring page blends over the finished composite, contain-fit and
-// centered — matching how the overlay <img> renders above the canvas: black
-// lines multiplied over light paper, or (dark mode) the inverted white lines
-// screened over the dark paper.
+// centered — matching how the transparent overlay <img> renders above the canvas.
 function drawOverlayContained(
   target: ExportContext,
   overlay: HTMLImageElement,
   w: number,
-  h: number,
-  theme: ResolvedTheme
+  h: number
 ) {
   if (overlay.naturalWidth === 0 || overlay.naturalHeight === 0) return;
   const { scale, offsetX, offsetY } = containFit(
@@ -110,19 +95,8 @@ function drawOverlayContained(
   );
   const drawnW = overlay.naturalWidth * scale;
   const drawnH = overlay.naturalHeight * scale;
-  if (theme === 'dark') {
-    const inverted = invertedOverlay(overlay);
-    if (!inverted) {
-      // No 2D context was available for the temporary inversion surface.
-      target.globalCompositeOperation = 'source-over';
-      return;
-    }
-    target.globalCompositeOperation = 'screen';
-    target.drawImage(inverted, offsetX, offsetY, drawnW, drawnH);
-  } else {
-    target.globalCompositeOperation = 'multiply';
-    target.drawImage(overlay, offsetX, offsetY, drawnW, drawnH);
-  }
+  target.globalCompositeOperation = 'source-over';
+  target.drawImage(overlay, offsetX, offsetY, drawnW, drawnH);
   target.globalCompositeOperation = 'source-over';
 }
 
@@ -137,7 +111,7 @@ export async function composeExportPng(
   // Resolve once up front so an OS theme switch mid-export can't mismatch the
   // paper fill and the overlay treatment. Coloring pages follow the resolved
   // theme just like free-draw (ADR-0052 direction B): a dark-mode save is the
-  // night version — dark paper, inverted white "chalk" line art screened on top,
+  // night version — dark paper, the generated transparent white chalk overlay,
   // and the night-fill reveals already baked into the replayed strokes.
   const theme = resolvedTheme();
 
@@ -163,21 +137,20 @@ export async function composeExportPng(
       texture: textureBitmap,
       overlay: overlayBitmap,
       paperColor: PAPER_COLORS[theme],
-      theme,
     });
   }
 
   const w = snapshot.width / renderScale;
   const h = snapshot.height / renderScale;
 
-  const target = snapshot.getContext('2d');
+  const target = getExportContext(snapshot);
   if (!target) return null;
   target.imageSmoothingEnabled = true;
   target.imageSmoothingQuality = 'high';
   target.setTransform(renderScale, 0, 0, renderScale, 0, 0);
 
   await paintPaperBackground(target, w, h, includePaperTexture, theme);
-  if (overlayImage) drawOverlayContained(target, overlayImage, w, h, theme);
+  if (overlayImage) drawOverlayContained(target, overlayImage, w, h);
 
   return encodeCanvasPng(snapshot);
 }

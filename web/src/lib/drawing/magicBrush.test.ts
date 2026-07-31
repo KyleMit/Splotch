@@ -251,6 +251,132 @@ describe('magic sheet fill-load failure', () => {
   });
 });
 
+describe('magic sheet worker raster', () => {
+  const REAL_GET_CONTEXT = HTMLCanvasElement.prototype.getContext;
+  const requestedImages: WorkerImage[] = [];
+  const workers: WorkerStub[] = [];
+
+  class WorkerImage {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    naturalWidth = 200;
+    naturalHeight = 100;
+    src = '';
+
+    constructor() {
+      requestedImages.push(this);
+    }
+  }
+
+  class WorkerStub {
+    messageListeners: Array<(event: MessageEvent) => void> = [];
+    errorListeners: Array<(event: ErrorEvent) => void> = [];
+    posted: Array<{ id: number; imageUrl: string }> = [];
+    terminate = vi.fn();
+
+    constructor() {
+      workers.push(this);
+    }
+
+    addEventListener(type: string, listener: EventListener) {
+      if (type === 'message') this.messageListeners.push(listener as (event: MessageEvent) => void);
+      if (type === 'error') this.errorListeners.push(listener as (event: ErrorEvent) => void);
+    }
+
+    postMessage(message: { id: number; imageUrl: string }) {
+      this.posted.push(message);
+    }
+
+    respond(data: unknown) {
+      for (const listener of this.messageListeners) {
+        listener(new MessageEvent('message', { data }));
+      }
+    }
+
+    fail(message: string) {
+      for (const listener of this.errorListeners) {
+        listener(new ErrorEvent('error', { message }));
+      }
+    }
+  }
+
+  class WorkerOffscreenCanvas {
+    transferToImageBitmap() {}
+  }
+
+  beforeEach(() => {
+    vi.resetModules();
+    requestedImages.length = 0;
+    workers.length = 0;
+    vi.stubGlobal('Image', WorkerImage);
+    vi.stubGlobal('Worker', WorkerStub);
+    vi.stubGlobal('OffscreenCanvas', WorkerOffscreenCanvas);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    HTMLCanvasElement.prototype.getContext = REAL_GET_CONTEXT;
+  });
+
+  async function mountedWorkerBrush(repaint = vi.fn()) {
+    const magic = await import('./magicBrush');
+    magic.initMagicBrush({
+      paperSize: () => ({ width: 400, height: 300 }),
+      sheetBounds: () => ({ x: 0, y: 0, width: 400, height: 300 }),
+      repaint,
+    });
+    return { magic, repaint };
+  }
+
+  it('publishes the transferred bitmap only after the worker finishes', async () => {
+    const { magic, repaint } = await mountedWorkerBrush();
+    magic.setColorSheet('/coloring/page.light.webp');
+    requestedImages[0].onload!();
+
+    expect(magic.captureMagicSheet()).toBeNull();
+    expect(workers[0].posted[0]).toMatchObject({ imageUrl: '/coloring/page.light.webp' });
+
+    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    workers[0].respond({ id: workers[0].posted[0].id, bitmap });
+    await vi.waitFor(() => expect(magic.captureMagicSheet()?.canvas).toBe(bitmap));
+
+    expect(bitmap.close).not.toHaveBeenCalled();
+    expect(repaint).toHaveBeenCalledOnce();
+  });
+
+  it('closes a superseded bitmap without replacing the current sheet', async () => {
+    const { magic } = await mountedWorkerBrush();
+    magic.setColorSheet('/coloring/first.light.webp');
+    requestedImages[0].onload!();
+    magic.setColorSheet('/coloring/second.light.webp');
+    requestedImages[1].onload!();
+
+    const firstBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    workers[0].respond({ id: workers[0].posted[0].id, bitmap: firstBitmap });
+    await vi.waitFor(() => expect(firstBitmap.close).toHaveBeenCalledOnce());
+    expect(magic.captureMagicSheet()).toBeNull();
+
+    const secondBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    workers[0].respond({ id: workers[0].posted[1].id, bitmap: secondBitmap });
+    await vi.waitFor(() => expect(magic.captureMagicSheet()?.canvas).toBe(secondBitmap));
+  });
+
+  it('falls back to main-thread rasterization when the worker fails', async () => {
+    (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = () =>
+      ({ clearRect() {}, drawImage() {} }) as unknown as CanvasRenderingContext2D;
+    const { magic, repaint } = await mountedWorkerBrush();
+    magic.setColorSheet('/coloring/page.light.webp');
+    requestedImages[0].onload!();
+
+    workers[0].fail('worker unavailable');
+    await vi.waitFor(() => expect(magic.captureMagicSheet()).not.toBeNull());
+
+    expect(workers[0].terminate).toHaveBeenCalledOnce();
+    expect(magic.captureMagicSheet()?.canvas).toBeInstanceOf(HTMLCanvasElement);
+    expect(repaint).toHaveBeenCalledOnce();
+  });
+});
+
 describe('letterbox edge extension geometry', () => {
   // A tall fill contain-fit into a taller viewport → top + bottom margins only.
   it('fills top and bottom margins for a top/bottom letterbox', () => {

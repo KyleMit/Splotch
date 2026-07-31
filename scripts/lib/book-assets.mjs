@@ -2,3 +2,14 @@
 // This script-side filter must remain the complement of booksForPlatform('mobile')
 // in web/src/lib/state/books.ts.
 export const webOnlyBooks = (books) => books.filter((book) => !book.platforms.includes('mobile'));
+
+export const nativeUnusedLineArt = (books) =>
+  books
+    .filter((book) => book.platforms.includes('mobile'))
+    .flatMap((book) => [
+      book.cover,
+      ...book.pages.flatMap((page) => [
+        ...Object.values(page.images),
+        ...Object.values(page.chalkImages),
+      ]),
+    ]);

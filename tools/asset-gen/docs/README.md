@@ -65,6 +65,7 @@ npm run gen:coloring-fills:audit:shapes # invented colored shapes on the open ba
 npm run gen:coloring-fills:audit:halo # rank shipped night fills by residual dark halo after the punch (no key/network)
 npm run gen:coloring-punch      # re-punch the shipped fills from fill-src/ raws (no key/network)
 npm run gen:coloring-thumbs     # picker thumbnails (pen + chalk) -> web/static/coloring/**/*.{thumb,chalk.thumb}.webp
+npm run gen:coloring-overlays   # transparent light/dark runtime overlays -> web/static/coloring/**/*.{overlay,dark.overlay}.webp
 npm run gen:coloring-golden:diff # re-score the catalog vs the frozen golden/golden-scores.json (no key/network, ~1 min)
 npm run gen:coloring-golden:freeze # adopt the current catalog scores as the new golden baseline
 npm run gen:assets:manifest     # re-hash the committed art -> golden/asset-manifest.sha256 (CI drift guard)
@@ -144,6 +145,7 @@ The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast wit
 * **Shipped outputs** (committed, read by the app): `*.chalk.webp` chalk outlines (dedicated
   dark-mode line art, stored ink-on-white — see `pipeline.md`), `*.light.webp` / `*.night.webp`
   fills, `*.thumb.webp` / `*.chalk.thumb.webp` thumbnails (light / dark picker tiles),
+  `*.overlay.webp` / `*.dark.overlay.webp` transparent full-page presentation layers, and
   `web/static/styles/*.webp` covers.
 * **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/` — at the **repo
   root** (`lib/paths.mjs` `SAMPLES_DIR` / `SAMPLES_DARK_DIR`), not under `tools/asset-gen/`. (The

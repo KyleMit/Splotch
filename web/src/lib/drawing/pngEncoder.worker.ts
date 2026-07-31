@@ -15,7 +15,6 @@ interface EncodeTiledPngRequest {
   texture: ImageBitmap | null;
   overlay: ImageBitmap | null;
   paperColor: string;
-  theme: 'light' | 'dark';
 }
 
 type EncodePngRequest = EncodeCanvasPngRequest | EncodeTiledPngRequest;
@@ -31,28 +30,15 @@ const encoderWorker = self as unknown as EncoderWorkerScope;
 function drawContainedOverlay(
   context: OffscreenCanvasRenderingContext2D,
   canvas: OffscreenCanvas,
-  overlay: ImageBitmap,
-  theme: EncodeTiledPngRequest['theme']
+  overlay: ImageBitmap
 ) {
   const scale = Math.min(canvas.width / overlay.width, canvas.height / overlay.height);
   const width = overlay.width * scale;
   const height = overlay.height * scale;
   const x = (canvas.width - width) / 2;
   const y = (canvas.height - height) / 2;
-  if (theme === 'dark') {
-    const inverted = new OffscreenCanvas(overlay.width, overlay.height);
-    const invertedContext = inverted.getContext('2d');
-    if (!invertedContext) throw new Error('PNG encoder could not invert the overlay');
-    invertedContext.drawImage(overlay, 0, 0);
-    invertedContext.globalCompositeOperation = 'difference';
-    invertedContext.fillStyle = '#fff';
-    invertedContext.fillRect(0, 0, inverted.width, inverted.height);
-    context.globalCompositeOperation = 'screen';
-    context.drawImage(inverted, x, y, width, height);
-  } else {
-    context.globalCompositeOperation = 'multiply';
-    context.drawImage(overlay, x, y, width, height);
-  }
+  context.globalCompositeOperation = 'source-over';
+  context.drawImage(overlay, x, y, width, height);
   context.globalCompositeOperation = 'source-over';
 }
 
@@ -81,7 +67,7 @@ async function encodeTiledPng(data: EncodeTiledPngRequest): Promise<Blob> {
   context.setTransform(tileScale, 0, 0, tileScale, 0, 0);
   for (const tile of data.tiles) context.drawImage(tile.bitmap, tile.x, tile.y);
   context.resetTransform();
-  if (data.overlay) drawContainedOverlay(context, canvas, data.overlay, data.theme);
+  if (data.overlay) drawContainedOverlay(context, canvas, data.overlay);
   return canvas.convertToBlob({ type: 'image/png' });
 }
 

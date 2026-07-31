@@ -25,7 +25,7 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toBeVisible();
   // The src lands once the art has decoded (the ready-gated swap), so retry.
-  await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.outline\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.overlay\.webp$/);
 });
 
 test('a selected page stays centered and visible while its full-resolution art decodes', async ({
@@ -36,7 +36,7 @@ test('a selected page stays centered and visible while its full-resolution art d
   const fullImageHeld = new Promise<void>((resolve) => {
     releaseFullImage = resolve;
   });
-  await page.route(/\/coloring\/farm\/cat-wide\.outline\.webp$/, async (route) => {
+  await page.route(/\/coloring\/farm\/cat-wide\.overlay\.webp$/, async (route) => {
     await fullImageHeld;
     await route.continue();
   });
@@ -63,7 +63,7 @@ test('a selected page stays centered and visible while its full-resolution art d
     expect(overlayBox).toEqual(canvasBox);
 
     releaseFullImage();
-    await expect(overlay).toHaveAttribute('src', /\/cat-wide\.outline\.webp$/);
+    await expect(overlay).toHaveAttribute('src', /\/cat-wide\.overlay\.webp$/);
 
     await openColoringDialog(page);
     await expect(dialog.getByRole('heading', { name: 'Coloring Books' })).toBeVisible();
@@ -84,7 +84,7 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
   await applyFarmPage(page);
 
   const overlay = page.locator('#coloringOverlay');
-  await expect(overlay).toHaveAttribute('src', /\.outline\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /\.overlay\.webp$/);
   await page.evaluate(() => {
     const originalDecode = HTMLImageElement.prototype.decode;
     let release!: () => void;
@@ -94,7 +94,7 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
     const controlledWindow = window as Window & { __releaseChalkDecode?: () => void };
     controlledWindow.__releaseChalkDecode = release;
     HTMLImageElement.prototype.decode = function () {
-      if (this.src.endsWith('.chalk.webp')) {
+      if (this.src.endsWith('.dark.overlay.webp')) {
         return pendingChalk.then(() => originalDecode.call(this));
       }
       return originalDecode.call(this);
@@ -104,13 +104,13 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
   await openParentCenter(page);
   await page.locator('#themeOption-dark').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(overlay).toHaveAttribute('src', /\.outline\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /\.overlay\.webp$/);
   await expect(overlay).toHaveClass(/overlay-ready/);
 
   await page.evaluate(() => {
     (window as Window & { __releaseChalkDecode?: () => void }).__releaseChalkDecode?.();
   });
-  await expect(overlay).toHaveAttribute('src', /\.chalk\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /\.dark\.overlay\.webp$/);
 });
 
 // A device rotation with ink on the canvas must NOT swap the page's tall/wide
@@ -128,7 +128,7 @@ test('rotating with ink keeps the same coloring page art until the canvas is bla
   await applyFarmPage(page);
 
   const overlay = page.locator('#coloringOverlay');
-  await expect(overlay).toHaveAttribute('src', /-wide\.outline\.webp$/); // landscape viewport → wide art
+  await expect(overlay).toHaveAttribute('src', /-wide\.overlay\.webp$/); // landscape viewport → wide art
   const srcBefore = await overlay.getAttribute('src');
 
   await draw(page, [
@@ -146,7 +146,7 @@ test('rotating with ink keeps the same coloring page art until the canvas is bla
   // Undo the only stroke → blank canvas → the paper re-adopts the portrait
   // viewport and the art swaps to the tall variant.
   await page.locator('#undoButton').click();
-  await expect(overlay).toHaveAttribute('src', /-tall\.outline\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /-tall\.overlay\.webp$/);
   await expect(page.locator('.paper-sheet.paper-lifted')).toHaveCount(0);
 });
 
@@ -218,11 +218,11 @@ test('rotating the viewport swaps the coloring overlay to the matching art', asy
   await applyFarmPage(page);
 
   const overlay = page.locator('#coloringOverlay');
-  await expect(overlay).toHaveAttribute('src', /-wide\.outline\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /-wide\.overlay\.webp$/);
 
   await page.setViewportSize({ width: 600, height: 900 });
-  await expect(overlay).toHaveAttribute('src', /-tall\.outline\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /-tall\.overlay\.webp$/);
 
   await page.setViewportSize({ width: 900, height: 600 });
-  await expect(overlay).toHaveAttribute('src', /-wide\.outline\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /-wide\.overlay\.webp$/);
 });

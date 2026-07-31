@@ -165,10 +165,9 @@
   // aware (ADR-0052 direction B): light mode reveals the light fill; dark mode
   // reveals the pre-colored NIGHT fill where one exists, falling back to the
   // light fill for pages/orientations whose night asset isn't generated yet.
-  // The overlay's line art is theme-aware: dark mode shows the page's CHALK
-  // outline where one exists (shipped ink-on-white, so the same
-  // --lineart-filter invert + screen treatment renders it as white chalk),
-  // falling back to inverting the pen outline for un-forked pages. Reading
+  // The overlay's line art is theme-aware: light mode uses generated transparent
+  // black pen ink and dark mode uses generated transparent white chalk, falling
+  // back to a white overlay derived from the pen for un-forked pages. Reading
   // resolvedTheme() re-picks the art on a live theme switch.
   const themedOverlayUrl = $derived(currentThemedOverlayUrl(resolvedTheme()));
   const themedOverlayThumbnailUrl = $derived(currentThemedOverlayThumbnailUrl(resolvedTheme()));
@@ -181,7 +180,10 @@
   // visible until the sibling is ready.
   let displayedOverlayUrl = $state<string | null>(null);
   function overlayCompositionKey(url: string) {
-    return url.replace(/\.(?:outline|chalk(?:\.thumb)?|thumb)\.webp(?:\?.*)?$/, '');
+    return url.replace(
+      /\.(?:(?:dark\.)?overlay|outline|chalk(?:\.thumb)?|thumb)\.webp(?:\?.*)?$/,
+      ''
+    );
   }
 
   $effect(() => {
@@ -236,29 +238,6 @@
   const paperCssHeight = $derived(
     paperView.paperCssHeight ? `${paperView.paperCssHeight}px` : '100%'
   );
-
-  // The line-art overlay's mix-blend-mode composites against a STALE snapshot
-  // of the canvas while a stroke is live: painting into the 2D canvas doesn't
-  // invalidate the blend layer above it, so the blend only re-evaluates when
-  // something else repaints — which used to be the pointerup Svelte writes,
-  // making dark-mode ink under the chalk lines look dim until the finger
-  // lifted (issue #307). Toggling an imperceptible translateZ epsilon on the
-  // wrapper damages the blend layer once per input event (pointermoves are
-  // coalesced to ~one per frame), forcing the screen/multiply blend to
-  // recompute against the current canvas pixels mid-stroke. The two transform
-  // values must differ NUMERICALLY — alternating `translateZ(0)` with nothing
-  // flattens to the same matrix and the compositor would skip the damage.
-  let blendNudge = $state(false);
-
-  function nudgeBlendLayer(e: PointerEvent) {
-    if (!overlayUrl()) return;
-    if (e.type === 'pointermove' && e.buttons === 0) return;
-    blendNudge = !blendNudge;
-  }
-
-  const paperViewTransform = $derived(
-    `${paperTransform} translateZ(${blendNudge ? '0.01px' : '0'})`
-  );
 </script>
 
 <div class="canvas-container">
@@ -281,7 +260,7 @@
     class="paper-view"
     style:width={paperCssWidth}
     style:height={paperCssHeight}
-    style:transform={paperViewTransform}
+    style:transform={paperTransform}
     hidden={!overlayUrl()}
   >
     <img
@@ -300,12 +279,7 @@
        previews faint on the dark paper (min(colour, near-black) erases the
        blend layer) until its pass stamps. -->
   <div class="canvas-stack">
-    <canvas
-      bind:this={canvasEl}
-      id="drawingCanvas"
-      class:erasing={toolState.brush === 'eraser'}
-      onpointerdown={nudgeBlendLayer}
-      onpointermove={nudgeBlendLayer}
+    <canvas bind:this={canvasEl} id="drawingCanvas" class:erasing={toolState.brush === 'eraser'}
     ></canvas>
     <div
       class="live-paper-view"
@@ -407,15 +381,9 @@
     cursor: none;
   }
 
-  /* The blend lives on the wrapper (not the img): the transform makes the
-     wrapper a stacking context, which would confine an inner mix-blend-mode to
-     the wrapper's own (transparent) backdrop instead of the canvas below.
-     Light: black lines multiply over the light paper. Dark: the img's
-     --lineart-filter inverts the art to white-on-black and screen makes the
-     black transparent-equivalent — white "chalk" lines over the dark paper
-     (ADR-0052 direction B). will-change keeps the wrapper on its own
-     compositor layer so the mid-stroke blend nudge (see nudgeBlendLayer) is a
-     composite-only update — no per-frame repaint of the line art. */
+  /* The generated overlay carries only transparent black or white ink, so it
+     can use ordinary source-over composition without a full-page blend/filter
+     layer. */
   .paper-view {
     position: absolute;
     top: 0;
@@ -423,7 +391,7 @@
     transform-origin: 0 0;
     pointer-events: none;
     z-index: 2;
-    mix-blend-mode: var(--lineart-blend);
+    mix-blend-mode: normal;
     will-change: transform;
   }
 
@@ -439,7 +407,6 @@
     height: 100%;
     object-fit: contain;
     opacity: 0;
-    filter: var(--lineart-filter);
   }
 
   .coloring-overlay.overlay-ready {

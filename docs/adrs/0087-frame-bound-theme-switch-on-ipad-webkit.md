@@ -1,7 +1,8 @@
 # ADR-0087: Keep iPad Theme Changes Frame-Bound by Retiring Idle Canvas Layers
 
 **Status:** Active — amends [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) and
-[ADR-0086](0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md). **Date:** 2026-07
+[ADR-0086](0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md). **Date:** 2026-07 The
+alpha-native follow-up is implemented by [ADR-0091](0091-alpha-overlays-and-worker-magic-sheets.md).
 
 ## Context
 
@@ -62,8 +63,8 @@ frame P95.
 Keeping both theme-specific line-art images resident eliminated a cold swap outlier but stabilized
 at the same 30–31 ms as the simpler decoded-sibling gate. It consumed another full-page decoded
 image and compositor layer, so it was not retained. Generating alpha-native line-art assets could
-remove the remaining `filter` plus `mix-blend-mode` cost, but that is an asset-pipeline decision and
-was not necessary to remove the user-visible freeze.
+remove the remaining `filter` plus `mix-blend-mode` cost. ADR-0091 later implemented that option
+when coloring-page selection showed the residual cost could independently cross the frame gate.
 
 ## Decision
 
@@ -123,8 +124,8 @@ long-frame boundary with millisecond timer quantization, rather than the prior o
   cannot merely call `renderOp`; it must maintain tile visibility too.
 * − `hidden` is correctness state, not cosmetic markup. Resize, clear, repaint, crayon flush, and
   undo must keep it synchronized with tile pixels.
-* − Five occupied tiles add about 3–4 ms to a theme switch compared with a blank paper. Further
-  margin likely requires alpha-native line-art assets that eliminate full-page blend/filter work.
+* − Five occupied tiles add about 3–4 ms to a theme switch compared with a blank paper. ADR-0091
+  later removed the full-page line-art blend/filter work; occupied tile cost remains independent.
 * − Physical MobileSafari remains authoritative. Playwright WebKit can catch logic and large local
   regressions but does not reproduce this iPad compositor's costs.
 
@@ -200,16 +201,15 @@ before the first mutation in the same undo snapshot that captures pixels.
 
 ### Overlay Alternatives
 
-The accepted composition-key gate strips `.outline.webp` and `.chalk.webp` from the URL. A page or
-orientation change has a different key and uses the existing hide-until-decode behavior. A theme
-sibling has the same key and leaves the old image visible until decode.
+The accepted composition-key gate strips thumbnail and presentation suffixes, including
+`.overlay.webp` and `.dark.overlay.webp`, from the URL. A page or orientation change has a different
+key and uses the existing hide-until-decode behavior. A theme sibling has the same key and leaves
+the old image visible until decode.
 
 The rejected dual-layer experiment appended both decoded siblings, kept both at full paper size, and
 toggled opacity from a `data-theme` observer. It measured 30–31 ms, indistinguishable from the
 retained version, while adding decoded memory and a potential compositor layer.
 
-An alpha-native asset experiment would need transparent black outline art for light mode and
-transparent white chalk art for dark mode. It can remove `mix-blend-mode` and `filter`, but it must
-be decided in `tools/asset-gen/docs/`, regenerate every orientation/theme asset, update export
-composition, compare file size and edge quality, and remeasure Coloring Book thumbnails as well as
-the drawing overlay.
+ADR-0091 and `tools/asset-gen/docs/alpha-line-art-overlays.md` implement the alpha-native option:
+transparent black pen art for light mode, transparent white chalk art for dark mode, source-over
+export composition, and a catalog-wide 4/255 reconstructed-channel guard.

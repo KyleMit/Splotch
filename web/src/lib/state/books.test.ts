@@ -60,15 +60,17 @@ describe('pageThumb', () => {
 describe('pageOverlayImage', () => {
   const cat = BOOKS.find((book) => book.id === 'farm')!.pages.find((p) => p.id === 'cat')!;
 
-  it('uses pen line art in light mode and chalk line art in dark mode', () => {
-    expect(pageOverlayImage(cat, 'portrait', 'light')).toBe('/coloring/farm/cat-tall.outline.webp');
-    expect(pageOverlayImage(cat, 'portrait', 'dark')).toBe('/coloring/farm/cat-tall.chalk.webp');
+  it('uses transparent presentation overlays for both themes', () => {
+    expect(pageOverlayImage(cat, 'portrait', 'light')).toBe('/coloring/farm/cat-tall.overlay.webp');
+    expect(pageOverlayImage(cat, 'portrait', 'dark')).toBe(
+      '/coloring/farm/cat-tall.dark.overlay.webp'
+    );
   });
 
-  it('falls back to pen line art when a dark-mode chalk sibling is unavailable', () => {
+  it('keeps the dark presentation path stable when its generator falls back to pen line art', () => {
     const unforked = { ...cat, chalkImages: {} };
     expect(pageOverlayImage(unforked, 'landscape', 'dark')).toBe(
-      '/coloring/farm/cat-wide.outline.webp'
+      '/coloring/farm/cat-wide.dark.overlay.webp'
     );
   });
 });
@@ -111,6 +113,16 @@ describe('bookAssetPaths', () => {
     for (const page of farm.pages) {
       for (const chalk of Object.values(page.chalkImages)) {
         expect(paths).toContain(chalkThumbPath(chalk));
+      }
+    }
+  });
+
+  it('lists light and dark presentation overlays for every page orientation', () => {
+    const paths = bookAssetPaths(farm);
+    for (const page of farm.pages) {
+      for (const orientation of ['portrait', 'landscape'] as const) {
+        expect(paths).toContain(pageOverlayImage(page, orientation, 'light'));
+        expect(paths).toContain(pageOverlayImage(page, orientation, 'dark'));
       }
     }
   });

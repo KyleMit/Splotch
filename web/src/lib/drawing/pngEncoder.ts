@@ -14,7 +14,6 @@ export interface TiledPngInput {
   texture: ImageBitmap | null;
   overlay: ImageBitmap | null;
   paperColor: string;
-  theme: 'light' | 'dark';
 }
 
 interface PngEncoder {

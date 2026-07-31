@@ -156,7 +156,6 @@ describe('composeExportPng overlay', () => {
         tiles: [{ bitmap, x: 100, y: 75 }],
         texture: null,
         overlay: null,
-        theme: 'light',
       })
     );
   });
@@ -171,7 +170,7 @@ describe('composeExportPng overlay', () => {
     expect(toBlob).not.toHaveBeenCalled();
   });
 
-  it('multiplies the original overlay in light mode', async () => {
+  it('draws the transparent light overlay source-over', async () => {
     const contexts = setupExportContexts(null);
     const overlay = createOverlayImage();
     const { composeExportPng } = await import('./exportDrawing');
@@ -180,47 +179,23 @@ describe('composeExportPng overlay', () => {
 
     expect(contexts.draws[0]).toMatchObject({
       source: overlay,
-      compositeOperation: 'multiply',
+      compositeOperation: 'source-over',
     });
     expect(contexts.outputContext.globalCompositeOperation).toBe('source-over');
   });
 
-  it('screens the inverted overlay in dark mode', async () => {
+  it('draws the transparent dark overlay source-over without another canvas', async () => {
     appearanceMock.resolvedTheme.mockReturnValue('dark');
-    const inversionContext = asCanvasContext({
-      globalCompositeOperation: 'source-over',
-      imageSmoothingEnabled: false,
-      imageSmoothingQuality: 'low',
-      fillStyle: '',
-      scale: vi.fn(),
-      setTransform: vi.fn(),
-      fillRect: vi.fn(),
-      createPattern: vi.fn(() => null),
-      drawImage: vi.fn(),
-    });
-    const contexts = setupExportContexts(inversionContext);
+    const contexts = setupExportContexts(null);
     const { composeExportPng } = await import('./exportDrawing');
     const overlay = createOverlayImage();
 
     await composeExportPng(createSnapshot(), 1, overlay, { includePaperTexture: false });
 
-    expect(contexts.draws[0].source).toBeInstanceOf(HTMLCanvasElement);
-    expect(contexts.draws[0].source).not.toBe(overlay);
-    expect(contexts.draws[0].compositeOperation).toBe('screen');
-    expect(contexts.outputContext.globalCompositeOperation).toBe('source-over');
-  });
-
-  it('skips the overlay when inversion cannot allocate a context', async () => {
-    appearanceMock.resolvedTheme.mockReturnValue('dark');
-    const contexts = setupExportContexts(null);
-    contexts.outputContext.globalCompositeOperation = 'screen';
-    const { composeExportPng } = await import('./exportDrawing');
-
-    await composeExportPng(createSnapshot(), 1, createOverlayImage(), {
-      includePaperTexture: false,
+    expect(contexts.draws[0]).toMatchObject({
+      source: overlay,
+      compositeOperation: 'source-over',
     });
-
-    expect(contexts.draws).toHaveLength(0);
     expect(contexts.outputContext.globalCompositeOperation).toBe('source-over');
   });
 });

@@ -9,6 +9,10 @@
 //   static/coloring/{book}/{page}-wide.outline.webp   landscape PEN outline, 3:2
 //   static/coloring/{book}/{page}-tall.chalk.webp     portrait CHALK outline (dark mode)
 //   static/coloring/{book}/{page}-wide.chalk.webp     landscape CHALK outline (dark mode)
+//   static/coloring/{book}/{page}-tall.overlay.webp   transparent black light-mode overlay
+//   static/coloring/{book}/{page}-wide.overlay.webp   transparent black light-mode overlay
+//   static/coloring/{book}/{page}-tall.dark.overlay.webp transparent white dark-mode overlay
+//   static/coloring/{book}/{page}-wide.dark.overlay.webp transparent white dark-mode overlay
 //   static/coloring/{book}/{name}.thumb.webp          grid thumbnail of the pen line art
 //   static/coloring/{book}/{name}.chalk.thumb.webp    grid thumbnail of the chalk (dark mode)
 //   static/coloring/{book}/{page}-tall.light.webp     portrait colored fill
@@ -20,13 +24,14 @@
 // every other asset derives from. The CHALK outline is the dark-mode overlay —
 // a Gemini redraw of the pen as a chalk drawing whose deliberate solid whites
 // (eye sclera, catchlights) survive into the night render. It ships INK-ON-WHITE
-// (the negation of what dark mode shows) so the existing dark treatment
-// (--lineart-filter: invert(1) + screen) renders it unchanged; orientations
-// without a chalk fall back to inverting the pen (tools/asset-gen/bin/gen-coloring-chalk.mjs).
+// (the negation of what dark mode shows). The picker applies invert + screen;
+// gen-coloring-overlays derives the transparent white full-page presentation.
+// Orientations without a chalk derive their dark overlay from the pen instead.
 //
 // Each picker-facing line-art image (cover + pages, pen AND chalk) has a
 // thumbnail sibling (tools/asset-gen/bin/gen-coloring-thumbs.mjs): the picker grid
-// shows the thumbnail, the full-screen canvas overlay uses the full-res source.
+// shows the thumbnail, while the full-screen canvas uses a transparent overlay
+// derived from the full-res source.
 // `thumbPath()` maps a pen outline to its `.thumb.webp`, `chalkThumbPath()` a
 // chalk to its `.chalk.thumb.webp`, and `pageThumb()` picks per theme — dark
 // mode shows the chalk thumb so the tile previews the same art the canvas
@@ -86,6 +91,8 @@ const ASSET_SUFFIXES = {
   chalk: '.chalk.webp',
   thumb: '.thumb.webp',
   chalkThumb: '.chalk.thumb.webp',
+  overlay: '.overlay.webp',
+  darkOverlay: '.dark.overlay.webp',
 } as const;
 
 const ALL_ORIENTATIONS: BookOrientation[] = ['portrait', 'landscape'];
@@ -266,9 +273,9 @@ export function pageOverlayImage(
   orientation: BookOrientation,
   theme: ResolvedTheme
 ): string {
-  return (
-    (theme === 'dark' ? pageChalkImage(page, orientation) : null) ?? pageImage(page, orientation)
-  );
+  const source = pageImage(page, orientation);
+  const suffix = theme === 'dark' ? ASSET_SUFFIXES.darkOverlay : ASSET_SUFFIXES.overlay;
+  return source.slice(0, -ASSET_SUFFIXES.outline.length) + suffix;
 }
 
 /** Grid-thumbnail path for a picker-facing line-art image (`x.outline.webp` -> `x.thumb.webp`). */
@@ -287,10 +294,9 @@ export function chalkThumbPath(src: string): string {
 
 /** Picker-tile thumbnail for a page, theme-aware: dark mode shows the CHALK
     thumbnail where the orientation has a chalk (stored ink-on-white like every
-    line-art asset — the tile's --lineart-filter invert + screen renders it as
-    white chalk, the same treatment the canvas overlay gets), falling back to
-    the inverted pen thumbnail for un-forked pages. Covers have no chalk yet,
-    so book tiles keep `thumbPath(book.cover)`. */
+    source line-art asset — the tile's --lineart-filter invert + screen renders
+    it as white chalk), falling back to the inverted pen thumbnail for un-forked
+    pages. Covers have no chalk yet, so book tiles keep `thumbPath(book.cover)`. */
 export function pageThumb(
   page: ColoringPage,
   orientation: BookOrientation,
@@ -318,10 +324,16 @@ export function bookAssetPaths(book: Book): string[] {
   const nightFills = book.pages.flatMap((page) =>
     ALL_ORIENTATIONS.map((o) => page.nightImages[o]).filter((p): p is string => !!p)
   );
-  // Chalk outlines exist only for forked orientations — the full-screen overlay
-  // and the picker tile (via its .chalk.thumb sibling) swap to them in dark mode.
+  // Chalk outlines exist only for forked orientations — they produce the dark
+  // presentation overlay and the picker tile's .chalk.thumb sibling.
   const chalkOutlines = book.pages.flatMap((page) =>
     ALL_ORIENTATIONS.map((o) => page.chalkImages[o]).filter((p): p is string => !!p)
+  );
+  const overlays = book.pages.flatMap((page) =>
+    ALL_ORIENTATIONS.flatMap((orientation) => [
+      pageOverlayImage(page, orientation, 'light'),
+      pageOverlayImage(page, orientation, 'dark'),
+    ])
   );
   return [
     ...lineArt,
@@ -330,5 +342,6 @@ export function bookAssetPaths(book: Book): string[] {
     ...chalkOutlines,
     ...lineArt.map(thumbPath),
     ...chalkOutlines.map(chalkThumbPath),
+    ...overlays,
   ];
 }

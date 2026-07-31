@@ -128,7 +128,6 @@ describe('encodeCanvasPng', () => {
       texture,
       overlay,
       paperColor: '#fff',
-      theme: 'dark',
     });
     const worker = ControllableWorker.instances[0];
 

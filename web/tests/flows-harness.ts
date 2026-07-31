@@ -99,6 +99,6 @@ export async function applyFarmPage(page: Page) {
   }).toPass();
   await expect(page.locator('#coloringOverlay')).toHaveAttribute(
     'src',
-    /\.(?:outline|chalk)\.webp$/
+    /\.(?:dark\.)?overlay\.webp$/
   );
 }

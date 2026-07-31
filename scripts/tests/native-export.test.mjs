@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { nativeUnusedLineArt } from '../lib/book-assets.mjs';
 import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from '../lib/native-export.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
@@ -47,5 +48,31 @@ describe('stripWebOnlyHeadTags', () => {
   it('is a no-op on markup with nothing to strip', () => {
     const html = '<link rel="stylesheet" href="/app.css" />\n<meta charset="UTF-8" />\n';
     expect(stripWebOnlyHeadTags(html)).toBe(html);
+  });
+});
+
+describe('nativeUnusedLineArt', () => {
+  it('strips opaque sources only for books shipped on mobile', () => {
+    const mobile = {
+      cover: '/coloring/mobile/cover.outline.webp',
+      platforms: ['mobile'],
+      pages: [
+        {
+          images: {
+            portrait: '/coloring/mobile/page-tall.outline.webp',
+            landscape: '/coloring/mobile/page-wide.outline.webp',
+          },
+          chalkImages: { portrait: '/coloring/mobile/page-tall.chalk.webp' },
+        },
+      ],
+    };
+    const web = { ...mobile, cover: '/coloring/web/cover.outline.webp', platforms: ['web'] };
+
+    expect(nativeUnusedLineArt([mobile, web])).toEqual([
+      '/coloring/mobile/cover.outline.webp',
+      '/coloring/mobile/page-tall.outline.webp',
+      '/coloring/mobile/page-wide.outline.webp',
+      '/coloring/mobile/page-tall.chalk.webp',
+    ]);
   });
 });
