@@ -6,6 +6,7 @@ import {
   chalkThumbPath,
   pageColorImage,
   pageImage,
+  pageOverlayImage,
   pageThumb,
   thumbPath,
 } from './books';
@@ -53,6 +54,22 @@ describe('pageThumb', () => {
   it('dark mode falls back to the pen thumbnail for un-forked orientations', () => {
     const unforked = { ...cat, chalkImages: {} };
     expect(pageThumb(unforked, 'portrait', 'dark')).toBe('/coloring/farm/cat-tall.thumb.webp');
+  });
+});
+
+describe('pageOverlayImage', () => {
+  const cat = BOOKS.find((book) => book.id === 'farm')!.pages.find((p) => p.id === 'cat')!;
+
+  it('uses pen line art in light mode and chalk line art in dark mode', () => {
+    expect(pageOverlayImage(cat, 'portrait', 'light')).toBe('/coloring/farm/cat-tall.outline.webp');
+    expect(pageOverlayImage(cat, 'portrait', 'dark')).toBe('/coloring/farm/cat-tall.chalk.webp');
+  });
+
+  it('falls back to pen line art when a dark-mode chalk sibling is unavailable', () => {
+    const unforked = { ...cat, chalkImages: {} };
+    expect(pageOverlayImage(unforked, 'landscape', 'dark')).toBe(
+      '/coloring/farm/cat-wide.outline.webp'
+    );
   });
 });
 

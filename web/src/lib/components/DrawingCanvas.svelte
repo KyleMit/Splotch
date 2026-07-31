@@ -20,7 +20,9 @@
   import { strokeState, getStrokeWidthPx, getEraserWidthPx } from '$lib/state/strokeWidth.svelte';
   import {
     overlayUrl,
-    chalkUrl,
+    coloringBookState,
+    themedOverlayUrl as currentThemedOverlayUrl,
+    themedOverlayThumbnailUrl as currentThemedOverlayThumbnailUrl,
     colorSheetUrl,
     nightSheetUrl,
   } from '$lib/state/coloringBook.svelte';
@@ -29,6 +31,7 @@
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
   import { isNative } from '$lib/platform';
   import { scheduleIdle } from '$lib/idle';
+  import { prefetchImages } from '$lib/imagePrefetch';
   import FullscreenToggle from './FullscreenToggle.svelte';
   import PointerHalos from './PointerHalos.svelte';
 
@@ -162,34 +165,23 @@
   // aware (ADR-0052 direction B): light mode reveals the light fill; dark mode
   // reveals the pre-colored NIGHT fill where one exists, falling back to the
   // light fill for pages/orientations whose night asset isn't generated yet.
-  // Both fills ship fills-only (outlines punched to transparency at build time),
-  // so the overlay <img> stays the single source of line work. Reading
-  // resolvedTheme() re-runs this on a live theme switch, re-rasterizing the sheet.
-  $effect(() => {
-    const nightUrl = resolvedTheme() === 'dark' ? nightSheetUrl() : null;
-    setColorSheet(nightUrl ?? colorSheetUrl());
-  });
-
   // The overlay's line art is theme-aware: dark mode shows the page's CHALK
   // outline where one exists (shipped ink-on-white, so the same
   // --lineart-filter invert + screen treatment renders it as white chalk),
   // falling back to inverting the pen outline for un-forked pages. Reading
   // resolvedTheme() re-picks the art on a live theme switch.
-  const themedOverlayUrl = $derived(
-    resolvedTheme() === 'dark' ? (chalkUrl() ?? overlayUrl()) : overlayUrl()
-  );
+  const themedOverlayUrl = $derived(currentThemedOverlayUrl(resolvedTheme()));
+  const themedOverlayThumbnailUrl = $derived(currentThemedOverlayThumbnailUrl(resolvedTheme()));
 
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
-  // and swaps the page art to the other tall/wide variant — a different
-  // composition. Pointing the <img> straight at the new URL shows the old art
-  // mis-fit in the new layout, then pops the new one in whenever it decodes.
-  // Instead: hide the art when the composition changes, decode the new file
-  // off-DOM, and fade it in only once it's ready. A theme sibling has identical
-  // registration, so it keeps the current art visible until the sibling is ready.
-  // Applying a page from the picker flows through the composition-change gate.
+  // and swaps the page art to the other tall/wide composition. The matching
+  // picker thumbnail bridges that full-resolution decode, so the new page is
+  // centered and recognizable immediately instead of leaving a blank canvas.
+  // A theme sibling has identical registration, so it keeps the current art
+  // visible until the sibling is ready.
   let displayedOverlayUrl = $state<string | null>(null);
   function overlayCompositionKey(url: string) {
-    return url.replace(/\.(?:outline|chalk)\.webp(?:\?.*)?$/, '');
+    return url.replace(/\.(?:outline|chalk(?:\.thumb)?|thumb)\.webp(?:\?.*)?$/, '');
   }
 
   $effect(() => {
@@ -202,10 +194,11 @@
       !displayedOverlayUrl ||
       overlayCompositionKey(displayedOverlayUrl) !== overlayCompositionKey(url)
     ) {
-      displayedOverlayUrl = null;
+      displayedOverlayUrl = themedOverlayThumbnailUrl;
     }
     let stale = false;
     const img = new Image();
+    img.fetchPriority = 'high';
     img.src = url;
     // Show on decode failure too — the <img> then surfaces the same broken
     // state a direct src assignment would have.
@@ -216,6 +209,24 @@
     return () => {
       stale = true;
     };
+  });
+
+  // The line art is the only asset needed to make a selected page visible.
+  // Start the magic fill and rotation warm-up after it decodes so those
+  // full-resolution transfers cannot delay the page the child just picked.
+  $effect(() => {
+    const url = themedOverlayUrl;
+    if (!url || displayedOverlayUrl !== url) {
+      setColorSheet(null);
+      return;
+    }
+    const theme = resolvedTheme();
+    const nightUrl = theme === 'dark' ? nightSheetUrl() : null;
+    setColorSheet(nightUrl ?? colorSheetUrl());
+    const other = coloringBookState.orientation === 'portrait' ? 'landscape' : 'portrait';
+    const otherUrl = currentThemedOverlayUrl(theme, other);
+    if (!otherUrl) return;
+    return scheduleIdle(() => prefetchImages([otherUrl]));
   });
 
   // The sheet/wrapper track the engine's paper; before the engine mounts and

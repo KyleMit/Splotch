@@ -4,9 +4,12 @@ import {
   pageColorImage,
   pageNightImage,
   pageChalkImage,
+  pageOverlayImage,
+  pageThumb,
   type BookOrientation,
   type ColoringPage,
 } from './books';
+import type { ResolvedTheme } from '../theme';
 
 export { booksForPlatform } from './books';
 
@@ -37,6 +40,22 @@ export function overlayUrl(): string | null {
 export function chalkUrl(): string | null {
   const page = coloringBookState.overlayPage;
   return page ? pageChalkImage(page, coloringBookState.orientation) : null;
+}
+
+export function themedOverlayUrl(
+  theme: ResolvedTheme,
+  orientation = coloringBookState.orientation
+): string | null {
+  const page = coloringBookState.overlayPage;
+  return page ? pageOverlayImage(page, orientation, theme) : null;
+}
+
+export function themedOverlayThumbnailUrl(
+  theme: ResolvedTheme,
+  orientation = coloringBookState.orientation
+): string | null {
+  const page = coloringBookState.overlayPage;
+  return page ? pageThumb(page, orientation, theme) : null;
 }
 
 export function colorSheetUrl(): string | null {

@@ -70,14 +70,50 @@ Prefetch is deliberately **scoped to the thumbnails plus the one full-res image 
 over** — warming all ~100 full-res images on open would re-create the original slowness, just
 earlier.
 
+### 3. Apply the selected page visible-first and cancel obsolete picker transfers
+
+**Amendment (2026-07-31).** A touch device does not provide enough pointer dwell for the selected
+full-resolution image to finish before the click. Worse, closing the picker left its detached
+prefetches and hidden grid images competing with the selected page, the Magic Brush fill, and the
+opposite-orientation line art. On a throttled cold load, the canvas stayed blank for 1.8 seconds on
+fast 4G and several seconds on the constrained profile. That transient blank interval was reported
+on the physical iPad as both a slow page selection and a page landing off-center. The final overlay
+geometry was correct: `#coloringOverlay` and `#drawingCanvas` had identical
+`{ x: 84, y: 0, width: 1282, height: 934 }` bounds.
+
+Page application is now a visible-first sequence:
+
+1. The theme- and orientation-matched picker thumbnail becomes the canvas overlay immediately.
+   Thumbnail and full art share an aspect ratio and registration, so it stays centered while the
+   higher-resolution sibling decodes.
+2. The selected full-resolution line art receives high fetch priority and replaces the thumbnail
+   only after `decode()` resolves.
+3. Detached speculative images are tracked by `$lib/imagePrefetch.ts`. Selecting a page cancels
+   every active prefetch except that selected full-resolution URL and removes `src` from the closing
+   dialog's grid images. Cancelled URLs are removed from the warm set so reopening can fetch them
+   again.
+4. The Magic Brush fill and the alternate-orientation line art do not start until the visible
+   full-resolution line art has decoded. They cannot take connection slots from the page the child
+   just chose.
+5. The dark-mode prefetch uses `pageOverlayImage()`, the same helper as the canvas, so it warms the
+   chalk image instead of the unused pen sibling.
+
+The full-resolution image remains the steady state. The thumbnail is an explicit progressive-image
+fallback: on the physical iPad it lasted 19 ms; on fast 4G it lasted 300 ms. On the intentionally
+extreme link it remains soft for about three seconds, but the correctly centered page is usable in
+the first frame instead of leaving the child on a blank canvas.
+
 ## Consequences
 
 * **+** Grid downloads drop ~85% (thumbnails ~15 KB vs. 84–120 KB); the picker paints fast even on a
   cold visit, and decode cost per tile falls with the pixel count.
-* **+** The overlay stays full-res — no quality loss where it's shown large.
+* **+** The steady-state overlay stays full-res. A matching thumbnail bridges a cold full-image
+  transfer instead of leaving the canvas blank.
 * **+** Prefetch turns each hop (open → book → apply) from first-fetch latency into a cache hit on
   the common path — measured at 14–137× faster first open and 1.5–44× faster page-apply (see
   **Measured impact** below).
+* **+** Page selection is frame-bound on the physical iPad: 29 ms maximum and 14 ms frame P95, with
+  the preview visible 1 ms and full art visible 20 ms after click.
 * **+** One derivation point (`thumbPath` + `bookAssetPaths`) keeps the catalog, the asset check,
   and the native strip in agreement automatically.
 * **−** ~100 new committed binary files and roughly a doubling of the coloring precache entry count
@@ -85,6 +121,8 @@ earlier.
   page changes; `check:assets` fails loudly if a thumb is missing.
 * **−** Two files per page to keep in sync. The generator is the source of truth and is idempotent,
   so the sync step is "re-run the script," not hand-editing.
+* **−** A cold constrained connection shows the lower-resolution thumbnail until the full art
+  decodes. The progressive softening is preferable to an empty or apparently misplaced page.
 
 ### When to escalate
 
@@ -129,3 +167,61 @@ pointer lingers long enough to finish the 121 KB download before the click (fast
 pointerdown→click gap (~120 ms), so it still saves 0.3–3.2 s from the queue-jump but is not instant
 on a weak link. The cover-grid idle warm has no such caveat: its lead is seconds, so it lands for
 touch and pointer alike.
+
+## Visible-first page-application trials (2026-07-31)
+
+Every trial changed one architecture, reran the same cold-browser probe, and then backed the change
+out before the next. The fast profile is 40 ms latency and 4 Mbps down; the constrained profile is
+400 ms latency and 400 Kbps down. “Visible” means a correctly registered overlay is painted; “full”
+means the 1,536×1,024 art decoded. Most rows use click-to-full time because they intentionally had
+no progressive preview.
+
+| #  | Isolated strategy                                          | Profile             | Result                       |
+| -- | ---------------------------------------------------------- | ------------------- | ---------------------------- |
+| 01 | Existing production path                                   | Fast, immediate tap | Full 1,811 ms                |
+| 02 | Theme-aware selected-page prefetch only                    | Fast, immediate tap | Full 1,314 ms                |
+| 03 | High-priority off-DOM selected image only                  | Fast, immediate tap | Full 1,315 ms                |
+| 04 | Remove eager alternate-orientation prefetch only           | Fast, immediate tap | Full 1,310 ms                |
+| 05 | Remove eager Magic Brush fill only                         | Fast, immediate tap | Full 1,825 ms; no gain       |
+| 06 | Immediately unmount the active book view                   | Fast, mouse probe   | Full 2,349 ms; no cancel     |
+| 07 | Combine theme match, priority, and visible-first deferrals | Fast, immediate tap | Full 805 ms                  |
+| 08 | Add `fetchPriority=low` to speculative picker images       | Constrained         | Full 12.4 s; no preemption   |
+| 09 | Queue detached cover prefetches serially at idle           | Constrained         | Full 12.4 s; DOM still eager |
+| 10 | Use the selected thumbnail as a progressive canvas overlay | Fast, 750 ms dwell  | Visible 47 ms; full 300 ms   |
+| 11 | Same progressive overlay                                   | Constrained, 8 s    | Visible 51 ms; full 4.24 s   |
+| 12 | Cancel obsolete detached and dialog image transfers        | Constrained, 8 s    | Full 3.07 s                  |
+| 13 | Retained combined architecture                             | Fast, immediate tap | Visible 53 ms; full 353 ms   |
+| 14 | Retained combined architecture                             | Constrained, 8 s    | Visible 56 ms; full 3,145 ms |
+| 15 | Retained architecture, trusted physical-iPad tap           | Local Wi-Fi         | Visible 1 ms; full 20 ms     |
+
+The physical-iPad interaction had a 29 ms maximum frame gap and 14 ms P95, below the shared 32 ms
+interaction gate. The overlay and canvas bounds remained identical after full decode. A trusted
+Magic Brush stroke after the deferred fill loaded held at 25 ms maximum / 10 ms P95.
+
+### Re-attempting the rejected page-load strategies
+
+Drive a production build at iPad Pro geometry (1,366×934 CSS pixels at 2× DPR), use touch input, and
+start with a fresh browser context. Enter a book grid, optionally dwell for the named interval, tap
+the first page, and record `pointerdown`, `click`, every `#coloringOverlay` `src` mutation, image
+natural dimensions, request start/finish times, and `requestAnimationFrame` gaps. A mouse click is
+not interchangeable with a touch tap because hover creates download lead time.
+
+To isolate a single request class, preserve all other production behavior and change only one of:
+
+* the current page's pen/chalk prefetch URL;
+* the selected request's `fetchPriority`;
+* the eager Magic Brush fill;
+* the alternate-orientation warm-up;
+* the dialog grid's lifetime after close; or
+* detached prefetch concurrency.
+
+Browser fetch priority does not interrupt requests that already own connection slots. Likewise,
+serializing only detached idle prefetches does not control the real `<img>` elements in the picker.
+Removing or hiding a dialog is also insufficient unless its in-flight image requests are explicitly
+cancelled. Check the request waterfall rather than inferring cancellation from DOM visibility.
+
+For the retained path, stall the full-resolution request in Playwright and assert that the thumbnail
+remains visible, has the same bounding box as `#drawingCanvas`, and is replaced by full art only
+after release. Reopen the dialog afterward: its cover images must regain `src`, proving cancelled
+URLs can be warmed again. Re-run Magic Brush, rotation, theme switching, undo, and screenshot export
+on the physical device after changing this ordering.

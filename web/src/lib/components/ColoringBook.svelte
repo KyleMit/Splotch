@@ -3,19 +3,24 @@
   import { coloringBook } from '$lib/state/ui.svelte';
   import {
     booksForPlatform,
-    coloringBookState,
     setOverlayPage,
     setOverlayOrientation,
     overlayUrl,
     clearOverlay,
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
-  import { pageImage, pageThumb, thumbPath, type Book, type ColoringPage } from '$lib/state/books';
+  import {
+    pageOverlayImage,
+    pageThumb,
+    thumbPath,
+    type Book,
+    type ColoringPage,
+  } from '$lib/state/books';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { layout } from '$lib/state/layout.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
-  import { prefetchImages } from '$lib/imagePrefetch';
+  import { cancelImagePrefetchesExcept, prefetchImages } from '$lib/imagePrefetch';
   import { scheduleIdle } from '$lib/idle';
 
   // Only show books licensed for this platform. Native builds also strip the
@@ -24,6 +29,7 @@
   const books = booksForPlatform(isNative() ? 'mobile' : 'web');
 
   let activeBook = $state<Book | null>(null);
+  let dialogEl: HTMLDialogElement;
   // The tall/wide art variant follows the engine's PAPER, not the live viewport:
   // after a rotation with ink on the canvas the paper stays locked (ADR-0050),
   // so the variant the child colored on must stay applied — and any page picked
@@ -43,7 +49,7 @@
     prefetchImages(book.pages.map((page) => pageThumb(page, orientation, resolvedTheme())));
   }
   function prefetchPageOverlay(page: ColoringPage) {
-    prefetchImages([pageImage(page, orientation)]);
+    prefetchImages([pageOverlayImage(page, orientation, resolvedTheme())]);
   }
 
   // Swap the active overlay to the paper's portrait/landscape art when the
@@ -53,16 +59,10 @@
     setOverlayOrientation(orientation);
   });
 
-  // The other orientation's art is what a blank-canvas rotation will swap to;
-  // warm it as soon as a page is applied so that swap is a cache hit and the
-  // ready-gated fade-in (DrawingCanvas) is near-instant.
-  $effect(() => {
-    if (!coloringBookState.overlayPage) return;
-    const other = orientation === 'portrait' ? 'landscape' : 'portrait';
-    prefetchImages([pageImage(coloringBookState.overlayPage, other)]);
-  });
-
   function pickPage(page: ColoringPage) {
+    const selectedOverlayUrl = pageOverlayImage(page, orientation, resolvedTheme());
+    cancelImagePrefetchesExcept(selectedOverlayUrl);
+    for (const img of dialogEl.querySelectorAll('img')) img.removeAttribute('src');
     setOverlayPage(page, orientation);
     coloringBook.hide();
   }
@@ -95,6 +95,7 @@
 </script>
 
 <dialog
+  bind:this={dialogEl}
   class="coloring-book-modal modal-dialog modal-fly-in modal-shell"
   id="coloring-book-dialog"
   use:modalDialog={() => ({
@@ -102,7 +103,6 @@
     origin: coloringBook.origin,
     onRequestClose: coloringBook.hide,
     onOpen: () => showView(null),
-    onClose: () => showView(null),
   })}
 >
   <div class="coloring-book-content" class:hover-armed={hoverArmed} use:armHoverOnMouseMove>

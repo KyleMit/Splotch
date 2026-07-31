@@ -82,7 +82,8 @@ export async function openColoringDialog(page: Page) {
   );
 }
 
-// Apply the first Farm page and wait for its overlay + colored fill to be ready.
+// Apply the first Farm page and wait for its full-resolution overlay. The
+// thumbnail bridge lands first; the full line art enables the deferred fill.
 export async function applyFarmPage(page: Page) {
   await openColoringDialog(page);
   const dialog = page.locator('#coloring-book-dialog');
@@ -96,7 +97,8 @@ export async function applyFarmPage(page: Page) {
     if (await dialog.isVisible()) await farmPage.click();
     await expect(dialog).toBeHidden();
   }).toPass();
-  // Wait for the art itself, not just the element: the src lands only once the
-  // image has decoded (the ready-gated swap in DrawingCanvas).
-  await expect(page.locator('#coloringOverlay')).toHaveAttribute('src', /\.webp$/);
+  await expect(page.locator('#coloringOverlay')).toHaveAttribute(
+    'src',
+    /\.(?:outline|chalk)\.webp$/
+  );
 }

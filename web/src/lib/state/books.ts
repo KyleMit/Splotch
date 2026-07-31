@@ -261,6 +261,16 @@ export function pageChalkImage(page: ColoringPage, orientation: BookOrientation)
   return page.chalkImages[orientation] ?? null;
 }
 
+export function pageOverlayImage(
+  page: ColoringPage,
+  orientation: BookOrientation,
+  theme: ResolvedTheme
+): string {
+  return (
+    (theme === 'dark' ? pageChalkImage(page, orientation) : null) ?? pageImage(page, orientation)
+  );
+}
+
 /** Grid-thumbnail path for a picker-facing line-art image (`x.outline.webp` -> `x.thumb.webp`). */
 export function thumbPath(src: string): string {
   return src.endsWith(ASSET_SUFFIXES.outline)
