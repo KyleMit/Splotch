@@ -27,6 +27,9 @@ declare global {
   // marks for the profiling harness. Literal false in normal builds, so the
   // guarded blocks dead-code-eliminate and never reach production.
   const __PERF_MARKS__: boolean;
+  // Build-flag (PUBLIC_ENABLE_DEV_HARNESS=true) that keeps test/profiling
+  // seams in opted-in bundles. Literal false in release builds.
+  const __DEV_HARNESS__: boolean;
 
   // Capacitor injects this global in the native shell and once @capacitor/core
   // loads on the web. Read off the global (see src/lib/platform.ts) so the
@@ -61,9 +64,9 @@ declare global {
   }
 
   interface Window {
-    // Read-only test/profiling seam, installed by lib/boot/devHarnessSeam.ts
-    // while PUBLIC_ENABLE_DEV_HARNESS or PERF_MARKS is set (ADRs 0080/0086) —
-    // hence optional: release builds never define it.
+    // Read-only test/profiling seam, installed by lib/boot/devHarnessSeam.ts in
+    // builds compiled with PUBLIC_ENABLE_DEV_HARNESS or PERF_MARKS
+    // (ADRs 0080/0086) — hence optional: release builds never define it.
     __committedBrushMode?: () => import('$lib/state/tool.svelte').BrushType;
     showDirectoryPicker(options?: {
       mode?: FileSystemPermissionMode;
@@ -72,6 +75,9 @@ declare global {
     // Read-only profiling seam, installed by the same gated boot step as
     // __committedBrushMode (ADRs 0083/0086) — see lib/boot/devHarnessSeam.ts.
     __drawingDebug?: { getUndoDebug: typeof import('$lib/drawing/engine').getUndoDebug };
+    // Instrumented-build persistence boundary for native screenshot profiling.
+    // The release bundle drops both the branch and this property name.
+    __screenshotSaveSink?: (blob: Blob, baseName: string) => void | Promise<void>;
   }
 
   interface FileSystemHandle {

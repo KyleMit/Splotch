@@ -20,6 +20,7 @@ const PROBE_FILE = join(ROOT, 'scripts', 'perf', 'real-screen-probe.js');
 const DEFAULT_APPIUM_URL = 'http://127.0.0.1:4723';
 const DEFAULT_XCODE_CONFIG = join(ROOT, 'ios', 'local.xcconfig');
 const DEFAULT_WDA_BUNDLE_ID = 'art.splotch.WebDriverAgentRunner';
+const DEFAULT_NATIVE_WEBVIEW_CLASS = 'XCUIElementTypeWebView';
 const WEBVIEW_READY_TIMEOUT_MS = 30_000;
 const WEBVIEW_READY_POLL_MS = 250;
 const SCRIPT_TIMEOUT_MS = 30_000;
@@ -31,6 +32,7 @@ const TABLE_CHUNK_ROWS = 2_000;
 const BRUSH_SELECT_TIMEOUT_MS = 10_000;
 const UNDO_ACTION_SETTLE_MS = 500;
 const UNDO_ACTION_PAUSE_MS = 120;
+const UNDO_MEASURE_TIMEOUT_MS = 5_000;
 const ROTATION_SETTLE_TIMEOUT_MS = 10_000;
 const BRUSH_BUTTON_BY_MODE = {
   pen: '#penBrushButton',
@@ -73,12 +75,16 @@ function sanitizeLabel(value) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, '-');
 }
 
-export function nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow }) {
+export function nativeCanvasBounds({
+  webGeometry,
+  webViewBounds,
+  nativeWindow,
+  includeBrowserChrome = true,
+}) {
   const scale = webViewBounds.width / webGeometry.viewport.width;
-  const browserChromeHeight = Math.max(
-    0,
-    nativeWindow.height - webGeometry.viewport.height * scale
-  );
+  const browserChromeHeight = includeBrowserChrome
+    ? Math.max(0, nativeWindow.height - webGeometry.viewport.height * scale)
+    : 0;
   return {
     x: webViewBounds.x + webGeometry.canvas.x * scale,
     y: webViewBounds.y + browserChromeHeight + webGeometry.canvas.y * scale,
@@ -219,6 +225,30 @@ export function createWebDriverClient(baseUrl) {
   return { request };
 }
 
+export function capabilitiesFromFile(path) {
+  const parsed = JSON.parse(readFileSync(path, 'utf8'));
+  return parsed.capabilities?.alwaysMatch ?? parsed.alwaysMatch ?? parsed;
+}
+
+export function isWebContext(context) {
+  return context === 'CHROMIUM' || context.startsWith('WEBVIEW');
+}
+
+export async function switchToWebContext(client, sessionId) {
+  const webContext = await pollUntil(
+    () =>
+      client
+        .request('GET', `/session/${sessionId}/contexts`)
+        .then((contexts) => contexts.find(isWebContext) ?? null)
+        .catch(() => null),
+    WEBVIEW_READY_TIMEOUT_MS,
+    WEBVIEW_READY_POLL_MS
+  );
+  if (!webContext) throw new Error('Appium reported no WEBVIEW context');
+  await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
+  return webContext;
+}
+
 function profilingUrl(appUrl) {
   const url = new URL(appUrl);
   url.searchParams.set('perf-run', String(Date.now()));
@@ -267,6 +297,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         'xcode-config',
         'wda-bundle-id',
         'allow-provisioning',
+        'capabilities-file',
+        'session-id',
+        'native-app',
+        'native-webview-class',
         'brush',
         'gesture-repeats',
         'repeat-pause-ms',
@@ -283,16 +317,21 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     argv
   );
   const deviceId = flag('device-id');
-  if (!deviceId) fail('Pass the physical iPad UDID with --device-id=');
+  const capabilitiesFile = flag('capabilities-file');
+  const borrowedSessionId = flag('session-id');
+  if (!deviceId && !capabilitiesFile && !borrowedSessionId) {
+    fail('Pass --device-id=, --capabilities-file=, or --session-id=');
+  }
   const xcodeConfigFile = flag('xcode-config', DEFAULT_XCODE_CONFIG);
-  if (!existsSync(xcodeConfigFile)) {
+  if (!capabilitiesFile && !borrowedSessionId && !existsSync(xcodeConfigFile)) {
     fail(
       `No signing config at ${xcodeConfigFile}. Create ios/local.xcconfig with ` +
         'DEVELOPMENT_TEAM = <your Apple team id>.'
     );
   }
 
-  const appUrl = resolveDeviceUrl(flag('url'), port, APP_PATH);
+  const nativeApp = has('native-app');
+  const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
   const gestureRepeats = Number.parseInt(flag('gesture-repeats', '1'), 10);
   if (!Number.isSafeInteger(gestureRepeats) || gestureRepeats < 1) {
     fail('--gesture-repeats must be a positive integer');
@@ -313,32 +352,45 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   if (!Number.isSafeInteger(historySettleMs) || historySettleMs < 0) {
     fail('--history-settle-ms must be a non-negative integer');
   }
-  const server = await ensurePreviewServer(appUrl, port, !has('no-serve'));
+  const server = nativeApp
+    ? null
+    : await ensurePreviewServer(requestedAppUrl, port, !has('no-serve'));
   const client = createWebDriverClient(flag('appium-url', DEFAULT_APPIUM_URL));
-  let sessionId;
+  let sessionId = borrowedSessionId;
+  let ownsSession = false;
   let originalOrientation;
   try {
     await client.request('GET', '/status');
-    const session = await client.request('POST', '/session', {
-      capabilities: {
-        alwaysMatch: appiumCapabilities({
-          deviceId,
-          xcodeConfigFile,
-          wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),
-          allowProvisioning: has('allow-provisioning'),
-        }),
-      },
-    });
-    sessionId = session.sessionId;
+    const session = sessionId
+      ? await client.request('GET', `/session/${sessionId}`)
+      : await client.request('POST', '/session', {
+          capabilities: {
+            alwaysMatch: capabilitiesFile
+              ? capabilitiesFromFile(capabilitiesFile)
+              : appiumCapabilities({
+                  deviceId,
+                  xcodeConfigFile,
+                  wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),
+                  allowProvisioning: has('allow-provisioning'),
+                }),
+          },
+        });
+    if (!sessionId) {
+      sessionId = session.sessionId;
+      ownsSession = true;
+    }
     const execute = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/sync`, { script, args });
     const executeAsync = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/async`, { script, args });
+    if (nativeApp) {
+      await switchToWebContext(client, sessionId);
+    } else {
+      await client.request('POST', `/session/${sessionId}/url`, { url: requestedAppUrl });
+    }
     await client.request('POST', `/session/${sessionId}/timeouts`, {
       script: SCRIPT_TIMEOUT_MS,
     });
-
-    await client.request('POST', `/session/${sessionId}/url`, { url: appUrl });
     const initialReady = await pollUntil(
       () =>
         execute(
@@ -347,10 +399,22 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       WEBVIEW_READY_TIMEOUT_MS,
       WEBVIEW_READY_POLL_MS
     );
-    if (!initialReady) throw new Error(`${appUrl} never showed a sized #drawingCanvas`);
+    if (!initialReady) {
+      throw new Error(
+        `${nativeApp ? 'The native app' : requestedAppUrl} never showed a sized #drawingCanvas`
+      );
+    }
     await clearDeviceWebCache(executeAsync);
+    const appUrl = nativeApp ? await execute('return location.href;') : requestedAppUrl;
     const loadedUrl = profilingUrl(appUrl);
-    await client.request('POST', `/session/${sessionId}/url`, { url: loadedUrl });
+    if (nativeApp) {
+      await execute(`location.replace(${JSON.stringify(loadedUrl)}); return true;`).catch(
+        () => null
+      );
+      await switchToWebContext(client, sessionId);
+    } else {
+      await client.request('POST', `/session/${sessionId}/url`, { url: loadedUrl });
+    }
     const ready = await pollUntil(
       () =>
         execute(
@@ -435,23 +499,29 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       "const r = document.querySelector('#drawingCanvas').getBoundingClientRect(); return {canvas:{x:r.x,y:r.y,width:r.width,height:r.height},viewport:{width:innerWidth,height:innerHeight}};"
     );
     const contexts = await client.request('GET', `/session/${sessionId}/contexts`);
-    const webContext = contexts.find((context) => context.startsWith('WEBVIEW'));
+    const webContext = contexts.find(isWebContext);
     if (!webContext) throw new Error(`Appium reported no WEBVIEW context: ${contexts.join(', ')}`);
 
     await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
-    const webView = await client.request('POST', `/session/${sessionId}/element`, {
-      using: 'class name',
-      value: 'XCUIElementTypeWebView',
-    });
-    const webViewId = webView['element-6066-11e4-a52e-4f735466cecf'] ?? webView.ELEMENT;
-    const webViewBounds = await client.request(
-      'GET',
-      `/session/${sessionId}/element/${webViewId}/rect`
-    );
     const nativeWindow = await client.request('GET', `/session/${sessionId}/window/rect`);
+    const webViewBounds = await client
+      .request('POST', `/session/${sessionId}/element`, {
+        using: 'class name',
+        value: flag('native-webview-class', DEFAULT_NATIVE_WEBVIEW_CLASS),
+      })
+      .then((webView) => {
+        const webViewId = webView['element-6066-11e4-a52e-4f735466cecf'] ?? webView.ELEMENT;
+        return client.request('GET', `/session/${sessionId}/element/${webViewId}/rect`);
+      })
+      .catch(() => nativeWindow);
     const orientation = await client.request('GET', `/session/${sessionId}/orientation`);
     originalOrientation = orientation;
-    const canvasBounds = nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow });
+    const canvasBounds = nativeCanvasBounds({
+      webGeometry,
+      webViewBounds,
+      nativeWindow,
+      includeBrowserChrome: !nativeApp,
+    });
 
     await client.request('POST', `/session/${sessionId}/actions`, {
       actions: [
@@ -523,20 +593,31 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
           }
           const beforeCount = performance.getEntriesByName('engine.undo', 'measure').length;
           const startedAt = performance.now();
-          button.click();
-          const measures = performance.getEntriesByName('engine.undo', 'measure');
-          const measure = measures.at(-1);
-          requestAnimationFrame((paintedAt) => {
-            done({
-              index: ${index},
-              startedAt,
-              endedAt: performance.now(),
-              beforeCount,
-              afterCount: measures.length,
-              engineMs: measure?.duration,
-              nextFrameMs: paintedAt - startedAt
-            });
-          });
+          button.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }));
+          const finishAfterMeasure = () => {
+            const measures = performance.getEntriesByName('engine.undo', 'measure');
+            const measure = measures.at(-1);
+            if (measures.length === beforeCount + 1 && Number.isFinite(measure?.duration)) {
+              requestAnimationFrame((paintedAt) => {
+                done({
+                  index: ${index},
+                  startedAt,
+                  endedAt: performance.now(),
+                  beforeCount,
+                  afterCount: measures.length,
+                  engineMs: measure.duration,
+                  nextFrameMs: paintedAt - startedAt
+                });
+              });
+              return;
+            }
+            if (performance.now() - startedAt >= ${UNDO_MEASURE_TIMEOUT_MS}) {
+              done(null);
+              return;
+            }
+            requestAnimationFrame(finishAfterMeasure);
+          };
+          finishAfterMeasure();
         `);
         if (
           !action ||
@@ -573,6 +654,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         id: deviceId,
       },
       appUrl,
+      transport: nativeApp ? 'native-capacitor-webview' : 'browser',
       mode: `xcuitest:${label}`,
       automation: {
         appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),
@@ -620,7 +702,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       `\nFidelity: ${fidelity.passed ? 'PASS' : 'FAIL'} · ${JSON.stringify(fidelity.checks)}`
     );
     console.log(`Wrote ${output}`);
-    if (!fidelity.passed) {
+    if (!fidelity.passed && !has('report-only')) {
       throw new Error(
         'The capture failed the trusted-input fidelity gate; do not use its lag score.'
       );
@@ -644,7 +726,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         })
         .catch(() => {});
     }
-    if (sessionId) {
+    if (sessionId && ownsSession) {
       await client.request('DELETE', `/session/${sessionId}`).catch(() => {});
     }
     server?.stop();

@@ -197,9 +197,11 @@ because the tiled path requires the full set of transferable canvas APIs.
 Use the production `/` route from a `PERF_MARKS` build on the physical iPad:
 
 1. Draw at least one trusted pen stroke so the Screenshot Button is enabled.
-2. Replace `HTMLAnchorElement.prototype.click` only for the measurement window so Safari does not
-   open twenty download dialogs. Record the generated blob type and byte count before suppressing
-   the anchor.
+2. On web, replace `HTMLAnchorElement.prototype.click` only for the measurement window so Safari
+   does not open twenty download dialogs. On native, install `window.__screenshotSaveSink` for the
+   measurement window. The sink is consumed only by a `PERF_MARKS` build and records export
+   completion without writing to Photos or reaching a permission sheet. Record the generated blob
+   type and byte count before suppressing persistence.
 3. Start a `requestAnimationFrame` loop, wait two frames, then click the Screenshot Button.
 4. Stop 100 ms after the PNG reaches `URL.createObjectURL`.
 5. Record completion time, largest frame interval, and pooled frame P95.
@@ -211,6 +213,12 @@ Verify separately that an unsuppressed user tap downloads or saves the PNG. Re-r
 crayon, and magic strokes plus undo and theme switching after any export architecture change. Test
 both free drawing and light- and dark-theme coloring overlays: free drawing alone did not reveal the
 line-art graphics-memory cliff.
+
+The native persistence sink is not a rendering-control seam: it replaces only the external gallery
+write after the production PNG exists. Normal native builds compile out its branch and property
+name, and the release post-build scan rejects either surviving in the client bundle. Do not
+intercept Capacitor's private `nativePromise` transport; that couples the runner to plugin internals
+and can suppress unrelated native calls.
 
 ### Settled Live-Tile Isolation
 

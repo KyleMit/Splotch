@@ -9,8 +9,10 @@ const ctrl = vi.hoisted(() => ({
   snapshots: 3,
 }));
 
-vi.mock('$lib/devHarness', () => ({
-  devHarnessEnabled: () => ctrl.harnessEnabled,
+vi.mock('$app/environment', () => ({
+  get dev() {
+    return ctrl.harnessEnabled;
+  },
 }));
 
 vi.mock('$lib/drawing/engine', () => ({

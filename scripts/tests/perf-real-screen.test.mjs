@@ -23,6 +23,7 @@ import { probeConfigScript } from '../perf/ipad-frames.mjs';
 import {
   appiumCapabilities,
   inputFidelity,
+  isWebContext,
   nativeCanvasBounds,
   trustedGestureActions,
 } from '../perf/ipad-xcuitest.mjs';
@@ -47,6 +48,11 @@ import {
 import { summarizeUndoActions } from '../perf/undo-action-stats.mjs';
 
 const PROBE = readFileSync(join(ROOT, 'scripts', 'perf', 'real-screen-probe.js'), 'utf8');
+const ACTION_RUNNER = readFileSync(join(ROOT, 'scripts', 'perf', 'ipad-actions.mjs'), 'utf8');
+const SCREENSHOT_MODULE = readFileSync(
+  join(ROOT, 'web', 'src', 'lib', 'drawing', 'screenshot.ts'),
+  'utf8'
+);
 const component = (name) =>
   readFileSync(join(ROOT, 'web', 'src', 'lib', 'components', name), 'utf8');
 
@@ -671,6 +677,29 @@ describe('trusted XCUITest input', () => {
     });
   });
 
+  it('maps native WebView coordinates without adding browser chrome', () => {
+    expect(
+      nativeCanvasBounds({
+        webGeometry,
+        webViewBounds,
+        nativeWindow,
+        includeBrowserChrome: false,
+      })
+    ).toEqual({
+      x: 84,
+      y: 0,
+      width: 1282,
+      height: 934,
+    });
+  });
+
+  it('recognizes iOS, Android WebView, and Android Chrome contexts', () => {
+    expect(isWebContext('WEBVIEW_42')).toBe(true);
+    expect(isWebContext('WEBVIEW_art.splotch.app')).toBe(true);
+    expect(isWebContext('CHROMIUM')).toBe(true);
+    expect(isWebContext('NATIVE_APP')).toBe(false);
+  });
+
   it('builds two long and eight short native strokes inside the canvas', () => {
     const bounds = nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow });
     const actions = trustedGestureActions(bounds);
@@ -788,6 +817,12 @@ describe('probe selectors still match the app', () => {
   // attribute being how DrawingCanvas hides the overlay wrapper.
   it('still learns paper state from the wrapper’s hidden attribute', () => {
     expect(component('DrawingCanvas.svelte')).toContain('hidden={!overlayUrl()}');
+  });
+
+  it('shares the native screenshot persistence boundary with the action runner', () => {
+    expect(ACTION_RUNNER).toContain('window.__screenshotSaveSink');
+    expect(SCREENSHOT_MODULE).toContain('window.__screenshotSaveSink');
+    expect(ACTION_RUNNER).not.toContain('Capacitor.nativePromise');
   });
 });
 

@@ -313,13 +313,21 @@ confound *and* the effect the reported lag scales with, so `page-again` repeats 
 the end: whatever separates the two is accumulation, and every suppression delta has to be read
 against it.
 
-### The one dev seam
+### Instrumented-build seams
 
-`lib/boot/devHarnessSeam.ts` exposes the already-exported `getUndoDebug()` on `/` behind the same
-gate as `routes/dev/*` (`PUBLIC_ENABLE_DEV_HARNESS`, which the Netlify deploy never sets). It is
-**read-only on purpose**: a probe that can change the app can invalidate its own measurement.
-Nothing else about the app is touched — the synthetic hand loads a coloring page by clicking the
-real UI.
+`lib/boot/devHarnessSeam.ts` exposes the already-exported `getUndoDebug()` on `/` only when the
+client is compiled with `PUBLIC_ENABLE_DEV_HARNESS=true` or `PERF_MARKS=true`. Vite replaces the
+choice with the literal `__DEV_HARNESS__`, so normal web and native builds dead-code-eliminate the
+assignments and property names. The `/dev/*` server routes retain their separate runtime environment
+gate. The drawing seam is **read-only on purpose**: a probe that can change the renderer can
+invalidate its own measurement. The synthetic hand still loads a coloring page by clicking the real
+UI.
+
+Native screenshot measurement has a narrower persistence-boundary seam:
+`window.__screenshotSaveSink`. A `PERF_MARKS` build calls it only after the production PNG exists,
+letting the action runner observe completion without writing benchmark images to Photos or waiting
+on a permission sheet. It does not alter rendering. Normal builds compile it out, and
+`scripts/check-release-seams.mjs` scans the built client for both seams and `engine.*` mark names.
 
 ### Counting the rendering work — `--timeline`
 
@@ -378,9 +386,10 @@ disk is already the one you want.
 
 It then serves that build on `0.0.0.0:4173` with the `/dev/*` harness routes unlocked, which is what
 makes `/dev/engine` (and its `window.__engine` / `getUndoDebug()`) reachable
-(`PUBLIC_ENABLE_DEV_HARNESS` is read at **runtime** via `$env/dynamic/public`, so it must be set for
-the server, which `perf:serve` does; `--host` exposes it beyond localhost). Leave it running in its
-own terminal — and stop it before `perf:replay` (same port).
+(`PUBLIC_ENABLE_DEV_HARNESS` is read at **runtime** for the server route and compiled into the
+client's `__DEV_HARNESS__` literal, so it must be set for the build and server; `perf:serve` does
+both, and `--host` exposes it beyond localhost). Leave it running in its own terminal — and stop it
+before `perf:replay` (same port).
 
 It prints the two URLs to open on the iPad:
 

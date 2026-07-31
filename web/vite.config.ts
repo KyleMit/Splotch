@@ -14,6 +14,7 @@ const isCapacitor = process.env.CAPACITOR === 'true';
 // by default so the marks never ship: with the literal `false` the guarded
 // blocks — and their mark-name strings — dead-code-eliminate from the bundle.
 const perfMarks = process.env.PERF_MARKS === 'true';
+const devHarness = process.env.PUBLIC_ENABLE_DEV_HARNESS === 'true';
 const profilingEsbuildOptions: import('vite').ESBuildOptions & {
   keepNames: boolean;
 } = { keepNames: true };
@@ -41,6 +42,7 @@ export default defineConfig({
     nativeApiBase: NATIVE_API_BASE,
     isCapacitor,
     perfMarks,
+    devHarness,
   }),
   build: { target: BROWSER_TARGETS },
   // Profiling builds (PERF_MARKS=true) keep function names through minification

@@ -34,9 +34,11 @@ A publishable collection ships a **reachable entry page plus its assets** — no
   (`.md` — findings/notes). The index surfaces both; a collection with neither is invisible and
   fails `npm run scrapbook:check`.
 * Only the **report and its `assets/`** — never the run's raw `results.json` / `summary.json` /
-  whole run dir (those stay in the gitignored scratch dir). The index deliberately skips `assets/`
-  and non-page data files (`.json`, …) so they never clutter the listing — but that also means a
-  folder of *only* data files surfaces nothing, so promote the report, not the raw run.
+  whole run dir (those stay in the gitignored scratch dir). A report may own a deliberately
+  normalized, schema-versioned data file when the values are useful to downstream analysis and the
+  raw event stream is omitted. The index deliberately skips `assets/` and non-page data files
+  (`.json`, …) so they never clutter the listing — a folder of *only* data files still surfaces
+  nothing, so promote the report, not the raw run.
 
 Everything regenerable and uninteresting stays in its gitignored scratch dir. When in doubt, ask
 "would someone want to open this rendered, months from now, instead of re-running the tool?" — if

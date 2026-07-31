@@ -7,5 +7,6 @@ describe('Vitest build defines', () => {
     expect(__NATIVE_API_BASE__).toBe('');
     expect(__IS_CAPACITOR__).toBe(true);
     expect(__PERF_MARKS__).toBe(false);
+    expect(__DEV_HARNESS__).toBe(false);
   });
 });

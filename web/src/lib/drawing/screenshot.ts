@@ -11,6 +11,7 @@ import {
 import { saveBlobToFolder } from './folderSave';
 import { playScreenshotFeedback } from './screenshotFeedback';
 import { SCREENSHOT_COOLDOWN_MS } from './screenshotTiming';
+import { PERF_MARKS } from './perf';
 
 const ALBUM_NAME = 'Splotch';
 
@@ -69,6 +70,10 @@ export async function saveImageBlob(
   // __IS_CAPACITOR__ makes the gallery path compile-time dead on web so Rollup
   // drops the media plugin chunk (isNative() alone can't tree-shake across modules).
   if (__IS_CAPACITOR__ && isNative()) {
+    if (PERF_MARKS && window.__screenshotSaveSink) {
+      await window.__screenshotSaveSink(blob, baseName);
+      return;
+    }
     try {
       await saveToGallery(blob, baseName);
     } catch (err) {

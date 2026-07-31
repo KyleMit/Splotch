@@ -1,18 +1,18 @@
+import { dev } from '$app/environment';
 import { committedBrushMode, getUndoDebug } from '$lib/drawing/engine';
 import { PERF_MARKS } from '$lib/drawing/perf';
-import { devHarnessEnabled } from '$lib/devHarness';
 
 // The drawing route's gated `window` seams — what the E2E harness and the
 // on-device profiler need to see and no DOM state exposes. One module rather than
 // one per consumer, so there is a single place to read what this route publishes
 // and a single teardown.
 //
-// The seams use the same PUBLIC_ENABLE_DEV_HARNESS switch as the /dev/* routes
-// and are also present in PERF_MARKS builds. That makes a physical bundle
-// self-identifying without putting the seams in the Netlify deploy. Installed
-// from the drawing route's onMount, whose teardown removes them — the engine
-// itself boots earlier (ADR-0072), but no spec can reach a brush button before
-// hydration anyway.
+// PUBLIC_ENABLE_DEV_HARNESS is compiled into a literal for this client-only
+// surface; PERF_MARKS builds retain it independently. Normal web and native
+// builds therefore drop the assignments and property names, while /dev/*
+// server routes keep their separate runtime gate. Installed from the drawing
+// route's onMount, whose teardown removes them — the engine itself boots
+// earlier (ADR-0072), but no spec can reach a brush button before hydration.
 //
 // Both are READ-ONLY on purpose. A test seam that mutates invites specs that pass
 // against a configuration no child ever runs; a profiling seam that mutates can
@@ -30,8 +30,7 @@ import { devHarnessEnabled } from '$lib/devHarness';
 //     how that gets tested rather than argued. `/dev/engine` already exposed
 //     `getUndoDebug()`; this reaches it on the route users actually draw on.
 export function installDevHarnessSeam(): () => void {
-  const harnessEnabled = devHarnessEnabled();
-  if (!harnessEnabled && !PERF_MARKS) return () => {};
+  if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) return () => {};
   window.__committedBrushMode = committedBrushMode;
   window.__drawingDebug = { getUndoDebug };
   return () => {

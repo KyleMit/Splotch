@@ -5,9 +5,12 @@ import { actionFailures, actionRows, summarizeActions } from './action-stats.mjs
 import { parsePerfArgs } from './args.mjs';
 import {
   appiumCapabilities,
+  capabilitiesFromFile,
   clearDeviceWebCache,
   createWebDriverClient,
+  isWebContext,
   nativeCanvasBounds,
+  switchToWebContext,
 } from './ipad-xcuitest.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from './ipad-session.mjs';
 import { profilePath } from './paths.mjs';
@@ -17,6 +20,7 @@ const ACTION_PROBE_FILE = join(ROOT, 'scripts', 'perf', 'action-probe.js');
 const DEFAULT_APPIUM_URL = 'http://127.0.0.1:4723';
 const DEFAULT_XCODE_CONFIG = join(ROOT, 'ios', 'local.xcconfig');
 const DEFAULT_WDA_BUNDLE_ID = 'art.splotch.WebDriverAgentRunner';
+const DEFAULT_NATIVE_WEBVIEW_CLASS = 'XCUIElementTypeWebView';
 const READY_TIMEOUT_MS = 30_000;
 const POLL_MS = 50;
 const SCRIPT_TIMEOUT_MS = 45_000;
@@ -56,11 +60,6 @@ export function selectedActions(value) {
   const unknown = [...actions].filter((action) => !ALL_ACTIONS.has(action));
   if (unknown.length) fail(`Unknown --actions entries: ${unknown.join(', ')}`);
   return actions;
-}
-
-function capabilitiesFromFile(path) {
-  const parsed = JSON.parse(readFileSync(path, 'utf8'));
-  return parsed.capabilities?.alwaysMatch ?? parsed.alwaysMatch ?? parsed;
 }
 
 function sessionCapabilities({ deviceId, xcodeConfigFile, wdaBundleId, allowProvisioning, file }) {
@@ -105,6 +104,63 @@ async function clickWebElement(client, sessionId, selector) {
   await client.request('POST', `/session/${sessionId}/element/${elementId}/click`);
 }
 
+async function clickSetupElement(execute, selector) {
+  await execute(`
+    const target = document.querySelector(${JSON.stringify(selector)});
+    if (!target) throw new Error('Missing setup target');
+    target.click();
+    return true;
+  `);
+}
+
+async function setNativeRotationLock(execute, locked) {
+  await clickSetupElement(execute, 'button[aria-label="Parent Center"]');
+  await waitForReady(
+    execute,
+    `document.querySelector('#parentHelpModal')?.open === true`,
+    'Parent Center for rotation setup'
+  );
+  if (!(await execute(`return document.querySelector('#lockRotationToggle') !== null;`))) {
+    const appearanceSelector = await execute(`
+      if (document.querySelector('#parentHelpModal .pc-nav-item')) {
+        return '#parentHelpModal .pc-nav-item:first-child';
+      }
+      if (document.querySelector('#parentHelpModal .hub-row')) {
+        return '#parentHelpModal .hub-list li:first-child .hub-row';
+      }
+      return null;
+    `);
+    if (appearanceSelector) {
+      await clickSetupElement(execute, appearanceSelector);
+      await waitForReady(
+        execute,
+        `document.querySelector('#themeOption-light') !== null`,
+        'Appearance section for rotation setup'
+      );
+    }
+  }
+  const initial = await execute(`
+    const toggle = document.querySelector('#lockRotationToggle');
+    return toggle ? toggle.getAttribute('aria-checked') === 'true' : null;
+  `);
+  if (initial !== null && initial !== locked) {
+    await clickSetupElement(execute, '#lockRotationToggle');
+    await waitForReady(
+      execute,
+      `document.querySelector('#lockRotationToggle')?.getAttribute('aria-checked') === '${locked}'`,
+      `rotation lock to become ${locked ? 'enabled' : 'disabled'}`
+    );
+  }
+  await clickSetupElement(execute, '#parentHelpModal button[aria-label="Close"]');
+  await waitForReady(
+    execute,
+    `document.querySelector('#parentHelpModal')?.open !== true`,
+    'Parent Center to close after rotation setup'
+  );
+  await sleep(ANIMATED_ACTION_SETTLE_MS);
+  return initial;
+}
+
 async function measureClick({
   client,
   sessionId,
@@ -118,7 +174,7 @@ async function measureClick({
   activation = 'native',
 }) {
   const nativeTarget =
-    activation === 'native'
+    activation === 'native' && !client.webdriverClicks
       ? await nativeBoundsForSelector(client, sessionId, execute, selector)
       : null;
   await execute(
@@ -163,9 +219,12 @@ async function measureClick({
         }
       };
     `);
-    throw new Error(`${error.message}\nAction state: ${JSON.stringify(state)}`, {
-      cause: error,
-    });
+    throw new Error(
+      `${error.message}\nAction state: ${JSON.stringify({ ...state, nativeTarget })}`,
+      {
+        cause: error,
+      }
+    );
   }
   await sleep(settleMs);
   return execute(`return window.__actionProbe.finish(${readyAt});`);
@@ -199,26 +258,32 @@ async function nativeBoundsForSelector(client, sessionId, execute, selector) {
   `);
   if (!webGeometry) throw new Error(`No native-gesture target matches ${selector}`);
   const contexts = await client.request('GET', `/session/${sessionId}/contexts`);
-  const webContext = contexts.find((context) => context.startsWith('WEBVIEW'));
+  const webContext = contexts.find(isWebContext);
   await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
-  const webView = await client.request('POST', `/session/${sessionId}/element`, {
-    using: 'class name',
-    value: 'XCUIElementTypeWebView',
-  });
-  const webViewId = webView[ELEMENT_KEY] ?? webView.ELEMENT;
-  const webViewBounds = await client.request(
-    'GET',
-    `/session/${sessionId}/element/${webViewId}/rect`
-  );
   const nativeWindow = await client.request('GET', `/session/${sessionId}/window/rect`);
-  const bounds = nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow });
+  const webViewBounds = await client
+    .request('POST', `/session/${sessionId}/element`, {
+      using: 'class name',
+      value: client.nativeWebViewClass ?? DEFAULT_NATIVE_WEBVIEW_CLASS,
+    })
+    .then((webView) => {
+      const webViewId = webView[ELEMENT_KEY] ?? webView.ELEMENT;
+      return client.request('GET', `/session/${sessionId}/element/${webViewId}/rect`);
+    })
+    .catch(() => nativeWindow);
+  const bounds = nativeCanvasBounds({
+    webGeometry,
+    webViewBounds,
+    nativeWindow,
+    includeBrowserChrome: !client.nativeApp,
+  });
   await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
   return { bounds, nativeWindow, webContext };
 }
 
 async function nativeAccessibilityBounds(client, sessionId, name) {
   const contexts = await client.request('GET', `/session/${sessionId}/contexts`);
-  const webContext = contexts.find((context) => context.startsWith('WEBVIEW'));
+  const webContext = contexts.find(isWebContext);
   await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
   try {
     const element = await client.request('POST', `/session/${sessionId}/element`, {
@@ -279,11 +344,11 @@ async function addTrustedStroke(client, sessionId, execute) {
 }
 
 async function measureClear(client, sessionId, execute, label = 'clear drawing') {
-  const { bounds, nativeWindow, webContext } = await nativeAccessibilityBounds(
-    client,
-    sessionId,
-    'Clear drawing'
-  ).catch(() => nativeBoundsForSelector(client, sessionId, execute, '#clearButton'));
+  const { bounds, nativeWindow, webContext } = client.nativeApp
+    ? await nativeBoundsForSelector(client, sessionId, execute, '#clearButton')
+    : await nativeAccessibilityBounds(client, sessionId, 'Clear drawing').catch(() =>
+        nativeBoundsForSelector(client, sessionId, execute, '#clearButton')
+      );
   const startX = Math.round(bounds.x + bounds.width / 2);
   const startY = Math.round(bounds.y + bounds.height / 2);
   const distance = Math.min(nativeWindow.width, nativeWindow.height) * 0.48;
@@ -345,7 +410,7 @@ async function measureRotation(client, sessionId, execute, from, to, label) {
   await client.request('POST', `/session/${sessionId}/orientation`, { orientation: to });
   await sleep(ROTATION_NATIVE_SETTLE_MS);
   const contexts = await client.request('GET', `/session/${sessionId}/contexts`);
-  const webContext = contexts.find((context) => context.startsWith('WEBVIEW'));
+  const webContext = contexts.find(isWebContext);
   await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
   const readyAt = await waitForReady(
     execute,
@@ -373,7 +438,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       `return document.querySelector(${JSON.stringify(selector)})?.getAttribute(${JSON.stringify(stateAttribute)}) === 'true';`
     );
     if (initial !== baseline) {
-      await execute(`document.querySelector(${JSON.stringify(selector)})?.click(); return true;`);
+      await clickSetupElement(execute, selector);
       await waitForReady(execute, stateExpression(baseline), `${label} baseline`);
       await sleep(ANIMATED_ACTION_SETTLE_MS);
     }
@@ -456,13 +521,14 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         settleMs: ANIMATED_ACTION_SETTLE_MS,
       })
     );
+    const colorGrid = await execute(`return innerWidth > innerHeight ? 'landscape' : 'portrait';`);
     await record(
       measureClick({
         client,
         sessionId,
         execute,
         label: 'select custom color',
-        selector: '#color-picker .hexagon:not(.selected)',
+        selector: `#color-picker .grid.${colorGrid} .hexagon:not(.selected)`,
         ready: `document.querySelector('#color-picker')?.open !== true && document.querySelector('.gradient-swatch')?.classList.contains('active') === true`,
         settleMs: ANIMATED_ACTION_SETTLE_MS,
       })
@@ -504,7 +570,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     ];
     for (const [index, selection] of brushSelections.entries()) {
       if (index > 0) {
-        await execute(`document.querySelector('#brushButton')?.click(); return true;`);
+        await clickSetupElement(execute, '#brushButton');
         await waitForReady(
           execute,
           `document.querySelector('#brushButton')?.getAttribute('aria-expanded') === 'true'`,
@@ -565,14 +631,48 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     );
   }
 
-  if (actions.has('parent-sections')) {
-    const sectionCount = await execute(
-      `return document.querySelectorAll('#parentHelpModal .pc-nav-item').length;`
+  const parentCenterUsesSidebar = await execute(
+    `return document.querySelector('#parentHelpModal .pc-nav-item') !== null;`
+  );
+  const parentSectionSelector = (index) =>
+    parentCenterUsesSidebar
+      ? `#parentHelpModal .pc-nav-item:nth-child(${index})`
+      : `#parentHelpModal .hub-list li:nth-child(${index}) .hub-row`;
+  const ensureParentHub = async () => {
+    if (
+      parentCenterUsesSidebar ||
+      (await execute(`return !!document.querySelector('.hub-list');`))
+    ) {
+      return;
+    }
+    await clickSetupElement(execute, '#parentHelpModal .pc-back');
+    await waitForReady(
+      execute,
+      `document.querySelector('.hub-list') !== null`,
+      'Parent Center hub'
     );
+  };
+  const openParentSection = async (index, ready, hint) => {
+    await ensureParentHub();
+    await clickSetupElement(execute, parentSectionSelector(index));
+    await waitForReady(execute, ready, hint);
+  };
+
+  if (actions.has('parent-sections')) {
+    const sectionCount = await execute(`
+      return document.querySelectorAll(
+        ${JSON.stringify(
+          parentCenterUsesSidebar ? '#parentHelpModal .pc-nav-item' : '#parentHelpModal .hub-row'
+        )}
+      ).length;
+    `);
     for (let index = 2; index <= sectionCount; index++) {
-      const selector = `#parentHelpModal .pc-nav-item:nth-child(${index})`;
+      await ensureParentHub();
+      const selector = parentSectionSelector(index);
       const label = await execute(
-        `return document.querySelector(${JSON.stringify(selector)})?.textContent?.trim();`
+        `return document.querySelector(${JSON.stringify(
+          parentCenterUsesSidebar ? selector : `${selector} .hub-title`
+        )})?.textContent?.trim();`
       );
       await record(
         measureClick({
@@ -581,21 +681,22 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
           execute,
           label: `open Parent Center section: ${label}`,
           selector,
-          ready: `document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-current') === 'page'`,
+          ready: parentCenterUsesSidebar
+            ? `document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-current') === 'page'`
+            : `document.querySelector('#parentHelpModal .pc-back') !== null`,
           activation: 'webdriver',
         })
       );
     }
-    await execute(`document.querySelector('#parentHelpModal .pc-nav-item')?.click(); return true;`);
-    await waitForReady(
-      execute,
+    await openParentSection(
+      1,
       `document.querySelector('#themeOption-light') !== null`,
       'Appearance section'
     );
   }
 
   if (actions.has('theme')) {
-    await execute(`document.querySelector('#themeOption-dark')?.click(); return true;`);
+    await clickSetupElement(execute, '#themeOption-dark');
     await waitForReady(
       execute,
       `document.documentElement.dataset.theme === 'dark'`,
@@ -629,10 +730,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   }
 
   if (actions.has('parent-settings')) {
-    await execute(
-      `document.querySelector('#parentHelpModal .pc-nav-item:nth-child(2)')?.click(); return true;`
-    );
-    await waitForReady(execute, `document.querySelector('#soundToggle') !== null`, 'Sound section');
+    await openParentSection(2, `document.querySelector('#soundToggle') !== null`, 'Sound section');
     await recordToggleRoundTrip({
       label: 'drawing sounds',
       selector: '#soundToggle',
@@ -641,11 +739,8 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         `document.querySelector('#soundVolumeLabel') ${enabled ? '!== null' : '=== null'}`,
     });
 
-    await execute(
-      `document.querySelector('#parentHelpModal .pc-nav-item:nth-child(3)')?.click(); return true;`
-    );
-    await waitForReady(
-      execute,
+    await openParentSection(
+      3,
       `document.querySelector('#saveOnDeleteToggle') !== null`,
       'Saving section'
     );
@@ -655,11 +750,8 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       baseline: false,
     });
 
-    await execute(
-      `document.querySelector('#parentHelpModal .pc-nav-item:nth-child(4)')?.click(); return true;`
-    );
-    await waitForReady(
-      execute,
+    await openParentSection(
+      4,
       `document.querySelector('#advancedControlsToggle') !== null`,
       'Controls & Buttons section'
     );
@@ -736,7 +828,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         activation: 'webdriver',
       })
     );
-    await execute(`document.querySelector('#coloringBookButton')?.click(); return true;`);
+    await clickSetupElement(execute, '#coloringBookButton');
     await waitForReady(
       execute,
       `document.querySelector('#coloring-book-dialog')?.open === true`,
@@ -767,6 +859,13 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       HTMLAnchorElement.prototype.click = function () {
         window.__actionDownloadReadyAt = performance.now();
       };
+      if (globalThis.Capacitor?.isNativePlatform?.()) {
+        window.__actionOriginalScreenshotSaveSink = window.__screenshotSaveSink;
+        window.__screenshotSaveSink = function () {
+          window.__actionDownloadReadyAt = performance.now();
+          return Promise.resolve();
+        };
+      }
       return true;
     `);
     await record(
@@ -783,6 +882,12 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     await execute(`
       HTMLAnchorElement.prototype.click = window.__actionOriginalAnchorClick;
       delete window.__actionOriginalAnchorClick;
+      if (window.__actionOriginalScreenshotSaveSink) {
+        window.__screenshotSaveSink = window.__actionOriginalScreenshotSaveSink;
+      } else {
+        delete window.__screenshotSaveSink;
+      }
+      delete window.__actionOriginalScreenshotSaveSink;
       return true;
     `);
   }
@@ -909,6 +1014,10 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         'allow-provisioning',
         'capabilities-file',
         'session-id',
+        'native-app',
+        'native-webview-class',
+        'webdriver-clicks',
+        'orientation',
         'actions',
         'repeats',
         'label',
@@ -919,15 +1028,24 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     },
     argv
   );
-  const appUrl = resolveDeviceUrl(flag('url'), port, APP_PATH);
-  const server = await ensurePreviewServer(appUrl, port, !has('no-serve'));
+  const nativeApp = has('native-app');
+  const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
+  const server = nativeApp
+    ? null
+    : await ensurePreviewServer(requestedAppUrl, port, !has('no-serve'));
   const client = createWebDriverClient(flag('appium-url', DEFAULT_APPIUM_URL));
+  client.nativeApp = nativeApp;
+  client.nativeWebViewClass = flag('native-webview-class', DEFAULT_NATIVE_WEBVIEW_CLASS);
+  client.webdriverClicks = has('webdriver-clicks');
   const repeats = positiveInteger(flag('repeats', '3'), 'repeats');
   const actions = selectedActions(flag('actions'));
   let sessionId = flag('session-id');
   let ownsSession = false;
   let originalOrientation;
+  let restoreOrientation;
   let session;
+  let execute;
+  let restoreNativeRotationLock;
 
   try {
     await client.request('GET', '/status');
@@ -947,16 +1065,31 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       sessionId = session.sessionId;
       ownsSession = true;
     }
-    const execute = (script, args = []) =>
+    execute = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/sync`, { script, args });
     const executeAsync = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/async`, { script, args });
+    restoreOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
+    const requestedOrientation = flag('orientation')?.toUpperCase();
+    if (requestedOrientation && requestedOrientation !== restoreOrientation) {
+      if (!['PORTRAIT', 'LANDSCAPE'].includes(requestedOrientation)) {
+        fail('--orientation must be PORTRAIT or LANDSCAPE');
+      }
+      await client.request('POST', `/session/${sessionId}/orientation`, {
+        orientation: requestedOrientation,
+      });
+      await sleep(ROTATION_NATIVE_SETTLE_MS);
+    }
+    originalOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
+
+    if (nativeApp) {
+      await switchToWebContext(client, sessionId);
+    } else {
+      await client.request('POST', `/session/${sessionId}/url`, { url: requestedAppUrl });
+    }
     await client.request('POST', `/session/${sessionId}/timeouts`, {
       script: SCRIPT_TIMEOUT_MS,
     });
-    originalOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
-
-    await client.request('POST', `/session/${sessionId}/url`, { url: appUrl });
     const initialReady = await pollUntil(
       () =>
         execute(
@@ -965,13 +1098,39 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       READY_TIMEOUT_MS,
       POLL_MS
     );
-    if (!initialReady) throw new Error(`${appUrl} never showed a sized #drawingCanvas`);
+    if (!initialReady) {
+      throw new Error(
+        `${nativeApp ? 'The native app' : requestedAppUrl} never showed a sized #drawingCanvas`
+      );
+    }
     await clearDeviceWebCache(executeAsync);
+    if (nativeApp && actions.has('rotation')) {
+      restoreNativeRotationLock = (await setNativeRotationLock(execute, false)) === true;
+      await execute(`location.reload(); return true;`).catch(() => null);
+      await switchToWebContext(client, sessionId);
+      const unlockedReady = await pollUntil(
+        () =>
+          execute(
+            "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
+          ).catch(() => false),
+        READY_TIMEOUT_MS,
+        POLL_MS
+      );
+      if (!unlockedReady) throw new Error('The native app did not reload after unlocking rotation');
+    }
+    const appUrl = nativeApp ? await execute('return location.href;') : requestedAppUrl;
 
     const samples = [];
     for (let repeat = 1; repeat <= repeats; repeat++) {
       const loadedUrl = profilingUrl(appUrl, repeat);
-      await client.request('POST', `/session/${sessionId}/url`, { url: loadedUrl });
+      if (nativeApp) {
+        await execute(`location.replace(${JSON.stringify(loadedUrl)}); return true;`).catch(
+          () => null
+        );
+        await switchToWebContext(client, sessionId);
+      } else {
+        await client.request('POST', `/session/${sessionId}/url`, { url: loadedUrl });
+      }
       const ready = await pollUntil(
         () =>
           execute(
@@ -1011,9 +1170,12 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         id: flag('device-id') ?? 'cloud',
       },
       appUrl,
+      transport: nativeApp ? 'native-capacitor-webview' : 'browser',
+      uiActivation: client.webdriverClicks ? 'webdriver-element-click' : 'native-touch',
       appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),
       actions: [...actions],
       repeats,
+      orientation: originalOrientation,
       samples,
       summaries,
       passed: failures.length === 0,
@@ -1029,10 +1191,14 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     }
     return artifact;
   } finally {
-    if (sessionId && originalOrientation) {
+    if (sessionId && execute && restoreNativeRotationLock) {
+      await switchToWebContext(client, sessionId).catch(() => null);
+      await setNativeRotationLock(execute, true).catch(() => null);
+    }
+    if (sessionId && restoreOrientation) {
       await client
         .request('POST', `/session/${sessionId}/orientation`, {
-          orientation: originalOrientation,
+          orientation: restoreOrientation,
         })
         .catch(() => {});
     }

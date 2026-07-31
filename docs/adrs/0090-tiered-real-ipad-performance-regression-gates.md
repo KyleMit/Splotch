@@ -5,7 +5,7 @@
 
 ## Context
 
-The physical-iPad campaign fixed five user-visible stalls: drawing, undo, screenshot save, theme
+The physical-iPad campaign fixed six user-visible stalls: drawing, undo, screenshot save, theme
 switch, coloring-page selection, and rotation. The repository had empirical tools for each
 investigation, but they were not yet a regression system:
 
@@ -160,6 +160,46 @@ No account, credential, paid plan, or CI workflow is created by this decision. P
 must first prove that in-page requestAnimationFrame timing is stable on a pinned tablet and that
 rotation, native trusted touch, and local-tunnel preview access all work.
 
+### Cross-platform snapshots reuse the transport, not the iPad baseline
+
+The Appium endpoint and capability-file seam also supports Android Chrome, iOS/Android simulators,
+and native Capacitor WebViews. `--native-app` attaches to the app-owned WebView without navigating
+it to an HTTP URL, `--native-webview-class` supplies the platform accessibility class, and context
+selection accepts both `WEBVIEW_*` and Android's `CHROMIUM` name. CSS canvas coordinates are mapped
+through browser chrome for mobile web and directly through the edge-to-edge WebView for native apps.
+The action runner supports both the Parent Center's tablet sidebar and phone drill-in shell.
+
+This is transport and metric-schema reuse, not baseline inheritance. Safari's trusted-input
+calibration does not approve simulator input, Android automation with missing contact geometry, or a
+Capacitor WebView whose coalescing signature differs from MobileSafari. Those captures are advisory
+until each physical deployment target has its own hand-calibrated fidelity bounds.
+
+The iOS Simulator is nevertheless a rejection tier for the known renderer architecture. A negative
+control served and installed the pre-tiling commit `2769ceae` while retaining the current runner and
+input plan. On the same iPad Pro 13-inch Simulator, the historical web build measured Crayon at
+37/59/81 ms P95/P99/max with 79.52 ms/s starvation and Magic at 1371/1604/1653 ms with 650.69 ms/s
+starvation. Historical native measured Crayon at 75/94/117 ms with 185.74 ms/s starvation and Magic
+at 1046/1246/1296 ms with 767.63 ms/s starvation. The current tiled web/native builds measured Magic
+at 15/16/17 and 16/18/20 ms respectively, and both historical undo paths missed the next-frame gate.
+The Simulator therefore catches a reintroduction of the original drawing-starvation and async-undo
+classes without physical hardware. It may reject a candidate before the device run; only calibrated
+physical input may approve one.
+
+Native Splotch defaults to a persisted orientation lock. A rotation sweep opens the real Parent
+Center Appearance section, disables the lock through `#lockRotationToggle`, reloads so the Capacitor
+plugin releases the Activity/controller lock, and restores the setting through the same UI before
+closing the session. Forcing Appium orientation while leaving the product lock active is invalid: it
+either fails at the driver or measures a state the app intentionally prevents. A profiling-only
+preference mutation seam was rejected because it would measure a state transition that no parent
+performs and would need a second implementation of product persistence semantics.
+
+Native screenshot profiling has one narrower seam at the external persistence boundary. A
+`PERF_MARKS` build may provide `window.__screenshotSaveSink` so the action suite observes completion
+without writing benchmark images to Photos or blocking on a system permission sheet. It receives the
+already-produced PNG and does not alter rendering. Normal builds dead-code-eliminate it, and a
+post-build release scan fails if the screenshot sink, drawing-debug seams, or `engine.*` mark names
+survive in the client bundle.
+
 ## Consequences
 
 * \+ The budgets used to approve the iPad fixes are executable gates rather than prose in an ADR.
@@ -167,6 +207,8 @@ rotation, native trusted touch, and local-tunnel preview access all work.
   trials without rewriting probe scripts.
 * \+ Provider choice is isolated to an endpoint and capabilities file; local physical-device runs
   remain the authoritative fallback.
+* \+ The same probe and scorer can produce deployment-matrix snapshots across mobile web and native
+  shells without forking performance definitions.
 * \+ Normal CI keeps deterministic behavior and metric-definition tests without pretending a Linux
   runner can approve iPad compositing.
 * − The full suite takes several minutes because each measured tap uses the real native path and
@@ -177,6 +219,8 @@ rotation, native trusted touch, and local-tunnel preview access all work.
   verification still uses Instruments frame-lifetime traces when a gap's attribution is ambiguous.
 * − First-observed readiness is useful for finding gross regressions but includes driver return
   latency and cannot be compared to a local JavaScript duration.
+* − Simulator and non-calibrated platform rows are comparative evidence, not release approval for a
+  physical device.
 
 ## Reproducing
 

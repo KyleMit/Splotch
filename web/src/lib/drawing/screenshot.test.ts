@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   isNative: vi.fn(() => false),
   saveBlobToFolder: vi.fn(),
   playScreenshotFeedback: vi.fn(),
+  perfMarks: false,
 }));
 
 vi.mock('./engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob }));
@@ -16,6 +17,11 @@ vi.mock('./screenshotFeedback', () => ({
   playScreenshotFeedback: mocks.playScreenshotFeedback,
 }));
 vi.mock('./screenshotTiming', () => ({ SCREENSHOT_COOLDOWN_MS: 4_000 }));
+vi.mock('./perf', () => ({
+  get PERF_MARKS() {
+    return mocks.perfMarks;
+  },
+}));
 
 interface Deferred<T> {
   promise: Promise<T>;
@@ -36,6 +42,9 @@ function deferred<T>(): Deferred<T> {
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
+  mocks.perfMarks = false;
+  mocks.isNative.mockReturnValue(false);
+  delete window.__screenshotSaveSink;
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:polaroid');
 });
 
@@ -115,6 +124,20 @@ describe('saveScreenshot', () => {
 });
 
 describe('saveImageBlob', () => {
+  it('uses the instrumented native persistence sink without reaching the media plugin', async () => {
+    const sink = vi.fn();
+    mocks.perfMarks = true;
+    mocks.isNative.mockReturnValue(true);
+    window.__screenshotSaveSink = sink;
+    const blob = new Blob(['image'], { type: 'image/png' });
+    const { saveImageBlob } = await import('./screenshot');
+
+    await saveImageBlob(blob, 'splotch-test');
+
+    expect(sink).toHaveBeenCalledWith(blob, 'splotch-test');
+    expect(mocks.saveBlobToFolder).not.toHaveBeenCalled();
+  });
+
   it('uses the blob MIME type for web filenames', async () => {
     mocks.saveBlobToFolder.mockResolvedValue(true);
     const { saveImageBlob } = await import('./screenshot');
