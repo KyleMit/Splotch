@@ -1,6 +1,7 @@
 # ADR-0074: Undo Hot-Path Optimizations — Clustered Patches, Clear Paper Swap, Rect-Limited Undo Repaint
 
-**Status:** Active — amends ADR-0069. **Date:** 2026-07
+**Status:** Superseded by [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) for the production
+drawing route. **Date:** 2026-07
 
 ## Context
 

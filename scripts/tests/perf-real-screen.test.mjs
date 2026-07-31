@@ -524,6 +524,25 @@ describe('trusted XCUITest input', () => {
     ).toBe(true);
   });
 
+  it('can repeat the native gesture sequence in one drawing session', () => {
+    const bounds = nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow });
+    const once = trustedGestureActions(bounds);
+    const repeated = trustedGestureActions(bounds, 3);
+
+    expect(repeated).toHaveLength(once.length * 3);
+    expect(repeated.slice(0, once.length)).toEqual(once);
+    expect(repeated.slice(once.length, once.length * 2)).toEqual(once);
+  });
+
+  it('can pause between repeated native gesture sequences', () => {
+    const bounds = nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow });
+    const repeated = trustedGestureActions(bounds, 3, 2_000);
+
+    expect(
+      repeated.filter((action) => action.type === 'pause' && action.duration === 2_000)
+    ).toHaveLength(2);
+  });
+
   it('only permits Apple-account provisioning when explicitly requested', () => {
     const base = {
       deviceId: 'device',

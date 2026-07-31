@@ -153,6 +153,30 @@ describe('magic sheet fill-load failure', () => {
     expect(magic.isMagicSheetUnready()).toBe(false);
   });
 
+  it('keeps a captured sheet immutable when the active source changes', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.ensureMagicSheet();
+    const first = magic.captureMagicSheet();
+    magic.clearMagicGradient();
+    magic.ensureMagicSheet();
+    const second = magic.captureMagicSheet();
+
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    expect(second!.canvas).not.toBe(first!.canvas);
+
+    const sources: CanvasImageSource[] = [];
+    const target = {
+      createPattern: (source: CanvasImageSource) => {
+        sources.push(source);
+        return { setTransform() {} };
+      },
+    } as unknown as CanvasRenderingContext2D;
+    expect(magic.sheetPatternFor(target, first)).not.toBeNull();
+    expect(sources).toEqual([first!.canvas]);
+  });
+
   it('re-attempts the load when the same page is applied again', async () => {
     const magic = await mountedMagicBrush();
 

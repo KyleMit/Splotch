@@ -5,6 +5,7 @@
 //   npm run perf:frames:local                      Playwright WebKit (the iOS engine family)
 //   npm run perf:frames:local -- --engine=chromium --throttle=4
 //   npm run perf:frames:local -- --drive-hz=120 --phases=page,page-no-halos
+//   npm run perf:frames:local -- --viewport=2049x1373 --device-scale-factor=2
 //
 // WHAT THIS CAN AND CANNOT STAND IN FOR. The device findings this exists to
 // reproduce are compositor-side: frame production blocked at a stroke boundary,
@@ -54,6 +55,22 @@ const ENGINES = {
   chromium: { launcher: chromium, hasCdp: true },
 };
 
+function positiveNumber(value, label) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) fail(`${label} must be a positive number`);
+  return number;
+}
+
+function resolveViewport(value) {
+  if (!value) return IPAD_PRO_VIEWPORT;
+  const match = /^(\d+)x(\d+)$/.exec(value);
+  if (!match) fail(`--viewport=${value} must use WIDTHxHEIGHT, for example 1366x915`);
+  return {
+    width: positiveNumber(match[1], 'viewport width'),
+    height: positiveNumber(match[2], 'viewport height'),
+  };
+}
+
 export async function runFramesLocal(argv = process.argv.slice(2)) {
   const { flag, has, port } = parsePerfArgs(
     {
@@ -65,6 +82,9 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
         'contact-seconds',
         'drive',
         'drive-hz',
+        'viewport',
+        'device-scale-factor',
+        'headed',
         'no-serve',
         'no-forensics',
       ],
@@ -90,14 +110,20 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
   const contactSeconds = Number(flag('contact-seconds', DEFAULT_CONTACT_SECONDS));
   const drive = flag('drive', 'mixed');
   const driveHz = flag('drive-hz') && Number(flag('drive-hz'));
+  const viewport = resolveViewport(flag('viewport'));
+  const deviceScaleFactor = positiveNumber(
+    flag('device-scale-factor', IPAD_PRO_SCALE),
+    'device scale factor'
+  );
+  const headless = !has('headed');
 
   let browser;
   try {
     if (server) await waitForUrl(url, SERVER_READY_TIMEOUT_MS);
-    browser = await engine.launcher.launch({ headless: true });
+    browser = await engine.launcher.launch({ headless });
     const context = await browser.newContext({
-      viewport: IPAD_PRO_VIEWPORT,
-      deviceScaleFactor: IPAD_PRO_SCALE,
+      viewport,
+      deviceScaleFactor,
     });
     const page = await context.newPage();
     const pageLogs = [];
@@ -136,7 +162,7 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
       );
     }
     console.log(
-      `${engineName} · ${throttle.tag} CPU · ${IPAD_PRO_VIEWPORT.width}×${IPAD_PRO_VIEWPORT.height}@${IPAD_PRO_SCALE}x · ` +
+      `${engineName} · ${throttle.tag} CPU · ${viewport.width}×${viewport.height}@${deviceScaleFactor}x · ` +
         `driving ${drive}${driveHz ? ` at ${driveHz} Hz` : ' at one move per frame'}`
     );
 
@@ -164,6 +190,8 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
       mode: `synthetic:${drive}${driveHz ? `@${driveHz}hz` : ''}`,
       engine: engineName,
       throttle: throttle.tag,
+      viewport: { ...viewport, deviceScaleFactor },
+      headless,
       report,
       console: pageLogs,
     };

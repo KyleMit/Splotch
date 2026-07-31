@@ -122,6 +122,7 @@ It also cannot see the real screen at all. That is the next section.
 npm run perf:ipad:frames                              # hand-drawn, full phase sweep
 npm run perf:ipad:frames -- --drive                    # synthetic input, no human hand
 npm run perf:ipad:xcuitest -- --device-id=<UDID>       # trusted native touch, no human hand
+npm run perf:ipad:xcuitest -- --device-id=<UDID> --brush=crayon --gesture-repeats=3
 npm run perf:ipad:frames -- --phases=blank,page --contact-seconds=20
 npm run perf:frames:analyze -- perf-profiles/<dir>/real-screen.json
 ```
@@ -183,14 +184,21 @@ Start Appium in one terminal, keep the USB-connected iPad unlocked, and run:
 npm run perf:ipad:xcuitest -- --device-id=<UDID>
 # First WebDriverAgent install only, when provisioning is missing:
 npm run perf:ipad:xcuitest -- --device-id=<UDID> --allow-provisioning
+# Exercise one brush for a longer session:
+npm run perf:ipad:xcuitest -- --device-id=<UDID> \
+  --brush=magic --gesture-repeats=3 --repeat-pause-ms=1500
 ```
 
 The command rebuilds and serves the profiling bundle like the other iPad entries. For a build
 already served elsewhere, use
 `--ignore-scripts -- --url=http://<mac-ip>:<port>/ --no-serve --device-id=<UDID>`. `--label=` names
 the output directory; `--output=` writes an exact artifact path for a scripted A/B run.
+`--brush=pen|crayon|magic|eraser` selects through the real brush UI before capture; the eraser run
+prefills the live tiles so it measures actual removal. `--gesture-repeats=N` repeats the calibrated
+sequence in one drawing session, and `--repeat-pause-ms=N` idles between repetitions to exercise
+deferred work such as history compaction.
 
-The fixed gesture contains two long interpolated strokes and eight short strokes. WebDriverAgent
+The base gesture contains two long interpolated strokes and eight short strokes. WebDriverAgent
 emits native touch samples along each interpolation; splitting the same gesture into hundreds of 8
 ms WebDriver actions took 211 seconds and is deliberately not how the committed driver works.
 

@@ -107,15 +107,29 @@ let activeGradient: RainbowGradient | null = null;
 let sheetCanvas: HTMLCanvasElement | null = null;
 let sheetCtx: CanvasRenderingContext2D | null = null;
 let sheetReady = false;
+export interface MagicSheetSnapshot {
+  canvas: HTMLCanvasElement;
+  originX: number;
+  originY: number;
+}
+let sheetSnapshot: MagicSheetSnapshot | null = null;
 // The sheet's origin in paper coordinates (non-zero only when a rotation lock makes
 // the sheet cover margins around the fitted paper). The pattern is offset by it so
 // sheet pixel (0,0) maps to this paper coordinate.
 let sheetOriginX = 0;
 let sheetOriginY = 0;
-let patternCache = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
+let patternCache = new WeakMap<
+  CanvasRenderingContext2D,
+  WeakMap<HTMLCanvasElement, CanvasPattern>
+>();
+const patternRegionByTarget = new WeakMap<
+  CanvasRenderingContext2D,
+  { x: number; y: number; width: number; height: number }
+>();
 
 function invalidateSheet() {
   sheetReady = false;
+  sheetSnapshot = null;
   patternCache = new WeakMap();
 }
 
@@ -293,10 +307,8 @@ export function rasterizeSheet() {
   if (!paper || !bounds || bounds.width <= 0 || bounds.height <= 0) return;
   const source = activeSource();
   if (!source) return;
-  if (!sheetCanvas) {
-    sheetCanvas = document.createElement('canvas');
-    sheetCtx = sheetCanvas.getContext('2d');
-  }
+  sheetCanvas = document.createElement('canvas');
+  sheetCtx = sheetCanvas.getContext('2d');
   if (!sheetCtx || !sheetCanvas) return;
   sheetCanvas.width = bounds.width;
   sheetCanvas.height = bounds.height;
@@ -318,6 +330,7 @@ export function rasterizeSheet() {
     paintGradient(sheetCtx, sheetCanvas.width, sheetCanvas.height, source.gradient);
   }
   sheetReady = true;
+  sheetSnapshot = { canvas: sheetCanvas, originX: sheetOriginX, originY: sheetOriginY };
 }
 
 // A no-repeat pattern of the sheet, cached per target context (the visible ctx
@@ -326,17 +339,59 @@ export function rasterizeSheet() {
 // identity in normal use, a translation under a rotation lock — keeping it aligned on
 // the visible canvas and the larger square paper raster alike, all of which draw ops
 // in paper coordinates.
-export function sheetPatternFor(target: CanvasRenderingContext2D): CanvasPattern | null {
-  if (!sheetCanvas || !sheetReady) return null;
-  const cached = patternCache.get(target);
-  if (cached) return cached;
-  const pattern = target.createPattern(sheetCanvas, 'no-repeat');
-  if (!pattern) return null;
-  if ((sheetOriginX !== 0 || sheetOriginY !== 0) && typeof DOMMatrix !== 'undefined') {
-    pattern.setTransform(new DOMMatrix([1, 0, 0, 1, sheetOriginX, sheetOriginY]));
+export function captureMagicSheet(): MagicSheetSnapshot | null {
+  return sheetReady ? sheetSnapshot : null;
+}
+
+export function sheetPatternFor(
+  target: CanvasRenderingContext2D,
+  snapshot: MagicSheetSnapshot | null = captureMagicSheet()
+): CanvasPattern | null {
+  if (!snapshot) return null;
+  let patternsBySource = patternCache.get(target);
+  if (!patternsBySource) {
+    patternsBySource = new WeakMap();
+    patternCache.set(target, patternsBySource);
   }
-  patternCache.set(target, pattern);
+  const cached = patternsBySource.get(snapshot.canvas);
+  if (cached) return cached;
+  const region = patternRegionByTarget.get(target);
+  let source = snapshot.canvas;
+  if (region) {
+    source = document.createElement('canvas');
+    source.width = region.width;
+    source.height = region.height;
+    source
+      .getContext('2d')
+      ?.drawImage(
+        snapshot.canvas,
+        region.x - snapshot.originX,
+        region.y - snapshot.originY,
+        region.width,
+        region.height,
+        0,
+        0,
+        region.width,
+        region.height
+      );
+  }
+  const pattern = target.createPattern(source, 'no-repeat');
+  if (!pattern) return null;
+  const originX = region?.x ?? snapshot.originX;
+  const originY = region?.y ?? snapshot.originY;
+  if ((originX !== 0 || originY !== 0) && typeof DOMMatrix !== 'undefined') {
+    pattern.setTransform(new DOMMatrix([1, 0, 0, 1, originX, originY]));
+  }
+  patternsBySource.set(snapshot.canvas, pattern);
   return pattern;
+}
+
+export function setMagicPatternRegion(
+  target: CanvasRenderingContext2D,
+  region: { x: number; y: number; width: number; height: number }
+) {
+  patternRegionByTarget.set(target, region);
+  patternCache.delete(target);
 }
 
 // True whenever the sheet cannot currently paint magic ink — i.e. sheetPatternFor

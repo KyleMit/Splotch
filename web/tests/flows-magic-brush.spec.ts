@@ -6,6 +6,7 @@ import {
   draw,
   gotoApp,
   hasRedDominantPixel,
+  renderedCanvasHandle,
   swatch,
   TEST_PALETTE,
 } from './helpers';
@@ -96,20 +97,24 @@ async function clearViaGesture(page: Page) {
 // correctly (issue #658). Finer quantization costs nothing on the other side —
 // a flat pen pass measured 1-3 buckets at 4, 5 and 6 bits alike, since one
 // colour is one bucket however narrow the buckets are.
-function distinctOpaqueColors(page: Page, bits = 6): Promise<number> {
-  return page.evaluate((b) => {
-    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-    const shift = 8 - b;
-    const seen = new Set<number>();
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i + 3] < 200) continue;
-      const key =
-        ((data[i] >> shift) << (2 * b)) | ((data[i + 1] >> shift) << b) | (data[i + 2] >> shift);
-      seen.add(key);
-    }
-    return seen.size;
-  }, bits);
+async function distinctOpaqueColors(page: Page, bits = 6): Promise<number> {
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return await canvas.evaluate((c, b) => {
+      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+      const shift = 8 - b;
+      const seen = new Set<number>();
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] < 200) continue;
+        const key =
+          ((data[i] >> shift) << (2 * b)) | ((data[i + 1] >> shift) << b) | (data[i + 2] >> shift);
+        seen.add(key);
+      }
+      return seen.size;
+    }, bits);
+  } finally {
+    await canvas.dispose();
+  }
 }
 
 test('the magic brush is always available and paints the coloring page colors', async ({
@@ -294,19 +299,23 @@ test('a down-less pen stream adopted from a UI control still grows a brush ring'
 // the canvas) is the only source of line work; revealing the fill's copy on the
 // canvas would double every line under the overlay and ghost on any drift
 // (ADR-0043). So the fills-only reveal leaves the canvas essentially black-free.
-function revealedNearBlackFraction(page: Page): Promise<number> {
-  return page.evaluate(() => {
-    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-    let opaque = 0;
-    let nearBlack = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i + 3] < 200) continue;
-      opaque++;
-      if (data[i] < 40 && data[i + 1] < 40 && data[i + 2] < 40) nearBlack++;
-    }
-    return opaque === 0 ? 0 : nearBlack / opaque;
-  });
+async function revealedNearBlackFraction(page: Page): Promise<number> {
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return await canvas.evaluate((c) => {
+      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+      let opaque = 0;
+      let nearBlack = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] < 200) continue;
+        opaque++;
+        if (data[i] < 40 && data[i + 1] < 40 && data[i + 2] < 40) nearBlack++;
+      }
+      return opaque === 0 ? 0 : nearBlack / opaque;
+    });
+  } finally {
+    await canvas.dispose();
+  }
 }
 
 test('the magic brush reveals fills only, never the fill outlines (no double lines)', async ({
@@ -350,37 +359,41 @@ test('the magic brush reveals fills only, never the fill outlines (no double lin
 // anti-aliasing on the ink, which lands within ~2 per channel.
 const INK_MATCH_TOLERANCE = 16;
 
-function bandNonInkPixels(
+async function bandNonInkPixels(
   page: Page,
   edge: 'left' | 'top',
   frac: number,
   ink: string
 ): Promise<number> {
-  return page.evaluate(
-    ({ edge, frac, ink, tol }) => {
-      const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-      const w = edge === 'left' ? Math.max(1, Math.round(c.width * frac)) : c.width;
-      const h = edge === 'top' ? Math.max(1, Math.round(c.height * frac)) : c.height;
-      const { data } = c.getContext('2d')!.getImageData(0, 0, w, h);
-      const r0 = parseInt(ink.slice(1, 3), 16);
-      const g0 = parseInt(ink.slice(3, 5), 16);
-      const b0 = parseInt(ink.slice(5, 7), 16);
-      let nonInk = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        if (data[i + 3] <= 200) continue;
-        if (
-          Math.abs(data[i] - r0) <= tol &&
-          Math.abs(data[i + 1] - g0) <= tol &&
-          Math.abs(data[i + 2] - b0) <= tol
-        ) {
-          continue;
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return await canvas.evaluate(
+      (c, { edge, frac, ink, tol }) => {
+        const w = edge === 'left' ? Math.max(1, Math.round(c.width * frac)) : c.width;
+        const h = edge === 'top' ? Math.max(1, Math.round(c.height * frac)) : c.height;
+        const { data } = c.getContext('2d')!.getImageData(0, 0, w, h);
+        const r0 = parseInt(ink.slice(1, 3), 16);
+        const g0 = parseInt(ink.slice(3, 5), 16);
+        const b0 = parseInt(ink.slice(5, 7), 16);
+        let nonInk = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] <= 200) continue;
+          if (
+            Math.abs(data[i] - r0) <= tol &&
+            Math.abs(data[i + 1] - g0) <= tol &&
+            Math.abs(data[i + 2] - b0) <= tol
+          ) {
+            continue;
+          }
+          nonInk++;
         }
-        nonInk++;
-      }
-      return nonInk;
-    },
-    { edge, frac, ink, tol: INK_MATCH_TOLERANCE }
-  );
+        return nonInk;
+      },
+      { edge, frac, ink, tol: INK_MATCH_TOLERANCE }
+    );
+  } finally {
+    await canvas.dispose();
+  }
 }
 
 test('the magic brush paints the letterbox margin by extending the edge colour', async ({
@@ -497,14 +510,18 @@ test('the magic brush reveals a rainbow gradient when no coloring page is applie
 });
 
 // Count of strongly-opaque canvas pixels.
-function opaqueCount(page: Page): Promise<number> {
-  return page.evaluate(() => {
-    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-    let n = 0;
-    for (let i = 3; i < data.length; i += 4) if (data[i] > 200) n++;
-    return n;
-  });
+async function opaqueCount(page: Page): Promise<number> {
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return await canvas.evaluate((c) => {
+      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+      let n = 0;
+      for (let i = 3; i < data.length; i += 4) if (data[i] > 200) n++;
+      return n;
+    });
+  } finally {
+    await canvas.dispose();
+  }
 }
 
 test('the eraser removes magic-brush strokes and later colors override them', async ({ page }) => {

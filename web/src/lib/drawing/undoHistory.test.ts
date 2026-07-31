@@ -17,6 +17,7 @@ const magicSheet = vi.hoisted(() => ({ ready: true }));
 // these tests only assert that undoHistory defers folding while the gate is closed.
 vi.mock('./magicBrush', () => ({
   isMagicSheetUnready: () => !magicSheet.ready,
+  captureMagicSheet: () => (magicSheet.ready ? {} : null),
   sheetPatternFor: () => (magicSheet.ready ? '#magic' : null),
 }));
 

@@ -25,6 +25,13 @@ const WDA_STARTUP_RETRIES = 1;
 const PROBE_CONTACT_BUDGET_MS = 60_000;
 const AFTER_GESTURE_SETTLE_MS = 500;
 const TABLE_CHUNK_ROWS = 2_000;
+const BRUSH_SELECT_TIMEOUT_MS = 10_000;
+const BRUSH_BUTTON_BY_MODE = {
+  pen: '#penBrushButton',
+  crayon: '#crayonBrushButton',
+  magic: '#magicBrushButton',
+  eraser: '#eraserButton',
+};
 
 // One interpolated native move emits digitizer-like samples without making WDA
 // serialize hundreds of tiny action commands.
@@ -116,10 +123,15 @@ function addShortStroke(actions, bounds, [xFraction, yFraction]) {
   actions.push({ type: 'pause', duration: SHORT_STROKE_PAUSE_MS });
 }
 
-export function trustedGestureActions(bounds) {
+export function trustedGestureActions(bounds, repeats = 1, repeatPauseMs = 0) {
   const actions = [];
-  for (const seed of LONG_STROKE_SEEDS) addLongStroke(actions, bounds, seed);
-  for (const origin of SHORT_STROKE_ORIGINS) addShortStroke(actions, bounds, origin);
+  for (let repeat = 0; repeat < repeats; repeat++) {
+    if (repeat > 0 && repeatPauseMs > 0) {
+      actions.push({ type: 'pause', duration: repeatPauseMs });
+    }
+    for (const seed of LONG_STROKE_SEEDS) addLongStroke(actions, bounds, seed);
+    for (const origin of SHORT_STROKE_ORIGINS) addShortStroke(actions, bounds, origin);
+  }
   return actions;
 }
 
@@ -212,6 +224,9 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         'xcode-config',
         'wda-bundle-id',
         'allow-provisioning',
+        'brush',
+        'gesture-repeats',
+        'repeat-pause-ms',
         'label',
         'output',
         'no-serve',
@@ -230,6 +245,14 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   }
 
   const appUrl = resolveDeviceUrl(flag('url'), port, APP_PATH);
+  const gestureRepeats = Number.parseInt(flag('gesture-repeats', '1'), 10);
+  if (!Number.isSafeInteger(gestureRepeats) || gestureRepeats < 1) {
+    fail('--gesture-repeats must be a positive integer');
+  }
+  const repeatPauseMs = Number.parseInt(flag('repeat-pause-ms', '0'), 10);
+  if (!Number.isSafeInteger(repeatPauseMs) || repeatPauseMs < 0) {
+    fail('--repeat-pause-ms must be a non-negative integer');
+  }
   const server = await ensurePreviewServer(appUrl, port, !has('no-serve'));
   const client = createWebDriverClient(flag('appium-url', DEFAULT_APPIUM_URL));
   let sessionId;
@@ -259,6 +282,59 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       WEBVIEW_READY_POLL_MS
     );
     if (!ready) throw new Error(`${appUrl} never showed a sized #drawingCanvas`);
+
+    const brush = flag('brush', 'pen');
+    const brushSelector = BRUSH_BUTTON_BY_MODE[brush];
+    if (!brushSelector) {
+      fail(`--brush must be one of ${Object.keys(BRUSH_BUTTON_BY_MODE).join(', ')}`);
+    }
+    if (brush !== 'pen') {
+      await execute(
+        `document.querySelector('button[aria-label="Expand controls"]')?.click(); return true;`
+      );
+      const drawerReady = await pollUntil(
+        () => execute(`return !!document.querySelector('#brushButton');`).catch(() => false),
+        BRUSH_SELECT_TIMEOUT_MS,
+        WEBVIEW_READY_POLL_MS
+      );
+      if (!drawerReady) throw new Error('Action drawer did not expose #brushButton');
+      await execute(`document.querySelector('#brushButton')?.click(); return true;`);
+      const brushReady = await pollUntil(
+        () =>
+          execute(`return !!document.querySelector(${JSON.stringify(brushSelector)});`).catch(
+            () => false
+          ),
+        BRUSH_SELECT_TIMEOUT_MS,
+        WEBVIEW_READY_POLL_MS
+      );
+      if (!brushReady) throw new Error(`Brush menu did not expose ${brushSelector}`);
+      await execute(
+        `document.querySelector(${JSON.stringify(brushSelector)})?.click(); return true;`
+      );
+      const brushCommitted = await pollUntil(
+        () =>
+          execute(`return window.__committedBrushMode?.() === ${JSON.stringify(brush)};`).catch(
+            () => false
+          ),
+        BRUSH_SELECT_TIMEOUT_MS,
+        WEBVIEW_READY_POLL_MS
+      );
+      if (!brushCommitted) throw new Error(`Drawing engine did not commit ${brush} mode`);
+    }
+    if (brush === 'eraser') {
+      await execute(`
+        for (const canvas of document.querySelectorAll('canvas[data-live-tile]')) {
+          const context = canvas.getContext('2d');
+          context.save();
+          context.setTransform(1, 0, 0, 1, 0, 0);
+          context.fillStyle = '#7c4dff';
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          context.restore();
+        }
+        return true;
+      `);
+      await sleep(AFTER_GESTURE_SETTLE_MS);
+    }
 
     await execute(
       probeConfigScript({
@@ -296,7 +372,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
           type: 'pointer',
           id: 'finger',
           parameters: { pointerType: 'touch' },
-          actions: trustedGestureActions(canvasBounds),
+          actions: trustedGestureActions(canvasBounds, gestureRepeats, repeatPauseMs),
         },
       ],
     });
@@ -313,7 +389,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     const summaries = summarizeRun(report);
     const input = summaries.phases[0]?.input ?? {};
     const fidelity = inputFidelity(input);
-    const label = sanitizeLabel(flag('label', 'mixed'));
+    const label = sanitizeLabel(flag('label', brush));
     const output = flag('output') ?? join(profilePath('ipad-xcuitest', label), 'real-screen.json');
     mkdirSync(dirname(output), { recursive: true });
     const artifact = {
@@ -331,6 +407,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         webViewBounds,
         nativeWindow,
         canvasBounds,
+        gestureRepeats,
+        repeatPauseMs,
       },
       fidelity,
       summaries,

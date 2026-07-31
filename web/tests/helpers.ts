@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from '@playwright/test';
+import { expect, type JSHandle, type Locator, type Page } from '@playwright/test';
 
 import { COLOR_FAMILIES } from '../src/lib/hexPickerLayout';
 import { POINTER_RESUME_JUMP_RATIO } from '../src/lib/drawing/strokeMath';
@@ -144,29 +144,63 @@ export async function draw(page: Page, points: { x: number; y: number }[]) {
   await dragStroke(page, box, points);
 }
 
-/** First non-transparent pixel on the canvas as [r,g,b,a], or null if blank. */
-export function firstOpaquePixel(page: Page): Promise<Rgba | null> {
-  return page.evaluate((): Rgba | null => {
-    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-    for (let i = 3; i < data.length; i += 4) {
-      if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
+export function renderedCanvasHandle(page: Page): Promise<JSHandle<HTMLCanvasElement>> {
+  return page.evaluateHandle(() => {
+    const input = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const tiles = Array.from(
+      document.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]')
+    );
+    if (tiles.length === 0) return input;
+    const rendered = document.createElement('canvas');
+    rendered.width = input.width;
+    rendered.height = input.height;
+    const target = rendered.getContext('2d')!;
+    const rect = input.getBoundingClientRect();
+    const scaleX = input.width / rect.width;
+    const scaleY = input.height / rect.height;
+    for (const tile of tiles) {
+      target.drawImage(
+        tile,
+        Math.round(Number.parseFloat(tile.style.left) * scaleX),
+        Math.round(Number.parseFloat(tile.style.top) * scaleY)
+      );
     }
-    return null;
+    return rendered;
   });
+}
+
+/** First non-transparent pixel on the canvas as [r,g,b,a], or null if blank. */
+export async function firstOpaquePixel(page: Page): Promise<Rgba | null> {
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return await canvas.evaluate((c): Rgba | null => {
+      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+      for (let i = 3; i < data.length; i += 4) {
+        if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
+      }
+      return null;
+    });
+  } finally {
+    await canvas.dispose();
+  }
 }
 
 export function isBlueDominant(px: Rgba) {
   return px[2] > px[0];
 }
 
-export function hasRedDominantPixel(page: Page): Promise<boolean> {
-  return page.evaluate(() => {
-    const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i + 3] > 200 && data[i] > 200 && data[i + 1] < 120 && data[i + 2] < 120) return true;
-    }
-    return false;
-  });
+export async function hasRedDominantPixel(page: Page): Promise<boolean> {
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return await canvas.evaluate((c) => {
+      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] > 200 && data[i] > 200 && data[i + 1] < 120 && data[i + 2] < 120)
+          return true;
+      }
+      return false;
+    });
+  } finally {
+    await canvas.dispose();
+  }
 }

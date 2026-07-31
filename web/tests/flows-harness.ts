@@ -86,12 +86,16 @@ export async function openColoringDialog(page: Page) {
 export async function applyFarmPage(page: Page) {
   await openColoringDialog(page);
   const dialog = page.locator('#coloring-book-dialog');
-  await dialog.getByRole('button', { name: /Farm coloring book/i }).click();
-  await dialog
-    .getByRole('button', { name: /Farm coloring page/i })
-    .first()
-    .click();
-  await expect(dialog).toBeHidden();
+  const farmPage = dialog.getByRole('button', { name: /Farm coloring page/i }).first();
+  await retryOpen(
+    farmPage,
+    () => dialog.getByRole('button', { name: /Farm coloring book/i }).click({ timeout: 1000 }),
+    { settle: 1000 }
+  );
+  await expect(async () => {
+    if (await dialog.isVisible()) await farmPage.click();
+    await expect(dialog).toBeHidden();
+  }).toPass();
   // Wait for the art itself, not just the element: the src lands only once the
   // image has decoded (the ready-gated swap in DrawingCanvas).
   await expect(page.locator('#coloringOverlay')).toHaveAttribute('src', /\.webp$/);

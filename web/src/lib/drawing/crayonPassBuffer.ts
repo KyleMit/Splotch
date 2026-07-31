@@ -99,6 +99,14 @@ export function setLiveCrayonBuffer(
   }
 }
 
+export function setCrayonBufferForTarget(
+  target: CanvasRenderingContext2D,
+  buffer: CanvasRenderingContext2D,
+  mirror: CanvasRenderingContext2D
+) {
+  bufferByTarget.set(target, { ctx: buffer, mirror, dirty: false, bounds: null });
+}
+
 // --- Live paper-space pass accumulation --------------------------------------
 //
 // Alongside the screen-space overlay preview, every live crayon op also paints

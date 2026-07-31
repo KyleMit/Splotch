@@ -8,7 +8,7 @@
 // being deterministic. The pass buffer those ops come from lives in
 // crayonPassBuffer.ts; renderOp only dispatches into it.
 
-import { sheetPatternFor } from './magicBrush';
+import { captureMagicSheet, sheetPatternFor, type MagicSheetSnapshot } from './magicBrush';
 import { paintOpShape } from './opGeometry';
 import {
   flushCrayonBuffer,
@@ -63,6 +63,7 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      magicSheet?: MagicSheetSnapshot;
       crayon?: boolean;
       seed?: number;
     }
@@ -79,6 +80,7 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      magicSheet?: MagicSheetSnapshot;
       crayon?: boolean;
       seed?: number;
     }
@@ -149,8 +151,10 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   }
   if (op.magic) {
     flushCrayonBuffer(target);
-    const pattern = sheetPatternFor(target);
+    const snapshot = op.magicSheet ?? captureMagicSheet();
+    const pattern = sheetPatternFor(target, snapshot);
     if (!pattern) return;
+    op.magicSheet ??= snapshot ?? undefined;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
     return;

@@ -12,6 +12,7 @@
   import { pushToolStateToEngine } from '$lib/drawing/earlyBoot';
   import { COLORING_OVERLAY_ID } from '$lib/drawing/overlay';
   import { viewMatrix } from '$lib/drawing/paperView';
+  import { LIVE_TILE_COUNT } from '$lib/drawing/liveTiles';
   import { layout } from '$lib/state/layout.svelte';
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
@@ -33,6 +34,7 @@
 
   let canvasEl: HTMLCanvasElement = $state()!;
   let pointerHalos: PointerHalos;
+  const liveTiles = Array.from({ length: LIVE_TILE_COUNT }, (_, index) => index);
 
   // The engine's paper view (ADR-0050): identity in normal use; after a device
   // rotation with ink on the canvas it presents the locked paper upright,
@@ -281,16 +283,16 @@
       onpointerdown={nudgeBlendLayer}
       onpointermove={nudgeBlendLayer}
     ></canvas>
-    <!-- The engine's live crayon pass overlays (bottom darken layer, then the
-         opacity-mixed top — see engine.ts's crayonOverlay notes). Rendered
-         here, not injected by the engine: the engine boots BEFORE hydration
-         (ADR-0072), and elements it inserted into the prerendered DOM made
-         Svelte's hydration walk bail to a full client re-render, replacing
-         the live canvas. Template-owned markup hydrates cleanly; the engine
-         adopts the pair by the data attribute. -->
-    <canvas class="crayon-overlay" data-crayon-overlay aria-hidden="true"></canvas>
-    <canvas class="crayon-overlay crayon-overlay-top" data-crayon-overlay aria-hidden="true"
-    ></canvas>
+    {#each liveTiles as tile (tile)}
+      <canvas class="live-tile" data-live-tile aria-hidden="true"></canvas>
+      <canvas class="live-tile live-crayon-tile" data-live-crayon-bottom aria-hidden="true"
+      ></canvas>
+      <canvas
+        class="live-tile live-crayon-tile live-crayon-tile-top"
+        data-live-crayon-top
+        aria-hidden="true"
+      ></canvas>
+    {/each}
   </div>
   <PointerHalos bind:this={pointerHalos} {canvasEl} {eraserSizePx} {brushRingSizePx} />
   <FullscreenToggle />
@@ -338,6 +340,8 @@
   }
 
   #drawingCanvas {
+    position: relative;
+    z-index: 3;
     display: block;
     cursor: crosshair;
     touch-action: none;
@@ -345,25 +349,23 @@
     height: 100%;
   }
 
-  #drawingCanvas.erasing {
-    cursor: none;
+  .live-tile {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1;
   }
 
-  /* Mirrors the inline styling the engine applies when it creates its own
-     overlays (the /dev/engine harness path) — keep the two in sync. */
-  .crayon-overlay {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
+  .live-crayon-tile {
     z-index: 2;
     mix-blend-mode: darken;
   }
 
-  .crayon-overlay-top {
+  .live-crayon-tile-top {
     mix-blend-mode: normal;
+  }
+
+  #drawingCanvas.erasing {
+    cursor: none;
   }
 
   /* The blend lives on the wrapper (not the img): the transform makes the
