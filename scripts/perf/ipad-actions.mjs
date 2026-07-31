@@ -30,6 +30,7 @@ const REPEAT_SETTLE_MS = 500;
 const TRUSTED_STROKE_MS = 650;
 const CLEAR_DRAG_MS = 450;
 const ROTATION_NATIVE_SETTLE_MS = 1_500;
+const MAX_SETUP_RECOVERY_ATTEMPTS = 3;
 const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
 const ALL_ACTIONS = new Set([
   'drawer',
@@ -341,6 +342,37 @@ async function addTrustedStroke(client, sessionId, execute) {
     'the trusted stroke to enter undo history'
   );
   await sleep(ACTION_SETTLE_MS);
+}
+
+async function installActionProbe(execute) {
+  await execute(readFileSync(ACTION_PROBE_FILE, 'utf8'));
+}
+
+async function ensureStableTrustedStroke(client, sessionId, execute) {
+  for (let attempt = 0; attempt < MAX_SETUP_RECOVERY_ATTEMPTS; attempt++) {
+    const ready = await pollUntil(
+      () =>
+        execute(
+          "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
+        ).catch(() => false),
+      READY_TIMEOUT_MS,
+      POLL_MS
+    );
+    if (!ready) throw new Error('The drawing canvas did not recover after native setup');
+    const probeReady = await execute(`return typeof window.__actionProbe?.begin === 'function';`);
+    if (!probeReady) await installActionProbe(execute);
+    const hasInk = await execute(
+      `return document.querySelector('#undoButton')?.getAttribute('aria-disabled') === 'false';`
+    );
+    if (!hasInk) await addTrustedStroke(client, sessionId, execute);
+    await sleep(POLL_MS);
+    const stable = await execute(`
+      return typeof window.__actionProbe?.begin === 'function' &&
+        document.querySelector('#undoButton')?.getAttribute('aria-disabled') === 'false';
+    `).catch(() => false);
+    if (stable) return;
+  }
+  throw new Error('The native WebView did not retain the action probe and setup stroke');
 }
 
 async function measureClear(client, sessionId, execute, label = 'clear drawing') {
@@ -907,13 +939,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   }
 
   if (actions.has('clear')) {
-    if (
-      await execute(
-        `return document.querySelector('#undoButton')?.getAttribute('aria-disabled') === 'true';`
-      )
-    ) {
-      await addTrustedStroke(client, sessionId, execute);
-    }
+    await ensureStableTrustedStroke(client, sessionId, execute);
     await record(measureClear(client, sessionId, execute));
   }
 
@@ -956,7 +982,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
           settleMs: ANIMATED_ACTION_SETTLE_MS,
         })
       );
-      await addTrustedStroke(client, sessionId, execute);
+      await ensureStableTrustedStroke(client, sessionId, execute);
       await record(
         measureClear(client, sessionId, execute, 'clear restored drawing after blank rotation')
       );
@@ -972,7 +998,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       );
     }
     if (canvasEmpty) {
-      await addTrustedStroke(client, sessionId, execute);
+      await ensureStableTrustedStroke(client, sessionId, execute);
     }
     const current = await client.request('GET', `/session/${sessionId}/orientation`);
     const other = current === 'LANDSCAPE' ? 'PORTRAIT' : 'LANDSCAPE';
@@ -1140,7 +1166,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         POLL_MS
       );
       if (!ready) throw new Error(`${loadedUrl} never showed a sized #drawingCanvas`);
-      await execute(readFileSync(ACTION_PROBE_FILE, 'utf8'));
+      await installActionProbe(execute);
       await sleep(REPEAT_SETTLE_MS);
       console.log(`\nAction sweep ${repeat}/${repeats}`);
       samples.push(
