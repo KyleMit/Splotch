@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+
   // Generated at build time from releases/*.md (see scripts/generate-releases.mjs).
   import releases from '$lib/releases.json';
 
@@ -7,7 +9,10 @@
   // Cards lead with the release date — version numbers are dev-facing and live
   // in GitHub releases, behind the "See all releases" link.
   const RELEASES_URL = 'https://github.com/KyleMit/Splotch/releases';
-  const recent = releases.slice(0, 5);
+  const RECENT_RELEASE_COUNT = 5;
+  const INITIAL_RELEASE_COUNT = 1;
+  const recent = releases.slice(0, RECENT_RELEASE_COUNT);
+  let visibleReleaseCount = $state(INITIAL_RELEASE_COUNT);
   const RELEASE_MONTHS = [
     'January',
     'February',
@@ -30,10 +35,24 @@
     const [year, month, day] = isoDate.split('-').map(Number);
     return `${RELEASE_MONTHS[month - 1]} ${day}, ${year}`;
   }
+
+  onMount(() => {
+    let frame = 0;
+    const revealNext = () => {
+      visibleReleaseCount += 1;
+      if (visibleReleaseCount < recent.length) frame = requestAnimationFrame(revealNext);
+    };
+    // A requestAnimationFrame callback precedes paint; the second callback guarantees the
+    // current release reaches the screen before older-card DOM work starts.
+    frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(revealNext);
+    });
+    return () => cancelAnimationFrame(frame);
+  });
 </script>
 
 <section class="setting-group">
-  {#each recent as release (release.version)}
+  {#each recent.slice(0, visibleReleaseCount) as release (release.version)}
     <div class="whats-new">
       <h3 class="whats-new-heading">
         <span class="whats-new-date">{formatReleaseDate(release.date)}</span>
