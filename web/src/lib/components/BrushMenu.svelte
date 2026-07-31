@@ -49,9 +49,10 @@
   /* The .flyout-menu / .flyout-option chrome is shared with StrokeWidthMenu and
      lives in app.css; only the brush-specific rules stay here. */
 
-  /* The eraser's Parent Center toggle hides its Brush Menu entry (the eraser
-     lives in the flyout, not the top-level row). */
-  :global(html[data-off-eraser]) #eraserButton {
+  /* The eraser's Parent Center toggle hides its Brush Menu entry. The root seed
+     owns first paint; the hydrated panel owns live changes. */
+  :global(html[data-off-eraser] .actions-panel:not([data-action-panel-live])) #eraserButton,
+  :global(.actions-panel[data-action-panel-live][data-off-eraser]) #eraserButton {
     display: none;
   }
 

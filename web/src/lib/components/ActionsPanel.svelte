@@ -1,13 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
+  import BrushButtonFaces from './BrushButtonFaces.svelte';
   import BrushMenu from './BrushMenu.svelte';
   import StrokeWidthMenu from './StrokeWidthMenu.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { colors, isWhite, isDarkInk } from '$lib/state/colors.svelte';
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
   import { setStrokeSize, activeStrokeSize, type StrokeSize } from '$lib/state/strokeWidth.svelte';
-  import { toolState, selectBrush, BRUSH_OPTIONS, type BrushType } from '$lib/state/tool.svelte';
+  import { toolState, selectBrush, type BrushType } from '$lib/state/tool.svelte';
   import { ui, coloringBook, aiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
   import { network } from '$lib/state/network.svelte';
@@ -34,6 +35,7 @@
   let strokeWrapperEl: HTMLDivElement | undefined = $state();
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
   let aiBtnEl: HTMLButtonElement | undefined = $state();
+  let panelEl: HTMLDivElement | undefined = $state();
 
   // The two flyouts (Brush Menu, Stroke Width) share one open-state slot, so
   // opening one closes the other and the outside-click handler below only ever
@@ -115,14 +117,13 @@
 
   const buttonScale = $derived(settings.actionButtonScale / 100);
 
-  // Publish the panel's persisted UI state to <html> so CSS can drive it. The
-  // write list, its default polarity, and the app.html/BOOL_SETTINGS contract
-  // live in publishActionPanelState (actionButtonLayout) — this effect only
-  // keeps it live through hydration and every change. The settings/brush reads
-  // happen synchronously inside the call, so Svelte still tracks them as this
-  // effect's dependencies.
+  // app.html seeds <html> for first paint of the prerendered page. Hydration
+  // publishes the live copy to this panel so later settings changes invalidate
+  // only its subtree. publishActionPanelState applies the live marker last, so
+  // CSS switches sources only after every local attribute agrees.
   $effect(() => {
-    publishActionPanelState(document.documentElement, drawerExpanded, buttonScale);
+    if (!panelEl) return;
+    publishActionPanelState(panelEl, drawerExpanded, buttonScale);
   });
 
   // The stroke-size lines preview the ink you'll lay down, tinted via
@@ -257,19 +258,19 @@
   class="actions-panel"
   style:left={leftOffset}
   style:--action-btn-size={buttonSize}
+  bind:this={panelEl}
   use:scribbleGuard
 >
   <!-- Always rendered; the drawer's open/closed state and each control's Parent
-       Center on/off toggle are driven purely by CSS keyed off <html> attributes
-       (see the publish effect above and app.html), so a returning user's stored
-       state is correct at first paint of the prerendered page. -->
+       Center on/off toggle are driven purely by CSS. app.html's <html> seed owns
+       first paint; the panel-local publish effect owns hydrated changes. -->
   <div class="actions-drawer">
     <div class="actions-drawer-inner">
       <!-- Brush Menu: the four brush types (pen, crayon, magic, eraser) behind
            one trigger whose face is the active brush's icon. All four trigger
-           icons stay in the DOM and CSS shows the one matching [data-brush] on
-           <html> (seeded pre-paint by app.html, kept live by the publish
-           effect) — an {@html} icon swapped on client-only state would keep the
+           icons stay in the DOM and CSS shows the one matching [data-brush]
+           from the pre-paint seed or live panel — an {@html} icon swapped on
+           client-only state would keep the
            server-rendered SVG through hydration (.claude/rules/svelte.md). -->
       <div class="flyout-wrapper brush-wrapper" bind:this={brushWrapperEl}>
         <!-- The pen and crayon icons draw their ink parts in currentColor, so
@@ -285,9 +286,7 @@
           use:scribbleTap={handleBrushBtnClick}
           style:color={colors.activeColor}
         >
-          {#each BRUSH_OPTIONS as opt (opt.brush)}
-            <Icon name={opt.icon} class="action-icon" data-brush-face={opt.brush} />
-          {/each}
+          <BrushButtonFaces />
         </button>
         <BrushMenu
           open={openFlyout === 'brush'}
@@ -408,10 +407,9 @@
   }
 
   /* Collapsible drawer holding the action buttons. Always in the DOM; open/closed
-     is driven by the [data-drawer-open] attribute on <html> (seeded pre-paint by
-     app.html, kept live by the publish effect) so a returning user's state is
-     correct at first paint — replacing the old {#if} + Svelte slide, which could
-     only ever render closed on the prerendered page.
+     reads the app.html <html> seed before hydration and the panel-local
+     [data-drawer-open] state afterward, so a returning user's state is correct
+     at first paint without making live changes document-wide.
 
      The collapse is a grid accordion: the outer grid animates one track between
      1fr (open) and 0fr (closed) — width in landscape, height in portrait, matching
@@ -448,11 +446,17 @@
     overflow: hidden;
   }
 
-  :global(html[data-drawer-open]) .actions-drawer-inner {
+  :global(html[data-drawer-open])
+    .actions-panel:not([data-action-panel-live])
+    .actions-drawer-inner,
+  :global(.actions-panel[data-action-panel-live][data-drawer-open]) .actions-drawer-inner {
     overflow: visible;
   }
 
-  :global(html:not([data-drawer-open])) .actions-drawer {
+  :global(html:not([data-drawer-open]))
+    .actions-panel:not([data-action-panel-live])
+    .actions-drawer,
+  :global(.actions-panel[data-action-panel-live]:not([data-drawer-open])) .actions-drawer {
     grid-template-columns: 0fr;
     opacity: 0;
     margin-right: 0;
@@ -479,7 +483,10 @@
       flex-direction: column-reverse;
     }
 
-    :global(html:not([data-drawer-open])) .actions-drawer {
+    :global(html:not([data-drawer-open]))
+      .actions-panel:not([data-action-panel-live])
+      .actions-drawer,
+    :global(.actions-panel[data-action-panel-live]:not([data-drawer-open])) .actions-drawer {
       grid-template-columns: none;
       grid-template-rows: 0fr;
       margin-top: 0;
@@ -487,32 +494,36 @@
     }
   }
 
-  /* Individual controls sit behind Parent Center on/off toggles. They stay in the
-     DOM and are shown/hidden purely by CSS keyed off <html> attributes (seeded
-     pre-paint + kept live, same as the drawer) so their toggle state is correct at
-     render, hydration, and live. Controls default ON, so a `data-off-*` attribute
-     (present only when the parent switched it off) hides it — which means the raw
-     prerendered HTML, before the head script runs, already shows the defaults.
-     (The AI button is the exception — see its markup comment.) */
-  :global(html[data-off-stroke]) .stroke-width-wrapper {
+  /* Individual controls sit behind Parent Center on/off toggles. The <html>
+     bootstrap selector applies only until the panel publishes its live marker;
+     hydrated toggles use panel-local attributes. Controls default ON, so the raw
+     prerendered HTML already shows the defaults. */
+  :global(html[data-off-stroke]) .actions-panel:not([data-action-panel-live]) .stroke-width-wrapper,
+  :global(.actions-panel[data-action-panel-live][data-off-stroke]) .stroke-width-wrapper {
     display: none;
   }
   /* The eraser's Parent Center toggle hides its Brush Menu entry — that rule
      moved into BrushMenu.svelte with the #eraserButton element it targets. */
-  :global(html[data-off-coloring]) #coloringBookButton {
+  :global(html[data-off-coloring]) .actions-panel:not([data-action-panel-live]) #coloringBookButton,
+  :global(.actions-panel[data-action-panel-live][data-off-coloring]) #coloringBookButton {
     display: none;
   }
-  :global(html[data-off-screenshot]) .screenshot-button {
+  :global(html[data-off-screenshot])
+    .actions-panel:not([data-action-panel-live])
+    .screenshot-button,
+  :global(.actions-panel[data-action-panel-live][data-off-screenshot]) .screenshot-button {
     display: none;
   }
-  :global(html[data-off-undo]) #undoButton {
+  :global(html[data-off-undo]) .actions-panel:not([data-action-panel-live]) #undoButton,
+  :global(.actions-panel[data-action-panel-live][data-off-undo]) #undoButton {
     display: none;
   }
 
   /* Chevron toggle is hidden (and the drawer can't open) when advanced controls
      are off — the same gate the old {#if advancedControlsEnabled} enforced.
      Default on, so `data-off-adv` (present only when off) hides it. */
-  :global(html[data-off-adv]) .drawer-toggle {
+  :global(html[data-off-adv]) .actions-panel:not([data-action-panel-live]) .drawer-toggle,
+  :global(.actions-panel[data-action-panel-live][data-off-adv]) .drawer-toggle {
     display: none;
   }
 
@@ -530,8 +541,8 @@
      input is correct at first paint of the prerendered page:
        • --drawer-axis-rot — orientation axis, from a media query (landscape base
          points right at 0°; portrait rotates the axis −90°).
-       • --drawer-open-rot — the 0°/180° open/close flip, from the [data-drawer-open]
-         attribute on <html> (seeded pre-paint, kept live) rather than JS markup.
+       • --drawer-open-rot — the 0°/180° open/close flip, from the bootstrap or
+         panel-local [data-drawer-open] attribute rather than JS markup.
      Composed:
        landscape closed 0 · open 180 (left)
        portrait  closed −90 (up) · open 90 (down) */
@@ -542,7 +553,10 @@
     transform: rotate(calc(var(--drawer-axis-rot) + var(--drawer-open-rot)));
   }
 
-  :global(html[data-drawer-open] .drawer-toggle-icon) {
+  :global(html[data-drawer-open])
+    .actions-panel:not([data-action-panel-live])
+    :global(.drawer-toggle-icon),
+  :global(.actions-panel[data-action-panel-live][data-drawer-open]) :global(.drawer-toggle-icon) {
     --drawer-open-rot: 180deg;
   }
 
@@ -739,24 +753,6 @@
      Parent Center toggle). */
   .flyout-wrapper {
     position: relative;
-  }
-
-  /* The Brush Button wears the active brush's icon: all four faces are always
-     in the DOM ({@html} icons can't be swapped on client-only state during
-     hydration — .claude/rules/svelte.md) and [data-brush] on <html> (seeded
-     pre-paint by app.html, kept live by the publish effect) picks the visible
-     one. No attribute means the default pen, so the raw prerendered HTML is
-     already correct. */
-  .brush-wrapper :global(.action-icon[data-brush-face]) {
-    display: none;
-  }
-  :global(html:not([data-brush])) .brush-wrapper :global(.action-icon[data-brush-face='pen']),
-  :global(html[data-brush='crayon']) .brush-wrapper :global(.action-icon[data-brush-face='crayon']),
-  :global(html[data-brush='magic']) .brush-wrapper :global(.action-icon[data-brush-face='magic']),
-  :global(html[data-brush='eraser'])
-    .brush-wrapper
-    :global(.action-icon[data-brush-face='eraser']) {
-    display: inline-flex;
   }
 
   /* White brush color is invisible on the white buttons, so ring the tinted

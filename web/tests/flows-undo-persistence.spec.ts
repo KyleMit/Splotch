@@ -190,6 +190,8 @@ test('a persisted-open drawer, with a control toggled off, is correct at first p
 
   // The <html> stamp the CSS keys off is present before hydration.
   await expect(page.locator('html')).toHaveAttribute('data-drawer-open', '');
+  await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
+  await expect(page.locator('.actions-panel')).toHaveAttribute('data-drawer-open', '');
   // Drawer open: its buttons are visible without tapping the chevron.
   await expect(page.locator('#undoButton')).toBeVisible();
   await expect(page.locator('#coloringBookButton')).toBeVisible();
@@ -240,17 +242,22 @@ test('the picked brush persists across a reload and stamps the brush face pre-pa
   await gotoApp(page);
   await openDrawer(page);
 
+  const panel = page.locator('.actions-panel');
+
   // Default is the pen: no data-brush attribute, pen entry selected.
   await expect(page.locator('html')).not.toHaveAttribute('data-brush');
+  await expect(panel).not.toHaveAttribute('data-brush');
   await openBrushMenu(page);
   await expect(page.locator('#penBrushButton')).toHaveAttribute('aria-pressed', 'true');
 
   await pickBrush(page, '#crayonBrushButton');
-  await expect(page.locator('html')).toHaveAttribute('data-brush', 'crayon');
+  await expect(panel).toHaveAttribute('data-brush', 'crayon');
+  await expect(page.locator('html')).not.toHaveAttribute('data-brush');
 
   await page.reload();
   await expect(page.locator('#drawingCanvas')).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-brush', 'crayon');
+  await expect(panel).toHaveAttribute('data-brush', 'crayon');
   await openBrushMenu(page);
   await expect(page.locator('#crayonBrushButton')).toHaveAttribute('aria-pressed', 'true');
 });

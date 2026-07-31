@@ -3,6 +3,7 @@ import actionsPanelSource from './components/ActionsPanel.svelte?raw';
 import {
   ACTION_BUTTON_BASE_LANDSCAPE,
   ACTION_BUTTON_BASE_PORTRAIT,
+  ACTION_PANEL_LIVE_ATTRIBUTE,
   MAX_ACTION_BUTTON_COUNT,
   PALETTE_BAR_RESERVE,
   PALETTE_CLEARANCE,
@@ -22,6 +23,10 @@ const fallbackBlocks = [
 ].map((m) => m[1]);
 
 describe('action-button CSS fallback mirrors the layout constants', () => {
+  it('switches bootstrap selectors to the shared live-state marker', () => {
+    expect(actionsPanelSource).toContain(ACTION_PANEL_LIVE_ATTRIBUTE);
+  });
+
   it('has exactly two fallback blocks (landscape + portrait)', () => {
     expect(fallbackBlocks).toHaveLength(2);
   });
