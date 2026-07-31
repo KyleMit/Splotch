@@ -168,6 +168,55 @@ The final trusted-touch runs all passed:
 | Magic, three repeats, Web Audio enabled |  20.5 s | 2,347 |      30 |                    0 |             15/24/35 |
 | Post-extraction magic verification      |  20.5 s | 2,362 |      30 |                    0 |             16/25/32 |
 
+## Cross-Platform Regression Decision
+
+The tiled renderer remains the single production architecture on desktop and iPad. A platform
+detection seam was considered and rejected after a current-versus-control campaign on the same Mac
+showed neutral in-contact pacing and materially better between-stroke response. The small increase
+in renderer bookkeeping never consumed even 0.3 ms per frame and did not move frame P95.
+
+The control was the immediate pre-tiling commit, 2769ceae9e8cf658ebc8cbd87ec47f02cf7bdd40. Both
+builds were driven by the current runner, probe, input plan, and thresholds; only the served app
+changed. The Mac was an Apple M5 MacBook Pro with 32 GiB RAM and macOS 26.5.2. Headed Playwright
+WebKit ran at 1512×982 CSS pixels and 2× DPR. This exercises WebKit on real Mac hardware, but it is
+not Safari and does not supersede the physical-iPad results above.
+
+The full discrete-action comparison was:
+
+| Build / target                | Three-repeat result                                                                                                                                                           |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Current tiled renderer, iPad  | All 46 actions passed; first-response P95 ≤29 ms, post-action P95 17 ms, post-action max ≤32 ms                                                                               |
+| Current tiled renderer, Mac   | Renderer-sensitive actions passed; post-action P95 was 19 ms. Screenshot first-response P95 was 14–18 ms and coloring-page selection was 8–11 ms                              |
+| Pre-tiling single canvas, Mac | Screenshot failed repeatably at 78–88 ms first response and 41–44 ms post-action max; coloring-page selection failed at 24 ms first-response P95 and 32–33 ms post-action max |
+
+Two isolated current-build samples failed the generic gate during the first full sweep: one 65 ms
+post-action interval at Magic selection and one 90 ms first response at What's New. Both passed all
+ten immediate focused repeats (Magic 19 ms max; What's New 19 ms first-response P95 and 21 ms
+post-action max). A second full sweep kept every renderer-sensitive action within budget and found
+one 34 ms cold What's New first response; the other two samples were 9 and 13 ms, and all its
+post-action intervals were at most 19 ms. This remains a non-canvas cold-mount watchpoint rather
+than evidence for a second renderer. By contrast, the control's screenshot failure occurred in all
+three samples and its coloring-page hard-max failure repeated.
+
+The production-route drawing probe used the same mixed ten-stroke, ten-second synthetic input three
+times per brush and build. Values are the range across those three samples:
+
+| Brush  | Renderer      | Frame P95/max ms | Paint P95/max ms | Between-stroke lost ms | Whole-window max ms | Engine ms/frame |
+| ------ | ------------- | ---------------- | ---------------- | ---------------------- | ------------------- | --------------- |
+| Pen    | Single canvas | 19 / 19–24       | 17–18 / 18–23    | 0                      | 20–24               | 0.12–0.16       |
+| Pen    | Tiled         | 19 / 19–24       | 17 / 18          | 0–8                    | 19–24               | 0.18–0.25       |
+| Crayon | Single canvas | 19 / 19–20       | 17–18 / 18–19    | 37–89                  | 37–39               | 0.15–0.20       |
+| Crayon | Tiled         | 19 / 19–20       | 18 / 18–19       | 0                      | 19–20               | 0.18–0.25       |
+| Magic  | Single canvas | 19 / 19          | 16–18 / 18       | 1,162–1,344            | 495–658             | 0.09–0.10       |
+| Magic  | Tiled         | 19 / 19          | 16–17 / 18       | 0                      | 19                  | 0.18–0.20       |
+
+In-contact P95 alone would have hidden the desktop benefit: the old Magic renderer froze after
+finger-up, between strokes. The tiled renderer removed that repeatable 0.5–0.7 second worst gap and
+more than one second of aggregate lost presentation time per run. Crayon also improved its
+between-stroke tail. Pen was frame-neutral. The outcome is therefore option A: retain and document
+one tiled architecture. No renderer fork, platform sniffing, or device-specific detection is
+justified by the measured cost.
+
 ## Consequences
 
 * \+ The iPad no longer exhibits the hundreds-of-milliseconds compositor freezes, and all measured
@@ -179,9 +228,14 @@ The final trusted-touch runs all passed:
   exceeding ADR-0086's three-paper resident budget.
 * \+ The result identifies a reusable platform constraint: keep any frequently mutated WebKit canvas
   surface below the tablet-size flush cliff, even when aggregate pixels are unchanged.
+* \+ The same topology is neutral or faster on the measured Mac. It removes the old Magic renderer's
+  repeatable 495–658 ms between-stroke gap without changing its 19 ms frame P95, so one production
+  architecture serves both targets.
 * − The production stack owns 48 positioned tile canvases plus the transparent input canvas. This
   increases DOM/layer count and makes tile geometry, transforms, blend planes, and source cropping
   explicit engine concerns.
+* − Tile culling and target visits added about 0.04–0.11 ms of renderer work per measured Mac frame.
+  That cost remains below 0.3 ms/frame and produced no observed frame-budget regression.
 * − Undo, resize, export, magic-source lifetime, and crayon buffering now have tiled code paths.
   Boundary and replay tests are required whenever a brush or paper transform changes.
 * − The snapshot renderer remains as temporary harness-only debt. Its passing microbenchmarks do not
@@ -235,6 +289,36 @@ npm run perf:frames:local -- \
 Also try `2049x1373@2` and `2732x1830@2` when probing a suspected size threshold. These runs did not
 reproduce the iPad cliff, even at the largest size. A local failure is actionable; a local pass is
 not evidence that an iPad compositor change is safe.
+
+For a desktop architecture comparison, keep the current harness while changing only the served
+build. In a detached worktree at the control commit, build and serve an instrumented bundle on a
+second port. Then run from the current worktree:
+
+```sh
+npm run perf:desktop:actions -- \
+  --engine=webkit \
+  --headed \
+  --viewport=1512x982 \
+  --device-scale-factor=2 \
+  --url=http://127.0.0.1:4273/ \
+  --repeats=3
+
+npm run perf:frames:local -- \
+  --engine=webkit \
+  --headed \
+  --viewport=1512x982 \
+  --device-scale-factor=2 \
+  --url=http://127.0.0.1:4273/ \
+  --brush=magic \
+  --phases=blank \
+  --contact-seconds=10 \
+  --drive=mixed \
+  --no-forensics
+```
+
+Repeat the commands without `--url=` for the current build. Use a fresh browser process and three
+samples for each side. Compare `betweenStrokes` and `wholeWindow`, not only the in-contact `pacing`
+table; the old desktop Magic regression is invisible in the latter.
 
 ### Render-Scale Cap
 

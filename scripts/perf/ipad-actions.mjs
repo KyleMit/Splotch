@@ -50,7 +50,7 @@ function positiveInteger(value, name) {
   return parsed;
 }
 
-function selectedActions(value) {
+export function selectedActions(value) {
   if (!value) return ALL_ACTIONS;
   const actions = new Set(value.split(',').filter(Boolean));
   const unknown = [...actions].filter((action) => !ALL_ACTIONS.has(action));
@@ -80,7 +80,7 @@ function sessionCapabilities({ deviceId, xcodeConfigFile, wdaBundleId, allowProv
   });
 }
 
-function profilingUrl(appUrl, repeat) {
+export function profilingUrl(appUrl, repeat) {
   const url = new URL(appUrl);
   url.searchParams.set('perf-actions', `${Date.now()}-${repeat}`);
   return url.toString();
@@ -357,7 +357,7 @@ async function measureRotation(client, sessionId, execute, from, to, label) {
   return execute(`return window.__actionProbe.finish(${readyAt});`);
 }
 
-async function runActionSweep({ client, sessionId, execute, actions, originalOrientation }) {
+export async function runActionSweep({ client, sessionId, execute, actions, originalOrientation }) {
   const samples = [];
   const record = async (promise) => samples.push(await promise);
   const recordToggleRoundTrip = async ({

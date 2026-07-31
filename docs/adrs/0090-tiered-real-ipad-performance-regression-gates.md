@@ -42,6 +42,15 @@ guard geometry, rendering state, interaction semantics, and the production-route
 every performance fix. `perf:frames:local` remains an advisory production-route run at iPad
 geometry. A local failure is actionable; a local pass cannot approve an iPad compositor change.
 
+`perf:desktop:actions` reuses the physical suite's exact 46-action plan, in-page probe, scorer, and
+20/32 ms gates through a Playwright transport. It provides a headed, real-Mac regression comparison
+without maintaining a second action vocabulary. Its `--url=` flag deliberately separates the runner
+from the target build: the current runner can drive a historical build served from a detached
+worktree, so architecture comparisons do not accidentally compare different probes or inputs.
+`perf:frames:local` has the same external-URL seam and can select pen, crayon, Magic, or eraser.
+These desktop results can reject a change and compare renderer architectures, but they cannot
+replace the physical-iPad approval tier established by ADR-0085.
+
 Absolute physical-device frame gates do not run on a shared headless GitHub runner. Its browser,
 host load, GPU path, and timer variance are different from the shipping environment.
 

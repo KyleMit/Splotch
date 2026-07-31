@@ -49,10 +49,18 @@ const RUN_TIMEOUT_MS = 20 * 60_000;
 const PROGRESS_POLL_MS = 1_000;
 const READY_TIMEOUT_MS = 60_000;
 const SERVER_READY_TIMEOUT_MS = 90_000;
+const BRUSH_SETTLE_MS = 500;
 
 const ENGINES = {
   webkit: { launcher: webkit, hasCdp: false },
   chromium: { launcher: chromium, hasCdp: true },
+};
+
+const BRUSH_SELECTORS = {
+  pen: '#penBrushButton',
+  crayon: '#crayonBrushButton',
+  magic: '#magicBrushButton',
+  eraser: '#eraserButton',
 };
 
 function positiveNumber(value, label) {
@@ -71,6 +79,24 @@ function resolveViewport(value) {
   };
 }
 
+async function selectBrush(page, brush) {
+  const selector = BRUSH_SELECTORS[brush];
+  if (!selector) fail(`--brush must be one of ${Object.keys(BRUSH_SELECTORS).join(', ')}`);
+  if (brush === 'pen') return;
+  await page.locator('button[aria-label="Expand controls"]').click();
+  await page.waitForFunction(() => document.documentElement.hasAttribute('data-drawer-open'));
+  await page.locator('#brushButton').click();
+  await page.waitForFunction(
+    () => document.querySelector('#brushButton')?.getAttribute('aria-expanded') === 'true'
+  );
+  await page.locator(selector).click();
+  await page.waitForFunction(
+    (expected) => document.documentElement.dataset.brush === expected,
+    brush
+  );
+  await sleep(BRUSH_SETTLE_MS);
+}
+
 export async function runFramesLocal(argv = process.argv.slice(2)) {
   const { flag, has, port } = parsePerfArgs(
     {
@@ -78,6 +104,8 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
       throttleDefault: 1,
       extra: [
         'engine',
+        'url',
+        'brush',
         'phases',
         'contact-seconds',
         'drive',
@@ -105,10 +133,14 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     fail(`--throttle needs CDP, which ${engineName} has none of. Use --engine=chromium.`);
   }
 
-  const url = `http://localhost:${port}${APP_URL_PATH}`;
-  const server = has('no-serve') ? null : spawnPerfServe(port);
+  const externalUrl = flag('url');
+  const url = externalUrl
+    ? new URL(externalUrl).toString()
+    : `http://localhost:${port}${APP_URL_PATH}`;
+  const server = externalUrl || has('no-serve') ? null : spawnPerfServe(port);
   const contactSeconds = Number(flag('contact-seconds', DEFAULT_CONTACT_SECONDS));
   const drive = flag('drive', 'mixed');
+  const brush = flag('brush', 'pen');
   const driveHz = flag('drive-hz') && Number(flag('drive-hz'));
   const viewport = resolveViewport(flag('viewport'));
   const deviceScaleFactor = positiveNumber(
@@ -119,7 +151,7 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
 
   let browser;
   try {
-    if (server) await waitForUrl(url, SERVER_READY_TIMEOUT_MS);
+    await waitForUrl(url, SERVER_READY_TIMEOUT_MS);
     browser = await engine.launcher.launch({ headless });
     const context = await browser.newContext({
       viewport,
@@ -144,6 +176,7 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
       undefined,
       { timeout: READY_TIMEOUT_MS }
     );
+    await selectBrush(page, brush);
 
     await page.evaluate(
       ([phases, contactMs, driveShape, hz]) => {
@@ -163,7 +196,7 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     }
     console.log(
       `${engineName} · ${throttle.tag} CPU · ${viewport.width}×${viewport.height}@${deviceScaleFactor}x · ` +
-        `driving ${drive}${driveHz ? ` at ${driveHz} Hz` : ' at one move per frame'}`
+        `${brush} · driving ${drive}${driveHz ? ` at ${driveHz} Hz` : ' at one move per frame'}`
     );
 
     const deadline = Date.now() + RUN_TIMEOUT_MS;
@@ -187,7 +220,8 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     const capture = {
       device: { name: `${engineName} (local)`, os: process.platform },
       appUrl: url,
-      mode: `synthetic:${drive}${driveHz ? `@${driveHz}hz` : ''}`,
+      mode: `synthetic:${drive}${driveHz ? `@${driveHz}hz` : ''}:${brush}`,
+      brush,
       engine: engineName,
       throttle: throttle.tag,
       viewport: { ...viewport, deviceScaleFactor },
@@ -198,7 +232,7 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     const summaries = printRun(capture, { forensics: !has('no-forensics') });
     capture.summaries = summaries;
 
-    const outDir = profilePath('frames-local', engineName, throttle.tag);
+    const outDir = profilePath('frames-local', engineName, throttle.tag, brush);
     mkdirSync(outDir, { recursive: true });
     const artifact = join(outDir, 'real-screen.json');
     writeFileSync(artifact, `${JSON.stringify(capture, null, 2)}\n`);
