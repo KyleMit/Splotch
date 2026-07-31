@@ -1440,8 +1440,8 @@ export function setMagicMode(active: boolean) {
 // observable from the DOM distinguishes the two — a pen stroke fills the canvas
 // exactly like a reveal — so the E2E harness waits on this instead of on
 // `aria-pressed`. Reached only through lib/boot/devHarnessSeam.ts, which
-// publishes it on `window` when PUBLIC_ENABLE_DEV_HARNESS is set; production has
-// no caller.
+// publishes it on `window` for test-harness and PERF_MARKS builds; release
+// builds have no caller.
 export function committedBrushMode(): BrushType {
   if (magicActive) return 'magic';
   if (crayonActive && !eraserActive) return 'crayon';

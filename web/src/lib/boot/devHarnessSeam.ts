@@ -1,4 +1,5 @@
 import { committedBrushMode, getUndoDebug } from '$lib/drawing/engine';
+import { PERF_MARKS } from '$lib/drawing/perf';
 import { devHarnessEnabled } from '$lib/devHarness';
 
 // The drawing route's gated `window` seams — what the E2E harness and the
@@ -6,11 +7,12 @@ import { devHarnessEnabled } from '$lib/devHarness';
 // one per consumer, so there is a single place to read what this route publishes
 // and a single teardown.
 //
-// Gated on the same PUBLIC_ENABLE_DEV_HARNESS switch as the /dev/* routes
-// (`devHarnessEnabled()` is its single definition), so the Netlify deploy never
-// defines any of it. Installed from the drawing route's onMount, whose teardown
-// removes them — the engine itself boots earlier (ADR-0072), but no spec can
-// reach a brush button before hydration anyway.
+// The seams use the same PUBLIC_ENABLE_DEV_HARNESS switch as the /dev/* routes
+// and are also present in PERF_MARKS builds. That makes a physical bundle
+// self-identifying without putting the seams in the Netlify deploy. Installed
+// from the drawing route's onMount, whose teardown removes them — the engine
+// itself boots earlier (ADR-0072), but no spec can reach a brush button before
+// hydration anyway.
 //
 // Both are READ-ONLY on purpose. A test seam that mutates invites specs that pass
 // against a configuration no child ever runs; a profiling seam that mutates can
@@ -28,7 +30,8 @@ import { devHarnessEnabled } from '$lib/devHarness';
 //     how that gets tested rather than argued. `/dev/engine` already exposed
 //     `getUndoDebug()`; this reaches it on the route users actually draw on.
 export function installDevHarnessSeam(): () => void {
-  if (!devHarnessEnabled()) return () => {};
+  const harnessEnabled = devHarnessEnabled();
+  if (!harnessEnabled && !PERF_MARKS) return () => {};
   window.__committedBrushMode = committedBrushMode;
   window.__drawingDebug = { getUndoDebug };
   return () => {

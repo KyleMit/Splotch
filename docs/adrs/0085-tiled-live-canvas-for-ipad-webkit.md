@@ -1,7 +1,9 @@
 # ADR-0085: Tile the Full-Resolution Live Canvas to Avoid WebKit Surface-Flush Starvation
 
 **Status:** Active — supersedes ADR-0066, ADR-0068, ADR-0069, ADR-0074, and ADR-0082 for the
-production drawing route. **Date:** 2026-07
+production drawing route; amended by
+[ADR-0086](0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md) for production undo.
+**Date:** 2026-07
 
 ## Context
 
@@ -122,12 +124,13 @@ resolution. Operations stay in paper coordinates. `tiledRenderer.ts` applies the
 transform to each tile, culls dots and paths by their paper-space bounds, and renders only
 intersecting tiles.
 
-Production undo retains the newest twenty stroke-group commands as vector operations. Older commands
-fold, one at a time, into a 4×4 offscreen raster base after 1.5 seconds without active input.
-Pointerdown cancels pending compaction. Undo pops one retained command and repaints the tiled base
-plus the remaining tail. This preserves the existing twenty-step user contract without creating or
-mutating a full-size snapshot surface in the interaction path. Clear is an ordinary history command,
-and export composites the tiled base and retained commands into its destination.
+Production history retains vector operations and folds its non-undoable prefix, one command at a
+time, into a 4×4 offscreen raster base after 1.5 seconds without active input. Pointerdown cancels
+pending compaction. ADR-0086 replaces ordinary vector-replay undo with cropped, tile-local
+pre-command patches: a pop restores only the pixels that command changed. Normal drawings retain
+twenty undo steps; canvas-spanning commands adaptively shorten depth before patches exceed a
+three-paper resident byte budget. Clear is an ordinary full-tile snapshot command, and export
+composites the tiled base and retained commands into its destination.
 
 Brush-specific invariants are:
 
@@ -164,8 +167,9 @@ The final trusted-touch runs all passed:
   brush/history cases meet the frame-derived acceptance gates.
 * \+ Rendering stays at 2× on the affected iPad. Stroke sharpness, exports, brush behavior, undo
   depth, and drawing sound are preserved; visual checks show no tile seams.
-* \+ Undo memory is bounded by one aggregate full-resolution base plus twenty vector commands,
-  rather than a tier of full-size snapshot surfaces.
+* \+ Undo response is frame-bounded by dirty-region restore rather than vector replay. Typical
+  twenty-step patch history measured about 20 MiB, and canvas-spanning history shortens depth before
+  exceeding ADR-0086's three-paper resident budget.
 * \+ The result identifies a reusable platform constraint: keep any frequently mutated WebKit canvas
   surface below the tablet-size flush cliff, even when aggregate pixels are unchanged.
 * − The production stack owns 48 positioned tile canvases plus the transparent input canvas. This
@@ -306,17 +310,22 @@ Trial 14 paired the passing live tiles with the existing full-size undo paper. I
 ms/s starvation and 249/316/342 ms paint latency. This is the minimal demonstration that an
 offscreen canvas can trigger the cliff even when the visible presentation is tiled.
 
-The passing replacement records each stroke group as `StrokeGroupCommand` operations:
+The first passing live-render replacement recorded each stroke group as `StrokeGroupCommand`
+operations:
 
 1. Start one command when the first pointer in a group goes down.
 2. Append the same immutable ops sent to live rendering.
 3. Commit the group when its last pointer finishes.
-4. Undo by removing the newest retained command and repainting the tiled base plus remaining tail.
+4. In the initial prototype, undo by removing the newest retained command and repainting the tiled
+   base plus remaining tail.
 5. Keep the newest twenty groups as the user-visible undo window.
 
-The first vector-replay undo passed at 0 starvation and 15/20/29 ms. Re-attempts must preserve
-grouping: five simultaneous fingers are one undo step, a clear is undoable, and an active stroke
-must survive resize/remount without being committed twice.
+The first vector-replay implementation preserved live drawing at 0 starvation and 15/20/29 ms paint
+latency, but later direct measurement found 1,778 ms `engine.undo` P95 after twenty commands.
+ADR-0086 supersedes step 4 for production undo with cropped tile-local pre-command patches. Vector
+commands remain necessary for resize reconstruction, export, and idle compaction. Re-attempts must
+preserve grouping: five simultaneous fingers are one undo step, a clear is undoable, and an active
+stroke must survive resize/remount without being committed twice.
 
 Pure vector retention is not bounded for long sessions. The production variant therefore folds
 commands older than the twenty-step tail into a 4×4 offscreen raster base. The base uses the same
@@ -437,7 +446,8 @@ prototype:
 * Two matching crayon preview planes per tile.
 * Transparent aggregate input canvas.
 * Paper-coordinate vector operations with padded tile culling.
-* Twenty-command vector undo tail plus one-at-a-time idle folding into a 4×4 raster base.
+* Twenty-command normal undo tail restored from cropped dirty-region tile snapshots, byte-bounded
+  per ADR-0086, plus one-at-a-time idle folding into a 4×4 raster base.
 * Tile-cropped immutable magic sources.
 * A 64-op crayon checkpoint.
 * Deferred tile-local eraser scans.
@@ -452,3 +462,4 @@ After any change to this stack:
 4. Run the modified interaction on the physical iPad.
 5. Repeat the three-gesture magic trusted-touch case with Web Audio enabled.
 6. Reject the change if the original drawing gates regress, even if its new target metric improves.
+7. Run ADR-0086's normal, rotated, post-compaction, and canvas-spanning undo cases.

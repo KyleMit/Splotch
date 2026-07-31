@@ -26,6 +26,7 @@ import {
   nativeCanvasBounds,
   trustedGestureActions,
 } from '../perf/ipad-xcuitest.mjs';
+import { summarizeUndoActions } from '../perf/undo-action-stats.mjs';
 
 const PROBE = readFileSync(join(ROOT, 'scripts', 'perf', 'real-screen-probe.js'), 'utf8');
 const component = (name) =>
@@ -83,6 +84,42 @@ describe('percentile', () => {
   it('takes the nearest rank without interpolating', () => {
     expect(percentile([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0.5)).toBe(5);
     expect(percentile([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0.95)).toBe(10);
+  });
+});
+
+describe('undo action response', () => {
+  it('measures engine work and the first frame after each action', () => {
+    const summary = summarizeUndoActions(
+      [
+        { startedAt: 10, engineMs: 4 },
+        { startedAt: 40, engineMs: 7 },
+      ],
+      [
+        [16, 16, 0],
+        [33, 17, 0],
+        [49, 16, 0],
+      ]
+    );
+
+    expect(summary.engine).toMatchObject({ p50: 4, p95: 7, max: 7 });
+    expect(summary.nextFrame).toMatchObject({ p50: 6, p95: 9, max: 9 });
+    expect(summary.passed).toBe(true);
+  });
+
+  it('fails when undo misses the frame-derived response gates', () => {
+    const summary = summarizeUndoActions([{ startedAt: 10, engineMs: 24 }], [[65, 55, 0]]);
+
+    expect(summary.passed).toBe(false);
+  });
+
+  it('uses the action-local next frame when the global probe was suspended', () => {
+    const summary = summarizeUndoActions(
+      [{ startedAt: 100, engineMs: 1, nextFrameMs: 12 }],
+      [[90, 16, 0]]
+    );
+
+    expect(summary.nextFrame).toMatchObject({ p95: 12, max: 12 });
+    expect(summary.passed).toBe(true);
   });
 });
 

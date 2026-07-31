@@ -61,16 +61,16 @@ declare global {
   }
 
   interface Window {
-    // Test-only seam, installed by lib/boot/devHarnessSeam.ts only while
-    // PUBLIC_ENABLE_DEV_HARNESS is set (ADR-0080) — hence optional: production
-    // never defines it, and the E2E harness treats its absence as a failure.
+    // Read-only test/profiling seam, installed by lib/boot/devHarnessSeam.ts
+    // while PUBLIC_ENABLE_DEV_HARNESS or PERF_MARKS is set (ADRs 0080/0086) —
+    // hence optional: release builds never define it.
     __committedBrushMode?: () => import('$lib/state/tool.svelte').BrushType;
     showDirectoryPicker(options?: {
       mode?: FileSystemPermissionMode;
       startIn?: string;
     }): Promise<FileSystemDirectoryHandle>;
     // Read-only profiling seam, installed by the same gated boot step as
-    // __committedBrushMode (ADR-0083) — see lib/boot/devHarnessSeam.ts.
+    // __committedBrushMode (ADRs 0083/0086) — see lib/boot/devHarnessSeam.ts.
     __drawingDebug?: { getUndoDebug: typeof import('$lib/drawing/engine').getUndoDebug };
   }
 

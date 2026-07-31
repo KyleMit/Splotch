@@ -187,6 +187,15 @@ npm run perf:ipad:xcuitest -- --device-id=<UDID> --allow-provisioning
 # Exercise one brush for a longer session:
 npm run perf:ipad:xcuitest -- --device-id=<UDID> \
   --brush=magic --gesture-repeats=3 --repeat-pause-ms=1500
+# Score ten serial undos after twenty commands:
+npm run perf:ipad:xcuitest -- --device-id=<UDID> \
+  --gesture-repeats=2 --undo-count=10
+# Exercise rebuilt patches after rotation:
+npm run perf:ipad:xcuitest -- --device-id=<UDID> \
+  --gesture-repeats=2 --undo-count=10 --rotate-before-undo
+# Let a thirty-command history fully compact, then undo all retained steps:
+npm run perf:ipad:xcuitest -- --device-id=<UDID> \
+  --gesture-repeats=3 --history-settle-ms=17000 --undo-count=20
 ```
 
 The command rebuilds and serves the profiling bundle like the other iPad entries. For a build
@@ -196,17 +205,29 @@ the output directory; `--output=` writes an exact artifact path for a scripted A
 `--brush=pen|crayon|magic|eraser` selects through the real brush UI before capture; the eraser run
 prefills the live tiles so it measures actual removal. `--gesture-repeats=N` repeats the calibrated
 sequence in one drawing session, and `--repeat-pause-ms=N` idles between repetitions to exercise
-deferred work such as history compaction.
+deferred work such as history compaction. `--undo-count=N` clicks the real enabled Undo button
+serially and records both `engine.undo` and the first action-local animation frame;
+`--undo-pause-ms=N` controls the gap. `--history-settle-ms=N` waits after drawing so deferred folds
+can finish. `--rotate-before-undo` changes orientation, waits for the new viewport and two visual
+frames, measures undo in the settled layout, and restores the original orientation.
 
 The base gesture contains two long interpolated strokes and eight short strokes. WebDriverAgent
 emits native touch samples along each interpolation; splitting the same gesture into hundreds of 8
 ms WebDriver actions took 211 seconds and is deliberately not how the committed driver works.
 
-The artifact reports the input-fidelity verdict plus render-starvation populations. An episode is a
-frame gap over four observed frame intervals with at least two trusted touch moves handled inside it
-and no more than 10% marked engine work. Read **worst gap** and **starvation ms / drawing second**
-with episodes/commit: the 1.5x mitigation split the baseline's large freezes into more, smaller
-episodes, so episode count alone inverted the result.
+Before measurement the driver unregisters service workers, clears CacheStorage, and reloads a
+cache-busted URL; without that, MobileSafari can silently execute an older bundle from the same
+server. A `PERF_MARKS` build publishes the route's read-only brush/history seams even when the
+prerendered client cannot see the preview server's dynamic public environment.
+
+The artifact reports the input-fidelity verdict plus render-starvation populations. With undo
+enabled it also reports engine P50/P95/P99/max, action-to-next-frame P50/P95/P99/max, the pass/fail
+verdict, every raw action, and history bytes before undo. The ADR-0086 gates are engine P95 ≤20 ms,
+next-frame P95 ≤33 ms, and next-frame max ≤50 ms. An episode is a frame gap over four observed frame
+intervals with at least two trusted touch moves handled inside it and no more than 10% marked engine
+work. Read **worst gap** and **starvation ms / drawing second** with episodes/commit: the 1.5x
+mitigation split the baseline's large freezes into more, smaller episodes, so episode count alone
+inverted the result.
 
 For a system-level attribution run, start Apple's **Animation Hitches** template in one terminal:
 

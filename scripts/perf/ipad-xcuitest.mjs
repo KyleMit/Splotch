@@ -12,6 +12,7 @@ import {
   starvationRows,
   summarizeRun,
 } from './real-screen-stats.mjs';
+import { summarizeUndoActions, undoActionRows } from './undo-action-stats.mjs';
 
 const APP_PATH = '/';
 const PROBE_FILE = join(ROOT, 'scripts', 'perf', 'real-screen-probe.js');
@@ -20,12 +21,16 @@ const DEFAULT_XCODE_CONFIG = join(ROOT, 'ios', 'local.xcconfig');
 const DEFAULT_WDA_BUNDLE_ID = 'art.splotch.WebDriverAgentRunner';
 const WEBVIEW_READY_TIMEOUT_MS = 30_000;
 const WEBVIEW_READY_POLL_MS = 250;
+const SCRIPT_TIMEOUT_MS = 30_000;
 const WDA_LAUNCH_TIMEOUT_MS = 180_000;
 const WDA_STARTUP_RETRIES = 1;
 const PROBE_CONTACT_BUDGET_MS = 60_000;
 const AFTER_GESTURE_SETTLE_MS = 500;
 const TABLE_CHUNK_ROWS = 2_000;
 const BRUSH_SELECT_TIMEOUT_MS = 10_000;
+const UNDO_ACTION_SETTLE_MS = 500;
+const UNDO_ACTION_PAUSE_MS = 120;
+const ROTATION_SETTLE_TIMEOUT_MS = 10_000;
 const BRUSH_BUTTON_BY_MODE = {
   pen: '#penBrushButton',
   crayon: '#crayonBrushButton',
@@ -201,6 +206,31 @@ function createWebDriverClient(baseUrl) {
   return { request };
 }
 
+function profilingUrl(appUrl) {
+  const url = new URL(appUrl);
+  url.searchParams.set('perf-run', String(Date.now()));
+  return url.toString();
+}
+
+async function clearDeviceWebCache(executeAsync) {
+  const result = await executeAsync(`
+    const done = arguments[arguments.length - 1];
+    const unregister = 'serviceWorker' in navigator
+      ? navigator.serviceWorker.getRegistrations().then((registrations) =>
+          Promise.all(registrations.map((registration) => registration.unregister()))
+        )
+      : Promise.resolve();
+    const clearCaches = 'caches' in window
+      ? caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+      : Promise.resolve();
+    Promise.all([unregister, clearCaches]).then(
+      () => done({ ok: true }),
+      (error) => done({ ok: false, message: String(error) })
+    );
+  `);
+  if (!result?.ok) throw new Error(`Could not clear the iPad web cache: ${result?.message}`);
+}
+
 async function readTable(execute, accessor, total) {
   const rows = [];
   while (rows.length < total) {
@@ -227,6 +257,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         'brush',
         'gesture-repeats',
         'repeat-pause-ms',
+        'undo-count',
+        'undo-pause-ms',
+        'history-settle-ms',
+        'rotate-before-undo',
         'label',
         'output',
         'no-serve',
@@ -253,9 +287,22 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   if (!Number.isSafeInteger(repeatPauseMs) || repeatPauseMs < 0) {
     fail('--repeat-pause-ms must be a non-negative integer');
   }
+  const undoCount = Number.parseInt(flag('undo-count', '0'), 10);
+  if (!Number.isSafeInteger(undoCount) || undoCount < 0) {
+    fail('--undo-count must be a non-negative integer');
+  }
+  const undoPauseMs = Number.parseInt(flag('undo-pause-ms', String(UNDO_ACTION_PAUSE_MS)), 10);
+  if (!Number.isSafeInteger(undoPauseMs) || undoPauseMs < 0) {
+    fail('--undo-pause-ms must be a non-negative integer');
+  }
+  const historySettleMs = Number.parseInt(flag('history-settle-ms', '0'), 10);
+  if (!Number.isSafeInteger(historySettleMs) || historySettleMs < 0) {
+    fail('--history-settle-ms must be a non-negative integer');
+  }
   const server = await ensurePreviewServer(appUrl, port, !has('no-serve'));
   const client = createWebDriverClient(flag('appium-url', DEFAULT_APPIUM_URL));
   let sessionId;
+  let originalOrientation;
   try {
     await client.request('GET', '/status');
     const session = await client.request('POST', '/session', {
@@ -271,8 +318,25 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     sessionId = session.sessionId;
     const execute = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/sync`, { script, args });
+    const executeAsync = (script, args = []) =>
+      client.request('POST', `/session/${sessionId}/execute/async`, { script, args });
+    await client.request('POST', `/session/${sessionId}/timeouts`, {
+      script: SCRIPT_TIMEOUT_MS,
+    });
 
     await client.request('POST', `/session/${sessionId}/url`, { url: appUrl });
+    const initialReady = await pollUntil(
+      () =>
+        execute(
+          "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
+        ).catch(() => false),
+      WEBVIEW_READY_TIMEOUT_MS,
+      WEBVIEW_READY_POLL_MS
+    );
+    if (!initialReady) throw new Error(`${appUrl} never showed a sized #drawingCanvas`);
+    await clearDeviceWebCache(executeAsync);
+    const loadedUrl = profilingUrl(appUrl);
+    await client.request('POST', `/session/${sessionId}/url`, { url: loadedUrl });
     const ready = await pollUntil(
       () =>
         execute(
@@ -281,7 +345,15 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       WEBVIEW_READY_TIMEOUT_MS,
       WEBVIEW_READY_POLL_MS
     );
-    if (!ready) throw new Error(`${appUrl} never showed a sized #drawingCanvas`);
+    if (!ready) throw new Error(`${loadedUrl} never showed a sized #drawingCanvas`);
+    if (undoCount > 0) {
+      const debugReady = await pollUntil(
+        () => execute('return !!window.__drawingDebug?.getUndoDebug;').catch(() => false),
+        BRUSH_SELECT_TIMEOUT_MS,
+        WEBVIEW_READY_POLL_MS
+      );
+      if (!debugReady) throw new Error('The production route did not expose __drawingDebug');
+    }
 
     const brush = flag('brush', 'pen');
     const brushSelector = BRUSH_BUTTON_BY_MODE[brush];
@@ -364,6 +436,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     );
     const nativeWindow = await client.request('GET', `/session/${sessionId}/window/rect`);
     const orientation = await client.request('GET', `/session/${sessionId}/orientation`);
+    originalOrientation = orientation;
     const canvasBounds = nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow });
 
     await client.request('POST', `/session/${sessionId}/actions`, {
@@ -378,6 +451,91 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     });
     await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
     await sleep(AFTER_GESTURE_SETTLE_MS);
+    if (historySettleMs > 0) await sleep(historySettleMs);
+    let rotation = null;
+    if (has('rotate-before-undo')) {
+      const before = await execute('return { width: innerWidth, height: innerHeight };');
+      const target = orientation === 'LANDSCAPE' ? 'PORTRAIT' : 'LANDSCAPE';
+      await client.request('POST', `/session/${sessionId}/orientation`, { orientation: target });
+      const settled = await pollUntil(
+        () =>
+          execute('return { width: innerWidth, height: innerHeight };')
+            .then((size) => {
+              const targetReached =
+                target === 'PORTRAIT' ? size.height > size.width : size.width > size.height;
+              return targetReached && (size.width !== before.width || size.height !== before.height)
+                ? size
+                : null;
+            })
+            .catch(() => null),
+        ROTATION_SETTLE_TIMEOUT_MS,
+        WEBVIEW_READY_POLL_MS
+      );
+      if (!settled) throw new Error(`The iPad did not settle into ${target}`);
+      await sleep(AFTER_GESTURE_SETTLE_MS);
+      const visualSettledMs = await executeAsync(`
+        const done = arguments[arguments.length - 1];
+        const startedAt = performance.now();
+        requestAnimationFrame(() =>
+          requestAnimationFrame((at) => done(at - startedAt))
+        );
+      `);
+      rotation = { from: orientation, to: target, before, after: settled, visualSettledMs };
+    }
+    const historyBeforeUndo =
+      undoCount > 0 ? await execute('return window.__drawingDebug.getUndoDebug();') : null;
+
+    const undoActions = [];
+    if (undoCount > 0) {
+      await execute(
+        `document.querySelector('button[aria-label="Expand controls"]')?.click(); return true;`
+      );
+      const undoReady = await pollUntil(
+        () =>
+          execute(
+            `const button = document.querySelector('#undoButton'); return !!button && !button.disabled;`
+          ).catch(() => false),
+        BRUSH_SELECT_TIMEOUT_MS,
+        WEBVIEW_READY_POLL_MS
+      );
+      if (!undoReady) throw new Error('Action drawer did not expose an enabled #undoButton');
+      for (let index = 0; index < undoCount; index++) {
+        const action = await executeAsync(`
+          const done = arguments[arguments.length - 1];
+          const button = document.querySelector('#undoButton');
+          if (!button || button.disabled) {
+            done(null);
+            return;
+          }
+          const beforeCount = performance.getEntriesByName('engine.undo', 'measure').length;
+          const startedAt = performance.now();
+          button.click();
+          const measures = performance.getEntriesByName('engine.undo', 'measure');
+          const measure = measures.at(-1);
+          requestAnimationFrame((paintedAt) => {
+            done({
+              index: ${index},
+              startedAt,
+              endedAt: performance.now(),
+              beforeCount,
+              afterCount: measures.length,
+              engineMs: measure?.duration,
+              nextFrameMs: paintedAt - startedAt
+            });
+          });
+        `);
+        if (
+          !action ||
+          action.afterCount !== action.beforeCount + 1 ||
+          !Number.isFinite(action.engineMs)
+        ) {
+          throw new Error(`Undo action ${index + 1} did not produce one engine.undo measure`);
+        }
+        undoActions.push(action);
+        await sleep(undoPauseMs);
+      }
+      await sleep(UNDO_ACTION_SETTLE_MS);
+    }
 
     const report = await execute('return window.__probe.finish();');
     const counts = report.meta.counts;
@@ -387,6 +545,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     await execute('return window.__probe.stop();');
 
     const summaries = summarizeRun(report);
+    const undo = summarizeUndoActions(undoActions, report.frames);
     const input = summaries.phases[0]?.input ?? {};
     const fidelity = inputFidelity(input);
     const label = sanitizeLabel(flag('label', brush));
@@ -403,14 +562,22 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       automation: {
         appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),
         orientation,
+        loadedUrl,
         webGeometry,
         webViewBounds,
         nativeWindow,
         canvasBounds,
         gestureRepeats,
         repeatPauseMs,
+        undoCount,
+        undoPauseMs,
+        historySettleMs,
+        rotation,
       },
       fidelity,
+      undo,
+      undoActions,
+      historyBeforeUndo,
       summaries,
       report,
     };
@@ -425,6 +592,12 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     console.table(engineRows(summaries.phases));
     console.log('\nRender starvation');
     console.table(starvationRows(summaries.phases));
+    if (undoCount > 0) {
+      console.log('\nUndo response');
+      console.table(undoActionRows(undo));
+      console.log('\nHistory before undo');
+      console.table([historyBeforeUndo]);
+    }
     console.log(
       `\nFidelity: ${fidelity.passed ? 'PASS' : 'FAIL'} · ${JSON.stringify(fidelity.checks)}`
     );
@@ -436,6 +609,13 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     }
     return artifact;
   } finally {
+    if (sessionId && originalOrientation) {
+      await client
+        .request('POST', `/session/${sessionId}/orientation`, {
+          orientation: originalOrientation,
+        })
+        .catch(() => {});
+    }
     if (sessionId) {
       await client.request('DELETE', `/session/${sessionId}`).catch(() => {});
     }

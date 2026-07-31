@@ -753,6 +753,8 @@ export interface HistoryDebug {
   liveRasters: number;
   rasterBytes: number;
   blobBytes: number;
+  baseRasters?: number;
+  baseRasterBytes?: number;
   // Every patch's pixel cost from its rect, cold entries included — what the
   // stack would occupy resident if nothing were ever encoded. `rasterBytes`
   // counts only what is resident *now*, so it cannot answer whether the

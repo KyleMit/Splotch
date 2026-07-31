@@ -4,18 +4,14 @@ import { setMagicPatternRegion, sheetPatternFor } from './magicBrush';
 import { viewMatrix, viewToPaper, type PaperView } from './paperView';
 import { clearAllOf, renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
 import { type HistoryDebug, MAX_UNDO_DEPTH } from './undoHistory';
+import {
+  geometryIntersectsTile,
+  opDeviceBounds,
+  tilesIntersect,
+  type TileBounds,
+} from './tiledGeometry';
 import { LIVE_TILE_COLUMNS, LIVE_TILE_ROWS } from './liveTiles';
-
-interface TileBounds {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  paperLeft: number;
-  paperTop: number;
-  paperRight: number;
-  paperBottom: number;
-}
+import { createTiledUndoPatches } from './tiledUndoPatches';
 
 interface LiveTile extends TileBounds {
   canvas: HTMLCanvasElement;
@@ -37,6 +33,8 @@ interface TiledRendererHost {
 }
 
 const TILE_HISTORY_FOLD_IDLE_MS = 1_500;
+export const TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE = 3;
+const MIN_TILED_UNDO_COMMANDS = 2;
 
 let canvas: HTMLCanvasElement | null = null;
 let host: TiledRendererHost | null = null;
@@ -46,6 +44,7 @@ let historyBaseWidth = 0;
 let historyBaseHeight = 0;
 let activeCommand: StrokeGroupCommand | null = null;
 const history: StrokeGroupCommand[] = [];
+const undoPatches = createTiledUndoPatches();
 let undoableCommands = 0;
 let historyFoldTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -198,44 +197,6 @@ export function applyTiledView(paperView: PaperView) {
   }
 }
 
-function geometryIntersectsTile(op: Extract<StrokeOp, { kind: 'dot' | 'path' }>, tile: TileBounds) {
-  let left: number;
-  let top: number;
-  let right: number;
-  let bottom: number;
-  let padding: number;
-  if (op.kind === 'dot') {
-    left = right = op.x;
-    top = bottom = op.y;
-    padding = op.radius;
-  } else {
-    left = right = op.startX;
-    top = bottom = op.startY;
-    for (const segment of op.segs) {
-      left = Math.min(left, segment.cx, segment.x);
-      top = Math.min(top, segment.cy, segment.y);
-      right = Math.max(right, segment.cx, segment.x);
-      bottom = Math.max(bottom, segment.cy, segment.y);
-    }
-    padding = op.lineWidth / 2;
-  }
-  return (
-    right + padding >= tile.paperLeft &&
-    left - padding <= tile.paperRight &&
-    bottom + padding >= tile.paperTop &&
-    top - padding <= tile.paperBottom
-  );
-}
-
-function tilesIntersect(first: TileBounds, second: TileBounds) {
-  return (
-    first.paperRight >= second.paperLeft &&
-    first.paperLeft <= second.paperRight &&
-    first.paperBottom >= second.paperTop &&
-    first.paperTop <= second.paperBottom
-  );
-}
-
 function renderHistoryBaseOp(op: StrokeOp) {
   if (op.kind !== 'dot' && op.kind !== 'path') {
     for (const tile of historyBase) renderOp(tile.ctx, op);
@@ -246,14 +207,44 @@ function renderHistoryBaseOp(op: StrokeOp) {
   }
 }
 
-export function renderTiledOp(op: StrokeOp) {
+function enforceUndoPatchBudget() {
+  for (const command of history.slice(0, -undoableCommands)) {
+    undoPatches.delete(command);
+  }
+  const budget =
+    liveTiles.reduce((total, tile) => total + tile.width * tile.height * 4, 0) *
+    TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE;
+  let bytes = history
+    .slice(-undoableCommands)
+    .reduce((total, command) => total + undoPatches.bytes(command), 0);
+  while (undoableCommands > MIN_TILED_UNDO_COMMANDS && bytes > budget) {
+    const command = history[history.length - undoableCommands];
+    bytes -= undoPatches.bytes(command);
+    undoPatches.delete(command);
+    undoableCommands--;
+  }
+}
+
+function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | null) {
   if (op.kind !== 'dot' && op.kind !== 'path') {
-    for (const tile of liveTiles) renderOp(tile.ctx, op);
+    for (const [index, tile] of liveTiles.entries()) {
+      if (command && op.kind !== 'crayonFlush') {
+        undoPatches.capture(command, tile, index);
+      }
+      renderOp(tile.ctx, op);
+    }
     return;
   }
-  for (const tile of liveTiles) {
-    if (geometryIntersectsTile(op, tile)) renderOp(tile.ctx, op);
+  for (const [index, tile] of liveTiles.entries()) {
+    if (geometryIntersectsTile(op, tile)) {
+      if (command) undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
+      renderOp(tile.ctx, op);
+    }
   }
+}
+
+export function renderTiledOp(op: StrokeOp) {
+  renderTiledOpForCommand(op, activeCommand);
 }
 
 export function recordTiledOp(op: StrokeOp) {
@@ -271,7 +262,7 @@ function renderHistoryCommand(target: CanvasRenderingContext2D, command: StrokeG
   target.restore();
 }
 
-function renderCommandAcrossTiles(command: StrokeGroupCommand) {
+function renderCommandAcrossTiles(command: StrokeGroupCommand, captureUndo = false) {
   const paper = host?.paperSize();
   if (!paper) return;
   for (const tile of liveTiles) {
@@ -280,14 +271,18 @@ function renderCommandAcrossTiles(command: StrokeGroupCommand) {
     tile.ctx.rect(0, 0, paper.width, paper.height);
     tile.ctx.clip();
   }
-  for (const op of command.ops) renderTiledOp(op);
+  for (const op of command.ops) {
+    renderTiledOpForCommand(op, captureUndo ? command : null);
+  }
   for (const tile of liveTiles) tile.ctx.restore();
+  if (captureUndo) undoPatches.crop(command);
 }
 
 function foldOldestCommand() {
   const command = history.shift();
   const paper = host?.paperSize();
   if (!command || !paper) return;
+  undoPatches.delete(command);
   ensureHistoryBase();
   for (const tile of historyBase) {
     tile.ctx.save();
@@ -307,16 +302,18 @@ function cancelHistoryFold() {
 
 export function scheduleTiledHistoryFold() {
   cancelHistoryFold();
-  if (history.length <= MAX_UNDO_DEPTH) return;
+  if (history.length <= undoableCommands) return;
   historyFoldTimer = setTimeout(() => {
     historyFoldTimer = null;
-    if (host?.hasActivePointers() || history.length <= MAX_UNDO_DEPTH) return;
+    if (host?.hasActivePointers() || history.length <= undoableCommands) return;
     foldOldestCommand();
     scheduleTiledHistoryFold();
   }, TILE_HISTORY_FOLD_IDLE_MS);
 }
 
 export function repaintTiledRenderer() {
+  const undoableStart = history.length - undoableCommands;
+  const rebuildUndo = undoableCommands > 0 || activeCommand !== null;
   for (const tile of liveTiles) {
     resetCrayonStateForClear(tile.ctx);
     clearAllOf(tile.ctx);
@@ -326,10 +323,17 @@ export function repaintTiledRenderer() {
       }
     }
   }
-  for (const command of history) renderCommandAcrossTiles(command);
-  if (activeCommand) {
-    for (const op of activeCommand.ops) renderTiledOp(op);
+  for (const [index, command] of history.entries()) {
+    const captureUndo = rebuildUndo && index >= undoableStart;
+    if (rebuildUndo) undoPatches.delete(command);
+    renderCommandAcrossTiles(command, captureUndo);
   }
+  if (activeCommand) {
+    if (rebuildUndo) undoPatches.delete(activeCommand);
+    for (const op of activeCommand.ops) renderTiledOp(op);
+    if (rebuildUndo) undoPatches.crop(activeCommand);
+  }
+  if (rebuildUndo) enforceUndoPatchBudget();
 }
 
 export function beginTiledCommand(wasEmpty: boolean) {
@@ -339,30 +343,59 @@ export function beginTiledCommand(wasEmpty: boolean) {
 
 export function commitTiledCommand() {
   if (!activeCommand) return false;
+  undoPatches.crop(activeCommand);
   history.push(activeCommand);
   undoableCommands = Math.min(MAX_UNDO_DEPTH, undoableCommands + 1);
+  enforceUndoPatchBudget();
   activeCommand = null;
   scheduleTiledHistoryFold();
   return true;
 }
 
 export function undoTiledCommand(renderScale: number) {
-  history.pop();
+  const undone = history.pop();
   undoableCommands = Math.max(0, undoableCommands - 1);
-  repaintTiledRenderer();
+  const snapshots = undone && undoPatches.get(undone);
+  const snapshotsFit =
+    snapshots &&
+    [...snapshots].every(([index, snapshot]) => {
+      const tile = liveTiles[index];
+      return snapshot.tileWidth === tile?.width && snapshot.tileHeight === tile?.height;
+    });
+  if (snapshotsFit) {
+    for (const [index, snapshot] of snapshots) {
+      const tile = liveTiles[index];
+      resetCrayonStateForClear(tile.ctx);
+      tile.ctx.save();
+      tile.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      tile.ctx.clearRect(snapshot.x, snapshot.y, snapshot.canvas.width, snapshot.canvas.height);
+      tile.ctx.drawImage(snapshot.canvas, snapshot.x, snapshot.y);
+      tile.ctx.restore();
+    }
+  } else {
+    repaintTiledRenderer();
+  }
+  if (undone) undoPatches.delete(undone);
+  const empty =
+    undone && !host?.hasActivePointers() ? undone.wasEmpty : scanTiledRendererIsEmpty(renderScale);
   return {
-    empty: scanTiledRendererIsEmpty(renderScale),
+    empty,
     canUndo: undoableCommands > 0,
   };
 }
 
 export function clearTiledRenderer(wasEmpty: boolean) {
   const clearCommand: StrokeGroupCommand = { ops: [{ kind: 'clear' }], wasEmpty };
+  for (const [index, tile] of liveTiles.entries()) {
+    undoPatches.capture(clearCommand, tile, index);
+  }
   history.push(clearCommand);
   undoableCommands = Math.min(MAX_UNDO_DEPTH, undoableCommands + 1);
+  enforceUndoPatchBudget();
   scheduleTiledHistoryFold();
-  renderTiledOp(clearCommand.ops[0]);
+  renderTiledOpForCommand(clearCommand.ops[0], null);
   if (activeCommand) {
+    undoPatches.delete(activeCommand);
     activeCommand.ops.length = 0;
     activeCommand.wasEmpty = true;
   }
@@ -374,13 +407,24 @@ export function scanTiledRendererIsEmpty(renderScale: number) {
 }
 
 export function tiledHistoryDebug(): HistoryDebug {
-  const rasterBytes = historyBase.reduce((total, tile) => total + tile.width * tile.height * 4, 0);
+  const undoSnapshots = history.map((command) => undoPatches.get(command));
+  const undoTiles = undoSnapshots.flatMap((snapshots) => [...(snapshots?.values() ?? [])]);
+  const rasterBytes = undoTiles.reduce(
+    (total, snapshot) => total + snapshot.canvas.width * snapshot.canvas.height * 4,
+    0
+  );
+  const baseRasterBytes = historyBase.reduce(
+    (total, tile) => total + tile.width * tile.height * 4,
+    0
+  );
   return {
     snapshots: undoableCommands,
-    liveRasters: historyBase.length,
+    liveRasters: undoSnapshots.filter((snapshots) => snapshots && snapshots.size > 0).length,
     rasterBytes,
     blobBytes: 0,
-    patchBytes: 0,
+    baseRasters: historyBase.length,
+    baseRasterBytes,
+    patchBytes: rasterBytes,
     pendingCommands: activeCommand ? 1 : 0,
   };
 }
