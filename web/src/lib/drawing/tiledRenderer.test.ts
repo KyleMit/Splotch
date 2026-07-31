@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { IDENTITY_PAPER_VIEW } from './paperView';
 import type { StrokeOp } from './strokeOps';
@@ -6,6 +6,7 @@ import {
   adoptTiledRenderer,
   applyTiledView,
   beginTiledCommand,
+  captureTiledCanvasSnapshot,
   clearTiledRenderer,
   commitTiledCommand,
   detachTiledRenderer,
@@ -59,6 +60,7 @@ beforeEach(() => {
 afterEach(() => {
   detachTiledRenderer();
   HTMLCanvasElement.prototype.getContext = originalGetContext;
+  vi.unstubAllGlobals();
 });
 
 function rendererElements() {
@@ -134,5 +136,42 @@ describe('idle tiled canvas visibility', () => {
     expect(hasUnresolvedTiledMagicOps()).toBe(false);
     commitTiledCommand();
     undoTiledCommand(1);
+  });
+
+  it('captures every settled live tile before an asynchronous export continues', async () => {
+    const { canvas } = rendererElements();
+    const bitmaps = Array.from({ length: 16 }, (_, index) => ({ index }) as unknown as ImageBitmap);
+    let nextBitmap = 0;
+    const createBitmap = vi.fn((_: HTMLCanvasElement) => Promise.resolve(bitmaps[nextBitmap++]));
+    vi.stubGlobal('createImageBitmap', createBitmap);
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+
+    const snapshot = captureTiledCanvasSnapshot();
+
+    expect(snapshot).toMatchObject({ width: 400, height: 400 });
+    expect(snapshot?.tiles).toHaveLength(16);
+    expect(createBitmap).toHaveBeenCalledTimes(16);
+    await expect(Promise.all(snapshot!.tiles.map((tile) => tile.bitmap))).resolves.toEqual(bitmaps);
+    expect(snapshot?.tiles[0]).toMatchObject({ x: 0, y: 0 });
+    expect(snapshot?.tiles.at(-1)).toMatchObject({ x: 300, y: 300 });
+  });
+
+  it('does not capture while a pointer is active', () => {
+    const { canvas } = rendererElements();
+    const createBitmap = vi.fn();
+    vi.stubGlobal('createImageBitmap', createBitmap);
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => true,
+    });
+    resizeTiledRenderer(1);
+
+    expect(captureTiledCanvasSnapshot()).toBeNull();
+    expect(createBitmap).not.toHaveBeenCalled();
   });
 });

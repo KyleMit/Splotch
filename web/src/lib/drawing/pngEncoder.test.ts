@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface WorkerMessage {
   id: number;
-  bitmap: ImageBitmap;
+  kind: 'canvas' | 'tiles';
+  bitmap?: ImageBitmap;
+  tiles?: Array<{ bitmap: ImageBitmap; x: number; y: number }>;
 }
 
 class ControllableWorker {
@@ -107,5 +109,37 @@ describe('encodeCanvasPng', () => {
 
     expect(ControllableWorker.instances).toHaveLength(1);
     expect(toBlob).not.toHaveBeenCalled();
+  });
+
+  it('transfers settled drawing tiles and composition layers together', async () => {
+    const tile = { close: vi.fn() } as unknown as ImageBitmap;
+    const texture = { close: vi.fn() } as unknown as ImageBitmap;
+    const overlay = { close: vi.fn() } as unknown as ImageBitmap;
+    const expected = new Blob(['worker'], { type: 'image/png' });
+    vi.stubGlobal('Worker', ControllableWorker);
+    const { encodeTiledCanvasPng } = await import('./pngEncoder');
+
+    const encoded = encodeTiledCanvasPng({
+      sourceWidth: 400,
+      sourceHeight: 300,
+      sourceScale: 2,
+      exportScale: 2,
+      tiles: [{ bitmap: tile, x: 10, y: 20 }],
+      texture,
+      overlay,
+      paperColor: '#fff',
+      theme: 'dark',
+    });
+    const worker = ControllableWorker.instances[0];
+
+    expect(worker.posted[0].message).toMatchObject({
+      kind: 'tiles',
+      sourceWidth: 400,
+      sourceHeight: 300,
+      tiles: [{ bitmap: tile, x: 10, y: 20 }],
+    });
+    expect(worker.posted[0].transfer).toEqual([tile, texture, overlay]);
+    worker.resolve(expected);
+    await expect(encoded).resolves.toBe(expected);
   });
 });

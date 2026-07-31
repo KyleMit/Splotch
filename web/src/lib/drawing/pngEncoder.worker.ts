@@ -1,8 +1,24 @@
-interface EncodePngRequest {
+interface EncodeCanvasPngRequest {
   id: number;
+  kind: 'canvas';
   bitmap: ImageBitmap;
 }
 
+interface EncodeTiledPngRequest {
+  id: number;
+  kind: 'tiles';
+  sourceWidth: number;
+  sourceHeight: number;
+  sourceScale: number;
+  exportScale: number;
+  tiles: Array<{ bitmap: ImageBitmap; x: number; y: number }>;
+  texture: ImageBitmap | null;
+  overlay: ImageBitmap | null;
+  paperColor: string;
+  theme: 'light' | 'dark';
+}
+
+type EncodePngRequest = EncodeCanvasPngRequest | EncodeTiledPngRequest;
 type EncodePngResponse = { id: number; blob: Blob } | { id: number; error: string };
 
 interface EncoderWorkerScope {
@@ -12,17 +28,85 @@ interface EncoderWorkerScope {
 
 const encoderWorker = self as unknown as EncoderWorkerScope;
 
-encoderWorker.onmessage = async ({ data: { id, bitmap } }) => {
+function drawContainedOverlay(
+  context: OffscreenCanvasRenderingContext2D,
+  canvas: OffscreenCanvas,
+  overlay: ImageBitmap,
+  theme: EncodeTiledPngRequest['theme']
+) {
+  const scale = Math.min(canvas.width / overlay.width, canvas.height / overlay.height);
+  const width = overlay.width * scale;
+  const height = overlay.height * scale;
+  const x = (canvas.width - width) / 2;
+  const y = (canvas.height - height) / 2;
+  if (theme === 'dark') {
+    const inverted = new OffscreenCanvas(overlay.width, overlay.height);
+    const invertedContext = inverted.getContext('2d');
+    if (!invertedContext) throw new Error('PNG encoder could not invert the overlay');
+    invertedContext.drawImage(overlay, 0, 0);
+    invertedContext.globalCompositeOperation = 'difference';
+    invertedContext.fillStyle = '#fff';
+    invertedContext.fillRect(0, 0, inverted.width, inverted.height);
+    context.globalCompositeOperation = 'screen';
+    context.drawImage(inverted, x, y, width, height);
+  } else {
+    context.globalCompositeOperation = 'multiply';
+    context.drawImage(overlay, x, y, width, height);
+  }
+  context.globalCompositeOperation = 'source-over';
+}
+
+async function encodeTiledPng(data: EncodeTiledPngRequest): Promise<Blob> {
+  const width = Math.round((data.sourceWidth / data.sourceScale) * data.exportScale);
+  const height = Math.round((data.sourceHeight / data.sourceScale) * data.exportScale);
+  const canvas = new OffscreenCanvas(width, height);
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('PNG encoder could not allocate a 2D context');
+
+  context.fillStyle = data.paperColor;
+  context.fillRect(0, 0, width, height);
+  if (data.texture) {
+    const pattern = context.createPattern(data.texture, 'repeat');
+    if (pattern) {
+      context.setTransform(data.exportScale, 0, 0, data.exportScale, 0, 0);
+      context.fillStyle = pattern;
+      context.fillRect(0, 0, width / data.exportScale, height / data.exportScale);
+      context.resetTransform();
+    }
+  }
+
+  const tileScale = data.exportScale / data.sourceScale;
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = 'high';
+  context.setTransform(tileScale, 0, 0, tileScale, 0, 0);
+  for (const tile of data.tiles) context.drawImage(tile.bitmap, tile.x, tile.y);
+  context.resetTransform();
+  if (data.overlay) drawContainedOverlay(context, canvas, data.overlay, data.theme);
+  return canvas.convertToBlob({ type: 'image/png' });
+}
+
+encoderWorker.onmessage = async ({ data }) => {
+  const { id } = data;
   try {
-    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+    if (data.kind === 'tiles') {
+      encoderWorker.postMessage({ id, blob: await encodeTiledPng(data) });
+      return;
+    }
+    const canvas = new OffscreenCanvas(data.bitmap.width, data.bitmap.height);
     const context = canvas.getContext('2d');
     if (!context) throw new Error('PNG encoder could not allocate a 2D context');
-    context.drawImage(bitmap, 0, 0);
+    context.drawImage(data.bitmap, 0, 0);
     const blob = await canvas.convertToBlob({ type: 'image/png' });
     encoderWorker.postMessage({ id, blob });
   } catch (error) {
     encoderWorker.postMessage({ id, error: String(error) });
   } finally {
-    bitmap.close();
+    if (data.kind === 'tiles') {
+      for (const tile of data.tiles) tile.bitmap.close();
+      data.texture?.close();
+      data.overlay?.close();
+    } else {
+      data.bitmap.close();
+    }
   }
 };

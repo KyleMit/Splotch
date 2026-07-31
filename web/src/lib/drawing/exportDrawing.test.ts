@@ -3,8 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const appearanceMock = vi.hoisted(() => ({
   resolvedTheme: vi.fn<() => 'light' | 'dark'>(),
 }));
+const pngMock = vi.hoisted(() => ({
+  encodeTiledCanvasPng: vi.fn(),
+}));
 
 vi.mock('../state/appearance.svelte', () => appearanceMock);
+vi.mock('./pngEncoder', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./pngEncoder')>()),
+  encodeTiledCanvasPng: pngMock.encodeTiledCanvasPng,
+}));
 
 const requested: ControllableImage[] = [];
 
@@ -22,6 +29,7 @@ beforeEach(() => {
   vi.resetModules();
   requested.length = 0;
   appearanceMock.resolvedTheme.mockReturnValue('light');
+  pngMock.encodeTiledCanvasPng.mockReset();
   vi.stubGlobal('Image', ControllableImage);
 });
 
@@ -117,6 +125,42 @@ describe('warmPaperTexture', () => {
 });
 
 describe('composeExportPng overlay', () => {
+  it('sends settled live tiles directly to the worker compositor', async () => {
+    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    const expected = new Blob(['tiles'], { type: 'image/png' });
+    pngMock.encodeTiledCanvasPng.mockResolvedValue(expected);
+    const { composeExportPng } = await import('./exportDrawing');
+
+    await expect(
+      composeExportPng(
+        {
+          source: {
+            width: 400,
+            height: 300,
+            tiles: [{ bitmap: Promise.resolve(bitmap), x: 100, y: 75 }],
+          },
+          sourceScale: 2,
+        },
+        2,
+        null,
+        { includePaperTexture: false }
+      )
+    ).resolves.toBe(expected);
+
+    expect(pngMock.encodeTiledCanvasPng).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceWidth: 400,
+        sourceHeight: 300,
+        sourceScale: 2,
+        exportScale: 2,
+        tiles: [{ bitmap, x: 100, y: 75 }],
+        texture: null,
+        overlay: null,
+        theme: 'light',
+      })
+    );
+  });
+
   it('returns null when the output canvas cannot allocate a context', async () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     const toBlob = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob');

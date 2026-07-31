@@ -1,4 +1,4 @@
-# ADR-0088: Keep iPad Screenshot Export Frame-Bound with Disposable Offscreen Canvases
+# ADR-0088: Keep iPad Screenshot Export Frame-Bound with Settled Live Tiles
 
 **Status:** Active — amends [ADR-0015](0015-capped-dpr-canvas-rendering.md) for saved-image quality
 and complements [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md). **Date:** 2026-07
@@ -18,10 +18,10 @@ responsive throughout. Saved-image correctness independently requires a lossless
 upright paper rather than the letterboxed visible viewport, a minimum 2× export scale, paper
 texture, theme treatment, and coloring-page line art.
 
-Thirty-one serial isolations separated encoding, preview, surface allocation, and cleanup costs.
-Each architecture was applied alone and backed out before the next unless marked retained. “Max gap”
-is the largest `requestAnimationFrame` interval after the Screenshot Button click on the same
-physical iPad. Rapid stress trials started a new save approximately every 1.1 seconds;
+The first thirty-one serial isolations separated encoding, preview, surface allocation, and cleanup
+costs. Each architecture was applied alone and backed out before the next unless marked retained.
+“Max gap” is the largest `requestAnimationFrame` interval after the Screenshot Button click on the
+same physical iPad. Rapid stress trials started a new save approximately every 1.1 seconds;
 normal-cadence trials waited four seconds. Typical ranges exclude a separately reported cleanup
 outlier.
 
@@ -70,29 +70,78 @@ forced a 591 ms MobileSafari graphics cleanup. A four-second post-save cooldown 
 surface backlog: a 20-tap dark-overlay stress run made seven real saves, suppressed thirteen
 duplicate taps, and held every frame at or below 20 ms.
 
+A later brush-complete regression pass falsified that conclusion. The retained architecture passed
+pen and uncomplicated coloring-page exports, but a fresh Magic drawing blocked for 288–354 ms at
+exactly 2×, and a crayon drawing still blocked for 202 ms at 1.99× and 144 ms at 1.5×. The
+full-resolution main-thread snapshot—not PNG compression or merely the 2× dimensions—was still a
+shared graphics backing store that the worker forced WebKit to synchronize.
+
+The follow-up serial trials kept the same physical iPad, 1,282×934 CSS-pixel paper, exact blob-type
+check, and 32 ms frame gate:
+
+| #  | Isolated strategy                                                    | Max gap ms      | Result                                                    |
+| -- | -------------------------------------------------------------------- | --------------- | --------------------------------------------------------- |
+| 32 | Exact-2× production snapshot with fresh Magic ink                    | 354; repeat 288 | Fail                                                      |
+| 33 | Pure-JavaScript full-canvas PNG in the worker                        | 401             | Fail; native PNG compression was not causal               |
+| 34 | Compose coloring overlay inside the worker                           | 268             | Fail; another worker graphics surface increased pressure  |
+| 35 | Scan full `ImageBitmap` as 64-row bands in the worker                | 311             | Fail; first access synchronized the full source backing   |
+| 36 | Crop 64-row bitmaps from one full exact-2× source                    | 309–389         | Fail; the first crop synchronized the full source backing |
+| 37 | Magic export at 1.5×, 1.75×, 1.875×, 1.95×, and 1.99×                | 9 each          | Pass for Magic only                                       |
+| 38 | Magic export at 1.995× and 1.999×                                    | 907; 942        | Fail; exposed a sharp WebKit surface-size cliff           |
+| 39 | Render exact-2× 64-row surfaces directly, then batch worker transfer | 83–91           | Fail; pending surfaces flushed together                   |
+| 40 | Transfer and encode one 64-row surface per frame                     | 66–67           | Fail; first worker pixel readback remained blocking       |
+| 41 | Reduce direct surfaces to 16 rows                                    | 71              | Fail; gap was not proportional to row height              |
+| 42 | Native-PNG each row surface, decompress, and reassemble              | 61              | Fail; avoided `getImageData` but not first graphics sync  |
+| 43 | Render 512×64 2D tiles and reassemble losslessly                     | 60–72           | Fail; first `createImageBitmap` flushed pending tile work |
+| 44 | 1.99× full snapshot with crayon                                      | 202             | Fail; near-2× was not brush-complete                      |
+| 45 | 1.5× full snapshot with crayon                                       | 144             | Fail and visibly reduced saved resolution                 |
+| 46 | Transfer the 16 existing settled live tiles; transparent worker PNG  | 16              | Pass; exact 2×                                            |
+| 47 | Settled tiles plus paper, texture, and dark coloring overlay         | 20              | Pass; exact 2×                                            |
+| 48 | Production Magic, three normal-cadence saves                         | 17 / 17 / 17    | Pass; P95 9–11                                            |
+| 49 | Production crayon, three normal-cadence saves                        | 23 / 16 / 16    | Pass; P95 9–11                                            |
+| 50 | Production pen and light-theme Magic coloring-page saves             | 21; 24          | Pass                                                      |
+| 51 | Final branch: 15 Magic saves, then five crayon saves                 | 25 worst        | Pass; P95 9–13                                            |
+
+The produced light-theme PNG was decoded only for validation and measured exactly 2,564×1,868. That
+validation decode itself caused a 64 ms UI gap, reaffirming why product feedback must never display
+the just-created full-resolution PNG.
+
+The final-build regression pass also kept coloring-page selection at a 26 ms maximum frame with its
+first visible paint at 47 ms, three dark-to-light switches at a 31 ms maximum and 9 ms P95, and Undo
+at 1 ms of engine work with a 9 ms maximum interaction frame. One 85 ms screenshot interval followed
+a deliberately timed-out instrumentation run; it did not recur in the next 15 Magic or five crayon
+saves. Preserve a normal-cadence multi-save run so probe cleanup is not mistaken for a periodic
+product cliff.
+
 The key distinction was not simply “use a worker.” An HTML canvas snapshot followed by
 `createImageBitmap` normally moved encoding off-thread but accumulated WebKit graphics surfaces
 until a later save paid a 400–800 ms cleanup cliff. Retaining or explicitly resizing a surface made
 WebKit synchronize on every save. A disposable main-thread `OffscreenCanvas` avoided the DOM canvas
-surface lifecycle, while a disposable worker `OffscreenCanvas` avoided retained-surface
-synchronization.
+surface lifecycle in the initial trials, but Magic and crayon later proved that its newly rendered
+full-page backing still synchronized. The reliable distinction is whether the UI process ever
+creates that full-page drawing surface: the retained path transfers the live renderer's already
+settled small tiles and assembles the only full page inside the worker.
 
 ## Decision
 
-Screenshot export uses one disposable `OffscreenCanvas` snapshot at the final export dimensions when
-the API exists:
+At matched live/export scale with an identity paper view, screenshot export reuses the tiled live
+renderer's already-settled pixels instead of replaying into a new full-page surface:
 
-1. `engine.ts` creates the snapshot synchronously before the compositor module's dynamic import and
-   replays strokes at `currentExportScale()`. Synchronous capture preserves the save-on-delete race
-   contract: clearing the live drawing immediately afterward cannot blank the pending export.
-2. `exportDrawing.ts` composes paper texture and the opaque paper color behind those strokes with
-   `destination-over`, then draws coloring-page line art above them. It does not allocate a second
-   output canvas.
-3. `pngEncoder.ts` converts the finished surface to an `ImageBitmap` and transfers it to one cached
-   module worker. `pngEncoder.worker.ts` creates a fresh `OffscreenCanvas` for that request and
-   calls `convertToBlob({ type: 'image/png' })`.
-4. Worker and bitmap failures terminate the cached worker and fall back to the browser's canvas
-   encoder. HTML canvas remains a feature-detected fallback for engines without `OffscreenCanvas`.
+1. Before the compositor module's first `await`, `captureTiledCanvasSnapshot()` invokes
+   `createImageBitmap()` on all 16 live tile canvases and records each tile's paper position. The
+   promises may settle later, but invoking them synchronously preserves the save-on-delete race:
+   clearing the live drawing immediately afterward cannot blank the requested snapshots.
+2. `exportDrawing.ts` resolves those tile snapshots plus optional paper-texture and coloring-overlay
+   bitmaps. It passes them directly to the cached encoder worker; the main thread never owns a new
+   full-page export surface.
+3. `pngEncoder.worker.ts` creates the only full-resolution export `OffscreenCanvas`, paints the
+   opaque paper and repeating texture, scales and positions the settled stroke tiles, applies the
+   light/dark coloring-page blend, then calls `convertToBlob({ type: 'image/png' })`.
+4. The fast path is deliberately narrow: export scale must equal live render scale, the paper view
+   must be unrotated, no pointer may still be active, and Worker, `OffscreenCanvas`, and
+   `createImageBitmap` must exist. A rotation needs the full upright paper rather than the presented
+   viewport; a scale mismatch needs vector replay rather than interpolated live pixels. Those cases
+   retain the disposable full-snapshot architecture and browser encoder fallback.
 5. The full-screen polaroid preview is removed. `screenshotFeedback.ts` immediately animates the
    existing camera icon, so feedback does not decode or composite the just-created PNG.
 6. `screenshot.ts` continues coalescing concurrent Screenshot Button taps into one active save.
@@ -100,10 +149,10 @@ the API exists:
    four-second interval exported by `screenshotTiming.ts`. A failed save remains immediately
    retryable.
 
-Do not pool, cache, resize-to-zero, or explicitly release either export canvas as an optimization.
-Those intuitive lifetime controls are the configurations that caused 70–94 ms per-save stalls or
-periodic 400–800 ms cleanup cliffs on MobileSafari. The cached object is the worker process, not its
-canvas.
+Do not first assemble the live tiles on the main thread, render a new set of export tiles all at
+once, pool a full-resolution export canvas, resize one to zero, or explicitly release it as an
+optimization. Those configurations caused 60–94 ms per-save stalls or periodic 400–800 ms cleanup
+cliffs on MobileSafari. The cached object is the worker process, not its full-page canvas.
 
 The export scale remains independent from ADR-0015's 1.5× live rendering cap. `exportScale.ts` keeps
 the lossless saved PNG at `max(devicePixelRatio, 2)`, so the live-canvas performance tradeoff does
@@ -111,26 +160,31 @@ not soften paper texture or line art in saved work.
 
 Safari and iPadOS 16.4 added Offscreen Canvas 2D support, matching Splotch's browser and native iOS
 floor. The path remains guarded because native Android can run an independently updated WebView and
-because a failed worker must not turn the Screenshot Button into a no-op.
+because the tiled path requires the full set of transferable canvas APIs.
 
 ## Consequences
 
-* \+ Screenshot interaction improved from 241–265 ms blocked frames to a 9 ms frame P95 and 20 ms
-  maximum in the worst-case coloring-page button-mash test.
+* \+ Screenshot interaction improved from 241–401 ms blocked frames to a 9–13 ms frame P95 and 25 ms
+  maximum across repeated pen, crayon, and Magic coloring-page saves.
 * \+ Saved output remains a full-resolution, lossless, 2× PNG with the same paper, texture, theme,
   strokes, and coloring-page composition.
 * \+ Encoding throughput no longer controls drawing responsiveness; even a one-second worker encode
   produced no long frame.
-* \+ Snapshot capture still precedes the first `await`, preserving save-on-delete correctness.
+* \+ Tile snapshot invocation still precedes the first `await`, preserving save-on-delete
+  correctness.
 * \+ The worker and compositor stay out of the initial drawing-route preload graph.
 * − The large full-screen polaroid animation is replaced by smaller camera-button feedback.
   Restoring any PNG preview requires its own physical-iPad frame-budget proof.
-* − The main and worker threads briefly hold full-resolution offscreen surfaces concurrently. They
-  must remain disposable even though pooling appears to reduce allocation.
+* \+ The affected 2× iPad path no longer creates a full-resolution drawing surface on the main
+  thread. Only the worker owns the full composed output.
+* − Rotated papers, active pointers, and devices whose live and export scales differ retain the
+  replay fallback. They preserve orientation and vector quality but can still hit the older
+  compatibility path's main-thread graphics cost.
 * − Repeated Screenshot Button taps within four seconds of a successful save are intentionally
   ignored so MobileSafari can reclaim the full-page PNG surfaces.
 * − The compatibility fallback can still block on engines whose main-thread canvas encoder is slow.
-  The supported Safari/iPadOS floor takes the offscreen worker path.
+  A tiled-worker failure rejects that save instead of reconstructing another full-page surface on
+  the UI thread; the next user tap creates a fresh worker.
 * − Completion time is intentionally not a hard gate. A save can finish slowly under device pressure
   as long as UI frames remain below the 32 ms interaction threshold.
 
@@ -155,6 +209,46 @@ Verify separately that an unsuppressed user tap downloads or saves the PNG. Re-r
 crayon, and magic strokes plus undo and theme switching after any export architecture change. Test
 both free drawing and light- and dark-theme coloring overlays: free drawing alone did not reveal the
 line-art graphics-memory cliff.
+
+### Settled Live-Tile Isolation
+
+The smallest proof for the retained architecture does not use the Screenshot Button:
+
+1. Finish a trusted crayon or Magic stroke and select all `canvas[data-live-tile]` elements.
+2. Invoke `createImageBitmap()` on every tile in the same synchronous turn, recording each tile's
+   backing-pixel `x`/`y` position. Do not first draw them into a shared canvas.
+3. Transfer the tile bitmaps to a disposable worker. Create the full-size `OffscreenCanvas` only
+   there, draw the tiles at their recorded positions, and encode PNG.
+4. First test transparent strokes alone. The crayon prototype produced a 2,564×1,868 PNG with a 16
+   ms maximum gap.
+5. Add the paper color, repeating texture, and coloring overlay inside the same worker. The complete
+   dark-theme prototype measured 20 ms. If this addition fails, isolate texture and overlay
+   separately before changing tile capture.
+
+Production capture has three load-bearing guards. An active pointer can leave crayon ink in preview
+overlays rather than the settled main tiles. A rotated paper's live tiles contain its presented
+letterboxed view rather than the upright export. A live/export scale mismatch would interpolate
+settled pixels instead of replaying vectors at output resolution. Fall back to the existing replay
+snapshot for all three.
+
+Invoking all tile snapshots before the dynamic import is also load-bearing. Moving
+`createImageBitmap(tile.canvas)` after an `await` lets save-on-delete clear the source first. Store
+the promises immediately; awaiting those already-requested snapshots later is safe.
+
+### Full-Surface and Export-Scale Cliff
+
+To remeasure WebKit's dimension cliff, override only `currentExportScale()` and use one fresh Magic
+stroke on the same paper. Scales from 1.5× through 1.99× held at 9 ms, while 1.995× and 1.999×
+jumped to 907–942 ms. Do not infer a shippable scale from Magic alone: crayon still stalled for 202
+ms at 1.99× and 144 ms at 1.5×. A resolution cap is therefore neither brush-complete nor the
+retained fix.
+
+Direct export strips fail for a related but distinct reason. Cropping strips from one full surface
+synchronizes that source on the first crop. Rendering fresh strips avoids the full source but queues
+new graphics work across every strip; the first pixel read or `createImageBitmap` then flushes the
+aggregate pending work. Row height, incremental worker messages, native per-strip PNG, and 2D tiles
+all moved the gap but did not clear the 32 ms gate. Existing live tiles work because their rendering
+settled as the child drew, before the Screenshot Button interaction begins.
 
 ### Encoding Isolation
 

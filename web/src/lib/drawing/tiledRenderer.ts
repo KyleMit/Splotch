@@ -36,6 +36,12 @@ interface TiledRendererHost {
   hasActivePointers: () => boolean;
 }
 
+export interface TiledCanvasSnapshot {
+  width: number;
+  height: number;
+  tiles: Array<{ bitmap: Promise<ImageBitmap>; x: number; y: number }>;
+}
+
 const TILE_HISTORY_FOLD_IDLE_MS = 1_500;
 export const TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE = 3;
 const MIN_TILED_UNDO_COMMANDS = 2;
@@ -461,6 +467,26 @@ export function tiledHistoryDebug(): HistoryDebug {
 
 export function prewarmTiledMagicPatterns() {
   for (const tile of liveTiles) sheetPatternFor(tile.ctx);
+}
+
+export function captureTiledCanvasSnapshot(): TiledCanvasSnapshot | null {
+  if (
+    !canvas ||
+    liveTiles.length === 0 ||
+    host?.hasActivePointers() ||
+    typeof createImageBitmap !== 'function'
+  ) {
+    return null;
+  }
+  return {
+    width: canvas.width,
+    height: canvas.height,
+    tiles: liveTiles.map((tile) => ({
+      bitmap: createImageBitmap(tile.canvas),
+      x: tile.x,
+      y: tile.y,
+    })),
+  };
 }
 
 export function renderTiledSnapshot(target: CanvasRenderingContext2D) {

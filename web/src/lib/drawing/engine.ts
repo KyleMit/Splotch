@@ -94,8 +94,9 @@ import {
 import { scanCanvasIsEmpty } from './emptyScan';
 import { createPenStreamAdopter } from './penStreamQuirks';
 import { listen } from './listenerRegistry';
-import type { ExportOptions } from './exportDrawing';
+import type { ExportOptions, ExportSnapshot } from './exportDrawing';
 import { currentExportScale } from './exportScale';
+import { captureTiledSnapshot, createStrokeSnapshot } from './strokeSnapshot';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
 import {
@@ -1479,33 +1480,19 @@ export function setSafeAreaInsets(insets: {
 // in-flight stroke) rather than copying the visible canvas: under a
 // rotation-locked view the visible canvas is the letterboxed presentation, and
 // the export should be the full upright page.
-function snapshotStrokes(snapshotScale: number): HTMLCanvasElement | OffscreenCanvas {
+function snapshotStrokes(snapshotScale: number): ExportSnapshot {
   const width = Math.round((paper.pxW / renderScale) * snapshotScale);
   const height = Math.round((paper.pxH / renderScale) * snapshotScale);
-  let snapshot: HTMLCanvasElement | OffscreenCanvas;
-  let snapshotCtx: CanvasRenderingContext2D;
-  if (typeof OffscreenCanvas !== 'undefined') {
-    snapshot = new OffscreenCanvas(width, height);
-    snapshotCtx = snapshot.getContext('2d') as unknown as CanvasRenderingContext2D;
-  } else {
-    snapshot = document.createElement('canvas');
-    snapshot.width = width;
-    snapshot.height = height;
-    snapshotCtx = snapshot.getContext('2d')!;
-  }
-  snapshotCtx.lineCap = 'round';
-  snapshotCtx.lineJoin = 'round';
-  snapshotCtx.scale(snapshotScale / renderScale, snapshotScale / renderScale);
-  if (!tiledRendererActive()) {
-    repaintAll(snapshotCtx);
-  } else {
-    renderTiledSnapshot(snapshotCtx);
-  }
-  // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
-  // (its flush is only recorded at pass close); an export is terminal for this
-  // snapshot, so stamp it now rather than dropping that ink.
-  flushCrayonBuffer(snapshotCtx);
-  return snapshot;
+  const tiledSnapshot = captureTiledSnapshot(snapshotScale, renderScale, isIdentityView(paperView));
+  if (tiledSnapshot) return tiledSnapshot;
+  return createStrokeSnapshot(width, height, snapshotScale / renderScale, (target) => {
+    if (tiledRendererActive()) renderTiledSnapshot(target);
+    else repaintAll(target);
+    // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
+    // (its flush is only recorded at pass close); an export is terminal for this
+    // snapshot, so stamp it now rather than dropping that ink.
+    flushCrayonBuffer(target);
+  });
 }
 
 // The compositor is save-time-only, so it loads on demand and stays out of the

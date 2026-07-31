@@ -107,6 +107,7 @@ multiplies — the cap itself, the propagation rules, and the per-session invari
 ## Amendment (ADR-0088, 2026-07)
 
 The Decision's export scale remains `max(devicePixelRatio, 2)`, but export no longer interpolates
-from the capped live backing store. The engine replays strokes directly into a disposable
-full-export-resolution `OffscreenCanvas`, composes paper and line art on that same surface, and
-encodes it in a worker. The live 1.5× cap and saved 2× quality are therefore independent.
+from a lower-resolution live backing store. When live and export scales are both 2×, the engine
+transfers the tiled renderer's settled 2× pixels and composes the only full page inside a worker.
+When a live cap makes the scales differ, export falls back to vector replay directly at the full
+export scale. The live 1.5× cap and saved 2× quality therefore remain independent.

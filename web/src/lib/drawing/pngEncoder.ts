@@ -5,8 +5,21 @@ interface PendingEncode {
 
 type EncodePngResponse = { id: number; blob: Blob } | { id: number; error: string };
 
+export interface TiledPngInput {
+  sourceWidth: number;
+  sourceHeight: number;
+  sourceScale: number;
+  exportScale: number;
+  tiles: Array<{ bitmap: ImageBitmap; x: number; y: number }>;
+  texture: ImageBitmap | null;
+  overlay: ImageBitmap | null;
+  paperColor: string;
+  theme: 'light' | 'dark';
+}
+
 interface PngEncoder {
   encode(bitmap: ImageBitmap): Promise<Blob>;
+  encodeTiles(input: TiledPngInput): Promise<Blob>;
   terminate(error: Error): void;
 }
 
@@ -19,6 +32,14 @@ function createPngEncoder(): PngEncoder {
   const pending = new Map<number, PendingEncode>();
   let nextRequestId = 0;
 
+  function request(message: Record<string, unknown>, transfer: Transferable[]): Promise<Blob> {
+    const id = ++nextRequestId;
+    return new Promise((resolve, reject) => {
+      pending.set(id, { resolve, reject });
+      worker.postMessage({ id, ...message }, transfer);
+    });
+  }
+
   function rejectPending(error: Error) {
     for (const request of pending.values()) request.reject(error);
     pending.clear();
@@ -26,11 +47,15 @@ function createPngEncoder(): PngEncoder {
 
   const encoder: PngEncoder = {
     encode(bitmap) {
-      const id = ++nextRequestId;
-      return new Promise((resolve, reject) => {
-        pending.set(id, { resolve, reject });
-        worker.postMessage({ id, bitmap }, [bitmap]);
-      });
+      return request({ kind: 'canvas', bitmap }, [bitmap]);
+    },
+    encodeTiles(input) {
+      const transfer = [
+        ...input.tiles.map((tile) => tile.bitmap),
+        ...(input.texture ? [input.texture] : []),
+        ...(input.overlay ? [input.overlay] : []),
+      ];
+      return request({ kind: 'tiles', ...input }, transfer);
     },
     terminate(error) {
       worker.terminate();
@@ -70,6 +95,24 @@ function encodeOnMainThread(canvas: HTMLCanvasElement | OffscreenCanvas): Promis
     return canvas.convertToBlob({ type: 'image/png' });
   }
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+}
+
+export async function encodeTiledCanvasPng(input: TiledPngInput): Promise<Blob | null> {
+  try {
+    cachedEncoder ??= createPngEncoder();
+    const blob = await cachedEncoder.encodeTiles(input);
+    if (blob.type !== 'image/png') throw new Error(`PNG encoder returned ${blob.type}`);
+    return blob;
+  } catch (error) {
+    for (const tile of input.tiles) tile.bitmap.close();
+    input.texture?.close();
+    input.overlay?.close();
+    if (cachedEncoder) {
+      cachedEncoder.terminate(error instanceof Error ? error : new Error(String(error)));
+      cachedEncoder = null;
+    }
+    return null;
+  }
 }
 
 export async function encodeCanvasPng(

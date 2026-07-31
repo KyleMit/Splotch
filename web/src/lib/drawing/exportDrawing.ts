@@ -13,10 +13,16 @@
 import { PAPER_COLORS, type ResolvedTheme } from '../theme';
 import { resolvedTheme } from '../state/appearance.svelte';
 import { containFit } from './paperView';
-import { encodeCanvasPng } from './pngEncoder';
+import { encodeCanvasPng, encodeTiledCanvasPng } from './pngEncoder';
+import type { TiledCanvasSnapshot } from './tiledRenderer';
 
 type ExportCanvas = HTMLCanvasElement | OffscreenCanvas;
 type ExportContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+export interface TiledExportSnapshot {
+  source: TiledCanvasSnapshot;
+  sourceScale: number;
+}
+export type ExportSnapshot = ExportCanvas | TiledExportSnapshot;
 
 export interface ExportOptions {
   includePaperTexture?: boolean;
@@ -121,7 +127,7 @@ function drawOverlayContained(
 }
 
 export async function composeExportPng(
-  snapshot: ExportCanvas,
+  snapshot: ExportSnapshot,
   renderScale: number,
   overlayImage: HTMLImageElement | null = null,
   options: ExportOptions = {}
@@ -134,6 +140,32 @@ export async function composeExportPng(
   // night version — dark paper, inverted white "chalk" line art screened on top,
   // and the night-fill reveals already baked into the replayed strokes.
   const theme = resolvedTheme();
+
+  if ('source' in snapshot) {
+    const texture = includePaperTexture ? await loadPaperTexture() : null;
+    const [tiles, textureBitmap, overlayBitmap] = await Promise.all([
+      Promise.all(
+        snapshot.source.tiles.map(async (tile) => ({
+          bitmap: await tile.bitmap,
+          x: tile.x,
+          y: tile.y,
+        }))
+      ),
+      texture ? createImageBitmap(texture) : null,
+      overlayImage?.naturalWidth ? createImageBitmap(overlayImage) : null,
+    ]);
+    return encodeTiledCanvasPng({
+      sourceWidth: snapshot.source.width,
+      sourceHeight: snapshot.source.height,
+      sourceScale: snapshot.sourceScale,
+      exportScale: renderScale,
+      tiles,
+      texture: textureBitmap,
+      overlay: overlayBitmap,
+      paperColor: PAPER_COLORS[theme],
+      theme,
+    });
+  }
 
   const w = snapshot.width / renderScale;
   const h = snapshot.height / renderScale;
