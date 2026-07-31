@@ -23,6 +23,10 @@ async function paneZoom(page: Page): Promise<number> {
 // from native scrolling). `fingers: 1` is a lone drag that must pass through;
 // `fingers: 2` is a pinch spreading apart by `factor`. `pointerType: 'mouse'`
 // must be ignored entirely (the action only engages real touch).
+//
+// The coordinates come from the pane's live rect, so the caller must have let the
+// dialog land first — a pane still flying in sits inside the modal's launch dead
+// zone, which swallows the gesture (settleFlyIn in helpers.ts).
 async function gestureOnPane(
   page: Page,
   opts: { fingers: 1 | 2; pointerType?: 'touch' | 'mouse'; factor?: number }

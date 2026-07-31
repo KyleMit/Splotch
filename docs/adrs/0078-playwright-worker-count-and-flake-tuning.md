@@ -355,6 +355,59 @@ Fixing one spec took 4 workers from 6/15 red to 1/35; three more of the same kin
 `retries: 1` a measurement rather than an assumption. They are a coherent cluster (zoom/pinch
 gesture state), which is a better starting point than a rate.
 
+### 4a. The zoom/pinch cluster was one bug, and the count still does not move
+
+The three specs above were a cluster because they shared a cause, and it was not in the code they
+were testing. All four failures land on the first assertion after the gesture — zoom still 1, or the
+ghost-click guard never primed — i.e. the pinch did nothing at all.
+
+**Mechanism.** `dialogFlyFromOrigin` (`app.css`) opens a modal at `scale(0.05)` translated **onto
+the button that opened it**, and `modalDialog` arms a launch dead zone at that same point
+(`launchGuard`: 72px, 600ms) whose capture-phase `pointerdown` handler swallows everything inside it
+— dialog content included, deliberately, so a toddler's repeat taps cannot work the controls that
+painted under the finger (issue \#308). So for the opening frames the *whole dialog* sits in that
+dead zone. Stepping the animation by hand, the Parent Center's content pane centers **6px** from the
+launch origin at the first keyframe, 60px at 10ms, and only clears the 72px radius around 13ms.
+
+The specs read that pane's **live** rect and dispatched synthetic pointer events at it from an
+`evaluate`, which skips the actionability checks a real Playwright click performs — so they could
+aim straight into the guard. A CSS animation advances with *rendered frames*, so a starved worker
+parks the dialog on that first keyframe for far longer than 13ms of wall clock: that is the
+contention coupling. Held at frame 0, the pinch's `pointerdown` comes back `defaultPrevented` and
+the zoom stays 1, which reproduces the failure exactly. `a two-finger pinch enlarges the pane` is
+structurally identical and never failed in 70 reps — its extra `paneZoom` round trip lets the fly-in
+advance first, which is the tell that the window is about one round trip wide.
+
+**Fix.** `openParentCenter` awaits the fly-in's `Animation.finished` (`settleFlyIn` in
+`tests/helpers.ts`). Landed, the pane rests 574px from the launch origin, so the dependency on
+animation progress is removed rather than timed. Nothing in the app changed: the dead zone
+swallowing content that is momentarily sitting on the launch button is what it is for.
+
+**Re-measured**, 35 reps at 4 workers, retries off (run 30581020210):
+
+| spec cluster                                                                      | before    | after |
+| --------------------------------------------------------------------------------- | --------- | ----- |
+| the three zoom/pinch specs                                                        | 4/70 reps | 0/35  |
+| `pointer exploration still snaps a hexagon gap and commits the highlighted color` | 0/70 reps | 1/35  |
+| runs gone red (4 workers)                                                         | 1/35      | 1/35  |
+
+**So the cluster is gone and the rate is not.** The red run belongs to a spec in a different
+subsystem — the colour picker's gap snap, where a `mouse.move` into the gap between hexagons left
+the nearest one un-highlighted. It did not fail once in the 70 reps behind the table above, so this
+is not a regression the fix introduced so much as the next spec down becoming visible once the
+loudest one stopped.
+
+**`retries: 2` therefore stays.** The precondition §4 set was a clean sweep, and 1 of 35 is not one:
+the red-run rate at the shipped count is where it was, so every argument above still applies
+unchanged. What has changed is what the number is *made of* — a single identified spec rather than
+an unexplained residual — and which spec the next attempt should start from. Reducing the count is
+now downstream of `pointer exploration still snaps a hexagon gap and commits the highlighted color`,
+not of issue \#665.
+
+The wider lesson is the one §4 already records twice: a rate that one spec dominates is not a rate.
+Three specs looked like a cluster of gesture-state races and were a single missing wait shared by
+the helper all three called.
+
 ## Consequences
 
 \+ The worker count is now defensible: 91 local runs and 30 CI runs, with the hardware recorded
