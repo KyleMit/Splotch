@@ -109,37 +109,41 @@
   </div>
 
   {#if settings.advancedControlsEnabled}
-    <div class="setting slider-setting button-size-setting" transition:slide={SECTION_SLIDE}>
-      <SliderRow
-        id="actionButtonScaleLabel"
-        label="Button Size"
-        icon="photo-size-select-small"
-        value={displayedScale}
-        min={ACTION_BUTTON_SCALE_MIN}
-        max={scaleCeiling}
-        snap={scaleCeiling > ACTION_BUTTON_SCALE_DEFAULT ? ACTION_BUTTON_SCALE_DEFAULT : undefined}
-        onInput={setActionButtonScale}
-        onActiveChange={onScaleActive}
-      />
-    </div>
+    <div class="advanced-controls-settings" transition:slide={SECTION_SLIDE}>
+      <div class="setting slider-setting button-size-setting">
+        <SliderRow
+          id="actionButtonScaleLabel"
+          label="Button Size"
+          icon="photo-size-select-small"
+          value={displayedScale}
+          min={ACTION_BUTTON_SCALE_MIN}
+          max={scaleCeiling}
+          snap={scaleCeiling > ACTION_BUTTON_SCALE_DEFAULT
+            ? ACTION_BUTTON_SCALE_DEFAULT
+            : undefined}
+          onInput={setActionButtonScale}
+          onActiveChange={onScaleActive}
+        />
+      </div>
 
-    <div class="chip-block" transition:slide={SECTION_SLIDE}>
-      <h4 class="chip-heading">Show these buttons</h4>
-      <div class="chip-grid">
-        {#each buttonChips as chip (chip.id)}
-          <button
-            type="button"
-            class="chip"
-            class:on={chip.checked()}
-            id={chip.id}
-            aria-pressed={chip.checked()}
-            onclick={() => chip.toggle(!chip.checked())}
-          >
-            <Icon name={chip.icon} class="chip-icon" />
-            <span class="chip-label">{chip.label}</span>
-            <span class="chip-check" aria-hidden="true">{chip.checked() ? '✓' : ''}</span>
-          </button>
-        {/each}
+      <div class="chip-block">
+        <h4 class="chip-heading">Show these buttons</h4>
+        <div class="chip-grid">
+          {#each buttonChips as chip (chip.id)}
+            <button
+              type="button"
+              class="chip"
+              class:on={chip.checked()}
+              id={chip.id}
+              aria-pressed={chip.checked()}
+              onclick={() => chip.toggle(!chip.checked())}
+            >
+              <Icon name={chip.icon} class="chip-icon" />
+              <span class="chip-label">{chip.label}</span>
+              <span class="chip-check" aria-hidden="true">{chip.checked() ? '✓' : ''}</span>
+            </button>
+          {/each}
+        </div>
       </div>
     </div>
   {/if}
@@ -159,6 +163,10 @@
 </section>
 
 <style>
+  .advanced-controls-settings {
+    display: flow-root;
+  }
+
   .slider-setting {
     margin-top: 12px;
   }
