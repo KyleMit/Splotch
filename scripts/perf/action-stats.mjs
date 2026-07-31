@@ -20,7 +20,9 @@ function finiteValues(actions, field) {
 }
 
 export function summarizeActionGroup(actions) {
-  const frameGaps = actions.flatMap((action) => action.frameGapsMs ?? []);
+  const frameGaps = actions.flatMap(
+    (action) => action.postActionFrameGapsMs ?? action.frameGapsMs ?? []
+  );
   const firstFrame = distribution(finiteValues(actions, 'firstFrameMs'));
   const ready = distribution(finiteValues(actions, 'readyMs'));
   const frames = distribution(frameGaps);
@@ -58,8 +60,8 @@ export function actionRows(summaries) {
     'first p95': summary.firstFrame.p95,
     'ready seen p50': summary.ready.p50,
     'ready seen p95': summary.ready.p95,
-    'frame p95': summary.frames.p95,
-    'frame max': summary.frames.max,
+    'post p95': summary.frames.p95,
+    'post max': summary.frames.max,
     verdict: summary.passed ? 'PASS' : 'FAIL',
   }));
 }

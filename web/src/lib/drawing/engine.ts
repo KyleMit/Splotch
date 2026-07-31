@@ -438,7 +438,10 @@ export function getCanvasRect(): Readonly<CanvasRect> {
 // remapped. Returns whether the paper is locked.
 function adoptPaperUnlessLocked(rect: DOMRect): boolean {
   const angle = currentScreenAngle();
-  const lockPaper = !canvasEmpty && rotationDelta(paperAngle, angle) !== 0;
+  const paperAngleChanged = rotationDelta(paperAngle, angle) !== 0;
+  const returningFromLockedRotation =
+    !isIdentityView(paperView) && rotationDelta(resizedAngle, angle) !== 0 && !paperAngleChanged;
+  const lockPaper = !canvasEmpty && (paperAngleChanged || returningFromLockedRotation);
   if (!lockPaper) {
     const { w, h } = backingSizeOf(rect);
     paper = { pxW: w, pxH: h, cssW: rect.width, cssH: rect.height };
@@ -496,7 +499,12 @@ function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
   if (canvas.height !== inputBitmapHeight) canvas.height = inputBitmapHeight;
   let tiledRendererResized = false;
   if (!lockPaper) {
-    tiledRendererResized = resizeTiledRenderer(viewport.width, viewport.height, renderScale);
+    tiledRendererResized = resizeTiledRenderer(
+      viewport.width,
+      viewport.height,
+      renderScale,
+      canvasEmpty
+    );
   }
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
@@ -507,7 +515,7 @@ function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
   // any pending magic ops against it.
   rasterizeSheet();
   if (tiledRendererActive()) {
-    if (tiledRendererResized) repaintTiledRenderer();
+    if (tiledRendererResized && !canvasEmpty) repaintTiledRenderer();
   } else {
     repaintAll(ctx);
   }

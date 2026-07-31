@@ -110,6 +110,24 @@ test('rotating back restores the exact original layout', async ({ page }) => {
   await expect.poll(() => count(page)).toBe(before);
 });
 
+test('returning to the paper angle preserves it across viewport drift', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await drawStroke(page, box, [
+    { x: 40, y: 60 },
+    { x: 200, y: 60 },
+  ]);
+
+  await rotateTo(page, 90, 400, 300);
+  await rotateTo(page, 0, 302, 300);
+
+  const view = await page.evaluate(() => window.__engine.getViewState());
+  expect(view.active).toBe(true);
+  expect(view.scale).toBe(1);
+  expect(view.tx).toBe(1);
+  expect(view.paperCssWidth).toBe(300);
+  expect(await page.evaluate(() => window.__engine.pixelAt(121, 60)[3])).toBeGreaterThan(0);
+});
+
 test('strokes drawn while rotated land on the paper and survive rotating back', async ({
   page,
 }) => {

@@ -189,6 +189,19 @@ describe('discrete action response', () => {
   it('keeps readiness latency informational because completion semantics differ by action', () => {
     expect(summarizeActionGroup([clean('full-resolution image decode', 4_000)]).passed).toBe(true);
   });
+
+  it('scores the event-straddling frame by its post-action remainder', () => {
+    const summary = summarizeActionGroup([
+      {
+        ...clean('rotation'),
+        firstFrameMs: 29,
+        frameGapsMs: [52, 17, 17],
+        postActionFrameGapsMs: [17, 17],
+      },
+    ]);
+
+    expect(summary.passed).toBe(true);
+  });
 });
 
 describe('drawing acceptance gates', () => {

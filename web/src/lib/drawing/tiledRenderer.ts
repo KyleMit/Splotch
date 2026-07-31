@@ -61,6 +61,7 @@ const history: StrokeGroupCommand[] = [];
 const undoPatches = createTiledUndoPatches();
 let undoableCommands = 0;
 let historyFoldTimer: ReturnType<typeof setTimeout> | null = null;
+let backingMigrationRevision = 0;
 
 export function adoptTiledRenderer(
   canvasElement: HTMLCanvasElement,
@@ -114,6 +115,16 @@ function resizeBacking(canvas: HTMLCanvasElement, width: number, height: number)
   if (canvas.height !== height) canvas.height = height;
 }
 
+function ensureNormalBacking(tile: LiveTile) {
+  if (tile.canvas.width === tile.width && tile.canvas.height === tile.height) return;
+  const transform = tile.ctx.getTransform();
+  resizeBacking(tile.canvas, tile.width, tile.height);
+  tile.ctx.lineCap = 'round';
+  tile.ctx.lineJoin = 'round';
+  tile.ctx.setTransform(transform);
+  tile.needsClear = false;
+}
+
 function ensureCrayonBacking(tile: LiveTile) {
   const correctlySized =
     tile.crayonBottom.width === tile.width &&
@@ -145,7 +156,26 @@ function deferHiddenTileClear(tile: LiveTile) {
   });
 }
 
-export function resizeTiledRenderer(width: number, height: number, renderScale: number) {
+function migrateHiddenBackingsAcrossFrames() {
+  const revision = ++backingMigrationRevision;
+  let index = 0;
+  const migrateNext = () => {
+    if (revision !== backingMigrationRevision) return;
+    const tile = liveTiles[index++];
+    if (tile?.canvas.hidden) ensureNormalBacking(tile);
+    if (index < liveTiles.length) {
+      requestAnimationFrame(migrateNext);
+    }
+  };
+  requestAnimationFrame(migrateNext);
+}
+
+export function resizeTiledRenderer(
+  width: number,
+  height: number,
+  renderScale: number,
+  deferHiddenBackings = false
+) {
   if (!canvas) return false;
   if (rendererWidth === width && rendererHeight === height && rendererScale === renderScale) {
     return false;
@@ -167,8 +197,7 @@ export function resizeTiledRenderer(width: number, height: number, renderScale: 
       tile.canvas.hidden = true;
       tile.crayonBottom.hidden = true;
       tile.crayonTop.hidden = true;
-      resizeBacking(tile.canvas, tile.width, tile.height);
-      tile.needsClear = false;
+      if (!deferHiddenBackings || !tile.canvas.hidden) ensureNormalBacking(tile);
       for (const tileCanvas of [tile.canvas, tile.crayonBottom, tile.crayonTop]) {
         tileCanvas.style.left = `${tile.x / renderScale}px`;
         tileCanvas.style.top = `${tile.y / renderScale}px`;
@@ -181,6 +210,8 @@ export function resizeTiledRenderer(width: number, height: number, renderScale: 
     }
   }
   if (historyBase.length > 0) ensureHistoryBase();
+  if (deferHiddenBackings) migrateHiddenBackingsAcrossFrames();
+  else backingMigrationRevision++;
   return true;
 }
 
@@ -307,6 +338,7 @@ function showTileForOp(tile: LiveTile, op: StrokeOp) {
 function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | null) {
   if (op.kind !== 'dot' && op.kind !== 'path') {
     for (const [index, tile] of liveTiles.entries()) {
+      if (op.kind !== 'crayonFlush' || crayonBufferIsDirty(tile.ctx)) ensureNormalBacking(tile);
       if (command && op.kind !== 'crayonFlush') {
         undoPatches.capture(command, tile, index);
       }
@@ -317,6 +349,7 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
   }
   for (const [index, tile] of liveTiles.entries()) {
     if (geometryIntersectsTile(op, tile)) {
+      ensureNormalBacking(tile);
       if (op.crayon && !op.erase) ensureCrayonBacking(tile);
       if (command) undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
       showTileForOp(tile, op);
@@ -393,10 +426,11 @@ export function scheduleTiledHistoryFold() {
   }, TILE_HISTORY_FOLD_IDLE_MS);
 }
 
-export function repaintTiledRenderer() {
+export function repaintTiledRenderer(rebuildUndoPatches = true) {
   const undoableStart = history.length - undoableCommands;
-  const rebuildUndo = undoableCommands > 0 || activeCommand !== null;
+  const rebuildUndo = rebuildUndoPatches && (undoableCommands > 0 || activeCommand !== null);
   for (const tile of liveTiles) {
+    ensureNormalBacking(tile);
     tile.canvas.hidden = true;
     clearTileBacking(tile);
     for (const base of historyBase) {
@@ -458,7 +492,7 @@ export function undoTiledCommand(renderScale: number) {
       tile.canvas.hidden = snapshot.hidden;
     }
   } else {
-    repaintTiledRenderer();
+    repaintTiledRenderer(snapshots === undefined);
   }
   if (undone) undoPatches.delete(undone);
   const empty =
@@ -566,6 +600,7 @@ export function renderTiledSnapshot(target: CanvasRenderingContext2D) {
 
 export function detachTiledRenderer() {
   cancelHistoryFold();
+  backingMigrationRevision++;
   canvas = null;
   host = null;
   liveTiles = [];

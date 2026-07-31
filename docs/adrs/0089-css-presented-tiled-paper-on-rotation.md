@@ -49,6 +49,33 @@ Serial diagnostic trials changed one surface family at a time:
 | Preserve an unchanged tile layout, rerasterize Magic sheet    |      28–29 | Pass; no replay scratch surfaces                                      |
 | Five more colored-crayon rotations with preserved tile layout |      23–32 | Pass; P95 remained 9 ms                                               |
 
+The later full-action regression suite found two rotation paths that the original isolated
+ink/coloring captures did not sequence together: rotate a paper immediately after clear, then draw
+and return to the original angle after MobileSafari's viewport chrome settles. The blank path
+reallocated all sixteen hidden normal-tile backings together. The return path sometimes changed the
+restored viewport by a few CSS pixels, defeated the exact-size no-op, and replayed history even
+though the paper had returned to its own angle. Both operations took 0–4 ms of JavaScript while
+WebKit presented a much longer frame later.
+
+These follow-up trials used the action-local scorer from ADR-0090. “Post max” excludes the frame
+interval that began before MobileSafari delivered the orientation event; the action-to-first-frame
+gate scores the app-owned remainder of that interval.
+
+| Follow-up strategy                                              | Blank post max ms | Undo-clear max ms | Ink-return post max ms | Result                                      |
+| --------------------------------------------------------------- | ----------------: | ----------------: | ---------------------: | ------------------------------------------- |
+| Broad-suite baseline                                            |           111–129 |                 — |                    131 | Fail                                        |
+| Detach the hidden paper wrapper during synchronous reallocation |           107–112 |                 — |                      — | Fail; allocation, not attachment, dominates |
+| Allocate normal tiles only when reused                          |             17–23 |             91–97 |                  19–25 | Rotation pass; undo regression              |
+| Allocate one hidden tile per frame, then rebuild patches        |             18–21 |                20 |                    240 | Blank/undo pass; return misclassified       |
+| Also preserve paper on return despite viewport drift            |             17–23 |             17–19 |                  18–21 | Focused pass; late patch rebuild hit 68–74  |
+| Keep patches stale; replay without recapture when undone        |             19–27 |             18–19 |                  19–21 | Pass; retained                              |
+
+The retained three-repeat sequence measured first-frame P95 at 19–20 ms for the two blank
+directions, 15–16 ms for the ink directions, 7 ms for undoing clear, and 8 ms for undoing the
+restored older stroke. Every post-action frame P95 was 17 ms and every post-action maximum was at
+most 27 ms. Trusted first-contact drawing also remained within the ADR-0085 gates: pen paint
+P95/P99/max was 16/26/39 ms, crayon was 16/27/38 ms, and both recorded zero starvation.
+
 The alternatives were:
 
 * **Keep replaying into resized viewport tiles.** Functionally complete, including drawing into the
@@ -89,13 +116,19 @@ The related invariants are:
   feature whose committed pixels were already cropped on rotating back or exporting. The legacy
   harness retains its historical drawable-margin behavior because it still owns a viewport canvas.
 * A blank rotation still re-adopts the new viewport. Its tiles are hidden, so normal-ink backings
-  can resize below the frame gate. Undo/clear-to-blank first paints those tiles hidden, then
-  re-adopts after two animation frames; resizing them in the same turn as the hide reproduces the 49
-  ms stall.
+  migrate one per animation frame. Undo patches from the previous geometry stay stale: rebuilding
+  them together after migration caused a delayed 68–74 ms surface flush. An undo whose patch no
+  longer fits replays the remaining vector history without recapturing every older patch. A new op
+  that reaches a tile before migration finishes allocates that tile synchronously before snapshot
+  capture or paint.
 * `resizeTiledRenderer` treats identical backing dimensions and render scale as a no-op. Returning a
   nonempty paper to its original orientation therefore removes the CSS presentation transform
   without hiding and replaying the already-correct tiles. Replaying one colored crayon stroke
   created ten temporary canvases and two 96/138 ms frames despite unchanged output.
+* A return to `paperAngle` remains locked for that resize when the previous processed angle differs,
+  even if MobileSafari restores a viewport a few CSS pixels larger or smaller. The paper is
+  contain-fit and centered in that drift instead of being rerasterized. A later same-angle viewport
+  resize retains the ordinary re-adoption behavior.
 * Hidden crayon-preview canvases carry no committed pixels and are not resized. The first crayon op
   allocates only the intersecting bottom/top preview pairs. A preview that is visible during a
   resize remains eager so an in-progress pass can replay.
@@ -112,8 +145,9 @@ The related invariants are:
   live canvas backing assignments.
 * \+ The drawing, paper texture, and coloring art remain upright, contain-fit, centered, and
   aligned. The existing full-resolution pixels are composited rather than replayed or softened.
-* \+ Blank rotations, undo-to-empty, first crayon allocation, and rotated screenshot export all stay
-  within the same 32 ms gate.
+* \+ Blank rotations, undo-to-empty, undoing clear and the restored older stroke after a blank
+  rotation, first pen/crayon allocation, and rotated screenshot export all stay within their
+  calibrated gates.
 * \+ Repeated colored-crayon rotations stay frame-bound without rebuilding settled ink or its undo
   patches.
 * \+ The 1×1 input bitmap removes an otherwise unused 4.8-million-pixel transparent backing store
@@ -128,8 +162,10 @@ The related invariants are:
 * − The first crayon stroke after a resize allocates touched preview tiles. The measured five-tile
   gesture passed at 30 ms, but future changes that touch many tiles at pointerdown need a physical
   iPad regression run.
-* − Empty-paper re-adoption is delayed by two rendered frames after undo or clear. The canvas is
-  already visibly blank; only the removal of the temporary paper letterbox waits.
+* − Empty-paper backing migration takes up to sixteen rendered frames after re-adoption. The blank
+  paper's CSS geometry updates immediately, and each allocation remains below one frame. Undo
+  patches captured before the geometry change are not rebuilt; undoing one replays the remaining
+  retained history without patch recapture.
 
 ## Reproducing the Rotation Trials
 
@@ -154,9 +190,16 @@ not exercise the same WebKit surface lifecycle. Record:
 5. The input and live-tile dimensions after settling.
 
 Run portrait→landscape and landscape→portrait separately. Then repeat with no ink, a coloring page
-plus ink, a committed crayon stroke, and undo of the only rotated stroke. The app's own work starts
-about 150 ms after the web resize event because the web target uses the resize-settle debounce; the
-largest interval anywhere in the observation window is still the score.
+plus ink, a committed crayon stroke, and undo of the only rotated stroke. Also run the full
+clear→blank rotation→undo clear→undo restored stroke→new stroke→clear→return→new ink→both rotations
+sequence; it exercises the hidden-backing migration, stale undo-patch fallback, and viewport-drift
+return paths that isolated ink rotation misses. The app's own resize starts about 150 ms after the
+event because the web target uses the resize-settle debounce.
+
+Retain the raw frame interval that straddles input delivery, but do not attribute its pre-event
+portion to the app. Gate its action-to-first-frame remainder at 32 ms, then gate every fully
+post-action interval at 32 ms. Canvas width/height setter logging should show one normal tile per
+frame during blank migration and zero normal-tile assignments when ink returns to `paperAngle`.
 
 For surface-family isolation, temporarily intercept the `HTMLCanvasElement` width and height setters
 in the page before the orientation request. Suppress exactly one tagged family and restore the

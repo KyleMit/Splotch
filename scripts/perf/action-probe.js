@@ -1,7 +1,38 @@
 (() => {
   const frames = [];
+  const canvasDescriptors = {
+    width: Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, 'width'),
+    height: Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, 'height'),
+  };
   let previousFrameAt;
   let active = null;
+
+  function canvasKind(canvas) {
+    if (canvas.id === 'drawingCanvas') return 'input';
+    if (canvas.hasAttribute('data-live-tile')) return 'normal-tile';
+    if (canvas.hasAttribute('data-live-crayon-bottom')) return 'crayon-bottom';
+    if (canvas.hasAttribute('data-live-crayon-top')) return 'crayon-top';
+    return canvas.isConnected ? 'other-attached' : 'other-detached';
+  }
+
+  for (const property of ['width', 'height']) {
+    const descriptor = canvasDescriptors[property];
+    Object.defineProperty(HTMLCanvasElement.prototype, property, {
+      ...descriptor,
+      set(value) {
+        if (active) {
+          active.canvasMutations.push({
+            at: performance.now(),
+            kind: canvasKind(this),
+            property,
+            from: descriptor.get.call(this),
+            to: Number(value),
+          });
+        }
+        descriptor.set.call(this, value);
+      },
+    });
+  }
 
   function frame(at) {
     if (previousFrameAt !== undefined) frames.push([at, at - previousFrameAt]);
@@ -25,6 +56,8 @@
       armedAt: performance.now(),
       actionAt: null,
       eventType: null,
+      measureCount: performance.getEntriesByType('measure').length,
+      canvasMutations: [],
       listeners: [],
     };
     const listener = (event) => {
@@ -48,6 +81,8 @@
       armedAt: performance.now(),
       actionAt: null,
       eventType: null,
+      measureCount: performance.getEntriesByType('measure').length,
+      canvasMutations: [],
       listeners: [],
     };
     const listener = (event) => {
@@ -98,7 +133,22 @@
       readyMs: readyAt - actionAt,
       firstFrameMs: firstFrame ? firstFrame[0] - actionAt : null,
       frameGapsMs: actionFrames.map(([, gap]) => gap),
+      postActionFrameGapsMs: actionFrames
+        .filter(([at, gap]) => at - gap >= actionAt)
+        .map(([, gap]) => gap),
       topFrameGaps,
+      canvasMutations: action.canvasMutations.map(({ at, ...mutation }) => ({
+        ...mutation,
+        atFromActionMs: at - actionAt,
+      })),
+      measures: performance
+        .getEntriesByType('measure')
+        .slice(action.measureCount)
+        .map(({ name, startTime, duration }) => ({
+          name,
+          startFromActionMs: startTime - actionAt,
+          duration,
+        })),
     };
   }
 

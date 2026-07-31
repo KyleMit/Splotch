@@ -59,7 +59,8 @@ the explicit diagnostic mode for finishing a broken run and retaining its artifa
 * action drawer, palette, brush selection, and stroke width;
 * first Parent Center open, every section, theme changes, and close;
 * coloring picker, book, page selection, and page removal;
-* screenshot export, undo, drag-to-clear, and both rotation directions.
+* screenshot export, undo, drag-to-clear, both blank/ink rotation directions, and undoing both clear
+  and its restored older stroke after a blank rotation.
 
 Splotch's Scribble-guarded drawing controls are activated by native XCUITest pointer sequences.
 Ordinary `onclick` controls inside dialogs use WebDriver's semantic element click. Treating those as
@@ -67,11 +68,15 @@ one mechanism is invalid: a WebDriver element click deliberately does not satisf
 while coordinate tapping a dialog tile needlessly depends on Safari chrome geometry.
 
 `action-probe.js` records requestAnimationFrame intervals inside the page. Mac-to-device WebDriver
-latency is therefore outside the frame score. It reports action-to-first-frame, frame P95, and the
-worst interval with its start/end relative to the input event. The first-observed readiness time is
-retained as an upper bound, not a gate: native actions must return from the native context before
-the driver can observe a DOM completion condition, so that number includes automation round-trip
-time.
+latency is therefore outside the frame score. It reports action-to-first-frame, post-action frame
+P95/max, and the raw worst intervals with their start/end relative to the input event. The interval
+that straddles input delivery is scored by its action-to-frame remainder, not by time that elapsed
+before the app received the event. This is material for Appium rotation: iPadOS can begin a 40–53 ms
+system transition interval 15–27 ms before MobileSafari delivers `orientationchange`, while the app
+still responds 23–29 ms later and every fully post-action interval remains below 25 ms. The
+first-observed readiness time is retained as an upper bound, not a gate: native actions must return
+from the native context before the driver can observe a DOM completion condition, so that number
+includes automation round-trip time.
 
 The command repeats the suite three times by default, writes raw samples and grouped summaries, and
 fails the 20/32 ms action gates. `--report-only` lets an exploratory sweep rank every failure

@@ -276,7 +276,7 @@ async function addTrustedStroke(client, sessionId, execute) {
   await sleep(ACTION_SETTLE_MS);
 }
 
-async function measureClear(client, sessionId, execute) {
+async function measureClear(client, sessionId, execute, label = 'clear drawing') {
   const { bounds, nativeWindow, webContext } = await nativeAccessibilityBounds(
     client,
     sessionId,
@@ -288,7 +288,7 @@ async function measureClear(client, sessionId, execute) {
   const endX = Math.max(20, Math.round(startX - distance * 0.72));
   const endY = Math.min(nativeWindow.height - 20, Math.round(startY + distance * 0.72));
   await execute(
-    `return window.__actionProbe.begin('clear drawing', '#clearButton', ['pointerdown']);`
+    `return window.__actionProbe.begin(${JSON.stringify(label)}, '#clearButton', ['pointerdown']);`
   );
   await performNativeGesture(client, sessionId, webContext, [
     { type: 'pointerMove', duration: 0, origin: 'viewport', x: startX, y: startY },
@@ -693,6 +693,32 @@ async function runActionSweep({ client, sessionId, execute, actions, originalOri
           other,
           `empty after clear: ${current} to ${other} rotation`
         )
+      );
+      await record(
+        measureClick({
+          client,
+          sessionId,
+          execute,
+          label: 'undo clear after blank rotation',
+          selector: '#undoButton',
+          ready: `document.querySelector('#screenshotButton')?.disabled === false`,
+          settleMs: ANIMATED_ACTION_SETTLE_MS,
+        })
+      );
+      await record(
+        measureClick({
+          client,
+          sessionId,
+          execute,
+          label: 'undo restored stroke after blank rotation',
+          selector: '#undoButton',
+          ready: `document.querySelector('#screenshotButton')?.disabled === true`,
+          settleMs: ANIMATED_ACTION_SETTLE_MS,
+        })
+      );
+      await addTrustedStroke(client, sessionId, execute);
+      await record(
+        measureClear(client, sessionId, execute, 'clear restored drawing after blank rotation')
       );
       await record(
         measureRotation(

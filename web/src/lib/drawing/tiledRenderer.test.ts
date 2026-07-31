@@ -49,6 +49,9 @@ beforeEach(() => {
       clip() {},
       clearRect: vi.fn(),
       drawImage: vi.fn(),
+      getImageData(_x: number, _y: number, width: number, height: number) {
+        return { data: new Uint8ClampedArray(width * height * 4) };
+      },
       arc() {},
       fill() {},
       setTransform(a: number, b: number, c: number, d: number, e: number, f: number) {
@@ -264,6 +267,49 @@ describe('idle tiled canvas visibility', () => {
     expect(host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]:not([hidden])')).toHaveLength(
       1
     );
+    undoTiledCommand(1);
+    undoTiledCommand(1);
+  });
+
+  it('migrates blank backings across frames without rebuilding stale undo patches', () => {
+    const { host, canvas } = rendererElements();
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 800, height: 400 }),
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+    const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
+    const dot: StrokeOp = {
+      kind: 'dot',
+      x: 50,
+      y: 50,
+      radius: 5,
+      color: '#ff0000',
+      erase: false,
+    };
+    beginTiledCommand(true);
+    renderTiledOp(dot);
+    recordTiledOp(dot);
+    commitTiledCommand();
+    const deferredFrames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      deferredFrames.push(callback);
+      return deferredFrames.length;
+    });
+    clearTiledRenderer(false);
+    const patchBytesBeforeResize = tiledHistoryDebug().patchBytes;
+
+    resizeTiledRenderer(800, 400, 1, true);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+    expect(tiles.some((tile) => tile.width !== 200 || tile.height !== 100)).toBe(true);
+    while (deferredFrames.length) deferredFrames.shift()!(0);
+
+    expect(tiles.every((tile) => tile.width === 200 && tile.height === 100)).toBe(true);
+    expect(tiledHistoryDebug().patchBytes).toBe(patchBytesBeforeResize);
+    expect(undoTiledCommand(1)).toMatchObject({ empty: false, canUndo: true });
+    expect(tiledHistoryDebug().patchBytes).toBeLessThan(patchBytesBeforeResize);
+    expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
   });
 
   it('does not capture while a pointer is active', () => {
