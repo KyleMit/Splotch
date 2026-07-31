@@ -152,12 +152,15 @@ export function renderedCanvasHandle(page: Page): Promise<JSHandle<HTMLCanvasEle
     );
     if (tiles.length === 0) return input;
     const rendered = document.createElement('canvas');
-    rendered.width = input.width;
-    rendered.height = input.height;
+    const scaleX = tiles[0].width / Number.parseFloat(tiles[0].style.width);
+    const scaleY = tiles[0].height / Number.parseFloat(tiles[0].style.height);
+    rendered.width = Math.max(
+      ...tiles.map((tile) => Math.round(Number.parseFloat(tile.style.left) * scaleX) + tile.width)
+    );
+    rendered.height = Math.max(
+      ...tiles.map((tile) => Math.round(Number.parseFloat(tile.style.top) * scaleY) + tile.height)
+    );
     const target = rendered.getContext('2d')!;
-    const rect = input.getBoundingClientRect();
-    const scaleX = input.width / rect.width;
-    const scaleY = input.height / rect.height;
     for (const tile of tiles) {
       target.drawImage(
         tile,

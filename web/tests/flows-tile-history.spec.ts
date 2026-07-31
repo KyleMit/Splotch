@@ -92,8 +92,10 @@ test('canvas-spanning strokes shorten undo depth before exceeding the patch budg
 
   const debug = await page.evaluate(() => window.__drawingDebug?.getUndoDebug());
   const paperBytes = await page
-    .locator('#drawingCanvas')
-    .evaluate((canvas: HTMLCanvasElement) => canvas.width * canvas.height * 4);
+    .locator('canvas[data-live-tile]')
+    .evaluateAll((tiles: HTMLCanvasElement[]) =>
+      tiles.reduce((bytes, canvas) => bytes + canvas.width * canvas.height * 4, 0)
+    );
   expect(debug?.snapshots).toBeGreaterThanOrEqual(2);
   expect(debug?.snapshots).toBeLessThan(20);
   expect(debug?.rasterBytes).toBeLessThanOrEqual(

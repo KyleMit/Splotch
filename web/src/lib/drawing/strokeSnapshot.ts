@@ -5,12 +5,10 @@ type SnapshotCanvas = HTMLCanvasElement | OffscreenCanvas;
 
 export function captureTiledSnapshot(
   snapshotScale: number,
-  renderScale: number,
-  identityView: boolean
+  renderScale: number
 ): TiledExportSnapshot | null {
   if (
     snapshotScale !== renderScale ||
-    !identityView ||
     typeof Worker === 'undefined' ||
     typeof OffscreenCanvas === 'undefined'
   ) {

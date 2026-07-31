@@ -3,8 +3,9 @@
 **Status:** Active — supersedes ADR-0066, ADR-0068, ADR-0069, ADR-0074, and ADR-0082 for the
 production drawing route; amended by
 [ADR-0086](0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md) for production undo and
-[ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md) for idle tile composition. **Date:**
-2026-07
+[ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md) for idle tile composition, and amended
+by [ADR-0089](0089-css-presented-tiled-paper-on-rotation.md) for rotation presentation and lazy
+crayon surfaces. **Date:** 2026-07
 
 ## Context
 
@@ -490,3 +491,19 @@ After any change to this stack:
 5. Repeat the three-gesture magic trusted-touch case with Web Audio enabled.
 6. Reject the change if the original drawing gates regress, even if its new target metric improves.
 7. Run ADR-0086's normal, rotated, post-compaction, and canvas-spanning undo cases.
+
+## Amendment (ADR-0089, 2026-07)
+
+The aggregate `#drawingCanvas` no longer owns a full-resolution bitmap in tiled production. It is a
+full-CSS-size pointer receiver with a 1×1 backing; `engine.ts` stores the backing-pixel viewport
+separately and passes explicit geometry into `resizeTiledRenderer`.
+
+Locked rotations do not resize or repaint live tiles. All 48 surfaces sit inside `.live-paper-view`,
+remain in upright paper coordinates, and receive the paper's CSS contain-fit transform. This reduced
+physical-iPad rotation frames from 56–57 ms to 20–31 ms. The temporary letterbox margin is
+consequently non-drawable in production; a stroke must begin on the visible paper.
+
+Hidden crayon preview surfaces are allocated lazily per touched tile instead of being resized with
+every blank paper. Undo-to-empty first paints the ink tiles hidden, waits two animation frames, and
+then re-adopts the viewport. The combination measured 24 ms for undo-to-empty and 30 ms for the
+first five-tile crayon stroke. ADR-0089 contains the isolation table and reconstruction protocol.

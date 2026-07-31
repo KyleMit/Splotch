@@ -47,6 +47,13 @@ test('hydration adopts the pre-hydration canvas instead of replacing it', async 
   await expect(page.locator('canvas[data-live-tile]')).toHaveCount(LIVE_TILE_COUNT);
   await expect(page.locator('canvas[data-live-crayon-bottom]')).toHaveCount(LIVE_TILE_COUNT);
   await expect(page.locator('canvas[data-live-crayon-top]')).toHaveCount(LIVE_TILE_COUNT);
+  await expect
+    .poll(() =>
+      page
+        .locator('#drawingCanvas')
+        .evaluate((canvas: HTMLCanvasElement) => [canvas.width, canvas.height])
+    )
+    .toEqual([1, 1]);
 
   const hydrationWarnings = consoleMessages.filter((m) => /hydration/i.test(m));
   expect(hydrationWarnings, 'console must carry no hydration mismatch output').toEqual([]);

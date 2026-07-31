@@ -307,17 +307,24 @@
       onpointerdown={nudgeBlendLayer}
       onpointermove={nudgeBlendLayer}
     ></canvas>
-    {#each liveTiles as tile (tile)}
-      <canvas class="live-tile" data-live-tile aria-hidden="true" hidden></canvas>
-      <canvas class="live-tile live-crayon-tile" data-live-crayon-bottom aria-hidden="true" hidden
-      ></canvas>
-      <canvas
-        class="live-tile live-crayon-tile live-crayon-tile-top"
-        data-live-crayon-top
-        aria-hidden="true"
-        hidden
-      ></canvas>
-    {/each}
+    <div
+      class="live-paper-view"
+      style:width={paperCssWidth}
+      style:height={paperCssHeight}
+      style:transform={paperTransform}
+    >
+      {#each liveTiles as tile (tile)}
+        <canvas class="live-tile" data-live-tile aria-hidden="true" hidden></canvas>
+        <canvas class="live-tile live-crayon-tile" data-live-crayon-bottom aria-hidden="true" hidden
+        ></canvas>
+        <canvas
+          class="live-tile live-crayon-tile live-crayon-tile-top"
+          data-live-crayon-top
+          aria-hidden="true"
+          hidden
+        ></canvas>
+      {/each}
+    </div>
   </div>
   <PointerHalos bind:this={pointerHalos} {canvasEl} {eraserSizePx} {brushRingSizePx} />
   <FullscreenToggle />
@@ -372,6 +379,13 @@
     touch-action: none;
     width: 100%;
     height: 100%;
+  }
+
+  .live-paper-view {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
   }
 
   .live-tile {

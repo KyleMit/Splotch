@@ -95,8 +95,17 @@ describe('idle tiled canvas visibility', () => {
       paperSize: () => ({ width: 400, height: 400 }),
       hasActivePointers: () => false,
     });
-    resizeTiledRenderer(1);
+    canvas.width = 1;
+    canvas.height = 1;
+    resizeTiledRenderer(400, 400, 1);
     applyTiledView(IDENTITY_PAPER_VIEW);
+    const deferredCrayonTiles = [
+      ...host.querySelectorAll<HTMLCanvasElement>('[data-live-crayon-bottom]'),
+      ...host.querySelectorAll<HTMLCanvasElement>('[data-live-crayon-top]'),
+    ];
+    expect(deferredCrayonTiles.every((tile) => tile.width === 300 && tile.height === 150)).toBe(
+      true
+    );
 
     const dot: StrokeOp = {
       kind: 'dot',
@@ -112,6 +121,8 @@ describe('idle tiled canvas visibility', () => {
     commitTiledCommand();
 
     const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
+    expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
+    expect(resizeTiledRenderer(400, 400, 1)).toBe(false);
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
 
     clearTiledRenderer(false);
@@ -148,7 +159,7 @@ describe('idle tiled canvas visibility', () => {
       paperSize: () => ({ width: 400, height: 400 }),
       hasActivePointers: () => false,
     });
-    resizeTiledRenderer(1);
+    resizeTiledRenderer(400, 400, 1);
     applyTiledView(IDENTITY_PAPER_VIEW);
 
     const snapshot = captureTiledCanvasSnapshot();
@@ -169,7 +180,7 @@ describe('idle tiled canvas visibility', () => {
       paperSize: () => ({ width: 400, height: 400 }),
       hasActivePointers: () => true,
     });
-    resizeTiledRenderer(1);
+    resizeTiledRenderer(400, 400, 1);
 
     expect(captureTiledCanvasSnapshot()).toBeNull();
     expect(createBitmap).not.toHaveBeenCalled();

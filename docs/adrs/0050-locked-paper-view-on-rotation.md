@@ -1,9 +1,10 @@
 # ADR-0050: Lock the "Paper" on Rotation and Present It Upright Through a Contain-Fit View
 
-**Status:** Active — amended by ADR-0066 (2026-07): the paper lock and the upright contain-fit view
-stand unchanged, but the margin-ink semantics and the replay framing below are replay-era; under
-snapshot undo, margin ink outside a locked paper is cropped **permanently at commit** and never
-resurrected. See the amendment at the end. **Date:** 2026-07
+**Status:** Active — amended by ADR-0066 and
+[ADR-0089](0089-css-presented-tiled-paper-on-rotation.md). The paper lock and upright contain-fit
+view stand unchanged. ADR-0066 changed replay-era margin retention; ADR-0089 moves tiled production
+presentation to CSS and makes those temporary letterbox margins non-drawable. See the amendments at
+the end. **Date:** 2026-07
 
 ## Context
 
@@ -163,3 +164,24 @@ untouched. What changes is the margin-ink corner and the replay framing:
 The rejection of margin-covering rasters (~2× the paper's long side per surface) carries over
 unchanged and is, if anything, stronger: snapshots are full paper-square copies, so widening them to
 cover mapped margins would multiply the whole depth-20 stack.
+
+## Amendment (ADR-0089, 2026-07)
+
+The tiled production renderer no longer rebuilds a locked paper into viewport-sized tile canvases.
+Its live tiles stay in upright paper coordinates and a `.live-paper-view` CSS transform supplies the
+same contain-fit presentation as the paper sheet and coloring overlay. The legacy `/dev/engine`
+renderer retains the persistent context-transform path described above.
+
+This changes three production details:
+
+* Letterbox margins are outside the paper and reject contacts that begin there. No invisible undo
+  command is created. The earlier drawable-margin behavior survives only in the legacy harness.
+* Undo/clear-to-blank still frees the paper, but tiled production waits two rendered frames before
+  resizing the newly hidden tile backings. The canvas is already visibly blank; only letterbox
+  removal waits.
+* Rotated settled tiles remain an upright paper snapshot, so export can use ADR-0088's tiled worker
+  path instead of reconstructing a full-page surface.
+
+The original alignment guarantees remain: paper, ink, and coloring art share one matrix; pointer
+input is inverse-mapped; rotating back restores the original pixels. ADR-0089 records the physical
+iPad evidence and the 32 ms frame gate behind the implementation change.

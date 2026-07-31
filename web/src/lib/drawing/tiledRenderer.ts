@@ -49,6 +49,9 @@ const MIN_TILED_UNDO_COMMANDS = 2;
 let canvas: HTMLCanvasElement | null = null;
 let host: TiledRendererHost | null = null;
 let liveTiles: LiveTile[] = [];
+let rendererWidth = 0;
+let rendererHeight = 0;
+let rendererScale = 0;
 let historyBase: HistoryBaseTile[] = [];
 let historyBaseWidth = 0;
 let historyBaseHeight = 0;
@@ -87,6 +90,13 @@ export function adoptTiledRenderer(
     paperRight: 0,
     paperBottom: 0,
   }));
+  for (const tile of liveTiles) {
+    tile.crayonBottomCtx.lineCap = 'round';
+    tile.crayonBottomCtx.lineJoin = 'round';
+    tile.crayonTopCtx.lineCap = 'round';
+    tile.crayonTopCtx.lineJoin = 'round';
+    setCrayonBufferForTarget(tile.ctx, tile.crayonBottomCtx, tile.crayonTopCtx);
+  }
 }
 
 export function tiledRendererActive() {
@@ -97,37 +107,63 @@ export function syncTiledCrayonMix(opacity: string) {
   for (const tile of liveTiles) tile.crayonTop.style.opacity = opacity;
 }
 
-export function resizeTiledRenderer(renderScale: number) {
-  if (!canvas) return;
+function resizeBacking(canvas: HTMLCanvasElement, width: number, height: number) {
+  if (canvas.width !== width) canvas.width = width;
+  if (canvas.height !== height) canvas.height = height;
+}
+
+function ensureCrayonBacking(tile: LiveTile) {
+  const correctlySized =
+    tile.crayonBottom.width === tile.width &&
+    tile.crayonBottom.height === tile.height &&
+    tile.crayonTop.width === tile.width &&
+    tile.crayonTop.height === tile.height;
+  if (correctlySized) return;
+  resizeBacking(tile.crayonBottom, tile.width, tile.height);
+  resizeBacking(tile.crayonTop, tile.width, tile.height);
+  tile.crayonBottomCtx.lineCap = 'round';
+  tile.crayonBottomCtx.lineJoin = 'round';
+  tile.crayonTopCtx.lineCap = 'round';
+  tile.crayonTopCtx.lineJoin = 'round';
+  setCrayonBufferForTarget(tile.ctx, tile.crayonBottomCtx, tile.crayonTopCtx);
+}
+
+export function resizeTiledRenderer(width: number, height: number, renderScale: number) {
+  if (!canvas) return false;
+  if (rendererWidth === width && rendererHeight === height && rendererScale === renderScale) {
+    return false;
+  }
+  rendererWidth = width;
+  rendererHeight = height;
+  rendererScale = renderScale;
   for (let row = 0; row < LIVE_TILE_ROWS; row++) {
     for (let column = 0; column < LIVE_TILE_COLUMNS; column++) {
       const tile = liveTiles[row * LIVE_TILE_COLUMNS + column];
       if (!tile) continue;
-      tile.x = Math.floor((column * canvas.width) / LIVE_TILE_COLUMNS);
-      tile.y = Math.floor((row * canvas.height) / LIVE_TILE_ROWS);
-      const right = Math.floor(((column + 1) * canvas.width) / LIVE_TILE_COLUMNS);
-      const bottom = Math.floor(((row + 1) * canvas.height) / LIVE_TILE_ROWS);
+      tile.x = Math.floor((column * width) / LIVE_TILE_COLUMNS);
+      tile.y = Math.floor((row * height) / LIVE_TILE_ROWS);
+      const right = Math.floor(((column + 1) * width) / LIVE_TILE_COLUMNS);
+      const bottom = Math.floor(((row + 1) * height) / LIVE_TILE_ROWS);
+      const crayonWasVisible = !tile.crayonBottom.hidden || !tile.crayonTop.hidden;
       tile.width = right - tile.x;
       tile.height = bottom - tile.y;
       tile.canvas.hidden = true;
       tile.crayonBottom.hidden = true;
       tile.crayonTop.hidden = true;
+      resizeBacking(tile.canvas, tile.width, tile.height);
       for (const tileCanvas of [tile.canvas, tile.crayonBottom, tile.crayonTop]) {
-        tileCanvas.width = tile.width;
-        tileCanvas.height = tile.height;
         tileCanvas.style.left = `${tile.x / renderScale}px`;
         tileCanvas.style.top = `${tile.y / renderScale}px`;
         tileCanvas.style.width = `${tile.width / renderScale}px`;
         tileCanvas.style.height = `${tile.height / renderScale}px`;
       }
-      for (const tileContext of [tile.ctx, tile.crayonBottomCtx, tile.crayonTopCtx]) {
-        tileContext.lineCap = 'round';
-        tileContext.lineJoin = 'round';
-      }
-      setCrayonBufferForTarget(tile.ctx, tile.crayonBottomCtx, tile.crayonTopCtx);
+      tile.ctx.lineCap = 'round';
+      tile.ctx.lineJoin = 'round';
+      if (crayonWasVisible) ensureCrayonBacking(tile);
     }
   }
   if (historyBase.length > 0) ensureHistoryBase();
+  return true;
 }
 
 function createHistoryBaseTiles(width: number, height: number): HistoryBaseTile[] {
@@ -261,6 +297,7 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
   }
   for (const [index, tile] of liveTiles.entries()) {
     if (geometryIntersectsTile(op, tile)) {
+      if (op.crayon && !op.erase) ensureCrayonBacking(tile);
       if (command) undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
       showTileForOp(tile, op);
       renderOp(tile.ctx, op);
@@ -479,8 +516,8 @@ export function captureTiledCanvasSnapshot(): TiledCanvasSnapshot | null {
     return null;
   }
   return {
-    width: canvas.width,
-    height: canvas.height,
+    width: rendererWidth,
+    height: rendererHeight,
     tiles: liveTiles.map((tile) => ({
       bitmap: createImageBitmap(tile.canvas),
       x: tile.x,
@@ -504,4 +541,7 @@ export function detachTiledRenderer() {
   canvas = null;
   host = null;
   liveTiles = [];
+  rendererWidth = 0;
+  rendererHeight = 0;
+  rendererScale = 0;
 }

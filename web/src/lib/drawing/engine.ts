@@ -161,6 +161,8 @@ let canvas!: HTMLCanvasElement;
 let ctx!: CanvasRenderingContext2D;
 let currentColor = '';
 const DEFAULT_LINE_WIDTH_PX = getStrokeWidthPx(DEFAULT_SIZE);
+const TILED_INPUT_BITMAP_SIDE_PX = 1;
+let viewport = { width: 0, height: 0 };
 let currentLineWidth = DEFAULT_LINE_WIDTH_PX;
 let eraserActive = false;
 let magicActive = false;
@@ -240,6 +242,22 @@ function setCanUndo(value: boolean) {
 
 let canvasEmpty = true;
 
+function readoptPaperAfterTiledCanvasHides() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (
+        engineLive &&
+        tiledRendererActive() &&
+        canvasEmpty &&
+        activePointers.size === 0 &&
+        !isIdentityView(paperView)
+      ) {
+        resizeCanvas();
+      }
+    });
+  });
+}
+
 function setCanvasEmptyState(empty: boolean) {
   if (canvasEmpty === empty) return;
   canvasEmpty = empty;
@@ -247,7 +265,10 @@ function setCanvasEmptyState(empty: boolean) {
   // A blank canvas frees the locked paper to match the live viewport again
   // (clear, undo-to-blank, erase-to-blank): re-adopt right away instead of
   // leaving the child a letterboxed blank page until the next rotation.
-  if (empty && activePointers.size === 0 && !isIdentityView(paperView)) resizeCanvas();
+  if (empty && activePointers.size === 0 && !isIdentityView(paperView)) {
+    if (tiledRendererActive()) readoptPaperAfterTiledCanvasHides();
+    else resizeCanvas();
+  }
 }
 
 // --- Paper space and the rotation-lock view (ADR-0050) --------------------
@@ -351,8 +372,8 @@ function refreshCanvasRect(rect?: DOMRect) {
   if (!canvas) return;
   rect ??= canvas.getBoundingClientRect();
   canvasRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
-  rectScaleX = rect.width ? canvas.width / rect.width : 1;
-  rectScaleY = rect.height ? canvas.height / rect.height : 1;
+  rectScaleX = rect.width ? viewport.width / rect.width : 1;
+  rectScaleY = rect.height ? viewport.height / rect.height : 1;
 }
 
 // Backing-store (screen) coordinates of a pointer event — the physical space
@@ -379,6 +400,7 @@ function screenToPaper(pt: Point): Point {
 // rect (unioned with the paper for safety). Ops in those margins record at these
 // out-of-paper coordinates, so the sheet is extended there too (ADR-0043/0050).
 function sheetBoundsPaper(): { x: number; y: number; width: number; height: number } {
+  if (tiledRendererActive()) return { x: 0, y: 0, width: paper.pxW, height: paper.pxH };
   if (isIdentityView(paperView)) return { x: 0, y: 0, width: paper.pxW, height: paper.pxH };
   let minX = 0;
   let minY = 0;
@@ -386,9 +408,9 @@ function sheetBoundsPaper(): { x: number; y: number; width: number; height: numb
   let maxY = paper.pxH;
   for (const [x, y] of [
     [0, 0],
-    [canvas.width, 0],
-    [0, canvas.height],
-    [canvas.width, canvas.height],
+    [viewport.width, 0],
+    [0, viewport.height],
+    [viewport.width, viewport.height],
   ]) {
     const p = viewToPaper(paperView, x, y);
     minX = Math.min(minX, p.x);
@@ -443,16 +465,12 @@ function adoptPaperUnlessLocked(rect: DOMRect): boolean {
 // ADR-0050.
 function applyPaperView(lockPaper: boolean) {
   paperView = lockPaper
-    ? computePaperView(
-        { width: paper.pxW, height: paper.pxH },
-        { width: canvas.width, height: canvas.height },
-        0
-      )
+    ? computePaperView({ width: paper.pxW, height: paper.pxH }, viewport, 0)
     : IDENTITY_PAPER_VIEW;
-  if (!isIdentityView(paperView)) {
+  if (!tiledRendererActive() && !isIdentityView(paperView)) {
     ctx.setTransform(...viewMatrix(paperView));
   }
-  applyTiledView(paperView);
+  applyTiledView(tiledRendererActive() ? IDENTITY_PAPER_VIEW : paperView);
 }
 
 function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
@@ -471,19 +489,28 @@ function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
   // Resizing the backing store wipes the visible canvas and resets its context
   // state, so re-arm the round caps and repaint from the paper raster.
   const { w, h } = backingSizeOf(rect);
-  canvas.width = w;
-  canvas.height = h;
-  resizeTiledRenderer(renderScale);
+  viewport = { width: w, height: h };
+  const inputBitmapWidth = tiledRendererActive() ? TILED_INPUT_BITMAP_SIDE_PX : w;
+  const inputBitmapHeight = tiledRendererActive() ? TILED_INPUT_BITMAP_SIDE_PX : h;
+  if (canvas.width !== inputBitmapWidth) canvas.width = inputBitmapWidth;
+  if (canvas.height !== inputBitmapHeight) canvas.height = inputBitmapHeight;
+  let tiledRendererResized = false;
+  if (!lockPaper) {
+    tiledRendererResized = resizeTiledRenderer(viewport.width, viewport.height, renderScale);
+  }
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  resizeLegacyCrayonOverlays(canvas.width, canvas.height);
+  resizeLegacyCrayonOverlays(viewport.width, viewport.height);
   applyPaperView(lockPaper);
 
   // The magic sheet is sized to the paper, so re-rasterize before repainting
   // any pending magic ops against it.
   rasterizeSheet();
-  if (tiledRendererActive()) repaintTiledRenderer();
-  else repaintAll(ctx);
+  if (tiledRendererActive()) {
+    if (tiledRendererResized) repaintTiledRenderer();
+  } else {
+    repaintAll(ctx);
+  }
 
   refreshCanvasRect(rect);
   notifyViewChange();
@@ -525,7 +552,8 @@ function resyncOnReentry() {
   if (document.visibilityState !== 'visible') return;
   const rect = canvas.getBoundingClientRect();
   const { w, h } = backingSizeOf(rect);
-  const stale = canvas.width !== w || canvas.height !== h || resizedAngle !== currentScreenAngle();
+  const stale =
+    viewport.width !== w || viewport.height !== h || resizedAngle !== currentScreenAngle();
   if (stale) resizeCanvas(rect);
   else refreshCanvasRect(rect);
 }
@@ -806,6 +834,13 @@ function startDrawing(e: PointerEvent) {
 
   const screen = pointerToScreen(e);
   const { x, y } = screenToPaper(screen);
+  if (
+    tiledRendererActive() &&
+    !isIdentityView(paperView) &&
+    (x < 0 || y < 0 || x > paper.pxW || y > paper.pxH)
+  ) {
+    return;
+  }
 
   // The eraser runs a bit larger than the pen at the same stroke level. Stroke
   // widths are authored in CSS pixels, so they scale to backing-store pixels.
@@ -815,8 +850,8 @@ function startDrawing(e: PointerEvent) {
   const edgeSwipeGuard =
     e.pointerType === 'touch'
       ? guardedEdgeAt(screen.x, screen.y, {
-          width: canvas.width,
-          height: canvas.height,
+          width: viewport.width,
+          height: viewport.height,
           renderScale,
           bottomInset: safeInsets.bottom,
         })
@@ -1483,7 +1518,7 @@ export function setSafeAreaInsets(insets: {
 function snapshotStrokes(snapshotScale: number): ExportSnapshot {
   const width = Math.round((paper.pxW / renderScale) * snapshotScale);
   const height = Math.round((paper.pxH / renderScale) * snapshotScale);
-  const tiledSnapshot = captureTiledSnapshot(snapshotScale, renderScale, isIdentityView(paperView));
+  const tiledSnapshot = captureTiledSnapshot(snapshotScale, renderScale);
   if (tiledSnapshot) return tiledSnapshot;
   return createStrokeSnapshot(width, height, snapshotScale / renderScale, (target) => {
     if (tiledRendererActive()) renderTiledSnapshot(target);

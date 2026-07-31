@@ -149,10 +149,13 @@ test('a crayon stroke previews at its true colour MID-stroke in dark mode', asyn
   // Structural pin: the overlays and canvas share an isolated stacking group.
   const isolation = await page.evaluate(() => {
     const stack = document.getElementById('drawingCanvas')!.parentElement!;
-    return { isolation: getComputedStyle(stack).isolation, children: stack.children.length };
+    return {
+      isolation: getComputedStyle(stack).isolation,
+      layers: stack.querySelector('.live-paper-view')?.children.length ?? 0,
+    };
   });
   expect(isolation.isolation).toBe('isolate');
-  expect(isolation.children).toBeGreaterThanOrEqual(3); // canvas + two overlays
+  expect(isolation.layers).toBeGreaterThanOrEqual(3);
 
   const box = (await page.locator('#drawingCanvas').boundingBox())!;
   const y = box.y + 260;

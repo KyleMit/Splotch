@@ -428,12 +428,7 @@ test('the magic brush paints the letterbox margin by extending the edge colour',
     .toBeGreaterThan(BAND_MIN_REVEALED_PX);
 });
 
-// The case the user hit: after a rotation-with-ink the paper LOCKS (ADR-0050) and is
-// contain-fit into the new viewport, leaving letterbox margins around the whole page
-// (not just inside it). The magic sheet now covers the mapped viewport, so the brush
-// paints those margins too — before, they revealed nothing even though a pen could
-// draw there. Rotation is emulated via CDP (new metrics + a changed orientation angle).
-test('the magic brush paints the rotation-lock letterbox margin', async ({ page }) => {
+test('the rotation-lock letterbox margin stays outside the drawable paper', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
   await applyFarmPage(page); // landscape viewport → wide art
@@ -455,20 +450,19 @@ test('the magic brush paints the rotation-lock letterbox margin', async ({ page 
   // to reject.
   await expect(swatch(page, TEST_PALETTE.purple)).toHaveClass(/active/);
   await pickBrush(page, '#magicBrushButton');
-  // Sweep along the very top of the canvas — inside the rotation-lock top margin.
+  const undoDepthBefore = await page.evaluate(
+    () => window.__drawingDebug?.getUndoDebug().snapshots
+  );
   await draw(page, [
     { x: 40, y: 6 },
     { x: 240, y: 6 },
     { x: 440, y: 6 },
     { x: 660, y: 6 },
   ]);
-  // Non-ink pixels, not opacity, is the mode signal — see bandNonInkPixels. This
-  // margin is reachable by a pen too, so that discrimination is load-bearing here.
-  await expect
-    .poll(() => bandNonInkPixels(page, 'top', 0.05, TEST_PALETTE.purple), {
-      timeout: REVEAL_SETTLE_MS,
-    })
-    .toBeGreaterThan(BAND_MIN_REVEALED_PX);
+  expect(await bandNonInkPixels(page, 'top', 0.05, TEST_PALETTE.purple)).toBe(0);
+  expect(await page.evaluate(() => window.__drawingDebug?.getUndoDebug().snapshots)).toBe(
+    undoDepthBefore
+  );
 });
 
 test('the magic brush reveals a rainbow gradient when no coloring page is applied', async ({

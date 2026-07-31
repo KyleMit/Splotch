@@ -1,7 +1,9 @@
 # ADR-0088: Keep iPad Screenshot Export Frame-Bound with Settled Live Tiles
 
-**Status:** Active — amends [ADR-0015](0015-capped-dpr-canvas-rendering.md) for saved-image quality
-and complements [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md). **Date:** 2026-07
+**Status:** Active — amends [ADR-0015](0015-capped-dpr-canvas-rendering.md) for saved-image quality,
+complements [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md), and is amended by
+[ADR-0089](0089-css-presented-tiled-paper-on-rotation.md) for rotated settled tiles. **Date:**
+2026-07
 
 ## Context
 
@@ -137,11 +139,11 @@ renderer's already-settled pixels instead of replaying into a new full-page surf
 3. `pngEncoder.worker.ts` creates the only full-resolution export `OffscreenCanvas`, paints the
    opaque paper and repeating texture, scales and positions the settled stroke tiles, applies the
    light/dark coloring-page blend, then calls `convertToBlob({ type: 'image/png' })`.
-4. The fast path is deliberately narrow: export scale must equal live render scale, the paper view
-   must be unrotated, no pointer may still be active, and Worker, `OffscreenCanvas`, and
-   `createImageBitmap` must exist. A rotation needs the full upright paper rather than the presented
-   viewport; a scale mismatch needs vector replay rather than interpolated live pixels. Those cases
-   retain the disposable full-snapshot architecture and browser encoder fallback.
+4. The fast path is deliberately narrow: export scale must equal live render scale, no pointer may
+   still be active, and Worker, `OffscreenCanvas`, and `createImageBitmap` must exist. ADR-0089
+   keeps rotated tile pixels in the full upright paper and applies presentation through CSS, so a
+   rotated settled snapshot is eligible too. A scale mismatch still needs vector replay rather than
+   interpolated live pixels and retains the disposable full-snapshot architecture.
 5. The full-screen polaroid preview is removed. `screenshotFeedback.ts` immediately animates the
    existing camera icon, so feedback does not decode or composite the just-created PNG.
 6. `screenshot.ts` continues coalescing concurrent Screenshot Button taps into one active save.
@@ -177,9 +179,9 @@ because the tiled path requires the full set of transferable canvas APIs.
   Restoring any PNG preview requires its own physical-iPad frame-budget proof.
 * \+ The affected 2× iPad path no longer creates a full-resolution drawing surface on the main
   thread. Only the worker owns the full composed output.
-* − Rotated papers, active pointers, and devices whose live and export scales differ retain the
-  replay fallback. They preserve orientation and vector quality but can still hit the older
-  compatibility path's main-thread graphics cost.
+* − Active pointers and devices whose live and export scales differ retain the replay fallback. They
+  preserve vector quality but can still hit the older compatibility path's main-thread graphics
+  cost.
 * − Repeated Screenshot Button taps within four seconds of a successful save are intentionally
   ignored so MobileSafari can reclaim the full-page PNG surfaces.
 * − The compatibility fallback can still block on engines whose main-thread canvas encoder is slow.
@@ -225,11 +227,11 @@ The smallest proof for the retained architecture does not use the Screenshot But
    dark-theme prototype measured 20 ms. If this addition fails, isolate texture and overlay
    separately before changing tile capture.
 
-Production capture has three load-bearing guards. An active pointer can leave crayon ink in preview
-overlays rather than the settled main tiles. A rotated paper's live tiles contain its presented
-letterboxed view rather than the upright export. A live/export scale mismatch would interpolate
-settled pixels instead of replaying vectors at output resolution. Fall back to the existing replay
-snapshot for all three.
+Production capture has two load-bearing guards. An active pointer can leave crayon ink in preview
+overlays rather than the settled main tiles. A live/export scale mismatch would interpolate settled
+pixels instead of replaying vectors at output resolution. Fall back to the existing replay snapshot
+for both. ADR-0089 removed the rotation guard because CSS presents the locked paper without changing
+the upright tile pixels.
 
 Invoking all tile snapshots before the dynamic import is also load-bearing. Moving
 `createImageBitmap(tile.canvas)` after an `await` lets save-on-delete clear the source first. Store
