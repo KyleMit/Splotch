@@ -20,6 +20,7 @@ export interface UndoTileSnapshot {
   tileWidth: number;
   tileHeight: number;
   dirty: TileDirtyBounds;
+  hidden: boolean;
 }
 
 export function createTiledUndoPatches() {
@@ -55,6 +56,7 @@ export function createTiledUndoPatches() {
       tileWidth: tile.width,
       tileHeight: tile.height,
       dirty: { ...dirty },
+      hidden: tile.canvas.hidden === true,
     });
   }
 

@@ -2,8 +2,9 @@
 
 **Status:** Active — supersedes ADR-0066, ADR-0068, ADR-0069, ADR-0074, and ADR-0082 for the
 production drawing route; amended by
-[ADR-0086](0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md) for production undo.
-**Date:** 2026-07
+[ADR-0086](0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md) for production undo and
+[ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md) for idle tile composition. **Date:**
+2026-07
 
 ## Context
 

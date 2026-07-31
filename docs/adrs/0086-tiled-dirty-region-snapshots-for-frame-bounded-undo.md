@@ -1,7 +1,8 @@
 # ADR-0086: Restore Tiled Dirty-Region Snapshots for Frame-Bounded Undo
 
 **Status:** Active — amends [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) for production
-undo. **Date:** 2026-07
+undo; amended by [ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md) for tile visibility
+snapshots. **Date:** 2026-07
 
 ## Context
 

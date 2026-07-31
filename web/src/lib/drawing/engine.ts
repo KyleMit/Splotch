@@ -110,6 +110,7 @@ import {
   clearTiledRenderer,
   commitTiledCommand,
   detachTiledRenderer,
+  hasUnresolvedTiledMagicOps,
   prewarmTiledMagicPatterns,
   recordTiledOp,
   repaintTiledRenderer,
@@ -1308,8 +1309,9 @@ function wireMagicBrushHost(): void {
     sheetBounds: () => (paperIsSized() ? sheetBoundsPaper() : null),
     repaint: () => {
       if (!ctx) return;
-      if (tiledRendererActive()) repaintTiledRenderer();
-      else repaintAll(ctx);
+      if (tiledRendererActive()) {
+        if (hasUnresolvedTiledMagicOps()) repaintTiledRenderer();
+      } else repaintAll(ctx);
     },
   });
 }

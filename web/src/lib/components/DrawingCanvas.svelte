@@ -183,14 +183,27 @@
   // and swaps the page art to the other tall/wide variant — a different
   // composition. Pointing the <img> straight at the new URL shows the old art
   // mis-fit in the new layout, then pops the new one in whenever it decodes.
-  // Instead: hide the art the moment the target changes, decode the new file
-  // off-DOM, and fade it in only once it's ready. Applying a page from the
-  // picker flows through the same gate.
+  // Instead: hide the art when the composition changes, decode the new file
+  // off-DOM, and fade it in only once it's ready. A theme sibling has identical
+  // registration, so it keeps the current art visible until the sibling is ready.
+  // Applying a page from the picker flows through the composition-change gate.
   let displayedOverlayUrl = $state<string | null>(null);
+  function overlayCompositionKey(url: string) {
+    return url.replace(/\.(?:outline|chalk)\.webp(?:\?.*)?$/, '');
+  }
+
   $effect(() => {
     const url = themedOverlayUrl;
-    displayedOverlayUrl = null;
-    if (!url) return;
+    if (!url) {
+      displayedOverlayUrl = null;
+      return;
+    }
+    if (
+      !displayedOverlayUrl ||
+      overlayCompositionKey(displayedOverlayUrl) !== overlayCompositionKey(url)
+    ) {
+      displayedOverlayUrl = null;
+    }
     let stale = false;
     const img = new Image();
     img.src = url;
@@ -284,13 +297,14 @@
       onpointermove={nudgeBlendLayer}
     ></canvas>
     {#each liveTiles as tile (tile)}
-      <canvas class="live-tile" data-live-tile aria-hidden="true"></canvas>
-      <canvas class="live-tile live-crayon-tile" data-live-crayon-bottom aria-hidden="true"
+      <canvas class="live-tile" data-live-tile aria-hidden="true" hidden></canvas>
+      <canvas class="live-tile live-crayon-tile" data-live-crayon-bottom aria-hidden="true" hidden
       ></canvas>
       <canvas
         class="live-tile live-crayon-tile live-crayon-tile-top"
         data-live-crayon-top
         aria-hidden="true"
+        hidden
       ></canvas>
     {/each}
   </div>

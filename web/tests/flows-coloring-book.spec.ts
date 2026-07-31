@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { rotateViewportViaCdp } from './cdp';
-import { draw, gotoApp } from './helpers';
+import { draw, gotoApp, openParentCenter } from './helpers';
 
 import { applyFarmPage, openColoringDialog, openDrawer } from './flows-harness';
 
@@ -26,6 +26,43 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await expect(overlay).toBeVisible();
   // The src lands once the art has decoded (the ready-gated swap), so retry.
   await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.outline\.webp$/);
+});
+
+test('a theme sibling keeps the registered coloring art visible while it decodes', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await applyFarmPage(page);
+
+  const overlay = page.locator('#coloringOverlay');
+  await expect(overlay).toHaveAttribute('src', /\.outline\.webp$/);
+  await page.evaluate(() => {
+    const originalDecode = HTMLImageElement.prototype.decode;
+    let release!: () => void;
+    const pendingChalk = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const controlledWindow = window as Window & { __releaseChalkDecode?: () => void };
+    controlledWindow.__releaseChalkDecode = release;
+    HTMLImageElement.prototype.decode = function () {
+      if (this.src.endsWith('.chalk.webp')) {
+        return pendingChalk.then(() => originalDecode.call(this));
+      }
+      return originalDecode.call(this);
+    };
+  });
+
+  await openParentCenter(page);
+  await page.locator('#themeOption-dark').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(overlay).toHaveAttribute('src', /\.outline\.webp$/);
+  await expect(overlay).toHaveClass(/overlay-ready/);
+
+  await page.evaluate(() => {
+    (window as Window & { __releaseChalkDecode?: () => void }).__releaseChalkDecode?.();
+  });
+  await expect(overlay).toHaveAttribute('src', /\.chalk\.webp$/);
 });
 
 // A device rotation with ink on the canvas must NOT swap the page's tall/wide

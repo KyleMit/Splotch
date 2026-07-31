@@ -1,4 +1,8 @@
-import { resetCrayonStateForClear, setCrayonBufferForTarget } from './crayonPassBuffer';
+import {
+  crayonBufferIsDirty,
+  resetCrayonStateForClear,
+  setCrayonBufferForTarget,
+} from './crayonPassBuffer';
 import { scanCanvasIsEmpty } from './emptyScan';
 import { setMagicPatternRegion, sheetPatternFor } from './magicBrush';
 import { viewMatrix, viewToPaper, type PaperView } from './paperView';
@@ -99,6 +103,9 @@ export function resizeTiledRenderer(renderScale: number) {
       const bottom = Math.floor(((row + 1) * canvas.height) / LIVE_TILE_ROWS);
       tile.width = right - tile.x;
       tile.height = bottom - tile.y;
+      tile.canvas.hidden = true;
+      tile.crayonBottom.hidden = true;
+      tile.crayonTop.hidden = true;
       for (const tileCanvas of [tile.canvas, tile.crayonBottom, tile.crayonTop]) {
         tileCanvas.width = tile.width;
         tileCanvas.height = tile.height;
@@ -225,12 +232,23 @@ function enforceUndoPatchBudget() {
   }
 }
 
+function showTileForOp(tile: LiveTile, op: StrokeOp) {
+  if (op.kind === 'clear') {
+    tile.canvas.hidden = true;
+    return;
+  }
+  if ((op.kind === 'dot' || op.kind === 'path') && op.crayon && !op.erase) return;
+  if (op.kind === 'crayonFlush' && !crayonBufferIsDirty(tile.ctx)) return;
+  tile.canvas.hidden = false;
+}
+
 function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | null) {
   if (op.kind !== 'dot' && op.kind !== 'path') {
     for (const [index, tile] of liveTiles.entries()) {
       if (command && op.kind !== 'crayonFlush') {
         undoPatches.capture(command, tile, index);
       }
+      showTileForOp(tile, op);
       renderOp(tile.ctx, op);
     }
     return;
@@ -238,6 +256,7 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
   for (const [index, tile] of liveTiles.entries()) {
     if (geometryIntersectsTile(op, tile)) {
       if (command) undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
+      showTileForOp(tile, op);
       renderOp(tile.ctx, op);
     }
   }
@@ -315,11 +334,13 @@ export function repaintTiledRenderer() {
   const undoableStart = history.length - undoableCommands;
   const rebuildUndo = undoableCommands > 0 || activeCommand !== null;
   for (const tile of liveTiles) {
+    tile.canvas.hidden = true;
     resetCrayonStateForClear(tile.ctx);
     clearAllOf(tile.ctx);
     for (const base of historyBase) {
       if (tilesIntersect(base, tile)) {
         tile.ctx.drawImage(base.canvas, base.x, base.y);
+        tile.canvas.hidden = false;
       }
     }
   }
@@ -371,6 +392,7 @@ export function undoTiledCommand(renderScale: number) {
       tile.ctx.clearRect(snapshot.x, snapshot.y, snapshot.canvas.width, snapshot.canvas.height);
       tile.ctx.drawImage(snapshot.canvas, snapshot.x, snapshot.y);
       tile.ctx.restore();
+      tile.canvas.hidden = snapshot.hidden;
     }
   } else {
     repaintTiledRenderer();
@@ -404,6 +426,14 @@ export function clearTiledRenderer(wasEmpty: boolean) {
 
 export function scanTiledRendererIsEmpty(renderScale: number) {
   return liveTiles.every((tile) => scanCanvasIsEmpty(tile.canvas, renderScale));
+}
+
+export function hasUnresolvedTiledMagicOps() {
+  const unresolved = (command: StrokeGroupCommand) =>
+    command.ops.some(
+      (op) => (op.kind === 'dot' || op.kind === 'path') && op.magic && !op.magicSheet
+    );
+  return history.some(unresolved) || (activeCommand ? unresolved(activeCommand) : false);
 }
 
 export function tiledHistoryDebug(): HistoryDebug {

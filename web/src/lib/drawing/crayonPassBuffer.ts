@@ -88,6 +88,8 @@ export function setLiveCrayonBuffer(
   buffer: CanvasRenderingContext2D | null,
   mirror: CanvasRenderingContext2D | null = null
 ) {
+  if (buffer) buffer.canvas.hidden = true;
+  if (mirror) mirror.canvas.hidden = true;
   liveTarget = buffer ? target : null;
   liveBuffer = buffer ? { ctx: buffer, mirror, dirty: false, bounds: null } : null;
   if (!buffer) {
@@ -104,6 +106,8 @@ export function setCrayonBufferForTarget(
   buffer: CanvasRenderingContext2D,
   mirror: CanvasRenderingContext2D
 ) {
+  buffer.canvas.hidden = true;
+  mirror.canvas.hidden = true;
   bufferByTarget.set(target, { ctx: buffer, mirror, dirty: false, bounds: null });
 }
 
@@ -229,6 +233,10 @@ function existingBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer |
   return bufferByTarget.get(target) ?? null;
 }
 
+export function crayonBufferIsDirty(target: CanvasRenderingContext2D) {
+  return existingBufferFor(target)?.dirty === true;
+}
+
 // Grow the buffer's device-px bounds by an op's user-space bbox, mapped through
 // the transform the op was painted with. Conservative: quadratic/cubic control
 // points bound the curve's hull, the pad covers the stroke's half-width plus AA
@@ -282,6 +290,8 @@ function clearCrayonBounds(buf: CrayonPassBuffer) {
   }
   buf.bounds = null;
   buf.dirty = false;
+  buf.ctx.canvas.hidden = true;
+  if (buf.mirror) buf.mirror.canvas.hidden = true;
 }
 
 export function stampSubtractiveGlaze(
@@ -361,6 +371,8 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
     return;
   }
   const buf = crayonBufferFor(target);
+  buf.ctx.canvas.hidden = false;
+  if (buf.mirror) buf.mirror.canvas.hidden = false;
   const matrix = target.getTransform();
   buf.ctx.setTransform(matrix);
   buf.mirror?.setTransform(matrix);

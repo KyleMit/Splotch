@@ -195,16 +195,8 @@ function paintGradient(g: CanvasRenderingContext2D, w: number, h: number, spec: 
 // transparent letterbox margins on any side — top/bottom or left/right where the
 // fill is contain-fit in the paper, AND (under a rotation lock) the other axis where
 // the paper itself is contain-fit in the larger sheet, so all four sides plus corners
-// can be empty. `edgeMargins` returns the ordered blits that extend the picture's edge
-// colours outward to fill them, as pure geometry so the math is unit-testable without
-// a real canvas.
-//
-// Two ordered passes so corners fall out for free:
-//   1. Vertical — stretch the box's top/bottom rows across the box width into the
-//      top/bottom bands. Now the box's full column span is coloured top-to-bottom.
-//   2. Horizontal — stretch a FULL-HEIGHT column just inside each side edge into the
-//      side bands; because it's full height it also paints the corners the vertical
-//      pass filled. (Pass 2 samples what pass 1 drew, so the order matters.)
+// can be empty. `edgeMargins` returns direct source-image blits for every band and
+// corner, as pure geometry so the math is unit-testable without a real canvas.
 //
 // Each source is taken a hair INSIDE the picture (`inset`), not on the literal border:
 // a coloring page can carry an outline right at its edge, and sampling the 1px border
@@ -213,7 +205,7 @@ function paintGradient(g: CanvasRenderingContext2D, w: number, h: number, spec: 
 // with no line streak. Stretching a row/column (not a flat per-edge average) preserves
 // along-edge variation — a landscape scene keeps sky-at-top / grass-at-bottom.
 export interface EdgeFill {
-  /** Source rect in the sheet to sample (a 1px-thin edge strip). */
+  /** Source rect in the fill image to sample. */
   sx: number;
   sy: number;
   sw: number;
@@ -231,7 +223,9 @@ export function edgeMargins(
   ox: number,
   oy: number,
   bw: number,
-  bh: number
+  bh: number,
+  sourceWidth = bw,
+  sourceHeight = bh
 ): EdgeFill[] {
   const top = Math.round(oy);
   const left = Math.round(ox);
@@ -239,35 +233,103 @@ export function edgeMargins(
   const right = Math.round(ox + bw);
   const bottomMargin = H - bottom;
   const rightMargin = W - right;
-  const inset = Math.max(1, Math.round(Math.min(bw, bh) * EDGE_SAMPLE_INSET_FRACTION));
+  const scaleX = bw / sourceWidth;
+  const scaleY = bh / sourceHeight;
+  const sourcePixelX = 1 / scaleX;
+  const sourcePixelY = 1 / scaleY;
+  const destinationInset = Math.max(1, Math.round(Math.min(bw, bh) * EDGE_SAMPLE_INSET_FRACTION));
+  const sourceInsetX = destinationInset / scaleX;
+  const sourceInsetY = destinationInset / scaleY;
+  const sourceRight = sourceWidth - sourcePixelX - sourceInsetX;
+  const sourceBottom = sourceHeight - sourcePixelY - sourceInsetY;
   const fills: EdgeFill[] = [];
-  // Pass 1 — vertical: box top/bottom rows stretched across the box width.
   if (top > 0)
-    fills.push({ sx: ox, sy: oy + inset, sw: bw, sh: 1, dx: ox, dy: 0, dw: bw, dh: top });
+    fills.push({
+      sx: 0,
+      sy: sourceInsetY,
+      sw: sourceWidth,
+      sh: sourcePixelY,
+      dx: ox,
+      dy: 0,
+      dw: bw,
+      dh: top,
+    });
   if (bottomMargin > 0)
     fills.push({
-      sx: ox,
-      sy: bottom - 1 - inset,
-      sw: bw,
-      sh: 1,
+      sx: 0,
+      sy: sourceBottom,
+      sw: sourceWidth,
+      sh: sourcePixelY,
       dx: ox,
       dy: bottom,
       dw: bw,
       dh: bottomMargin,
     });
-  // Pass 2 — horizontal: full-height columns just inside each side edge, stretched
-  // outward (also covers the corners pass 1 filled).
-  if (left > 0) fills.push({ sx: ox + inset, sy: 0, sw: 1, sh: H, dx: 0, dy: 0, dw: left, dh: H });
+  if (left > 0)
+    fills.push({
+      sx: sourceInsetX,
+      sy: 0,
+      sw: sourcePixelX,
+      sh: sourceHeight,
+      dx: 0,
+      dy: oy,
+      dw: left,
+      dh: bh,
+    });
   if (rightMargin > 0)
     fills.push({
-      sx: right - 1 - inset,
+      sx: sourceRight,
       sy: 0,
-      sw: 1,
-      sh: H,
+      sw: sourcePixelX,
+      sh: sourceHeight,
+      dx: right,
+      dy: oy,
+      dw: rightMargin,
+      dh: bh,
+    });
+  if (top > 0 && left > 0)
+    fills.push({
+      sx: sourceInsetX,
+      sy: sourceInsetY,
+      sw: sourcePixelX,
+      sh: sourcePixelY,
+      dx: 0,
+      dy: 0,
+      dw: left,
+      dh: top,
+    });
+  if (top > 0 && rightMargin > 0)
+    fills.push({
+      sx: sourceRight,
+      sy: sourceInsetY,
+      sw: sourcePixelX,
+      sh: sourcePixelY,
       dx: right,
       dy: 0,
       dw: rightMargin,
-      dh: H,
+      dh: top,
+    });
+  if (bottomMargin > 0 && left > 0)
+    fills.push({
+      sx: sourceInsetX,
+      sy: sourceBottom,
+      sw: sourcePixelX,
+      sh: sourcePixelY,
+      dx: 0,
+      dy: bottom,
+      dw: left,
+      dh: bottomMargin,
+    });
+  if (bottomMargin > 0 && rightMargin > 0)
+    fills.push({
+      sx: sourceRight,
+      sy: sourceBottom,
+      sw: sourcePixelX,
+      sh: sourcePixelY,
+      dx: right,
+      dy: bottom,
+      dw: rightMargin,
+      dh: bottomMargin,
     });
   return fills;
 }
@@ -279,6 +341,7 @@ export function edgeMargins(
 // the rotation-lock margins around the fitted paper).
 function extendSheetEdges(
   g: CanvasRenderingContext2D,
+  image: HTMLImageElement,
   W: number,
   H: number,
   ox: number,
@@ -286,9 +349,8 @@ function extendSheetEdges(
   bw: number,
   bh: number
 ) {
-  if (!sheetCanvas) return;
-  for (const f of edgeMargins(W, H, ox, oy, bw, bh)) {
-    g.drawImage(sheetCanvas, f.sx, f.sy, f.sw, f.sh, f.dx, f.dy, f.dw, f.dh);
+  for (const fill of edgeMargins(W, H, ox, oy, bw, bh, image.naturalWidth, image.naturalHeight)) {
+    g.drawImage(image, fill.sx, fill.sy, fill.sw, fill.sh, fill.dx, fill.dy, fill.dw, fill.dh);
   }
 }
 
@@ -325,7 +387,7 @@ export function rasterizeSheet() {
     const ox = (paper.width - dw) / 2 - sheetOriginX;
     const oy = (paper.height - dh) / 2 - sheetOriginY;
     sheetCtx.drawImage(source.image, ox, oy, dw, dh);
-    extendSheetEdges(sheetCtx, sheetCanvas.width, sheetCanvas.height, ox, oy, dw, dh);
+    extendSheetEdges(sheetCtx, source.image, sheetCanvas.width, sheetCanvas.height, ox, oy, dw, dh);
   } else {
     paintGradient(sheetCtx, sheetCanvas.width, sheetCanvas.height, source.gradient);
   }
