@@ -30,6 +30,7 @@ const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
 const ALL_ACTIONS = new Set([
   'drawer',
   'palette',
+  'color-picker',
   'brushes',
   'stroke-width',
   'parent-center',
@@ -406,6 +407,31 @@ async function runActionSweep({ client, sessionId, execute, actions, originalOri
         label: 'change ink color',
         selector,
         ready: `document.querySelector(${JSON.stringify(selector)})?.classList.contains('active') === true`,
+      })
+    );
+  }
+
+  if (actions.has('color-picker')) {
+    await record(
+      measureClick({
+        client,
+        sessionId,
+        execute,
+        label: 'open custom color picker',
+        selector: '.gradient-swatch',
+        ready: `document.querySelector('#color-picker')?.open === true`,
+        settleMs: ANIMATED_ACTION_SETTLE_MS,
+      })
+    );
+    await record(
+      measureClick({
+        client,
+        sessionId,
+        execute,
+        label: 'select custom color',
+        selector: '#color-picker .hexagon:not(.selected)',
+        ready: `document.querySelector('#color-picker')?.open !== true && document.querySelector('.gradient-swatch')?.classList.contains('active') === true`,
+        settleMs: ANIMATED_ACTION_SETTLE_MS,
       })
     );
   }

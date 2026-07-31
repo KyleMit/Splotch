@@ -193,6 +193,7 @@
     overflow: hidden;
     padding: 0;
     touch-action: none;
+    will-change: transform;
   }
 
   .picker {

@@ -92,16 +92,16 @@ began before event delivery, then fixed the genuine cases one at a time:
 | Drag-to-clear                                        |       75–83 |       20 | ADR-0086        |
 | Cold What's New first response                       |       40–65 |       16 | ADR-0061        |
 | Magic-brush selection (first response / post-action) |     92 / 66 |   8 / 18 | ADR-0043        |
+| Cold custom-color picker open                        |          41 |       18 | ADR-0048        |
 | Crayon-brush selection                               |       29–45 |       20 | ADR-0065        |
 
 “Final” is the maximum fully post-action interval except for What's New, whose problem and final
 value are action-to-first-frame; Magic shows both because both failed. The final production
-candidate ran all 36 actions three times: every action passed; first-response P95 was at most 32 ms,
-post-action P95 was 17 ms throughout, and post-action maxima were at most 26 ms. The slower passing
-tails were coloring-page selection at 26 ms, What's New and post-rotation clear at 25 ms, ink
-rotation and coloring-book open at 24 ms, and blank rotation at 23 ms. These remain ranked
-watchpoints rather than additional fixes because they have hard-threshold headroom and no repeated
-P95 miss.
+candidate ran all 38 actions three times: every action passed; first-response P95 was at most 30 ms,
+post-action P95 was at most 19 ms, and post-action maxima were at most 30 ms. The slower passing
+tails were custom-color selection at 30 ms, coloring-page selection at 28 ms, What's New at 26 ms,
+ink rotation at 25 ms, and clear/blank rotation at 20–21 ms. These remain ranked watchpoints rather
+than additional fixes because they pass both action gates and have no repeated P95 miss.
 
 ### Hosted-device CI uses the same Appium protocol
 
