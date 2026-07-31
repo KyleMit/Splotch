@@ -1,32 +1,26 @@
 [
   {
     "version": "1.4.0",
-    "date": "2026-07-28",
-    "bodyHtml": "<h2>✨ New</h2>\n<ul>\n<li>Dark mode — Light, Dark, or follow your device.</li>\n<li>A wax crayon brush, from the new Brush Menu.</li>\n<li>The magic brush now works on any drawing.</li>\n<li>Report a bug from the Parent Center.</li>\n</ul>\n<h2>🚀 Improved</h2>\n<ul>\n<li>Rotating your device keeps the paper upright.</li>\n<li>Undo now goes back 20 steps.</li>\n<li>A bigger eraser, sized as holes in the paper.</li>\n</ul>\n<h2>🛠 Fixed</h2>\n<ul>\n<li>The magic brush no longer leaves ghost outlines.</li>\n<li>Swatches and pages read correctly in dark mode.</li>\n<li>The drag-to-clear tutorial no longer vanishes instantly.</li>\n</ul>"
+    "date": "2026-07-28"
   },
   {
     "version": "1.3.0",
-    "date": "2026-07-05",
-    "bodyHtml": "<h2>✨ New</h2>\n<ul>\n<li>Parent Center: a slider to resize the on-screen buttons.</li>\n<li>Save your drawings straight to a folder on your computer (web).</li>\n<li>A fullscreen button for a distraction-free canvas (web).</li>\n<li>Add Splotch to your home screen with a friendly one-tap install prompt (web).</li>\n<li>Native Apple Pencil support, including a double-tap-to-erase setting.</li>\n</ul>\n<h2>🚀 Improved</h2>\n<ul>\n<li>Faster first load and quicker startup.</li>\n<li>Bigger, easier-to-tap buttons and color swatches.</li>\n<li>Sliders now snap to their default value.</li>\n</ul>\n<h2>🛠 Fixed</h2>\n<ul>\n<li>Apple Pencil strokes and quick taps no longer get dropped.</li>\n<li>White strokes are now easy to see while drawing.</li>\n<li>The color palette stays centered in landscape.</li>\n<li>Menus no longer overlap on small phones.</li>\n<li>Double-tapping a button no longer opens things twice.</li>\n</ul>"
+    "date": "2026-07-05"
   },
   {
     "version": "1.2.0",
-    "date": "2026-06-22",
-    "bodyHtml": "<h2>✨ New</h2>\n<ul>\n<li>Splotch is now on iPhone and iPad.</li>\n<li>A volume slider to fine-tune the sound.</li>\n<li>Swipe between tabs in Parent Controls.</li>\n</ul>\n<h2>🚀 Improved</h2>\n<ul>\n<li>Smoother, crisper strokes.</li>\n<li>Faster drawing and saving.</li>\n</ul>\n<h2>🛠 Fixed</h2>\n<ul>\n<li>The first stroke now always draws.</li>\n<li>No more streaky multi-touch lines on iPhone/iPad.</li>\n<li>Saving no longer creates a blank picture.</li>\n<li>App updates no longer leave stale content.</li>\n</ul>"
+    "date": "2026-06-22"
   },
   {
     "version": "1.1.0",
-    "date": "2026-06-05",
-    "bodyHtml": "<h2>✨ New</h2>\n<ul>\n<li>Lock screen rotation so your drawing stays put — on by default.</li>\n<li>Tap the speaker icon to mute or unmute sounds.</li>\n</ul>\n<h2>🚀 Improved</h2>\n<ul>\n<li>Coloring pages now adapt to both portrait and landscape.</li>\n<li>Sounds start sooner for snappier feedback.</li>\n<li>Better screen-reader support for in-app messages.</li>\n</ul>\n<h2>🛠 Fixed</h2>\n<ul>\n<li>Your coloring page no longer resets when you rotate the device.</li>\n<li>Fixed the layout on wide screens.</li>\n</ul>"
+    "date": "2026-06-05"
   },
   {
     "version": "1.0.1",
-    "date": "2026-06-03",
-    "bodyHtml": "<h2>🚀 Improved</h2>\n<ul>\n<li>More colors now fit on smaller screens.</li>\n<li>The clear button is friendlier and more fun.</li>\n<li>A colorful gradient sweeps in while you&#39;re clearing the canvas.</li>\n</ul>\n<h2>🛠 Fixed</h2>\n<ul>\n<li>The color palette now adapts more gracefully across devices.</li>\n</ul>"
+    "date": "2026-06-03"
   },
   {
     "version": "1.0.0",
-    "date": "2026-06-01",
-    "bodyHtml": "<h2>✨ New</h2>\n<ul>\n<li>First public release of Splotch — a quiet, ad-free drawing app made for the youngest artists.</li>\n<li>Draw with big, chunky, crayon-like strokes and a row of bright, friendly colors.</li>\n<li>Rainbow color picker for hundreds more colors.</li>\n<li>Coloring book pages to fill in.</li>\n<li>Parent Center: settings, install help, and an About page — no ads, no tracking, no accounts.</li>\n</ul>"
+    "date": "2026-06-01"
   }
 ]

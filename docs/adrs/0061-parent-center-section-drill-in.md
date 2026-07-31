@@ -27,6 +27,13 @@ A later physical-iPad action sweep found one cold-path exception: the first What
 locale machinery on the first call, so one of ten focused opens took 42 ms to present while the
 other nine took 9–11 ms. No canvas or drawing-engine work occurred.
 
+A subsequent cross-target sweep found a second cold path after date formatting was removed. The
+section still instantiated up to five cards from runtime `{@html}` strings. Android Chrome reached a
+66.7 ms post-action frame, and desktop WebKit took 90 ms to present the current-release-only variant
+on its first open. Rendering older cards one per animation frame merely split the work across
+blocking presentation frames; it did not remove HTML parsing and DOM construction from the
+interaction.
+
 ## Decision
 
 Replace the tabs with **one flat, ordered list of sections**, rendered through **two shells chosen
@@ -50,11 +57,14 @@ by viewport width** — both reading the same section definitions, so the layout
 * **The per-button on/off list became a 2-column chip grid** ("Show these buttons") in Controls &
   Buttons, replacing the stack of six toggle rows.
 * **Release notes split into their own What's New section**; About now holds only identity, links,
-  and version. Submit Feedback is promoted from an About sub-section to a top-level section. Release
-  dates are generated as validated `YYYY-MM-DD` strings and formatted with a static English month
-  table when the section mounts. This preserves the same `July 28, 2026` presentation without
-  constructing `Date` objects, shifting across time zones, or initializing `Intl` on the response
-  frame.
+  and version. Submit Feedback is promoted from an About sub-section to a top-level section. The
+  build generates metadata JSON plus a Svelte component containing the current release's compiled
+  markup. The section renders only that current release and links to GitHub for full history. Its
+  static English month table preserves the same `July 28, 2026` presentation without constructing
+  `Date` objects, shifting across time zones, initializing `Intl`, or parsing HTML on the response
+  frame. The generator splits the current note at its level-two headings; the first compiled section
+  renders with the card and the remaining sections appear one per presentation frame. No frame has
+  to construct and lay out the entire note at once, and no work is added to app boot.
 
 `TabPager`/`TabPagerTab`/`tabPagerContext` are deleted — the pager was Parent-Center-only.
 
@@ -67,6 +77,19 @@ Alternatives considered:
 * **A single responsive component with CSS-only layout switching** — the two shells differ in
   structure (a hub has no persistent nav; the pane always shows a section), not just in CSS, so a
   small `wide` branch in the shell is clearer than contorting one DOM to serve both.
+* **`content-visibility: auto` on release cards** — Android still produced a 66.8 ms maximum frame
+  because the browser had to parse and construct the DOM even when layout and paint were deferred.
+* **Reveal historical cards over successive animation frames** — the browser performs each callback
+  before paint, so runtime HTML parsing still consumed presentation frames. Keeping the complete
+  history behind the existing release link removes that low-value work entirely.
+* **Keep only the current release but retain runtime `{@html}`** — Android improved to a 33.4 ms
+  maximum frame, but desktop WebKit still showed a 90 ms cold response. Compiling the same markup as
+  Svelte eliminates the runtime parser path without changing the visible current-release content.
+* **Prewarm the compiled note in a detached element during boot idle** — this reduced the iPad
+  simulator's cold response to 10 ms and added no mount-profile long task, but detached DOM does not
+  perform visible layout or font shaping. Two of three desktop WebKit samples retained a 43–47 ms
+  cold response. Progressive compiled sections address the remaining visible work and avoid another
+  boot responsibility.
 
 ## Consequences
 
@@ -77,9 +100,19 @@ Alternatives considered:
 * \+ Navigation is plain button clicks (drill-in or sidebar select), so the native smoke test taps
   "About" directly instead of driving fragile horizontal swipes, and the WKWebView pager no-op is
   gone.
-* \+ Ten cold What's New opens measured 16 ms first-frame P95 and 25 ms maximum post-action frame,
-  down from 42 ms first-frame P95 in the baseline; every run passed the 20/32 ms action gates with
-  identical visible date text.
+* \+ The locale-free date path reduced the original physical-iPad sample from 42 ms first-frame P95
+  to 16 ms, with a 25 ms maximum post-action frame.
+* \+ Compiled, progressive current notes reduced the iPad simulator's later cold response from 72 ms
+  to 13 ms first-frame P95, with 17 ms post-action P95 / maximum. Android measured 9.5 ms
+  first-frame P95 and 16.8 ms post-action P95 / maximum. Two ten-run desktop WebKit samples measured
+  25 ms and 23 ms first-frame P95, with 19 ms maximum post-action frames. These pass the shared 20
+  ms post-action P95 and 33.5 ms first-frame / maximum gates with the same complete current-release
+  content, filled in over two subsequent frames.
+* \+ A 4× CPU tablet mount trace remained at 74/89 ms for its two pre-existing long tasks, matching
+  the no-prewarm 76/89 ms baseline. The persistent 89 ms task is the sound preload; release-note
+  work no longer runs during boot.
+* − The in-app section shows only the current release. Older notes remain available through “See all
+  releases,” trading embedded history for consistently responsive navigation.
 * − Two layouts to keep in mind when styling a section, and a viewport-width branch in the shell
   (mitigated by every section rendering the same component in both).
 * − Deep-linking to a specific section still isn't a URL (the Parent Center is a client-only modal);
