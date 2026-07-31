@@ -81,6 +81,9 @@ includes automation round-trip time.
 The command repeats the suite three times by default, writes raw samples and grouped summaries, and
 fails the 20/32 ms action gates. `--report-only` lets an exploratory sweep rank every failure
 instead of stopping at the first one. `--actions=` selects a focused family for one-change trials.
+Parent-setting actions normalize and restore known baselines around every sound, auto-save,
+advanced-control, and button-visibility round trip. A failed or interrupted audit therefore cannot
+silently remove controls from the later action sequence.
 
 The first full-suite campaign separated genuine action-local failures from native intervals that
 began before event delivery, then fixed the genuine cases one at a time:
@@ -97,11 +100,14 @@ began before event delivery, then fixed the genuine cases one at a time:
 
 “Final” is the maximum fully post-action interval except for What's New, whose problem and final
 value are action-to-first-frame; Magic shows both because both failed. The final production
-candidate ran all 38 actions three times: every action passed; first-response P95 was at most 30 ms,
-post-action P95 was at most 19 ms, and post-action maxima were at most 30 ms. The slower passing
-tails were custom-color selection at 30 ms, coloring-page selection at 28 ms, What's New at 26 ms,
-ink rotation at 25 ms, and clear/blank rotation at 20–21 ms. These remain ranked watchpoints rather
-than additional fixes because they pass both action gates and have no repeated P95 miss.
+candidate ran all 46 actions three times: every action passed; first-response P95 was at most 29 ms,
+post-action P95 was 17 ms throughout, and post-action maxima were at most 32 ms. One coloring-book
+open reached that hard-max boundary; its immediate five-repeat follow-up measured 17 ms P95 and 20
+ms max, so it was not a reproducible failure. The slower repeatable passing tails were custom-color
+selection at 29 ms, coloring-page selection at 27 ms, What's New at 25 ms, ink-color selection at 24
+ms, and rotations at 20–22 ms. The added Parent Center setting round trips measured 17 ms P95
+throughout and at most 24 ms in their five-repeat audit. These remain ranked watchpoints rather than
+additional fixes because they pass both action gates and have no repeated P95 miss.
 
 ### Hosted-device CI uses the same Appium protocol
 

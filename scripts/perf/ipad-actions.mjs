@@ -35,6 +35,7 @@ const ALL_ACTIONS = new Set([
   'stroke-width',
   'parent-center',
   'parent-sections',
+  'parent-settings',
   'theme',
   'coloring',
   'screenshot',
@@ -359,6 +360,38 @@ async function measureRotation(client, sessionId, execute, from, to, label) {
 async function runActionSweep({ client, sessionId, execute, actions, originalOrientation }) {
   const samples = [];
   const record = async (promise) => samples.push(await promise);
+  const recordToggleRoundTrip = async ({
+    label,
+    selector,
+    readyFor,
+    stateAttribute = 'aria-checked',
+    baseline,
+  }) => {
+    const stateExpression = (enabled) =>
+      `document.querySelector(${JSON.stringify(selector)})?.getAttribute(${JSON.stringify(stateAttribute)}) === '${enabled}'${readyFor ? ` && (${readyFor(enabled)})` : ''}`;
+    const initial = await execute(
+      `return document.querySelector(${JSON.stringify(selector)})?.getAttribute(${JSON.stringify(stateAttribute)}) === 'true';`
+    );
+    if (initial !== baseline) {
+      await execute(`document.querySelector(${JSON.stringify(selector)})?.click(); return true;`);
+      await waitForReady(execute, stateExpression(baseline), `${label} baseline`);
+      await sleep(ANIMATED_ACTION_SETTLE_MS);
+    }
+    for (const next of [!baseline, baseline]) {
+      await record(
+        measureClick({
+          client,
+          sessionId,
+          execute,
+          label: `${next ? 'enable' : 'disable'} ${label}`,
+          selector,
+          ready: stateExpression(next),
+          settleMs: ANIMATED_ACTION_SETTLE_MS,
+          activation: 'webdriver',
+        })
+      );
+    }
+  };
 
   if (actions.has('drawer')) {
     await ensureState(
@@ -512,7 +545,12 @@ async function runActionSweep({ client, sessionId, execute, actions, originalOri
     );
   }
 
-  if (actions.has('parent-center') || actions.has('parent-sections') || actions.has('theme')) {
+  if (
+    actions.has('parent-center') ||
+    actions.has('parent-sections') ||
+    actions.has('parent-settings') ||
+    actions.has('theme')
+  ) {
     await closeDialogs(execute);
     await record(
       measureClick({
@@ -590,7 +628,64 @@ async function runActionSweep({ client, sessionId, execute, actions, originalOri
     );
   }
 
-  if (actions.has('parent-center') || actions.has('parent-sections') || actions.has('theme')) {
+  if (actions.has('parent-settings')) {
+    await execute(
+      `document.querySelector('#parentHelpModal .pc-nav-item:nth-child(2)')?.click(); return true;`
+    );
+    await waitForReady(execute, `document.querySelector('#soundToggle') !== null`, 'Sound section');
+    await recordToggleRoundTrip({
+      label: 'drawing sounds',
+      selector: '#soundToggle',
+      baseline: true,
+      readyFor: (enabled) =>
+        `document.querySelector('#soundVolumeLabel') ${enabled ? '!== null' : '=== null'}`,
+    });
+
+    await execute(
+      `document.querySelector('#parentHelpModal .pc-nav-item:nth-child(3)')?.click(); return true;`
+    );
+    await waitForReady(
+      execute,
+      `document.querySelector('#saveOnDeleteToggle') !== null`,
+      'Saving section'
+    );
+    await recordToggleRoundTrip({
+      label: 'auto-save on delete',
+      selector: '#saveOnDeleteToggle',
+      baseline: false,
+    });
+
+    await execute(
+      `document.querySelector('#parentHelpModal .pc-nav-item:nth-child(4)')?.click(); return true;`
+    );
+    await waitForReady(
+      execute,
+      `document.querySelector('#advancedControlsToggle') !== null`,
+      'Controls & Buttons section'
+    );
+    await recordToggleRoundTrip({
+      label: 'advanced controls',
+      selector: '#advancedControlsToggle',
+      baseline: true,
+      readyFor: (enabled) =>
+        `document.querySelector('#screenshotToggle') ${enabled ? '!== null' : '=== null'}`,
+    });
+    await recordToggleRoundTrip({
+      label: 'screenshot action button',
+      selector: '#screenshotToggle',
+      stateAttribute: 'aria-pressed',
+      baseline: true,
+      readyFor: (enabled) =>
+        `document.documentElement.hasAttribute('data-off-screenshot') === ${!enabled}`,
+    });
+  }
+
+  if (
+    actions.has('parent-center') ||
+    actions.has('parent-sections') ||
+    actions.has('parent-settings') ||
+    actions.has('theme')
+  ) {
     await record(
       measureClick({
         client,
