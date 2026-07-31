@@ -8,16 +8,27 @@
   // in GitHub releases, behind the "See all releases" link.
   const RELEASES_URL = 'https://github.com/KyleMit/Splotch/releases';
   const recent = releases.slice(0, 5);
+  const RELEASE_MONTHS = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
 
   // Dates in releases.json are plain YYYY-MM-DD; parse the parts directly so
-  // formatting never shifts a day across timezones.
+  // formatting never shifts a day across timezones or initializes Intl on the
+  // section's first displayed frame.
   function formatReleaseDate(isoDate: string): string {
     const [year, month, day] = isoDate.split('-').map(Number);
-    return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    return `${RELEASE_MONTHS[month - 1]} ${day}, ${year}`;
   }
 </script>
 

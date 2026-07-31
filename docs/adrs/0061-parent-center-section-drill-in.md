@@ -22,6 +22,11 @@ still.
 We wanted: no giant scroll, room to grow the destination list, and a shape that works in a phone
 modal and on a tablet/desktop where there's horizontal room to spare.
 
+A later physical-iPad action sweep found one cold-path exception: the first What's New render called
+`Date.prototype.toLocaleDateString` for five release cards. MobileSafari lazily initialized its
+locale machinery on the first call, so one of ten focused opens took 42 ms to present while the
+other nine took 9–11 ms. No canvas or drawing-engine work occurred.
+
 ## Decision
 
 Replace the tabs with **one flat, ordered list of sections**, rendered through **two shells chosen
@@ -45,7 +50,11 @@ by viewport width** — both reading the same section definitions, so the layout
 * **The per-button on/off list became a 2-column chip grid** ("Show these buttons") in Controls &
   Buttons, replacing the stack of six toggle rows.
 * **Release notes split into their own What's New section**; About now holds only identity, links,
-  and version. Submit Feedback is promoted from an About sub-section to a top-level section.
+  and version. Submit Feedback is promoted from an About sub-section to a top-level section. Release
+  dates are generated as validated `YYYY-MM-DD` strings and formatted with a static English month
+  table when the section mounts. This preserves the same `July 28, 2026` presentation without
+  constructing `Date` objects, shifting across time zones, or initializing `Intl` on the response
+  frame.
 
 `TabPager`/`TabPagerTab`/`tabPagerContext` are deleted — the pager was Parent-Center-only.
 
@@ -68,6 +77,9 @@ Alternatives considered:
 * \+ Navigation is plain button clicks (drill-in or sidebar select), so the native smoke test taps
   "About" directly instead of driving fragile horizontal swipes, and the WKWebView pager no-op is
   gone.
+* \+ Ten cold What's New opens measured 16 ms first-frame P95 and 25 ms maximum post-action frame,
+  down from 42 ms first-frame P95 in the baseline; every run passed the 20/32 ms action gates with
+  identical visible date text.
 * − Two layouts to keep in mind when styling a section, and a viewport-width branch in the shell
   (mitigated by every section rendering the same component in both).
 * − Deep-linking to a specific section still isn't a URL (the Parent Center is a client-only modal);
