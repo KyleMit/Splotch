@@ -422,10 +422,13 @@
     grid-template-columns: 1fr;
     align-items: center;
     margin-right: 8px;
-    --drawer-collapse: 0.28s;
+    /* Grid-track animation repaints the scene beneath this fixed panel on mobile
+       Chromium. Keep the motion perceptible without spanning enough frames to
+       starve drawing-surface presentation. */
+    --drawer-collapse: calc(var(--duration-fast) / 2);
     --drawer-transition:
       grid-template-columns var(--drawer-collapse) ease,
-      grid-template-rows var(--drawer-collapse) ease, opacity var(--duration-base) ease,
+      grid-template-rows var(--drawer-collapse) ease, opacity var(--drawer-collapse) ease,
       margin var(--drawer-collapse) ease;
     transition: var(--drawer-transition);
   }
