@@ -7,7 +7,7 @@
 // Save-time-only, so the engine loads this module on demand (issue #461) —
 // keep it free of static importers or it silently merges back into the startup
 // bundle (web/tests/startup-bundle.spec.ts guards the modulepreload list). The
-// stroke snapshot is taken synchronously by engine.exportCanvasBlob BEFORE the
+// stroke snapshot is taken synchronously by engineExport BEFORE the
 // module load's await, so a clear racing the export can't blank it.
 
 import { PAPER_COLORS, type ResolvedTheme } from '../theme';

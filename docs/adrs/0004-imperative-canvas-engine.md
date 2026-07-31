@@ -32,10 +32,8 @@ state. Components call `initDrawingCanvas(canvas, options)` on mount, then imper
 `setColor()`, `setStrokeWidth()`, `undo()`, `clearCanvas()`, and `exportCanvasBlob()`. The engine
 signals state changes back to Svelte via typed callbacks (`onDrawSound`, `onUndoStateChange`,
 `onCanvasEmptyChange`). These callbacks are wired into thin `$state` bridging objects in
-`state/canvas.svelte.ts`. (The engine has since been split into focused sibling modules —
-`undoHistory.ts`, `strokeOps.ts`, `commandSimplify.ts`, `exportDrawing.ts` — that are
-module-singletons in the same way; `engine.ts` remains the facade components import, and this
-decision is unaffected.)
+`state/canvas.svelte.ts`. The engine delegates focused state or mechanics to drawing siblings while
+`engine.ts` remains the facade components import; this decision is unaffected.
 
 The virtual canvas (a second off-screen canvas, 2× the viewport dimension) was used as a composite
 buffer so that drawing content survives viewport resize and orientation change without loss.
@@ -85,9 +83,12 @@ is again a raster (the "paper"), with a depth-20 stack of pre-stroke snapshots. 
 untouched. What changed shape:
 
 * **The sibling-module list:** `commandSimplify.ts` was deleted with the ADR-0036 simplification
-  pipeline. The engine's current focused siblings are `undoHistory.ts`, `strokeOps.ts`,
-  `strokeMath.ts`, `paperView.ts`, `magicBrush.ts`, `crayonBrush.ts`, `emptyScan.ts`, and
-  `exportDrawing.ts` — module-singletons in the same way, with `engine.ts` still the facade.
+  pipeline. The engine's current focused siblings include `undoHistory.ts`, `tiledRenderer.ts`,
+  `tiledSurfaces.ts`, `tiledUndoPatches.ts`, `strokeOps.ts`, `strokeMath.ts`, `paperView.ts`,
+  `magicBrush.ts`, `crayonBrush.ts`, `brushState.ts`, `engineListeners.ts`, `engineExport.ts`,
+  `emptyScan.ts`, and `exportDrawing.ts`. Mutable history and renderer modules remain
+  module-singletons; geometry, projection, listener registration, surface allocation, and export
+  orchestration are stateless helpers. `engine.ts` remains the only facade components import.
 * **The undo-memory consequence is re-opened, as a managed budget, not the naïve stack.** The
   "resolved by ADR-0033: one baseline raster + a small command log" note no longer describes the
   code: history is again full-canvas snapshots, but tiered — the paper plus the `K_LIVE = 2` most

@@ -126,6 +126,11 @@ resolution. Operations stay in paper coordinates. `tiledRenderer.ts` applies the
 transform to each tile, culls dots and paths by their paper-space bounds, and renders only
 intersecting tiles.
 
+`tiledSurfaces.ts` owns discovery and construction of the template-provided tile elements, normal
+and crayon backing-store allocation, deferred hidden-tile clears, and history-base tile creation.
+`tiledRenderer.ts` owns renderer/history orchestration over those surfaces. This separation keeps
+surface lifecycle independent of command ordering without changing allocation timing or pixels.
+
 Production history retains vector operations and folds its non-undoable prefix, one command at a
 time, into a 4×4 offscreen raster base after 1.5 seconds without active input. Pointerdown cancels
 pending compaction. ADR-0086 replaces ordinary vector-replay undo with cropped, tile-local
