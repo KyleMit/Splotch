@@ -292,6 +292,31 @@ review-surface consequences (the coloring-book proof sheet's `buildFills` now ru
 `--source samples`) live in
 [`tools/asset-gen/docs/inpainted-fill-punch.md`](../../tools/asset-gen/docs/inpainted-fill-punch.md).
 
+## Follow-up (2026-07): tile patterns are allocated on first intersection
+
+Selecting the Magic brush used to rasterize the one shared color sheet and then eagerly ask every
+live tile for its own pattern. On the physical iPad, `sheetPatternFor` therefore allocated and
+copied 16 detached tile-region canvases in the selection frame. The copies were intended to remove
+setup from the drawing path, but they made selecting the brush visibly freeze.
+
+One-change physical-device trials separated the shared-sheet cost from the tile-copy cost:
+
+| selection strategy                         | first response P95 | post-action max | first Magic stroke |
+| ------------------------------------------ | -----------------: | --------------: | ------------------ |
+| Shared sheet + eager patterns for 16 tiles |              92 ms |           66 ms | not measured       |
+| **Shared sheet + lazy intersected tiles**  |           **8 ms** |       **18 ms** | 16 ms paint P95    |
+
+The retained design still calls `ensureMagicSheet()` when Magic is selected. It removes only the
+whole-grid prewarm: `renderTiledOp` asks `sheetPatternFor` for each tile the stroke actually
+intersects, and the existing source-keyed, per-context cache makes that tile's first allocation the
+only one. The trusted-touch first-stroke run measured 20 ms paint P99, 24 ms paint max, zero
+starvation, 1 ms undo-engine P95, and 6 ms undo-to-next-frame P95. Thus deferring the copies did not
+move the selection hitch into drawing. Pattern pixels, resolution, sheet dimensions, and caching are
+unchanged, so this has no visible fidelity tradeoff.
+
+The physical action suite measures Magic selection alongside every other brush selection, while the
+trusted-touch drawing suite exercises the lazy first-pattern path and undo.
+
 ## Amendment (ADR-0066, 2026-07)
 
 ADR-0066 replaced the command log with snapshot undo (the committed "paper" raster + a depth-20

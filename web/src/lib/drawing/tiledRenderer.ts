@@ -562,10 +562,6 @@ export function tiledHistoryDebug(): HistoryDebug {
   };
 }
 
-export function prewarmTiledMagicPatterns() {
-  for (const tile of liveTiles) sheetPatternFor(tile.ctx);
-}
-
 export function captureTiledCanvasSnapshot(): TiledCanvasSnapshot | null {
   if (
     !canvas ||

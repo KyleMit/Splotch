@@ -421,32 +421,46 @@ async function runActionSweep({ client, sessionId, execute, actions, originalOri
         ready: `document.querySelector('#brushButton')?.getAttribute('aria-expanded') === 'true'`,
       })
     );
-    await record(
-      measureClick({
-        client,
-        sessionId,
-        execute,
+    const brushSelections = [
+      {
         label: 'select crayon brush',
         selector: '#crayonBrushButton',
         ready: `document.documentElement.dataset.brush === 'crayon'`,
-      })
-    );
-    await execute(`document.querySelector('#brushButton')?.click(); return true;`);
-    await waitForReady(
-      execute,
-      `document.querySelector('#brushButton')?.getAttribute('aria-expanded') === 'true'`,
-      'brush menu to reopen'
-    );
-    await record(
-      measureClick({
-        client,
-        sessionId,
-        execute,
+      },
+      {
+        label: 'select Magic brush',
+        selector: '#magicBrushButton',
+        ready: `document.documentElement.dataset.brush === 'magic'`,
+      },
+      {
+        label: 'select eraser',
+        selector: '#eraserButton',
+        ready: `document.documentElement.dataset.brush === 'eraser'`,
+      },
+      {
         label: 'select pen brush',
         selector: '#penBrushButton',
         ready: `!document.documentElement.hasAttribute('data-brush')`,
-      })
-    );
+      },
+    ];
+    for (const [index, selection] of brushSelections.entries()) {
+      if (index > 0) {
+        await execute(`document.querySelector('#brushButton')?.click(); return true;`);
+        await waitForReady(
+          execute,
+          `document.querySelector('#brushButton')?.getAttribute('aria-expanded') === 'true'`,
+          'brush menu to reopen'
+        );
+      }
+      await record(
+        measureClick({
+          client,
+          sessionId,
+          execute,
+          ...selection,
+        })
+      );
+    }
   }
 
   if (actions.has('stroke-width')) {

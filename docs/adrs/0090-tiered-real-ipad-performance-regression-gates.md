@@ -82,6 +82,27 @@ The command repeats the suite three times by default, writes raw samples and gro
 fails the 20/32 ms action gates. `--report-only` lets an exploratory sweep rank every failure
 instead of stopping at the first one. `--actions=` selects a focused family for one-change trials.
 
+The first full-suite campaign separated genuine action-local failures from native intervals that
+began before event delivery, then fixed the genuine cases one at a time:
+
+| Ranked action                                        | Baseline ms | Final ms | Owning decision |
+| ---------------------------------------------------- | ----------: | -------: | --------------- |
+| Blank rotation immediately after clear               |     111–129 |       23 | ADR-0089        |
+| Ink return after that blank/undo sequence            |         131 |       24 | ADR-0089        |
+| Drag-to-clear                                        |       75–83 |       20 | ADR-0086        |
+| Cold What's New first response                       |       40–65 |       16 | ADR-0061        |
+| Magic-brush selection (first response / post-action) |     92 / 66 |   8 / 18 | ADR-0043        |
+| Crayon-brush selection                               |       29–45 |       20 | ADR-0065        |
+
+“Final” is the maximum fully post-action interval except for What's New, whose problem and final
+value are action-to-first-frame; Magic shows both because both failed. The final production
+candidate ran all 36 actions three times: every action passed; first-response P95 was at most 32 ms,
+post-action P95 was 17 ms throughout, and post-action maxima were at most 26 ms. The slower passing
+tails were coloring-page selection at 26 ms, What's New and post-rotation clear at 25 ms, ink
+rotation and coloring-book open at 24 ms, and blank rotation at 23 ms. These remain ranked
+watchpoints rather than additional fixes because they have hard-threshold headroom and no repeated
+P95 miss.
+
 ### Hosted-device CI uses the same Appium protocol
 
 The runner accepts `--appium-url=` with HTTP basic credentials and a `--capabilities-file=`

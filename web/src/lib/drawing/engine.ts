@@ -113,7 +113,6 @@ import {
   commitTiledCommand,
   detachTiledRenderer,
   hasUnresolvedTiledMagicOps,
-  prewarmTiledMagicPatterns,
   recordTiledOp,
   repaintTiledRenderer,
   renderTiledOp,
@@ -1470,10 +1469,7 @@ export function setEraserMode(active: boolean) {
 // coloring page is applied, or when a rainbow is already held from before).
 export function setMagicMode(active: boolean) {
   magicActive = active;
-  if (active) {
-    ensureMagicSheet();
-    prewarmTiledMagicPatterns();
-  }
+  if (active) ensureMagicSheet();
 }
 
 // The brush mode the engine has COMMITTED — the mode a stroke started right now
