@@ -57,9 +57,15 @@ async function run(browser, base) {
     { x: box.width * 0.7, y: box.height * 0.6 },
   ]);
   const painted = await page.evaluate(() => {
-    const c = document.getElementById('drawingCanvas');
-    const { data } = c.getContext('2d').getImageData(0, 0, c.width, c.height);
-    for (let i = 3; i < data.length; i += 4) if (data[i] > 0) return true;
+    const input = document.getElementById('drawingCanvas');
+    const tiles = [...document.querySelectorAll('canvas[data-live-tile]:not([hidden])')];
+    const canvases = tiles.length > 0 ? tiles : [input];
+    for (const canvas of canvases) {
+      const { data } = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+      for (let index = 3; index < data.length; index += 4) {
+        if (data[index] > 0) return true;
+      }
+    }
     return false;
   });
   check('drawStroke lays ink on the canvas', painted);
