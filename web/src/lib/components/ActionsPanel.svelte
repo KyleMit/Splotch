@@ -27,7 +27,7 @@
   } from '$lib/actionButtonLayout';
   import { undo } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
-  import { SCREENSHOT_BUTTON_ID } from '$lib/drawing/polaroidAnimation';
+  import { SCREENSHOT_BUTTON_ID } from '$lib/drawing/screenshotFeedback';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
 
   let brushWrapperEl: HTMLDivElement | undefined = $state();

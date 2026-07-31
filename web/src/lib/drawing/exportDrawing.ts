@@ -13,6 +13,10 @@
 import { PAPER_COLORS, type ResolvedTheme } from '../theme';
 import { resolvedTheme } from '../state/appearance.svelte';
 import { containFit } from './paperView';
+import { encodeCanvasPng } from './pngEncoder';
+
+type ExportCanvas = HTMLCanvasElement | OffscreenCanvas;
+type ExportContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 export interface ExportOptions {
   includePaperTexture?: boolean;
@@ -20,10 +24,6 @@ export interface ExportOptions {
 
 let paperTextureImage: HTMLImageElement | null = null;
 let paperTexturePromise: Promise<HTMLImageElement | null> | null = null;
-
-// The 2× export floor preserves crisp paper-texture and overlay resampling on
-// 1x screens while balancing PNG size and canvas-memory use.
-const MIN_EXPORT_SCALE = 2;
 
 function loadPaperTexture(): Promise<HTMLImageElement | null> {
   if (paperTextureImage) return Promise.resolve(paperTextureImage);
@@ -50,22 +50,24 @@ export function warmPaperTexture() {
 }
 
 async function paintPaperBackground(
-  target: CanvasRenderingContext2D,
+  target: ExportContext,
   w: number,
   h: number,
   includePaperTexture: boolean,
   theme: ResolvedTheme
 ) {
+  target.globalCompositeOperation = 'destination-over';
+  if (includePaperTexture) {
+    const texture = await loadPaperTexture();
+    const pattern = texture ? target.createPattern(texture, 'repeat') : null;
+    if (pattern) {
+      target.fillStyle = pattern;
+      target.fillRect(0, 0, w, h);
+    }
+  }
   target.fillStyle = PAPER_COLORS[theme];
   target.fillRect(0, 0, w, h);
-  if (!includePaperTexture) return;
-  const texture = await loadPaperTexture();
-  if (!texture) return;
-  const pattern = target.createPattern(texture, 'repeat');
-  if (!pattern) return;
-  // The texture is a low-alpha grain layer, so it composites over either fill.
-  target.fillStyle = pattern;
-  target.fillRect(0, 0, w, h);
+  target.globalCompositeOperation = 'source-over';
 }
 
 // Invert the (opaque) line art the way the on-screen --lineart-filter does.
@@ -89,7 +91,7 @@ function invertedOverlay(overlay: HTMLImageElement): HTMLCanvasElement | null {
 // lines multiplied over light paper, or (dark mode) the inverted white lines
 // screened over the dark paper.
 function drawOverlayContained(
-  target: CanvasRenderingContext2D,
+  target: ExportContext,
   overlay: HTMLImageElement,
   w: number,
   h: number,
@@ -119,7 +121,7 @@ function drawOverlayContained(
 }
 
 export async function composeExportPng(
-  snapshot: HTMLCanvasElement,
+  snapshot: ExportCanvas,
   renderScale: number,
   overlayImage: HTMLImageElement | null = null,
   options: ExportOptions = {}
@@ -133,22 +135,17 @@ export async function composeExportPng(
   // and the night-fill reveals already baked into the replayed strokes.
   const theme = resolvedTheme();
 
-  const exportScale = Math.max(window.devicePixelRatio || 1, MIN_EXPORT_SCALE);
   const w = snapshot.width / renderScale;
   const h = snapshot.height / renderScale;
 
-  const out = document.createElement('canvas');
-  out.width = Math.round(w * exportScale);
-  out.height = Math.round(h * exportScale);
-  const outCtx = out.getContext('2d');
-  if (!outCtx) return null;
-  outCtx.imageSmoothingEnabled = true;
-  outCtx.imageSmoothingQuality = 'high';
-  outCtx.scale(exportScale, exportScale);
+  const target = snapshot.getContext('2d');
+  if (!target) return null;
+  target.imageSmoothingEnabled = true;
+  target.imageSmoothingQuality = 'high';
+  target.setTransform(renderScale, 0, 0, renderScale, 0, 0);
 
-  await paintPaperBackground(outCtx, w, h, includePaperTexture, theme);
-  outCtx.drawImage(snapshot, 0, 0, w, h);
-  if (overlayImage) drawOverlayContained(outCtx, overlayImage, w, h, theme);
+  await paintPaperBackground(target, w, h, includePaperTexture, theme);
+  if (overlayImage) drawOverlayContained(target, overlayImage, w, h, theme);
 
-  return await new Promise((resolve) => out.toBlob(resolve, 'image/png'));
+  return encodeCanvasPng(snapshot);
 }

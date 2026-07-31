@@ -1,9 +1,9 @@
 # ADR-0015: Capped-DPR Canvas Rendering (min(devicePixelRatio, 2))
 
-**Status:** Active — amended by ADR-0066 (2026-07): the capped scale factor stands unchanged, but
-the memory math below derives from the replay-era "baseline + tiny command log"; under snapshot undo
-the 4× factor multiplies the paper raster + tiered snapshot stack instead. See the amendment at the
-end. **Date:** 2026-06
+**Status:** Active — amended by ADR-0066 and
+[ADR-0088](0088-frame-bound-screenshot-export-on-ipad-webkit.md). The capped live scale and 2×
+export floor stand unchanged; the memory and export architectures evolved around them. See the
+amendments at the end. **Date:** 2026-06
 
 ## Context
 
@@ -103,3 +103,10 @@ multiplies — the cap itself, the propagation rules, and the per-session invari
   half-reinstated: each commit again pays one full-canvas `drawImage` at pointerup (the snapshot
   copy) — deliberate, once per commit rather than per gesture start, and it is ADR-0066's open
   on-device perf gate.
+
+## Amendment (ADR-0088, 2026-07)
+
+The Decision's export scale remains `max(devicePixelRatio, 2)`, but export no longer interpolates
+from the capped live backing store. The engine replays strokes directly into a disposable
+full-export-resolution `OffscreenCanvas`, composes paper and line art on that same surface, and
+encodes it in a worker. The live 1.5× cap and saved 2× quality are therefore independent.

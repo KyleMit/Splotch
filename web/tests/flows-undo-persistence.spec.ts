@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { SCREENSHOT_COOLDOWN_MS } from '../src/lib/drawing/screenshotTiming';
 
 import { draw, firstOpaquePixel, gotoApp, retryOpen } from './helpers';
 
@@ -117,13 +118,14 @@ test('a burst of screenshot taps shares one save before allowing the next', asyn
   // takes longer than any sleep sized on an idle one — this is what failed 3 of
   // 12 CI reps at 4 workers, issue #653)…
   await expect.poll(() => downloads.length).toBe(1);
-  await expect(page.locator('.polaroid-overlay')).toHaveCount(1);
+  await expect(shot).toHaveClass(/screenshot-capture-feedback/);
 
   // …then idle past the window a second save would have arrived in, which is
   // what proves the burst was coalesced rather than merely slow.
   await page.waitForTimeout(SECOND_SAVE_WINDOW_MS);
   expect(downloads).toHaveLength(1);
 
+  await page.waitForTimeout(SCREENSHOT_COOLDOWN_MS);
   const nextDownload = page.waitForEvent('download');
   await shot.click();
   await nextDownload;

@@ -41,6 +41,7 @@ type CanvasContextStub = {
   imageSmoothingQuality: ImageSmoothingQuality;
   fillStyle: string;
   scale: (x: number, y: number) => void;
+  setTransform: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
   fillRect: (x: number, y: number, w: number, h: number) => void;
   createPattern: () => null;
   drawImage: (source: CanvasImageSource) => void;
@@ -74,6 +75,7 @@ function setupExportContexts(inversionContext: CanvasRenderingContext2D | null) 
     imageSmoothingQuality: 'low',
     fillStyle: '',
     scale: vi.fn(),
+    setTransform: vi.fn(),
     fillRect: vi.fn(),
     createPattern: vi.fn(() => null),
     drawImage: vi.fn((source: CanvasImageSource) => {
@@ -132,7 +134,7 @@ describe('composeExportPng overlay', () => {
 
     await composeExportPng(createSnapshot(), 1, overlay, { includePaperTexture: false });
 
-    expect(contexts.draws[1]).toMatchObject({
+    expect(contexts.draws[0]).toMatchObject({
       source: overlay,
       compositeOperation: 'multiply',
     });
@@ -147,6 +149,7 @@ describe('composeExportPng overlay', () => {
       imageSmoothingQuality: 'low',
       fillStyle: '',
       scale: vi.fn(),
+      setTransform: vi.fn(),
       fillRect: vi.fn(),
       createPattern: vi.fn(() => null),
       drawImage: vi.fn(),
@@ -157,9 +160,9 @@ describe('composeExportPng overlay', () => {
 
     await composeExportPng(createSnapshot(), 1, overlay, { includePaperTexture: false });
 
-    expect(contexts.draws[1].source).toBeInstanceOf(HTMLCanvasElement);
-    expect(contexts.draws[1].source).not.toBe(overlay);
-    expect(contexts.draws[1].compositeOperation).toBe('screen');
+    expect(contexts.draws[0].source).toBeInstanceOf(HTMLCanvasElement);
+    expect(contexts.draws[0].source).not.toBe(overlay);
+    expect(contexts.draws[0].compositeOperation).toBe('screen');
     expect(contexts.outputContext.globalCompositeOperation).toBe('source-over');
   });
 
@@ -173,7 +176,7 @@ describe('composeExportPng overlay', () => {
       includePaperTexture: false,
     });
 
-    expect(contexts.draws).toHaveLength(1);
+    expect(contexts.draws).toHaveLength(0);
     expect(contexts.outputContext.globalCompositeOperation).toBe('source-over');
   });
 });

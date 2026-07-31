@@ -9,11 +9,13 @@ import {
   triggerDownload,
 } from '$lib/saveNaming';
 import { saveBlobToFolder } from './folderSave';
-import { playPolaroidAnimation } from './polaroidAnimation';
+import { playScreenshotFeedback } from './screenshotFeedback';
+import { SCREENSHOT_COOLDOWN_MS } from './screenshotTiming';
 
 const ALBUM_NAME = 'Splotch';
 
 let activeScreenshotSave: Promise<void> | null = null;
+let nextScreenshotAllowedAt = 0;
 
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -82,17 +84,22 @@ export async function saveImageBlob(
 }
 
 async function saveScreenshotImage() {
+  playScreenshotFeedback();
   const blob = await exportCanvasBlob(getActiveOverlayImage());
   if (!blob) return;
-  // Feedback first: the polaroid must not wait behind the folder write — or the
-  // permission re-confirm dialog — that saveImageBlob may perform on the web.
-  playPolaroidAnimation(URL.createObjectURL(blob));
   await saveImageBlob(blob, undefined, { allowPrompt: true });
 }
 
 export function saveScreenshot(): Promise<void> {
-  activeScreenshotSave ??= saveScreenshotImage().finally(() => {
-    activeScreenshotSave = null;
-  });
+  if (activeScreenshotSave) return activeScreenshotSave;
+  const startedAt = performance.now();
+  if (startedAt < nextScreenshotAllowedAt) return Promise.resolve();
+  activeScreenshotSave = saveScreenshotImage()
+    .then(() => {
+      nextScreenshotAllowedAt = startedAt + SCREENSHOT_COOLDOWN_MS;
+    })
+    .finally(() => {
+      activeScreenshotSave = null;
+    });
   return activeScreenshotSave;
 }

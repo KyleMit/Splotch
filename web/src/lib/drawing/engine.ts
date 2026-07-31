@@ -95,6 +95,7 @@ import { scanCanvasIsEmpty } from './emptyScan';
 import { createPenStreamAdopter } from './penStreamQuirks';
 import { listen } from './listenerRegistry';
 import type { ExportOptions } from './exportDrawing';
+import { currentExportScale } from './exportScale';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
 import {
@@ -1478,13 +1479,23 @@ export function setSafeAreaInsets(insets: {
 // in-flight stroke) rather than copying the visible canvas: under a
 // rotation-locked view the visible canvas is the letterboxed presentation, and
 // the export should be the full upright page.
-function snapshotStrokes(): HTMLCanvasElement {
-  const snapshot = document.createElement('canvas');
-  snapshot.width = paper.pxW;
-  snapshot.height = paper.pxH;
-  const snapshotCtx = snapshot.getContext('2d')!;
+function snapshotStrokes(snapshotScale: number): HTMLCanvasElement | OffscreenCanvas {
+  const width = Math.round((paper.pxW / renderScale) * snapshotScale);
+  const height = Math.round((paper.pxH / renderScale) * snapshotScale);
+  let snapshot: HTMLCanvasElement | OffscreenCanvas;
+  let snapshotCtx: CanvasRenderingContext2D;
+  if (typeof OffscreenCanvas !== 'undefined') {
+    snapshot = new OffscreenCanvas(width, height);
+    snapshotCtx = snapshot.getContext('2d') as unknown as CanvasRenderingContext2D;
+  } else {
+    snapshot = document.createElement('canvas');
+    snapshot.width = width;
+    snapshot.height = height;
+    snapshotCtx = snapshot.getContext('2d')!;
+  }
   snapshotCtx.lineCap = 'round';
   snapshotCtx.lineJoin = 'round';
+  snapshotCtx.scale(snapshotScale / renderScale, snapshotScale / renderScale);
   if (!tiledRendererActive()) {
     repaintAll(snapshotCtx);
   } else {
@@ -1508,8 +1519,8 @@ export async function exportCanvasBlob(
   options: ExportOptions = {}
 ): Promise<Blob | null> {
   if (!canvas || paper.pxW === 0 || paper.pxH === 0) return null;
-  const snapshot = snapshotStrokes();
-  const scale = renderScale;
+  const scale = currentExportScale();
+  const snapshot = snapshotStrokes(scale);
   const { composeExportPng } = await import('./exportDrawing');
   return composeExportPng(snapshot, scale, overlayImage, options);
 }

@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -6,14 +5,17 @@ const mocks = vi.hoisted(() => ({
   getActiveOverlayImage: vi.fn(() => null),
   isNative: vi.fn(() => false),
   saveBlobToFolder: vi.fn(),
-  playPolaroidAnimation: vi.fn(),
+  playScreenshotFeedback: vi.fn(),
 }));
 
 vi.mock('./engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob }));
 vi.mock('./overlay', () => ({ getActiveOverlayImage: mocks.getActiveOverlayImage }));
 vi.mock('$lib/platform', () => ({ getPlatform: vi.fn(), isNative: mocks.isNative }));
 vi.mock('./folderSave', () => ({ saveBlobToFolder: mocks.saveBlobToFolder }));
-vi.mock('./polaroidAnimation', () => ({ playPolaroidAnimation: mocks.playPolaroidAnimation }));
+vi.mock('./screenshotFeedback', () => ({
+  playScreenshotFeedback: mocks.playScreenshotFeedback,
+}));
+vi.mock('./screenshotTiming', () => ({ SCREENSHOT_COOLDOWN_MS: 4_000 }));
 
 interface Deferred<T> {
   promise: Promise<T>;
@@ -32,30 +34,29 @@ function deferred<T>(): Deferred<T> {
 }
 
 beforeEach(() => {
+  vi.resetModules();
   vi.clearAllMocks();
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:polaroid');
 });
 
-const appCssPath = '../../app.css';
-const polaroidSourcePath = './polaroidAnimation.ts';
-
-describe('polaroid animation', () => {
-  it('keeps the CSS animation duration aligned with overlay teardown', () => {
-    const css = readFileSync(new URL(appCssPath, import.meta.url), 'utf8');
-    const polaroidSource = readFileSync(new URL(polaroidSourcePath, import.meta.url), 'utf8');
-    const animation = css.match(
-      /\.polaroid-frame\s*\{[^}]*\banimation:\s*polaroid-show\s+(\d+(?:\.\d+)?)s\b/
-    );
-    const teardownDuration = polaroidSource.match(/\bconst POLAROID_DURATION_MS = (\d+);/);
-
-    expect(animation, '.polaroid-frame declares the polaroid-show animation').not.toBeNull();
-    expect(teardownDuration, 'polaroid teardown declares POLAROID_DURATION_MS').not.toBeNull();
-    expect(Number(animation![1]) * 1000).toBe(Number(teardownDuration![1]));
-  });
-});
-
 describe('saveScreenshot', () => {
+  it('starts lightweight capture feedback before the PNG export settles', async () => {
+    const exported = deferred<Blob | null>();
+    mocks.exportCanvasBlob.mockReturnValue(exported.promise);
+    const { saveScreenshot } = await import('./screenshot');
+
+    const save = saveScreenshot();
+
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledWith();
+    expect(mocks.saveBlobToFolder).not.toHaveBeenCalled();
+
+    exported.resolve(null);
+    await save;
+  });
+
   it('coalesces overlapping saves and permits a later save after persistence settles', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1_000);
     const save = deferred<boolean>();
     mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
     mocks.saveBlobToFolder.mockReturnValueOnce(save.promise).mockResolvedValueOnce(true);
@@ -67,14 +68,35 @@ describe('saveScreenshot', () => {
     expect(second).toBe(first);
     await vi.waitFor(() => expect(mocks.saveBlobToFolder).toHaveBeenCalledOnce());
     expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
-    expect(mocks.playPolaroidAnimation).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
 
     save.resolve(true);
     await first;
+    now.mockReturnValue(5_000);
     await saveScreenshot();
 
     expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
     expect(mocks.saveBlobToFolder).toHaveBeenCalledTimes(2);
+  });
+
+  it('suppresses duplicate saves during the post-save cooldown', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1_000);
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
+    mocks.saveBlobToFolder.mockResolvedValue(true);
+    const { saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+    now.mockReturnValue(4_999);
+    await saveScreenshot();
+
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
+
+    now.mockReturnValue(5_000);
+    await saveScreenshot();
+
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledTimes(2);
   });
 
   it('clears the active save after a rejection', async () => {
