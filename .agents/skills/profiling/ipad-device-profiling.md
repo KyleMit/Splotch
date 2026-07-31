@@ -7,8 +7,9 @@ the drawing engine, because it's the real **WebKit/JavaScriptCore engine + Apple
 ProMotion** display the app actually ships on.
 
 The gates run is automated by **`npm run perf:ipad`**; trusted-touch real-screen capture is
-automated separately by **`npm run perf:ipad:xcuitest`**. This file covers their one-time device
-setup, the Timeline recording they deliberately do *not* replace, and the by-hand fallbacks.
+automated by **`npm run perf:ipad:xcuitest`**, and discrete UI-action regression coverage by
+**`npm run perf:ipad:actions`**. This file covers their one-time device setup, the Timeline
+recording they deliberately do *not* replace, and the by-hand fallbacks.
 
 Where the device sits among the harness targets:
 
@@ -61,8 +62,9 @@ Computer** when prompted. Put both devices on the **same Wi‑Fi** network.
 brew install ios-webkit-debug-proxy
 ```
 
-**⟨Mac⟩ + ⟨iPad⟩** For `npm run perf:ipad:xcuitest`, install Appium 3 and its XCUITest driver, then
-enable **Settings → Apps → Safari → Advanced → Remote Automation** on the iPad:
+**⟨Mac⟩ + ⟨iPad⟩** For `npm run perf:ipad:xcuitest` and `npm run perf:ipad:actions`, install Appium
+3 and its XCUITest driver, then enable **Settings → Apps → Safari → Advanced → Remote Automation**
+on the iPad:
 
 ```sh
 npm install --global appium@3
@@ -123,6 +125,7 @@ npm run perf:ipad:frames                              # hand-drawn, full phase s
 npm run perf:ipad:frames -- --drive                    # synthetic input, no human hand
 npm run perf:ipad:xcuitest -- --device-id=<UDID>       # trusted native touch, no human hand
 npm run perf:ipad:xcuitest -- --device-id=<UDID> --brush=crayon --gesture-repeats=3
+npm run perf:ipad:actions -- --device-id=<UDID>        # discrete UI-action frame gates
 npm run perf:ipad:frames -- --phases=blank,page --contact-seconds=20
 npm run perf:frames:analyze -- perf-profiles/<dir>/real-screen.json
 ```
@@ -256,13 +259,40 @@ absolute `start-date`. Compare each episode with consecutive display-frame-lifet
 limit the check to the derived `hitches` table: a presentation gap can contain no expensive
 submitted frame for that high-level detector to label.
 
-There is intentionally no nonzero lag exit threshold yet. A fidelity failure exits nonzero; a
-starvation episode is reported. Calibrate a severity gate from more repeated baselines before making
-the lag itself fail the command.
+After the fidelity gate passes, the command fails the ADR-0085 drawing budgets: paint P95 ≤20 ms,
+paint P99 ≤33 ms, paint max ≤50 ms, and render starvation ≤10 ms per drawing-second. A requested
+undo run also fails its existing engine/next-frame gates. `--report-only` finishes and preserves a
+broken artifact during diagnosis.
 
 Appium's Remote Automation Safari window is not exposed by `ios-webkit-debug-proxy`, so
 `perf:ipad:frames` cannot attach to it. The Appium session must own navigation, probe injection,
 native input, and readback as one operation.
+
+### Discrete action automation — `perf:ipad:actions`
+
+Use the same running Appium server and unlocked iPad:
+
+```sh
+npm run perf:ipad:actions -- --device-id=<UDID>
+npm run perf:ipad:actions --ignore-scripts -- --device-id=<UDID> \
+  --actions=coloring,screenshot,undo,rotation --report-only
+```
+
+The default three-repeat suite covers the action drawer, palette, brushes, stroke width, Parent
+Center and every section, themes, coloring-page selection/removal, screenshot, undo, drag-to-clear,
+and rotation. It writes `actions.json` and fails a grouped action when frame P95 exceeds 20 ms or
+the first/worst frame exceeds 32 ms. Use `--report-only` for a broad discovery sweep, then
+`--actions=` for one-change trials against the failing family.
+
+The rAF recorder runs inside MobileSafari, so WebDriver's Mac/device round-trip is not part of the
+frame score. The reported first-observed readiness is only an upper bound: the driver must return
+from native context before it can observe the DOM condition. Drawing controls use native XCUITest
+pointer sequences because `scribbleTap` intentionally ignores an element-click pointer surrogate;
+ordinary dialog and Parent Center controls use semantic WebDriver clicks.
+
+For a hosted real-device endpoint, pass a credentialed `--appium-url=`,
+`--capabilities-file=/path/outside/repo/provider.json`, and a preview URL the device can reach. ADR
+0090 defines the tiered local/CI workflow and provider evaluation criteria.
 
 ### The phase sweep
 

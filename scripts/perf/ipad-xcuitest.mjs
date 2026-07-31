@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../lib/proc.mjs';
 import { parsePerfArgs } from './args.mjs';
+import { drawingGateRows, scoreDrawingRun } from './drawing-gates.mjs';
 import { probeConfigScript } from './ipad-frames.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from './ipad-session.mjs';
 import { profilePath } from './paths.mjs';
@@ -178,14 +179,26 @@ export function inputFidelity(input = {}) {
   return { passed: Object.values(checks).every(Boolean), checks };
 }
 
-function createWebDriverClient(baseUrl) {
-  const url = baseUrl.replace(/\/+$/, '');
+export function createWebDriverClient(baseUrl) {
+  const endpoint = new URL(baseUrl);
+  const authorization =
+    endpoint.username || endpoint.password
+      ? `Basic ${Buffer.from(
+          `${decodeURIComponent(endpoint.username)}:${decodeURIComponent(endpoint.password)}`
+        ).toString('base64')}`
+      : null;
+  endpoint.username = '';
+  endpoint.password = '';
+  const url = endpoint.toString().replace(/\/+$/, '');
   const request = async (method, path, body) => {
     let response;
     try {
       response = await fetch(`${url}${path}`, {
         method,
-        headers: body ? { 'content-type': 'application/json' } : undefined,
+        headers: {
+          ...(body ? { 'content-type': 'application/json' } : {}),
+          ...(authorization ? { authorization } : {}),
+        },
         body: body ? JSON.stringify(body) : undefined,
       });
     } catch (error) {
@@ -212,7 +225,7 @@ function profilingUrl(appUrl) {
   return url.toString();
 }
 
-async function clearDeviceWebCache(executeAsync) {
+export async function clearDeviceWebCache(executeAsync) {
   const result = await executeAsync(`
     const done = arguments[arguments.length - 1];
     const unregister = 'serviceWorker' in navigator
@@ -263,6 +276,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         'rotate-before-undo',
         'label',
         'output',
+        'report-only',
         'no-serve',
       ],
     },
@@ -545,6 +559,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     await execute('return window.__probe.stop();');
 
     const summaries = summarizeRun(report);
+    const drawing = scoreDrawingRun(summaries.phases);
     const undo = summarizeUndoActions(undoActions, report.frames);
     const input = summaries.phases[0]?.input ?? {};
     const fidelity = inputFidelity(input);
@@ -575,6 +590,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         rotation,
       },
       fidelity,
+      drawing,
       undo,
       undoActions,
       historyBeforeUndo,
@@ -592,6 +608,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     console.table(engineRows(summaries.phases));
     console.log('\nRender starvation');
     console.table(starvationRows(summaries.phases));
+    console.log('\nDrawing acceptance gates');
+    console.table(drawingGateRows(drawing));
     if (undoCount > 0) {
       console.log('\nUndo response');
       console.table(undoActionRows(undo));
@@ -605,6 +623,16 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     if (!fidelity.passed) {
       throw new Error(
         'The capture failed the trusted-input fidelity gate; do not use its lag score.'
+      );
+    }
+    if (!has('report-only') && (!drawing.passed || (undoCount > 0 && !undo.passed))) {
+      throw new Error(
+        [
+          !drawing.passed ? 'drawing frame gates' : null,
+          undoCount > 0 && !undo.passed ? 'undo response gates' : null,
+        ]
+          .filter(Boolean)
+          .join(' and ') + ' failed'
       );
     }
     return artifact;

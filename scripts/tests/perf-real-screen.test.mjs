@@ -26,6 +26,24 @@ import {
   nativeCanvasBounds,
   trustedGestureActions,
 } from '../perf/ipad-xcuitest.mjs';
+import {
+  ACTION_FIRST_FRAME_GATE_MS,
+  ACTION_FRAME_MAX_GATE_MS,
+  ACTION_FRAME_P95_GATE_MS,
+  actionFailures,
+  actionRows,
+  summarizeActionGroup,
+  summarizeActions,
+} from '../perf/action-stats.mjs';
+import {
+  PAINT_MAX_GATE_MS,
+  PAINT_P95_GATE_MS,
+  PAINT_P99_GATE_MS,
+  STARVATION_PER_DRAWING_SECOND_GATE_MS,
+  drawingGateRows,
+  scoreDrawingPhase,
+  scoreDrawingRun,
+} from '../perf/drawing-gates.mjs';
 import { summarizeUndoActions } from '../perf/undo-action-stats.mjs';
 
 const PROBE = readFileSync(join(ROOT, 'scripts', 'perf', 'real-screen-probe.js'), 'utf8');
@@ -120,6 +138,104 @@ describe('undo action response', () => {
 
     expect(summary.nextFrame).toMatchObject({ p95: 12, max: 12 });
     expect(summary.passed).toBe(true);
+  });
+});
+
+describe('discrete action response', () => {
+  const clean = (label, readyMs = 24) => ({
+    label,
+    readyMs,
+    firstFrameMs: 8,
+    frameGapsMs: [8, 9, 16, 9, 9, 8, 9, 10, 9, 8, 9, 8, 9, 10, 8, 9, 9, 8, 9, 16],
+  });
+
+  it('groups repeated actions and reports their response distributions', () => {
+    const summaries = summarizeActions([
+      clean('theme dark to light', 20),
+      clean('theme dark to light', 28),
+      clean('open brush menu', 12),
+    ]);
+
+    expect(summaries).toHaveLength(2);
+    expect(summaries[0]).toMatchObject({
+      label: 'theme dark to light',
+      count: 2,
+      ready: { p50: 20, p95: 28 },
+      passed: true,
+    });
+    expect(actionRows(summaries)[0]).toMatchObject({
+      action: 'theme dark to light',
+      runs: 2,
+      verdict: 'PASS',
+    });
+    expect(actionFailures(summaries)).toEqual([]);
+  });
+
+  it.each([
+    ['first visible response', { firstFrameMs: ACTION_FIRST_FRAME_GATE_MS + 1 }],
+    [
+      'sustained pacing',
+      {
+        frameGapsMs: Array.from({ length: 20 }, (_, index) =>
+          index < 2 ? ACTION_FRAME_P95_GATE_MS + 1 : 9
+        ),
+      },
+    ],
+    ['single freeze', { frameGapsMs: [9, 9, ACTION_FRAME_MAX_GATE_MS + 1] }],
+  ])('fails a %s regression', (_name, change) => {
+    expect(summarizeActionGroup([{ ...clean('action'), ...change }]).passed).toBe(false);
+  });
+
+  it('keeps readiness latency informational because completion semantics differ by action', () => {
+    expect(summarizeActionGroup([clean('full-resolution image decode', 4_000)]).passed).toBe(true);
+  });
+});
+
+describe('drawing acceptance gates', () => {
+  const phase = (changes = {}) => ({
+    key: 'blank',
+    paintLatencyMs: {
+      p95: PAINT_P95_GATE_MS,
+      p99: PAINT_P99_GATE_MS,
+      max: PAINT_MAX_GATE_MS,
+    },
+    starvation: {
+      all: {
+        starvationMsPerDrawingSecond: STARVATION_PER_DRAWING_SECOND_GATE_MS,
+      },
+    },
+    ...changes,
+  });
+
+  it('accepts the documented paint and starvation boundaries', () => {
+    const score = scoreDrawingRun([phase()]);
+
+    expect(score.passed).toBe(true);
+    expect(drawingGateRows(score)[0]).toMatchObject({
+      phase: 'blank',
+      verdict: 'PASS',
+    });
+  });
+
+  it.each([
+    ['paint P95', { paintLatencyMs: { p95: 21, p99: 30, max: 40 } }],
+    ['paint P99', { paintLatencyMs: { p95: 18, p99: 34, max: 40 } }],
+    ['paint max', { paintLatencyMs: { p95: 18, p99: 30, max: 51 } }],
+    ['render starvation', { starvation: { all: { starvationMsPerDrawingSecond: 10.01 } } }],
+  ])('fails a %s regression', (_name, change) => {
+    expect(scoreDrawingPhase(phase(change)).passed).toBe(false);
+  });
+
+  it('requires every captured phase to pass', () => {
+    expect(
+      scoreDrawingRun([
+        phase(),
+        phase({
+          key: 'second',
+          paintLatencyMs: { p95: 18, p99: 30, max: 51 },
+        }),
+      ]).passed
+    ).toBe(false);
   });
 });
 

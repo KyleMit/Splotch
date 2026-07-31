@@ -1,6 +1,7 @@
 # ADR-0084: Trusted XCUITest Input for Physical-iPad Real-Screen Profiling
 
-**Status:** Active **Date:** 2026-07
+**Status:** Active — amended by [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md).
+**Date:** 2026-07
 
 ## Context
 
@@ -59,10 +60,11 @@ Instruments trace. The system-correlation target is the Animation Hitches `hitch
 table, not only its derived `hitches` table: presentation starvation can leave no expensive
 submitted frame for the high-level detector to classify.
 
-The command intentionally has no starvation exit threshold yet. Repeated 2x and 1.5x A/B/A/B runs
-separate on severity, but 1.5x still produces episodes and can produce more smaller episodes than
-2x. The fidelity gate may fail the command; a nonzero lag gate waits for a larger calibrated
-baseline.
+ADR-0090 adds the calibrated acceptance gates established by ADR-0085. The command exits nonzero
+after fidelity succeeds when paint P95 exceeds 20 ms, paint P99 exceeds 33 ms, paint max exceeds 50
+ms, or starvation exceeds 10 ms per drawing-second. A requested undo run also fails its existing
+engine/next-frame gate. `--report-only` retains the pre-ADR-0090 diagnostic behavior when a complete
+broken artifact is more useful than stopping with a failing command.
 
 Appium and its XCUITest driver remain local external prerequisites, like `ios-webkit-debug-proxy`.
 WebDriverAgent signing reads the ignored `ios/local.xcconfig`. Normal runs cannot change Apple
