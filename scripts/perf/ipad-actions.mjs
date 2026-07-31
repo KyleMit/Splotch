@@ -750,6 +750,11 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   }
 
   if (actions.has('theme')) {
+    await openParentSection(
+      1,
+      `document.querySelector('#themeOption-light') !== null`,
+      'Appearance section'
+    );
     await clickSetupElement(execute, '#themeOption-dark');
     await waitForReady(
       execute,
