@@ -1,8 +1,9 @@
 import { percentile } from './real-screen-stats.mjs';
 
 export const ACTION_FRAME_P95_GATE_MS = 20;
-export const ACTION_FRAME_MAX_GATE_MS = 32;
-export const ACTION_FIRST_FRAME_GATE_MS = 32;
+// Two exact 60 Hz vsync intervals are 33.33 ms; the next interval is the visible 50 ms freeze.
+export const ACTION_FRAME_MAX_GATE_MS = 33.5;
+export const ACTION_FIRST_FRAME_GATE_MS = 33.5;
 
 const maximum = (values) => (values.length ? Math.max(...values) : undefined);
 

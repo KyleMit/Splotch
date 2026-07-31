@@ -12,10 +12,10 @@ canvases to the new viewport, applying a transformed context to each, and replay
 JavaScript completed in 2–3 ms, but MobileSafari presented a 56–57 ms frame on the 12.9-inch iPad
 Pro. The page visibly froze even though the engine's own measure looked fast.
 
-The generic interaction gate is a requestAnimationFrame interval at or below 32 ms, derived from the
-observed 60 Hz display cadence. P95 remains expected near 9 ms on this iPad. Rotation is unusual
-because iPadOS itself contributes a 20–31 ms transition frame, leaving almost no budget for app-side
-surface work.
+The generic interaction gate is a requestAnimationFrame interval at or below 33.5 ms, derived from
+two exact 60 Hz vsync intervals plus timer precision. P95 remains expected near 9 ms on this iPad.
+Rotation is unusual because iPadOS itself contributes a 20–31 ms transition frame, leaving almost no
+budget for app-side surface work.
 
 Playwright can emulate the viewport, DPR, orientation angle, paper lock, and functional behavior,
 but it does not reproduce the physical iPad's WebKit compositor flush. Appium's XCUITest orientation
@@ -76,6 +76,23 @@ restored older stroke. Every post-action frame P95 was 17 ms and every post-acti
 most 27 ms. Trusted first-contact drawing also remained within the ADR-0085 gates: pen paint
 P95/P99/max was 16/26/39 ms, crayon was 16/27/38 ms, and both recorded zero starvation.
 
+The Android native matrix later exposed a second form of return drift. The restored viewport first
+matched the paper, then settled about 5.5 CSS px shorter as system insets stabilized. Treating that
+same-angle settle as a new paper reallocated all sixteen normal tiles and produced 33–50 ms frames.
+Deferring an inactive Magic sheet alone left the tile stall; retaining the paper alone left 4–6
+full-surface Magic mutations and the same stall. With both surface families preserved, five repeats
+performed zero canvas backing mutations across all ten ink rotations. Nine directions topped out at
+16.8 ms; one system-compositor interval was exactly two 60 Hz vsyncs (33.4 ms), while the app's
+`engine.resize` work was 0.2 ms.
+
+Physical iPad validation exposed the complementary event-order case: Mobile WebKit can deliver the
+resized portrait/landscape geometry before `screen.orientation.angle` changes. Preferring the legacy
+angle API did not solve it and still reassigned 32–48 normal tiles, producing 46–52 ms frames.
+Locking when the viewport's portrait/landscape shape differs from the paper removed every surface
+mutation. Across three repeats in both directions, physical iPad post-action P95 was 17 ms and max
+was 22–26 ms. Android native retained zero surface mutations with P95 16.7–16.8 ms and max 33.3–33.4
+ms. An isolated Mac WebKit cross-check passed ten rotations at P95 18 ms and max 19–24 ms.
+
 The alternatives were:
 
 * **Keep replaying into resized viewport tiles.** Functionally complete, including drawing into the
@@ -125,19 +142,24 @@ The related invariants are:
   nonempty paper to its original orientation therefore removes the CSS presentation transform
   without hiding and replaying the already-correct tiles. Replaying one colored crayon stroke
   created ten temporary canvases and two 96/138 ms frames despite unchanged output.
-* A return to `paperAngle` remains locked for that resize when the previous processed angle differs,
-  even if MobileSafari restores a viewport a few CSS pixels larger or smaller. The paper is
-  contain-fit and centered in that drift instead of being rerasterized. A later same-angle viewport
-  resize retains the ordinary re-adoption behavior.
+* A return to `paperAngle` remains locked for that resize when the previous processed angle differs.
+  A viewport whose portrait/landscape shape differs from the paper also locks immediately, because
+  Mobile WebKit can expose the resized geometry before its Screen Orientation angle settles. A
+  same-angle system-inset settle within `PAPER_VIEWPORT_DRIFT_TOLERANCE_CSS_PX` also keeps the paper
+  locked. The paper is contain-fit and centered in that drift instead of being rerasterized; a
+  material later viewport resize retains the ordinary re-adoption behavior.
 * Hidden crayon-preview canvases carry no committed pixels and are not resized. The first crayon op
   allocates only the intersecting bottom/top preview pairs. A preview that is visible during a
   resize remains eager so an in-progress pass can replay.
+* An inactive Magic sheet keeps its immutable captured snapshot through resize and only marks its
+  geometry stale. Selecting Magic rasterizes the active fill or held gradient at the current paper
+  geometry before the next stroke; active Magic remains eager during resize.
 * `captureTiledSnapshot` no longer requires an identity paper view. Since CSS, not tile pixels,
   presents the rotation, a settled rotated tile snapshot is still the full upright paper and can use
   ADR-0088's worker composition path.
-* The production rotation gate is max frame interval ≤32 ms in both directions with ink, plus blank,
-  coloring-page, crayon, undo-to-empty, and screenshot regression cases. An `engine.resize` duration
-  alone is not an acceptance metric.
+* The production rotation gate is max frame interval ≤33.5 ms in both directions with ink, plus
+  blank, coloring-page, crayon, undo-to-empty, and screenshot regression cases. An `engine.resize`
+  duration alone is not an acceptance metric.
 
 ## Consequences
 
@@ -197,8 +219,8 @@ return paths that isolated ink rotation misses. The app's own resize starts abou
 event because the web target uses the resize-settle debounce.
 
 Retain the raw frame interval that straddles input delivery, but do not attribute its pre-event
-portion to the app. Gate its action-to-first-frame remainder at 32 ms, then gate every fully
-post-action interval at 32 ms. Canvas width/height setter logging should show one normal tile per
+portion to the app. Gate its action-to-first-frame remainder at 33.5 ms, then gate every fully
+post-action interval at 33.5 ms. Canvas width/height setter logging should show one normal tile per
 frame during blank migration and zero normal-tile assignments when ink returns to `paperAngle`.
 
 For surface-family isolation, temporarily intercept the `HTMLCanvasElement` width and height setters

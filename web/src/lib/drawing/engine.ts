@@ -47,6 +47,7 @@ import {
   isIdentityView,
   IDENTITY_PAPER_VIEW,
   rotationDelta,
+  smallViewportDrift,
   visiblePaperBounds,
   viewMatrix,
   viewToPaper,
@@ -54,7 +55,7 @@ import {
 } from './paperView';
 import {
   initMagicBrush,
-  rasterizeSheet,
+  resizeMagicSheet,
   ensureMagicSheet,
   clearMagicGradient,
   setColorSheet,
@@ -298,9 +299,7 @@ let paperView: PaperView = IDENTITY_PAPER_VIEW;
 // reads so the /dev/engine harness can simulate a device rotation without a
 // device. Production never calls the setter.
 let screenAngleOverride: number | null = null;
-export function setScreenAngleOverride(angle: number | null) {
-  screenAngleOverride = angle;
-}
+export const setScreenAngleOverride = (angle: number | null) => (screenAngleOverride = angle);
 
 function currentScreenAngle(): number {
   if (screenAngleOverride !== null) return screenAngleOverride;
@@ -425,7 +424,11 @@ function adoptPaperUnlessLocked(rect: DOMRect): boolean {
   const paperAngleChanged = rotationDelta(paperAngle, angle) !== 0;
   const returningFromLockedRotation =
     !isIdentityView(paperView) && rotationDelta(resizedAngle, angle) !== 0 && !paperAngleChanged;
-  const lockPaper = !canvasEmpty && (paperAngleChanged || returningFromLockedRotation);
+  const paperOrientationChanged = paper.cssW > paper.cssH !== rect.width > rect.height;
+  const minorDrift = !paperAngleChanged && smallViewportDrift(paper.cssW, paper.cssH, rect);
+  const lockPaper =
+    !canvasEmpty &&
+    (paperAngleChanged || returningFromLockedRotation || paperOrientationChanged || minorDrift);
   if (!lockPaper) {
     const { w, h } = backingSizeOf(rect);
     paper = { pxW: w, pxH: h, cssW: rect.width, cssH: rect.height };
@@ -495,9 +498,7 @@ function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
   resizeLegacyCrayonOverlays(viewport.width, viewport.height);
   applyPaperView(lockPaper);
 
-  // The magic sheet is sized to the paper, so re-rasterize before repainting
-  // any pending magic ops against it.
-  rasterizeSheet();
+  resizeMagicSheet(magicActive);
   if (tiledRendererActive()) {
     if (tiledRendererResized && !canvasEmpty) repaintTiledRenderer();
   } else {

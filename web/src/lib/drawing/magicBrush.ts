@@ -107,6 +107,7 @@ let activeGradient: RainbowGradient | null = null;
 let sheetCanvas: HTMLCanvasElement | null = null;
 let sheetCtx: CanvasRenderingContext2D | null = null;
 let sheetReady = false;
+let sheetGeometryStale = false;
 export interface MagicSheetSnapshot {
   canvas: HTMLCanvasElement;
   originX: number;
@@ -392,7 +393,15 @@ export function rasterizeSheet() {
     paintGradient(sheetCtx, sheetCanvas.width, sheetCanvas.height, source.gradient);
   }
   sheetReady = true;
+  sheetGeometryStale = false;
   sheetSnapshot = { canvas: sheetCanvas, originX: sheetOriginX, originY: sheetOriginY };
+}
+
+// Preserve captured sheets for history, but defer allocating replacement full-screen
+// backing stores until Magic can actually paint with the new geometry.
+export function resizeMagicSheet(eager: boolean) {
+  if (eager) rasterizeSheet();
+  else sheetGeometryStale = true;
 }
 
 // A no-repeat pattern of the sheet, cached per target context (the visible ctx
@@ -540,8 +549,8 @@ function holdRandomGradient() {
 // once a gradient is already active, so re-selecting the brush (or toggling
 // pen↔magic) neither re-rolls the rainbow nor re-rasterizes.
 export function ensureMagicSheet() {
-  if (fillUrl || activeGradient) return;
-  holdRandomGradient();
+  if (sheetReady && !sheetGeometryStale) return;
+  if (!fillUrl) holdRandomGradient();
   rasterizeSheet();
 }
 

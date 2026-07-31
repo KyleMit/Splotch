@@ -196,6 +196,15 @@ describe('discrete action response', () => {
     expect(summarizeActionGroup([clean('full-resolution image decode', 4_000)]).passed).toBe(true);
   });
 
+  it('allows one isolated pair of 60 Hz vsync intervals', () => {
+    const frameGapsMs = Array.from({ length: 40 }, () => 1000 / 60);
+    frameGapsMs[20] = 2000 / 60;
+
+    expect(
+      summarizeActionGroup([{ ...clean('rotation'), firstFrameMs: 2000 / 60, frameGapsMs }]).passed
+    ).toBe(true);
+  });
+
   it('scores the event-straddling frame by its post-action remainder', () => {
     const summary = summarizeActionGroup([
       {

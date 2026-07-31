@@ -177,6 +177,19 @@ describe('magic sheet fill-load failure', () => {
     expect(sources).toEqual([first!.canvas]);
   });
 
+  it('defers a resized inactive sheet until the brush is selected again', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.ensureMagicSheet();
+    const beforeResize = magic.captureMagicSheet();
+    magic.resizeMagicSheet(false);
+
+    expect(magic.captureMagicSheet()).toBe(beforeResize);
+
+    magic.ensureMagicSheet();
+    expect(magic.captureMagicSheet()).not.toBe(beforeResize);
+  });
+
   it('re-attempts the load when the same page is applied again', async () => {
     const magic = await mountedMagicBrush();
 

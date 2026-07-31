@@ -28,8 +28,9 @@ Hz web cadence:
 * render starvation at most 10 ms per drawing-second.
 
 The generic discrete-action budget established by ADR-0087 and ADR-0089 is a P95 frame interval at
-most 20 ms and a first/worst frame interval at most 32 ms. Thirty-two milliseconds allows one missed
-60 Hz presentation; a longer gap is visible as a freeze.
+most 20 ms, an action-to-first-frame remainder at most 33.5 ms, and a worst fully post-action
+interval at most 33.5 ms. The max admits two exact 60 Hz vsync intervals plus timer precision; the
+next 50 ms interval is the visible freeze.
 
 ## Decision
 
@@ -43,13 +44,13 @@ every performance fix. `perf:frames:local` remains an advisory production-route 
 geometry. A local failure is actionable; a local pass cannot approve an iPad compositor change.
 
 `perf:desktop:actions` reuses the physical suite's exact 46-action plan, in-page probe, scorer, and
-20/32 ms gates through a Playwright transport. It provides a headed, real-Mac regression comparison
-without maintaining a second action vocabulary. Its `--url=` flag deliberately separates the runner
-from the target build: the current runner can drive a historical build served from a detached
-worktree, so architecture comparisons do not accidentally compare different probes or inputs.
-`perf:frames:local` has the same external-URL seam and can select pen, crayon, Magic, or eraser.
-These desktop results can reject a change and compare renderer architectures, but they cannot
-replace the physical-iPad approval tier established by ADR-0085.
+20/33.5 ms gates through a Playwright transport. It provides a headed, real-Mac regression
+comparison without maintaining a second action vocabulary. Its `--url=` flag deliberately separates
+the runner from the target build: the current runner can drive a historical build served from a
+detached worktree, so architecture comparisons do not accidentally compare different probes or
+inputs. `perf:frames:local` has the same external-URL seam and can select pen, crayon, Magic, or
+eraser. These desktop results can reject a change and compare renderer architectures, but they
+cannot replace the physical-iPad approval tier established by ADR-0085.
 
 Absolute physical-device frame gates do not run on a shared headless GitHub runner. Its browser,
 host load, GPU path, and timer variance are different from the shipping environment.
@@ -88,7 +89,7 @@ from the native context before the driver can observe a DOM completion condition
 includes automation round-trip time.
 
 The command repeats the suite three times by default, writes raw samples and grouped summaries, and
-fails the 20/32 ms action gates. `--report-only` lets an exploratory sweep rank every failure
+fails the 20/33.5 ms action gates. `--report-only` lets an exploratory sweep rank every failure
 instead of stopping at the first one. `--actions=` selects a focused family for one-change trials.
 Parent-setting actions normalize and restore known baselines around every sound, auto-save,
 advanced-control, and button-visibility round trip. A failed or interrupted audit therefore cannot

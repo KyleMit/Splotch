@@ -28,6 +28,20 @@ export interface Size {
   height: number;
 }
 
+// Native rotation can settle its insets a few pixels late; adopting that drift invalidates every tile.
+const PAPER_VIEWPORT_DRIFT_TOLERANCE_CSS_PX = 8;
+
+export function smallViewportDrift(
+  paperWidth: number,
+  paperHeight: number,
+  viewport: Size
+): boolean {
+  return (
+    Math.abs(viewport.width - paperWidth) <= PAPER_VIEWPORT_DRIFT_TOLERANCE_CSS_PX &&
+    Math.abs(viewport.height - paperHeight) <= PAPER_VIEWPORT_DRIFT_TOLERANCE_CSS_PX
+  );
+}
+
 export const IDENTITY_PAPER_VIEW: Readonly<PaperView> = Object.freeze<PaperView>({
   scale: 1,
   rotate: 0,
