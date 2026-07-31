@@ -6,6 +6,7 @@ import { ADB } from '../lib/android.mjs';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../lib/proc.mjs';
 import { actionFailures, actionRows, summarizeActions } from './action-stats.mjs';
 import { parsePerfArgs } from './args.mjs';
+import { startTrace, stopTrace } from './capture.mjs';
 import { profilingUrl, runActionSweep, selectedActions } from './ipad-actions.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from './ipad-session.mjs';
 import { profilePath } from './paths.mjs';
@@ -187,6 +188,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         'repeats',
         'label',
         'output',
+        'trace',
         'report-only',
         'no-serve',
       ],
@@ -215,7 +217,13 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
   const originalRotation = adb(deviceId, ['shell', 'settings', 'get', 'system', 'user_rotation']);
   let server;
   let browser;
+  let cdp;
   let target;
+  let traceActive = false;
+  let traceEvents;
+  const output =
+    flag('output') ??
+    join(profilePath('android-web-actions', flag('label', 'full-suite')), 'actions.json');
 
   try {
     server = await ensurePreviewServer(base, port, !has('no-serve'));
@@ -258,7 +266,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       );
       await sleep(ORIENTATION_SETTLE_MS);
     };
-    const cdp = await context.newCDPSession(page);
+    cdp = await context.newCDPSession(page);
     const client = new PlaywrightWebDriver(page, {
       cdp,
       readOrientation,
@@ -272,6 +280,10 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     const originalOrientation = await client.orientation();
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
     const samples = [];
+    if (has('trace')) {
+      traceEvents = await startTrace(cdp);
+      traceActive = true;
+    }
 
     for (let repeat = 1; repeat <= repeats; repeat++) {
       await page.goto(profilingUrl(base, repeat), { waitUntil: 'load' });
@@ -290,11 +302,13 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       );
     }
 
+    if (traceActive) {
+      await stopTrace(cdp);
+      traceActive = false;
+    }
+
     const summaries = summarizeActions(samples);
     const failures = actionFailures(summaries);
-    const output =
-      flag('output') ??
-      join(profilePath('android-web-actions', flag('label', 'full-suite')), 'actions.json');
     mkdirSync(dirname(output), { recursive: true });
     const artifact = {
       device: {
@@ -313,6 +327,9 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       passed: failures.length === 0,
     };
     writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);
+    if (traceEvents) {
+      writeFileSync(join(dirname(output), 'trace.json'), JSON.stringify({ traceEvents }));
+    }
     console.log('\nAndroid Chrome discrete action response');
     console.table(actionRows(summaries));
     console.log(`\nWrote ${output}`);
@@ -323,6 +340,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     }
     return artifact;
   } finally {
+    if (traceActive && cdp) await stopTrace(cdp).catch(() => null);
     await browser?.close();
     if (target) await closeTarget(endpoint, target.id);
     adb(deviceId, ['forward', '--remove', `tcp:${cdpPort}`], { allowFailure: true });

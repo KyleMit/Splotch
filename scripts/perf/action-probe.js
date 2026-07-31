@@ -6,6 +6,7 @@
   };
   let previousFrameAt;
   let active = null;
+  let actionSequence = 0;
 
   function canvasKind(canvas) {
     if (canvas.id === 'drawingCanvas') return 'input';
@@ -53,6 +54,7 @@
     if (!target) throw new Error(`No action target matches ${selector}`);
     const action = {
       label,
+      traceName: `action:${label}:${++actionSequence}`,
       armedAt: performance.now(),
       actionAt: null,
       eventType: null,
@@ -65,6 +67,7 @@
       action.actionAt = performance.now();
       action.eventType = event.type;
       action.trusted = event.isTrusted;
+      performance.mark(`${action.traceName}:start`);
     };
     for (const type of eventTypes) {
       target.addEventListener(type, listener, { capture: true });
@@ -78,6 +81,7 @@
     if (active) throw new Error(`Action ${active.label} is still active`);
     const action = {
       label,
+      traceName: `action:${label}:${++actionSequence}`,
       armedAt: performance.now(),
       actionAt: null,
       eventType: null,
@@ -90,6 +94,7 @@
       action.actionAt = performance.now();
       action.eventType = event.type;
       action.trusted = event.isTrusted;
+      performance.mark(`${action.traceName}:start`);
     };
     for (const type of eventTypes) {
       window.addEventListener(type, listener, { capture: true });
@@ -104,6 +109,7 @@
     if (active.actionAt === null) {
       active.actionAt = performance.now();
       active.eventType = 'driver';
+      performance.mark(`${active.traceName}:start`);
     }
   }
 
@@ -114,6 +120,8 @@
     removeListeners(action);
     const actionAt = action.actionAt ?? action.armedAt;
     const finishedAt = performance.now();
+    if (action.actionAt === null) performance.mark(`${action.traceName}:start`);
+    performance.measure(action.traceName, `${action.traceName}:start`);
     const actionFrames = frames.filter(([at, gap]) => at >= actionAt && at - gap <= finishedAt);
     const firstFrame = actionFrames.find(([at]) => at >= actionAt);
     const topFrameGaps = actionFrames
@@ -126,6 +134,7 @@
       .slice(0, 5);
     return {
       label: action.label,
+      traceName: action.traceName,
       armedAt: action.armedAt,
       actionAt,
       eventType: action.eventType ?? 'uncaptured',

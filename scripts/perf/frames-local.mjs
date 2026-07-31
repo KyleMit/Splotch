@@ -84,16 +84,21 @@ async function selectBrush(page, brush) {
   if (!selector) fail(`--brush must be one of ${Object.keys(BRUSH_SELECTORS).join(', ')}`);
   if (brush === 'pen') return;
   await page.locator('button[aria-label="Expand controls"]').click();
-  await page.waitForFunction(() => document.documentElement.hasAttribute('data-drawer-open'));
+  await page.waitForFunction(() => {
+    const state =
+      document.querySelector('.actions-panel[data-action-panel-live]') ?? document.documentElement;
+    return state.hasAttribute('data-drawer-open');
+  });
   await page.locator('#brushButton').click();
   await page.waitForFunction(
     () => document.querySelector('#brushButton')?.getAttribute('aria-expanded') === 'true'
   );
   await page.locator(selector).click();
-  await page.waitForFunction(
-    (expected) => document.documentElement.dataset.brush === expected,
-    brush
-  );
+  await page.waitForFunction((expected) => {
+    const state =
+      document.querySelector('.actions-panel[data-action-panel-live]') ?? document.documentElement;
+    return state.dataset.brush === expected;
+  }, brush);
   await sleep(BRUSH_SETTLE_MS);
 }
 

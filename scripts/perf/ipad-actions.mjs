@@ -17,6 +17,7 @@ import { profilePath } from './paths.mjs';
 
 const APP_PATH = '/';
 const ACTION_PROBE_FILE = join(ROOT, 'scripts', 'perf', 'action-probe.js');
+const ACTION_PANEL_STATE_TARGET = `(document.querySelector('.actions-panel[data-action-panel-live]') ?? document.documentElement)`;
 const DEFAULT_APPIUM_URL = 'http://127.0.0.1:4723';
 const DEFAULT_XCODE_CONFIG = join(ROOT, 'ios', 'local.xcconfig');
 const DEFAULT_WDA_BUNDLE_ID = 'art.splotch.WebDriverAgentRunner';
@@ -26,6 +27,7 @@ const POLL_MS = 50;
 const SCRIPT_TIMEOUT_MS = 45_000;
 const ACTION_SETTLE_MS = 650;
 const ANIMATED_ACTION_SETTLE_MS = 1_100;
+const IDLE_CONTROL_MS = 5_000;
 const REPEAT_SETTLE_MS = 500;
 const TRUSTED_STROKE_MS = 650;
 const CLEAR_DRAG_MS = 450;
@@ -33,6 +35,7 @@ const ROTATION_NATIVE_SETTLE_MS = 1_500;
 const MAX_SETUP_RECOVERY_ATTEMPTS = 3;
 const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
 const ALL_ACTIONS = new Set([
+  'idle',
   'drawer',
   'palette',
   'color-picker',
@@ -61,6 +64,18 @@ export function selectedActions(value) {
   const unknown = [...actions].filter((action) => !ALL_ACTIONS.has(action));
   if (unknown.length) fail(`Unknown --actions entries: ${unknown.join(', ')}`);
   return actions;
+}
+
+function actionPanelHasAttribute(attribute) {
+  return `${ACTION_PANEL_STATE_TARGET}.hasAttribute(${JSON.stringify(attribute)}) === true`;
+}
+
+function actionPanelLacksAttribute(attribute) {
+  return `${ACTION_PANEL_STATE_TARGET}.hasAttribute(${JSON.stringify(attribute)}) === false`;
+}
+
+function actionPanelDatasetEquals(key, value) {
+  return `${ACTION_PANEL_STATE_TARGET}.dataset[${JSON.stringify(key)}] === ${JSON.stringify(value)}`;
 }
 
 function sessionCapabilities({ deviceId, xcodeConfigFile, wdaBundleId, allowProvisioning, file }) {
@@ -230,6 +245,17 @@ async function measureClick({
   }
   await sleep(settleMs);
   return execute(`return window.__actionProbe.finish(${readyAt});`);
+}
+
+async function measureIdle(execute) {
+  await ensureActionProbe(execute);
+  await execute(`
+    window.__actionProbe.beginExternal('idle frame control', []);
+    window.__actionProbe.markExternalAction();
+    return true;
+  `);
+  await sleep(IDLE_CONTROL_MS);
+  return execute(`return window.__actionProbe.finish(performance.now());`);
 }
 
 async function ensureState(execute, condition, activation) {
@@ -500,10 +526,14 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     }
   };
 
+  if (actions.has('idle')) {
+    await record(measureIdle(execute));
+  }
+
   if (actions.has('drawer')) {
     await ensureState(
       execute,
-      `!document.documentElement.hasAttribute('data-drawer-open')`,
+      actionPanelLacksAttribute('data-drawer-open'),
       `document.querySelector('button[aria-label="Collapse controls"]')?.click()`
     );
     await record(
@@ -513,7 +543,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         execute,
         label: 'expand action drawer',
         selector: 'button[aria-label="Expand controls"]',
-        ready: `document.documentElement.hasAttribute('data-drawer-open')`,
+        ready: actionPanelHasAttribute('data-drawer-open'),
       })
     );
     await record(
@@ -523,14 +553,14 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         execute,
         label: 'collapse action drawer',
         selector: 'button[aria-label="Collapse controls"]',
-        ready: `!document.documentElement.hasAttribute('data-drawer-open')`,
+        ready: actionPanelLacksAttribute('data-drawer-open'),
       })
     );
   }
 
   await ensureState(
     execute,
-    `document.documentElement.hasAttribute('data-drawer-open')`,
+    actionPanelHasAttribute('data-drawer-open'),
     `document.querySelector('button[aria-label="Expand controls"]')?.click()`
   );
 
@@ -592,22 +622,22 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       {
         label: 'select crayon brush',
         selector: '#crayonBrushButton',
-        ready: `document.documentElement.dataset.brush === 'crayon'`,
+        ready: actionPanelDatasetEquals('brush', 'crayon'),
       },
       {
         label: 'select Magic brush',
         selector: '#magicBrushButton',
-        ready: `document.documentElement.dataset.brush === 'magic'`,
+        ready: actionPanelDatasetEquals('brush', 'magic'),
       },
       {
         label: 'select eraser',
         selector: '#eraserButton',
-        ready: `document.documentElement.dataset.brush === 'eraser'`,
+        ready: actionPanelDatasetEquals('brush', 'eraser'),
       },
       {
         label: 'select pen brush',
         selector: '#penBrushButton',
-        ready: `!document.documentElement.hasAttribute('data-brush')`,
+        ready: actionPanelLacksAttribute('data-brush'),
       },
     ];
     for (const [index, selection] of brushSelections.entries()) {
@@ -827,7 +857,9 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       stateAttribute: 'aria-pressed',
       baseline: true,
       readyFor: (enabled) =>
-        `document.documentElement.hasAttribute('data-off-screenshot') === ${!enabled}`,
+        enabled
+          ? actionPanelLacksAttribute('data-off-screenshot')
+          : actionPanelHasAttribute('data-off-screenshot'),
     });
   }
 
