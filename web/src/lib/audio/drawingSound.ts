@@ -9,7 +9,6 @@ const BASE_SCRATCH_GAIN = 0.2;
 // threshold like the old HTMLAudioElement implementation did.
 const FULL_VOLUME_SPEED = 0.45;
 const GAIN_RAMP_S = 0.06;
-const STOP_RAMP_S = 0.03;
 
 let audioContext: AudioContext | null = null;
 let buffers: AudioBuffer[] | null = null;
@@ -87,12 +86,13 @@ export function stopDrawSound() {
   if (playback && audioContext) {
     const now = audioContext.currentTime;
     const { source, gain } = playback;
-    rampGainTo(gain.gain, 0, now, STOP_RAMP_S);
-    source.stop(now + STOP_RAMP_S);
-    source.onended = () => {
-      source.disconnect();
-      gain.disconnect();
-    };
+    // A preloaded WebKit context can remain suspended with a frozen clock, so
+    // lift-time silence cannot wait for a scheduled ramp or `ended` event.
+    gain.gain.cancelScheduledValues(now);
+    gain.gain.setValueAtTime(0, now);
+    source.disconnect();
+    gain.disconnect();
+    source.stop();
   }
   currentPlayback = null;
 }

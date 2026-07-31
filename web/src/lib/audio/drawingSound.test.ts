@@ -30,6 +30,7 @@ describe('playDrawSound', () => {
       buffer: null,
       loop: false,
       connect: vi.fn(),
+      disconnect: vi.fn(),
       start: vi.fn(),
       stop: vi.fn(),
       onended: null,
@@ -81,7 +82,7 @@ describe('playDrawSound', () => {
     expect(linearRampToValueAtTime).toHaveBeenLastCalledWith(0.2, 4.06);
   });
 
-  it('disconnects the stopped source and gain when playback ends', async () => {
+  it('mutes and disconnects playback synchronously when drawing stops', async () => {
     const { setSound } = await import('$lib/state/settings.svelte');
     const drawingSound = await import('./drawingSound');
     stopDrawSound = drawingSound.stopDrawSound;
@@ -131,9 +132,15 @@ describe('playDrawSound', () => {
       expect(sourceNode.start).toHaveBeenCalled();
     });
 
+    gain.cancelScheduledValues.mockClear();
+    gain.setValueAtTime.mockClear();
+    gain.linearRampToValueAtTime.mockClear();
     drawingSound.stopDrawSound();
-    sourceNode.onended?.();
 
+    expect(gain.cancelScheduledValues).toHaveBeenCalledWith(4);
+    expect(gain.setValueAtTime).toHaveBeenCalledWith(0, 4);
+    expect(gain.linearRampToValueAtTime).not.toHaveBeenCalled();
+    expect(sourceNode.stop).toHaveBeenCalledWith();
     expect(sourceNode.disconnect).toHaveBeenCalledOnce();
     expect(gainNode.disconnect).toHaveBeenCalledOnce();
   });

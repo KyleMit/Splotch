@@ -438,6 +438,32 @@ gesture and retain the fidelity verdict. Media elements can involve their own pr
 are not necessarily cheaper than a warmed Web Audio graph. A timing pass that removes audible events
 is a product regression, not a performance win.
 
+#### Lift-Time Teardown Amendment (2026-07)
+
+The retained Web Audio architecture originally faded the gain over 30 audio-clock milliseconds,
+scheduled `source.stop()` at the end of that fade, and disconnected the nodes from `onended`.
+Physical use exposed a seconds-long tail after finger lift. The pointer path itself was not late:
+the iPad recorded `pointerup` to `stopDrawSound()` in 0–1 ms.
+
+The failure mode was the lifetime dependency. Splotch creates its `AudioContext` during idle
+preload, before a media-authorizing gesture. WebKit can therefore leave the context suspended with
+`currentTime === 0`; in the device automation trace, the scheduled stop remained at 0.03 and neither
+`ended` nor either disconnect occurred during the next three seconds. The WebDriver touch is trusted
+for pointer delivery but does not set `navigator.userActivation`, so it cannot validate audible
+output. It does validate the suspended-clock case that the teardown must survive.
+
+Keep Web Audio, but make lift-time silence independent of audio-clock progress:
+
+1. Cancel pending gain automation and set gain to zero at the current context time.
+2. Disconnect the source and gain synchronously.
+3. Call `source.stop()` without a future timestamp.
+
+Three repeated Magic strokes detached both nodes 0 / 0 / 1 ms after pointerup, with a 25 ms maximum
+drawing frame. A screenshot of that drawing remained at 21 ms, and a fresh-pen Undo measured 1 ms of
+engine work with a 21 ms maximum interaction frame. `drawingSound.test.ts` pins the synchronous
+mute, un-timestamped stop, and both disconnects. Do not restore an `ended`-dependent teardown or
+replace Web Audio with the already-rejected media-element path.
+
 ### Productization and Regression Protocol
 
 The production reconstruction is the combination of the passing architectures, not any single
