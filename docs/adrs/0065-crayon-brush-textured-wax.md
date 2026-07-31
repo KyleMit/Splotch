@@ -181,6 +181,29 @@ variants A/B-able through the `/dev/engine` harness, gated by `PUBLIC_ENABLE_DEV
 runtime, so **one preview build sweeps every variant** and the winner ships as the
 `CRAYON_DEFAULTS`. Production never calls the setter.
 
+### Frame-bound wax-tile warming
+
+Each `(colour, density pass)` pair owns a 256×256 canvas tile. The first implementation generated
+both density-pass tiles in one Safari idle-fallback callback 200 ms after selecting the crayon.
+Desktop JavaScript profiling made that look cheap, but the physical iPad action suite observed the
+two detached canvas uploads in one 29–45 ms frame.
+
+One-variable physical-iPad trials retained the exact tile dimensions, fields, colors, and alpha:
+
+| Strategy                                           | Five-run post-action max | Result                            |
+| -------------------------------------------------- | -----------------------: | --------------------------------- |
+| Build both pass tiles in one idle callback         |                 29–45 ms | Fail                              |
+| Build one complete pass per animation frame        |                 19–32 ms | Pass, but no threshold headroom   |
+| Also hoist invariant per-pixel threshold math      |                 17–33 ms | Fail; computation still too large |
+| Generate each pass in 64-row chunks after idle     |                 17–23 ms | Pass                              |
+| Start those chunks on the first frame after select |                 17–21 ms | Pass; retained                    |
+
+`warmCrayonTiles` therefore generates at most `CRAYON_WARM_ROWS_PER_FRAME` rows in one animation
+frame and advances the two density passes across frames. Repeated warm requests for one color
+coalesce, and a dev-harness option change invalidates in-flight work. The synchronous `colorTile`
+path remains as a correctness fallback if a stroke reaches a color before its warm completes. This
+changes scheduling only; the resulting pixel buffers are byte-identical to the synchronous path.
+
 ## Consequences
 
 * **+** Zero new undo/eraser/ordering/export machinery — the brush rides the command log, so the
@@ -207,8 +230,10 @@ runtime, so **one preview build sweeps every variant** and the winner ships as t
   dither keeps the binary rims from reading as hard dots, so the look holds. A true soft tooth would
   need a per-stroke composited layer (a parallel textured-layer system this ADR explicitly avoids).
 * **+** Cheap: under the 4× CPU throttle, per-op draw averaged **0.086 ms** (max 2.6 ms) across a
-  realistic multi-colour session — far under the ≲ 2 ms / ~8 ms budget. A new colour's wax tiles
-  build once at ~1 ms, off any single frame.
+  realistic multi-colour session — far under the ≲ 2 ms / ~8 ms budget. A new color's wax tiles
+  still build only once, but their physical-iPad work is split across frames: selection measured 17
+  ms P95 and 21 ms maximum instead of a 45 ms maximum. A trusted crayon drawing repeat remained at
+  15/27/41 ms paint P95/P99/max with zero starvation.
 * **−** The tooth field repeats every tile (256 px); a large fill can in principle show the period.
   Chosen tile + coarse-octave-free fine grain keep the repeat below legibility in practice, but a
   huge single-colour flood is the thin edge.
@@ -230,8 +255,6 @@ runtime, so **one preview build sweeps every variant** and the winner ships as t
   `colorMix: 0` is a dev-sweepable escape hatch back to the direct opaque pipeline. A known
   follow-up if devices show sluggish undo: a rolling one-undo-back snapshot to make the first (most
   common) undo a single blit.
-* **−** Not yet exposed as a kid-facing Actions Panel tool. The brush is fully wired through the
-  engine (`setCrayonMode`) and selectable/A-B-able via the dev harness; adding a user-facing button
-  is a deliberate follow-up (it needs an illustrated crayon icon matching the existing icon set,
-  plus the settings/`actionButtonLayout`/Parent Center plumbing the eraser and magic brush have),
-  kept out of this change so an un-designed icon doesn't ship into the polished icon set.
+* **−** A first stroke that lands before background warming completes can still finish a missing
+  tile synchronously. Starting warm work on the first post-selection frame makes that window much
+  shorter than the former 200 ms idle delay; the physical trusted-input gate guards the fallback.

@@ -261,6 +261,8 @@ scheduleIdle(() => crayonFields());
 export function setCrayonOptions(next: Partial<CrayonOptions>) {
   opts = clone({ ...opts, ...next });
   fields = buildFields();
+  colorTileRevision++;
+  warmingColors.clear();
   colorTileCache.clear();
   patternCache = new WeakMap();
 }
@@ -319,23 +321,6 @@ function parseColor(color: string): [number, number, number] {
   return [128, 128, 128];
 }
 
-// Binary wax opacity (0 or 1) at texel i for a pass covering `coverage` of the
-// area. The tooth MUST be binary: a pass accumulates dozens of overlapping
-// per-frame ops on its buffer, and source-over only stays idempotent under
-// that overlap when every alpha is 0 or 1 (fractional alpha would deepen
-// wherever consecutive ops of one pass overlap, striping the stroke). So: bias the pit
-// threshold slowly by the body field (a coverage wobble, not an alpha dip, so the
-// body stays opaque and same-colour overlap can't darken), jitter it per-texel by
-// the dither field within an `edge`-wide band so rims stipple instead of aliasing,
-// then hard-decide bump (1) vs pit (0).
-function waxAlpha(i: number, coverage: number): number {
-  const { height, body, dither } = crayonFields();
-  const h = height[i];
-  const t = 1 - coverage + opts.bodyVariation * (body[i] - 0.5);
-  const jitter = (dither[i] - 0.5) * 2 * Math.max(0, opts.edge);
-  return h + jitter >= t ? 1 : 0;
-}
-
 // Texels that survive the pit threshold cluster around this height, so the fine
 // shade term is centred near zero WITHIN the wax — the mean body colour stays
 // the exact crayon colour instead of skewing dark.
@@ -362,6 +347,9 @@ export function shadeShift(heightValue: number, bodyValue: number, amplitude: nu
 // per texel (identically for every pass), alpha = the pass's tooth field. Built
 // once and reused by every context's pattern.
 const colorTileCache = new Map<string, HTMLCanvasElement>();
+const warmingColors = new Set<string>();
+let colorTileRevision = 0;
+const CRAYON_WARM_ROWS_PER_FRAME = 64;
 // Bounds resident wax-tile canvases to this many recent (colour, pass) keys — each tile is
 // tile*tile RGBA, so unbounded growth (issue #167, custom colours) would leak canvas memory.
 // Derived, not a flat number, so an added swatch or pass can't silently drop the fixed palette
@@ -371,29 +359,49 @@ const colorTileCache = new Map<string, HTMLCanvasElement>();
 // Exported for crayonBrush.test.ts only — no production caller needs the raw cap.
 export const MAX_COLOR_TILES = (PALETTE_COLORS.length + 1) * CRAYON_DEFAULTS.passes.length;
 
-function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
-  const key = `${color}@${passIdx}`;
-  const hit = colorTileCache.get(key);
-  if (hit) {
-    colorTileCache.delete(key);
-    colorTileCache.set(key, hit);
-    return hit;
-  }
+interface ColorTileBuild {
+  key: string;
+  canvas: HTMLCanvasElement;
+  context: CanvasRenderingContext2D;
+  image: ImageData;
+  fields: CrayonFields;
+  color: [number, number, number];
+  shadeVariation: number;
+  coverageThreshold: number;
+  bodyVariation: number;
+  ditherScale: number;
+}
+
+function createColorTileBuild(color: string, passIdx: number): ColorTileBuild | null {
   const pass = opts.passes[passIdx];
   if (!pass) return null;
-  const { tile, height, body } = crayonFields();
-  const c = document.createElement('canvas');
-  c.width = tile;
-  c.height = tile;
-  const g = c.getContext('2d');
-  if (!g) return null;
-  const img = g.createImageData(tile, tile);
-  const [r, gr, b] = parseColor(color);
-  const data = img.data;
-  const amp = Math.max(0, opts.shadeVariation);
-  for (let i = 0; i < height.length; i++) {
+  const fields = crayonFields();
+  const canvas = document.createElement('canvas');
+  canvas.width = fields.tile;
+  canvas.height = fields.tile;
+  const context = canvas.getContext('2d');
+  if (!context) return null;
+  return {
+    key: `${color}@${passIdx}`,
+    canvas,
+    context,
+    image: context.createImageData(fields.tile, fields.tile),
+    fields,
+    color: parseColor(color),
+    shadeVariation: Math.max(0, opts.shadeVariation),
+    coverageThreshold: 1 - pass.coverage,
+    bodyVariation: opts.bodyVariation,
+    ditherScale: 2 * Math.max(0, opts.edge),
+  };
+}
+
+function fillColorTilePixels(build: ColorTileBuild, start: number, end: number) {
+  const { height, body, dither } = build.fields;
+  const [r, gr, b] = build.color;
+  const data = build.image.data;
+  for (let i = start; i < end; i++) {
     const j = i * 4;
-    const s = amp ? shadeShift(height[i], body[i], amp) : 0;
+    const s = build.shadeVariation ? shadeShift(height[i], body[i], build.shadeVariation) : 0;
     if (s >= 0) {
       data[j] = Math.round(r + (255 - r) * s);
       data[j + 1] = Math.round(gr + (255 - gr) * s);
@@ -404,10 +412,15 @@ function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
       data[j + 1] = Math.round(gr * k);
       data[j + 2] = Math.round(b * k);
     }
-    data[j + 3] = Math.round(waxAlpha(i, pass.coverage) * 255);
+    const threshold = build.coverageThreshold + build.bodyVariation * (body[i] - 0.5);
+    const jitter = (dither[i] - 0.5) * build.ditherScale;
+    data[j + 3] = height[i] + jitter >= threshold ? 255 : 0;
   }
-  g.putImageData(img, 0, 0);
-  colorTileCache.set(key, c);
+}
+
+function cacheColorTile(build: ColorTileBuild) {
+  build.context.putImageData(build.image, 0, 0);
+  colorTileCache.set(build.key, build.canvas);
   if (colorTileCache.size > MAX_COLOR_TILES) {
     const oldest = colorTileCache.keys().next().value;
     if (oldest !== undefined) colorTileCache.delete(oldest);
@@ -417,18 +430,78 @@ function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
     // setCrayonOptions already does on a full option change).
     patternCache = new WeakMap();
   }
-  return c;
+  return build.canvas;
 }
 
-// Build a colour's wax tiles off the pointer hot path — scheduled when the
-// crayon is selected or its colour changes, so the first stroke of a new colour
-// doesn't pay the per-pass tile build (a few ms under CPU throttle) inside a
-// draw. If a stroke lands before idle fires, colorTile builds synchronously —
-// a one-time cost, never repeated.
+function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
+  const key = `${color}@${passIdx}`;
+  const hit = colorTileCache.get(key);
+  if (hit) {
+    colorTileCache.delete(key);
+    colorTileCache.set(key, hit);
+    return hit;
+  }
+  const build = createColorTileBuild(color, passIdx);
+  if (!build) return null;
+  fillColorTilePixels(build, 0, build.fields.height.length);
+  return cacheColorTile(build);
+}
+
+function warmCrayonTileAcrossFrames(color: string, passIdx: number, revision: number) {
+  if (revision !== colorTileRevision) return;
+  const key = `${color}@${passIdx}`;
+  if (colorTileCache.has(key)) {
+    warmNextCrayonPass(color, passIdx, revision);
+    return;
+  }
+  const build = createColorTileBuild(color, passIdx);
+  if (!build) {
+    warmingColors.delete(color);
+    return;
+  }
+  let nextPixel = 0;
+  const fillNext = () => {
+    if (revision !== colorTileRevision) return;
+    if (colorTileCache.has(key)) {
+      warmNextCrayonPass(color, passIdx, revision);
+      return;
+    }
+    const startPixel = nextPixel;
+    nextPixel = Math.min(
+      nextPixel + build.fields.tile * CRAYON_WARM_ROWS_PER_FRAME,
+      build.fields.height.length
+    );
+    fillColorTilePixels(build, startPixel, nextPixel);
+    if (nextPixel < build.fields.height.length) {
+      requestAnimationFrame(fillNext);
+      return;
+    }
+    cacheColorTile(build);
+    warmNextCrayonPass(color, passIdx, revision);
+  };
+  fillNext();
+}
+
+function warmNextCrayonPass(color: string, passIdx: number, revision: number) {
+  const nextPassIdx = passIdx + 1;
+  if (nextPassIdx < opts.passes.length) {
+    requestAnimationFrame(() => warmCrayonTileAcrossFrames(color, nextPassIdx, revision));
+  } else {
+    warmingColors.delete(color);
+  }
+}
+
+// Build a colour's wax tiles off the pointer hot path when the crayon is
+// selected or its colour changes, so the first stroke of a new colour doesn't
+// pay the per-pass tile build inside a draw. Warming starts on the next frame
+// and generates each density pass in row chunks because one full detached tile
+// can consume the MobileSafari frame budget. If a stroke lands before warming
+// finishes, colorTile builds synchronously — a one-time cost, never repeated.
 export function warmCrayonTiles(color: string) {
-  scheduleIdle(() => {
-    for (let i = 0; i < opts.passes.length; i++) colorTile(color, i);
-  });
+  if (warmingColors.has(color)) return;
+  warmingColors.add(color);
+  const revision = colorTileRevision;
+  requestAnimationFrame(() => warmCrayonTileAcrossFrames(color, 0, revision));
 }
 
 // Per-context, per-(colour,pass) repeating pattern. createPattern is bound to one

@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import {
   seedPhase,
   getCrayonOptions,
@@ -14,6 +14,7 @@ import {
   CRAYON_DEFAULTS,
   MAX_CRAYON_MIX,
   MAX_COLOR_TILES,
+  warmCrayonTiles,
   type CrayonPoint,
 } from './crayonBrush';
 
@@ -153,6 +154,7 @@ describe('colorTileCache LRU eviction', () => {
   afterEach(() => {
     HTMLCanvasElement.prototype.getContext = origGetContext;
     setCrayonOptions(CRAYON_DEFAULTS);
+    vi.unstubAllGlobals();
   });
 
   function tileFor(color: string): HTMLCanvasElement {
@@ -183,6 +185,33 @@ describe('colorTileCache LRU eviction', () => {
 
     expect(tileFor(colors[0])).not.toBe(tiles[0]);
     expect(tileFor(colors[1])).toBe(recentTile);
+  });
+
+  it('warms tile rows and density passes across separate frames', () => {
+    setCrayonOptions({
+      tile: 128,
+      passes: [
+        { widthScale: 1, coverage: 0.45 },
+        { widthScale: 0.68, coverage: 0.63 },
+      ],
+    });
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+
+    warmCrayonTiles('#123456');
+    expect(frames).toHaveLength(1);
+
+    frames.shift()!(0);
+    expect(frames).toHaveLength(1);
+    frames.shift()!(16);
+    expect(frames).toHaveLength(1);
+    frames.shift()!(32);
+    expect(frames).toHaveLength(1);
+    frames.shift()!(48);
+    expect(frames).toHaveLength(0);
   });
 });
 
