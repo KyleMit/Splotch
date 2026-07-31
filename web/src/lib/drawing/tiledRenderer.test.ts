@@ -14,8 +14,14 @@ import {
   recordTiledOp,
   renderTiledOp,
   resizeTiledRenderer,
+  tiledHistoryDebug,
   undoTiledCommand,
 } from './tiledRenderer';
+
+vi.mock('./crayonBrush', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./crayonBrush')>()),
+  crayonPatternFor: () => ({}) as CanvasPattern,
+}));
 
 let originalGetContext: typeof HTMLCanvasElement.prototype.getContext;
 
@@ -41,8 +47,8 @@ beforeEach(() => {
       beginPath() {},
       rect() {},
       clip() {},
-      clearRect() {},
-      drawImage() {},
+      clearRect: vi.fn(),
+      drawImage: vi.fn(),
       arc() {},
       fill() {},
       setTransform(a: number, b: number, c: number, d: number, e: number, f: number) {
@@ -125,11 +131,38 @@ describe('idle tiled canvas visibility', () => {
     expect(resizeTiledRenderer(400, 400, 1)).toBe(false);
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
 
+    const patchBytesBeforeClear = tiledHistoryDebug().patchBytes;
+    const clearCallsBefore = tiles.reduce(
+      (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
+      0
+    );
+    const deferredFrames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      deferredFrames.push(callback);
+      return deferredFrames.length;
+    });
     clearTiledRenderer(false);
     expect(tiles.every((tile) => tile.hidden)).toBe(true);
+    const clearCallsAfter = tiles.reduce(
+      (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
+      0
+    );
+    expect(tiledHistoryDebug().patchBytes - patchBytesBeforeClear).toBe(100 * 100 * 4);
+    expect(clearCallsAfter - clearCallsBefore).toBe(0);
 
     undoTiledCommand(1);
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
+    const clearCallsAfterUndo = tiles.reduce(
+      (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
+      0
+    );
+    deferredFrames.shift()?.(0);
+    deferredFrames.shift()?.(16);
+    const clearCallsAfterDeferredFrames = tiles.reduce(
+      (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
+      0
+    );
+    expect(clearCallsAfterDeferredFrames).toBe(clearCallsAfterUndo);
 
     undoTiledCommand(1);
     expect(tiles.every((tile) => tile.hidden)).toBe(true);
@@ -149,8 +182,8 @@ describe('idle tiled canvas visibility', () => {
     undoTiledCommand(1);
   });
 
-  it('captures every settled live tile before an asynchronous export continues', async () => {
-    const { canvas } = rendererElements();
+  it('captures visible settled tiles before an asynchronous export continues', async () => {
+    const { host, canvas } = rendererElements();
     const bitmaps = Array.from({ length: 16 }, (_, index) => ({ index }) as unknown as ImageBitmap);
     let nextBitmap = 0;
     const createBitmap = vi.fn((_: HTMLCanvasElement) => Promise.resolve(bitmaps[nextBitmap++]));
@@ -161,15 +194,76 @@ describe('idle tiled canvas visibility', () => {
     });
     resizeTiledRenderer(400, 400, 1);
     applyTiledView(IDENTITY_PAPER_VIEW);
+    const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
+    tiles[0].hidden = false;
+    tiles[5].hidden = false;
 
     const snapshot = captureTiledCanvasSnapshot();
 
     expect(snapshot).toMatchObject({ width: 400, height: 400 });
-    expect(snapshot?.tiles).toHaveLength(16);
-    expect(createBitmap).toHaveBeenCalledTimes(16);
-    await expect(Promise.all(snapshot!.tiles.map((tile) => tile.bitmap))).resolves.toEqual(bitmaps);
+    expect(snapshot?.tiles).toHaveLength(2);
+    expect(createBitmap).toHaveBeenCalledTimes(2);
+    await expect(Promise.all(snapshot!.tiles.map((tile) => tile.bitmap))).resolves.toEqual(
+      bitmaps.slice(0, 2)
+    );
     expect(snapshot?.tiles[0]).toMatchObject({ x: 0, y: 0 });
-    expect(snapshot?.tiles.at(-1)).toMatchObject({ x: 300, y: 300 });
+    expect(snapshot?.tiles[1]).toMatchObject({ x: 100, y: 100 });
+  });
+
+  it('hides and invalidates an open crayon pass before the tile is reused', () => {
+    const { host, canvas } = rendererElements();
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => true,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+    const crayonLayers = [
+      ...host.querySelectorAll<HTMLCanvasElement>('[data-live-crayon-bottom]'),
+      ...host.querySelectorAll<HTMLCanvasElement>('[data-live-crayon-top]'),
+    ];
+    const crayonDot: StrokeOp = {
+      kind: 'dot',
+      x: 50,
+      y: 50,
+      radius: 5,
+      color: '#ff0000',
+      erase: false,
+      crayon: true,
+      seed: 1,
+    };
+    const deferredFrames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      deferredFrames.push(callback);
+      return deferredFrames.length;
+    });
+
+    beginTiledCommand(true);
+    renderTiledOp(crayonDot);
+    recordTiledOp(crayonDot);
+    expect(crayonLayers.filter((layer) => !layer.hidden)).toHaveLength(2);
+
+    clearTiledRenderer(true);
+    expect(crayonLayers.every((layer) => layer.hidden)).toBe(true);
+
+    renderTiledOp(crayonDot);
+    recordTiledOp(crayonDot);
+    expect(crayonLayers.filter((layer) => !layer.hidden)).toHaveLength(2);
+    expect(
+      crayonLayers.some(
+        (layer) => vi.mocked(layer.getContext('2d')!.clearRect).mock.calls.length > 0
+      )
+    ).toBe(true);
+
+    const crayonFlush: StrokeOp = { kind: 'crayonFlush' };
+    renderTiledOp(crayonFlush);
+    recordTiledOp(crayonFlush);
+    commitTiledCommand();
+    deferredFrames.shift()?.(0);
+    deferredFrames.shift()?.(16);
+    expect(host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]:not([hidden])')).toHaveLength(
+      1
+    );
   });
 
   it('does not capture while a pointer is active', () => {

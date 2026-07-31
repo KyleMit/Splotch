@@ -24,6 +24,7 @@ interface LiveTile extends TileBounds {
   crayonBottomCtx: CanvasRenderingContext2D;
   crayonTop: HTMLCanvasElement;
   crayonTopCtx: CanvasRenderingContext2D;
+  needsClear: boolean;
 }
 
 interface HistoryBaseTile extends TileBounds {
@@ -81,6 +82,7 @@ export function adoptTiledRenderer(
     crayonBottomCtx: crayonBottoms[index].getContext('2d')!,
     crayonTop: crayonTops[index],
     crayonTopCtx: crayonTops[index].getContext('2d')!,
+    needsClear: false,
     x: 0,
     y: 0,
     width: 0,
@@ -128,6 +130,21 @@ function ensureCrayonBacking(tile: LiveTile) {
   setCrayonBufferForTarget(tile.ctx, tile.crayonBottomCtx, tile.crayonTopCtx);
 }
 
+function clearTileBacking(tile: LiveTile) {
+  resetCrayonStateForClear(tile.ctx);
+  clearAllOf(tile.ctx);
+  tile.needsClear = false;
+}
+
+function deferHiddenTileClear(tile: LiveTile) {
+  tile.needsClear = true;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (tile.needsClear && tile.canvas.hidden) clearTileBacking(tile);
+    });
+  });
+}
+
 export function resizeTiledRenderer(width: number, height: number, renderScale: number) {
   if (!canvas) return false;
   if (rendererWidth === width && rendererHeight === height && rendererScale === renderScale) {
@@ -151,6 +168,7 @@ export function resizeTiledRenderer(width: number, height: number, renderScale: 
       tile.crayonBottom.hidden = true;
       tile.crayonTop.hidden = true;
       resizeBacking(tile.canvas, tile.width, tile.height);
+      tile.needsClear = false;
       for (const tileCanvas of [tile.canvas, tile.crayonBottom, tile.crayonTop]) {
         tileCanvas.style.left = `${tile.x / renderScale}px`;
         tileCanvas.style.top = `${tile.y / renderScale}px`;
@@ -277,8 +295,10 @@ function enforceUndoPatchBudget() {
 function showTileForOp(tile: LiveTile, op: StrokeOp) {
   if (op.kind === 'clear') {
     tile.canvas.hidden = true;
+    tile.needsClear = false;
     return;
   }
+  if (tile.needsClear) clearTileBacking(tile);
   if ((op.kind === 'dot' || op.kind === 'path') && op.crayon && !op.erase) return;
   if (op.kind === 'crayonFlush' && !crayonBufferIsDirty(tile.ctx)) return;
   tile.canvas.hidden = false;
@@ -378,8 +398,7 @@ export function repaintTiledRenderer() {
   const rebuildUndo = undoableCommands > 0 || activeCommand !== null;
   for (const tile of liveTiles) {
     tile.canvas.hidden = true;
-    resetCrayonStateForClear(tile.ctx);
-    clearAllOf(tile.ctx);
+    clearTileBacking(tile);
     for (const base of historyBase) {
       if (tilesIntersect(base, tile)) {
         tile.ctx.drawImage(base.canvas, base.x, base.y);
@@ -435,6 +454,7 @@ export function undoTiledCommand(renderScale: number) {
       tile.ctx.clearRect(snapshot.x, snapshot.y, snapshot.canvas.width, snapshot.canvas.height);
       tile.ctx.drawImage(snapshot.canvas, snapshot.x, snapshot.y);
       tile.ctx.restore();
+      tile.needsClear = false;
       tile.canvas.hidden = snapshot.hidden;
     }
   } else {
@@ -452,13 +472,19 @@ export function undoTiledCommand(renderScale: number) {
 export function clearTiledRenderer(wasEmpty: boolean) {
   const clearCommand: StrokeGroupCommand = { ops: [{ kind: 'clear' }], wasEmpty };
   for (const [index, tile] of liveTiles.entries()) {
-    undoPatches.capture(clearCommand, tile, index);
+    if (!tile.canvas.hidden) undoPatches.capture(clearCommand, tile, index);
   }
   history.push(clearCommand);
   undoableCommands = Math.min(MAX_UNDO_DEPTH, undoableCommands + 1);
   enforceUndoPatchBudget();
   scheduleTiledHistoryFold();
-  renderTiledOpForCommand(clearCommand.ops[0], null);
+  for (const tile of liveTiles) {
+    if (tile.canvas.hidden && !crayonBufferIsDirty(tile.ctx)) continue;
+    tile.canvas.hidden = true;
+    tile.crayonBottom.hidden = true;
+    tile.crayonTop.hidden = true;
+    deferHiddenTileClear(tile);
+  }
   if (activeCommand) {
     undoPatches.delete(activeCommand);
     activeCommand.ops.length = 0;
@@ -518,11 +544,13 @@ export function captureTiledCanvasSnapshot(): TiledCanvasSnapshot | null {
   return {
     width: rendererWidth,
     height: rendererHeight,
-    tiles: liveTiles.map((tile) => ({
-      bitmap: createImageBitmap(tile.canvas),
-      x: tile.x,
-      y: tile.y,
-    })),
+    tiles: liveTiles
+      .filter((tile) => !tile.canvas.hidden)
+      .map((tile) => ({
+        bitmap: createImageBitmap(tile.canvas),
+        x: tile.x,
+        y: tile.y,
+      })),
   };
 }
 

@@ -60,6 +60,22 @@ in the table because they explain two important false conclusions: a missing nex
 not a zero-millisecond paint, and Appium can execute JavaScript while MobileSafari is still visually
 suspended by an orientation transition.
 
+The later full-app interaction sweep exposed a separate clear-action stall in the same architecture.
+A one-tile pen drawing still captured and cleared all sixteen attached normal-ink surfaces. Three
+physical-iPad runs measured 75–83 ms maximum frame gaps. Serial isolation retained the one-tile undo
+snapshot, then changed only the pixel mutation:
+
+| Clear strategy                                     | Frame P95 ms | Max gap ms | Result                                         |
+| -------------------------------------------------- | -----------: | ---------: | ---------------------------------------------- |
+| Capture and clear all sixteen live tiles           |           17 |      75–83 | Fail                                           |
+| Capture and synchronously clear visible tiles only |           17 |      30–34 | Major improvement; one run missed the max gate |
+| Hide the visible tile without clearing its backing |           17 |         28 | Diagnostic pass; stale backing is invalid      |
+| Hide immediately; clear after two presented frames |           17 |      23–28 | Pass; retained                                 |
+
+The clear gesture's 725–731 ms “ready observed” time includes the drag and page-turn choreography.
+It is not synchronous clear work. The scored frame stream starts at trusted pointerdown and covers
+the full gesture plus deferred wipe, so the retained result cannot hide a delayed long frame.
+
 ## Decision
 
 Production tiled undo restores pre-command dirty-region patches. Vector commands remain, but undo
@@ -78,9 +94,14 @@ does not replay them in the ordinary path.
 5. Ordinary undo publishes the popped command's captured `wasEmpty` state. A tile scan remains only
    when another pointer is actively drawing and the captured pre-command state cannot describe the
    composite result.
-6. Clear captures all normal-ink tiles because its mutation is full-paper. It remains one undoable
-   command. If another pointer is still drawing, clear discards that active command's old patches so
-   its continued segment captures the cleared paper, not the pixels clear removed.
+6. Clear captures only visible normal-ink tiles, because hidden tiles contain no presented committed
+   pixels. It hides affected normal and crayon layers immediately, then clears their backing stores
+   after two presented frames. A tile reused before that callback clears synchronously before its
+   first new op; undo cancels the pending wipe by restoring the patch and visibility first. Export
+   snapshots include visible tiles only, so a hidden stale backing can never leak into a save. Clear
+   remains one undoable command. If another pointer is still drawing, clear discards that active
+   command's old patches so its continued segment captures the cleared paper, not the pixels clear
+   removed.
 
 Patch coordinates are local to the current tile backing stores. Resize or rotation can change tile
 dimensions, and an asynchronous magic sheet can change what an earlier command should reveal without
@@ -121,6 +142,8 @@ Resident patches use an adaptive byte budget:
   or historical op volume. The final normal run measured 0 ms engine P95 and 10 ms next-frame P95.
 * \+ All four brushes, post-rotation undo, and twenty deep undos after tiled-base compaction pass
   the physical-iPad response gates.
+* \+ Clear improved from 75–83 ms maximum frame gaps to 23–28 ms without reducing output scale, undo
+  depth, or visual quality.
 * \+ Live drawing remains full-resolution and starve-free. No brush, audio, visual quality, or
   normal twenty-step depth was removed.
 * \+ Typical twenty-step patch history is about 20 MiB on the target iPad. Fully compacted history
@@ -240,8 +263,35 @@ strips after drawing has begun can also be wrong where the expansion overlaps pi
 earlier op. The full transient copy followed by one crop keeps the pre-command source immutable.
 
 `crayonFlush` contributes no new dirty area; its deposited pixels are contained by the preceding
-crayon geometry. `clear` and non-geometric full-surface ops capture full tiles. Geometry culling and
-snapshot bounds must use the same anti-alias padding.
+crayon geometry. A visible tile captured for `clear`, and other non-geometric full-surface ops,
+captures the full tile. Geometry culling and snapshot bounds must use the same anti-alias padding.
+
+### Frame-Bound Clear
+
+Reconstruct the baseline by capturing every live tile for the clear command and broadcasting a
+`clear` op across all sixteen tile contexts. Score the trusted drag-to-clear gesture from
+pointerdown through at least one second after pointerup; the costly canvas flush appears near the
+commit at the end of the drag, not at pointerdown.
+
+To separate snapshot cost from backing-store mutation:
+
+1. First capture only tiles whose normal-ink canvas is visible, but still clear those backings
+   synchronously. The measured one-tile drawing should fall near 30–34 ms.
+2. Keep the same snapshot and hide the tile without clearing its backing. A result near 28 ms
+   identifies the remaining attached-surface wipe, but this version is not shippable.
+3. Productize the diagnostic by marking the hidden tile dirty and clearing it after two
+   `requestAnimationFrame` callbacks. If a new op reaches the tile first, clear before rendering
+   that op. If undo restores it first, cancel the pending wipe by clearing the dirty marker.
+
+An open crayon pass is a second presentation plane even when the normal tile is hidden. Treat a
+dirty crayon buffer as affected by clear, hide both preview canvases immediately, and invalidate the
+same backing. Otherwise a second finger can draw after the clear drag begins and leave wax visible
+when the gesture commits. Unit coverage must exercise clear, immediate undo, reuse before the
+deferred callback, crayon-buffer reuse, and visible-only export capture.
+
+Do not infer clear completion from the Undo button: clear itself is undoable. The production action
+probe waits for Screenshot to become disabled, while the frame gate—not that readiness
+observation—scores responsiveness.
 
 ### Repaint, Resize, and Rotation Reconstruction
 
