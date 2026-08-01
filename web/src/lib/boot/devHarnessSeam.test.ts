@@ -7,6 +7,7 @@ const ctrl = vi.hoisted(() => ({
   perfMarks: false,
   mode: 'pen',
   snapshots: 3,
+  rasterizedOps: 5,
 }));
 
 vi.mock('$app/environment', () => ({
@@ -17,6 +18,7 @@ vi.mock('$app/environment', () => ({
 
 vi.mock('$lib/drawing/engine', () => ({
   committedBrushMode: () => ctrl.mode,
+  getDrawingWorkDebug: () => ({ lastCommand: { rasterizedOps: ctrl.rasterizedOps } }),
   getUndoDebug: () => ({ snapshots: ctrl.snapshots }),
   getLiveSurfaceTopology: () => [{ width: 683, height: 458 }],
 }));
@@ -32,6 +34,7 @@ beforeEach(() => {
   ctrl.perfMarks = false;
   ctrl.mode = 'pen';
   ctrl.snapshots = 3;
+  ctrl.rasterizedOps = 5;
   delete window.__committedBrushMode;
   delete window.__drawingDebug;
 });
@@ -51,10 +54,17 @@ it('publishes the engine mode while the dev-harness gate is open', () => {
 it('publishes the undo-history debug reader while the gate is open', () => {
   installDevHarnessSeam();
   expect(window.__drawingDebug?.getUndoDebug()).toEqual({ snapshots: 3 });
+  expect(window.__drawingDebug?.getDrawingWorkDebug()).toEqual({
+    lastCommand: { rasterizedOps: 5 },
+  });
   expect(window.__drawingDebug?.getLiveSurfaceTopology()).toEqual([{ width: 683, height: 458 }]);
 
   ctrl.snapshots = 7;
+  ctrl.rasterizedOps = 9;
   expect(window.__drawingDebug?.getUndoDebug()).toEqual({ snapshots: 7 });
+  expect(window.__drawingDebug?.getDrawingWorkDebug()).toEqual({
+    lastCommand: { rasterizedOps: 9 },
+  });
 });
 
 it('installs nothing when the gate is closed, so the deploy has no seam', () => {

@@ -20,6 +20,12 @@ export interface HistoryBaseTile extends TileBounds {
   painted: boolean;
 }
 
+export interface TiledCanvasSnapshot {
+  width: number;
+  height: number;
+  tiles: Array<{ bitmap: Promise<ImageBitmap>; x: number; y: number }>;
+}
+
 export function createLiveTiles(canvasElement: HTMLCanvasElement): LiveTile[] {
   const elements =
     canvasElement.parentElement?.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]') ??

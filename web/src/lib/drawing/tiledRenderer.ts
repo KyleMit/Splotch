@@ -1,7 +1,9 @@
 import { crayonBufferIsDirty, resetCrayonStateForClear } from './crayonPassBuffer';
+import { createDrawingWorkCounters } from './drawingWorkDebug';
 import { scanCanvasIsEmpty } from './emptyScan';
 import { setMagicPatternRegion } from './magicBrush';
 import { viewMatrix, viewToPaper, type PaperView } from './paperView';
+import { PERF_MARKS } from './perf';
 import { createProgressiveClearCapture } from './progressiveClearCapture';
 import { renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
 import { type HistoryDebug, MAX_UNDO_DEPTH } from './undoHistory';
@@ -23,17 +25,12 @@ import {
   renderHistoryBaseOp,
   type HistoryBaseTile,
   type LiveTile,
+  type TiledCanvasSnapshot,
 } from './tiledSurfaces';
 
 interface TiledRendererHost {
   paperSize: () => { width: number; height: number };
   hasActivePointers: () => boolean;
-}
-
-export interface TiledCanvasSnapshot {
-  width: number;
-  height: number;
-  tiles: Array<{ bitmap: Promise<ImageBitmap>; x: number; y: number }>;
 }
 
 export const TILE_HISTORY_FOLD_IDLE_MS = 1_500;
@@ -55,6 +52,9 @@ const undoPatches = createTiledUndoPatches();
 let undoableCommands = 0;
 let historyFoldTimer: ReturnType<typeof setTimeout> | null = null;
 let backingMigrationRevision = 0;
+const isDev = import.meta.env?.DEV;
+const isDevHarness = typeof __DEV_HARNESS__ !== 'undefined' && __DEV_HARNESS__;
+const workCounters = isDev || isDevHarness || PERF_MARKS ? createDrawingWorkCounters() : null;
 
 export function adoptTiledRenderer(
   canvasElement: HTMLCanvasElement,
@@ -65,9 +65,7 @@ export function adoptTiledRenderer(
   liveTiles = createLiveTiles(canvasElement);
 }
 
-export function tiledRendererActive() {
-  return liveTiles.length > 0;
-}
+export const tiledRendererActive = () => liveTiles.length > 0;
 
 export function tiledSurfaceTopologyDebug() {
   return liveTiles.map(({ width, height }) => ({ width, height }));
@@ -237,6 +235,7 @@ function showTileForOp(tile: LiveTile, op: StrokeOp) {
 }
 
 function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | null) {
+  let surfaceVisits = 0;
   if (op.kind !== 'dot' && op.kind !== 'path') {
     for (const [index, tile] of liveTiles.entries()) {
       if (op.kind !== 'crayonFlush' || crayonBufferIsDirty(tile.ctx)) {
@@ -248,19 +247,22 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
       }
       showTileForOp(tile, op);
       renderOp(tile.ctx, op);
+      surfaceVisits++;
     }
-    return;
-  }
-  for (const [index, tile] of liveTiles.entries()) {
-    if (geometryIntersectsTile(op, tile)) {
-      ensureNormalTileBacking(tile);
-      if (op.crayon && !op.erase) ensureCrayonTileBacking(tile);
-      prepareTileForMutation(tile, index);
-      if (command) undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
-      showTileForOp(tile, op);
-      renderOp(tile.ctx, op);
+  } else {
+    for (const [index, tile] of liveTiles.entries()) {
+      if (geometryIntersectsTile(op, tile)) {
+        ensureNormalTileBacking(tile);
+        if (op.crayon && !op.erase) ensureCrayonTileBacking(tile);
+        prepareTileForMutation(tile, index);
+        if (command) undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
+        showTileForOp(tile, op);
+        renderOp(tile.ctx, op);
+        surfaceVisits++;
+      }
     }
   }
+  if (command === activeCommand) workCounters?.record(surfaceVisits);
 }
 
 export function renderTiledOp(op: StrokeOp) {
@@ -361,6 +363,7 @@ export function repaintTiledRenderer(rebuildUndoPatches = true) {
 export function beginTiledCommand(wasEmpty: boolean) {
   cancelHistoryFold();
   activeCommand = { ops: [], wasEmpty };
+  workCounters?.begin();
 }
 
 export function commitTiledCommand() {
@@ -370,6 +373,7 @@ export function commitTiledCommand() {
   undoableCommands = Math.min(MAX_UNDO_DEPTH, undoableCommands + 1);
   enforceUndoPatchBudget();
   activeCommand = null;
+  workCounters?.commit();
   scheduleTiledHistoryFold();
   return true;
 }
@@ -479,6 +483,11 @@ export function tiledHistoryDebug(): HistoryDebug {
   };
 }
 
+export function tiledWorkDebug() {
+  if (!workCounters) throw new Error();
+  return workCounters.debug(liveTiles);
+}
+
 export function captureTiledCanvasSnapshot(): TiledCanvasSnapshot | null {
   if (
     !canvas ||
@@ -521,4 +530,5 @@ export function detachTiledRenderer() {
   rendererWidth = 0;
   rendererHeight = 0;
   rendererScale = 0;
+  workCounters?.reset();
 }

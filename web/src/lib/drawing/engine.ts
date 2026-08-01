@@ -130,8 +130,10 @@ import {
   tiledHistoryDebug,
   tiledRendererActive,
   tiledSurfaceTopologyDebug,
+  tiledWorkDebug,
   undoTiledCommand,
 } from './tiledRenderer';
+import type { DrawingWorkDebug } from './drawingWorkDebug';
 
 export { setColorSheet };
 
@@ -1253,6 +1255,11 @@ export function getUndoDebug(): HistoryDebug {
 export function getLiveSurfaceTopology() {
   if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) throw new Error();
   return tiledSurfaceTopologyDebug();
+}
+
+export function getDrawingWorkDebug(): DrawingWorkDebug | null {
+  if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) throw new Error();
+  return tiledRendererActive() ? tiledWorkDebug() : null;
 }
 
 // Dev A/B seam (ADR-0065 tuning): override the crayon tooth/coverage/pass knobs

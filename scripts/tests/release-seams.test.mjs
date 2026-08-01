@@ -54,8 +54,16 @@ it('derives every current window seam and engine measure family', () => {
     'engine.scanEmpty',
     'engine.snapshot',
     'engine.undo',
+    'inputOps',
     'liveRasters',
+    'liveSurfaceElements',
+    'maxLiveBackingBytes',
+    'maxSurfaceVisitsPerOp',
     'pendingCommands',
+    'rasterizedOps',
+    'realizedCrayonBackings',
+    'realizedNormalBackings',
+    'totalLiveBackingBytes',
   ]);
 });
 
