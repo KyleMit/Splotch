@@ -7,6 +7,7 @@ interface CommandWork {
 }
 
 export interface DrawingWorkDebug {
+  backingMigrationPending: boolean;
   liveSurfaceElements: number;
   realizedNormalBackings: number;
   realizedCrayonBackings: number;
@@ -43,7 +44,7 @@ export function createDrawingWorkCounters() {
       activeCommand = null;
       lastCommand = null;
     },
-    debug(liveTiles: LiveTile[]): DrawingWorkDebug {
+    debug(liveTiles: LiveTile[], backingMigrationPending: boolean): DrawingWorkDebug {
       let realizedNormalBackings = 0;
       let realizedCrayonBackings = 0;
       let maxLiveBackingBytes = 0;
@@ -66,6 +67,7 @@ export function createDrawingWorkCounters() {
         }
       }
       return {
+        backingMigrationPending,
         liveSurfaceElements: liveTiles.length * SURFACES_PER_TILE,
         realizedNormalBackings,
         realizedCrayonBackings,

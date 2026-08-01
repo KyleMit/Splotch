@@ -115,6 +115,7 @@ describe('idle tiled canvas visibility', () => {
       Array.from({ length: 16 }, () => ({ width: 100, height: 100 }))
     );
     expect(tiledWorkDebug()).toMatchObject({
+      backingMigrationPending: false,
       liveSurfaceElements: 48,
       realizedNormalBackings: 16,
       realizedCrayonBackings: 0,
