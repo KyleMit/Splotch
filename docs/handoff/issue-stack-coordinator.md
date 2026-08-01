@@ -15,7 +15,7 @@ implementation worker and its independent reviewer both start without this conve
 The coordinator retains only the queue and compact completion records.
 
 Before spawning any worker, the coordinator must finish the permission and hardware preflight under
-**Decisions made (and why)**. Delegates do not request escalated permissions themselves. A delegate
+**Decisions made (and why)**. Delegates do not seek new permission grants themselves. A delegate
 that encounters an unapproved operation returns the exact command and reason to the coordinator; the
 coordinator obtains or denies the permission and then resumes the same delegate.
 
@@ -116,11 +116,13 @@ spawn worker 1 until all applicable rows below are confirmed or explicitly marke
 Known reusable approvals established while creating this packet:
 
 * `git switch -c`
+* `git add`
+* `git commit -m`
+* `git push -u origin`
 * `gh extension install`
 * `gh stack link`
 
-Do not assume those approvals survived into a different permission profile: verify them. Git add,
-commit, and `git push -u origin` are exercised while this packet is committed and pushed. Record
+Do not assume those approvals survived into a different permission profile: verify them and record
 their result in the resume delta before delegation.
 
 The physical-iPad requirements cannot be made purely permission-driven. The device must be
@@ -130,9 +132,11 @@ rather than discovering the blocker after several PR layers exist.
 
 Delegate prompt rule:
 
-> Do not request escalated permissions. Use inherited approved commands only. If an operation is
-> denied, stop that operation, send `PERMISSION_BLOCKED` with the exact command, target, reason, and
-> safest reusable prefix to the coordinator, and wait. Do not substitute a broader or less safe
+> Do not request new approval rules. Use inherited approved commands only. If an operation is
+> outside the sandbox but its exact command prefix was approved by the coordinator, invoke it with
+> the existing approval and do not propose a new rule. If an operation has no existing approval or
+> is denied, stop that operation, send `PERMISSION_BLOCKED` with the exact command, target, reason,
+> and safest reusable prefix to the coordinator, and wait. Do not substitute a broader or less safe
 > command.
 
 ### Per-issue worker contract
@@ -202,6 +206,7 @@ Layer 1 starts from `origin/main`, not from either handoff commit.
 * Installed the official `github/gh-stack` extension successfully.
 * Ran `gh stack link --help`; the command supports appending existing PRs without local stack
   tracking.
+* Staged an explicit path, created the handoff commit, and pushed its tracked branch to `origin`.
 * Ran `npm run info` before naming repository scripts.
 * Read the profiling skill and its physical-iPad runbook.
 * No issue was claimed, no product file was edited, and no PR was opened.
