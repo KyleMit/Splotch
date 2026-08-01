@@ -14,6 +14,7 @@ import {
 } from './ipad-release-report.mjs';
 
 const BUILD_METADATA_PATH = join(ROOT, 'web', 'build', 'version.json');
+const DEVICE_INFO_COMMAND = 'ideviceinfo';
 
 function runChecked(command, args, options = {}) {
   console.log('$', command, ...args);
@@ -56,6 +57,29 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
 
+export function validatePhysicalDeviceModel(actual, expected) {
+  if (!actual) {
+    throw new Error(`${DEVICE_INFO_COMMAND} did not report ProductType for the selected device`);
+  }
+  if (actual !== expected) {
+    throw new Error(`Attached device model ${actual} does not match configured model ${expected}`);
+  }
+  return actual;
+}
+
+function readPhysicalDeviceModel(deviceId, expected) {
+  const result = spawnSync(DEVICE_INFO_COMMAND, ['-u', deviceId, '-k', 'ProductType'], {
+    encoding: 'utf8',
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      `${DEVICE_INFO_COMMAND} could not inspect the selected physical device. ` +
+        'Unlock it, trust this Mac, and keep the USB connection active.'
+    );
+  }
+  return validatePhysicalDeviceModel(result.stdout.trim(), expected);
+}
+
 export async function runIpadReleaseRig(argv = process.argv.slice(2)) {
   const { values } = parseArgs({
     args: argv,
@@ -87,6 +111,7 @@ export async function runIpadReleaseRig(argv = process.argv.slice(2)) {
   if (process.platform !== 'darwin') {
     throw new Error('The physical-iPad release rig requires macOS');
   }
+  const deviceModel = readPhysicalDeviceModel(plan.deviceId, plan.deviceModel);
 
   runChecked('npm', ['run', 'perf:build'], {
     env: { ...process.env, PERF_MARKS: 'true', PUBLIC_ENABLE_DEV_HARNESS: 'true' },
@@ -96,6 +121,7 @@ export async function runIpadReleaseRig(argv = process.argv.slice(2)) {
     `--device-id=${plan.deviceId}`,
     `--expected-app-version=${build.appVersion}`,
     `--expected-build-time=${build.buildTime}`,
+    '--redact-device-log',
   ];
   const rawDir = join(dirname(outputDir), 'raw');
   mkdirSync(rawDir, { recursive: true });
@@ -129,7 +155,7 @@ export async function runIpadReleaseRig(argv = process.argv.slice(2)) {
     buildTime: build.buildTime,
     commit: capture('git', ['rev-parse', 'HEAD']).trim(),
     releaseTag: values['release-tag'],
-    device: { ...first.device, model: plan.deviceModel },
+    device: { ...first.device, model: deviceModel },
   };
   const report = writeReleaseRigReport({ metadata, engineRuns, frameRuns }, outputDir);
   console.log(`\nRelease-rig report: ${join(outputDir, 'index.html')}`);

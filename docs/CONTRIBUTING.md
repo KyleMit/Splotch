@@ -134,9 +134,11 @@ real-screen suite once for each new `v*` release tag. Results are committed unde
 `scrapbook/performance/ipad-release-rig/` and render on GitHub Pages. The rig is deliberately not a
 self-hosted GitHub runner.
 
-The exact device name and UDID gate repeat identity only in ephemeral raw captures. Public JSON,
-HTML, and scrapbook output retain a neutral rig label, hardware model, and iPadOS version, but never
-the personal device name or UDID.
+The UDID remains only in the mode-0600 launchd configuration and ephemeral raw captures; the
+personal device name remains only in raw captures. Public JSON, HTML, and scrapbook output retain a
+neutral rig label, hardware model, and iPadOS version, but never the personal device name or UDID.
+Persistent launchd logs apply the same redaction, and `ideviceinfo` must confirm that the configured
+model matches the selected physical device.
 
 Install or inspect its two user agents from a dedicated clean `main` clone:
 

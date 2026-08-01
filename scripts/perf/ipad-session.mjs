@@ -75,7 +75,13 @@ export async function ensurePreviewServer(url, port, allowSpawn) {
 
 // Starts the relay and picks a device off it; the caller owns stopProxy() for
 // the length of the run.
-export async function connectDevice(deviceId) {
+export function deviceLogLabel(device, redactIdentity = false) {
+  return redactIdentity
+    ? `physical iOS device (iOS ${device.deviceOSVersion})`
+    : `${device.deviceName} (iOS ${device.deviceOSVersion})`;
+}
+
+export async function connectDevice(deviceId, { redactIdentity = false } = {}) {
   const { stop: stopProxy } = startInspectorProxy();
   const device = await waitForDevice(deviceId);
   if (!device) {
@@ -85,7 +91,7 @@ export async function connectDevice(deviceId) {
         'Trust This Computer, and turn on Settings → Apps → Safari → Advanced → Web Inspector.'
     );
   }
-  console.log(`Device: ${device.deviceName} (iOS ${device.deviceOSVersion})`);
+  console.log(`Device: ${deviceLogLabel(device, redactIdentity)}`);
   return { device, stopProxy };
 }
 

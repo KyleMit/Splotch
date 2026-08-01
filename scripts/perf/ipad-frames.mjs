@@ -159,6 +159,7 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         'output',
         'expected-app-version',
         'expected-build-time',
+        'redact-device-log',
       ],
     },
     argv
@@ -202,7 +203,9 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
     );
   }
   const server = await ensurePreviewServer(appUrl, port, !has('no-serve'));
-  const { device, stopProxy } = await connectDevice(flag('device-id'));
+  const { device, stopProxy } = await connectDevice(flag('device-id'), {
+    redactIdentity: has('redact-device-log'),
+  });
 
   let session;
   try {

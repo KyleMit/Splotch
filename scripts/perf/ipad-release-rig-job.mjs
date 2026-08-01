@@ -17,8 +17,13 @@ const DEFAULT_STATE_DIR = join(homedir(), 'Library', 'Application Support', 'Spl
 export const COMPLETED_RELEASE_TAGS_FILE = 'completed-release-tags.json';
 const TRUSTED_TAG_PREFIX = 'refs/splotch-rig/tags/';
 
+export function redactCommandArgs(args) {
+  return args.map((arg) => (arg.startsWith('--device-id=') ? '--device-id=<private-device>' : arg));
+}
+
 function command(commandName, args, { cwd = ROOT, allowFailure = false, capture = false } = {}) {
-  console.log('$', commandName, ...args);
+  const loggedArgs = redactCommandArgs(args);
+  console.log('$', commandName, ...loggedArgs);
   const result = spawnSync(commandName, args, {
     cwd,
     encoding: capture ? 'utf8' : undefined,
@@ -26,7 +31,7 @@ function command(commandName, args, { cwd = ROOT, allowFailure = false, capture 
   });
   if (result.status !== 0 && !allowFailure) {
     throw new Error(
-      `${commandName} ${args.join(' ')} exited ${result.status ?? 'without a status'}${capture ? `\n${result.stderr}` : ''}`
+      `${commandName} ${loggedArgs.join(' ')} exited ${result.status ?? 'without a status'}${capture ? `\n${result.stderr}` : ''}`
     );
   }
   return capture ? (result.stdout ?? '').trim() : result.status === 0;
@@ -136,11 +141,9 @@ function prepareMain(repo) {
 
 function runRig(repo, outputDir, plan, releaseTag) {
   command(
-    'npm',
+    process.execPath,
     [
-      'run',
-      'perf:ipad:release-rig',
-      '--',
+      join(repo, 'scripts', 'perf', 'ipad-release-rig.mjs'),
       `--suite=${plan.suite}`,
       '--repeats=3',
       `--device-id=${plan.deviceId}`,
@@ -175,8 +178,14 @@ function publish(repo, reportDir) {
       cwd: repo,
     }
   );
-  command('git', ['push', 'origin', 'main'], { cwd: repo });
+  command('git', ['push', 'origin', 'HEAD:main'], { cwd: repo });
   return { metadata, destination };
+}
+
+function preparePublicationWorktree(repo, worktree) {
+  command('git', ['fetch', 'origin', '+refs/heads/main:refs/remotes/origin/main'], { cwd: repo });
+  command('git', ['worktree', 'add', '--detach', worktree, 'origin/main'], { cwd: repo });
+  command('npm', ['ci'], { cwd: worktree });
 }
 
 export function firstUnmeasuredReleaseTag(tags, completedTags) {
@@ -238,7 +247,8 @@ export async function runScheduledIpadRig(argv = process.argv.slice(2)) {
     return { skipped: 'locked' };
   }
 
-  let worktree;
+  let releaseWorktree;
+  let publicationWorktree;
   try {
     const releaseTags = prepareMain(repo);
     let runRepo = repo;
@@ -251,7 +261,6 @@ export async function runScheduledIpadRig(argv = process.argv.slice(2)) {
         console.log('No unseen v* release tag is available; skipping.');
         return { skipped: 'no-unseen-release-tag' };
       }
-      command('npm', ['ci'], { cwd: repo });
       releaseTag = selected.name;
       if (
         !command('git', ['merge-base', '--is-ancestor', selected.ref, 'origin/main'], {
@@ -261,13 +270,13 @@ export async function runScheduledIpadRig(argv = process.argv.slice(2)) {
       ) {
         throw new Error(`${releaseTag} is not an ancestor of origin/main`);
       }
-      worktree = join(
+      releaseWorktree = join(
         tmpdir(),
         `splotch-ipad-${releaseTag.replace(/[^\w.-]/g, '-')}-${process.pid}`
       );
-      command('git', ['worktree', 'add', '--detach', worktree, selected.ref], { cwd: repo });
-      command('npm', ['ci'], { cwd: worktree });
-      runRepo = worktree;
+      command('git', ['worktree', 'add', '--detach', releaseWorktree, selected.ref], { cwd: repo });
+      command('npm', ['ci'], { cwd: releaseWorktree });
+      runRepo = releaseWorktree;
     } else {
       command('npm', ['ci'], { cwd: repo });
     }
@@ -275,13 +284,20 @@ export async function runScheduledIpadRig(argv = process.argv.slice(2)) {
     const reportRoot = join(stateDir, 'out', `${Date.now()}-${plan.suite}`);
     const reportDir = join(reportRoot, 'report');
     runRig(runRepo, reportDir, plan, releaseTag);
-    const published = publish(repo, reportDir);
+    publicationWorktree = join(tmpdir(), `splotch-ipad-publish-${Date.now()}-${process.pid}`);
+    preparePublicationWorktree(repo, publicationWorktree);
+    const published = publish(publicationWorktree, reportDir);
     if (releaseTag) writeCompletedReleaseTags(stateDir, [...completedTags, releaseTag]);
     rmSync(reportRoot, { recursive: true, force: true });
     return published;
   } finally {
-    if (worktree)
-      command('git', ['worktree', 'remove', worktree, '--force'], {
+    if (publicationWorktree)
+      command('git', ['worktree', 'remove', publicationWorktree, '--force'], {
+        cwd: repo,
+        allowFailure: true,
+      });
+    if (releaseWorktree)
+      command('git', ['worktree', 'remove', releaseWorktree, '--force'], {
         cwd: repo,
         allowFailure: true,
       });

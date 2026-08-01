@@ -8,11 +8,12 @@ import {
   validateReleaseRigInputs,
   writeReleaseRigReport,
 } from '../perf/ipad-release-report.mjs';
-import { releaseRigPlan } from '../perf/ipad-release-rig.mjs';
+import { releaseRigPlan, validatePhysicalDeviceModel } from '../perf/ipad-release-rig.mjs';
 import { renderReleaseRigIndex, writeReleaseRigIndex } from '../perf/ipad-release-index.mjs';
 import {
   acquireJobLock,
   firstUnmeasuredReleaseTag,
+  redactCommandArgs,
   scheduledRigPlan,
 } from '../perf/ipad-release-rig-job.mjs';
 import { releaseRigPlist } from '../install-ipad-release-rig.mjs';
@@ -98,6 +99,14 @@ describe('release-rig contract', () => {
     expect(() =>
       releaseRigPlan({ suite: 'fast', repeats: 3, deviceId: '', deviceModel: 'iPad13,8' })
     ).toThrow('simulator substitution is forbidden');
+  });
+
+  it('rejects configured model provenance that differs from the attached device', () => {
+    expect(validatePhysicalDeviceModel('iPad13,8', 'iPad13,8')).toBe('iPad13,8');
+    expect(() => validatePhysicalDeviceModel('iPad13,8', 'not-the-attached-model')).toThrow(
+      'does not match configured model'
+    );
+    expect(() => validatePhysicalDeviceModel('', 'iPad13,8')).toThrow('did not report ProductType');
   });
 
   it('rejects partial, stale, uninstrumented, and hand-driven evidence', () => {
@@ -219,6 +228,17 @@ describe('scheduled push model', () => {
     expect(plist).toContain('<key>Umask</key><integer>63</integer>');
     expect(plist).not.toMatch(/token|secret|password/i);
     expect(plist).not.toContain('NetworkState');
+  });
+
+  it('redacts the private device ID from persistent command logs', () => {
+    const args = [
+      'scripts/perf/ipad-release-rig.mjs',
+      `--device-id=${device.id}`,
+      '--device-model=iPad13,8',
+    ];
+    const logged = redactCommandArgs(args).join(' ');
+    expect(logged).toContain('--device-id=<private-device>');
+    expect(logged).not.toContain(device.id);
   });
 
   it('pins release polling to daily 04:00', () => {
