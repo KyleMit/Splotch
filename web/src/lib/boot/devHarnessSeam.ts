@@ -37,7 +37,12 @@ import { PERF_MARKS } from '$lib/drawing/perf';
 export function installDevHarnessSeam(): () => void {
   if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) return () => {};
   window.__committedBrushMode = committedBrushMode;
-  window.__drawingDebug = { getDrawingWorkDebug, getLiveSurfaceTopology, getUndoDebug };
+  window.__drawingDebug = {
+    buildMetadata: { appVersion: __APP_VERSION__, buildTime: __BUILD_TIME__ },
+    getDrawingWorkDebug,
+    getLiveSurfaceTopology,
+    getUndoDebug,
+  };
   return () => {
     delete window.__committedBrushMode;
     delete window.__drawingDebug;

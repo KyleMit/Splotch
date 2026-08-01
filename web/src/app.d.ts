@@ -75,6 +75,7 @@ declare global {
     // Read-only profiling seam, installed by the same gated boot step as
     // __committedBrushMode (ADRs 0083/0085/0086) — see lib/boot/devHarnessSeam.ts.
     __drawingDebug?: {
+      buildMetadata: { appVersion: string; buildTime: string };
       getDrawingWorkDebug: typeof import('$lib/drawing/engine').getDrawingWorkDebug;
       getLiveSurfaceTopology: typeof import('$lib/drawing/engine').getLiveSurfaceTopology;
       getUndoDebug: typeof import('$lib/drawing/engine').getUndoDebug;

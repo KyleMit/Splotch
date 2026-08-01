@@ -16,6 +16,7 @@ declare global {
       strokeEnds: number;
     };
     __engine: {
+      buildMetadata: { appVersion: string; buildTime: string };
       setColor(color: string): void;
       setStrokeWidth(width: number): void;
       setEraserMode(active: boolean): void;

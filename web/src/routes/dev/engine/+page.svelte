@@ -95,6 +95,7 @@
   // from that spec-facing contract errors here instead of type-checking silently.
   function buildEngineApi(): Window['__engine'] {
     return {
+      buildMetadata: { appVersion: __APP_VERSION__, buildTime: __BUILD_TIME__ },
       setColor,
       setStrokeWidth,
       setEraserMode,

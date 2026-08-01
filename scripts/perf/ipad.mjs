@@ -21,7 +21,7 @@
 // open on at least one tab — a device with no tab exposes no page to attach to.
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { parsePerfArgs } from './args.mjs';
 import { profilePath } from './paths.mjs';
@@ -31,6 +31,7 @@ import {
   createDeviceConsole,
   ensurePreviewServer,
   openDevicePage,
+  readInstrumentedBuild,
   requireInspectorProxy,
   resolveDeviceUrl,
   waitForGlobal,
@@ -61,7 +62,20 @@ export function runOverridesScript({ scenarios, strokes, ops }) {
 
 export async function runIpadProfile(argv = process.argv.slice(2)) {
   const { flag, has, port } = parsePerfArgs(
-    { entry: true, extra: ['url', 'scenarios', 'strokes', 'ops', 'device-id', 'no-serve'] },
+    {
+      entry: true,
+      extra: [
+        'url',
+        'scenarios',
+        'strokes',
+        'ops',
+        'device-id',
+        'no-serve',
+        'output',
+        'expected-app-version',
+        'expected-build-time',
+      ],
+    },
     argv
   );
   requireInspectorProxy();
@@ -85,6 +99,16 @@ export async function runIpadProfile(argv = process.argv.slice(2)) {
         'never exposed window.__engine. Serve a build made with ' +
         'PUBLIC_ENABLE_DEV_HARNESS=true (npm run perf:serve does).',
     });
+    const build = await readInstrumentedBuild(
+      session,
+      'window.__engine?.buildMetadata ?? null',
+      flag('expected-app-version') && flag('expected-build-time')
+        ? {
+            appVersion: flag('expected-app-version'),
+            buildTime: flag('expected-build-time'),
+          }
+        : undefined
+    );
     await session.evaluate(
       runOverridesScript({
         scenarios: flag('scenarios'),
@@ -103,13 +127,16 @@ export async function runIpadProfile(argv = process.argv.slice(2)) {
     });
 
     console.table(rows);
-    const outDir = profilePath('ipad', device.deviceName.replace(/[^\w.-]+/g, '-'));
-    mkdirSync(outDir, { recursive: true });
+    const artifact =
+      flag('output') ??
+      join(profilePath('ipad', device.deviceName.replace(/[^\w.-]+/g, '-')), 'ipad-gates.json');
+    mkdirSync(dirname(artifact), { recursive: true });
     writeFileSync(
-      join(outDir, 'ipad-gates.json'),
+      artifact,
       `${JSON.stringify(
         {
           device: { name: device.deviceName, os: device.deviceOSVersion, id: device.deviceId },
+          build,
           harnessUrl,
           rows,
           console: deviceConsole.forReport(),
@@ -118,8 +145,8 @@ export async function runIpadProfile(argv = process.argv.slice(2)) {
         2
       )}\n`
     );
-    console.log(`\nWrote ${join(outDir, 'ipad-gates.json')}`);
-    return rows;
+    console.log(`\nWrote ${artifact}`);
+    return { artifact, build, device, rows };
   } finally {
     session?.close();
     stopProxy();

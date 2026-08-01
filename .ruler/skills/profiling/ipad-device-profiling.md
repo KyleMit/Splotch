@@ -118,6 +118,59 @@ It also cannot see the real screen at all. That is the next section.
 
 ---
 
+## Scheduled release rig — `perf:ipad:release-rig` — **⟨Mac⟩**
+
+ADR-0094 packages the gates and real-screen commands as an outbound-only launchd push rig. It never
+registers the public repository as a self-hosted runner.
+
+The two tiers cut scenarios, never repeats:
+
+* **Fast:** `multi-finger` + `crayon-scribbles`, three repeats, every Sunday at 03:00.
+* **Full:** all four engine scenarios three times plus three unattended `perf:ipad:frames --drive`
+  sweeps. A daily 04:00 poll runs it once for each unseen `v*` tag from an exact detached tag
+  worktree.
+
+Dry-run the contract and take an intentional canary before installing:
+
+```sh
+npm run perf:ipad:release-rig -- --suite=fast --repeats=3 \
+  --device-id=<UDID> --device-model=<model> --dry-run
+npm run perf:ipad:release-rig -- --suite=fast --repeats=3 \
+  --device-id=<UDID> --device-model=<model>
+npm run perf:ipad:release-rig:install -- \
+  --device-id=<UDID> --device-model=<model> --install
+```
+
+Installation writes two mode-0600 plists under `~/Library/LaunchAgents/`, state under
+`~/Library/Application Support/SplotchPerfRig/`, and logs under `~/Library/Logs/Splotch/`. Run it
+from a dedicated clean clone on `main`. The job fast-forwards from `origin/main`, rejects dirty or
+non-main state, and rejects an origin URL with embedded credentials. Configure SSH or the macOS Git
+credential helper; no token belongs in a plist, environment variable, remote URL, or log.
+
+Keep the Mac awake with the user logged in. Keep the tethered iPad unlocked, on the same Wi-Fi, with
+Safari foregrounded on a tab, Auto-Lock disabled for the rig, and Web Inspector enabled. These are
+device-security prerequisites, not automation gaps launchd can bypass. If the device is offline,
+locked, or backgrounded, the run fails and publishes nothing; there is no simulator fallback.
+
+Every repeat checks the executing page's compiled app version and build time against the bundle the
+rig just built. A stale service-worker client, old bundle, release build without profiling seams,
+partial scenario set, zero commit sample, device/OS change, console error, or repeat count below
+three stops publication. Successful reports go through `npm run scrapbook:publish` to
+`scrapbook/performance/ipad-release-rig/` and appear on Pages.
+
+The exact device name and UDID exist only in ephemeral raw captures to enforce same-device repeats.
+The normalized JSON, HTML, and scrapbook output replace them with a neutral rig label and retain
+only the hardware model and iPadOS version.
+
+Inspect installed jobs with:
+
+```sh
+launchctl print gui/$(id -u)/art.splotch.ipad-perf-fast
+launchctl print gui/$(id -u)/art.splotch.ipad-perf-release
+```
+
+---
+
 ## The real screen — `npm run perf:ipad:frames` — **⟨Mac⟩**
 
 ```sh

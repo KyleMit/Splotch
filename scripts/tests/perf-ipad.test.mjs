@@ -7,7 +7,7 @@ vi.mock('../lib/net.mjs', async (importOriginal) => {
 
 const { runOverridesScript } = await import('../perf/ipad.mjs');
 // Shared with perf:ipad:frames, which opens `/` instead — the path is the caller's.
-const { resolveDeviceUrl } = await import('../perf/ipad-session.mjs');
+const { resolveDeviceUrl, validateInstrumentedBuild } = await import('../perf/ipad-session.mjs');
 
 describe('resolveDeviceUrl', () => {
   it('points at the requested route on the first reachable LAN address', () => {
@@ -59,5 +59,25 @@ describe('runOverridesScript', () => {
   // immediately and report the wrong numbers.
   it('clears the results global the run is tracked by', () => {
     expect(runOverridesScript({})).toContain('window.__perfRows = undefined;');
+  });
+});
+
+describe('validateInstrumentedBuild', () => {
+  const expected = { appVersion: '1.4.500', buildTime: '2026-08-01 12:34' };
+
+  it('accepts the exact executing build', () => {
+    expect(validateInstrumentedBuild(expected, expected)).toEqual(expected);
+  });
+
+  it('rejects a page without profiling metadata', () => {
+    expect(() => validateInstrumentedBuild(null, expected)).toThrow(
+      'does not expose instrumented build metadata'
+    );
+  });
+
+  it('rejects a stale executing bundle', () => {
+    expect(() =>
+      validateInstrumentedBuild({ appVersion: '1.4.499', buildTime: '2026-08-01 12:30' }, expected)
+    ).toThrow('Stale device bundle');
   });
 });

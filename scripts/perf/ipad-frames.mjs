@@ -21,7 +21,7 @@
 // skill's ipad-device-profiling.md).
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, runMain } from '../lib/proc.mjs';
 import { parsePerfArgs } from './args.mjs';
 import { profilePath } from './paths.mjs';
@@ -31,6 +31,7 @@ import {
   createDeviceConsole,
   ensurePreviewServer,
   openDevicePage,
+  readInstrumentedBuild,
   requireInspectorProxy,
   resolveDeviceUrl,
   waitForGlobal,
@@ -155,6 +156,9 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         'no-hud',
         'hud',
         'timeline',
+        'output',
+        'expected-app-version',
+        'expected-build-time',
       ],
     },
     argv
@@ -213,6 +217,16 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         'never showed a sized #drawingCanvas. Confirm the tab is the real app at / ' +
         '(not /dev/engine) and that the page finished hydrating.',
     });
+    const build = await readInstrumentedBuild(
+      session,
+      'window.__drawingDebug?.buildMetadata ?? null',
+      flag('expected-app-version') && flag('expected-build-time')
+        ? {
+            appVersion: flag('expected-app-version'),
+            buildTime: flag('expected-build-time'),
+          }
+        : undefined
+    );
     // The HUD repaints twice a second and damages the blend layer some phases
     // isolate. Driven runs omit it unless --hud makes that cost part of the trial.
     await session.evaluate(probeConfig);
@@ -295,14 +309,19 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
       console.table(comparisons);
     }
 
-    const outDir = profilePath('ipad-frames', device.deviceName.replace(/[^\w.-]+/g, '-'));
-    mkdirSync(outDir, { recursive: true });
-    const artifact = join(outDir, 'real-screen.json');
+    const artifact =
+      flag('output') ??
+      join(
+        profilePath('ipad-frames', device.deviceName.replace(/[^\w.-]+/g, '-')),
+        'real-screen.json'
+      );
+    mkdirSync(dirname(artifact), { recursive: true });
     writeFileSync(
       artifact,
       `${JSON.stringify(
         {
           device: { name: device.deviceName, os: device.deviceOSVersion, id: device.deviceId },
+          build,
           appUrl,
           mode: drive ? `synthetic:${drive}${driveHz ? `@${driveHz}hz` : ''}` : 'hand',
           summaries,
@@ -315,7 +334,7 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
       )}\n`
     );
     console.log(`\nWrote ${artifact}`);
-    return { summaries, report };
+    return { artifact, build, device, summaries, report };
   } finally {
     session?.close();
     stopProxy();
