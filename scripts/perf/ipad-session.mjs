@@ -179,6 +179,30 @@ export async function openDevicePage(device, url, { onConsole, onEvent, ready, r
   return session;
 }
 
+export function validateInstrumentedBuild(actual, expected) {
+  if (!actual?.appVersion || !actual?.buildTime) {
+    throw new Error(
+      'The device page does not expose instrumented build metadata. Rebuild with ' +
+        'PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true; refusing stale or release output.'
+    );
+  }
+  if (
+    expected &&
+    (actual.appVersion !== expected.appVersion || actual.buildTime !== expected.buildTime)
+  ) {
+    throw new Error(
+      `Stale device bundle: expected ${expected.appVersion} built ${expected.buildTime}, ` +
+        `but the executing page reports ${actual.appVersion} built ${actual.buildTime}.`
+    );
+  }
+  return actual;
+}
+
+export async function readInstrumentedBuild(session, expression, expected) {
+  const actual = await session.readJson(expression);
+  return validateInstrumentedBuild(actual, expected);
+}
+
 // The device's console, collected for the report and echoed as the run's
 // progress narration. An injected payload's own console.error is how it reports
 // a fatal condition — there is no other channel back.

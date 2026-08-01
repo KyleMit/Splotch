@@ -126,6 +126,33 @@ npm run test:e2e:ui        # Playwright UI mode
 See the [testing guide](../.claude/skills/testing/SKILL.md) for the full test strategy, including
 the native smoke tests (`test:android`, `test:ios`).
 
+### Physical-iPad release rig
+
+The tethered release Mac runs the outbound-only launchd rig from ADR-0094: a three-repeat fast set
+every Sunday at 03:00, and a daily 04:00 poll that runs the three-repeat full engine + unattended
+real-screen suite once for each new `v*` release tag. Results are committed under
+`scrapbook/performance/ipad-release-rig/` and render on GitHub Pages. The rig is deliberately not a
+self-hosted GitHub runner.
+
+The exact device name and UDID gate repeat identity only in ephemeral raw captures. Public JSON,
+HTML, and scrapbook output retain a neutral rig label, hardware model, and iPadOS version, but never
+the personal device name or UDID.
+
+Install or inspect its two user agents from a dedicated clean `main` clone:
+
+```bash
+npm run perf:ipad:release-rig:install -- \
+  --device-id=<physical-UDID> --device-model=<model>       # print only
+npm run perf:ipad:release-rig:install -- \
+  --device-id=<physical-UDID> --device-model=<model> --install
+```
+
+The Mac must be awake with the user logged in. Keep the USB-connected iPad unlocked, on the same
+Wi-Fi, with Safari foregrounded, Auto-Lock disabled for the rig, and Web Inspector enabled. Use an
+SSH remote or the macOS credential helper; never put a token in the remote URL, plist, environment,
+or log configuration. The full setup, canary, and failure recovery are in the profiling skill's
+`ipad-device-profiling.md` runbook.
+
 ## Dev routes
 
 Set `PUBLIC_ENABLE_DEV_HARNESS=true` in `.env.local` to unlock:
