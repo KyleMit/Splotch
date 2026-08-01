@@ -53,7 +53,7 @@ let undoableCommands = 0;
 let historyFoldTimer: ReturnType<typeof setTimeout> | null = null;
 let backingMigration = { revision: 0, pending: false };
 const isDevHarness = typeof __DEV_HARNESS__ !== 'undefined' && __DEV_HARNESS__;
-const workCounters = import.meta.env.DEV || isDevHarness ? createDrawingWorkCounters() : null;
+const workCounters = import.meta.env?.DEV || isDevHarness ? createDrawingWorkCounters() : null;
 
 export function adoptTiledRenderer(
   canvasElement: HTMLCanvasElement,
