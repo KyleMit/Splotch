@@ -49,7 +49,10 @@ export function renderReleaseRigIndex(entries) {
 }
 
 export async function writeReleaseRigIndex(dir = IPAD_RELEASE_SCRAPBOOK_DIR) {
-  writeFileSync(join(dir, 'index.html'), renderReleaseRigIndex(releaseRigEntries(dir)));
+  writeFileSync(
+    join(dir, 'index.html'),
+    renderReleaseRigIndex(releaseRigEntries(dir)).replace(/[ \t]+$/gm, '')
+  );
 }
 
 if (isMain(import.meta.url)) runMain(writeReleaseRigIndex);

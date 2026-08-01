@@ -9,7 +9,7 @@ import {
   writeReleaseRigReport,
 } from '../perf/ipad-release-report.mjs';
 import { releaseRigPlan } from '../perf/ipad-release-rig.mjs';
-import { renderReleaseRigIndex } from '../perf/ipad-release-index.mjs';
+import { renderReleaseRigIndex, writeReleaseRigIndex } from '../perf/ipad-release-index.mjs';
 import {
   acquireJobLock,
   firstUnmeasuredReleaseTag,
@@ -155,6 +155,13 @@ describe('release-rig contract', () => {
 
   it('links the collection index back to the scrapbook root', () => {
     expect(renderReleaseRigIndex([])).toContain('href="../../index.html"');
+  });
+
+  it('writes the collection index without trailing whitespace', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'splotch-ipad-index-'));
+    dirs.push(dir);
+    await writeReleaseRigIndex(dir);
+    expect(readFileSync(join(dir, 'index.html'), 'utf8')).not.toMatch(/[ \t]+$/m);
   });
 });
 

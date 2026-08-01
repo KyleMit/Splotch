@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "metadata": {
+    "capturedAt": "2026-08-01T17:18:00.779Z",
+    "suite": "fast",
+    "repeats": 3,
+    "appVersion": "1.4.491",
+    "buildTime": "2026-08-01 17:11",
+    "commit": "12fda71223449df0cdb971347b61451e0c192641",
+    "device": {
+      "label": "Splotch release iPad",
+      "model": "iPad13,8",
+      "os": "26.5.0"
+    },
+    "scenarios": [
+      "multi-finger",
+      "crayon-scribbles"
+    ]
+  },
+  "runs": [
+    {
+      "build": {
+        "appVersion": "1.4.491",
+        "buildTime": "2026-08-01 17:11"
+      },
+      "rows": [
+        {
+          "key": "multi-finger",
+          "scenario": "22 five-finger drags (~2400 ops each)",
+          "snapshots": 20,
+          "commits": 22,
+          "blob KB": 0,
+          "snap copy max ms": 1,
+          "fold max ms": 1,
+          "encode max ms": 0,
+          "commit max ms": 1,
+          "undo steps": 20,
+          "undo avg ms": 0.1,
+          "undo p95 ms": 1,
+          "undo max ms": 1,
+          "history MiB": 28,
+          "no-encode MiB": 28
+        },
+        {
+          "key": "crayon-scribbles",
+          "scenario": "22 crayon scribbles (pass splits)",
+          "snapshots": 20,
+          "commits": 22,
+          "blob KB": 0,
+          "snap copy max ms": 1,
+          "fold max ms": 1,
+          "encode max ms": 0,
+          "commit max ms": 1,
+          "undo steps": 20,
+          "undo avg ms": 0.1,
+          "undo p95 ms": 1,
+          "undo max ms": 1,
+          "history MiB": 54,
+          "no-encode MiB": 54
+        }
+      ]
+    },
+    {
+      "build": {
+        "appVersion": "1.4.491",
+        "buildTime": "2026-08-01 17:11"
+      },
+      "rows": [
+        {
+          "key": "multi-finger",
+          "scenario": "22 five-finger drags (~2400 ops each)",
+          "snapshots": 20,
+          "commits": 22,
+          "blob KB": 0,
+          "snap copy max ms": 1,
+          "fold max ms": 0,
+          "encode max ms": 0,
+          "commit max ms": 1,
+          "undo steps": 20,
+          "undo avg ms": 0.1,
+          "undo p95 ms": 1,
+          "undo max ms": 1,
+          "history MiB": 28,
+          "no-encode MiB": 28
+        },
+        {
+          "key": "crayon-scribbles",
+          "scenario": "22 crayon scribbles (pass splits)",
+          "snapshots": 20,
+          "commits": 22,
+          "blob KB": 0,
+          "snap copy max ms": 1,
+          "fold max ms": 0,
+          "encode max ms": 1,
+          "commit max ms": 1,
+          "undo steps": 20,
+          "undo avg ms": 0.2,
+          "undo p95 ms": 1,
+          "undo max ms": 1,
+          "history MiB": 54,
+          "no-encode MiB": 54
+        }
+      ]
+    },
+    {
+      "build": {
+        "appVersion": "1.4.491",
+        "buildTime": "2026-08-01 17:11"
+      },
+      "rows": [
+        {
+          "key": "multi-finger",
+          "scenario": "22 five-finger drags (~2400 ops each)",
+          "snapshots": 20,
+          "commits": 22,
+          "blob KB": 0,
+          "snap copy max ms": 1,
+          "fold max ms": 1,
+          "encode max ms": 0,
+          "commit max ms": 1,
+          "undo steps": 20,
+          "undo avg ms": 0.05,
+          "undo p95 ms": 0,
+          "undo max ms": 1,
+          "history MiB": 28,
+          "no-encode MiB": 28
+        },
+        {
+          "key": "crayon-scribbles",
+          "scenario": "22 crayon scribbles (pass splits)",
+          "snapshots": 20,
+          "commits": 22,
+          "blob KB": 0,
+          "snap copy max ms": 1,
+          "fold max ms": 0,
+          "encode max ms": 1,
+          "commit max ms": 1,
+          "undo steps": 20,
+          "undo avg ms": 0.05,
+          "undo p95 ms": 0,
+          "undo max ms": 1,
+          "history MiB": 54,
+          "no-encode MiB": 54
+        }
+      ]
+    }
+  ]
+}
