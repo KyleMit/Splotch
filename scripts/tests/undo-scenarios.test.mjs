@@ -333,6 +333,54 @@ describe('engine selection', () => {
     expect(traceEvents.map((e) => e.ts)).toEqual([0, 1000, 2000]);
   });
 
+  it('derives and persists fast-set evidence after a complete WebKit run', async () => {
+    process.argv = [...process.argv, '--engine=webkit'];
+    fakeBrowser(fakePage(), { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    expect(gate.fastSetEvaluation).toMatchObject({
+      evaluated: true,
+      committed: ['multi-finger', 'crayon-scribbles'],
+      ideal: ['multi-finger', 'crayon-scribbles'],
+      drifted: false,
+      latestMiss: false,
+      consecutiveMisses: 0,
+    });
+    const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
+    expect(report.scenarios.every((scenario) => scenario.paths.length > 0)).toBe(true);
+    expect(report.scenarios.every((scenario) => scenario.draw.headroomRatio === 0.04)).toBe(true);
+    const history = JSON.parse(
+      readFileSync(join(fixtureDir, 'undo-fast-set-history.json'), 'utf8')
+    );
+    expect(history.runs).toHaveLength(2);
+    expect(history.runs.at(-1)).toMatchObject({
+      fastSetWouldCatch: null,
+      fastSetMiss: false,
+      consecutiveFastSetMisses: 0,
+    });
+  });
+
+  it('resolves the fast suite through the exported membership constant', async () => {
+    process.argv = [...process.argv, '--engine=webkit', '--suite=fast'];
+    fakeBrowser(fakePage(), { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    await runUndoScenarios();
+
+    const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
+    expect(report.scenarios.map((scenario) => scenario.key)).toEqual([
+      'multi-finger',
+      'crayon-scribbles',
+    ]);
+    expect(report.fastSetEvaluation).toBeNull();
+  });
+
   it('rejects an unknown engine instead of silently falling back to Chromium', async () => {
     process.argv = [...process.argv, '--engine=firefox'];
     const exit = vi.spyOn(process, 'exit').mockImplementation(() => {});

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "runs": [
+    {
+      "startedAt": "2026-08-01T22:22:56.997Z",
+      "budgetMs": 25,
+      "scenarios": [
+        { "key": "long-squiggles", "measuredMs": 1, "headroomRatio": 0.04, "breached": false },
+        { "key": "short-marks", "measuredMs": 0, "headroomRatio": 0, "breached": false },
+        { "key": "mixed", "measuredMs": 1, "headroomRatio": 0.04, "breached": false },
+        { "key": "multi-finger", "measuredMs": 1, "headroomRatio": 0.04, "breached": false },
+        { "key": "scribbles", "measuredMs": 1, "headroomRatio": 0.04, "breached": false },
+        { "key": "crayon-squiggles", "measuredMs": 4, "headroomRatio": 0.16, "breached": false },
+        { "key": "crayon-scribbles", "measuredMs": 4, "headroomRatio": 0.16, "breached": false }
+      ],
+      "breaches": [],
+      "fastSetBreaches": [],
+      "fullOnlyBreaches": [],
+      "fastSetWouldCatch": null,
+      "fastSetMiss": false,
+      "consecutiveFastSetMisses": 0
+    }
+  ]
+}

@@ -107,6 +107,14 @@ isolated runner interruption. This is a catastrophic-regression gate with a wide
 physical-iPad approval; ADR-0090's real-device tier remains the authority for frame pacing and
 device-calibrated budgets.
 
+The named fast command reads `FAST_UNDO_SCENARIO_KEYS`; the npm script and workflow do not repeat
+its members. Each scenario declares the commit paths it exercises, and the repo-script suite fails
+when a sole exerciser leaves the fast set. Every release-tag full run restores the latest
+`webkit-undo-full-history` artifact, appends per-scenario `commit P95 / 25 ms` headroom and whether
+the fast set would have caught any breach, then uploads the rolling history for 90 days. The full
+gate fails when the derived ideal membership differs or when two consecutive full-run breaches were
+fast-set misses. A compatible committed seed starts the chain after artifact expiry.
+
 > **Not available in a cloud session.** `.claude/cloud/setup.sh` installs Chromium only, so any
 > WebKit-driving command (`perf:undo:webkit`, `perf:ios`) fails there with Playwright's raw
 > `Executable doesn't exist`. `scripts/lib/playwright.mjs` self-heals a drifted *Chromium* revision

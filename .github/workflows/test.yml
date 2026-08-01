@@ -13,6 +13,7 @@ on:
   pull_request:
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -207,16 +208,41 @@ jobs:
 
       - uses: ./.github/actions/setup-playwright-webkit
 
-      - name: Run full WebKit commit gate
-        run: npm run perf:undo:webkit
+      - name: Restore fast-set history
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p .perf-state
+          artifact_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=webkit-undo-full-history&per_page=20" --jq '[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == .workflow_run.repository_id and (.workflow_run.head_branch | startswith("v")))][0].id // empty')"
+          if [[ -n "$artifact_id" ]]; then
+            archive_path="${RUNNER_TEMP}/webkit-undo-full-history.zip"
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > "$archive_path"
+            unzip -q "$archive_path" -d .perf-state
+          else
+            cp scripts/perf/undo-fast-set-history.seed.json .perf-state/undo-fast-set-history.json
+          fi
 
-      - name: Upload WebKit undo diagnostics
-        if: failure()
+      - name: Run full WebKit commit gate
+        run: npm run perf:undo:webkit -- --fast-set-history=.perf-state/undo-fast-set-history.json
+
+      - name: Persist WebKit full-run history
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: webkit-undo-full-history
+          path: .perf-state/undo-fast-set-history.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload WebKit full-run diagnostics
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: webkit-undo-full-diagnostics
           path: |
             perf-profiles/**/undo-scenarios.json
             perf-profiles/**/undo-scenarios.md
+            perf-profiles/**/undo-fast-set-history.json
           if-no-files-found: warn
-          retention-days: 7
+          retention-days: 90

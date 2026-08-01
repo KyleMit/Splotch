@@ -15,8 +15,9 @@
 // recorded op — real 120 Hz input volume, deterministically.
 
 import { chromium, webkit } from '@playwright/test';
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { fail, isMain, runMain, sleep } from '../lib/proc.mjs';
 import { parsePerfArgs } from './args.mjs';
@@ -35,7 +36,13 @@ import { IPAD_PRO } from './devices.mjs';
 import { profilePath } from './paths.mjs';
 import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
 import { percentile } from './real-screen-stats.mjs';
-import { ALL_UNDO_SCENARIO_KEYS, UNDO_SCENARIO_KEYS } from './undo-scenario-keys.mjs';
+import {
+  ALL_UNDO_SCENARIO_KEYS,
+  FAST_UNDO_SCENARIO_KEYS,
+  UNDO_SCENARIO_KEYS,
+  UNDO_SCENARIO_PATHS,
+} from './undo-scenario-keys.mjs';
+import { appendFullRun, evaluateFastSet, readFastSetHistory } from './undo-fast-set.mjs';
 import { toMiB } from './units.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 
@@ -53,12 +60,17 @@ const { flag, throttle, port, build } = parsePerfArgs({
     'long-seconds',
     'long-ops',
     'multi-seconds',
+    'fast-set-history',
     'strokes',
     'scenarios',
+    'suite',
   ],
   entry: isMain(import.meta.url),
 });
 const COLD_TIER_TIMEOUT_MS = Number(flag('cold-tier-timeout-ms', '10000'));
+const FAST_SET_HISTORY_SEED_PATH = fileURLToPath(
+  new URL('./undo-fast-set-history.seed.json', import.meta.url)
+);
 
 // One decimal place, or 'n/a' for an absent measure.
 const f1 = (n) => (n == null ? 'n/a' : n.toFixed(1));
@@ -264,7 +276,7 @@ function buildScenarios(width, height) {
       strokes: scribbles,
       crayon: true,
     },
-  ];
+  ].map((scenario) => ({ ...scenario, paths: UNDO_SCENARIO_PATHS[scenario.key] }));
 }
 
 const now = (page) => page.evaluate(() => performance.now());
@@ -481,6 +493,7 @@ export async function runUndoScenario(
   const result = {
     key: sc.key,
     label: sc.label,
+    paths: sc.paths,
     strokes: sc.strokes.length,
     crayon: !!sc.crayon,
     debug,
@@ -494,6 +507,7 @@ export async function runUndoScenario(
       commitCount: commit.count,
       commitMs: commit.total,
       commitP95Ms,
+      headroomRatio: commitP95Ms / COMMIT_GATE_MS,
       commitMaxMs: commit.max,
       commitDurationsMs: commit.durationsMs,
       snapshotMs: snapshot.total,
@@ -559,8 +573,16 @@ export async function runUndoScenarios() {
   process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
   warnIfNoPerfMarks(engine.script);
 
+  const suite = flag('suite', 'full');
+  if (!['full', 'fast'].includes(suite)) {
+    throw new Error(`--suite=${suite} is not known — expected full or fast`);
+  }
   const only = flag('scenarios', '');
-  const requestedKeys = only ? only.split(',') : ALL_UNDO_SCENARIO_KEYS;
+  if (suite === 'fast' && only) {
+    throw new Error('--suite=fast cannot be combined with --scenarios');
+  }
+  const requestedKeys =
+    suite === 'fast' ? FAST_UNDO_SCENARIO_KEYS : only ? only.split(',') : ALL_UNDO_SCENARIO_KEYS;
   const unknownKeys = requestedKeys.filter((key) => !ALL_UNDO_SCENARIO_KEYS.includes(key));
   if (unknownKeys.length > 0) {
     throw new Error(
@@ -659,18 +681,84 @@ export async function runUndoScenarios() {
       metrics,
     });
 
-    const undoSummary = { settings, scenarios: results };
+    const gate = reportCommitGate(results);
+    const fullRun =
+      requestedKeys.length === ALL_UNDO_SCENARIO_KEYS.length &&
+      ALL_UNDO_SCENARIO_KEYS.every((key) => requestedKeys.includes(key));
+    const fastSetEvaluation =
+      engine.gated && fullRun
+        ? persistFastSetHistory({
+            results,
+            settings,
+            outDir,
+            historyPath: flag('fast-set-history', ''),
+          })
+        : null;
+    const undoSummary = { settings, scenarios: results, fastSetEvaluation };
     writeFileSync(join(outDir, 'undo-scenarios.json'), JSON.stringify(undoSummary, null, 2));
     const md = renderUndoReport(undoSummary);
     writeFileSync(join(outDir, 'undo-scenarios.md'), md);
 
     console.log(`\n${md}\n`);
     console.log(`Artifacts: ${outDir}`);
-    return reportCommitGate(results);
+    return { ...gate, fastSetEvaluation };
   } finally {
     await browser.close();
     stop();
   }
+}
+
+function persistFastSetHistory({ results, settings, outDir, historyPath }) {
+  const inputPath =
+    historyPath && existsSync(historyPath) ? historyPath : FAST_SET_HISTORY_SEED_PATH;
+  let history = readFastSetHistory(inputPath);
+  const complete =
+    results.length === ALL_UNDO_SCENARIO_KEYS.length && results.every((result) => !result.skipped);
+  if (complete) {
+    history = appendFullRun({
+      history,
+      results,
+      startedAt: settings.startedAt,
+      budgetMs: COMMIT_GATE_MS,
+    });
+  }
+
+  const artifactPath = join(outDir, 'undo-fast-set-history.json');
+  const json = `${JSON.stringify(history, null, 2)}\n`;
+  writeFileSync(artifactPath, json);
+  if (historyPath) {
+    mkdirSync(dirname(historyPath), { recursive: true });
+    writeFileSync(historyPath, json);
+  }
+
+  if (!complete) {
+    return {
+      evaluated: false,
+      reason: 'The full run did not complete every scenario, so its timings were not recorded.',
+    };
+  }
+
+  const evaluation = { evaluated: true, ...evaluateFastSet(history) };
+  if (evaluation.drifted) {
+    process.exitCode = 1;
+    console.error(
+      `\n✗ Fast-set membership drifted: committed ${evaluation.committed.join(', ')}; ` +
+        `ideal ${evaluation.ideal.join(', ')} from ${evaluation.historyWindowRuns} full run(s).`
+    );
+  } else {
+    console.log(
+      `✓ Fast-set membership matches ${evaluation.historyWindowRuns} full run(s): ` +
+        evaluation.committed.join(', ')
+    );
+  }
+  if (evaluation.consecutiveMisses >= 2) {
+    process.exitCode = 1;
+    console.error(
+      `\n✗ The fast set missed ${evaluation.consecutiveMisses} consecutive full-run breaches; ` +
+        `reselect it from the recorded headroom before the next release.`
+    );
+  }
+  return evaluation;
 }
 
 // The commit gate, and why only WebKit gets it.
@@ -849,7 +937,7 @@ function reportCommitGate(results) {
   };
 }
 
-function renderUndoReport({ settings, scenarios }) {
+function renderUndoReport({ settings, scenarios, fastSetEvaluation }) {
   const out = [];
   out.push('# Undo scenario profile (snapshot stack, ADR-0066)\n');
   out.push(
@@ -920,6 +1008,24 @@ function renderUndoReport({ settings, scenarios }) {
         `${f1(s.draw.commitMaxMs)} ms | ` +
         `${f1(s.draw.encodeMaxMs)} ms |`
     );
+  }
+  if (fastSetEvaluation) {
+    out.push('\n## Fast-set drift\n');
+    if (!fastSetEvaluation.evaluated) {
+      out.push(`${fastSetEvaluation.reason}\n`);
+    } else {
+      out.push(
+        `Committed: **${fastSetEvaluation.committed.join(', ')}** · ` +
+          `ideal: **${fastSetEvaluation.ideal.join(', ')}** · ` +
+          `mandatory sole exercisers: **${fastSetEvaluation.mandatory.join(', ')}** · ` +
+          `history window: **${fastSetEvaluation.historyWindowRuns} full run(s)**.\n`
+      );
+      out.push(
+        `Latest fast-set miss: **${fastSetEvaluation.latestMiss ? 'yes' : 'no'}** · ` +
+          `consecutive misses: **${fastSetEvaluation.consecutiveMisses}**. ` +
+          `The rolling record is in \`undo-fast-set-history.json\`.\n`
+      );
+    }
   }
   out.push('\n## Undo cost (engine.undo)\n');
   out.push('| Scenario | Undo steps | Total | Avg / step | Max step |');

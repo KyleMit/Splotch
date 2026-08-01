@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { ALL_UNDO_SCENARIO_KEYS } from '../perf/undo-scenario-keys.mjs';
+import { ALL_UNDO_SCENARIO_KEYS, FAST_UNDO_SCENARIO_KEYS } from '../perf/undo-scenario-keys.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
 const packageJson = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
@@ -21,10 +21,11 @@ function job(id) {
 describe('WebKit performance CI', () => {
   it('defines the fast scenario set once and resolves every key through the scenario registry', () => {
     const fastScript = packageJson.scripts['perf:undo:webkit:fast'];
-    const fastKeys = fastScript.match(/--scenarios=([^\s]+)/)?.[1].split(',') ?? [];
 
-    expect(fastKeys).toEqual(['multi-finger', 'crayon-scribbles']);
-    expect(fastKeys.every((key) => ALL_UNDO_SCENARIO_KEYS.includes(key))).toBe(true);
+    expect(FAST_UNDO_SCENARIO_KEYS).toEqual(['multi-finger', 'crayon-scribbles']);
+    expect(FAST_UNDO_SCENARIO_KEYS.every((key) => ALL_UNDO_SCENARIO_KEYS.includes(key))).toBe(true);
+    expect(fastScript).toContain('--suite=fast');
+    expect(fastScript).not.toContain('--scenarios=');
     expect(workflow).toContain('npm run perf:undo:webkit:fast');
     expect(workflow).not.toContain('--scenarios=');
   });
@@ -60,8 +61,23 @@ describe('WebKit performance CI', () => {
     expect(workflow).toContain("tags: ['v*']");
     expect(fullJob).toContain("startsWith(github.ref, 'refs/tags/v')");
     expect(fullJob).toContain('runs-on: macos-latest');
-    expect(fullJob).toContain('run: npm run perf:undo:webkit\n');
+    expect(fullJob).toContain(
+      'run: npm run perf:undo:webkit -- --fast-set-history=.perf-state/undo-fast-set-history.json'
+    );
     expect(packageJson.scripts['perf:undo:webkit']).not.toContain('--scenarios=');
+  });
+
+  it('restores and durably persists the rolling full-run history', () => {
+    const fullJob = job('webkit-commit-gate-full');
+
+    expect(workflow).toContain('actions: read');
+    expect(fullJob).toContain('name=webkit-undo-full-history');
+    expect(fullJob).toContain('undo-fast-set-history.seed.json');
+    expect(fullJob).toContain('name: webkit-undo-full-history');
+    expect(fullJob).toContain('path: .perf-state/undo-fast-set-history.json');
+    expect(fullJob).toContain('include-hidden-files: true');
+    expect(fullJob).toContain('if: always()');
+    expect(fullJob).toContain('retention-days: 90');
   });
 
   it.each(['webkit-commit-gate-fast', 'webkit-commit-gate-full'])(
@@ -69,7 +85,7 @@ describe('WebKit performance CI', () => {
     (jobId) => {
       const workflowJob = job(jobId);
 
-      expect(workflowJob).toContain('if: failure()');
+      expect(workflowJob).toContain(jobId.endsWith('fast') ? 'if: failure()' : 'if: always()');
       expect(workflowJob).toContain('perf-profiles/**/undo-scenarios.json');
       expect(workflowJob).toContain('perf-profiles/**/undo-scenarios.md');
       expect(workflowJob).toContain('if-no-files-found: warn');
