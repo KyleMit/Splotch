@@ -20,15 +20,17 @@ coverage floor requires.
 
 GitHub Actions runs the WebKit commit gate in two tiers from `.github/workflows/test.yml`:
 
-* Pull requests run `npm run perf:undo:webkit:fast` in a job parallel to the ordinary Tests job. Its
-  set is defined once in `package.json`: `multi-finger`, the only scenario that currently exhausts
-  the resident byte budget and exercises encoding, plus `crayon-scribbles`, which covers mid-stroke
-  crayon pass splits.
+* Pull requests run `npm run perf:undo:webkit:fast` on `macos-latest` in a job parallel to the
+  ordinary Tests job. The first Ubuntu Actions measurement exceeded the 184-second Tests job, while
+  the same fast command completes in roughly 24 seconds on macOS. Its set is defined once in
+  `package.json`: `multi-finger`, the only scenario that currently exhausts the resident byte budget
+  and exercises encoding, plus `crayon-scribbles`, which covers mid-stroke crayon pass splits.
 * `v*` release tags run `npm run perf:undo:webkit`, retaining all seven scenarios at the point a
   release reaches users.
 * Both tiers upload `undo-scenarios.json` and `undo-scenarios.md` when the command fails. A run with
   no `engine.commit` samples exits nonzero, so a stale or uninstrumented bundle cannot pass as a
-  zero-millisecond result.
+  zero-millisecond result. Any requested scenario that fails to complete also fails the gated run;
+  partial or empty coverage cannot pass.
 
 The 25 ms threshold stays a wide catastrophic-regression threshold. It does not replace the
 physical-device gates in ADR-0090, and it must not be tightened from shared-runner observations.
@@ -45,5 +47,7 @@ path exerciser remains mandatory regardless of recent timing.
   WebKit reproduction.
 * − Shared-runner noise still limits the gate to catastrophic regressions; smaller but real timing
   regressions can pass and belong to deterministic counters or physical-device measurements.
+* − The every-PR job consumes a macOS runner because the Ubuntu WebKit runtime does not fit the
+  suite's wall-clock budget.
 * − Fast-set coverage depends on current scenario behavior. A separate drift guard may automate its
   membership policy, but this decision keeps the set explicit and reviewable in one npm script.

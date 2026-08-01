@@ -383,9 +383,10 @@ secret; without it the job fails at the login step. The iOS smoke mirrors Androi
 
 The WebKit commit gate is split by path coverage and cost (ADR-0093). Pull requests run
 `multi-finger` (the sole encode-path exerciser) and `crayon-scribbles` (mid-stroke pass splits) in a
-parallel job whose duration stays below the ordinary Tests job. Release tags run all seven
-scenarios. A timing breach or a bundle with no `engine.commit` samples fails the job, and either
-tier uploads `undo-scenarios.json` and `undo-scenarios.md` on failure.
+parallel `macos-latest` job whose duration stays below the ordinary Tests job; the Ubuntu WebKit
+runtime does not meet that wall-clock constraint. Release tags run all seven scenarios. A timing
+breach, an incomplete scenario, or a bundle with no `engine.commit` samples fails the job, and
+either tier uploads `undo-scenarios.json` and `undo-scenarios.md` on failure.
 
 The native smoke workflows are deliberately tag-only — an emulator/simulator job is the heaviest
 thing in CI, and a launch crash is exactly the kind of regression you want caught at release time.

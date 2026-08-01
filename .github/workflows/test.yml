@@ -1,8 +1,9 @@
 # WebKit timing is split by cost: pull requests run multi-finger (the sole
 # encode-path exerciser) plus crayon-scribbles (mid-stroke pass splits) in a
 # job parallel to Tests, while release tags run all seven scenarios. The fast
-# subset stays below the existing Tests job's duration; the tag-only full run
-# buys broader path coverage without adding that cost to every change.
+# subset stays below the existing Tests job's duration on the measured macOS
+# runner; Ubuntu's WebKit runtime exceeds that budget. The tag-only full run
+# buys broader path coverage without adding its cost to every change.
 name: Tests
 
 on:
@@ -175,7 +176,7 @@ jobs:
   webkit-commit-gate-fast:
     name: WebKit commit gate (fast)
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     timeout-minutes: 15
     env:
       PW_BROWSERS: webkit
@@ -220,7 +221,7 @@ jobs:
   webkit-commit-gate-full:
     name: WebKit commit gate (full)
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     timeout-minutes: 20
     env:
       PW_BROWSERS: webkit

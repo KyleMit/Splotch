@@ -26,6 +26,7 @@ describe('WebKit performance CI', () => {
 
     expect(workflow).toContain('pull_request:');
     expect(fastJob).toContain("if: github.event_name == 'pull_request'");
+    expect(fastJob).toContain('runs-on: macos-latest');
     expect(fastJob).toContain('run: npm run perf:undo:webkit:fast');
     expect(fastJob).not.toContain('continue-on-error');
   });
@@ -35,6 +36,7 @@ describe('WebKit performance CI', () => {
 
     expect(workflow).toContain("tags: ['v*']");
     expect(fullJob).toContain("startsWith(github.ref, 'refs/tags/v')");
+    expect(fullJob).toContain('runs-on: macos-latest');
     expect(fullJob).toContain('run: npm run perf:undo:webkit\n');
     expect(packageJson.scripts['perf:undo:webkit']).not.toContain('--scenarios=');
   });

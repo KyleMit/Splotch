@@ -117,9 +117,11 @@ function fakePage({
   encodeInCommitMaxMs = 0,
   deferredEncodeMaxMs = 0,
   blobBytes = 1,
+  coldTierNeverSettles = false,
 } = {}) {
   const now = mockTickingClock();
   let drawEnd = null;
+  let coldTierRead = 0;
   return {
     goto: vi.fn(async () => {}),
     waitForSelector: vi.fn(async () => {}),
@@ -127,7 +129,11 @@ function fakePage({
     evaluate: vi.fn(async (fn, arg) => {
       const source = fn.toString();
       if (source.includes('getUndoDebug')) {
-        return { snapshots: 22, liveRasters: 2, blobBytes };
+        return {
+          snapshots: 22,
+          liveRasters: 2,
+          blobBytes: coldTierNeverSettles ? coldTierRead++ : blobBytes,
+        };
       }
       if (source.includes('document.querySelector')) {
         return { backingW: 20, backingH: 20, side: 20, bytesPerRaster: 1600 };
@@ -419,6 +425,24 @@ describe('the commit gate', () => {
     expect(process.exitCode).toBe(1);
     expect(error).toHaveBeenCalledWith(expect.stringContaining('NOT EVALUATED on webkit'));
     expect(error).toHaveBeenCalledWith(expect.stringContaining('npm run perf:undo:webkit'));
+  });
+
+  it('fails rather than certifies a WebKit run with skipped scenarios', async () => {
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
+    const page = fakePage({ coldTierNeverSettles: true });
+    fakeBrowser(page, { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    expect(gate).toMatchObject({ evaluated: false, skipped: 1, breaches: [] });
+    expect(process.exitCode).toBe(1);
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('NOT EVALUATED on webkit'));
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('multi-finger'));
   });
 
   it('reports the gate as not evaluated on Chromium', async () => {

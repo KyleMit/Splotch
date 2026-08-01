@@ -96,8 +96,8 @@ either — it is a desktop build with no throttle and `performance.now()` clampe
 gate is deliberately blunt (catch full-raster work reappearing on the pointerup path, not police
 drift). Absolute device milliseconds still come from `ipad-device-profiling.md`.
 
-CI uses the fast named subset on every pull request in a job parallel to the ordinary test suite,
-then runs all seven scenarios on `v*` release tags (ADR-0093). Both jobs upload
+CI uses the fast named subset on every pull request in a measured `macos-latest` job parallel to the
+ordinary test suite, then runs all seven scenarios on `v*` release tags (ADR-0093). Both jobs upload
 `undo-scenarios.json` and `undo-scenarios.md` when the gate fails. This is a catastrophic-regression
 gate with a wide threshold, not physical-iPad approval; ADR-0090's real-device tier remains the
 authority for frame pacing and device-calibrated budgets.
