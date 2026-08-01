@@ -77,13 +77,16 @@ const externalUrl = values.url ?? null;
 
 // Readiness predicate per route — what to poll for before interacting.
 // For "/", the engine boots at module-evaluation time, before hydration
-// (ADR-0072), and resizes the canvas's backing store off its 300x150 default
-// just before binding the pointer listeners — so a non-default width means
-// the engine is initialized and a stroke will register.
+// (ADR-0072), and changes the canvas backing store off the browser's 300x150
+// default just before binding pointer listeners. Production tiled mode uses a
+// deliberate 1x1 input bitmap (ADR-0089), so readiness also requires visible
+// CSS bounds rather than a large bitmap.
 const ready = {
   '/': () => {
     const c = document.getElementById('drawingCanvas');
-    return !!c && c.width > 300;
+    if (!(c instanceof HTMLCanvasElement)) return false;
+    const rect = c.getBoundingClientRect();
+    return (c.width !== 300 || c.height !== 150) && rect.width > 0 && rect.height > 0;
   },
   '/dev/engine': () => window.__engineReady === true,
 };
