@@ -85,10 +85,16 @@ untouched. What changed shape:
 * **The sibling-module list:** `commandSimplify.ts` was deleted with the ADR-0036 simplification
   pipeline. The engine's current focused siblings include `undoHistory.ts`, `tiledRenderer.ts`,
   `tiledSurfaces.ts`, `tiledUndoPatches.ts`, `strokeOps.ts`, `strokeMath.ts`, `paperView.ts`,
-  `magicBrush.ts`, `crayonBrush.ts`, `brushState.ts`, `engineListeners.ts`, `engineExport.ts`,
-  `emptyScan.ts`, and `exportDrawing.ts`. Mutable history and renderer modules remain
-  module-singletons; geometry, projection, listener registration, surface allocation, and export
-  orchestration are stateless helpers. `engine.ts` remains the only facade components import.
+  `magicBrush.ts`, `crayonBrush.ts`, `engineListeners.ts`, `emptyScan.ts`, and `exportDrawing.ts`.
+  Mutable history and renderer modules remain module-singletons; geometry, listener registration,
+  surface allocation, and PNG composition are focused helpers. Brush-state projection and the
+  synchronous export snapshot stay in `engine.ts`: they are thin expressions over engine-owned
+  state, and the export-before-clear invariant is clearest beside the sequencing it constrains.
+  `engine.ts` remains the only facade components import.
+* **The size exemption reflects that boundary.** `engine.ts` has a 950-counted-line cap rather than
+  the default 500. The margin permits ordinary facade/input maintenance without counter-driven
+  micro-extractions; renderer, surface, history, and geometry responsibilities still belong in their
+  focused siblings.
 * **The undo-memory consequence is re-opened, as a managed budget, not the naïve stack.** The
   "resolved by ADR-0033: one baseline raster + a small command log" note no longer describes the
   code: history is again full-canvas snapshots, but tiered — the paper plus the `K_LIVE = 2` most

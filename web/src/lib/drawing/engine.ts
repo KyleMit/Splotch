@@ -13,7 +13,6 @@
 //   strokeOps.ts        the op vocabulary + the one renderer every surface shares
 //   crayonPassBuffer.ts the crayon pass's accumulation buffers + glaze stamp
 //   crayonOverlay.ts    the legacy harness's live crayon preview planes
-//   brushState.ts       pure brush-mode precedence and op-style projection
 //   tiledRenderer.ts    production live surfaces + vector-tail undo (ADR-0085)
 //   tiledSurfaces.ts    allocation and lifecycle of each tile's canvas surfaces
 //   undoHistory.ts      the legacy harness's paper + snapshot stack (ADR-0066)
@@ -23,7 +22,6 @@
 //   emptyScan.ts        cheap blank-canvas detection
 //   penStreamQuirks.ts  WebKit merged-stream pen-contact adoption
 //   engineListeners.ts  DOM listener registration and teardown tracking
-//   engineExport.ts     save-time snapshot and lazy PNG-compositor loading
 //   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
 import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
@@ -100,9 +98,10 @@ import {
 } from './undoHistory';
 import { scanCanvasIsEmpty } from './emptyScan';
 import { createPenStreamAdopter } from './penStreamQuirks';
-import { exportEngineCanvas, type ExportOptions } from './engineExport';
+import type { ExportOptions, ExportSnapshot } from './exportDrawing';
+import { currentExportScale } from './exportScale';
+import { captureTiledSnapshot, createStrokeSnapshot } from './strokeSnapshot';
 import { registerDrawingEngineListeners } from './engineListeners';
-import { brushModeOf, strokeStyleOf } from './brushState';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
 import {
@@ -583,6 +582,16 @@ function beginStrokeGroup() {
 function closeCrayonPassBeforeForeignOp(ps: PointerState) {
   const hasOpenPass = tiledRendererActive() ? crayonOpsSinceFlush > 0 : hasOpenLiveCrayonPass();
   if (!(ps.crayon && !ps.erase) && hasOpenPass) recordCrayonFlush();
+}
+
+// The five style modifiers every `dot`/`path` op carries. Erasing clears pixels
+// via destination-out; the stroke color is irrelevant there, only its (opaque)
+// alpha matters. A magic op ignores `color` too — it reveals the sheet — but
+// carries it so every op is style-complete.
+function strokeStyleOf(
+  ps: PointerState
+): Pick<PointerState, 'color' | 'erase' | 'magic' | 'crayon' | 'seed'> {
+  return { color: ps.color, erase: ps.erase, magic: ps.magic, crayon: ps.crayon, seed: ps.seed };
 }
 
 // Paint the round dot that anchors a stroke at its start point, and kick the
@@ -1431,7 +1440,9 @@ export function setMagicMode(active: boolean) {
 // publishes it on `window` for test-harness and PERF_MARKS builds; release
 // builds have no caller.
 export function committedBrushMode(): BrushType {
-  return brushModeOf(magicActive, crayonActive, eraserActive);
+  if (magicActive) return 'magic';
+  if (crayonActive && !eraserActive) return 'crayon';
+  return eraserActive ? 'eraser' : 'pen';
 }
 
 // Crayon brush on/off (ADR-0065). Like the eraser/magic it's a modifier the
@@ -1458,29 +1469,37 @@ export function setSafeAreaInsets(insets: {
 
 // --- Export -------------------------------------------------------------------
 
+// Rebuild the strokes in PAPER space (the paper raster + pending + any
+// in-flight stroke) rather than copying the visible canvas: under a
+// rotation-locked view the visible canvas is the letterboxed presentation, and
+// the export should be the full upright page.
+function snapshotStrokes(snapshotScale: number): ExportSnapshot {
+  const width = Math.round((paper.pxW / renderScale) * snapshotScale);
+  const height = Math.round((paper.pxH / renderScale) * snapshotScale);
+  const tiledSnapshot = captureTiledSnapshot(snapshotScale, renderScale);
+  if (tiledSnapshot) return tiledSnapshot;
+  return createStrokeSnapshot(width, height, snapshotScale / renderScale, (target) => {
+    if (tiledRendererActive()) renderTiledSnapshot(target);
+    else repaintAll(target);
+    // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
+    // (its flush is only recorded at pass close); an export is terminal for this
+    // snapshot, so stamp it now rather than dropping that ink.
+    flushCrayonBuffer(target);
+  });
+}
+
 // The compositor is save-time-only, so it loads on demand and stays out of the
-// startup bundle (issue #461). The snapshot MUST be taken before the import's
-// await: save-on-delete fire-and-forgets this call and then clears the live
-// canvas synchronously, so snapshotting any later would export a blank page
-// (the engine E2E spec pins the race). A dead connection can reject the import
-// — callers own surfacing that (their tap handlers catch).
+// startup bundle (issue #461). A dead connection can reject the import —
+// callers own surfacing that (their tap handlers catch).
 export async function exportCanvasBlob(
   overlayImage: HTMLImageElement | null = null,
   options: ExportOptions = {}
 ): Promise<Blob | null> {
   if (!canvas || paper.pxW === 0 || paper.pxH === 0) return null;
-  return exportEngineCanvas(
-    {
-      paperWidth: paper.pxW,
-      paperHeight: paper.pxH,
-      renderScale,
-      renderStrokes(target) {
-        if (tiledRendererActive()) renderTiledSnapshot(target);
-        else repaintAll(target);
-        flushCrayonBuffer(target);
-      },
-    },
-    overlayImage,
-    options
-  );
+  const scale = currentExportScale();
+  // The snapshot MUST stay before the import await: save-on-delete fire-and-forgets
+  // this call and clears the live engine synchronously (the E2E spec pins the race).
+  const snapshot = snapshotStrokes(scale);
+  const { composeExportPng } = await import('./exportDrawing');
+  return composeExportPng(snapshot, scale, overlayImage, options);
 }

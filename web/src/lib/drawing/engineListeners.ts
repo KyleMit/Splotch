@@ -18,22 +18,31 @@ export function registerDrawingEngineListeners(
   handlers: EngineListenerHandlers
 ) {
   listen(removers, window, 'resize', handlers.handleResize);
-  // Scroll and orientation can move the canvas without resizing it.
+  // Scroll/orientation move the canvas in the viewport without resizing it, so
+  // refresh the cached rect (left/top) without the full backing-store rebuild.
   listen(removers, window, 'scroll', handlers.refreshCanvasRect, true);
   listen(removers, window, 'orientationchange', handlers.refreshCanvasRect);
-  // The orientation angle can settle after resize; either signal must recompute the view.
+  // The paper view keys off the Screen Orientation angle. Resize usually lands
+  // after the angle updates, but ordering is not guaranteed everywhere. Older
+  // WebViews can expose screen.orientation without the listener API.
   const screenOrientation = window.screen?.orientation;
   if (typeof screenOrientation?.addEventListener === 'function') {
     listen(removers, screenOrientation, 'change', handlers.handleResize);
   }
-  // Backgrounded rotations emit neither signal, so visibility restores the missed state.
+  // Backgrounded rotations emit neither signal, so visibility restores the
+  // missed state (issue #305).
   listen(removers, document, 'visibilitychange', handlers.resyncOnReentry);
   listen(removers, canvas, 'pointerdown', handlers.startDrawing);
   listen(removers, canvas, 'pointermove', handlers.draw);
   listen(removers, canvas, 'pointerup', handlers.stopDrawing);
   listen(removers, canvas, 'pointerout', handlers.stopDrawing);
   listen(removers, canvas, 'pointercancel', handlers.stopDrawing);
-  // Cancelling the parallel touch stream is what releases iPadOS Scribble's pen claim.
+  // iPadOS Scribble claims an Apple Pencil stroke that starts soon after a pen
+  // tap: pointer events still arrive and the engine paints, but the system never
+  // presents those frames. Cancelling the parallel TOUCH stream is the only
+  // working release; preventDefault on pointer events is documented and
+  // confirmed on-device not to help. Non-passive on purpose. The palette needs
+  // the same treatment through the scribbleGuard action.
   listen(removers, canvas, 'touchstart', handlers.cancelTouch, { passive: false });
   listen(removers, canvas, 'touchmove', handlers.cancelTouch, { passive: false });
   handlers.registerPenListeners((type, handler, capture) =>
