@@ -61,7 +61,10 @@ test('tiled undo patches rebuild after the live canvas resizes', async ({ page }
   const originalBytes = await page.evaluate(
     () => window.__drawingDebug?.getUndoDebug().rasterBytes
   );
-  await page.setViewportSize({ width: 600, height: 900 });
+  // A rotation CSS-presents the locked paper without resizing its tile
+  // backings (ADR-0089). Use a material same-orientation resize to exercise the
+  // backing and undo-patch rebuild path itself.
+  await page.setViewportSize({ width: 800, height: 500 });
   await expect
     .poll(() => page.evaluate(() => window.__drawingDebug?.getUndoDebug().rasterBytes))
     .not.toBe(originalBytes);

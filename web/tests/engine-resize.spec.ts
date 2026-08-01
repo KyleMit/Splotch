@@ -90,9 +90,16 @@ test('the drawing survives a canvas resize (virtual-canvas preservation)', async
 
   await page.evaluate(() => window.__engine.resizeTo(500, 400));
 
-  // Pixels near the origin (where the stroke is) must persist after the resize.
+  // The original paper can become contain-fit in the resized viewport. Sample
+  // the same paper point through the engine's published presentation transform.
   expect(await count(page)).toBeGreaterThan(0);
-  const alpha = await page.evaluate(() => window.__engine.pixelAt(70, 30)[3]);
+  const alpha = await page.evaluate(() => {
+    const view = window.__engine.getViewState();
+    return window.__engine.pixelAt(
+      Math.round(70 * view.scale + view.tx),
+      Math.round(30 * view.scale + view.ty)
+    )[3];
+  });
   expect(alpha).toBeGreaterThan(0);
 });
 
