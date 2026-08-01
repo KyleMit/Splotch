@@ -547,17 +547,20 @@ preload, before a media-authorizing gesture. WebKit can therefore leave the cont
 for pointer delivery but does not set `navigator.userActivation`, so it cannot validate audible
 output. It does validate the suspended-clock case that the teardown must survive.
 
-Keep Web Audio, but make lift-time silence independent of audio-clock progress:
+Keep Web Audio, but make lift-time teardown independent of audio-clock progress:
 
-1. Cancel pending gain automation and set gain to zero at the current context time.
-2. Disconnect the source and gain synchronously.
-3. Call `source.stop()` without a future timestamp.
+1. If the context clock is running, ramp the gain to zero over 5 ms and tear down the graph from a
+   wall-clock timer after the ramp.
+2. If the context is suspended or its clock has not advanced, set the gain to zero and tear down the
+   graph synchronously.
+3. Disconnect both nodes and call `source.stop()` without depending on an `ended` event.
 
 Three repeated Magic strokes detached both nodes 0 / 0 / 1 ms after pointerup, with a 25 ms maximum
 drawing frame. A screenshot of that drawing remained at 21 ms, and a fresh-pen Undo measured 1 ms of
-engine work with a 21 ms maximum interaction frame. `drawingSound.test.ts` pins the synchronous
-mute, un-timestamped stop, and both disconnects. Do not restore an `ended`-dependent teardown or
-replace Web Audio with the already-rejected media-element path.
+engine work with a 21 ms maximum interaction frame. `drawingSound.test.ts` pins the running-clock
+declick ramp, suspended-clock synchronous mute, un-timestamped stop, both disconnects, and absence
+of an `ended` handler. Do not make teardown depend on audio-clock progress or an `ended` event, and
+do not replace Web Audio with the already-rejected media-element path.
 
 ### Productization and Regression Protocol
 
