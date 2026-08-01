@@ -183,6 +183,93 @@ test('drawing shows a brush impact ring, rainbow-flavored for the magic brush', 
   await expect(ring).toHaveCount(0);
 });
 
+// How long the coalescing probe below drives pointermoves. Long enough that the
+// frame count is not dominated by scheduling noise, short enough to stay well
+// inside a default test timeout.
+const RING_COALESCING_DRIVE_MS = 400;
+// Gap between dispatched moves. Well under a 16.7 ms frame, so several separate
+// tasks land inside every frame — which is the condition the assertion needs.
+const RING_COALESCING_MOVE_GAP_MS = 2;
+
+// The ring has exactly one visible position per painted frame, so its transform
+// is written once per FRAME rather than once per input event. This pins that
+// contract from both sides: the ring still moves while drawing, and never more
+// often than the frames that could have shown a move.
+//
+// It drives pointermoves from inside the page rather than through `draw()`: a CDP
+// mouse.move costs ~10 ms round-trip, so the moves land roughly one per frame and
+// a per-event write is indistinguishable from a per-frame one. Real input is not
+// so polite — Safari gives web content a 60 Hz rAF beat while an iPad digitizer
+// delivers 120 Hz+. Each move is dispatched in its OWN task, since a single task
+// would let Svelte batch the writes and hide the difference either way.
+test('the brush ring transform is written once per frame, not once per input', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const ring = page.locator('.brush-ring');
+  const box = await page.locator('#drawingCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+
+  await page.mouse.move(box.x + 150, box.y + 120);
+  await page.mouse.down();
+  await expect(ring).toHaveCount(1);
+
+  const { writes, frames, moves } = await page.evaluate(
+    async ([driveMs, gapMs]) => {
+      const ringEl = document.querySelector('.brush-ring');
+      const canvas = document.querySelector('#drawingCanvas');
+      if (!ringEl || !canvas) throw new Error('no .brush-ring / #drawingCanvas to drive');
+
+      let writes = 0;
+      let frames = 0;
+      let running = true;
+      const observer = new MutationObserver((records) => {
+        writes += records.length;
+      });
+      observer.observe(ringEl, { attributes: true, attributeFilter: ['style'] });
+      const tick = () => {
+        frames++;
+        if (running) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+
+      const rect = canvas.getBoundingClientRect();
+      let moves = 0;
+      const started = performance.now();
+      while (performance.now() - started < driveMs) {
+        canvas.dispatchEvent(
+          new PointerEvent('pointermove', {
+            bubbles: true,
+            pointerId: 1,
+            pointerType: 'mouse',
+            isPrimary: true,
+            buttons: 1,
+            clientX: rect.left + 60 + (moves % 50),
+            clientY: rect.top + 80 + (moves % 30),
+          })
+        );
+        moves++;
+        await new Promise((resolve) => setTimeout(resolve, gapMs));
+      }
+
+      running = false;
+      observer.disconnect();
+      return { writes, frames, moves };
+    },
+    [RING_COALESCING_DRIVE_MS, RING_COALESCING_MOVE_GAP_MS]
+  );
+
+  // The premise of the assertion below: the driving really did outrun the frames.
+  expect(moves).toBeGreaterThan(frames);
+  // The ring still tracks the finger.
+  expect(writes).toBeGreaterThan(0);
+  // Never more than the frames that could have shown them. Pre-coalescing this
+  // was one per move, i.e. `moves` of them.
+  expect(writes).toBeLessThanOrEqual(frames);
+
+  await page.mouse.up();
+});
+
 // A palette press mid-stroke ends the stroke through releaseAllPointers() — the
 // canvas never sees a pointerup for the drawing finger, so the ring must leave
 // with the engine's capture release (lostpointercapture), not linger and stick.
