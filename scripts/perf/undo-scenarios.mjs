@@ -688,6 +688,7 @@ function reportCommitGate(results) {
   const budgetMs = COMMIT_GATE_MS;
   const { gated } = engine;
   const measured = results.filter((s) => !s.skipped);
+  const skipped = results.filter((s) => s.skipped);
   const breaches = gated ? measured.filter((s) => s.draw.commitMaxMs > budgetMs) : [];
 
   if (!gated) {
@@ -698,6 +699,25 @@ function reportCommitGate(results) {
     return { engine: engineName, gated, budgetMs, breaches };
   }
 
+  if (skipped.length > 0) {
+    process.exitCode = 1;
+    console.error(
+      `\n✗ Commit gate NOT EVALUATED on ${engineName}: ${skipped.length} requested ` +
+        `scenario(s) did not complete.\n` +
+        `  A gated run must measure every requested scenario; skipped coverage cannot pass.\n` +
+        skipped.map((s) => `  ${s.key}: ${s.error}`).join('\n') +
+        '\n'
+    );
+    return {
+      engine: engineName,
+      gated,
+      budgetMs,
+      breaches,
+      evaluated: false,
+      skipped: skipped.length,
+    };
+  }
+
   // Every measure absent reads exactly like a very fast commit — 0 ms, no
   // breach, green gate. That happens whenever the *served bundle* was built
   // without PERF_MARKS, which --no-build makes reachable since it reuses
@@ -706,7 +726,7 @@ function reportCommitGate(results) {
   // the encode-path warning below — blobBytes comes from getUndoDebug(), which
   // reports tiering whether or not the marks were compiled in. So check the
   // sample count, and fail rather than certify a run that measured nothing.
-  if (measured.length > 0 && measured.every((s) => s.draw.commitCount === 0)) {
+  if (measured.length === 0 || measured.every((s) => s.draw.commitCount === 0)) {
     process.exitCode = 1;
     console.error(
       `\n✗ Commit gate NOT EVALUATED on ${engineName}: no engine.commit samples in any of ` +

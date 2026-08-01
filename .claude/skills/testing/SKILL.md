@@ -8,17 +8,19 @@ description: Full testing guide — the three-tier strategy (Vitest unit, Playwr
 # Splotch — Testing Guide
 
 Splotch has five core automated suites across three test layers. The app-unit, asset-pipeline,
-repo-script, and E2E suites run on every push/PR; real-device launch tests are heavy, so they run
-only on tagged releases and on demand.
+repo-script, and E2E suites run on every push/PR. A two-scenario WebKit timing gate runs on every
+pull request in parallel with them; its full seven-scenario form and the real-device launch tests
+run only on tagged releases.
 
-| Layer                 | Tool                | Command                  | Runs in CI                              |
-| --------------------- | ------------------- | ------------------------ | --------------------------------------- |
-| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit`      | every push / PR                         |
-| Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen` | every push / PR                         |
-| Unit (repo scripts)   | Vitest (Node)       | `npm run test:scripts`   | every push / PR                         |
-| E2E (web)             | Playwright          | `npm run test:e2e`       | every push / PR                         |
-| Smoke (Android)       | Maestro + emulator  | `npm run test:android`   | **tagged releases only**                |
-| Smoke (iOS)           | Maestro + simulator | `npm run test:ios`       | **tagged releases only** (macOS runner) |
+| Layer                 | Tool                | Command                         | Runs in CI                              |
+| --------------------- | ------------------- | ------------------------------- | --------------------------------------- |
+| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit`             | every push / PR                         |
+| Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`        | every push / PR                         |
+| Unit (repo scripts)   | Vitest (Node)       | `npm run test:scripts`          | every push / PR                         |
+| E2E (web)             | Playwright          | `npm run test:e2e`              | every push / PR                         |
+| Smoke (Android)       | Maestro + emulator  | `npm run test:android`          | **tagged releases only**                |
+| Smoke (iOS)           | Maestro + simulator | `npm run test:ios`              | **tagged releases only** (macOS runner) |
+| WebKit commit timing  | Playwright WebKit   | `npm run perf:undo:webkit:fast` | every PR; full suite on release tags    |
 
 A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
 `npm audit --audit-level=critical`) also runs on every push/PR alongside the tests — see Continuous
@@ -368,16 +370,23 @@ npm run test:android:device     # re-run as often as you like
 
 ## Continuous integration
 
-| Workflow                               | Trigger                                                          | What it runs                                                                        |
-| -------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `.github/workflows/test.yml`           | every push to `main`, every PR                                   | `quality` (type-check, lint, format:check, audit) + app/asset unit + Playwright E2E |
-| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`                   | Android Maestro smoke test                                                          |
-| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`                   | iOS Maestro smoke test (macOS runner)                                               |
-| `.github/workflows/blobs-smoke.yml`    | Netlify `deployment_status` success + manual `workflow_dispatch` | Netlify Blobs persistence round-trip (ADR-0025)                                     |
+| Workflow                               | Trigger                                                          | What it runs                                                                                        |
+| -------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push**                | normal quality/tests on branch/PR events; fast WebKit commit gate on PRs; full gate on release tags |
+| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`                   | Android Maestro smoke test                                                                          |
+| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`                   | iOS Maestro smoke test (macOS runner)                                                               |
+| `.github/workflows/blobs-smoke.yml`    | Netlify `deployment_status` success + manual `workflow_dispatch` | Netlify Blobs persistence round-trip (ADR-0025)                                                     |
 
 The `blobs-smoke` workflow needs a repo secret `ADMIN_ACCESS_TOKEN` matching the deploy's admin
 secret; without it the job fails at the login step. The iOS smoke mirrors Android but on a
 `macos-latest` runner — the debug build targets the simulator, so no signing secrets are involved.
+
+The WebKit commit gate is split by path coverage and cost (ADR-0093). Pull requests run
+`multi-finger` (the sole encode-path exerciser) and `crayon-scribbles` (mid-stroke pass splits) in a
+parallel `macos-latest` job whose duration stays below the ordinary Tests job; the Ubuntu WebKit
+runtime does not meet that wall-clock constraint. Release tags run all seven scenarios. A timing
+breach, an incomplete scenario, or a bundle with no `engine.commit` samples fails the job, and
+either tier uploads `undo-scenarios.json` and `undo-scenarios.md` on failure.
 
 The native smoke workflows are deliberately tag-only — an emulator/simulator job is the heaviest
 thing in CI, and a launch crash is exactly the kind of regression you want caught at release time.

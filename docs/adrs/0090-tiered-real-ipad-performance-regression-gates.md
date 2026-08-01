@@ -2,7 +2,8 @@
 
 **Status:** Active — amends [ADR-0032](0032-performance-profiling-harness.md) and
 [ADR-0084](0084-trusted-xcuitest-input-for-ipad-real-screen-profiling.md); amended by
-[ADR-0092](0092-direct-cdp-android-browser-action-profiling.md). **Date:** 2026-07
+[ADR-0092](0092-direct-cdp-android-browser-action-profiling.md) and
+[ADR-0093](0093-two-tier-webkit-commit-gate-in-ci.md). **Date:** 2026-07
 
 ## Context
 
@@ -61,6 +62,10 @@ cannot replace the physical-iPad approval tier established by ADR-0085.
 
 Absolute physical-device frame gates do not run on a shared headless GitHub runner. Its browser,
 host load, GPU path, and timer variance are different from the shipping environment.
+
+ADR-0093 adds a narrower shared-runner WebKit gate for catastrophic commit-path shape regressions.
+Its 25 ms threshold is deliberately far above healthy desktop measurements and does not approve any
+physical-device frame budget; the real-iPad tiers in this record remain authoritative for those.
 
 ### Physical drawing and undo runs fail their calibrated gates
 

@@ -117,9 +117,11 @@ function fakePage({
   encodeInCommitMaxMs = 0,
   deferredEncodeMaxMs = 0,
   blobBytes = 1,
+  coldTierNeverSettles = false,
 } = {}) {
   const now = mockTickingClock();
   let drawEnd = null;
+  let coldTierRead = 0;
   return {
     goto: vi.fn(async () => {}),
     waitForSelector: vi.fn(async () => {}),
@@ -127,7 +129,11 @@ function fakePage({
     evaluate: vi.fn(async (fn, arg) => {
       const source = fn.toString();
       if (source.includes('getUndoDebug')) {
-        return { snapshots: 22, liveRasters: 2, blobBytes };
+        return {
+          snapshots: 22,
+          liveRasters: 2,
+          blobBytes: coldTierNeverSettles ? coldTierRead++ : blobBytes,
+        };
       }
       if (source.includes('document.querySelector')) {
         return { backingW: 20, backingH: 20, side: 20, bytesPerRaster: 1600 };
@@ -324,7 +330,7 @@ describe('the commit gate', () => {
   it('fails the WebKit run when a commit exceeds the budget', async () => {
     // #635's shape: an encode back on the commit path, so engine.commit carries
     // a full-raster encode instead of a rect-sized copy plus a fold.
-    process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
     const page = fakePage({ commitMaxMs: 56, encodeInCommitMaxMs: 55 });
     fakeBrowser(page, { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
@@ -335,7 +341,7 @@ describe('the commit gate', () => {
     const gate = await runUndoScenarios();
 
     expect(gate).toMatchObject({ engine: 'webkit', gated: true, budgetMs: 25 });
-    expect(gate.breaches.map((s) => s.key)).toEqual(['short-marks']);
+    expect(gate.breaches.map((s) => s.key)).toEqual(['multi-finger']);
     expect(process.exitCode).toBe(1);
     expect(error).toHaveBeenCalledWith(expect.stringContaining('Commit gate FAILED on webkit'));
     // The breach has to name its own cause, or the run says "too slow" and
@@ -419,6 +425,24 @@ describe('the commit gate', () => {
     expect(process.exitCode).toBe(1);
     expect(error).toHaveBeenCalledWith(expect.stringContaining('NOT EVALUATED on webkit'));
     expect(error).toHaveBeenCalledWith(expect.stringContaining('npm run perf:undo:webkit'));
+  });
+
+  it('fails rather than certifies a WebKit run with skipped scenarios', async () => {
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
+    const page = fakePage({ coldTierNeverSettles: true });
+    fakeBrowser(page, { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    expect(gate).toMatchObject({ evaluated: false, skipped: 1, breaches: [] });
+    expect(process.exitCode).toBe(1);
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('NOT EVALUATED on webkit'));
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('multi-finger'));
   });
 
   it('reports the gate as not evaluated on Chromium', async () => {
