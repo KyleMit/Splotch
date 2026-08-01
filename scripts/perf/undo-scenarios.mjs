@@ -3,7 +3,7 @@
 // (depth, hot rasters vs encoded blobs), the cost of drawing vs. the cost of
 // undoing — the commit hitch (paper copy) and per-step restore — and the
 // memory footprint while history is resident. Built to watch the ADR-0066
-// gates: commit max, snapshot copy max, undo avg/max, history MB.
+// gates: commit P95, snapshot copy max, undo avg/max, history MB.
 //
 //   npm run perf:undo                       (tablet viewport, 4× CPU throttle)
 //   node scripts/perf/undo-scenarios.mjs --no-throttle --no-build
@@ -34,6 +34,8 @@ import {
 import { IPAD_PRO } from './devices.mjs';
 import { profilePath } from './paths.mjs';
 import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
+import { percentile } from './real-screen-stats.mjs';
+import { ALL_UNDO_SCENARIO_KEYS, UNDO_SCENARIO_KEYS } from './undo-scenario-keys.mjs';
 import { toMiB } from './units.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 
@@ -223,18 +225,22 @@ function buildScenarios(width, height) {
   const scribbles = Array.from({ length: STROKES }, (_, i) => scribble(i % 6, width, height));
   return [
     {
-      key: 'long-squiggles',
+      key: UNDO_SCENARIO_KEYS.longSquiggles,
       label: `${STROKES} long squiggles (~${LONG_OPS} ops each @ ${HZ}Hz), then undo all`,
       strokes: longs,
     },
     {
-      key: 'short-marks',
+      key: UNDO_SCENARIO_KEYS.shortMarks,
       label: `${STROKES} short dot/dash strokes, then undo all`,
       strokes: shorts,
     },
-    { key: 'mixed', label: `${STROKES} mixed long+short strokes, then undo all`, strokes: mixed },
     {
-      key: 'multi-finger',
+      key: UNDO_SCENARIO_KEYS.mixed,
+      label: `${STROKES} mixed long+short strokes, then undo all`,
+      strokes: mixed,
+    },
+    {
+      key: UNDO_SCENARIO_KEYS.multiFinger,
       label: `${STROKES} five-finger drags (~${MULTI_FINGERS * MULTI_OPS_PER_FINGER} ops/command), then undo all`,
       strokes: multi,
     },
@@ -242,18 +248,18 @@ function buildScenarios(width, height) {
     // stamps the pass buffer, so the crayon fold is the heaviest per-commit
     // render. The pen scribble is the shape-matched control.
     {
-      key: 'scribbles',
+      key: UNDO_SCENARIO_KEYS.scribbles,
       label: `${STROKES} pen back-and-forth scribbles (~${LONG_OPS} ops each), then undo all`,
       strokes: scribbles,
     },
     {
-      key: 'crayon-squiggles',
+      key: UNDO_SCENARIO_KEYS.crayonSquiggles,
       label: `${STROKES} crayon long squiggles (~${LONG_OPS} ops each), then undo all`,
       strokes: longs,
       crayon: true,
     },
     {
-      key: 'crayon-scribbles',
+      key: UNDO_SCENARIO_KEYS.crayonScribbles,
       label: `${STROKES} crayon back-and-forth scribbles (mid-stroke pass splits), then undo all`,
       strokes: scribbles,
       crayon: true,
@@ -277,6 +283,7 @@ function engineMeasuresIn(page, from, to) {
         e.count++;
         e.total += m.duration;
         e.max = Math.max(e.max, m.duration);
+        if (m.name === 'engine.commit') (e.durationsMs ??= []).push(m.duration);
       }
       return byName;
     },
@@ -444,7 +451,7 @@ export async function runUndoScenario(
   // copy), engine.fold (rendering the committed ops), and engine.encode
   // (demoting cold patches to blobs) are the candidates it decomposes into, so
   // a hot commit attributes to one of them rather than to the pipeline at large.
-  const commit = drawMarks['engine.commit'] || { count: 0, total: 0, max: 0 };
+  const commit = drawMarks['engine.commit'] || { count: 0, total: 0, max: 0, durationsMs: [] };
   const snapshot = drawMarks['engine.snapshot'] || { count: 0, total: 0, max: 0 };
   const fold = drawMarks['engine.fold'] || { count: 0, total: 0, max: 0 };
   const encode = postDrawMarks['engine.encode'] || { count: 0, total: 0, max: 0 };
@@ -455,6 +462,7 @@ export async function runUndoScenario(
   // belongs beside snapshot/fold/commit, which all come from this same window.
   const encodeInCommit = drawMarks['engine.encode'] || { count: 0, total: 0, max: 0 };
   const undoM = undoMarks['engine.undo'] || { count: 0, total: 0, max: 0 };
+  const commitP95Ms = percentile(commit.durationsMs, COMMIT_GATE_PERCENTILE) ?? 0;
 
   // History raster memory the way it actually lives — off the JS heap, in
   // canvas backing stores: live snapshot patches + the paper, plus the
@@ -485,7 +493,9 @@ export async function runUndoScenario(
       // gate has to tell apart from a genuinely fast commit (both read 0 ms).
       commitCount: commit.count,
       commitMs: commit.total,
+      commitP95Ms,
       commitMaxMs: commit.max,
+      commitDurationsMs: commit.durationsMs,
       snapshotMs: snapshot.total,
       snapshotMaxMs: snapshot.max,
       foldMs: fold.total,
@@ -510,7 +520,8 @@ export async function runUndoScenario(
   console.log(
     `  snapshots=${debug?.snapshots ?? 'n/a'} liveRasters=${debug?.liveRasters ?? 'n/a'} ` +
       `blobKB=${debug ? Math.round(debug.blobBytes / 1024) : 'n/a'} | ` +
-      `commit max ${commit.max.toFixed(1)}ms (copy ${snapshot.max.toFixed(1)} ` +
+      `commit p95 ${commitP95Ms.toFixed(1)}ms ` +
+      `max ${commit.max.toFixed(1)}ms (copy ${snapshot.max.toFixed(1)} ` +
       `fold ${fold.max.toFixed(1)} encode ${encodeInCommit.max.toFixed(1)}; ` +
       `deferred encode ${encode.max.toFixed(1)}) | ` +
       `undo ${undoM.count} steps ` +
@@ -548,6 +559,15 @@ export async function runUndoScenarios() {
   process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
   warnIfNoPerfMarks(engine.script);
 
+  const only = flag('scenarios', '');
+  const requestedKeys = only ? only.split(',') : ALL_UNDO_SCENARIO_KEYS;
+  const unknownKeys = requestedKeys.filter((key) => !ALL_UNDO_SCENARIO_KEYS.includes(key));
+  if (unknownKeys.length > 0) {
+    throw new Error(
+      `--scenarios contains unknown key(s): ${unknownKeys.join(', ')}; expected ${ALL_UNDO_SCENARIO_KEYS.join(', ')}`
+    );
+  }
+
   const outDir = profilePath('undo-scenarios', engineName, throttle.tag);
   mkdirSync(outDir, { recursive: true });
 
@@ -580,13 +600,9 @@ export async function runUndoScenarios() {
     const geom = await rasterGeometry(page);
     const events = cdp ? await startTrace(cdp) : null;
     // --scenarios=key1,key2 runs a subset (fast iteration on one question).
-    const only = flag('scenarios', '');
-    let scenarios = buildScenarios(IPAD_PRO.width, IPAD_PRO.height);
-    if (only) {
-      const keys = only.split(',');
-      scenarios = scenarios.filter((sc) => keys.includes(sc.key));
-      if (scenarios.length === 0) throw new Error(`--scenarios matched nothing: ${only}`);
-    }
+    const scenarios = buildScenarios(IPAD_PRO.width, IPAD_PRO.height).filter((scenario) =>
+      requestedKeys.includes(scenario.key)
+    );
     const results = [];
     // Each scenario reloads /dev/engine, and a navigation wipes the Performance
     // API entries — so without CDP the measures have to be drained *per
@@ -670,9 +686,12 @@ export async function runUndoScenarios() {
 //   #635 shape commit max 47–56 ms (98% of it engine.encode, run to run)
 //
 // so the gate sits ~3× above the healthy worst case and ~2× below the cheapest
-// observed regression. It is deliberately blunt: the point is to catch a
-// full-raster operation reappearing on the pointerup path, not to police
-// millisecond drift, which only the on-device run can honestly judge.
+// observed regression. A shared runner can still suspend WebKit inside one
+// measured commit, so the gate uses P95 to require the expensive shape to recur
+// while preserving max and every raw duration for diagnosis. It is deliberately
+// blunt: the point is to catch a full-raster operation reappearing on the
+// pointerup path, not to police millisecond drift, which only the on-device run
+// can honestly judge.
 //
 // Chromium is deliberately NOT gated. Its absolute milliseconds are unfaithful
 // in both directions — SwiftShader exaggerates full-canvas blits, and its
@@ -683,20 +702,42 @@ export async function runUndoScenarios() {
 // numbers it cannot measure would rebuild the false assurance that let #635 hide
 // behind a passing profile for a year.
 const COMMIT_GATE_MS = 25;
+const COMMIT_GATE_PERCENTILE = 0.95;
+
+function formatCommitBreach(scenario) {
+  return (
+    `  ${scenario.key}: commit p95 ${f1(scenario.draw.commitP95Ms)} ms, ` +
+    `max ${f1(scenario.draw.commitMaxMs)} ms ` +
+    `(copy ${f1(scenario.draw.snapshotMaxMs)} · fold ${f1(scenario.draw.foldMaxMs)} · ` +
+    `encode ${f1(scenario.draw.encodeInCommitMaxMs)}; deferred ${f1(scenario.draw.encodeMaxMs)})`
+  );
+}
+
+function formatCompletedBreaches(breaches) {
+  return breaches.length > 0
+    ? `\n  Completed scenario breaches:\n${breaches.map(formatCommitBreach).join('\n')}\n`
+    : '\n';
+}
 
 function reportCommitGate(results) {
   const budgetMs = COMMIT_GATE_MS;
   const { gated } = engine;
   const measured = results.filter((s) => !s.skipped);
   const skipped = results.filter((s) => s.skipped);
-  const breaches = gated ? measured.filter((s) => s.draw.commitMaxMs > budgetMs) : [];
+  const breaches = gated ? measured.filter((s) => s.draw.commitP95Ms > budgetMs) : [];
 
   if (!gated) {
     console.log(
       `Commit gate: not evaluated on ${engineName} — its absolute ms are advisory ` +
         `(see COMMIT_GATE_MS). Run \`${ENGINES.webkit.script}\` for the gated engine.`
     );
-    return { engine: engineName, gated, budgetMs, breaches };
+    return {
+      engine: engineName,
+      gated,
+      budgetMs,
+      percentile: COMMIT_GATE_PERCENTILE,
+      breaches,
+    };
   }
 
   if (skipped.length > 0) {
@@ -706,12 +747,13 @@ function reportCommitGate(results) {
         `scenario(s) did not complete.\n` +
         `  A gated run must measure every requested scenario; skipped coverage cannot pass.\n` +
         skipped.map((s) => `  ${s.key}: ${s.error}`).join('\n') +
-        '\n'
+        formatCompletedBreaches(breaches)
     );
     return {
       engine: engineName,
       gated,
       budgetMs,
+      percentile: COMMIT_GATE_PERCENTILE,
       breaches,
       evaluated: false,
       skipped: skipped.length,
@@ -735,49 +777,76 @@ function reportCommitGate(results) {
         `  pass would mean nothing. Rebuild with marks — \`${engine.script}\` without\n` +
         `  --no-build — and re-run.\n`
     );
-    return { engine: engineName, gated, budgetMs, breaches: [], evaluated: false };
+    return {
+      engine: engineName,
+      gated,
+      budgetMs,
+      percentile: COMMIT_GATE_PERCENTILE,
+      breaches: [],
+      evaluated: false,
+    };
   }
 
   // The encode path only runs for a scenario whose patches exhaust the resident
   // byte budget (ADR-0082). Today that is multi-finger alone, so the gate's
   // cover for #635's defect class rests on one scenario producing blobs. If a
-  // tiering change ever stops it, the gate keeps passing while testing nothing —
-  // say so rather than let the silence read as a clean bill of health.
+  // tiering change ever stops it, the run measured no coverage for that defect
+  // class and cannot certify the commit path.
   const encoding = measured.filter((s) => (s.debug?.blobBytes ?? 0) > 0);
   if (encoding.length === 0) {
-    console.warn(
-      `! No scenario demoted a patch to a blob, so this run did not exercise the encode ` +
-        `path at all — the commit gate cannot see a #635-class regression. Check whether ` +
-        `the resident byte budget (HOT_PATCH_BUDGET_PAPER_MULTIPLE) now covers every scenario.`
+    process.exitCode = 1;
+    console.error(
+      `\n✗ Commit gate NOT EVALUATED on ${engineName}: no scenario demoted a patch to a ` +
+        `blob, so this run did not exercise the encode path.\n` +
+        `  The commit gate cannot see a #635-class regression. Check whether the resident byte\n` +
+        `  budget (HOT_PATCH_BUDGET_PAPER_MULTIPLE) now covers every requested scenario.` +
+        formatCompletedBreaches(breaches)
     );
+    return {
+      engine: engineName,
+      gated,
+      budgetMs,
+      percentile: COMMIT_GATE_PERCENTILE,
+      breaches,
+      encoding: 0,
+      evaluated: false,
+    };
   }
 
   if (breaches.length === 0) {
     console.log(
-      `✓ Commit gate: every scenario's commit max is within ${budgetMs} ms on ${engineName} ` +
+      `✓ Commit gate: every scenario's commit p95 is within ${budgetMs} ms on ${engineName} ` +
         `(${measured.length} measured, ${encoding.length} exercising the encode path).`
     );
-    return { engine: engineName, gated, budgetMs, breaches, encoding: encoding.length };
+    return {
+      engine: engineName,
+      gated,
+      budgetMs,
+      percentile: COMMIT_GATE_PERCENTILE,
+      breaches,
+      encoding: encoding.length,
+    };
   }
 
   process.exitCode = 1;
   console.error(
-    `\n✗ Commit gate FAILED on ${engineName}: ${breaches.length} scenario(s) exceeded ` +
-      `${budgetMs} ms of synchronous stroke-end work.\n` +
-      `  A commit this hot is doing full-raster work on the pointerup path. The parts below\n` +
+    `\n✗ Commit gate FAILED on ${engineName}: ${breaches.length} scenario(s) had commit p95 ` +
+      `above ${budgetMs} ms of synchronous stroke-end work.\n` +
+      `  Repeated commits this hot are doing full-raster work on the pointerup path. ` +
+      `The parts below\n` +
       `  all come from inside engine.commit and sum to it — an engine.encode among them is\n` +
       `  #635 recurring (the cold encode belongs off the commit, on scheduleIdle). The\n` +
       `  trailing "deferred" figure is the encode that ran off-commit, which is where it\n` +
       `  belongs: large there is healthy, and it is never the cause of a breach.\n`
   );
-  for (const s of breaches) {
-    console.error(
-      `  ${s.key}: commit max ${f1(s.draw.commitMaxMs)} ms ` +
-        `(copy ${f1(s.draw.snapshotMaxMs)} · fold ${f1(s.draw.foldMaxMs)} · ` +
-        `encode ${f1(s.draw.encodeInCommitMaxMs)}; deferred ${f1(s.draw.encodeMaxMs)})`
-    );
-  }
-  return { engine: engineName, gated, budgetMs, breaches };
+  for (const scenario of breaches) console.error(formatCommitBreach(scenario));
+  return {
+    engine: engineName,
+    gated,
+    budgetMs,
+    percentile: COMMIT_GATE_PERCENTILE,
+    breaches,
+  };
 }
 
 function renderUndoReport({ settings, scenarios }) {
@@ -820,8 +889,9 @@ function renderUndoReport({ settings, scenarios }) {
   }
   out.push('\n## Drawing cost (engine.draw + the stroke-end pipeline)\n');
   out.push(
-    'engine.commit wraps the whole stroke-end pipeline, so **commit max** is the pointerup ' +
-      'hitch the user feels. The three columns before it are measured in the same window and ' +
+    'engine.commit wraps the whole stroke-end pipeline. **Commit P95** is the shared-runner ' +
+      'gate, while commit max and the raw JSON samples retain isolated hitches for diagnosis. ' +
+      'The three stage columns are measured in the same window and ' +
       'decompose it: engine.snapshot (the pre-stroke patch copy), engine.fold (rendering the ' +
       'committed ops), and engine.encode (demoting cold patches to blobs).\n'
   );
@@ -835,18 +905,19 @@ function renderUndoReport({ settings, scenarios }) {
       'encode.\n'
   );
   out.push(
-    '| Scenario | draw() calls | draw total | snapshot copy max | fold max | encode in commit max | **commit max (1 stroke end)** | deferred encode max |'
+    '| Scenario | draw() calls | draw total | snapshot copy max | fold max | encode in commit max | **commit p95 (gate)** | commit max | deferred encode max |'
   );
-  out.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
+  out.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
     if (s.skipped) {
-      out.push(`| ${s.label} | n/a | n/a | n/a | n/a | n/a | **n/a** | n/a |`);
+      out.push(`| ${s.label} | n/a | n/a | n/a | n/a | n/a | **n/a** | n/a | n/a |`);
       continue;
     }
     out.push(
       `| ${s.label} | ${s.draw.ops} | ${f1(s.draw.totalMs)} ms | ` +
         `${f1(s.draw.snapshotMaxMs)} ms | ${f1(s.draw.foldMaxMs)} ms | ` +
-        `${f1(s.draw.encodeInCommitMaxMs)} ms | **${f1(s.draw.commitMaxMs)} ms** | ` +
+        `${f1(s.draw.encodeInCommitMaxMs)} ms | **${f1(s.draw.commitP95Ms)} ms** | ` +
+        `${f1(s.draw.commitMaxMs)} ms | ` +
         `${f1(s.draw.encodeMaxMs)} ms |`
     );
   }

@@ -83,7 +83,7 @@ neither substitutes for the other.
 | ------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | Answers | how the stack *behaves* — depth, tiering, op-volume scaling, where time goes | whether a stroke-end **costs** what it should in the shipping engine family |
 | Has     | CDP trace, CPU throttle, JS-heap table, main-thread breakdown                | engine marks only                                                           |
-| Gate    | none — its ms are advisory                                                   | `engine.commit` max vs `COMMIT_GATE_MS`; exits non-zero                     |
+| Gate    | none — its ms are advisory                                                   | `engine.commit` P95 vs `COMMIT_GATE_MS`; exits non-zero                     |
 
 The split exists because a Chromium-only harness is **structurally blind** to a whole defect class:
 per-engine differences in canvas API behaviour. `toBlob` is the worked example — Chromium honours
@@ -97,10 +97,15 @@ gate is deliberately blunt (catch full-raster work reappearing on the pointerup 
 drift). Absolute device milliseconds still come from `ipad-device-profiling.md`.
 
 CI uses the fast named subset on every pull request in a measured `macos-latest` job parallel to the
-ordinary test suite, then runs all seven scenarios on `v*` release tags (ADR-0093). Both jobs upload
-`undo-scenarios.json` and `undo-scenarios.md` when the gate fails. This is a catastrophic-regression
-gate with a wide threshold, not physical-iPad approval; ADR-0090's real-device tier remains the
-authority for frame pacing and device-calibrated budgets.
+ordinary test suite, then runs all seven scenarios on `v*` release tags (ADR-0093). Both jobs
+attempt to upload `undo-scenarios.json` and `undo-scenarios.md` after a failure; a gate breach
+produces them, while an earlier build/browser failure warns that none exist without masking the
+original error. An unknown requested key, incomplete scenario, missing `engine.commit` samples,
+absent encode-path coverage, or timing breach fails closed. The timing gate uses P95 so a
+catastrophic work shape must recur; it retains commit max and every raw duration for diagnosing an
+isolated runner interruption. This is a catastrophic-regression gate with a wide threshold, not
+physical-iPad approval; ADR-0090's real-device tier remains the authority for frame pacing and
+device-calibrated budgets.
 
 > **Not available in a cloud session.** `.claude/cloud/setup.sh` installs Chromium only, so any
 > WebKit-driving command (`perf:undo:webkit`, `perf:ios`) fails there with Playwright's raw

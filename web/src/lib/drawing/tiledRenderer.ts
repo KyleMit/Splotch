@@ -21,6 +21,7 @@ import {
   deferHiddenTileClear,
   ensureCrayonTileBacking,
   ensureNormalTileBacking,
+  liveTileSurfaces,
   renderHistoryBaseOp,
   type HistoryBaseTile,
   type LiveTile,
@@ -51,9 +52,8 @@ const undoPatches = createTiledUndoPatches();
 let undoableCommands = 0;
 let historyFoldTimer: ReturnType<typeof setTimeout> | null = null;
 let backingMigration = { revision: 0, pending: false };
-const isDev = import.meta.env?.DEV;
 const isDevHarness = typeof __DEV_HARNESS__ !== 'undefined' && __DEV_HARNESS__;
-const workCounters = isDev || isDevHarness ? createDrawingWorkCounters() : null;
+const workCounters = import.meta.env?.DEV || isDevHarness ? createDrawingWorkCounters() : null;
 
 export function adoptTiledRenderer(
   canvasElement: HTMLCanvasElement,
@@ -123,7 +123,7 @@ export function resizeTiledRenderer(
       tile.crayonBottom.hidden = true;
       tile.crayonTop.hidden = true;
       if (!deferHiddenBackings || !tile.canvas.hidden) ensureNormalTileBacking(tile);
-      for (const tileCanvas of [tile.canvas, tile.crayonBottom, tile.crayonTop]) {
+      for (const tileCanvas of liveTileSurfaces(tile)) {
         tileCanvas.style.left = `${horizontal.start}px`;
         tileCanvas.style.top = `${vertical.start}px`;
         tileCanvas.style.width = `${horizontal.size}px`;
@@ -354,6 +354,7 @@ export function repaintTiledRenderer(rebuildUndoPatches = true) {
     renderCommandAcrossTiles(command, captureUndo);
   }
   if (activeCommand) {
+    workCounters?.begin();
     if (rebuildUndo) undoPatches.delete(activeCommand);
     for (const op of activeCommand.ops) renderTiledOp(op);
   }
@@ -443,6 +444,7 @@ export function clearTiledRenderer(wasEmpty: boolean) {
     undoPatches.delete(activeCommand);
     activeCommand.ops.length = 0;
     activeCommand.wasEmpty = true;
+    workCounters?.begin();
   }
   return { empty: activeCommand === null, canUndo: true };
 }

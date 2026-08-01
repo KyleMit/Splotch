@@ -178,31 +178,10 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: macos-latest
     timeout-minutes: 15
-    env:
-      PW_BROWSERS: webkit
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: ./.github/actions/setup-node
-
-      - name: Resolve Playwright version
-        id: playwright-version
-        run: node scripts/playwright-version.mjs >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browser
-        id: playwright-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ env.PW_BROWSERS }}-${{ steps.playwright-version.outputs.version }}
-
-      - name: Install Playwright browser
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps ${{ env.PW_BROWSERS }}
-
-      - name: Install Playwright system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps ${{ env.PW_BROWSERS }}
+      - uses: ./.github/actions/setup-playwright-webkit
 
       - name: Run fast WebKit commit gate
         run: npm run perf:undo:webkit:fast
@@ -215,7 +194,7 @@ jobs:
           path: |
             perf-profiles/**/undo-scenarios.json
             perf-profiles/**/undo-scenarios.md
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
 
   webkit-commit-gate-full:
@@ -223,31 +202,10 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: macos-latest
     timeout-minutes: 20
-    env:
-      PW_BROWSERS: webkit
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: ./.github/actions/setup-node
-
-      - name: Resolve Playwright version
-        id: playwright-version
-        run: node scripts/playwright-version.mjs >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browser
-        id: playwright-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ env.PW_BROWSERS }}-${{ steps.playwright-version.outputs.version }}
-
-      - name: Install Playwright browser
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps ${{ env.PW_BROWSERS }}
-
-      - name: Install Playwright system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps ${{ env.PW_BROWSERS }}
+      - uses: ./.github/actions/setup-playwright-webkit
 
       - name: Run full WebKit commit gate
         run: npm run perf:undo:webkit
@@ -260,5 +218,5 @@ jobs:
           path: |
             perf-profiles/**/undo-scenarios.json
             perf-profiles/**/undo-scenarios.md
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7

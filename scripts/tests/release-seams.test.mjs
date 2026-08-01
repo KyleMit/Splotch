@@ -86,9 +86,13 @@ it.each(DEV_GATED_ENGINE_EXPORTS)('rejects an ungated %s export', (name) => {
 
 it('requires surface-visit accounting to stay behind the compile-time gate', () => {
   expect(drawingWorkHotPathProblems()).toEqual([]);
-  expect(drawingWorkHotPathProblems('surfaceVisits++;')).toEqual([
-    'surface-visit accounting must stay behind the compile-time workCounters gate',
+  expect(drawingWorkHotPathProblems('const untouched = true;\nsurfaceVisits += 1;')).toEqual([
+    'web/src/lib/drawing/tiledRenderer.ts:2: surface-visit accounting must stay behind the compile-time workCounters gate',
   ]);
+  expect(drawingWorkHotPathProblems('if (workCounters) surfaceVisits++;')).toEqual([]);
+  expect(drawingWorkHotPathProblems('if (workCounters) {\n  surfaceVisits += visited;\n}')).toEqual(
+    []
+  );
 });
 
 it('skips an explicitly instrumented build before reading its bundle', async () => {
