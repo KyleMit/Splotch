@@ -193,6 +193,12 @@ calibration does not approve simulator input, Android automation with missing co
 Capacitor WebView whose coalescing signature differs from MobileSafari. Those captures are advisory
 until each physical deployment target has its own hand-calibrated fidelity bounds.
 
+A deployment-matrix report may combine retained full sweeps with later focused recaptures only when
+it preserves product-commit provenance for every drawing run, undo result, and action result. Action
+sources are applied in manifest order, and a focused source replaces only its declared labels. The
+report must identify its final performance-affecting commit and must not relabel older device
+evidence as current-build evidence when a target cannot be recaptured.
+
 The iOS Simulator is nevertheless a rejection tier for the known renderer architecture. A negative
 control served and installed the pre-tiling commit `2769ceae` while retaining the current runner and
 input plan. On the same iPad Pro 13-inch Simulator, the historical web build measured Crayon at
