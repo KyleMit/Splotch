@@ -382,6 +382,11 @@ async function ensureActionProbe(execute) {
   if (!ready) await installActionProbe(execute);
 }
 
+// Exported so the script regression test can pin this state boundary independently of Appium.
+export async function canvasHasInk(execute) {
+  return execute(`return document.querySelector('#screenshotButton')?.disabled === false;`);
+}
+
 async function ensureStableTrustedStroke(client, sessionId, execute) {
   for (let attempt = 0; attempt < MAX_SETUP_RECOVERY_ATTEMPTS; attempt++) {
     const ready = await pollUntil(
@@ -394,14 +399,12 @@ async function ensureStableTrustedStroke(client, sessionId, execute) {
     );
     if (!ready) throw new Error('The drawing canvas did not recover after native setup');
     await ensureActionProbe(execute);
-    const hasInk = await execute(
-      `return document.querySelector('#undoButton')?.getAttribute('aria-disabled') === 'false';`
-    );
+    const hasInk = await canvasHasInk(execute);
     if (!hasInk) await addTrustedStroke(client, sessionId, execute);
     await sleep(POLL_MS);
     const stable = await execute(`
       return typeof window.__actionProbe?.begin === 'function' &&
-        document.querySelector('#undoButton')?.getAttribute('aria-disabled') === 'false';
+        document.querySelector('#screenshotButton')?.disabled === false;
     `).catch(() => false);
     if (stable) return;
   }

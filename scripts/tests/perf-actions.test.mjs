@@ -5,7 +5,7 @@ import {
   scoredActionFrameGaps,
   summarizeActionGroup,
 } from '../perf/action-stats.mjs';
-import { selectedActions } from '../perf/ipad-actions.mjs';
+import { canvasHasInk, selectedActions } from '../perf/ipad-actions.mjs';
 
 const frame = (startFromActionMs, gapMs, visualEffectsActive = false) => ({
   startFromActionMs,
@@ -30,6 +30,19 @@ describe('selectedActions', () => {
   it('includes the idle-frame control in complete suites and focused runs', () => {
     expect(selectedActions()).toContain('idle');
     expect(selectedActions('idle')).toEqual(new Set(['idle']));
+  });
+});
+
+describe('trusted action setup', () => {
+  it('checks canvas ink rather than undo history after a clear', async () => {
+    let expression;
+    await canvasHasInk(async (script) => {
+      expression = script;
+      return true;
+    });
+
+    expect(expression).toContain("document.querySelector('#screenshotButton')?.disabled === false");
+    expect(expression).not.toContain('#undoButton');
   });
 });
 

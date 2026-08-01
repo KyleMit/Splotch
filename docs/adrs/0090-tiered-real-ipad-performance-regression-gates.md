@@ -78,6 +78,10 @@ Ordinary `onclick` controls inside dialogs use WebDriver's semantic element clic
 one mechanism is invalid: a WebDriver element click deliberately does not satisfy `scribbleTap`,
 while coordinate tapping a dialog tile needlessly depends on Safari chrome geometry.
 
+Trusted setup determines whether ink exists from the Screenshot button's enabled state, not Undo.
+Clear is itself undoable, so enabled Undo can describe a blank canvas and silently turn a with-ink
+rotation into a blank-path sample.
+
 `action-probe.js` records requestAnimationFrame intervals inside the page. Mac-to-device WebDriver
 latency is therefore outside the frame score. It reports action-to-first-frame, post-action frame
 P95/max, and the raw worst intervals with their start/end relative to the input event. The interval
