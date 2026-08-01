@@ -42,7 +42,7 @@ Discrete actions:
 npm run perf:desktop:actions -- \
   --engine=webkit \
   --headed \
-  --repeats=3
+  --repeats=4
 ```
 
 The established comparison geometry is 1512×982 CSS pixels at 2× DPR. The runner defaults to that
@@ -75,7 +75,7 @@ npm run perf:ipad:actions --ignore-scripts -- \
   --device-id=<udid> \
   --url=<lan-url> \
   --no-serve \
-  --repeats=3
+  --repeats=4
 ```
 
 Use the real-screen WebKit Inspector runner (`perf:ipad:frames`) for a hand-driven diagnostic and
@@ -102,7 +102,7 @@ npm run perf:ipad:actions --ignore-scripts -- \
   --appium-url=<appium-url> \
   --capabilities-file=<capabilities.json> \
   --native-app \
-  --repeats=3
+  --repeats=4
 ```
 
 The native WebView’s coalescing signature is not the MobileSafari calibration. Report it as
@@ -155,7 +155,7 @@ npm run perf:android:web:actions --ignore-scripts -- \
   --device-id=emulator-5554 \
   --url=<url> \
   --no-serve \
-  --repeats=3
+  --repeats=4
 ```
 
 Use `--trace` only for a focused attribution run; broad traces are large and mix unrelated actions.

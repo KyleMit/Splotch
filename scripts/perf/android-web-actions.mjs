@@ -4,7 +4,13 @@ import { dirname, join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { ADB } from '../lib/android.mjs';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../lib/proc.mjs';
-import { actionFailures, actionRows, summarizeActions } from './action-stats.mjs';
+import {
+  MIN_GATED_SAMPLES,
+  WARMUP_REPEATS,
+  actionFailures,
+  actionRows,
+  summarizeActions,
+} from './action-stats.mjs';
 import { parsePerfArgs } from './args.mjs';
 import { startTrace, stopTrace } from './capture.mjs';
 import { profilingUrl, runActionSweep, selectedActions } from './ipad-actions.mjs';
@@ -198,7 +204,10 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
   const base = resolveDeviceUrl(flag('url'), port, APP_PATH);
   const deviceId = resolveAndroidDevice(flag('device-id'));
   const cdpPort = positiveInteger(flag('cdp-port', String(DEFAULT_CDP_PORT)), 'cdp-port');
-  const repeats = positiveInteger(flag('repeats', '3'), 'repeats');
+  const repeats = positiveInteger(flag('repeats', '4'), 'repeats');
+  if (repeats < WARMUP_REPEATS + MIN_GATED_SAMPLES) {
+    fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
+  }
   const actions = selectedActions(flag('actions'));
   const requestedOrientation = flag('orientation')?.toUpperCase();
   if (requestedOrientation && !['PORTRAIT', 'LANDSCAPE'].includes(requestedOrientation)) {
@@ -280,6 +289,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     const originalOrientation = await client.orientation();
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
     const samples = [];
+    const expectedLabels = new Set();
     if (has('trace')) {
       traceEvents = await startTrace(cdp);
       traceActive = true;
@@ -291,13 +301,21 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       await page.evaluate(readFileSync(ACTION_PROBE_FILE, 'utf8'));
       await waitForStableFrames(page);
       console.log(`\nAndroid web action sweep ${repeat}/${repeats}`);
+      const sweep = await runActionSweep({
+        client,
+        sessionId: SESSION_ID,
+        execute,
+        actions,
+        originalOrientation,
+      });
+      if (repeat <= WARMUP_REPEATS) {
+        for (const sample of sweep) expectedLabels.add(sample.label);
+      }
       samples.push(
-        ...(await runActionSweep({
-          client,
-          sessionId: SESSION_ID,
-          execute,
-          actions,
-          originalOrientation,
+        ...sweep.map((sample) => ({
+          ...sample,
+          repeat,
+          warmup: repeat <= WARMUP_REPEATS,
         }))
       );
     }
@@ -307,7 +325,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       traceActive = false;
     }
 
-    const summaries = summarizeActions(samples);
+    const summaries = summarizeActions(samples, expectedLabels);
     const failures = actionFailures(summaries);
     mkdirSync(dirname(output), { recursive: true });
     const artifact = {

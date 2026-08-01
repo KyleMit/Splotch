@@ -186,6 +186,9 @@
     if (action.actionAt === null) performance.mark(`${action.traceName}:start`);
     performance.measure(action.traceName, `${action.traceName}:start`);
     const actionFrames = frames.filter(([at, gap]) => at >= actionAt && at - gap <= finishedAt);
+    const responseEndedAt = Number.isFinite(readyAt) ? readyAt : finishedAt;
+    const responseFrames = actionFrames.filter(([at, gap]) => at - gap <= responseEndedAt);
+    const settleFrames = actionFrames.filter(([at, gap]) => at - gap > responseEndedAt);
     const firstFrame = actionFrames.find(([at]) => at >= actionAt);
     const topFrameGaps = actionFrames
       .map(([at, gap]) => ({
@@ -204,7 +207,8 @@
       trusted: action.trusted ?? null,
       readyMs: Number.isFinite(readyAt) ? readyAt - actionAt : null,
       firstFrameMs: firstFrame ? firstFrame[0] - actionAt : null,
-      frameGapsMs: actionFrames.map(([, gap]) => gap),
+      frameGapsMs: responseFrames.map(([, gap]) => gap),
+      settleFrameGapsMs: settleFrames.map(([, gap]) => gap),
       postActionFrameGapsMs: actionFrames
         .filter(([at, gap]) => at - gap >= actionAt)
         .map(([, gap]) => gap),

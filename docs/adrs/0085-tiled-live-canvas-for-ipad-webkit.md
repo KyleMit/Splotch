@@ -305,7 +305,7 @@ npm run perf:desktop:actions -- \
   --viewport=1512x982 \
   --device-scale-factor=2 \
   --url=http://127.0.0.1:4273/ \
-  --repeats=3
+  --repeats=4
 
 npm run perf:frames:local -- \
   --engine=webkit \

@@ -26,7 +26,13 @@ Hz web cadence:
 * paint P95 at most 20 ms;
 * paint P99 at most 33 ms;
 * paint max at most 50 ms;
-* render starvation at most 10 ms per drawing-second.
+* cumulative lost frame time at most 1% of in-contact time.
+
+The drawing gate sums every late frame's time beyond the fixed 16.67 ms ceiling, even when an
+already-degraded capture reports a slower observed cadence. Long-gap episodes remain a forensic
+view: marked engine time is subtracted from an episode's unexplained duration, while engine share
+and trusted-move count stay visible instead of removing the episode. Whole-window, in-contact, and
+between-stroke populations use their own elapsed-time denominators.
 
 The generic discrete-action budget established by ADR-0087 and ADR-0089 is a P95 frame interval at
 most 20 ms, an action-to-first-frame remainder at most 33.5 ms, and a worst action-attributed
@@ -59,7 +65,7 @@ host load, GPU path, and timer variance are different from the shipping environm
 ### Physical drawing and undo runs fail their calibrated gates
 
 `perf:ipad:xcuitest` scores every captured phase through `drawing-gates.mjs`. After the
-trusted-input fidelity gate passes, the command exits nonzero when any paint/starvation budget
+trusted-input fidelity gate passes, the command exits nonzero when any paint/lost-frame budget
 fails, or when a requested undo run fails its existing engine/next-frame budget. `--report-only` is
 the explicit diagnostic mode for finishing a broken run and retaining its artifact.
 
@@ -90,28 +96,31 @@ before the app received the event. This is material for Appium rotation: iPadOS 
 system transition interval 15–27 ms before MobileSafari delivers `orientationchange`, while the app
 still responds 23–29 ms later and every fully post-action interval remains below 25 ms.
 
-Every raw post-action frame remains in the artifact and in the calibrated P95 population. The
-maximum gate applies only while work is attributable to the action. The scorer opens an observation
-window at input, reopens it for later DOM or canvas mutation, engine measures, resize/orientation
-activity, and keeps it open while a transition or animation is active. Each signal carries the
-stable-frame tail owned by `ACTION_SETTLE_TAIL_FRAMES`, so the frame that presents the work and an
-immediate pacing recovery remain scored. A late requestAnimationFrame omission after a static quiet
-window remains visible as the raw max without failing the product action. Deferred work cannot hide
-behind an earlier quiet period because its activity reopens the window; the rule has no action-name
-exceptions. Keeping P95 over the full raw window preserves the gate's calibrated population and
-still rejects transport-wide cadence instability.
+Every raw post-action frame remains in the artifact, split into response and settle fields. The P95
+and maximum gates apply only while work is attributable to the action. The scorer opens an
+observation window at input, reopens it for later DOM or canvas mutation, engine measures,
+resize/orientation activity, and keeps it open while a transition or animation is active. Each
+signal carries the stable-frame tail owned by `ACTION_SETTLE_TAIL_FRAMES`, so the frame that
+presents the work and an immediate pacing recovery remain scored. A late requestAnimationFrame
+omission after a static quiet window remains visible in the raw distribution without diluting or
+failing the product action. Deferred work cannot hide behind an earlier quiet period because its
+activity reopens the window; the rule has no action-name exceptions.
 
 The first-observed readiness time is retained as an upper bound, not a gate or attribution signal:
 native actions must return from the native context before the driver can observe a DOM completion
 condition, so that number includes automation round-trip time. Readiness without a corresponding
 page activity does not extend the scored window.
 
-The command repeats the suite three times by default, writes raw samples and grouped summaries, and
-fails the 20/33.5 ms action gates. `--report-only` lets an exploratory sweep rank every failure
-instead of stopping at the first one. `--actions=` selects a focused family for one-change trials.
-Parent-setting actions normalize and restore known baselines around every sound, auto-save,
-advanced-control, and button-visibility round trip. A failed or interrupted audit therefore cannot
-silently remove controls from the later action sequence.
+The command repeats the suite four times by default. The first repeat is an unscored warmup retained
+in the artifact; every label then needs at least three scored samples. An uncaptured or explicitly
+untrusted activation fails its group, and a label established by the warmup cannot disappear from
+the scored repeats. Selecting rotation always exercises both blank and ink paths, including the
+clear/undo setup that makes the blank path meaningful. The runner writes raw samples and grouped
+summaries and fails the 20/33.5 ms action gates. `--report-only` lets an exploratory sweep rank
+every failure instead of stopping at the first one. `--actions=` selects a focused family for
+one-change trials. Parent-setting actions normalize and restore known baselines around every sound,
+auto-save, advanced-control, and button-visibility round trip. A failed or interrupted audit
+therefore cannot silently remove controls from the later action sequence.
 
 The first full-suite campaign separated genuine action-local failures from native intervals that
 began before event delivery, then fixed the genuine cases one at a time:
@@ -257,7 +266,7 @@ Local physical iPad:
 npm run perf:ipad:actions --ignore-scripts -- \
   --device-id=<udid> \
   --url=http://<mac-lan-ip>:4173/ \
-  --repeats=3
+  --repeats=4
 ```
 
 Focused diagnostic:

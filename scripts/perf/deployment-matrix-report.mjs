@@ -7,12 +7,14 @@ import {
   ACTION_FIRST_FRAME_GATE_MS,
   ACTION_FRAME_MAX_GATE_MS,
   ACTION_FRAME_P95_GATE_MS,
+  summarizeActions,
 } from './action-stats.mjs';
+import { summarizeRun } from './real-screen-stats.mjs';
 import {
+  LOST_FRAME_TIME_SHARE_GATE,
   PAINT_MAX_GATE_MS,
   PAINT_P95_GATE_MS,
   PAINT_P99_GATE_MS,
-  STARVATION_PER_DRAWING_SECOND_GATE_MS,
   scoreDrawingRun,
 } from './drawing-gates.mjs';
 import {
@@ -41,6 +43,10 @@ function round(value) {
   return Number.isFinite(value) ? Number(value.toFixed(2)) : null;
 }
 
+function roundShare(value) {
+  return Number.isFinite(value) ? Number(value.toFixed(4)) : null;
+}
+
 function normalizedDistribution(distribution) {
   if (!distribution) return null;
   return Object.fromEntries(
@@ -50,7 +56,8 @@ function normalizedDistribution(distribution) {
 
 function normalizeDrawingRun(source, productCommit) {
   const profile = readJson(sourcePath(source));
-  const scored = scoreDrawingRun(profile.summaries?.phases ?? []);
+  const phases = profile.report ? summarizeRun(profile.report).phases : profile.summaries?.phases;
+  const scored = scoreDrawingRun(phases ?? []);
   return {
     source,
     productCommit,
@@ -58,7 +65,7 @@ function normalizeDrawingRun(source, productCommit) {
     phases: scored.phases.map((phase) => ({
       phase: phase.phase,
       paint: normalizedDistribution(phase.paint),
-      starvationMsPerDrawingSecond: round(phase.starvationMsPerDrawingSecond),
+      lostFrameTimeShare: roundShare(phase.lostFrameTimeShare),
       passed: phase.passed,
     })),
     passed: scored.passed,
@@ -80,8 +87,8 @@ function aggregateDrawingRuns(runs) {
       p99: round(median(blankPhases.map((phase) => phase.paint.p99))),
       max: round(Math.max(...blankPhases.map((phase) => phase.paint.max))),
     },
-    starvationMsPerDrawingSecond: round(
-      Math.max(...blankPhases.map((phase) => phase.starvationMsPerDrawingSecond))
+    lostFrameTimeShare: roundShare(
+      Math.max(...blankPhases.map((phase) => phase.lostFrameTimeShare))
     ),
     blankPassed: blankPhases.length > 0 && blankPhases.every((phase) => phase.passed),
     allPhasesPassed: runs.length > 0 && runs.every((run) => run.passed),
@@ -116,7 +123,8 @@ function normalizeUndo(source, productCommit) {
 function normalizeActionCapture(spec) {
   const profile = readJson(sourcePath(spec.source));
   const labels = spec.labels ? new Set(spec.labels) : null;
-  const results = profile.summaries
+  const summaries = profile.samples ? summarizeActions(profile.samples) : profile.summaries;
+  const results = summaries
     .filter((summary) => !labels || labels.has(summary.label))
     .map((summary) => ({
       label: summary.label,
@@ -215,7 +223,7 @@ function normalizeMatrix(manifest) {
         paintP95Ms: PAINT_P95_GATE_MS,
         paintP99Ms: PAINT_P99_GATE_MS,
         paintMaxMs: PAINT_MAX_GATE_MS,
-        starvationMsPerDrawingSecond: STARVATION_PER_DRAWING_SECOND_GATE_MS,
+        lostFrameTimeShare: LOST_FRAME_TIME_SHARE_GATE,
       },
       undo: {
         engineP95Ms: UNDO_ENGINE_P95_GATE_MS,
@@ -234,6 +242,10 @@ function normalizeMatrix(manifest) {
 
 function fmt(value) {
   return Number.isFinite(value) ? value.toFixed(value % 1 ? 1 : 0) : '—';
+}
+
+function fmtPercent(value) {
+  return Number.isFinite(value) ? `${fmt(value * 100)}%` : '—';
 }
 
 function statusChip(target) {
@@ -435,7 +447,7 @@ function renderMarkdown(matrix) {
     `${target.number}. ${target.label}`,
     ...BRUSHES.map((brush) => {
       const aggregate = target.drawing[brush].aggregate;
-      const value = `${fmt(aggregate.paint.p95)} / ${fmt(aggregate.paint.p99)} / ${fmt(aggregate.paint.max)} · S${fmt(aggregate.starvationMsPerDrawingSecond)}`;
+      const value = `${fmt(aggregate.paint.p95)} / ${fmt(aggregate.paint.p99)} / ${fmt(aggregate.paint.max)} · L${fmtPercent(aggregate.lostFrameTimeShare)}`;
       return aggregate.blankPassed ? value : `**FAIL ${value}**`;
     }),
   ]);
@@ -492,7 +504,7 @@ node scripts/perf/deployment-matrix-report.mjs \\
 ## Acceptance gates
 
 Drawing passes at paint P95 ≤ ${matrix.gates.drawing.paintP95Ms} ms, P99 ≤ ${matrix.gates.drawing.paintP99Ms} ms,
-max ≤ ${matrix.gates.drawing.paintMaxMs} ms, and starvation ≤ ${matrix.gates.drawing.starvationMsPerDrawingSecond} ms per drawing-second. Undo
+max ≤ ${matrix.gates.drawing.paintMaxMs} ms, and cumulative lost frame time ≤ ${fmtPercent(matrix.gates.drawing.lostFrameTimeShare)} of in-contact time. Undo
 passes at engine P95 ≤ ${matrix.gates.undo.engineP95Ms} ms, next-frame P95 ≤ ${matrix.gates.undo.nextFrameP95Ms} ms, and next-frame max ≤
 ${matrix.gates.undo.nextFrameMaxMs} ms. A discrete action passes at first-frame P95 ≤
 ${matrix.gates.actions.firstFrameP95Ms} ms, post-action frame P95 ≤ ${matrix.gates.actions.postActionFrameP95Ms} ms, and post-action frame max ≤
@@ -508,8 +520,8 @@ ${markdownTable(['Target', 'Drawing', 'Undo', 'Action source commits'], provenan
 
 ## Drawing
 
-Each cell is blank-paper paint \`P95 / P99 / max\` in milliseconds, followed by starvation
-milliseconds per drawing-second. macOS values aggregate three runs; other targets use one run.
+Each cell is blank-paper paint \`P95 / P99 / max\` in milliseconds, followed by the cumulative
+lost-frame share of in-contact time. macOS values aggregate three runs; other targets use one run.
 
 ${markdownTable(['Target', 'Pen', 'Crayon', 'Magic', 'Eraser'], drawingRows)}
 
@@ -530,9 +542,10 @@ ${markdownTable(['Target', 'Passing', 'At final commit', 'Worst first P95', 'Wor
 ## Method
 
 Action sources are applied in manifest order. A focused capture replaces only its declared labels;
-all other labels retain their earlier measurement and provenance. Physical iPad web remains the
-Safari-calibrated release gate. Simulator, desktop, native-shell, and automated Android input are
-advisory comparisons.
+all other labels retain their earlier measurement and provenance. Drawing raw tables and action
+samples are re-scored with the current metric definitions when this report is generated; stored
+derived summaries are not trusted. Physical iPad web remains the Safari-calibrated release gate.
+Simulator, desktop, native-shell, and automated Android input are advisory comparisons.
 `;
 }
 
@@ -590,7 +603,7 @@ function renderReport(matrix) {
   </div>
 
   <div class="section-head"><h2>How to read this snapshot</h2></div>
-  <div class="method"><p>Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs. The committed JSON preserves every renderer phase, the source commit for each run, and the source artifact and commit for each action result.</p><p>Action sources are applied in manifest order. A focused capture replaces only its declared labels; all other labels retain their earlier measurement and provenance. Profiling controls such as the idle-frame sample remain in normalized data but are omitted from the user-action comparison.</p></div>
+  <div class="method"><p>Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs. Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, the source commit for each run, and the source artifact and commit for each action result.</p><p>Action sources are applied in manifest order. A focused capture replaces only its declared labels; all other labels retain their earlier measurement and provenance. Profiling controls such as the idle-frame sample remain in normalized data but are omitted from the user-action comparison.</p></div>
 </div></main>
 ${siteFooter({ home: '../../index.html' })}`;
   return page({

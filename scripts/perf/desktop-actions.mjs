@@ -1,7 +1,13 @@
 import { chromium, webkit } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { actionFailures, actionRows, summarizeActions } from './action-stats.mjs';
+import {
+  MIN_GATED_SAMPLES,
+  WARMUP_REPEATS,
+  actionFailures,
+  actionRows,
+  summarizeActions,
+} from './action-stats.mjs';
 import { parsePerfArgs } from './args.mjs';
 import { profilingUrl, runActionSweep, selectedActions } from './ipad-actions.mjs';
 import { profilePath } from './paths.mjs';
@@ -78,7 +84,10 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
     flag('device-scale-factor', DEFAULT_DEVICE_SCALE_FACTOR),
     'device-scale-factor'
   );
-  const repeats = positiveInteger(flag('repeats', '3'), 'repeats');
+  const repeats = positiveInteger(flag('repeats', '4'), 'repeats');
+  if (repeats < WARMUP_REPEATS + MIN_GATED_SAMPLES) {
+    fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
+  }
   const actions = selectedActions(flag('actions'));
   const headless = !has('headed');
   const externalUrl = flag('url');
@@ -97,6 +106,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
     const originalOrientation = await client.orientation();
     const samples = [];
+    const expectedLabels = new Set();
 
     for (let repeat = 1; repeat <= repeats; repeat++) {
       const loadedUrl = profilingUrl(base, repeat);
@@ -112,18 +122,26 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       await page.evaluate(readFileSync(ACTION_PROBE_FILE, 'utf8'));
       await sleep(REPEAT_SETTLE_MS);
       console.log(`\nDesktop action sweep ${repeat}/${repeats}`);
+      const sweep = await runActionSweep({
+        client,
+        sessionId: SESSION_ID,
+        execute,
+        actions,
+        originalOrientation,
+      });
+      if (repeat <= WARMUP_REPEATS) {
+        for (const sample of sweep) expectedLabels.add(sample.label);
+      }
       samples.push(
-        ...(await runActionSweep({
-          client,
-          sessionId: SESSION_ID,
-          execute,
-          actions,
-          originalOrientation,
+        ...sweep.map((sample) => ({
+          ...sample,
+          repeat,
+          warmup: repeat <= WARMUP_REPEATS,
         }))
       );
     }
 
-    const summaries = summarizeActions(samples);
+    const summaries = summarizeActions(samples, expectedLabels);
     const failures = actionFailures(summaries);
     const output =
       flag('output') ??

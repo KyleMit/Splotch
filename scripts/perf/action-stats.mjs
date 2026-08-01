@@ -4,6 +4,8 @@ export const ACTION_FRAME_P95_GATE_MS = 20;
 // Two exact 60 Hz vsync intervals are 33.33 ms; the next interval is the visible 50 ms freeze.
 export const ACTION_FRAME_MAX_GATE_MS = 33.5;
 export const ACTION_FIRST_FRAME_GATE_MS = 33.5;
+export const WARMUP_REPEATS = 1;
+export const MIN_GATED_SAMPLES = 3;
 // Four ordinary callbacks confirm that presentation recovered without reaching late static gaps.
 export const ACTION_SETTLE_TAIL_FRAMES = 4;
 
@@ -20,6 +22,14 @@ function distribution(values) {
 
 function finiteValues(actions, field) {
   return actions.map((action) => action[field]).filter(Number.isFinite);
+}
+
+function actionActivated(action) {
+  if (action.eventType === 'uncaptured') return false;
+  if (action.activation === 'native-touch') return action.trusted === true;
+  if (action.activation === 'webdriver-element-click') return true;
+  if (!action.activation && action.eventType === 'click') return true;
+  return action.trusted !== false;
 }
 
 function activityTimes(action) {
@@ -74,24 +84,34 @@ export function scoredActionFrameGaps(action) {
 }
 
 export function summarizeActionGroup(actions) {
-  const frameGaps = actions.flatMap(scoredActionFrameGaps);
-  const rawFrameGaps = actions.flatMap(
+  const hasWarmupMetadata = actions.some((action) => typeof action.warmup === 'boolean');
+  const scoredActions = hasWarmupMetadata ? actions.filter((action) => !action.warmup) : actions;
+  const frameGaps = scoredActions.flatMap(scoredActionFrameGaps);
+  const rawFrameGaps = scoredActions.flatMap(
     (action) => action.postActionFrameGapsMs ?? action.frameGapsMs ?? []
   );
-  const firstFrame = distribution(finiteValues(actions, 'firstFrameMs'));
-  const ready = distribution(finiteValues(actions, 'readyMs'));
+  const firstFrame = distribution(finiteValues(scoredActions, 'firstFrameMs'));
+  const ready = distribution(finiteValues(scoredActions, 'readyMs'));
   const frames = {
-    ...distribution(rawFrameGaps),
-    max: maximum(frameGaps),
-    rawMax: maximum(rawFrameGaps),
+    ...distribution(frameGaps),
+    raw: distribution(rawFrameGaps),
   };
+  const activation = {
+    captured: actions.filter((action) => action.eventType !== 'uncaptured').length,
+    valid: actions.filter(actionActivated).length,
+  };
+  activation.passed = activation.valid === actions.length;
+  const minimumSamples = hasWarmupMetadata ? MIN_GATED_SAMPLES : 1;
   const passed =
-    actions.length > 0 &&
+    scoredActions.length >= minimumSamples &&
+    activation.passed &&
     firstFrame.p95 <= ACTION_FIRST_FRAME_GATE_MS &&
     frames.p95 <= ACTION_FRAME_P95_GATE_MS &&
     frames.max <= ACTION_FRAME_MAX_GATE_MS;
   return {
-    count: actions.length,
+    count: scoredActions.length,
+    totalCount: actions.length,
+    activation,
     firstFrame,
     ready,
     frames,
@@ -103,12 +123,15 @@ export function summarizeActionGroup(actions) {
   };
 }
 
-export function summarizeActions(actions) {
+export function summarizeActions(actions, expectedLabels = []) {
   const groups = new Map();
   for (const action of actions) {
     const entries = groups.get(action.label) ?? [];
     entries.push(action);
     groups.set(action.label, entries);
+  }
+  for (const label of expectedLabels) {
+    if (!groups.has(label)) groups.set(label, []);
   }
   return [...groups.entries()].map(([label, entries]) => ({
     label,
@@ -119,13 +142,14 @@ export function summarizeActions(actions) {
 export function actionRows(summaries) {
   return summaries.map((summary) => ({
     action: summary.label,
-    runs: summary.count,
+    runs: `${summary.count}/${summary.totalCount}`,
+    activation: `${summary.activation.valid}/${summary.totalCount}`,
     'first p95': summary.firstFrame.p95,
     'ready seen p50': summary.ready.p50,
     'ready seen p95': summary.ready.p95,
     'post p95': summary.frames.p95,
     'post max': summary.frames.max,
-    'raw max': summary.frames.rawMax,
+    'raw max': summary.frames.raw.max,
     'scored/raw frames': `${summary.frameSamples.scored}/${summary.frameSamples.raw}`,
     verdict: summary.passed ? 'PASS' : 'FAIL',
   }));

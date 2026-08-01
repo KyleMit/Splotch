@@ -16,6 +16,8 @@ const frame = (startFromActionMs, gapMs, visualEffectsActive = false) => ({
 
 const action = (postActionFrames, changes = {}) => ({
   label: 'fixture action',
+  eventType: 'click',
+  trusted: true,
   firstFrameMs: 8,
   readyMs: null,
   postActionFrames,
@@ -99,5 +101,15 @@ describe('action-owned frame attribution', () => {
       Array.from({ length: ACTION_SETTLE_TAIL_FRAMES }, () => 16.7)
     );
     expect(summarizeActionGroup([sample]).passed).toBe(true);
+  });
+
+  it('does not let settle-idle frames dilute the gated P95', () => {
+    const frames = [frame(0, 16.7), frame(16.7, 200)];
+    frames.push(...Array.from({ length: 50 }, (_, index) => frame(216.7 + index * 16.7, 16.7)));
+    const summary = summarizeActionGroup([action(frames)]);
+
+    expect(summary.frames.p95).toBe(200);
+    expect(summary.frames.raw.p95).toBe(16.7);
+    expect(summary.passed).toBe(false);
   });
 });

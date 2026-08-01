@@ -1,7 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../lib/proc.mjs';
-import { actionFailures, actionRows, summarizeActions } from './action-stats.mjs';
+import {
+  MIN_GATED_SAMPLES,
+  WARMUP_REPEATS,
+  actionFailures,
+  actionRows,
+  summarizeActions,
+} from './action-stats.mjs';
 import { parsePerfArgs } from './args.mjs';
 import {
   appiumCapabilities,
@@ -199,6 +205,7 @@ async function measureClick({
       selector
     )}, ${JSON.stringify(eventTypes ?? ['pointerup', 'click'])});`
   );
+  const activationMode = nativeTarget ? 'native-touch' : 'webdriver-element-click';
   if (nativeTarget) {
     const x = Math.round(nativeTarget.bounds.x + nativeTarget.bounds.width / 2);
     const y = Math.round(nativeTarget.bounds.y + nativeTarget.bounds.height / 2);
@@ -244,7 +251,8 @@ async function measureClick({
     );
   }
   await sleep(settleMs);
-  return execute(`return window.__actionProbe.finish(${readyAt});`);
+  const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
+  return { ...sample, activation: activationMode };
 }
 
 async function measureIdle(execute) {
@@ -255,7 +263,8 @@ async function measureIdle(execute) {
     return true;
   `);
   await sleep(IDLE_CONTROL_MS);
-  return execute(`return window.__actionProbe.finish(null);`);
+  const sample = await execute(`return window.__actionProbe.finish(null);`);
+  return { ...sample, activation: 'driver' };
 }
 
 async function ensureState(execute, condition, activation) {
@@ -469,7 +478,8 @@ async function measureClear(client, sessionId, execute, label = 'clear drawing')
     });
   }
   await sleep(ANIMATED_ACTION_SETTLE_MS);
-  return execute(`return window.__actionProbe.finish(${readyAt});`);
+  const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
+  return { ...sample, activation: 'native-touch' };
 }
 
 async function measureRotation(client, sessionId, execute, from, to, label) {
@@ -490,7 +500,8 @@ async function measureRotation(client, sessionId, execute, from, to, label) {
     READY_TIMEOUT_MS
   );
   await sleep(ANIMATED_ACTION_SETTLE_MS);
-  return execute(`return window.__actionProbe.finish(${readyAt});`);
+  const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
+  return { ...sample, activation: 'native-system' };
 }
 
 export async function runActionSweep({ client, sessionId, execute, actions, originalOrientation }) {
@@ -1006,62 +1017,63 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   }
 
   if (actions.has('rotation')) {
+    if (!actions.has('clear')) {
+      await ensureStableTrustedStroke(client, sessionId, execute);
+      await record(measureClear(client, sessionId, execute, 'clear drawing for blank rotation'));
+    }
     const canvasEmpty = await execute(
       `return document.querySelector('#screenshotButton')?.disabled === true;`
     );
-    if (canvasEmpty && actions.has('clear')) {
-      const current = await client.request('GET', `/session/${sessionId}/orientation`);
-      const other = current === 'LANDSCAPE' ? 'PORTRAIT' : 'LANDSCAPE';
-      await record(
-        measureRotation(
-          client,
-          sessionId,
-          execute,
-          current,
-          other,
-          `empty after clear: ${current} to ${other} rotation`
-        )
-      );
-      await record(
-        measureClick({
-          client,
-          sessionId,
-          execute,
-          label: 'undo clear after blank rotation',
-          selector: '#undoButton',
-          ready: `document.querySelector('#screenshotButton')?.disabled === false`,
-          settleMs: ANIMATED_ACTION_SETTLE_MS,
-        })
-      );
-      await record(
-        measureClick({
-          client,
-          sessionId,
-          execute,
-          label: 'undo restored stroke after blank rotation',
-          selector: '#undoButton',
-          ready: `document.querySelector('#screenshotButton')?.disabled === true`,
-          settleMs: ANIMATED_ACTION_SETTLE_MS,
-        })
-      );
-      await ensureStableTrustedStroke(client, sessionId, execute);
-      await record(
-        measureClear(client, sessionId, execute, 'clear restored drawing after blank rotation')
-      );
-      await record(
-        measureRotation(
-          client,
-          sessionId,
-          execute,
-          other,
-          originalOrientation,
-          `empty after clear: ${other} to ${originalOrientation} rotation`
-        )
-      );
-    }
-    if (canvasEmpty) {
-      await ensureStableTrustedStroke(client, sessionId, execute);
-    }
+    if (!canvasEmpty) throw new Error('Rotation setup did not produce a blank canvas');
+    const blankCurrent = await client.request('GET', `/session/${sessionId}/orientation`);
+    const blankOther = blankCurrent === 'LANDSCAPE' ? 'PORTRAIT' : 'LANDSCAPE';
+    await record(
+      measureRotation(
+        client,
+        sessionId,
+        execute,
+        blankCurrent,
+        blankOther,
+        `empty after clear: ${blankCurrent} to ${blankOther} rotation`
+      )
+    );
+    await record(
+      measureClick({
+        client,
+        sessionId,
+        execute,
+        label: 'undo clear after blank rotation',
+        selector: '#undoButton',
+        ready: `document.querySelector('#screenshotButton')?.disabled === false`,
+        settleMs: ANIMATED_ACTION_SETTLE_MS,
+      })
+    );
+    await record(
+      measureClick({
+        client,
+        sessionId,
+        execute,
+        label: 'undo restored stroke after blank rotation',
+        selector: '#undoButton',
+        ready: `document.querySelector('#screenshotButton')?.disabled === true`,
+        settleMs: ANIMATED_ACTION_SETTLE_MS,
+      })
+    );
+    await ensureStableTrustedStroke(client, sessionId, execute);
+    await record(
+      measureClear(client, sessionId, execute, 'clear restored drawing after blank rotation')
+    );
+    await record(
+      measureRotation(
+        client,
+        sessionId,
+        execute,
+        blankOther,
+        originalOrientation,
+        `empty after clear: ${blankOther} to ${originalOrientation} rotation`
+      )
+    );
+    await ensureStableTrustedStroke(client, sessionId, execute);
     const current = await client.request('GET', `/session/${sessionId}/orientation`);
     const other = current === 'LANDSCAPE' ? 'PORTRAIT' : 'LANDSCAPE';
     await record(
@@ -1125,7 +1137,10 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
   client.nativeApp = nativeApp;
   client.nativeWebViewClass = flag('native-webview-class', DEFAULT_NATIVE_WEBVIEW_CLASS);
   client.webdriverClicks = has('webdriver-clicks');
-  const repeats = positiveInteger(flag('repeats', '3'), 'repeats');
+  const repeats = positiveInteger(flag('repeats', '4'), 'repeats');
+  if (repeats < WARMUP_REPEATS + MIN_GATED_SAMPLES) {
+    fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
+  }
   const actions = selectedActions(flag('actions'));
   let sessionId = flag('session-id');
   let ownsSession = false;
@@ -1209,6 +1224,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     const appUrl = nativeApp ? await execute('return location.href;') : requestedAppUrl;
 
     const samples = [];
+    const expectedLabels = new Set();
     for (let repeat = 1; repeat <= repeats; repeat++) {
       const loadedUrl = profilingUrl(appUrl, repeat);
       if (nativeApp) {
@@ -1231,18 +1247,26 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       await installActionProbe(execute);
       await sleep(REPEAT_SETTLE_MS);
       console.log(`\nAction sweep ${repeat}/${repeats}`);
+      const sweep = await runActionSweep({
+        client,
+        sessionId,
+        execute,
+        actions,
+        originalOrientation,
+      });
+      if (repeat <= WARMUP_REPEATS) {
+        for (const sample of sweep) expectedLabels.add(sample.label);
+      }
       samples.push(
-        ...(await runActionSweep({
-          client,
-          sessionId,
-          execute,
-          actions,
-          originalOrientation,
+        ...sweep.map((sample) => ({
+          ...sample,
+          repeat,
+          warmup: repeat <= WARMUP_REPEATS,
         }))
       );
     }
 
-    const summaries = summarizeActions(samples);
+    const summaries = summarizeActions(samples, expectedLabels);
     const failures = actionFailures(summaries);
     const output =
       flag('output') ??

@@ -98,7 +98,7 @@ describe('deployment matrix report', () => {
           paintP95Ms: 20,
           paintP99Ms: 33,
           paintMaxMs: 50,
-          starvationMsPerDrawingSecond: 10,
+          lostFrameTimeShare: 0.01,
         },
         undo: { engineP95Ms: 20, nextFrameP95Ms: 33, nextFrameMaxMs: 50 },
         actions: { firstFrameP95Ms: 32, postActionFrameP95Ms: 20, postActionFrameMaxMs: 32 },

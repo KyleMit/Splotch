@@ -51,16 +51,12 @@ export const LONG_STROKE_MS = 1000;
 // whole; this only marks the ones worth calling out.
 export const NOTABLE_LIFT_MS = 100;
 // Four missed presentation opportunities distinguishes a visible freeze from
-// ordinary scheduling jitter while still deriving the budget from the device.
+// ordinary scheduling jitter. This only selects forensic episodes; the gate
+// uses cumulative lost frame time without a cliff.
 export const STARVATION_FRAME_MULTIPLE = 4;
-// Engine spans above this share can explain the missing frame themselves. The
-// signal sought here is input being handled while presentation is starved.
-export const STARVATION_MAX_ENGINE_SHARE = 0.1;
 // Compositor work in the device traces began up to 192 ms after commit closed.
 // Attribution is reported, never used to discard an otherwise valid episode.
 export const STARVATION_ATTRIBUTION_WINDOW_MS = 250;
-// One move can be a boundary event; two proves input delivery continued.
-export const STARVATION_TRUSTED_MOVE_FLOOR = 2;
 export const REAL_SCREEN_SCHEMA_VERSION = 2;
 
 export const POINTER_DOWN = 0;
@@ -126,20 +122,26 @@ export function observedFrameIntervalMs(frames) {
 }
 
 export function frameStats(deltas, intervalMs) {
-  const lateThreshold = intervalMs * LATE_FRAME_MULTIPLE;
+  const budgetMs = Math.min(intervalMs, QUEUE_DELAY_LAG_MS);
+  const lateThreshold = budgetMs * LATE_FRAME_MULTIPLE;
   const late = deltas.filter((delta) => delta > lateThreshold);
+  const elapsedMs = round(sum(deltas));
+  const lostMs = round(sum(late.map((delta) => delta - budgetMs)));
   return {
     frames: deltas.length,
     p50: percentile(deltas, 0.5),
     p95: percentile(deltas, 0.95),
     p99: percentile(deltas, 0.99),
     max: max(deltas),
+    budgetMs: round(budgetMs),
     lateThresholdMs: round(lateThreshold),
     lateShare: share(late.length, deltas.length),
     stallShare: share(deltas.filter((delta) => delta > STALL_FRAME_MS).length, deltas.length),
     // The frames a child actually waited through, which a share hides: 1% of a
     // long capture is still a visible freeze every few seconds.
-    lostMs: round(sum(late.map((delta) => delta - intervalMs))),
+    elapsedMs,
+    lostMs,
+    lostFrameTimeShare: elapsedMs ? round(lostMs / elapsedMs, 4) : undefined,
   };
 }
 
@@ -361,7 +363,8 @@ export function starvationEpisodes({
   from = -Infinity,
   to = Infinity,
 }) {
-  const thresholdMs = intervalMs * STARVATION_FRAME_MULTIPLE;
+  const budgetMs = Math.min(intervalMs, QUEUE_DELAY_LAG_MS);
+  const thresholdMs = budgetMs * STARVATION_FRAME_MULTIPLE;
   const trustedTouchMoves = events.filter(
     (event) =>
       event[EVENT_ON_CANVAS] &&
@@ -394,18 +397,15 @@ export function starvationEpisodes({
     if (!inWindow(start, from, to) || !inWindow(end, from, to) || gapMs <= thresholdMs) continue;
 
     const moves = trustedTouchMoves.filter((event) => inWindow(event[EVENT_AT], start, end));
-    if (moves.length < STARVATION_TRUSTED_MOVE_FLOOR) continue;
-
     const engineMs = coveredDurationMs(measures, start, end);
     const engineShare = engineMs / gapMs;
-    if (engineShare > STARVATION_MAX_ENGINE_SHARE) continue;
 
     episodes.push({
       frameIndex: index,
       startMs: round(start),
       endMs: round(end),
       gapMs: round(gapMs),
-      starvationMs: round(gapMs - intervalMs),
+      starvationMs: round(Math.max(0, gapMs - budgetMs - engineMs)),
       population: previous[FRAME_CONTACT] && frame[FRAME_CONTACT] ? 'inContact' : 'betweenStrokes',
       trustedMoves: moves.length,
       engineMs,
@@ -418,7 +418,7 @@ export function starvationEpisodes({
   return episodes;
 }
 
-function starvationPopulation(episodes, commitCount, contactSeconds) {
+function starvationPopulation(episodes, commitCount, pacing) {
   const starvationMs = round(sum(episodes.map((episode) => episode.starvationMs)));
   const attributedCommits = new Set(
     episodes.map((episode) => episode.nearestCommit?.index).filter((index) => index !== undefined)
@@ -427,7 +427,8 @@ function starvationPopulation(episodes, commitCount, contactSeconds) {
     episodes: episodes.length,
     episodesPerCommit: commitCount ? round(episodes.length / commitCount, 4) : undefined,
     starvationMs,
-    starvationMsPerDrawingSecond: contactSeconds ? round(starvationMs / contactSeconds) : undefined,
+    lostFrameTimeMs: pacing.lostMs,
+    lostFrameTimeShare: pacing.lostFrameTimeShare,
     worstFrameGapMs: max(episodes.map((episode) => episode.gapMs)),
     commitsFollowedByStarvation: attributedCommits.size,
     commits: commitCount,
@@ -564,6 +565,8 @@ export function summarizePhase(phase, tables) {
   const movesPerFrame = contactFrames ? round(canvasMoves.length / contactFrames) : 0;
   const contactSeconds = (phase.contactMs ?? 0) / 1000;
   const pacing = frameStats(contactDeltas, intervalMs);
+  const betweenStrokes = frameStats(betweenDeltas, intervalMs);
+  const wholeWindow = frameStats(allDeltas, intervalMs);
   const commits = phaseMeasures.filter(
     (measure) => measureNames[measure[MEASURE_NAME]] === 'engine.commit'
   );
@@ -585,22 +588,21 @@ export function summarizePhase(phase, tables) {
     halos: { seen: phase.halosSeen ?? 0, hidden: phase.halosHidden ?? null },
     contactSeconds: round(contactSeconds, 1),
     pacing,
-    betweenStrokes: frameStats(betweenDeltas, intervalMs),
-    wholeWindow: frameStats(allDeltas, intervalMs),
+    betweenStrokes,
+    wholeWindow,
     starvation: {
-      thresholdMs: round(intervalMs * STARVATION_FRAME_MULTIPLE),
-      maxEngineShare: STARVATION_MAX_ENGINE_SHARE,
+      thresholdMs: round(Math.min(intervalMs, QUEUE_DELAY_LAG_MS) * STARVATION_FRAME_MULTIPLE),
       attributionWindowMs: STARVATION_ATTRIBUTION_WINDOW_MS,
-      all: starvationPopulation(episodes, commits.length, contactSeconds),
+      all: starvationPopulation(episodes, commits.length, wholeWindow),
       inContact: starvationPopulation(
         episodes.filter((episode) => episode.population === 'inContact'),
         commits.length,
-        contactSeconds
+        pacing
       ),
       betweenStrokes: starvationPopulation(
         episodes.filter((episode) => episode.population === 'betweenStrokes'),
         commits.length,
-        contactSeconds
+        betweenStrokes
       ),
       episodes,
     },
@@ -863,8 +865,11 @@ export function starvationRows(summaries) {
         population,
         episodes: stats?.episodes,
         'episodes/commit': stats?.episodesPerCommit,
-        'starvation ms': stats?.starvationMs,
-        'ms/draw s': stats?.starvationMsPerDrawingSecond,
+        'unexplained episode ms': stats?.starvationMs,
+        'lost frame ms': stats?.lostFrameTimeMs,
+        'lost frame %': Number.isFinite(stats?.lostFrameTimeShare)
+          ? round(stats.lostFrameTimeShare * 100, 2)
+          : undefined,
         'worst gap': stats?.worstFrameGapMs,
         'commits followed': stats
           ? `${stats.commitsFollowedByStarvation}/${stats.commits}`

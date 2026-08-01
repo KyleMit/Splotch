@@ -135,10 +135,10 @@ at a DOM-ready flag when visible work is still pending.
 
 ## Report the result
 
-For drawing, report paint P95/P99/max and starvation milliseconds per drawing-second. For undo,
-report engine P95 and next-frame P95/max. For actions, report first-frame P95, post-action frame
-P95, post-action max, and the count/list of failed actions. Include input fidelity and the raw
-artifact path beside the result.
+For drawing, report paint P95/P99/max and the cumulative lost-frame share of in-contact time. For
+undo, report engine P95 and next-frame P95/max. For actions, report first-frame P95, post-action
+frame P95, post-action max, activation fidelity, and the count/list of failed actions. Include input
+fidelity and the raw artifact path beside the result.
 
 When refreshing the committed matrix:
 

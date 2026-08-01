@@ -223,14 +223,15 @@ cache-busted URL; without that, MobileSafari can silently execute an older bundl
 server. A `PERF_MARKS` build publishes the route's read-only brush/history seams even when the
 prerendered client cannot see the preview server's dynamic public environment.
 
-The artifact reports the input-fidelity verdict plus render-starvation populations. With undo
-enabled it also reports engine P50/P95/P99/max, action-to-next-frame P50/P95/P99/max, the pass/fail
-verdict, every raw action, and history bytes before undo. The ADR-0086 gates are engine P95 ≤20 ms,
-next-frame P95 ≤33 ms, and next-frame max ≤50 ms. An episode is a frame gap over four observed frame
-intervals with at least two trusted touch moves handled inside it and no more than 10% marked engine
-work. Read **worst gap** and **starvation ms / drawing second** with episodes/commit: the 1.5x
-mitigation split the baseline's large freezes into more, smaller episodes, so episode count alone
-inverted the result.
+The artifact reports the input-fidelity verdict plus cumulative lost-frame time and long-gap
+forensics. With undo enabled it also reports engine P50/P95/P99/max, action-to-next-frame
+P50/P95/P99/max, the pass/fail verdict, every raw action, and history bytes before undo. The
+ADR-0086 gates are engine P95 ≤20 ms, next-frame P95 ≤33 ms, and next-frame max ≤50 ms. A forensic
+episode is a frame gap over four presentation budgets. Trusted-move count and engine share stay
+visible even when either would once have discarded the episode, and marked engine time is subtracted
+from its unexplained duration. Lead with **lost frame %** and **worst gap**, then use
+episodes/commit for attribution: the 1.5x mitigation split the baseline's large freezes into more,
+smaller episodes, so episode count alone inverted the result.
 
 For a system-level attribution run, start Apple's **Animation Hitches** template in one terminal:
 
@@ -259,10 +260,10 @@ absolute `start-date`. Compare each episode with consecutive display-frame-lifet
 limit the check to the derived `hitches` table: a presentation gap can contain no expensive
 submitted frame for that high-level detector to label.
 
-After the fidelity gate passes, the command fails the ADR-0085 drawing budgets: paint P95 ≤20 ms,
-paint P99 ≤33 ms, paint max ≤50 ms, and render starvation ≤10 ms per drawing-second. A requested
-undo run also fails its existing engine/next-frame gates. `--report-only` finishes and preserves a
-broken artifact during diagnosis.
+After the fidelity gate passes, the command fails the drawing budgets: paint P95 ≤20 ms, paint P99
+≤33 ms, paint max ≤50 ms, and cumulative lost frame time ≤1% of in-contact time. A requested undo
+run also fails its existing engine/next-frame gates. `--report-only` finishes and preserves a broken
+artifact during diagnosis.
 
 Appium's Remote Automation Safari window is not exposed by `ios-webkit-debug-proxy`, so
 `perf:ipad:frames` cannot attach to it. The Appium session must own navigation, probe injection,

@@ -6,9 +6,9 @@ import {
   LATE_FRAME_MULTIPLE,
   comparisonRows,
   NOTABLE_LIFT_MS,
+  QUEUE_DELAY_LAG_MS,
   REAL_SCREEN_SCHEMA_VERSION,
   STARVATION_FRAME_MULTIPLE,
-  STARVATION_MAX_ENGINE_SHARE,
   STALL_FRAME_MS,
   classifyPhase,
   frameStats,
@@ -31,6 +31,8 @@ import {
   ACTION_FIRST_FRAME_GATE_MS,
   ACTION_FRAME_MAX_GATE_MS,
   ACTION_FRAME_P95_GATE_MS,
+  MIN_GATED_SAMPLES,
+  WARMUP_REPEATS,
   actionFailures,
   actionRows,
   summarizeActionGroup,
@@ -40,7 +42,7 @@ import {
   PAINT_MAX_GATE_MS,
   PAINT_P95_GATE_MS,
   PAINT_P99_GATE_MS,
-  STARVATION_PER_DRAWING_SECOND_GATE_MS,
+  LOST_FRAME_TIME_SHARE_GATE,
   drawingGateRows,
   scoreDrawingPhase,
   scoreDrawingRun,
@@ -150,6 +152,8 @@ describe('undo action response', () => {
 describe('discrete action response', () => {
   const clean = (label, readyMs = 24) => ({
     label,
+    eventType: 'click',
+    trusted: true,
     readyMs,
     firstFrameMs: 8,
     frameGapsMs: [8, 9, 16, 9, 9, 8, 9, 10, 9, 8, 9, 8, 9, 10, 8, 9, 9, 8, 9, 16],
@@ -171,7 +175,8 @@ describe('discrete action response', () => {
     });
     expect(actionRows(summaries)[0]).toMatchObject({
       action: 'theme dark to light',
-      runs: 2,
+      runs: '2/2',
+      activation: '2/2',
       verdict: 'PASS',
     });
     expect(actionFailures(summaries)).toEqual([]);
@@ -217,6 +222,43 @@ describe('discrete action response', () => {
 
     expect(summary.passed).toBe(true);
   });
+
+  it('fails an uncaptured or explicitly untrusted activation', () => {
+    expect(summarizeActionGroup([{ ...clean('action'), eventType: 'uncaptured' }]).passed).toBe(
+      false
+    );
+    expect(
+      summarizeActionGroup([{ ...clean('action'), activation: 'native-touch', trusted: false }])
+        .passed
+    ).toBe(false);
+    expect(
+      summarizeActionGroup([
+        { ...clean('action'), activation: 'webdriver-element-click', trusted: false },
+      ]).passed
+    ).toBe(true);
+  });
+
+  it('keeps one warmup in the artifact but requires three scored samples', () => {
+    const warmup = { ...clean('action'), repeat: 1, warmup: true, firstFrameMs: 200 };
+    const scored = Array.from({ length: MIN_GATED_SAMPLES }, (_, index) => ({
+      ...clean('action'),
+      repeat: index + WARMUP_REPEATS + 1,
+      warmup: false,
+    }));
+
+    expect(summarizeActionGroup([warmup, ...scored])).toMatchObject({
+      count: MIN_GATED_SAMPLES,
+      totalCount: MIN_GATED_SAMPLES + WARMUP_REPEATS,
+      passed: true,
+    });
+    expect(summarizeActionGroup([warmup, ...scored.slice(1)]).passed).toBe(false);
+  });
+
+  it('fails an expected action label that produced no samples', () => {
+    expect(summarizeActions([], ['missing action'])).toEqual([
+      expect.objectContaining({ label: 'missing action', count: 0, passed: false }),
+    ]);
+  });
 });
 
 describe('drawing acceptance gates', () => {
@@ -228,8 +270,8 @@ describe('drawing acceptance gates', () => {
       max: PAINT_MAX_GATE_MS,
     },
     starvation: {
-      all: {
-        starvationMsPerDrawingSecond: STARVATION_PER_DRAWING_SECOND_GATE_MS,
+      inContact: {
+        lostFrameTimeShare: LOST_FRAME_TIME_SHARE_GATE,
       },
     },
     ...changes,
@@ -249,7 +291,10 @@ describe('drawing acceptance gates', () => {
     ['paint P95', { paintLatencyMs: { p95: 21, p99: 30, max: 40 } }],
     ['paint P99', { paintLatencyMs: { p95: 18, p99: 34, max: 40 } }],
     ['paint max', { paintLatencyMs: { p95: 18, p99: 30, max: 51 } }],
-    ['render starvation', { starvation: { all: { starvationMsPerDrawingSecond: 10.01 } } }],
+    [
+      'render starvation',
+      { starvation: { inContact: { lostFrameTimeShare: LOST_FRAME_TIME_SHARE_GATE + 0.0001 } } },
+    ],
   ])('fails a %s regression', (_name, change) => {
     expect(scoreDrawingPhase(phase(change)).passed).toBe(false);
   });
@@ -296,6 +341,16 @@ describe('frameStats', () => {
     expect(frameStats([16.7, 116.7], 16.7).lostMs).toBeCloseTo(100, 0);
   });
 
+  it('does not let an end-to-end regression raise its own frame budget', () => {
+    const stats = frameStats(
+      Array.from({ length: 400 }, () => 60),
+      60
+    );
+
+    expect(stats.lostMs).toBeGreaterThan(17_000);
+    expect(stats.lostFrameTimeShare).toBeGreaterThan(0.7);
+  });
+
   it('reports a perfectly paced capture as entirely on time', () => {
     const stats = frameStats(
       Array.from({ length: 100 }, () => 16.7),
@@ -340,14 +395,14 @@ describe('starvationEpisodes', () => {
     expect(episode.gapMs).toBe(1422);
     expect(episode.trustedMoves).toBeGreaterThan(100);
     expect(episode.engineMs).toBe(7);
-    expect(episode.engineShare).toBeLessThan(STARVATION_MAX_ENGINE_SHARE);
+    expect(episode.engineShare).toBeLessThan(0.1);
     expect(episode.population).toBe('inContact');
     expect(episode.nearestLift).toBeDefined();
     expect(episode.nearestCommit).toBeDefined();
   });
 
   it('does not classify a clean drawing frame', () => {
-    const gapMs = intervalMs * STARVATION_FRAME_MULTIPLE;
+    const gapMs = QUEUE_DELAY_LAG_MS * STARVATION_FRAME_MULTIPLE;
     const { frames, start, end } = framesWithGap(gapMs);
 
     expect(
@@ -360,10 +415,12 @@ describe('starvationEpisodes', () => {
     ).toEqual([]);
   });
 
-  it('does not classify an idle frame with no trusted touch moves', () => {
-    const { frames } = framesWithGap(1422, { beforeContact: 0, afterContact: 0 });
+  it('retains a contact-held freeze even when no trusted moves arrive', () => {
+    const { frames } = framesWithGap(1422);
+    const [episode] = starvationEpisodes({ frames, events: [], measures: [], intervalMs });
 
-    expect(starvationEpisodes({ frames, events: [], measures: [], intervalMs })).toEqual([]);
+    expect(episode.trustedMoves).toBe(0);
+    expect(episode.starvationMs).toBeCloseTo(1422 - intervalMs, 1);
   });
 
   it('retains and labels a starvation episode between strokes', () => {
@@ -380,18 +437,18 @@ describe('starvationEpisodes', () => {
     expect(episode.nearestLift).toBeDefined();
   });
 
-  it('rejects a long frame explained by marked engine work', () => {
+  it('subtracts marked engine work without discarding the unexplained remainder', () => {
     const { frames, start, end } = framesWithGap(400);
+    const [episode] = starvationEpisodes({
+      frames,
+      events: trustedMoves(start, end),
+      measures: [[start, 200, 0]],
+      measureNames: ['engine.draw'],
+      intervalMs,
+    });
 
-    expect(
-      starvationEpisodes({
-        frames,
-        events: trustedMoves(start, end),
-        measures: [[start, 200, 0]],
-        measureNames: ['engine.draw'],
-        intervalMs,
-      })
-    ).toEqual([]);
+    expect(episode.engineShare).toBe(0.5);
+    expect(episode.starvationMs).toBeCloseTo(400 - intervalMs - 200, 1);
   });
 });
 
@@ -510,6 +567,30 @@ describe('summarizePhase via summarizeRun', () => {
     expect(phase.pacing.p50).toBeCloseTo(16.7, 1);
     expect(phase.input.moves).toBe(50);
     expect(phase.strokes.count).toBe(1);
+  });
+
+  it('leads with cumulative lost time and partitions the whole window exactly', () => {
+    const frames = [
+      [1, -1, 1],
+      [17.7, 16.7, 1],
+      [77.7, 60, 1],
+      [94.4, 16.7, 0],
+      [154.4, 60, 0],
+    ];
+    const [phase] = summarizeRun({
+      phases: [{ key: 'page', suppress: [], startedAt: 1, endedAt: 154.4, contactMs: 76.7 }],
+      frames,
+      events: [],
+      measures: [],
+    }).phases;
+
+    expect(phase.starvation.all.episodes).toBe(0);
+    expect(phase.starvation.inContact.lostFrameTimeMs).toBeGreaterThan(40);
+    expect(phase.starvation.betweenStrokes.lostFrameTimeMs).toBeGreaterThan(40);
+    expect(phase.starvation.all.lostFrameTimeMs).toBeCloseTo(
+      phase.starvation.inContact.lostFrameTimeMs + phase.starvation.betweenStrokes.lostFrameTimeMs,
+      1
+    );
   });
 
   it('reports the trusted touch-input signature and contact geometry', () => {
