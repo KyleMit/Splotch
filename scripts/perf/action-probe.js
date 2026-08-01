@@ -8,6 +8,15 @@
   let active = null;
   let actionSequence = 0;
 
+  const VISUAL_EFFECT_START_EVENTS = ['transitionrun', 'animationstart'];
+  const VISUAL_EFFECT_END_EVENTS = [
+    'transitionend',
+    'transitioncancel',
+    'animationend',
+    'animationcancel',
+  ];
+  const WINDOW_ACTIVITY_EVENTS = ['resize', 'orientationchange'];
+
   function canvasKind(canvas) {
     if (canvas.id === 'drawingCanvas') return 'input';
     if (canvas.hasAttribute('data-live-tile')) return 'normal-tile';
@@ -36,9 +45,55 @@
   }
 
   function frame(at) {
-    if (previousFrameAt !== undefined) frames.push([at, at - previousFrameAt]);
+    if (previousFrameAt !== undefined) {
+      frames.push([at, at - previousFrameAt, (active?.visualEffectCount ?? 0) > 0]);
+    }
     previousFrameAt = at;
     requestAnimationFrame(frame);
+  }
+
+  function recordActivity(action, type) {
+    action.activities.push({ at: performance.now(), type });
+  }
+
+  function trackActivity(action) {
+    action.mutationObserver = new MutationObserver((records) => {
+      if (records.length) recordActivity(action, 'dom-mutation');
+    });
+    action.mutationObserver.observe(document.documentElement, {
+      attributes: true,
+      characterData: true,
+      childList: true,
+      subtree: true,
+    });
+
+    const visualEffectStarted = (event) => {
+      action.visualEffectCount++;
+      recordActivity(action, event.type);
+    };
+    const visualEffectEnded = (event) => {
+      action.visualEffectCount = Math.max(0, action.visualEffectCount - 1);
+      recordActivity(action, event.type);
+    };
+    const windowActivity = (event) => recordActivity(action, event.type);
+    for (const type of VISUAL_EFFECT_START_EVENTS) {
+      document.addEventListener(type, visualEffectStarted, true);
+      action.listeners.push({ target: document, type, listener: visualEffectStarted });
+    }
+    for (const type of VISUAL_EFFECT_END_EVENTS) {
+      document.addEventListener(type, visualEffectEnded, true);
+      action.listeners.push({ target: document, type, listener: visualEffectEnded });
+    }
+    for (const type of WINDOW_ACTIVITY_EVENTS) {
+      window.addEventListener(type, windowActivity, true);
+      action.listeners.push({ target: window, type, listener: windowActivity });
+    }
+  }
+
+  function stopActivityTracking(action) {
+    if (action.mutationObserver.takeRecords().length) recordActivity(action, 'dom-mutation');
+    action.mutationObserver.disconnect();
+    removeListeners(action);
   }
 
   function removeListeners(action) {
@@ -60,6 +115,9 @@
       eventType: null,
       measureCount: performance.getEntriesByType('measure').length,
       canvasMutations: [],
+      activities: [],
+      visualEffectCount: 0,
+      mutationObserver: null,
       listeners: [],
     };
     const listener = (event) => {
@@ -73,6 +131,7 @@
       target.addEventListener(type, listener, { capture: true });
       action.listeners.push({ target, type, listener });
     }
+    trackActivity(action);
     active = action;
     return true;
   }
@@ -87,6 +146,9 @@
       eventType: null,
       measureCount: performance.getEntriesByType('measure').length,
       canvasMutations: [],
+      activities: [],
+      visualEffectCount: 0,
+      mutationObserver: null,
       listeners: [],
     };
     const listener = (event) => {
@@ -100,6 +162,7 @@
       window.addEventListener(type, listener, { capture: true });
       action.listeners.push({ target: window, type, listener });
     }
+    trackActivity(action);
     active = action;
     return true;
   }
@@ -117,7 +180,7 @@
     if (!active) throw new Error('No action is active');
     const action = active;
     active = null;
-    removeListeners(action);
+    stopActivityTracking(action);
     const actionAt = action.actionAt ?? action.armedAt;
     const finishedAt = performance.now();
     if (action.actionAt === null) performance.mark(`${action.traceName}:start`);
@@ -139,13 +202,25 @@
       actionAt,
       eventType: action.eventType ?? 'uncaptured',
       trusted: action.trusted ?? null,
-      readyMs: readyAt - actionAt,
+      readyMs: Number.isFinite(readyAt) ? readyAt - actionAt : null,
       firstFrameMs: firstFrame ? firstFrame[0] - actionAt : null,
       frameGapsMs: actionFrames.map(([, gap]) => gap),
       postActionFrameGapsMs: actionFrames
         .filter(([at, gap]) => at - gap >= actionAt)
         .map(([, gap]) => gap),
+      postActionFrames: actionFrames
+        .filter(([at, gap]) => at - gap >= actionAt)
+        .map(([at, gap, visualEffectsActive]) => ({
+          gapMs: gap,
+          startFromActionMs: at - gap - actionAt,
+          endFromActionMs: at - actionAt,
+          visualEffectsActive,
+        })),
       topFrameGaps,
+      activities: action.activities.map(({ at, type }) => ({
+        type,
+        atFromActionMs: at - actionAt,
+      })),
       canvasMutations: action.canvasMutations.map(({ at, ...mutation }) => ({
         ...mutation,
         atFromActionMs: at - actionAt,

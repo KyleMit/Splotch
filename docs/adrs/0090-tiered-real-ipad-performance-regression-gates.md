@@ -29,9 +29,9 @@ Hz web cadence:
 * render starvation at most 10 ms per drawing-second.
 
 The generic discrete-action budget established by ADR-0087 and ADR-0089 is a P95 frame interval at
-most 20 ms, an action-to-first-frame remainder at most 33.5 ms, and a worst fully post-action
-interval at most 33.5 ms. The max admits two exact 60 Hz vsync intervals plus timer precision; the
-next 50 ms interval is the visible freeze.
+most 20 ms, an action-to-first-frame remainder at most 33.5 ms, and a worst action-attributed
+post-action interval at most 33.5 ms. The max admits two exact 60 Hz vsync intervals plus timer
+precision; the next 50 ms interval is the visible freeze.
 
 ## Decision
 
@@ -84,10 +84,23 @@ P95/max, and the raw worst intervals with their start/end relative to the input 
 that straddles input delivery is scored by its action-to-frame remainder, not by time that elapsed
 before the app received the event. This is material for Appium rotation: iPadOS can begin a 40–53 ms
 system transition interval 15–27 ms before MobileSafari delivers `orientationchange`, while the app
-still responds 23–29 ms later and every fully post-action interval remains below 25 ms. The
-first-observed readiness time is retained as an upper bound, not a gate: native actions must return
-from the native context before the driver can observe a DOM completion condition, so that number
-includes automation round-trip time.
+still responds 23–29 ms later and every fully post-action interval remains below 25 ms.
+
+Every raw post-action frame remains in the artifact and in the calibrated P95 population. The
+maximum gate applies only while work is attributable to the action. The scorer opens an observation
+window at input, reopens it for later DOM or canvas mutation, engine measures, resize/orientation
+activity, and keeps it open while a transition or animation is active. Each signal carries the
+stable-frame tail owned by `ACTION_SETTLE_TAIL_FRAMES`, so the frame that presents the work and an
+immediate pacing recovery remain scored. A late requestAnimationFrame omission after a static quiet
+window remains visible as the raw max without failing the product action. Deferred work cannot hide
+behind an earlier quiet period because its activity reopens the window; the rule has no action-name
+exceptions. Keeping P95 over the full raw window preserves the gate's calibrated population and
+still rejects transport-wide cadence instability.
+
+The first-observed readiness time is retained as an upper bound, not a gate or attribution signal:
+native actions must return from the native context before the driver can observe a DOM completion
+condition, so that number includes automation round-trip time. Readiness without a corresponding
+page activity does not extend the scored window.
 
 The command repeats the suite three times by default, writes raw samples and grouped summaries, and
 fails the 20/33.5 ms action gates. `--report-only` lets an exploratory sweep rank every failure
@@ -207,6 +220,8 @@ survive in the client bundle.
 * \+ The budgets used to approve the iPad fixes are executable gates rather than prose in an ADR.
 * \+ One action artifact can rank regressions, preserve noisy samples, and drive serial focused
   trials without rewriting probe scripts.
+* \+ Static renderer omissions remain in raw action artifacts while the gate distinguishes them from
+  input-, render-, transition-, and deferred-work intervals attributable to the action.
 * \+ Provider choice is isolated to an endpoint and capabilities file; local physical-device runs
   remain the authoritative fallback.
 * \+ The same probe and scorer can produce deployment-matrix snapshots across mobile web and native

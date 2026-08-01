@@ -352,7 +352,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       ['shell', 'settings', 'put', 'system', 'accelerometer_rotation', originalAutoRotation],
       { allowFailure: true }
     );
-    server?.kill();
+    server?.stop();
   }
 }
 

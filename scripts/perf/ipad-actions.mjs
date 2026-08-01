@@ -255,7 +255,7 @@ async function measureIdle(execute) {
     return true;
   `);
   await sleep(IDLE_CONTROL_MS);
-  return execute(`return window.__actionProbe.finish(performance.now());`);
+  return execute(`return window.__actionProbe.finish(null);`);
 }
 
 async function ensureState(execute, condition, activation) {

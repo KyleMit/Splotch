@@ -264,8 +264,24 @@ was ready in 5.3 ms. The trace contained compositor `BeginFrame` events but no m
 animation callback, long task, layout, paint, raster, or GPU work that could explain product
 blocking. A 30-repeat no-op idle control then produced P95 16.8 ms and max 66.6 ms with no UI
 mutation. That late gap is ambient renderer omission of an animation callback on a static page, not
-sound work. The scorer still needs to stop treating such idle omissions as visible action freezes
-without hiding truly deferred rendering.
+sound work.
+
+The scorer now preserves every raw post-action frame and keeps the calibrated P95 over that full
+population, while the maximum gate uses segmented attribution windows: input, DOM and canvas
+mutations, engine measures, resize/orientation signals, active transitions/animations, and their
+stable-frame tails. Readiness remains diagnostic because the driver round trip can observe it late;
+it does not extend a quiet action window by itself. A deferred mutation reopens maximum scoring
+after a quiet period, while an isolated static omission remains visible as the raw max without
+failing the action. Unit fixtures lock immediate jank, deferred post-ready paint, transition work,
+and the no-op omission as separate classifications.
+
+The original 30-repeat idle artifact re-scores at 16.8 ms P95 and attributed max while retaining its
+66.6 ms raw max. A fresh 30-repeat physical-Android run scored 120 of 8,991 raw frames and passed at
+16.8 ms P95/max. Focused current-build checks kept sound off/on, theme, coloring, screenshot, and
+portrait-to-landscape rotation inside the gates. They also retained three action-attributed reds for
+the final regression pass: Parent Center open at 41.6 ms, advanced-controls disable at 41.7 ms, and
+landscape-to-portrait rotation at 75 ms. Historical pre-fix theme, coloring, screenshot, and
+rotation artifacts still fail through the legacy raw-frame fallback.
 
 Evidence:
 
@@ -344,8 +360,7 @@ The latest product changes are pushed on `experiment/trusted-ipad-input` and PR
 [#682](https://github.com/KyleMit/Splotch/pull/682). The remaining work is deliberately split into
 task-specific files in `docs/handoff/`:
 
-* capture physical Android web/native and refresh the nine-target matrix;
-* refine the discrete-action idle-frame gate using the no-op control evidence;
+* refresh the nine-target matrix with the captured physical Android web/native rows;
 * rerun the complete current action suite and classify any genuine failures;
 * refresh the committed report to the final product commit;
 * address PR review feedback against the final branch, revalidating every comment.
