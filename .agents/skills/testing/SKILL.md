@@ -396,7 +396,8 @@ restore and update the durable `webkit-undo-full-history` artifact: the harness 
 scenario's measured-to-budget ratio, recomputes ideal membership from the three most recent full
 runs, and records whether the fast tier would have caught a breach. Membership drift and two
 consecutive fast-set misses fail the full job; the updated history and full diagnostics upload even
-when that check fails.
+when that check fails. Invalid restored history falls back to the compatible seed, and a full run
+without commit samples is rejected without appending zero-valued evidence.
 
 The native smoke workflows are deliberately tag-only — an emulator/simulator job is the heaviest
 thing in CI, and a launch crash is exactly the kind of regression you want caught at release time.

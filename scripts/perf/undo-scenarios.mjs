@@ -709,11 +709,13 @@ export async function runUndoScenarios() {
 }
 
 function persistFastSetHistory({ results, settings, outDir, historyPath }) {
-  const inputPath =
-    historyPath && existsSync(historyPath) ? historyPath : FAST_SET_HISTORY_SEED_PATH;
-  let history = readFastSetHistory(inputPath);
+  let history = readRestoredHistoryOrSeed(historyPath);
   const complete =
-    results.length === ALL_UNDO_SCENARIO_KEYS.length && results.every((result) => !result.skipped);
+    results.length === ALL_UNDO_SCENARIO_KEYS.length &&
+    results.every(
+      (result) =>
+        !result.skipped && result.draw?.commitCount > 0 && Number.isFinite(result.draw.commitP95Ms)
+    );
   if (complete) {
     history = appendFullRun({
       history,
@@ -734,7 +736,8 @@ function persistFastSetHistory({ results, settings, outDir, historyPath }) {
   if (!complete) {
     return {
       evaluated: false,
-      reason: 'The full run did not complete every scenario, so its timings were not recorded.',
+      reason:
+        'The full run did not produce valid commit samples for every scenario, so its timings were not recorded.',
     };
   }
 
@@ -759,6 +762,20 @@ function persistFastSetHistory({ results, settings, outDir, historyPath }) {
     );
   }
   return evaluation;
+}
+
+function readRestoredHistoryOrSeed(historyPath) {
+  if (historyPath && existsSync(historyPath)) {
+    try {
+      return readFastSetHistory(historyPath);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(
+        `Could not use restored fast-set history (${message}); falling back to the compatible seed.`
+      );
+    }
+  }
+  return readFastSetHistory(FAST_SET_HISTORY_SEED_PATH);
 }
 
 // The commit gate, and why only WebKit gets it.

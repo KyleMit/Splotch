@@ -113,7 +113,8 @@ when a sole exerciser leaves the fast set. Every release-tag full run restores t
 `webkit-undo-full-history` artifact, appends per-scenario `commit P95 / 25 ms` headroom and whether
 the fast set would have caught any breach, then uploads the rolling history for 90 days. The full
 gate fails when the derived ideal membership differs or when two consecutive full-run breaches were
-fast-set misses. A compatible committed seed starts the chain after artifact expiry.
+fast-set misses. A compatible committed seed starts the chain after artifact expiry or invalid
+restored state, and a run without commit samples never enters the history.
 
 > **Not available in a cloud session.** `.claude/cloud/setup.sh` installs Chromium only, so any
 > WebKit-driving command (`perf:undo:webkit`, `perf:ios`) fails there with Playwright's raw

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -362,6 +362,47 @@ describe('engine selection', () => {
       fastSetMiss: false,
       consecutiveFastSetMisses: 0,
     });
+  });
+
+  it('falls back to the compatible seed when restored history is invalid', async () => {
+    const historyPath = join(fixtureDir, 'restored-history.json');
+    writeFileSync(historyPath, '{"schemaVersion":0,"runs":[]}');
+    process.argv = [...process.argv, '--engine=webkit', `--fast-set-history=${historyPath}`];
+    fakeBrowser(fakePage(), { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    expect(gate.fastSetEvaluation).toMatchObject({ evaluated: true, historyWindowRuns: 2 });
+    expect(warning).toHaveBeenCalledWith(
+      expect.stringContaining('Could not use restored fast-set history')
+    );
+    const history = JSON.parse(readFileSync(historyPath, 'utf8'));
+    expect(history.schemaVersion).toBe(1);
+    expect(history.runs).toHaveLength(2);
+  });
+
+  it('does not append a full run when a scenario has no commit samples', async () => {
+    const historyPath = join(fixtureDir, 'zero-sample-history.json');
+    process.argv = [...process.argv, '--engine=webkit', `--fast-set-history=${historyPath}`];
+    fakeBrowser(fakePage({ commitCount: 0 }), { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    expect(gate).toMatchObject({ evaluated: false });
+    expect(gate.fastSetEvaluation).toMatchObject({
+      evaluated: false,
+      reason: expect.stringContaining('valid commit samples'),
+    });
+    const history = JSON.parse(readFileSync(historyPath, 'utf8'));
+    expect(history.runs).toHaveLength(1);
   });
 
   it('resolves the fast suite through the exported membership constant', async () => {
