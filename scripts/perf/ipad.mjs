@@ -74,6 +74,7 @@ export async function runIpadProfile(argv = process.argv.slice(2)) {
         'output',
         'expected-app-version',
         'expected-build-time',
+        'redact-device-log',
       ],
     },
     argv
@@ -84,7 +85,9 @@ export async function runIpadProfile(argv = process.argv.slice(2)) {
   const harnessUrl = resolveDeviceUrl(flag('url'), port, HARNESS_PATH);
   const server = await ensurePreviewServer(harnessUrl, port, !has('no-serve'));
 
-  const { device, stopProxy } = await connectDevice(flag('device-id'));
+  const { device, stopProxy } = await connectDevice(flag('device-id'), {
+    redactIdentity: has('redact-device-log'),
+  });
 
   // The driver's own narration is the run's progress report; its table is
   // re-rendered from __perfRows, so the table message itself is noise here.

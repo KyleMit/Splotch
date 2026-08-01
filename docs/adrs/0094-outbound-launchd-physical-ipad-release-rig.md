@@ -40,19 +40,23 @@ Two user agents run from a dedicated clean clone:
   oldest-first when multiple releases arrive between polls. Installation seeds that set with the
   releases that already exist, so enabling the rig does not backfill project history.
 
-`scripts/perf/ipad-release-rig.mjs` is the measurement boundary. It rejects fewer than three
+`scripts/perf/ipad-release-rig.mjs` is the measurement boundary. It resolves the selected device's
+`ProductType` through `ideviceinfo` and rejects a configured-model mismatch, fewer than three
 repeats, missing physical-device identity/model, incomplete scenario sets, zero commit samples,
 device or OS drift, console errors, and hand-driven output in the unattended full tier. The
 instrumented client exposes its compile-time app version and build time through the existing
 release-stripped profiling seams. Every device page must match the bundle the rig just built, so an
 old service-worker client or an uninstrumented/release bundle fails before publication.
 
-Successful output is normalized by `scripts/perf/ipad-release-report.mjs`, promoted through
-`npm run scrapbook:publish`, indexed under `scrapbook/performance/ipad-release-rig/`, committed, and
-pushed to `main`. The result records capture date, app version, commit and optional release tag,
-neutral rig label, device model, iPadOS version, suite, scenario set, and repeat count. The exact
-device name and UDID reject cross-device repeats before normalization, then are removed from every
-Pages-ready JSON and HTML artifact.
+Successful output is normalized by `scripts/perf/ipad-release-report.mjs`, then a freshly fetched
+detached publication worktree promotes it through `npm run scrapbook:publish`, indexes it under
+`scrapbook/performance/ipad-release-rig/`, commits, and pushes `HEAD:main`. The worktree is
+discarded on success or failure, so a rejected push or intermediate generation error cannot dirty or
+advance the control clone. The result records capture date, app version, commit and optional release
+tag, neutral rig label, measured device model, iPadOS version, suite, scenario set, and repeat
+count. The UDID remains only in the mode-0600 launchd configuration and ephemeral raw captures; the
+personal device name remains only in raw captures. Both are removed from every Pages-ready JSON and
+HTML artifact.
 
 Security and operating invariants:
 
@@ -61,8 +65,8 @@ Security and operating invariants:
   deleted or locally invented tag cannot become scheduled executable input.
 * The remote URL must not contain an embedded credential. Use SSH or the macOS credential helper;
   tokens never enter plist arguments, environment variables, repository files, or logs.
-* The launch agents expose no port and accept no inbound job payload. Logs contain command progress
-  and file paths only.
+* The launch agents expose no port and accept no inbound job payload. Persistent logs redact the
+  device UDID and replace the personal device name with a generic physical-device label.
 * The iPad remains a physical hard gate. A disconnected/locked/backgrounded device fails the job; no
   simulator fallback exists.
 
@@ -77,8 +81,9 @@ Security and operating invariants:
   repeat metadata travel with the measurements.
 * − The Mac must be awake with a logged-in user session, and the tethered iPad must remain unlocked
   with Safari foregrounded and Web Inspector enabled. launchd cannot bypass iOS device security.
-* − The job needs outbound Git fetch/push access and executes `npm ci` from a trusted release tag;
-  dependency installation can fail independently of the measurement.
+* − The job needs outbound Git fetch/push access and executes `npm ci` in a trusted measurement
+  checkout and disposable publication worktree; dependency installation can fail independently of
+  the measurement.
 * − `perf:ipad:frames --drive` gives reproducible unattended real-screen frame evidence but not a
   physical finger's coalescing/pressure signature. Trusted-input investigations still use
   `perf:ipad:xcuitest` under ADR-0084/0090.

@@ -7,7 +7,8 @@ vi.mock('../lib/net.mjs', async (importOriginal) => {
 
 const { runOverridesScript } = await import('../perf/ipad.mjs');
 // Shared with perf:ipad:frames, which opens `/` instead — the path is the caller's.
-const { resolveDeviceUrl, validateInstrumentedBuild } = await import('../perf/ipad-session.mjs');
+const { deviceLogLabel, resolveDeviceUrl, validateInstrumentedBuild } =
+  await import('../perf/ipad-session.mjs');
 
 describe('resolveDeviceUrl', () => {
   it('points at the requested route on the first reachable LAN address', () => {
@@ -79,5 +80,24 @@ describe('validateInstrumentedBuild', () => {
     expect(() =>
       validateInstrumentedBuild({ appVersion: '1.4.499', buildTime: '2026-08-01 12:30' }, expected)
     ).toThrow('Stale device bundle');
+  });
+});
+
+describe('deviceLogLabel', () => {
+  const device = {
+    deviceName: 'Private device name',
+    deviceOSVersion: '26.5',
+    deviceId: 'private-device-id',
+  };
+
+  it('retains the useful name for an interactive run', () => {
+    expect(deviceLogLabel(device)).toBe('Private device name (iOS 26.5)');
+  });
+
+  it('removes private identity from a persistent scheduled log', () => {
+    const label = deviceLogLabel(device, true);
+    expect(label).toBe('physical iOS device (iOS 26.5)');
+    expect(label).not.toContain(device.deviceName);
+    expect(label).not.toContain(device.deviceId);
   });
 });
