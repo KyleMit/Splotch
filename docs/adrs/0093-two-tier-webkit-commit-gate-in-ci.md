@@ -1,0 +1,49 @@
+# ADR-0093: Run a Two-Tier WebKit Commit Gate in CI
+
+**Status:** Active **Date:** 2026-08
+
+## Context
+
+`perf:undo:webkit` already distinguishes two commit-work shapes that Chromium cannot faithfully
+measure: healthy dirty-region work has a 1–8 ms worst commit on the desktop WebKit harness, while
+putting a full-raster encode back on the pointer-up path costs 47–56 ms. Its 25 ms gate is therefore
+about catastrophic work shape, not fine timing drift or physical-iPad frame approval.
+
+ADR-0032 rejected a general shared-runner performance gate because host load, GPU path, and timer
+variance make absolute budgets flaky. ADR-0090 likewise keeps device-calibrated frame gates on real
+hardware. Skipping CI entirely, however, leaves a known WebKit-only defect class unguarded despite a
+threshold with roughly 3× headroom over the healthy worst case. Gating Chromium would not close that
+gap, and running all seven WebKit scenarios on every pull request would spend more CI time than the
+coverage floor requires.
+
+## Decision
+
+GitHub Actions runs the WebKit commit gate in two tiers from `.github/workflows/test.yml`:
+
+* Pull requests run `npm run perf:undo:webkit:fast` in a job parallel to the ordinary Tests job. Its
+  set is defined once in `package.json`: `multi-finger`, the only scenario that currently exhausts
+  the resident byte budget and exercises encoding, plus `crayon-scribbles`, which covers mid-stroke
+  crayon pass splits.
+* `v*` release tags run `npm run perf:undo:webkit`, retaining all seven scenarios at the point a
+  release reaches users.
+* Both tiers upload `undo-scenarios.json` and `undo-scenarios.md` when the command fails. A run with
+  no `engine.commit` samples exits nonzero, so a stale or uninstrumented bundle cannot pass as a
+  zero-millisecond result.
+
+The 25 ms threshold stays a wide catastrophic-regression threshold. It does not replace the
+physical-device gates in ADR-0090, and it must not be tightened from shared-runner observations.
+Fast-set membership follows path coverage first, then measured headroom and breach history; a sole
+path exerciser remains mandatory regardless of recent timing.
+
+## Consequences
+
+* \+ Pull requests catch a WebKit-only full-raster commit regression before merge without serially
+  extending the ordinary test suite.
+* \+ The fast job still covers encoding and crayon pass splitting, while release tags retain broad
+  scenario coverage.
+* \+ Failure artifacts preserve the scenario table and gate evidence without requiring a local
+  WebKit reproduction.
+* − Shared-runner noise still limits the gate to catastrophic regressions; smaller but real timing
+  regressions can pass and belong to deterministic counters or physical-device measurements.
+* − Fast-set coverage depends on current scenario behavior. A separate drift guard may automate its
+  membership policy, but this decision keeps the set explicit and reviewable in one npm script.

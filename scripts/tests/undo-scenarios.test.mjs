@@ -324,7 +324,7 @@ describe('the commit gate', () => {
   it('fails the WebKit run when a commit exceeds the budget', async () => {
     // #635's shape: an encode back on the commit path, so engine.commit carries
     // a full-raster encode instead of a rect-sized copy plus a fold.
-    process.argv = [...process.argv, '--engine=webkit', '--scenarios=short-marks'];
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
     const page = fakePage({ commitMaxMs: 56, encodeInCommitMaxMs: 55 });
     fakeBrowser(page, { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
@@ -335,7 +335,7 @@ describe('the commit gate', () => {
     const gate = await runUndoScenarios();
 
     expect(gate).toMatchObject({ engine: 'webkit', gated: true, budgetMs: 25 });
-    expect(gate.breaches.map((s) => s.key)).toEqual(['short-marks']);
+    expect(gate.breaches.map((s) => s.key)).toEqual(['multi-finger']);
     expect(process.exitCode).toBe(1);
     expect(error).toHaveBeenCalledWith(expect.stringContaining('Commit gate FAILED on webkit'));
     // The breach has to name its own cause, or the run says "too slow" and

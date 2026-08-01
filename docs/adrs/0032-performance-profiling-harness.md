@@ -9,7 +9,9 @@ profiling stays a documented manual step" below now holds only for Timeline reco
 amended by ADR-0090 (2026-07): calibrated physical-iPad drawing and discrete-action measurements are
 absolute regression gates, while shared-runner browser profiles remain on-demand diagnostics.
 Further amended by ADR-0092 (2026-07): Android Chrome discrete-action profiles use direct CDP rather
-than Appium. See the amendments at the end. **Date:** 2026-06
+than Appium. Further amended by ADR-0093 (2026-08): a narrowly calibrated WebKit commit-shape gate
+runs in shared CI without claiming device-accurate timing. See the amendments at the end. **Date:**
+2026-06
 
 ## Context
 
@@ -71,7 +73,8 @@ A profiling harness in `scripts/perf/`, built on the existing Playwright app-dri
   and mark strings shipping to production for zero user benefit.
 * **A hard CI perf gate** — headless-runner variance makes absolute-threshold gating flaky; the
   harness is run on demand (and the analyzer is cheap to re-run on a saved trace) rather than
-  blocking PRs. Left for a future baseline-comparison pass.
+  blocking PRs. ADR-0093 makes one narrow exception: WebKit commit work has a wide, shape-level
+  threshold that separates a healthy dirty-region commit from a catastrophic full-raster encode.
 
 ## Consequences
 
