@@ -104,6 +104,8 @@ const mockTickingClock = () =>
       tick++
   )(0);
 
+const REALISTIC_COMMIT_SAMPLE_COUNT = 22;
+
 // A page whose engine.* measures are dictated by the caller, so a test can put
 // the run on either side of the commit gate without driving a real browser.
 //
@@ -113,13 +115,15 @@ const mockTickingClock = () =>
 // exist to pin down.
 function fakePage({
   commitMaxMs = 1,
-  commitCount = 1,
+  commitCount = REALISTIC_COMMIT_SAMPLE_COUNT,
+  commitDurationsMs = null,
   encodeInCommitMaxMs = 0,
   deferredEncodeMaxMs = 0,
   blobBytes = 1,
   coldTierNeverSettles = false,
   coldTierNeverSettlesOnNavigation = null,
 } = {}) {
+  const commitSamples = commitDurationsMs ?? Array.from({ length: commitCount }, () => commitMaxMs);
   const now = mockTickingClock();
   let drawEnd = null;
   let coldTierRead = 0;
@@ -151,10 +155,19 @@ function fakePage({
         const encodeMs = isPostDraw ? deferredEncodeMaxMs : encodeInCommitMaxMs;
         return {
           'engine.draw': { count: 1, total: 1, max: 1 },
-          'engine.commit': { count: commitCount, total: commitMaxMs, max: commitMaxMs },
+          'engine.commit': {
+            count: commitSamples.length,
+            total: commitSamples.reduce((total, duration) => total + duration, 0),
+            max: Math.max(0, ...commitSamples),
+            durationsMs: commitSamples,
+          },
           'engine.snapshot': { count: 1, total: 1, max: 1 },
           'engine.fold': { count: 1, total: 1, max: 1 },
-          'engine.encode': { count: 1, total: encodeMs, max: encodeMs },
+          'engine.encode': {
+            count: 1,
+            total: encodeMs,
+            max: encodeMs,
+          },
           'engine.undo': { count: 1, total: 1, max: 1 },
         };
       }
@@ -207,7 +220,7 @@ describe('undo scenario profiling', () => {
         if (source.includes("getEntriesByType('measure')")) {
           return {
             'engine.draw': { count: 1, total: 1, max: 1 },
-            'engine.commit': { count: 1, total: 1, max: 1 },
+            'engine.commit': { count: 1, total: 1, max: 1, durationsMs: [1] },
             'engine.snapshot': { count: 1, total: 1, max: 1 },
             'engine.undo': { count: 1, total: 1, max: 1 },
           };
@@ -348,11 +361,14 @@ describe('engine selection', () => {
 });
 
 describe('the commit gate', () => {
-  it('fails the WebKit run when a commit exceeds the budget', async () => {
+  it('fails the WebKit run when commit latency repeatedly exceeds the budget', async () => {
     // #635's shape: an encode back on the commit path, so engine.commit carries
     // a full-raster encode instead of a rect-sized copy plus a fold.
     process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
-    const page = fakePage({ commitMaxMs: 56, encodeInCommitMaxMs: 55 });
+    const page = fakePage({
+      commitDurationsMs: [...Array(REALISTIC_COMMIT_SAMPLE_COUNT - 2).fill(8), 55, 56],
+      encodeInCommitMaxMs: 55,
+    });
     fakeBrowser(page, { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -361,13 +377,41 @@ describe('the commit gate', () => {
     const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
     const gate = await runUndoScenarios();
 
-    expect(gate).toMatchObject({ engine: 'webkit', gated: true, budgetMs: 25 });
+    expect(gate).toMatchObject({
+      engine: 'webkit',
+      gated: true,
+      budgetMs: 25,
+      percentile: 0.95,
+    });
     expect(gate.breaches.map((s) => s.key)).toEqual(['multi-finger']);
     expect(process.exitCode).toBe(1);
     expect(error).toHaveBeenCalledWith(expect.stringContaining('Commit gate FAILED on webkit'));
     // The breach has to name its own cause, or the run says "too slow" and
     // leaves the reader where #444 was left — guessing at which stage.
     expect(error).toHaveBeenCalledWith(expect.stringContaining('encode 55.0'));
+  });
+
+  it('retains but does not fail one isolated shared-runner outlier', async () => {
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
+    const commitDurationsMs = [...Array(REALISTIC_COMMIT_SAMPLE_COUNT - 1).fill(8), 56];
+    const page = fakePage({ commitDurationsMs });
+    fakeBrowser(page, { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    expect(gate.breaches).toEqual([]);
+    expect(gate).toMatchObject({ percentile: 0.95 });
+    expect(process.exitCode).toBe(originalExitCode);
+
+    const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
+    expect(report.scenarios[0].draw).toMatchObject({
+      commitP95Ms: 8,
+      commitMaxMs: 56,
+      commitDurationsMs,
+    });
   });
 
   it('blames the in-commit encode, never the healthy deferred one', async () => {
@@ -482,7 +526,9 @@ describe('the commit gate', () => {
     expect(gate).toMatchObject({ evaluated: false, skipped: 1 });
     expect(gate.breaches.map((scenario) => scenario.key)).toEqual(['multi-finger']);
     expect(error).toHaveBeenCalledWith(expect.stringContaining('Completed scenario breaches'));
-    expect(error).toHaveBeenCalledWith(expect.stringContaining('multi-finger: commit max 30.0 ms'));
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('multi-finger: commit p95 30.0 ms, max 30.0 ms')
+    );
   });
 
   it('reports the gate as not evaluated on Chromium', async () => {

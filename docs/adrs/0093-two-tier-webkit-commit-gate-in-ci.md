@@ -6,9 +6,10 @@
 ## Context
 
 `perf:undo:webkit` already distinguishes two commit-work shapes that Chromium cannot faithfully
-measure: healthy dirty-region work has a 1–8 ms worst commit on the desktop WebKit harness, while
-putting a full-raster encode back on the pointer-up path costs 47–56 ms. Its 25 ms gate is therefore
-about catastrophic work shape, not fine timing drift or physical-iPad frame approval.
+measure: healthy dirty-region work has a 1–8 ms worst commit on an otherwise idle desktop WebKit
+harness, while putting a full-raster encode back on the pointer-up path makes multiple commits run
+that work and produces 47–56 ms maxima. Its 25 ms gate is therefore about catastrophic work shape,
+not fine timing drift or physical-iPad frame approval.
 
 ADR-0032 rejected a general shared-runner performance gate because host load, GPU path, and timer
 variance make absolute budgets flaky. ADR-0090 likewise keeps device-calibrated frame gates on real
@@ -42,6 +43,16 @@ physical-device gates in ADR-0090, and it must not be tightened from shared-runn
 Fast-set membership follows path coverage first, then measured headroom and breach history; a sole
 path exerciser remains mandatory regardless of recent timing.
 
+The gate evaluates each scenario's `engine.commit` P95 and retains its maximum plus every raw sample
+in `undo-scenarios.json`. At the scenarios' sample size, P95 excludes one isolated maximum. GitHub's
+shared macOS runner produced isolated 53 ms and 70 ms crayon-fold maxima on the same source tree
+that passed at 18 ms on another run, while local runs remained below the threshold. A scheduler
+interruption inside a synchronous measure is indistinguishable from engine work, but it does not
+reproduce the gate's target defect: restoring the synchronous cold encode runs the full-raster work
+on multiple commits as patches cross the resident budget. Requiring the expensive shape to recur
+keeps that regression detectable without treating one host interruption as product behavior. The
+real-device maximum gates in ADR-0090 remain responsible for isolated user-visible hitches.
+
 A third full-suite tier on every `main` push or a nightly schedule was considered and rejected. It
 would spend an additional macOS runner after the pull-request gate has already exercised the two
 distinct load-bearing paths. The other five scenarios broaden shape coverage but do not guard a
@@ -57,8 +68,9 @@ rather than in a delayed middle tier.
   scenario coverage.
 * \+ Failure artifacts preserve the scenario table and gate evidence without requiring a local
   WebKit reproduction.
-* − Shared-runner noise still limits the gate to catastrophic regressions; smaller but real timing
-  regressions can pass and belong to deterministic counters or physical-device measurements.
+* − Shared-runner noise still limits the gate to recurrent catastrophic regressions; isolated and
+  smaller real timing regressions can pass and belong to deterministic counters or physical-device
+  measurements.
 * − The every-PR job consumes a macOS runner because the Ubuntu WebKit runtime does not fit the
   suite's wall-clock budget.
 * − Fast-set coverage still depends on current scenario behavior. Registry drift and loss of the
