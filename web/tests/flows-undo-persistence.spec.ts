@@ -132,6 +132,26 @@ test('a burst of screenshot taps shares one save before allowing the next', asyn
   await expect.poll(() => downloads.length).toBe(2);
 });
 
+test.describe('tiled screenshot export', () => {
+  test.use({ deviceScaleFactor: 2 });
+
+  test('downloads a PNG through the matched-scale worker path', async ({ page }) => {
+    await gotoApp(page);
+    await openDrawer(page);
+    await draw(page, [
+      { x: 140, y: 140 },
+      { x: 240, y: 200 },
+    ]);
+
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('#screenshotButton').click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toMatch(/^splotch-.+\.png$/);
+    expect(await download.failure()).toBeNull();
+  });
+});
+
 // ── tool/stroke state + persistence ─────────────────────────────────────────
 
 test('pen and eraser keep independent stroke sizes that persist across reload', async ({

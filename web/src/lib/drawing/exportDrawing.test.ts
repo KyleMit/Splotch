@@ -50,6 +50,7 @@ type CanvasContextStub = {
   fillStyle: string;
   scale: (x: number, y: number) => void;
   setTransform: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
+  resetTransform: () => void;
   fillRect: (x: number, y: number, w: number, h: number) => void;
   createPattern: () => null;
   drawImage: (source: CanvasImageSource) => void;
@@ -84,6 +85,7 @@ function setupExportContexts(inversionContext: CanvasRenderingContext2D | null) 
     fillStyle: '',
     scale: vi.fn(),
     setTransform: vi.fn(),
+    resetTransform: vi.fn(),
     fillRect: vi.fn(),
     createPattern: vi.fn(() => null),
     drawImage: vi.fn((source: CanvasImageSource) => {

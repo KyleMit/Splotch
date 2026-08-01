@@ -1,20 +1,11 @@
+import type { EncodePngPayload, EncodePngResponse, TiledPngInput } from './pngEncoderProtocol';
+
+export type { TiledPngInput } from './pngEncoderProtocol';
+
 interface PendingEncode {
   resolve: (blob: Blob) => void;
   reject: (error: Error) => void;
   timeoutId: ReturnType<typeof setTimeout>;
-}
-
-type EncodePngResponse = { id: number; blob: Blob } | { id: number; error: string };
-
-export interface TiledPngInput {
-  sourceWidth: number;
-  sourceHeight: number;
-  sourceScale: number;
-  exportScale: number;
-  tiles: Array<{ bitmap: ImageBitmap; x: number; y: number }>;
-  texture: ImageBitmap | null;
-  overlay: ImageBitmap | null;
-  paperColor: string;
 }
 
 interface PngEncoder {
@@ -34,7 +25,10 @@ function createPngEncoder(): PngEncoder {
   const pending = new Map<number, PendingEncode>();
   let nextRequestId = 0;
 
-  function request(message: Record<string, unknown>, transfer: Transferable[]): Promise<Blob> {
+  function request<T extends EncodePngPayload>(
+    message: T,
+    transfer: Transferable[]
+  ): Promise<Blob> {
     const id = ++nextRequestId;
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {

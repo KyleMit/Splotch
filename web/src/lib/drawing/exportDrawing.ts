@@ -10,14 +10,13 @@
 // stroke snapshot is taken synchronously by engineExport BEFORE the
 // module load's await, so a clear racing the export can't blank it.
 
-import { PAPER_COLORS, type ResolvedTheme } from '../theme';
+import { PAPER_COLORS } from '../theme';
 import { resolvedTheme } from '../state/appearance.svelte';
-import { containFit } from './paperView';
+import { drawExportOverlay, paintExportPaper, type ExportContext } from './exportCompositor';
 import { encodeCanvasPng, encodeTiledCanvasPng } from './pngEncoder';
 import type { TiledCanvasSnapshot } from './tiledRenderer';
 
 type ExportCanvas = HTMLCanvasElement | OffscreenCanvas;
-type ExportContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 export interface TiledExportSnapshot {
   source: TiledCanvasSnapshot;
   sourceScale: number;
@@ -57,47 +56,6 @@ function loadPaperTexture(): Promise<HTMLImageElement | null> {
 // first export. The engine calls this from its own idle warm of this module.
 export function warmPaperTexture() {
   void loadPaperTexture();
-}
-
-async function paintPaperBackground(
-  target: ExportContext,
-  w: number,
-  h: number,
-  includePaperTexture: boolean,
-  theme: ResolvedTheme
-) {
-  target.globalCompositeOperation = 'destination-over';
-  if (includePaperTexture) {
-    const texture = await loadPaperTexture();
-    const pattern = texture ? target.createPattern(texture, 'repeat') : null;
-    if (pattern) {
-      target.fillStyle = pattern;
-      target.fillRect(0, 0, w, h);
-    }
-  }
-  target.fillStyle = PAPER_COLORS[theme];
-  target.fillRect(0, 0, w, h);
-  target.globalCompositeOperation = 'source-over';
-}
-
-// The coloring page blends over the finished composite, contain-fit and
-// centered — matching how the transparent overlay <img> renders above the canvas.
-function drawOverlayContained(
-  target: ExportContext,
-  overlay: HTMLImageElement,
-  w: number,
-  h: number
-) {
-  if (overlay.naturalWidth === 0 || overlay.naturalHeight === 0) return;
-  const { scale, offsetX, offsetY } = containFit(
-    { width: overlay.naturalWidth, height: overlay.naturalHeight },
-    { width: w, height: h }
-  );
-  const drawnW = overlay.naturalWidth * scale;
-  const drawnH = overlay.naturalHeight * scale;
-  target.globalCompositeOperation = 'source-over';
-  target.drawImage(overlay, offsetX, offsetY, drawnW, drawnH);
-  target.globalCompositeOperation = 'source-over';
 }
 
 export async function composeExportPng(
@@ -145,12 +103,25 @@ export async function composeExportPng(
 
   const target = getExportContext(snapshot);
   if (!target) return null;
-  target.imageSmoothingEnabled = true;
-  target.imageSmoothingQuality = 'high';
-  target.setTransform(renderScale, 0, 0, renderScale, 0, 0);
-
-  await paintPaperBackground(target, w, h, includePaperTexture, theme);
-  if (overlayImage) drawOverlayContained(target, overlayImage, w, h);
+  const texture = includePaperTexture ? await loadPaperTexture() : null;
+  paintExportPaper(target, {
+    width: w,
+    height: h,
+    scale: renderScale,
+    paperColor: PAPER_COLORS[theme],
+    texture,
+  });
+  if (overlayImage) {
+    drawExportOverlay(
+      target,
+      {
+        source: overlayImage,
+        width: overlayImage.naturalWidth,
+        height: overlayImage.naturalHeight,
+      },
+      { width: w, height: h, scale: renderScale }
+    );
+  }
 
   return encodeCanvasPng(snapshot);
 }

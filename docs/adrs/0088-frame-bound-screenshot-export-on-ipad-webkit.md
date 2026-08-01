@@ -153,6 +153,10 @@ renderer's already-settled pixels instead of replaying into a new full-page surf
 8. Every worker request has a 15-second deadline. A silent worker death terminates the cached
    encoder and releases pending requests; full-canvas exports fall back to the main-thread encoder,
    while a failed tiled export remains immediately retryable.
+9. `exportCompositor.ts` owns smoothing, paper/texture order, and contain-fit overlay placement for
+   both the compatibility and tiled-worker paths. `pngEncoderProtocol.ts` is the single typed
+   request/response vocabulary. Unit tests execute the real tiled compositor, and a 2× browser test
+   reaches the matched-scale worker path.
 
 Do not first assemble the live tiles on the main thread, render a new set of export tiles all at
 once, pool a full-resolution export canvas, resize one to zero, or explicitly release it as an
