@@ -1258,7 +1258,7 @@ export function getLiveSurfaceTopology() {
 }
 
 export function getDrawingWorkDebug(): DrawingWorkDebug | null {
-  if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) throw new Error();
+  if (!dev && !__DEV_HARNESS__) throw new Error();
   return tiledRendererActive() ? tiledWorkDebug() : null;
 }
 

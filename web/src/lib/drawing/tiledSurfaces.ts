@@ -26,6 +26,10 @@ export interface TiledCanvasSnapshot {
   tiles: Array<{ bitmap: Promise<ImageBitmap>; x: number; y: number }>;
 }
 
+export function liveTileSurfaces(tile: LiveTile) {
+  return [tile.canvas, tile.crayonBottom, tile.crayonTop] as const;
+}
+
 export function createLiveTiles(canvasElement: HTMLCanvasElement): LiveTile[] {
   const elements =
     canvasElement.parentElement?.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]') ??

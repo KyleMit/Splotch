@@ -6,6 +6,9 @@ import { openDrawer, pickBrush } from './flows-harness';
 const DEVICE_SCALE_FACTOR = 2;
 const COUNTER_STROKE_MOVE_STEPS = 12;
 
+// This spec uses Chromium-emulated geometry, including the iPad-shaped viewport; it validates
+// deterministic renderer work and memory shapes, not WebKit behavior or physical-device timing.
+
 // ADR-0085 found that more than sixteen cells worsens WebKit's per-surface overhead and seam risk;
 // this independent ceiling must not track a finer grid from production constants.
 const MAX_LIVE_SURFACE_ELEMENTS = 48;
@@ -111,8 +114,8 @@ for (const profile of VIEWPORTS) {
       const byteCeilings = BYTE_CEILINGS[profile.key];
 
       expect(withCrayon.liveSurfaceElements).toBeLessThanOrEqual(MAX_LIVE_SURFACE_ELEMENTS);
-      expect(withCrayon.realizedNormalBackings).toBeLessThanOrEqual(MAX_REALIZED_NORMAL_BACKINGS);
-      expect(withCrayon.realizedCrayonBackings).toBeLessThanOrEqual(MAX_REALIZED_CRAYON_BACKINGS);
+      expect(withCrayon.realizedNormalBackings).toBe(MAX_REALIZED_NORMAL_BACKINGS);
+      expect(withCrayon.realizedCrayonBackings).toBe(MAX_REALIZED_CRAYON_BACKINGS);
       expect(withCrayon.maxLiveBackingBytes).toBeLessThanOrEqual(byteCeilings.maxLiveBackingBytes);
       expect(withCrayon.maxLiveBackingBytes).toBeLessThanOrEqual(MAX_MEASURED_SAFE_SURFACE_BYTES);
       expect(withCrayon.totalLiveBackingBytes).toBeLessThanOrEqual(

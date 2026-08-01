@@ -88,10 +88,35 @@ export function engineDevGateProblems(
 export function drawingWorkHotPathProblems(
   source = readFileSync(join(ROOT, TILED_RENDERER_SOURCE_PATH), 'utf8')
 ) {
-  return source
-    .split('\n')
-    .filter((line) => line.includes('surfaceVisits++') && !line.includes('if (workCounters)'))
-    .map(() => 'surface-visit accounting must stay behind the compile-time workCounters gate');
+  const guardedRanges = [];
+  const guardedBlock = /if\s*\(\s*workCounters\s*\)\s*\{/g;
+  for (const match of source.matchAll(guardedBlock)) {
+    const start = match.index + match[0].lastIndexOf('{');
+    let depth = 1;
+    let end = start + 1;
+    while (depth > 0 && end < source.length) {
+      if (source[end] === '{') depth++;
+      if (source[end] === '}') depth--;
+      end++;
+    }
+    guardedRanges.push({ start, end });
+  }
+  for (const match of source.matchAll(
+    /if\s*\(\s*workCounters\s*\)\s*surfaceVisits\s*(?:\+\+|\+=\s*[^;\n]+)\s*;/g
+  )) {
+    guardedRanges.push({ start: match.index, end: match.index + match[0].length });
+  }
+
+  return [...source.matchAll(/surfaceVisits\s*(?:\+\+|\+=\s*[^;\n]+)/g)].flatMap((match) => {
+    const guarded = guardedRanges.some(
+      ({ start, end }) => match.index > start && match.index < end
+    );
+    if (guarded) return [];
+    const line = source.slice(0, match.index).split('\n').length;
+    return [
+      `${TILED_RENDERER_SOURCE_PATH}:${line}: surface-visit accounting must stay behind the compile-time workCounters gate`,
+    ];
+  });
 }
 
 function javascriptFiles(dir) {

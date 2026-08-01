@@ -1,4 +1,4 @@
-import type { LiveTile } from './tiledSurfaces';
+import { liveTileSurfaces, type LiveTile } from './tiledSurfaces';
 
 interface CommandWork {
   inputOps: number;
@@ -17,7 +17,6 @@ export interface DrawingWorkDebug {
 }
 
 const BYTES_PER_PIXEL = 4;
-const SURFACES_PER_TILE = 3;
 
 export function createDrawingWorkCounters() {
   let activeCommand: CommandWork | null = null;
@@ -47,6 +46,7 @@ export function createDrawingWorkCounters() {
     debug(liveTiles: LiveTile[], backingMigrationPending: boolean): DrawingWorkDebug {
       let realizedNormalBackings = 0;
       let realizedCrayonBackings = 0;
+      let liveSurfaceElements = 0;
       let maxLiveBackingBytes = 0;
       let totalLiveBackingBytes = 0;
       const countBacking = (backing: HTMLCanvasElement) => {
@@ -55,11 +55,13 @@ export function createDrawingWorkCounters() {
         totalLiveBackingBytes += bytes;
       };
       for (const tile of liveTiles) {
-        if (tile.canvas.width === tile.width && tile.canvas.height === tile.height) {
+        const [normalBacking, ...crayonBackings] = liveTileSurfaces(tile);
+        liveSurfaceElements += 1 + crayonBackings.length;
+        if (normalBacking.width === tile.width && normalBacking.height === tile.height) {
           realizedNormalBackings++;
-          countBacking(tile.canvas);
+          countBacking(normalBacking);
         }
-        for (const backing of [tile.crayonBottom, tile.crayonTop]) {
+        for (const backing of crayonBackings) {
           if (backing.width === tile.width && backing.height === tile.height) {
             realizedCrayonBackings++;
             countBacking(backing);
@@ -68,7 +70,7 @@ export function createDrawingWorkCounters() {
       }
       return {
         backingMigrationPending,
-        liveSurfaceElements: liveTiles.length * SURFACES_PER_TILE,
+        liveSurfaceElements,
         realizedNormalBackings,
         realizedCrayonBackings,
         maxLiveBackingBytes,

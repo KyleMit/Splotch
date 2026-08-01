@@ -238,6 +238,72 @@ describe('idle tiled canvas visibility', () => {
     undoTiledCommand(1);
   });
 
+  it('recounts an active command from scratch when repaint replays it', () => {
+    const { canvas } = rendererElements();
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+    const dot: StrokeOp = {
+      kind: 'dot',
+      x: 50,
+      y: 50,
+      radius: 5,
+      color: '#ff0000',
+      erase: false,
+    };
+    beginTiledCommand(true);
+    renderTiledOp(dot);
+    recordTiledOp(dot);
+
+    repaintTiledRenderer();
+    commitTiledCommand();
+
+    expect(tiledWorkDebug()).toMatchObject({
+      lastCommand: { inputOps: 1, rasterizedOps: 1, maxSurfaceVisitsPerOp: 1 },
+    });
+    undoTiledCommand(1);
+  });
+
+  it('drops pre-clear work from a command that continues after clear', () => {
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 1)
+    );
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    const { canvas } = rendererElements();
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => true,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+    const dot: StrokeOp = {
+      kind: 'dot',
+      x: 50,
+      y: 50,
+      radius: 5,
+      color: '#ff0000',
+      erase: false,
+    };
+    beginTiledCommand(true);
+    renderTiledOp(dot);
+    recordTiledOp(dot);
+
+    clearTiledRenderer(false);
+    renderTiledOp(dot);
+    recordTiledOp(dot);
+    commitTiledCommand();
+
+    expect(tiledWorkDebug()).toMatchObject({
+      lastCommand: { inputOps: 1, rasterizedOps: 1, maxSurfaceVisitsPerOp: 1 },
+    });
+    undoTiledCommand(1);
+    undoTiledCommand(1);
+  });
+
   it('captures visible settled tiles before an asynchronous export continues', async () => {
     const { host, canvas } = rendererElements();
     const bitmaps = Array.from({ length: 16 }, (_, index) => ({ index }) as unknown as ImageBitmap);
