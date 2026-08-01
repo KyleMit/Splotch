@@ -62,7 +62,18 @@ test("What's New formats the current release date without runtime locale initial
   page,
 }) => {
   await page.addInitScript(() => {
+    Intl.DateTimeFormat = new Proxy(Intl.DateTimeFormat, {
+      apply() {
+        throw new Error('runtime Intl date formatting is disabled');
+      },
+      construct() {
+        throw new Error('runtime Intl date formatting is disabled');
+      },
+    });
     Date.prototype.toLocaleDateString = () => {
+      throw new Error('runtime locale formatting is disabled');
+    };
+    Date.prototype.toLocaleString = () => {
       throw new Error('runtime locale formatting is disabled');
     };
   });
@@ -73,7 +84,9 @@ test("What's New formats the current release date without runtime locale initial
 
   const dates = page.locator('.whats-new-date');
   await expect(dates).toHaveCount(1);
-  await expect(dates.first()).toHaveText(/^[A-Z][a-z]+ \d{1,2}, \d{4}$/);
+  for (const date of await dates.all()) {
+    await expect(date).toHaveText(/^[A-Z][a-z]+ \d{1,2}, \d{4}$/);
+  }
 });
 
 test('setting card spacing only applies to direct section siblings', async ({ page }) => {

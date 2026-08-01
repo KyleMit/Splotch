@@ -59,12 +59,13 @@ by viewport width** — both reading the same section definitions, so the layout
 * **Release notes split into their own What's New section**; About now holds only identity, links,
   and version. Submit Feedback is promoted from an About sub-section to a top-level section. The
   build generates metadata JSON plus a Svelte component containing the current release's compiled
-  markup. The section renders only that current release and links to GitHub for full history. Its
-  static English month table preserves the same `July 28, 2026` presentation without constructing
-  `Date` objects, shifting across time zones, initializing `Intl`, or parsing HTML on the response
-  frame. The generator splits the current note at its level-two headings; the first compiled section
-  renders with the card and the remaining sections appear one per presentation frame. No frame has
-  to construct and lay out the entire note at once, and no work is added to app boot.
+  markup. The section renders only that current release and links to GitHub for full history. The
+  generator validates the hand-authored ISO date and emits its UTC `en-US` display label, preserving
+  the same `July 28, 2026` presentation without constructing `Date` objects, shifting across time
+  zones, initializing `Intl`, or parsing HTML on the response frame. The generator splits the
+  current note at its level-two headings; the first compiled section renders with the card and the
+  remaining sections appear one per presentation frame. No frame has to construct and lay out the
+  entire note at once, and no work is added to app boot.
 
 `TabPager`/`TabPagerTab`/`tabPagerContext` are deleted — the pager was Parent-Center-only.
 

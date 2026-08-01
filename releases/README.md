@@ -16,9 +16,9 @@ is generated from them:
 
 ```markdown
 ---
-version: 1.2.0          # semver, must match the filename
-date: 2026-06-10        # YYYY-MM-DD, the release date
-androidVersionCode: 3   # monotonic integer; filled in by the release script
+version: 1.2.0
+date: 2026-06-10
+androidVersionCode: 3
 ---
 
 ## ✨ New
@@ -33,6 +33,9 @@ androidVersionCode: 3   # monotonic integer; filled in by the release script
 
 * A fixed thing
 ```
+
+`version` is semver and must match the filename. `date` is a real calendar date in exact
+`YYYY-MM-DD` form. `androidVersionCode` is a monotonic integer filled in by the release script.
 
 The body is free Markdown. Headings become section labels in the plain-text store changelogs; list
 items become `•` bullets. Keep the Android changelog under **500 characters** (the script warns if

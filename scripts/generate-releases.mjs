@@ -15,11 +15,30 @@ import { parseFrontmatter, compareSemverDesc, writeFileDeep } from './lib/frontm
 
 const RELEASES_DIR = join(ROOT, 'releases');
 const ANDROID_CHANGELOG_LIMIT = 500; // Google Play "What's new" hard limit.
+const ISO_RELEASE_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function parseRelease(filename) {
-  const parsed = parseFrontmatter(readFileSync(join(RELEASES_DIR, filename), 'utf8'));
-  if (!parsed) fail(`${filename}: missing or malformed frontmatter`);
-  return { filename, meta: parsed.meta, body: parsed.body };
+  return parseReleaseSource(filename, readFileSync(join(RELEASES_DIR, filename), 'utf8'));
+}
+
+export function parseReleaseSource(filename, source) {
+  const parsed = parseFrontmatter(source);
+  if (!parsed) throw new Error(`${filename}: missing or malformed frontmatter`);
+  const isoDate = parsed.meta.date;
+  if (!ISO_RELEASE_DATE.test(isoDate)) {
+    throw new Error(`${filename}: date must use YYYY-MM-DD`);
+  }
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  if (Number.isNaN(date.valueOf()) || date.toISOString().slice(0, 10) !== isoDate) {
+    throw new Error(`${filename}: date must be a real calendar date`);
+  }
+  const dateLabel = date.toLocaleDateString('en-US', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  return { filename, meta: parsed.meta, body: parsed.body, dateLabel };
 }
 
 // Markdown -> plain text for the store changelogs.
@@ -101,7 +120,7 @@ function main() {
   //    Markdown into ordinary DOM creation instead of parsing HTML on the response frame.
   const appData = releases.map((r) => ({
     version: r.meta.version,
-    date: r.meta.date,
+    dateLabel: r.dateLabel,
   }));
   write(join(ROOT, 'web', 'src', 'lib', 'releases.json'), JSON.stringify(appData, null, 2) + '\n');
   write(

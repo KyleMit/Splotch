@@ -11,28 +11,6 @@
   const INITIAL_RELEASE_SECTION_COUNT = 1;
   const currentRelease = releases[0];
   let visibleReleaseSections = $state(INITIAL_RELEASE_SECTION_COUNT);
-  const RELEASE_MONTHS = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
-
-  // Dates in releases.json are plain YYYY-MM-DD; parse the parts directly so
-  // formatting never shifts a day across timezones or initializes Intl on the
-  // section's first displayed frame.
-  function formatReleaseDate(isoDate: string): string {
-    const [year, month, day] = isoDate.split('-').map(Number);
-    return `${RELEASE_MONTHS[month - 1]} ${day}, ${year}`;
-  }
 
   onMount(() => {
     let frame = 0;
@@ -53,7 +31,7 @@
   {#if currentRelease}
     <div class="whats-new">
       <h3 class="whats-new-heading">
-        <span class="whats-new-date">{formatReleaseDate(currentRelease.date)}</span>
+        <span class="whats-new-date">{currentRelease.dateLabel}</span>
       </h3>
       <div class="whats-new-body">
         <CurrentReleaseNotes visibleSections={visibleReleaseSections} />

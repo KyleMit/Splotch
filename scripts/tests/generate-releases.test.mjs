@@ -1,5 +1,41 @@
 import { describe, expect, it } from 'vitest';
-import { renderReleaseComponent, validateStoreText } from '../generate-releases.mjs';
+import {
+  parseReleaseSource,
+  renderReleaseComponent,
+  validateStoreText,
+} from '../generate-releases.mjs';
+
+describe('parseReleaseSource', () => {
+  it('formats a validated release date for the generated app data', () => {
+    expect(
+      parseReleaseSource(
+        '2.0.0.md',
+        '---\nversion: 2.0.0\ndate: 2026-07-28\n---\n\n## New\n\nFaster drawing.'
+      ).dateLabel
+    ).toBe('July 28, 2026');
+  });
+
+  it.each(['07/28/2026', '2026-07-28  # ship day', '', '2026-13-01'])(
+    'rejects invalid release date frontmatter %j',
+    (date) => {
+      expect(() =>
+        parseReleaseSource(
+          '2.0.0.md',
+          `---\nversion: 2.0.0\ndate: ${date}\n---\n\n## New\n\nFaster drawing.`
+        )
+      ).toThrow(/2\.0\.0\.md: date must/);
+    }
+  );
+
+  it('rejects impossible calendar dates', () => {
+    expect(() =>
+      parseReleaseSource(
+        '2.0.0.md',
+        '---\nversion: 2.0.0\ndate: 2026-02-29\n---\n\n## New\n\nFaster drawing.'
+      )
+    ).toThrow('2.0.0.md: date must be a real calendar date');
+  });
+});
 
 describe('validateStoreText', () => {
   it('accepts ordinary plain text', () => {
