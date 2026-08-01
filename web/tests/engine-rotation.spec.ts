@@ -145,6 +145,22 @@ test('returning to the paper angle preserves it across viewport drift', async ({
   expect(await page.evaluate(() => window.__engine.pixelAt(121, 60)[3])).toBeGreaterThan(0);
 });
 
+test('returning to the paper angle re-adopts a materially resized viewport', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await drawStroke(page, box, [
+    { x: 40, y: 60 },
+    { x: 200, y: 60 },
+  ]);
+
+  await rotateTo(page, 90, 400, 300);
+  await rotateTo(page, 0, 400, 400);
+
+  const view = await page.evaluate(() => window.__engine.getViewState());
+  expect(view.active).toBe(false);
+  expect(view.paperCssWidth).toBe(400);
+  expect(view.paperCssHeight).toBe(400);
+});
+
 test('a minor same-angle settle after an exact return preserves the paper', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
   await drawStroke(page, box, [

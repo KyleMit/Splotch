@@ -124,7 +124,9 @@ and accessibility surface, but the production renderer never paints it. The sixt
 ADR-0015's full `min(devicePixelRatio, 2)` resolution; tiling changes surface topology, not
 resolution. Operations stay in paper coordinates. `tiledRenderer.ts` applies the paper-view
 transform to each tile, culls dots and paths by their paper-space bounds, and renders only
-intersecting tiles.
+intersecting tiles. Its CSS boundaries are shared and snapped to physical-device pixels even when
+the backing scale is capped below device DPR, preventing independently composited neighbors from
+landing on fractional physical pixels.
 
 `tiledSurfaces.ts` owns discovery and construction of the template-provided tile elements, normal
 and crayon backing-store allocation, deferred hidden-tile clears, and history-base tile creation.
@@ -133,11 +135,13 @@ surface lifecycle independent of command ordering without changing allocation ti
 
 Production history retains vector operations and folds its non-undoable prefix, one command at a
 time, into a 4×4 offscreen raster base after 1.5 seconds without active input. Pointerdown cancels
-pending compaction. ADR-0086 replaces ordinary vector-replay undo with cropped, tile-local
-pre-command patches: a pop restores only the pixels that command changed. Normal drawings retain
-twenty undo steps; canvas-spanning commands adaptively shorten depth before patches exceed a
-three-paper resident byte budget. Clear is an ordinary full-tile snapshot command, and export
-composites the tiled base and retained commands into its destination.
+pending compaction. Each base tile tracks whether folding has painted it; blank base tiles neither
+blit nor make their matching live canvas visible during repaint. ADR-0086 replaces ordinary
+vector-replay undo with cropped, tile-local pre-command patches: a pop restores only the pixels that
+command changed. Normal drawings retain twenty undo steps; canvas-spanning commands adaptively
+shorten depth before patches exceed a three-paper resident byte budget. Clear is an ordinary
+full-tile snapshot command, and export composites the tiled base and retained commands into its
+destination.
 
 Brush-specific invariants are:
 
@@ -385,7 +389,8 @@ The critical gotchas are:
 
 * Split in backing pixels, not CSS pixels; otherwise fractional DPR leaves gaps or overlaps.
 * Use shared boundary calculations for neighboring tiles so every backing pixel belongs to exactly
-  one tile.
+  one tile, and snap internal CSS boundaries through device DPR when render scale is capped below
+  that DPR.
 * Preserve round line caps and anti-alias padding when culling; centerline-only bounds clip stroke
   edges at tile seams.
 * A tile canvas's local origin differs from paper coordinates. Subtract the tile offset in the

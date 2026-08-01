@@ -159,12 +159,12 @@ The related invariants are:
   nonempty paper to its original orientation therefore removes the CSS presentation transform
   without hiding and replaying the already-correct tiles. Replaying one colored crayon stroke
   created ten temporary canvases and two 96/138 ms frames despite unchanged output.
-* A return to `paperAngle` remains locked for that resize when the previous processed angle differs.
-  A viewport whose portrait/landscape shape differs from the paper also locks immediately, because
-  Mobile WebKit can expose the resized geometry before its Screen Orientation angle settles. A
-  same-angle system-inset settle within `PAPER_VIEWPORT_DRIFT_TOLERANCE_CSS_PX` also keeps the paper
-  locked. The paper is contain-fit and centered in that drift instead of being rerasterized; a
-  material later viewport resize retains the ordinary re-adoption behavior.
+* A return to `paperAngle` remains locked only when its viewport stays within
+  `PAPER_VIEWPORT_DRIFT_TOLERANCE_CSS_PX` of the paper. A viewport whose portrait/landscape shape
+  differs from the paper also locks immediately, because Mobile WebKit can expose the resized
+  geometry before its Screen Orientation angle settles. The paper is contain-fit and centered in
+  minor system-inset drift instead of being rerasterized; a material same-orientation viewport
+  resize re-adopts the paper.
 * Hidden crayon-preview canvases carry no committed pixels and are not resized. The first crayon op
   allocates only the intersecting bottom/top preview pairs. A preview that is visible during a
   resize remains eager so an in-progress pass can replay.

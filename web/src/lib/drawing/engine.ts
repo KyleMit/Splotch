@@ -422,13 +422,9 @@ export function getCanvasRect(): Readonly<CanvasRect> {
 function adoptPaperUnlessLocked(rect: DOMRect): boolean {
   const angle = currentScreenAngle();
   const paperAngleChanged = rotationDelta(paperAngle, angle) !== 0;
-  const returningFromLockedRotation =
-    !isIdentityView(paperView) && rotationDelta(resizedAngle, angle) !== 0 && !paperAngleChanged;
   const paperOrientationChanged = paper.cssW > paper.cssH !== rect.width > rect.height;
   const minorDrift = !paperAngleChanged && smallViewportDrift(paper.cssW, paper.cssH, rect);
-  const lockPaper =
-    !canvasEmpty &&
-    (paperAngleChanged || returningFromLockedRotation || paperOrientationChanged || minorDrift);
+  const lockPaper = !canvasEmpty && (paperAngleChanged || paperOrientationChanged || minorDrift);
   if (!lockPaper) {
     const { w, h } = backingSizeOf(rect);
     paper = { pxW: w, pxH: h, cssW: rect.width, cssH: rect.height };

@@ -21,6 +21,7 @@ export interface UndoTileSnapshot {
   tileHeight: number;
   dirty: TileDirtyBounds;
   hidden: boolean;
+  cropped: boolean;
 }
 
 export function createTiledUndoPatches() {
@@ -58,6 +59,7 @@ export function createTiledUndoPatches() {
       tileHeight: tile.height,
       dirty: { ...dirty },
       hidden,
+      cropped: false,
     });
   }
 
@@ -65,6 +67,8 @@ export function createTiledUndoPatches() {
     const snapshots = byCommand.get(command);
     if (!snapshots) return;
     for (const snapshot of snapshots.values()) {
+      if (snapshot.cropped) continue;
+      snapshot.cropped = true;
       const { x0, y0, x1, y1 } = snapshot.dirty;
       if (x0 === 0 && y0 === 0 && x1 === snapshot.tileWidth && y1 === snapshot.tileHeight) continue;
       const cropped = document.createElement('canvas');

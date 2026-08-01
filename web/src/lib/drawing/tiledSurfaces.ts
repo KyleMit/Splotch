@@ -1,8 +1,8 @@
 import { resetCrayonStateForClear, setCrayonBufferForTarget } from './crayonPassBuffer';
 import { setMagicPatternRegion } from './magicBrush';
 import { LIVE_TILE_COLUMNS, LIVE_TILE_ROWS } from './liveTiles';
-import { clearAllOf } from './strokeOps';
-import type { TileBounds } from './tiledGeometry';
+import { clearAllOf, renderOp, type StrokeOp } from './strokeOps';
+import { geometryIntersectsTile, type TileBounds } from './tiledGeometry';
 
 export interface LiveTile extends TileBounds {
   canvas: HTMLCanvasElement;
@@ -17,6 +17,7 @@ export interface LiveTile extends TileBounds {
 export interface HistoryBaseTile extends TileBounds {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
+  painted: boolean;
 }
 
 export function createLiveTiles(canvasElement: HTMLCanvasElement): LiveTile[] {
@@ -130,10 +131,46 @@ export function createHistoryBaseTiles(width: number, height: number): HistoryBa
         paperTop: y,
         paperRight: right,
         paperBottom: bottom,
+        painted: false,
       };
       setMagicPatternRegion(baseCtx, { x, y, width: tile.width, height: tile.height });
       tiles.push(tile);
     }
   }
   return tiles;
+}
+
+export function renderHistoryBaseOp(tiles: HistoryBaseTile[], op: StrokeOp) {
+  if (op.kind === 'clear') {
+    for (const tile of tiles) {
+      renderOp(tile.ctx, op);
+      tile.painted = false;
+    }
+    return;
+  }
+  if (op.kind === 'crayonFlush') {
+    for (const tile of tiles) renderOp(tile.ctx, op);
+    return;
+  }
+  if (op.kind === 'crayonPassRaster') {
+    const right = op.x + op.canvas.width;
+    const bottom = op.y + op.canvas.height;
+    for (const tile of tiles) {
+      if (
+        right > tile.paperLeft &&
+        op.x < tile.paperRight &&
+        bottom > tile.paperTop &&
+        op.y < tile.paperBottom
+      ) {
+        renderOp(tile.ctx, op);
+        tile.painted = true;
+      }
+    }
+    return;
+  }
+  for (const tile of tiles) {
+    if (!geometryIntersectsTile(op, tile)) continue;
+    renderOp(tile.ctx, op);
+    if (!op.erase) tile.painted = true;
+  }
 }

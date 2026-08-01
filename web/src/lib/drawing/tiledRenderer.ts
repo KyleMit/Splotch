@@ -5,7 +5,12 @@ import { viewMatrix, viewToPaper, type PaperView } from './paperView';
 import { createProgressiveClearCapture } from './progressiveClearCapture';
 import { renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
 import { type HistoryDebug, MAX_UNDO_DEPTH } from './undoHistory';
-import { geometryIntersectsTile, opDeviceBounds, tilesIntersect } from './tiledGeometry';
+import {
+  geometryIntersectsTile,
+  opDeviceBounds,
+  tileCssSpan,
+  tilesIntersect,
+} from './tiledGeometry';
 import { LIVE_TILE_COLUMNS, LIVE_TILE_ROWS } from './liveTiles';
 import { createTiledUndoPatches } from './tiledUndoPatches';
 import {
@@ -15,6 +20,7 @@ import {
   deferHiddenTileClear,
   ensureCrayonTileBacking,
   ensureNormalTileBacking,
+  renderHistoryBaseOp,
   type HistoryBaseTile,
   type LiveTile,
 } from './tiledSurfaces';
@@ -95,6 +101,9 @@ export function resizeTiledRenderer(
   rendererWidth = width;
   rendererHeight = height;
   rendererScale = renderScale;
+  const totalCssWidth = width / renderScale;
+  const totalCssHeight = height / renderScale;
+  const deviceScale = window.devicePixelRatio || 1;
   for (let row = 0; row < LIVE_TILE_ROWS; row++) {
     for (let column = 0; column < LIVE_TILE_COLUMNS; column++) {
       const tile = liveTiles[row * LIVE_TILE_COLUMNS + column];
@@ -103,6 +112,8 @@ export function resizeTiledRenderer(
       tile.y = Math.floor((row * height) / LIVE_TILE_ROWS);
       const right = Math.floor(((column + 1) * width) / LIVE_TILE_COLUMNS);
       const bottom = Math.floor(((row + 1) * height) / LIVE_TILE_ROWS);
+      const horizontal = tileCssSpan(column, LIVE_TILE_COLUMNS, totalCssWidth, deviceScale);
+      const vertical = tileCssSpan(row, LIVE_TILE_ROWS, totalCssHeight, deviceScale);
       const crayonWasVisible = !tile.crayonBottom.hidden || !tile.crayonTop.hidden;
       tile.width = right - tile.x;
       tile.height = bottom - tile.y;
@@ -111,10 +122,10 @@ export function resizeTiledRenderer(
       tile.crayonTop.hidden = true;
       if (!deferHiddenBackings || !tile.canvas.hidden) ensureNormalTileBacking(tile);
       for (const tileCanvas of [tile.canvas, tile.crayonBottom, tile.crayonTop]) {
-        tileCanvas.style.left = `${tile.x / renderScale}px`;
-        tileCanvas.style.top = `${tile.y / renderScale}px`;
-        tileCanvas.style.width = `${tile.width / renderScale}px`;
-        tileCanvas.style.height = `${tile.height / renderScale}px`;
+        tileCanvas.style.left = `${horizontal.start}px`;
+        tileCanvas.style.top = `${vertical.start}px`;
+        tileCanvas.style.width = `${horizontal.size}px`;
+        tileCanvas.style.height = `${vertical.size}px`;
       }
       tile.ctx.lineCap = 'round';
       tile.ctx.lineJoin = 'round';
@@ -143,8 +154,9 @@ function ensureHistoryBase() {
   historyBaseHeight = paper.height;
   for (const target of historyBase) {
     for (const source of previous) {
-      if (tilesIntersect(source, target)) {
+      if (source.painted && tilesIntersect(source, target)) {
         target.ctx.drawImage(source.canvas, source.x, source.y);
+        target.painted = true;
       }
     }
   }
@@ -170,16 +182,6 @@ export function applyTiledView(paperView: PaperView) {
       width: Math.ceil(tile.paperRight) - patternX,
       height: Math.ceil(tile.paperBottom) - patternY,
     });
-  }
-}
-
-function renderHistoryBaseOp(op: StrokeOp) {
-  if (op.kind !== 'dot' && op.kind !== 'path') {
-    for (const tile of historyBase) renderOp(tile.ctx, op);
-    return;
-  }
-  for (const tile of historyBase) {
-    if (geometryIntersectsTile(op, tile)) renderOp(tile.ctx, op);
   }
 }
 
@@ -304,7 +306,7 @@ function foldOldestCommand() {
     tile.ctx.rect(0, 0, paper.width, paper.height);
     tile.ctx.clip();
   }
-  for (const op of command.ops) renderHistoryBaseOp(op);
+  for (const op of command.ops) renderHistoryBaseOp(historyBase, op);
   for (const tile of historyBase) tile.ctx.restore();
 }
 
@@ -334,7 +336,7 @@ export function repaintTiledRenderer(rebuildUndoPatches = true) {
     tile.canvas.hidden = true;
     clearTileBacking(tile);
     for (const base of historyBase) {
-      if (tilesIntersect(base, tile)) {
+      if (base.painted && tilesIntersect(base, tile)) {
         tile.ctx.drawImage(base.canvas, base.x, base.y);
         tile.canvas.hidden = false;
       }
@@ -348,7 +350,6 @@ export function repaintTiledRenderer(rebuildUndoPatches = true) {
   if (activeCommand) {
     if (rebuildUndo) undoPatches.delete(activeCommand);
     for (const op of activeCommand.ops) renderTiledOp(op);
-    if (rebuildUndo) undoPatches.crop(activeCommand);
   }
   if (rebuildUndo) enforceUndoPatchBudget();
 }
@@ -380,7 +381,7 @@ export function undoTiledCommand(renderScale: number) {
       const tile = liveTiles[index];
       return snapshot.tileWidth === tile?.width && snapshot.tileHeight === tile?.height;
     });
-  if (snapshotsFit) {
+  if (snapshotsFit && !activeCommand) {
     for (const [index, snapshot] of snapshots ?? []) {
       const tile = liveTiles[index];
       resetCrayonStateForClear(tile.ctx);
@@ -398,7 +399,7 @@ export function undoTiledCommand(renderScale: number) {
       tile.canvas.hidden = false;
     }
   } else {
-    repaintTiledRenderer(snapshots === undefined);
+    repaintTiledRenderer(activeCommand !== null || snapshots === undefined);
   }
   if (undone) undoPatches.delete(undone);
   const empty =
@@ -497,7 +498,7 @@ export function captureTiledCanvasSnapshot(): TiledCanvasSnapshot | null {
 
 export function renderTiledSnapshot(target: CanvasRenderingContext2D) {
   for (const base of historyBase) {
-    target.drawImage(base.canvas, base.x, base.y);
+    if (base.painted) target.drawImage(base.canvas, base.x, base.y);
   }
   for (const command of history) renderHistoryCommand(target, command);
   if (activeCommand) {

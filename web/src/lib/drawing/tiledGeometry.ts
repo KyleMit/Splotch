@@ -16,41 +16,32 @@ export function geometryIntersectsTile(
   op: Extract<StrokeOp, { kind: 'dot' | 'path' }>,
   tile: TileBounds
 ) {
-  let left: number;
-  let top: number;
-  let right: number;
-  let bottom: number;
-  let padding: number;
-  if (op.kind === 'dot') {
-    left = right = op.x;
-    top = bottom = op.y;
-    padding = op.radius;
-  } else {
-    left = right = op.startX;
-    top = bottom = op.startY;
-    for (const segment of op.segs) {
-      left = Math.min(left, segment.cx, segment.x);
-      top = Math.min(top, segment.cy, segment.y);
-      right = Math.max(right, segment.cx, segment.x);
-      bottom = Math.max(bottom, segment.cy, segment.y);
-    }
-    padding = op.lineWidth / 2;
-  }
+  const { x0, y0, x1, y1, pad } = opPaddedUserBounds(op);
   return (
-    right + padding >= tile.paperLeft &&
-    left - padding <= tile.paperRight &&
-    bottom + padding >= tile.paperTop &&
-    top - padding <= tile.paperBottom
+    x1 + pad >= tile.paperLeft &&
+    x0 - pad <= tile.paperRight &&
+    y1 + pad >= tile.paperTop &&
+    y0 - pad <= tile.paperBottom
   );
 }
 
 export function tilesIntersect(first: TileBounds, second: TileBounds) {
   return (
-    first.paperRight >= second.paperLeft &&
-    first.paperLeft <= second.paperRight &&
-    first.paperBottom >= second.paperTop &&
-    first.paperTop <= second.paperBottom
+    first.paperRight > second.paperLeft &&
+    first.paperLeft < second.paperRight &&
+    first.paperBottom > second.paperTop &&
+    first.paperTop < second.paperBottom
   );
+}
+
+export function tileCssSpan(index: number, count: number, totalCssPx: number, deviceScale: number) {
+  const start =
+    index === 0 ? 0 : Math.floor((index * totalCssPx * deviceScale) / count) / deviceScale;
+  const end =
+    index === count - 1
+      ? totalCssPx
+      : Math.floor(((index + 1) * totalCssPx * deviceScale) / count) / deviceScale;
+  return { start, size: end - start };
 }
 
 export function opDeviceBounds(

@@ -111,7 +111,9 @@ does not replay them in the ordinary path.
    pre-command value.
 5. Ordinary undo publishes the popped command's captured `wasEmpty` state. A tile scan remains only
    when another pointer is actively drawing and the captured pre-command state cannot describe the
-   composite result.
+   composite result. With an active pointer, undo takes the replay path and rebuilds that active
+   command's pre-state after removing the popped history command; patch restore alone could erase
+   overlapping in-flight pixels or make the removed command reappear on the next undo.
 6. Clear targets only visible normal-ink tiles, because hidden tiles contain no presented committed
    pixels. It hides affected normal and crayon layers immediately, then captures at most one full
    pre-clear tile per `requestAnimationFrame`. Each captured backing clears after two further
@@ -128,9 +130,12 @@ Patch coordinates are local to the current tile backing stores. Resize or rotati
 dimensions, and an asynchronous magic sheet can change what an earlier command should reveal without
 changing geometry. Every existing full vector repaint therefore deletes the old undo rasters and
 reconstructs the undoable tail in one chronological pass: capture the pre-command tiles, replay that
-command, crop, then advance. Subsequent undo returns to patch restore. The accepted physical
-rotation measured 45 ms of `engine.resize`; Appium's separate system orientation transition
-suspended rAF for 2,736 ms, which is recorded but not attributed to `engine.resize` or undo.
+command, crop, then advance. An in-flight command is rebuilt last but remains full-tile until its
+single commit-time crop; cropping it during a repaint would make later input expand bounds around an
+already-cropped source. Patch cropping is also idempotent as a structural guard. Subsequent undo
+returns to patch restore. The accepted physical rotation measured 45 ms of `engine.resize`; Appium's
+separate system orientation transition suspended rAF for 2,736 ms, which is recorded but not
+attributed to `engine.resize` or undo.
 
 Resident patches use an adaptive byte budget:
 

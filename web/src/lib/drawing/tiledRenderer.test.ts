@@ -12,6 +12,7 @@ import {
   detachTiledRenderer,
   hasUnresolvedTiledMagicOps,
   recordTiledOp,
+  repaintTiledRenderer,
   renderTiledOp,
   resizeTiledRenderer,
   tiledHistoryDebug,
@@ -70,6 +71,7 @@ afterEach(() => {
   detachTiledRenderer();
   HTMLCanvasElement.prototype.getContext = originalGetContext;
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 function rendererElements() {
@@ -357,5 +359,37 @@ describe('idle tiled canvas visibility', () => {
 
     expect(captureTiledCanvasSnapshot()).toBeNull();
     expect(createBitmap).not.toHaveBeenCalled();
+  });
+
+  it('keeps blank folded history tiles out of the compositor tree', () => {
+    vi.useFakeTimers();
+    const { host, canvas } = rendererElements();
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+    const dot: StrokeOp = {
+      kind: 'dot',
+      x: 50,
+      y: 50,
+      radius: 5,
+      color: '#ff0000',
+      erase: false,
+    };
+    for (let index = 0; index < 21; index++) {
+      beginTiledCommand(index === 0);
+      renderTiledOp(dot);
+      recordTiledOp(dot);
+      commitTiledCommand();
+    }
+
+    vi.advanceTimersByTime(1_500);
+    repaintTiledRenderer(false);
+
+    expect(host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]:not([hidden])')).toHaveLength(
+      1
+    );
   });
 });
