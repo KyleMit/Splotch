@@ -34,6 +34,7 @@ import {
 import { IPAD_PRO } from './devices.mjs';
 import { profilePath } from './paths.mjs';
 import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
+import { ALL_UNDO_SCENARIO_KEYS, UNDO_SCENARIO_KEYS } from './undo-scenario-keys.mjs';
 import { toMiB } from './units.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 
@@ -223,18 +224,22 @@ function buildScenarios(width, height) {
   const scribbles = Array.from({ length: STROKES }, (_, i) => scribble(i % 6, width, height));
   return [
     {
-      key: 'long-squiggles',
+      key: UNDO_SCENARIO_KEYS.longSquiggles,
       label: `${STROKES} long squiggles (~${LONG_OPS} ops each @ ${HZ}Hz), then undo all`,
       strokes: longs,
     },
     {
-      key: 'short-marks',
+      key: UNDO_SCENARIO_KEYS.shortMarks,
       label: `${STROKES} short dot/dash strokes, then undo all`,
       strokes: shorts,
     },
-    { key: 'mixed', label: `${STROKES} mixed long+short strokes, then undo all`, strokes: mixed },
     {
-      key: 'multi-finger',
+      key: UNDO_SCENARIO_KEYS.mixed,
+      label: `${STROKES} mixed long+short strokes, then undo all`,
+      strokes: mixed,
+    },
+    {
+      key: UNDO_SCENARIO_KEYS.multiFinger,
       label: `${STROKES} five-finger drags (~${MULTI_FINGERS * MULTI_OPS_PER_FINGER} ops/command), then undo all`,
       strokes: multi,
     },
@@ -242,18 +247,18 @@ function buildScenarios(width, height) {
     // stamps the pass buffer, so the crayon fold is the heaviest per-commit
     // render. The pen scribble is the shape-matched control.
     {
-      key: 'scribbles',
+      key: UNDO_SCENARIO_KEYS.scribbles,
       label: `${STROKES} pen back-and-forth scribbles (~${LONG_OPS} ops each), then undo all`,
       strokes: scribbles,
     },
     {
-      key: 'crayon-squiggles',
+      key: UNDO_SCENARIO_KEYS.crayonSquiggles,
       label: `${STROKES} crayon long squiggles (~${LONG_OPS} ops each), then undo all`,
       strokes: longs,
       crayon: true,
     },
     {
-      key: 'crayon-scribbles',
+      key: UNDO_SCENARIO_KEYS.crayonScribbles,
       label: `${STROKES} crayon back-and-forth scribbles (mid-stroke pass splits), then undo all`,
       strokes: scribbles,
       crayon: true,
@@ -548,6 +553,15 @@ export async function runUndoScenarios() {
   process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
   warnIfNoPerfMarks(engine.script);
 
+  const only = flag('scenarios', '');
+  const requestedKeys = only ? only.split(',') : ALL_UNDO_SCENARIO_KEYS;
+  const unknownKeys = requestedKeys.filter((key) => !ALL_UNDO_SCENARIO_KEYS.includes(key));
+  if (unknownKeys.length > 0) {
+    throw new Error(
+      `--scenarios contains unknown key(s): ${unknownKeys.join(', ')}; expected ${ALL_UNDO_SCENARIO_KEYS.join(', ')}`
+    );
+  }
+
   const outDir = profilePath('undo-scenarios', engineName, throttle.tag);
   mkdirSync(outDir, { recursive: true });
 
@@ -580,13 +594,9 @@ export async function runUndoScenarios() {
     const geom = await rasterGeometry(page);
     const events = cdp ? await startTrace(cdp) : null;
     // --scenarios=key1,key2 runs a subset (fast iteration on one question).
-    const only = flag('scenarios', '');
-    let scenarios = buildScenarios(IPAD_PRO.width, IPAD_PRO.height);
-    if (only) {
-      const keys = only.split(',');
-      scenarios = scenarios.filter((sc) => keys.includes(sc.key));
-      if (scenarios.length === 0) throw new Error(`--scenarios matched nothing: ${only}`);
-    }
+    const scenarios = buildScenarios(IPAD_PRO.width, IPAD_PRO.height).filter((scenario) =>
+      requestedKeys.includes(scenario.key)
+    );
     const results = [];
     // Each scenario reloads /dev/engine, and a navigation wipes the Performance
     // API entries — so without CDP the measures have to be drained *per
@@ -684,6 +694,20 @@ export async function runUndoScenarios() {
 // behind a passing profile for a year.
 const COMMIT_GATE_MS = 25;
 
+function formatCommitBreach(scenario) {
+  return (
+    `  ${scenario.key}: commit max ${f1(scenario.draw.commitMaxMs)} ms ` +
+    `(copy ${f1(scenario.draw.snapshotMaxMs)} · fold ${f1(scenario.draw.foldMaxMs)} · ` +
+    `encode ${f1(scenario.draw.encodeInCommitMaxMs)}; deferred ${f1(scenario.draw.encodeMaxMs)})`
+  );
+}
+
+function formatCompletedBreaches(breaches) {
+  return breaches.length > 0
+    ? `\n  Completed scenario breaches:\n${breaches.map(formatCommitBreach).join('\n')}\n`
+    : '\n';
+}
+
 function reportCommitGate(results) {
   const budgetMs = COMMIT_GATE_MS;
   const { gated } = engine;
@@ -706,7 +730,7 @@ function reportCommitGate(results) {
         `scenario(s) did not complete.\n` +
         `  A gated run must measure every requested scenario; skipped coverage cannot pass.\n` +
         skipped.map((s) => `  ${s.key}: ${s.error}`).join('\n') +
-        '\n'
+        formatCompletedBreaches(breaches)
     );
     return {
       engine: engineName,
@@ -741,15 +765,26 @@ function reportCommitGate(results) {
   // The encode path only runs for a scenario whose patches exhaust the resident
   // byte budget (ADR-0082). Today that is multi-finger alone, so the gate's
   // cover for #635's defect class rests on one scenario producing blobs. If a
-  // tiering change ever stops it, the gate keeps passing while testing nothing —
-  // say so rather than let the silence read as a clean bill of health.
+  // tiering change ever stops it, the run measured no coverage for that defect
+  // class and cannot certify the commit path.
   const encoding = measured.filter((s) => (s.debug?.blobBytes ?? 0) > 0);
   if (encoding.length === 0) {
-    console.warn(
-      `! No scenario demoted a patch to a blob, so this run did not exercise the encode ` +
-        `path at all — the commit gate cannot see a #635-class regression. Check whether ` +
-        `the resident byte budget (HOT_PATCH_BUDGET_PAPER_MULTIPLE) now covers every scenario.`
+    process.exitCode = 1;
+    console.error(
+      `\n✗ Commit gate NOT EVALUATED on ${engineName}: no scenario demoted a patch to a ` +
+        `blob, so this run did not exercise the encode path.\n` +
+        `  The commit gate cannot see a #635-class regression. Check whether the resident byte\n` +
+        `  budget (HOT_PATCH_BUDGET_PAPER_MULTIPLE) now covers every requested scenario.` +
+        formatCompletedBreaches(breaches)
     );
+    return {
+      engine: engineName,
+      gated,
+      budgetMs,
+      breaches,
+      encoding: 0,
+      evaluated: false,
+    };
   }
 
   if (breaches.length === 0) {
@@ -770,13 +805,7 @@ function reportCommitGate(results) {
       `  trailing "deferred" figure is the encode that ran off-commit, which is where it\n` +
       `  belongs: large there is healthy, and it is never the cause of a breach.\n`
   );
-  for (const s of breaches) {
-    console.error(
-      `  ${s.key}: commit max ${f1(s.draw.commitMaxMs)} ms ` +
-        `(copy ${f1(s.draw.snapshotMaxMs)} · fold ${f1(s.draw.foldMaxMs)} · ` +
-        `encode ${f1(s.draw.encodeInCommitMaxMs)}; deferred ${f1(s.draw.encodeMaxMs)})`
-    );
-  }
+  for (const scenario of breaches) console.error(formatCommitBreach(scenario));
   return { engine: engineName, gated, budgetMs, breaches };
 }
 
