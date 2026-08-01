@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   isNative: vi.fn(() => false),
   saveBlobToFolder: vi.fn(),
   playScreenshotFeedback: vi.fn(),
+  playScreenshotSuppressedFeedback: vi.fn(),
   perfMarks: false,
 }));
 
@@ -15,6 +16,7 @@ vi.mock('$lib/platform', () => ({ getPlatform: vi.fn(), isNative: mocks.isNative
 vi.mock('./folderSave', () => ({ saveBlobToFolder: mocks.saveBlobToFolder }));
 vi.mock('./screenshotFeedback', () => ({
   playScreenshotFeedback: mocks.playScreenshotFeedback,
+  playScreenshotSuppressedFeedback: mocks.playScreenshotSuppressedFeedback,
 }));
 vi.mock('./screenshotTiming', () => ({ SCREENSHOT_COOLDOWN_MS: 4_000 }));
 vi.mock('./perf', () => ({
@@ -62,6 +64,13 @@ describe('saveScreenshot', () => {
 
     exported.resolve(null);
     await save;
+
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['retry']));
+    mocks.saveBlobToFolder.mockResolvedValue(true);
+    await saveScreenshot();
+
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
+    expect(mocks.playScreenshotSuppressedFeedback).not.toHaveBeenCalled();
   });
 
   it('coalesces overlapping saves and permits a later save after persistence settles', async () => {
@@ -79,9 +88,13 @@ describe('saveScreenshot', () => {
     expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
     expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
 
+    now.mockReturnValue(3_000);
     save.resolve(true);
     await first;
-    now.mockReturnValue(5_000);
+    now.mockReturnValue(6_999);
+    await saveScreenshot();
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
+    now.mockReturnValue(7_000);
     await saveScreenshot();
 
     expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
@@ -100,6 +113,7 @@ describe('saveScreenshot', () => {
 
     expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
     expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
 
     now.mockReturnValue(5_000);
     await saveScreenshot();

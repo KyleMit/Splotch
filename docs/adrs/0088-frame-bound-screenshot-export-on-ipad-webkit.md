@@ -147,9 +147,12 @@ renderer's already-settled pixels instead of replaying into a new full-page surf
 5. The full-screen polaroid preview is removed. `screenshotFeedback.ts` immediately animates the
    existing camera icon, so feedback does not decode or composite the just-created PNG.
 6. `screenshot.ts` continues coalescing concurrent Screenshot Button taps into one active save.
-7. After a successful save starts, `screenshot.ts` suppresses further Screenshot Button taps for the
-   four-second interval exported by `screenshotTiming.ts`. A failed save remains immediately
-   retryable.
+7. After a successful save finishes, `screenshot.ts` suppresses further Screenshot Button taps for
+   the four-second interval exported by `screenshotTiming.ts`. A failed save remains immediately
+   retryable, while a suppressed tap gets a smaller camera-button pulse instead of disappearing.
+8. Every worker request has a 15-second deadline. A silent worker death terminates the cached
+   encoder and releases pending requests; full-canvas exports fall back to the main-thread encoder,
+   while a failed tiled export remains immediately retryable.
 
 Do not first assemble the live tiles on the main thread, render a new set of export tiles all at
 once, pool a full-resolution export canvas, resize one to zero, or explicitly release it as an

@@ -345,8 +345,18 @@ body {
   animation: screenshot-capture var(--duration-slow) var(--ease-pop-strong);
 }
 
+.screenshot-suppressed-feedback [data-icon='camera'] {
+  animation: screenshot-suppressed var(--duration-base) var(--ease-glide);
+}
+
 @keyframes screenshot-capture {
   50% {
     transform: scale(1.2) rotate(-8deg);
+  }
+}
+
+@keyframes screenshot-suppressed {
+  50% {
+    transform: scale(0.82);
   }
 }

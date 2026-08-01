@@ -9,7 +9,7 @@ import {
   triggerDownload,
 } from '$lib/saveNaming';
 import { saveBlobToFolder } from './folderSave';
-import { playScreenshotFeedback } from './screenshotFeedback';
+import { playScreenshotFeedback, playScreenshotSuppressedFeedback } from './screenshotFeedback';
 import { SCREENSHOT_COOLDOWN_MS } from './screenshotTiming';
 import { PERF_MARKS } from './perf';
 
@@ -72,36 +72,42 @@ export async function saveImageBlob(
   if (__IS_CAPACITOR__ && isNative()) {
     if (PERF_MARKS && window.__screenshotSaveSink) {
       await window.__screenshotSaveSink(blob, baseName);
-      return;
+      return true;
     }
     try {
       await saveToGallery(blob, baseName);
+      return true;
     } catch (err) {
       console.error('Save to gallery failed:', err);
+      return false;
     }
   } else {
     const filename = `${baseName}-${timestamp()}.${extensionForImageType(blob.type)}`;
-    if (await saveBlobToFolder(blob, filename, opts)) return;
+    if (await saveBlobToFolder(blob, filename, opts)) return true;
     const url = URL.createObjectURL(blob);
     triggerDownload(url, filename);
     URL.revokeObjectURL(url);
+    return true;
   }
 }
 
 async function saveScreenshotImage() {
   playScreenshotFeedback();
   const blob = await exportCanvasBlob(getActiveOverlayImage());
-  if (!blob) return;
-  await saveImageBlob(blob, undefined, { allowPrompt: true });
+  if (!blob) return false;
+  return saveImageBlob(blob, undefined, { allowPrompt: true });
 }
 
 export function saveScreenshot(): Promise<void> {
   if (activeScreenshotSave) return activeScreenshotSave;
   const startedAt = performance.now();
-  if (startedAt < nextScreenshotAllowedAt) return Promise.resolve();
+  if (startedAt < nextScreenshotAllowedAt) {
+    playScreenshotSuppressedFeedback();
+    return Promise.resolve();
+  }
   activeScreenshotSave = saveScreenshotImage()
-    .then(() => {
-      nextScreenshotAllowedAt = startedAt + SCREENSHOT_COOLDOWN_MS;
+    .then((saved) => {
+      if (saved) nextScreenshotAllowedAt = performance.now() + SCREENSHOT_COOLDOWN_MS;
     })
     .finally(() => {
       activeScreenshotSave = null;

@@ -51,6 +51,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -109,6 +110,29 @@ describe('encodeCanvasPng', () => {
 
     expect(ControllableWorker.instances).toHaveLength(1);
     expect(toBlob).not.toHaveBeenCalled();
+  });
+
+  it('terminates a silent worker and falls back to the main-thread encoder', async () => {
+    vi.useFakeTimers();
+    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    const fallback = new Blob(['fallback'], { type: 'image/png' });
+    vi.stubGlobal('Worker', ControllableWorker);
+    vi.stubGlobal('OffscreenCanvas', class {});
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(async () => bitmap)
+    );
+    const canvas = document.createElement('canvas');
+    vi.spyOn(canvas, 'toBlob').mockImplementation((callback) => callback(fallback));
+    const { encodeCanvasPng } = await import('./pngEncoder');
+
+    const encoded = encodeCanvasPng(canvas);
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(15_000);
+
+    await expect(encoded).resolves.toBe(fallback);
+    expect(ControllableWorker.instances[0].terminated).toBe(true);
+    expect(bitmap.close).toHaveBeenCalledOnce();
   });
 
   it('transfers settled drawing tiles and composition layers together', async () => {
