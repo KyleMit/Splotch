@@ -868,33 +868,6 @@ Make the collection single-path: extract
 exactly the state the preview renders, a collection failure degrades to "no device info attached"
 instead of a fake network error, and the two sites can't drift.
 
-### [Maintainability] WhatsNewSection's `slice(0, 5)` recent-release count is an unnamed tuning literal
-
-**File(s):** `web/src/lib/components/parent/WhatsNewSection.svelte` (line 10) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const RELEASES_URL = 'https://github.com/KyleMit/Splotch/releases';
-const recent = releases.slice(0, 5);
-```
-
-How many releases the Updates section shows is precisely a "tunable decision" under CLAUDE.md's
-naming rule ("threshold, duration, dimension, … retry count — gets a named module-scope constant").
-The neighboring `RELEASES_URL` is named; the `5` is not, and nothing at the call site says whether
-it balances scroll length, staleness, or payload size.
-
-#### Proposed solution
-
-```ts
-// Enough history to show momentum without the section becoming a scroll chore;
-// older releases live behind the "See all releases" link.
-const RECENT_RELEASE_COUNT = 5;
-const recent = releases.slice(0, RECENT_RELEASE_COUNT);
-```
-
 ### [Readability] ParentCenter's two media-query flags are four pieces of duplicated wiring — extract a `mediaQueryFlag` helper
 
 **File(s):** `web/src/lib/components/ParentCenter.svelte` (lines 26–61) @ 9ae62ff1
@@ -7688,82 +7661,6 @@ return type `string | undefined` so the existing `if (!effectiveKey)` checks beh
 
 ## Source: Code audit — Coloring books + platform/device + audio + misc utilities
 
-### [Performance] Coloring-book prefetch warms only the pen outline, missing the chalk art dark mode actually displays
-
-**File(s):** `web/src/lib/components/ColoringBook.svelte` (`prefetchPageOverlay`, lines 45–47;
-rotation-warm `$effect`, lines 59–63) @ 9ae62ff1
-
-**Priority:** P2
-
-> **Verified 2026-07-28** — confirmed that no other site warms chalk. Magnitude caveat the finding
-> omits: `web/vite.config.ts` line 93 precaches `**/*.webp` (all 96 chalk files, ~39 MB), so once
-> the service-worker precache completes both variants are local; the real win narrows to the
-> pre-SW/first-visit window plus decode warming, and is near-nil on native where assets are bundled.
-> Weigh that before ranking the work.
-
-#### Problem
-
-Both full-res warm-up paths in `ColoringBook.svelte` prefetch only the PEN outline:
-
-```svelte
-function prefetchPageOverlay(page: ColoringPage) {
-  prefetchImages([pageImage(page, orientation)]);
-}
-```
-
-and (lines 59–63):
-
-```svelte
-$effect(() => {
-  if (!coloringBookState.overlayPage) return;
-  const other = orientation === 'portrait' ? 'landscape' : 'portrait';
-  prefetchImages([pageImage(coloringBookState.overlayPage, other)]);
-});
-```
-
-But what the canvas actually renders in dark mode is the CHALK outline, not the pen outline —
-`DrawingCanvas.svelte` lines 266–268:
-
-```ts
-const themedOverlayUrl = $derived(
-  resolvedTheme() === 'dark' ? (chalkUrl() ?? overlayUrl()) : overlayUrl(),
-);
-```
-
-The comment on the rotation-warm effect (lines 58–63) states its purpose: "warm it as soon as a page
-is applied so that swap is a cache hit and the ready-gated fade-in (DrawingCanvas) is near-instant."
-In dark mode that promise is broken: the effect warms `pageImage(page, other)` (the pen
-`.outline.webp`), while the ready-gated decode in `DrawingCanvas` (lines 277–284) loads the
-`.chalk.webp` — a cold fetch, so the blank-canvas rotation swap and the pick-from-picker path both
-pay full network + decode latency in dark mode. Notably, the *thumbnail* prefetch
-(`prefetchBookPages`, lines 42–44) already got this right — it is theme-aware via
-`pageThumb(page, orientation, resolvedTheme())` and its comment explicitly says "reading
-resolvedTheme() keeps the warmed set and the grid in sync". The full-res paths just never got the
-same treatment when chalk art landed.
-
-#### Proposed solution
-
-Add a theme-aware full-res URL helper mirroring `DrawingCanvas`'s selection, e.g. in `books.ts`:
-
-```ts
-export function pageOverlayImage(
-  page: ColoringPage,
-  orientation: BookOrientation,
-  theme: ResolvedTheme,
-): string {
-  return (theme === 'dark' ? page.chalkImages[orientation] : undefined) ?? page.images[orientation];
-}
-```
-
-and use it in `prefetchPageOverlay` and the rotation-warm effect
-(`pageOverlayImage(page, other, resolvedTheme())`). Bonus: `DrawingCanvas`'s `themedOverlayUrl`
-could be re-expressed through the same helper (via a `coloringBook.svelte.ts` getter), collapsing
-the currently duplicated "chalk in dark, else pen" rule into one place. Gotcha: dark mode with no
-chalk must still fall back to the pen outline (the `??`), and prefetching *both* pen+chalk in dark
-mode is wasteful — only the resolved one is displayed. Consider also whether the night fill
-(`nightSheetUrl`) used by the magic brush deserves the same warm-up; that is a larger asset and may
-be a deliberate omission worth a comment.
-
 ### [Correctness] Every page tile in a book announces the same aria-label; `ColoringPage.name` has no production reader
 
 **File(s):** `web/src/lib/components/ColoringBook.svelte` (page-tile button, line 163);
@@ -12048,56 +11945,6 @@ Extract `async function captureFeatureGraphic(browser)` beside the scenes (it do
 
 ## Source: Code audit — scripts/perf — performance harness
 
-### [Correctness] `perf:mount` crashes with ReferenceError — `join` is used but never imported
-
-**File(s):** `scripts/perf/mount.mjs` (`runMountProfile`, lines 13–21, 101–102, 117) @ 9ae62ff1
-
-**Priority:** P1
-
-#### Problem
-
-`mount.mjs` calls `join(...)` three times but never imports it. The import block (lines 13–21) is:
-
-```js
-import { chromium } from '@playwright/test';
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { chromiumExecutablePath } from '../lib/playwright.mjs';
-import { isMain, runMain } from '../lib/proc.mjs';
-import { parsePerfArgs } from './args.mjs';
-import { startTrace, stopTrace } from './capture.mjs';
-import { profilePath } from './paths.mjs';
-import { buildAndPreview } from './preview.mjs';
-import { LONG_TASK_MS } from './thresholds.mjs';
-```
-
-There is no `import { join } from 'node:path'`, yet lines 101–102 and 117 use it:
-
-```js
-writeFileSync(join(outDir, 'trace.json'), JSON.stringify({ traceEvents: events }));
-writeFileSync(join(outDir, 'mount-summary.json'), JSON.stringify(summary, null, 2));
-...
-console.log(`Analyze the trace with: npm run perf:analyze -- ${join(outDir, 'trace.json')}`);
-```
-
-`npm run perf:mount` (package.json line 43) therefore runs the entire expensive front half —
-production build, preview server, headless Chromium launch, Slow-4G-throttled navigation, 5 s
-post-load settle, trace stop — and then throws `ReferenceError: join is not defined` at line 101,
-before either artifact is written. The whole run is wasted; the trace is lost. Verified: `grep`
-confirms no `node:path` import anywhere in the file, and ESLint passes it clean (see the next
-finding for why). No test imports `mount.mjs` either (`scripts/tests/perf-cli-inputs.test.mjs`
-covers `analyze.mjs`, `analyze-webinspector.mjs`, `replay-scenario.mjs`, and `android.mjs` only), so
-nothing catches the break.
-
-#### Proposed solution
-
-Add `import { join } from 'node:path';` to `mount.mjs`. Additionally add a cheap smoke to
-`scripts/tests/perf-cli-inputs.test.mjs` that imports `../perf/mount.mjs` without invoking its
-driver (the same pattern as the existing "imports the Android profiler without starting its driver"
-test) — an import alone wouldn't catch a missing binding used at runtime, so the durable prevention
-is the lint change in the next finding.
-
----
-
 ### [Testing] Extend the `no-undef` lint carve-out from `tools/asset-gen` to `scripts/**` — it exists precisely to catch the `perf:mount` class of bug
 
 **File(s):** `eslint.config.js` (lines 126–134) @ 9ae62ff1; `scripts/perf/mount.mjs`
@@ -15580,37 +15427,6 @@ await page.mouse.move(box.x + START.x, box.y + START.y);
 
 Now the premise is computed from the same values the gesture uses.
 
-### [Readability] `flows-magic-brush.spec.ts` carries three near-identical opaque-pixel counters
-
-**File(s):** `web/tests/flows-magic-brush.spec.ts` (`opaquePixelsInLeftBand` lines 280–289,
-`opaquePixelsInTopBand` lines 317–326, `opaqueCount` lines 400–408) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Three helpers in the same file run the identical loop — `getImageData` over a region, count
-`data[i] > 200` alpha — differing only in the sampled rectangle (left band by width fraction, top
-band by height fraction, whole canvas). Each carries its own doc comment and `frac` default; a
-threshold change (the `200` strong-alpha cutoff, itself an unnamed magic literal repeated three
-times) must be made in three places. Staying inside this file keeps the sanctioned
-self-contained-pixel-spec boundary intact — the duplication is purely internal.
-
-#### Proposed solution
-
-One parameterized counter, kept in-file:
-
-```ts
-const STRONG_ALPHA = 200;
-function opaquePixelCount(
-  page: Page,
-  region?: { xFrac?: number; yFrac?: number; wFrac?: number; hFrac?: number },
-): Promise<number>;
-```
-
-with the three call sites passing `{ wFrac: 0.04 }`, `{ hFrac: 0.05 }`, and nothing. Name the alpha
-cutoff once.
-
 ### [Performance] `picker-trim.spec.ts` ladder walk does a full page load + dialog-animation wait per rung
 
 **File(s):** `web/tests/picker-trim.spec.ts` (`openPickerAt` lines 20–68, ladder test lines 105–115)
@@ -15636,37 +15452,6 @@ re-exercising the *open-at-this-size* path per rung — but the six `CASES` test
 open-at-size, and the ladder test's stated subject is the offset restatement in the CSS, which
 resize exercises identically. Verify with `--repeat-each=10` that resize-with-open-dialog is stable
 before committing (the fly-in has finished by then, so it should be).
-
-### [Maintainability] `flows-coloring-book.spec.ts` re-inlines the Farm-page application it has a harness helper for
-
-**File(s):** `web/tests/flows-coloring-book.spec.ts` (lines 134–141), `web/tests/flows-harness.ts`
-(`applyFarmPage`, lines 54–66) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The "rotating the viewport swaps the coloring overlay" test (lines 126–150) re-inlines the
-open-dialog → click Farm book → click first page sequence:
-
-```ts
-await openColoringDialog(page);
-const dialog = page.locator('#coloring-book-dialog');
-await dialog.getByRole('button', { name: /Farm coloring book/i }).click();
-await dialog.getByRole('button', { name: /Farm coloring page/i }).first().click();
-```
-
-`applyFarmPage` in `flows-harness.ts:54-66` is exactly this plus two *stronger* readiness waits
-(dialog hidden, `src` decoded) — the inline copy skips those and goes straight to
-`toHaveAttribute('src', /-wide…/)`, which happens to retry, but the duplication means a book-picker
-relabel breaks two sites and the readiness discipline exists in only one. (The first test, lines
-10–29, legitimately inlines the steps because the intermediate states *are* its subject.)
-
-#### Proposed solution
-
-Replace lines 134–141 with `await applyFarmPage(page);` — the subsequent `-wide` assertion still
-pins the orientation-specific variant. One behavior change: the helper waits for the decoded src
-first, which only makes the test less racy.
 
 ### [Maintainability] `admin.spec.ts` route mock hard-codes the Playwright preview origin
 
@@ -17577,56 +17362,6 @@ machine-specific literals in an otherwise machine-portable script surface.
 
 ## Source: Code audit — docs — ADRs & guides (+ scrapbook/store-assets/releases prose)
 
-### [Docs] Two distinct Active ADRs share the number 0077 — the "immutable number" invariant is broken and every `ADR-0077` reference is ambiguous
-
-**File(s):** `docs/adrs/0077-dependabot-claude-review-workflow.md` (whole file),
-`docs/adrs/0077-three-phase-release-verified-artifact-publish.md` (whole file),
-`docs/adrs/README.md` (lines 130, 140) @ 9ae62ff1
-
-**Priority:** P1
-
-#### Problem
-
-Two unrelated ADRs carry the same number:
-
-* `docs/adrs/0077-three-phase-release-verified-artifact-publish.md` — "ADR-0077: Three-Phase
-  Shipping (Release → Build → Publish)…", created in 1112776 (2026-07-28 13:11 UTC).
-* `docs/adrs/0077-dependabot-claude-review-workflow.md` — "ADR-0077: Auto-Review Dependabot PRs with
-  Claude…", created in 718dd72 (2026-07-28 13:15 UTC), four minutes later — evidently two parallel
-  sessions each took "next number".
-
-`docs/adrs/README.md` states the numbering contract at lines 7–8: "ADR numbers and filenames are
-**immutable** — records are never renumbered, deleted, or rewritten once superseded." A duplicated
-number breaks the premise that makes immutability workable (a number uniquely names a record
-forever). The index itself lists "0077" twice — line 130 (Build & tooling) and line 140 (Agent
-workflow & docs).
-
-The ambiguity is already live in prose references that use the bare number:
-
-* `docs/DEPENDABOT.md:6` — "\[ADR-0077](adrs/0077-dependabot-claude-review-workflow.md)" (means the
-  Dependabot one).
-* `releases/README.md:43` — "three ordered phases — release, build, publish (ADR-0077)" (means the
-  release one).
-* `.ruler/skills/release/SKILL.md:64`, `.ruler/skills/build/SKILL.md:17`,
-  `.ruler/skills/publish-artifacts/SKILL.md:19`, `.ruler/skills/skills-guide/SKILL.md:94` — all
-  "ADR-0077" meaning the release one.
-* Both ADR bodies self-identify as "ADR-0077" in their `# ADR-0077:` H1s.
-
-Any future "see ADR-0077" without a path is a coin flip, and the collision compounds as more
-references accrete.
-
-#### Proposed solution
-
-Renumber the later-created record (`0077-dependabot-claude-review-workflow.md` →
-`0078-dependabot-claude-review-workflow.md`), update its H1 to `ADR-0078`, and fix the references
-that point at it (`docs/DEPENDABOT.md:6` and the index row at `docs/adrs/README.md:140`). The
-release-flow ADR keeps 0077, so the five skill references and `releases/README.md:43` stay correct
-untouched. This is the one legitimate exception to "never renumbered": the invariant being repaired
-is precisely the uniqueness the rule exists to protect, and the collision is hours old with only one
-prose link to move. Also worth a line in the `create-adr` skill (out of this section's scope, so
-just flag it): "take the number from the highest existing file *and check for an unmerged sibling PR
-claiming it*", since parallel sessions are how this happened.
-
 ### [Correctness] CONTRIBUTING.md documents three server env vars under names the code never reads
 
 **File(s):** `docs/CONTRIBUTING.md` (lines 60–66, env-var table) @ 9ae62ff1
@@ -17708,39 +17443,6 @@ targeted edit: delete the two package sections and their verdict rows, update th
 counts at line 9, mark the \#332 backlog item resolved (replaced in 9a47e2b), and fix or drop the
 false `folderSave.ts` usage claim. A full refresh is preferable since the 2026-07-17 health facts
 (stars, latest versions) are also 11 days old.
-
-### [Docs] Stale handoff packet: `audit-burndown-236.md` outlived its merged PR and drained backlog, violating the handoff lifecycle it sits next to
-
-**File(s):** `docs/handoff/audit-burndown-236.md` (whole file, lines 1–207) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-`docs/handoff/CLAUDE.md` (lines 58–66) defines the lifecycle: "`resume-handoff` consumes then
-deletes it… **Prune stale handoffs.** If a handoff's PR merged or its work is abandoned, delete the
-file — don't let the folder accumulate dead packets." This packet's world no longer exists:
-
-* Its PR — \#552, `claude/burn-down-audit-skill-hidj17` — merged in ced5523.
-* Its objective ("Resume the bulk burndown of `docs/AUDIT.md` — 236 → 183 done") is complete:
-  `docs/AUDIT.md` no longer exists (the backlog was fully drained; `docs/AUDIT-LOG.md` lines 21–27
-  record the follow-on 2026-07-27/28 burndown and triage runs that finished the job).
-* Its "Relaunch command — use this verbatim" (lines 38–42) targets a merged branch, and its owed
-  follow-ups are themselves stale — e.g. lines 184–186 cite `build-review.mjs:121`/`:212`, a file
-  that no longer exists under `scripts/audit-burndown/` (current contents: `agent-runner.mjs`,
-  `backfill-comments.mjs`, `burndown.mjs`, …).
-
-A future session listing open handoffs (the documented `resume-handoff` entry path) would surface
-this as apparently-resumable in-flight work and could re-launch a burndown against an empty backlog
-on a dead branch.
-
-#### Proposed solution
-
-Delete `docs/handoff/audit-burndown-236.md` and commit the deletion, per the conventions in the
-sibling `CLAUDE.md`. Before deleting, skim the "Owed follow-ups" section for anything still live and
-file each as a GitHub issue if not already tracked (the mislabelled `docs/AUDIT-DEFERRED.md`
-deferral it names was already handled by the 2026-07-27/28 triage passes; the device-run
-verifications of b1f32762/e0b9e7b2/d685bdca may still be worth an issue).
 
 ### [Docs] ADR-0020 and ADR-0030 still credit `capacitor-set-version` with native version syncing — replaced by in-repo helpers a week before the release-flow ADR was written
 
