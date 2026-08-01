@@ -176,7 +176,14 @@
     border: 4px solid transparent;
     border-radius: 50%;
     cursor: pointer;
-    transition: all var(--duration-base) ease;
+    /* Orientation changes resize every swatch together. Keep those geometry
+       changes synchronous so rotation does not schedule sixteen layout
+       transitions; only interaction and theme feedback should animate. */
+    transition:
+      background-color var(--duration-base) ease,
+      border-color var(--duration-base) ease,
+      box-shadow var(--duration-base) ease,
+      transform var(--duration-base) ease;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     touch-action: manipulation; /* Prevent iOS gesture delays */
   }

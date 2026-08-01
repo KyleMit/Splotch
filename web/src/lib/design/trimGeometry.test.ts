@@ -135,6 +135,13 @@ describe('ColorPalette', () => {
     expect(PALETTE_ROW_GEOMETRY.paddingPx).toBe(2 * px(palette, 'padding'));
   });
 
+  it('keeps orientation-driven swatch geometry out of interaction transitions', () => {
+    const swatch = blockAfter(css, '.color-swatch {');
+    expect(swatch).not.toMatch(/transition:\s*all\b/);
+    expect(swatch).not.toMatch(/\b(?:width|height)\s+var\(--duration-/);
+    expect(swatch).toContain('transform var(--duration-base) ease');
+  });
+
   it('falls back to two columns at the single-column floor', () => {
     expect(feature(layoutSwitch[0], 'min-height')).toBe(landscapeSingleColumnFloorPx());
   });

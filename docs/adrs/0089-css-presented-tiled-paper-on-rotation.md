@@ -93,6 +93,23 @@ mutation. Across three repeats in both directions, physical iPad post-action P95
 was 22–26 ms. Android native retained zero surface mutations with P95 16.7–16.8 ms and max 33.3–33.4
 ms. An isolated Mac WebKit cross-check passed ten rotations at P95 18 ms and max 19–24 ms.
 
+The final discrete-action regression found that its trusted-stroke setup used enabled Undo as its
+ink signal. Clear remains undoable while the canvas is blank, so the supposed with-ink rotation
+could exercise the blank path. The runner instead uses enabled Screenshot, whose product state
+tracks whether the canvas has pixels. A corrected Android-web trace confirmed real ink and zero
+canvas backing mutations; `engine.resize` took 0.4–3.0 ms.
+
+That trace also separated canvas work from orientation layout animation. Eight palette swatches
+animated width and height because their interaction rule used `transition: all`, and the action
+drawer animated its axis whenever the media query changed. Limiting palette transitions to visual
+feedback properties and arming drawer geometry transitions only for an actual expand/collapse
+reduced the rotation's active CSS transitions from seventeen to zero. Seven of eight focused
+Android-web rotation cases passed; one ink landscape-to-portrait sample retained a 50 ms first fully
+post-action viewport/layout frame while `engine.resize` took 0.4 ms and performed no backing
+mutation. Mac WebKit passed both ink directions across three repeats at 21 ms maximum. Android-web
+remains an advisory target under ADR-0090, so the isolated compositor/layout interval is a
+cross-device watchpoint rather than evidence of a tiled-canvas regression.
+
 The alternatives were:
 
 * **Keep replaying into resized viewport tiles.** Functionally complete, including drawing into the

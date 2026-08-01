@@ -36,6 +36,9 @@
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
   let aiBtnEl: HTMLButtonElement | undefined = $state();
   let panelEl: HTMLDivElement | undefined = $state();
+  let drawerMotion = $state(false);
+  // Intentionally untracked: only the reactive drawer-expanded value should rerun this comparison.
+  let lastDrawerExpanded: boolean | undefined;
 
   // The two flyouts (Brush Menu, Stroke Width) share one open-state slot, so
   // opening one closes the other and the outside-click handler below only ever
@@ -115,6 +118,17 @@
     (settings.advancedControlsEnabled && settings.drawerOpen) || ui.resizingActionButtons
   );
 
+  $effect(() => {
+    const expanded = drawerExpanded;
+    if (lastDrawerExpanded === undefined) {
+      lastDrawerExpanded = expanded;
+      return;
+    }
+    if (lastDrawerExpanded === expanded) return;
+    lastDrawerExpanded = expanded;
+    drawerMotion = true;
+  });
+
   const buttonScale = $derived(settings.actionButtonScale / 100);
 
   // app.html seeds <html> for first paint of the prerendered page. Hydration
@@ -156,6 +170,11 @@
     setDrawerOpen(next);
     // Tidy up any open flyout as the controls tuck away.
     if (!next) openFlyout = null;
+  }
+
+  function finishDrawerMotion(event: TransitionEvent) {
+    if (event.target === event.currentTarget && event.propertyName === 'opacity')
+      drawerMotion = false;
   }
 
   onMount(() => {
@@ -256,6 +275,7 @@
      (pointerup for pointers, click only for keyboard/AT) instead of onclick. -->
 <div
   class="actions-panel"
+  data-drawer-motion={drawerMotion ? '' : undefined}
   style:left={leftOffset}
   style:--action-btn-size={buttonSize}
   bind:this={panelEl}
@@ -264,7 +284,7 @@
   <!-- Always rendered; the drawer's open/closed state and each control's Parent
        Center on/off toggle are driven purely by CSS. app.html's <html> seed owns
        first paint; the panel-local publish effect owns hydrated changes. -->
-  <div class="actions-drawer">
+  <div class="actions-drawer" ontransitionend={finishDrawerMotion}>
     <div class="actions-drawer-inner">
       <!-- Brush Menu: the four brush types (pen, crayon, magic, eraser) behind
            one trigger whose face is the active brush's icon. All four trigger
@@ -428,6 +448,9 @@
       grid-template-columns var(--drawer-collapse) ease,
       grid-template-rows var(--drawer-collapse) ease, opacity var(--drawer-collapse) ease,
       margin var(--drawer-collapse) ease;
+  }
+
+  .actions-panel[data-drawer-motion] .actions-drawer {
     transition: var(--drawer-transition);
   }
 
@@ -462,10 +485,14 @@
     margin-right: 0;
     pointer-events: none;
     /* Inert when closed: out of hit-testing, the a11y tree, and tab order (unlike
-       opacity alone). visibility flips to hidden only after the collapse finishes
-       (--drawer-collapse transition-delay) so the close still animates; opening
-       restores it instantly because the base rule doesn't transition visibility. */
+       opacity alone). */
     visibility: hidden;
+  }
+
+  :global(.actions-panel[data-action-panel-live][data-drawer-motion]:not([data-drawer-open]))
+    .actions-drawer {
+    /* A state-driven close keeps the drawer visible until its collapse finishes.
+       Orientation-only geometry changes never set data-drawer-motion. */
     transition:
       var(--drawer-transition),
       visibility 0s var(--drawer-collapse);
