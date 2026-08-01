@@ -91,6 +91,16 @@ const REGISTRY = {
     kind: 'Measurement study',
     count: () => null,
   },
+  'drawing-engine': {
+    icon: 'pen',
+    hue: 'blue',
+    title: 'How the drawing engine works',
+    blurb:
+      'A visual, plain-language tour of the production drawing pipeline — multi-finger input, stroke smoothing, tiled rendering, raster folding, dirty-patch undo, Magic and crayon compositing, rotation, and PNG export.',
+    entry: 'drawing-engine/index.html',
+    kind: 'Architecture explainer',
+    count: () => null,
+  },
   performance: {
     icon: 'line-weight',
     hue: 'green',
