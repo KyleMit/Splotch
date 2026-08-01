@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 
 import { rotateViewportViaCdp } from './cdp';
-import { draw, gotoApp, openParentCenter } from './helpers';
+import { draw, gotoApp, openParentCenter, renderedCanvasHandle } from './helpers';
 
-import { applyFarmPage, openColoringDialog, openDrawer } from './flows-harness';
+import { applyFarmPage, openColoringDialog, openDrawer, pickBrush } from './flows-harness';
 
 // ── coloring book overlay ───────────────────────────────────────────────────
 
@@ -83,6 +83,31 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
   await openDrawer(page);
   await applyFarmPage(page);
 
+  await pickBrush(page, '#magicBrushButton');
+  await draw(page, [
+    { x: 180, y: 160 },
+    { x: 420, y: 240 },
+  ]);
+  const opaquePixelCount = async () => {
+    const canvas = await renderedCanvasHandle(page);
+    try {
+      return canvas.evaluate((element) => {
+        const pixels = element
+          .getContext('2d')!
+          .getImageData(0, 0, element.width, element.height).data;
+        let opaque = 0;
+        for (let index = 3; index < pixels.length; index += 4) {
+          if (pixels[index] > 0) opaque++;
+        }
+        return opaque;
+      });
+    } finally {
+      await canvas.dispose();
+    }
+  };
+  await expect.poll(opaquePixelCount).toBeGreaterThan(0);
+  const pixelsBeforeTheme = await opaquePixelCount();
+
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toHaveAttribute('src', /\.overlay\.webp$/);
   await page.evaluate(() => {
@@ -106,6 +131,7 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(overlay).toHaveAttribute('src', /\.overlay\.webp$/);
   await expect(overlay).toHaveClass(/overlay-ready/);
+  await expect.poll(opaquePixelCount).toBe(pixelsBeforeTheme);
 
   await page.evaluate(() => {
     (window as Window & { __releaseChalkDecode?: () => void }).__releaseChalkDecode?.();

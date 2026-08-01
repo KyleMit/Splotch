@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import {
     adoptDrawingCanvas,
     setColor,
@@ -27,6 +27,7 @@
     nightSheetUrl,
   } from '$lib/state/coloringBook.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
+  import { pageCompositionKey } from '$lib/state/books';
   import { settings } from '$lib/state/settings.svelte';
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
   import { isNative } from '$lib/platform';
@@ -179,12 +180,6 @@
   // A theme sibling has identical registration, so it keeps the current art
   // visible until the sibling is ready.
   let displayedOverlayUrl = $state<string | null>(null);
-  function overlayCompositionKey(url: string) {
-    return url.replace(
-      /\.(?:(?:dark\.)?overlay|outline|chalk(?:\.thumb)?|thumb)\.webp(?:\?.*)?$/,
-      ''
-    );
-  }
 
   $effect(() => {
     const url = themedOverlayUrl;
@@ -192,10 +187,8 @@
       displayedOverlayUrl = null;
       return;
     }
-    if (
-      !displayedOverlayUrl ||
-      overlayCompositionKey(displayedOverlayUrl) !== overlayCompositionKey(url)
-    ) {
+    const displayed = untrack(() => displayedOverlayUrl);
+    if (!displayed || pageCompositionKey(displayed) !== pageCompositionKey(url)) {
       displayedOverlayUrl = themedOverlayThumbnailUrl;
     }
     let stale = false;
@@ -218,10 +211,15 @@
   // full-resolution transfers cannot delay the page the child just picked.
   $effect(() => {
     const url = themedOverlayUrl;
-    if (!url || displayedOverlayUrl !== url) {
+    const displayed = displayedOverlayUrl;
+    if (!url) {
       setColorSheet(null);
       return;
     }
+    if (displayed && pageCompositionKey(displayed) !== pageCompositionKey(url)) {
+      setColorSheet(null);
+    }
+    if (displayed !== url) return;
     const theme = resolvedTheme();
     const nightUrl = theme === 'dark' ? nightSheetUrl() : null;
     setColorSheet(nightUrl ?? colorSheetUrl());

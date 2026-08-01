@@ -5,6 +5,7 @@ import {
   bookAssetPaths,
   chalkThumbPath,
   pageColorImage,
+  pageCompositionKey,
   pageImage,
   pageOverlayImage,
   pageThumb,
@@ -72,6 +73,23 @@ describe('pageOverlayImage', () => {
     expect(pageOverlayImage(unforked, 'landscape', 'dark')).toBe(
       '/coloring/farm/cat-wide.dark.overlay.webp'
     );
+  });
+});
+
+describe('pageCompositionKey', () => {
+  it('groups every generated sibling for one page without hardcoded variants', () => {
+    const siblings = [
+      '/coloring/farm/cat-tall.outline.webp',
+      '/coloring/farm/cat-tall.light.webp',
+      '/coloring/farm/cat-tall.night.webp',
+      '/coloring/farm/cat-tall.chalk.webp',
+      '/coloring/farm/cat-tall.thumb.webp',
+      '/coloring/farm/cat-tall.chalk.thumb.webp',
+      '/coloring/farm/cat-tall.overlay.webp',
+      '/coloring/farm/cat-tall.dark.overlay.webp?version=1',
+    ];
+
+    expect(new Set(siblings.map(pageCompositionKey))).toEqual(new Set(['/coloring/farm/cat-tall']));
   });
 });
 

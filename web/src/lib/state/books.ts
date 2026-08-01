@@ -95,6 +95,13 @@ const ASSET_SUFFIXES = {
   darkOverlay: '.dark.overlay.webp',
 } as const;
 
+const PAGE_ASSET_SUFFIX_PATTERN = new RegExp(
+  `(?:${Object.values(ASSET_SUFFIXES)
+    .sort((a, b) => b.length - a.length)
+    .map((suffix) => suffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|')})(?:[?#].*)?$`
+);
+
 const ALL_ORIENTATIONS: BookOrientation[] = ['portrait', 'landscape'];
 
 type PageAssetVariant = 'outline' | 'light' | 'night' | 'chalk';
@@ -251,6 +258,10 @@ export function booksForPlatform(platform: BookPlatform): Book[] {
 
 export function pageImage(page: ColoringPage, orientation: BookOrientation): string {
   return page.images[orientation];
+}
+
+export function pageCompositionKey(url: string): string {
+  return url.replace(PAGE_ASSET_SUFFIX_PATTERN, '');
 }
 
 export function pageColorImage(page: ColoringPage, orientation: BookOrientation): string {
