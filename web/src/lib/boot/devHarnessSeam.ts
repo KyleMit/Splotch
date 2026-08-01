@@ -1,5 +1,10 @@
 import { dev } from '$app/environment';
-import { committedBrushMode, getLiveSurfaceTopology, getUndoDebug } from '$lib/drawing/engine';
+import {
+  committedBrushMode,
+  getDrawingWorkDebug,
+  getLiveSurfaceTopology,
+  getUndoDebug,
+} from '$lib/drawing/engine';
 import { PERF_MARKS } from '$lib/drawing/perf';
 
 // The drawing route's gated `window` seams — what the E2E harness and the
@@ -32,7 +37,7 @@ import { PERF_MARKS } from '$lib/drawing/perf';
 export function installDevHarnessSeam(): () => void {
   if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) return () => {};
   window.__committedBrushMode = committedBrushMode;
-  window.__drawingDebug = { getLiveSurfaceTopology, getUndoDebug };
+  window.__drawingDebug = { getDrawingWorkDebug, getLiveSurfaceTopology, getUndoDebug };
   return () => {
     delete window.__committedBrushMode;
     delete window.__drawingDebug;

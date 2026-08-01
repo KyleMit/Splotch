@@ -17,6 +17,7 @@ import {
   resizeTiledRenderer,
   tiledHistoryDebug,
   tiledSurfaceTopologyDebug,
+  tiledWorkDebug,
   undoTiledCommand,
 } from './tiledRenderer';
 
@@ -113,6 +114,15 @@ describe('idle tiled canvas visibility', () => {
     expect(tiledSurfaceTopologyDebug()).toEqual(
       Array.from({ length: 16 }, () => ({ width: 100, height: 100 }))
     );
+    expect(tiledWorkDebug()).toMatchObject({
+      backingMigrationPending: false,
+      liveSurfaceElements: 48,
+      realizedNormalBackings: 16,
+      realizedCrayonBackings: 0,
+      maxLiveBackingBytes: 40_000,
+      totalLiveBackingBytes: 640_000,
+      lastCommand: null,
+    });
     applyTiledView(IDENTITY_PAPER_VIEW);
     const deferredCrayonTiles = [
       ...host.querySelectorAll<HTMLCanvasElement>('[data-live-crayon-bottom]'),
@@ -134,6 +144,10 @@ describe('idle tiled canvas visibility', () => {
     renderTiledOp(dot);
     recordTiledOp(dot);
     commitTiledCommand();
+
+    expect(tiledWorkDebug()).toMatchObject({
+      lastCommand: { inputOps: 1, rasterizedOps: 1, maxSurfaceVisitsPerOp: 1 },
+    });
 
     const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
@@ -190,6 +204,37 @@ describe('idle tiled canvas visibility', () => {
     };
     expect(hasUnresolvedTiledMagicOps()).toBe(false);
     commitTiledCommand();
+    undoTiledCommand(1);
+  });
+
+  it('counts seam overdraw and lazily realized crayon backings', () => {
+    const { canvas } = rendererElements();
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+    const crayonDot: StrokeOp = {
+      kind: 'dot',
+      x: 100,
+      y: 100,
+      radius: 5,
+      color: '#ff0000',
+      erase: false,
+      crayon: true,
+      seed: 1,
+    };
+    beginTiledCommand(true);
+    renderTiledOp(crayonDot);
+    recordTiledOp(crayonDot);
+    commitTiledCommand();
+
+    expect(tiledWorkDebug()).toMatchObject({
+      realizedCrayonBackings: 8,
+      totalLiveBackingBytes: 960_000,
+      lastCommand: { inputOps: 1, rasterizedOps: 4, maxSurfaceVisitsPerOp: 4 },
+    });
     undoTiledCommand(1);
   });
 
