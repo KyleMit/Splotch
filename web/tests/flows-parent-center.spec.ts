@@ -58,7 +58,9 @@ test('parent center sidebar switches the content pane (tablet layout)', async ({
   await expect(aboutMascot).toHaveClass(/icon-color/);
 });
 
-test("What's New formats release dates without runtime locale initialization", async ({ page }) => {
+test("What's New formats the current release date without runtime locale initialization", async ({
+  page,
+}) => {
   await page.addInitScript(() => {
     Date.prototype.toLocaleDateString = () => {
       throw new Error('runtime locale formatting is disabled');
@@ -70,7 +72,7 @@ test("What's New formats release dates without runtime locale initialization", a
   await page.getByRole('button', { name: "What's New" }).click();
 
   const dates = page.locator('.whats-new-date');
-  await expect(dates).toHaveCount(5);
+  await expect(dates).toHaveCount(1);
   await expect(dates.first()).toHaveText(/^[A-Z][a-z]+ \d{1,2}, \d{4}$/);
 });
 
