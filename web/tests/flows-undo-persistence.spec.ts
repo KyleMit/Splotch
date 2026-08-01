@@ -118,7 +118,7 @@ test('a burst of screenshot taps shares one save before allowing the next', asyn
   // takes longer than any sleep sized on an idle one — this is what failed 3 of
   // 12 CI reps at 4 workers, issue #653)…
   await expect.poll(() => downloads.length).toBe(1);
-  await expect(shot).toHaveClass(/screenshot-capture-feedback/);
+  await expect(shot).toHaveClass(/screenshot-suppressed-feedback/);
 
   // …then idle past the window a second save would have arrived in, which is
   // what proves the burst was coalesced rather than merely slow.
