@@ -1,4 +1,4 @@
-export const OVERLAY_ALPHA_STEP = 8;
+const OVERLAY_ALPHA_STEP = 8;
 export const OVERLAY_MAX_CHANNEL_ERROR = OVERLAY_ALPHA_STEP / 2;
 
 function quantizeAlpha(alpha) {

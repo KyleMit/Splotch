@@ -9,12 +9,12 @@ export interface TiledPngInput {
   paperColor: string;
 }
 
-export interface EncodeCanvasPngPayload {
+interface EncodeCanvasPngPayload {
   kind: 'canvas';
   bitmap: ImageBitmap;
 }
 
-export interface EncodeTiledPngPayload extends TiledPngInput {
+interface EncodeTiledPngPayload extends TiledPngInput {
   kind: 'tiles';
 }
 

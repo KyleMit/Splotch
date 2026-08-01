@@ -477,7 +477,7 @@ function extendSheetEdges(
 // where the overlay <img> paints), then its edge colours are extended outward to
 // fill every letterbox margin (the fill's own, and the rotation-lock margins around
 // the paper); the gradient fills the whole sheet. Re-run on load and every resize.
-export function rasterizeSheet() {
+function rasterizeSheet() {
   invalidateSheet();
   const paper = host?.paperSize();
   const bounds = host?.sheetBounds();
