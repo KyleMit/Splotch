@@ -17362,6 +17362,80 @@ machine-specific literals in an otherwise machine-portable script surface.
 
 ## Source: Code audit — docs — ADRs & guides (+ scrapbook/store-assets/releases prose)
 
+### [Maintainability] COMPATIBILITY.md's risk register pins claims to line numbers that have broadly rotted — three now name the wrong file
+
+**File(s):** `docs/COMPATIBILITY.md` ("API risk register" section, the `Where` column)
+
+**Priority:** P2
+
+#### Problem
+
+The register cites exact `file:line` anchors. They were already drifting, and the tiled-renderer
+work (#682) moved enough code that three rows no longer point at the named API at all — the *file*
+is wrong, not merely the line. Those three cannot be repaired by re-counting; a reader who follows
+them lands somewhere the API does not appear and cannot tell whether the row is stale or the guard
+was dropped.
+
+**Rows whose target left the cited file:**
+
+| Doc claim                                            | Reality                                                                                                                                        |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| unprefixed `mask` — `DrawingCanvas.svelte:534`       | No `mask`/`mask-image` anywhere in `DrawingCanvas.svelte`. Surviving unprefixed uses: `PointerHalos.svelte:213`/`:218`, `AiConfetti.svelte:80` |
+| `navigator.storage.persist` — `secureStorage.ts:177` | Absent from `secureStorage.ts` (212 lines total); the call is `lib/idb.ts:8`                                                                   |
+| `aspect-ratio` — `app.css:294`                       | Absent from `app.css`; the uses are `ColoringBook.svelte:280`/`:331`/`:335`, `AiDial.svelte:126`/`:172`, `AiImagePrompt.svelte:143`            |
+
+**Rows that are line-drifted only:**
+
+| Doc claim                                                 | Actual               |
+| --------------------------------------------------------- | -------------------- |
+| `getCoalescedEvents()` — `engine.ts:883`                  | `:992`               |
+| `color-mix` — `ColorPicker.svelte:447`                    | `:469`               |
+| `color-mix` — `ColoringBook.svelte:298`                   | `:295`               |
+| `showModal()` — `modalDialog.svelte.ts:122`               | `:123`               |
+| `100dvh` — `app.css:28` + `:70`                           | `:28` (holds), `:81` |
+| `backdrop-filter` — `app.css:97`                          | `:108`               |
+| reduced-motion off-switch — `ParentCenter.svelte:339–340` | `:237–238`           |
+| `env(safe-area-inset-*)` — `app.css:54–56`                | `:65–67`             |
+| orientation lock — `orientation.ts:50–55`                 | `:41`                |
+| `navigator.vibrate` — `haptics.ts:24`                     | `:34`                |
+| `requestIdleCallback` — `idle.ts:8–13`                    | `:7–8`               |
+| `saveData` — `updates.ts:62–64`                           | `:48–49`, `:87`      |
+| `clipboard.writeText` — `AdminConsole.svelte:133`         | `:131`               |
+| `willReadFrequently` — `emptyScan.ts:22`                  | `:32`                |
+| `createImageBitmap` — `aiImage.ts:26`                     | `:33`                |
+| `toBlob(…, 'image/webp')` — `aiImage.ts:38`               | `:45`                |
+| `crypto.subtle` — `aiImage.ts:56`                         | `:77`                |
+| `text-wrap: pretty` — `StepLedger.svelte:263`             | `:299`               |
+
+Only three anchors still land exactly: `ColorPalette.svelte:46` (`ResizeObserver`),
+`network.svelte.ts:17` (`navigator.onLine`), and `deviceInfo.ts:60`.
+
+No API claim is itself wrong — every guarded feature is still guarded, so this is not a
+compatibility bug. The damage is to trust in the document: it is the canonical register consulted
+"before raising the floor [or] adding a modern web API", it carries no snapshot disclaimer (unlike
+`docs/CODE-MAP.md`), and its "Maintaining this" section implies it is kept current.
+
+#### Proposed solution
+
+Two parts: (a) refresh the anchors once from the tables above; (b) stop the recurrence by switching
+the `Where` column to identifier-level anchors — file + function/selector/constant name (`engine.ts`
+`pointermove` handler; `ClearButton.svelte` `.clear-button--armed` gradient) — keeping line numbers
+only where no stable identifier exists. Identifiers carry the register's actual value ("which file
+guards this API and how") and survive refactors, which is what the three file-level breaks argue
+for. A drift-guard test is overkill for prose, but a note in "Maintaining this" declaring anchors
+identifier-level would set the convention.
+
+#### Verification
+
+For each row, `grep -n` the API token in the cited file; the row is sound only if a hit lands on the
+cited line. The three file-level breaks fail immediately — each returns nothing:
+
+```sh
+grep -n "mask" web/src/lib/components/DrawingCanvas.svelte
+grep -n "storage.persist" web/src/lib/secureStorage.ts
+grep -n "aspect-ratio" web/src/app.css
+```
+
 ### [Correctness] CONTRIBUTING.md documents three server env vars under names the code never reads
 
 **File(s):** `docs/CONTRIBUTING.md` (lines 60–66, env-var table) @ 9ae62ff1
@@ -17515,44 +17589,6 @@ authoritative source and keep one sentence: "Shipping is three ordered phases �
 `/build`, `/publish-artifacts` (ADR-0077); see `releases/README.md`."). If the smoke test stays
 mentioned, name it as such: "pushing the `v*` tag also triggers the Android/iOS launch smoke
 workflows."
-
-### [Maintainability] COMPATIBILITY.md's risk register pins claims to line numbers that have broadly rotted
-
-**File(s):** `docs/COMPATIBILITY.md` (lines 70–101, API risk register table) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The register cites exact `file:line` anchors, and a spot-check shows most have drifted:
-
-| Doc claim (line)                                             | Actual at 9ae62ff1                  |
-| ------------------------------------------------------------ | ----------------------------------- |
-| `getCoalescedEvents()` — `engine.ts:883` (line 74)           | `web/src/lib/drawing/engine.ts:899` |
-| `color-mix` — `ColorPicker.svelte:447` (line 75)             | `:468`                              |
-| `ClearButton.svelte:221–222`, `:240–241` (line 75)           | `:201/:222` and `:238–:243`         |
-| `100dvh` — `app.css:28` + `:70` (line 76)                    | `:28` + `:81`                       |
-| mask — `DrawingCanvas.svelte:534`/`:529` (line 78)           | `:537`/`:532`                       |
-| mask — `AiConfetti.svelte:50`/`:44` (line 78)                | `:80`/`:79`                         |
-| `navigator.vibrate` — `haptics.ts:24` (line 88)              | `:34`                               |
-| `saveData` — `updates.ts:62–64` (line 93)                    | `:48–49`, `:87`                     |
-| orientation listener guard — `engine.ts:1300–1302` (line 87) | `~:1328`                            |
-
-None of the drifts is dangerous yet (every file and API claim itself still holds — verified), but
-the doc is the canonical risk register consulted "before raising the floor [or] adding a modern web
-API", and rotting anchors erode trust in the rows that matter. Unlike `docs/CODE-MAP.md`, this doc
-carries no snapshot disclaimer; its "Maintaining this" section (lines 140–146) implies it is kept
-current.
-
-#### Proposed solution
-
-Two-part fix: (a) refresh the current numbers once; (b) reduce future rot by switching the Where
-column to identifier-level anchors — file + function/selector/constant name (`engine.ts`
-`pointermove` handler; `ClearButton.svelte` `.clear-button--armed` gradient) — keeping line numbers
-only where no stable identifier exists. The register's value is "which file guards this API and
-how", which identifiers convey better than line numbers. A drift-guard test is overkill here (the
-register is prose), but a note in "Maintaining this" saying anchors are identifier-level would set
-the convention.
 
 ### [Docs] AUDIT-DEFERRED.md still carries the `@capacitor/filesystem` finding as "awaiting triage" — it was resolved on main the same day
 
