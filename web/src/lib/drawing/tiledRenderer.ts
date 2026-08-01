@@ -3,7 +3,6 @@ import { createDrawingWorkCounters } from './drawingWorkDebug';
 import { scanCanvasIsEmpty } from './emptyScan';
 import { setMagicPatternRegion } from './magicBrush';
 import { viewMatrix, viewToPaper, type PaperView } from './paperView';
-import { PERF_MARKS } from './perf';
 import { createProgressiveClearCapture } from './progressiveClearCapture';
 import { renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
 import { type HistoryDebug, MAX_UNDO_DEPTH } from './undoHistory';
@@ -51,10 +50,10 @@ const history: StrokeGroupCommand[] = [];
 const undoPatches = createTiledUndoPatches();
 let undoableCommands = 0;
 let historyFoldTimer: ReturnType<typeof setTimeout> | null = null;
-let backingMigrationRevision = 0;
+let backingMigration = { revision: 0, pending: false };
 const isDev = import.meta.env?.DEV;
 const isDevHarness = typeof __DEV_HARNESS__ !== 'undefined' && __DEV_HARNESS__;
-const workCounters = isDev || isDevHarness || PERF_MARKS ? createDrawingWorkCounters() : null;
+const workCounters = isDev || isDevHarness ? createDrawingWorkCounters() : null;
 
 export function adoptTiledRenderer(
   canvasElement: HTMLCanvasElement,
@@ -76,15 +75,16 @@ export function syncTiledCrayonMix(opacity: string) {
 }
 
 function migrateHiddenBackingsAcrossFrames() {
-  const revision = ++backingMigrationRevision;
+  const revision = backingMigration.revision + 1;
+  backingMigration = { revision, pending: true };
   let index = 0;
   const migrateNext = () => {
-    if (revision !== backingMigrationRevision) return;
+    if (revision !== backingMigration.revision) return;
     const tile = liveTiles[index++];
     if (tile?.canvas.hidden) ensureNormalTileBacking(tile);
     if (index < liveTiles.length) {
       requestAnimationFrame(migrateNext);
-    }
+    } else backingMigration.pending = false;
   };
   requestAnimationFrame(migrateNext);
 }
@@ -136,7 +136,7 @@ export function resizeTiledRenderer(
   }
   if (historyBase.length > 0) ensureHistoryBase();
   if (deferHiddenBackings) migrateHiddenBackingsAcrossFrames();
-  else backingMigrationRevision++;
+  else backingMigration = { revision: backingMigration.revision + 1, pending: false };
   return true;
 }
 
@@ -247,7 +247,7 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
       }
       showTileForOp(tile, op);
       renderOp(tile.ctx, op);
-      surfaceVisits++;
+      if (workCounters) surfaceVisits++;
     }
   } else {
     for (const [index, tile] of liveTiles.entries()) {
@@ -258,11 +258,11 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
         if (command) undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
         showTileForOp(tile, op);
         renderOp(tile.ctx, op);
-        surfaceVisits++;
+        if (workCounters) surfaceVisits++;
       }
     }
   }
-  if (command === activeCommand) workCounters?.record(surfaceVisits);
+  if (workCounters && command === activeCommand) workCounters.record(surfaceVisits);
 }
 
 export function renderTiledOp(op: StrokeOp) {
@@ -484,8 +484,7 @@ export function tiledHistoryDebug(): HistoryDebug {
 }
 
 export function tiledWorkDebug() {
-  if (!workCounters) throw new Error();
-  return workCounters.debug(liveTiles);
+  return workCounters?.debug(liveTiles, backingMigration.pending) ?? null;
 }
 
 export function captureTiledCanvasSnapshot(): TiledCanvasSnapshot | null {
@@ -523,7 +522,7 @@ export function renderTiledSnapshot(target: CanvasRenderingContext2D) {
 export function detachTiledRenderer() {
   cancelHistoryFold();
   clearCapture.cancel();
-  backingMigrationRevision++;
+  backingMigration = { revision: backingMigration.revision + 1, pending: false };
   canvas = null;
   host = null;
   liveTiles = [];

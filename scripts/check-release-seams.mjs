@@ -4,6 +4,7 @@ import { ROOT, isMain, runMain } from './lib/proc.mjs';
 
 const CLIENT_BUNDLE_DIR = join(ROOT, 'web/.svelte-kit/output/client/_app/immutable');
 const ENGINE_SOURCE_PATH = 'web/src/lib/drawing/engine.ts';
+const TILED_RENDERER_SOURCE_PATH = 'web/src/lib/drawing/tiledRenderer.ts';
 const RELEASE_SEAM_SOURCE_FILES = [
   'web/src/lib/boot/devHarnessSeam.ts',
   'web/src/lib/drawing/screenshot.ts',
@@ -12,6 +13,7 @@ const RELEASE_SEAM_SOURCE_FILES = [
   'web/src/lib/drawing/emptyScan.ts',
 ];
 const RELEASE_ONLY_DEBUG_PROPERTIES = [
+  'backingMigrationPending',
   'baseRasterBytes',
   'inputOps',
   'liveSurfaceElements',
@@ -83,6 +85,15 @@ export function engineDevGateProblems(
   });
 }
 
+export function drawingWorkHotPathProblems(
+  source = readFileSync(join(ROOT, TILED_RENDERER_SOURCE_PATH), 'utf8')
+) {
+  return source
+    .split('\n')
+    .filter((line) => line.includes('surfaceVisits++') && !line.includes('if (workCounters)'))
+    .map(() => 'surface-visit accounting must stay behind the compile-time workCounters gate');
+}
+
 function javascriptFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -108,7 +119,7 @@ export async function checkReleaseSeams({
   env = process.env,
   log = console.log,
 } = {}) {
-  const sourceProblems = engineDevGateProblems();
+  const sourceProblems = [...engineDevGateProblems(), ...drawingWorkHotPathProblems()];
   if (sourceProblems.length) throw new Error(sourceProblems.join('\n'));
   const instrumented = env.PERF_MARKS === 'true' || env.PUBLIC_ENABLE_DEV_HARNESS === 'true';
   if (instrumented) {

@@ -94,8 +94,11 @@ for (const profile of VIEWPORTS) {
     test('drawing work stays inside deterministic counter ceilings', async ({ page }) => {
       await gotoApp(page);
       await expect
-        .poll(async () => (await drawingWork(page))?.realizedNormalBackings)
-        .toBe(MAX_REALIZED_NORMAL_BACKINGS);
+        .poll(async () => {
+          const work = await drawingWork(page);
+          return Boolean(work && work.liveSurfaceElements > 0 && !work.backingMigrationPending);
+        })
+        .toBe(true);
 
       await drawCounterStroke(page);
       const penWork = await drawingWork(page);

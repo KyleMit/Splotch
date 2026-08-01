@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import {
   checkReleaseSeams,
   DEV_GATED_ENGINE_EXPORTS,
+  drawingWorkHotPathProblems,
   engineDevGateProblems,
   RELEASE_ONLY_TOKENS,
   releaseSeamProblems,
@@ -44,6 +45,7 @@ it('derives every current window seam and engine measure family', () => {
     '__committedBrushMode',
     '__drawingDebug',
     '__screenshotSaveSink',
+    'backingMigrationPending',
     'baseRasterBytes',
     'engine.commit',
     'engine.draw',
@@ -80,6 +82,13 @@ it.each(DEV_GATED_ENGINE_EXPORTS)('rejects an ungated %s export', (name) => {
   expect(engineDevGateProblems(source)).toContain(
     `${name} must begin with the __DEV_HARNESS__ compile-time guard`
   );
+});
+
+it('requires surface-visit accounting to stay behind the compile-time gate', () => {
+  expect(drawingWorkHotPathProblems()).toEqual([]);
+  expect(drawingWorkHotPathProblems('surfaceVisits++;')).toEqual([
+    'surface-visit accounting must stay behind the compile-time workCounters gate',
+  ]);
 });
 
 it('skips an explicitly instrumented build before reading its bundle', async () => {
