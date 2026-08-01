@@ -385,8 +385,10 @@ The WebKit commit gate is split by path coverage and cost (ADR-0093). Pull reque
 `multi-finger` (the sole encode-path exerciser) and `crayon-scribbles` (mid-stroke pass splits) in a
 parallel `macos-latest` job whose duration stays below the ordinary Tests job; the Ubuntu WebKit
 runtime does not meet that wall-clock constraint. Release tags run all seven scenarios. A timing
-breach, an incomplete scenario, or a bundle with no `engine.commit` samples fails the job, and
-either tier uploads `undo-scenarios.json` and `undo-scenarios.md` on failure.
+breach, an incomplete or unknown requested scenario, a run with no encode-path coverage, or a bundle
+with no `engine.commit` samples fails the job. Either tier attempts to upload `undo-scenarios.json`
+and `undo-scenarios.md` after a failure; an early build/browser failure may leave no reports, which
+warns without masking the original error.
 
 The native smoke workflows are deliberately tag-only — an emulator/simulator job is the heaviest
 thing in CI, and a launch crash is exactly the kind of regression you want caught at release time.

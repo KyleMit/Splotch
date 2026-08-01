@@ -97,10 +97,13 @@ gate is deliberately blunt (catch full-raster work reappearing on the pointerup 
 drift). Absolute device milliseconds still come from `ipad-device-profiling.md`.
 
 CI uses the fast named subset on every pull request in a measured `macos-latest` job parallel to the
-ordinary test suite, then runs all seven scenarios on `v*` release tags (ADR-0093). Both jobs upload
-`undo-scenarios.json` and `undo-scenarios.md` when the gate fails. This is a catastrophic-regression
-gate with a wide threshold, not physical-iPad approval; ADR-0090's real-device tier remains the
-authority for frame pacing and device-calibrated budgets.
+ordinary test suite, then runs all seven scenarios on `v*` release tags (ADR-0093). Both jobs
+attempt to upload `undo-scenarios.json` and `undo-scenarios.md` after a failure; a gate breach
+produces them, while an earlier build/browser failure warns that none exist without masking the
+original error. An unknown requested key, incomplete scenario, missing `engine.commit` samples,
+absent encode-path coverage, or timing breach fails closed. This is a catastrophic-regression gate
+with a wide threshold, not physical-iPad approval; ADR-0090's real-device tier remains the authority
+for frame pacing and device-calibrated budgets.
 
 > **Not available in a cloud session.** `.claude/cloud/setup.sh` installs Chromium only, so any
 > WebKit-driving command (`perf:undo:webkit`, `perf:ios`) fails there with Playwright's raw
