@@ -72,6 +72,7 @@ import {
   setCrayonOptions,
   crayonColorMix,
   warmCrayonTiles,
+  cancelCrayonWarmup,
   CrayonPassTracker,
   type CrayonOptions,
 } from './crayonBrush';
@@ -1279,6 +1280,7 @@ function teardownEngine() {
   // mid-flight stroke into the log, so navigating away mid-stroke keeps
   // the ink.
   releaseAllPointers();
+  cancelCrayonWarmup();
   penStreamAdopter.reset();
   detachLegacyCrayonOverlays();
   detachTiledRenderer();
@@ -1439,6 +1441,7 @@ export function committedBrushMode(): BrushType {
 export function setCrayonMode(active: boolean) {
   crayonActive = active;
   if (active) warmCrayonTiles(currentColor);
+  else cancelCrayonWarmup();
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system
