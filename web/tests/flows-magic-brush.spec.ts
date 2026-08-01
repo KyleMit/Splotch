@@ -6,6 +6,7 @@ import {
   draw,
   gotoApp,
   hasRedDominantPixel,
+  renderedCanvasHandle,
   swatch,
   TEST_PALETTE,
 } from './helpers';
@@ -96,20 +97,24 @@ async function clearViaGesture(page: Page) {
 // correctly (issue #658). Finer quantization costs nothing on the other side —
 // a flat pen pass measured 1-3 buckets at 4, 5 and 6 bits alike, since one
 // colour is one bucket however narrow the buckets are.
-function distinctOpaqueColors(page: Page, bits = 6): Promise<number> {
-  return page.evaluate((b) => {
-    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-    const shift = 8 - b;
-    const seen = new Set<number>();
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i + 3] < 200) continue;
-      const key =
-        ((data[i] >> shift) << (2 * b)) | ((data[i + 1] >> shift) << b) | (data[i + 2] >> shift);
-      seen.add(key);
-    }
-    return seen.size;
-  }, bits);
+async function distinctOpaqueColors(page: Page, bits = 6): Promise<number> {
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return await canvas.evaluate((c, b) => {
+      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+      const shift = 8 - b;
+      const seen = new Set<number>();
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] < 200) continue;
+        const key =
+          ((data[i] >> shift) << (2 * b)) | ((data[i + 1] >> shift) << b) | (data[i + 2] >> shift);
+        seen.add(key);
+      }
+      return seen.size;
+    }, bits);
+  } finally {
+    await canvas.dispose();
+  }
 }
 
 test('the magic brush is always available and paints the coloring page colors', async ({
@@ -176,6 +181,93 @@ test('drawing shows a brush impact ring, rainbow-flavored for the magic brush', 
   await expect(ring).toHaveClass(/magic/);
   await page.mouse.up();
   await expect(ring).toHaveCount(0);
+});
+
+// How long the coalescing probe below drives pointermoves. Long enough that the
+// frame count is not dominated by scheduling noise, short enough to stay well
+// inside a default test timeout.
+const RING_COALESCING_DRIVE_MS = 400;
+// Gap between dispatched moves. Well under a 16.7 ms frame, so several separate
+// tasks land inside every frame — which is the condition the assertion needs.
+const RING_COALESCING_MOVE_GAP_MS = 2;
+
+// The ring has exactly one visible position per painted frame, so its transform
+// is written once per FRAME rather than once per input event. This pins that
+// contract from both sides: the ring still moves while drawing, and never more
+// often than the frames that could have shown a move.
+//
+// It drives pointermoves from inside the page rather than through `draw()`: a CDP
+// mouse.move costs ~10 ms round-trip, so the moves land roughly one per frame and
+// a per-event write is indistinguishable from a per-frame one. Real input is not
+// so polite — Safari gives web content a 60 Hz rAF beat while an iPad digitizer
+// delivers 120 Hz+. Each move is dispatched in its OWN task, since a single task
+// would let Svelte batch the writes and hide the difference either way.
+test('the brush ring transform is written once per frame, not once per input', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const ring = page.locator('.brush-ring');
+  const box = await page.locator('#drawingCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+
+  await page.mouse.move(box.x + 150, box.y + 120);
+  await page.mouse.down();
+  await expect(ring).toHaveCount(1);
+
+  const { writes, frames, moves } = await page.evaluate(
+    async ([driveMs, gapMs]) => {
+      const ringEl = document.querySelector('.brush-ring');
+      const canvas = document.querySelector('#drawingCanvas');
+      if (!ringEl || !canvas) throw new Error('no .brush-ring / #drawingCanvas to drive');
+
+      let writes = 0;
+      let frames = 0;
+      let running = true;
+      const observer = new MutationObserver((records) => {
+        writes += records.length;
+      });
+      observer.observe(ringEl, { attributes: true, attributeFilter: ['style'] });
+      const tick = () => {
+        frames++;
+        if (running) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+
+      const rect = canvas.getBoundingClientRect();
+      let moves = 0;
+      const started = performance.now();
+      while (performance.now() - started < driveMs) {
+        canvas.dispatchEvent(
+          new PointerEvent('pointermove', {
+            bubbles: true,
+            pointerId: 1,
+            pointerType: 'mouse',
+            isPrimary: true,
+            buttons: 1,
+            clientX: rect.left + 60 + (moves % 50),
+            clientY: rect.top + 80 + (moves % 30),
+          })
+        );
+        moves++;
+        await new Promise((resolve) => setTimeout(resolve, gapMs));
+      }
+
+      running = false;
+      observer.disconnect();
+      return { writes, frames, moves };
+    },
+    [RING_COALESCING_DRIVE_MS, RING_COALESCING_MOVE_GAP_MS]
+  );
+
+  // The premise of the assertion below: the driving really did outrun the frames.
+  expect(moves).toBeGreaterThan(frames);
+  // The ring still tracks the finger.
+  expect(writes).toBeGreaterThan(0);
+  // Never more than the frames that could have shown them. Pre-coalescing this
+  // was one per move, i.e. `moves` of them.
+  expect(writes).toBeLessThanOrEqual(frames);
+
+  await page.mouse.up();
 });
 
 // A palette press mid-stroke ends the stroke through releaseAllPointers() — the
@@ -294,19 +386,23 @@ test('a down-less pen stream adopted from a UI control still grows a brush ring'
 // the canvas) is the only source of line work; revealing the fill's copy on the
 // canvas would double every line under the overlay and ghost on any drift
 // (ADR-0043). So the fills-only reveal leaves the canvas essentially black-free.
-function revealedNearBlackFraction(page: Page): Promise<number> {
-  return page.evaluate(() => {
-    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-    let opaque = 0;
-    let nearBlack = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i + 3] < 200) continue;
-      opaque++;
-      if (data[i] < 40 && data[i + 1] < 40 && data[i + 2] < 40) nearBlack++;
-    }
-    return opaque === 0 ? 0 : nearBlack / opaque;
-  });
+async function revealedNearBlackFraction(page: Page): Promise<number> {
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return await canvas.evaluate((c) => {
+      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+      let opaque = 0;
+      let nearBlack = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] < 200) continue;
+        opaque++;
+        if (data[i] < 40 && data[i + 1] < 40 && data[i + 2] < 40) nearBlack++;
+      }
+      return opaque === 0 ? 0 : nearBlack / opaque;
+    });
+  } finally {
+    await canvas.dispose();
+  }
 }
 
 test('the magic brush reveals fills only, never the fill outlines (no double lines)', async ({
@@ -350,37 +446,41 @@ test('the magic brush reveals fills only, never the fill outlines (no double lin
 // anti-aliasing on the ink, which lands within ~2 per channel.
 const INK_MATCH_TOLERANCE = 16;
 
-function bandNonInkPixels(
+async function bandNonInkPixels(
   page: Page,
   edge: 'left' | 'top',
   frac: number,
   ink: string
 ): Promise<number> {
-  return page.evaluate(
-    ({ edge, frac, ink, tol }) => {
-      const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-      const w = edge === 'left' ? Math.max(1, Math.round(c.width * frac)) : c.width;
-      const h = edge === 'top' ? Math.max(1, Math.round(c.height * frac)) : c.height;
-      const { data } = c.getContext('2d')!.getImageData(0, 0, w, h);
-      const r0 = parseInt(ink.slice(1, 3), 16);
-      const g0 = parseInt(ink.slice(3, 5), 16);
-      const b0 = parseInt(ink.slice(5, 7), 16);
-      let nonInk = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        if (data[i + 3] <= 200) continue;
-        if (
-          Math.abs(data[i] - r0) <= tol &&
-          Math.abs(data[i + 1] - g0) <= tol &&
-          Math.abs(data[i + 2] - b0) <= tol
-        ) {
-          continue;
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return await canvas.evaluate(
+      (c, { edge, frac, ink, tol }) => {
+        const w = edge === 'left' ? Math.max(1, Math.round(c.width * frac)) : c.width;
+        const h = edge === 'top' ? Math.max(1, Math.round(c.height * frac)) : c.height;
+        const { data } = c.getContext('2d')!.getImageData(0, 0, w, h);
+        const r0 = parseInt(ink.slice(1, 3), 16);
+        const g0 = parseInt(ink.slice(3, 5), 16);
+        const b0 = parseInt(ink.slice(5, 7), 16);
+        let nonInk = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] <= 200) continue;
+          if (
+            Math.abs(data[i] - r0) <= tol &&
+            Math.abs(data[i + 1] - g0) <= tol &&
+            Math.abs(data[i + 2] - b0) <= tol
+          ) {
+            continue;
+          }
+          nonInk++;
         }
-        nonInk++;
-      }
-      return nonInk;
-    },
-    { edge, frac, ink, tol: INK_MATCH_TOLERANCE }
-  );
+        return nonInk;
+      },
+      { edge, frac, ink, tol: INK_MATCH_TOLERANCE }
+    );
+  } finally {
+    await canvas.dispose();
+  }
 }
 
 test('the magic brush paints the letterbox margin by extending the edge colour', async ({
@@ -415,12 +515,7 @@ test('the magic brush paints the letterbox margin by extending the edge colour',
     .toBeGreaterThan(BAND_MIN_REVEALED_PX);
 });
 
-// The case the user hit: after a rotation-with-ink the paper LOCKS (ADR-0050) and is
-// contain-fit into the new viewport, leaving letterbox margins around the whole page
-// (not just inside it). The magic sheet now covers the mapped viewport, so the brush
-// paints those margins too — before, they revealed nothing even though a pen could
-// draw there. Rotation is emulated via CDP (new metrics + a changed orientation angle).
-test('the magic brush paints the rotation-lock letterbox margin', async ({ page }) => {
+test('the rotation-lock letterbox margin stays outside the drawable paper', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
   await applyFarmPage(page); // landscape viewport → wide art
@@ -442,20 +537,22 @@ test('the magic brush paints the rotation-lock letterbox margin', async ({ page 
   // to reject.
   await expect(swatch(page, TEST_PALETTE.purple)).toHaveClass(/active/);
   await pickBrush(page, '#magicBrushButton');
-  // Sweep along the very top of the canvas — inside the rotation-lock top margin.
+  const undoDepthBefore = await page.evaluate(
+    () => window.__drawingDebug?.getUndoDebug().snapshots
+  );
   await draw(page, [
     { x: 40, y: 6 },
     { x: 240, y: 6 },
     { x: 440, y: 6 },
     { x: 660, y: 6 },
   ]);
-  // Non-ink pixels, not opacity, is the mode signal — see bandNonInkPixels. This
-  // margin is reachable by a pen too, so that discrimination is load-bearing here.
-  await expect
-    .poll(() => bandNonInkPixels(page, 'top', 0.05, TEST_PALETTE.purple), {
-      timeout: REVEAL_SETTLE_MS,
-    })
-    .toBeGreaterThan(BAND_MIN_REVEALED_PX);
+  // A valid margin stroke can settle after its pointerup while the worker-built
+  // magic sheet resolves, so give that deferred repaint its full allowed window.
+  await page.waitForTimeout(REVEAL_SETTLE_MS);
+  expect(await bandNonInkPixels(page, 'top', 0.05, TEST_PALETTE.purple)).toBe(0);
+  expect(await page.evaluate(() => window.__drawingDebug?.getUndoDebug().snapshots)).toBe(
+    undoDepthBefore
+  );
 });
 
 test('the magic brush reveals a rainbow gradient when no coloring page is applied', async ({
@@ -497,14 +594,18 @@ test('the magic brush reveals a rainbow gradient when no coloring page is applie
 });
 
 // Count of strongly-opaque canvas pixels.
-function opaqueCount(page: Page): Promise<number> {
-  return page.evaluate(() => {
-    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-    let n = 0;
-    for (let i = 3; i < data.length; i += 4) if (data[i] > 200) n++;
-    return n;
-  });
+async function opaqueCount(page: Page): Promise<number> {
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return await canvas.evaluate((c) => {
+      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+      let n = 0;
+      for (let i = 3; i < data.length; i += 4) if (data[i] > 200) n++;
+      return n;
+    });
+  } finally {
+    await canvas.dispose();
+  }
 }
 
 test('the eraser removes magic-brush strokes and later colors override them', async ({ page }) => {

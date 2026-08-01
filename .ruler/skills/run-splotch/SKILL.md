@@ -105,11 +105,13 @@ const browser = await chromium.launch({ executablePath: chromiumExecutablePath()
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 await page.goto('http://localhost:5199/', { waitUntil: 'commit' });
 
-// Readiness: the canvas is in the DOM before it's wired — poll for the engine
-// resizing the backing store off its 300×150 default (see the Gotchas below).
+// Readiness: the canvas is in the DOM before it's wired. Poll until the engine
+// changes the browser-default backing store and the CSS hit target has bounds.
 await page.waitForFunction(() => {
   const c = document.getElementById('drawingCanvas');
-  return !!c && c.width > 300;
+  if (!(c instanceof HTMLCanvasElement)) return false;
+  const rect = c.getBoundingClientRect();
+  return (c.width !== 300 || c.height !== 150) && rect.width > 0 && rect.height > 0;
 });
 
 // The tool buttons live in the COLLAPSED action drawer — expand it first.
@@ -178,9 +180,10 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
 
 * **The canvas exists before it's interactive.** `#drawingCanvas` is in the prerendered DOM before
   any script runs; the engine boots at module-evaluation time (before hydration, ADR-0072) and binds
-  the pointer listeners right after resizing the backing store off its 300×150 default. Polling for
-  the element alone can still draw into a dead canvas — wait for a non-default width (as the driver
-  does) if you script your own draw.
+  the pointer listeners right after changing the backing store off its 300×150 browser default.
+  Production tiled mode deliberately uses a 1×1 input bitmap (ADR-0089), so a large bitmap is not a
+  readiness signal. Wait for a non-default backing size and positive CSS bounds, as the driver does,
+  before scripting a draw.
 * **Cold `vite dev` re-optimizes deps** on the first hit, briefly 504-ing modules and
   auto-reloading. The driver *polls* for readiness instead of re-navigating (same trick as
   `web/tests/global-setup.ts`); a plain `goto` + immediate screenshot can catch the transient error

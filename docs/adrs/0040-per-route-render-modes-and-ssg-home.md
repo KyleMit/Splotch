@@ -58,9 +58,12 @@ that are already correct in the prerendered HTML:
    palette-clearing offset (needs the *measured* palette width).
 2. **Pre-paint head-script stamp** (`web/src/app.html`) + CSS. A tiny synchronous inline script runs
    before first paint and stamps `<html>` from `localStorage`, and the Action-center panel's CSS
-   reads those stamps so the state is correct at render. The same values are kept live through
-   hydration and every change by a publish `$effect` in `ActionsPanel.svelte` (one shared target, so
-   there's no competing default), giving correctness at **render + hydration + live update**.
+   reads those stamps so the state is correct at render. During hydration, a publish `$effect` in
+   `ActionsPanel.svelte` writes the current values onto `.actions-panel` and applies
+   `data-action-panel-live` as its final write. CSS bootstrap selectors require the panel not to
+   carry that marker; panel-local selectors take over once it appears. The `<html>` seed is never
+   mutated after first paint, giving correctness at **render + hydration + live update** without
+   making each live control change a document-wide style invalidation.
 
    **An attribute marks a *deviation* from the default**, so the raw prerendered HTML — the head
    script never having run — already renders the defaults, and the script is a pure optimization for
@@ -73,6 +76,7 @@ that are already correct in the prerendered HTML:
    * `data-drawer-open` — present only when the drawer is open (default: closed).
    * `data-off-adv` / `data-off-<control>` — present only when advanced controls, or that
      Parent-Center control, is switched **off** (default: on/shown).
+   * `data-brush` — present for a persisted non-default brush (default: pen).
 
    This is what lets the drawer be **always rendered** (in the DOM) yet shown/hidden and the
    individual controls gated **purely by CSS** — so a returning user who left the drawer open, or
@@ -101,6 +105,16 @@ because the raw prerendered HTML already carries the defaults, the ~99% of visit
 pay the ~0.1 ms for nothing visible but risk nothing if the script is skipped, while only customized
 returning visits actually consume the benefit.
 
+Keeping the same attributes live on `<html>` was rejected after Android Chrome action traces showed
+that re-enabling the Screenshot Button could invalidate and repaint the entire 1440×2780 document.
+The failing action spent 14.923 ms in `UpdateLayoutTree`, 2.294 ms in layout, and 68.605 ms in one
+GPU task with 193,119,152 used bytes; its sampled frame reached 66.7 ms. With the immutable
+bootstrap seed plus panel-local live state, 30 untraced disable/enable round trips both held a 16.8
+ms maximum. Five action-aligned traces reduced the action-start style update to 0.3–0.4 ms and the
+largest GPU task to 7.4–9.6 ms even as reported GPU memory rose as high as 227,977,528 bytes. The
+improvement therefore comes from damage/invalidation scope, not from reducing retained drawing
+surfaces.
+
 ## Consequences
 
 * **+** The home route stays a static, CDN-served, offline-capable page that is identical across web
@@ -109,6 +123,8 @@ returning visits actually consume the benefit.
   variable (button scale, drawer open state, each control toggle) is seeded before paint by the head
   script — no flash-of-default-then-correct, including for a returning user who left the drawer open
   or switched a control off.
+* **+** Hydrated Actions Panel changes invalidate only the panel subtree. A parent toggling one
+  button no longer republishes state on `<html>` and repaints the high-DPI drawing document.
 * **+** Because attributes mark only deviations from the default, the raw prerendered HTML renders
   the default UI on its own — the head script is a pure optimization, not load-bearing, so a default
   visitor is correct at first paint even if it never runs (JS disabled, or `localStorage` throwing
@@ -123,12 +139,14 @@ returning visits actually consume the benefit.
 * **−** The head script duplicates a handful of `localStorage` keys, their defaults, and the
   button-scale clamp from `settings.svelte.ts` (it runs in `<head>` before `<body>` exists, so it
   can only stamp `<html>` — it can't import the source of truth or touch the buttons directly). Both
-  files call this out; a mismatch would silently mis-seed until hydration corrects it. The
-  `data-drawer-open`/`data-off-*` publish path is covered by an E2E test
-  (`flows-undo-persistence.spec.ts`, "persisted-open drawer … at first paint").
+  files call this out; a mismatch would silently mis-seed until hydration corrects it. The root
+  attributes intentionally remain the first-paint snapshot and are not a live-state inspection API.
+  The bootstrap/panel handoff is covered by an E2E test (`flows-undo-persistence.spec.ts`,
+  "persisted-open drawer … at first paint").
 * **−** The drawer moved from a Svelte `{#if}` + `slide` to always-rendered markup gated by CSS
   (grid accordion + delayed `visibility`). More CSS mechanism, and the buttons are always in the DOM
   — but inert when closed, so no a11y/interaction cost.
-* **−** `--action-btn-scale` is now written to `document.documentElement` from a component
-  `$effect`, a small reach outside the component's own subtree — justified because the value must be
-  seedable from `<head>` before the component exists.
+* **−** Bootstrap and hydrated CSS need paired selectors: `<html>` while the panel lacks
+  `data-action-panel-live`, then panel-local attributes afterward. A new action-state selector must
+  cover both phases, and profilers must inspect the panel rather than treating the root seed as
+  live.

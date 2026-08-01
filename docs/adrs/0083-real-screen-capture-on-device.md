@@ -58,13 +58,18 @@ table, since a hand-drawn phase can only fairly be compared to *itself earlier*.
 gives identical input per phase but cannot reproduce touch coalescing, ProMotion input pacing, or
 queue delay — a constructed event's `timeStamp` is set when the probe builds it.
 
-**One production seam, read-only.** `web/src/lib/boot/devHarnessSeam.ts` exposes the
-already-exported `getUndoDebug()` on `/` behind the same gate as `routes/dev/*`
-(`PUBLIC_ENABLE_DEV_HARNESS`, which the Netlify deploy never sets). It exposes no mutation
-deliberately: a probe that can change the app can invalidate its own measurement. Everything else
-the probe needs — loading a coloring page, selecting a brush, suppressing the blend nudge /
-`mix-blend-mode` / halos — it gets by driving the real UI by selector or by injecting CSS with
-`!important`, so production carries no probe-only surface.
+**One read-only drawing seam, compiled out of release clients.**
+`web/src/lib/boot/devHarnessSeam.ts` exposes the already-exported `getUndoDebug()` on `/` when the
+client is compiled with `PUBLIC_ENABLE_DEV_HARNESS=true` or `PERF_MARKS=true`. Vite replaces that
+choice with the literal `__DEV_HARNESS__`; release builds dead-code-eliminate the assignments and
+property names. The `/dev/*` server routes retain their separate runtime environment gate because
+route authorization and client tree-shaking are different boundaries. A post-build scan rejects a
+release web or native client that retains the read-only drawing seams or `engine.*` mark names.
+
+The seam exposes no drawing mutation deliberately: a probe that can change the renderer can
+invalidate its own measurement. Everything else the probe needs — loading a coloring page, selecting
+a brush, suppressing the blend nudge / `mix-blend-mode` / halos — it gets by driving the real UI by
+selector or by injecting CSS with `!important`.
 
 Non-obvious invariants:
 

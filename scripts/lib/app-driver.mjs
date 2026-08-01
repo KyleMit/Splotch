@@ -118,6 +118,29 @@ export async function drawStroke(page, box, pts) {
   await sleep(STROKE_COMPLETION_DELAY_MS);
 }
 
+export async function tiledRendererIsActive(page) {
+  return page.locator(DRAWING_CANVAS_SELECTOR).evaluate((canvas) => {
+    const bounds = canvas.getBoundingClientRect();
+    return canvas.width < bounds.width && canvas.height < bounds.height;
+  });
+}
+
+export async function hasInk(page) {
+  return page.evaluate(() => {
+    const tiles = document.querySelectorAll('canvas[data-live-tile]:not([hidden])');
+    if (tiles.length === 0) return false;
+    for (const canvas of tiles) {
+      const context = canvas.getContext('2d');
+      if (!context) continue;
+      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+      for (let index = 3; index < data.length; index += 4) {
+        if (data[index] > 0) return true;
+      }
+    }
+    return false;
+  });
+}
+
 // Click an empty canvas corner to close any open menu before a screenshot.
 export async function dismissMenu(page) {
   await page.locator(DRAWING_CANVAS_SELECTOR).click({ position: { x: 5, y: 5 } });

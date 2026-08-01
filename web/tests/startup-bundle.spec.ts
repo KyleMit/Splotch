@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 
 // Issue #461: the save pipeline (the export compositor, screenshot persistence,
-// folder save, polaroid animation) loads on demand at save time. Nothing else
+// folder save, screenshot feedback) loads on demand at save time. Nothing else
 // stops a future static import from silently merging it back onto the startup
 // critical path, so this spec pins the prerendered `/` page's modulepreload list:
 // no chunk the browser must fetch before hydration may contain the save modules'
@@ -22,7 +22,7 @@ const SAVE_MODULE_MARKERS: Record<string, string> = {
   'exportDrawing.ts': 'handmade-paper',
   'screenshot.ts': 'allowPrompt',
   'folderSave.ts': 'Persisting the save folder failed:',
-  'polaroidAnimation.ts': 'polaroid-flash',
+  'screenshotFeedback.ts': 'screenshot-capture-feedback',
 };
 
 test.skip(!!process.env.DEV_SERVER, 'guards the production build output');

@@ -91,6 +91,26 @@ const REGISTRY = {
     kind: 'Measurement study',
     count: () => null,
   },
+  'drawing-engine': {
+    icon: 'pen',
+    hue: 'blue',
+    title: 'How the drawing engine works',
+    blurb:
+      'A visual, plain-language tour of the production drawing pipeline — multi-finger input, stroke smoothing, tiled rendering, raster folding, dirty-patch undo, Magic and crayon compositing, rotation, and PNG export.',
+    entry: 'drawing-engine/index.html',
+    kind: 'Architecture explainer',
+    count: () => null,
+  },
+  performance: {
+    icon: 'line-weight',
+    hue: 'green',
+    title: 'Cross-platform performance',
+    blurb:
+      'Drawing, undo, and interaction timings across physical devices, simulators, browsers, and native shells — visualized against the shared release gates.',
+    entry: 'performance/2026-07-31-deployment-target-matrix/index.html',
+    kind: 'Performance matrix',
+    count: () => null,
+  },
   icons: {
     icon: 'more-colors',
     hue: 'purple',

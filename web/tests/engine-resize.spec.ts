@@ -90,9 +90,16 @@ test('the drawing survives a canvas resize (virtual-canvas preservation)', async
 
   await page.evaluate(() => window.__engine.resizeTo(500, 400));
 
-  // Pixels near the origin (where the stroke is) must persist after the resize.
+  // The original paper can become contain-fit in the resized viewport. Sample
+  // the same paper point through the engine's published presentation transform.
   expect(await count(page)).toBeGreaterThan(0);
-  const alpha = await page.evaluate(() => window.__engine.pixelAt(70, 30)[3]);
+  const alpha = await page.evaluate(() => {
+    const view = window.__engine.getViewState();
+    return window.__engine.pixelAt(
+      Math.round(70 * view.scale + view.tx),
+      Math.round(30 * view.scale + view.ty)
+    )[3];
+  });
   expect(alpha).toBeGreaterThan(0);
 });
 
@@ -106,25 +113,42 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
   const box = await page.locator('#engineCanvas').boundingBox();
   if (!box) throw new Error('canvas has no bounding box');
 
-  await page.mouse.move(box.x + 40, box.y + 40);
+  await drawStroke(page, box, [
+    { x: 40, y: 100 },
+    { x: 180, y: 100 },
+  ]);
+
+  await page.mouse.move(box.x + 80, box.y + 160);
   await page.mouse.down();
-  await page.mouse.move(box.x + 100, box.y + 100);
+  await page.mouse.move(box.x + 140, box.y + 160);
 
   // Resize while the finger is still down (the stroke is mid-flight).
   await page.evaluate(() => window.__engine.resizeTo(500, 400));
 
-  // The portion drawn before the resize is still on the canvas.
-  expect(await page.evaluate(() => window.__engine.pixelAt(40, 40)[3])).toBeGreaterThan(0);
+  // Sample the in-flight stroke at its distinct paper position so the earlier
+  // committed stroke cannot make this survival check pass on its own.
+  const inFlightAlpha = await page.evaluate(() => {
+    const view = window.__engine.getViewState();
+    return window.__engine.pixelAt(
+      Math.round(110 * view.scale + view.tx),
+      Math.round(160 * view.scale + view.ty)
+    )[3];
+  });
+  expect(inFlightAlpha).toBeGreaterThan(0);
 
-  await page.mouse.move(box.x + 150, box.y + 150);
+  await page.mouse.move(box.x + 220, box.y + 160);
   await page.mouse.up();
 
   expect(await count(page)).toBeGreaterThan(0);
 
-  // One stroke → one command: a single undo clears it back to blank.
+  // Undoing the rebuilt in-flight stroke restores the earlier command instead
+  // of a twice-cropped transparent patch.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBeGreaterThan(0);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(false);
+  expect(s.canUndo).toBe(true);
+
   await page.evaluate(() => window.__engine.undo());
   expect(await count(page)).toBe(0);
-  const s = await state(page);
-  expect(s.canvasEmpty).toBe(true);
-  expect(s.canUndo).toBe(false);
 });

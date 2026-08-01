@@ -11,6 +11,7 @@
 // user-timing measures the page recorded.
 
 import { writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { isMain, runMain } from '../lib/proc.mjs';

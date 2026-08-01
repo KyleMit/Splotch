@@ -43,20 +43,20 @@ gates:
   is the "dedicated night line art" option *domesticated*: an edit, not a fresh generation, so
   registration is provable.
 * **Storage polarity:** the chalk ships **ink-on-white** (the negation of what dark mode displays).
-  The app's existing dark treatment (`invert(1)` + `screen`) renders it unchanged —
-  `DrawingCanvas.svelte` just swaps the overlay `src` to `chalkUrl` in dark mode — every
-  ink-on-white analysis tool (outline-match, punch, audits) reads chalks unmodified, and lossy webp
-  without an alpha plane is smaller than a transparent line layer (and avoids the sharp
-  alpha-flattening gotcha).
+  Every ink-on-white analysis tool (outline-match, punch, audits) reads chalks unmodified; the
+  picker applies the original `invert(1)` + `screen` treatment. The full-page canvas uses the
+  generated transparent white `.dark.overlay.webp` sibling from
+  [`alpha-line-art-overlays.md`](alpha-line-art-overlays.md), so WebKit does not retain a full-page
+  blend/filter layer (ADR-0091).
 * **The punch is per-theme** (`lib/punch-fill.mjs`): light raws punch against the pen, night raws
-  against the chalk. Because `screen` with white is white, the chalk's solid whites always survive
-  into the final combined image — the punch and renderer stay dumb; all judgment lives in the chalk.
+  against the chalk. The generated white alpha overlay preserves the chalk's solid whites in the
+  final combined image — the punch and renderer stay dumb; all judgment lives in the chalk.
 * **Night fills condition on the chalk** (`gen-coloring-fills-dark.mjs`): the model input is the
   chalk as-displayed, and the eye gate judges the simulated final composite (chalk-punched fill +
   screened chalk over dark paper), since the chalk now owns the eye whites.
 * **Incremental migration:** `books.ts` lists chalk orientations per page (like `night`); absent a
-  chalk, dark mode falls back to inverting the pen — the pre-fork behavior, byte-identical light
-  mode throughout.
+  chalk, the dark alpha overlay is derived from the pen — visually matching the pre-fork inversion
+  behavior, with light mode byte-identical throughout.
 
 Nature (12 cells) is the pilot. Consequent loosening: pen thin-stroke normalization (PR #122's
 machinery) is now a *light-theme quality* call — a solid pen pupil no longer breaks dark mode,
@@ -67,12 +67,12 @@ because the chalk redraw makes its own judgment from whatever pen it gets.
 * \+ Dark-mode whites are correct **by authorship**: what should be white at night is decided once,
   at generation time, by an editor with judgment — not reconstructed per-fill by prompts and policed
   by eye gates.
-* \+ The renderer and punch stay trivially dumb (ADR-0043/0052 style); the only app change is a
-  themed `src` swap with a safe fallback.
+* \+ The renderer and punch stay trivially dumb (ADR-0043/0052 style); the canvas swaps between
+  generated light/dark alpha siblings with a safe fallback.
 * \+ Night-fill generation gets easier, not harder: the model no longer has to nail three-tone eyes
   — the chalk carries the whites, the fill paints a pupil.
-* \+ Un-migrated categories keep working unchanged (pen-invert fallback), so the fork rolls out
-  category by category behind human review.
+* \+ Un-migrated categories keep working unchanged (white alpha derived from the pen), so the fork
+  rolls out category by category behind human review.
 * \- One more shipped asset per page-orientation (~60–90 KB each, ~0.9 MB per fully-migrated 6-page
   book) on web and native installs.
 * \- A page edit now fans out further: a pen change invalidates the chalk too (chalk → night fill →

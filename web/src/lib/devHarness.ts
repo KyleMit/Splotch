@@ -2,14 +2,10 @@ import { dev } from '$app/environment';
 import { env } from '$env/dynamic/public';
 import { error } from '@sveltejs/kit';
 
-// The dev-only test harnesses under routes/dev/* — and the engine seam in
-// lib/boot/devHarnessSeam.ts — must never ship to real users. They're available
-// in `vite dev`, and in a production `vite preview` build only when
-// PUBLIC_ENABLE_DEV_HARNESS=true (the e2e webServer sets it so Playwright can
-// drive the real build). The Netlify deploy never sets it. This is the single
-// definition of that gate; keep server-only imports out of this module so a
-// client boot step can read it too.
-export function devHarnessEnabled(): boolean {
+// Server-rendered /dev/* routes need a runtime gate because their modules remain
+// in the server build. Client seams use the compile-time __DEV_HARNESS__ literal
+// instead so ordinary bundles can remove them entirely.
+function devHarnessEnabled(): boolean {
   return dev || env.PUBLIC_ENABLE_DEV_HARNESS === 'true';
 }
 

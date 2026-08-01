@@ -21,6 +21,8 @@ import {
   pickColor,
   setStrokeSize,
   drawStroke,
+  hasInk,
+  tiledRendererIsActive,
   openColoringBook,
   pickBook,
   pickPage,
@@ -56,13 +58,8 @@ async function run(browser, base) {
     { x: box.width * 0.3, y: box.height * 0.4 },
     { x: box.width * 0.7, y: box.height * 0.6 },
   ]);
-  const painted = await page.evaluate(() => {
-    const c = document.getElementById('drawingCanvas');
-    const { data } = c.getContext('2d').getImageData(0, 0, c.width, c.height);
-    for (let i = 3; i < data.length; i += 4) if (data[i] > 0) return true;
-    return false;
-  });
-  check('drawStroke lays ink on the canvas', painted);
+  check('the tiled renderer is the active surface', await tiledRendererIsActive(page));
+  check('drawStroke lays ink on a visible live tile', await hasInk(page));
 
   await openColoringBook(page);
   await sleep(450);

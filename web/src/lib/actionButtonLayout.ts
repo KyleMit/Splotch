@@ -103,17 +103,18 @@ export function maxActionButtonScale(): number {
   return Math.min(ACTION_BUTTON_SCALE_MAX, Math.max(ACTION_BUTTON_SCALE_MIN, pct));
 }
 
-// Publish the Actions Panel's persisted UI state onto <html> so CSS can drive
-// each control's visibility, the drawer's open state, and the Brush Button's
-// face without JS in the render path. The home page is prerendered (ADR-0040),
-// so its static HTML can't reflect a returning user's stored settings — the
-// buttons are always in the DOM and shown/hidden purely by CSS keyed off these
-// attributes. ActionsPanel calls this from a reactive $effect that keeps them
-// live through hydration and every change; the inline head script in app.html
-// seeds the same attributes before first paint (so a returning user's drawer
-// and control toggles render with no flash). Those two writers must stay in
-// lockstep, and the keys/defaults mirror BOOL_SETTINGS in settings.svelte.ts —
-// centralised here so that contract has a single, unit-testable home.
+// Marks the point where Actions Panel CSS stops reading app.html's immutable
+// first-paint seed from <html> and reads live state from the panel subtree.
+export const ACTION_PANEL_LIVE_ATTRIBUTE = 'data-action-panel-live';
+
+// Publish the Actions Panel's hydrated UI state onto its own root so CSS can
+// drive each control's visibility, the drawer's open state, and the Brush
+// Button's face without invalidating the full document. The home page is
+// prerendered (ADR-0040), so app.html stamps the same state onto <html> before
+// first paint. CSS reads that immutable bootstrap seed until this function
+// applies ACTION_PANEL_LIVE_ATTRIBUTE as its final write, then switches to the
+// panel-local attributes. The keys/defaults mirror BOOL_SETTINGS in
+// settings.svelte.ts and stay centralised here as a unit-testable contract.
 //
 // Polarity: an attribute marks a DEVIATION from the default, so the raw
 // prerendered HTML (no attributes) already shows the defaults — drawer closed,
@@ -142,4 +143,5 @@ export function publishActionPanelState(
   // default pen so the raw prerendered HTML is already correct.
   if (toolState.brush === 'pen') el.removeAttribute('data-brush');
   else el.setAttribute('data-brush', toolState.brush);
+  el.setAttribute(ACTION_PANEL_LIVE_ATTRIBUTE, '');
 }

@@ -7,6 +7,7 @@ import { cmd, createCanvasStub, freshHistory } from './undoHistoryHarness';
 // real sheet loader. The unready-sheet behavior lives in undoHistory.test.ts.
 vi.mock('./magicBrush', () => ({
   isMagicSheetUnready: () => false,
+  captureMagicSheet: () => ({}),
   sheetPatternFor: () => '#magic',
 }));
 

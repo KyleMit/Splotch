@@ -1,6 +1,7 @@
 # ADR-0082: Size the Resident Snapshot Tier by Bytes, and Encode Off the Commit
 
-**Status:** Active **Date:** 2026-07
+**Status:** Superseded by [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) for the production
+drawing route. **Date:** 2026-07
 
 ## Context
 

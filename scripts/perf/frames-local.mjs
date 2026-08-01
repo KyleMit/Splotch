@@ -5,6 +5,7 @@
 //   npm run perf:frames:local                      Playwright WebKit (the iOS engine family)
 //   npm run perf:frames:local -- --engine=chromium --throttle=4
 //   npm run perf:frames:local -- --drive-hz=120 --phases=page,page-no-halos
+//   npm run perf:frames:local -- --viewport=2049x1373 --device-scale-factor=2
 //
 // WHAT THIS CAN AND CANNOT STAND IN FOR. The device findings this exists to
 // reproduce are compositor-side: frame production blocked at a stroke boundary,
@@ -34,6 +35,7 @@ import { profilePath } from './paths.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 import { spawnPerfServe } from './serve.mjs';
 import { printRun } from './frames-analyze.mjs';
+import { probeConfigScript } from './ipad-frames.mjs';
 
 const PROBE_FILE = join(ROOT, 'scripts', 'perf', 'real-screen-probe.js');
 const APP_URL_PATH = '/';
@@ -54,6 +56,22 @@ const ENGINES = {
   chromium: { launcher: chromium, hasCdp: true },
 };
 
+function positiveNumber(value, label) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) fail(`${label} must be a positive number`);
+  return number;
+}
+
+function resolveViewport(value) {
+  if (!value) return IPAD_PRO_VIEWPORT;
+  const match = /^(\d+)x(\d+)$/.exec(value);
+  if (!match) fail(`--viewport=${value} must use WIDTHxHEIGHT, for example 1366x915`);
+  return {
+    width: positiveNumber(match[1], 'viewport width'),
+    height: positiveNumber(match[2], 'viewport height'),
+  };
+}
+
 export async function runFramesLocal(argv = process.argv.slice(2)) {
   const { flag, has, port } = parsePerfArgs(
     {
@@ -61,10 +79,15 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
       throttleDefault: 1,
       extra: [
         'engine',
+        'url',
+        'brush',
         'phases',
         'contact-seconds',
         'drive',
         'drive-hz',
+        'viewport',
+        'device-scale-factor',
+        'headed',
         'no-serve',
         'no-forensics',
       ],
@@ -85,19 +108,37 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     fail(`--throttle needs CDP, which ${engineName} has none of. Use --engine=chromium.`);
   }
 
-  const url = `http://localhost:${port}${APP_URL_PATH}`;
-  const server = has('no-serve') ? null : spawnPerfServe(port);
+  const externalUrl = flag('url');
+  const url = externalUrl
+    ? new URL(externalUrl).toString()
+    : `http://localhost:${port}${APP_URL_PATH}`;
   const contactSeconds = Number(flag('contact-seconds', DEFAULT_CONTACT_SECONDS));
   const drive = flag('drive', 'mixed');
+  const brush = flag('brush', 'pen');
   const driveHz = flag('drive-hz') && Number(flag('drive-hz'));
+  const viewport = resolveViewport(flag('viewport'));
+  const deviceScaleFactor = positiveNumber(
+    flag('device-scale-factor', IPAD_PRO_SCALE),
+    'device scale factor'
+  );
+  const headless = !has('headed');
+  const probeConfig = probeConfigScript({
+    phases: flag('phases'),
+    contactMs: contactSeconds * 1000,
+    drive,
+    driveHz: driveHz || undefined,
+    brush,
+    hud: false,
+  });
+  const server = externalUrl || has('no-serve') ? null : spawnPerfServe(port);
 
   let browser;
   try {
-    if (server) await waitForUrl(url, SERVER_READY_TIMEOUT_MS);
-    browser = await engine.launcher.launch({ headless: true });
+    await waitForUrl(url, SERVER_READY_TIMEOUT_MS);
+    browser = await engine.launcher.launch({ headless });
     const context = await browser.newContext({
-      viewport: IPAD_PRO_VIEWPORT,
-      deviceScaleFactor: IPAD_PRO_SCALE,
+      viewport,
+      deviceScaleFactor,
     });
     const page = await context.newPage();
     const pageLogs = [];
@@ -118,17 +159,7 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
       undefined,
       { timeout: READY_TIMEOUT_MS }
     );
-
-    await page.evaluate(
-      ([phases, contactMs, driveShape, hz]) => {
-        window.__probePhases = phases;
-        window.__probeContactMs = contactMs;
-        window.__probeDrive = driveShape;
-        window.__probeDriveHz = hz;
-        window.__probeHud = false;
-      },
-      [flag('phases'), contactSeconds * 1000, drive, driveHz || undefined]
-    );
+    await page.evaluate(probeConfig);
     await page.evaluate(readFileSync(PROBE_FILE, 'utf8'));
     if (!(await page.evaluate(() => !!window.__probe))) {
       fail(
@@ -136,8 +167,8 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
       );
     }
     console.log(
-      `${engineName} · ${throttle.tag} CPU · ${IPAD_PRO_VIEWPORT.width}×${IPAD_PRO_VIEWPORT.height}@${IPAD_PRO_SCALE}x · ` +
-        `driving ${drive}${driveHz ? ` at ${driveHz} Hz` : ' at one move per frame'}`
+      `${engineName} · ${throttle.tag} CPU · ${viewport.width}×${viewport.height}@${deviceScaleFactor}x · ` +
+        `${brush} · driving ${drive}${driveHz ? ` at ${driveHz} Hz` : ' at one move per frame'}`
     );
 
     const deadline = Date.now() + RUN_TIMEOUT_MS;
@@ -161,16 +192,19 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     const capture = {
       device: { name: `${engineName} (local)`, os: process.platform },
       appUrl: url,
-      mode: `synthetic:${drive}${driveHz ? `@${driveHz}hz` : ''}`,
+      mode: `synthetic:${drive}${driveHz ? `@${driveHz}hz` : ''}:${brush}`,
+      brush,
       engine: engineName,
       throttle: throttle.tag,
+      viewport: { ...viewport, deviceScaleFactor },
+      headless,
       report,
       console: pageLogs,
     };
     const summaries = printRun(capture, { forensics: !has('no-forensics') });
     capture.summaries = summaries;
 
-    const outDir = profilePath('frames-local', engineName, throttle.tag);
+    const outDir = profilePath('frames-local', engineName, throttle.tag, brush);
     mkdirSync(outDir, { recursive: true });
     const artifact = join(outDir, 'real-screen.json');
     writeFileSync(artifact, `${JSON.stringify(capture, null, 2)}\n`);

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
 
 // ADR-0072: the engine boots at module evaluation against the prerendered
 // canvas, and hydration must ADOPT that element — not bail and re-render the
@@ -42,8 +43,17 @@ test('hydration adopts the pre-hydration canvas instead of replacing it', async 
     true
   );
 
-  const stackCanvases = await page.locator('.canvas-stack canvas').count();
-  expect(stackCanvases, 'expected main canvas + two crayon overlays, nothing duplicated').toBe(3);
+  await expect(page.locator('#drawingCanvas')).toHaveCount(1);
+  await expect(page.locator('canvas[data-live-tile]')).toHaveCount(LIVE_TILE_COUNT);
+  await expect(page.locator('canvas[data-live-crayon-bottom]')).toHaveCount(LIVE_TILE_COUNT);
+  await expect(page.locator('canvas[data-live-crayon-top]')).toHaveCount(LIVE_TILE_COUNT);
+  await expect
+    .poll(() =>
+      page
+        .locator('#drawingCanvas')
+        .evaluate((canvas: HTMLCanvasElement) => [canvas.width, canvas.height])
+    )
+    .toEqual([1, 1]);
 
   const hydrationWarnings = consoleMessages.filter((m) => /hydration/i.test(m));
   expect(hydrationWarnings, 'console must carry no hydration mismatch output').toEqual([]);

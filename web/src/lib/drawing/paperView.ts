@@ -28,6 +28,20 @@ export interface Size {
   height: number;
 }
 
+// Native rotation can settle its insets a few pixels late; adopting that drift invalidates every tile.
+const PAPER_VIEWPORT_DRIFT_TOLERANCE_CSS_PX = 8;
+
+export function smallViewportDrift(
+  paperWidth: number,
+  paperHeight: number,
+  viewport: Size
+): boolean {
+  return (
+    Math.abs(viewport.width - paperWidth) <= PAPER_VIEWPORT_DRIFT_TOLERANCE_CSS_PX &&
+    Math.abs(viewport.height - paperHeight) <= PAPER_VIEWPORT_DRIFT_TOLERANCE_CSS_PX
+  );
+}
+
 export const IDENTITY_PAPER_VIEW: Readonly<PaperView> = Object.freeze<PaperView>({
   scale: 1,
   rotate: 0,
@@ -123,4 +137,27 @@ export function viewToPaper(view: PaperView, x: number, y: number): Point {
     case 270:
       return { x: -v, y: u };
   }
+}
+
+export function visiblePaperBounds(paper: Size, viewport: Size, view: PaperView) {
+  if (isIdentityView(view)) return { x: 0, y: 0, width: paper.width, height: paper.height };
+  let minX = 0;
+  let minY = 0;
+  let maxX = paper.width;
+  let maxY = paper.height;
+  for (const [x, y] of [
+    [0, 0],
+    [viewport.width, 0],
+    [0, viewport.height],
+    [viewport.width, viewport.height],
+  ]) {
+    const point = viewToPaper(view, x, y);
+    minX = Math.min(minX, point.x);
+    minY = Math.min(minY, point.y);
+    maxX = Math.max(maxX, point.x);
+    maxY = Math.max(maxY, point.y);
+  }
+  const x = Math.floor(minX);
+  const y = Math.floor(minY);
+  return { x, y, width: Math.ceil(maxX) - x, height: Math.ceil(maxY) - y };
 }

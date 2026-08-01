@@ -8,6 +8,7 @@ import {
   gotoApp,
   isBlueDominant,
   PICKER_GREEN,
+  renderedCanvasHandle,
   retryOpen,
   swatch,
   TEST_PALETTE,
@@ -17,43 +18,48 @@ import {
 
 import { openBrushMenu, openDrawer, pickBrush } from './flows-harness';
 
-function canvasInkStats(
+async function canvasInkStats(
   page: Page,
   region: { x: number; y: number; width: number; height: number }
 ): Promise<{ count: number; strong: number; alphaSum: number; r: number; g: number; b: number }> {
-  return page.evaluate(({ x, y, width, height }) => {
-    const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const pixels = canvas
-      .getContext('2d')!
-      .getImageData(x * scaleX, y * scaleY, width * scaleX, height * scaleY).data;
-    let count = 0;
-    let strong = 0;
-    let alphaSum = 0;
-    let redSum = 0;
-    let greenSum = 0;
-    let blueSum = 0;
-    for (let i = 0; i < pixels.length; i += 4) {
-      const alpha = pixels[i + 3];
-      if (alpha <= 8) continue;
-      count++;
-      if (alpha >= 220) strong++;
-      alphaSum += alpha;
-      redSum += pixels[i] * alpha;
-      greenSum += pixels[i + 1] * alpha;
-      blueSum += pixels[i + 2] * alpha;
-    }
-    return {
-      count,
-      strong,
-      alphaSum,
-      r: redSum / alphaSum,
-      g: greenSum / alphaSum,
-      b: blueSum / alphaSum,
-    };
-  }, region);
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return await canvas.evaluate((rendered, { x, y, width, height }) => {
+      const input = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+      const rect = input.getBoundingClientRect();
+      const scaleX = rendered.width / rect.width;
+      const scaleY = rendered.height / rect.height;
+      const pixels = rendered
+        .getContext('2d')!
+        .getImageData(x * scaleX, y * scaleY, width * scaleX, height * scaleY).data;
+      let count = 0;
+      let strong = 0;
+      let alphaSum = 0;
+      let redSum = 0;
+      let greenSum = 0;
+      let blueSum = 0;
+      for (let i = 0; i < pixels.length; i += 4) {
+        const alpha = pixels[i + 3];
+        if (alpha <= 8) continue;
+        count++;
+        if (alpha >= 220) strong++;
+        alphaSum += alpha;
+        redSum += pixels[i] * alpha;
+        greenSum += pixels[i + 1] * alpha;
+        blueSum += pixels[i + 2] * alpha;
+      }
+      return {
+        count,
+        strong,
+        alphaSum,
+        r: redSum / alphaSum,
+        g: greenSum / alphaSum,
+        b: blueSum / alphaSum,
+      };
+    }, region);
+  } finally {
+    await canvas.dispose();
+  }
 }
 
 // ── palette ──────────────────────────────────────────────────────────────--
@@ -143,10 +149,13 @@ test('a crayon stroke previews at its true colour MID-stroke in dark mode', asyn
   // Structural pin: the overlays and canvas share an isolated stacking group.
   const isolation = await page.evaluate(() => {
     const stack = document.getElementById('drawingCanvas')!.parentElement!;
-    return { isolation: getComputedStyle(stack).isolation, children: stack.children.length };
+    return {
+      isolation: getComputedStyle(stack).isolation,
+      layers: stack.querySelector('.live-paper-view')?.children.length ?? 0,
+    };
   });
   expect(isolation.isolation).toBe('isolate');
-  expect(isolation.children).toBeGreaterThanOrEqual(3); // canvas + two overlays
+  expect(isolation.layers).toBeGreaterThanOrEqual(3);
 
   const box = (await page.locator('#drawingCanvas').boundingBox())!;
   const y = box.y + 260;
@@ -240,10 +249,13 @@ test('pointer exploration still snaps a hexagon gap and commits the highlighted 
   const start = dialog.locator('.grid.landscape .row.r5 .hexagon.c3');
   const target = dialog.locator('.grid.landscape .row.r5 .hexagon.c1');
 
-  await start.hover();
-  await page.mouse.down();
-  await target.hover();
-  await expect(target).toHaveClass(/hover/);
+  await expect(async () => {
+    await page.mouse.up();
+    await start.hover();
+    await page.mouse.down();
+    await target.hover();
+    await expect(target).toHaveClass(/hover/);
+  }).toPass();
 
   const targetBox = (await target.boundingBox())!;
   const gap = {
@@ -310,9 +322,16 @@ test('a pen stroke shortly after a pen tap on a swatch still paints', async ({ p
       fire(canvas, 'pointerup', rect.left + 462, rect.top + 271, 0);
       await new Promise(requestAnimationFrame);
 
-      const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
-      for (let i = 3; i < data.length; i += 4) {
-        if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
+      const tiles = Array.from(
+        document.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]')
+      );
+      for (const rendered of tiles.length > 0 ? tiles : [canvas]) {
+        const { data } = rendered
+          .getContext('2d')!
+          .getImageData(0, 0, rendered.width, rendered.height);
+        for (let i = 3; i < data.length; i += 4) {
+          if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
+        }
       }
       return null;
     }

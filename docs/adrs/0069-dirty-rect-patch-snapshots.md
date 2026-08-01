@@ -1,8 +1,7 @@
 # ADR-0069: Undo Snapshots Shrink to Dirty-Rect Patches of the Fold Region
 
-**Status:** Active — amends ADR-0066; the on-device perf gates it inherits from ADR-0066 remain
-pending. Amended by ADR-0074 (clustered multi-rect patches, clear paper swap, rect-limited undo
-repaint). **Date:** 2026-07
+**Status:** Superseded by [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) for the production
+drawing route. **Date:** 2026-07
 
 ## Context
 

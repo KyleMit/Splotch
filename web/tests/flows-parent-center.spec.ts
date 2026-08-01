@@ -58,6 +58,37 @@ test('parent center sidebar switches the content pane (tablet layout)', async ({
   await expect(aboutMascot).toHaveClass(/icon-color/);
 });
 
+test("What's New formats the current release date without runtime locale initialization", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Intl.DateTimeFormat = new Proxy(Intl.DateTimeFormat, {
+      apply() {
+        throw new Error('runtime Intl date formatting is disabled');
+      },
+      construct() {
+        throw new Error('runtime Intl date formatting is disabled');
+      },
+    });
+    Date.prototype.toLocaleDateString = () => {
+      throw new Error('runtime locale formatting is disabled');
+    };
+    Date.prototype.toLocaleString = () => {
+      throw new Error('runtime locale formatting is disabled');
+    };
+  });
+  await gotoApp(page);
+
+  await openParentCenter(page);
+  await page.getByRole('button', { name: "What's New" }).click();
+
+  const dates = page.locator('.whats-new-date');
+  await expect(dates).toHaveCount(1);
+  for (const date of await dates.all()) {
+    await expect(date).toHaveText(/^[A-Z][a-z]+ \d{1,2}, \d{4}$/);
+  }
+});
+
 test('setting card spacing only applies to direct section siblings', async ({ page }) => {
   await page.addInitScript(
     (aiAccessToken) => localStorage.setItem(aiAccessToken, 'test-access-code'),

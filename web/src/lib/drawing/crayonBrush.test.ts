@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import {
   seedPhase,
   getCrayonOptions,
@@ -14,6 +14,8 @@ import {
   CRAYON_DEFAULTS,
   MAX_CRAYON_MIX,
   MAX_COLOR_TILES,
+  warmCrayonTiles,
+  cancelCrayonWarmup,
   type CrayonPoint,
 } from './crayonBrush';
 
@@ -153,7 +155,22 @@ describe('colorTileCache LRU eviction', () => {
   afterEach(() => {
     HTMLCanvasElement.prototype.getContext = origGetContext;
     setCrayonOptions(CRAYON_DEFAULTS);
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
+
+  function frameQueue() {
+    const frames = new Map<number, FrameRequestCallback>();
+    let nextFrameId = 0;
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      const id = ++nextFrameId;
+      frames.set(id, callback);
+      return id;
+    });
+    const cancel = vi.fn((id: number) => frames.delete(id));
+    vi.stubGlobal('cancelAnimationFrame', cancel);
+    return { frames, cancel };
+  }
 
   function tileFor(color: string): HTMLCanvasElement {
     const createdWith: HTMLCanvasElement[] = [];
@@ -183,6 +200,46 @@ describe('colorTileCache LRU eviction', () => {
 
     expect(tileFor(colors[0])).not.toBe(tiles[0]);
     expect(tileFor(colors[1])).toBe(recentTile);
+  });
+
+  it('warms tile rows and density passes across separate frames', () => {
+    setCrayonOptions({
+      tile: 128,
+      passes: [
+        { widthScale: 1, coverage: 0.45 },
+        { widthScale: 0.68, coverage: 0.63 },
+      ],
+    });
+    const { frames } = frameQueue();
+    let now = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => (now += 0.75));
+
+    warmCrayonTiles('#123456');
+    expect(frames.size).toBe(1);
+
+    let frameCount = 0;
+    while (frames.size > 0) {
+      const [id, callback] = frames.entries().next().value!;
+      frames.delete(id);
+      callback(frameCount * 16);
+      frameCount++;
+      expect(frames.size).toBeLessThanOrEqual(1);
+      expect(frameCount).toBeLessThan(100);
+    }
+    expect(frameCount).toBeGreaterThan(4);
+  });
+
+  it('keeps one warm chain when rapid color changes supersede each other', () => {
+    const { frames, cancel } = frameQueue();
+    const colors = Array.from({ length: 11 }, (_, index) => `#${index.toString(16).repeat(6)}`);
+
+    for (const color of colors) warmCrayonTiles(color);
+
+    expect(frames.size).toBe(1);
+    expect(cancel).toHaveBeenCalledTimes(colors.length - 1);
+
+    cancelCrayonWarmup();
+    expect(frames.size).toBe(0);
   });
 });
 

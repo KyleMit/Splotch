@@ -8,6 +8,7 @@ eye-failure gallery that produced today's gates) live in [`legacy/README.md`](..
 
 Companion docs: `README.md` (runbook), `coloring-book-proof-sheet.md` (review surface), the decision
 records in [`docs/`]() — [pen/chalk fork](pen-chalk-fork.md),
+[alpha line-art overlays](alpha-line-art-overlays.md),
 [chalk edge crisping](chalk-edge-crisping.md), [inpainted fill punch](inpainted-fill-punch.md),
 [asset naming](asset-naming.md), [fill vocabulary](fill-vocabulary.md),
 [asset-gen architecture](architecture.md) — plus ADR-0043 (magic-brush reveal) and ADR-0052 (dark
@@ -19,8 +20,10 @@ live assets regenerate, these don't.
 ```mermaid
 flowchart LR
     O["pen outline<br/>(.outline.webp)"] -->|gen:coloring-thumbs| T[".thumb.webp<br/>(picker, light)"]
+    O -->|gen:coloring-overlays| PO[".overlay.webp<br/>(canvas, light)"]
     O -->|"gen:coloring-chalk<br/>(Gemini, gated)"| C["chalk outline<br/>(.chalk.webp)"]
     C -->|gen:coloring-thumbs| CT[".chalk.thumb.webp<br/>(picker, dark)"]
+    C -->|gen:coloring-overlays| CO[".dark.overlay.webp<br/>(canvas, dark)"]
     O -->|"gen:coloring-fills<br/>(Gemini, gated)"| LR2["light raw<br/>(fill-src/…light.raw.webp)"]
     C -->|"gen-coloring-fills-dark<br/>(Gemini, gated)"| NR["night raw<br/>(fill-src/…night.raw.webp)"]
     LR2 -->|gen:coloring-punch| LS["shipped .light.webp<br/>(fills-only)"]
@@ -47,16 +50,18 @@ the white-blob problem and two earlier generations of fixes — is chronicled in
 | `{page}.chalk.webp`             | `web/static/coloring/{book}/`      | yes — the CHALK outline: dark-mode overlay + night punch mask, stored ink-on-white                                                     | `gen-coloring-chalk.mjs` from the pen                    |
 | `{page}.thumb.webp`             | `web/static/coloring/{book}/`      | yes — light-mode picker grid (from the pen)                                                                                            | `gen-coloring-thumbs.mjs`                                |
 | `{page}.chalk.thumb.webp`       | `web/static/coloring/{book}/`      | yes — dark-mode picker grid (from the chalk, ink-on-white; the tile's invert renders it as white chalk)                                | `gen-coloring-thumbs.mjs`                                |
+| `{page}.overlay.webp`           | `web/static/coloring/{book}/`      | yes — transparent black pen for source-over light canvas presentation                                                                  | `gen-coloring-overlays.mjs`                              |
+| `{page}.dark.overlay.webp`      | `web/static/coloring/{book}/`      | yes — transparent white chalk for source-over dark canvas presentation                                                                 | `gen-coloring-overlays.mjs`                              |
 | `{page}.{light,night}.raw.webp` | `tools/asset-gen/fill-src/{book}/` | no — committed source of truth for fills, keeps its own outlines so audits can score registration                                      | `gen-coloring-fills.mjs` / `gen-coloring-fills-dark.mjs` |
 | `{page}.{light,night}.webp`     | `web/static/coloring/{book}/`      | yes — magic-brush reveal, fills-only (outline pixels inpainted with bled fill color, opaque: pen mask for light, chalk mask for night) | `punch-fill-outlines.mjs` from the raw                   |
 
 Everything shipped is a **static, committed artifact** — no generation at build or run time, no
-server dependency, trivially cacheable. The renderer is deliberately dumb: light mode multiplies the
-pen outline over light paper; dark mode inverts the chalk (shipped ink-on-white) to white chalk and
-screens it over dark paper (ADR-0052); the reveal layers the punched fill underneath. Because screen
-with white is white, the chalk's solid whites always survive into the final combined image — no
-runtime smarts needed. All intelligence lives at generation time, behind gates, with a human review
-at the end.
+server dependency, trivially cacheable. The renderer is deliberately dumb: generated transparent
+black pen or transparent white chalk overlays use ordinary source-over composition; the reveal
+layers the punched fill underneath. The opaque pen/chalk sources retain their pipeline storage
+polarity, while `gen:coloring-overlays` converts them for presentation (ADR-0091 and
+[`alpha-line-art-overlays.md`](alpha-line-art-overlays.md)). All intelligence lives at generation
+time, behind gates, with a human review at the end.
 
 ## Stage 1 — Pen outlines
 

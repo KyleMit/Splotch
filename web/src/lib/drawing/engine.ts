@@ -12,14 +12,19 @@
 //
 //   strokeOps.ts        the op vocabulary + the one renderer every surface shares
 //   crayonPassBuffer.ts the crayon pass's accumulation buffers + glaze stamp
-//   undoHistory.ts      the paper raster + pre-stroke snapshot stack (ADR-0066)
+//   crayonOverlay.ts    the legacy harness's live crayon preview planes
+//   tiledRenderer.ts    production live surfaces + vector-tail undo (ADR-0085)
+//   tiledSurfaces.ts    allocation and lifecycle of each tile's canvas surfaces
+//   undoHistory.ts      the legacy harness's paper + snapshot stack (ADR-0066)
 //   strokeMath.ts       pure gesture math (edge swipes, resume detection, speed)
 //   paperView.ts        pure rotation-lock view geometry (ADR-0050)
 //   magicBrush.ts       the magic brush's color sheet + paint pattern (ADR-0043)
 //   emptyScan.ts        cheap blank-canvas detection
 //   penStreamQuirks.ts  WebKit merged-stream pen-contact adoption
+//   engineListeners.ts  DOM listener registration and teardown tracking
 //   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
+import { dev } from '$app/environment';
 import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
 import type { BrushType } from '$lib/state/tool.svelte';
 import {
@@ -41,13 +46,15 @@ import {
   isIdentityView,
   IDENTITY_PAPER_VIEW,
   rotationDelta,
+  smallViewportDrift,
+  visiblePaperBounds,
   viewMatrix,
   viewToPaper,
   type PaperView,
 } from './paperView';
 import {
   initMagicBrush,
-  rasterizeSheet,
+  resizeMagicSheet,
   ensureMagicSheet,
   clearMagicGradient,
   setColorSheet,
@@ -59,12 +66,12 @@ import {
   hasOpenLiveCrayonPass,
   resetLiveCrayonPass,
   setCrayonPaperSpace,
-  setLiveCrayonBuffer,
 } from './crayonPassBuffer';
 import {
   setCrayonOptions,
   crayonColorMix,
   warmCrayonTiles,
+  cancelCrayonWarmup,
   CrayonPassTracker,
   type CrayonOptions,
 } from './crayonBrush';
@@ -92,9 +99,39 @@ import {
 } from './undoHistory';
 import { scanCanvasIsEmpty } from './emptyScan';
 import { createPenStreamAdopter } from './penStreamQuirks';
-import type { ExportOptions } from './exportDrawing';
+import type { ExportOptions, ExportSnapshot } from './exportDrawing';
+import { currentExportScale } from './exportScale';
+import { captureTiledSnapshot, createStrokeSnapshot } from './strokeSnapshot';
+import { registerDrawingEngineListeners } from './engineListeners';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
+import {
+  detachLegacyCrayonOverlays,
+  resizeLegacyCrayonOverlays,
+  setupLegacyCrayonOverlays,
+  syncLegacyCrayonMix,
+} from './crayonOverlay';
+import {
+  adoptTiledRenderer,
+  applyTiledView,
+  beginTiledCommand,
+  clearTiledRenderer,
+  commitTiledCommand,
+  detachTiledRenderer,
+  hasUnresolvedTiledMagicOps,
+  recordTiledOp,
+  repaintTiledRenderer,
+  renderTiledOp,
+  renderTiledSnapshot,
+  resizeTiledRenderer,
+  scanTiledRendererIsEmpty,
+  scheduleTiledHistoryFold,
+  syncTiledCrayonMix,
+  tiledHistoryDebug,
+  tiledRendererActive,
+  tiledSurfaceTopologyDebug,
+  undoTiledCommand,
+} from './tiledRenderer';
 
 export { setColorSheet };
 
@@ -130,6 +167,8 @@ let canvas!: HTMLCanvasElement;
 let ctx!: CanvasRenderingContext2D;
 let currentColor = '';
 const DEFAULT_LINE_WIDTH_PX = getStrokeWidthPx(DEFAULT_SIZE);
+const TILED_INPUT_BITMAP_SIDE_PX = 1;
+let viewport = { width: 0, height: 0 };
 let currentLineWidth = DEFAULT_LINE_WIDTH_PX;
 let eraserActive = false;
 let magicActive = false;
@@ -150,27 +189,10 @@ let lastColorChangeTime = 0;
 // sees the composited page, and on the DARK paper min(colour, near-black)
 // erased the bottom layer, leaving a faint 1-m-opacity stroke until stamp.
 //
-// ADOPTED from the markup when the owner provides them (two
-// `canvas[data-crayon-overlay]` siblings, bottom then top — DrawingCanvas
-// renders and styles them so the prerendered DOM matches what hydration
-// expects; elements the engine injected before hydration made Svelte bail to
-// a full client re-render, replacing the live canvas — ADR-0072). Created,
-// styled, and inserted by the engine only where the markup has none (the
-// /dev/engine harness, which inits after hydration).
-interface CrayonOverlays {
-  bottom: HTMLCanvasElement;
-  bottomCtx: CanvasRenderingContext2D;
-  top: HTMLCanvasElement;
-  topCtx: CanvasRenderingContext2D;
-  engineCreated: boolean;
-}
-
-let crayonOverlays: CrayonOverlays | null = null;
-
 function syncCrayonOverlayMix() {
-  if (crayonOverlays) {
-    crayonOverlays.top.style.opacity = String(1 - crayonColorMix());
-  }
+  const opacity = String(1 - crayonColorMix());
+  syncLegacyCrayonMix(opacity);
+  syncTiledCrayonMix(opacity);
 }
 
 // Close the current deposition pass: stamp the live buffer onto the canvas,
@@ -183,10 +205,12 @@ function syncCrayonOverlayMix() {
 // matching renderOp's no-op flush of a clean buffer.
 function recordCrayonFlush() {
   const flush: StrokeOp = { kind: 'crayonFlush' };
-  renderOp(ctx, flush);
+  if (!tiledRendererActive()) renderOp(ctx, flush);
+  else renderTiledOp(flush);
   const raster = closeLiveCrayonPass();
-  if (raster) replaceOpenCrayonPassOps(raster);
-  else recordOp(flush);
+  if (raster && !tiledRendererActive()) replaceOpenCrayonPassOps(raster);
+  else recordCurrentOp(flush);
+  crayonOpsSinceFlush = 0;
 }
 
 // A per-pass seed stamped onto every crayon op, so the paper-tooth pattern is
@@ -207,7 +231,10 @@ let callbacks: Omit<InitOptions, 'initialColor'> = {};
 // a mid-session DPR change (desktop zoom, monitor move) would otherwise need
 // every pixel surface (visible canvas, paper) rescaled in place.
 const MAX_RENDER_SCALE = 2;
+// Bound live crayon memory without making ordinary short strokes pay a checkpoint.
+const CRAYON_CHECKPOINT_OPS = 64;
 let renderScale = 1;
+let crayonOpsSinceFlush = 0;
 
 function backingSizeOf(rect: DOMRect): { w: number; h: number } {
   return { w: Math.round(rect.width * renderScale), h: Math.round(rect.height * renderScale) };
@@ -222,6 +249,22 @@ function setCanUndo(value: boolean) {
 
 let canvasEmpty = true;
 
+function readoptPaperAfterTiledCanvasHides() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (
+        engineLive &&
+        tiledRendererActive() &&
+        canvasEmpty &&
+        activePointers.size === 0 &&
+        !isIdentityView(paperView)
+      ) {
+        resizeCanvas();
+      }
+    });
+  });
+}
+
 function setCanvasEmptyState(empty: boolean) {
   if (canvasEmpty === empty) return;
   canvasEmpty = empty;
@@ -229,7 +272,10 @@ function setCanvasEmptyState(empty: boolean) {
   // A blank canvas frees the locked paper to match the live viewport again
   // (clear, undo-to-blank, erase-to-blank): re-adopt right away instead of
   // leaving the child a letterboxed blank page until the next rotation.
-  if (empty && activePointers.size === 0 && !isIdentityView(paperView)) resizeCanvas();
+  if (empty && activePointers.size === 0 && !isIdentityView(paperView)) {
+    if (tiledRendererActive()) readoptPaperAfterTiledCanvasHides();
+    else resizeCanvas();
+  }
 }
 
 // --- Paper space and the rotation-lock view (ADR-0050) --------------------
@@ -252,16 +298,18 @@ let paperAngle = 0;
 let resizedAngle = 0;
 let paperView: PaperView = IDENTITY_PAPER_VIEW;
 
-// Dev/test seam (mirrors setCrayonParams): pin the screen angle the engine
-// reads so the /dev/engine harness can simulate a device rotation without a
-// device. Production never calls the setter.
+// The /dev/engine harness intentionally mutates this unlike the drawing route's
+// read-only seams: simulated rotation has no equivalent DOM state to drive.
+// The compile-time gate drops both the state and currentScreenAngle branch from
+// release builds.
 let screenAngleOverride: number | null = null;
 export function setScreenAngleOverride(angle: number | null) {
+  if (!dev && !__DEV_HARNESS__) return;
   screenAngleOverride = angle;
 }
 
 function currentScreenAngle(): number {
-  if (screenAngleOverride !== null) return screenAngleOverride;
+  if ((dev || __DEV_HARNESS__) && screenAngleOverride !== null) return screenAngleOverride;
   const angle = window.screen?.orientation?.angle;
   return typeof angle === 'number' ? angle : 0;
 }
@@ -333,8 +381,8 @@ function refreshCanvasRect(rect?: DOMRect) {
   if (!canvas) return;
   rect ??= canvas.getBoundingClientRect();
   canvasRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
-  rectScaleX = rect.width ? canvas.width / rect.width : 1;
-  rectScaleY = rect.height ? canvas.height / rect.height : 1;
+  rectScaleX = rect.width ? viewport.width / rect.width : 1;
+  rectScaleY = rect.height ? viewport.height / rect.height : 1;
 }
 
 // Backing-store (screen) coordinates of a pointer event — the physical space
@@ -361,26 +409,8 @@ function screenToPaper(pt: Point): Point {
 // rect (unioned with the paper for safety). Ops in those margins record at these
 // out-of-paper coordinates, so the sheet is extended there too (ADR-0043/0050).
 function sheetBoundsPaper(): { x: number; y: number; width: number; height: number } {
-  if (isIdentityView(paperView)) return { x: 0, y: 0, width: paper.pxW, height: paper.pxH };
-  let minX = 0;
-  let minY = 0;
-  let maxX = paper.pxW;
-  let maxY = paper.pxH;
-  for (const [x, y] of [
-    [0, 0],
-    [canvas.width, 0],
-    [0, canvas.height],
-    [canvas.width, canvas.height],
-  ]) {
-    const p = viewToPaper(paperView, x, y);
-    minX = Math.min(minX, p.x);
-    minY = Math.min(minY, p.y);
-    maxX = Math.max(maxX, p.x);
-    maxY = Math.max(maxY, p.y);
-  }
-  const x = Math.floor(minX);
-  const y = Math.floor(minY);
-  return { x, y, width: Math.ceil(maxX) - x, height: Math.ceil(maxY) - y };
+  if (tiledRendererActive()) return { x: 0, y: 0, width: paper.pxW, height: paper.pxH };
+  return visiblePaperBounds({ width: paper.pxW, height: paper.pxH }, viewport, paperView);
 }
 
 // The cached canvas client rect, so components can position pointer-following
@@ -398,7 +428,10 @@ export function getCanvasRect(): Readonly<CanvasRect> {
 // remapped. Returns whether the paper is locked.
 function adoptPaperUnlessLocked(rect: DOMRect): boolean {
   const angle = currentScreenAngle();
-  const lockPaper = !canvasEmpty && rotationDelta(paperAngle, angle) !== 0;
+  const paperAngleChanged = rotationDelta(paperAngle, angle) !== 0;
+  const paperOrientationChanged = paper.cssW > paper.cssH !== rect.width > rect.height;
+  const minorDrift = !paperAngleChanged && smallViewportDrift(paper.cssW, paper.cssH, rect);
+  const lockPaper = !canvasEmpty && (paperAngleChanged || paperOrientationChanged || minorDrift);
   if (!lockPaper) {
     const { w, h } = backingSizeOf(rect);
     paper = { pxW: w, pxH: h, cssW: rect.width, cssH: rect.height };
@@ -425,15 +458,12 @@ function adoptPaperUnlessLocked(rect: DOMRect): boolean {
 // ADR-0050.
 function applyPaperView(lockPaper: boolean) {
   paperView = lockPaper
-    ? computePaperView(
-        { width: paper.pxW, height: paper.pxH },
-        { width: canvas.width, height: canvas.height },
-        0
-      )
+    ? computePaperView({ width: paper.pxW, height: paper.pxH }, viewport, 0)
     : IDENTITY_PAPER_VIEW;
-  if (!isIdentityView(paperView)) {
+  if (!tiledRendererActive() && !isIdentityView(paperView)) {
     ctx.setTransform(...viewMatrix(paperView));
   }
+  applyTiledView(tiledRendererActive() ? IDENTITY_PAPER_VIEW : paperView);
 }
 
 function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
@@ -452,28 +482,23 @@ function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
   // Resizing the backing store wipes the visible canvas and resets its context
   // state, so re-arm the round caps and repaint from the paper raster.
   const { w, h } = backingSizeOf(rect);
-  canvas.width = w;
-  canvas.height = h;
+  viewport = { width: w, height: h };
+  const inputBitmapWidth = tiledRendererActive() ? TILED_INPUT_BITMAP_SIDE_PX : w;
+  const inputBitmapHeight = tiledRendererActive() ? TILED_INPUT_BITMAP_SIDE_PX : h;
+  if (canvas.width !== inputBitmapWidth) canvas.width = inputBitmapWidth;
+  if (canvas.height !== inputBitmapHeight) canvas.height = inputBitmapHeight;
+  const tiledRendererResized = resizeTiledRenderer(paper.pxW, paper.pxH, renderScale, canvasEmpty);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  const overlays = crayonOverlays;
-  if (overlays) {
-    for (const [el, g] of [
-      [overlays.bottom, overlays.bottomCtx],
-      [overlays.top, overlays.topCtx],
-    ] as const) {
-      el.width = canvas.width;
-      el.height = canvas.height;
-      g.lineCap = 'round';
-      g.lineJoin = 'round';
-    }
-  }
+  resizeLegacyCrayonOverlays(viewport.width, viewport.height);
   applyPaperView(lockPaper);
 
-  // The magic sheet is sized to the paper, so re-rasterize before repainting
-  // any pending magic ops against it.
-  rasterizeSheet();
-  repaintAll(ctx);
+  resizeMagicSheet(magicActive);
+  if (tiledRendererActive()) {
+    if (tiledRendererResized && !canvasEmpty) repaintTiledRenderer();
+  } else {
+    repaintAll(ctx);
+  }
 
   refreshCanvasRect(rect);
   notifyViewChange();
@@ -515,7 +540,8 @@ function resyncOnReentry() {
   if (document.visibilityState !== 'visible') return;
   const rect = canvas.getBoundingClientRect();
   const { w, h } = backingSizeOf(rect);
-  const stale = canvas.width !== w || canvas.height !== h || resizedAngle !== currentScreenAngle();
+  const stale =
+    viewport.width !== w || viewport.height !== h || resizedAngle !== currentScreenAngle();
   if (stale) resizeCanvas(rect);
   else refreshCanvasRect(rect);
 }
@@ -528,9 +554,18 @@ function resyncOnReentry() {
 // stack or the empty flag. Reset when the last finger lifts.
 let groupHasDrawn = false;
 
+function recordCurrentOp(op: StrokeOp) {
+  if (!tiledRendererActive()) recordOp(op);
+  else recordTiledOp(op);
+}
+
 function beginStrokeGroup() {
   if (groupHasDrawn) return;
-  beginCommand(canvasEmpty);
+  if (!tiledRendererActive()) {
+    beginCommand(canvasEmpty);
+  } else {
+    beginTiledCommand(canvasEmpty);
+  }
   setCanvasEmptyState(false);
   groupHasDrawn = true;
 }
@@ -544,7 +579,8 @@ function beginStrokeGroup() {
 // not attribute it). Continued crayon ops then open a fresh pass, exactly as
 // the pre-raster pipeline behaved (the erase branch's implicit buffer flush).
 function closeCrayonPassBeforeForeignOp(ps: PointerState) {
-  if (!(ps.crayon && !ps.erase) && hasOpenLiveCrayonPass()) recordCrayonFlush();
+  const hasOpenPass = tiledRendererActive() ? crayonOpsSinceFlush > 0 : hasOpenLiveCrayonPass();
+  if (!(ps.crayon && !ps.erase) && hasOpenPass) recordCrayonFlush();
 }
 
 // The five style modifiers every `dot`/`path` op carries. Erasing clears pixels
@@ -571,8 +607,9 @@ function renderStrokeStart(ps: PointerState) {
     radius: ps.lineWidth / 2,
     ...strokeStyleOf(ps),
   };
-  renderOp(ctx, dot);
-  recordOp(dot);
+  if (tiledRendererActive()) renderTiledOp(dot);
+  else renderOp(ctx, dot);
+  recordCurrentOp(dot);
 
   ctx.beginPath();
   ctx.moveTo(ps.x, ps.y);
@@ -606,8 +643,14 @@ function strokeSmoothSegments(ps: PointerState, points: Point[]) {
     ps.midX = midX;
     ps.midY = midY;
   }
-  renderOp(ctx, op);
-  recordOp(op);
+  if (tiledRendererActive()) renderTiledOp(op);
+  else renderOp(ctx, op);
+  recordCurrentOp(op);
+  if (ps.crayon && !ps.erase && ++crayonOpsSinceFlush >= CRAYON_CHECKPOINT_OPS) {
+    recordCrayonFlush();
+    ps.seed = crayonSeedCounter++;
+    ps.passTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
+  }
 }
 
 // Crayon-aware segment routing: feed each point through the stroke's pass
@@ -650,6 +693,12 @@ function strokeSegments(ps: PointerState, points: Point[]) {
 function commitStrokeGroup() {
   if (PERF_MARKS) performance.mark('engine.commit:start');
   try {
+    if (tiledRendererActive()) {
+      if (!commitTiledCommand()) return;
+      setCanUndo(true);
+      callbacks.onStrokeEnd?.();
+      return;
+    }
     const deferBehindRestore = paperStepsPending > 0;
     const rasterRects = activeCrayonRasterRects();
     if (!commitActiveCommand(deferBehindRestore)) return;
@@ -775,6 +824,13 @@ function startDrawing(e: PointerEvent) {
 
   const screen = pointerToScreen(e);
   const { x, y } = screenToPaper(screen);
+  if (
+    tiledRendererActive() &&
+    !isIdentityView(paperView) &&
+    (x < 0 || y < 0 || x > paper.pxW || y > paper.pxH)
+  ) {
+    return;
+  }
 
   // The eraser runs a bit larger than the pen at the same stroke level. Stroke
   // widths are authored in CSS pixels, so they scale to backing-store pixels.
@@ -784,8 +840,8 @@ function startDrawing(e: PointerEvent) {
   const edgeSwipeGuard =
     e.pointerType === 'touch'
       ? guardedEdgeAt(screen.x, screen.y, {
-          width: canvas.width,
-          height: canvas.height,
+          width: viewport.width,
+          height: viewport.height,
           renderScale,
           bottomInset: safeInsets.bottom,
         })
@@ -967,6 +1023,11 @@ function draw(e: PointerEvent) {
   }
 }
 
+function scanDrawingIsEmpty() {
+  if (tiledRendererActive()) return scanTiledRendererIsEmpty(renderScale);
+  return scanCanvasIsEmpty(canvas, renderScale);
+}
+
 function stopDrawing(e: PointerEvent) {
   const pointerState = activePointers.get(e.pointerId);
 
@@ -1000,7 +1061,11 @@ function stopDrawing(e: PointerEvent) {
   ctx.beginPath();
 
   if (pointerState && !pointerState.edgeSwipeGuard && pointerState.erase) {
-    setCanvasEmptyState(scanCanvasIsEmpty(canvas, renderScale));
+    if (tiledRendererActive()) {
+      requestAnimationFrame(() => setCanvasEmptyState(scanDrawingIsEmpty()));
+    } else {
+      setCanvasEmptyState(scanDrawingIsEmpty());
+    }
   }
 
   if (activePointers.size === 0) finishStrokeGroup();
@@ -1081,6 +1146,17 @@ function queueDeferredCommandFold() {
 
 export function undo(): Promise<void> {
   if (!canUndo || !canvas || !ctx) return paperChain;
+  if (tiledRendererActive()) {
+    if (PERF_MARKS) performance.mark('engine.undo:start');
+    const state = undoTiledCommand(renderScale);
+    setCanvasEmptyState(state.empty);
+    setCanUndo(state.canUndo);
+    if (PERF_MARKS) {
+      performance.mark('engine.undo:end');
+      performance.measure('engine.undo', 'engine.undo:start', 'engine.undo:end');
+    }
+    return Promise.resolve();
+  }
   return queuePaperStep(async () => {
     // Paired start/end marks, not just the measure: Safari Web Inspector's
     // timeline export contains marks but no measures, and a deep undo spans
@@ -1127,6 +1203,16 @@ export function undo(): Promise<void> {
 
 export function clearCanvas() {
   if (!canvas || !ctx) return;
+  if (tiledRendererActive()) {
+    const state = clearTiledRenderer(canvasEmpty);
+    resetLiveCrayonPass();
+    crayonOpsSinceFlush = 0;
+    setCanvasEmptyState(state.empty);
+    setCanUndo(state.canUndo);
+    clearMagicGradient();
+    if (magicActive) ensureMagicSheet();
+    return;
+  }
   // The clear is its own undo command: folding it wipes the paper, and undoing
   // it restores the pre-clear snapshot in one blit. Mid-restore it defers like
   // a stroke commit; the visible wipe below still happens immediately.
@@ -1159,7 +1245,14 @@ export function isCanvasEmpty(): boolean {
 // Test/profiling seam: how the undo history is currently stored (see
 // undoHistory.getHistoryDebug).
 export function getUndoDebug(): HistoryDebug {
+  if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) throw new Error();
+  if (tiledRendererActive()) return tiledHistoryDebug();
   return getHistoryDebug();
+}
+
+export function getLiveSurfaceTopology() {
+  if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) throw new Error();
+  return tiledSurfaceTopologyDebug();
 }
 
 // Dev A/B seam (ADR-0065 tuning): override the crayon tooth/coverage/pass knobs
@@ -1169,9 +1262,13 @@ export function getUndoDebug(): HistoryDebug {
 // in-flight and pending crayon ops pick up the new tooth (committed wax is
 // baked into the paper raster and keeps the tooth it was drawn with).
 export function setCrayonParams(params: Partial<CrayonOptions>) {
+  if (!dev && !__DEV_HARNESS__) return;
   setCrayonOptions(params);
   syncCrayonOverlayMix();
-  if (ctx) repaintAll(ctx);
+  if (ctx) {
+    if (tiledRendererActive()) repaintTiledRenderer();
+    else repaintAll(ctx);
+  }
 }
 
 // --- Mount / unmount ---------------------------------------------------------
@@ -1201,15 +1298,11 @@ function teardownEngine() {
   // mid-flight stroke into the log, so navigating away mid-stroke keeps
   // the ink.
   releaseAllPointers();
+  crayonOpsSinceFlush = 0;
+  cancelCrayonWarmup();
   penStreamAdopter.reset();
-  setLiveCrayonBuffer(null, null);
-  // Only engine-created overlays are removed — adopted ones belong to the
-  // owner component's markup and die (or are re-adopted) with it.
-  if (crayonOverlays?.engineCreated) {
-    crayonOverlays.bottom.remove();
-    crayonOverlays.top.remove();
-  }
-  crayonOverlays = null;
+  detachLegacyCrayonOverlays();
+  detachTiledRenderer();
   // After the pointer release above has fired its stop/commit callbacks,
   // detach them all: a torn-down engine (e.g. a deferred fold settling after
   // navigation) must never signal an unmounted component. The next adopt or
@@ -1241,43 +1334,6 @@ export function adoptDrawingCanvas(canvasElement: HTMLCanvasElement, options: In
   return { teardown: teardownEngine };
 }
 
-function setupCrayonOverlays(canvas: HTMLCanvasElement): void {
-  // The live crayon pass overlays (see the crayonOverlay notes above): adopt
-  // the markup-provided pair when present, otherwise create and insert them.
-  // Absolute inset-0 inside the canvas's positioned container tracks the
-  // canvas box — #drawingCanvas fills that container — and the paper-view
-  // transform lives in the ctx (mirrored onto the buffers per op), never in
-  // CSS, so no transform mirroring is needed here.
-  const providedOverlays = canvas.parentElement?.querySelectorAll<HTMLCanvasElement>(
-    'canvas[data-crayon-overlay]'
-  );
-  let bottom: HTMLCanvasElement;
-  let top: HTMLCanvasElement;
-  let engineCreated: boolean;
-  if (providedOverlays && providedOverlays.length >= 2) {
-    bottom = providedOverlays[0];
-    top = providedOverlays[1];
-    engineCreated = false;
-  } else {
-    const overlayCss =
-      'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;';
-    bottom = document.createElement('canvas');
-    bottom.setAttribute('aria-hidden', 'true');
-    bottom.style.cssText = overlayCss + 'mix-blend-mode:darken;';
-    top = document.createElement('canvas');
-    top.setAttribute('aria-hidden', 'true');
-    top.style.cssText = overlayCss;
-    canvas.insertAdjacentElement('afterend', bottom);
-    bottom.insertAdjacentElement('afterend', top);
-    engineCreated = true;
-  }
-  const bottomCtx = bottom.getContext('2d')!;
-  const topCtx = top.getContext('2d')!;
-  crayonOverlays = { bottom, bottomCtx, top, topCtx, engineCreated };
-  setLiveCrayonBuffer(ctx, bottomCtx, topCtx);
-  syncCrayonOverlayMix();
-}
-
 function paperIsSized(): boolean {
   return paper.pxW > 0 && paper.pxH > 0;
 }
@@ -1289,83 +1345,12 @@ function wireMagicBrushHost(): void {
     paperSize: () => (paperIsSized() ? { width: paper.pxW, height: paper.pxH } : null),
     sheetBounds: () => (paperIsSized() ? sheetBoundsPaper() : null),
     repaint: () => {
-      if (ctx) repaintAll(ctx);
+      if (!ctx) return;
+      if (tiledRendererActive()) {
+        if (hasUnresolvedTiledMagicOps()) repaintTiledRenderer();
+      } else repaintAll(ctx);
     },
   });
-}
-
-// Every listener registered through here is removed symmetrically in
-// teardownEngine(), so the add/remove lists can't drift apart.
-function listen<K extends keyof WindowEventMap>(
-  target: Window,
-  type: K,
-  handler: (e: WindowEventMap[K]) => void,
-  options?: AddEventListenerOptions | boolean
-): void;
-function listen<K extends keyof DocumentEventMap>(
-  target: Document,
-  type: K,
-  handler: (e: DocumentEventMap[K]) => void,
-  options?: AddEventListenerOptions | boolean
-): void;
-function listen<K extends keyof HTMLElementEventMap>(
-  target: HTMLElement,
-  type: K,
-  handler: (e: HTMLElementEventMap[K]) => void,
-  options?: AddEventListenerOptions | boolean
-): void;
-function listen(
-  target: EventTarget,
-  type: string,
-  handler: (e: Event) => void,
-  options?: AddEventListenerOptions | boolean
-): void;
-function listen(
-  target: EventTarget,
-  type: string,
-  handler: (e: Event) => void,
-  options?: AddEventListenerOptions | boolean
-) {
-  target.addEventListener(type, handler as EventListener, options);
-  listenerRemovers.push(() => target.removeEventListener(type, handler as EventListener, options));
-}
-
-function registerEngineListeners(canvas: HTMLCanvasElement): void {
-  listen(window, 'resize', handleResize);
-  // Scroll/orientation move the canvas in the viewport without resizing it, so
-  // refresh the cached rect (left/top) without the full backing-store rebuild.
-  listen(window, 'scroll', () => refreshCanvasRect(), true);
-  listen(window, 'orientationchange', () => refreshCanvasRect());
-  // The paper view keys off the Screen Orientation angle (resizeCanvas). The
-  // resize event usually lands after the angle updates, but ordering isn't
-  // guaranteed everywhere — also funnel the orientation change itself through
-  // the debounced resize so a late angle still recomputes the view. Guarded:
-  // older WebViews can expose screen.orientation without the listener API.
-  const screenOrientation = window.screen?.orientation;
-  if (typeof screenOrientation?.addEventListener === 'function')
-    listen(screenOrientation, 'change', handleResize);
-  // Rotation while backgrounded fires none of the listeners above (the document
-  // is hidden) — catch up on re-entry instead (issue #305).
-  listen(document, 'visibilitychange', resyncOnReentry);
-
-  listen(canvas, 'pointerdown', startDrawing);
-  listen(canvas, 'pointermove', draw);
-  listen(canvas, 'pointerup', stopDrawing);
-  listen(canvas, 'pointerout', stopDrawing);
-  listen(canvas, 'pointercancel', stopDrawing);
-  // iPadOS Scribble claims an Apple Pencil stroke that starts within ~450ms of
-  // a pen tap: pointer events still arrive and the engine paints, but the
-  // system never presents those frames — the ink is invisible and never shows.
-  // Cancelling the parallel TOUCH stream is the only thing that makes Scribble
-  // let go; preventDefault on the pointer events (draw() already does it) is
-  // documented and confirmed on-device NOT to help. Non-passive on purpose.
-  // The palette needs the same guard for the tap that precedes a stroke — see
-  // the scribbleGuard action.
-  listen(canvas, 'touchstart', cancelTouch, { passive: false });
-  listen(canvas, 'touchmove', cancelTouch, { passive: false });
-  penStreamAdopter.registerWindowListeners((type, handler, capture) =>
-    listen(window, type, handler, capture)
-  );
 }
 
 export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
@@ -1382,7 +1367,12 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   // ADR-0051.
   ctx = canvas.getContext('2d')!;
 
-  setupCrayonOverlays(canvas);
+  adoptTiledRenderer(canvas, {
+    paperSize: () => ({ width: paper.pxW, height: paper.pxH }),
+    hasActivePointers: () => activePointers.size > 0,
+  });
+  if (tiledRendererActive()) syncCrayonOverlayMix();
+  else setupLegacyCrayonOverlays(canvas, ctx, String(1 - crayonColorMix()));
   wireMagicBrushHost();
 
   attachCallbacks(options);
@@ -1390,7 +1380,16 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
   resizeCanvas();
 
-  registerEngineListeners(canvas);
+  registerDrawingEngineListeners(listenerRemovers, canvas, {
+    handleResize,
+    refreshCanvasRect: () => refreshCanvasRect(),
+    resyncOnReentry,
+    startDrawing,
+    draw,
+    stopDrawing,
+    cancelTouch,
+    registerPenListeners: penStreamAdopter.registerWindowListeners,
+  });
 
   // Warm the export compositor + paper texture at idle: the module is
   // dynamic-imported so it stays out of the startup bundle (issue #461), and
@@ -1402,6 +1401,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   });
 
   engineLive = true;
+  scheduleTiledHistoryFold();
   return { teardown: teardownEngine };
 }
 
@@ -1447,13 +1447,12 @@ export function setMagicMode(active: boolean) {
 // observable from the DOM distinguishes the two — a pen stroke fills the canvas
 // exactly like a reveal — so the E2E harness waits on this instead of on
 // `aria-pressed`. Reached only through lib/boot/devHarnessSeam.ts, which
-// publishes it on `window` when PUBLIC_ENABLE_DEV_HARNESS is set; production has
-// no caller.
+// publishes it on `window` for test-harness and PERF_MARKS builds; release
+// builds have no caller.
 export function committedBrushMode(): BrushType {
   if (magicActive) return 'magic';
   if (crayonActive && !eraserActive) return 'crayon';
-  if (eraserActive) return 'eraser';
-  return 'pen';
+  return eraserActive ? 'eraser' : 'pen';
 }
 
 // Crayon brush on/off (ADR-0065). Like the eraser/magic it's a modifier the
@@ -1463,6 +1462,7 @@ export function committedBrushMode(): BrushType {
 export function setCrayonMode(active: boolean) {
   crayonActive = active;
   if (active) warmCrayonTiles(currentColor);
+  else cancelCrayonWarmup();
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system
@@ -1483,38 +1483,33 @@ export function setSafeAreaInsets(insets: {
 // in-flight stroke) rather than copying the visible canvas: under a
 // rotation-locked view the visible canvas is the letterboxed presentation, and
 // the export should be the full upright page.
-function snapshotStrokes(): HTMLCanvasElement {
-  const snapshot = document.createElement('canvas');
-  snapshot.width = paper.pxW;
-  snapshot.height = paper.pxH;
-  const snapshotCtx = snapshot.getContext('2d')!;
-  snapshotCtx.lineCap = 'round';
-  snapshotCtx.lineJoin = 'round';
-  repaintAll(snapshotCtx);
-  // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
-  // (its flush is only recorded at pass close); an export is terminal for this
-  // snapshot, so stamp it now rather than dropping that ink.
-  flushCrayonBuffer(snapshotCtx);
-  return snapshot;
+function snapshotStrokes(snapshotScale: number): ExportSnapshot {
+  const width = Math.round((paper.pxW / renderScale) * snapshotScale);
+  const height = Math.round((paper.pxH / renderScale) * snapshotScale);
+  const tiledSnapshot = captureTiledSnapshot(snapshotScale, renderScale);
+  if (tiledSnapshot) return tiledSnapshot;
+  return createStrokeSnapshot(width, height, snapshotScale / renderScale, (target) => {
+    if (tiledRendererActive()) renderTiledSnapshot(target);
+    else repaintAll(target);
+    // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
+    // (its flush is only recorded at pass close); an export is terminal for this
+    // snapshot, so stamp it now rather than dropping that ink.
+    flushCrayonBuffer(target);
+  });
 }
 
 // The compositor is save-time-only, so it loads on demand and stays out of the
-// startup bundle (issue #461). The snapshot MUST be taken before the import's
-// await: save-on-delete fire-and-forgets this call and then clears the live
-// canvas synchronously, so snapshotting any later would export a blank page
-// (the engine E2E spec pins the race). A dead connection can reject the import
-// — callers own surfacing that (their tap handlers catch).
+// startup bundle (issue #461). A dead connection can reject the import —
+// callers own surfacing that (their tap handlers catch).
 export async function exportCanvasBlob(
   overlayImage: HTMLImageElement | null = null,
   options: ExportOptions = {}
 ): Promise<Blob | null> {
   if (!canvas || paper.pxW === 0 || paper.pxH === 0) return null;
-  const snapshot = snapshotStrokes();
-  const scale = renderScale;
+  const scale = currentExportScale();
+  // The snapshot MUST stay before the import await: save-on-delete fire-and-forgets
+  // this call and clears the live engine synchronously (the E2E spec pins the race).
+  const snapshot = snapshotStrokes(scale);
   const { composeExportPng } = await import('./exportDrawing');
   return composeExportPng(snapshot, scale, overlayImage, options);
-}
-
-export function getActiveCanvas(): HTMLCanvasElement {
-  return canvas;
 }

@@ -14,6 +14,12 @@ to be available in client-side code without a runtime server request:
 * **`__NATIVE_API_BASE__`** — the base URL for API calls. On the web, API routes are same-origin
   (empty string). Inside the native app there is no local server, so this must point to
   `https://splotch.art`.
+* **`__IS_CAPACITOR__`** — the web/native build boundary. Native-only plugin imports sit behind this
+  literal so Rollup can remove their chunks from the web build.
+* **`__PERF_MARKS__`** — whether profiling builds retain `engine.*` user-timing marks and the native
+  screenshot persistence sink.
+* **`__DEV_HARNESS__`** — whether client-side read-only test/profiling seams are retained. This is
+  separate from the runtime server gate for `/dev/*` routes.
 
 Options:
 
@@ -26,19 +32,25 @@ Options:
 
 ## Decision
 
-Inject the three constants via `define` in `vite.config.ts`:
+Inject the constants through `buildDefines()` in `defines.ts`, called by `vite.config.ts` and the
+Vitest config:
 
 ```ts
-define: {
-  __APP_VERSION__: JSON.stringify(APP_VERSION),   // from package.json
-  __BUILD_TIME__:  JSON.stringify(BUILD_TIME),     // computed at build
-  __NATIVE_API_BASE__: JSON.stringify(NATIVE_API_BASE) // '' or 'https://splotch.art'
-}
+define: buildDefines({
+  appVersion,
+  buildTime,
+  nativeApiBase,
+  isCapacitor,
+  perfMarks,
+  devHarness,
+});
 ```
 
 `NATIVE_API_BASE` is computed from the same `CAPACITOR=true` env var used by the adapter selection
 (ADR-0001). This means the decision of "web vs native" is made once at build time and baked into the
-bundle — no runtime branching on a window global.
+bundle — no runtime branching on a window global. `PERF_MARKS=true` and
+`PUBLIC_ENABLE_DEV_HARNESS=true` select instrumented builds; ordinary web and native builds replace
+both with literal `false`.
 
 TypeScript declarations for these globals live in `src/app.d.ts`.
 
@@ -48,6 +60,9 @@ TypeScript declarations for these globals live in `src/app.d.ts`.
   runtime env access.
 * **+** Dead code elimination: when `__NATIVE_API_BASE__` is an empty string literal, the native
   branch in `api.ts` is optimized away in the web bundle (and vice versa).
+* **+** Test and profiling property names do not merely remain dormant in release clients. The false
+  literals remove their branches, and the post-build release scan rejects a bundle that still
+  contains them or any `engine.*` mark name.
 * **-** Changing these values requires a full rebuild and redeploy; they can't be updated at runtime
   without a new build.
 * **-** The `__APP_VERSION__` in a live native APK reflects the version at build time, not the

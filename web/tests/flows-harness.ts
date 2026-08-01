@@ -45,6 +45,9 @@ const ENGINE_MODE_BY_BUTTON = {
 // The engine has ~nothing to do to adopt a mode — it assigns a flag — so this
 // only has to outlast a starved worker's Svelte flush, not any real work.
 const BRUSH_COMMIT_TIMEOUT_MS = 10_000;
+const COLORING_DIALOG_CLOSE_TIMEOUT_MS = 10_000;
+const COLORING_DIALOG_CLOSE_SETTLE_MS = 1_000;
+const COLORING_OVERLAY_DECODE_TIMEOUT_MS = 15_000;
 
 // Answer the mode the ENGINE holds, or a legible stand-in when the dev-harness
 // seam isn't there to ask (a build without PUBLIC_ENABLE_DEV_HARNESS, or a page
@@ -82,17 +85,24 @@ export async function openColoringDialog(page: Page) {
   );
 }
 
-// Apply the first Farm page and wait for its overlay + colored fill to be ready.
+// Apply the first Farm page and wait for its full-resolution overlay. The
+// thumbnail bridge lands first; the full line art enables the deferred fill.
 export async function applyFarmPage(page: Page) {
   await openColoringDialog(page);
   const dialog = page.locator('#coloring-book-dialog');
-  await dialog.getByRole('button', { name: /Farm coloring book/i }).click();
-  await dialog
-    .getByRole('button', { name: /Farm coloring page/i })
-    .first()
-    .click();
-  await expect(dialog).toBeHidden();
-  // Wait for the art itself, not just the element: the src lands only once the
-  // image has decoded (the ready-gated swap in DrawingCanvas).
-  await expect(page.locator('#coloringOverlay')).toHaveAttribute('src', /\.webp$/);
+  const farmPage = dialog.getByRole('button', { name: /Farm coloring page/i }).first();
+  await retryOpen(
+    farmPage,
+    () => dialog.getByRole('button', { name: /Farm coloring book/i }).click({ timeout: 1000 }),
+    { settle: 1000 }
+  );
+  await expect(async () => {
+    if (await dialog.isVisible()) await farmPage.click();
+    await expect(dialog).toBeHidden({ timeout: COLORING_DIALOG_CLOSE_SETTLE_MS });
+  }).toPass({ timeout: COLORING_DIALOG_CLOSE_TIMEOUT_MS });
+  await expect(page.locator('#coloringOverlay')).toHaveAttribute(
+    'src',
+    /\.(?:dark\.)?overlay\.webp$/,
+    { timeout: COLORING_OVERLAY_DECODE_TIMEOUT_MS }
+  );
 }

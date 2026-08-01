@@ -52,4 +52,6 @@ Where things live (full file-by-file map: `architecture` skill):
 
 Compile-time constants from Vite (ADR-0010): `__APP_VERSION__`, `__BUILD_TIME__`,
 `__NATIVE_API_BASE__`, `__IS_CAPACITOR__` (true in the native build — prefer it over a runtime
-`isNative()` for build-time platform branches).
+`isNative()` for build-time platform branches), plus instrumentation-only `__PERF_MARKS__` and
+`__DEV_HARNESS__`. Normal builds set both instrumentation literals false; the release post-build
+scan rejects retained profiling property names or engine marks.

@@ -9,6 +9,7 @@
 // during SSR where Image is undefined.
 
 const warmed = new Set<string>();
+const activePrefetches = new Map<string, HTMLImageElement>();
 
 export function prefetchImages(urls: Iterable<string>): void {
   if (typeof Image === 'undefined') return;
@@ -17,6 +18,21 @@ export function prefetchImages(urls: Iterable<string>): void {
     warmed.add(url);
     const img = new Image();
     img.decoding = 'async';
+    const release = () => {
+      if (activePrefetches.get(url) === img) activePrefetches.delete(url);
+    };
+    img.onload = release;
+    img.onerror = release;
+    activePrefetches.set(url, img);
     img.src = url;
+  }
+}
+
+export function cancelImagePrefetchesExcept(preservedUrl: string): void {
+  for (const [url, img] of activePrefetches) {
+    if (url === preservedUrl) continue;
+    img.removeAttribute('src');
+    activePrefetches.delete(url);
+    warmed.delete(url);
   }
 }

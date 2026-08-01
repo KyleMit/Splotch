@@ -15,6 +15,7 @@ import {
 } from './state/settings.svelte';
 import { selectBrush } from './state/tool.svelte';
 import {
+  ACTION_PANEL_LIVE_ATTRIBUTE,
   visibleActionButtonCount,
   maxActionButtonScale,
   publishActionPanelState,
@@ -146,6 +147,7 @@ describe('publishActionPanelState', () => {
     publishActionPanelState(el, false, 1);
 
     expect(el.style.getPropertyValue('--action-btn-scale')).toBe('1');
+    expect(el.hasAttribute(ACTION_PANEL_LIVE_ATTRIBUTE)).toBe(true);
     expect(el.hasAttribute('data-drawer-open')).toBe(false);
     for (const attr of [
       'data-off-adv',

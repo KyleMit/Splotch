@@ -25,6 +25,8 @@
 // (chosen over a per-op mask composite and a flat colour-sample after measuring
 // all three — see ADR-0043).
 
+import { magicSheetWorkerSupported, rasterizeMagicSheetInWorker } from './magicSheetRasterClient';
+
 export const MAGIC_GRADIENT_COUNT = 10;
 
 // Few enough hue stops that each is visually distinct, many enough that the ramp
@@ -79,7 +81,7 @@ interface MagicBrushHost {
 // back with a fresh patternCache — setColorSheet(null) rasterizes, which rebuilds
 // it, and clearMagicGradient() rebuilds it only inside its `if (!fillUrl)` branch,
 // so clearing the gradient while a page is applied leaves the cached patterns (and
-// readiness) as they were. Either way host, sheetCanvas, sheetCtx, and
+// readiness) as they were. Either way host, sheetCanvas, and
 // sheetOriginX/sheetOriginY keep whatever the last rasterize left them, and
 // readiness stays false until some source is set *and* rasterized (a bare
 // rasterizeSheet() with no active source returns early, still unready). So a test
@@ -95,6 +97,7 @@ let fillUrl: string | null = null;
 // The one in-flight fill decode. Its handlers are the only ones allowed to touch the
 // sheet state; every other load is superseded, whatever URL it was for.
 let pendingLoad: HTMLImageElement | null = null;
+let pendingFillRaster: HTMLImageElement | null = null;
 
 // Source 2: the generated rainbow. The pool is built lazily and reused; the active
 // gradient is the one currently revealed, held until the canvas is cleared.
@@ -104,19 +107,94 @@ let activeGradient: RainbowGradient | null = null;
 // The offscreen sheet the pattern samples, plus a per-target-context pattern cache.
 // Reset (new map) on every rasterize so a resized sheet can't hand back a stale
 // pattern; a WeakMap can't be cleared.
-let sheetCanvas: HTMLCanvasElement | null = null;
-let sheetCtx: CanvasRenderingContext2D | null = null;
+type MagicSheetCanvas = HTMLCanvasElement | ImageBitmap;
+
+let sheetCanvas: MagicSheetCanvas | null = null;
 let sheetReady = false;
+let sheetGeometryStale = false;
+export interface MagicSheetSnapshot {
+  canvas: MagicSheetCanvas;
+  originX: number;
+  originY: number;
+}
+let sheetSnapshot: MagicSheetSnapshot | null = null;
 // The sheet's origin in paper coordinates (non-zero only when a rotation lock makes
 // the sheet cover margins around the fitted paper). The pattern is offset by it so
 // sheet pixel (0,0) maps to this paper coordinate.
 let sheetOriginX = 0;
 let sheetOriginY = 0;
-let patternCache = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
+let patternCache = new WeakMap<
+  CanvasRenderingContext2D,
+  WeakMap<MagicSheetCanvas, CanvasPattern>
+>();
+const patternRegionByTarget = new WeakMap<
+  CanvasRenderingContext2D,
+  { x: number; y: number; width: number; height: number }
+>();
 
 function invalidateSheet() {
   sheetReady = false;
+  sheetSnapshot = null;
   patternCache = new WeakMap();
+}
+
+function rasterizeFillOffThread(
+  image: HTMLImageElement,
+  imageUrl: string,
+  paper: { width: number; height: number },
+  bounds: { x: number; y: number; width: number; height: number }
+) {
+  const scale = Math.min(paper.width / image.naturalWidth, paper.height / image.naturalHeight);
+  const width = image.naturalWidth * scale;
+  const height = image.naturalHeight * scale;
+  const x = (paper.width - width) / 2 - bounds.x;
+  const y = (paper.height - height) / 2 - bounds.y;
+  return rasterizeMagicSheetInWorker({
+    imageUrl,
+    width: bounds.width,
+    height: bounds.height,
+    fit: { x, y, width, height },
+    edgeFills: edgeMargins(
+      bounds.width,
+      bounds.height,
+      x,
+      y,
+      width,
+      height,
+      image.naturalWidth,
+      image.naturalHeight
+    ),
+  });
+}
+
+function beginFillRaster(image: HTMLImageElement, imageUrl: string) {
+  if (!magicSheetWorkerSupported()) return false;
+  const paper = host?.paperSize();
+  const bounds = host?.sheetBounds();
+  if (!paper || !bounds || bounds.width <= 0 || bounds.height <= 0) return false;
+  pendingFillRaster = image;
+  void rasterizeFillOffThread(image, imageUrl, paper, bounds)
+    .then((bitmap) => {
+      if (pendingFillRaster !== image || fillImage !== image) {
+        bitmap.close();
+        return;
+      }
+      pendingFillRaster = null;
+      sheetCanvas = bitmap;
+      sheetOriginX = bounds.x;
+      sheetOriginY = bounds.y;
+      sheetReady = true;
+      sheetGeometryStale = false;
+      sheetSnapshot = { canvas: sheetCanvas, originX: sheetOriginX, originY: sheetOriginY };
+      host?.repaint();
+    })
+    .catch(() => {
+      if (pendingFillRaster !== image || fillImage !== image) return;
+      pendingFillRaster = null;
+      rasterizeSheet();
+      host?.repaint();
+    });
+  return true;
 }
 
 export function initMagicBrush(h: MagicBrushHost) {
@@ -181,16 +259,8 @@ function paintGradient(g: CanvasRenderingContext2D, w: number, h: number, spec: 
 // transparent letterbox margins on any side — top/bottom or left/right where the
 // fill is contain-fit in the paper, AND (under a rotation lock) the other axis where
 // the paper itself is contain-fit in the larger sheet, so all four sides plus corners
-// can be empty. `edgeMargins` returns the ordered blits that extend the picture's edge
-// colours outward to fill them, as pure geometry so the math is unit-testable without
-// a real canvas.
-//
-// Two ordered passes so corners fall out for free:
-//   1. Vertical — stretch the box's top/bottom rows across the box width into the
-//      top/bottom bands. Now the box's full column span is coloured top-to-bottom.
-//   2. Horizontal — stretch a FULL-HEIGHT column just inside each side edge into the
-//      side bands; because it's full height it also paints the corners the vertical
-//      pass filled. (Pass 2 samples what pass 1 drew, so the order matters.)
+// can be empty. `edgeMargins` returns direct source-image blits for every band and
+// corner, as pure geometry so the math is unit-testable without a real canvas.
 //
 // Each source is taken a hair INSIDE the picture (`inset`), not on the literal border:
 // a coloring page can carry an outline right at its edge, and sampling the 1px border
@@ -199,7 +269,7 @@ function paintGradient(g: CanvasRenderingContext2D, w: number, h: number, spec: 
 // with no line streak. Stretching a row/column (not a flat per-edge average) preserves
 // along-edge variation — a landscape scene keeps sky-at-top / grass-at-bottom.
 export interface EdgeFill {
-  /** Source rect in the sheet to sample (a 1px-thin edge strip). */
+  /** Source rect in the fill image to sample. */
   sx: number;
   sy: number;
   sw: number;
@@ -217,7 +287,9 @@ export function edgeMargins(
   ox: number,
   oy: number,
   bw: number,
-  bh: number
+  bh: number,
+  sourceWidth = bw,
+  sourceHeight = bh
 ): EdgeFill[] {
   const top = Math.round(oy);
   const left = Math.round(ox);
@@ -225,35 +297,103 @@ export function edgeMargins(
   const right = Math.round(ox + bw);
   const bottomMargin = H - bottom;
   const rightMargin = W - right;
-  const inset = Math.max(1, Math.round(Math.min(bw, bh) * EDGE_SAMPLE_INSET_FRACTION));
+  const scaleX = bw / sourceWidth;
+  const scaleY = bh / sourceHeight;
+  const sourcePixelX = 1 / scaleX;
+  const sourcePixelY = 1 / scaleY;
+  const destinationInset = Math.max(1, Math.round(Math.min(bw, bh) * EDGE_SAMPLE_INSET_FRACTION));
+  const sourceInsetX = destinationInset / scaleX;
+  const sourceInsetY = destinationInset / scaleY;
+  const sourceRight = sourceWidth - sourcePixelX - sourceInsetX;
+  const sourceBottom = sourceHeight - sourcePixelY - sourceInsetY;
   const fills: EdgeFill[] = [];
-  // Pass 1 — vertical: box top/bottom rows stretched across the box width.
   if (top > 0)
-    fills.push({ sx: ox, sy: oy + inset, sw: bw, sh: 1, dx: ox, dy: 0, dw: bw, dh: top });
+    fills.push({
+      sx: 0,
+      sy: sourceInsetY,
+      sw: sourceWidth,
+      sh: sourcePixelY,
+      dx: ox,
+      dy: 0,
+      dw: bw,
+      dh: top,
+    });
   if (bottomMargin > 0)
     fills.push({
-      sx: ox,
-      sy: bottom - 1 - inset,
-      sw: bw,
-      sh: 1,
+      sx: 0,
+      sy: sourceBottom,
+      sw: sourceWidth,
+      sh: sourcePixelY,
       dx: ox,
       dy: bottom,
       dw: bw,
       dh: bottomMargin,
     });
-  // Pass 2 — horizontal: full-height columns just inside each side edge, stretched
-  // outward (also covers the corners pass 1 filled).
-  if (left > 0) fills.push({ sx: ox + inset, sy: 0, sw: 1, sh: H, dx: 0, dy: 0, dw: left, dh: H });
+  if (left > 0)
+    fills.push({
+      sx: sourceInsetX,
+      sy: 0,
+      sw: sourcePixelX,
+      sh: sourceHeight,
+      dx: 0,
+      dy: oy,
+      dw: left,
+      dh: bh,
+    });
   if (rightMargin > 0)
     fills.push({
-      sx: right - 1 - inset,
+      sx: sourceRight,
       sy: 0,
-      sw: 1,
-      sh: H,
+      sw: sourcePixelX,
+      sh: sourceHeight,
+      dx: right,
+      dy: oy,
+      dw: rightMargin,
+      dh: bh,
+    });
+  if (top > 0 && left > 0)
+    fills.push({
+      sx: sourceInsetX,
+      sy: sourceInsetY,
+      sw: sourcePixelX,
+      sh: sourcePixelY,
+      dx: 0,
+      dy: 0,
+      dw: left,
+      dh: top,
+    });
+  if (top > 0 && rightMargin > 0)
+    fills.push({
+      sx: sourceRight,
+      sy: sourceInsetY,
+      sw: sourcePixelX,
+      sh: sourcePixelY,
       dx: right,
       dy: 0,
       dw: rightMargin,
-      dh: H,
+      dh: top,
+    });
+  if (bottomMargin > 0 && left > 0)
+    fills.push({
+      sx: sourceInsetX,
+      sy: sourceBottom,
+      sw: sourcePixelX,
+      sh: sourcePixelY,
+      dx: 0,
+      dy: bottom,
+      dw: left,
+      dh: bottomMargin,
+    });
+  if (bottomMargin > 0 && rightMargin > 0)
+    fills.push({
+      sx: sourceRight,
+      sy: sourceBottom,
+      sw: sourcePixelX,
+      sh: sourcePixelY,
+      dx: right,
+      dy: bottom,
+      dw: rightMargin,
+      dh: bottomMargin,
     });
   return fills;
 }
@@ -265,6 +405,7 @@ export function edgeMargins(
 // the rotation-lock margins around the fitted paper).
 function extendSheetEdges(
   g: CanvasRenderingContext2D,
+  image: HTMLImageElement,
   W: number,
   H: number,
   ox: number,
@@ -272,9 +413,8 @@ function extendSheetEdges(
   bw: number,
   bh: number
 ) {
-  if (!sheetCanvas) return;
-  for (const f of edgeMargins(W, H, ox, oy, bw, bh)) {
-    g.drawImage(sheetCanvas, f.sx, f.sy, f.sw, f.sh, f.dx, f.dy, f.dw, f.dh);
+  for (const fill of edgeMargins(W, H, ox, oy, bw, bh, image.naturalWidth, image.naturalHeight)) {
+    g.drawImage(image, fill.sx, fill.sy, fill.sw, fill.sh, fill.dx, fill.dy, fill.dw, fill.dh);
   }
 }
 
@@ -286,23 +426,22 @@ function extendSheetEdges(
 // where the overlay <img> paints), then its edge colours are extended outward to
 // fill every letterbox margin (the fill's own, and the rotation-lock margins around
 // the paper); the gradient fills the whole sheet. Re-run on load and every resize.
-export function rasterizeSheet() {
+function rasterizeSheet() {
   invalidateSheet();
   const paper = host?.paperSize();
   const bounds = host?.sheetBounds();
   if (!paper || !bounds || bounds.width <= 0 || bounds.height <= 0) return;
   const source = activeSource();
   if (!source) return;
-  if (!sheetCanvas) {
-    sheetCanvas = document.createElement('canvas');
-    sheetCtx = sheetCanvas.getContext('2d');
-  }
-  if (!sheetCtx || !sheetCanvas) return;
-  sheetCanvas.width = bounds.width;
-  sheetCanvas.height = bounds.height;
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  if (!context) return;
+  canvas.width = bounds.width;
+  canvas.height = bounds.height;
+  sheetCanvas = canvas;
   sheetOriginX = bounds.x;
   sheetOriginY = bounds.y;
-  sheetCtx.clearRect(0, 0, sheetCanvas.width, sheetCanvas.height);
+  context.clearRect(0, 0, canvas.width, canvas.height);
   if (source.kind === 'fill') {
     const iw = source.image.naturalWidth;
     const ih = source.image.naturalHeight;
@@ -312,12 +451,22 @@ export function rasterizeSheet() {
     // Contain-fit box in paper coords, shifted into the (possibly offset) sheet.
     const ox = (paper.width - dw) / 2 - sheetOriginX;
     const oy = (paper.height - dh) / 2 - sheetOriginY;
-    sheetCtx.drawImage(source.image, ox, oy, dw, dh);
-    extendSheetEdges(sheetCtx, sheetCanvas.width, sheetCanvas.height, ox, oy, dw, dh);
+    context.drawImage(source.image, ox, oy, dw, dh);
+    extendSheetEdges(context, source.image, canvas.width, canvas.height, ox, oy, dw, dh);
   } else {
-    paintGradient(sheetCtx, sheetCanvas.width, sheetCanvas.height, source.gradient);
+    paintGradient(context, canvas.width, canvas.height, source.gradient);
   }
   sheetReady = true;
+  sheetGeometryStale = false;
+  sheetSnapshot = { canvas: sheetCanvas, originX: sheetOriginX, originY: sheetOriginY };
+}
+
+// Preserve captured sheets for history, but defer allocating replacement full-screen
+// backing stores until Magic can actually paint with the new geometry.
+export function resizeMagicSheet(eager: boolean) {
+  pendingFillRaster = null;
+  if (eager) rasterizeSheet();
+  else sheetGeometryStale = true;
 }
 
 // A no-repeat pattern of the sheet, cached per target context (the visible ctx
@@ -326,17 +475,59 @@ export function rasterizeSheet() {
 // identity in normal use, a translation under a rotation lock — keeping it aligned on
 // the visible canvas and the larger square paper raster alike, all of which draw ops
 // in paper coordinates.
-export function sheetPatternFor(target: CanvasRenderingContext2D): CanvasPattern | null {
-  if (!sheetCanvas || !sheetReady) return null;
-  const cached = patternCache.get(target);
-  if (cached) return cached;
-  const pattern = target.createPattern(sheetCanvas, 'no-repeat');
-  if (!pattern) return null;
-  if ((sheetOriginX !== 0 || sheetOriginY !== 0) && typeof DOMMatrix !== 'undefined') {
-    pattern.setTransform(new DOMMatrix([1, 0, 0, 1, sheetOriginX, sheetOriginY]));
+export function captureMagicSheet(): MagicSheetSnapshot | null {
+  return sheetReady ? sheetSnapshot : null;
+}
+
+export function sheetPatternFor(
+  target: CanvasRenderingContext2D,
+  snapshot: MagicSheetSnapshot | null = captureMagicSheet()
+): CanvasPattern | null {
+  if (!snapshot) return null;
+  let patternsBySource = patternCache.get(target);
+  if (!patternsBySource) {
+    patternsBySource = new WeakMap();
+    patternCache.set(target, patternsBySource);
   }
-  patternCache.set(target, pattern);
+  const cached = patternsBySource.get(snapshot.canvas);
+  if (cached) return cached;
+  const region = patternRegionByTarget.get(target);
+  let source = snapshot.canvas;
+  if (region) {
+    source = document.createElement('canvas');
+    source.width = region.width;
+    source.height = region.height;
+    source
+      .getContext('2d')
+      ?.drawImage(
+        snapshot.canvas,
+        region.x - snapshot.originX,
+        region.y - snapshot.originY,
+        region.width,
+        region.height,
+        0,
+        0,
+        region.width,
+        region.height
+      );
+  }
+  const pattern = target.createPattern(source, 'no-repeat');
+  if (!pattern) return null;
+  const originX = region?.x ?? snapshot.originX;
+  const originY = region?.y ?? snapshot.originY;
+  if ((originX !== 0 || originY !== 0) && typeof DOMMatrix !== 'undefined') {
+    pattern.setTransform(new DOMMatrix([1, 0, 0, 1, originX, originY]));
+  }
+  patternsBySource.set(snapshot.canvas, pattern);
   return pattern;
+}
+
+export function setMagicPatternRegion(
+  target: CanvasRenderingContext2D,
+  region: { x: number; y: number; width: number; height: number }
+) {
+  patternRegionByTarget.set(target, region);
+  patternCache.delete(target);
 }
 
 // True whenever the sheet cannot currently paint magic ink — i.e. sheetPatternFor
@@ -373,6 +564,7 @@ function loadSheetImage(url: string) {
     if (pendingLoad !== img) return;
     pendingLoad = null;
     fillImage = img;
+    if (beginFillRaster(img, url)) return;
     rasterizeSheet();
     host?.repaint();
   };
@@ -396,6 +588,7 @@ export function setColorSheet(colorUrl: string | null) {
   if (colorUrl === fillUrl) return;
   // Whatever is still decoding is for the outgoing source — disown it.
   pendingLoad = null;
+  pendingFillRaster = null;
   fillUrl = colorUrl;
   fillImage = null;
   if (!colorUrl) {
@@ -423,8 +616,9 @@ function holdRandomGradient() {
 // once a gradient is already active, so re-selecting the brush (or toggling
 // pen↔magic) neither re-rolls the rainbow nor re-rasterizes.
 export function ensureMagicSheet() {
-  if (fillUrl || activeGradient) return;
-  holdRandomGradient();
+  if (sheetReady && !sheetGeometryStale) return;
+  if (pendingFillRaster) return;
+  if (!fillUrl) holdRandomGradient();
   rasterizeSheet();
 }
 

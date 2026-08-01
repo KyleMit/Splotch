@@ -7,7 +7,8 @@
 // The probe's row schemas (see its header for the full story). Columns are read
 // by POSITION here, so this list and the probe's writers move together:
 //   frames   [t, dt, contact]
-//   events   [stamp, at, type, id, buttons, coalesced, onCanvas, kind]
+//   events   [stamp, at, type, id, buttons, coalesced, onCanvas, kind,
+//             trusted, pressure, width, height, coalescedFirst, coalescedLast]
 //   measures [start, dur, nameIndex]
 //
 // MEASURED ON DEVICE, and load-bearing for how everything here is defined:
@@ -40,10 +41,23 @@ export const QUEUE_DELAY_LAG_MS = 16.67;
 // grows one op buffer, rapid strokes pay commit + history + reactivity per
 // lift — so they are summarized apart.
 export const LONG_STROKE_MS = 1000;
-// Past this, the frame straddling a finger-lift is not a commit hitch: the page
-// went idle because nothing was animating, and rAF simply stopped being called.
-// Counted separately rather than reported as a 2.4-second hitch.
-export const MAX_CREDIBLE_HITCH_MS = 250;
+// NOT a cap on what counts as a hitch. An earlier version discarded any
+// finger-lift frame above 250 ms as "the page went idle with nothing to animate",
+// which was wrong twice over: the ceiling measurement shows rAF firing at ~17 ms
+// on a completely idle page, and a hand capture recorded 13,195 frames BETWEEN
+// strokes at a steady 17 ms p50 — rAF never stops. The cap was silently throwing
+// away the largest stalls in the capture (a 487 ms lift, and every 250-568 ms one
+// in the run that first reproduced the reported lag). Lift frames are now reported
+// whole; this only marks the ones worth calling out.
+export const NOTABLE_LIFT_MS = 100;
+// Four missed presentation opportunities distinguishes a visible freeze from
+// ordinary scheduling jitter. This only selects forensic episodes; the gate
+// uses cumulative lost frame time without a cliff.
+export const STARVATION_FRAME_MULTIPLE = 4;
+// Compositor work in the device traces began up to 192 ms after commit closed.
+// Attribution is reported, never used to discard an otherwise valid episode.
+export const STARVATION_ATTRIBUTION_WINDOW_MS = 250;
+export const REAL_SCREEN_SCHEMA_VERSION = 2;
 
 export const POINTER_DOWN = 0;
 export const POINTER_MOVE = 1;
@@ -61,7 +75,14 @@ const EVENT_BUTTONS = 4;
 const EVENT_COALESCED = 5;
 const EVENT_ON_CANVAS = 6;
 const EVENT_KIND = 7;
+const EVENT_TRUSTED = 8;
+const EVENT_PRESSURE = 9;
+const EVENT_WIDTH = 10;
+const EVENT_HEIGHT = 11;
+const EVENT_COALESCED_FIRST = 12;
+const EVENT_COALESCED_LAST = 13;
 const POINTER_KIND_NAMES = ['touch', 'pen', 'mouse'];
+const LAST_TRUSTED_CONTACT_KIND = 1;
 const MEASURE_START = 0;
 const MEASURE_DUR = 1;
 const MEASURE_NAME = 2;
@@ -102,20 +123,26 @@ export function observedFrameIntervalMs(frames) {
 }
 
 export function frameStats(deltas, intervalMs) {
-  const lateThreshold = intervalMs * LATE_FRAME_MULTIPLE;
+  const budgetMs = Math.min(intervalMs, QUEUE_DELAY_LAG_MS);
+  const lateThreshold = budgetMs * LATE_FRAME_MULTIPLE;
   const late = deltas.filter((delta) => delta > lateThreshold);
+  const elapsedMs = round(sum(deltas));
+  const lostMs = round(sum(late.map((delta) => delta - budgetMs)));
   return {
     frames: deltas.length,
     p50: percentile(deltas, 0.5),
     p95: percentile(deltas, 0.95),
     p99: percentile(deltas, 0.99),
     max: max(deltas),
+    budgetMs: round(budgetMs),
     lateThresholdMs: round(lateThreshold),
     lateShare: share(late.length, deltas.length),
     stallShare: share(deltas.filter((delta) => delta > STALL_FRAME_MS).length, deltas.length),
     // The frames a child actually waited through, which a share hides: 1% of a
     // long capture is still a visible freeze every few seconds.
-    lostMs: round(sum(late.map((delta) => delta - intervalMs))),
+    elapsedMs,
+    lostMs,
+    lostFrameTimeShare: elapsedMs ? round(lostMs / elapsedMs, 4) : undefined,
   };
 }
 
@@ -176,25 +203,24 @@ export function segmentStrokes(events) {
   return strokes;
 }
 
-// The frame that first rendered after a stroke ended — where the commit runs,
-// off the draw path, invisible to the pacing numbers. Past
-// MAX_CREDIBLE_HITCH_MS it is not a hitch at all but the page going idle with
-// nothing left to animate, so those are counted, not averaged in.
-// Reported as a RATE, not a percentile. A phase holds only 20-40 strokes, so a
-// p95 over them is the second-worst sample dressed up as a distribution: two
-// otherwise identical device runs disagreed about whether the pointer halos cost
-// 100 ms at each lift purely because one phase had 19 strokes and the next had 27.
-// "How many lifts in this phase stalled, out of how many" survives that.
+// The frame that first rendered after a stroke ended — where the commit runs, off
+// the draw path and outside the in-contact pacing numbers entirely. This is where
+// the reported lag turned out to live (250-568 ms frames at `up +2..22ms`), so
+// nothing here is filtered: every lift frame is kept whole.
+//
+// Counts are reported as a RATE rather than a percentile. A phase holds only 20-40
+// strokes, so a p95 over them is the second-worst sample dressed up as a
+// distribution — two otherwise identical device runs disagreed about whether the
+// pointer halos cost 100 ms at each lift purely because one phase had 19 strokes
+// and the next had 27.
 function endHitches(strokes, frames) {
   const hitches = [];
-  let idleAfterLift = 0;
   for (const stroke of strokes) {
     const frame = frames.find((row) => row[FRAME_T] >= stroke.end);
     if (!frame || frame[FRAME_DT] < 0) continue;
-    if (frame[FRAME_DT] > MAX_CREDIBLE_HITCH_MS) idleAfterLift++;
-    else hitches.push(frame[FRAME_DT]);
+    hitches.push(frame[FRAME_DT]);
   }
-  return { hitches, idleAfterLift };
+  return { hitches, notableLifts: hitches.filter((ms) => ms > NOTABLE_LIFT_MS).length };
 }
 
 // How long a child waits between moving their finger and the next frame that
@@ -279,6 +305,140 @@ function measureBreakdown(measures, names) {
   return Object.fromEntries([...byName].sort(([a], [b]) => a.localeCompare(b)));
 }
 
+function coveredDurationMs(measures, from, to) {
+  const intervals = measures
+    .map((measure) => [
+      Math.max(from, measure[MEASURE_START]),
+      Math.min(to, measure[MEASURE_START] + measure[MEASURE_DUR]),
+    ])
+    .filter(([start, end]) => end > start)
+    .sort(([a], [b]) => a - b);
+  let covered = 0;
+  let currentStart;
+  let currentEnd;
+  for (const [start, end] of intervals) {
+    if (currentStart === undefined) {
+      currentStart = start;
+      currentEnd = end;
+    } else if (start <= currentEnd) {
+      currentEnd = Math.max(currentEnd, end);
+    } else {
+      covered += currentEnd - currentStart;
+      currentStart = start;
+      currentEnd = end;
+    }
+  }
+  if (currentStart !== undefined) covered += currentEnd - currentStart;
+  return round(covered);
+}
+
+function nearestAttribution(signals, start, end) {
+  const candidates = signals
+    .map((signal) => {
+      const distance =
+        signal.at < start ? start - signal.at : signal.at > end ? signal.at - end : 0;
+      return { ...signal, distance };
+    })
+    .filter((signal) => signal.distance <= STARVATION_ATTRIBUTION_WINDOW_MS)
+    .sort(
+      (a, b) =>
+        a.distance - b.distance || Math.abs(a.at - start) - Math.abs(b.at - start) || a.at - b.at
+    );
+  const nearest = candidates[0];
+  return nearest
+    ? {
+        index: nearest.index,
+        atMs: round(nearest.at),
+        offsetFromStartMs: round(nearest.at - start),
+        distanceMs: round(nearest.distance),
+      }
+    : undefined;
+}
+
+export function starvationEpisodes({
+  frames,
+  events,
+  measures,
+  measureNames = [],
+  intervalMs = observedFrameIntervalMs(frames),
+  from = -Infinity,
+  to = Infinity,
+}) {
+  const budgetMs = Math.min(intervalMs, QUEUE_DELAY_LAG_MS);
+  const thresholdMs = budgetMs * STARVATION_FRAME_MULTIPLE;
+  const trustedContactMoves = events.filter(
+    (event) =>
+      event[EVENT_ON_CANVAS] &&
+      event[EVENT_TYPE] === POINTER_MOVE &&
+      event[EVENT_BUTTONS] !== 0 &&
+      event[EVENT_KIND] <= LAST_TRUSTED_CONTACT_KIND &&
+      event[EVENT_TRUSTED] === 1
+  );
+  const lifts = events
+    .filter(
+      (event) =>
+        event[EVENT_ON_CANVAS] &&
+        event[EVENT_TYPE] === POINTER_UP &&
+        event[EVENT_KIND] <= LAST_TRUSTED_CONTACT_KIND &&
+        event[EVENT_TRUSTED] === 1
+    )
+    .map((event, index) => ({ index, at: event[EVENT_AT] }));
+  const commits = measures
+    .map((measure, index) => ({ measure, index }))
+    .filter(({ measure }) => measureNames[measure[MEASURE_NAME]] === 'engine.commit')
+    .map(({ measure, index }) => ({ index, at: measure[MEASURE_START] + measure[MEASURE_DUR] }));
+  const episodes = [];
+
+  for (let index = 1; index < frames.length; index++) {
+    const previous = frames[index - 1];
+    const frame = frames[index];
+    const start = previous[FRAME_T];
+    const end = frame[FRAME_T];
+    const gapMs = frame[FRAME_DT];
+    if (!inWindow(start, from, to) || !inWindow(end, from, to) || gapMs <= thresholdMs) continue;
+
+    const moves = trustedContactMoves.filter((event) => inWindow(event[EVENT_AT], start, end));
+    const engineMs = coveredDurationMs(measures, start, end);
+    const engineShare = engineMs / gapMs;
+
+    episodes.push({
+      frameIndex: index,
+      startMs: round(start),
+      endMs: round(end),
+      gapMs: round(gapMs),
+      starvationMs: round(Math.max(0, gapMs - budgetMs - engineMs)),
+      population: previous[FRAME_CONTACT] && frame[FRAME_CONTACT] ? 'inContact' : 'betweenStrokes',
+      trustedMoves: moves.length,
+      trustedPointerKinds: [
+        ...new Set(moves.map((event) => POINTER_KIND_NAMES[event[EVENT_KIND]]).filter(Boolean)),
+      ],
+      engineMs,
+      engineShare: round(engineShare, 4),
+      nearestLift: nearestAttribution(lifts, start, end),
+      nearestCommit: nearestAttribution(commits, start, end),
+    });
+  }
+
+  return episodes;
+}
+
+function starvationPopulation(episodes, commitCount, pacing) {
+  const starvationMs = round(sum(episodes.map((episode) => episode.starvationMs)));
+  const attributedCommits = new Set(
+    episodes.map((episode) => episode.nearestCommit?.index).filter((index) => index !== undefined)
+  );
+  return {
+    episodes: episodes.length,
+    episodesPerCommit: commitCount ? round(episodes.length / commitCount, 4) : undefined,
+    starvationMs,
+    lostFrameTimeMs: pacing.lostMs,
+    lostFrameTimeShare: pacing.lostFrameTimeShare,
+    worstFrameGapMs: max(episodes.map((episode) => episode.gapMs)),
+    commitsFollowedByStarvation: attributedCommits.size,
+    commits: commitCount,
+  };
+}
+
 // The forensic list: the worst frames in a phase, each with what surrounded it.
 // A share and a p99 say a freeze happened; this says WHERE — mid-stroke, at
 // finger-lift, right after a stroke started — and what marked work was inside
@@ -332,18 +492,28 @@ export function summarizePhase(phase, tables) {
   }
 
   const phaseFrames = frames.filter((frame) => inWindow(frame[FRAME_T], from, to));
-  // Both ends of the interval must be in contact — the delta into the first
-  // frame of a stroke carries however long the page sat idle before it.
+  // THREE populations, because reporting only the first hid where the lag actually
+  // was. `contact` is the stroke itself (both ends of the interval in contact — the
+  // delta into a stroke's first frame carries whatever preceded it). `between` is
+  // the rest of the window, which is where the finger-lift stalls live: a hand
+  // capture spent 3142 ms of lost time between strokes against 1763 ms during them,
+  // and only the second number was on the table.
   const contactDeltas = [];
+  const betweenDeltas = [];
+  const allDeltas = [];
   const lateWindows = [];
   const lateThreshold = intervalMs * LATE_FRAME_MULTIPLE;
   for (let i = 1; i < phaseFrames.length; i++) {
     const delta = phaseFrames[i][FRAME_DT];
     if (delta < 0) continue;
-    if (!phaseFrames[i][FRAME_CONTACT] || !phaseFrames[i - 1][FRAME_CONTACT]) continue;
-    contactDeltas.push(delta);
-    if (delta > lateThreshold)
+    allDeltas.push(delta);
+    const drawing = phaseFrames[i][FRAME_CONTACT] && phaseFrames[i - 1][FRAME_CONTACT];
+    (drawing ? contactDeltas : betweenDeltas).push(delta);
+    // Attribution windows span the whole phase now, not just the stroke: the worst
+    // frames sit at the lift, which is not an in-contact interval.
+    if (delta > lateThreshold) {
       lateWindows.push([phaseFrames[i - 1][FRAME_T], phaseFrames[i][FRAME_T]]);
+    }
   }
 
   const phaseEvents = events.filter((event) => inWindow(event[EVENT_STAMP], from, to));
@@ -352,6 +522,21 @@ export function summarizePhase(phase, tables) {
       event[EVENT_ON_CANVAS] && event[EVENT_TYPE] === POINTER_MOVE && event[EVENT_BUTTONS] !== 0
   );
   const queueDelays = canvasMoves.map((event) => round(event[EVENT_AT] - event[EVENT_STAMP]));
+  const trustedMoves = canvasMoves.filter((event) => event[EVENT_TRUSTED] === 1).length;
+  const untrustedMoves = canvasMoves.filter((event) => event[EVENT_TRUSTED] === 0).length;
+  const unknownTrustMoves = canvasMoves.length - trustedMoves - untrustedMoves;
+  const pressure = canvasMoves
+    .map((event) => event[EVENT_PRESSURE])
+    .filter((value) => Number.isFinite(value));
+  const widths = canvasMoves
+    .map((event) => event[EVENT_WIDTH])
+    .filter((value) => Number.isFinite(value));
+  const heights = canvasMoves
+    .map((event) => event[EVENT_HEIGHT])
+    .filter((value) => Number.isFinite(value));
+  const coalescedSpans = canvasMoves
+    .filter((event) => event[EVENT_COALESCED_FIRST] >= 0 && event[EVENT_COALESCED_LAST] >= 0)
+    .map((event) => round(event[EVENT_COALESCED_LAST] - event[EVENT_COALESCED_FIRST]));
 
   const phaseMeasures = measures.filter((measure) => inWindow(measure[MEASURE_START], from, to));
   const contactFrames = contactDeltas.length;
@@ -374,7 +559,7 @@ export function summarizePhase(phase, tables) {
   // last stroke of every phase — and with it the stroke-end hitch, which is
   // exactly what a rapid-repeated-strokes complaint is about.
   const strokes = segmentStrokes(events).filter((stroke) => inWindow(stroke.start, from, to));
-  const { hitches, idleAfterLift } = endHitches(strokes, frames);
+  const { hitches, notableLifts } = endHitches(strokes, frames);
   const latencies = paintLatencies(strokes, frames);
   const gaps = moveGaps(strokes);
   const longStrokes = strokes.filter((stroke) => stroke.durationMs >= LONG_STROKE_MS);
@@ -382,7 +567,22 @@ export function summarizePhase(phase, tables) {
   const trend = longStrokeTrend(longStrokes, frames);
 
   const movesPerFrame = contactFrames ? round(canvasMoves.length / contactFrames) : 0;
+  const contactSeconds = (phase.contactMs ?? 0) / 1000;
   const pacing = frameStats(contactDeltas, intervalMs);
+  const betweenStrokes = frameStats(betweenDeltas, intervalMs);
+  const wholeWindow = frameStats(allDeltas, intervalMs);
+  const commits = phaseMeasures.filter(
+    (measure) => measureNames[measure[MEASURE_NAME]] === 'engine.commit'
+  );
+  const episodes = starvationEpisodes({
+    frames,
+    events,
+    measures,
+    measureNames,
+    intervalMs,
+    from,
+    to,
+  });
 
   return {
     key: phase.key,
@@ -390,8 +590,26 @@ export function summarizePhase(phase, tables) {
     paperActive: phase.paperActive,
     abandoned: phase.abandoned ?? false,
     halos: { seen: phase.halosSeen ?? 0, hidden: phase.halosHidden ?? null },
-    contactSeconds: round((phase.contactMs ?? 0) / 1000, 1),
+    contactSeconds: round(contactSeconds, 1),
     pacing,
+    betweenStrokes,
+    wholeWindow,
+    starvation: {
+      thresholdMs: round(Math.min(intervalMs, QUEUE_DELAY_LAG_MS) * STARVATION_FRAME_MULTIPLE),
+      attributionWindowMs: STARVATION_ATTRIBUTION_WINDOW_MS,
+      all: starvationPopulation(episodes, commits.length, wholeWindow),
+      inContact: starvationPopulation(
+        episodes.filter((episode) => episode.population === 'inContact'),
+        commits.length,
+        pacing
+      ),
+      betweenStrokes: starvationPopulation(
+        episodes.filter((episode) => episode.population === 'betweenStrokes'),
+        commits.length,
+        betweenStrokes
+      ),
+      episodes,
+    },
     paintLatencyMs: {
       p50: percentile(latencies, 0.5),
       p95: percentile(latencies, 0.95),
@@ -406,6 +624,7 @@ export function summarizePhase(phase, tables) {
     input: {
       moves: canvasMoves.length,
       movesPerFrame,
+      movesPerSecond: contactSeconds ? round(canvasMoves.length / contactSeconds) : 0,
       // Absent in captures taken before the probe recorded it.
       kinds: [
         ...new Set(
@@ -415,6 +634,35 @@ export function summarizePhase(phase, tables) {
       coalescedPerMove: canvasMoves.length
         ? round(sum(canvasMoves.map((event) => event[EVENT_COALESCED])) / canvasMoves.length)
         : 0,
+      coalescedSpanMs: {
+        p50: percentile(coalescedSpans, 0.5),
+        p95: percentile(coalescedSpans, 0.95),
+        max: max(coalescedSpans),
+      },
+      trust: {
+        trusted: trustedMoves,
+        untrusted: untrustedMoves,
+        unknown: unknownTrustMoves,
+        share:
+          trustedMoves + untrustedMoves
+            ? round(trustedMoves / (trustedMoves + untrustedMoves), 4)
+            : undefined,
+      },
+      pressure: {
+        p50: percentile(pressure, 0.5),
+        p95: percentile(pressure, 0.95),
+        max: max(pressure),
+      },
+      contactWidth: {
+        p50: percentile(widths, 0.5),
+        p95: percentile(widths, 0.95),
+        max: max(widths),
+      },
+      contactHeight: {
+        p50: percentile(heights, 0.5),
+        p95: percentile(heights, 0.95),
+        max: max(heights),
+      },
       moveGapP95Ms: percentile(gaps, 0.95),
       moveGapMaxMs: max(gaps),
     },
@@ -438,7 +686,12 @@ export function summarizePhase(phase, tables) {
       endHitchMaxMs: max(hitches),
       stalledLifts: hitches.filter((hitch) => hitch > STALL_FRAME_MS).length,
       measuredLifts: hitches.length,
-      idleAfterLift,
+      notableLifts,
+      liftMs: {
+        p50: percentile(hitches, 0.5),
+        p95: percentile(hitches, 0.95),
+        max: max(hitches),
+      },
       longStrokeTrend: trend,
     },
     worstFrames: worstFrames({ frames, events, measures, measureNames, from, to }),
@@ -550,6 +803,10 @@ export function pacingRows(summaries) {
     'late %': phase.pacing ? round(phase.pacing.lateShare * 100, 1) : undefined,
     'stall %': phase.pacing ? round(phase.pacing.stallShare * 100, 1) : undefined,
     'lost ms': phase.pacing?.lostMs,
+    // The two columns that stop a lift stall from hiding: everything in the
+    // window, and everything that is not the stroke itself.
+    'lost ms between': phase.betweenStrokes?.lostMs,
+    'window max': phase.wholeWindow?.max,
     verdict: phase.verdict ?? phase.skipped,
   }));
 }
@@ -560,7 +817,16 @@ export function inputRows(summaries) {
     moves: phase.input?.moves,
     kind: phase.input?.kinds || undefined,
     'mv/frame': phase.input?.movesPerFrame,
+    'mv/s': phase.input?.movesPerSecond,
+    trusted: phase.input?.trust
+      ? `${phase.input.trust.trusted}/${phase.input.trust.trusted + phase.input.trust.untrusted}` +
+        (phase.input.trust.unknown ? ` (+${phase.input.trust.unknown} old)` : '')
+      : undefined,
     'coal/mv': phase.input?.coalescedPerMove,
+    'coal span p95': phase.input?.coalescedSpanMs?.p95,
+    'pressure p50': phase.input?.pressure?.p50,
+    'width p50': phase.input?.contactWidth?.p50,
+    'height p50': phase.input?.contactHeight?.p50,
     'gap p95': phase.input?.moveGapP95Ms,
     'gap max': phase.input?.moveGapMaxMs,
     'queue p50': phase.queueDelayMs?.p50,
@@ -586,11 +852,35 @@ export function engineRows(summaries) {
     'stalled lifts': phase.strokes
       ? `${phase.strokes.stalledLifts}/${phase.strokes.measuredLifts}`
       : undefined,
-    'hitch max': phase.strokes?.endHitchMaxMs,
+    'lift p95': phase.strokes?.liftMs?.p95,
+    'lift max': phase.strokes?.liftMs?.max,
     'long dt 1st→3rd': phase.strokes?.longStrokeTrend
       ? `${phase.strokes.longStrokeTrend.firstThirdP50 ?? '–'}→${phase.strokes.longStrokeTrend.lastThirdP50 ?? '–'}`
       : undefined,
   }));
+}
+
+export function starvationRows(summaries) {
+  return summaries.flatMap((phase) =>
+    ['all', 'inContact', 'betweenStrokes'].map((population) => {
+      const stats = phase.starvation?.[population];
+      return {
+        phase: phase.key,
+        population,
+        episodes: stats?.episodes,
+        'episodes/commit': stats?.episodesPerCommit,
+        'unexplained episode ms': stats?.starvationMs,
+        'lost frame ms': stats?.lostFrameTimeMs,
+        'lost frame %': Number.isFinite(stats?.lostFrameTimeShare)
+          ? round(stats.lostFrameTimeShare * 100, 2)
+          : undefined,
+        'worst gap': stats?.worstFrameGapMs,
+        'commits followed': stats
+          ? `${stats.commitsFollowedByStarvation}/${stats.commits}`
+          : undefined,
+      };
+    })
+  );
 }
 
 // What each suppression bought against the phase it is a variant of, which is

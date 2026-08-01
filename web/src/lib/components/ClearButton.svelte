@@ -248,6 +248,7 @@
     transition:
       opacity 0.12s linear,
       background 0.12s linear;
+    will-change: opacity;
   }
 
   /* Point of no return: the wash snaps to flood the whole canvas, giving the

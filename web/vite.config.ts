@@ -14,6 +14,7 @@ const isCapacitor = process.env.CAPACITOR === 'true';
 // by default so the marks never ship: with the literal `false` the guarded
 // blocks — and their mark-name strings — dead-code-eliminate from the bundle.
 const perfMarks = process.env.PERF_MARKS === 'true';
+const devHarness = process.env.PUBLIC_ENABLE_DEV_HARNESS === 'true';
 const profilingEsbuildOptions: import('vite').ESBuildOptions & {
   keepNames: boolean;
 } = { keepNames: true };
@@ -41,6 +42,7 @@ export default defineConfig({
     nativeApiBase: NATIVE_API_BASE,
     isCapacitor,
     perfMarks,
+    devHarness,
   }),
   build: { target: BROWSER_TARGETS },
   // Profiling builds (PERF_MARKS=true) keep function names through minification
@@ -91,6 +93,7 @@ export default defineConfig({
               // Exclude html — navigation requests use the NetworkFirst runtime
               // cache below so a manual refresh always fetches fresh markup.
               globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}'],
+              globIgnores: ['**/*.outline.webp', '**/*.chalk.webp'],
               // Do NOT set skipWaiting here. The new SW enters "waiting" state
               // and updates.ts activates it (via SKIP_WAITING message) only when
               // the canvas is blank, so mid-drawing sessions are never disrupted.

@@ -71,3 +71,22 @@ coverage for the restatement rules, which are the easiest thing to break when ed
   carry the formulas to re-derive them.
 * − Desktop/landscape users see families as columns while portrait shows them as rows — the full
   grid is the same 81 colors, but its orientation flips with the viewport.
+
+## Follow-up (2026-07): pre-promote the animated picker surface on WebKit
+
+The physical iPad action sweep found a cold-open frame gap after the picker entered the top layer.
+There was no drawing-engine or canvas work in the interval: WebKit was first rasterizing the
+81-visible-hex surface while the dialog's shared fly-in transform was already animating.
+
+One visually neutral compositor hint was sufficient:
+
+| strategy                                      | first response P95 | post-action P95 | post-action max |
+| --------------------------------------------- | -----------------: | --------------: | --------------: |
+| Default transform promotion                   |               9 ms |           17 ms |           41 ms |
+| **`will-change: transform` on picker dialog** |              10 ms |           17 ms |           18 ms |
+
+The retained hint does not alter the animation, geometry, colors, hit targets, trim rules, or DOM.
+It asks WebKit to composite the transform it already animates instead of discovering the layer
+during the first open. The layer exists only while the dialog is rendered; the closed native
+`<dialog>` remains `display: none`. Selecting a custom color remains independently gated; in the
+full physical suite it measured 19 ms post-action P95 and 30 ms max.

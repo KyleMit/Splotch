@@ -1,7 +1,7 @@
 # ADR-0068: Crayon Passes Commit as Live-Captured Rasters — the Fold Blits, It No Longer Re-Renders
 
-**Status:** Active — amends ADR-0065 (fold architecture) and ADR-0066 (what "live equals fold" means
-for crayon). **Date:** 2026-07
+**Status:** Superseded by [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) for the production
+drawing route. **Date:** 2026-07
 
 ## Context
 

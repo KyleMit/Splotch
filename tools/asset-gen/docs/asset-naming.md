@@ -36,6 +36,8 @@ web/static/coloring/{book}/{name}.outline.webp   PEN line art (light picker + ca
 web/static/coloring/{book}/{name}.chalk.webp     CHALK line art (dark canvas overlay, ink-on-white)
 web/static/coloring/{book}/{name}.thumb.webp     picker grid thumbnail (light, from the pen)
 web/static/coloring/{book}/{name}.chalk.thumb.webp  picker grid thumbnail (dark, from the chalk)
+web/static/coloring/{book}/{name}.overlay.webp   transparent black page overlay (light runtime)
+web/static/coloring/{book}/{name}.dark.overlay.webp  transparent white page overlay (dark runtime)
 web/static/coloring/{book}/{name}.light.webp     light magic-brush fill (fills-only)
 web/static/coloring/{book}/{name}.night.webp     dark magic-brush fill (fills-only)
 tools/asset-gen/fill-src/{book}/{name}.{light,night}.raw.webp   raw (lined) fills
@@ -52,6 +54,9 @@ Key implementation points:
   exclusion lists.
 * `lib/punch-fill.mjs` derives the shipped fill path from a raw by stripping `.raw`, and the mask
   path by swapping `.{light,night}` → `.outline`.
+* `gen-coloring-overlays.mjs` positively selects page `.outline.webp` sources and writes
+  `.overlay.webp` plus `.dark.overlay.webp`; the dark derivative uses the `.chalk.webp` sibling
+  where present.
 * CLI page arguments stay suffix-free (`farm/dog-wide`); each script appends `.outline.webp` when
   resolving them, and the dark generator's review samples in `.coloring-samples-dark/` stay bare
   (`dog-wide.webp`) — the `.night.raw` suffix is added at ship time (the night-fill runbook, now
@@ -61,9 +66,9 @@ Key implementation points:
 
 ## Consequences
 
-* **+** One rule for every asset: strip the final `.{variant}.webp` to get the page name; add a
-  suffix to get a sibling. New variants need no changes to exclusion lists — line art is matched
-  positively.
+* **+** Every role is an explicit dot-separated suffix. Multi-part roles such as `.chalk.thumb` and
+  `.dark.overlay` remain recognizable without exclusion lists; source line art is matched positively
+  by `.outline.webp`.
 * **+** `light`/`night` name the fills by the theme they serve, matching `resolvedTheme()`'s pick in
   `DrawingCanvas` (ADR-0052).
 * **+** Dots carry variants, dashes carry orientation — the two axes can't collide in a filename.

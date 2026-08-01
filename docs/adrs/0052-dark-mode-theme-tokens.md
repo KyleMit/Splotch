@@ -1,9 +1,10 @@
 # ADR-0052: Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Paper, White "Chalk" Line Art, Night Coloring Fills
 
-**Status:** Active — amended by [the pen/chalk fork](../../tools/asset-gen/docs/pen-chalk-fork.md):
-coloring pages with a shipped chalk outline render *it* in dark mode (via the same invert+screen
-treatment) instead of inverting the shared outline, superseding this ADR's "no pre-generated
-inverted assets" clause **Date:** 2026-07
+**Status:** Active — amended by [ADR-0091](0091-alpha-overlays-and-worker-magic-sheets.md): the
+full-page canvas uses generated alpha-native overlays and ordinary source-over composition. Also
+amended by [the pen/chalk fork](../../tools/asset-gen/docs/pen-chalk-fork.md): coloring pages with a
+shipped chalk outline derive their dark presentation from it instead of the shared pen, superseding
+this ADR's "no pre-generated inverted assets" clause. **Date:** 2026-07
 
 ## Context
 
@@ -67,13 +68,11 @@ the duplication is the accepted cost; keep the blocks in sync.
   danger chrome reads the same on either paper.
 * **Coloring pages stay on the DARK paper — white "chalk" line art + pre-colored NIGHT fills
   (direction B).** A coloring page keeps the same dark chalkboard paper as free-draw, not a light
-  sheet. Its line art inverts to white and screens over the dark paper via `--lineart-filter`
-  (`none` → `invert(1)`) + `--lineart-blend` (`multiply` → `screen`) on the `DrawingCanvas` overlay
-  — white lines on dark, no pre-generated inverted assets. The overlay only renders while a page is
-  applied, so these tokens are effectively the dark+coloring treatment. The coloring-book **picker
-  tiles** (`ColoringBook.svelte`) carry the same `--lineart-*` tokens, so covers and page thumbnails
-  preview as white-on-dark in dark mode, matching the chalkboard the page applies to. The magic
-  brush then reveals a whole PARALLEL SET of pre-colored **night fills**
+  sheet. The full-page canvas uses generated transparent black/white presentation siblings with
+  ordinary source-over composition (ADR-0091). The coloring-book **picker tiles**
+  (`ColoringBook.svelte`) retain the `--lineart-*` token treatment on their small thumbnails, so
+  covers and page thumbnails preview as white-on-dark in dark mode, matching the chalkboard the page
+  applies to. The magic brush then reveals a whole PARALLEL SET of pre-colored **night fills**
   (`{page}-{orient}.night.webp`, `tools/asset-gen/bin/gen-coloring-fills-dark.mjs`): deep-navy
   backgrounds with glowing, cozy-night fills, registered to the original outline. `DrawingCanvas`
   picks the fill by `resolvedTheme()` — the light fill (`.light.webp`) in light mode, the night fill
@@ -93,14 +92,14 @@ the duplication is the accepted cost; keep the blocks in sync.
   sync); `lib/state/appearance.svelte.ts` exposes a reactive `resolvedTheme()` (setting + live OS
   preference). The **Notch Band** eraser clears the band to the resolved theme's paper
   (`NotchBand.svelte`), and the **export path** (`exportDrawing.ts`) follows the resolved theme for
-  coloring pages too: a dark-mode save is the night version — dark paper, inverted white line art
-  screened on top, and the night-fill reveals already baked into the replayed strokes.
+  coloring pages too: a dark-mode save is the night version — dark paper, the transparent white
+  presentation overlay, and the night-fill reveals already baked into the replayed strokes.
 * **Catalog.** `books.ts` carries a `nightImages: Partial<Record<orientation, url>>` per page (only
   the orientations that have a generated fill) with a `pageNightImage()` helper;
-  `coloringBook.svelte.ts` stores only the selected page and orientation, deriving the outline,
-  chalk, light-fill, and night-fill URLs through accessors. `bookAssetPaths()` lists the shipped
-  night fills so `check-assets` validates them and `strip-native-assets` removes them, exactly like
-  the light `.light.webp` fills (no thumbnails — never in the grid).
+  `coloringBook.svelte.ts` stores only the selected page and orientation, deriving the transparent
+  presentation, outline, chalk, light-fill, and night-fill URLs through accessors.
+  `bookAssetPaths()` lists the shipped night fills and presentation overlays so `check-assets`
+  validates them (fills and overlays have no picker thumbnails).
 * **Prominence of the float cards in dark mode.** The action buttons' warm drop shadow vanishes on
   dark paper, so `--float-border` (a faint light hairline) + `--float-shadow` /
   `--float-shadow-flyout` give each card a visible edge and lift in dark mode; both are
@@ -118,9 +117,9 @@ the duplication is the accepted cost; keep the blocks in sync.
   listener; the only JS followers are the `theme-color` meta and the Notch Band.
 * \+ Prerendered HTML with no attribute renders the system default correctly even if the head script
   never runs; explicit choices restore before first paint (no flash).
-* \+ One texture and one set of line-art assets serve both themes; coloring pages stay on the same
-  dark chalkboard as free-draw (one coherent dark surface, no light sheet spotlit on a dark desk),
-  and exports match what the child saw.
+* \+ One paper texture serves both themes; coloring pages stay on the same dark chalkboard as
+  free-draw (one coherent dark surface, no light sheet spotlit on a dark desk), and exports match
+  what the child saw. The later pen/chalk and alpha-overlay amendments add theme-specific line art.
 * \+ The night fills turn dark mode into a distinct experience rather than a compromise — a parallel
   set of cozy-night pictures under the same brush — while light mode is untouched.
 * − Black/dark strokes are nearly invisible on the dark paper (free-draw AND pen-coloring) — the

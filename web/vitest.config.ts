@@ -18,6 +18,7 @@ export default defineConfig({
     // web/native split through their runtime isNative() mocks.
     isCapacitor: true,
     perfMarks: false,
+    devHarness: false,
   }),
   test: {
     environment: 'happy-dom',

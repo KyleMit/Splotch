@@ -29,17 +29,18 @@ asset-pipeline defects or leads as issues. See `docs/ISSUE-WORKFLOW.md`.
 Decision records (un-numbered, live here instead of `docs/adrs/` — see the repo CLAUDE.md
 carve-out):
 
-| File                      | Decision                                                                                        |
-| ------------------------- | ----------------------------------------------------------------------------------------------- |
-| `architecture.md`         | Why the pipeline is an in-repo folder, not a workspace or separate repo (ex ADR-0053).          |
-| `asset-naming.md`         | Uniform dot-separated variant suffixes — `{name}.{variant}.webp` (ex ADR-0054).                 |
-| `fill-vocabulary.md`      | The magic-brush reveal assets are "fills", not "twins" (ex ADR-0055).                           |
-| `pen-chalk-fork.md`       | Fork the line art per theme — pen outline (light) + Gemini-authored chalk (dark) (ex ADR-0056). |
-| `chalk-edge-crisping.md`  | Crisp the chalk's edges at render time, not in the punch or the app compositor.                 |
-| `inpainted-fill-punch.md` | Punch by inpainting — shipped fills stay opaque, outline pixels replaced by bled fill color.    |
-| `fresh-outline-regen.md`  | Redraw a problem pen outline from scratch instead of editing it.                                |
-| `gemini-3.1-migration.md` | Run record of the 2026-07 full-catalog regeneration on `gemini-3.1-flash-image`.                |
-| `gate-redundancy.md`      | Which quality gates are load-bearing vs redundant — the fixtures×gates matrix.                  |
+| File                         | Decision                                                                                        |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| `architecture.md`            | Why the pipeline is an in-repo folder, not a workspace or separate repo (ex ADR-0053).          |
+| `asset-naming.md`            | Uniform dot-separated variant suffixes — `{name}.{variant}.webp` (ex ADR-0054).                 |
+| `fill-vocabulary.md`         | The magic-brush reveal assets are "fills", not "twins" (ex ADR-0055).                           |
+| `pen-chalk-fork.md`          | Fork the line art per theme — pen outline (light) + Gemini-authored chalk (dark) (ex ADR-0056). |
+| `alpha-line-art-overlays.md` | Derive alpha-native runtime overlays while retaining opaque pipeline sources.                   |
+| `chalk-edge-crisping.md`     | Crisp the chalk's edges at render time, not in the punch or the app compositor.                 |
+| `inpainted-fill-punch.md`    | Punch by inpainting — shipped fills stay opaque, outline pixels replaced by bled fill color.    |
+| `fresh-outline-regen.md`     | Redraw a problem pen outline from scratch instead of editing it.                                |
+| `gemini-3.1-migration.md`    | Run record of the 2026-07 full-catalog regeneration on `gemini-3.1-flash-image`.                |
+| `gate-redundancy.md`         | Which quality gates are load-bearing vs redundant — the fixtures×gates matrix.                  |
 
 ## Key rules when working in this folder
 
@@ -80,9 +81,9 @@ carve-out):
   `channels: 3, hasAlpha: false`, no error). Interleave an explicit RGBA buffer and construct
   `sharp(rgba, { raw: { width,
   height, channels: 4 } })` instead, and verify outputs with
-  `sharp(out).metadata()` → `hasAlpha: true`. (No current asset ships alpha — the punch inpaints
-  instead of cutting holes, `docs/inpainted-fill-punch.md` — this trap applies to any future
-  alpha-carrying asset.)
+  `sharp(out).metadata()` → `hasAlpha: true`. The runtime line-art overlays intentionally use this
+  explicit-RGBA path (`lib/overlay-alpha.mjs`); the fill punch still inpaints instead of cutting
+  holes (`docs/inpainted-fill-punch.md`).
 * **Outputs are committed artifacts**, reviewed by a human before shipping. The generators write
   shipped art into `web/static/` and review scratch into the gitignored `.coloring-samples*/`. Never
   commit the scratch dirs.

@@ -3,8 +3,8 @@ import { type Page } from '@playwright/test';
 import { count, drawStroke, expect, state, test } from './engine-harness';
 
 // ── device rotation / the paper view (ADR-0050) ─────────────────────────────
-// A resize with a changed Screen Orientation angle is a rotation. With ink on
-// the canvas the engine locks the paper (the space ops live in) and presents it
+// A changed Screen Orientation angle or viewport orientation is a rotation. With
+// ink on the canvas the engine locks the paper (the space ops live in) and presents it
 // UPRIGHT, contain-fit and centered — scaled down when it must — instead of
 // letting content rotate off-screen or swapping a colored page's art. The
 // harness pins the angle via setScreenAngleOverride, so these run without a
@@ -88,6 +88,23 @@ test('a rotation the paper does not fit scales it down uniformly, fully visible'
   expect(bounds.maxY).toBeLessThanOrEqual(250);
 });
 
+test('a viewport rotation locks the paper before the screen angle settles', async ({ page }) => {
+  await rotateTo(page, 0, 300, 400);
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await drawStroke(page, box, [
+    { x: 40, y: 60 },
+    { x: 200, y: 60 },
+  ]);
+
+  await rotateTo(page, 0, 400, 300);
+
+  const view = await page.evaluate(() => window.__engine.getViewState());
+  expect(view.active).toBe(true);
+  expect(view.paperCssWidth).toBe(300);
+  expect(view.paperCssHeight).toBe(400);
+  expect(await page.evaluate(() => window.__engine.pixelAt(180, 45)[3])).toBeGreaterThan(0);
+});
+
 test('rotating back restores the exact original layout', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
@@ -108,6 +125,59 @@ test('rotating back restores the exact original layout', async ({ page }) => {
     .poll(() => page.evaluate(() => window.__engine.pixelAt(120, 60)[3]))
     .toBeGreaterThan(0);
   await expect.poll(() => count(page)).toBe(before);
+});
+
+test('returning to the paper angle preserves it across viewport drift', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await drawStroke(page, box, [
+    { x: 40, y: 60 },
+    { x: 200, y: 60 },
+  ]);
+
+  await rotateTo(page, 90, 400, 300);
+  await rotateTo(page, 0, 302, 300);
+
+  const view = await page.evaluate(() => window.__engine.getViewState());
+  expect(view.active).toBe(true);
+  expect(view.scale).toBe(1);
+  expect(view.tx).toBe(1);
+  expect(view.paperCssWidth).toBe(300);
+  expect(await page.evaluate(() => window.__engine.pixelAt(121, 60)[3])).toBeGreaterThan(0);
+});
+
+test('returning to the paper angle re-adopts a materially resized viewport', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await drawStroke(page, box, [
+    { x: 40, y: 60 },
+    { x: 200, y: 60 },
+  ]);
+
+  await rotateTo(page, 90, 400, 300);
+  await rotateTo(page, 0, 400, 400);
+
+  const view = await page.evaluate(() => window.__engine.getViewState());
+  expect(view.active).toBe(false);
+  expect(view.paperCssWidth).toBe(400);
+  expect(view.paperCssHeight).toBe(400);
+});
+
+test('a minor same-angle settle after an exact return preserves the paper', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await drawStroke(page, box, [
+    { x: 40, y: 60 },
+    { x: 200, y: 60 },
+  ]);
+
+  await rotateTo(page, 90, 400, 300);
+  await rotateTo(page, 0, 300, 300);
+  await page.evaluate(() => window.__engine.resizeTo(300, 294));
+
+  const view = await page.evaluate(() => window.__engine.getViewState());
+  expect(view.active).toBe(true);
+  expect(view.paperCssWidth).toBe(300);
+  expect(view.paperCssHeight).toBe(300);
+  expect(view.scale).toBeCloseTo(0.98, 5);
+  expect(await page.evaluate(() => window.__engine.pixelAt(118, 59)[3])).toBeGreaterThan(0);
 });
 
 test('strokes drawn while rotated land on the paper and survive rotating back', async ({

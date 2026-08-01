@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "recordedOn": "2026-08-01",
+  "issue": 683,
+  "productCommit": "d838fc0ccc4fa462db0e1971f14bb0d6ce6f442a",
+  "device": {
+    "model": "iPad13,8",
+    "os": "iPadOS 26.5",
+    "runtime": "MobileSafari",
+    "orientation": "landscape"
+  },
+  "measurement": {
+    "brush": "pen",
+    "gesture": "trusted XCUITest ten-stroke plan",
+    "starvationEpisodeThresholdMs": 56,
+    "allRunsPassedInputFidelity": true,
+    "totalBackingPixels": 4692120
+  },
+  "cohorts": [
+    {
+      "grid": "2x1",
+      "tileCount": 2,
+      "maxBackingPixels": 2346060,
+      "maxBackingMegapixels": 2.346,
+      "runs": [
+        { "run": 1, "paintMs": [25, 41, 59], "lostFrameShare": 0.0831, "starvationEpisodes": 1 },
+        { "run": 2, "paintMs": [24, 36, 50], "lostFrameShare": 0.0989, "starvationEpisodes": 2 },
+        { "run": 3, "paintMs": [25, 41, 50], "lostFrameShare": 0.0883, "starvationEpisodes": 0 }
+      ]
+    },
+    {
+      "grid": "3x1",
+      "tileCount": 3,
+      "maxBackingPixels": 1564650,
+      "maxBackingMegapixels": 1.565,
+      "runs": [
+        { "run": 1, "paintMs": [16, 29, 37], "lostFrameShare": 0.0687, "starvationEpisodes": 0 },
+        { "run": 2, "paintMs": [17, 32, 47], "lostFrameShare": 0.0826, "starvationEpisodes": 0 },
+        { "run": 3, "paintMs": [16, 29, 33], "lostFrameShare": 0.0769, "starvationEpisodes": 0 }
+      ]
+    },
+    {
+      "grid": "2x2",
+      "tileCount": 4,
+      "maxBackingPixels": 1173030,
+      "maxBackingMegapixels": 1.173,
+      "runs": [
+        { "run": 1, "paintMs": [16, 26, 37], "lostFrameShare": 0.0644, "starvationEpisodes": 0 },
+        { "run": 2, "paintMs": [16, 25, 39], "lostFrameShare": 0.059, "starvationEpisodes": 0 },
+        { "run": 3, "paintMs": [16, 31, 39], "lostFrameShare": 0.0542, "starvationEpisodes": 0 }
+      ]
+    },
+    {
+      "grid": "4x4",
+      "tileCount": 16,
+      "maxBackingPixels": 293578,
+      "maxBackingMegapixels": 0.294,
+      "runs": [
+        { "run": 1, "paintMs": [16, 16, 39], "lostFrameShare": 0.0334, "starvationEpisodes": 0 },
+        { "run": 2, "paintMs": [16, 23, 39], "lostFrameShare": 0.0308, "starvationEpisodes": 0 },
+        { "run": 3, "paintMs": [15, 17, 25], "lostFrameShare": 0.0317, "starvationEpisodes": 0 }
+      ]
+    }
+  ]
+}

@@ -160,7 +160,6 @@ export const zIndex = {
   zNotch: 1000,
   zClearCoachmark: 1001, // the ghost button, above the real one
   zPalette: 1002,
-  zScreenshotFlash: 10000, // app.css .polaroid-overlay
 } as const;
 
 // Themed tokens. Dark mode swaps these — and only these — so themed chrome

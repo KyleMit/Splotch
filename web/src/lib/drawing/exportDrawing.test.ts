@@ -3,8 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const appearanceMock = vi.hoisted(() => ({
   resolvedTheme: vi.fn<() => 'light' | 'dark'>(),
 }));
+const pngMock = vi.hoisted(() => ({
+  encodeTiledCanvasPng: vi.fn(),
+}));
 
 vi.mock('../state/appearance.svelte', () => appearanceMock);
+vi.mock('./pngEncoder', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./pngEncoder')>()),
+  encodeTiledCanvasPng: pngMock.encodeTiledCanvasPng,
+}));
 
 const requested: ControllableImage[] = [];
 
@@ -22,6 +29,7 @@ beforeEach(() => {
   vi.resetModules();
   requested.length = 0;
   appearanceMock.resolvedTheme.mockReturnValue('light');
+  pngMock.encodeTiledCanvasPng.mockReset();
   vi.stubGlobal('Image', ControllableImage);
 });
 
@@ -41,6 +49,8 @@ type CanvasContextStub = {
   imageSmoothingQuality: ImageSmoothingQuality;
   fillStyle: string;
   scale: (x: number, y: number) => void;
+  setTransform: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
+  resetTransform: () => void;
   fillRect: (x: number, y: number, w: number, h: number) => void;
   createPattern: () => null;
   drawImage: (source: CanvasImageSource) => void;
@@ -74,6 +84,8 @@ function setupExportContexts(inversionContext: CanvasRenderingContext2D | null) 
     imageSmoothingQuality: 'low',
     fillStyle: '',
     scale: vi.fn(),
+    setTransform: vi.fn(),
+    resetTransform: vi.fn(),
     fillRect: vi.fn(),
     createPattern: vi.fn(() => null),
     drawImage: vi.fn((source: CanvasImageSource) => {
@@ -115,6 +127,69 @@ describe('warmPaperTexture', () => {
 });
 
 describe('composeExportPng overlay', () => {
+  it('sends settled live tiles directly to the worker compositor', async () => {
+    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    const expected = new Blob(['tiles'], { type: 'image/png' });
+    pngMock.encodeTiledCanvasPng.mockResolvedValue(expected);
+    const { composeExportPng } = await import('./exportDrawing');
+
+    await expect(
+      composeExportPng(
+        {
+          source: {
+            width: 400,
+            height: 300,
+            tiles: [{ bitmap: Promise.resolve(bitmap), x: 100, y: 75 }],
+          },
+          sourceScale: 2,
+        },
+        2,
+        null,
+        { includePaperTexture: false }
+      )
+    ).resolves.toBe(expected);
+
+    expect(pngMock.encodeTiledCanvasPng).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceWidth: 400,
+        sourceHeight: 300,
+        sourceScale: 2,
+        exportScale: 2,
+        tiles: [{ bitmap, x: 100, y: 75 }],
+        texture: null,
+        overlay: null,
+      })
+    );
+  });
+
+  it('closes fulfilled bitmaps when another tiled bitmap rejects', async () => {
+    const fulfilled = { close: vi.fn() } as unknown as ImageBitmap;
+    const failure = new Error('bitmap failed');
+    const { composeExportPng } = await import('./exportDrawing');
+
+    await expect(
+      composeExportPng(
+        {
+          source: {
+            width: 400,
+            height: 300,
+            tiles: [
+              { bitmap: Promise.resolve(fulfilled), x: 0, y: 0 },
+              { bitmap: Promise.reject(failure), x: 200, y: 0 },
+            ],
+          },
+          sourceScale: 2,
+        },
+        2,
+        null,
+        { includePaperTexture: false }
+      )
+    ).rejects.toBe(failure);
+
+    expect(fulfilled.close).toHaveBeenCalledOnce();
+    expect(pngMock.encodeTiledCanvasPng).not.toHaveBeenCalled();
+  });
+
   it('returns null when the output canvas cannot allocate a context', async () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     const toBlob = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob');
@@ -125,55 +200,32 @@ describe('composeExportPng overlay', () => {
     expect(toBlob).not.toHaveBeenCalled();
   });
 
-  it('multiplies the original overlay in light mode', async () => {
+  it('draws the transparent light overlay source-over', async () => {
     const contexts = setupExportContexts(null);
     const overlay = createOverlayImage();
     const { composeExportPng } = await import('./exportDrawing');
 
     await composeExportPng(createSnapshot(), 1, overlay, { includePaperTexture: false });
 
-    expect(contexts.draws[1]).toMatchObject({
+    expect(contexts.draws[0]).toMatchObject({
       source: overlay,
-      compositeOperation: 'multiply',
+      compositeOperation: 'source-over',
     });
     expect(contexts.outputContext.globalCompositeOperation).toBe('source-over');
   });
 
-  it('screens the inverted overlay in dark mode', async () => {
+  it('draws the transparent dark overlay source-over without another canvas', async () => {
     appearanceMock.resolvedTheme.mockReturnValue('dark');
-    const inversionContext = asCanvasContext({
-      globalCompositeOperation: 'source-over',
-      imageSmoothingEnabled: false,
-      imageSmoothingQuality: 'low',
-      fillStyle: '',
-      scale: vi.fn(),
-      fillRect: vi.fn(),
-      createPattern: vi.fn(() => null),
-      drawImage: vi.fn(),
-    });
-    const contexts = setupExportContexts(inversionContext);
+    const contexts = setupExportContexts(null);
     const { composeExportPng } = await import('./exportDrawing');
     const overlay = createOverlayImage();
 
     await composeExportPng(createSnapshot(), 1, overlay, { includePaperTexture: false });
 
-    expect(contexts.draws[1].source).toBeInstanceOf(HTMLCanvasElement);
-    expect(contexts.draws[1].source).not.toBe(overlay);
-    expect(contexts.draws[1].compositeOperation).toBe('screen');
-    expect(contexts.outputContext.globalCompositeOperation).toBe('source-over');
-  });
-
-  it('skips the overlay when inversion cannot allocate a context', async () => {
-    appearanceMock.resolvedTheme.mockReturnValue('dark');
-    const contexts = setupExportContexts(null);
-    contexts.outputContext.globalCompositeOperation = 'screen';
-    const { composeExportPng } = await import('./exportDrawing');
-
-    await composeExportPng(createSnapshot(), 1, createOverlayImage(), {
-      includePaperTexture: false,
+    expect(contexts.draws[0]).toMatchObject({
+      source: overlay,
+      compositeOperation: 'source-over',
     });
-
-    expect(contexts.draws).toHaveLength(1);
     expect(contexts.outputContext.globalCompositeOperation).toBe('source-over');
   });
 });

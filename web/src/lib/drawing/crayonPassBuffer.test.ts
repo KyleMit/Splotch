@@ -15,7 +15,9 @@ import {
   setLiveCrayonBuffer,
   setCrayonPaperSpace,
   closeLiveCrayonPass,
+  crayonBufferIsDirty,
   hasOpenLiveCrayonPass,
+  setCrayonBufferForTarget,
   flushCrayonBuffer,
 } from './crayonPassBuffer';
 import { AA_PAD_PX } from './opGeometry';
@@ -89,6 +91,28 @@ function crayonDot(overrides: Partial<Extract<StrokeOp, { kind: 'dot' }>> = {}):
 }
 
 describe('live crayon paper-space seam', () => {
+  it('shows tiled preview canvases only while their pass is dirty', () => {
+    const target = ctx2d();
+    const buffer = ctx2d();
+    const mirror = ctx2d();
+    setCrayonBufferForTarget(target, buffer, mirror);
+
+    expect(buffer.canvas.hidden).toBe(true);
+    expect(mirror.canvas.hidden).toBe(true);
+
+    renderOp(target, crayonDot());
+
+    expect(crayonBufferIsDirty(target)).toBe(true);
+    expect(buffer.canvas.hidden).toBe(false);
+    expect(mirror.canvas.hidden).toBe(false);
+
+    renderOp(target, { kind: 'crayonFlush' });
+
+    expect(crayonBufferIsDirty(target)).toBe(false);
+    expect(buffer.canvas.hidden).toBe(true);
+    expect(mirror.canvas.hidden).toBe(true);
+  });
+
   it('accumulates a live crayon op into paper space while a paper size is registered', () => {
     const target = ctx2d();
     const buffer = ctx2d();

@@ -1,0 +1,309 @@
+{
+  "schemaVersion": 2,
+  "recordedOn": "2026-07-31",
+  "productCommit": "7c5125ce17d8",
+  "snapshotKind": "cumulative-final-state",
+  "architecture": "tiled renderer",
+  "sourceRoot": "../../../",
+  "limitations": [
+    "The final physical-iPad recapture could not start WebDriverAgent: Xcode timed out enabling UI automation, and the preinstalled-WDA launch timed out while the device was unavailable for automation. The retained physical-iPad evidence remains attributed to 09c4efac27ca.",
+    "The final product commit includes unmeasured post-capture changes to screenshot recovery, alpha-overlay theme swaps and thumbnails, crayon warming/checkpoints, PNG composition, audio teardown, engine extraction, Magic worker recovery, remount/resize behavior, progressive clear, and tiled undo safety. Every retained result remains attributed to the product commit that produced its source capture.",
+    "Only physical iPad web uses the Safari-calibrated trusted-input release gate. Simulator, desktop, native-shell, and automated Android results are advisory."
+  ],
+  "targets": [
+    {
+      "id": "ipad-device-native",
+      "number": 1,
+      "label": "iPad device · native",
+      "platform": "iOS",
+      "deviceKind": "physical",
+      "runtime": "native",
+      "environment": "iPad13,8 · iPadOS 26.5 · Capacitor WebView",
+      "status": "captured",
+      "fidelity": "physical-native-advisory",
+      "drawingProductCommit": "09c4efac27ca",
+      "drawing": {
+        "pen": ["perf-profiles/2026-07-31T13-04-14-489Z-ipad-xcuitest-matrix-ipad-device-native-pen-undo/real-screen.json"],
+        "crayon": ["perf-profiles/2026-07-31T13-04-34-301Z-ipad-xcuitest-matrix-ipad-device-native-crayon/real-screen.json"],
+        "magic": ["perf-profiles/2026-07-31T13-05-00-393Z-ipad-xcuitest-matrix-ipad-device-native-magic/real-screen.json"],
+        "eraser": ["perf-profiles/2026-07-31T13-05-19-733Z-ipad-xcuitest-matrix-ipad-device-native-eraser/real-screen.json"]
+      },
+      "undoSource": "perf-profiles/2026-07-31T13-04-14-489Z-ipad-xcuitest-matrix-ipad-device-native-pen-undo/real-screen.json",
+      "actionSources": [
+        {
+          "source": "perf-profiles/2026-07-31T13-11-19-189Z-ipad-actions-matrix-ipad-device-native/actions.json",
+          "productCommit": "09c4efac27ca",
+          "kind": "full"
+        }
+      ]
+    },
+    {
+      "id": "ipad-simulator-web",
+      "number": 2,
+      "label": "iPad simulator · web",
+      "platform": "iOS",
+      "deviceKind": "simulator",
+      "runtime": "web",
+      "environment": "iPad Pro 13-inch (M5) · iOS 26.5 · Safari",
+      "status": "captured",
+      "fidelity": "simulator-advisory",
+      "drawingProductCommit": "09c4efac27ca",
+      "drawing": {
+        "pen": ["perf-profiles/2026-07-31T12-39-33-049Z-ipad-xcuitest-matrix-ipad-simulator-web-pen-undo/real-screen.json"],
+        "crayon": ["perf-profiles/2026-07-31T12-39-53-533Z-ipad-xcuitest-matrix-ipad-simulator-web-crayon/real-screen.json"],
+        "magic": ["perf-profiles/2026-07-31T12-40-11-217Z-ipad-xcuitest-matrix-ipad-simulator-web-magic/real-screen.json"],
+        "eraser": ["perf-profiles/2026-07-31T12-40-32-172Z-ipad-xcuitest-matrix-ipad-simulator-web-eraser/real-screen.json"]
+      },
+      "undoSource": "perf-profiles/2026-07-31T12-39-33-049Z-ipad-xcuitest-matrix-ipad-simulator-web-pen-undo/real-screen.json",
+      "actionSources": [
+        {
+          "source": "perf-profiles/2026-07-31T12-39-07-355Z-ipad-actions-matrix-ipad-simulator-web/actions.json",
+          "productCommit": "09c4efac27ca",
+          "kind": "full"
+        }
+      ]
+    },
+    {
+      "id": "ipad-simulator-native",
+      "number": 3,
+      "label": "iPad simulator · native",
+      "platform": "iOS",
+      "deviceKind": "simulator",
+      "runtime": "native",
+      "environment": "iPad Pro 13-inch (M5) · iOS 26.5 · Capacitor WebView",
+      "status": "captured",
+      "fidelity": "simulator-advisory",
+      "drawingProductCommit": "09c4efac27ca",
+      "drawing": {
+        "pen": ["perf-profiles/2026-07-31T12-41-33-606Z-ipad-xcuitest-matrix-ipad-simulator-native-pen-undo/real-screen.json"],
+        "crayon": ["perf-profiles/2026-07-31T12-47-45-439Z-ipad-xcuitest-matrix-ipad-simulator-native-crayon/real-screen.json"],
+        "magic": ["perf-profiles/2026-07-31T12-48-04-671Z-ipad-xcuitest-matrix-ipad-simulator-native-magic/real-screen.json"],
+        "eraser": ["perf-profiles/2026-07-31T12-48-23-590Z-ipad-xcuitest-matrix-ipad-simulator-native-eraser/real-screen.json"]
+      },
+      "undoSource": "perf-profiles/2026-07-31T12-41-33-606Z-ipad-xcuitest-matrix-ipad-simulator-native-pen-undo/real-screen.json",
+      "actionSources": [
+        {
+          "source": "perf-profiles/2026-07-31T12-47-22-749Z-ipad-actions-matrix-ipad-simulator-native/actions.json",
+          "productCommit": "09c4efac27ca",
+          "kind": "full"
+        }
+      ]
+    },
+    {
+      "id": "android-emulator-web",
+      "number": 4,
+      "label": "Android emulator · web",
+      "platform": "Android",
+      "deviceKind": "emulator",
+      "runtime": "web",
+      "environment": "Pixel 7 Pro API 33 · Android 13 · Chrome 149",
+      "status": "captured",
+      "fidelity": "simulator-advisory",
+      "drawingProductCommit": "09c4efac27ca",
+      "drawing": {
+        "pen": ["perf-profiles/2026-07-31T13-11-52-021Z-ipad-xcuitest-matrix-android-emulator-web-pen-undo/real-screen.json"],
+        "crayon": ["perf-profiles/2026-07-31T13-12-17-823Z-ipad-xcuitest-matrix-android-emulator-web-crayon/real-screen.json"],
+        "magic": ["perf-profiles/2026-07-31T13-12-41-029Z-ipad-xcuitest-matrix-android-emulator-web-magic/real-screen.json"],
+        "eraser": ["perf-profiles/2026-07-31T13-13-01-887Z-ipad-xcuitest-matrix-android-emulator-web-eraser/real-screen.json"]
+      },
+      "undoSource": "perf-profiles/2026-07-31T13-11-52-021Z-ipad-xcuitest-matrix-android-emulator-web-pen-undo/real-screen.json",
+      "actionSources": [
+        {
+          "source": "perf-profiles/2026-07-31T13-02-57-213Z-ipad-actions-matrix-android-emulator-web/actions.json",
+          "productCommit": "09c4efac27ca",
+          "kind": "full"
+        }
+      ]
+    },
+    {
+      "id": "android-emulator-native",
+      "number": 5,
+      "label": "Android emulator · native",
+      "platform": "Android",
+      "deviceKind": "emulator",
+      "runtime": "native",
+      "environment": "Pixel 7 Pro API 33 · Android 13 · Capacitor WebView 149",
+      "status": "captured",
+      "fidelity": "simulator-advisory",
+      "drawingProductCommit": "09c4efac27ca",
+      "drawing": {
+        "pen": ["perf-profiles/2026-07-31T13-14-48-574Z-ipad-xcuitest-matrix-android-emulator-native-pen-undo/real-screen.json"],
+        "crayon": ["perf-profiles/2026-07-31T13-15-11-013Z-ipad-xcuitest-matrix-android-emulator-native-crayon/real-screen.json"],
+        "magic": ["perf-profiles/2026-07-31T13-15-29-320Z-ipad-xcuitest-matrix-android-emulator-native-magic/real-screen.json"],
+        "eraser": ["perf-profiles/2026-07-31T13-15-47-200Z-ipad-xcuitest-matrix-android-emulator-native-eraser/real-screen.json"]
+      },
+      "undoSource": "perf-profiles/2026-07-31T13-14-48-574Z-ipad-xcuitest-matrix-android-emulator-native-pen-undo/real-screen.json",
+      "actionSources": [
+        {
+          "source": "perf-profiles/2026-07-31T13-22-56-341Z-ipad-actions-matrix-android-emulator-native/actions.json",
+          "productCommit": "09c4efac27ca",
+          "kind": "full"
+        }
+      ]
+    },
+    {
+      "id": "android-device-web",
+      "number": 6,
+      "label": "Android device · web",
+      "platform": "Android",
+      "deviceKind": "physical",
+      "runtime": "web",
+      "environment": "Samsung SM-G990U1 · Android 16 · Chrome 150",
+      "status": "captured",
+      "fidelity": "physical-web-advisory",
+      "drawingProductCommit": "b91fcc08fa63",
+      "drawing": {
+        "pen": ["perf-profiles/2026-08-01T00-40-17-508Z-ipad-xcuitest-matrix-android-device-web-pen-undo/real-screen.json"],
+        "crayon": ["perf-profiles/2026-08-01T00-41-47-082Z-ipad-xcuitest-matrix-android-device-web-crayon/real-screen.json"],
+        "magic": ["perf-profiles/2026-08-01T00-43-14-530Z-ipad-xcuitest-matrix-android-device-web-magic/real-screen.json"],
+        "eraser": ["perf-profiles/2026-08-01T00-44-44-718Z-ipad-xcuitest-matrix-android-device-web-eraser/real-screen.json"]
+      },
+      "undoSource": "perf-profiles/2026-08-01T00-40-17-508Z-ipad-xcuitest-matrix-android-device-web-pen-undo/real-screen.json",
+      "actionSources": [
+        {
+          "source": "perf-profiles/2026-08-01T02-06-58-170Z-android-web-actions-final-action-regression-current/actions.json",
+          "productCommit": "b91fcc08fa63",
+          "kind": "full"
+        },
+        {
+          "source": "perf-profiles/2026-08-01T02-12-01-818Z-android-web-actions-final-action-regression-parent-settings-trace/actions.json",
+          "productCommit": "b91fcc08fa63",
+          "kind": "focused",
+          "labels": ["disable advanced controls"]
+        },
+        {
+          "source": "perf-profiles/2026-08-01T02-30-02-287Z-android-web-actions-final-action-regression-drawer-motion/actions.json",
+          "productCommit": "4c57798b9ac1",
+          "kind": "focused",
+          "labels": ["expand action drawer", "collapse action drawer"]
+        },
+        {
+          "source": "perf-profiles/2026-08-01T03-03-34-330Z-android-web-actions-deployment-matrix-final-current-web/actions.json",
+          "productCommit": "4c57798b9ac1",
+          "kind": "focused",
+          "labels": ["change ink color"]
+        },
+        {
+          "source": "perf-profiles/2026-08-01T02-30-38-218Z-android-web-actions-final-action-regression-rotation-motion-isolated/actions.json",
+          "productCommit": "4c57798b9ac1",
+          "kind": "focused",
+          "labels": [
+            "clear drawing",
+            "empty after clear: PORTRAIT to LANDSCAPE rotation",
+            "undo clear after blank rotation",
+            "undo restored stroke after blank rotation",
+            "clear restored drawing after blank rotation",
+            "empty after clear: LANDSCAPE to PORTRAIT rotation",
+            "with ink: PORTRAIT to LANDSCAPE rotation",
+            "with ink: LANDSCAPE to PORTRAIT rotation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "android-device-native",
+      "number": 7,
+      "label": "Android device · native",
+      "platform": "Android",
+      "deviceKind": "physical",
+      "runtime": "native",
+      "environment": "Samsung SM-G990U1 · Android 16 · Capacitor WebView 150",
+      "status": "captured",
+      "fidelity": "physical-native-advisory",
+      "drawingProductCommit": "b91fcc08fa63",
+      "drawing": {
+        "pen": ["perf-profiles/2026-08-01T00-53-18-022Z-ipad-xcuitest-matrix-android-device-native-pen-undo/real-screen.json"],
+        "crayon": ["perf-profiles/2026-08-01T00-54-46-212Z-ipad-xcuitest-matrix-android-device-native-crayon/real-screen.json"],
+        "magic": ["perf-profiles/2026-08-01T00-56-12-103Z-ipad-xcuitest-matrix-android-device-native-magic/real-screen.json"],
+        "eraser": ["perf-profiles/2026-08-01T00-57-38-448Z-ipad-xcuitest-matrix-android-device-native-eraser/real-screen.json"]
+      },
+      "undoSource": "perf-profiles/2026-08-01T00-53-18-022Z-ipad-xcuitest-matrix-android-device-native-pen-undo/real-screen.json",
+      "actionSources": [
+        {
+          "source": "perf-profiles/2026-08-01T01-08-46-611Z-ipad-actions-matrix-android-device-native/actions.json",
+          "productCommit": "b91fcc08fa63",
+          "kind": "full"
+        },
+        {
+          "source": "perf-profiles/2026-08-01T02-53-29-699Z-ipad-actions-deployment-matrix-final-current-native/actions.json",
+          "productCommit": "4c57798b9ac1",
+          "kind": "focused",
+          "labels": [
+            "expand action drawer",
+            "collapse action drawer",
+            "change ink color",
+            "with ink: PORTRAIT to LANDSCAPE rotation",
+            "with ink: LANDSCAPE to PORTRAIT rotation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ipad-device-web",
+      "number": 8,
+      "label": "iPad device · web",
+      "platform": "iOS",
+      "deviceKind": "physical",
+      "runtime": "web",
+      "environment": "iPad13,8 · iPadOS 26.5 · MobileSafari",
+      "status": "captured",
+      "fidelity": "release-gate",
+      "drawingProductCommit": "09c4efac27ca",
+      "drawing": {
+        "pen": ["perf-profiles/2026-07-31T09-11-21-207Z-ipad-xcuitest-final-pen-undo-regression-instrumented/real-screen.json"],
+        "crayon": ["perf-profiles/2026-07-31T09-11-47-249Z-ipad-xcuitest-final-crayon-undo-regression/real-screen.json"],
+        "magic": ["perf-profiles/2026-07-31T09-12-12-518Z-ipad-xcuitest-final-magic-undo-regression/real-screen.json"],
+        "eraser": ["perf-profiles/2026-07-31T13-24-50-180Z-ipad-xcuitest-matrix-ipad-device-web-eraser/real-screen.json"]
+      },
+      "undoSource": "perf-profiles/2026-07-31T09-11-21-207Z-ipad-xcuitest-final-pen-undo-regression-instrumented/real-screen.json",
+      "actionSources": [
+        {
+          "source": "perf-profiles/2026-07-31T09-43-50-043Z-ipad-actions-expanded-46-action-regression/actions.json",
+          "productCommit": "09c4efac27ca",
+          "kind": "full"
+        }
+      ]
+    },
+    {
+      "id": "macos-web",
+      "number": 9,
+      "label": "macOS · web",
+      "platform": "macOS",
+      "deviceKind": "physical",
+      "runtime": "web",
+      "environment": "MacBook Pro M5 · 32 GB · macOS 26.5.2 · Playwright WebKit",
+      "status": "captured",
+      "fidelity": "synthetic-advisory",
+      "drawingProductCommit": "09c4efac27ca",
+      "drawing": {
+        "pen": [
+          "perf-profiles/2026-07-31T10-47-05-983Z-frames-local-webkit-raw/real-screen.json",
+          "perf-profiles/2026-07-31T10-47-25-500Z-frames-local-webkit-raw/real-screen.json",
+          "perf-profiles/2026-07-31T10-47-44-410Z-frames-local-webkit-raw/real-screen.json"
+        ],
+        "crayon": [
+          "perf-profiles/2026-07-31T10-49-46-825Z-frames-local-webkit-raw-crayon/real-screen.json",
+          "perf-profiles/2026-07-31T10-52-50-078Z-frames-local-webkit-raw-crayon/real-screen.json",
+          "perf-profiles/2026-07-31T10-53-09-265Z-frames-local-webkit-raw-crayon/real-screen.json"
+        ],
+        "magic": [
+          "perf-profiles/2026-07-31T10-50-29-795Z-frames-local-webkit-raw-magic/real-screen.json",
+          "perf-profiles/2026-07-31T10-51-52-924Z-frames-local-webkit-raw-magic/real-screen.json",
+          "perf-profiles/2026-07-31T10-52-13-581Z-frames-local-webkit-raw-magic/real-screen.json"
+        ],
+        "eraser": [
+          "perf-profiles/2026-07-31T13-27-52-760Z-frames-local-webkit-raw-eraser/real-screen.json",
+          "perf-profiles/2026-07-31T13-29-58-785Z-frames-local-webkit-raw-eraser/real-screen.json",
+          "perf-profiles/2026-07-31T13-32-01-212Z-frames-local-webkit-raw-eraser/real-screen.json"
+        ]
+      },
+      "actionSources": [
+        {
+          "source": "perf-profiles/2026-08-01T02-49-33-224Z-desktop-actions-webkit-deployment-matrix-final-current/actions.json",
+          "productCommit": "4c57798b9ac1",
+          "kind": "full"
+        }
+      ]
+    }
+  ]
+}

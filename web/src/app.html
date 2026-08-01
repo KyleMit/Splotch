@@ -50,8 +50,10 @@
          static HTML can't know the visitor's viewport or stored preferences; this
          runs synchronously before first paint to seed the first-paint state that
          would otherwise flash from a default before hydration. The Action-center
-         panel keeps these live (ActionsPanel.svelte's publish effect) and its CSS
-         reads them, so render / hydration / live-update all agree.
+         panel adopts the same state onto its own root during hydration and its
+         CSS stops consulting this bootstrap seed after data-action-panel-live is
+         present. These <html> values remain immutable so live button changes do
+         not invalidate the drawing document.
 
          An attribute is stamped only when the value DEVIATES from the default, so
          the raw prerendered HTML (this script never having run) already renders the

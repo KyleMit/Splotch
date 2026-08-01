@@ -40,18 +40,18 @@ test('undo preserves and rebases a stroke that is still in progress', async ({ p
   if (!box) throw new Error('canvas has no bounding box');
 
   await drawStroke(page, box, [
-    { x: 40, y: 40 },
-    { x: 120, y: 40 },
+    { x: 40, y: 120 },
+    { x: 200, y: 120 },
   ]);
 
-  await page.mouse.move(box.x + 180, box.y + 180);
+  await page.mouse.move(box.x + 80, box.y + 120);
   await page.mouse.down();
-  await page.mouse.move(box.x + 260, box.y + 180);
+  await page.mouse.move(box.x + 160, box.y + 120);
 
   await page.evaluate(() => window.__engine.undo());
 
-  expect(await page.evaluate(() => window.__engine.pixelAt(60, 40)[3])).toBe(0);
-  expect(await page.evaluate(() => window.__engine.pixelAt(220, 180)[3])).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(60, 120)[3])).toBe(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(120, 120)[3])).toBeGreaterThan(0);
   expect((await state(page)).canvasEmpty).toBe(false);
 
   await page.mouse.up();

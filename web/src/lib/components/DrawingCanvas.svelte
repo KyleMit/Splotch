@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import {
     adoptDrawingCanvas,
     setColor,
@@ -12,6 +12,7 @@
   import { pushToolStateToEngine } from '$lib/drawing/earlyBoot';
   import { COLORING_OVERLAY_ID } from '$lib/drawing/overlay';
   import { viewMatrix } from '$lib/drawing/paperView';
+  import { LIVE_TILE_COUNT } from '$lib/drawing/liveTiles';
   import { layout } from '$lib/state/layout.svelte';
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
@@ -19,20 +20,25 @@
   import { strokeState, getStrokeWidthPx, getEraserWidthPx } from '$lib/state/strokeWidth.svelte';
   import {
     overlayUrl,
-    chalkUrl,
+    coloringBookState,
+    themedOverlayUrl as currentThemedOverlayUrl,
+    themedOverlayThumbnailUrl as currentThemedOverlayThumbnailUrl,
     colorSheetUrl,
     nightSheetUrl,
   } from '$lib/state/coloringBook.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
+  import { pageCompositionKey } from '$lib/state/books';
   import { settings } from '$lib/state/settings.svelte';
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
   import { isNative } from '$lib/platform';
   import { scheduleIdle } from '$lib/idle';
+  import { prefetchImages } from '$lib/imagePrefetch';
   import FullscreenToggle from './FullscreenToggle.svelte';
   import PointerHalos from './PointerHalos.svelte';
 
   let canvasEl: HTMLCanvasElement = $state()!;
   let pointerHalos: PointerHalos;
+  const liveTiles = Array.from({ length: LIVE_TILE_COUNT }, (_, index) => index);
 
   // The engine's paper view (ADR-0050): identity in normal use; after a device
   // rotation with ink on the canvas it presents the locked paper upright,
@@ -160,37 +166,34 @@
   // aware (ADR-0052 direction B): light mode reveals the light fill; dark mode
   // reveals the pre-colored NIGHT fill where one exists, falling back to the
   // light fill for pages/orientations whose night asset isn't generated yet.
-  // Both fills ship fills-only (outlines punched to transparency at build time),
-  // so the overlay <img> stays the single source of line work. Reading
-  // resolvedTheme() re-runs this on a live theme switch, re-rasterizing the sheet.
-  $effect(() => {
-    const nightUrl = resolvedTheme() === 'dark' ? nightSheetUrl() : null;
-    setColorSheet(nightUrl ?? colorSheetUrl());
-  });
-
-  // The overlay's line art is theme-aware: dark mode shows the page's CHALK
-  // outline where one exists (shipped ink-on-white, so the same
-  // --lineart-filter invert + screen treatment renders it as white chalk),
-  // falling back to inverting the pen outline for un-forked pages. Reading
+  // The overlay's line art is theme-aware: light mode uses generated transparent
+  // black pen ink and dark mode uses generated transparent white chalk, falling
+  // back to a white overlay derived from the pen for un-forked pages. Reading
   // resolvedTheme() re-picks the art on a live theme switch.
-  const themedOverlayUrl = $derived(
-    resolvedTheme() === 'dark' ? (chalkUrl() ?? overlayUrl()) : overlayUrl()
-  );
+  const themedOverlayUrl = $derived(currentThemedOverlayUrl(resolvedTheme()));
+  const themedOverlayThumbnailUrl = $derived(currentThemedOverlayThumbnailUrl(resolvedTheme()));
 
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
-  // and swaps the page art to the other tall/wide variant — a different
-  // composition. Pointing the <img> straight at the new URL shows the old art
-  // mis-fit in the new layout, then pops the new one in whenever it decodes.
-  // Instead: hide the art the moment the target changes, decode the new file
-  // off-DOM, and fade it in only once it's ready. Applying a page from the
-  // picker flows through the same gate.
+  // and swaps the page art to the other tall/wide composition. The matching
+  // picker thumbnail bridges that full-resolution decode, so the new page is
+  // centered and recognizable immediately instead of leaving a blank canvas.
+  // A theme sibling has identical registration, so it keeps the current art
+  // visible until the sibling is ready.
   let displayedOverlayUrl = $state<string | null>(null);
+
   $effect(() => {
     const url = themedOverlayUrl;
-    displayedOverlayUrl = null;
-    if (!url) return;
+    if (!url) {
+      displayedOverlayUrl = null;
+      return;
+    }
+    const displayed = untrack(() => displayedOverlayUrl);
+    if (!displayed || pageCompositionKey(displayed) !== pageCompositionKey(url)) {
+      displayedOverlayUrl = themedOverlayThumbnailUrl;
+    }
     let stale = false;
     const img = new Image();
+    img.fetchPriority = 'high';
     img.src = url;
     // Show on decode failure too — the <img> then surfaces the same broken
     // state a direct src assignment would have.
@@ -203,35 +206,35 @@
     };
   });
 
+  // The line art is the only asset needed to make a selected page visible.
+  // Start the magic fill and rotation warm-up after it decodes so those
+  // full-resolution transfers cannot delay the page the child just picked.
+  $effect(() => {
+    const url = themedOverlayUrl;
+    const displayed = displayedOverlayUrl;
+    if (!url) {
+      setColorSheet(null);
+      return;
+    }
+    if (displayed !== url) {
+      setColorSheet(null);
+      return;
+    }
+    const theme = resolvedTheme();
+    const nightUrl = theme === 'dark' ? nightSheetUrl() : null;
+    setColorSheet(nightUrl ?? colorSheetUrl());
+    const other = coloringBookState.orientation === 'portrait' ? 'landscape' : 'portrait';
+    const otherUrl = currentThemedOverlayUrl(theme, other);
+    if (!otherUrl) return;
+    return scheduleIdle(() => prefetchImages([otherUrl]));
+  });
+
   // The sheet/wrapper track the engine's paper; before the engine mounts and
   // reports a size, fall back to filling the container so the SSR'd shell shows
   // the full-bleed paper texture with no flash.
   const paperCssWidth = $derived(paperView.paperCssWidth ? `${paperView.paperCssWidth}px` : '100%');
   const paperCssHeight = $derived(
     paperView.paperCssHeight ? `${paperView.paperCssHeight}px` : '100%'
-  );
-
-  // The line-art overlay's mix-blend-mode composites against a STALE snapshot
-  // of the canvas while a stroke is live: painting into the 2D canvas doesn't
-  // invalidate the blend layer above it, so the blend only re-evaluates when
-  // something else repaints — which used to be the pointerup Svelte writes,
-  // making dark-mode ink under the chalk lines look dim until the finger
-  // lifted (issue #307). Toggling an imperceptible translateZ epsilon on the
-  // wrapper damages the blend layer once per input event (pointermoves are
-  // coalesced to ~one per frame), forcing the screen/multiply blend to
-  // recompute against the current canvas pixels mid-stroke. The two transform
-  // values must differ NUMERICALLY — alternating `translateZ(0)` with nothing
-  // flattens to the same matrix and the compositor would skip the damage.
-  let blendNudge = $state(false);
-
-  function nudgeBlendLayer(e: PointerEvent) {
-    if (!overlayUrl()) return;
-    if (e.type === 'pointermove' && e.buttons === 0) return;
-    blendNudge = !blendNudge;
-  }
-
-  const paperViewTransform = $derived(
-    `${paperTransform} translateZ(${blendNudge ? '0.01px' : '0'})`
   );
 </script>
 
@@ -255,7 +258,7 @@
     class="paper-view"
     style:width={paperCssWidth}
     style:height={paperCssHeight}
-    style:transform={paperViewTransform}
+    style:transform={paperTransform}
     hidden={!overlayUrl()}
   >
     <img
@@ -274,23 +277,26 @@
        previews faint on the dark paper (min(colour, near-black) erases the
        blend layer) until its pass stamps. -->
   <div class="canvas-stack">
-    <canvas
-      bind:this={canvasEl}
-      id="drawingCanvas"
-      class:erasing={toolState.brush === 'eraser'}
-      onpointerdown={nudgeBlendLayer}
-      onpointermove={nudgeBlendLayer}
+    <canvas bind:this={canvasEl} id="drawingCanvas" class:erasing={toolState.brush === 'eraser'}
     ></canvas>
-    <!-- The engine's live crayon pass overlays (bottom darken layer, then the
-         opacity-mixed top — see engine.ts's crayonOverlay notes). Rendered
-         here, not injected by the engine: the engine boots BEFORE hydration
-         (ADR-0072), and elements it inserted into the prerendered DOM made
-         Svelte's hydration walk bail to a full client re-render, replacing
-         the live canvas. Template-owned markup hydrates cleanly; the engine
-         adopts the pair by the data attribute. -->
-    <canvas class="crayon-overlay" data-crayon-overlay aria-hidden="true"></canvas>
-    <canvas class="crayon-overlay crayon-overlay-top" data-crayon-overlay aria-hidden="true"
-    ></canvas>
+    <div
+      class="live-paper-view"
+      style:width={paperCssWidth}
+      style:height={paperCssHeight}
+      style:transform={paperTransform}
+    >
+      {#each liveTiles as tile (tile)}
+        <canvas class="live-tile" data-live-tile aria-hidden="true" hidden></canvas>
+        <canvas class="live-tile live-crayon-tile" data-live-crayon-bottom aria-hidden="true" hidden
+        ></canvas>
+        <canvas
+          class="live-tile live-crayon-tile live-crayon-tile-top"
+          data-live-crayon-top
+          aria-hidden="true"
+          hidden
+        ></canvas>
+      {/each}
+    </div>
   </div>
   <PointerHalos bind:this={pointerHalos} {canvasEl} {eraserSizePx} {brushRingSizePx} />
   <FullscreenToggle />
@@ -338,6 +344,8 @@
   }
 
   #drawingCanvas {
+    position: relative;
+    z-index: 3;
     display: block;
     cursor: crosshair;
     touch-action: none;
@@ -345,36 +353,35 @@
     height: 100%;
   }
 
-  #drawingCanvas.erasing {
-    cursor: none;
+  .live-paper-view {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
   }
 
-  /* Mirrors the inline styling the engine applies when it creates its own
-     overlays (the /dev/engine harness path) — keep the two in sync. */
-  .crayon-overlay {
+  .live-tile {
     position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
     pointer-events: none;
+    z-index: 1;
+  }
+
+  .live-crayon-tile {
     z-index: 2;
     mix-blend-mode: darken;
   }
 
-  .crayon-overlay-top {
+  .live-crayon-tile-top {
     mix-blend-mode: normal;
   }
 
-  /* The blend lives on the wrapper (not the img): the transform makes the
-     wrapper a stacking context, which would confine an inner mix-blend-mode to
-     the wrapper's own (transparent) backdrop instead of the canvas below.
-     Light: black lines multiply over the light paper. Dark: the img's
-     --lineart-filter inverts the art to white-on-black and screen makes the
-     black transparent-equivalent — white "chalk" lines over the dark paper
-     (ADR-0052 direction B). will-change keeps the wrapper on its own
-     compositor layer so the mid-stroke blend nudge (see nudgeBlendLayer) is a
-     composite-only update — no per-frame repaint of the line art. */
+  #drawingCanvas.erasing {
+    cursor: none;
+  }
+
+  /* The generated overlay carries only transparent black or white ink, so it
+     can use ordinary source-over composition without a full-page blend/filter
+     layer. */
   .paper-view {
     position: absolute;
     top: 0;
@@ -382,7 +389,7 @@
     transform-origin: 0 0;
     pointer-events: none;
     z-index: 2;
-    mix-blend-mode: var(--lineart-blend);
+    mix-blend-mode: normal;
     will-change: transform;
   }
 
@@ -398,7 +405,6 @@
     height: 100%;
     object-fit: contain;
     opacity: 0;
-    filter: var(--lineart-filter);
   }
 
   .coloring-overlay.overlay-ready {

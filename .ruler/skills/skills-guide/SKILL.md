@@ -29,12 +29,13 @@ Standalone lookups; none depend on another skill.
 | `create-adr`  | Document a significant decision just made — adds a new ADR                     |
 | `update-adrs` | End-of-session sweep: verify existing ADRs still match reality, amend drift    |
 
-## Performance — two harnesses for two kinds of slow
+## Performance — interaction matrices and page load
 
-| Skill              | Measures                                                                                  |
-| ------------------ | ----------------------------------------------------------------------------------------- |
-| `profiling`        | Drawing/canvas **interaction** performance (`npm run perf:*` harness, jank, regressions)  |
-| `lighthouse-audit` | **Page-load** performance / Core Web Vitals on a throttled device; also an audit producer |
+| Skill                    | Measures                                                                                  |
+| ------------------------ | ----------------------------------------------------------------------------------------- |
+| `profiling`              | Drawing/canvas **interaction** performance (`npm run perf:*` harness, jank, regressions)  |
+| `run-performance-matrix` | Serial cross-target drawing, undo, and discrete-action capture across web/native targets  |
+| `lighthouse-audit`       | **Page-load** performance / Core Web Vitals on a throttled device; also an audit producer |
 
 ## Audit lifecycle — produce → vet → fix
 

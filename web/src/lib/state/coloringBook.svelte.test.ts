@@ -5,6 +5,8 @@ import {
   setOverlayOrientation,
   overlayUrl,
   chalkUrl,
+  themedOverlayUrl,
+  themedOverlayThumbnailUrl,
   colorSheetUrl,
   nightSheetUrl,
   clearOverlay,
@@ -92,6 +94,30 @@ describe('coloring book state', () => {
     setOverlayOrientation('landscape');
     expect(chalkUrl()).toBeNull();
     expect(pageChalkImage(chalked, 'landscape')).toBeNull();
+  });
+
+  it('picks matching full-resolution and thumbnail art for the resolved theme', () => {
+    setOverlayPage(spacePage, 'landscape');
+    expect(themedOverlayUrl('light')).toBe(
+      spacePage.images.landscape.replace('.outline.webp', '.overlay.webp')
+    );
+    expect(themedOverlayThumbnailUrl('light')).toBe(
+      spacePage.images.landscape.replace('.outline.webp', '.overlay.thumb.webp')
+    );
+    expect(themedOverlayUrl('dark')).toBe(
+      spacePage.images.landscape.replace('.outline.webp', '.dark.overlay.webp')
+    );
+    expect(themedOverlayThumbnailUrl('dark')).toBe(
+      spacePage.images.landscape.replace('.outline.webp', '.dark.overlay.thumb.webp')
+    );
+  });
+
+  it('can derive another orientation without changing the active orientation', () => {
+    setOverlayPage(spacePage, 'landscape');
+    expect(themedOverlayUrl('dark', 'portrait')).toBe(
+      spacePage.images.portrait.replace('.outline.webp', '.dark.overlay.webp')
+    );
+    expect(coloringBookState.orientation).toBe('landscape');
   });
 });
 

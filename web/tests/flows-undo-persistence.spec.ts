@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { SCREENSHOT_COOLDOWN_MS } from '../src/lib/drawing/screenshotTiming';
 
 import { draw, firstOpaquePixel, gotoApp, retryOpen } from './helpers';
 
@@ -117,17 +118,38 @@ test('a burst of screenshot taps shares one save before allowing the next', asyn
   // takes longer than any sleep sized on an idle one — this is what failed 3 of
   // 12 CI reps at 4 workers, issue #653)…
   await expect.poll(() => downloads.length).toBe(1);
-  await expect(page.locator('.polaroid-overlay')).toHaveCount(1);
+  await expect(shot).toHaveClass(/screenshot-suppressed-feedback/);
 
   // …then idle past the window a second save would have arrived in, which is
   // what proves the burst was coalesced rather than merely slow.
   await page.waitForTimeout(SECOND_SAVE_WINDOW_MS);
   expect(downloads).toHaveLength(1);
 
+  await page.waitForTimeout(SCREENSHOT_COOLDOWN_MS);
   const nextDownload = page.waitForEvent('download');
   await shot.click();
   await nextDownload;
   await expect.poll(() => downloads.length).toBe(2);
+});
+
+test.describe('tiled screenshot export', () => {
+  test.use({ deviceScaleFactor: 2 });
+
+  test('downloads a PNG through the matched-scale worker path', async ({ page }) => {
+    await gotoApp(page);
+    await openDrawer(page);
+    await draw(page, [
+      { x: 140, y: 140 },
+      { x: 240, y: 200 },
+    ]);
+
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('#screenshotButton').click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toMatch(/^splotch-.+\.png$/);
+    expect(await download.failure()).toBeNull();
+  });
 });
 
 // ── tool/stroke state + persistence ─────────────────────────────────────────
@@ -188,6 +210,8 @@ test('a persisted-open drawer, with a control toggled off, is correct at first p
 
   // The <html> stamp the CSS keys off is present before hydration.
   await expect(page.locator('html')).toHaveAttribute('data-drawer-open', '');
+  await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
+  await expect(page.locator('.actions-panel')).toHaveAttribute('data-drawer-open', '');
   // Drawer open: its buttons are visible without tapping the chevron.
   await expect(page.locator('#undoButton')).toBeVisible();
   await expect(page.locator('#coloringBookButton')).toBeVisible();
@@ -238,17 +262,22 @@ test('the picked brush persists across a reload and stamps the brush face pre-pa
   await gotoApp(page);
   await openDrawer(page);
 
+  const panel = page.locator('.actions-panel');
+
   // Default is the pen: no data-brush attribute, pen entry selected.
   await expect(page.locator('html')).not.toHaveAttribute('data-brush');
+  await expect(panel).not.toHaveAttribute('data-brush');
   await openBrushMenu(page);
   await expect(page.locator('#penBrushButton')).toHaveAttribute('aria-pressed', 'true');
 
   await pickBrush(page, '#crayonBrushButton');
-  await expect(page.locator('html')).toHaveAttribute('data-brush', 'crayon');
+  await expect(panel).toHaveAttribute('data-brush', 'crayon');
+  await expect(page.locator('html')).not.toHaveAttribute('data-brush');
 
   await page.reload();
   await expect(page.locator('#drawingCanvas')).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-brush', 'crayon');
+  await expect(panel).toHaveAttribute('data-brush', 'crayon');
   await openBrushMenu(page);
   await expect(page.locator('#crayonBrushButton')).toHaveAttribute('aria-pressed', 'true');
 });

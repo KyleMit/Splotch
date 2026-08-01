@@ -5,7 +5,10 @@ import { ROOT } from '../lib/proc.mjs';
 import {
   LATE_FRAME_MULTIPLE,
   comparisonRows,
-  MAX_CREDIBLE_HITCH_MS,
+  NOTABLE_LIFT_MS,
+  QUEUE_DELAY_LAG_MS,
+  REAL_SCREEN_SCHEMA_VERSION,
+  STARVATION_FRAME_MULTIPLE,
   STALL_FRAME_MS,
   classifyPhase,
   frameStats,
@@ -13,11 +16,49 @@ import {
   observedFrameIntervalMs,
   percentile,
   segmentStrokes,
+  starvationEpisodes,
   summarizeRun,
 } from '../perf/real-screen-stats.mjs';
-import { probeConfigScript } from '../perf/ipad-frames.mjs';
+import { probeConfigScript, validateFreeDrawOptions } from '../perf/ipad-frames.mjs';
+import {
+  appiumCapabilities,
+  blockServiceWorkerRegistrationForMeasurement,
+  dismissInstallBannerForMeasurement,
+  inputFidelity,
+  isWebContext,
+  nativeCanvasBounds,
+  summarizeLiveSurfaceTopology,
+  trustedGestureActions,
+} from '../perf/ipad-xcuitest.mjs';
+import {
+  ACTION_FIRST_FRAME_GATE_MS,
+  ACTION_FRAME_MAX_GATE_MS,
+  ACTION_FRAME_P95_GATE_MS,
+  MIN_GATED_SAMPLES,
+  WARMUP_REPEATS,
+  actionFailures,
+  actionRows,
+  summarizeActionGroup,
+  summarizeActions,
+} from '../perf/action-stats.mjs';
+import {
+  PAINT_MAX_GATE_MS,
+  PAINT_P95_GATE_MS,
+  PAINT_P99_GATE_MS,
+  LOST_FRAME_TIME_SHARE_GATE,
+  drawingGateRows,
+  scoreDrawingPhase,
+  scoreDrawingRun,
+} from '../perf/drawing-gates.mjs';
+import { summarizeUndoActions } from '../perf/undo-action-stats.mjs';
 
 const PROBE = readFileSync(join(ROOT, 'scripts', 'perf', 'real-screen-probe.js'), 'utf8');
+const ACTION_RUNNER = readFileSync(join(ROOT, 'scripts', 'perf', 'ipad-actions.mjs'), 'utf8');
+const STORAGE_KEYS_SOURCE = readFileSync(join(ROOT, 'web', 'src', 'lib', 'storageKeys.ts'), 'utf8');
+const SCREENSHOT_MODULE = readFileSync(
+  join(ROOT, 'web', 'src', 'lib', 'drawing', 'screenshot.ts'),
+  'utf8'
+);
 const component = (name) =>
   readFileSync(join(ROOT, 'web', 'src', 'lib', 'components', name), 'utf8');
 
@@ -25,7 +66,23 @@ const DOWN = 0;
 const MOVE = 1;
 const UP = 2;
 
-const move = (stamp, { at = stamp + 6, id = 1, buttons = 1, coalesced = 0, onCanvas = 1 } = {}) => [
+const move = (
+  stamp,
+  {
+    at = stamp + 6,
+    id = 1,
+    buttons = 1,
+    coalesced = 0,
+    onCanvas = 1,
+    kind = 0,
+    trusted = 1,
+    pressure = 0.5,
+    width = 30,
+    height = 30,
+    coalescedFirst = -1,
+    coalescedLast = -1,
+  } = {}
+) => [
   stamp,
   at,
   MOVE,
@@ -33,9 +90,16 @@ const move = (stamp, { at = stamp + 6, id = 1, buttons = 1, coalesced = 0, onCan
   buttons,
   coalesced,
   onCanvas,
+  kind,
+  trusted,
+  pressure,
+  width,
+  height,
+  coalescedFirst,
+  coalescedLast,
 ];
-const down = (stamp, id = 1) => [stamp, stamp + 6, DOWN, id, 1, 0, 1];
-const up = (stamp, id = 1) => [stamp, stamp + 6, UP, id, 0, 0, 1];
+const down = (stamp, id = 1) => [stamp, stamp + 6, DOWN, id, 1, 0, 1, 0, 1, 0.5, 30, 30, -1, -1];
+const up = (stamp, id = 1) => [stamp, stamp + 6, UP, id, 0, 0, 1, 0, 1, 0, 30, 30, -1, -1];
 
 // A 60 Hz capture, since that is what Safari actually gives web content on the
 // ProMotion iPad this exists to measure.
@@ -50,6 +114,205 @@ describe('percentile', () => {
   it('takes the nearest rank without interpolating', () => {
     expect(percentile([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0.5)).toBe(5);
     expect(percentile([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0.95)).toBe(10);
+  });
+});
+
+describe('undo action response', () => {
+  it('measures engine work and the first frame after each action', () => {
+    const summary = summarizeUndoActions(
+      [
+        { startedAt: 10, engineMs: 4 },
+        { startedAt: 40, engineMs: 7 },
+      ],
+      [
+        [16, 16, 0],
+        [33, 17, 0],
+        [49, 16, 0],
+      ]
+    );
+
+    expect(summary.engine).toMatchObject({ p50: 4, p95: 7, max: 7 });
+    expect(summary.nextFrame).toMatchObject({ p50: 6, p95: 9, max: 9 });
+    expect(summary.passed).toBe(true);
+  });
+
+  it('fails when undo misses the frame-derived response gates', () => {
+    const summary = summarizeUndoActions([{ startedAt: 10, engineMs: 24 }], [[65, 55, 0]]);
+
+    expect(summary.passed).toBe(false);
+  });
+
+  it('uses the action-local next frame when the global probe was suspended', () => {
+    const summary = summarizeUndoActions(
+      [{ startedAt: 100, engineMs: 1, nextFrameMs: 12 }],
+      [[90, 16, 0]]
+    );
+
+    expect(summary.nextFrame).toMatchObject({ p95: 12, max: 12 });
+    expect(summary.passed).toBe(true);
+  });
+});
+
+describe('discrete action response', () => {
+  const clean = (label, readyMs = 24) => ({
+    label,
+    eventType: 'click',
+    trusted: true,
+    readyMs,
+    firstFrameMs: 8,
+    frameGapsMs: [8, 9, 16, 9, 9, 8, 9, 10, 9, 8, 9, 8, 9, 10, 8, 9, 9, 8, 9, 16],
+  });
+
+  it('groups repeated actions and reports their response distributions', () => {
+    const summaries = summarizeActions([
+      clean('theme dark to light', 20),
+      clean('theme dark to light', 28),
+      clean('open brush menu', 12),
+    ]);
+
+    expect(summaries).toHaveLength(2);
+    expect(summaries[0]).toMatchObject({
+      label: 'theme dark to light',
+      count: 2,
+      ready: { p50: 20, p95: 28 },
+      passed: true,
+    });
+    expect(actionRows(summaries)[0]).toMatchObject({
+      action: 'theme dark to light',
+      runs: '2/2',
+      activation: '2/2',
+      verdict: 'PASS',
+    });
+    expect(actionFailures(summaries)).toEqual([]);
+  });
+
+  it.each([
+    ['first visible response', { firstFrameMs: ACTION_FIRST_FRAME_GATE_MS + 1 }],
+    [
+      'sustained pacing',
+      {
+        frameGapsMs: Array.from({ length: 20 }, (_, index) =>
+          index < 2 ? ACTION_FRAME_P95_GATE_MS + 1 : 9
+        ),
+      },
+    ],
+    ['single freeze', { frameGapsMs: [9, 9, ACTION_FRAME_MAX_GATE_MS + 1] }],
+  ])('fails a %s regression', (_name, change) => {
+    expect(summarizeActionGroup([{ ...clean('action'), ...change }]).passed).toBe(false);
+  });
+
+  it('keeps readiness latency informational because completion semantics differ by action', () => {
+    expect(summarizeActionGroup([clean('full-resolution image decode', 4_000)]).passed).toBe(true);
+  });
+
+  it('allows one isolated pair of 60 Hz vsync intervals', () => {
+    const frameGapsMs = Array.from({ length: 40 }, () => 1000 / 60);
+    frameGapsMs[20] = 2000 / 60;
+
+    expect(
+      summarizeActionGroup([{ ...clean('rotation'), firstFrameMs: 2000 / 60, frameGapsMs }]).passed
+    ).toBe(true);
+  });
+
+  it('scores the event-straddling frame by its post-action remainder', () => {
+    const summary = summarizeActionGroup([
+      {
+        ...clean('rotation'),
+        firstFrameMs: 29,
+        frameGapsMs: [52, 17, 17],
+        postActionFrameGapsMs: [17, 17],
+      },
+    ]);
+
+    expect(summary.passed).toBe(true);
+  });
+
+  it('fails an uncaptured or explicitly untrusted activation', () => {
+    expect(summarizeActionGroup([{ ...clean('action'), eventType: 'uncaptured' }]).passed).toBe(
+      false
+    );
+    expect(
+      summarizeActionGroup([{ ...clean('action'), activation: 'native-touch', trusted: false }])
+        .passed
+    ).toBe(false);
+    expect(
+      summarizeActionGroup([
+        { ...clean('action'), activation: 'webdriver-element-click', trusted: false },
+      ]).passed
+    ).toBe(true);
+  });
+
+  it('keeps one warmup in the artifact but requires three scored samples', () => {
+    const warmup = { ...clean('action'), repeat: 1, warmup: true, firstFrameMs: 200 };
+    const scored = Array.from({ length: MIN_GATED_SAMPLES }, (_, index) => ({
+      ...clean('action'),
+      repeat: index + WARMUP_REPEATS + 1,
+      warmup: false,
+    }));
+
+    expect(summarizeActionGroup([warmup, ...scored])).toMatchObject({
+      count: MIN_GATED_SAMPLES,
+      totalCount: MIN_GATED_SAMPLES + WARMUP_REPEATS,
+      passed: true,
+    });
+    expect(summarizeActionGroup([warmup, ...scored.slice(1)]).passed).toBe(false);
+  });
+
+  it('fails an expected action label that produced no samples', () => {
+    expect(summarizeActions([], ['missing action'])).toEqual([
+      expect.objectContaining({ label: 'missing action', count: 0, passed: false }),
+    ]);
+  });
+});
+
+describe('drawing acceptance gates', () => {
+  const phase = (changes = {}) => ({
+    key: 'blank',
+    paintLatencyMs: {
+      p95: PAINT_P95_GATE_MS,
+      p99: PAINT_P99_GATE_MS,
+      max: PAINT_MAX_GATE_MS,
+    },
+    starvation: {
+      inContact: {
+        lostFrameTimeShare: LOST_FRAME_TIME_SHARE_GATE,
+      },
+    },
+    ...changes,
+  });
+
+  it('accepts the documented paint and starvation boundaries', () => {
+    const score = scoreDrawingRun([phase()]);
+
+    expect(score.passed).toBe(true);
+    expect(drawingGateRows(score)[0]).toMatchObject({
+      phase: 'blank',
+      verdict: 'PASS',
+    });
+  });
+
+  it.each([
+    ['paint P95', { paintLatencyMs: { p95: 21, p99: 30, max: 40 } }],
+    ['paint P99', { paintLatencyMs: { p95: 18, p99: 34, max: 40 } }],
+    ['paint max', { paintLatencyMs: { p95: 18, p99: 30, max: 51 } }],
+    [
+      'render starvation',
+      { starvation: { inContact: { lostFrameTimeShare: LOST_FRAME_TIME_SHARE_GATE + 0.0001 } } },
+    ],
+  ])('fails a %s regression', (_name, change) => {
+    expect(scoreDrawingPhase(phase(change)).passed).toBe(false);
+  });
+
+  it('requires every captured phase to pass', () => {
+    expect(
+      scoreDrawingRun([
+        phase(),
+        phase({
+          key: 'second',
+          paintLatencyMs: { p95: 18, p99: 30, max: 51 },
+        }),
+      ]).passed
+    ).toBe(false);
   });
 });
 
@@ -82,6 +345,16 @@ describe('frameStats', () => {
     expect(frameStats([16.7, 116.7], 16.7).lostMs).toBeCloseTo(100, 0);
   });
 
+  it('does not let an end-to-end regression raise its own frame budget', () => {
+    const stats = frameStats(
+      Array.from({ length: 400 }, () => 60),
+      60
+    );
+
+    expect(stats.lostMs).toBeGreaterThan(17_000);
+    expect(stats.lostFrameTimeShare).toBeGreaterThan(0.7);
+  });
+
   it('reports a perfectly paced capture as entirely on time', () => {
     const stats = frameStats(
       Array.from({ length: 100 }, () => 16.7),
@@ -91,6 +364,110 @@ describe('frameStats', () => {
     expect(stats.lateShare).toBe(0);
     expect(stats.stallShare).toBe(0);
     expect(stats.lostMs).toBe(0);
+  });
+});
+
+describe('starvationEpisodes', () => {
+  const intervalMs = 16.7;
+  const framesWithGap = (gapMs, { beforeContact = 1, afterContact = 1 } = {}) => {
+    const frames = beat(20, { interval: intervalMs, contact: beforeContact });
+    const start = frames.at(-1)[0];
+    frames.push([start + gapMs, gapMs, afterContact]);
+    return { frames, start, end: start + gapMs };
+  };
+  const trustedMoves = (start, end) => {
+    const events = [];
+    for (let stamp = start + 2; stamp + 6 < end; stamp += 8.3) events.push(move(stamp));
+    return events;
+  };
+
+  it('detects the real 1422 ms low-engine-work signature', () => {
+    const { frames, start, end } = framesWithGap(1422);
+    const events = [down(start - 20), ...trustedMoves(start, end), up(end - 20)];
+    const measures = [
+      [start + 10, 5, 0],
+      [start + 30, 2, 1],
+    ];
+    const [episode] = starvationEpisodes({
+      frames,
+      events,
+      measures,
+      measureNames: ['engine.draw', 'engine.commit'],
+      intervalMs,
+    });
+
+    expect(episode.gapMs).toBe(1422);
+    expect(episode.trustedMoves).toBeGreaterThan(100);
+    expect(episode.engineMs).toBe(7);
+    expect(episode.engineShare).toBeLessThan(0.1);
+    expect(episode.population).toBe('inContact');
+    expect(episode.nearestLift).toBeDefined();
+    expect(episode.nearestCommit).toBeDefined();
+  });
+
+  it('does not classify a clean drawing frame', () => {
+    const gapMs = QUEUE_DELAY_LAG_MS * STARVATION_FRAME_MULTIPLE;
+    const { frames, start, end } = framesWithGap(gapMs);
+
+    expect(
+      starvationEpisodes({
+        frames,
+        events: trustedMoves(start, end),
+        measures: [],
+        intervalMs,
+      })
+    ).toEqual([]);
+  });
+
+  it('retains a contact-held freeze even when no trusted moves arrive', () => {
+    const { frames } = framesWithGap(1422);
+    const [episode] = starvationEpisodes({ frames, events: [], measures: [], intervalMs });
+
+    expect(episode.trustedMoves).toBe(0);
+    expect(episode.starvationMs).toBeCloseTo(1422 - intervalMs, 1);
+  });
+
+  it('counts trusted pen input as contact without admitting mouse input', () => {
+    const { frames, start } = framesWithGap(400);
+    const penMove = move(start + 20, { kind: 1 });
+    const mouseMove = move(start + 40, { kind: 2 });
+    const [episode] = starvationEpisodes({
+      frames,
+      events: [penMove, mouseMove],
+      measures: [],
+      intervalMs,
+    });
+
+    expect(episode.trustedMoves).toBe(1);
+    expect(episode.trustedPointerKinds).toEqual(['pen']);
+  });
+
+  it('retains and labels a starvation episode between strokes', () => {
+    const { frames, start, end } = framesWithGap(400, { afterContact: 0 });
+    const [episode] = starvationEpisodes({
+      frames,
+      events: [...trustedMoves(start, end), up(start + 80)],
+      measures: [[start + 60, 2, 0]],
+      measureNames: ['engine.commit'],
+      intervalMs,
+    });
+
+    expect(episode.population).toBe('betweenStrokes');
+    expect(episode.nearestLift).toBeDefined();
+  });
+
+  it('subtracts marked engine work without discarding the unexplained remainder', () => {
+    const { frames, start, end } = framesWithGap(400);
+    const [episode] = starvationEpisodes({
+      frames,
+      events: trustedMoves(start, end),
+      measures: [[start, 200, 0]],
+      measureNames: ['engine.draw'],
+      intervalMs,
+    });
+
+    expect(episode.engineShare).toBe(0.5);
+    expect(episode.starvationMs).toBeCloseTo(400 - intervalMs - 200, 1);
   });
 });
 
@@ -209,6 +586,55 @@ describe('summarizePhase via summarizeRun', () => {
     expect(phase.pacing.p50).toBeCloseTo(16.7, 1);
     expect(phase.input.moves).toBe(50);
     expect(phase.strokes.count).toBe(1);
+  });
+
+  it('leads with cumulative lost time and partitions the whole window exactly', () => {
+    const frames = [
+      [1, -1, 1],
+      [17.7, 16.7, 1],
+      [77.7, 60, 1],
+      [94.4, 16.7, 0],
+      [154.4, 60, 0],
+    ];
+    const [phase] = summarizeRun({
+      phases: [{ key: 'page', suppress: [], startedAt: 1, endedAt: 154.4, contactMs: 76.7 }],
+      frames,
+      events: [],
+      measures: [],
+    }).phases;
+
+    expect(phase.starvation.all.episodes).toBe(0);
+    expect(phase.starvation.inContact.lostFrameTimeMs).toBeGreaterThan(40);
+    expect(phase.starvation.betweenStrokes.lostFrameTimeMs).toBeGreaterThan(40);
+    expect(phase.starvation.all.lostFrameTimeMs).toBeCloseTo(
+      phase.starvation.inContact.lostFrameTimeMs + phase.starvation.betweenStrokes.lostFrameTimeMs,
+      1
+    );
+  });
+
+  it('reports the trusted touch-input signature and contact geometry', () => {
+    const [phase] = summarizeRun(capture()).phases;
+
+    expect(phase.input.kinds).toBe('touch');
+    expect(phase.input.trust).toEqual({ trusted: 50, untrusted: 0, unknown: 0, share: 1 });
+    expect(phase.input.pressure.p50).toBe(0.5);
+    expect(phase.input.contactWidth.p50).toBe(30);
+    expect(phase.input.contactHeight.p50).toBe(30);
+  });
+
+  it('retains coalesced-event timestamp span', () => {
+    const report = capture();
+    report.events[1] = move(1010, {
+      coalesced: 3,
+      coalescedFirst: 1002,
+      coalescedLast: 1010,
+    });
+
+    expect(summarizeRun(report).phases[0].input.coalescedSpanMs).toMatchObject({
+      p50: 8,
+      p95: 8,
+      max: 8,
+    });
   });
 
   // A phase's clock runs while the finger is down, so it always ends mid-stroke;
@@ -331,11 +757,181 @@ describe('probeConfigScript', () => {
   });
 
   it('passes the requested phases, contact budget and drive shape', () => {
-    const script = probeConfigScript({ phases: 'blank,page', contactMs: 20000, drive: 'mixed' });
+    const script = probeConfigScript({
+      phases: 'blank,page',
+      contactMs: 20000,
+      drive: 'mixed',
+      brush: 'magic',
+    });
 
     expect(script).toContain('window.__probePhases = "blank,page";');
     expect(script).toContain('window.__probeContactMs = 20000;');
     expect(script).toContain('window.__probeDrive = "mixed";');
+    expect(script).toContain('window.__probeBrush = "magic";');
+  });
+
+  it('rejects an unknown brush before a runner starts its browser', () => {
+    expect(() => probeConfigScript({ brush: 'marker' })).toThrow(
+      '--brush must be one of pen, crayon, magic, eraser'
+    );
+  });
+
+  it('requires a valid free-draw duration and the START-button HUD', () => {
+    expect(() => validateFreeDrawOptions(undefined, { bare: true })).toThrow(
+      '--free-draw requires a duration'
+    );
+    expect(() => validateFreeDrawOptions('abc')).toThrow('--free-draw must be a positive number');
+    expect(() => validateFreeDrawOptions('60', { hud: false })).toThrow(
+      '--free-draw needs the on-device HUD'
+    );
+    expect(validateFreeDrawOptions('60', { hud: true })).toBe(60);
+  });
+});
+
+describe('trusted XCUITest input', () => {
+  const webGeometry = {
+    canvas: { x: 84, y: 0, width: 1282, height: 934 },
+    viewport: { width: 1366, height: 934 },
+  };
+  const webViewBounds = { x: 0, y: 0, width: 1366, height: 1024 };
+  const nativeWindow = { x: 0, y: 0, width: 1366, height: 1024 };
+
+  it('pins PWA side effects before measurement', async () => {
+    const scripts = [];
+    const execute = async (script) => {
+      scripts.push(script);
+      return script.includes("return 'blocked'") ? 'blocked' : true;
+    };
+
+    await dismissInstallBannerForMeasurement(execute);
+    await expect(blockServiceWorkerRegistrationForMeasurement(execute)).resolves.toBe('blocked');
+
+    const installKey = /installDismissed:\s*'([^']+)'/.exec(STORAGE_KEYS_SOURCE)?.[1];
+    expect(installKey).toBeDefined();
+    expect(scripts[0]).toContain(JSON.stringify(installKey));
+    expect(scripts[1]).toContain("Object.defineProperty(navigator.serviceWorker, 'register'");
+  });
+
+  it('maps CSS canvas coordinates below Safari chrome', () => {
+    expect(nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow })).toEqual({
+      x: 84,
+      y: 90,
+      width: 1282,
+      height: 934,
+    });
+  });
+
+  it('maps native WebView coordinates without adding browser chrome', () => {
+    expect(
+      nativeCanvasBounds({
+        webGeometry,
+        webViewBounds,
+        nativeWindow,
+        includeBrowserChrome: false,
+      })
+    ).toEqual({
+      x: 84,
+      y: 0,
+      width: 1282,
+      height: 934,
+    });
+  });
+
+  it('recognizes iOS, Android WebView, and Android Chrome contexts', () => {
+    expect(isWebContext('WEBVIEW_42')).toBe(true);
+    expect(isWebContext('WEBVIEW_art.splotch.app')).toBe(true);
+    expect(isWebContext('CHROMIUM')).toBe(true);
+    expect(isWebContext('NATIVE_APP')).toBe(false);
+  });
+
+  it('builds two long and eight short native strokes inside the canvas', () => {
+    const bounds = nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow });
+    const actions = trustedGestureActions(bounds);
+    const moves = actions.filter((action) => action.type === 'pointerMove');
+
+    expect(actions.filter((action) => action.type === 'pointerDown')).toHaveLength(10);
+    expect(actions.filter((action) => action.type === 'pointerUp')).toHaveLength(10);
+    expect(moves.reduce((total, action) => total + action.duration, 0)).toBe(5920);
+    expect(
+      moves.every(
+        (action) =>
+          action.x >= bounds.x &&
+          action.x <= bounds.x + bounds.width &&
+          action.y >= bounds.y &&
+          action.y <= bounds.y + bounds.height
+      )
+    ).toBe(true);
+  });
+
+  it('can repeat the native gesture sequence in one drawing session', () => {
+    const bounds = nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow });
+    const once = trustedGestureActions(bounds);
+    const repeated = trustedGestureActions(bounds, 3);
+
+    expect(repeated).toHaveLength(once.length * 3);
+    expect(repeated.slice(0, once.length)).toEqual(once);
+    expect(repeated.slice(once.length, once.length * 2)).toEqual(once);
+  });
+
+  it('can pause between repeated native gesture sequences', () => {
+    const bounds = nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow });
+    const repeated = trustedGestureActions(bounds, 3, 2_000);
+
+    expect(
+      repeated.filter((action) => action.type === 'pause' && action.duration === 2_000)
+    ).toHaveLength(2);
+  });
+
+  it('only permits Apple-account provisioning when explicitly requested', () => {
+    const base = {
+      deviceId: 'device',
+      xcodeConfigFile: '/tmp/local.xcconfig',
+      wdaBundleId: 'art.splotch.WebDriverAgentRunner',
+    };
+
+    expect(appiumCapabilities(base)).not.toHaveProperty(
+      'appium:allowProvisioningDeviceRegistration'
+    );
+    expect(appiumCapabilities({ ...base, allowProvisioning: true })).toHaveProperty(
+      'appium:allowProvisioningDeviceRegistration',
+      true
+    );
+  });
+
+  it('accepts the calibrated trusted-touch signature and rejects untrusted input', () => {
+    const input = {
+      kinds: 'touch',
+      movesPerSecond: 121,
+      moveGapP95Ms: 9,
+      coalescedPerMove: 0,
+      trust: { share: 1 },
+      pressure: { p50: 0 },
+      contactWidth: { p50: 73.76 },
+      contactHeight: { p50: 73.76 },
+    };
+
+    expect(inputFidelity(input).passed).toBe(true);
+    expect(inputFidelity({ ...input, trust: { share: 0 } }).passed).toBe(false);
+  });
+
+  it('records the maximum live-surface area and groups boundary-size variants', () => {
+    expect(
+      summarizeLiveSurfaceTopology([
+        { width: 683, height: 458 },
+        { width: 683, height: 457 },
+        { width: 683, height: 458 },
+        { width: 683, height: 457 },
+      ])
+    ).toEqual({
+      count: 4,
+      sizes: [
+        { width: 683, height: 458, pixels: 312_814, count: 2 },
+        { width: 683, height: 457, pixels: 312_131, count: 2 },
+      ],
+      totalBackingPixels: 1_249_890,
+      maxBackingPixels: 312_814,
+      maxBackingMegapixels: 0.313,
+    });
   });
 });
 
@@ -386,12 +982,65 @@ describe('probe selectors still match the app', () => {
   it('still learns paper state from the wrapper’s hidden attribute', () => {
     expect(component('DrawingCanvas.svelte')).toContain('hidden={!overlayUrl()}');
   });
+
+  it('shares the native screenshot persistence boundary with the action runner', () => {
+    expect(ACTION_RUNNER).toContain('window.__screenshotSaveSink');
+    expect(SCREENSHOT_MODULE).toContain('window.__screenshotSaveSink');
+    expect(ACTION_RUNNER).not.toContain('Capacitor.nativePromise');
+  });
 });
 
 describe('constants the metrics rest on', () => {
-  // A hitch that is counted has to be able to register as a stall; the other way
-  // round, every credible hitch would be silently below the stall floor.
-  it('keeps the credible-hitch ceiling above the stall floor', () => {
-    expect(MAX_CREDIBLE_HITCH_MS).toBeGreaterThan(STALL_FRAME_MS);
+  it('flags a notable lift well above the stall floor', () => {
+    expect(NOTABLE_LIFT_MS).toBeGreaterThan(STALL_FRAME_MS);
+  });
+
+  it('keeps the probe and analyzer on the same raw schema version', () => {
+    const probeSchema = Number(/schema: (\d+)/.exec(PROBE)?.[1]);
+
+    expect(probeSchema).toBe(REAL_SCREEN_SCHEMA_VERSION);
+  });
+});
+
+describe('lift frames and the between-stroke window', () => {
+  // A stroke ending at 200 ms, then the very next frame arrives 400 ms later —
+  // the shape of a real finger-lift stall. Hand-built so the big frame is the one
+  // that actually follows the lift.
+  const frames = [
+    [100, -1, 1],
+    [116.7, 16.7, 1],
+    [133.4, 16.7, 1],
+    [150.1, 16.7, 1],
+    [550.1, 400, 0],
+    [566.8, 16.7, 0],
+    [583.5, 16.7, 0],
+  ];
+  const events = [down(100), move(116.7), move(133.4), up(200)];
+  const report = {
+    meta: { measureNames: [] },
+    phases: [{ key: 'p', suppress: [], startedAt: 100, endedAt: 900, contactMs: 90 }],
+    frames,
+    events,
+    measures: [],
+  };
+
+  // The cap this replaces discarded any lift frame over 250 ms as "the page went
+  // idle", which threw away the largest stalls in the capture that first
+  // reproduced the reported lag.
+  it('keeps a lift frame that a credibility cap would have discarded', () => {
+    const [phase] = summarizeRun(report).phases;
+
+    expect(phase.strokes.liftMs.max).toBe(400);
+    expect(phase.strokes.notableLifts).toBe(1);
+  });
+
+  // Reporting only in-contact frames hid 3142 ms of lost time between strokes in a
+  // real capture against 1763 ms during them.
+  it('reports the between-stroke and whole-window populations too', () => {
+    const [phase] = summarizeRun(report).phases;
+
+    expect(phase.betweenStrokes.max).toBe(400);
+    expect(phase.wholeWindow.max).toBe(400);
+    expect(phase.pacing.max).toBeLessThan(400);
   });
 });

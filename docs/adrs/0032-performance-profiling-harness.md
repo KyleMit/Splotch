@@ -5,8 +5,11 @@ but the mark set below is replay-era — `engine.foldBaseline` (and ADR-0035's `
 deleted with the replay system; a commit now splits into `engine.snapshot` + `engine.fold`, and
 `engine.undo` pairs an explicit end mark. Further amended by ADR-0079 (2026-07): a **fourth capture
 path** drives a physical iOS device over the WebKit Inspector Protocol, so "device-accurate iOS
-profiling stays a documented manual step" below now holds only for Timeline recording. See the
-amendments at the end. **Date:** 2026-06
+profiling stays a documented manual step" below now holds only for Timeline recording. Further
+amended by ADR-0090 (2026-07): calibrated physical-iPad drawing and discrete-action measurements are
+absolute regression gates, while shared-runner browser profiles remain on-demand diagnostics.
+Further amended by ADR-0092 (2026-07): Android Chrome discrete-action profiles use direct CDP rather
+than Appium. See the amendments at the end. **Date:** 2026-06
 
 ## Context
 

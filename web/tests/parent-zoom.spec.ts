@@ -69,14 +69,22 @@ async function gestureOnPane(
     }, opts);
 }
 
+async function pinchUntilZoomed(page: Page, factor = 2): Promise<boolean> {
+  let movePrevented = false;
+  await expect(async () => {
+    ({ movePrevented } = await gestureOnPane(page, { fingers: 2, factor }));
+    expect(await paneZoom(page)).toBeGreaterThan(1);
+  }).toPass();
+  return movePrevented;
+}
+
 test('a two-finger pinch enlarges the pane (and intercepts the gesture)', async ({ page }) => {
   await page.goto('/');
   await openParentCenter(page);
 
   expect(await paneZoom(page)).toBe(1);
 
-  const { movePrevented } = await gestureOnPane(page, { fingers: 2, factor: 2 });
-  expect(await paneZoom(page)).toBeGreaterThan(1);
+  const movePrevented = await pinchUntilZoomed(page);
   // A real pinch is taken over from native scrolling.
   expect(movePrevented).toBe(true);
 });
@@ -90,7 +98,7 @@ test('a pinch swallows the trailing click, so it never toggles the control benea
   // A two-finger gesture leaves the action primed to eat the primary finger's
   // click (which would otherwise open a section or flip a toggle under the
   // finger). Exactly one click is swallowed; the next is a real tap again.
-  await gestureOnPane(page, { fingers: 2, factor: 2 });
+  await pinchUntilZoomed(page);
   const { first, second } = await page
     .locator('.pc-pane, .pc-scroll')
     .first()
@@ -123,8 +131,7 @@ test('a one-finger drag actually scrolls the pane (native scrolling survives)', 
   // `touch-action: none` on the pane or an ancestor would block this and fail
   // here, where the `movePrevented` check alone would sail past it.
   await page.locator('.pc-nav').getByRole('button', { name: 'Setup Guide' }).click();
-  await gestureOnPane(page, { fingers: 2, factor: 3 });
-  expect(await paneZoom(page)).toBeGreaterThan(1);
+  await pinchUntilZoomed(page, 3);
 
   const pane = page.locator('.pc-pane, .pc-scroll').first();
   const box = await pane.boundingBox();
@@ -165,8 +172,7 @@ test('navigating to another section resets the zoom', async ({ page }) => {
   await page.goto('/');
   await openParentCenter(page);
 
-  await gestureOnPane(page, { fingers: 2, factor: 2 });
-  expect(await paneZoom(page)).toBeGreaterThan(1);
+  await pinchUntilZoomed(page);
 
   // Switching sections (resetKey: view) returns the pane to normal size, so a
   // parent never lands on a new section still enlarged from the previous one.
@@ -203,8 +209,7 @@ test('closing the overlay resets the zoom for the next open', async ({ page }) =
   await page.goto('/');
   await openParentCenter(page);
 
-  await gestureOnPane(page, { fingers: 2, factor: 2 });
-  expect(await paneZoom(page)).toBeGreaterThan(1);
+  await pinchUntilZoomed(page);
 
   await page.getByRole('button', { name: 'Close' }).click();
   await expect(page.locator('#parentHelpModal')).toBeHidden();

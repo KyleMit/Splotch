@@ -1,36 +1,43 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+
   // Generated at build time from releases/*.md (see scripts/generate-releases.mjs).
   import releases from '$lib/releases.json';
+  import CurrentReleaseNotes, { RELEASE_NOTE_SECTION_COUNT } from './CurrentReleaseNotes.svelte';
 
-  // The most recent release powers the top card; the rest stack below it so the
-  // section reads as a short changelog (New / Improved / Fixed per release).
-  // Cards lead with the release date — version numbers are dev-facing and live
-  // in GitHub releases, behind the "See all releases" link.
+  // The current release stays in-app; the complete history lives behind the
+  // GitHub link so opening this low-frequency section never parses older HTML.
   const RELEASES_URL = 'https://github.com/KyleMit/Splotch/releases';
-  const recent = releases.slice(0, 5);
+  const INITIAL_RELEASE_SECTION_COUNT = 1;
+  const currentRelease = releases[0];
+  let visibleReleaseSections = $state(INITIAL_RELEASE_SECTION_COUNT);
 
-  // Dates in releases.json are plain YYYY-MM-DD; parse the parts directly so
-  // formatting never shifts a day across timezones.
-  function formatReleaseDate(isoDate: string): string {
-    const [year, month, day] = isoDate.split('-').map(Number);
-    return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+  onMount(() => {
+    let frame = 0;
+    const revealNext = () => {
+      visibleReleaseSections += 1;
+      if (visibleReleaseSections < RELEASE_NOTE_SECTION_COUNT) {
+        frame = requestAnimationFrame(revealNext);
+      }
+    };
+    frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(revealNext);
     });
-  }
+    return () => cancelAnimationFrame(frame);
+  });
 </script>
 
 <section class="setting-group">
-  {#each recent as release (release.version)}
+  {#if currentRelease}
     <div class="whats-new">
       <h3 class="whats-new-heading">
-        <span class="whats-new-date">{formatReleaseDate(release.date)}</span>
+        <span class="whats-new-date">{currentRelease.dateLabel}</span>
       </h3>
-      <!-- eslint-disable-next-line svelte/no-at-html-tags bodyHtml is our own first-party Markdown rendered to HTML at build time -->
-      <div class="whats-new-body">{@html release.bodyHtml}</div>
+      <div class="whats-new-body">
+        <CurrentReleaseNotes visibleSections={visibleReleaseSections} />
+      </div>
     </div>
-  {/each}
+  {/if}
 
   <p class="all-releases">
     <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer">See all releases →</a>

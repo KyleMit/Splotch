@@ -2,19 +2,34 @@ import { beforeEach, expect, it, vi } from 'vitest';
 
 import { installDevHarnessSeam } from './devHarnessSeam';
 
-const ctrl = vi.hoisted(() => ({ harnessEnabled: true, mode: 'pen', snapshots: 3 }));
+const ctrl = vi.hoisted(() => ({
+  harnessEnabled: true,
+  perfMarks: false,
+  mode: 'pen',
+  snapshots: 3,
+}));
 
-vi.mock('$lib/devHarness', () => ({
-  devHarnessEnabled: () => ctrl.harnessEnabled,
+vi.mock('$app/environment', () => ({
+  get dev() {
+    return ctrl.harnessEnabled;
+  },
 }));
 
 vi.mock('$lib/drawing/engine', () => ({
   committedBrushMode: () => ctrl.mode,
   getUndoDebug: () => ({ snapshots: ctrl.snapshots }),
+  getLiveSurfaceTopology: () => [{ width: 683, height: 458 }],
+}));
+
+vi.mock('$lib/drawing/perf', () => ({
+  get PERF_MARKS() {
+    return ctrl.perfMarks;
+  },
 }));
 
 beforeEach(() => {
   ctrl.harnessEnabled = true;
+  ctrl.perfMarks = false;
   ctrl.mode = 'pen';
   ctrl.snapshots = 3;
   delete window.__committedBrushMode;
@@ -36,6 +51,7 @@ it('publishes the engine mode while the dev-harness gate is open', () => {
 it('publishes the undo-history debug reader while the gate is open', () => {
   installDevHarnessSeam();
   expect(window.__drawingDebug?.getUndoDebug()).toEqual({ snapshots: 3 });
+  expect(window.__drawingDebug?.getLiveSurfaceTopology()).toEqual([{ width: 683, height: 458 }]);
 
   ctrl.snapshots = 7;
   expect(window.__drawingDebug?.getUndoDebug()).toEqual({ snapshots: 7 });
@@ -46,6 +62,14 @@ it('installs nothing when the gate is closed, so the deploy has no seam', () => 
   installDevHarnessSeam();
   expect(window.__committedBrushMode).toBeUndefined();
   expect(window.__drawingDebug).toBeUndefined();
+});
+
+it('publishes the read-only profiling seams in an instrumented physical build', () => {
+  ctrl.harnessEnabled = false;
+  ctrl.perfMarks = true;
+  installDevHarnessSeam();
+  expect(window.__committedBrushMode?.()).toBe('pen');
+  expect(window.__drawingDebug?.getUndoDebug()).toEqual({ snapshots: 3 });
 });
 
 it('removes every seam on teardown', () => {

@@ -341,93 +341,22 @@ body {
   }
 }
 
-/* Polaroid screenshot animation. The overlay/frame/img elements are created
-   imperatively in src/lib/drawing/polaroidAnimation.ts and appended to <body>, so
-   these styles must be global. */
-.polaroid-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-screenshot-flash);
-  pointer-events: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.screenshot-capture-feedback [data-icon='camera'] {
+  animation: screenshot-capture var(--duration-slow) var(--ease-pop-strong);
 }
 
-.polaroid-flash {
-  position: absolute;
-  inset: 0;
-  background: white;
-  opacity: 0;
-  animation: polaroid-flash 0.35s ease-out forwards;
+.screenshot-suppressed-feedback [data-icon='camera'] {
+  animation: screenshot-suppressed var(--duration-base) var(--ease-glide);
 }
 
-@keyframes polaroid-flash {
-  0% {
-    opacity: 0;
-  }
-  15% {
-    opacity: 0.85;
-  }
-  100% {
-    opacity: 0;
+@keyframes screenshot-capture {
+  50% {
+    transform: scale(1.2) rotate(-8deg);
   }
 }
 
-.polaroid-frame {
-  /* --from-x/y: offset from viewport center to the camera button.
-     The photo flies in from there, settles in the middle, and shrinks
-     back into the same point. */
-  --from-x: 0px;
-  --from-y: 0px;
-
-  background: #fdfcf7;
-  padding: 16px 16px 64px 16px;
-  border-radius: 3px;
-  box-shadow:
-    0 14px 40px rgba(0, 0, 0, 0.35),
-    0 4px 12px rgba(0, 0, 0, 0.2),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.04);
-  transform: translate(var(--from-x), var(--from-y)) scale(0.1) rotate(-18deg);
-  opacity: 0;
-  animation: polaroid-show 1.9s var(--ease-glide) forwards;
-  transform-origin: center center;
-}
-
-.polaroid-image {
-  display: block;
-  width: clamp(260px, 54vw, 480px);
-  max-width: 80vw;
-  max-height: 70vh;
-  aspect-ratio: var(--polaroid-aspect, 4 / 3);
-  object-fit: contain;
-  background: #fcfbf8;
-  border-radius: 1px;
-}
-
-@keyframes polaroid-show {
-  0% {
-    transform: translate(var(--from-x), var(--from-y)) scale(0.1) rotate(-18deg);
-    opacity: 0;
-  }
-  6% {
-    transform: translate(var(--from-x), var(--from-y)) scale(0.15) rotate(-15deg);
-    opacity: 0.6;
-  }
-  30% {
-    transform: translate(0, 0) scale(1.06) rotate(-6deg);
-    opacity: 1;
-  }
-  38% {
-    transform: translate(0, 0) scale(1) rotate(-4deg);
-    opacity: 1;
-  }
-  68% {
-    transform: translate(0, 0) scale(1) rotate(-4deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--from-x), var(--from-y)) scale(0.1) rotate(-18deg);
-    opacity: 0;
+@keyframes screenshot-suppressed {
+  50% {
+    transform: scale(0.82);
   }
 }
