@@ -27,6 +27,7 @@ const DEFAULT_MANIFEST = join(
 );
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
 const BRUSH_LABELS = { pen: 'Pen', crayon: 'Crayon', magic: 'Magic', eraser: 'Eraser' };
+const ACTION_CONTROL_LABELS = new Set(['idle frame control']);
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
@@ -232,9 +233,21 @@ function heatClass(ratio) {
   return 'hot';
 }
 
+function comparableActionResults(actions) {
+  return actions.results.filter((result) => !ACTION_CONTROL_LABELS.has(result.label));
+}
+
+function comparableActionLabels(targets) {
+  return [
+    ...new Set(
+      targets.flatMap((target) => comparableActionResults(target.actions).map(({ label }) => label))
+    ),
+  ];
+}
+
 function actionHeatmap(matrix) {
   const targets = matrix.targets.filter((target) => target.actions);
-  const labels = targets[0].actions.results.map((result) => result.label);
+  const labels = comparableActionLabels(targets);
   const columns = labels
     .map(
       (label, index) =>
@@ -243,14 +256,24 @@ function actionHeatmap(matrix) {
     .join('');
   const rows = targets
     .map((target) => {
-      const cells = target.actions.results
-        .map((result, index) => {
+      const resultsByLabel = new Map(
+        comparableActionResults(target.actions).map((result) => [result.label, result])
+      );
+      const cells = labels
+        .map((label, index) => {
+          const result = resultsByLabel.get(label);
+          if (!result) {
+            const tooltip = `${index + 1}. ${label} · not measured`;
+            return `<span class="heat-cell missing" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
+          }
           const ratio = actionRatio(result, matrix.gates.actions);
           const tooltip = `${index + 1}. ${result.label} · first P95 ${fmt(result.firstFrame.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${result.passed ? 'PASS' : 'FAIL'}`;
           return `<span class="heat-cell ${heatClass(ratio)}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
         })
         .join('');
-      return `<div class="heat-row"><div class="heat-label"><span>${esc(target.label)}</span><b>${target.actions.passedActionCount}/${target.actions.actionCount}</b></div><div class="heat-cells">${cells}</div></div>`;
+      const comparableResults = comparableActionResults(target.actions);
+      const passingCount = comparableResults.filter((result) => result.passed).length;
+      return `<div class="heat-row"><div class="heat-label"><span>${esc(target.label)}</span><b>${passingCount}/${comparableResults.length}</b></div><div class="heat-cells">${cells}</div></div>`;
     })
     .join('');
   const legend = labels
@@ -265,16 +288,19 @@ function actionHeatmap(matrix) {
 
 function rankedActionFailures(matrix) {
   const captured = matrix.targets.filter((target) => target.actions);
-  const labels = captured[0].actions.results.map((result) => result.label);
+  const labels = comparableActionLabels(captured);
   const ranked = labels
-    .map((label, index) => {
-      const entries = captured.map((target) => ({
-        target,
-        result: target.actions.results[index],
-      }));
+    .map((label) => {
+      const entries = captured.flatMap((target) => {
+        const result = comparableActionResults(target.actions).find(
+          (candidate) => candidate.label === label
+        );
+        return result ? [{ target, result }] : [];
+      });
       return {
         label,
         failed: entries.filter((entry) => !entry.result.passed).length,
+        measured: entries.length,
         worstRatio: Math.max(
           ...entries.map((entry) => actionRatio(entry.result, matrix.gates.actions))
         ),
@@ -286,7 +312,7 @@ function rankedActionFailures(matrix) {
   return ranked
     .map(
       (entry, index) =>
-        `<li><span class="rank">${index + 1}</span><span><b>${esc(entry.label)}</b><small>${entry.failed} of ${captured.length} targets failed · worst ${entry.worstRatio.toFixed(1)}× gate</small></span></li>`
+        `<li><span class="rank">${index + 1}</span><span><b>${esc(entry.label)}</b><small>${entry.failed} of ${entry.measured} targets failed · worst ${entry.worstRatio.toFixed(1)}× gate</small></span></li>`
     )
     .join('');
 }
@@ -308,7 +334,11 @@ function targetCards(matrix) {
     .map((target) => {
       const body =
         target.status === 'captured'
-          ? `<div class="target-scores"><span><b>${target.actions?.passedActionCount ?? '—'}</b><small>actions passing</small></span><span><b>${target.actions?.actionCount ?? '—'}</b><small>measured</small></span></div>`
+          ? (() => {
+              const actionResults = target.actions ? comparableActionResults(target.actions) : [];
+              const passingCount = actionResults.filter((result) => result.passed).length;
+              return `<div class="target-scores"><span><b>${target.actions ? passingCount : '—'}</b><small>actions passing</small></span><span><b>${target.actions ? actionResults.length : '—'}</b><small>measured</small></span></div>`;
+            })()
           : `<p class="target-reason">${esc(target.reason)}</p>`;
       return `<article class="target-card ${target.status}">
         <div><span class="target-number">${target.number}</span>${statusChip(target)}</div>
@@ -324,7 +354,10 @@ const EXTRA_CSS = `
 
 function renderReport(matrix) {
   const capturedCount = matrix.targets.filter((target) => target.status === 'captured').length;
-  const stats = `<span class="chip"><b>${capturedCount}/9</b> targets captured</span><span class="chip"><b>46</b> actions per target</span><span class="chip"><b>4</b> drawing tools</span>`;
+  const actionCount = comparableActionLabels(
+    matrix.targets.filter((target) => target.actions)
+  ).length;
+  const stats = `<span class="chip"><b>${capturedCount}/9</b> targets captured</span><span class="chip"><b>${actionCount}</b> actions per target</span><span class="chip"><b>4</b> drawing tools</span>`;
   const header = masthead({
     title: 'Deployment-target performance matrix',
     tagline:
@@ -349,7 +382,7 @@ function renderReport(matrix) {
     ${drawingPlot(matrix, 'max', matrix.gates.drawing.paintMaxMs, 'Paint maximum')}
   </div>
 
-  <div class="section-head"><h2>46-action failure fingerprint</h2><span class="desc">Color is the worst ratio across first P95, post P95, and post max</span></div>
+  <div class="section-head"><h2>${actionCount}-action failure fingerprint</h2><span class="desc">Color is the worst ratio across first P95, post P95, and post max</span></div>
   <div class="heat-legend"><span><i class="heat-cell cool"></i>≤ 0.75× gate</span><span><i class="heat-cell pass"></i>0.75–1×</span><span><i class="heat-cell warn"></i>1–1.5×</span><span><i class="heat-cell hot"></i>&gt; 1.5×</span></div>
   ${actionHeatmap(matrix)}
 
@@ -359,7 +392,7 @@ function renderReport(matrix) {
   </div>
 
   <div class="section-head"><h2>How to read this snapshot</h2></div>
-  <div class="method"><p>Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs. The committed JSON also preserves every renderer phase from every run; the macOS eraser therefore retains its isolated 58 ms <code>page-no-nudge</code> maximum even though all three blank-paper samples passed.</p><p>The action grid exposes platform-shaped failures: a vertical stripe means an interaction is difficult across targets, while a dense row points to a noisy deployment environment. Unavailable Android-device rows remain part of the dataset and will be filled when hardware returns.</p></div>
+  <div class="method"><p>Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs. The committed JSON also preserves every renderer phase from every run; the macOS eraser therefore retains its isolated 58 ms <code>page-no-nudge</code> maximum even though all three blank-paper samples passed.</p><p>The action grid exposes platform-shaped failures: a vertical stripe means an interaction is difficult across targets, while a dense row points to a noisy deployment environment. Profiling controls such as the idle-frame sample remain in the normalized data but are omitted from this user-action comparison.</p></div>
 </div></main>
 ${siteFooter({ home: '../../index.html' })}`;
   return page({

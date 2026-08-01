@@ -106,10 +106,17 @@
       "platform": "Android",
       "deviceKind": "physical",
       "runtime": "web",
-      "environment": "Device not attached over USB or discoverable through ADB mDNS",
-      "status": "unavailable",
-      "fidelity": "unavailable",
-      "reason": "Deferred until the physical Android device is available"
+      "environment": "Samsung SM-G990U1 · Android 16 · Chrome 150",
+      "status": "captured",
+      "fidelity": "physical-web-advisory",
+      "drawing": {
+        "pen": ["perf-profiles/2026-08-01T00-40-17-508Z-ipad-xcuitest-matrix-android-device-web-pen-undo/real-screen.json"],
+        "crayon": ["perf-profiles/2026-08-01T00-41-47-082Z-ipad-xcuitest-matrix-android-device-web-crayon/real-screen.json"],
+        "magic": ["perf-profiles/2026-08-01T00-43-14-530Z-ipad-xcuitest-matrix-android-device-web-magic/real-screen.json"],
+        "eraser": ["perf-profiles/2026-08-01T00-44-44-718Z-ipad-xcuitest-matrix-android-device-web-eraser/real-screen.json"]
+      },
+      "undoSource": "perf-profiles/2026-08-01T00-40-17-508Z-ipad-xcuitest-matrix-android-device-web-pen-undo/real-screen.json",
+      "actionsSource": "perf-profiles/2026-08-01T00-45-06-725Z-android-web-actions-matrix-android-device-web/actions.json"
     },
     {
       "id": "android-device-native",
@@ -118,10 +125,17 @@
       "platform": "Android",
       "deviceKind": "physical",
       "runtime": "native",
-      "environment": "Device not attached over USB or discoverable through ADB mDNS",
-      "status": "unavailable",
-      "fidelity": "unavailable",
-      "reason": "Deferred until the physical Android device is available"
+      "environment": "Samsung SM-G990U1 · Android 16 · Capacitor WebView 150",
+      "status": "captured",
+      "fidelity": "physical-native-advisory",
+      "drawing": {
+        "pen": ["perf-profiles/2026-08-01T00-53-18-022Z-ipad-xcuitest-matrix-android-device-native-pen-undo/real-screen.json"],
+        "crayon": ["perf-profiles/2026-08-01T00-54-46-212Z-ipad-xcuitest-matrix-android-device-native-crayon/real-screen.json"],
+        "magic": ["perf-profiles/2026-08-01T00-56-12-103Z-ipad-xcuitest-matrix-android-device-native-magic/real-screen.json"],
+        "eraser": ["perf-profiles/2026-08-01T00-57-38-448Z-ipad-xcuitest-matrix-android-device-native-eraser/real-screen.json"]
+      },
+      "undoSource": "perf-profiles/2026-08-01T00-53-18-022Z-ipad-xcuitest-matrix-android-device-native-pen-undo/real-screen.json",
+      "actionsSource": "perf-profiles/2026-08-01T01-08-46-611Z-ipad-actions-matrix-android-device-native/actions.json"
     },
     {
       "id": "ipad-device-web",

@@ -6,7 +6,7 @@ simulators, and Capacitor WebViews; no product performance fix was included in t
 
 The [interactive matrix](./index.html) is the quickest way to compare gate margin and action-failure
 patterns. [`data.json`](./data.json) is the committed normalized dataset behind it; it retains every
-drawing phase/run and all 46 grouped action results without copying raw event timelines or device
+drawing phase/run and all grouped action results without copying raw event timelines or device
 identifiers.
 
 Regenerate both files after updating `sources.json` and the local raw captures with:
@@ -16,9 +16,9 @@ node scripts/perf/deployment-matrix-report.mjs \
   scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 ```
 
-Seven of the nine requested targets were captured. The physical Android device was neither attached
-over USB nor discoverable through ADB wireless debugging, so both physical-Android rows are
-explicitly unavailable rather than inferred from emulator data.
+All nine requested targets were captured. The physical Android rows use a Samsung SM-G990U1 on
+Android 16 with Chrome/WebView 150; like the other automated-touch rows, their timing results are
+advisory until the Android input-fidelity gate is calibrated against hand input.
 
 ## Acceptance gates
 
@@ -44,8 +44,8 @@ therefore advisory even when their timing gates pass.
 |  3 | iPad simulator, native    | iPad Pro 13-inch (M5) · iOS 26.5 · Capacitor WebView      | Captured       | Advisory simulator input                          |
 |  4 | Android emulator, web     | Pixel 7 Pro API 33 · Android 13 · Chrome 149              | Captured       | Advisory emulator input                           |
 |  5 | Android emulator, native  | Pixel 7 Pro API 33 · Android 13 · Capacitor WebView 149   | Captured       | Advisory emulator input                           |
-|  6 | Android on device, web    | Expected device was absent from ADB and mDNS              | Unavailable    | —                                                 |
-|  7 | Android on device, native | Expected device was absent from ADB and mDNS              | Unavailable    | —                                                 |
+|  6 | Android on device, web    | Samsung SM-G990U1 · Android 16 · Chrome 150               | Captured       | Advisory automated input                          |
+|  7 | Android on device, native | Samsung SM-G990U1 · Android 16 · Capacitor WebView 150    | Captured       | Advisory automated input                          |
 |  8 | iPad on device, web       | iPad13,8 · iPadOS 26.5 · MobileSafari                     | Captured       | Passed                                            |
 |  9 | macOS, web                | MacBook Pro M5 · 32 GB · macOS 26.5.2 · Playwright WebKit | Captured       | Synthetic local input                             |
 
@@ -56,21 +56,25 @@ drawing-second. Device and simulator rows are one mixed-stroke capture per brush
 median P95/P99 and worst max across three full nine-phase runs; the comparable blank-paper phase is
 shown here. **FAIL** means an absolute drawing gate failed.
 
-| Target                     |                     Pen |                        Crayon |                   Magic |                  Eraser |
-| -------------------------- | ----------------------: | ----------------------------: | ----------------------: | ----------------------: |
-| 1. iPad device native      |       13 / 14 / 17 · S0 | **FAIL 14 / 35 / 69 · S8.64** |       14 / 19 / 43 · S0 |       13 / 14 / 21 · S0 |
-| 2. iPad simulator web      |        8 / 15 / 17 · S0 |              7 / 14 / 19 · S0 |       15 / 16 / 17 · S0 |       13 / 16 / 19 · S0 |
-| 3. iPad simulator native   |          5 / 7 / 9 · S0 |             13 / 22 / 30 · S0 |       16 / 18 / 20 · S0 |       12 / 16 / 21 · S0 |
-| 4. Android emulator web    | 16.4 / 16.5 / 18.7 · S0 |       14.8 / 16.1 / 16.1 · S0 | 16.4 / 16.4 / 16.4 · S0 |   15.4 / 15.4 / 32 · S0 |
-| 5. Android emulator native |   15.1 / 16 / 16.1 · S0 |       15.6 / 15.7 / 15.7 · S0 | 15.8 / 15.8 / 16.1 · S0 | 15.7 / 16.4 / 16.4 · S0 |
-| 6. Android device web      |                       — |                             — |                       — |                       — |
-| 7. Android device native   |                       — |                             — |                       — |                       — |
-| 8. iPad device web         |       16 / 17 / 38 · S0 |             16 / 27 / 40 · S0 |       16 / 17 / 35 · S0 |       15 / 20 / 24 · S0 |
-| 9. macOS web               |       17 / 18 / 18 · S0 |             18 / 18 / 19 · S0 |       17 / 18 / 18 · S0 |       17 / 17 / 17 · S0 |
+| Target                     |                     Pen |                         Crayon |                   Magic |                  Eraser |
+| -------------------------- | ----------------------: | -----------------------------: | ----------------------: | ----------------------: |
+| 1. iPad device native      |       13 / 14 / 17 · S0 |  **FAIL 14 / 35 / 69 · S8.64** |       14 / 19 / 43 · S0 |       13 / 14 / 21 · S0 |
+| 2. iPad simulator web      |        8 / 15 / 17 · S0 |               7 / 14 / 19 · S0 |       15 / 16 / 17 · S0 |       13 / 16 / 19 · S0 |
+| 3. iPad simulator native   |          5 / 7 / 9 · S0 |              13 / 22 / 30 · S0 |       16 / 18 / 20 · S0 |       12 / 16 / 21 · S0 |
+| 4. Android emulator web    | 16.4 / 16.5 / 18.7 · S0 |        14.8 / 16.1 / 16.1 · S0 | 16.4 / 16.4 / 16.4 · S0 |   15.4 / 15.4 / 32 · S0 |
+| 5. Android emulator native |   15.1 / 16 / 16.1 · S0 |        15.6 / 15.7 / 15.7 · S0 | 15.8 / 15.8 / 16.1 · S0 | 15.7 / 16.4 / 16.4 · S0 |
+| 6. Android device web      | 15.6 / 16.4 / 23.1 · S0 |        15.5 / 16.4 / 24.2 · S0 | 15.5 / 16.4 / 16.7 · S0 | 15.5 / 16.3 / 16.6 · S0 |
+| 7. Android device native   |    7.9 / 8.2 / 8.3 · S0 | **FAIL 7.9 / 8.2 / 64.8 · S0** |   7.9 / 8.2 / 20.7 · S0 |    7.8 / 8.2 / 8.4 · S0 |
+| 8. iPad device web         |       16 / 17 / 38 · S0 |              16 / 27 / 40 · S0 |       16 / 17 / 35 · S0 |       15 / 20 / 24 · S0 |
+| 9. macOS web               |       17 / 18 / 18 · S0 |              18 / 18 / 19 · S0 |       17 / 18 / 18 · S0 |       17 / 17 / 17 · S0 |
 
 The physical native iPad's crayon failure came from one 73 ms in-contact frame gap: paint P95
 remained 14 ms, but P99/max reached 35/69 ms. Its starvation score remained inside the 10 ms/s
 budget. The run is preserved as a failure rather than repeated until green.
+
+The physical Android web drawing runs passed every brush gate. Native pen, Magic, and eraser also
+passed, while native crayon preserved one 64.8 ms maximum frame as a failure despite 7.9/8.2 ms
+P95/P99 and zero starvation.
 
 The macOS eraser's blank-paper path passed in all three runs. Across the full 27 renderer-phase
 samples, one `page-no-nudge` sample reached 58 ms paint max and would fail the 50 ms hard maximum;
@@ -90,15 +94,17 @@ next-frame max` in milliseconds.
 | 3. iPad simulator native   |       1 / 14 / 14 |      10 | Pass, advisory input                                                                     |
 | 4. Android emulator web    | 0.2 / 14.1 / 14.1 |      10 | Pass, advisory input                                                                     |
 | 5. Android emulator native |   0.3 / 3.6 / 3.6 |      10 | Pass, advisory input                                                                     |
-| 6. Android device web      |                 — |       — | Unavailable                                                                              |
-| 7. Android device native   |                 — |       — | Unavailable                                                                              |
+| 6. Android device web      | 1.2 / 11.8 / 11.8 |      10 | Pass, advisory input                                                                     |
+| 7. Android device native   |   0.7 / 3.7 / 3.7 |      10 | Pass, advisory input                                                                     |
 | 8. iPad device web         |       1 / 11 / 11 |       5 | Pass                                                                                     |
 | 9. macOS web               |                 — |       — | No engine/next-frame undo probe in the desktop runner; the discrete undo action is below |
 
 ## Discrete-action overview
 
-All measured targets ran the current 46-action plan three times. Worst columns are the maximum
-grouped value across the 46 actions, not a percentile across actions.
+All measured targets ran the current 46-action plan three times. The physical Android captures also
+recorded the five-second idle-frame control added to the runner; it remains in `data.json` but is
+excluded from this user-action comparison. Worst columns are the maximum grouped value across the
+actions, not a percentile across actions.
 
 | Target                     | Passing actions | Worst first P95 | Worst post P95 | Worst post max | Failed actions                                        |
 | -------------------------- | --------------: | --------------: | -------------: | -------------: | ----------------------------------------------------- |
@@ -107,22 +113,23 @@ grouped value across the 46 actions, not a percentile across actions.
 | 3. iPad simulator native   |         39 / 46 |              38 |             19 |            108 | 7 failures; see full table                            |
 | 4. Android emulator web    |         12 / 46 |            28.8 |           33.3 |          283.3 | 34 failures; see full table                           |
 | 5. Android emulator native |         42 / 46 |            53.1 |           16.8 |            100 | All four rotations                                    |
-| 6. Android device web      |               — |               — |              — |              — | Unavailable                                           |
-| 7. Android device native   |               — |               — |              — |              — | Unavailable                                           |
+| 6. Android device web      |         34 / 46 |            86.2 |             25 |           75.1 | 12 failures; see interactive matrix                   |
+| 7. Android device native   |         42 / 46 |              32 |            8.4 |           66.8 | All four rotations                                    |
 | 8. iPad device web         |         46 / 46 |              29 |             17 |             32 | None                                                  |
 | 9. macOS web               |         45 / 46 |              34 |             19 |             27 | Cold What's New first frame                           |
 
-The Android emulator web action result is much noisier than its drawing paint result. Chrome showed
-long global frame gaps while Appium injected only about 45–48 moves/second; this row measures that
-deployment/emulator combination, but it cannot distinguish Chrome scheduling from host/emulator
-contention without a physical Android run. On the same emulator, the native WebView held every
-non-rotation action to about 16.8 ms post-action max.
+The Android emulator web action result is much noisier than its drawing paint result. The physical
+Chrome run improved from 12/46 to 34/46 passing rows, separating substantial emulator/host
+contention from failures that also reproduce on hardware. Native Android held every non-rotation
+action inside the gates on both emulator and device; all four physical-device rotation actions
+failed, with post-action maxima up to 66.8 ms.
 
 ## Full 46-action results
 
-Each cell is `first-frame P95 / post-action P95 / post-action max` in milliseconds. Physical Android
-columns are omitted because they contain no measurements. A bold **FAIL** means one of the 32/20/32
-ms action gates failed.
+Each cell is `first-frame P95 / post-action P95 / post-action max` in milliseconds. The physical
+Android columns are available in the interactive matrix and normalized dataset; they remain omitted
+from this already-wide Markdown table. A bold **FAIL** means one of the 32/20/32 ms action gates
+failed.
 
 | Action                                         |       iPad native |      iPad sim web |   iPad sim native |              Android web |          Android native | iPad web |           Mac web |
 | ---------------------------------------------- | ----------------: | ----------------: | ----------------: | -----------------------: | ----------------------: | -------: | ----------------: |
@@ -207,6 +214,8 @@ events, screenshots, device identifiers, and redundant probe internals. Primary 
 * `2026-07-31T12-47-22-749Z-ipad-actions-matrix-ipad-simulator-native/actions.json`
 * `2026-07-31T13-02-57-213Z-ipad-actions-matrix-android-emulator-web/actions.json`
 * `2026-07-31T13-22-56-341Z-ipad-actions-matrix-android-emulator-native/actions.json`
+* `2026-08-01T00-45-06-725Z-android-web-actions-matrix-android-device-web/actions.json`
+* `2026-08-01T01-08-46-611Z-ipad-actions-matrix-android-device-native/actions.json`
 * `2026-07-31T09-43-50-043Z-ipad-actions-expanded-46-action-regression/actions.json`
 * `2026-07-31T10-59-26-734Z-desktop-actions-webkit-current-tiled-mac-confirmation-3x/actions.json`
 
