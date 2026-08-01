@@ -11,10 +11,23 @@ const RELEASE_SEAM_SOURCE_FILES = [
   'web/src/lib/drawing/undoHistory.ts',
   'web/src/lib/drawing/emptyScan.ts',
 ];
-const RELEASE_ONLY_DEBUG_PROPERTIES = ['baseRasterBytes', 'liveRasters', 'pendingCommands'];
+const RELEASE_ONLY_DEBUG_PROPERTIES = [
+  'baseRasterBytes',
+  'inputOps',
+  'liveSurfaceElements',
+  'liveRasters',
+  'maxLiveBackingBytes',
+  'maxSurfaceVisitsPerOp',
+  'pendingCommands',
+  'rasterizedOps',
+  'realizedCrayonBackings',
+  'realizedNormalBackings',
+  'totalLiveBackingBytes',
+];
 
 export const DEV_GATED_ENGINE_EXPORTS = [
   'setScreenAngleOverride',
+  'getDrawingWorkDebug',
   'getUndoDebug',
   'setCrayonParams',
 ];

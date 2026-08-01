@@ -14,7 +14,7 @@ import { PAPER_COLORS } from '../theme';
 import { resolvedTheme } from '../state/appearance.svelte';
 import { drawExportOverlay, paintExportPaper, type ExportContext } from './exportCompositor';
 import { encodeCanvasPng, encodeTiledCanvasPng } from './pngEncoder';
-import type { TiledCanvasSnapshot } from './tiledRenderer';
+import type { TiledCanvasSnapshot } from './tiledSurfaces';
 
 type ExportCanvas = HTMLCanvasElement | OffscreenCanvas;
 export interface TiledExportSnapshot {
