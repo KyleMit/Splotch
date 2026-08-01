@@ -5,7 +5,7 @@ production drawing route; amended by
 [ADR-0086](0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md) for production undo and
 [ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md) for idle tile composition, and amended
 by [ADR-0089](0089-css-presented-tiled-paper-on-rotation.md) for rotation presentation and lazy
-crayon surfaces. **Date:** 2026-07
+crayon surfaces; surface-budget evidence amended 2026-08-01. **Date:** 2026-07
 
 ## Context
 
@@ -109,6 +109,51 @@ requirements. CSS promotion, an opaque canvas, `desynchronized`, `willReadFreque
 `touch-action`, hidden presentation, suppressed callbacks, and independently removing the crayon
 backing, undo snapshots, or commit paper also failed. The decisive variable was the maximum size of
 one actively mutated surface, not the total painted pixel count or JavaScript cost.
+
+### Surface-budget amendment (2026-08-01)
+
+The original tile-count prototypes above were single samples, changed both count and grid shape, and
+produced a non-monotonic sequence: two and four tiles passed, eight failed P99, and sixteen passed.
+They established that tiling removed the catastrophic full-surface stall, but not the per-surface
+threshold or the reliability of a smaller grid.
+
+A follow-up campaign on the same physical iPad model, OS, route, orientation, pen gesture, and
+full-resolution 4.692 Mpx paper repeated each candidate three times. The
+[normalized report and raw-source manifest](../../scrapbook/performance/2026-08-01-live-surface-budget/index.md)
+record the twelve captures. The profiler now reads configured dimensions from the renderer rather
+than inspecting idle DOM canvases, whose released backing stores report the browser's misleading
+300×150 default.
+
+| Grid | Maximum surface | Paint P95/P99/max range | In-contact lost-frame share | Starvation episodes |
+| ---- | --------------: | ----------------------: | --------------------------: | ------------------: |
+| 2×1  |       2.346 Mpx |       24–25/36–41/50–59 |                  8.31–9.89% |                 0–2 |
+| 3×1  |       1.565 Mpx |       16–17/29–32/33–47 |                  6.87–8.26% |                   0 |
+| 2×2  |       1.173 Mpx |          16/25–31/37–39 |                  5.42–6.44% |                   0 |
+| 4×4  |       0.294 Mpx |       15–16/16–23/25–39 |                  3.08–3.34% |                   0 |
+
+All twelve runs passed the trusted-touch fidelity gate. For this device and workload, a ≥56 ms
+surface-starvation episode is therefore bounded above 1.565 Mpx and at or below 2.346 Mpx: the
+larger surface produced episodes in two of three runs and failed the paint-tail gates in all three,
+while every smaller-surface run had zero episodes. This does not establish a universal WebKit
+constant, a brush-independent threshold, or a fully passing interaction run; even the 4×4 cohort
+missed the separate 1% cumulative lost-frame-share gate.
+
+The evidence reaffirms 4×4. Its 0.294 Mpx maximum surface has 5.3× area headroom below the largest
+repeatably starvation-free surface and roughly halves lost-frame share versus the 3×1 and 2×2
+candidates. A barely passing smaller grid would not reduce aggregate live pixels or ADR-0086's
+paper-relative undo budget. It would only reduce surface count while surrendering measured flush
+headroom.
+
+Over-tiling also has a cost. Each cell owns three live canvases, target visits grow with tile count,
+and every boundary expands seam, clipping, transform, export, and replay risk. Trial 24 already
+showed the non-monotonic limit: 32 tiles plus crayon preview buffers regressed to 14.40 ms of
+starvation per drawing-second and a 64 ms maximum, worse than the retained 16-tile checkpointed
+design. Surface size is a budget with headroom, not a quantity to minimize without bound.
+
+The retained fixed grid is not a scale-independent cap. A larger future backing store can cross the
+measured interval, while a smaller phone still pays the 48-canvas topology. Re-run the repeated
+campaign on any larger supported surface, or after a renderer, WebKit, brush-buffer, or device-floor
+change, before changing the grid or treating 0.294 Mpx as a universal target.
 
 ## Decision
 

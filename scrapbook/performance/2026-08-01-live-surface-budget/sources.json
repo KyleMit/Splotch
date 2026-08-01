@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "sourceRoot": "../../../",
+  "sources": [
+    "perf-profiles/2026-08-01-issue-683-live-surface-budget/count2-r4.json",
+    "perf-profiles/2026-08-01-issue-683-live-surface-budget/count2-r5.json",
+    "perf-profiles/2026-08-01-issue-683-live-surface-budget/count2-r6.json",
+    "perf-profiles/2026-08-01-issue-683-live-surface-budget/count3-r1.json",
+    "perf-profiles/2026-08-01-issue-683-live-surface-budget/count3-r2.json",
+    "perf-profiles/2026-08-01-issue-683-live-surface-budget/count3-r3.json",
+    "perf-profiles/2026-08-01-issue-683-live-surface-budget/count4-r1.json",
+    "perf-profiles/2026-08-01-issue-683-live-surface-budget/count4-r2.json",
+    "perf-profiles/2026-08-01-issue-683-live-surface-budget/count4-r3.json",
+    "perf-profiles/2026-08-01-issue-683-live-surface-budget/count16-r1.json",
+    "perf-profiles/2026-08-01-issue-683-live-surface-budget/count16-r2.json",
+    "perf-profiles/2026-08-01-issue-683-live-surface-budget/count16-r3.json"
+  ]
+}

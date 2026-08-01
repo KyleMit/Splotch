@@ -16,6 +16,7 @@ import {
   renderTiledOp,
   resizeTiledRenderer,
   tiledHistoryDebug,
+  tiledSurfaceTopologyDebug,
   undoTiledCommand,
 } from './tiledRenderer';
 
@@ -109,6 +110,9 @@ describe('idle tiled canvas visibility', () => {
     canvas.width = 1;
     canvas.height = 1;
     resizeTiledRenderer(400, 400, 1);
+    expect(tiledSurfaceTopologyDebug()).toEqual(
+      Array.from({ length: 16 }, () => ({ width: 100, height: 100 }))
+    );
     applyTiledView(IDENTITY_PAPER_VIEW);
     const deferredCrayonTiles = [
       ...host.querySelectorAll<HTMLCanvasElement>('[data-live-crayon-bottom]'),

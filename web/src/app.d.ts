@@ -73,8 +73,11 @@ declare global {
       startIn?: string;
     }): Promise<FileSystemDirectoryHandle>;
     // Read-only profiling seam, installed by the same gated boot step as
-    // __committedBrushMode (ADRs 0083/0086) — see lib/boot/devHarnessSeam.ts.
-    __drawingDebug?: { getUndoDebug: typeof import('$lib/drawing/engine').getUndoDebug };
+    // __committedBrushMode (ADRs 0083/0085/0086) — see lib/boot/devHarnessSeam.ts.
+    __drawingDebug?: {
+      getLiveSurfaceTopology: typeof import('$lib/drawing/engine').getLiveSurfaceTopology;
+      getUndoDebug: typeof import('$lib/drawing/engine').getUndoDebug;
+    };
     // Instrumented-build persistence boundary for native screenshot profiling.
     // The release bundle drops both the branch and this property name.
     __screenshotSaveSink?: (blob: Blob, baseName: string) => void | Promise<void>;

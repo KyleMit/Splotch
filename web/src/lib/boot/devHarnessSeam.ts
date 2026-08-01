@@ -1,5 +1,5 @@
 import { dev } from '$app/environment';
-import { committedBrushMode, getUndoDebug } from '$lib/drawing/engine';
+import { committedBrushMode, getLiveSurfaceTopology, getUndoDebug } from '$lib/drawing/engine';
 import { PERF_MARKS } from '$lib/drawing/perf';
 
 // The drawing route's gated `window` seams — what the E2E harness and the
@@ -23,16 +23,16 @@ import { PERF_MARKS } from '$lib/drawing/perf';
 //     and draws immediately can commit the stroke under the previous brush, and
 //     no DOM state distinguishes the two. tests/flows-harness.ts's pickBrush()
 //     polls this, so the wait is on the engine rather than the button.
-//   __drawingDebug (ADR-0083) — how the undo history is currently stored, for
-//     `npm run perf:ipad:frames`. The reported real-screen lag scales with how
-//     much has been drawn, and every stroke pushes a canvas-backed dirty-rect
-//     patch (ADR-0069/0074), so correlating stall onset against `rasterBytes` is
-//     how that gets tested rather than argued. `/dev/engine` already exposed
-//     `getUndoDebug()`; this reaches it on the route users actually draw on.
+//   __drawingDebug (ADR-0083/0085) — how the undo history is stored and the
+//     configured live-surface dimensions, for on-device profiling. Idle hidden
+//     canvases can release their backing stores to the browser's 300×150
+//     default, so DOM inspection cannot establish the surface-flush budget.
+//     `/dev/engine` already exposed `getUndoDebug()`; this reaches the same
+//     engine state on the route users actually draw on.
 export function installDevHarnessSeam(): () => void {
   if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) return () => {};
   window.__committedBrushMode = committedBrushMode;
-  window.__drawingDebug = { getUndoDebug };
+  window.__drawingDebug = { getLiveSurfaceTopology, getUndoDebug };
   return () => {
     delete window.__committedBrushMode;
     delete window.__drawingDebug;

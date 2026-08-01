@@ -27,6 +27,7 @@ import {
   inputFidelity,
   isWebContext,
   nativeCanvasBounds,
+  summarizeLiveSurfaceTopology,
   trustedGestureActions,
 } from '../perf/ipad-xcuitest.mjs';
 import {
@@ -911,6 +912,26 @@ describe('trusted XCUITest input', () => {
 
     expect(inputFidelity(input).passed).toBe(true);
     expect(inputFidelity({ ...input, trust: { share: 0 } }).passed).toBe(false);
+  });
+
+  it('records the maximum live-surface area and groups boundary-size variants', () => {
+    expect(
+      summarizeLiveSurfaceTopology([
+        { width: 683, height: 458 },
+        { width: 683, height: 457 },
+        { width: 683, height: 458 },
+        { width: 683, height: 457 },
+      ])
+    ).toEqual({
+      count: 4,
+      sizes: [
+        { width: 683, height: 458, pixels: 312_814, count: 2 },
+        { width: 683, height: 457, pixels: 312_131, count: 2 },
+      ],
+      totalBackingPixels: 1_249_890,
+      maxBackingPixels: 312_814,
+      maxBackingMegapixels: 0.313,
+    });
   });
 });
 

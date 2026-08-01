@@ -129,6 +129,7 @@ import {
   syncTiledCrayonMix,
   tiledHistoryDebug,
   tiledRendererActive,
+  tiledSurfaceTopologyDebug,
   undoTiledCommand,
 } from './tiledRenderer';
 
@@ -1247,6 +1248,11 @@ export function getUndoDebug(): HistoryDebug {
   if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) throw new Error();
   if (tiledRendererActive()) return tiledHistoryDebug();
   return getHistoryDebug();
+}
+
+export function getLiveSurfaceTopology() {
+  if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) throw new Error();
+  return tiledSurfaceTopologyDebug();
 }
 
 // Dev A/B seam (ADR-0065 tuning): override the crayon tooth/coverage/pass knobs

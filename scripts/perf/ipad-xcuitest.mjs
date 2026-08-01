@@ -186,6 +186,29 @@ export function inputFidelity(input = {}) {
   return { passed: Object.values(checks).every(Boolean), checks };
 }
 
+export function summarizeLiveSurfaceTopology(surfaces) {
+  const sizes = new Map();
+  let totalBackingPixels = 0;
+  let maxBackingPixels = 0;
+  for (const surface of surfaces) {
+    const { width, height } = surface;
+    const pixels = width * height;
+    totalBackingPixels += pixels;
+    maxBackingPixels = Math.max(maxBackingPixels, pixels);
+    const key = `${width}x${height}`;
+    const size = sizes.get(key) ?? { width, height, pixels, count: 0 };
+    size.count++;
+    sizes.set(key, size);
+  }
+  return {
+    count: surfaces.length,
+    sizes: [...sizes.values()],
+    totalBackingPixels,
+    maxBackingPixels,
+    maxBackingMegapixels: Math.round((maxBackingPixels / 1_000_000) * 1_000) / 1_000,
+  };
+}
+
 export function createWebDriverClient(baseUrl) {
   const endpoint = new URL(baseUrl);
   const authorization =
@@ -699,6 +722,9 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     const undo = summarizeUndoActions(undoActions, report.frames);
     const input = summaries.phases[0]?.input ?? {};
     const fidelity = inputFidelity(input);
+    const liveSurfaceTopology = summarizeLiveSurfaceTopology(
+      await execute('return window.__drawingDebug.getLiveSurfaceTopology();')
+    );
     const label = sanitizeLabel(flag('label', brush));
     const output = flag('output') ?? join(profilePath('ipad-xcuitest', label), 'real-screen.json');
     mkdirSync(dirname(output), { recursive: true });
@@ -719,6 +745,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         webViewBounds,
         nativeWindow,
         canvasBounds,
+        liveSurfaceTopology,
         gestureRepeats,
         repeatPauseMs,
         undoCount,

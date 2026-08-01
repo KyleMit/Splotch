@@ -69,6 +69,10 @@ export function tiledRendererActive() {
   return liveTiles.length > 0;
 }
 
+export function tiledSurfaceTopologyDebug() {
+  return liveTiles.map(({ width, height }) => ({ width, height }));
+}
+
 export function syncTiledCrayonMix(opacity: string) {
   for (const tile of liveTiles) tile.crayonTop.style.opacity = opacity;
 }

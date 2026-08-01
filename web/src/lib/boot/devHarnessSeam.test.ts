@@ -18,6 +18,7 @@ vi.mock('$app/environment', () => ({
 vi.mock('$lib/drawing/engine', () => ({
   committedBrushMode: () => ctrl.mode,
   getUndoDebug: () => ({ snapshots: ctrl.snapshots }),
+  getLiveSurfaceTopology: () => [{ width: 683, height: 458 }],
 }));
 
 vi.mock('$lib/drawing/perf', () => ({
@@ -50,6 +51,7 @@ it('publishes the engine mode while the dev-harness gate is open', () => {
 it('publishes the undo-history debug reader while the gate is open', () => {
   installDevHarnessSeam();
   expect(window.__drawingDebug?.getUndoDebug()).toEqual({ snapshots: 3 });
+  expect(window.__drawingDebug?.getLiveSurfaceTopology()).toEqual([{ width: 683, height: 458 }]);
 
   ctrl.snapshots = 7;
   expect(window.__drawingDebug?.getUndoDebug()).toEqual({ snapshots: 7 });
