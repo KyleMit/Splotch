@@ -140,6 +140,7 @@
           {#each SECTIONS as section (section.id)}
             <button
               class="pc-nav-item"
+              data-section={section.id}
               class:active={section.id === activeSection}
               aria-current={section.id === activeSection ? 'page' : undefined}
               onclick={() => openSection(section.id)}
@@ -166,7 +167,11 @@
           <ul class="hub-list">
             {#each SECTIONS as section (section.id)}
               <li>
-                <button class="hub-row" onclick={() => openSection(section.id)}>
+                <button
+                  class="hub-row"
+                  data-section={section.id}
+                  onclick={() => openSection(section.id)}
+                >
                   <span class="hub-icon">
                     <SectionIcon icon={section.icon} class="hub-icon-svg" />
                   </span>

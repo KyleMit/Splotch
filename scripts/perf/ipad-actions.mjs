@@ -519,24 +519,31 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     const initial = await execute(
       `return document.querySelector(${JSON.stringify(selector)})?.getAttribute(${JSON.stringify(stateAttribute)}) === 'true';`
     );
-    if (initial !== baseline) {
+    const setState = async (target, hint) => {
+      const current = await execute(`return ${stateExpression(target)};`);
+      if (current) return;
       await clickSetupElement(execute, selector);
-      await waitForReady(execute, stateExpression(baseline), `${label} baseline`);
+      await waitForReady(execute, stateExpression(target), hint);
       await sleep(ANIMATED_ACTION_SETTLE_MS);
-    }
-    for (const next of [!baseline, baseline]) {
-      await record(
-        measureClick({
-          client,
-          sessionId,
-          execute,
-          label: `${next ? 'enable' : 'disable'} ${label}`,
-          selector,
-          ready: stateExpression(next),
-          settleMs: ANIMATED_ACTION_SETTLE_MS,
-          activation: 'webdriver',
-        })
-      );
+    };
+    try {
+      await setState(baseline, `${label} baseline`);
+      for (const next of [!baseline, baseline]) {
+        await record(
+          measureClick({
+            client,
+            sessionId,
+            execute,
+            label: `${next ? 'enable' : 'disable'} ${label}`,
+            selector,
+            ready: stateExpression(next),
+            settleMs: ANIMATED_ACTION_SETTLE_MS,
+            activation: 'webdriver',
+          })
+        );
+      }
+    } finally {
+      await setState(initial, `${label} original state`);
     }
   };
 
@@ -732,10 +739,10 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   const parentCenterUsesSidebar = await execute(
     `return document.querySelector('#parentHelpModal .pc-nav-item') !== null;`
   );
-  const parentSectionSelector = (index) =>
+  const parentSectionSelector = (section) =>
     parentCenterUsesSidebar
-      ? `#parentHelpModal .pc-nav-item:nth-child(${index})`
-      : `#parentHelpModal .hub-list li:nth-child(${index}) .hub-row`;
+      ? `#parentHelpModal .pc-nav-item[data-section=${JSON.stringify(section)}]`
+      : `#parentHelpModal .hub-row[data-section=${JSON.stringify(section)}]`;
   const ensureParentHub = async () => {
     if (
       parentCenterUsesSidebar ||
@@ -750,23 +757,23 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       'Parent Center hub'
     );
   };
-  const openParentSection = async (index, ready, hint) => {
+  const openParentSection = async (section, ready, hint) => {
     await ensureParentHub();
-    await clickSetupElement(execute, parentSectionSelector(index));
+    await clickSetupElement(execute, parentSectionSelector(section));
     await waitForReady(execute, ready, hint);
   };
 
   if (actions.has('parent-sections')) {
-    const sectionCount = await execute(`
-      return document.querySelectorAll(
+    const sectionIds = await execute(`
+      return [...document.querySelectorAll(
         ${JSON.stringify(
           parentCenterUsesSidebar ? '#parentHelpModal .pc-nav-item' : '#parentHelpModal .hub-row'
         )}
-      ).length;
+      )].map((element) => element.dataset.section).filter(Boolean);
     `);
-    for (let index = 2; index <= sectionCount; index++) {
+    for (const section of sectionIds.slice(1)) {
       await ensureParentHub();
-      const selector = parentSectionSelector(index);
+      const selector = parentSectionSelector(section);
       const label = await execute(
         `return document.querySelector(${JSON.stringify(
           parentCenterUsesSidebar ? selector : `${selector} .hub-title`
@@ -787,7 +794,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       );
     }
     await openParentSection(
-      1,
+      'appearance',
       `document.querySelector('#themeOption-light') !== null`,
       'Appearance section'
     );
@@ -795,7 +802,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
 
   if (actions.has('theme')) {
     await openParentSection(
-      1,
+      'appearance',
       `document.querySelector('#themeOption-light') !== null`,
       'Appearance section'
     );
@@ -833,7 +840,11 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   }
 
   if (actions.has('parent-settings')) {
-    await openParentSection(2, `document.querySelector('#soundToggle') !== null`, 'Sound section');
+    await openParentSection(
+      'sound',
+      `document.querySelector('#soundToggle') !== null`,
+      'Sound section'
+    );
     await recordToggleRoundTrip({
       label: 'drawing sounds',
       selector: '#soundToggle',
@@ -843,7 +854,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     });
 
     await openParentSection(
-      3,
+      'saving',
       `document.querySelector('#saveOnDeleteToggle') !== null`,
       'Saving section'
     );
@@ -854,7 +865,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     });
 
     await openParentSection(
-      4,
+      'controls',
       `document.querySelector('#advancedControlsToggle') !== null`,
       'Controls & Buttons section'
     );

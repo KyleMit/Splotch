@@ -35,6 +35,7 @@ import { profilePath } from './paths.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 import { spawnPerfServe } from './serve.mjs';
 import { printRun } from './frames-analyze.mjs';
+import { probeConfigScript } from './ipad-frames.mjs';
 
 const PROBE_FILE = join(ROOT, 'scripts', 'perf', 'real-screen-probe.js');
 const APP_URL_PATH = '/';
@@ -49,18 +50,10 @@ const RUN_TIMEOUT_MS = 20 * 60_000;
 const PROGRESS_POLL_MS = 1_000;
 const READY_TIMEOUT_MS = 60_000;
 const SERVER_READY_TIMEOUT_MS = 90_000;
-const BRUSH_SETTLE_MS = 500;
 
 const ENGINES = {
   webkit: { launcher: webkit, hasCdp: false },
   chromium: { launcher: chromium, hasCdp: true },
-};
-
-const BRUSH_SELECTORS = {
-  pen: '#penBrushButton',
-  crayon: '#crayonBrushButton',
-  magic: '#magicBrushButton',
-  eraser: '#eraserButton',
 };
 
 function positiveNumber(value, label) {
@@ -77,29 +70,6 @@ function resolveViewport(value) {
     width: positiveNumber(match[1], 'viewport width'),
     height: positiveNumber(match[2], 'viewport height'),
   };
-}
-
-async function selectBrush(page, brush) {
-  const selector = BRUSH_SELECTORS[brush];
-  if (!selector) fail(`--brush must be one of ${Object.keys(BRUSH_SELECTORS).join(', ')}`);
-  if (brush === 'pen') return;
-  await page.locator('button[aria-label="Expand controls"]').click();
-  await page.waitForFunction(() => {
-    const state =
-      document.querySelector('.actions-panel[data-action-panel-live]') ?? document.documentElement;
-    return state.hasAttribute('data-drawer-open');
-  });
-  await page.locator('#brushButton').click();
-  await page.waitForFunction(
-    () => document.querySelector('#brushButton')?.getAttribute('aria-expanded') === 'true'
-  );
-  await page.locator(selector).click();
-  await page.waitForFunction((expected) => {
-    const state =
-      document.querySelector('.actions-panel[data-action-panel-live]') ?? document.documentElement;
-    return state.dataset.brush === expected;
-  }, brush);
-  await sleep(BRUSH_SETTLE_MS);
 }
 
 export async function runFramesLocal(argv = process.argv.slice(2)) {
@@ -142,7 +112,6 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
   const url = externalUrl
     ? new URL(externalUrl).toString()
     : `http://localhost:${port}${APP_URL_PATH}`;
-  const server = externalUrl || has('no-serve') ? null : spawnPerfServe(port);
   const contactSeconds = Number(flag('contact-seconds', DEFAULT_CONTACT_SECONDS));
   const drive = flag('drive', 'mixed');
   const brush = flag('brush', 'pen');
@@ -153,6 +122,15 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     'device scale factor'
   );
   const headless = !has('headed');
+  const probeConfig = probeConfigScript({
+    phases: flag('phases'),
+    contactMs: contactSeconds * 1000,
+    drive,
+    driveHz: driveHz || undefined,
+    brush,
+    hud: false,
+  });
+  const server = externalUrl || has('no-serve') ? null : spawnPerfServe(port);
 
   let browser;
   try {
@@ -181,18 +159,7 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
       undefined,
       { timeout: READY_TIMEOUT_MS }
     );
-    await selectBrush(page, brush);
-
-    await page.evaluate(
-      ([phases, contactMs, driveShape, hz]) => {
-        window.__probePhases = phases;
-        window.__probeContactMs = contactMs;
-        window.__probeDrive = driveShape;
-        window.__probeDriveHz = hz;
-        window.__probeHud = false;
-      },
-      [flag('phases'), contactSeconds * 1000, drive, driveHz || undefined]
-    );
+    await page.evaluate(probeConfig);
     await page.evaluate(readFileSync(PROBE_FILE, 'utf8'));
     if (!(await page.evaluate(() => !!window.__probe))) {
       fail(

@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { ROOT } from '../lib/proc.mjs';
 import {
   ACTION_FRAME_MAX_GATE_MS,
   ACTION_SETTLE_TAIL_FRAMES,
@@ -6,6 +9,12 @@ import {
   summarizeActionGroup,
 } from '../perf/action-stats.mjs';
 import { canvasHasInk, selectedActions } from '../perf/ipad-actions.mjs';
+
+const ACTION_RUNNER = readFileSync(join(ROOT, 'scripts', 'perf', 'ipad-actions.mjs'), 'utf8');
+const PARENT_CENTER = readFileSync(
+  join(ROOT, 'web', 'src', 'lib', 'components', 'ParentCenter.svelte'),
+  'utf8'
+);
 
 const frame = (startFromActionMs, gapMs, visualEffectsActive = false) => ({
   startFromActionMs,
@@ -45,6 +54,14 @@ describe('trusted action setup', () => {
 
     expect(expression).toContain("document.querySelector('#screenshotButton')?.disabled === false");
     expect(expression).not.toContain('#undoButton');
+  });
+
+  it('keeps Parent Center navigation semantic and restores observed settings', () => {
+    expect(PARENT_CENTER.match(/data-section=\{section\.id\}/g)).toHaveLength(2);
+    expect(ACTION_RUNNER).toContain('.pc-nav-item[data-section=');
+    expect(ACTION_RUNNER).toContain('.hub-row[data-section=');
+    expect(ACTION_RUNNER).not.toContain('.pc-nav-item:nth-child');
+    expect(ACTION_RUNNER).toContain('await setState(initial, `${label} original state`)');
   });
 });
 

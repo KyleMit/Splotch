@@ -34,6 +34,7 @@ const UNDO_ACTION_SETTLE_MS = 500;
 const UNDO_ACTION_PAUSE_MS = 120;
 const UNDO_MEASURE_TIMEOUT_MS = 5_000;
 const ROTATION_SETTLE_TIMEOUT_MS = 10_000;
+const INSTALL_DISMISSED_STORAGE_KEY = 'splotch-install-dismissed';
 const BRUSH_BUTTON_BY_MODE = {
   pen: '#penBrushButton',
   crayon: '#crayonBrushButton',
@@ -274,6 +275,24 @@ export async function clearDeviceWebCache(executeAsync) {
   if (!result?.ok) throw new Error(`Could not clear the iPad web cache: ${result?.message}`);
 }
 
+export async function dismissInstallBannerForMeasurement(execute) {
+  return execute(`
+    localStorage.setItem(${JSON.stringify(INSTALL_DISMISSED_STORAGE_KEY)}, 'true');
+    return true;
+  `);
+}
+
+export async function blockServiceWorkerRegistrationForMeasurement(execute) {
+  return execute(`
+    if (!('serviceWorker' in navigator)) return 'unsupported';
+    Object.defineProperty(navigator.serviceWorker, 'register', {
+      configurable: true,
+      value: () => Promise.resolve(undefined)
+    });
+    return 'blocked';
+  `);
+}
+
 async function readTable(execute, accessor, total) {
   const rows = [];
   while (rows.length < total) {
@@ -352,14 +371,45 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   if (!Number.isSafeInteger(historySettleMs) || historySettleMs < 0) {
     fail('--history-settle-ms must be a non-negative integer');
   }
-  const server = nativeApp
-    ? null
-    : await ensurePreviewServer(requestedAppUrl, port, !has('no-serve'));
+  const brush = flag('brush', 'pen');
+  const brushSelector = BRUSH_BUTTON_BY_MODE[brush];
+  if (!brushSelector) {
+    fail(`--brush must be one of ${Object.keys(BRUSH_BUTTON_BY_MODE).join(', ')}`);
+  }
   const client = createWebDriverClient(flag('appium-url', DEFAULT_APPIUM_URL));
+  let server;
   let sessionId = borrowedSessionId;
   let ownsSession = false;
   let originalOrientation;
+  let cleanupPromise;
+  const cleanup = () => {
+    cleanupPromise ??= (async () => {
+      if (sessionId && originalOrientation) {
+        await client
+          .request('POST', `/session/${sessionId}/orientation`, {
+            orientation: originalOrientation,
+          })
+          .catch(() => {});
+      }
+      if (sessionId && ownsSession) {
+        await client.request('DELETE', `/session/${sessionId}`).catch(() => {});
+      }
+      server?.stop();
+    })();
+    return cleanupPromise;
+  };
+  let interrupting = false;
+  const onInterrupt = (exitCode) => {
+    if (interrupting) return;
+    interrupting = true;
+    void cleanup().finally(() => process.exit(exitCode));
+  };
+  const onSigint = () => onInterrupt(130);
+  const onSigterm = () => onInterrupt(143);
+  process.once('SIGINT', onSigint);
+  process.once('SIGTERM', onSigterm);
   try {
+    server = nativeApp ? null : await ensurePreviewServer(requestedAppUrl, port, !has('no-serve'));
     await client.request('GET', '/status');
     const session = sessionId
       ? await client.request('GET', `/session/${sessionId}`)
@@ -405,6 +455,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       );
     }
     await clearDeviceWebCache(executeAsync);
+    await dismissInstallBannerForMeasurement(execute);
     const appUrl = nativeApp ? await execute('return location.href;') : requestedAppUrl;
     const loadedUrl = profilingUrl(appUrl);
     if (nativeApp) {
@@ -424,6 +475,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       WEBVIEW_READY_POLL_MS
     );
     if (!ready) throw new Error(`${loadedUrl} never showed a sized #drawingCanvas`);
+    await clearDeviceWebCache(executeAsync);
+    const serviceWorkerRegistration = await blockServiceWorkerRegistrationForMeasurement(execute);
     if (undoCount > 0) {
       const debugReady = await pollUntil(
         () => execute('return !!window.__drawingDebug?.getUndoDebug;').catch(() => false),
@@ -433,11 +486,6 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       if (!debugReady) throw new Error('The production route did not expose __drawingDebug');
     }
 
-    const brush = flag('brush', 'pen');
-    const brushSelector = BRUSH_BUTTON_BY_MODE[brush];
-    if (!brushSelector) {
-      fail(`--brush must be one of ${Object.keys(BRUSH_BUTTON_BY_MODE).join(', ')}`);
-    }
     if (brush !== 'pen') {
       await execute(
         `document.querySelector('button[aria-label="Expand controls"]')?.click(); return true;`
@@ -493,7 +541,14 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         hud: false,
       })
     );
-    await execute(`${readFileSync(PROBE_FILE, 'utf8')}\nreturn !!window.__probe;`);
+    const probeInstalled = await execute(
+      `${readFileSync(PROBE_FILE, 'utf8')}\nreturn !!window.__probe;`
+    );
+    if (!probeInstalled) {
+      throw new Error(
+        'The real-screen probe did not install; verify #drawingCanvas exists and no stale probe is active.'
+      );
+    }
 
     const webGeometry = await execute(
       "const r = document.querySelector('#drawingCanvas').getBoundingClientRect(); return {canvas:{x:r.x,y:r.y,width:r.width,height:r.height},viewport:{width:innerWidth,height:innerHeight}};"
@@ -670,6 +725,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         undoPauseMs,
         historySettleMs,
         rotation,
+        pwaEffects: {
+          installBanner: 'dismissed',
+          serviceWorkerRegistration,
+        },
       },
       fidelity,
       drawing,
@@ -719,17 +778,9 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     }
     return artifact;
   } finally {
-    if (sessionId && originalOrientation) {
-      await client
-        .request('POST', `/session/${sessionId}/orientation`, {
-          orientation: originalOrientation,
-        })
-        .catch(() => {});
-    }
-    if (sessionId && ownsSession) {
-      await client.request('DELETE', `/session/${sessionId}`).catch(() => {});
-    }
-    server?.stop();
+    process.off('SIGINT', onSigint);
+    process.off('SIGTERM', onSigterm);
+    await cleanup();
   }
 }
 

@@ -218,10 +218,13 @@ The base gesture contains two long interpolated strokes and eight short strokes.
 emits native touch samples along each interpolation; splitting the same gesture into hundreds of 8
 ms WebDriver actions took 211 seconds and is deliberately not how the committed driver works.
 
-Before measurement the driver unregisters service workers, clears CacheStorage, and reloads a
-cache-busted URL; without that, MobileSafari can silently execute an older bundle from the same
-server. A `PERF_MARKS` build publishes the route's read-only brush/history seams even when the
-prerendered client cannot see the preview server's dynamic public environment.
+Before measurement the driver dismisses the install banner through its owned storage key,
+unregisters service workers and clears CacheStorage on both sides of a cache-busted reload, then
+blocks service-worker registration for the measurement page. Without those guards, the PWA can add
+install UI or silently execute an older bundle from the same server. The artifact records the pinned
+PWA effects. A `PERF_MARKS` build publishes the route's read-only brush/history seams even when the
+prerendered client cannot see the preview server's dynamic public environment; the runner fails
+immediately if that probe is absent.
 
 The artifact reports the input-fidelity verdict plus cumulative lost-frame time and long-gap
 forensics. With undo enabled it also reports engine P50/P95/P99/max, action-to-next-frame

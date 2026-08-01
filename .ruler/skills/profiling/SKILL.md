@@ -43,25 +43,27 @@ pre-hook). `perf:ipad:xcuitest` needs an existing Appium 3 server and one of `--
 `--capabilities-file=`, or `--session-id=`. It also takes `--appium-url=` / `--xcode-config=` /
 `--wda-bundle-id=` / `--allow-provisioning` / `--native-app` / `--native-webview-class=` /
 `--brush=pen|crayon|magic|eraser` / `--gesture-repeats=N` / `--repeat-pause-ms=N` / `--undo-count=N`
-/ `--undo-pause-ms=N` / `--history-settle-ms=N` / `--rotate-before-undo` / `--label=` / `--output=`
-/ `--url=` / `--report-only` / `--no-serve`. `perf:ipad:actions` shares the Appium, capability,
-session, native-app, and signing flags and also takes `--orientation=` / `--webdriver-clicks` /
-`--actions=` / `--repeats=N` / `--report-only`. Use `--native-webview-class=android.webkit.WebView`
-for Android native sessions. A native rotation sweep uses the real Parent Center toggle to unlock
-and restore Splotch's orientation preference. `perf:android:web:actions` takes `--device-id=` /
-`--cdp-port=N` / `--orientation=` / `--actions=` / `--repeats=N` / `--label=` / `--output=` /
-`--url=` / `--report-only` / `--no-serve`; skip its build pre-hook with `--ignore-scripts` when an
-instrumented preview is already running. `perf:frames:local` takes `--viewport=WIDTHxHEIGHT` /
-`--device-scale-factor=N` / `--headed` / `--url=` / `--brush=pen|crayon|magic|eraser` in addition to
-its engine, throttle, phase, and drive flags. `perf:desktop:actions` takes those viewport, DPR,
-headed, and URL flags plus `--actions=` / `--repeats=N` / `--label=` / `--output=` / `--report-only`
-/ `--no-build`. Interaction runs write `perf-profiles/<timestamp>-<target>-…/` with `trace.json`,
-`metrics.json`, `summary.json`, `report.md`, and `screenshot.png`; `perf:undo` also writes
-`undo-scenarios.json` / `undo-scenarios.md` (the per-scenario snapshot/undo-cost/memory tables).
-`perf:mount` initially writes only `trace.json` and `mount-summary.json`; running `perf:analyze` on
-that trace adds `summary.json` and `report.md`. The raw mount trace does not retain the harness
-settings metadata, so the regenerated report's Settings table can say `n/a` / `none`; use the
-command and output-directory suffix (for example, `mount-phone-4x`) for the actual capture profile.
+/ `--undo-pause-ms=N` / `--history-settle-ms=N` / `--rotate-before-undo` / `--free-draw=SECONDS` /
+`--label=` / `--output=` / `--url=` / `--report-only` / `--no-serve`. Free-draw capture requires the
+visible HUD so the operator can start and stop the timed window. `perf:ipad:actions` shares the
+Appium, capability, session, native-app, and signing flags and also takes `--orientation=` /
+`--webdriver-clicks` / `--actions=` / `--repeats=N` / `--report-only`. Use
+`--native-webview-class=android.webkit.WebView` for Android native sessions. A native rotation sweep
+uses the real Parent Center toggle to unlock and restore Splotch's orientation preference.
+`perf:android:web:actions` takes `--device-id=` / `--cdp-port=N` / `--orientation=` / `--actions=` /
+`--repeats=N` / `--label=` / `--output=` / `--url=` / `--report-only` / `--no-serve`; skip its build
+pre-hook with `--ignore-scripts` when an instrumented preview is already running.
+`perf:frames:local` takes `--viewport=WIDTHxHEIGHT` / `--device-scale-factor=N` / `--headed` /
+`--url=` / `--brush=pen|crayon|magic|eraser` in addition to its engine, throttle, phase, and drive
+flags. `perf:desktop:actions` takes those viewport, DPR, headed, and URL flags plus `--actions=` /
+`--repeats=N` / `--label=` / `--output=` / `--report-only` / `--no-build`. Interaction runs write
+`perf-profiles/<timestamp>-<target>-…/` with `trace.json`, `metrics.json`, `summary.json`,
+`report.md`, and `screenshot.png`; `perf:undo` also writes `undo-scenarios.json` /
+`undo-scenarios.md` (the per-scenario snapshot/undo-cost/memory tables). `perf:mount` initially
+writes only `trace.json` and `mount-summary.json`; running `perf:analyze` on that trace adds
+`summary.json` and `report.md`. The raw mount trace does not retain the harness settings metadata,
+so the regenerated report's Settings table can say `n/a` / `none`; use the command and
+output-directory suffix (for example, `mount-phone-4x`) for the actual capture profile.
 `perf-profiles/` is gitignored.
 
 **Undo memory caveat:** history rasters (the paper and the live snapshot tier) live in **canvas

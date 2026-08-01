@@ -19,9 +19,11 @@ import {
   starvationEpisodes,
   summarizeRun,
 } from '../perf/real-screen-stats.mjs';
-import { probeConfigScript } from '../perf/ipad-frames.mjs';
+import { probeConfigScript, validateFreeDrawOptions } from '../perf/ipad-frames.mjs';
 import {
   appiumCapabilities,
+  blockServiceWorkerRegistrationForMeasurement,
+  dismissInstallBannerForMeasurement,
   inputFidelity,
   isWebContext,
   nativeCanvasBounds,
@@ -51,6 +53,8 @@ import { summarizeUndoActions } from '../perf/undo-action-stats.mjs';
 
 const PROBE = readFileSync(join(ROOT, 'scripts', 'perf', 'real-screen-probe.js'), 'utf8');
 const ACTION_RUNNER = readFileSync(join(ROOT, 'scripts', 'perf', 'ipad-actions.mjs'), 'utf8');
+const XCUITEST_RUNNER = readFileSync(join(ROOT, 'scripts', 'perf', 'ipad-xcuitest.mjs'), 'utf8');
+const STORAGE_KEYS_SOURCE = readFileSync(join(ROOT, 'web', 'src', 'lib', 'storageKeys.ts'), 'utf8');
 const SCREENSHOT_MODULE = readFileSync(
   join(ROOT, 'web', 'src', 'lib', 'drawing', 'screenshot.ts'),
   'utf8'
@@ -738,11 +742,34 @@ describe('probeConfigScript', () => {
   });
 
   it('passes the requested phases, contact budget and drive shape', () => {
-    const script = probeConfigScript({ phases: 'blank,page', contactMs: 20000, drive: 'mixed' });
+    const script = probeConfigScript({
+      phases: 'blank,page',
+      contactMs: 20000,
+      drive: 'mixed',
+      brush: 'magic',
+    });
 
     expect(script).toContain('window.__probePhases = "blank,page";');
     expect(script).toContain('window.__probeContactMs = 20000;');
     expect(script).toContain('window.__probeDrive = "mixed";');
+    expect(script).toContain('window.__probeBrush = "magic";');
+  });
+
+  it('rejects an unknown brush before a runner starts its browser', () => {
+    expect(() => probeConfigScript({ brush: 'marker' })).toThrow(
+      '--brush must be one of pen, crayon, magic, eraser'
+    );
+  });
+
+  it('requires a valid free-draw duration and the START-button HUD', () => {
+    expect(() => validateFreeDrawOptions(undefined, { bare: true })).toThrow(
+      '--free-draw requires a duration'
+    );
+    expect(() => validateFreeDrawOptions('abc')).toThrow('--free-draw must be a positive number');
+    expect(() => validateFreeDrawOptions('60', { hud: false })).toThrow(
+      '--free-draw needs the on-device HUD'
+    );
+    expect(validateFreeDrawOptions('60', { hud: true })).toBe(60);
   });
 
   it('retains a wall-clock anchor for system-trace correlation', () => {
@@ -757,6 +784,26 @@ describe('trusted XCUITest input', () => {
   };
   const webViewBounds = { x: 0, y: 0, width: 1366, height: 1024 };
   const nativeWindow = { x: 0, y: 0, width: 1366, height: 1024 };
+
+  it('pins PWA side effects and records probe/signal guards in the runner', async () => {
+    const scripts = [];
+    const execute = async (script) => {
+      scripts.push(script);
+      return script.includes("return 'blocked'") ? 'blocked' : true;
+    };
+
+    await dismissInstallBannerForMeasurement(execute);
+    await expect(blockServiceWorkerRegistrationForMeasurement(execute)).resolves.toBe('blocked');
+
+    const installKey = /installDismissed:\s*'([^']+)'/.exec(STORAGE_KEYS_SOURCE)?.[1];
+    expect(installKey).toBeDefined();
+    expect(scripts[0]).toContain(JSON.stringify(installKey));
+    expect(scripts[1]).toContain("Object.defineProperty(navigator.serviceWorker, 'register'");
+    expect(XCUITEST_RUNNER.match(/await clearDeviceWebCache\(executeAsync\)/g)).toHaveLength(2);
+    expect(XCUITEST_RUNNER).toContain('if (!probeInstalled)');
+    expect(XCUITEST_RUNNER).toContain("process.once('SIGINT', onSigint)");
+    expect(XCUITEST_RUNNER).toContain("process.once('SIGTERM', onSigterm)");
+  });
 
   it('maps CSS canvas coordinates below Safari chrome', () => {
     expect(nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow })).toEqual({

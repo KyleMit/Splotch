@@ -4,6 +4,7 @@
 //   npm run perf:ipad:frames                       hand-drawn, full phase sweep
 //   npm run perf:ipad:frames -- --phases=blank,page
 //   npm run perf:ipad:frames -- --contact-seconds=15
+//   npm run perf:ipad:frames -- --free-draw=60
 //
 // The sibling `npm run perf:ipad` drives /dev/engine and answers "how expensive
 // is an engine operation". This answers "does the screen keep up", which is a
@@ -56,6 +57,22 @@ const DEFAULT_CONTACT_SECONDS = 25;
 // relay is the one failure that would land AFTER the drawing is done, so the
 // tables come back in slices.
 const TABLE_CHUNK_ROWS = 2_000;
+const PROBE_BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
+
+export function validateFreeDrawOptions(value, { bare = false, hud = true } = {}) {
+  if (bare) throw new Error('--free-draw requires a duration: --free-draw=SECONDS');
+  if (value === undefined) return undefined;
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    throw new Error('--free-draw must be a positive number of seconds');
+  }
+  if (!hud) {
+    throw new Error(
+      '--free-draw needs the on-device HUD: drop --no-hud, or add --hud when using --drive.'
+    );
+  }
+  return seconds;
+}
 
 // Assigns every global the probe reads, including the ones not requested: the
 // page is freshly navigated so nothing should be left over, but this is the same
@@ -72,6 +89,9 @@ export function probeConfigScript({
   brush,
   hud = true,
 } = {}) {
+  if (brush !== undefined && !PROBE_BRUSHES.includes(brush)) {
+    throw new Error(`--brush must be one of ${PROBE_BRUSHES.join(', ')}`);
+  }
   const assign = (name, value) =>
     `window.${name} = ${value === undefined ? 'undefined' : JSON.stringify(value)};`;
   return [
@@ -143,17 +163,30 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
   warnIfNoPerfMarks('npm run perf:ipad:frames');
 
   const appUrl = resolveDeviceUrl(flag('url'), port, APP_PATH);
-  const server = await ensurePreviewServer(appUrl, port, !has('no-serve'));
-  const { device, stopProxy } = await connectDevice(flag('device-id'));
   const contactSeconds = Number(flag('contact-seconds', DEFAULT_CONTACT_SECONDS));
-  // Wall-clock window behind a START tap, rather than banked finger-down time.
-  const freeDrawSeconds = flag('free-draw') && Number(flag('free-draw'));
+  const freeDrawValue = flag('free-draw');
   // `--drive` with no value is the useful default: one long stroke then a burst
   // of short ones, the two shapes the lag report names.
   const drive = has('drive') ? 'mixed' : flag('drive');
   const driveHz = flag('drive-hz') && Number(flag('drive-hz'));
   const pointerType = flag('pointer-type');
   const brush = flag('brush');
+  const hud = has('hud') || (!has('no-hud') && !drive);
+  // Wall-clock window behind a START tap, rather than banked finger-down time.
+  const freeDrawSeconds = validateFreeDrawOptions(freeDrawValue, {
+    bare: has('free-draw'),
+    hud,
+  });
+  const probeConfig = probeConfigScript({
+    phases: flag('phases'),
+    contactMs: contactSeconds * 1000,
+    freeDrawSeconds,
+    drive,
+    driveHz,
+    pointerType,
+    brush,
+    hud,
+  });
   const deviceConsole = createDeviceConsole();
   // Records carry no timestamps over the protocol, so their counts only mean
   // something for a single phase — see timeline-records.mjs.
@@ -164,6 +197,8 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         'zeroed timestamps, so they cannot be attributed to a phase.'
     );
   }
+  const server = await ensurePreviewServer(appUrl, port, !has('no-serve'));
+  const { device, stopProxy } = await connectDevice(flag('device-id'));
 
   let session;
   try {
@@ -178,24 +213,9 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
         'never showed a sized #drawingCanvas. Confirm the tab is the real app at / ' +
         '(not /dev/engine) and that the page finished hydrating.',
     });
-    await session.evaluate(
-      probeConfigScript({
-        phases: flag('phases'),
-        contactMs: contactSeconds * 1000,
-        freeDrawSeconds,
-        drive,
-        driveHz,
-        pointerType,
-        brush,
-        // The HUD repaints twice a second, and a repaint damages the very blend
-        // layer some phases exist to isolate. A driven run has nobody to read
-        // it, so it costs nothing to leave off — but `--hud` forces it back on,
-        // because "hand runs had the HUD and synthetic runs did not" is a
-        // difference between the two that has to be ruled out rather than
-        // assumed harmless.
-        hud: has('hud') || (!has('no-hud') && !drive),
-      })
-    );
+    // The HUD repaints twice a second and damages the blend layer some phases
+    // isolate. Driven runs omit it unless --hud makes that cost part of the trial.
+    await session.evaluate(probeConfig);
     await timeline?.start(session);
     await session.evaluate(readFileSync(PROBE_FILE, 'utf8'));
 

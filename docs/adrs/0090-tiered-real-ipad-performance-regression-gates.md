@@ -69,6 +69,14 @@ trusted-input fidelity gate passes, the command exits nonzero when any paint/los
 fails, or when a requested undo run fails its existing engine/next-frame budget. `--report-only` is
 the explicit diagnostic mode for finishing a broken run and retaining its artifact.
 
+Before a trusted gesture, the runner persists the Install Banner's dismissed state, unregisters
+existing service workers and caches on both sides of the cache-busted navigation, and blocks
+service-worker registration in the measured page. The artifact records both pinned PWA conditions.
+Probe installation is an immediate gate, and SIGINT/SIGTERM cleanup closes an owned WebDriver
+session and preview server before exiting. `perf:frames:local` passes brush selection through the
+probe config, so every brush uses the same closed-drawer page shape and records its brush in the
+probe report.
+
 ### Physical discrete actions share one suite and scorer
 
 `perf:ipad:actions` opens the production route and repeats these families:
@@ -118,9 +126,10 @@ the scored repeats. Selecting rotation always exercises both blank and ink paths
 clear/undo setup that makes the blank path meaningful. The runner writes raw samples and grouped
 summaries and fails the 20/33.5 ms action gates. `--report-only` lets an exploratory sweep rank
 every failure instead of stopping at the first one. `--actions=` selects a focused family for
-one-change trials. Parent-setting actions normalize and restore known baselines around every sound,
-auto-save, advanced-control, and button-visibility round trip. A failed or interrupted audit
-therefore cannot silently remove controls from the later action sequence.
+one-change trials. Parent-setting actions normalize known baselines around every sound, auto-save,
+advanced-control, and button-visibility round trip, then restore the device's observed initial
+preference in a `finally` block, including after a measurement failure. Parent Center navigation
+uses each section's stable `data-section` id rather than its position in the list.
 
 The first full-suite campaign separated genuine action-local failures from native intervals that
 began before event delivery, then fixed the genuine cases one at a time:
