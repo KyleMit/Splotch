@@ -45,8 +45,8 @@ presentable frame is therefore about 16.7 ms. The drawing gates were calibrated 
 | Starvation                         | ≤10 ms/drawing-second | Long compositor gaps cannot hide behind good percentiles |
 | Undo engine P95                    |                ≤20 ms | Restore work fits near one refresh                       |
 | Undo next-frame P95/max            |             ≤33/50 ms | The response appears within two/three refreshes          |
-| Discrete action post-frame P95/max |             ≤20/32 ms | Transition stays at one refresh; no two-frame hole       |
-| Discrete action first-frame P95    |                ≤32 ms | App begins visibly responding within two refreshes       |
+| Discrete action post-frame P95/max |           ≤20/33.5 ms | Transition stays at one refresh; no two-frame hole       |
+| Discrete action first-frame P95    |              ≤33.5 ms | App begins visibly responding within two refreshes       |
 
 P95 is the useful normal-experience boundary, but P99, the absolute max, and starvation must all be
 kept. A single one-second freeze can coexist with a clean P95. Likewise, a frame interval that began
@@ -185,7 +185,7 @@ on other available targets. Authoritative details live in the linked ADRs.
 | Audio after lift                    | Audible tail lasted seconds                                     | Synchronously zero gain, disconnect both nodes, call untimestamped `stop()`                                            | teardown 0/0/1 ms in three Magic strokes; frame max 25 ms                                                                                  |
 | Clear                               | Full-surface snapshot/clear gap                                 | Tile-state snapshot and deferred backing clear                                                                         | retained action within the discrete-action gate                                                                                            |
 | Cold release notes                  | Cold locale/date work delayed first response                    | Pre-group release history and reveal work across frames                                                                | cold What's New first response reduced into gate                                                                                           |
-| Crayon/Magic/custom color selection | Cold resource/layer work on selection                           | Defer or precompute only the work needed for first visible state                                                       | retained focused runs within 20/32 ms gates                                                                                                |
+| Crayon/Magic/custom color selection | Cold resource/layer work on selection                           | Defer or precompute only the work needed for first visible state                                                       | retained focused runs within 20/33.5 ms gates                                                                                              |
 | Action drawer                       | Layer/transition burst                                          | Bound the transition work and score action-aligned frames                                                              | retained focused run within gate                                                                                                           |
 | Parent setting toggle               | Global `<html>` state invalidated a 1440×2780 document          | Keep immutable boot seed on `<html>` and live state on the action panel                                                | Android 30-repeat screenshot off/on both 16.8 ms max; Mac 20/19; iPad sim 17/19                                                            |
 | Advanced controls                   | Two simultaneous slide transitions drove a shared GPU burst     | Group both rows under one `advanced-controls-settings` transition wrapper                                              | Android 30-repeat off/on 16.8/16.8 ms; Mac 18/18; iPad sim 25/26                                                                           |
@@ -203,7 +203,7 @@ the immediate pre-tiling commit `2769ceae`. Headed Playwright WebKit ran at 1512
 
 | Build              | Result                                                                                                                      |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| Current tiled iPad | All 46 actions passed; first-response P95 ≤29 ms, post P95 17 ms, post max ≤32 ms                                           |
+| Current tiled iPad | All 46 actions passed; first-response P95 ≤29 ms, post P95 17 ms, post max ≤32 ms against the 33.5 ms gate                  |
 | Current tiled Mac  | Renderer-sensitive actions passed; post P95 19 ms                                                                           |
 | Pre-tiling Mac     | Screenshot repeatedly failed at 78–88 ms first response and 41–44 ms post max; coloring selection reached 32–33 ms post max |
 

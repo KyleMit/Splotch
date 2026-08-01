@@ -14,8 +14,8 @@ Read the `profiling` skill completely. Read the `mobile` skill completely when a
 Capacitor target is in scope. Read [`references/platforms.md`](references/platforms.md) completely
 before starting a multi-target run or any target whose setup is not already active.
 
-Run `npm run info -- --filter=perf` before composing commands. The script descriptions own current
-flags; this skill owns sequencing and interpretation.
+Run `npm run info` and read the `perf:*` rows before composing commands. The script descriptions own
+current flags; this skill owns sequencing and interpretation.
 
 Record:
 
@@ -61,7 +61,7 @@ For a full target snapshot, capture:
 
 1. drawing for pen, crayon, Magic, and eraser;
 2. undo after pen history setup;
-3. the full discrete-action plan with three repeats;
+3. the full discrete-action plan with four repeats (one warmup plus three scored samples);
 4. a screenshot or visible-state check when rendering topology changed.
 
 Save each raw artifact path before continuing.

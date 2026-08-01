@@ -194,7 +194,7 @@ no progressive preview.
 | 14 | Retained combined architecture                             | Constrained, 8 s    | Visible 56 ms; full 3,145 ms |
 | 15 | Retained architecture, trusted physical-iPad tap           | Local Wi-Fi         | Visible 1 ms; full 20 ms     |
 
-The physical-iPad interaction had a 29 ms maximum frame gap and 14 ms P95, below the shared 32 ms
+The physical-iPad interaction had a 29 ms maximum frame gap and 14 ms P95, below the shared 33.5 ms
 interaction gate. The overlay and canvas bounds remained identical after full decode. A trusted
 Magic Brush stroke after the deferred fill loaded held at 25 ms maximum / 10 ms P95.
 

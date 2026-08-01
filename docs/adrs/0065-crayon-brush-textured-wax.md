@@ -195,13 +195,13 @@ One-variable physical-iPad trials retained the exact tile dimensions, fields, co
 | Build both pass tiles in one idle callback         |                 29–45 ms | Fail                              |
 | Build one complete pass per animation frame        |                 19–32 ms | Pass, but no threshold headroom   |
 | Also hoist invariant per-pixel threshold math      |                 17–33 ms | Fail; computation still too large |
-| Generate each pass in 64-row chunks after idle     |                 17–23 ms | Pass                              |
+| Generate each pass in 8-row chunks after idle      |                 17–23 ms | Pass                              |
 | Start those chunks on the first frame after select |                 17–21 ms | Pass; retained                    |
 
-`warmCrayonTiles` therefore works in row-granularity chunks until a two-millisecond per-frame
-deadline, then advances the two density passes across frames. A new color cancels the one global
-in-flight warm rather than adding another frame chain; leaving crayon mode, tearing down the engine,
-or changing dev-harness options cancels it too. The synchronous `colorTile` path remains as a
+`warmCrayonTiles` therefore works in eight-row chunks until a two-millisecond per-frame deadline,
+then advances the two density passes across frames. A new color cancels the one global in-flight
+warm rather than adding another frame chain; leaving crayon mode, tearing down the engine, or
+changing dev-harness options cancels it too. The synchronous `colorTile` path remains as a
 correctness fallback if a stroke reaches a color before its warm completes. This changes scheduling
 only; completed pixel buffers are byte-identical to the synchronous path.
 

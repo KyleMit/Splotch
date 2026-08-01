@@ -67,13 +67,13 @@ picker thumbnails.
 * \+ Runtime line art uses normal source-over composition with no filter or blend-mode layer.
 * \+ The generator's 4/255 bound makes the visual tradeoff executable and deterministic rather than
   relying only on manual comparison.
-* \+ The full catalog's 192 presentation overlays total 14.0 MB; native pruning removes 18.19 MB of
-  now-runtime-unused opaque sources.
+* \+ The full catalog's 192 presentation overlays total 14.0 MB; web precaching excludes the 18.19
+  MB of runtime-unused opaque sources, and native pruning removes them from static builds.
 * \+ Pen/chalk pipeline inputs, registration gates, fill punches, and picker thumbnails keep their
   established storage polarity and code paths.
 * − Any pen or chalk byte change invalidates its presentation derivative. Regenerate the affected
   category, rebuild its proof sheet, and refresh the asset manifest in the same commit.
-* − Web deployments store both representations even though a browsing session downloads only the
-  thumbnail and selected presentation overlay.
+* − Web deployments store both representations even though a browsing session precaches only alpha
+  presentation assets and downloads opaque sources only if their direct URL is requested.
 * − `.dark.overlay.webp` does not reveal whether chalk or fallback pen was its source; inspect the
   catalog's `chalkImages` or rerun the generator to answer that provenance question.

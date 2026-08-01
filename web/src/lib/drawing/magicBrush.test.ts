@@ -255,6 +255,7 @@ describe('magic sheet worker raster', () => {
   const REAL_GET_CONTEXT = HTMLCanvasElement.prototype.getContext;
   const requestedImages: WorkerImage[] = [];
   const workers: WorkerStub[] = [];
+  let workerPostError: Error | null = null;
 
   class WorkerImage {
     onload: (() => void) | null = null;
@@ -270,9 +271,11 @@ describe('magic sheet worker raster', () => {
 
   class WorkerStub {
     messageListeners: Array<(event: MessageEvent) => void> = [];
+    messageErrorListeners: Array<(event: MessageEvent) => void> = [];
     errorListeners: Array<(event: ErrorEvent) => void> = [];
     posted: Array<{ id: number; imageUrl: string }> = [];
     terminate = vi.fn();
+    postError = workerPostError;
 
     constructor() {
       workers.push(this);
@@ -280,10 +283,14 @@ describe('magic sheet worker raster', () => {
 
     addEventListener(type: string, listener: EventListener) {
       if (type === 'message') this.messageListeners.push(listener as (event: MessageEvent) => void);
+      if (type === 'messageerror') {
+        this.messageErrorListeners.push(listener as (event: MessageEvent) => void);
+      }
       if (type === 'error') this.errorListeners.push(listener as (event: ErrorEvent) => void);
     }
 
     postMessage(message: { id: number; imageUrl: string }) {
+      if (this.postError) throw this.postError;
       this.posted.push(message);
     }
 
@@ -298,6 +305,12 @@ describe('magic sheet worker raster', () => {
         listener(new ErrorEvent('error', { message }));
       }
     }
+
+    failDecode() {
+      for (const listener of this.messageErrorListeners) {
+        listener(new MessageEvent('messageerror'));
+      }
+    }
   }
 
   class WorkerOffscreenCanvas {
@@ -308,12 +321,14 @@ describe('magic sheet worker raster', () => {
     vi.resetModules();
     requestedImages.length = 0;
     workers.length = 0;
+    workerPostError = null;
     vi.stubGlobal('Image', WorkerImage);
     vi.stubGlobal('Worker', WorkerStub);
     vi.stubGlobal('OffscreenCanvas', WorkerOffscreenCanvas);
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     HTMLCanvasElement.prototype.getContext = REAL_GET_CONTEXT;
   });
@@ -374,6 +389,43 @@ describe('magic sheet worker raster', () => {
     expect(workers[0].terminate).toHaveBeenCalledOnce();
     expect(magic.captureMagicSheet()?.canvas).toBeInstanceOf(HTMLCanvasElement);
     expect(repaint).toHaveBeenCalledOnce();
+  });
+
+  it('falls back and retires the worker when a response cannot be decoded', async () => {
+    (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = () =>
+      ({ clearRect() {}, drawImage() {} }) as unknown as CanvasRenderingContext2D;
+    const { magic } = await mountedWorkerBrush();
+    magic.setColorSheet('/coloring/page.light.webp');
+    requestedImages[0].onload!();
+
+    workers[0].failDecode();
+    await vi.waitFor(() => expect(magic.captureMagicSheet()).not.toBeNull());
+
+    expect(workers[0].terminate).toHaveBeenCalledOnce();
+  });
+
+  it('falls back when posting the raster request throws', async () => {
+    (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = () =>
+      ({ clearRect() {}, drawImage() {} }) as unknown as CanvasRenderingContext2D;
+    const { magic } = await mountedWorkerBrush();
+    magic.setColorSheet('/coloring/page.light.webp');
+    workerPostError = new Error('post failed');
+
+    requestedImages[0].onload!();
+    await vi.waitFor(() => expect(magic.captureMagicSheet()).not.toBeNull());
+  });
+
+  it('falls back when the worker does not answer before the deadline', async () => {
+    vi.useFakeTimers();
+    (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = () =>
+      ({ clearRect() {}, drawImage() {} }) as unknown as CanvasRenderingContext2D;
+    const { magic } = await mountedWorkerBrush();
+    magic.setColorSheet('/coloring/page.light.webp');
+    requestedImages[0].onload!();
+
+    await vi.advanceTimersByTimeAsync(15_000);
+
+    expect(magic.captureMagicSheet()).not.toBeNull();
   });
 });
 

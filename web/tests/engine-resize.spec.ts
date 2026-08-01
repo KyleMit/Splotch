@@ -118,17 +118,25 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
     { x: 180, y: 100 },
   ]);
 
-  await page.mouse.move(box.x + 80, box.y + 100);
+  await page.mouse.move(box.x + 80, box.y + 160);
   await page.mouse.down();
-  await page.mouse.move(box.x + 140, box.y + 100);
+  await page.mouse.move(box.x + 140, box.y + 160);
 
   // Resize while the finger is still down (the stroke is mid-flight).
   await page.evaluate(() => window.__engine.resizeTo(500, 400));
 
-  // The portion drawn before the resize is still on the canvas.
-  expect(await count(page)).toBeGreaterThan(0);
+  // Sample the in-flight stroke at its distinct paper position so the earlier
+  // committed stroke cannot make this survival check pass on its own.
+  const inFlightAlpha = await page.evaluate(() => {
+    const view = window.__engine.getViewState();
+    return window.__engine.pixelAt(
+      Math.round(110 * view.scale + view.tx),
+      Math.round(160 * view.scale + view.ty)
+    )[3];
+  });
+  expect(inFlightAlpha).toBeGreaterThan(0);
 
-  await page.mouse.move(box.x + 220, box.y + 100);
+  await page.mouse.move(box.x + 220, box.y + 160);
   await page.mouse.up();
 
   expect(await count(page)).toBeGreaterThan(0);

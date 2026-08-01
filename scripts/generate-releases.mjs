@@ -164,4 +164,10 @@ function main() {
   console.log('Done.');
 }
 
-if (isMain(import.meta.url)) main();
+if (isMain(import.meta.url)) {
+  try {
+    main();
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error));
+  }
+}

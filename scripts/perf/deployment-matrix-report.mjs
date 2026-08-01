@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { esc } from '../lib/html.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { masthead, page, siteFooter } from '../lib/scrapbook-chrome.mjs';
@@ -35,8 +35,8 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
 
-function sourcePath(source) {
-  return join(ROOT, source);
+function sourcePath(source, sourceDirectory) {
+  return isAbsolute(source) ? source : resolve(sourceDirectory, source);
 }
 
 function round(value) {
@@ -54,8 +54,8 @@ function normalizedDistribution(distribution) {
   );
 }
 
-function normalizeDrawingRun(source, productCommit) {
-  const profile = readJson(sourcePath(source));
+function normalizeDrawingRun(source, productCommit, sourceDirectory) {
+  const profile = readJson(sourcePath(source, sourceDirectory));
   const phases = profile.report ? summarizeRun(profile.report).phases : profile.summaries?.phases;
   const scored = scoreDrawingRun(phases ?? []);
   return {
@@ -78,6 +78,11 @@ function median(values) {
   return sorted[Math.floor(sorted.length / 2)];
 }
 
+function maximum(values) {
+  const finite = values.filter(Number.isFinite);
+  return finite.length ? Math.max(...finite) : null;
+}
+
 function aggregateDrawingRuns(runs) {
   const blankPhases = runs.flatMap((run) => run.phases.filter((phase) => phase.phase === 'blank'));
   return {
@@ -85,30 +90,28 @@ function aggregateDrawingRuns(runs) {
     paint: {
       p95: round(median(blankPhases.map((phase) => phase.paint.p95))),
       p99: round(median(blankPhases.map((phase) => phase.paint.p99))),
-      max: round(Math.max(...blankPhases.map((phase) => phase.paint.max))),
+      max: round(maximum(blankPhases.map((phase) => phase.paint?.max))),
     },
-    lostFrameTimeShare: roundShare(
-      Math.max(...blankPhases.map((phase) => phase.lostFrameTimeShare))
-    ),
+    lostFrameTimeShare: roundShare(maximum(blankPhases.map((phase) => phase.lostFrameTimeShare))),
     blankPassed: blankPhases.length > 0 && blankPhases.every((phase) => phase.passed),
     allPhasesPassed: runs.length > 0 && runs.every((run) => run.passed),
   };
 }
 
-function normalizeDrawing(sources = {}, productCommit) {
+function normalizeDrawing(sources = {}, productCommit, sourceDirectory) {
   return Object.fromEntries(
     BRUSHES.map((brush) => {
       const runs = (sources[brush] ?? []).map((source) =>
-        normalizeDrawingRun(source, productCommit)
+        normalizeDrawingRun(source, productCommit, sourceDirectory)
       );
       return [brush, { aggregate: aggregateDrawingRuns(runs), runs }];
     })
   );
 }
 
-function normalizeUndo(source, productCommit) {
+function normalizeUndo(source, productCommit, sourceDirectory) {
   if (!source) return null;
-  const summary = readJson(sourcePath(source)).undo;
+  const summary = readJson(sourcePath(source, sourceDirectory)).undo;
   if (!summary) return null;
   return {
     source,
@@ -120,8 +123,8 @@ function normalizeUndo(source, productCommit) {
   };
 }
 
-function normalizeActionCapture(spec) {
-  const profile = readJson(sourcePath(spec.source));
+function normalizeActionCapture(spec, sourceDirectory) {
+  const profile = readJson(sourcePath(spec.source, sourceDirectory));
   const labels = spec.labels ? new Set(spec.labels) : null;
   const summaries = profile.samples ? summarizeActions(profile.samples) : profile.summaries;
   const results = summaries
@@ -160,9 +163,9 @@ function mergeActionResults(captures) {
   return [...byLabel.values()];
 }
 
-function normalizeActions(sources, finalProductCommit) {
+function normalizeActions(sources, finalProductCommit, sourceDirectory) {
   if (!sources?.length) return null;
-  const captures = sources.map(normalizeActionCapture);
+  const captures = sources.map((source) => normalizeActionCapture(source, sourceDirectory));
   const results = mergeActionResults(captures);
   const comparableResults = results.filter((result) => !ACTION_CONTROL_LABELS.has(result.label));
   return {
@@ -175,19 +178,19 @@ function normalizeActions(sources, finalProductCommit) {
     actionCount: results.length,
     passedActionCount: results.filter((result) => result.passed).length,
     worst: {
-      firstFrameP95: round(Math.max(...comparableResults.map((result) => result.firstFrame.p95))),
+      firstFrameP95: round(maximum(comparableResults.map((result) => result.firstFrame?.p95))),
       postActionFrameP95: round(
-        Math.max(...comparableResults.map((result) => result.postActionFrames.p95))
+        maximum(comparableResults.map((result) => result.postActionFrames?.p95))
       ),
       postActionFrameMax: round(
-        Math.max(...comparableResults.map((result) => result.postActionFrames.max))
+        maximum(comparableResults.map((result) => result.postActionFrames?.max))
       ),
     },
     results,
   };
 }
 
-function normalizeTarget(target, finalProductCommit) {
+function normalizeTarget(target, finalProductCommit, sourceDirectory) {
   const shared = {
     id: target.id,
     number: target.number,
@@ -204,13 +207,18 @@ function normalizeTarget(target, finalProductCommit) {
     ...shared,
     drawingProductCommit: target.drawingProductCommit,
     undoProductCommit: target.undoProductCommit ?? target.drawingProductCommit,
-    drawing: normalizeDrawing(target.drawing, target.drawingProductCommit),
-    undo: normalizeUndo(target.undoSource, target.undoProductCommit ?? target.drawingProductCommit),
-    actions: normalizeActions(target.actionSources, finalProductCommit),
+    drawing: normalizeDrawing(target.drawing, target.drawingProductCommit, sourceDirectory),
+    undo: normalizeUndo(
+      target.undoSource,
+      target.undoProductCommit ?? target.drawingProductCommit,
+      sourceDirectory
+    ),
+    actions: normalizeActions(target.actionSources, finalProductCommit, sourceDirectory),
   };
 }
 
-function normalizeMatrix(manifest) {
+function normalizeMatrix(manifest, sourceDirectory = ROOT) {
+  const resolvedSourceDirectory = resolve(sourceDirectory, manifest.sourceRoot ?? '.');
   return {
     schemaVersion: 2,
     recordedOn: manifest.recordedOn,
@@ -236,7 +244,9 @@ function normalizeMatrix(manifest) {
         postActionFrameMaxMs: ACTION_FRAME_MAX_GATE_MS,
       },
     },
-    targets: manifest.targets.map((target) => normalizeTarget(target, manifest.productCommit)),
+    targets: manifest.targets.map((target) =>
+      normalizeTarget(target, manifest.productCommit, resolvedSourceDirectory)
+    ),
   };
 }
 
@@ -261,10 +271,11 @@ function drawingPlot(matrix, metric, gate, title) {
       const dots = BRUSHES.map((brush, index) => {
         const result = target.drawing[brush].aggregate;
         const value = result.paint[metric];
-        const ratio = Math.min(value / gate, 2);
-        const failed = value > gate;
+        const ratio = Number.isFinite(value) ? Math.min(value / gate, 2) : null;
+        const failed = Number.isFinite(value) && value > gate;
         const tooltip = `${target.label} · ${BRUSH_LABELS[brush]} · ${metric.toUpperCase()} ${fmt(value)} ms · gate ${gate} ms`;
-        return `<span class="plot-dot brush-${brush}${failed ? ' failed' : ''}" style="left:${ratio * 50}%;top:${8 + index * 7}px" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
+        const placement = ratio === null ? '' : `left:${ratio * 50}%;`;
+        return `<span class="plot-dot brush-${brush}${failed ? ' failed' : ''}${ratio === null ? ' missing' : ''}" style="${placement}top:${8 + index * 7}px" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
       }).join('');
       return `<div class="plot-row">
         <div class="plot-label"><span>${esc(target.label)}</span><small>${esc(target.runtime)}</small></div>
@@ -280,14 +291,19 @@ function drawingPlot(matrix, metric, gate, title) {
 }
 
 function actionRatio(result, gates) {
-  return Math.max(
-    result.firstFrame.p95 / gates.firstFrameP95Ms,
-    result.postActionFrames.p95 / gates.postActionFrameP95Ms,
-    result.postActionFrames.max / gates.postActionFrameMaxMs
+  return maximum(
+    [
+      [result.firstFrame.p95, gates.firstFrameP95Ms],
+      [result.postActionFrames.p95, gates.postActionFrameP95Ms],
+      [result.postActionFrames.max, gates.postActionFrameMaxMs],
+    ]
+      .filter(([value]) => Number.isFinite(value))
+      .map(([value, gate]) => value / gate)
   );
 }
 
 function heatClass(ratio) {
+  if (!Number.isFinite(ratio)) return 'missing';
   if (ratio <= 0.75) return 'cool';
   if (ratio <= 1) return 'pass';
   if (ratio <= 1.5) return 'warn';
@@ -363,8 +379,8 @@ function rankedActionFailures(matrix) {
         label,
         failed: entries.filter((entry) => !entry.result.passed).length,
         measured: entries.length,
-        worstRatio: Math.max(
-          ...entries.map((entry) => actionRatio(entry.result, matrix.gates.actions))
+        worstRatio: maximum(
+          entries.map((entry) => actionRatio(entry.result, matrix.gates.actions))
         ),
       };
     })
@@ -374,7 +390,7 @@ function rankedActionFailures(matrix) {
   return ranked
     .map(
       (entry, index) =>
-        `<li><span class="rank">${index + 1}</span><span><b>${esc(entry.label)}</b><small>${entry.failed} of ${entry.measured} targets failed · worst ${entry.worstRatio.toFixed(1)}× gate</small></span></li>`
+        `<li><span class="rank">${index + 1}</span><span><b>${esc(entry.label)}</b><small>${entry.failed} of ${entry.measured} targets failed · worst ${fmt(entry.worstRatio)}× gate</small></span></li>`
     )
     .join('');
 }
@@ -497,7 +513,7 @@ contains every normalized drawing run and grouped action result, and
 Regenerate the JSON, Markdown, and HTML after updating the source manifest with:
 
 \`\`\`sh
-node scripts/perf/deployment-matrix-report.mjs \\
+npm run perf:matrix:report -- \\
   scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 \`\`\`
 
@@ -608,15 +624,22 @@ function renderReport(matrix) {
 ${siteFooter({ home: '../../index.html' })}`;
   return page({
     title: `Deployment performance — ${matrix.recordedOn}`,
-    extraCss: EXTRA_CSS,
+    extraCss: EXTRA_CSS.replace(
+      /grid-template-columns:repeat\(\d+,15px\)/,
+      'grid-auto-flow:column;grid-auto-columns:15px'
+    ),
     body,
   });
 }
 
 export async function generateDeploymentMatrixReport(manifestArg = process.argv[2]) {
-  const manifestPath = manifestArg ? join(ROOT, manifestArg) : DEFAULT_MANIFEST;
+  const manifestPath = manifestArg
+    ? isAbsolute(manifestArg)
+      ? manifestArg
+      : join(ROOT, manifestArg)
+    : DEFAULT_MANIFEST;
   const outputDir = dirname(manifestPath);
-  const matrix = normalizeMatrix(readJson(manifestPath));
+  const matrix = normalizeMatrix(readJson(manifestPath), outputDir);
   writeFileSync(join(outputDir, 'data.json'), `${JSON.stringify(matrix, null, 2)}\n`);
   writeFileSync(join(outputDir, 'index.md'), renderMarkdown(matrix));
   writeFileSync(join(outputDir, 'index.html'), renderReport(matrix).replace(/[ \t]+$/gm, ''));

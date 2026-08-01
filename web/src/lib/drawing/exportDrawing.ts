@@ -27,7 +27,14 @@ export interface ExportOptions {
   includePaperTexture?: boolean;
 }
 
+type ExportBitmapResult =
+  | { kind: 'tile'; bitmap: ImageBitmap; x: number; y: number }
+  | { kind: 'texture' | 'overlay'; bitmap: ImageBitmap }
+  | null;
+
 function getExportContext(canvas: ExportCanvas): ExportContext | null {
+  // The identical branches preserve the concrete canvas union long enough for
+  // TypeScript to select each platform's distinct getContext overload.
   return canvas instanceof HTMLCanvasElement ? canvas.getContext('2d') : canvas.getContext('2d');
 }
 
@@ -75,17 +82,41 @@ export async function composeExportPng(
 
   if ('source' in snapshot) {
     const texture = includePaperTexture ? await loadPaperTexture() : null;
-    const [tiles, textureBitmap, overlayBitmap] = await Promise.all([
-      Promise.all(
-        snapshot.source.tiles.map(async (tile) => ({
+    const bitmapRequests: Promise<ExportBitmapResult>[] = [
+      ...snapshot.source.tiles.map(
+        async (tile): Promise<ExportBitmapResult> => ({
+          kind: 'tile',
           bitmap: await tile.bitmap,
           x: tile.x,
           y: tile.y,
-        }))
+        })
       ),
-      texture ? createImageBitmap(texture) : null,
-      overlayImage?.naturalWidth ? createImageBitmap(overlayImage) : null,
-    ]);
+      Promise.resolve(texture ? createImageBitmap(texture) : null).then(
+        (bitmap): ExportBitmapResult => (bitmap ? { kind: 'texture', bitmap } : null)
+      ),
+      Promise.resolve(overlayImage?.naturalWidth ? createImageBitmap(overlayImage) : null).then(
+        (bitmap): ExportBitmapResult => (bitmap ? { kind: 'overlay', bitmap } : null)
+      ),
+    ];
+    const settledBitmaps = await Promise.allSettled(bitmapRequests);
+    const failure = settledBitmaps.find((result) => result.status === 'rejected');
+    if (failure?.status === 'rejected') {
+      for (const result of settledBitmaps) {
+        if (result.status === 'fulfilled') result.value?.bitmap.close();
+      }
+      throw failure.reason;
+    }
+    const tiles: Array<{ bitmap: ImageBitmap; x: number; y: number }> = [];
+    let textureBitmap: ImageBitmap | null = null;
+    let overlayBitmap: ImageBitmap | null = null;
+    for (const result of settledBitmaps) {
+      if (result.status !== 'fulfilled' || !result.value) continue;
+      if (result.value.kind === 'tile') {
+        const { bitmap, x, y } = result.value;
+        tiles.push({ bitmap, x, y });
+      } else if (result.value.kind === 'texture') textureBitmap = result.value.bitmap;
+      else overlayBitmap = result.value.bitmap;
+    }
     return encodeTiledCanvasPng({
       sourceWidth: snapshot.source.width,
       sourceHeight: snapshot.source.height,

@@ -4,6 +4,7 @@
   "productCommit": "4c57798b9ac1",
   "snapshotKind": "cumulative-final-state",
   "architecture": "tiled renderer",
+  "sourceRoot": "../../../",
   "limitations": [
     "The final physical-iPad recapture could not start WebDriverAgent: Xcode timed out enabling UI automation, and the preinstalled-WDA launch timed out while the device was unavailable for automation. The retained physical-iPad evidence remains attributed to 09c4efac27ca.",
     "Drawing and undo were not rerun after the discrete-action fixes because those changes affect action readiness and layout transitions, not drawing or undo execution. Their original product commits remain explicit.",

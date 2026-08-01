@@ -50,7 +50,12 @@ export function createTiledUndoPatches() {
     const canvasSnapshot = document.createElement('canvas');
     canvasSnapshot.width = tile.width;
     canvasSnapshot.height = tile.height;
-    canvasSnapshot.getContext('2d')?.drawImage(tile.canvas, 0, 0);
+    const snapshotContext = canvasSnapshot.getContext('2d');
+    if (!snapshotContext) {
+      byCommand.delete(command);
+      return;
+    }
+    snapshotContext.drawImage(tile.canvas, 0, 0);
     snapshots.set(index, {
       canvas: canvasSnapshot,
       x: 0,
@@ -71,22 +76,23 @@ export function createTiledUndoPatches() {
       snapshot.cropped = true;
       const { x0, y0, x1, y1 } = snapshot.dirty;
       if (x0 === 0 && y0 === 0 && x1 === snapshot.tileWidth && y1 === snapshot.tileHeight) continue;
+      if (x1 <= x0 || y1 <= y0) continue;
       const cropped = document.createElement('canvas');
       cropped.width = x1 - x0;
       cropped.height = y1 - y0;
-      cropped
-        .getContext('2d')
-        ?.drawImage(
-          snapshot.canvas,
-          x0,
-          y0,
-          cropped.width,
-          cropped.height,
-          0,
-          0,
-          cropped.width,
-          cropped.height
-        );
+      const croppedContext = cropped.getContext('2d');
+      if (!croppedContext) continue;
+      croppedContext.drawImage(
+        snapshot.canvas,
+        x0,
+        y0,
+        cropped.width,
+        cropped.height,
+        0,
+        0,
+        cropped.width,
+        cropped.height
+      );
       snapshot.canvas = cropped;
       snapshot.x = x0;
       snapshot.y = y0;

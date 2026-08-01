@@ -18,10 +18,10 @@ export function geometryIntersectsTile(
 ) {
   const { x0, y0, x1, y1, pad } = opPaddedUserBounds(op);
   return (
-    x1 + pad >= tile.paperLeft &&
-    x0 - pad <= tile.paperRight &&
-    y1 + pad >= tile.paperTop &&
-    y0 - pad <= tile.paperBottom
+    x1 + pad > tile.paperLeft &&
+    x0 - pad < tile.paperRight &&
+    y1 + pad > tile.paperTop &&
+    y0 - pad < tile.paperBottom
   );
 }
 

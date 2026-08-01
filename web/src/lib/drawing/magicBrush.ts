@@ -25,7 +25,7 @@
 // (chosen over a per-op mask composite and a flat colour-sample after measuring
 // all three — see ADR-0043).
 
-import type { MagicSheetWorkerRequest, MagicSheetWorkerResponse } from './magicSheet.worker';
+import { magicSheetWorkerSupported, rasterizeMagicSheetInWorker } from './magicSheetRasterClient';
 
 export const MAGIC_GRADIENT_COUNT = 10;
 
@@ -138,51 +138,6 @@ function invalidateSheet() {
   patternCache = new WeakMap();
 }
 
-interface PendingWorkerRaster {
-  resolve: (bitmap: ImageBitmap) => void;
-  reject: (error: Error) => void;
-}
-
-let rasterWorker: Worker | null = null;
-let nextRasterRequestId = 0;
-const pendingWorkerRasters = new Map<number, PendingWorkerRaster>();
-
-function workerRasterSupported() {
-  return (
-    typeof Worker !== 'undefined' &&
-    typeof OffscreenCanvas !== 'undefined' &&
-    typeof OffscreenCanvas.prototype.transferToImageBitmap === 'function'
-  );
-}
-
-function rejectWorkerRasters(error: Error) {
-  for (const request of pendingWorkerRasters.values()) request.reject(error);
-  pendingWorkerRasters.clear();
-}
-
-function magicSheetRasterWorker() {
-  if (rasterWorker) return rasterWorker;
-  const worker = new Worker(new URL('./magicSheet.worker.ts', import.meta.url), { type: 'module' });
-  worker.addEventListener('message', ({ data }: MessageEvent<MagicSheetWorkerResponse>) => {
-    const request = pendingWorkerRasters.get(data.id);
-    if (!request) {
-      if ('bitmap' in data) data.bitmap.close();
-      return;
-    }
-    pendingWorkerRasters.delete(data.id);
-    if ('error' in data) request.reject(new Error(data.error));
-    else request.resolve(data.bitmap);
-  });
-  worker.addEventListener('error', (event) => {
-    const error = new Error(event.message || 'Magic sheet worker failed');
-    worker.terminate();
-    rejectWorkerRasters(error);
-    if (rasterWorker === worker) rasterWorker = null;
-  });
-  rasterWorker = worker;
-  return worker;
-}
-
 function rasterizeFillOffThread(
   image: HTMLImageElement,
   imageUrl: string,
@@ -194,9 +149,7 @@ function rasterizeFillOffThread(
   const height = image.naturalHeight * scale;
   const x = (paper.width - width) / 2 - bounds.x;
   const y = (paper.height - height) / 2 - bounds.y;
-  const id = ++nextRasterRequestId;
-  const request: MagicSheetWorkerRequest = {
-    id,
+  return rasterizeMagicSheetInWorker({
     imageUrl,
     width: bounds.width,
     height: bounds.height,
@@ -211,15 +164,11 @@ function rasterizeFillOffThread(
       image.naturalWidth,
       image.naturalHeight
     ),
-  };
-  return new Promise<ImageBitmap>((resolve, reject) => {
-    pendingWorkerRasters.set(id, { resolve, reject });
-    magicSheetRasterWorker().postMessage(request);
   });
 }
 
 function beginFillRaster(image: HTMLImageElement, imageUrl: string) {
-  if (!workerRasterSupported()) return false;
+  if (!magicSheetWorkerSupported()) return false;
   const paper = host?.paperSize();
   const bounds = host?.sheetBounds();
   if (!paper || !bounds || bounds.width <= 0 || bounds.height <= 0) return false;

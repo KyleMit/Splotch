@@ -1,6 +1,6 @@
 # Platform recipes
 
-These recipes assume the repository root and a fresh read of `npm run info -- --filter=perf`.
+These recipes assume the repository root and a fresh read of the `perf:*` rows from `npm run info`.
 Replace placeholders such as `<serial>`, `<url>`, and `<capabilities.json>` with locally verified
 values. Add `--report-only` for a measurement-only snapshot that must retain all results.
 
@@ -186,9 +186,11 @@ screen awake. Verify the exact serial shows `device`, not `unauthorized`:
 npm run adb:devices
 ```
 
-If the phone cannot reach the LAN preview, use the repository’s ADB reverse helper for the expected
-port or pass a reachable network URL. Drawing uses Appium Android Chrome capabilities. Actions use
-the direct-CDP command from the emulator recipe with `--device-id=<serial>`.
+If the phone cannot reach the LAN preview running on port 4173, forward that exact preview port with
+`adb -s <serial> reverse tcp:4173 tcp:4173`; the repository `adb:reverse` helper forwards the dev
+server’s 5173 instead. Alternatively, pass a reachable network URL. Drawing uses Appium Android
+Chrome capabilities. Actions use the direct-CDP command from the emulator recipe with
+`--device-id=<serial>`.
 
 Do not run with an unresolved shell variable for the serial; paste the verified explicit value into
 the command/log.
@@ -209,7 +211,7 @@ than editing generated instructions or guessing a target. Build with marks, then
 --native-app --native-webview-class=android.webkit.WebView
 ```
 
-Capture four brushes, pen undo, and the three-repeat action suite. Keep the physical Android
+Capture four brushes, pen undo, and the four-repeat action suite. Keep the physical Android
 calibration advisory until native/web hand input establishes expected cadence and contact geometry.
 
 ## Focused action reruns
@@ -232,7 +234,7 @@ scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 Regenerate normalized JSON, Markdown, and HTML:
 
 ```sh
-node scripts/perf/deployment-matrix-report.mjs \
+npm run perf:matrix:report -- \
   scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 ```
 

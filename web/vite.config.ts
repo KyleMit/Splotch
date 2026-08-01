@@ -93,6 +93,7 @@ export default defineConfig({
               // Exclude html — navigation requests use the NetworkFirst runtime
               // cache below so a manual refresh always fetches fresh markup.
               globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}'],
+              globIgnores: ['**/*.outline.webp', '**/*.chalk.webp'],
               // Do NOT set skipWaiting here. The new SW enters "waiting" state
               // and updates.ts activates it (via SKIP_WAITING message) only when
               // the canvas is blank, so mid-drawing sessions are never disrupted.

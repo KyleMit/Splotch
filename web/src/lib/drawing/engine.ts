@@ -229,6 +229,7 @@ let callbacks: Omit<InitOptions, 'initialColor'> = {};
 // a mid-session DPR change (desktop zoom, monitor move) would otherwise need
 // every pixel surface (visible canvas, paper) rescaled in place.
 const MAX_RENDER_SCALE = 2;
+// Bound live crayon memory without making ordinary short strokes pay a checkpoint.
 const CRAYON_CHECKPOINT_OPS = 64;
 let renderScale = 1;
 let crayonOpsSinceFlush = 0;
@@ -480,15 +481,7 @@ function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
   const inputBitmapHeight = tiledRendererActive() ? TILED_INPUT_BITMAP_SIDE_PX : h;
   if (canvas.width !== inputBitmapWidth) canvas.width = inputBitmapWidth;
   if (canvas.height !== inputBitmapHeight) canvas.height = inputBitmapHeight;
-  let tiledRendererResized = false;
-  if (!lockPaper) {
-    tiledRendererResized = resizeTiledRenderer(
-      viewport.width,
-      viewport.height,
-      renderScale,
-      canvasEmpty
-    );
-  }
+  const tiledRendererResized = resizeTiledRenderer(paper.pxW, paper.pxH, renderScale, canvasEmpty);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   resizeLegacyCrayonOverlays(viewport.width, viewport.height);
@@ -649,6 +642,8 @@ function strokeSmoothSegments(ps: PointerState, points: Point[]) {
   recordCurrentOp(op);
   if (ps.crayon && !ps.erase && ++crayonOpsSinceFlush >= CRAYON_CHECKPOINT_OPS) {
     recordCrayonFlush();
+    ps.seed = crayonSeedCounter++;
+    ps.passTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
   }
 }
 
@@ -1205,6 +1200,7 @@ export function clearCanvas() {
   if (tiledRendererActive()) {
     const state = clearTiledRenderer(canvasEmpty);
     resetLiveCrayonPass();
+    crayonOpsSinceFlush = 0;
     setCanvasEmptyState(state.empty);
     setCanUndo(state.canUndo);
     clearMagicGradient();
@@ -1289,6 +1285,7 @@ function teardownEngine() {
   // mid-flight stroke into the log, so navigating away mid-stroke keeps
   // the ink.
   releaseAllPointers();
+  crayonOpsSinceFlush = 0;
   cancelCrayonWarmup();
   penStreamAdopter.reset();
   detachLegacyCrayonOverlays();

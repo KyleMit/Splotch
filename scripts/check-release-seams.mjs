@@ -3,14 +3,29 @@ import { join } from 'node:path';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
 
 const CLIENT_BUNDLE_DIR = join(ROOT, 'web/.svelte-kit/output/client/_app/immutable');
-const RELEASE_ONLY_TOKENS = [
-  '__committedBrushMode',
-  '__drawingDebug',
-  '__screenshotSaveSink',
-  'engine.commit',
-  'engine.draw',
-  'engine.undo',
+const RELEASE_SEAM_SOURCE_FILES = [
+  'web/src/lib/boot/devHarnessSeam.ts',
+  'web/src/lib/drawing/screenshot.ts',
+  'web/src/lib/drawing/engine.ts',
+  'web/src/lib/drawing/undoHistory.ts',
+  'web/src/lib/drawing/emptyScan.ts',
 ];
+
+export const RELEASE_ONLY_TOKENS = [
+  ...new Set(
+    RELEASE_SEAM_SOURCE_FILES.flatMap((relativePath) => {
+      const source = readFileSync(join(ROOT, relativePath), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '');
+      return [
+        ...[...source.matchAll(/window\.(__[A-Za-z0-9_]+)/g)].map((match) => match[1]),
+        ...[...source.matchAll(/performance\.(?:mark|measure)\('(engine\.[A-Za-z]+)/g)].map(
+          (match) => match[1]
+        ),
+      ];
+    })
+  ),
+].sort();
 
 function javascriptFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -32,16 +47,19 @@ export function releaseSeamProblems(dir) {
   return problems;
 }
 
-export async function checkReleaseSeams() {
-  const instrumented =
-    process.env.PERF_MARKS === 'true' || process.env.PUBLIC_ENABLE_DEV_HARNESS === 'true';
+export async function checkReleaseSeams({
+  dir = CLIENT_BUNDLE_DIR,
+  env = process.env,
+  log = console.log,
+} = {}) {
+  const instrumented = env.PERF_MARKS === 'true' || env.PUBLIC_ENABLE_DEV_HARNESS === 'true';
   if (instrumented) {
-    console.log('[release-seams] instrumented build: profiling seams retained');
+    log('[release-seams] instrumented build: profiling seams retained');
     return;
   }
-  const problems = releaseSeamProblems(CLIENT_BUNDLE_DIR);
+  const problems = releaseSeamProblems(dir);
   if (problems.length) throw new Error(problems.join('\n'));
-  console.log('[release-seams] release client contains no profiling seams or engine marks');
+  log('[release-seams] release client contains no profiling seams or engine marks');
 }
 
 if (isMain(import.meta.url)) runMain(checkReleaseSeams);

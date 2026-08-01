@@ -1140,39 +1140,75 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     argv
   );
   const nativeApp = has('native-app');
-  const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
-  const server = nativeApp
-    ? null
-    : await ensurePreviewServer(requestedAppUrl, port, !has('no-serve'));
-  const client = createWebDriverClient(flag('appium-url', DEFAULT_APPIUM_URL));
-  client.nativeApp = nativeApp;
-  client.nativeWebViewClass = flag('native-webview-class', DEFAULT_NATIVE_WEBVIEW_CLASS);
-  client.webdriverClicks = has('webdriver-clicks');
+  const requestedOrientation = flag('orientation')?.toUpperCase();
+  if (requestedOrientation && !['PORTRAIT', 'LANDSCAPE'].includes(requestedOrientation)) {
+    fail('--orientation must be PORTRAIT or LANDSCAPE');
+  }
   const repeats = positiveInteger(flag('repeats', '4'), 'repeats');
   if (repeats < WARMUP_REPEATS + MIN_GATED_SAMPLES) {
     fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
   }
   const actions = selectedActions(flag('actions'));
+  const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
   let sessionId = flag('session-id');
-  let ownsSession = false;
-  let originalOrientation;
-  let restoreOrientation;
-  let session;
-  let execute;
-  let restoreNativeRotationLock;
-
-  try {
-    await client.request('GET', '/status');
-    if (sessionId) {
-      session = await client.request('GET', `/session/${sessionId}`);
-    } else {
-      const capabilities = sessionCapabilities({
+  const capabilities = sessionId
+    ? null
+    : sessionCapabilities({
         deviceId: flag('device-id'),
         xcodeConfigFile: flag('xcode-config', DEFAULT_XCODE_CONFIG),
         wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),
         allowProvisioning: has('allow-provisioning'),
         file: flag('capabilities-file'),
       });
+  let server;
+  let client;
+  let ownsSession = false;
+  let originalOrientation;
+  let restoreOrientation;
+  let session;
+  let execute;
+  let restoreNativeRotationLock;
+  let cleanupPromise;
+
+  function cleanup() {
+    cleanupPromise ??= (async () => {
+      if (sessionId && execute && restoreNativeRotationLock) {
+        await switchToWebContext(client, sessionId).catch(() => null);
+        await setNativeRotationLock(execute, true).catch(() => null);
+      }
+      if (sessionId && restoreOrientation) {
+        await client
+          ?.request('POST', `/session/${sessionId}/orientation`, {
+            orientation: restoreOrientation,
+          })
+          .catch(() => {});
+      }
+      if (sessionId && ownsSession) {
+        await client?.request('DELETE', `/session/${sessionId}`).catch(() => {});
+      }
+      server?.stop();
+    })();
+    return cleanupPromise;
+  }
+
+  const onSignal = (exitCode) => {
+    void cleanup().finally(() => process.exit(exitCode));
+  };
+  const onSigint = () => onSignal(130);
+  const onSigterm = () => onSignal(143);
+  process.once('SIGINT', onSigint);
+  process.once('SIGTERM', onSigterm);
+
+  try {
+    server = nativeApp ? null : await ensurePreviewServer(requestedAppUrl, port, !has('no-serve'));
+    client = createWebDriverClient(flag('appium-url', DEFAULT_APPIUM_URL));
+    client.nativeApp = nativeApp;
+    client.nativeWebViewClass = flag('native-webview-class', DEFAULT_NATIVE_WEBVIEW_CLASS);
+    client.webdriverClicks = has('webdriver-clicks');
+    await client.request('GET', '/status');
+    if (sessionId) {
+      session = await client.request('GET', `/session/${sessionId}`);
+    } else {
       session = await client.request('POST', '/session', {
         capabilities: { alwaysMatch: capabilities },
       });
@@ -1184,11 +1220,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     const executeAsync = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/async`, { script, args });
     restoreOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
-    const requestedOrientation = flag('orientation')?.toUpperCase();
     if (requestedOrientation && requestedOrientation !== restoreOrientation) {
-      if (!['PORTRAIT', 'LANDSCAPE'].includes(requestedOrientation)) {
-        fail('--orientation must be PORTRAIT or LANDSCAPE');
-      }
       await client.request('POST', `/session/${sessionId}/orientation`, {
         orientation: requestedOrientation,
       });
@@ -1314,21 +1346,9 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     }
     return artifact;
   } finally {
-    if (sessionId && execute && restoreNativeRotationLock) {
-      await switchToWebContext(client, sessionId).catch(() => null);
-      await setNativeRotationLock(execute, true).catch(() => null);
-    }
-    if (sessionId && restoreOrientation) {
-      await client
-        .request('POST', `/session/${sessionId}/orientation`, {
-          orientation: restoreOrientation,
-        })
-        .catch(() => {});
-    }
-    if (sessionId && ownsSession) {
-      await client.request('DELETE', `/session/${sessionId}`).catch(() => {});
-    }
-    server?.stop();
+    process.off('SIGINT', onSigint);
+    process.off('SIGTERM', onSigterm);
+    await cleanup();
   }
 }
 

@@ -99,7 +99,10 @@ async function saveScreenshotImage() {
 }
 
 export function saveScreenshot(): Promise<void> {
-  if (activeScreenshotSave) return activeScreenshotSave;
+  if (activeScreenshotSave) {
+    playScreenshotSuppressedFeedback();
+    return activeScreenshotSave;
+  }
   const startedAt = performance.now();
   if (startedAt < nextScreenshotAllowedAt) {
     playScreenshotSuppressedFeedback();

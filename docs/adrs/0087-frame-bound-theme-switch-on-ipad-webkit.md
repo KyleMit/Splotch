@@ -13,8 +13,8 @@ event handler and Svelte update were not slow; WebKit was flushing work caused b
 theme-dependent coloring assets and the drawing compositor stack after JavaScript returned.
 
 Theme changes use the same generic interaction gate as other non-drawing actions: a frame gap above
-32 ms is a long frame. The drawing and undo contracts from ADR-0085 and ADR-0086 remain independent,
-stricter gates and must pass after any theme optimization.
+33.5 ms is a long frame. The drawing and undo contracts from ADR-0085 and ADR-0086 remain
+independent, stricter gates and must pass after any theme optimization.
 
 Twenty-two serial isolations identified two independent costs. “Max gap” is the largest
 `requestAnimationFrame` interval after the theme click on the same physical iPad and full-resolution
@@ -109,7 +109,7 @@ The retained physical-device results were:
 | Undo regression, engine / first frame     |      1 / 3 |            9 |
 
 Crayon's 37 ms maximum matches ADR-0085's prior physical-device profile and remains below its 50 ms
-maximum gate; its P95 remains within one refresh. Theme's 33 ms measurement is at the 32 ms
+maximum gate; its P95 remains within one refresh. Theme's 33 ms measurement is at the 33.5 ms
 long-frame boundary with millisecond timer quantization, rather than the prior one-second freeze.
 
 ## Consequences

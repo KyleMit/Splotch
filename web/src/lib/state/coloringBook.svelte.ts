@@ -5,7 +5,7 @@ import {
   pageNightImage,
   pageChalkImage,
   pageOverlayImage,
-  pageThumb,
+  pageOverlayThumbnail,
   type BookOrientation,
   type ColoringPage,
 } from './books';
@@ -55,7 +55,7 @@ export function themedOverlayThumbnailUrl(
   orientation = coloringBookState.orientation
 ): string | null {
   const page = coloringBookState.overlayPage;
-  return page ? pageThumb(page, orientation, theme) : null;
+  return page ? pageOverlayThumbnail(page, orientation, theme) : null;
 }
 
 export function colorSheetUrl(): string | null {

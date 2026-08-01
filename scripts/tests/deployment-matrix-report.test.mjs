@@ -1,9 +1,26 @@
-import { describe, expect, it } from 'vitest';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
+import {
+  ACTION_FIRST_FRAME_GATE_MS,
+  ACTION_FRAME_MAX_GATE_MS,
+  ACTION_FRAME_P95_GATE_MS,
+} from '../perf/action-stats.mjs';
 import {
   mergeActionResults,
+  normalizeMatrix,
   renderMarkdown,
   renderReport,
 } from '../perf/deployment-matrix-report.mjs';
+
+const temporaryDirectories = [];
+
+afterEach(() => {
+  for (const directory of temporaryDirectories.splice(0)) {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 const distribution = { p50: 1, p95: 1, p99: 1, max: 1 };
 
@@ -42,7 +59,11 @@ describe('deployment matrix report', () => {
       limitations: ['Retained capture.'],
       gates: {
         drawing: { paintP95Ms: 20, paintP99Ms: 33, paintMaxMs: 50 },
-        actions: { firstFrameP95Ms: 32, postActionFrameP95Ms: 20, postActionFrameMaxMs: 32 },
+        actions: {
+          firstFrameP95Ms: ACTION_FIRST_FRAME_GATE_MS,
+          postActionFrameP95Ms: ACTION_FRAME_P95_GATE_MS,
+          postActionFrameMaxMs: ACTION_FRAME_MAX_GATE_MS,
+        },
       },
       targets: [
         {
@@ -101,12 +122,111 @@ describe('deployment matrix report', () => {
           lostFrameTimeShare: 0.01,
         },
         undo: { engineP95Ms: 20, nextFrameP95Ms: 33, nextFrameMaxMs: 50 },
-        actions: { firstFrameP95Ms: 32, postActionFrameP95Ms: 20, postActionFrameMaxMs: 32 },
+        actions: {
+          firstFrameP95Ms: ACTION_FIRST_FRAME_GATE_MS,
+          postActionFrameP95Ms: ACTION_FRAME_P95_GATE_MS,
+          postActionFrameMaxMs: ACTION_FRAME_MAX_GATE_MS,
+        },
       },
       targets: [],
     });
 
     expect(markdown).toContain('This cumulative snapshot');
     expect(markdown).toContain('`final123` is the final performance-affecting product commit');
+  });
+
+  it('resolves evidence from the manifest directory and preserves missing metrics', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    mkdirSync(join(manifestDirectory, 'captures'));
+    writeFileSync(
+      join(manifestDirectory, 'captures/actions.json'),
+      JSON.stringify({
+        repeats: 4,
+        summaries: [
+          {
+            label: 'expand action drawer',
+            count: 3,
+            firstFrame: { p50: null, p95: null, p99: null, max: null },
+            ready: distribution,
+            frames: { p50: null, p95: null, p99: null, max: null },
+            passed: false,
+          },
+          {
+            label: 'idle frame control',
+            count: 3,
+            firstFrame: distribution,
+            ready: distribution,
+            frames: distribution,
+            passed: true,
+          },
+        ],
+      })
+    );
+    const matrix = normalizeMatrix(
+      {
+        recordedOn: '2026-07-31',
+        productCommit: 'final123',
+        targets: [
+          {
+            id: 'fixture',
+            number: 1,
+            label: 'Fixture',
+            status: 'captured',
+            drawingProductCommit: 'final123',
+            drawing: {},
+            actionSources: [
+              {
+                source: 'captures/actions.json',
+                productCommit: 'final123',
+                kind: 'full',
+              },
+            ],
+          },
+        ],
+      },
+      manifestDirectory
+    );
+
+    expect(matrix.targets[0].actions.worst).toEqual({
+      firstFrameP95: null,
+      postActionFrameP95: null,
+      postActionFrameMax: null,
+    });
+    expect(renderReport(matrix)).not.toContain('repeat(46,15px)');
+  });
+
+  it('rejects a focused capture whose declared labels are absent', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    writeFileSync(
+      join(manifestDirectory, 'actions.json'),
+      JSON.stringify({ summaries: [action('measured action', true)] })
+    );
+
+    expect(() =>
+      normalizeMatrix(
+        {
+          recordedOn: '2026-07-31',
+          productCommit: 'final123',
+          targets: [
+            {
+              status: 'captured',
+              drawingProductCommit: 'final123',
+              drawing: {},
+              actionSources: [
+                {
+                  source: 'actions.json',
+                  productCommit: 'final123',
+                  kind: 'focused',
+                  labels: ['missing action'],
+                },
+              ],
+            },
+          ],
+        },
+        manifestDirectory
+      )
+    ).toThrow('actions.json does not contain: missing action');
   });
 });

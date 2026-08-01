@@ -184,4 +184,4 @@ This changes three production details:
 
 The original alignment guarantees remain: paper, ink, and coloring art share one matrix; pointer
 input is inverse-mapped; rotating back restores the original pixels. ADR-0089 records the physical
-iPad evidence and the 32 ms frame gate behind the implementation change.
+iPad evidence and the 33.5 ms frame gate behind the implementation change.

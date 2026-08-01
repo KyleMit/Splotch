@@ -87,6 +87,7 @@ describe('saveScreenshot', () => {
     await vi.waitFor(() => expect(mocks.saveBlobToFolder).toHaveBeenCalledOnce());
     expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
     expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
 
     now.mockReturnValue(3_000);
     save.resolve(true);

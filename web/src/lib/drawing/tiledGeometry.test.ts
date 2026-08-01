@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 
+import { AA_PAD_PX } from './opGeometry';
 import { geometryIntersectsTile, tileCssSpan, tilesIntersect } from './tiledGeometry';
 
 const tile = {
@@ -26,6 +27,19 @@ describe('tiled geometry', () => {
 
   it('treats touching tile edges as half-open rather than overlapping', () => {
     expect(tilesIntersect(tile, { ...tile, x: 100, paperLeft: 100, paperRight: 200 })).toBe(false);
+    expect(
+      geometryIntersectsTile(
+        {
+          kind: 'dot',
+          x: tile.paperRight + 1 + AA_PAD_PX,
+          y: 50,
+          radius: 1,
+          color: '#000000',
+          erase: false,
+        },
+        tile
+      )
+    ).toBe(false);
   });
 
   it('places shared CSS edges on physical-device pixels', () => {

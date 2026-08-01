@@ -9,8 +9,17 @@ import {
   summarizeActionGroup,
 } from '../perf/action-stats.mjs';
 import { canvasHasInk, selectedActions } from '../perf/ipad-actions.mjs';
+import { hasMinimumActionRepeats, resolveViewport } from '../perf/desktop-actions.mjs';
 
-const ACTION_RUNNER = readFileSync(join(ROOT, 'scripts', 'perf', 'ipad-actions.mjs'), 'utf8');
+const ACTION_PROBE = readFileSync(join(ROOT, 'scripts', 'perf', 'action-probe.js'), 'utf8');
+const DRAWING_CANVAS = readFileSync(
+  join(ROOT, 'web', 'src', 'lib', 'components', 'DrawingCanvas.svelte'),
+  'utf8'
+);
+const SCREENSHOT_FEEDBACK = readFileSync(
+  join(ROOT, 'web', 'src', 'lib', 'drawing', 'screenshotFeedback.ts'),
+  'utf8'
+);
 const PARENT_CENTER = readFileSync(
   join(ROOT, 'web', 'src', 'lib', 'components', 'ParentCenter.svelte'),
   'utf8'
@@ -44,6 +53,18 @@ describe('selectedActions', () => {
   });
 });
 
+describe('desktop action options', () => {
+  it('resolves the default and an explicit viewport', () => {
+    expect(resolveViewport()).toEqual({ width: 1512, height: 982 });
+    expect(resolveViewport('1024x768')).toEqual({ width: 1024, height: 768 });
+  });
+
+  it('requires a warmup plus every gated repeat', () => {
+    expect(hasMinimumActionRepeats(3)).toBe(false);
+    expect(hasMinimumActionRepeats(4)).toBe(true);
+  });
+});
+
 describe('trusted action setup', () => {
   it('checks canvas ink rather than undo history after a clear', async () => {
     let expression;
@@ -52,17 +73,31 @@ describe('trusted action setup', () => {
       return true;
     });
 
-    expect(expression).toContain("document.querySelector('#screenshotButton')?.disabled === false");
+    const screenshotButtonId = /SCREENSHOT_BUTTON_ID = '([^']+)'/.exec(SCREENSHOT_FEEDBACK)?.[1];
+    expect(screenshotButtonId).toBeTruthy();
+    expect(expression).toContain(
+      `document.querySelector('#${screenshotButtonId}')?.disabled === false`
+    );
     expect(expression).not.toContain('#undoButton');
   });
 
   it('keeps Parent Center navigation semantic and restores observed settings', () => {
     expect(PARENT_CENTER.match(/data-section=\{section\.id\}/g)).toHaveLength(2);
-    expect(ACTION_RUNNER).toContain('.pc-nav-item[data-section=');
-    expect(ACTION_RUNNER).toContain('.hub-row[data-section=');
-    expect(ACTION_RUNNER).not.toContain('.pc-nav-item:nth-child');
-    expect(ACTION_RUNNER).toContain('await setState(initial, `${label} original state`)');
   });
+});
+
+describe('action probe selector contract', () => {
+  for (const marker of [
+    'id="drawingCanvas"',
+    'data-live-tile',
+    'data-live-crayon-bottom',
+    'data-live-crayon-top',
+  ]) {
+    it(`tracks the canvas surface declared by ${marker}`, () => {
+      expect(DRAWING_CANVAS).toContain(marker);
+      expect(ACTION_PROBE).toContain(marker.replace('id="', '').replace('"', ''));
+    });
+  }
 });
 
 describe('action-owned frame attribution', () => {
@@ -114,6 +149,7 @@ describe('action-owned frame attribution', () => {
     const sample = action(frames, { readyMs: 5_000 });
 
     expect(sample.postActionFrameGapsMs).toContain(66.6);
+    expect(summarizeActionGroup([sample]).frames.raw.max).toBe(66.6);
     expect(scoredActionFrameGaps(sample)).toEqual(
       Array.from({ length: ACTION_SETTLE_TAIL_FRAMES }, () => 16.7)
     );

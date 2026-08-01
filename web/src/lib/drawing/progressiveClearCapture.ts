@@ -65,7 +65,9 @@ export function createProgressiveClearCapture<Command>(
         current.nextIndex++;
       }
       if (current.nextIndex < current.remaining.length) captureIndex(current.nextIndex++);
-      if (pending?.revision === scheduledRevision) requestAnimationFrame(captureNext);
+      if (pending?.revision === scheduledRevision && pending.nextIndex < pending.remaining.length) {
+        requestAnimationFrame(captureNext);
+      }
     };
     requestAnimationFrame(captureNext);
   }

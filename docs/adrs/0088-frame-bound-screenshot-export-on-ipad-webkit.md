@@ -15,9 +15,9 @@ full-screen polaroid animation. On a 1,282×934 CSS-pixel iPad at 2× export sca
 PNG encode blocked animation frames for 241–265 ms.
 
 Screenshot export uses the same generic interaction gate as theme changes: a `requestAnimationFrame`
-interval above 32 ms is a long frame. Total save completion may exceed one frame if drawing remains
-responsive throughout. Saved-image correctness independently requires a lossless PNG, the full
-upright paper rather than the letterboxed visible viewport, a minimum 2× export scale, paper
+interval above 33.5 ms is a long frame. Total save completion may exceed one frame if drawing
+remains responsive throughout. Saved-image correctness independently requires a lossless PNG, the
+full upright paper rather than the letterboxed visible viewport, a minimum 2× export scale, paper
 texture, theme treatment, and coloring-page line art.
 
 The first thirty-one serial isolations separated encoding, preview, surface allocation, and cleanup
@@ -79,7 +79,7 @@ full-resolution main-thread snapshot—not PNG compression or merely the 2× dim
 shared graphics backing store that the worker forced WebKit to synchronize.
 
 The follow-up serial trials kept the same physical iPad, 1,282×934 CSS-pixel paper, exact blob-type
-check, and 32 ms frame gate:
+check, and 33.5 ms frame gate:
 
 | #  | Isolated strategy                                                    | Max gap ms      | Result                                                    |
 | -- | -------------------------------------------------------------------- | --------------- | --------------------------------------------------------- |
@@ -195,7 +195,7 @@ because the tiled path requires the full set of transferable canvas APIs.
   A tiled-worker failure rejects that save instead of reconstructing another full-page surface on
   the UI thread; the next user tap creates a fresh worker.
 * − Completion time is intentionally not a hard gate. A save can finish slowly under device pressure
-  as long as UI frames remain below the 32 ms interaction threshold.
+  as long as UI frames remain below the 33.5 ms interaction threshold.
 
 ## Re-attempting the Architectures
 
@@ -264,8 +264,8 @@ Direct export strips fail for a related but distinct reason. Cropping strips fro
 synchronizes that source on the first crop. Rendering fresh strips avoids the full source but queues
 new graphics work across every strip; the first pixel read or `createImageBitmap` then flushes the
 aggregate pending work. Row height, incremental worker messages, native per-strip PNG, and 2D tiles
-all moved the gap but did not clear the 32 ms gate. Existing live tiles work because their rendering
-settled as the child drew, before the Screenshot Button interaction begins.
+all moved the gap but did not clear the 33.5 ms gate. Existing live tiles work because their
+rendering settled as the child drew, before the Screenshot Button interaction begins.
 
 ### Encoding Isolation
 

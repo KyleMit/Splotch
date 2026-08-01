@@ -10,6 +10,10 @@ describe('encodeTiledPng', () => {
     const expected = new Blob(['png'], { type: 'image/png' });
     const drawImage = vi.fn();
     const setTransform = vi.fn();
+    const fills: Array<{
+      fillStyle: string | CanvasGradient | CanvasPattern;
+      compositeOperation: GlobalCompositeOperation;
+    }> = [];
     const context = {
       globalCompositeOperation: 'source-over' as GlobalCompositeOperation,
       imageSmoothingEnabled: false,
@@ -17,7 +21,12 @@ describe('encodeTiledPng', () => {
       fillStyle: '',
       setTransform,
       resetTransform: vi.fn(),
-      fillRect: vi.fn(),
+      fillRect: vi.fn(() => {
+        fills.push({
+          fillStyle: context.fillStyle,
+          compositeOperation: context.globalCompositeOperation,
+        });
+      }),
       createPattern: vi.fn(() => {
         expect(context.imageSmoothingEnabled).toBe(true);
         expect(context.imageSmoothingQuality).toBe('high');
@@ -66,6 +75,10 @@ describe('encodeTiledPng', () => {
     expect(setTransform).toHaveBeenNthCalledWith(3, 2, 0, 0, 2, 0, 0);
     expect(drawImage).toHaveBeenNthCalledWith(1, tile, 10, 20);
     expect(drawImage).toHaveBeenNthCalledWith(2, overlay, 62.5, 0, 75, 150);
+    expect(fills).toEqual([
+      { fillStyle: expect.any(Object), compositeOperation: 'destination-over' },
+      { fillStyle: '#fffaf0', compositeOperation: 'destination-over' },
+    ]);
     expect(convertToBlob).toHaveBeenCalledWith({ type: 'image/png' });
   });
 });

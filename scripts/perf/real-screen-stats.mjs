@@ -82,6 +82,7 @@ const EVENT_HEIGHT = 11;
 const EVENT_COALESCED_FIRST = 12;
 const EVENT_COALESCED_LAST = 13;
 const POINTER_KIND_NAMES = ['touch', 'pen', 'mouse'];
+const LAST_TRUSTED_CONTACT_KIND = 1;
 const MEASURE_START = 0;
 const MEASURE_DUR = 1;
 const MEASURE_NAME = 2;
@@ -365,12 +366,12 @@ export function starvationEpisodes({
 }) {
   const budgetMs = Math.min(intervalMs, QUEUE_DELAY_LAG_MS);
   const thresholdMs = budgetMs * STARVATION_FRAME_MULTIPLE;
-  const trustedTouchMoves = events.filter(
+  const trustedContactMoves = events.filter(
     (event) =>
       event[EVENT_ON_CANVAS] &&
       event[EVENT_TYPE] === POINTER_MOVE &&
       event[EVENT_BUTTONS] !== 0 &&
-      event[EVENT_KIND] === 0 &&
+      event[EVENT_KIND] <= LAST_TRUSTED_CONTACT_KIND &&
       event[EVENT_TRUSTED] === 1
   );
   const lifts = events
@@ -378,7 +379,7 @@ export function starvationEpisodes({
       (event) =>
         event[EVENT_ON_CANVAS] &&
         event[EVENT_TYPE] === POINTER_UP &&
-        event[EVENT_KIND] === 0 &&
+        event[EVENT_KIND] <= LAST_TRUSTED_CONTACT_KIND &&
         event[EVENT_TRUSTED] === 1
     )
     .map((event, index) => ({ index, at: event[EVENT_AT] }));
@@ -396,7 +397,7 @@ export function starvationEpisodes({
     const gapMs = frame[FRAME_DT];
     if (!inWindow(start, from, to) || !inWindow(end, from, to) || gapMs <= thresholdMs) continue;
 
-    const moves = trustedTouchMoves.filter((event) => inWindow(event[EVENT_AT], start, end));
+    const moves = trustedContactMoves.filter((event) => inWindow(event[EVENT_AT], start, end));
     const engineMs = coveredDurationMs(measures, start, end);
     const engineShare = engineMs / gapMs;
 
@@ -408,6 +409,9 @@ export function starvationEpisodes({
       starvationMs: round(Math.max(0, gapMs - budgetMs - engineMs)),
       population: previous[FRAME_CONTACT] && frame[FRAME_CONTACT] ? 'inContact' : 'betweenStrokes',
       trustedMoves: moves.length,
+      trustedPointerKinds: [
+        ...new Set(moves.map((event) => POINTER_KIND_NAMES[event[EVENT_KIND]]).filter(Boolean)),
+      ],
       engineMs,
       engineShare: round(engineShare, 4),
       nearestLift: nearestAttribution(lifts, start, end),

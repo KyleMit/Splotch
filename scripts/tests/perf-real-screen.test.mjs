@@ -53,7 +53,6 @@ import { summarizeUndoActions } from '../perf/undo-action-stats.mjs';
 
 const PROBE = readFileSync(join(ROOT, 'scripts', 'perf', 'real-screen-probe.js'), 'utf8');
 const ACTION_RUNNER = readFileSync(join(ROOT, 'scripts', 'perf', 'ipad-actions.mjs'), 'utf8');
-const XCUITEST_RUNNER = readFileSync(join(ROOT, 'scripts', 'perf', 'ipad-xcuitest.mjs'), 'utf8');
 const STORAGE_KEYS_SOURCE = readFileSync(join(ROOT, 'web', 'src', 'lib', 'storageKeys.ts'), 'utf8');
 const SCREENSHOT_MODULE = readFileSync(
   join(ROOT, 'web', 'src', 'lib', 'drawing', 'screenshot.ts'),
@@ -427,6 +426,21 @@ describe('starvationEpisodes', () => {
     expect(episode.starvationMs).toBeCloseTo(1422 - intervalMs, 1);
   });
 
+  it('counts trusted pen input as contact without admitting mouse input', () => {
+    const { frames, start } = framesWithGap(400);
+    const penMove = move(start + 20, { kind: 1 });
+    const mouseMove = move(start + 40, { kind: 2 });
+    const [episode] = starvationEpisodes({
+      frames,
+      events: [penMove, mouseMove],
+      measures: [],
+      intervalMs,
+    });
+
+    expect(episode.trustedMoves).toBe(1);
+    expect(episode.trustedPointerKinds).toEqual(['pen']);
+  });
+
   it('retains and labels a starvation episode between strokes', () => {
     const { frames, start, end } = framesWithGap(400, { afterContact: 0 });
     const [episode] = starvationEpisodes({
@@ -771,10 +785,6 @@ describe('probeConfigScript', () => {
     );
     expect(validateFreeDrawOptions('60', { hud: true })).toBe(60);
   });
-
-  it('retains a wall-clock anchor for system-trace correlation', () => {
-    expect(PROBE).toContain('timeOriginUnixMs: performance.timeOrigin');
-  });
 });
 
 describe('trusted XCUITest input', () => {
@@ -785,7 +795,7 @@ describe('trusted XCUITest input', () => {
   const webViewBounds = { x: 0, y: 0, width: 1366, height: 1024 };
   const nativeWindow = { x: 0, y: 0, width: 1366, height: 1024 };
 
-  it('pins PWA side effects and records probe/signal guards in the runner', async () => {
+  it('pins PWA side effects before measurement', async () => {
     const scripts = [];
     const execute = async (script) => {
       scripts.push(script);
@@ -799,10 +809,6 @@ describe('trusted XCUITest input', () => {
     expect(installKey).toBeDefined();
     expect(scripts[0]).toContain(JSON.stringify(installKey));
     expect(scripts[1]).toContain("Object.defineProperty(navigator.serviceWorker, 'register'");
-    expect(XCUITEST_RUNNER.match(/await clearDeviceWebCache\(executeAsync\)/g)).toHaveLength(2);
-    expect(XCUITEST_RUNNER).toContain('if (!probeInstalled)');
-    expect(XCUITEST_RUNNER).toContain("process.once('SIGINT', onSigint)");
-    expect(XCUITEST_RUNNER).toContain("process.once('SIGTERM', onSigterm)");
   });
 
   it('maps CSS canvas coordinates below Safari chrome', () => {

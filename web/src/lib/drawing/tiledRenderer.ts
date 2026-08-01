@@ -36,9 +36,9 @@ export interface TiledCanvasSnapshot {
   tiles: Array<{ bitmap: Promise<ImageBitmap>; x: number; y: number }>;
 }
 
-const TILE_HISTORY_FOLD_IDLE_MS = 1_500;
+export const TILE_HISTORY_FOLD_IDLE_MS = 1_500;
 export const TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE = 3;
-const MIN_TILED_UNDO_COMMANDS = 2;
+export const MIN_TILED_UNDO_COMMANDS = 2;
 
 let canvas: HTMLCanvasElement | null = null;
 let host: TiledRendererHost | null = null;
@@ -469,6 +469,7 @@ export function tiledHistoryDebug(): HistoryDebug {
     blobBytes: 0,
     baseRasters: historyBase.length,
     baseRasterBytes,
+    historyLength: history.length,
     patchBytes: rasterBytes,
     pendingCommands: activeCommand ? 1 : 0,
   };

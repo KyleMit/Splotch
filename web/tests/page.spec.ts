@@ -1,5 +1,25 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { draw, gotoApp, renderedCanvasHandle } from './helpers';
+
+async function opaquePixelCount(page: Page) {
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return canvas.evaluate((element) => {
+      const pixels = element
+        .getContext('2d')!
+        .getImageData(0, 0, element.width, element.height).data;
+      let count = 0;
+      for (let index = 3; index < pixels.length; index += 4) {
+        if (pixels[index] > 0) count++;
+      }
+      return count;
+    });
+  } finally {
+    await canvas.dispose();
+  }
+}
+
 test('home page renders the drawing canvas', async ({ page }) => {
   await page.goto('/');
 
@@ -88,6 +108,35 @@ test('client-side nav off the drawing route drops the app-surface locks (effect 
   const after = await bodySurface(page);
   expect(after.touchAction).toBe('auto');
   expect(after.userSelect).not.toBe('none');
+});
+
+test('drawing survives a real-route remount and the fresh tiled canvas accepts more ink', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await draw(page, [
+    { x: 80, y: 100 },
+    { x: 260, y: 100 },
+  ]);
+  const beforeNavigation = await opaquePixelCount(page);
+  expect(beforeNavigation).toBeGreaterThan(0);
+
+  await page.evaluate(() => {
+    const link = document.createElement('a');
+    link.href = '/privacy';
+    document.body.appendChild(link);
+    link.click();
+  });
+  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+  await page.goBack();
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  expect(await opaquePixelCount(page)).toBeGreaterThanOrEqual(beforeNavigation);
+
+  await draw(page, [
+    { x: 80, y: 220 },
+    { x: 260, y: 220 },
+  ]);
+  expect(await opaquePixelCount(page)).toBeGreaterThan(beforeNavigation);
 });
 
 test('link-preview meta tags are present and match the real OG image', async ({

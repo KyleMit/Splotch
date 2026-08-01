@@ -473,6 +473,8 @@ boundaries. It passed at 0 starvation and 16/24/36 ms. To re-attempt:
 3. Increment the checkpoint counter once per recorded path op, not per coalesced pointer sample.
 4. Record each flush in command order so history replay preserves subtractive mixing.
 5. Reset the counter on every flush, clear, cancellation, and renderer teardown.
+6. Treat a checkpoint as a deposition-pass boundary: continued crayon input receives a fresh seed
+   and pass tracker so the next wax layer cannot reuse the phase that was just stamped.
 
 Do not capture one full-paper crayon raster in production; that was part of the superseded snapshot
 architecture. Also do not merge checkpoints across an eraser, pen, magic op, clear, or brush switch:

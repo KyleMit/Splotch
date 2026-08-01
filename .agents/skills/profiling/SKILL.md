@@ -43,11 +43,11 @@ pre-hook). `perf:ipad:xcuitest` needs an existing Appium 3 server and one of `--
 `--capabilities-file=`, or `--session-id=`. It also takes `--appium-url=` / `--xcode-config=` /
 `--wda-bundle-id=` / `--allow-provisioning` / `--native-app` / `--native-webview-class=` /
 `--brush=pen|crayon|magic|eraser` / `--gesture-repeats=N` / `--repeat-pause-ms=N` / `--undo-count=N`
-/ `--undo-pause-ms=N` / `--history-settle-ms=N` / `--rotate-before-undo` / `--free-draw=SECONDS` /
-`--label=` / `--output=` / `--url=` / `--report-only` / `--no-serve`. Free-draw capture requires the
-visible HUD so the operator can start and stop the timed window. `perf:ipad:actions` shares the
-Appium, capability, session, native-app, and signing flags and also takes `--orientation=` /
-`--webdriver-clicks` / `--actions=` / `--repeats=N` / `--report-only`. Use
+/ `--undo-pause-ms=N` / `--history-settle-ms=N` / `--rotate-before-undo` / `--label=` / `--output=`
+/ `--url=` / `--port=N` / `--report-only` / `--no-serve`. Free-draw capture belongs to
+`perf:ipad:frames`, whose visible HUD lets the operator start and stop the timed window.
+`perf:ipad:actions` shares the Appium, capability, session, native-app, and signing flags and also
+takes `--orientation=` / `--webdriver-clicks` / `--actions=` / `--repeats=N` / `--report-only`. Use
 `--native-webview-class=android.webkit.WebView` for Android native sessions. A native rotation sweep
 uses the real Parent Center toggle to unlock and restore Splotch's orientation preference.
 `perf:android:web:actions` takes `--device-id=` / `--cdp-port=N` / `--orientation=` / `--actions=` /
@@ -137,7 +137,7 @@ drift). Absolute device milliseconds still come from `ipad-device-profiling.md`.
 
 Read in this order:
 
-1. **Frame health** — `Long frames (>32 ms)` and `Long tasks (>50 ms)`. Zero is healthy. A cluster
+1. **Frame health** — `Long frames (>33.5 ms)` and `Long tasks (>50 ms)`. Zero is healthy. A cluster
    of long tasks points to the phase they fall in (see the per-phase table's "Long tasks" column).
 2. **Engine hot paths** — the `Total`/`Avg`/`Max` per operation. Map a hot row to its cause and fix:
 

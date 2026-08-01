@@ -262,7 +262,6 @@ export function setCrayonOptions(next: Partial<CrayonOptions>) {
   cancelCrayonWarmup();
   opts = clone({ ...opts, ...next });
   fields = buildFields();
-  colorTileRevision++;
   colorTileCache.clear();
   patternCache = new WeakMap();
 }
@@ -347,9 +346,9 @@ export function shadeShift(heightValue: number, bodyValue: number, amplitude: nu
 // per texel (identically for every pass), alpha = the pass's tooth field. Built
 // once and reused by every context's pattern.
 const colorTileCache = new Map<string, HTMLCanvasElement>();
-let colorTileRevision = 0;
 // Physical-iPad trials need warm-up work to leave headroom inside a presentation frame; a deadline
-// lets slower devices generate fewer rows instead of converting one tuned row count into a stall.
+// lets slower devices generate fewer eight-row chunks instead of turning one tuned row count into a
+// stall.
 const CRAYON_WARM_FRAME_BUDGET_MS = 2;
 const CRAYON_WARM_ROW_GRANULARITY = 8;
 // Bounds resident wax-tile canvases to this many recent (colour, pass) keys — each tile is
@@ -453,7 +452,6 @@ function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
 
 interface CrayonWarmJob {
   color: string;
-  revision: number;
   passIdx: number;
   build: ColorTileBuild | null;
   nextPixel: number;
@@ -463,7 +461,7 @@ interface CrayonWarmJob {
 let activeWarmJob: CrayonWarmJob | null = null;
 
 export function cancelCrayonWarmup() {
-  if (activeWarmJob?.frameId !== null && activeWarmJob?.frameId !== undefined) {
+  if (activeWarmJob?.frameId != null) {
     cancelAnimationFrame(activeWarmJob.frameId);
   }
   activeWarmJob = null;
@@ -485,7 +483,7 @@ function warmNextCrayonPass(job: CrayonWarmJob) {
 }
 
 function warmCrayonTileForFrame(job: CrayonWarmJob) {
-  if (activeWarmJob !== job || job.revision !== colorTileRevision) return;
+  if (activeWarmJob !== job) return;
   job.frameId = null;
   const key = `${job.color}@${job.passIdx}`;
   if (colorTileCache.has(key)) {
@@ -527,7 +525,6 @@ export function warmCrayonTiles(color: string) {
   cancelCrayonWarmup();
   const job: CrayonWarmJob = {
     color,
-    revision: colorTileRevision,
     passIdx: 0,
     build: null,
     nextPixel: 0,

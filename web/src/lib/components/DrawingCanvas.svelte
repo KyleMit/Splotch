@@ -216,10 +216,10 @@
       setColorSheet(null);
       return;
     }
-    if (displayed && pageCompositionKey(displayed) !== pageCompositionKey(url)) {
+    if (displayed !== url) {
       setColorSheet(null);
+      return;
     }
-    if (displayed !== url) return;
     const theme = resolvedTheme();
     const nightUrl = theme === 'dark' ? nightSheetUrl() : null;
     setColorSheet(nightUrl ?? colorSheetUrl());

@@ -102,13 +102,13 @@ describe('coloring book state', () => {
       spacePage.images.landscape.replace('.outline.webp', '.overlay.webp')
     );
     expect(themedOverlayThumbnailUrl('light')).toBe(
-      spacePage.images.landscape.replace('.outline.webp', '.thumb.webp')
+      spacePage.images.landscape.replace('.outline.webp', '.overlay.thumb.webp')
     );
     expect(themedOverlayUrl('dark')).toBe(
       spacePage.images.landscape.replace('.outline.webp', '.dark.overlay.webp')
     );
     expect(themedOverlayThumbnailUrl('dark')).toBe(
-      spacePage.chalkImages.landscape!.replace('.chalk.webp', '.chalk.thumb.webp')
+      spacePage.images.landscape.replace('.outline.webp', '.dark.overlay.thumb.webp')
     );
   });
 

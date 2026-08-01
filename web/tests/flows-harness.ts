@@ -45,6 +45,9 @@ const ENGINE_MODE_BY_BUTTON = {
 // The engine has ~nothing to do to adopt a mode — it assigns a flag — so this
 // only has to outlast a starved worker's Svelte flush, not any real work.
 const BRUSH_COMMIT_TIMEOUT_MS = 10_000;
+const COLORING_DIALOG_CLOSE_TIMEOUT_MS = 10_000;
+const COLORING_DIALOG_CLOSE_SETTLE_MS = 1_000;
+const COLORING_OVERLAY_DECODE_TIMEOUT_MS = 15_000;
 
 // Answer the mode the ENGINE holds, or a legible stand-in when the dev-harness
 // seam isn't there to ask (a build without PUBLIC_ENABLE_DEV_HARNESS, or a page
@@ -95,10 +98,11 @@ export async function applyFarmPage(page: Page) {
   );
   await expect(async () => {
     if (await dialog.isVisible()) await farmPage.click();
-    await expect(dialog).toBeHidden();
-  }).toPass();
+    await expect(dialog).toBeHidden({ timeout: COLORING_DIALOG_CLOSE_SETTLE_MS });
+  }).toPass({ timeout: COLORING_DIALOG_CLOSE_TIMEOUT_MS });
   await expect(page.locator('#coloringOverlay')).toHaveAttribute(
     'src',
-    /\.(?:dark\.)?overlay\.webp$/
+    /\.(?:dark\.)?overlay\.webp$/,
+    { timeout: COLORING_OVERLAY_DECODE_TIMEOUT_MS }
   );
 }

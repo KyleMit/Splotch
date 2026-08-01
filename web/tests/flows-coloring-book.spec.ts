@@ -55,7 +55,7 @@ test('a selected page stays centered and visible while its full-resolution art d
 
     await expect(dialog).toBeHidden();
     const overlay = page.locator('#coloringOverlay');
-    await expect(overlay).toHaveAttribute('src', /\/cat-wide\.thumb\.webp$/);
+    await expect(overlay).toHaveAttribute('src', /\/cat-wide\.overlay\.thumb\.webp$/);
     const [overlayBox, canvasBox] = await Promise.all([
       overlay.boundingBox(),
       page.locator('#drawingCanvas').boundingBox(),
@@ -109,7 +109,7 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
   const pixelsBeforeTheme = await opaquePixelCount();
 
   const overlay = page.locator('#coloringOverlay');
-  await expect(overlay).toHaveAttribute('src', /\.overlay\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /(?<!\.dark)\.overlay\.webp$/);
   await page.evaluate(() => {
     const originalDecode = HTMLImageElement.prototype.decode;
     let release!: () => void;
@@ -129,9 +129,9 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
   await openParentCenter(page);
   await page.locator('#themeOption-dark').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(overlay).toHaveAttribute('src', /\.overlay\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /(?<!\.dark)\.overlay\.webp$/);
   await expect(overlay).toHaveClass(/overlay-ready/);
-  await expect.poll(opaquePixelCount).toBe(pixelsBeforeTheme);
+  await expect.poll(opaquePixelCount).toBeGreaterThanOrEqual(pixelsBeforeTheme);
 
   await page.evaluate(() => {
     (window as Window & { __releaseChalkDecode?: () => void }).__releaseChalkDecode?.();

@@ -459,6 +459,9 @@ test('the rotation-lock letterbox margin stays outside the drawable paper', asyn
     { x: 440, y: 6 },
     { x: 660, y: 6 },
   ]);
+  // A valid margin stroke can settle after its pointerup while the worker-built
+  // magic sheet resolves, so give that deferred repaint its full allowed window.
+  await page.waitForTimeout(REVEAL_SETTLE_MS);
   expect(await bandNonInkPixels(page, 'top', 0.05, TEST_PALETTE.purple)).toBe(0);
   expect(await page.evaluate(() => window.__drawingDebug?.getUndoDebug().snapshots)).toBe(
     undoDepthBefore

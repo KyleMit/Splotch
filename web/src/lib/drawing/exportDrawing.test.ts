@@ -162,6 +162,34 @@ describe('composeExportPng overlay', () => {
     );
   });
 
+  it('closes fulfilled bitmaps when another tiled bitmap rejects', async () => {
+    const fulfilled = { close: vi.fn() } as unknown as ImageBitmap;
+    const failure = new Error('bitmap failed');
+    const { composeExportPng } = await import('./exportDrawing');
+
+    await expect(
+      composeExportPng(
+        {
+          source: {
+            width: 400,
+            height: 300,
+            tiles: [
+              { bitmap: Promise.resolve(fulfilled), x: 0, y: 0 },
+              { bitmap: Promise.reject(failure), x: 200, y: 0 },
+            ],
+          },
+          sourceScale: 2,
+        },
+        2,
+        null,
+        { includePaperTexture: false }
+      )
+    ).rejects.toBe(failure);
+
+    expect(fulfilled.close).toHaveBeenCalledOnce();
+    expect(pngMock.encodeTiledCanvasPng).not.toHaveBeenCalled();
+  });
+
   it('returns null when the output canvas cannot allocate a context', async () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     const toBlob = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob');

@@ -41,7 +41,7 @@ function positiveInteger(value, name) {
   return parsed;
 }
 
-function resolveViewport(value) {
+export function resolveViewport(value) {
   if (!value) return DEFAULT_VIEWPORT;
   const match = /^(\d+)x(\d+)$/.exec(value);
   if (!match) fail(`--viewport=${value} must use WIDTHxHEIGHT`);
@@ -49,6 +49,10 @@ function resolveViewport(value) {
     width: positiveInteger(match[1], 'viewport width'),
     height: positiveInteger(match[2], 'viewport height'),
   };
+}
+
+export function hasMinimumActionRepeats(repeats) {
+  return repeats >= WARMUP_REPEATS + MIN_GATED_SAMPLES;
 }
 
 function browserLaunchOptions(engineName, headless) {
@@ -85,7 +89,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
     'device-scale-factor'
   );
   const repeats = positiveInteger(flag('repeats', '4'), 'repeats');
-  if (repeats < WARMUP_REPEATS + MIN_GATED_SAMPLES) {
+  if (!hasMinimumActionRepeats(repeats)) {
     fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
   }
   const actions = selectedActions(flag('actions'));
