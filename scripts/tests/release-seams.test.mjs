@@ -4,6 +4,8 @@ import { dirname, join } from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 import {
   checkReleaseSeams,
+  DEV_GATED_ENGINE_EXPORTS,
+  engineDevGateProblems,
   RELEASE_ONLY_TOKENS,
   releaseSeamProblems,
 } from '../check-release-seams.mjs';
@@ -42,6 +44,7 @@ it('derives every current window seam and engine measure family', () => {
     '__committedBrushMode',
     '__drawingDebug',
     '__screenshotSaveSink',
+    'baseRasterBytes',
     'engine.commit',
     'engine.draw',
     'engine.encode',
@@ -51,7 +54,24 @@ it('derives every current window seam and engine measure family', () => {
     'engine.scanEmpty',
     'engine.snapshot',
     'engine.undo',
+    'liveRasters',
+    'pendingCommands',
   ]);
+});
+
+it('requires every engine dev export to start behind the compile-time gate', () => {
+  expect(engineDevGateProblems()).toEqual([]);
+});
+
+it.each(DEV_GATED_ENGINE_EXPORTS)('rejects an ungated %s export', (name) => {
+  const source = DEV_GATED_ENGINE_EXPORTS.map(
+    (exportName) =>
+      `export function ${exportName}() { ${exportName === name ? '' : 'if (!dev && !__DEV_HARNESS__) return;'} }`
+  ).join('\n');
+
+  expect(engineDevGateProblems(source)).toContain(
+    `${name} must begin with the __DEV_HARNESS__ compile-time guard`
+  );
 });
 
 it('skips an explicitly instrumented build before reading its bundle', async () => {

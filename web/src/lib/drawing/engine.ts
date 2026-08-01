@@ -24,6 +24,7 @@
 //   engineListeners.ts  DOM listener registration and teardown tracking
 //   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
+import { dev } from '$app/environment';
 import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
 import type { BrushType } from '$lib/state/tool.svelte';
 import {
@@ -296,14 +297,18 @@ let paperAngle = 0;
 let resizedAngle = 0;
 let paperView: PaperView = IDENTITY_PAPER_VIEW;
 
-// Dev/test seam (mirrors setCrayonParams): pin the screen angle the engine
-// reads so the /dev/engine harness can simulate a device rotation without a
-// device. Production never calls the setter.
+// The /dev/engine harness intentionally mutates this unlike the drawing route's
+// read-only seams: simulated rotation has no equivalent DOM state to drive.
+// The compile-time gate drops both the state and currentScreenAngle branch from
+// release builds.
 let screenAngleOverride: number | null = null;
-export const setScreenAngleOverride = (angle: number | null) => (screenAngleOverride = angle);
+export function setScreenAngleOverride(angle: number | null) {
+  if (!dev && !__DEV_HARNESS__) return;
+  screenAngleOverride = angle;
+}
 
 function currentScreenAngle(): number {
-  if (screenAngleOverride !== null) return screenAngleOverride;
+  if ((dev || __DEV_HARNESS__) && screenAngleOverride !== null) return screenAngleOverride;
   const angle = window.screen?.orientation?.angle;
   return typeof angle === 'number' ? angle : 0;
 }
@@ -1239,6 +1244,7 @@ export function isCanvasEmpty(): boolean {
 // Test/profiling seam: how the undo history is currently stored (see
 // undoHistory.getHistoryDebug).
 export function getUndoDebug(): HistoryDebug {
+  if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) throw new Error();
   if (tiledRendererActive()) return tiledHistoryDebug();
   return getHistoryDebug();
 }
@@ -1250,6 +1256,7 @@ export function getUndoDebug(): HistoryDebug {
 // in-flight and pending crayon ops pick up the new tooth (committed wax is
 // baked into the paper raster and keeps the tooth it was drawn with).
 export function setCrayonParams(params: Partial<CrayonOptions>) {
+  if (!dev && !__DEV_HARNESS__) return;
   setCrayonOptions(params);
   syncCrayonOverlayMix();
   if (ctx) {
