@@ -1,7 +1,7 @@
 # Deployment-target performance matrix — 2026-07-31
 
 This cumulative snapshot combines retained deployment-target evidence with focused final-state
-recaptures. `4c57798b9ac1` is the final performance-affecting product commit. Every normalized
+recaptures. `7c5125ce17d8` is the final performance-affecting product commit. Every normalized
 result retains the commit and raw artifact that produced it; focused action captures replace only
 their declared scenarios.
 
@@ -12,7 +12,7 @@ contains every normalized drawing run and grouped action result, and
 Regenerate the JSON, Markdown, and HTML after updating the source manifest with:
 
 ```sh
-node scripts/perf/deployment-matrix-report.mjs \
+npm run perf:matrix:report -- \
   scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 ```
 
@@ -28,9 +28,11 @@ post-action frame max ≤ 33.5 ms.
 * The final physical-iPad recapture could not start WebDriverAgent: Xcode timed out enabling UI
   automation, and the preinstalled-WDA launch timed out while the device was unavailable for
   automation. The retained physical-iPad evidence remains attributed to 09c4efac27ca.
-* Drawing and undo were not rerun after the discrete-action fixes because those changes affect
-  action readiness and layout transitions, not drawing or undo execution. Their original product
-  commits remain explicit.
+* The final product commit includes unmeasured post-capture changes to screenshot recovery,
+  alpha-overlay theme swaps and thumbnails, crayon warming/checkpoints, PNG composition, audio
+  teardown, engine extraction, Magic worker recovery, remount/resize behavior, progressive clear,
+  and tiled undo safety. Every retained result remains attributed to the product commit that
+  produced its source capture.
 * Only physical iPad web uses the Safari-calibrated trusted-input release gate. Simulator, desktop,
   native-shell, and automated Android results are advisory.
 
@@ -94,10 +96,10 @@ interactive matrix and normalized JSON.
 | 3. iPad simulator · native   | 40 / 46 | 0 / 46          | 38              | 19 / 108             | open Parent Center section: What's New; select coloring page; clear coloring page; clear drawing; clear restored drawing after blank rotation; with ink: LANDSCAPE to PORTRAIT rotation                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 4. Android emulator · web    | 25 / 46 | 0 / 46          | 28.8            | 33.3 / 283.3         | expand action drawer; collapse action drawer; select custom color; open brush menu; select eraser; open Parent Center; open Parent Center section: What's New; open Parent Center section: Submit Feedback; switch dark theme to light; switch light theme to dark; enable drawing sounds; disable advanced controls; enable advanced controls; disable screenshot action button; open coloring books; open coloring book; select coloring page; save screenshot; empty after clear: LANDSCAPE to PORTRAIT rotation; with ink: PORTRAIT to LANDSCAPE rotation; with ink: LANDSCAPE to PORTRAIT rotation |
 | 5. Android emulator · native | 43 / 46 | 0 / 46          | 53.1            | 16.8 / 100           | select custom color; empty after clear: PORTRAIT to LANDSCAPE rotation; with ink: PORTRAIT to LANDSCAPE rotation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| 6. Android device · web      | 39 / 46 | 11 / 46         | 24              | 41.7 / 50            | select custom color; select pen brush; open Parent Center; disable advanced controls; open coloring books; undo clear after blank rotation; with ink: LANDSCAPE to PORTRAIT rotation                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| 7. Android device · native   | 41 / 46 | 5 / 46          | 32              | 33.4 / 75            | select custom color; empty after clear: PORTRAIT to LANDSCAPE rotation; empty after clear: LANDSCAPE to PORTRAIT rotation; with ink: PORTRAIT to LANDSCAPE rotation; with ink: LANDSCAPE to PORTRAIT rotation                                                                                                                                                                                                                                                                                                                                                                                           |
+| 6. Android device · web      | 39 / 46 | 0 / 46          | 24              | 41.7 / 50            | select custom color; select pen brush; open Parent Center; disable advanced controls; open coloring books; undo clear after blank rotation; with ink: LANDSCAPE to PORTRAIT rotation                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 7. Android device · native   | 41 / 46 | 0 / 46          | 32              | 33.4 / 75            | select custom color; empty after clear: PORTRAIT to LANDSCAPE rotation; empty after clear: LANDSCAPE to PORTRAIT rotation; with ink: PORTRAIT to LANDSCAPE rotation; with ink: LANDSCAPE to PORTRAIT rotation                                                                                                                                                                                                                                                                                                                                                                                           |
 | 8. iPad device · web         | 45 / 46 | 0 / 46          | 29              | 17 / 32              | select custom color                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| 9. macOS · web               | 44 / 46 | 46 / 46         | 56              | 19 / 25              | select custom color; open Parent Center section: What's New                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| 9. macOS · web               | 44 / 46 | 0 / 46          | 56              | 19 / 25              | select custom color; open Parent Center section: What's New                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
 ## Method
 

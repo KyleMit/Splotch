@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
   "recordedOn": "2026-07-31",
-  "productCommit": "4c57798b9ac1",
+  "productCommit": "7c5125ce17d8",
   "snapshotKind": "cumulative-final-state",
   "architecture": "tiled renderer",
   "limitations": [
     "The final physical-iPad recapture could not start WebDriverAgent: Xcode timed out enabling UI automation, and the preinstalled-WDA launch timed out while the device was unavailable for automation. The retained physical-iPad evidence remains attributed to 09c4efac27ca.",
-    "Drawing and undo were not rerun after the discrete-action fixes because those changes affect action readiness and layout transitions, not drawing or undo execution. Their original product commits remain explicit.",
+    "The final product commit includes unmeasured post-capture changes to screenshot recovery, alpha-overlay theme swaps and thumbnails, crayon warming/checkpoints, PNG composition, audio teardown, engine extraction, Magic worker recovery, remount/resize behavior, progressive clear, and tiled undo safety. Every retained result remains attributed to the product commit that produced its source capture.",
     "Only physical iPad web uses the Safari-calibrated trusted-input release gate. Simulator, desktop, native-shell, and automated Android results are advisory."
   ],
   "gates": {
@@ -7172,7 +7172,7 @@
           }
         ],
         "fullSweepProductCommit": "b91fcc08fa63",
-        "finalProductCommitActionCount": 11,
+        "finalProductCommitActionCount": 0,
         "actionCount": 47,
         "passedActionCount": 40,
         "worst": {
@@ -8587,7 +8587,7 @@
           }
         ],
         "fullSweepProductCommit": "b91fcc08fa63",
-        "finalProductCommitActionCount": 5,
+        "finalProductCommitActionCount": 0,
         "actionCount": 47,
         "passedActionCount": 42,
         "worst": {
@@ -11729,7 +11729,7 @@
           }
         ],
         "fullSweepProductCommit": "4c57798b9ac1",
-        "finalProductCommitActionCount": 46,
+        "finalProductCommitActionCount": 0,
         "actionCount": 47,
         "passedActionCount": 45,
         "worst": {
