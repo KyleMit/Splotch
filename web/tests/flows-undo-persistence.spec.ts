@@ -1,7 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
-import { SCREENSHOT_COOLDOWN_MS } from '../src/lib/drawing/screenshotTiming';
+import {
+  POLAROID_OBSERVATION_MS,
+  SCREENSHOT_COOLDOWN_MS,
+} from '../src/lib/drawing/screenshotTiming';
 
 import { draw, firstOpaquePixel, gotoApp, retryOpen } from './helpers';
 
@@ -151,7 +154,7 @@ test.describe('tiled screenshot export', () => {
 
     expect(download.suggestedFilename()).toMatch(/^splotch-.+\.png$/);
     expect(await download.failure()).toBeNull();
-    await expect(polaroid).toHaveCount(0, { timeout: 3_000 });
+    await expect(polaroid).toHaveCount(0, { timeout: POLAROID_OBSERVATION_MS });
   });
 
   test('suppresses the polaroid flash for reduced motion', async ({ page }) => {
