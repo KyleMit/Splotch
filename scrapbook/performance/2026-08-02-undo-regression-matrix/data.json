@@ -1,0 +1,391 @@
+{
+  "schemaVersion": 1,
+  "recordedOn": "2026-08-02",
+  "snapshotKind": "physical-ipad-undo-regression",
+  "productCommit": "dce45b894af978eb2b0c997641a30c6408b1bb9a",
+  "target": {
+    "label": "iPad device · web",
+    "platform": "iPadOS",
+    "deviceKind": "physical",
+    "runtime": "web",
+    "environment": "iPad · iPadOS 26.5 · MobileSafari",
+    "deviceId": "00008103-0006202E3CF1001E",
+    "brushCaptureOrientation": "LANDSCAPE",
+    "viewport": {
+      "width": 1366,
+      "height": 866
+    }
+  },
+  "gates": {
+    "drawing": {
+      "paintP95Ms": 20,
+      "paintP99Ms": 33,
+      "paintMaxMs": 50,
+      "lostFrameTimeShare": 0.01,
+      "starvationEpisodeThresholdMs": 56
+    },
+    "undo": {
+      "engineP95Ms": 20,
+      "nextFrameP95Ms": 33,
+      "nextFrameMaxMs": 50
+    }
+  },
+  "brushes": {
+    "pen": {
+      "fidelity": {
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "coalescing": true,
+          "pressure": true,
+          "contactGeometry": true
+        }
+      },
+      "commands": 20,
+      "historyBeforeUndo": {
+        "snapshots": 20,
+        "historyLength": 20,
+        "liveRasters": 20,
+        "patchBytes": 16523912,
+        "pendingCommands": 0
+      },
+      "drawing": {
+        "paintMs": {
+          "p50": 8,
+          "p95": 15,
+          "p99": 18,
+          "max": 29
+        },
+        "lostFrameTimeShare": 0.0134,
+        "lostFrameTimeMs": 185,
+        "starvationEpisodes": 0,
+        "starvationMs": 0,
+        "paintGatesPassed": true,
+        "starvationEpisodesGatePassed": true,
+        "lostFrameTimeShareGatePassed": false,
+        "allReleaseGatesPassed": false
+      },
+      "undo": {
+        "count": 10,
+        "engineMs": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1,
+          "max": 1
+        },
+        "nextFrameMs": {
+          "p50": 8,
+          "p95": 11,
+          "p99": 11,
+          "max": 11
+        },
+        "passed": true
+      },
+      "surfaceTopology": {
+        "surfaceCount": 16,
+        "surfaceWidth": 641,
+        "surfaceHeight": 433,
+        "maxBackingMegapixels": 0.278
+      }
+    },
+    "crayon": {
+      "fidelity": {
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "coalescing": true,
+          "pressure": true,
+          "contactGeometry": true
+        }
+      },
+      "commands": 20,
+      "historyBeforeUndo": {
+        "snapshots": 20,
+        "historyLength": 20,
+        "liveRasters": 20,
+        "patchBytes": 16496344,
+        "pendingCommands": 0
+      },
+      "drawing": {
+        "paintMs": {
+          "p50": 8,
+          "p95": 16,
+          "p99": 24,
+          "max": 39
+        },
+        "lostFrameTimeShare": 0.026,
+        "lostFrameTimeMs": 356,
+        "starvationEpisodes": 0,
+        "starvationMs": 0,
+        "paintGatesPassed": true,
+        "starvationEpisodesGatePassed": true,
+        "lostFrameTimeShareGatePassed": false,
+        "allReleaseGatesPassed": false
+      },
+      "undo": {
+        "count": 10,
+        "engineMs": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1,
+          "max": 1
+        },
+        "nextFrameMs": {
+          "p50": 7,
+          "p95": 9,
+          "p99": 9,
+          "max": 9
+        },
+        "passed": true
+      },
+      "surfaceTopology": {
+        "surfaceCount": 16,
+        "surfaceWidth": 641,
+        "surfaceHeight": 433,
+        "maxBackingMegapixels": 0.278
+      }
+    },
+    "magic": {
+      "fidelity": {
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "coalescing": true,
+          "pressure": true,
+          "contactGeometry": true
+        }
+      },
+      "commands": 20,
+      "historyBeforeUndo": {
+        "snapshots": 20,
+        "historyLength": 20,
+        "liveRasters": 20,
+        "patchBytes": 16469860,
+        "pendingCommands": 0
+      },
+      "drawing": {
+        "paintMs": {
+          "p50": 8,
+          "p95": 15,
+          "p99": 17,
+          "max": 24
+        },
+        "lostFrameTimeShare": 0.0241,
+        "lostFrameTimeMs": 331,
+        "starvationEpisodes": 0,
+        "starvationMs": 0,
+        "paintGatesPassed": true,
+        "starvationEpisodesGatePassed": true,
+        "lostFrameTimeShareGatePassed": false,
+        "allReleaseGatesPassed": false
+      },
+      "undo": {
+        "count": 10,
+        "engineMs": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1,
+          "max": 1
+        },
+        "nextFrameMs": {
+          "p50": 8,
+          "p95": 9,
+          "p99": 9,
+          "max": 9
+        },
+        "passed": true
+      },
+      "surfaceTopology": {
+        "surfaceCount": 16,
+        "surfaceWidth": 641,
+        "surfaceHeight": 433,
+        "maxBackingMegapixels": 0.278
+      }
+    },
+    "eraser": {
+      "fidelity": {
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "coalescing": true,
+          "pressure": true,
+          "contactGeometry": true
+        }
+      },
+      "commands": 20,
+      "historyBeforeUndo": {
+        "snapshots": 20,
+        "historyLength": 20,
+        "liveRasters": 20,
+        "patchBytes": 23860136,
+        "pendingCommands": 0
+      },
+      "drawing": {
+        "paintMs": {
+          "p50": 8,
+          "p95": 16,
+          "p99": 17,
+          "max": 26
+        },
+        "lostFrameTimeShare": 0.0113,
+        "lostFrameTimeMs": 154,
+        "starvationEpisodes": 0,
+        "starvationMs": 0,
+        "paintGatesPassed": true,
+        "starvationEpisodesGatePassed": true,
+        "lostFrameTimeShareGatePassed": false,
+        "allReleaseGatesPassed": false
+      },
+      "undo": {
+        "count": 10,
+        "engineMs": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1,
+          "max": 1
+        },
+        "nextFrameMs": {
+          "p50": 6,
+          "p95": 10,
+          "p99": 10,
+          "max": 10
+        },
+        "passed": true
+      },
+      "surfaceTopology": {
+        "surfaceCount": 16,
+        "surfaceWidth": 641,
+        "surfaceHeight": 433,
+        "maxBackingMegapixels": 0.278
+      }
+    }
+  },
+  "rotation": {
+    "status": "passed",
+    "scenario": "Draw, rotate, visually settle, then run at least 10 undos",
+    "attemptCount": 4,
+    "acceptedCapture": {
+      "fidelity": {
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "coalescing": true,
+          "pressure": true,
+          "contactGeometry": true
+        }
+      },
+      "commands": 20,
+      "orientation": {
+        "from": "PORTRAIT",
+        "to": "LANDSCAPE",
+        "before": {
+          "width": 1024,
+          "height": 888
+        },
+        "after": {
+          "width": 1366,
+          "height": 866
+        },
+        "visualSettledMs": 17,
+        "input": "manual physical device rotation"
+      },
+      "historyBeforeUndo": {
+        "snapshots": 20,
+        "historyLength": 20,
+        "liveRasters": 20,
+        "patchBytes": 13158540,
+        "pendingCommands": 0
+      },
+      "drawing": {
+        "paintMs": {
+          "p50": 8,
+          "p95": 16,
+          "p99": 17,
+          "max": 24
+        },
+        "lostFrameTimeShare": 0.0124,
+        "lostFrameTimeMs": 170,
+        "starvationEpisodes": 0,
+        "starvationMs": 0,
+        "paintGatesPassed": true,
+        "starvationEpisodesGatePassed": true,
+        "lostFrameTimeShareGatePassed": false,
+        "allReleaseGatesPassed": false
+      },
+      "undo": {
+        "count": 10,
+        "engineMs": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1,
+          "max": 1
+        },
+        "nextFrameMs": {
+          "p50": 8,
+          "p95": 10,
+          "p99": 10,
+          "max": 10
+        },
+        "passed": true
+      },
+      "surfaceTopology": {
+        "surfaceCount": 16,
+        "surfaceWidth": 470,
+        "surfaceHeight": 444,
+        "maxBackingMegapixels": 0.209
+      }
+    }
+  },
+  "baseline": {
+    "report": "../2026-07-31-deployment-target-matrix/index.md",
+    "data": "../2026-07-31-deployment-target-matrix/data.json",
+    "productCommit": "09c4efac27ca",
+    "environment": "iPad13,8 · iPadOS 26.5 · MobileSafari",
+    "drawing": {
+      "pen": {
+        "paintMs": {
+          "p95": 16,
+          "p99": 17,
+          "max": 38
+        },
+        "lostFrameTimeShare": 0.0289
+      },
+      "crayon": {
+        "paintMs": {
+          "p95": 16,
+          "p99": 27,
+          "max": 40
+        },
+        "lostFrameTimeShare": 0.0521
+      },
+      "magic": {
+        "paintMs": {
+          "p95": 16,
+          "p99": 17,
+          "max": 35
+        },
+        "lostFrameTimeShare": 0.0252
+      },
+      "eraser": {
+        "paintMs": {
+          "p95": 15,
+          "p99": 20,
+          "max": 24
+        },
+        "lostFrameTimeShare": 0.0461
+      }
+    },
+    "undo": {
+      "count": 5,
+      "engineP95Ms": 1,
+      "nextFrameP95Ms": 11,
+      "nextFrameMaxMs": 11,
+      "passed": true
+    }
+  }
+}
