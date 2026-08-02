@@ -253,7 +253,14 @@
   }
 
   .coloring-books-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    --book-cols: 4;
+    grid-template-columns: repeat(var(--book-cols), minmax(0, 1fr));
+  }
+
+  /* A last row of one reads as accidental, so catalog sizes that would leave
+     that orphan use the next-lower column count. This also covers Clear Page. */
+  .coloring-books-grid:has(> :where(:nth-child(5):last-child, :nth-child(9):last-child)) {
+    --book-cols: 3;
   }
 
   .coloring-pages-grid {
@@ -335,13 +342,21 @@
     aspect-ratio: 2 / 3;
   }
 
+  /* Keep four cover tiles at least 140px wide after the modal's content padding
+     and grid gaps are accounted for. */
+  @media (max-width: 740px) {
+    .coloring-books-grid {
+      --book-cols: 3;
+    }
+  }
+
   @media (max-width: 520px) {
     .coloring-book-content {
       padding: 24px 18px;
     }
 
     .coloring-books-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      --book-cols: 2;
     }
 
     .coloring-pages-grid.portrait-pages {
