@@ -1,7 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
 import {
-  MIN_TILED_UNDO_COMMANDS,
   TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE,
   TILE_HISTORY_FOLD_IDLE_MS,
 } from '../src/lib/drawing/tiledRenderer';
@@ -97,21 +96,27 @@ test('tiled undo patches rebuild after the live canvas resizes', async ({ page }
   expect(await firstOpaquePixel(page)).toBeNull();
 });
 
-test('canvas-spanning strokes shorten undo depth before exceeding the patch budget', async ({
+test('twenty large sweeping strokes retain the advertised undo depth within budget', async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 900, height: 600 });
+  await page.setViewportSize({ width: 1366, height: 915 });
   await gotoApp(page);
   const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('drawing canvas has no bounds');
 
-  for (let index = 0; index < 20; index++) {
-    const forward = index % 2 === 0;
-    await draw(page, [
-      { x: box.width / 2, y: box.height / 2 },
-      { x: forward ? 100 : box.width - 100, y: 100 },
-      { x: forward ? box.width - 100 : 100, y: box.height - 100 },
-    ]);
+  for (let stroke = 0; stroke < MAX_UNDO_DEPTH; stroke++) {
+    const phase = stroke % 2 === 0 ? 0 : Math.PI;
+    const points = Array.from({ length: 9 }, (_, segment) => {
+      const progress = segment / 8;
+      return {
+        x: box.width * (0.12 + progress * 0.76),
+        y:
+          segment === 0
+            ? box.height * (stroke % 2 === 0 ? 0.22 : 0.78)
+            : box.height * (0.5 + Math.sin(progress * Math.PI * 5 + phase) * 0.32),
+      };
+    });
+    await draw(page, points);
   }
 
   const debug = await page.evaluate(() => window.__drawingDebug?.getUndoDebug());
@@ -120,16 +125,15 @@ test('canvas-spanning strokes shorten undo depth before exceeding the patch budg
     .evaluateAll((tiles: HTMLCanvasElement[]) =>
       tiles.reduce((bytes, canvas) => bytes + canvas.width * canvas.height * 4, 0)
     );
-  expect(debug?.snapshots).toBeGreaterThanOrEqual(MIN_TILED_UNDO_COMMANDS);
-  expect(debug?.snapshots).toBeLessThan(MAX_UNDO_DEPTH);
+  expect(debug?.snapshots).toBe(MAX_UNDO_DEPTH);
   expect(debug?.rasterBytes).toBeLessThanOrEqual(
     paperBytes * TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE
   );
 
   await openDrawer(page);
-  for (let index = 0; index < debug!.snapshots; index++) {
+  for (let index = 0; index < MAX_UNDO_DEPTH; index++) {
     await page.locator('#undoButton').click();
   }
   await expect(page.locator('#undoButton')).toBeDisabled();
-  expect(await firstOpaquePixel(page)).not.toBeNull();
+  await expect.poll(() => firstOpaquePixel(page)).toBeNull();
 });

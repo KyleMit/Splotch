@@ -2,7 +2,8 @@
 
 **Status:** Active — amends [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) for production
 undo; amended by [ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md) for tile visibility
-snapshots. **Date:** 2026-07
+snapshots; amended in 2026-08 to preserve the advertised twenty-step depth for measured large
+sweeps. **Date:** 2026-07
 
 ## Context
 
@@ -389,3 +390,67 @@ Before shipping a change to this architecture:
 5. Re-check ADR-0085's live drawing metrics in every physical capture.
 6. Reject a change that improves undo by lowering render scale, disabling a brush/audio feature, or
    reintroducing a frequently mutated full-size canvas.
+
+## Amendment (2026-08): Preserve Twenty Steps for Realistic Large Sweeps
+
+### Context
+
+The original three-paper budget deliberately allowed canvas-spanning commands to reduce effective
+depth to two or three. Parent Center simultaneously advertised “Undo now goes back 20 steps.” The
+adaptive test established a memory ceiling but did not establish whether the reduced depth occurred
+under realistic child input.
+
+Issue 695 measured two separate trusted-touch cohorts on a physical iPad13,8 running iPadOS 26.5.
+Each cohort began from blank paper, drew exactly twenty commands through XCUITest on the production
+route, recorded `getUndoDebug()`, and then invoked every offered undo until `aria-disabled` reported
+the history boundary:
+
+| Three-paper baseline                                      | Retained depth | Patch bytes | Pending commands |
+| --------------------------------------------------------- | -------------: | ----------: | ---------------: |
+| Twenty zigzag sweeps crossing most of the paper           |             10 |  51,595,632 |                0 |
+| Twenty short marks distributed across the paper (control) |             20 |   4,990,880 |                0 |
+
+The aggregate paper was 17,763,392 bytes, so the baseline budget was 53,290,176 bytes. Every
+retained undo completed in 0–1 ms, proving response time was healthy but the product promise was
+not: a realistic large-stroke session lost half of its advertised depth.
+
+Changing the copy to “up to 20 steps” or removing a fixed number would accurately describe the
+three-paper behavior but make the feature less predictable. Compression was also rejected for this
+fix: the existing WebKit evidence shows that encoding on commit or decoding on deep undo can violate
+the frame-bounded interaction contract. The chosen alternative is the smallest whole-paper budget
+that fits the measured twenty-command workload.
+
+### Decision
+
+`TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE` is six. `MAX_UNDO_DEPTH` and the Parent Center release note
+remain twenty. The same trusted-touch sweep on the final code retained all twenty commands with
+103,859,876 patch bytes under the 106,580,352-byte budget; the small-stroke control again retained
+twenty with 4,990,880 patch bytes. All forty final undos completed in 0–1 ms and both cohorts ended
+at zero snapshots with `aria-disabled=true`.
+
+The contract is executable in two layers:
+
+* `flows-tile-history.spec.ts` draws twenty large sweeps at the measured iPad viewport, requires
+  `MAX_UNDO_DEPTH` snapshots within the six-paper ceiling, invokes all twenty undos, and requires
+  blank paper plus the exhausted Undo state.
+* `undoDepthContract.test.ts` reads the generated release source and requires its advertised number
+  to equal `MAX_UNDO_DEPTH`.
+
+The two-command floor remains a safety valve for inputs whose retained dirty rectangles exceed six
+aggregate papers. It is not permission to calibrate the budget below the measured large-sweep
+contract. Any future budget reduction must rerun the physical twenty-large/twenty-small protocol and
+update the user-facing promise in the same change if twenty realistic sweeps no longer fit.
+
+### Consequences
+
+* \+ Realistic large sweeping input and small marks both deliver the twenty steps Parent Center
+  advertises.
+* \+ Patch restore remains frame-bounded; the change adds resident capacity without adding encode or
+  decode work.
+* \+ Cross-file and production-route tests prevent the copy, depth cap, and measured budget behavior
+  from drifting independently.
+* − The maximum patch allowance doubles from 50.8 MiB to 101.6 MiB on the measured paper. The final
+  large-stroke cohort used 99.0 MiB of patches; live paper plus retained patches measured 116.0 MiB.
+* − Truly full-paper commands can still exhaust six papers before twenty entries. Supporting every
+  possible twenty-command sequence would require a twenty-paper worst-case allowance and was
+  rejected as disproportionate memory pressure.

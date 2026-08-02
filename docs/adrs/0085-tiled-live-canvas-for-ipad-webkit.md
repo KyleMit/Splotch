@@ -5,7 +5,8 @@ production drawing route; amended by
 [ADR-0086](0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md) for production undo and
 [ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md) for idle tile composition, and amended
 by [ADR-0089](0089-css-presented-tiled-paper-on-rotation.md) for rotation presentation and lazy
-crayon surfaces; surface-budget evidence amended 2026-08-01. **Date:** 2026-07
+crayon surfaces; surface-budget evidence amended 2026-08-01; ADR-0086's twenty-step large-sweep
+contract amended 2026-08. **Date:** 2026-07
 
 ## Context
 
@@ -183,10 +184,10 @@ time, into a 4×4 offscreen raster base after 1.5 seconds without active input. 
 pending compaction. Each base tile tracks whether folding has painted it; blank base tiles neither
 blit nor make their matching live canvas visible during repaint. ADR-0086 replaces ordinary
 vector-replay undo with cropped, tile-local pre-command patches: a pop restores only the pixels that
-command changed. Normal drawings retain twenty undo steps; canvas-spanning commands adaptively
-shorten depth before patches exceed a three-paper resident byte budget. Clear is an ordinary
-full-tile snapshot command, and export composites the tiled base and retained commands into its
-destination.
+command changed. Twenty realistic full-paper sweeps retain twenty undo steps within ADR-0086's
+six-paper resident byte budget; still-larger retained regions remain adaptively bounded. Clear is an
+ordinary full-tile snapshot command, and export composites the tiled base and retained commands into
+its destination.
 
 Brush-specific invariants are:
 
@@ -273,8 +274,8 @@ justified by the measured cost.
 * \+ Rendering stays at 2× on the affected iPad. Stroke sharpness, exports, brush behavior, undo
   depth, and drawing sound are preserved; visual checks show no tile seams.
 * \+ Undo response is frame-bounded by dirty-region restore rather than vector replay. Typical
-  twenty-step patch history measured about 20 MiB, and canvas-spanning history shortens depth before
-  exceeding ADR-0086's three-paper resident budget.
+  twenty-step patch history measured about 20 MiB; ADR-0086's 2026-08 amendment raised the resident
+  budget to six papers after twenty trusted large sweeps required 99.0 MiB of patches.
 * \+ The result identifies a reusable platform constraint: keep any frequently mutated WebKit canvas
   surface below the tablet-size flush cliff, even when aggregate pixels are unchanged.
 * \+ The same topology is neutral or faster on the measured Mac. It removes the old Magic renderer's
@@ -618,8 +619,8 @@ prototype:
 * Two matching crayon preview planes per tile.
 * Transparent aggregate input canvas.
 * Paper-coordinate vector operations with padded tile culling.
-* Twenty-command normal undo tail restored from cropped dirty-region tile snapshots, byte-bounded
-  per ADR-0086, plus one-at-a-time idle folding into a 4×4 raster base.
+* Twenty-command normal undo tail restored from cropped dirty-region tile snapshots, byte-bounded at
+  six aggregate papers per ADR-0086, plus one-at-a-time idle folding into a 4×4 raster base.
 * Tile-cropped immutable magic sources.
 * A 64-op crayon checkpoint.
 * Deferred tile-local eraser scans.
