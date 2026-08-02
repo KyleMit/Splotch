@@ -42,7 +42,3 @@ export function createTiledPngPreview(canvas: OffscreenCanvas, previewWidth: num
   context.drawImage(canvas, 0, 0, previewWidth, previewHeight);
   return preview.transferToImageBitmap();
 }
-
-export async function encodeTiledPng(data: TiledPngInput): Promise<Blob> {
-  return composeTiledPngCanvas(data).convertToBlob({ type: 'image/png' });
-}

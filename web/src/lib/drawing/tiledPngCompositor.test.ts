@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createTiledPngPreview, encodeTiledPng } from './tiledPngCompositor';
+import { composeTiledPngCanvas, createTiledPngPreview } from './tiledPngCompositor';
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('encodeTiledPng', () => {
+describe('composeTiledPngCanvas', () => {
   it('executes the shared paper and overlay compositor around the live tiles', async () => {
     const expected = new Blob(['png'], { type: 'image/png' });
     const drawImage = vi.fn();
@@ -56,7 +56,7 @@ describe('encodeTiledPng', () => {
     const overlay = { width: 100, height: 200 } as ImageBitmap;
 
     await expect(
-      encodeTiledPng({
+      composeTiledPngCanvas({
         sourceWidth: 400,
         sourceHeight: 300,
         sourceScale: 2,
@@ -65,7 +65,7 @@ describe('encodeTiledPng', () => {
         texture,
         overlay,
         paperColor: '#fffaf0',
-      })
+      }).convertToBlob({ type: 'image/png' })
     ).resolves.toBe(expected);
 
     expect(canvases).toHaveLength(1);
