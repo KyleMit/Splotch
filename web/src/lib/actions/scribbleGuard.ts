@@ -1,4 +1,5 @@
 import { flushSync } from 'svelte';
+import { forgetPenPointer } from '$lib/drawing/engine';
 import { pointerWasResumed } from '$lib/drawing/strokeMath';
 
 // Browsers tolerate small click movement; match that forgiveness before a
@@ -103,6 +104,7 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
       // canvas until activation and its reactive engine bridge have flushed.
       e.preventDefault();
       e.stopImmediatePropagation();
+      forgetPenPointer(e.pointerId);
       finishPress(true);
       return;
     }

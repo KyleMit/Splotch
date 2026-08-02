@@ -1106,6 +1106,10 @@ const penStreamAdopter = createPenStreamAdopter({
   adopt: startDrawing,
 });
 
+export function forgetPenPointer(pointerId: number) {
+  penStreamAdopter.forgetPointer(pointerId);
+}
+
 const cancelTouch = (e: TouchEvent) => e.preventDefault();
 
 // --- Undo, clear, and canvas-empty API --------------------------------------

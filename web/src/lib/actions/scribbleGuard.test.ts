@@ -2,6 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { POINTER_RESUME_GAP_MS, POINTER_RESUME_JUMP_RATIO } from '$lib/drawing/strokeMath';
 import { scribbleGuard, scribbleTap } from './scribbleGuard';
 
+const forgetPenPointer = vi.hoisted(() => vi.fn());
+vi.mock('$lib/drawing/engine', () => ({ forgetPenPointer }));
+
 // Touch.touchType is Safari-only, so the stylus/finger discrimination can't be
 // exercised in the Chromium e2e run — stubbed touch lists cover it here.
 function touchEvent(type: string, touchTypes: (string | undefined)[]) {
@@ -92,6 +95,7 @@ describe('scribbleTap', () => {
     tapActions.clear();
     vi.useRealTimers();
     vi.restoreAllMocks();
+    forgetPenPointer.mockClear();
     document.body.innerHTML = '';
   });
 
@@ -182,6 +186,7 @@ describe('scribbleTap', () => {
       })
     );
     expect(activate).toHaveBeenCalledTimes(1);
+    expect(forgetPenPointer).toHaveBeenCalledWith(1);
   });
 
   it('does not mistake a continuous pen drag for an omitted-up tap', () => {

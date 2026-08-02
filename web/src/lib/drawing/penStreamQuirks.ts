@@ -34,9 +34,12 @@ export function createPenStreamAdopter(deps: PenStreamAdopterDeps) {
     liveDownIds.add(e.pointerId);
     canvasExitIds.delete(e.pointerId);
   };
+  const forgetPointer = (pointerId: number) => {
+    liveDownIds.delete(pointerId);
+    canvasExitIds.delete(pointerId);
+  };
   const trackPointerLift = (e: PointerEvent) => {
-    liveDownIds.delete(e.pointerId);
-    canvasExitIds.delete(e.pointerId);
+    forgetPointer(e.pointerId);
   };
 
   // A missing pointerdown licenses adoption only for a pen whose tip is down.
@@ -87,5 +90,5 @@ export function createPenStreamAdopter(deps: PenStreamAdopterDeps) {
     canvasExitIds.clear();
   }
 
-  return { isOrphanPenContact, registerWindowListeners, reset, trackCanvasExit };
+  return { forgetPointer, isOrphanPenContact, registerWindowListeners, reset, trackCanvasExit };
 }

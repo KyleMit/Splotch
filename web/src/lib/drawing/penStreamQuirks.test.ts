@@ -149,6 +149,19 @@ describe('createPenStreamAdopter', () => {
       expect(adopt).toHaveBeenCalledTimes(1);
     });
 
+    it('adopts a delivered-down pen stream after its omitted lift is identified', () => {
+      const adopter = createPenStreamAdopter({ canvas: () => canvas, isTracked, adopt });
+      const listeners = new Map<string, (e: PointerEvent) => void>();
+      const listen: ListenWindowFn = (type, handler) => listeners.set(type, handler);
+      adopter.registerWindowListeners(listen);
+
+      listeners.get('pointerdown')!(penEvent());
+      adopter.forgetPointer(1);
+      listeners.get('pointermove')!(penEvent());
+
+      expect(adopt).toHaveBeenCalledTimes(1);
+    });
+
     it('adopts a tracked pen after a synthetic canvas out-then-back sequence', () => {
       let tracked = true;
       isTracked.mockImplementation(() => tracked);
