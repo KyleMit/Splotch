@@ -22,6 +22,80 @@ const TAP_MOVEMENT_TOLERANCE_PX = 8;
 // Safari-only field (the whole point: Scribble only exists there).
 type StylusAwareTouch = Touch & { touchType?: 'direct' | 'stylus' };
 
+interface ScribbleTapStreamHandlers {
+  move: (event: PointerEvent) => void;
+  up: (event: PointerEvent) => void;
+  cancel: (event: PointerEvent) => void;
+}
+
+function createScribbleTapDispatcher(ownerWindow: Window) {
+  const handlersByPointerId = new Map<number, ScribbleTapStreamHandlers>();
+  let subscriptionCount = 0;
+
+  const move = (event: PointerEvent) => handlersByPointerId.get(event.pointerId)?.move(event);
+  const up = (event: PointerEvent) => handlersByPointerId.get(event.pointerId)?.up(event);
+  const cancel = (event: PointerEvent) => handlersByPointerId.get(event.pointerId)?.cancel(event);
+
+  function addWindowListeners() {
+    ownerWindow.addEventListener('pointermove', move, true);
+    ownerWindow.addEventListener('pointerup', up, true);
+    ownerWindow.addEventListener('pointercancel', cancel, true);
+  }
+
+  function removeWindowListeners() {
+    ownerWindow.removeEventListener('pointermove', move, true);
+    ownerWindow.removeEventListener('pointerup', up, true);
+    ownerWindow.removeEventListener('pointercancel', cancel, true);
+  }
+
+  return {
+    subscribe(handlers: ScribbleTapStreamHandlers) {
+      let active = true;
+      let claimedPointerId: number | undefined;
+      if (subscriptionCount === 0) addWindowListeners();
+      subscriptionCount += 1;
+
+      function release(pointerId: number) {
+        if (claimedPointerId === pointerId && handlersByPointerId.get(pointerId) === handlers) {
+          handlersByPointerId.delete(pointerId);
+        }
+        if (claimedPointerId === pointerId) claimedPointerId = undefined;
+      }
+
+      return {
+        claim(pointerId: number) {
+          if (!active) return;
+          if (claimedPointerId !== undefined) release(claimedPointerId);
+          claimedPointerId = pointerId;
+          handlersByPointerId.set(pointerId, handlers);
+        },
+        release,
+        destroy() {
+          if (!active) return;
+          active = false;
+          if (claimedPointerId !== undefined) release(claimedPointerId);
+          subscriptionCount -= 1;
+          if (subscriptionCount === 0) removeWindowListeners();
+        },
+      };
+    },
+  };
+}
+
+const scribbleTapDispatchers = new WeakMap<
+  Window,
+  ReturnType<typeof createScribbleTapDispatcher>
+>();
+
+function dispatcherFor(ownerWindow: Window) {
+  let dispatcher = scribbleTapDispatchers.get(ownerWindow);
+  if (!dispatcher) {
+    dispatcher = createScribbleTapDispatcher(ownerWindow);
+    scribbleTapDispatchers.set(ownerWindow, dispatcher);
+  }
+  return dispatcher;
+}
+
 export function scribbleGuard(node: HTMLElement) {
   const cancel = (e: TouchEvent) => {
     const touches = Array.from(e.changedTouches) as StylusAwareTouch[];
@@ -68,6 +142,7 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
 
   function finishPress(shouldActivate: boolean) {
     if (!press) return;
+    stream?.release(press.pointerId);
     press = undefined;
     if (shouldActivate) current();
   }
@@ -97,8 +172,9 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
       pointerWasResumed(now - press.lastTime, jump, minViewportSide());
 
     if (isMissingPenLift) {
-      // The move belongs to the next physical contact. Keep it away from the
-      // canvas until activation and its reactive engine bridge have flushed.
+      // The engine's window-capture adopter runs first; for a control-targeted
+      // stream its live-pointer gate declines adoption. Consume the resumed
+      // move before target phase, then forget and flush the activated state.
       e.preventDefault();
       e.stopImmediatePropagation();
       forgetPenPointer(e.pointerId);
@@ -139,16 +215,16 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
       lastTime: Date.now(),
       dragged: false,
     };
+    stream?.claim(e.pointerId);
   }
 
   const click = (e: MouseEvent) => {
     if (e.detail === 0) current();
   };
-  // Lifetime-scoped capture listeners make their ordering stable. A resumed
-  // move is selected and flushed before target-phase drawing can observe it.
-  ownerWindow?.addEventListener('pointermove', move, true);
-  ownerWindow?.addEventListener('pointerup', up, true);
-  ownerWindow?.addEventListener('pointercancel', cancel, true);
+  // Direct pointer-id routing keeps the drawing hot path at one window handler.
+  const stream = ownerWindow
+    ? dispatcherFor(ownerWindow).subscribe({ move, up, cancel })
+    : undefined;
   node.addEventListener('pointerdown', down);
   node.addEventListener('click', click);
   return {
@@ -157,9 +233,7 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
     },
     destroy() {
       press = undefined;
-      ownerWindow?.removeEventListener('pointermove', move, true);
-      ownerWindow?.removeEventListener('pointerup', up, true);
-      ownerWindow?.removeEventListener('pointercancel', cancel, true);
+      stream?.destroy();
       node.removeEventListener('pointerdown', down);
       node.removeEventListener('click', click);
     },

@@ -142,6 +142,40 @@ describe('scribbleTap', () => {
     expect(activate).toHaveBeenCalledTimes(1);
   });
 
+  it('routes concurrent presses to their owning action', () => {
+    const first = tapElement();
+    const second = tapElement();
+    vi.mocked(document.elementFromPoint).mockImplementation((x) => (x < 20 ? first.el : second.el));
+    first.el.dispatchEvent(pointerEvent('pointerdown', 1, { clientX: 10 }));
+    second.el.dispatchEvent(pointerEvent('pointerdown', 2, { clientX: 30 }));
+    window.dispatchEvent(pointerEvent('pointerup', 2, { clientX: 30 }));
+    window.dispatchEvent(pointerEvent('pointerup', 1, { clientX: 10 }));
+    expect(first.activate).toHaveBeenCalledTimes(1);
+    expect(second.activate).toHaveBeenCalledTimes(1);
+  });
+
+  it('shares window listeners until the last action is destroyed', () => {
+    const add = vi.spyOn(window, 'addEventListener');
+    const remove = vi.spyOn(window, 'removeEventListener');
+    const first = tapElement();
+    const second = tapElement();
+
+    expect(add.mock.calls.map(([type, , options]) => [type, options])).toEqual([
+      ['pointermove', true],
+      ['pointerup', true],
+      ['pointercancel', true],
+    ]);
+
+    first.action.destroy();
+    expect(remove).not.toHaveBeenCalled();
+    second.action.destroy();
+    expect(remove.mock.calls.map(([type, , options]) => [type, options])).toEqual([
+      ['pointermove', true],
+      ['pointerup', true],
+      ['pointercancel', true],
+    ]);
+  });
+
   it('survives pointerleave drift when the release hit-tests inside the control', () => {
     const { el, activate } = tapElement();
     el.dispatchEvent(pointerEvent('pointerdown', 1, { clientX: 10, clientY: 10 }));
@@ -195,10 +229,16 @@ describe('scribbleTap', () => {
     expect(activate).not.toHaveBeenCalled();
   });
 
-  it('completes a pen tap when a far move after the resume gap proves its up was omitted', () => {
+  it('handles a missing lift after the engine capture listener and before target drawing', () => {
     vi.useFakeTimers();
-    const { el, activate } = tapElement();
+    const canvas = document.createElement('canvas');
+    document.body.appendChild(canvas);
     const order: string[] = [];
+    const engineCapture = () => order.push('engine capture');
+    const targetDraw = () => order.push('target draw');
+    window.addEventListener('pointermove', engineCapture, true);
+    canvas.addEventListener('pointermove', targetDraw);
+    const { el, activate } = tapElement();
     forgetPenPointer.mockImplementation(() => order.push('forget pen pointer'));
     activate.mockImplementation(() => order.push('activate'));
     flushSync.mockImplementation(() => order.push('flush'));
@@ -207,17 +247,19 @@ describe('scribbleTap', () => {
       pointerEvent('pointerdown', 1, { pointerType: 'pen', buttons: 1, clientX: 10 })
     );
     vi.advanceTimersByTime(POINTER_RESUME_GAP_MS + 1);
-    window.dispatchEvent(
-      pointerEvent('pointermove', 1, {
-        pointerType: 'pen',
-        buttons: 1,
-        clientX: 10 + jump,
-      })
-    );
+    const resumed = pointerEvent('pointermove', 1, {
+      pointerType: 'pen',
+      buttons: 1,
+      clientX: 10 + jump,
+    });
+    canvas.dispatchEvent(resumed);
+    window.removeEventListener('pointermove', engineCapture, true);
+    canvas.removeEventListener('pointermove', targetDraw);
     expect(activate).toHaveBeenCalledTimes(1);
     expect(forgetPenPointer).toHaveBeenCalledWith(1);
     expect(flushSync).toHaveBeenCalledTimes(1);
-    expect(order).toEqual(['forget pen pointer', 'activate', 'flush']);
+    expect(resumed.defaultPrevented).toBe(true);
+    expect(order).toEqual(['engine capture', 'forget pen pointer', 'activate', 'flush']);
   });
 
   it('does not mistake a continuous pen drag for an omitted-up tap', () => {
