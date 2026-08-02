@@ -92,7 +92,8 @@ ABSOLUTE RULES:
 
 export const FRESH_STYLE_PROMPT = `Draw ONE page of a toddler coloring book (for age 2+), in this exact style:
 
-- Clean black pen OUTLINES on a pure white background. Medium, even line weight throughout — like a thick felt-tip pen. No shading, no grey, no color, no hatching, no texture, no text, letters, or numbers, and no border frame around the page.
+- Clean black pen OUTLINES on a pure white background. Medium, even line weight throughout — like a thick felt-tip pen. No shading, no grey, no color, no hatching, no texture, and no text, letters, or numbers.
+- NO PAGE ENCLOSURES: borders, frames, page outlines, decorative boxes, and decorative panels are explicitly forbidden anywhere in the drawing. Do not surround or box in the page, composition, subject, or background with any rectangle or enclosing line.
 - Simple, rounded, chunky cartoon shapes with very little detail. Big friendly forms a two-year-old can color. Generous white margins around the drawing.
 - EVERY shape is a closed thin-line outline that can be colored in. There must be NO solid black filled areas anywhere on the page.
 - If the drawing has a face: each eye is a white eyeball outlined with a thin line, containing ONE outlined pupil circle (drawn as a thin ring, NOT filled black) with ONE small round catchlight circle inside it. Add a simple smiling mouth and thin eyebrow strokes. Never fill a pupil solid black.

@@ -57,6 +57,7 @@ const encode = (c) =>
 export function solidPupilOutline() {
   const c = canvas(400, 400);
   rectStroke(c, 40, 40, 360, 360, 4);
+  fillRect(c, 356, 170, 365, 230, 255);
   ring(c, 150, 200, 40, 4);
   disc(c, 150, 200, 22, 0); // the solid pupil
   ring(c, 260, 200, 40, 4);
@@ -68,6 +69,7 @@ export function solidPupilOutline() {
 export function thinStrokeOutline() {
   const c = canvas(400, 400);
   rectStroke(c, 40, 40, 360, 360, 4);
+  fillRect(c, 356, 170, 365, 230, 255);
   ring(c, 150, 200, 40, 4);
   ring(c, 150, 200, 18, 4);
   ring(c, 260, 200, 40, 4);
@@ -80,6 +82,7 @@ export function thinStrokeOutline() {
 export function fakeHollowOutline() {
   const c = canvas(400, 400);
   rectStroke(c, 40, 40, 360, 360, 4);
+  fillRect(c, 356, 170, 365, 230, 255);
   disc(c, 150, 200, 14, 0);
   disc(c, 250, 200, 14, 0);
   return encode(c);
@@ -90,14 +93,55 @@ export function fakeHollowOutline() {
 // keys on. Depth ≈ ring count; the page is large so every ring stays eye-scale.
 // nRings=3 → a normal eye (depth 3, passes); nRings=5 → the "hypno swirl"
 // (depth 5, over EYE_RING_DEPTH_MAX).
-export function concentricEyeSource(nRings) {
+function concentricEye(nRings, openPageFrame) {
   const c = canvas(600, 600);
   rectStroke(c, 20, 20, 580, 580, 4);
+  if (openPageFrame) fillRect(c, 576, 250, 585, 350, 255);
   for (let k = 0; k < nRings; k++) ring(c, 300, 300, 12 + k * 8, 2);
   return encode(c);
 }
+export function concentricEyeSource(nRings) {
+  return concentricEye(nRings, false);
+}
 export const goodEyeSource = () => concentricEyeSource(3);
 export const swirlEyeSource = () => concentricEyeSource(5);
+export const isolatedSwirlEyeSource = () => concentricEye(5, true);
+
+// ================= OUTLINE FRAME (lib/outline-frame.mjs) =================
+// BROKEN: a continuous rectangle inset from all four page edges. The centered
+// subject proves the gate detects the page enclosure rather than an empty page.
+export function framedOutline() {
+  const c = canvas(600, 600);
+  rectStroke(c, 30, 30, 570, 570, 4);
+  ring(c, 300, 300, 100, 4);
+  return encode(c);
+}
+
+// GOOD: ordinary scene marks approach every edge but leave wide breaks, so no
+// four-sided page enclosure exists.
+export function edgeNearArtOutline() {
+  const c = canvas(600, 600);
+  ring(c, 300, 300, 100, 4);
+  fillRect(c, 30, 24, 220, 27, 0);
+  fillRect(c, 280, 24, 570, 27, 0);
+  fillRect(c, 30, 572, 330, 575, 0);
+  fillRect(c, 390, 572, 570, 575, 0);
+  fillRect(c, 24, 30, 27, 250, 0);
+  fillRect(c, 24, 320, 27, 570, 0);
+  fillRect(c, 572, 30, 575, 300, 0);
+  fillRect(c, 572, 360, 575, 570, 0);
+  return encode(c);
+}
+
+// GOOD: three continuous sides are not a page frame. The right edge is erased
+// completely so the fixture pins the all-four-sides requirement directly.
+export function threeSidedFrameOutline() {
+  const c = canvas(600, 600);
+  rectStroke(c, 30, 30, 570, 570, 4);
+  fillRect(c, 566, 0, 599, 599, 255);
+  ring(c, 300, 300, 100, 4);
+  return encode(c);
+}
 
 // Fills measured against goodEyeSource() (eye center at 300,300).
 // LIVELY: a dark pupil disc on a white sclera — strong dark-core contrast.

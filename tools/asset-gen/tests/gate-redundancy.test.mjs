@@ -19,6 +19,7 @@
 import { describe, it, expect } from 'vitest';
 import { scoreSolidity } from '../lib/solid-regions.mjs';
 import { scoreEyeRings } from '../lib/eye-fill.mjs';
+import { scoreOutlineFrame } from '../lib/outline-frame.mjs';
 import {
   scoreNightness,
   scoreDrift,
@@ -50,20 +51,23 @@ function loadBearing(gates, matrix, broken) {
   return report;
 }
 
-describe('line-art gates (solidity, eye-rings)', () => {
+describe('line-art gates (solidity, eye-rings, frame)', () => {
   const gates = {
     solidity: async (buf) => !(await scoreSolidity(buf)).passes,
     eyeRings: async (buf) => !(await scoreEyeRings(buf)).passes,
+    frame: async (buf) => !(await scoreOutlineFrame(buf)).passes,
   };
   const fixtures = {
     solidPupil: F.solidPupilOutline, // broken
     fakeHollow: F.fakeHollowOutline, // broken
-    swirlEye: F.swirlEyeSource, // broken
+    swirlEye: F.isolatedSwirlEyeSource, // broken
+    framed: F.framedOutline, // broken
     thinStroke: F.thinStrokeOutline, // good
-    goodEye: F.goodEyeSource, // good
+    edgeNearArt: F.edgeNearArtOutline, // good
+    threeSidedFrame: F.threeSidedFrameOutline, // good
   };
-  const broken = ['solidPupil', 'fakeHollow', 'swirlEye'];
-  const good = ['thinStroke', 'goodEye'];
+  const broken = ['solidPupil', 'fakeHollow', 'swirlEye', 'framed'];
+  const good = ['thinStroke', 'edgeNearArt', 'threeSidedFrame'];
 
   it('every gate is the sole catcher of ≥1 broken fixture', async () => {
     const matrix = await catchMatrix(gates, fixtures);

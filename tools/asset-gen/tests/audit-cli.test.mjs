@@ -92,6 +92,14 @@ vi.mock('../lib/composite-eye.mjs', () => ({
   scoreCompositeEyes: async () => ({ passes: true }),
 }));
 
+vi.mock('../lib/outline-frame.mjs', () => ({
+  FRAME_SIDE_COVERAGE_MIN: 0.97,
+  scoreOutlineFrame: async (buffer) => {
+    assertReadable(buffer);
+    return { sideCoverage: 0, frameDetected: false, passes: true };
+  },
+}));
+
 vi.mock('../lib/night-composite.mjs', () => ({
   compositeNight: async (buffer) => buffer,
 }));
@@ -216,7 +224,7 @@ it('golden diff reports a corrupt outline, retains successful pages, and exits n
   await addPage('good');
   await writeFile(
     join(state.roots.assetGen, 'golden/golden-scores.json'),
-    JSON.stringify({ version: 2, pages: { 'test/bad': {}, 'test/good': {} } })
+    JSON.stringify({ version: 3, pages: { 'test/bad': {}, 'test/good': {} } })
   );
 
   await runCli('audit-golden.mjs', '--diff');

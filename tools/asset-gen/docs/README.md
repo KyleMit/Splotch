@@ -112,8 +112,8 @@ to `.coloring-samples/drift/`.
 Two fixtures freeze the current catalog's state so a change can prove it didn't degrade anything
 else (both offline, no key):
 
-* **`golden/golden-scores.json`** — every offline audit score per page (outline solidity/eye rings,
-  light keep/localKeep + eyes, night drift/bgLuma/lineWhite + eyes), written by
+* **`golden/golden-scores.json`** — every offline audit score per page (outline solidity/eye
+  rings/page frames, light keep/localKeep + eyes, night drift/bgLuma/lineWhite + eyes), written by
   `gen:coloring-golden:freeze`. `gen:coloring-golden:diff` re-scores (~1 min) and exits non-zero on
   any verdict flip or bad-direction movement — run it after any pipeline or asset change, and
   re-freeze to adopt intended changes.
