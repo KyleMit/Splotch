@@ -360,7 +360,6 @@ describe('engine selection', () => {
     expect(history.runs.at(-1)).toMatchObject({
       fastSetWouldCatch: null,
       fastSetMiss: false,
-      consecutiveFastSetMisses: 0,
     });
   });
 

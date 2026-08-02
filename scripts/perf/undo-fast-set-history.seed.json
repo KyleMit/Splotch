@@ -17,8 +17,7 @@
       "fastSetBreaches": [],
       "fullOnlyBreaches": [],
       "fastSetWouldCatch": null,
-      "fastSetMiss": false,
-      "consecutiveFastSetMisses": 0
+      "fastSetMiss": false
     }
   ]
 }

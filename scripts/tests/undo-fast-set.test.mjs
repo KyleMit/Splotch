@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   appendFullRun,
   deriveIdealFastSet,
+  evaluateFastSet,
   soleExercisers,
   validateFastSetHistory,
 } from '../perf/undo-fast-set.mjs';
@@ -101,7 +102,7 @@ describe('data-derived membership', () => {
 describe('full-run miss history', () => {
   const healthyResults = () => ALL_UNDO_SCENARIO_KEYS.map((key) => result(key, 1));
 
-  it('records a full-only breach and carries its consecutive miss count', () => {
+  it('derives a full-only breach streak from the run records', () => {
     const missedResults = healthyResults().map((scenario) =>
       scenario.key === 'short-marks' ? result(scenario.key, 26) : scenario
     );
@@ -124,8 +125,8 @@ describe('full-run miss history', () => {
       fullOnlyBreaches: ['short-marks'],
       fastSetWouldCatch: false,
       fastSetMiss: true,
-      consecutiveFastSetMisses: 2,
     });
+    expect(evaluateFastSet(twice).consecutiveMisses).toBe(2);
   });
 
   it('records a breach as caught when a fast scenario also breaches', () => {
@@ -144,8 +145,8 @@ describe('full-run miss history', () => {
       fullOnlyBreaches: ['short-marks'],
       fastSetWouldCatch: true,
       fastSetMiss: false,
-      consecutiveFastSetMisses: 0,
     });
+    expect(evaluateFastSet(history).consecutiveMisses).toBe(0);
   });
 
   it('rejects history that cannot support a full-set comparison', () => {

@@ -191,8 +191,6 @@ export function appendFullRun({ history, results, startedAt, budgetMs }) {
       fastSetMiss,
     },
   ].slice(-FAST_SET_HISTORY_RETAINED_RUNS);
-  const consecutiveFastSetMisses = consecutiveMisses(runs);
-  runs[runs.length - 1].consecutiveFastSetMisses = consecutiveFastSetMisses;
   return { schemaVersion: FAST_SET_HISTORY_SCHEMA_VERSION, runs };
 }
 
@@ -206,6 +204,6 @@ export function evaluateFastSet(history) {
     historyWindowRuns: derived.historyWindowRuns,
     drifted: !sameMembers(FAST_UNDO_SCENARIO_KEYS, derived.ideal),
     latestMiss: latest?.fastSetMiss ?? false,
-    consecutiveMisses: latest?.consecutiveFastSetMisses ?? 0,
+    consecutiveMisses: consecutiveMisses(history.runs),
   };
 }
