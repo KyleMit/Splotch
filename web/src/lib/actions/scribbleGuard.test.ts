@@ -126,6 +126,16 @@ describe('scribbleTap', () => {
     expect(activate).not.toHaveBeenCalled();
   });
 
+  it('lets the latest press activate when the previous pointerup never arrived', () => {
+    const { el, activate } = tapElement();
+    el.dispatchEvent(pointerEvent('pointerdown', 1));
+    el.dispatchEvent(pointerEvent('pointerdown', 2));
+    window.dispatchEvent(pointerEvent('pointerup', 2));
+    expect(activate).toHaveBeenCalledTimes(1);
+    window.dispatchEvent(pointerEvent('pointerup', 1));
+    expect(activate).toHaveBeenCalledTimes(1);
+  });
+
   it('survives pointerleave drift when the release hit-tests inside the control', () => {
     const { el, activate } = tapElement();
     el.dispatchEvent(pointerEvent('pointerdown', 1, { clientX: 10, clientY: 10 }));

@@ -131,7 +131,6 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
   }
 
   function down(e: PointerEvent) {
-    if (press) return;
     press = {
       pointerId: e.pointerId,
       pointerType: e.pointerType,
