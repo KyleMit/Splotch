@@ -149,7 +149,7 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
 
   function eventHitsControl(e: PointerEvent): boolean {
     const hit = node.ownerDocument.elementFromPoint(e.clientX, e.clientY);
-    return hit === node || (hit !== null && node.contains(hit));
+    return node.contains(hit);
   }
 
   function minViewportSide(): number {
