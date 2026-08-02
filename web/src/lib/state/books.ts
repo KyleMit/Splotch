@@ -15,8 +15,6 @@
 //   static/coloring/{book}/{page}-wide.dark.overlay.webp transparent white dark-mode overlay
 //   static/coloring/{book}/{name}.thumb.webp          grid thumbnail of the pen line art
 //   static/coloring/{book}/{name}.chalk.thumb.webp    grid thumbnail of the chalk (dark mode)
-//   static/coloring/{book}/{name}.overlay.thumb.webp  transparent light decode bridge
-//   static/coloring/{book}/{name}.dark.overlay.thumb.webp transparent dark decode bridge
 //   static/coloring/{book}/{page}-tall.light.webp     portrait colored fill
 //   static/coloring/{book}/{page}-wide.light.webp     landscape colored fill
 //   static/coloring/{book}/{page}-tall.night.webp     portrait night fill (dark mode)
@@ -30,10 +28,8 @@
 // gen-coloring-overlays derives the transparent white full-page presentation.
 // Orientations without a chalk derive their dark overlay from the pen instead.
 //
-// Each picker-facing line-art image (cover + pages, pen AND chalk) and each
-// transparent presentation overlay has a thumbnail sibling
-// (tools/asset-gen/bin/gen-coloring-thumbs.mjs). The picker uses opaque-source
-// thumbnails; the canvas uses alpha thumbnails only as its full-res decode bridge.
+// Each picker-facing line-art image (cover + pages, pen AND chalk) has a
+// thumbnail sibling (tools/asset-gen/bin/gen-coloring-thumbs.mjs).
 // `thumbPath()` maps a pen outline to its `.thumb.webp`, `chalkThumbPath()` a
 // chalk to its `.chalk.thumb.webp`, and `pageThumb()` picks per theme — dark
 // mode shows the chalk thumb so the tile previews the same art the canvas
@@ -95,8 +91,6 @@ const ASSET_SUFFIXES = {
   chalkThumb: '.chalk.thumb.webp',
   overlay: '.overlay.webp',
   darkOverlay: '.dark.overlay.webp',
-  overlayThumb: '.overlay.thumb.webp',
-  darkOverlayThumb: '.dark.overlay.thumb.webp',
 } as const;
 
 const PAGE_ASSET_SUFFIX_PATTERN = new RegExp(
@@ -293,18 +287,6 @@ export function pageOverlayImage(
   return source.slice(0, -ASSET_SUFFIXES.outline.length) + suffix;
 }
 
-export function pageOverlayThumbnail(
-  page: ColoringPage,
-  orientation: BookOrientation,
-  theme: ResolvedTheme
-): string {
-  const overlay = pageOverlayImage(page, orientation, theme);
-  const overlaySuffix = theme === 'dark' ? ASSET_SUFFIXES.darkOverlay : ASSET_SUFFIXES.overlay;
-  const thumbSuffix =
-    theme === 'dark' ? ASSET_SUFFIXES.darkOverlayThumb : ASSET_SUFFIXES.overlayThumb;
-  return overlay.slice(0, -overlaySuffix.length) + thumbSuffix;
-}
-
 /** Grid-thumbnail path for a picker-facing line-art image (`x.outline.webp` -> `x.thumb.webp`). */
 export function thumbPath(src: string): string {
   return src.endsWith(ASSET_SUFFIXES.outline)
@@ -361,12 +343,6 @@ export function bookAssetPaths(book: Book): string[] {
       pageOverlayImage(page, orientation, 'dark'),
     ])
   );
-  const overlayThumbnails = book.pages.flatMap((page) =>
-    ALL_ORIENTATIONS.flatMap((orientation) => [
-      pageOverlayThumbnail(page, orientation, 'light'),
-      pageOverlayThumbnail(page, orientation, 'dark'),
-    ])
-  );
   return [
     ...lineArt,
     ...lightFills,
@@ -375,6 +351,5 @@ export function bookAssetPaths(book: Book): string[] {
     ...lineArt.map(thumbPath),
     ...chalkOutlines.map(chalkThumbPath),
     ...overlays,
-    ...overlayThumbnails,
   ];
 }

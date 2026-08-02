@@ -22,7 +22,6 @@
     overlayUrl,
     coloringBookState,
     themedOverlayUrl as currentThemedOverlayUrl,
-    themedOverlayThumbnailUrl as currentThemedOverlayThumbnailUrl,
     colorSheetUrl,
     nightSheetUrl,
   } from '$lib/state/coloringBook.svelte';
@@ -171,14 +170,12 @@
   // back to a white overlay derived from the pen for un-forked pages. Reading
   // resolvedTheme() re-picks the art on a live theme switch.
   const themedOverlayUrl = $derived(currentThemedOverlayUrl(resolvedTheme()));
-  const themedOverlayThumbnailUrl = $derived(currentThemedOverlayThumbnailUrl(resolvedTheme()));
 
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
-  // and swaps the page art to the other tall/wide composition. The matching
-  // picker thumbnail bridges that full-resolution decode, so the new page is
-  // centered and recognizable immediately instead of leaving a blank canvas.
-  // A theme sibling has identical registration, so it keeps the current art
-  // visible until the sibling is ready.
+  // and swaps the page art to the other tall/wide composition. Hide art when
+  // the composition changes, decode the full-resolution file off-DOM, and fade
+  // it in only once ready. A theme sibling has identical registration, so it
+  // keeps the current art visible until the sibling is ready.
   let displayedOverlayUrl = $state<string | null>(null);
 
   $effect(() => {
@@ -189,7 +186,7 @@
     }
     const displayed = untrack(() => displayedOverlayUrl);
     if (!displayed || pageCompositionKey(displayed) !== pageCompositionKey(url)) {
-      displayedOverlayUrl = themedOverlayThumbnailUrl;
+      displayedOverlayUrl = null;
     }
     let stale = false;
     const img = new Image();

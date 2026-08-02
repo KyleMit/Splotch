@@ -85,8 +85,8 @@ export async function openColoringDialog(page: Page) {
   );
 }
 
-// Apply the first Farm page and wait for its full-resolution overlay. The
-// thumbnail bridge lands first; the full line art enables the deferred fill.
+// Apply the first Farm page and wait for its ready-gated full-resolution
+// overlay; that decoded line art enables the deferred fill.
 export async function applyFarmPage(page: Page) {
   await openColoringDialog(page);
   const dialog = page.locator('#coloring-book-dialog');

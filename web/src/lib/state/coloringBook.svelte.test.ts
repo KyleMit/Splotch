@@ -6,7 +6,6 @@ import {
   overlayUrl,
   chalkUrl,
   themedOverlayUrl,
-  themedOverlayThumbnailUrl,
   colorSheetUrl,
   nightSheetUrl,
   clearOverlay,
@@ -96,19 +95,13 @@ describe('coloring book state', () => {
     expect(pageChalkImage(chalked, 'landscape')).toBeNull();
   });
 
-  it('picks matching full-resolution and thumbnail art for the resolved theme', () => {
+  it('picks matching full-resolution art for the resolved theme', () => {
     setOverlayPage(spacePage, 'landscape');
     expect(themedOverlayUrl('light')).toBe(
       spacePage.images.landscape.replace('.outline.webp', '.overlay.webp')
     );
-    expect(themedOverlayThumbnailUrl('light')).toBe(
-      spacePage.images.landscape.replace('.outline.webp', '.overlay.thumb.webp')
-    );
     expect(themedOverlayUrl('dark')).toBe(
       spacePage.images.landscape.replace('.outline.webp', '.dark.overlay.webp')
-    );
-    expect(themedOverlayThumbnailUrl('dark')).toBe(
-      spacePage.images.landscape.replace('.outline.webp', '.dark.overlay.thumb.webp')
     );
   });
 

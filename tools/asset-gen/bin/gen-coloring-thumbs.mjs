@@ -1,9 +1,7 @@
 // Generates a small grid thumbnail for every coloring-book cover and page under
 // web/static/coloring/. The Coloring Book Picker shows these images in a grid at
-// ~140-300px, but the source art is 1024px+. Picker thumbnails come from the
-// opaque pen/chalk sources. Decode-bridge thumbnails come from the alpha
-// presentation overlays so existing ink stays visible while full-resolution
-// art loads.
+// ~140-300px, but the source art is 1024px+. Thumbnails come from the opaque
+// pen/chalk sources used by the picker.
 //
 // The catalog (web/src/lib/state/books.ts) derives every thumb path from its
 // source via `thumbPath()`/`chalkThumbPath()`, and `bookAssetPaths()` lists both
@@ -24,13 +22,10 @@ import { COLORING_DIR } from '../lib/paths.mjs';
 
 const THUMB_EDGE = 400; // longest-edge px — comfortably covers a 2x DPR ~200px tile
 const THUMB_QUALITY = 80;
-// Longest suffix first keeps `.dark.overlay.webp` from matching `.overlay.webp`.
-const SOURCE_SUFFIXES = ['.dark.overlay.webp', '.outline.webp', '.chalk.webp', '.overlay.webp'];
+const SOURCE_SUFFIXES = ['.outline.webp', '.chalk.webp'];
 const THUMB_SUFFIXES = {
   '.outline.webp': '.thumb.webp',
   '.chalk.webp': '.chalk.thumb.webp',
-  '.overlay.webp': '.overlay.thumb.webp',
-  '.dark.overlay.webp': '.dark.overlay.thumb.webp',
 };
 
 function isSource(path) {
