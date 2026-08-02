@@ -59,6 +59,10 @@ membership uses the latest three full runs in priority order:
 3. a non-mandatory member that has not been near the budget in the window yields to a non-member
    that has, with an actual breach winning a tie.
 
+The current two mandatory sole exercisers fill both fast-set slots, so measured membership ranking
+is dormant until the coverage declarations or fast-set size change. The rolling history's
+consecutive-miss gate remains active independently of membership ranking.
+
 The full run fails when ideal and committed membership differ. For every full-run breach the same
 record says whether any committed fast scenario also breached. A breach confined to non-members is a
 fast-set miss; two consecutive misses fail even if the membership calculation has no legal swap.

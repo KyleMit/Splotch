@@ -69,6 +69,7 @@ export function deriveIdealFastSet({
     );
   }
 
+  // Ranking becomes active only when mandatory sole exercisers leave an open fast-set slot.
   const ranked = scenarioKeys
     .filter((key) => !mandatory.includes(key))
     .sort(compareHeadroom(stats));
