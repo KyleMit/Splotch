@@ -153,6 +153,24 @@ test.describe('tiled screenshot export', () => {
     expect(await download.failure()).toBeNull();
     await expect(polaroid).toHaveCount(0, { timeout: 3_000 });
   });
+
+  test('suppresses the polaroid flash for reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await gotoApp(page);
+    await openDrawer(page);
+    await draw(page, [
+      { x: 140, y: 140 },
+      { x: 240, y: 200 },
+    ]);
+
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('#screenshotButton').click();
+    const flash = page.locator('.polaroid-flash');
+    await expect(flash).toHaveCount(1);
+    await expect(flash).toHaveCSS('animation-name', 'none');
+    await expect(flash).toHaveCSS('opacity', '0');
+    await downloadPromise;
+  });
 });
 
 // ── tool/stroke state + persistence ─────────────────────────────────────────

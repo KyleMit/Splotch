@@ -438,6 +438,10 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .polaroid-flash {
+    animation: none;
+  }
+
   .polaroid-frame {
     animation-name: polaroid-fade;
     animation-duration: 0.7s;
