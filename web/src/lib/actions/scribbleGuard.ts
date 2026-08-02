@@ -69,10 +69,7 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
   function finishPress(shouldActivate: boolean) {
     if (!press) return;
     press = undefined;
-    if (shouldActivate) {
-      current();
-      flushSync();
-    }
+    if (shouldActivate) current();
   }
 
   function eventHitsControl(e: PointerEvent): boolean {
@@ -106,6 +103,7 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
       e.stopImmediatePropagation();
       forgetPenPointer(e.pointerId);
       finishPress(true);
+      flushSync();
       return;
     }
 

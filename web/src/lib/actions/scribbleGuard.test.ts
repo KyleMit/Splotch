@@ -2,7 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { POINTER_RESUME_GAP_MS, POINTER_RESUME_JUMP_RATIO } from '$lib/drawing/strokeMath';
 import { scribbleGuard, scribbleTap } from './scribbleGuard';
 
-const forgetPenPointer = vi.hoisted(() => vi.fn());
+const { flushSync, forgetPenPointer } = vi.hoisted(() => ({
+  flushSync: vi.fn(),
+  forgetPenPointer: vi.fn(),
+}));
+vi.mock('svelte', () => ({ flushSync }));
 vi.mock('$lib/drawing/engine', () => ({ forgetPenPointer }));
 
 // Touch.touchType is Safari-only, so the stylus/finger discrimination can't be
@@ -95,16 +99,18 @@ describe('scribbleTap', () => {
     tapActions.clear();
     vi.useRealTimers();
     vi.restoreAllMocks();
-    forgetPenPointer.mockClear();
+    flushSync.mockReset();
+    forgetPenPointer.mockReset();
     document.body.innerHTML = '';
   });
 
-  it('activates once on a completed press, ignoring the trailing click', () => {
+  it('activates once on a completed press without flushing, ignoring the trailing click', () => {
     const { el, activate } = tapElement();
     el.dispatchEvent(pointerEvent('pointerdown', 1));
     window.dispatchEvent(pointerEvent('pointerup', 1));
     el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
     expect(activate).toHaveBeenCalledTimes(1);
+    expect(flushSync).not.toHaveBeenCalled();
   });
 
   it('activates on a keyboard/AT click (detail 0, no pointer press)', () => {
@@ -192,6 +198,10 @@ describe('scribbleTap', () => {
   it('completes a pen tap when a far move after the resume gap proves its up was omitted', () => {
     vi.useFakeTimers();
     const { el, activate } = tapElement();
+    const order: string[] = [];
+    forgetPenPointer.mockImplementation(() => order.push('forget pen pointer'));
+    activate.mockImplementation(() => order.push('activate'));
+    flushSync.mockImplementation(() => order.push('flush'));
     const jump = Math.min(window.innerWidth, window.innerHeight) * POINTER_RESUME_JUMP_RATIO + 1;
     el.dispatchEvent(
       pointerEvent('pointerdown', 1, { pointerType: 'pen', buttons: 1, clientX: 10 })
@@ -206,6 +216,8 @@ describe('scribbleTap', () => {
     );
     expect(activate).toHaveBeenCalledTimes(1);
     expect(forgetPenPointer).toHaveBeenCalledWith(1);
+    expect(flushSync).toHaveBeenCalledTimes(1);
+    expect(order).toEqual(['forget pen pointer', 'activate', 'flush']);
   });
 
   it('does not mistake a continuous pen drag for an omitted-up tap', () => {
