@@ -113,7 +113,8 @@ function validateScenarioRecord(scenario, run, runIndex) {
     throw new Error(`fast-set history run ${runIndex} has invalid breach data for ${scenario.key}`);
   }
   const expectedRatio = scenario.measuredMs / run.budgetMs;
-  if (Math.abs(scenario.headroomRatio - expectedRatio) > Number.EPSILON) {
+  const ratioScale = Math.max(1, Math.abs(scenario.headroomRatio), Math.abs(expectedRatio));
+  if (Math.abs(scenario.headroomRatio - expectedRatio) > Number.EPSILON * ratioScale) {
     throw new Error(
       `fast-set history run ${runIndex} has inconsistent headroom for ${scenario.key}`
     );

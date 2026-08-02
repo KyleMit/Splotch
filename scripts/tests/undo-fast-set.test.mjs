@@ -164,4 +164,16 @@ describe('full-run miss history', () => {
       })
     ).toThrow('does not contain every scenario');
   });
+
+  it('accepts one-ULP ratio differences at large magnitudes', () => {
+    const history = appendFullRun({
+      history: emptyHistory(),
+      results: ALL_UNDO_SCENARIO_KEYS.map((key) => result(key, 10 ** 16)),
+      startedAt: '2026-08-01T00:00:00.000Z',
+      budgetMs: 1,
+    });
+    history.runs[0].scenarios[0].headroomRatio += 2;
+
+    expect(validateFastSetHistory(history)).toBe(history);
+  });
 });
