@@ -61,7 +61,7 @@
   // Filled one at a time by the idle mount pump (see boot/bootHiddenOverlays.ts).
   let overlays = $state<Component[]>([]);
 
-  // Settings dialog is the one overlay too heavy even for an idle
+  // The Settings dialog is the one overlay too heavy even for an idle
   // slice (~200 ms mounted under a 4× throttle), so it waits for its first
   // open — the tap that flips settingsModal.open latches the mount, and the
   // dialog's modalDialog $effect shows it as soon as it lands. The corner

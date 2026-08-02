@@ -9,7 +9,7 @@
   import type { ReportKind } from '$lib/report';
 
   interface Props {
-    // Flips true when Settings modal opens; we use it to clear the form
+    // Flips true when the Settings modal opens; we use it to clear the form
     // and any stale feedback so a reopened panel starts fresh.
     open?: boolean;
   }

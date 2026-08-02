@@ -24,7 +24,7 @@
 
   // Ceiling the Button Size slider at what the current screen can actually
   // fit, so the parent can't pick a size the Actions Panel would have to cap
-  // anyway (landscape: the row would hit Settings Button; portrait: the
+  // anyway (landscape: the row would hit the Settings Button; portrait: the
   // column would hit the palette). Recomputed reactively from the shared
   // layout state, so it tracks rotation while Settings is open. A
   // stored value above today's ceiling (e.g. set on a wider screen) is only

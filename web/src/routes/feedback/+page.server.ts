@@ -12,8 +12,8 @@ import type { Actions, PageServerLoad } from './$types';
 // site-wide prerender; that also drops its HTML from the native static export
 // (adapter-static's `strict: false`), the way /admin is handled — the route's JS
 // chunk still ships and a WebView deep-link would render a page whose POST goes
-// nowhere, but nothing in the app links there. The apps carry Settings
-// form and post to /api/report; this page is for the URL in the Play Store
+// nowhere, but nothing in the app links there. The apps carry the form in
+// Settings and post to /api/report; this page is for the URL in the Play Store
 // listing and anywhere else a link is handed out.
 export const prerender = false;
 export const ssr = true;

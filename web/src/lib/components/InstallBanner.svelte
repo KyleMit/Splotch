@@ -13,9 +13,9 @@
   } from '$lib/state/install.svelte';
   import { SETTINGS_BUTTON_ID } from '$lib/state/ui.svelte';
 
-  // The banner sits above the corner controls (actions toggle, Settings), so
+  // The banner sits above the corner controls (the actions toggle and the Settings Button), so
   // it must not linger: once the child has kept drawing past it, clear it and
-  // hand off to Settings setup guide with a short parting message.
+  // hand off to the Setup Guide in Settings with a short parting message.
   const PARTING_MESSAGE_MS = 4000;
 
   // Shared motion vocabulary for the banner's enter/exit transitions.
@@ -56,7 +56,7 @@
     }, PARTING_MESSAGE_MS);
   });
 
-  // Auto-clear exit: shrink the pill into Settings button so the parting
+  // Auto-clear exit: shrink the pill into the Settings Button so the parting
   // message's "it lives in Settings" lands visually too. Manual
   // dismiss / completed install keep the plain fly-down.
   function bannerExit(node: HTMLElement) {
@@ -105,11 +105,9 @@
           <SplotchyIcon class="install-mascot-icon" />
         </span>
         <p>
-          No rush — these steps are always in <Icon
-            name="settings"
-            class="install-inline-icon"
-            aria-hidden="true"
-          /><strong>Settings</strong>.
+          No rush — these steps are always in
+          <Icon name="settings" class="install-inline-icon" aria-hidden="true" />
+          <strong>Settings</strong>.
         </p>
       </div>
     {:else}

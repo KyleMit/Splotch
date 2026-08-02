@@ -50,8 +50,8 @@ the duplication is the accepted cost; keep the blocks in sync.
   and watches OS switches while in system mode. The pre-paint head script in `web/src/app.html`
   stamps `data-theme` before first paint, following the existing "attribute only on deviation from
   default" convention.
-* UI: the **Appearance Control** (Light / Dark / System segmented control) at the top of the Parent
-  Center Settings tab (`SettingsToggles.svelte`).
+* UI: the **Appearance Control** (Light / Dark / System segmented control) at the top of the former
+  Settings tab in the Settings modal (`SettingsToggles.svelte`).
 * **The paper darkens with the theme.** `--paper` (dark: a warm near-black, not pure black) sits
   under the unchanged low-alpha texture (`DrawingCanvas.svelte`); `--paper-margin` is the flat tone
   behind the rotation-locked sheet. The clear gesture's paper washes and page-turn ripple

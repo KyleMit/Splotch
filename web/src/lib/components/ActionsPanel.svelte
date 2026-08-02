@@ -71,7 +71,7 @@
   // Cap the button size so the expanded panel always fits the screen —
   // landscape: the row stops short of the bottom-right Settings Button;
   // portrait: the column stops short of the palette bar at the top. Constants
-  // and the mirror JS formula (Settings slider's dynamic max) live in
+  // and the mirror JS formula (the Button Size slider's dynamic max in Settings) live in
   // actionButtonLayout. An explicit equal per-button size — rather than letting
   // the row flex-shrink — keeps the buttons identical (flex distributes by
   // inner base size, which padding skews) and keeps their positions stable
@@ -281,8 +281,8 @@
   bind:this={panelEl}
   use:scribbleGuard
 >
-  <!-- Always rendered; the drawer's open/closed state and each control's Parent
-       Center on/off toggle are driven purely by CSS. app.html's <html> seed owns
+  <!-- Always rendered; the drawer's open/closed state and each control's toggle
+       in Settings are driven purely by CSS. app.html's <html> seed owns
        first paint; the panel-local publish effect owns hydrated changes. -->
   <div class="actions-drawer" ontransitionend={finishDrawerMotion}>
     <div class="actions-drawer-inner">
@@ -521,7 +521,7 @@
     }
   }
 
-  /* Individual controls sit behind Settings on/off toggles. The <html>
+  /* Individual controls sit behind on/off toggles in Settings. The <html>
      bootstrap selector applies only until the panel publishes its live marker;
      hydrated toggles use panel-local attributes. Controls default ON, so the raw
      prerendered HTML already shows the defaults. */
@@ -529,7 +529,7 @@
   :global(.actions-panel[data-action-panel-live][data-off-stroke]) .stroke-width-wrapper {
     display: none;
   }
-  /* The eraser's Settings toggle hides its Brush Menu entry — that rule
+  /* The eraser's toggle in Settings hides its Brush Menu entry — that rule
      moved into BrushMenu.svelte with the #eraserButton element it targets. */
   :global(html[data-off-coloring]) .actions-panel:not([data-action-panel-live]) #coloringBookButton,
   :global(.actions-panel[data-action-panel-live][data-off-coloring]) #coloringBookButton {
@@ -555,7 +555,7 @@
   }
 
   /* Drawer open/close toggle. Deliberately low-key (chrome from .corner-button
-     in app.css, shared with Settings button) so it doesn't compete
+     in app.css, shared with the Settings Button) so it doesn't compete
      with the tools. */
   .drawer-toggle {
     display: flex;
@@ -595,11 +595,11 @@
 
   /* Sized to roughly match the Color Swatch touch target (60px landscape /
      55px portrait) so the action buttons feel like equal-weight tap targets
-     for small hands. The parent can rescale them from Settings via
+     for small hands. The parent can rescale them in Settings with
      --action-btn-scale (defaults to 1 when unset). */
   .action-button {
     /* --action-btn-size (inline) is the precise measured cap ActionsPanel sets
-       once hydrated, so the row clears Settings Button (landscape) / the
+       once hydrated, so the row clears the Settings Button (landscape) / the
        palette bar (portrait). Until then it's unset and --action-btn-fallback
        owns first paint: the same worst-case cap (all 7 buttons, palette not yet
        measured) but expressed in CSS so the media query picks the right
@@ -777,7 +777,7 @@
      as a direct child of it and positions itself absolutely against this
      wrapper (a Svelte component adds no wrapper DOM). Visibility of the whole
      stroke-width wrapper is gated by the [data-off-stroke] rule above (the
-     Settings toggle). */
+     toggle in Settings). */
   .flyout-wrapper {
     position: relative;
   }

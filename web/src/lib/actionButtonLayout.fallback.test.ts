@@ -34,7 +34,7 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
   it('landscape fallback matches the constants', () => {
     const [landscape] = fallbackBlocks;
     expect(landscape).toContain(`${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)`);
-    // 100vw minus the right-edge Settings Button reserve + worst-case chrome.
+    // 100vw minus the reserve for the right-edge Settings Button + worst-case chrome.
     expect(landscape).toContain(`100vw - ${SETTINGS_BUTTON_RESERVE + WORST_CASE_CHROME}px`);
     expect(landscape).toContain(`/ ${MAX_ACTION_BUTTON_COUNT}`);
   });

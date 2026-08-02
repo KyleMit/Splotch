@@ -6,11 +6,11 @@ alpha-native follow-up is implemented by [ADR-0091](0091-alpha-overlays-and-work
 
 ## Context
 
-The tiled renderer made drawing and undo responsive on the physical iPad, but changing the Parent
-Center theme still froze the screen for about a second. A trusted MobileSafari dark-to-light
-baseline took 1–2 ms to update `data-theme`, then missed animation frames for 978–1,214 ms. The
-event handler and Svelte update were not slow; WebKit was flushing work caused by the
-theme-dependent coloring assets and the drawing compositor stack after JavaScript returned.
+The tiled renderer made drawing and undo responsive on the physical iPad, but changing the Settings
+theme still froze the screen for about a second. A trusted MobileSafari dark-to-light baseline took
+1–2 ms to update `data-theme`, then missed animation frames for 978–1,214 ms. The event handler and
+Svelte update were not slow; WebKit was flushing work caused by the theme-dependent coloring assets
+and the drawing compositor stack after JavaScript returned.
 
 Theme changes use the same generic interaction gate as other non-drawing actions: a frame gap above
 33.5 ms is a long frame. The drawing and undo contracts from ADR-0085 and ADR-0086 remain
@@ -133,8 +133,8 @@ long-frame boundary with millisecond timer quantization, rather than the prior o
 
 ### Authoritative Theme Measurement
 
-Use the production `/` route from a `PERF_MARKS` build, select a wide coloring page, open Parent
-Center, and measure dark-to-light separately from setup:
+Use the production `/` route from a `PERF_MARKS` build, select a wide coloring page, open Settings,
+and measure dark-to-light separately from setup:
 
 1. Set dark theme and wait for the themed overlay and magic fill to decode.
 2. Wait at least two animation frames so dialog animation is not attributed to the click.

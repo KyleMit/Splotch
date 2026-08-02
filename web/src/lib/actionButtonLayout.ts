@@ -1,7 +1,7 @@
 // Shared geometry for the Actions Panel button row, used by two consumers that
 // must agree: ActionsPanel caps the rendered button size so the expanded row
-// can never overlap Settings Button (landscape) or run off the top of
-// the screen (portrait), and Settings' Button Size slider caps its
+// can never overlap the Settings Button (landscape) or run off the top of
+// the screen (portrait), and the Button Size slider in Settings caps its
 // range so a parent can't even pick a size the current screen can't fit.
 import {
   settings,
@@ -19,7 +19,7 @@ export const ACTION_BUTTON_GAP = 12;
 export const ACTION_BUTTON_BASE_LANDSCAPE = 60;
 export const ACTION_BUTTON_BASE_PORTRAIT = 55;
 
-// Space the landscape row must leave at the right edge for Settings
+// Space the landscape row must leave at the right edge for the Settings
 // Button: its 8px inset + 48px button + 8px breathing room.
 export const SETTINGS_BUTTON_RESERVE = 64;
 
@@ -67,7 +67,7 @@ export function visibleActionButtonCount(): number {
 }
 
 // The space one button may occupy on the current screen, in px, before the row
-// (landscape: up to Settings Button reserve) or the column (portrait:
+// (landscape: up to the reserve for the Settings Button) or the column (portrait:
 // up to the palette bar) runs out. Mirrors the CSS cap in ActionsPanel — keep
 // the two formulas in step.
 function availablePerButton(buttonCount: number): number {
@@ -92,7 +92,7 @@ function availablePerButton(buttonCount: number): number {
 }
 
 // Largest Button Size percentage the current screen can show without the
-// render-time cap kicking in — Settings slider's dynamic max, so the
+// render-time cap kicking in — the dynamic maximum of the Button Size slider in Settings, so the
 // parent can't pick a size that would flow off the screen. Clamped to the
 // slider's static range: on an absurdly small viewport the render cap (below)
 // still bounds the actual size.

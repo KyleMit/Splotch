@@ -161,7 +161,7 @@ async function forgetStaleFolder(): Promise<void> {
 // Write `blob` as `filename` into the chosen folder. Returns true once written;
 // false (no folder set, unsupported, or permission lost) tells the caller to
 // fall back to a download. Never opens the folder picker — folder selection is a
-// separate Settings action. `allowPrompt` only lets a user-initiated save
+// separate action in Settings. `allowPrompt` only lets a user-initiated save
 // re-confirm a write permission the browser dropped since the folder was chosen
 // (in-tab origins lose it between sessions); background saves leave it false and
 // degrade silently to a download.

@@ -233,13 +233,13 @@ The Simulator therefore catches a reintroduction of the original drawing-starvat
 classes without physical hardware. It may reject a candidate before the device run; only calibrated
 physical input may approve one.
 
-Native Splotch defaults to a persisted orientation lock. A rotation sweep opens the real Parent
-Center Appearance section, disables the lock through `#lockRotationToggle`, reloads so the Capacitor
-plugin releases the Activity/controller lock, and restores the setting through the same UI before
-closing the session. Forcing Appium orientation while leaving the product lock active is invalid: it
-either fails at the driver or measures a state the app intentionally prevents. A profiling-only
-preference mutation seam was rejected because it would measure a state transition that no parent
-performs and would need a second implementation of product persistence semantics.
+Native Splotch defaults to a persisted orientation lock. A rotation sweep opens the real Settings
+Appearance section, disables the lock through `#lockRotationToggle`, reloads so the Capacitor plugin
+releases the Activity/controller lock, and restores the setting through the same UI before closing
+the session. Forcing Appium orientation while leaving the product lock active is invalid: it either
+fails at the driver or measures a state the app intentionally prevents. A profiling-only preference
+mutation seam was rejected because it would measure a state transition that no parent performs and
+would need a second implementation of product persistence semantics.
 
 Native screenshot profiling has one narrower seam at the external persistence boundary. A
 `PERF_MARKS` build may provide `window.__screenshotSaveSink` so the action suite observes completion

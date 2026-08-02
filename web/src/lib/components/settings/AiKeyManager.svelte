@@ -16,7 +16,7 @@
   import { getPlatform, type Platform } from '$lib/platform';
 
   interface Props {
-    // `open` flips true when Settings modal opens; we use it to clear
+    // `open` flips true when the Settings modal opens; we use it to clear
     // the input and any stale feedback, and to re-read the current platform.
     open?: boolean;
   }

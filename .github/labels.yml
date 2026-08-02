@@ -46,6 +46,7 @@
   color: 'd4c5f9'
   description: 'Layout, polish, responsiveness'
 - name: 'area:settings'
+  from: 'area:parent-center'
   color: '0052cc'
   description: 'Settings modal and controls'
 - name: 'area:admin-security'

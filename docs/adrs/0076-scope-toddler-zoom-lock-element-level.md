@@ -180,8 +180,8 @@ Recorded because each is a natural next idea, and each fails on a fact above:
 
 * `\+` The Lighthouse accessibility score reaches **100** on both form factors — the last deduction
   is gone.
-* `\+` `/privacy` and `/admin` are genuinely browser-zoomable for low-vision users, and the Parent
-  Center's reading content can be pinch-enlarged up to 3× inside the otherwise-locked drawing page.
+* `\+` `/privacy` and `/admin` are genuinely browser-zoomable for low-vision users, and Settings'
+  reading content can be pinch-enlarged up to 3× inside the otherwise-locked drawing page.
 * `\+` The lock is now honestly scoped and test-guarded — a route flag + the canvas's own layers —
   rather than relying on a meta attribute that iOS Safari has ignored for pinch since iOS 10 anyway.
   New non-canvas pages are accessible by default with no per-page opt-in.

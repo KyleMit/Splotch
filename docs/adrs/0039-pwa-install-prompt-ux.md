@@ -60,15 +60,15 @@ Two surfaces consume the state:
    It is dismissible, and the dismissal is remembered.
 
    On phones the banner is wider than the gap between the bottom-corner controls (actions toggle,
-   Settings button), and shrinking it to fit would cram the parent-facing copy into ~260px. Instead
-   it stacks **above** those controls (`z-index` over their 900/901), and the takeover is kept
-   short: five strokes after it appears — proof the child kept drawing and no parent is engaging
-   (the countdown pauses while the how-to is expanded or the native dialog is up) — it
+   the Settings Button), and shrinking it to fit would cram the parent-facing copy into ~260px.
+   Instead it stacks **above** those controls (`z-index` over their 900/901), and the takeover is
+   kept short: five strokes after it appears — proof the child kept drawing and no parent is
+   engaging (the countdown pauses while the how-to is expanded or the native dialog is up) — it
    auto-dismisses. The auto-clear persists the same `dismissed` flag as the × button, briefly swaps
    the pill to a parting message ("these steps are always in Settings"), then animates the pill into
-   Settings button so the message lands spatially too. Lifting the banner above the corner controls
-   instead was rejected: with the actions panel expanded the required lift would push the banner
-   toward mid-canvas.
+   the Settings Button so the message lands spatially too. Lifting the banner above the corner
+   controls instead was rejected: with the actions panel expanded the required lift would push the
+   banner toward mid-canvas.
 2. **Settings → Setup tab** — the existing step list, upgraded to show the one-tap button above the
    per-OS manual steps when available (the prompt is browser-wide — Android *or* desktop Chromium —
    so it belongs to no single OS section). Section ordering and the installed checkmark come from

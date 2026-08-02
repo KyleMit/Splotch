@@ -18,8 +18,8 @@ export const BRUSH_TYPES: BrushType[] = ['pen', 'crayon', 'magic', 'eraser'];
 // The Brush Menu's entries, in presentation order — the icon/label/id metadata
 // the Brush Button trigger (its stacked faces) and the Brush Menu popover both
 // render. The eraser keeps its long-standing #eraserButton id (and the magic
-// brush #magicBrushButton) from their days as top-level buttons — the Parent
-// Center's data-off-eraser CSS and the E2E suite address them by id.
+// brush #magicBrushButton) from their days as top-level buttons — the
+// data-off-eraser CSS driven by Settings and the E2E suite address them by id.
 export const BRUSH_OPTIONS: {
   brush: BrushType;
   icon: CommonIconName;

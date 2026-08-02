@@ -1545,7 +1545,7 @@ param, persisting the token via `setAiAccessToken`, and scrubbing the URL with
 `history.replaceState` — it is the landing path for every parent invite link (`/​?ai_access_token=…`,
 built in `lib/server/admin.ts:90`), so a silent regression here breaks token onboarding.
 `aiCredentialKind` encodes the BYOK-beats-access-code precedence that `AiKeyManager.svelte:33` and
-`parent/sections.ts:69` rely on.
+`settings/sections.ts:69` rely on.
 
 #### Proposed solution
 
@@ -3955,10 +3955,11 @@ hidden={!settings.aiAccessToken || !settings.aiImageEnabled || !network.online}
 
 If one side gains a condition the other doesn't (say, a future per-child AI lockout), the failure is
 silent and geometric: `visibleActionButtonCount()` feeds the divisor of the `buttonSize` cap
-(ActionsPanel lines 92–104) and Settings slider ceiling (`maxActionButtonScale`), so a mismatch
-renders a row whose button count and per-button budget disagree — buttons overlap the Settings
-Button or shrink for a button that isn't there. CLAUDE.md's rule is explicit: cross-file agreement
-is never maintained by prose/duplication; boundary predicates are declared once and imported.
+(ActionsPanel lines 92–104) and the slider ceiling in Settings (`maxActionButtonScale`), so a
+mismatch renders a row whose button count and per-button budget disagree — buttons overlap the
+Settings Button or shrink for a button that isn't there. CLAUDE.md's rule is explicit: cross-file
+agreement is never maintained by prose/duplication; boundary predicates are declared once and
+imported.
 
 #### Proposed solution
 
@@ -4443,7 +4444,7 @@ line 206).
 #### Problem
 
 No production caller passes `step` or `pageStep`: the only consumer is `SliderRow.svelte`, whose
-`Props` (lines 6–24) don't even include them, so both Settings sliders always get the defaults
+`Props` (lines 6–24) don't even include them, so both sliders in Settings always get the defaults
 (`1`/`10`). CLAUDE.md: "A new prop, option, or optional parameter needs a production caller that
 exercises it; a seam kept only for tests gets a comment saying so" — these have neither.
 
@@ -4570,8 +4571,8 @@ all-on count as a literal `6` (test line 50: `expect(visibleActionButtonCount())
 against the constant — so adding a seventh button to the function while forgetting the constant
 keeps every test green (the fallback test would still pass: it checks the CSS matches the stale
 constant), and first paint budgets for one button too few, letting the pre-hydration row overflow
-into Settings Button. The testing rule is explicit: "Parametrized tests import the constant/manifest
-they exercise — never re-declare the value."
+into the Settings Button. The testing rule is explicit: "Parametrized tests import the
+constant/manifest they exercise — never re-declare the value."
 
 #### Proposed solution
 
@@ -4721,8 +4722,8 @@ navigating sections via `resetKey: view` or closing the overlay):
   while the user tries to scroll.
 * `onPointerDown` (line 79): `tracker.pointerCount === 0` is never true again, so `pinchedRecently`
   is never cleared at gesture start, and every subsequent tap re-enters the `pointerCount === 2`
-  branch setting `pinchedRecently = true` — `onClickCapture` then swallows the tap's click. Parent
-  Center rows, toggles, and links go dead.
+  branch setting `pinchedRecently = true` — `onClickCapture` then swallows the tap's click. Settings
+  rows, toggles, and links go dead.
 
 `pinchZoom` does not have this hole because it captures *every* finger on `pointerdown`
 (`web/src/lib/actions/pinchZoom.svelte.ts` line 197).
@@ -6720,8 +6721,8 @@ sequentially covers double-call; add a concurrent-call variant.
 
 `platform.ts` is the declared home for UA sniffing (`isIosDevice`, `isAndroidBrowser`,
 `osLabelFromUserAgent`), and `install.svelte.ts` itself enforces that centralization for its
-consumers — `installDeviceOs`'s comment (lines 51–52): "consumers (Settings setup guide) must not
-re-sniff the UA themselves." Yet six lines above, the module re-sniffs the UA locally:
+consumers — `installDeviceOs`'s comment (lines 51–52): "consumers (the Setup Guide in Settings) must
+not re-sniff the UA themselves." Yet six lines above, the module re-sniffs the UA locally:
 
 ```ts
 function isIosSafari() {
@@ -18259,30 +18260,6 @@ untracked local config, the same principle that keeps `DEVELOPMENT_TEAM` out of 
 run-splotch: drop the parenthetical. workflow-audit: describe the derivation instead — "under
 `~/.claude/projects/<slug>/`, where `<slug>` is the absolute repo path with `/` replaced by `-`
 (list `~/.claude/projects/` and match the current checkout)".
-
-### [Docs] run-splotch describes the wrong verification landmark: "Settings button top-right"
-
-**File(s):** `.ruler/skills/run-splotch/SKILL.md` (lines 42–44) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The screenshot-verification paragraph says: "**Open the PNG and look at it** —
-`screenshots/splotch-home.png` shows the color palette down the left, Settings button top-right…".
-Two errors: the element's canonical name is the **Settings Button** (architecture skill's UI
-glossary, line 219 — the glossary exists precisely so skills use one name), and it is positioned at
-the **bottom** edge (`SettingsButton.svelte:25–26`:
-`position: fixed; bottom: calc(var(--space-2) + env(safe-area-inset-bottom))`; the architecture
-skill's layout notes, lines 155–158, call the bottom edge "contested" between this button and the
-Actions Panel). An agent doing the prescribed visual check against this text either fails the
-verification ("no button top-right — did my change break the UI?") or, worse, passes a screenshot
-where the real button regressed.
-
-#### Proposed solution
-
-Fix to "Settings Button bottom-right" (and keep "color palette down the left", which is correct for
-the driver's 1280×800 landscape viewport).
 
 ### [Docs] knowledge-map's ADR-0059 link breaks in the generated root CLAUDE.md/AGENTS.md
 

@@ -14,7 +14,7 @@ import { draw, firstOpaquePixel, gotoApp, openSettingsModal, PICKER_GREEN } from
 // rasterizer. The shared helpers imported above are held to the same
 // WebKit-portable bar.
 
-test('the app boots: canvas, palette, and Settings button render', async ({ page }) => {
+test('the app boots: canvas, palette, and Settings Button render', async ({ page }) => {
   await gotoApp(page);
   const settingsButton = page.getByRole('button', { name: 'Settings' });
   await expect(settingsButton).toBeVisible();

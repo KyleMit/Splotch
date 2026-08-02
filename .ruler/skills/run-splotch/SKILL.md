@@ -40,8 +40,8 @@ node .claude/skills/run-splotch/driver.mjs --route /admin --out screenshots/splo
 
 The driver starts its own server, waits for the route to become interactive, writes the PNG, then
 tears the server down. **Open the PNG and look at it** — `screenshots/splotch-home.png` shows the
-color palette down the left, Settings button top-right, and (with `--draw`) a purple zig-zag stroke
-on the canvas. A blank canvas with no stroke means the draw flow regressed.
+color palette down the left, the Settings Button bottom-right, and (with `--draw`) a purple zig-zag
+stroke on the canvas. A blank canvas with no stroke means the draw flow regressed.
 
 Options (see the header of `driver.mjs`):
 

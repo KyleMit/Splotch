@@ -125,8 +125,8 @@ interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey
   // Desktop web only: the name of the optional folder web saves are written into
   // (File System Access API). Not persisted here — derived from the directory
   // handle in IndexedDB and hydrated on boot by hydrateSaveFolder(). Null when no
-  // folder is set, in which case saves just download. Drives Settings
-  // folder display; nothing else depends on it.
+  // folder is set, in which case saves just download. Drives the folder
+  // display in Settings; nothing else depends on it.
   saveFolderName: string | null;
 }
 

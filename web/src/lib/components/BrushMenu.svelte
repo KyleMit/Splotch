@@ -49,7 +49,7 @@
   /* The .flyout-menu / .flyout-option chrome is shared with StrokeWidthMenu and
      lives in app.css; only the brush-specific rules stay here. */
 
-  /* The eraser's Settings toggle hides its Brush Menu entry. The root seed
+  /* The eraser's toggle in Settings hides its Brush Menu entry. The root seed
      owns first paint; the hydrated panel owns live changes. */
   :global(html[data-off-eraser] .actions-panel:not([data-action-panel-live])) #eraserButton,
   :global(.actions-panel[data-action-panel-live][data-off-eraser]) #eraserButton {

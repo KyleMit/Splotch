@@ -14,7 +14,7 @@ test.use({
 
 // The banner's exit is mostly a fixed in-app wait, not work: InstallBanner
 // spends PARTING_MESSAGE_MS (4s) showing the parting note, then
-// BANNER_SHRINK_EXIT_MS (550ms) shrinking the pill into Settings button —
+// BANNER_SHRINK_EXIT_MS (550ms) shrinking the pill into the Settings Button —
 // the auto-clear path this test drives sets exitIntoSettingsButton, so it takes
 // that exit rather than the shorter plain fly-down. So ~4.6s of any budget here is
 // floor that contention cannot compress, and only what is left absorbs

@@ -307,13 +307,13 @@ test('the picked brush persists across a reload and stamps the brush face pre-pa
 });
 
 // On a phone-width portrait screen the stroke-width flyout used to open as a
-// horizontal row that ran under the bottom-right Settings button. Tapping
+// horizontal row that ran under the bottom-right Settings Button. Tapping
 // the rightmost size closed the menu on pointerup, and the trailing click then
-// fell through to the now-unobscured Settings button and launched its
+// fell through to the now-unobscured Settings Button and launched its
 // modal. The flyout must clear that button so a size tap can't open it. 460px
-// sits in the range where the row would still reach the Settings button, so it
+// sits in the range where the row would still reach the Settings Button, so it
 // pins the column breakpoint high enough for the current button sizes.
-test('the stroke flyout clears Settings button on a phone', async ({ page }) => {
+test('the stroke flyout clears the Settings Button on a phone', async ({ page }) => {
   await page.setViewportSize({ width: 460, height: 852 });
   await gotoApp(page);
   await openDrawer(page);
@@ -329,7 +329,7 @@ test('the stroke flyout clears Settings button on a phone', async ({ page }) => 
     size5.x + size5.width > parent.x &&
     size5.y < parent.y + parent.height &&
     size5.y + size5.height > parent.y;
-  expect(overlaps, 'stroke flyout overlaps Settings button').toBe(false);
+  expect(overlaps, 'stroke flyout overlaps the Settings Button').toBe(false);
 
   // Tapping the rightmost size selects it and leaves Settings closed.
   await page.locator('button[aria-label="Size 5"]').click();

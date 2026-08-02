@@ -194,7 +194,7 @@ body {
 }
 
 /* Muted corner-button chrome shared by the drawer toggle, Fullscreen Toggle,
-   and Settings Button: a transparent button whose whole-button opacity and
+   and the Settings Button: a transparent button whose whole-button opacity and
    gray icon tint both step up idle → hover → pressed. Positioning and
    z-index stay in each component. */
 .corner-button {
@@ -272,9 +272,9 @@ body {
 }
 
 /* On phone-width portrait screens the horizontal flyout runs under the
-   bottom-right Settings button (and, when narrower, off the right edge):
+   bottom-right Settings Button (and, when narrower, off the right edge):
    stack the options vertically so it runs up alongside the other action
-   buttons and clears the Settings button. The row layout stays for tablet-width
+   buttons and clears the Settings Button. The row layout stays for tablet-width
    portrait, where there's room to the right of the palette. */
 @media (orientation: portrait) and (max-width: 540px) {
   .flyout-menu {
