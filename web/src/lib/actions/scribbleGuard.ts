@@ -110,6 +110,7 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
     }
 
     if (
+      !press.dragged &&
       Math.hypot(e.clientX - press.startX, e.clientY - press.startY) > TAP_MOVEMENT_TOLERANCE_PX &&
       !eventHitsControl(e)
     ) {

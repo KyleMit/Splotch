@@ -154,6 +154,15 @@ describe('scribbleTap', () => {
     expect(activate).not.toHaveBeenCalled();
   });
 
+  it('stops hit-testing moves once the press is known to be dragged', () => {
+    const { el } = tapElement();
+    const hitTest = vi.mocked(document.elementFromPoint).mockReturnValue(document.body);
+    el.dispatchEvent(pointerEvent('pointerdown', 1));
+    window.dispatchEvent(pointerEvent('pointermove', 1, { clientX: 10 }));
+    window.dispatchEvent(pointerEvent('pointermove', 1, { clientX: 20 }));
+    expect(hitTest).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps a press tappable when larger movement stays inside the control', () => {
     const { el, activate } = tapElement();
     el.dispatchEvent(pointerEvent('pointerdown', 1, { clientX: 10, clientY: 10 }));
