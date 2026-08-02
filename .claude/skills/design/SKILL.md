@@ -52,8 +52,8 @@ pierce Svelte's style scoping, so every component references them directly via `
 | Fill      | `--clear-gradient-rest` — the Clear Button's at-rest red, painted identically by the                                                        |
 |           | drag-to-clear coachmark ghost so the tutorial can't drift from the real control. Unthemed on                                                |
 |           | purpose (ADR-0052): it reads the same on both papers                                                                                        |
-| Stacking  | `--z-*` — the cross-component chrome order, `--z-canvas-chrome` (4) up to `--z-screenshot-flash`                                            |
-|           | (10000), listed low-to-high in `tokens.ts`. One list, not one context: all root-context except                                              |
+| Stacking  | `--z-*` — the cross-component chrome order, `--z-canvas-chrome` (4) up to `--z-polaroid`                                                    |
+|           | (1003), listed low-to-high in `tokens.ts`. One list, not one context: all root-context except                                               |
 |           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under                                        |
 |           | `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers                                                             |
 | Theme     | surfaces, borders, text ramp, icon inks, brand/success/danger washes, paper, float-card chrome — the full                                   |

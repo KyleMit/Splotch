@@ -367,7 +367,7 @@ body {
 .polaroid-overlay {
   position: fixed;
   inset: 0;
-  z-index: var(--z-screenshot-flash);
+  z-index: var(--z-polaroid);
   pointer-events: none;
   display: flex;
   align-items: center;
