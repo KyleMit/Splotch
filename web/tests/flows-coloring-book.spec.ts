@@ -11,6 +11,10 @@ import {
   pickBrush,
 } from './flows-harness';
 
+// A healthy Magic fill commits well within this window; holding the next overlay for the full
+// interval distinguishes no ink from an async paint that is merely late.
+const PENDING_FILL_SETTLE_MS = 500;
+
 async function opaquePixelCount(page: Page) {
   const canvas = await renderedCanvasHandle(page);
   try {
@@ -193,9 +197,7 @@ test('a newly applied page cannot paint the previous page fill while its art dec
       { x: 240, y: 180 },
       { x: 480, y: 260 },
     ]);
-    // This deliberately proves a negative while the next overlay remains held:
-    // the retired bridge left the previous page's fill armed in this window.
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(PENDING_FILL_SETTLE_MS);
     expect(await opaquePixelCount(page)).toBe(0);
 
     releaseNextOverlay();
