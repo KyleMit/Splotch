@@ -1,4 +1,5 @@
 import { getViewState } from './engine';
+import type { ExportOptions } from './exportDrawing';
 import { SCREENSHOT_BUTTON_ID } from './screenshotFeedback';
 import { POLAROID_CLEANUP_TIMEOUT_MS } from './screenshotTiming';
 
@@ -15,10 +16,7 @@ interface PolaroidSize {
   rasterWidth: number;
 }
 
-interface PolaroidPreviewRequest {
-  width: number;
-  onReady: (preview: ImageBitmap) => void;
-}
+type PolaroidPreviewRequest = NonNullable<ExportOptions['preview']>;
 
 function polaroidSize(): PolaroidSize | null {
   const { paperCssWidth, paperCssHeight } = getViewState();
