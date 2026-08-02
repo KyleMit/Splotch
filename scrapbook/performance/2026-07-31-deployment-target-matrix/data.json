@@ -553,7 +553,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings",
+            "label": "open Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 12,
@@ -578,7 +578,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Sound",
+            "label": "open Parent Center section: Sound",
             "count": 3,
             "firstFrame": {
               "p50": 3,
@@ -603,7 +603,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Saving",
+            "label": "open Parent Center section: Saving",
             "count": 3,
             "firstFrame": {
               "p50": 3,
@@ -628,7 +628,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Controls & Buttons",
+            "label": "open Parent Center section: Controls & Buttons",
             "count": 3,
             "firstFrame": {
               "p50": 5,
@@ -653,7 +653,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: AI Art",
+            "label": "open Parent Center section: AI Art",
             "count": 3,
             "firstFrame": {
               "p50": 6,
@@ -678,7 +678,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Setup Guide",
+            "label": "open Parent Center section: Setup Guide",
             "count": 3,
             "firstFrame": {
               "p50": 5,
@@ -703,7 +703,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: What's New",
+            "label": "open Parent Center section: What's New",
             "count": 3,
             "firstFrame": {
               "p50": 6,
@@ -728,7 +728,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Submit Feedback",
+            "label": "open Parent Center section: Submit Feedback",
             "count": 3,
             "firstFrame": {
               "p50": 5,
@@ -753,7 +753,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: About",
+            "label": "open Parent Center section: About",
             "count": 3,
             "firstFrame": {
               "p50": 6,
@@ -1028,7 +1028,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "close Settings",
+            "label": "close Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 3,
@@ -1930,7 +1930,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings",
+            "label": "open Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 7,
@@ -1955,7 +1955,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Sound",
+            "label": "open Parent Center section: Sound",
             "count": 3,
             "firstFrame": {
               "p50": 7,
@@ -1980,7 +1980,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Saving",
+            "label": "open Parent Center section: Saving",
             "count": 3,
             "firstFrame": {
               "p50": 6,
@@ -2005,7 +2005,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Controls & Buttons",
+            "label": "open Parent Center section: Controls & Buttons",
             "count": 3,
             "firstFrame": {
               "p50": 7,
@@ -2030,7 +2030,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: AI Art",
+            "label": "open Parent Center section: AI Art",
             "count": 3,
             "firstFrame": {
               "p50": 7,
@@ -2055,7 +2055,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Setup Guide",
+            "label": "open Parent Center section: Setup Guide",
             "count": 3,
             "firstFrame": {
               "p50": 6,
@@ -2080,7 +2080,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: What's New",
+            "label": "open Parent Center section: What's New",
             "count": 3,
             "firstFrame": {
               "p50": 7,
@@ -2105,7 +2105,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Submit Feedback",
+            "label": "open Parent Center section: Submit Feedback",
             "count": 3,
             "firstFrame": {
               "p50": 6,
@@ -2130,7 +2130,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: About",
+            "label": "open Parent Center section: About",
             "count": 3,
             "firstFrame": {
               "p50": 4,
@@ -2405,7 +2405,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "close Settings",
+            "label": "close Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 7,
@@ -3307,7 +3307,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings",
+            "label": "open Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 9,
@@ -3332,7 +3332,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Sound",
+            "label": "open Parent Center section: Sound",
             "count": 3,
             "firstFrame": {
               "p50": 4,
@@ -3357,7 +3357,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Saving",
+            "label": "open Parent Center section: Saving",
             "count": 3,
             "firstFrame": {
               "p50": 4,
@@ -3382,7 +3382,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Controls & Buttons",
+            "label": "open Parent Center section: Controls & Buttons",
             "count": 3,
             "firstFrame": {
               "p50": 8,
@@ -3407,7 +3407,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: AI Art",
+            "label": "open Parent Center section: AI Art",
             "count": 3,
             "firstFrame": {
               "p50": 7,
@@ -3432,7 +3432,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Setup Guide",
+            "label": "open Parent Center section: Setup Guide",
             "count": 3,
             "firstFrame": {
               "p50": 5,
@@ -3457,7 +3457,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: What's New",
+            "label": "open Parent Center section: What's New",
             "count": 3,
             "firstFrame": {
               "p50": 7,
@@ -3482,7 +3482,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Submit Feedback",
+            "label": "open Parent Center section: Submit Feedback",
             "count": 3,
             "firstFrame": {
               "p50": 6,
@@ -3507,7 +3507,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: About",
+            "label": "open Parent Center section: About",
             "count": 3,
             "firstFrame": {
               "p50": 4,
@@ -3782,7 +3782,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "close Settings",
+            "label": "close Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 9,
@@ -4684,7 +4684,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings",
+            "label": "open Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 12,
@@ -4709,7 +4709,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Sound",
+            "label": "open Parent Center section: Sound",
             "count": 3,
             "firstFrame": {
               "p50": 5.3,
@@ -4734,7 +4734,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Saving",
+            "label": "open Parent Center section: Saving",
             "count": 3,
             "firstFrame": {
               "p50": 6,
@@ -4759,7 +4759,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Controls & Buttons",
+            "label": "open Parent Center section: Controls & Buttons",
             "count": 3,
             "firstFrame": {
               "p50": 8.5,
@@ -4784,7 +4784,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: AI Art",
+            "label": "open Parent Center section: AI Art",
             "count": 3,
             "firstFrame": {
               "p50": 6.9,
@@ -4809,7 +4809,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Setup Guide",
+            "label": "open Parent Center section: Setup Guide",
             "count": 3,
             "firstFrame": {
               "p50": 11.7,
@@ -4834,7 +4834,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: What's New",
+            "label": "open Parent Center section: What's New",
             "count": 3,
             "firstFrame": {
               "p50": 10.6,
@@ -4859,7 +4859,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Submit Feedback",
+            "label": "open Parent Center section: Submit Feedback",
             "count": 3,
             "firstFrame": {
               "p50": 10.9,
@@ -4884,7 +4884,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: About",
+            "label": "open Parent Center section: About",
             "count": 3,
             "firstFrame": {
               "p50": 0.5,
@@ -5159,7 +5159,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "close Settings",
+            "label": "close Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 6.8,
@@ -6061,7 +6061,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings",
+            "label": "open Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 5.6,
@@ -6086,7 +6086,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Sound",
+            "label": "open Parent Center section: Sound",
             "count": 3,
             "firstFrame": {
               "p50": 4,
@@ -6111,7 +6111,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Saving",
+            "label": "open Parent Center section: Saving",
             "count": 3,
             "firstFrame": {
               "p50": 4.2,
@@ -6136,7 +6136,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Controls & Buttons",
+            "label": "open Parent Center section: Controls & Buttons",
             "count": 3,
             "firstFrame": {
               "p50": 1.5,
@@ -6161,7 +6161,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: AI Art",
+            "label": "open Parent Center section: AI Art",
             "count": 3,
             "firstFrame": {
               "p50": 4.6,
@@ -6186,7 +6186,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Setup Guide",
+            "label": "open Parent Center section: Setup Guide",
             "count": 3,
             "firstFrame": {
               "p50": 11.6,
@@ -6211,7 +6211,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: What's New",
+            "label": "open Parent Center section: What's New",
             "count": 3,
             "firstFrame": {
               "p50": 11.9,
@@ -6236,7 +6236,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Submit Feedback",
+            "label": "open Parent Center section: Submit Feedback",
             "count": 3,
             "firstFrame": {
               "p50": 8.8,
@@ -6261,7 +6261,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: About",
+            "label": "open Parent Center section: About",
             "count": 3,
             "firstFrame": {
               "p50": 12.1,
@@ -6536,7 +6536,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "close Settings",
+            "label": "close Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 6.6,
@@ -7127,7 +7127,7 @@
             "repeatCount": 3
           },
           {
-            "source": "perf-profiles/2026-08-01T02-12-01-818Z-android-web-actions-final-action-regression-settings-controls-trace/actions.json",
+            "source": "perf-profiles/2026-08-01T02-12-01-818Z-android-web-actions-final-action-regression-parent-settings-trace/actions.json",
             "productCommit": "b91fcc08fa63",
             "kind": "focused",
             "selectedLabels": [
@@ -7507,7 +7507,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings",
+            "label": "open Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 3.8,
@@ -7532,7 +7532,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: Sound",
+            "label": "open Parent Center section: Sound",
             "count": 3,
             "firstFrame": {
               "p50": 12,
@@ -7557,7 +7557,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: Saving",
+            "label": "open Parent Center section: Saving",
             "count": 3,
             "firstFrame": {
               "p50": 15,
@@ -7582,7 +7582,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: Controls & Buttons",
+            "label": "open Parent Center section: Controls & Buttons",
             "count": 3,
             "firstFrame": {
               "p50": 15.2,
@@ -7607,7 +7607,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: AI Art",
+            "label": "open Parent Center section: AI Art",
             "count": 3,
             "firstFrame": {
               "p50": 15.2,
@@ -7632,7 +7632,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: Setup Guide",
+            "label": "open Parent Center section: Setup Guide",
             "count": 3,
             "firstFrame": {
               "p50": 15.1,
@@ -7657,7 +7657,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: What's New",
+            "label": "open Parent Center section: What's New",
             "count": 3,
             "firstFrame": {
               "p50": 14.8,
@@ -7682,7 +7682,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: Submit Feedback",
+            "label": "open Parent Center section: Submit Feedback",
             "count": 3,
             "firstFrame": {
               "p50": 13.5,
@@ -7707,7 +7707,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: About",
+            "label": "open Parent Center section: About",
             "count": 3,
             "firstFrame": {
               "p50": 13.5,
@@ -7903,7 +7903,7 @@
               "max": 25
             },
             "passed": false,
-            "source": "perf-profiles/2026-08-01T02-12-01-818Z-android-web-actions-final-action-regression-settings-controls-trace/actions.json",
+            "source": "perf-profiles/2026-08-01T02-12-01-818Z-android-web-actions-final-action-regression-parent-settings-trace/actions.json",
             "productCommit": "b91fcc08fa63"
           },
           {
@@ -7982,7 +7982,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "close Settings",
+            "label": "close Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 13.2,
@@ -8922,7 +8922,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings",
+            "label": "open Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 2.3,
@@ -8947,7 +8947,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: Sound",
+            "label": "open Parent Center section: Sound",
             "count": 3,
             "firstFrame": {
               "p50": 4.7,
@@ -8972,7 +8972,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: Saving",
+            "label": "open Parent Center section: Saving",
             "count": 3,
             "firstFrame": {
               "p50": 6.8,
@@ -8997,7 +8997,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: Controls & Buttons",
+            "label": "open Parent Center section: Controls & Buttons",
             "count": 3,
             "firstFrame": {
               "p50": 11,
@@ -9022,7 +9022,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: AI Art",
+            "label": "open Parent Center section: AI Art",
             "count": 3,
             "firstFrame": {
               "p50": 9.7,
@@ -9047,7 +9047,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: Setup Guide",
+            "label": "open Parent Center section: Setup Guide",
             "count": 3,
             "firstFrame": {
               "p50": 2.7,
@@ -9072,7 +9072,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: What's New",
+            "label": "open Parent Center section: What's New",
             "count": 3,
             "firstFrame": {
               "p50": 7.6,
@@ -9097,7 +9097,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: Submit Feedback",
+            "label": "open Parent Center section: Submit Feedback",
             "count": 3,
             "firstFrame": {
               "p50": 3.5,
@@ -9122,7 +9122,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "open Settings section: About",
+            "label": "open Parent Center section: About",
             "count": 3,
             "firstFrame": {
               "p50": 4.8,
@@ -9397,7 +9397,7 @@
             "productCommit": "b91fcc08fa63"
           },
           {
-            "label": "close Settings",
+            "label": "close Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 6.8,
@@ -10299,7 +10299,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings",
+            "label": "open Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 15,
@@ -10324,7 +10324,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Sound",
+            "label": "open Parent Center section: Sound",
             "count": 3,
             "firstFrame": {
               "p50": 4,
@@ -10349,7 +10349,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Saving",
+            "label": "open Parent Center section: Saving",
             "count": 3,
             "firstFrame": {
               "p50": 5,
@@ -10374,7 +10374,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Controls & Buttons",
+            "label": "open Parent Center section: Controls & Buttons",
             "count": 3,
             "firstFrame": {
               "p50": 9,
@@ -10399,7 +10399,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: AI Art",
+            "label": "open Parent Center section: AI Art",
             "count": 3,
             "firstFrame": {
               "p50": 8,
@@ -10424,7 +10424,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Setup Guide",
+            "label": "open Parent Center section: Setup Guide",
             "count": 3,
             "firstFrame": {
               "p50": 7,
@@ -10449,7 +10449,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: What's New",
+            "label": "open Parent Center section: What's New",
             "count": 3,
             "firstFrame": {
               "p50": 10,
@@ -10474,7 +10474,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: Submit Feedback",
+            "label": "open Parent Center section: Submit Feedback",
             "count": 3,
             "firstFrame": {
               "p50": 8,
@@ -10499,7 +10499,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "open Settings section: About",
+            "label": "open Parent Center section: About",
             "count": 3,
             "firstFrame": {
               "p50": 5,
@@ -10774,7 +10774,7 @@
             "productCommit": "09c4efac27ca"
           },
           {
-            "label": "close Settings",
+            "label": "close Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 7,
@@ -12064,7 +12064,7 @@
             "productCommit": "4c57798b9ac1"
           },
           {
-            "label": "open Settings",
+            "label": "open Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 18,
@@ -12089,7 +12089,7 @@
             "productCommit": "4c57798b9ac1"
           },
           {
-            "label": "open Settings section: Sound",
+            "label": "open Parent Center section: Sound",
             "count": 3,
             "firstFrame": {
               "p50": 10,
@@ -12114,7 +12114,7 @@
             "productCommit": "4c57798b9ac1"
           },
           {
-            "label": "open Settings section: Saving",
+            "label": "open Parent Center section: Saving",
             "count": 3,
             "firstFrame": {
               "p50": 12,
@@ -12139,7 +12139,7 @@
             "productCommit": "4c57798b9ac1"
           },
           {
-            "label": "open Settings section: Controls & Buttons",
+            "label": "open Parent Center section: Controls & Buttons",
             "count": 3,
             "firstFrame": {
               "p50": 11,
@@ -12164,7 +12164,7 @@
             "productCommit": "4c57798b9ac1"
           },
           {
-            "label": "open Settings section: AI Art",
+            "label": "open Parent Center section: AI Art",
             "count": 3,
             "firstFrame": {
               "p50": 11,
@@ -12189,7 +12189,7 @@
             "productCommit": "4c57798b9ac1"
           },
           {
-            "label": "open Settings section: Setup Guide",
+            "label": "open Parent Center section: Setup Guide",
             "count": 3,
             "firstFrame": {
               "p50": 11,
@@ -12214,7 +12214,7 @@
             "productCommit": "4c57798b9ac1"
           },
           {
-            "label": "open Settings section: What's New",
+            "label": "open Parent Center section: What's New",
             "count": 3,
             "firstFrame": {
               "p50": 10,
@@ -12239,7 +12239,7 @@
             "productCommit": "4c57798b9ac1"
           },
           {
-            "label": "open Settings section: Submit Feedback",
+            "label": "open Parent Center section: Submit Feedback",
             "count": 3,
             "firstFrame": {
               "p50": 12,
@@ -12264,7 +12264,7 @@
             "productCommit": "4c57798b9ac1"
           },
           {
-            "label": "open Settings section: About",
+            "label": "open Parent Center section: About",
             "count": 3,
             "firstFrame": {
               "p50": 12,
@@ -12539,7 +12539,7 @@
             "productCommit": "4c57798b9ac1"
           },
           {
-            "label": "close Settings",
+            "label": "close Parent Center",
             "count": 3,
             "firstFrame": {
               "p50": 10,
