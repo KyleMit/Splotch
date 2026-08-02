@@ -80,6 +80,15 @@ describe('WebKit performance CI', () => {
     expect(fullJob).toContain('retention-days: 90');
   });
 
+  it('falls back to the committed seed when artifact transfer or extraction fails', () => {
+    const fullJob = job('webkit-commit-gate-full');
+
+    expect(fullJob).toContain('restore_ok=0');
+    expect(fullJob).toContain('&& unzip -q "$archive_path" -d .perf-state');
+    expect(fullJob).toContain('::warning::fast-set history restore failed');
+    expect(fullJob).toContain('if [[ "$restore_ok" -eq 0 ]]');
+  });
+
   it.each(['webkit-commit-gate-fast', 'webkit-commit-gate-full'])(
     '%s attempts both diagnostic reports without masking an earlier failure',
     (jobId) => {

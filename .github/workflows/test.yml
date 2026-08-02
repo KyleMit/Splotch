@@ -214,11 +214,17 @@ jobs:
         run: |
           mkdir -p .perf-state
           artifact_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=webkit-undo-full-history&per_page=20" --jq '[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == .workflow_run.repository_id and (.workflow_run.head_branch | startswith("v")))][0].id // empty')"
+          restore_ok=0
           if [[ -n "$artifact_id" ]]; then
             archive_path="${RUNNER_TEMP}/webkit-undo-full-history.zip"
-            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > "$archive_path"
-            unzip -q "$archive_path" -d .perf-state
-          else
+            if gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > "$archive_path" \
+              && unzip -q "$archive_path" -d .perf-state; then
+              restore_ok=1
+            else
+              echo "::warning::fast-set history restore failed; starting from the committed seed"
+            fi
+          fi
+          if [[ "$restore_ok" -eq 0 ]]; then
             cp scripts/perf/undo-fast-set-history.seed.json .perf-state/undo-fast-set-history.json
           fi
 
