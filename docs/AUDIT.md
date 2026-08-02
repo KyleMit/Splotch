@@ -230,14 +230,14 @@ Rename the option to `drawing` (or `drawingBlob`) at both signatures:
 change (`AiImagePrompt.svelte` line 45 becomes `generateAiImage({ drawing: blob, style })`;
 `ActionsPanel.svelte` line 247 passes nothing).
 
-## Source: Code audit — Parent Center / settings UI
+## Source: Code audit — Settings / settings UI
 
 ### [Maintainability] Three hand-rolled copies of the iOS-style segmented control — extract a design primitive
 
-**File(s):** `web/src/lib/components/parent/AppearanceSection.svelte` (`.theme-picker`, lines 33–47
-markup, 89–135 styles), `web/src/lib/components/parent/CompactShell.svelte` (`.orient-seg`, lines
-97–111 markup, 169–219 styles), `web/src/lib/components/parent/ReportForm.svelte` (`.report-kind`,
-lines 115–128 markup, 235–270 styles) @ 9ae62ff1
+**File(s):** `web/src/lib/components/settings/AppearanceSection.svelte` (`.theme-picker`, lines
+33–47 markup, 89–135 styles), `web/src/lib/components/settings/CompactShell.svelte` (`.orient-seg`,
+lines 97–111 markup, 169–219 styles), `web/src/lib/components/settings/ReportForm.svelte`
+(`.report-kind`, lines 115–128 markup, 235–270 styles) @ 9ae62ff1
 
 **Priority:** P2
 
@@ -294,8 +294,8 @@ variant can be dropped.
 
 ### [Types] Section→content mapping is an unchecked if/else chain — a new `SectionId` silently renders nothing
 
-**File(s):** `web/src/lib/components/ParentCenter.svelte` (`sectionContent` snippet, lines 88–108;
-`activeMeta`, line 44), `web/src/lib/components/parent/sections.ts` (`SectionId`, lines 18–27;
+**File(s):** `web/src/lib/components/SettingsModal.svelte` (`sectionContent` snippet, lines 88–108;
+`activeMeta`, line 44), `web/src/lib/components/settings/sections.ts` (`SectionId`, lines 18–27;
 `SECTIONS`, lines 29–39) @ 9ae62ff1
 
 **Priority:** P2
@@ -308,7 +308,7 @@ Three artifacts must agree for a section to work, and only one of them is compil
 2. The `SECTIONS` array (`sections.ts:29–39`) — each entry's `id` is checked *against* the union,
    but nothing guarantees every union member appears (or appears once). Removing an entry while
    forgetting the union member compiles clean.
-3. The `sectionContent` snippet in `ParentCenter.svelte:88–108` — a 9-branch `{#if}/{:else if}`
+3. The `sectionContent` snippet in `SettingsModal.svelte:88–108` — a 9-branch `{#if}/{:else if}`
    chain with no final `{:else}` and no exhaustiveness: add a tenth `SectionId`, register it in
    `SECTIONS`, and the hub row/nav item appears but drilling in renders an empty pane.
    `sectionSubtitle`'s `switch` (`sections.ts:50–83`) is the only exhaustiveness-checked consumer
@@ -337,7 +337,7 @@ export type SectionId = (typeof SECTIONS)[number]['id'];
 
 Duplicates and drift become impossible; `SectionMeta` becomes `(typeof SECTIONS)[number]`.
 
-2. In `ParentCenter.svelte`, replace the chain with a closed component map (Svelte 5 components are
+2. In `SettingsModal.svelte`, replace the chain with a closed component map (Svelte 5 components are
    values):
 
 ```ts
@@ -347,7 +347,7 @@ const SECTION_CONTENT: Record<SectionId, Component<{ open?: boolean }>> = {
 };
 ```
 
-then `{@const Section = SECTION_CONTENT[id]}<Section open={parentCenter.open} />`. Wrinkle: only
+then `{@const Section = SECTION_CONTENT[id]}<Section open={settingsModal.open} />`. Wrinkle: only
 `AiKeyManager`, `SetupInstructions`, and `ReportForm` accept `open` today; passing it to all nine
 either means adding an unused prop (violates no-speculative-surface) or typing the map as
 `Component<{ open?: boolean }>` and letting Svelte ignore the extra prop for the others — the latter
@@ -356,9 +356,9 @@ lookup (or keep `find` and drop the now-provably-dead `??` fallback).
 
 ### [Maintainability] ReportForm's 4000-char limit and `hp` honeypot field duplicate the server's contract as bare literals
 
-**File(s):** `web/src/lib/components/parent/ReportForm.svelte` (line 137 `maxlength={4000}`, line 83
-`hp: honeypot`), `web/src/routes/api/report/+server.ts` (line 10 `MAX_MESSAGE_LENGTH = 4000`, line
-68 `body?.hp`) @ 9ae62ff1
+**File(s):** `web/src/lib/components/settings/ReportForm.svelte` (line 137 `maxlength={4000}`, line
+83 `hp: honeypot`), `web/src/routes/api/report/+server.ts` (line 10 `MAX_MESSAGE_LENGTH = 4000`,
+line 68 `body?.hp`) @ 9ae62ff1
 
 **Priority:** P3
 
@@ -397,8 +397,8 @@ client code in the server). The `hp` key in the JSON body becomes
 
 ### [Maintainability] ReportForm's inline `slide` durations are unnamed tuning literals that bypass the section-wide `SECTION_SLIDE` convention
 
-**File(s):** `web/src/lib/components/parent/ReportForm.svelte` (lines 149, 158),
-`web/src/lib/components/parent/sections.ts` (`SECTION_SLIDE`, lines 41–44) @ 9ae62ff1
+**File(s):** `web/src/lib/components/settings/ReportForm.svelte` (lines 149, 158),
+`web/src/lib/components/settings/sections.ts` (`SECTION_SLIDE`, lines 41–44) @ 9ae62ff1
 
 **Priority:** P3
 
@@ -436,8 +436,8 @@ conditional settings block" comment to describe the two-tier scheme.
 
 ### [Maintainability] ToggleRow's icon-column indent is duplicated into SliderRow and kept in sync by prose
 
-**File(s):** `web/src/lib/components/parent/ToggleRow.svelte` (`.setting-help`, lines 50–57;
-`.setting-icon`/`.setting-info`, lines 59–70), `web/src/lib/components/parent/SliderRow.svelte`
+**File(s):** `web/src/lib/components/settings/ToggleRow.svelte` (`.setting-help`, lines 50–57;
+`.setting-icon`/`.setting-info`, lines 59–70), `web/src/lib/components/settings/SliderRow.svelte`
 (`.slider-row.indented`, lines 55–61) @ 9ae62ff1
 
 **Priority:** P3
@@ -468,8 +468,8 @@ acknowledges the missing token.
 #### Proposed solution
 
 Since scoped `<style>` blocks can't import TS constants, use the CSS-native sharing mechanism:
-declare the pairing once as custom properties in `tokens.css` (or on `.parent-help-content` in
-`ParentCenter.svelte`, whose `:global(.setting)` rules already act as the shared setting-card token
+declare the pairing once as custom properties in `tokens.css` (or on `.settings-content` in
+`SettingsModal.svelte`, whose `:global(.setting)` rules already act as the shared setting-card token
 block, lines 489–508):
 
 ```css
@@ -483,10 +483,11 @@ Both components then consume `var(--setting-indent)`, and ToggleRow's
 
 ### [Maintainability] Close-button clearance is hardcoded at four sites against geometry owned by `app.css`, with a comment restating the numbers
 
-**File(s):** `web/src/lib/components/ParentCenter.svelte` (`.pc-header` `padding-right: 68px`, line
-266; media-query `padding-right: 64px`, line 513),
-`web/src/lib/components/parent/CompactShell.svelte` (`.pc-header-compact` `padding-right: 64px` and
-`min-height: 62px`, lines 129–142), `web/src/app.css` (`.modal-close-btn`, lines 146–151) @ 9ae62ff1
+**File(s):** `web/src/lib/components/SettingsModal.svelte` (`.settings-header`
+`padding-right: 68px`, line 266; media-query `padding-right: 64px`, line 513),
+`web/src/lib/components/settings/CompactShell.svelte` (`.settings-header-compact`
+`padding-right: 64px` and `min-height: 62px`, lines 129–142), `web/src/app.css` (`.modal-close-btn`,
+lines 146–151) @ 9ae62ff1
 
 **Priority:** P3
 
@@ -520,14 +521,14 @@ Beside `.modal-close-btn` in `app.css`, declare the derived clearances as custom
 --modal-close-clearance-y: calc(var(--modal-close-inset) + var(--modal-close-size) + 6px);
 ```
 
-`.modal-close-btn` consumes `--modal-close-size`/`--modal-close-inset`; the ParentCenter headers and
+`.modal-close-btn` consumes `--modal-close-size`/`--modal-close-inset`; SettingsModal headers and
 CompactShell consume the clearance values. The 68px/64px variance between breakpoints suggests the
 horizontal clearance can collapse to one value once it's computed instead of eyeballed — verify
 visually at both widths (the `run-splotch` skill covers screenshots).
 
 ### [Readability] `submitKey` is a 52-line four-outcome state machine — extract the persist step and name the phases
 
-**File(s):** `web/src/lib/components/parent/AiKeyManager.svelte` (`submitKey`, lines 72–124) @
+**File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (`submitKey`, lines 72–124) @
 9ae62ff1
 
 **Priority:** P3
@@ -567,7 +568,8 @@ the supersede semantics stay in one place.
 
 ### [Readability] AiKeyManager's open-effect calls `latest.begin()` for its side effect only, behind a pointless alias
 
-**File(s):** `web/src/lib/components/parent/AiKeyManager.svelte` (`$effect`, lines 62–70) @ 9ae62ff1
+**File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (`$effect`, lines 62–70) @
+9ae62ff1
 
 **Priority:** P3
 
@@ -620,8 +622,8 @@ to clear it; a one-line comment either way).
 
 ### [Maintainability] AiKeyManager and ReportForm hand-roll the same async-submit status machine, including identical error copy
 
-**File(s):** `web/src/lib/components/parent/AiKeyManager.svelte` (lines 31–32, 57–60, 118–123,
-239–241), `web/src/lib/components/parent/ReportForm.svelte` (lines 30–31, 34, 99–103, 200–209) @
+**File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (lines 31–32, 57–60, 118–123,
+239–241), `web/src/lib/components/settings/ReportForm.svelte` (lines 30–31, 34, 99–103, 200–209) @
 9ae62ff1
 
 **Priority:** P4
@@ -651,7 +653,7 @@ abstraction speculatively — the constant + type is the right size today.
 
 ### [Correctness] CompactShell's Night Mode toggle silently discards a parent's `system` theme preference
 
-**File(s):** `web/src/lib/components/parent/CompactShell.svelte` (Night Mode `ToggleRow`, lines
+**File(s):** `web/src/lib/components/settings/CompactShell.svelte` (Night Mode `ToggleRow`, lines
 73–81) @ 9ae62ff1
 
 **Priority:** P4
@@ -695,7 +697,7 @@ other.
 
 ### [Readability] `keyStorageNote`'s nested ternary should be a `Record<Platform, string>` per the closed-union convention
 
-**File(s):** `web/src/lib/components/parent/AiKeyManager.svelte` (lines 48–55) @ 9ae62ff1
+**File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (lines 48–55) @ 9ae62ff1
 
 **Priority:** P4
 
@@ -736,9 +738,9 @@ let keyStorageNote = $derived(KEY_STORAGE_NOTE[platform]);
 
 ### [Maintainability] Off-scale hardcoded font sizes where the token scale is the convention
 
-**File(s):** `web/src/lib/components/ParentCenter.svelte` (lines 271 `24px`, 277 `20px`, 441
-`15px`), `web/src/lib/components/parent/CompactShell.svelte` (line 193 `12.5px`),
-`web/src/lib/components/parent/SetupInstructions.svelte` (lines 239 `24px`, 280 `20px`) @ 9ae62ff1
+**File(s):** `web/src/lib/components/SettingsModal.svelte` (lines 271 `24px`, 277 `20px`, 441
+`15px`), `web/src/lib/components/settings/CompactShell.svelte` (line 193 `12.5px`),
+`web/src/lib/components/settings/SetupInstructions.svelte` (lines 239 `24px`, 280 `20px`) @ 9ae62ff1
 
 **Priority:** P4
 
@@ -746,13 +748,13 @@ let keyStorageNote = $derived(KEY_STORAGE_NOTE[platform]);
 
 `tokens.css:37–43` defines a seven-step type scale (`--font-size-xs` 12px … `--font-size-3xl` 28px)
 and these same files use it dozens of times — then break out into raw pixels in six places: the
-ParentCenter `h2` at `24px` and `20px`, the sidebar nav item at `15px`, CompactShell's segment label
-at `12.5px`, and SetupInstructions' chevron at `24px` / check at `20px`. Three of these (`15px`,
-`12.5px`, `24px`) don't even exist on the scale, so they can't be a token-name-forgotten slip —
-they're ad-hoc sizes that silently fork the type ramp. The `design` skill owns this vocabulary
-("read before … picking a color/size"), and a mixed file (tokens on line 388, raw px on line 441 of
-the same component) is the worst of both: a reader can't tell which sizes are decisions and which
-are drift.
+SettingsModal `h2` at `24px` and `20px`, the sidebar nav item at `15px`, CompactShell's segment
+label at `12.5px`, and SetupInstructions' chevron at `24px` / check at `20px`. Three of these
+(`15px`, `12.5px`, `24px`) don't even exist on the scale, so they can't be a token-name-forgotten
+slip — they're ad-hoc sizes that silently fork the type ramp. The `design` skill owns this
+vocabulary ("read before … picking a color/size"), and a mixed file (tokens on line 388, raw px on
+line 441 of the same component) is the worst of both: a reader can't tell which sizes are decisions
+and which are drift.
 
 #### Proposed solution
 
@@ -764,16 +766,16 @@ viewport. Any size that genuinely must stay off-scale gets a local named custom 
 comment (the `--drawer-transition` pattern from the svelte rules). Same treatment for the
 `install-check`'s `font-size: 20px`.
 
-### [Maintainability] ParentHelpButton hardcodes `color: #999` instead of a theme token
+### [Maintainability] SettingsButton hardcodes `color: #999` instead of a theme token
 
-**File(s):** `web/src/lib/components/ParentHelpButton.svelte` (line 28) @ 9ae62ff1
+**File(s):** `web/src/lib/components/SettingsButton.svelte` (line 28) @ 9ae62ff1
 
 **Priority:** P4
 
 #### Problem
 
 ```css
-.parent-help-button {
+.settings-button {
   position: fixed;
   bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
   right: calc(var(--space-2) + env(safe-area-inset-right));
@@ -799,7 +801,7 @@ literal; if it does, fix both and consider moving the color into the shared `.co
 
 ### [Maintainability] SoundSection's non-reactive `previewingVolume` latch lacks the required "intentionally untracked" comment
 
-**File(s):** `web/src/lib/components/parent/SoundSection.svelte` (line 15) @ 9ae62ff1
+**File(s):** `web/src/lib/components/settings/SoundSection.svelte` (line 15) @ 9ae62ff1
 
 **Priority:** P4
 
@@ -828,7 +830,7 @@ let previewingVolume = false;
 
 ### [Readability] ReportForm's submit-time device fallback duplicates the effect's collection and can send data the preview never showed
 
-**File(s):** `web/src/lib/components/parent/ReportForm.svelte` (collection `$effect`, lines 56–62;
+**File(s):** `web/src/lib/components/settings/ReportForm.svelte` (collection `$effect`, lines 56–62;
 `submit`, line 81) @ 9ae62ff1
 
 **Priority:** P4
@@ -868,9 +870,9 @@ Make the collection single-path: extract
 exactly the state the preview renders, a collection failure degrades to "no device info attached"
 instead of a fake network error, and the two sites can't drift.
 
-### [Readability] ParentCenter's two media-query flags are four pieces of duplicated wiring — extract a `mediaQueryFlag` helper
+### [Readability] SettingsModal's two media-query flags are four pieces of duplicated wiring — extract a `mediaQueryFlag` helper
 
-**File(s):** `web/src/lib/components/ParentCenter.svelte` (lines 26–61) @ 9ae62ff1
+**File(s):** `web/src/lib/components/SettingsModal.svelte` (lines 26–61) @ 9ae62ff1
 
 **Priority:** P4
 
@@ -919,7 +921,7 @@ halve the block.
 
 ### [Readability] ControlsSection's `.slider-setting` class duplicates `.button-size-setting` on the same lone element
 
-**File(s):** `web/src/lib/components/parent/ControlsSection.svelte` (line 112; styles, lines
+**File(s):** `web/src/lib/components/settings/ControlsSection.svelte` (line 112; styles, lines
 162–168) @ 9ae62ff1
 
 **Priority:** P5
@@ -938,10 +940,10 @@ thing twice:
 .button-size-setting { margin: 12px 0 0; }
 ```
 
-`.button-size-setting` is load-bearing (ParentCenter's resize-melt reaches it via
-`:global(.button-size-setting)`, ParentCenter.svelte:240); `.slider-setting` here is a leftover from
-the shared naming that `SoundSection.svelte:65` still uses for its own scoped rule. One redundant
-class + one dead-weight rule.
+`.button-size-setting` is load-bearing (SettingsModal's resize-melt reaches it via
+`:global(.button-size-setting)`, SettingsModal.svelte:240); `.slider-setting` here is a leftover
+from the shared naming that `SoundSection.svelte:65` still uses for its own scoped rule. One
+redundant class + one dead-weight rule.
 
 #### Proposed solution
 
@@ -951,7 +953,7 @@ suite selects by ids (`actionButtonScaleLabel`), so this should be inert.
 
 ### [Readability] AboutSection's `typeof __IS_CAPACITOR__ !== 'undefined'` guard is dead defensive code, unique in the codebase
 
-**File(s):** `web/src/lib/components/parent/AboutSection.svelte` (lines 22–23) @ 9ae62ff1
+**File(s):** `web/src/lib/components/settings/AboutSection.svelte` (lines 22–23) @ 9ae62ff1
 
 **Priority:** P5
 
@@ -977,7 +979,7 @@ tests to confirm no config actually relies on the guard.
 
 ### [Readability] AboutSection's `showAdminLink` is a pass-through `$derived` alias
 
-**File(s):** `web/src/lib/components/parent/AboutSection.svelte` (line 21, template line 54) @
+**File(s):** `web/src/lib/components/settings/AboutSection.svelte` (line 21, template line 54) @
 9ae62ff1
 
 **Priority:** P5
@@ -1000,10 +1002,10 @@ Inline it: `{#if settings.adminLinkVisible}`. The valuable context (who sets/res
 already lives in the comment block at lines 7–11 and on the setting's declaration in
 `settings.svelte.ts:52–56`.
 
-### [Docs] ParentCenter's pinch-zoom comment says "whichever scroll shell is mounted binds it," but the compact shell never does
+### [Docs] SettingsModal's pinch-zoom comment says "whichever scroll shell is mounted binds it," but the compact shell never does
 
-**File(s):** `web/src/lib/components/ParentCenter.svelte` (comment, lines 76–79; compact branch,
-lines 131–132), `web/src/lib/components/parent/CompactShell.svelte` (`.quick-toggles` scroller,
+**File(s):** `web/src/lib/components/SettingsModal.svelte` (comment, lines 76–79; compact branch,
+lines 131–132), `web/src/lib/components/settings/CompactShell.svelte` (`.quick-toggles` scroller,
 lines 151–160) @ 9ae62ff1
 
 **Priority:** P5
@@ -1018,12 +1020,12 @@ The tier-2 accessibility comment claims universal coverage:
 // mounted binds it.
 ```
 
-but the compact branch renders `<CompactShell />` with no `use:pinchTextZoom` and no `.pc-zoom`
-target — CompactShell has its own scroll region (`.quick-toggles`, `overflow-y: auto`) that a
-low-vision parent cannot enlarge. Skipping the cramped landscape-phone shell may well be the right
-call (there's barely room at 1×, and its content is toggles rather than reading material), but as
-written the comment asserts coverage the code doesn't provide, so a reader auditing ADR-0076
-compliance gets a false all-clear.
+but the compact branch renders `<CompactShell />` with no `use:pinchTextZoom` and no
+`.settings-zoom` target — CompactShell has its own scroll region (`.quick-toggles`,
+`overflow-y: auto`) that a low-vision parent cannot enlarge. Skipping the cramped landscape-phone
+shell may well be the right call (there's barely room at 1×, and its content is toggles rather than
+reading material), but as written the comment asserts coverage the code doesn't provide, so a reader
+auditing ADR-0076 compliance gets a false all-clear.
 
 #### Proposed solution
 
@@ -1074,9 +1076,9 @@ in a file that knows nothing about its invariants.
 Move the seven `ai*` fields into an exported `$state` object in `aiGeneration.svelte.ts` (e.g.
 `export const aiResult = $state({ generating: false, open: false, resultUrl: null, … })`), dropping
 the `ai` prefix that the module name now carries. `ui.svelte.ts` keeps `resizingActionButtons`, the
-modal instances, `PARENT_HELP_BUTTON_ID`, and `buttonCenter`, and loses its `aiGeneration` import —
+modal instances, `SETTINGS_BUTTON_ID`, and `buttonCenter`, and loses its `aiGeneration` import —
 cycle gone. Readers to update: `ActionsPanel.svelte`, `AiImageResult.svelte`, `AiDial.svelte`,
-`ParentCenter.svelte` (reads `ui.resizingActionButtons` only), `lib/drawing/aiImage.ts`,
+`SettingsModal.svelte` (reads `ui.resizingActionButtons` only), `lib/drawing/aiImage.ts`,
 `routes/dev/ai-timer/+page.svelte`, plus tests. Mechanical rename churn is the only cost;
 `aiGeneration.svelte.ts` itself is owned by the AI section, so coordinate the halves as one change.
 
@@ -1148,7 +1150,7 @@ function clampVolume(v: number) {
 ```
 
 The `0`/`100` bounds are re-stated as bare literals in
-`web/src/lib/components/parent/SoundSection.svelte:53-54` (`min={0} max={100}`). These two sites
+`web/src/lib/components/settings/SoundSection.svelte:53-54` (`min={0} max={100}`). These two sites
 must agree — a slider whose range exceeds the clamp silently snaps on release; a clamp wider than
 the slider makes stored values unreachable. The module already demonstrates the correct pattern one
 screen down: `ACTION_BUTTON_SCALE_MIN`/`MAX` (lines 86–87) are exported and imported by
@@ -1564,7 +1566,7 @@ seed the URL) and asserts token persistence + URL scrub + the no-param no-op, an
 ```ts
 export const colorPicker = createModal();
 export const coloringBook = createModal();
-export const parentCenter = createModal();
+export const settingsModal = createModal();
 export const aiPrompt = createModal();
 ```
 
@@ -1579,7 +1581,7 @@ rename should be coordinated with it.
 
 #### Proposed solution
 
-Suffix the modal handles: `colorPickerModal`, `coloringBookModal`, `parentCenterModal`,
+Suffix the modal handles: `colorPickerModal`, `coloringBookModal`, `settingsModalModal`,
 `aiPromptModal`. Purely mechanical rename across ~10 importing components; the payoff is that every
 use is self-identifying and the `coloringBook` name is freed for the domain that owns it.
 
@@ -1653,8 +1655,7 @@ Two exports in the section have colocated test files that skip them entirely. (a
 keyline on dark action-button cards has no test pinning that Black ink is below it and, say, Purple
 is above. (b) `layout.svelte.test.ts` asserts orientation and safe-area syncing but never
 `layout.viewportWidth`/`viewportHeight` (`layout.svelte.ts:62-63`), which `actionButtonLayout.ts`
-and the Parent Center size ceiling consume; a regression that stopped syncing them would pass the
-suite.
+and Settings size ceiling consume; a regression that stopped syncing them would pass the suite.
 
 #### Proposed solution
 
@@ -1701,7 +1702,7 @@ second `clear()` ("selectBrush persists; tests start with empty storage").
 
 `modal.svelte.ts` defines `Origin` and the `Modal` interface whose `show(origin)` consumes it;
 `ui.svelte.ts` imports the type (line 3) solely to define `buttonCenter(el): Origin` — the standard
-producer of that value (`ColorPalette.svelte:15`, `ParentHelpButton.svelte:3`,
+producer of that value (`ColorPalette.svelte:15`, `SettingsButton.svelte:3`,
 `ActionsPanel.svelte:11` all import it to call `someModal.show(buttonCenter(el))`). The helper is
 pure DOM geometry with no dependency on the `ui` state object; it sits in `ui.svelte.ts` only by
 historical accident, splitting the modal-origin concept across two files.
@@ -2552,10 +2553,10 @@ return () => {
 The `WakeLockSentinel` acquired on the first pointerdown is never released. `installWakeLock` is a
 page-scoped boot step — `routes/+page.svelte:83–92` runs the teardown on unmount precisely so the
 drawing route's behaviors don't leak to other routes (the same commit scoped the zoom/scroll locks
-per ADR-0076). But after a client-side navigation from `/` to `/privacy` (the Parent Center links
-there), the screen-sleep suppression persists for the life of the tab: a parent who leaves the
-privacy policy open keeps burning battery with a screen that never dims, on a route that has no
-reason to hold a wake lock.
+per ADR-0076). But after a client-side navigation from `/` to `/privacy` (Settings links there), the
+screen-sleep suppression persists for the life of the tab: a parent who leaves the privacy policy
+open keeps burning battery with a screen that never dims, on a route that has no reason to hold a
+wake lock.
 
 #### Proposed solution
 
@@ -2644,7 +2645,7 @@ fix is a one-line comment at the top of the test explaining why it lives in `src
 placement reads as deliberate instead of lost. The move is strictly better for grepability; check
 nothing else (coverage config, CODE-MAP LOC buckets) keys on the current path.
 
-### [Correctness] `mountBootHiddenOverlays` discards the idle-callback cancel handle and leaves `onParentCenter` unguarded
+### [Correctness] `mountBootHiddenOverlays` discards the idle-callback cancel handle and leaves `onSettingsModal` unguarded
 
 **File(s):** `web/src/lib/boot/bootHiddenOverlays.ts` (`mountBootHiddenOverlays`, lines 15–47) @
 9ae62ff1
@@ -2660,7 +2661,7 @@ let stopped = false;
 scheduleIdle(() => {            // cancel handle returned by scheduleIdle is dropped
   import('$lib/components/bootHiddenOverlays')
     .then((module) => {
-      onParentCenter(module.ParentCenter);   // runs even when stopped
+      onSettingsModal(module.SettingsModal);   // runs even when stopped
       ...
 ```
 
@@ -2669,10 +2670,10 @@ the returned teardown only flips `stopped`. If the drawing page unmounts before 
 fires (fast navigation to `/privacy`), the callback still runs and kicks off the dynamic chunk
 import for a page that's gone — wasted network/parse on exactly the slow devices the idle pump
 exists to protect. (b) Inside the `.then`, `mountNext()` checks `stopped` but
-`onParentCenter(module.ParentCenter)` does not, so the unmounted page's `$state` setter still runs.
-Harmless in practice today (writing to orphaned `$state` is inert), but the asymmetry — one callback
-guarded, its sibling not — reads as an oversight, and the comment at lines 15–17 explains the
-`stopped` flag as *the* guard for "running after unmount".
+`onSettingsModal(module.SettingsModal)` does not, so the unmounted page's `$state` setter still
+runs. Harmless in practice today (writing to orphaned `$state` is inert), but the asymmetry — one
+callback guarded, its sibling not — reads as an oversight, and the comment at lines 15–17 explains
+the `stopped` flag as *the* guard for "running after unmount".
 
 #### Proposed solution
 
@@ -2683,7 +2684,7 @@ let stopped = false;
 const cancelIdle = scheduleIdle(() => { ... });
 // inside .then:
 if (stopped) return;
-onParentCenter(module.ParentCenter);
+onSettingsModal(module.SettingsModal);
 ...
 return () => {
   stopped = true;
@@ -2839,7 +2840,7 @@ const CONTACT_URL = 'https://github.com/KyleMit/Splotch/issues/new/choose';
 ```
 
 The `KyleMit/Splotch` repo URL is independently hardcoded in four client/server files: this page,
-`lib/components/parent/AboutSection.svelte`, `lib/components/parent/WhatsNewSection.svelte`, and
+`lib/components/settings/AboutSection.svelte`, `lib/components/settings/WhatsNewSection.svelte`, and
 `lib/server/config.ts`. A repo rename/transfer (or an org move — a real event for a project heading
 to app stores) means a four-site hunt, and a missed one ships a dead support link inside the privacy
 policy the stores require. CLAUDE.md's rule: boundary strings are "declared once, imported
@@ -3319,8 +3320,7 @@ The primitive claims to own "the chevron" (comment lines 4–8) and rotates it w
 
 A `::after` pseudo-element defaults to `display: inline`, and per CSS Transforms, non-replaced
 inline boxes are **not transformable** — `transform: rotate(90deg)` silently no-ops. The rotation
-only works today because every parent-center caller happens to blockify the pseudo-element from
-outside:
+only works today because every Settings caller happens to blockify the pseudo-element from outside:
 
 * `SetupInstructions.svelte` makes `summary` a flexbox (lines 226–228) so `::after` becomes a flex
   item (line 240 even sets `flex-shrink: 0` on it);
@@ -3955,11 +3955,10 @@ hidden={!settings.aiAccessToken || !settings.aiImageEnabled || !network.online}
 
 If one side gains a condition the other doesn't (say, a future per-child AI lockout), the failure is
 silent and geometric: `visibleActionButtonCount()` feeds the divisor of the `buttonSize` cap
-(ActionsPanel lines 92–104) and the Parent Center slider ceiling (`maxActionButtonScale`), so a
-mismatch renders a row whose button count and per-button budget disagree — buttons overlap the
-Parent Help Button or shrink for a button that isn't there. CLAUDE.md's rule is explicit: cross-file
-agreement is never maintained by prose/duplication; boundary predicates are declared once and
-imported.
+(ActionsPanel lines 92–104) and Settings slider ceiling (`maxActionButtonScale`), so a mismatch
+renders a row whose button count and per-button budget disagree — buttons overlap the Settings
+Button or shrink for a button that isn't there. CLAUDE.md's rule is explicit: cross-file agreement
+is never maintained by prose/duplication; boundary predicates are declared once and imported.
 
 #### Proposed solution
 
@@ -4444,7 +4443,7 @@ line 206).
 #### Problem
 
 No production caller passes `step` or `pageStep`: the only consumer is `SliderRow.svelte`, whose
-`Props` (lines 6–24) don't even include them, so both Parent Center sliders always get the defaults
+`Props` (lines 6–24) don't even include them, so both Settings sliders always get the defaults
 (`1`/`10`). CLAUDE.md: "A new prop, option, or optional parameter needs a production caller that
 exercises it; a seam kept only for tests gets a comment saying so" — these have neither.
 
@@ -4571,8 +4570,8 @@ all-on count as a literal `6` (test line 50: `expect(visibleActionButtonCount())
 against the constant — so adding a seventh button to the function while forgetting the constant
 keeps every test green (the fallback test would still pass: it checks the CSS matches the stale
 constant), and first paint budgets for one button too few, letting the pre-hydration row overflow
-into the Parent Help Button. The testing rule is explicit: "Parametrized tests import the
-constant/manifest they exercise — never re-declare the value."
+into Settings Button. The testing rule is explicit: "Parametrized tests import the constant/manifest
+they exercise — never re-declare the value."
 
 #### Proposed solution
 
@@ -4707,11 +4706,11 @@ if (tracker.pointerCount === 2) {
 
 The first finger is deliberately left uncaptured so one-finger scrolling stays native — but that
 means its `pointerup` is only seen when it fires inside `node`'s subtree. During a pinch the fingers
-spread apart; if the resting first finger drifts outside the `.pc-pane` bounds (easy in the exact
-scenario the comment at lines 49–53 describes: primary finger resting on a hub row while the second
-finger spreads) and lifts there, `node`'s `pointerup` listener never fires for it, `tracker.up()` is
-never called, and the tracker keeps a phantom entry forever. The pane's `touch-action` permits
-panning, so a scroll-claimed finger would get `pointercancel` — but a
+spread apart; if the resting first finger drifts outside the `.settings-pane` bounds (easy in the
+exact scenario the comment at lines 49–53 describes: primary finger resting on a hub row while the
+second finger spreads) and lifts there, `node`'s `pointerup` listener never fires for it,
+`tracker.up()` is never called, and the tracker keeps a phantom entry forever. The pane's
+`touch-action` permits panning, so a scroll-claimed finger would get `pointercancel` — but a
 *stationary-then-lifted-outside* finger gets nothing.
 
 Consequences while the phantom persists (until an option change reruns the reset `$effect`, e.g.
@@ -4899,7 +4898,7 @@ The header comment says:
 ```
 
 but the interface says `onRequestClose?: () => void;` (line 40). All five production call sites
-(`AiImagePrompt`, `AiImageResult`, `ColorPicker`, `ColoringBook`, `ParentCenter`) pass it. The
+(`AiImagePrompt`, `AiImageResult`, `ColorPicker`, `ColoringBook`, `SettingsModal`) pass it. The
 optional marker forces `o.onRequestClose?.()` call sites (lines 73, 105) and lets a sixth dialog
 compile without any way to dismiss on backdrop tap or re-sync after Esc — exactly the bug the type
 should prevent. This is a closed contract being kept open at the type level, contradicting the
@@ -5220,7 +5219,7 @@ image drag — and should stay.)
 
 Remove the two `pointermove` `preventDefault()` calls, or — if on-device testing (the guarded
 browsers in `docs/COMPATIBILITY.md`) reveals an engine that still honors them — keep them behind a
-WHY comment naming that engine. Verify with the existing `parent-zoom.spec.ts` plus a manual iOS
+WHY comment naming that engine. Verify with the existing `settings-zoom.spec.ts` plus a manual iOS
 Safari pass, since this is exactly the class of behavior E2E in Chromium can't fully certify.
 
 ### [Readability] `isPointInLaunchZone` is a query with hidden writes and a hand-rolled loop
@@ -6721,8 +6720,8 @@ sequentially covers double-call; add a concurrent-call variant.
 
 `platform.ts` is the declared home for UA sniffing (`isIosDevice`, `isAndroidBrowser`,
 `osLabelFromUserAgent`), and `install.svelte.ts` itself enforces that centralization for its
-consumers — `installDeviceOs`'s comment (lines 51–52): "consumers (the Parent Center setup guide)
-must not re-sniff the UA themselves." Yet six lines above, the module re-sniffs the UA locally:
+consumers — `installDeviceOs`'s comment (lines 51–52): "consumers (Settings setup guide) must not
+re-sniff the UA themselves." Yet six lines above, the module re-sniffs the UA locally:
 
 ```ts
 function isIosSafari() {
@@ -7857,7 +7856,7 @@ the failed-preload `loadStarted = false` retry reset (lines 52–54).
 
 **File(s):** `web/src/lib/notchBand.ts` (line 38), `web/src/lib/orientation.ts` (line 4),
 `web/src/lib/state/books.ts` (line 50); also (context, other sections) `state/layout.svelte.ts:4`,
-`state/canvas.svelte.ts:26`, `drawing/engine.ts:265`, `components/parent/CompactShell.svelte:29` @
+`state/canvas.svelte.ts:26`, `drawing/engine.ts:265`, `components/settings/CompactShell.svelte:29` @
 9ae62ff1
 
 **Priority:** P4
@@ -8047,9 +8046,9 @@ function armHoverOnMouseMove(node: HTMLElement) {
 exists to defeat the tile-appears-under-a-stationary-finger `:hover` misfire documented at lines
 75–80 — a device-behavior workaround, not ColoringBook-specific logic). Living inline, it is
 invisible to the next component that hits the same `:hover`-on-touch problem (any modal grid — the
-Parent Center's tile-like controls are plausible next customers), and its behavior (mouse-only
-arming, per-view reset) is untestable except through E2E. It also has a subtle contract with
-`showView()` (line 89–92 resets `hoverArmed`) that is easy to miss when reading the template.
+Settings' tile-like controls are plausible next customers), and its behavior (mouse-only arming,
+per-view reset) is untestable except through E2E. It also has a subtle contract with `showView()`
+(line 89–92 resets `hoverArmed`) that is easy to miss when reading the template.
 
 #### Proposed solution
 
@@ -15041,7 +15040,7 @@ component — check whether it too can live in the same side-effect-free module.
 **File(s):** `web/tests/engine-pointer-recovery.spec.ts` (lines 103–115, 168–180, 202–214),
 `web/tests/engine-lifecycle.spec.ts` (lines 46–57), `web/tests/engine-crayon.spec.ts` (lines
 356–367), `web/tests/flows-palette-brush.spec.ts` (lines 272–284), `web/tests/ai-timer.spec.ts`
-(lines 58–67), `web/tests/parent-zoom.spec.ts` (lines 39–50) @ 9ae62ff1
+(lines 58–67), `web/tests/settings-zoom.spec.ts` (lines 39–50) @ 9ae62ff1
 
 **Priority:** P3
 
@@ -15052,7 +15051,7 @@ and dispatches a `PointerEvent` with
 `{ pointerId, pointerType, buttons, clientX, clientY, bubbles, cancelable }`. Three of those copies
 live in one file (`engine-pointer-recovery.spec.ts`). The copies drift subtly —
 `engine-crayon.spec.ts:359` adds `isPrimary`, `flows-palette-brush.spec.ts:278` adds `pressure`,
-`parent-zoom.spec.ts` parameterizes `pointerType` — so a future fix to event construction (e.g.
+`settings-zoom.spec.ts` parameterizes `pointerType` — so a future fix to event construction (e.g.
 adding `isPrimary` everywhere, which the engine may start discriminating on) must be replicated by
 hand across seven sites. Playwright serializes evaluate callbacks by source, so the closure can't
 simply be hoisted, but the *sequences* are data and can be.
@@ -15490,14 +15489,14 @@ await expect(page.locator('#drawingCanvas')).toBeVisible();
 
 is `gotoApp(page)` (`helpers.ts:66-69`) written out longhand, in a file that already imports from
 `./helpers` (line 4). Trivial, but the helper exists precisely so the "canvas visible ⇒ hydrated"
-reasoning lives in one commented place; inline copies erode that. (`parent-zoom.spec.ts` similarly
-uses bare `page.goto('/')` eight times — acceptable there since `openParentCenter` immediately
+reasoning lives in one commented place; inline copies erode that. (`settings-zoom.spec.ts` similarly
+uses bare `page.goto('/')` eight times — acceptable there since `openSettingsModal` immediately
 retries, but worth normalizing if touched.)
 
 #### Proposed solution
 
-Replace with `await gotoApp(page);` in `a11y.spec.ts`; optionally sweep `parent-zoom.spec.ts` in the
-same commit.
+Replace with `await gotoApp(page);` in `a11y.spec.ts`; optionally sweep `settings-zoom.spec.ts` in
+the same commit.
 
 ### [Readability] `flows-palette-brush.spec.ts` duplicates the crayon/pen comparison scene inline in both tests
 
@@ -17386,26 +17385,26 @@ was dropped.
 
 **Rows that are line-drifted only:**
 
-| Doc claim                                                 | Actual               |
-| --------------------------------------------------------- | -------------------- |
-| `getCoalescedEvents()` — `engine.ts:883`                  | `:992`               |
-| `color-mix` — `ColorPicker.svelte:447`                    | `:469`               |
-| `color-mix` — `ColoringBook.svelte:298`                   | `:295`               |
-| `showModal()` — `modalDialog.svelte.ts:122`               | `:123`               |
-| `100dvh` — `app.css:28` + `:70`                           | `:28` (holds), `:81` |
-| `backdrop-filter` — `app.css:97`                          | `:108`               |
-| reduced-motion off-switch — `ParentCenter.svelte:339–340` | `:237–238`           |
-| `env(safe-area-inset-*)` — `app.css:54–56`                | `:65–67`             |
-| orientation lock — `orientation.ts:50–55`                 | `:41`                |
-| `navigator.vibrate` — `haptics.ts:24`                     | `:34`                |
-| `requestIdleCallback` — `idle.ts:8–13`                    | `:7–8`               |
-| `saveData` — `updates.ts:62–64`                           | `:48–49`, `:87`      |
-| `clipboard.writeText` — `AdminConsole.svelte:133`         | `:131`               |
-| `willReadFrequently` — `emptyScan.ts:22`                  | `:32`                |
-| `createImageBitmap` — `aiImage.ts:26`                     | `:33`                |
-| `toBlob(…, 'image/webp')` — `aiImage.ts:38`               | `:45`                |
-| `crypto.subtle` — `aiImage.ts:56`                         | `:77`                |
-| `text-wrap: pretty` — `StepLedger.svelte:263`             | `:299`               |
+| Doc claim                                                  | Actual               |
+| ---------------------------------------------------------- | -------------------- |
+| `getCoalescedEvents()` — `engine.ts:883`                   | `:992`               |
+| `color-mix` — `ColorPicker.svelte:447`                     | `:469`               |
+| `color-mix` — `ColoringBook.svelte:298`                    | `:295`               |
+| `showModal()` — `modalDialog.svelte.ts:122`                | `:123`               |
+| `100dvh` — `app.css:28` + `:70`                            | `:28` (holds), `:81` |
+| `backdrop-filter` — `app.css:97`                           | `:108`               |
+| reduced-motion off-switch — `SettingsModal.svelte:339–340` | `:237–238`           |
+| `env(safe-area-inset-*)` — `app.css:54–56`                 | `:65–67`             |
+| orientation lock — `orientation.ts:50–55`                  | `:41`                |
+| `navigator.vibrate` — `haptics.ts:24`                      | `:34`                |
+| `requestIdleCallback` — `idle.ts:8–13`                     | `:7–8`               |
+| `saveData` — `updates.ts:62–64`                            | `:48–49`, `:87`      |
+| `clipboard.writeText` — `AdminConsole.svelte:133`          | `:131`               |
+| `willReadFrequently` — `emptyScan.ts:22`                   | `:32`                |
+| `createImageBitmap` — `aiImage.ts:26`                      | `:33`                |
+| `toBlob(…, 'image/webp')` — `aiImage.ts:38`                | `:45`                |
+| `crypto.subtle` — `aiImage.ts:56`                          | `:77`                |
+| `text-wrap: pretty` — `StepLedger.svelte:263`              | `:299`               |
 
 Only three anchors still land exactly: `ColorPalette.svelte:46` (`ResizeObserver`),
 `network.svelte.ts:17` (`navigator.onLine`), and `deviceInfo.ts:60`.
@@ -17893,7 +17892,7 @@ wants).
 
 `web/tests/` no longer contains `flows.spec.ts` or `engine.spec.ts` — they were split into
 `flows-ai.spec.ts`, `flows-coloring-book.spec.ts`, `flows-icons.spec.ts`,
-`flows-magic-brush.spec.ts`, `flows-palette-brush.spec.ts`, `flows-parent-center.spec.ts`,
+`flows-magic-brush.spec.ts`, `flows-palette-brush.spec.ts`, `flows-settings.spec.ts`,
 `flows-undo-persistence.spec.ts` and the `engine-*.spec.ts` family, with shared helpers extracted to
 `helpers.ts`, `flows-harness.ts`, `engine-harness.ts`, and `cdp.ts`. The skills still cite the dead
 files in eight places:
@@ -18261,7 +18260,7 @@ run-splotch: drop the parenthetical. workflow-audit: describe the derivation ins
 `~/.claude/projects/<slug>/`, where `<slug>` is the absolute repo path with `/` replaced by `-`
 (list `~/.claude/projects/` and match the current checkout)".
 
-### [Docs] run-splotch describes the wrong verification landmark: "Parent Controls button top-right"
+### [Docs] run-splotch describes the wrong verification landmark: "Settings button top-right"
 
 **File(s):** `.ruler/skills/run-splotch/SKILL.md` (lines 42–44) @ 9ae62ff1
 
@@ -18270,10 +18269,10 @@ run-splotch: drop the parenthetical. workflow-audit: describe the derivation ins
 #### Problem
 
 The screenshot-verification paragraph says: "**Open the PNG and look at it** —
-`screenshots/splotch-home.png` shows the color palette down the left, the Parent Controls button
-top-right…". Two errors: the element's canonical name is the **Parent Help Button** (architecture
-skill's UI glossary, line 219 — the glossary exists precisely so skills use one name), and it is
-positioned at the **bottom** edge (`ParentHelpButton.svelte:25–26`:
+`screenshots/splotch-home.png` shows the color palette down the left, Settings button top-right…".
+Two errors: the element's canonical name is the **Settings Button** (architecture skill's UI
+glossary, line 219 — the glossary exists precisely so skills use one name), and it is positioned at
+the **bottom** edge (`SettingsButton.svelte:25–26`:
 `position: fixed; bottom: calc(var(--space-2) + env(safe-area-inset-bottom))`; the architecture
 skill's layout notes, lines 155–158, call the bottom edge "contested" between this button and the
 Actions Panel). An agent doing the prescribed visual check against this text either fails the
@@ -18282,8 +18281,8 @@ where the real button regressed.
 
 #### Proposed solution
 
-Fix to "the Parent Help Button bottom-right" (and keep "color palette down the left", which is
-correct for the driver's 1280×800 landscape viewport).
+Fix to "Settings Button bottom-right" (and keep "color palette down the left", which is correct for
+the driver's 1280×800 landscape viewport).
 
 ### [Docs] knowledge-map's ADR-0059 link breaks in the generated root CLAUDE.md/AGENTS.md
 

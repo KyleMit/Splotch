@@ -13,7 +13,7 @@
     <li>Dark mode — Light, Dark, or follow your device.</li>
     <li>A wax crayon brush, from the new Brush Menu.</li>
     <li>The magic brush now works on any drawing.</li>
-    <li>Report a bug from the Parent Center.</li>
+    <li>Report a bug from Settings.</li>
   </ul>
 {/if}
 {#if visibleSections >= 2}

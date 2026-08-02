@@ -3,7 +3,7 @@
   import type { HTMLButtonAttributes } from 'svelte/elements';
 
   // Design-system button primitive (ADR-0071): the shared chrome for
-  // text-labeled buttons on modal/parent surfaces. Canvas-floating controls
+  // text-labeled buttons on modal/settings surfaces. Canvas-floating controls
   // (Actions Panel, corner buttons) keep their bespoke paper treatments.
   //
   // Variants map to the token washes:

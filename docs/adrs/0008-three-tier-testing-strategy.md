@@ -25,7 +25,7 @@ automation:
 | Unit (asset)        | Vitest + Node                 | `npm run test:asset-gen`                                                    | Image-analysis gates and mocked asset-generator workflows against committed fixtures               |
 | Unit (repo scripts) | Vitest + Node                 | `npm run test:scripts`                                                      | Repository automation whose failures would corrupt state rather than simply crash                  |
 | E2E web             | Playwright (production build) | `npm run test:e2e`                                                          | Real browser flows on `/`, drawing engine harness, palette CSS trim, AI route (mocked), multitouch |
-| Native launch smoke | Maestro                       | `npm run test:android` / `npm run test:android:device` / `npm run test:ios` | App boots on a real emulator/simulator and the "Parent Center" button becomes visible              |
+| Native launch smoke | Maestro                       | `npm run test:android` / `npm run test:android:device` / `npm run test:ios` | App boots on a real emulator/simulator and the "Settings" button becomes visible                   |
 
 `npm test` runs app unit + asset-pipeline unit + repo-script unit + E2E sequentially; the native
 smoke tests are separate opt-in commands because they require an emulator or simulator. CI runs all
@@ -35,9 +35,9 @@ The Playwright E2E suite runs against the **production build** (not dev server) 
 issues. A `global-setup.ts` warms each route with a cold Vite load before workers start to avoid
 intermittent 504s (see ADR-0009).
 
-The Maestro flow (`.maestro/smoke.yaml`) asserts on the accessibility text "Parent Center" —
-presence of that label means the Svelte app rendered successfully in the WebView, not just that the
-native process is alive.
+The Maestro flow (`.maestro/smoke.yaml`) asserts on the accessibility text "Settings" — presence of
+that label means the Svelte app rendered successfully in the WebView, not just that the native
+process is alive.
 
 ## Consequences
 

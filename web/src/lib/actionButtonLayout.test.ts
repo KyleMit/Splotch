@@ -71,7 +71,7 @@ describe('visibleActionButtonCount', () => {
   });
 });
 
-// Landscape budget: viewportWidth − paletteWidth − 64 (Parent Help Button
+// Landscape budget: viewportWidth − paletteWidth − 64 (Settings Button
 // reserve) − side insets − (8 inset + 8 margin + 48 toggle + gaps). Portrait
 // swaps in viewportHeight − paletteHeight − 8 clearance − vertical insets.
 describe('maxActionButtonScale', () => {

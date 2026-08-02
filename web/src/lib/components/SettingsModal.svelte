@@ -2,25 +2,25 @@
   import { browser } from '$app/environment';
   import Icon from './Icon.svelte';
   import SectionIcon from './SectionIcon.svelte';
-  import { ui, parentCenter } from '$lib/state/ui.svelte';
-  import AppearanceSection from './parent/AppearanceSection.svelte';
-  import SoundSection from './parent/SoundSection.svelte';
-  import SavingSection from './parent/SavingSection.svelte';
-  import ControlsSection from './parent/ControlsSection.svelte';
-  import AiKeyManager from './parent/AiKeyManager.svelte';
-  import SetupInstructions from './parent/SetupInstructions.svelte';
-  import WhatsNewSection from './parent/WhatsNewSection.svelte';
-  import ReportForm from './parent/ReportForm.svelte';
-  import AboutSection from './parent/AboutSection.svelte';
-  import CompactShell from './parent/CompactShell.svelte';
-  import { SECTIONS, sectionSubtitle, type SectionId } from './parent/sections';
+  import { ui, settingsModal } from '$lib/state/ui.svelte';
+  import AppearanceSection from './settings/AppearanceSection.svelte';
+  import SoundSection from './settings/SoundSection.svelte';
+  import SavingSection from './settings/SavingSection.svelte';
+  import ControlsSection from './settings/ControlsSection.svelte';
+  import AiKeyManager from './settings/AiKeyManager.svelte';
+  import SetupInstructions from './settings/SetupInstructions.svelte';
+  import WhatsNewSection from './settings/WhatsNewSection.svelte';
+  import ReportForm from './settings/ReportForm.svelte';
+  import AboutSection from './settings/AboutSection.svelte';
+  import CompactShell from './settings/CompactShell.svelte';
+  import { SECTIONS, sectionSubtitle, type SectionId } from './settings/sections';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
 
   // Two shells, one section list (ADR-0061). Below the breakpoint it's a hub
   // that drills into a full-page section; at or above it's a persistent sidebar
   // + content pane. The choice is viewport width, so a rotate re-picks it live.
-  // ParentCenter first mounts on the opening tap (bootHiddenOverlays), so seed
+  // SettingsModal first mounts on the opening tap (bootHiddenOverlays), so seed
   // `wide` from the live viewport to render the right shell on the first frame —
   // no narrow-then-wide flash — then keep it fresh with the listener below.
   const WIDE_QUERY = '(min-width: 700px)';
@@ -62,7 +62,7 @@
 
   // Each reopen lands on the hub (phone) / first section (tablet).
   $effect(() => {
-    if (parentCenter.open) view = 'hub';
+    if (settingsModal.open) view = 'hub';
   });
 
   function openSection(id: SectionId) {
@@ -80,7 +80,7 @@
   let zoomTarget = $state<HTMLElement>();
   const textZoom = () => ({
     target: zoomTarget,
-    enabled: parentCenter.open,
+    enabled: settingsModal.open,
     resetKey: view,
   });
 </script>
@@ -95,36 +95,32 @@
   {:else if id === 'controls'}
     <ControlsSection />
   {:else if id === 'ai'}
-    <AiKeyManager open={parentCenter.open} />
+    <AiKeyManager open={settingsModal.open} />
   {:else if id === 'setup'}
-    <SetupInstructions open={parentCenter.open} />
+    <SetupInstructions open={settingsModal.open} />
   {:else if id === 'whatsnew'}
     <WhatsNewSection />
   {:else if id === 'feedback'}
-    <ReportForm open={parentCenter.open} />
+    <ReportForm open={settingsModal.open} />
   {:else if id === 'about'}
     <AboutSection />
   {/if}
 {/snippet}
 
 <dialog
-  class="parent-help-modal modal-dialog modal-fly-in modal-shell"
+  class="settings-modal modal-dialog modal-fly-in modal-shell"
   class:resizing={ui.resizingActionButtons}
   class:wide
   class:compact
-  id="parentHelpModal"
+  id="settingsModal"
   use:modalDialog={() => ({
-    open: parentCenter.open,
-    origin: parentCenter.origin,
-    onRequestClose: parentCenter.hide,
+    open: settingsModal.open,
+    origin: settingsModal.origin,
+    onRequestClose: settingsModal.hide,
   })}
 >
-  <div class="parent-help-content">
-    <button
-      class="parent-help-close modal-close-btn"
-      aria-label="Close"
-      onclick={parentCenter.hide}
-    >
+  <div class="settings-content">
+    <button class="settings-close modal-close-btn" aria-label="Close" onclick={settingsModal.hide}>
       <Icon name="close" class="modal-close-icon" />
     </button>
 
@@ -132,38 +128,38 @@
       <CompactShell />
     {:else if wide}
       <!-- Tablet / desktop: persistent sidebar + scrolling content pane. -->
-      <header class="pc-header">
-        <h2>Parent Center</h2>
+      <header class="settings-header">
+        <h2>Settings</h2>
       </header>
-      <div class="pc-split">
-        <nav class="pc-nav" aria-label="Parent Center sections">
+      <div class="settings-split">
+        <nav class="settings-nav" aria-label="Settings sections">
           {#each SECTIONS as section (section.id)}
             <button
-              class="pc-nav-item"
+              class="settings-nav-item"
               data-section={section.id}
               class:active={section.id === activeSection}
               aria-current={section.id === activeSection ? 'page' : undefined}
               onclick={() => openSection(section.id)}
             >
-              <SectionIcon icon={section.icon} class="pc-nav-icon" />
+              <SectionIcon icon={section.icon} class="settings-nav-icon" />
               <span>{section.label}</span>
             </button>
           {/each}
         </nav>
-        <div class="pc-pane" use:pinchTextZoom={textZoom}>
-          <div class="pc-zoom" bind:this={zoomTarget}>
-            <h3 class="pc-pane-title">{activeMeta.title ?? activeMeta.label}</h3>
+        <div class="settings-pane" use:pinchTextZoom={textZoom}>
+          <div class="settings-zoom" bind:this={zoomTarget}>
+            <h3 class="settings-pane-title">{activeMeta.title ?? activeMeta.label}</h3>
             {@render sectionContent(activeSection)}
           </div>
         </div>
       </div>
     {:else if view === 'hub'}
       <!-- Phone: top-level hub list. -->
-      <header class="pc-header">
-        <h2>Parent Center</h2>
+      <header class="settings-header">
+        <h2>Settings</h2>
       </header>
-      <div class="pc-scroll" use:pinchTextZoom={textZoom}>
-        <div class="pc-zoom" bind:this={zoomTarget}>
+      <div class="settings-scroll" use:pinchTextZoom={textZoom}>
+        <div class="settings-zoom" bind:this={zoomTarget}>
           <ul class="hub-list">
             {#each SECTIONS as section (section.id)}
               <li>
@@ -188,14 +184,14 @@
       </div>
     {:else}
       <!-- Phone: drilled into a single section, with a back arrow. -->
-      <header class="pc-header pc-header-sub">
-        <button class="pc-back" onclick={backToHub} aria-label="Back">
-          <Icon name="chevron-left" class="pc-back-icon" />
+      <header class="settings-header settings-header-sub">
+        <button class="settings-back" onclick={backToHub} aria-label="Back">
+          <Icon name="chevron-left" class="settings-back-icon" />
         </button>
         <h2>{activeMeta.title ?? activeMeta.label}</h2>
       </header>
-      <div class="pc-scroll" use:pinchTextZoom={textZoom}>
-        <div class="pc-zoom" bind:this={zoomTarget}>
+      <div class="settings-scroll" use:pinchTextZoom={textZoom}>
+        <div class="settings-zoom" bind:this={zoomTarget}>
           {@render sectionContent(activeSection)}
         </div>
       </div>
@@ -204,19 +200,19 @@
 </dialog>
 
 <style>
-  .parent-help-modal {
+  .settings-modal {
     width: min(92vw, 500px);
     max-height: 85vh;
     overflow: hidden;
   }
 
-  .parent-help-modal.wide {
+  .settings-modal.wide {
     width: min(94vw, 860px);
   }
 
   /* Landscape phone: wider than the portrait card (width is the plentiful
      axis there) but nowhere near the tablet two-pane. */
-  .parent-help-modal.compact {
+  .settings-modal.compact {
     width: min(94vw, 640px);
   }
 
@@ -227,22 +223,22 @@
      and backdrop go transparent so the canvas and buttons show through. The
      slider still occupies its normal slot in the (now invisible) layout, so no
      repositioning gymnastics are needed. */
-  .parent-help-modal.resizing {
+  .settings-modal.resizing {
     background: transparent;
     box-shadow: none;
   }
 
-  .parent-help-modal.resizing::backdrop {
+  .settings-modal.resizing::backdrop {
     background: transparent;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
 
-  .parent-help-modal.resizing .parent-help-content {
+  .settings-modal.resizing .settings-content {
     visibility: hidden;
   }
 
-  .parent-help-modal.resizing :global(.button-size-setting) {
+  .settings-modal.resizing :global(.button-size-setting) {
     visibility: visible;
     background: var(--surface);
     border-radius: var(--radius-lg);
@@ -253,7 +249,7 @@
 
   /* The content is a flex column capped at the modal height: the header stays
      put while the hub list / section body / content pane scrolls under it. */
-  .parent-help-content {
+  .settings-content {
     display: flex;
     flex-direction: column;
     max-height: 85vh;
@@ -261,7 +257,7 @@
     overflow: hidden;
   }
 
-  .pc-header {
+  .settings-header {
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -271,18 +267,18 @@
     padding-right: 68px;
   }
 
-  .pc-header h2 {
+  .settings-header h2 {
     margin: 0;
     font-size: 24px;
     color: var(--text-strong);
     font-weight: 600;
   }
 
-  .pc-header-sub h2 {
+  .settings-header-sub h2 {
     font-size: 20px;
   }
 
-  .pc-back {
+  .settings-back {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -299,28 +295,28 @@
   }
 
   @media (hover: hover) {
-    .pc-back:hover {
+    .settings-back:hover {
       background: var(--surface-hover);
     }
   }
 
-  .pc-back:active {
+  .settings-back:active {
     transform: scale(0.92);
   }
 
-  :global(.pc-back-icon) {
+  :global(.settings-back-icon) {
     width: 22px;
     height: 22px;
   }
 
-  :global(.pc-back-icon svg) {
+  :global(.settings-back-icon svg) {
     fill: var(--brand);
   }
 
   /* Phone: the single scroll region (hub list or a section body). overflow (not
-     just -y) so a pinch-enlarged (.pc-zoom) body can be scrolled sideways too;
+     just -y) so a pinch-enlarged (.settings-zoom) body can be scrolled sideways too;
      at rest the content is container-width, so no horizontal bar shows. */
-  .pc-scroll {
+  .settings-scroll {
     flex: 1;
     min-height: 0;
     overflow: auto;
@@ -414,7 +410,7 @@
   }
 
   /* ── Tablet two-pane ────────────────────────────────────────────────────── */
-  .pc-split {
+  .settings-split {
     flex: 1;
     min-height: 0;
     display: flex;
@@ -423,7 +419,7 @@
   }
 
   /* Nav never scrolls — only the pane does. */
-  .pc-nav {
+  .settings-nav {
     flex-shrink: 0;
     width: 232px;
     display: flex;
@@ -432,7 +428,7 @@
     overflow: hidden;
   }
 
-  .pc-nav-item {
+  .settings-nav-item {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -453,38 +449,38 @@
   }
 
   @media (hover: hover) {
-    .pc-nav-item:not(.active):hover {
+    .settings-nav-item:not(.active):hover {
       background: var(--surface-hover);
       color: var(--text-strong);
     }
   }
 
-  .pc-nav-item.active {
+  .settings-nav-item.active {
     background: var(--brand);
     color: var(--on-brand);
   }
 
-  :global(.pc-nav-icon) {
+  :global(.settings-nav-icon) {
     width: 20px;
     height: 20px;
     flex-shrink: 0;
   }
 
-  .pc-nav-item.active :global(.pc-nav-icon svg) {
+  .settings-nav-item.active :global(.settings-nav-icon svg) {
     fill: var(--on-brand);
   }
 
-  .pc-pane {
+  .settings-pane {
     flex: 1;
     min-width: 0;
     min-height: 0;
-    /* overflow (not just -y) so a pinch-enlarged (.pc-zoom) pane scrolls sideways
+    /* overflow (not just -y) so a pinch-enlarged (.settings-zoom) pane scrolls sideways
        too; at rest the content is pane-width, so no horizontal bar shows. */
     overflow: auto;
     padding: 4px 8px 4px 16px;
   }
 
-  .pc-pane-title {
+  .settings-pane-title {
     margin: 0 0 20px 0;
     font-size: var(--font-size-2xl);
     font-weight: 600;
@@ -494,31 +490,31 @@
   /* Shared setting-card tokens for the section bodies. The sections only ever
      render inside this modal, so scoping the :global reach here keeps these
      rules in one place instead of copied into each section component. */
-  .parent-help-content :global(.setting-group) {
+  .settings-content :global(.setting-group) {
     margin-bottom: 24px;
   }
 
-  .parent-help-content :global(.setting-group:last-child) {
+  .settings-content :global(.setting-group:last-child) {
     margin-bottom: 0;
   }
 
-  .parent-help-content :global(.setting-group > .setting + .setting) {
+  .settings-content :global(.setting-group > .setting + .setting) {
     margin-top: 6px;
   }
 
-  .parent-help-content :global(.setting) {
+  .settings-content :global(.setting) {
     padding: 12px 16px;
     background: var(--surface-2);
     border-radius: var(--radius-sm);
   }
 
   @media (max-width: 480px) {
-    .pc-header {
+    .settings-header {
       padding: 24px 20px 16px;
       padding-right: 64px;
     }
 
-    .pc-scroll {
+    .settings-scroll {
       padding: 0 20px 24px;
     }
   }

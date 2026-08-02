@@ -38,7 +38,7 @@ paths:
 * `tests/webkit-smoke.spec.ts` is a WebKit critical-path subset (boot, stroke, the two dialogs) run
   by the `webkit` Playwright project — CI installs WebKit so it always gates there; locally it only
   runs if the WebKit binary is installed. Keep that spec free of CDP and dev-harness dependencies.
-* Adult-facing surfaces (`/privacy`, `/admin`, the Parent Center dialog) get axe-core scans in
+* Adult-facing surfaces (`/privacy`, `/admin`, Settings dialog) get axe-core scans in
   `tests/a11y.spec.ts` — serious/critical violations fail. The toddler-facing canvas chrome is out
   of scope by design; scans of overlays over it are scoped via `AxeBuilder.include()`. Details in
   the `testing` skill.
@@ -60,7 +60,7 @@ paths:
 * **Flake-resistance (worker count is derived from the machine — capacity is `cores / 2`; local sits
   there, CI goes to twice it, ADR-0078 — so specs share the CPU):** never assert on a single
   interaction against a lazily-wired control — wrap open-then-assert in `expect(...).toPass()` or
-  reuse a retrying helper (`openParentCenter`/`openDrawer`/`openStrokeMenu`); use `expect.poll` /
+  reuse a retrying helper (`openSettingsModal`/`openDrawer`/`openStrokeMenu`); use `expect.poll` /
   web-first assertions instead of a fixed `waitForTimeout` to wait for something to happen (a fixed
   sleep is fine only to idle *past* a known threshold or to prove a state does *not* change); poll
   async canvas/relayout state through a retrying assertion with a window sized for a starved worker
@@ -69,7 +69,7 @@ paths:
   `window.__committedBrushMode`, ADR-0080); let a fly-in dialog **land** before reading a coordinate
   off it and dispatching synthetic events there — a real `.click()` waits for the element to stop
   moving, an `evaluate` does not, and a dialog still flying in sits inside the launch dead zone that
-  swallows the gesture; await its `Animation.finished` first, as `openParentCenter` does (ADR-0078
+  swallows the gesture; await its `Animation.finished` first, as `openSettingsModal` does (ADR-0078
   §4a); drive strokes through `draw`/`dragStroke`, which pace their samples inside the engine's
   dropped-pointer threshold — a hand-rolled run of far-apart `mouse.move`s gets read as a lifted
   finger and paints a stub of the stroke; and verify a fix with `--repeat-each=10`, never in

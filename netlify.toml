@@ -86,7 +86,7 @@
     Reporting-Endpoints = 'csp="/api/csp-report"'
     # Content-Security-Policy — ENFORCING (issue #457; staged as report-only by
     # issue #235, flipped after a full Playwright sweep of every surface — draw/
-    # undo/clear, coloring book, screenshot save, AI dialog, parent center,
+    # undo/clear, coloring book, screenshot save, AI dialog, Settings,
     # /admin, /privacy, SW registration + repeat visit — against this exact
     # policy came back violation-free). 'unsafe-inline' covers what nonces don't
     # yet replace: SvelteKit's inline hydration boot code, the app.html

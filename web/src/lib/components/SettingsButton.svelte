@@ -1,27 +1,27 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { parentCenter, buttonCenter, PARENT_HELP_BUTTON_ID } from '$lib/state/ui.svelte';
+  import { settingsModal, buttonCenter, SETTINGS_BUTTON_ID } from '$lib/state/ui.svelte';
 
   let buttonEl: HTMLButtonElement;
 
   function openModal() {
     if (!buttonEl) return;
-    parentCenter.show(buttonCenter(buttonEl));
+    settingsModal.show(buttonCenter(buttonEl));
   }
 </script>
 
 <button
-  class="parent-help-button corner-button"
-  id={PARENT_HELP_BUTTON_ID}
-  aria-label="Parent Center"
+  class="settings-button corner-button"
+  id={SETTINGS_BUTTON_ID}
+  aria-label="Settings"
   bind:this={buttonEl}
   onclick={openModal}
 >
-  <Icon name="parent" class="corner-button-icon" aria-label="Parent Center" role="img" />
+  <Icon name="settings" class="corner-button-icon" aria-label="Settings" role="img" />
 </button>
 
 <style>
-  .parent-help-button {
+  .settings-button {
     position: fixed;
     bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
     right: calc(var(--space-2) + env(safe-area-inset-right));

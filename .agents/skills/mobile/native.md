@@ -84,7 +84,7 @@ namespace, never the proxy.
 
 When no published plugin exposes a native capability, add a small **local** plugin in the app target
 itself (see `DeviceLock`, ADR-0027 — it reads iOS Guided Access / Android App-Pinning state for the
-Parent Center's lock-status ✓):
+Settings' lock-status ✓):
 
 * iOS — the key gotcha: **Capacitor 8 does not auto-discover plugin classes.**
   `CapacitorBridge.registerPlugins()` only loads its built-ins plus the `packageClassList` that
@@ -125,16 +125,16 @@ subscribes with `addListener` and exports `initPencilEraser()`, which `DrawingCa
 lazy-starts only when `isNative()` so `@capacitor/core` never loads on web. The web fallback's
 `addListener` is inert. The feature is on by default but parent-disablable: the listener's
 `handleDoubleTap()` sets a sticky `applePencilSeen` flag (lazy detection — there's no web API to
-query pencil pairing) and only toggles when `pencilEraserEnabled` is on; the Parent Center shows
-that toggle only `{#if settings.applePencilSeen}` so it appears solely on pencil-capable devices.
+query pencil pairing) and only toggles when `pencilEraserEnabled` is on; Settings shows that toggle
+only `{#if settings.applePencilSeen}` so it appears solely on pencil-capable devices.
 
 Adding native plugin code needs a **fresh native build** (`android:run` / `ios:run`); `cap:sync`
 alone won't compile/register the new Swift/Java classes.
 
 ### Screen orientation
 
-The parent-center rotation toggle (`lockRotationEnabled` + `forceLandscapeOrientation`) is applied
-by `web/src/lib/orientation.ts`. On native it locks via **`@capacitor/screen-orientation`**, which
+The Settings rotation toggle (`lockRotationEnabled` + `forceLandscapeOrientation`) is applied by
+`web/src/lib/orientation.ts`. On native it locks via **`@capacitor/screen-orientation`**, which
 calls Android's `Activity.setRequestedOrientation` — this **overrides the OS Auto-Rotate setting**,
 so the parent's choice is honored even on a device with rotation turned off. The Web Screen
 Orientation API (the web fallback) can't do this: it only chooses an orientation within what the OS
@@ -223,9 +223,9 @@ The shared baseline both depend on:
 * [ ] **Final hi-res app icon** (placeholder is upscaled from 512px) — produce a crisp **1024×1024**
       source at `assets/icon.png` (and tune `assets/splash.png`), then rerun
       `npx @capacitor/assets generate` for both platforms.
-* [ ] **AI access token on native**: today a parent types the invite code in the Parent Center.
-      Consider **deep links** (Android App Links / iOS Universal Links) so an `?ai_access_token=…`
-      invite link opens the app and applies the token automatically.
+* [ ] **AI access token on native**: today a parent types the invite code in Settings. Consider
+      **deep links** (Android App Links / iOS Universal Links) so an `?ai_access_token=…` invite
+      link opens the app and applies the token automatically.
 * [ ] Consider `@capacitor/status-bar` + `@capacitor/splash-screen` for finer control over the
       status bar color and splash dismissal timing.
 * [ ] Verify the **Wake Lock** behavior inside the WebView on real devices; if unreliable, add a

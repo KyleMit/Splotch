@@ -307,34 +307,34 @@ test('the picked brush persists across a reload and stamps the brush face pre-pa
 });
 
 // On a phone-width portrait screen the stroke-width flyout used to open as a
-// horizontal row that ran under the bottom-right Parent Center button. Tapping
+// horizontal row that ran under the bottom-right Settings button. Tapping
 // the rightmost size closed the menu on pointerup, and the trailing click then
-// fell through to the now-unobscured Parent Center button and launched its
+// fell through to the now-unobscured Settings button and launched its
 // modal. The flyout must clear that button so a size tap can't open it. 460px
-// sits in the range where the row would still reach the parent button, so it
+// sits in the range where the row would still reach the Settings button, so it
 // pins the column breakpoint high enough for the current button sizes.
-test('the stroke flyout clears the Parent Center button on a phone', async ({ page }) => {
+test('the stroke flyout clears Settings button on a phone', async ({ page }) => {
   await page.setViewportSize({ width: 460, height: 852 });
   await gotoApp(page);
   await openDrawer(page);
   await openStrokeMenu(page);
 
-  const parentModal = page.locator('#parentHelpModal');
-  await expect(parentModal).toBeHidden();
+  const settingsDialog = page.locator('#settingsModal');
+  await expect(settingsDialog).toBeHidden();
 
-  const parent = (await page.locator('#parentHelpButton').boundingBox())!;
+  const parent = (await page.locator('#settingsButton').boundingBox())!;
   const size5 = (await page.locator('button[aria-label="Size 5"]').boundingBox())!;
   const overlaps =
     size5.x < parent.x + parent.width &&
     size5.x + size5.width > parent.x &&
     size5.y < parent.y + parent.height &&
     size5.y + size5.height > parent.y;
-  expect(overlaps, 'stroke flyout overlaps the Parent Center button').toBe(false);
+  expect(overlaps, 'stroke flyout overlaps Settings button').toBe(false);
 
-  // Tapping the rightmost size selects it and leaves the Parent Center closed.
+  // Tapping the rightmost size selects it and leaves Settings closed.
   await page.locator('button[aria-label="Size 5"]').click();
   await expect(page.locator('button[aria-label="Size 5"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(parentModal).toBeHidden();
+  await expect(settingsDialog).toBeHidden();
 });
 
 // Landscape counterpart: the action panel hugs the bottom with little height to

@@ -3,7 +3,7 @@ import { describeDeviceInfo, sanitizeDeviceInfo, type DeviceInfo } from '$lib/de
 import { MAX_REPORT_MESSAGE_LENGTH, type ReportKind } from '$lib/report';
 
 // Server-only core of the feedback flow, shared by its two front doors: the
-// `/api/report` JSON endpoint the in-app Parent Center form posts to, and the
+// `/api/report` JSON endpoint the in-app Settings form posts to, and the
 // `/feedback` page's form action. Both throttle into the same bucket
 // (reportBucket) and then hand the raw fields here, so validation, the
 // honeypot, the issue Markdown, and the error wording can't drift between them.

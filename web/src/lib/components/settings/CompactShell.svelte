@@ -57,8 +57,8 @@
 
 <!-- Landscape phone: too cramped for the full section list, so just the
      essential quick toggles plus a pointer to portrait for the rest. -->
-<header class="pc-header-compact">
-  <h2>Parent Center</h2>
+<header class="settings-header-compact">
+  <h2>Settings</h2>
 </header>
 <div class="quick-toggles">
   <div class="setting">
@@ -124,9 +124,9 @@
 
 <style>
   /* Every vertical pixel counts here, so the header shrinks (its own copy of the
-     .pc-header shape, since ParentCenter's is scoped to that component) and the
+     .settings-header shape, since SettingsModal's is scoped to that component) and the
      toggles pack into a two-column grid that scrolls only if it must. */
-  .pc-header-compact {
+  .settings-header-compact {
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -141,7 +141,7 @@
     min-height: 62px;
   }
 
-  .pc-header-compact h2 {
+  .settings-header-compact h2 {
     margin: 0;
     font-size: var(--font-size-xl);
     color: var(--text-strong);

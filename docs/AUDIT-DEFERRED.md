@@ -326,9 +326,9 @@ widening the handler type.
 
 ### [P1][duplication] Extract a shared segmented-control primitive — it now exists three times with drift
 
-**File(s):** `web/src/lib/components/parent/AppearanceSection.svelte:32-47,92-138` ·
-`web/src/lib/components/ParentCenter.svelte:222-238,443-490` ·
-`web/src/lib/components/parent/ReportForm.svelte:112-125,233-267` — pinned at SHA f934d43
+**File(s):** `web/src/lib/components/settings/AppearanceSection.svelte:32-47,92-138` ·
+`web/src/lib/components/SettingsModal.svelte:222-238,443-490` ·
+`web/src/lib/components/settings/ReportForm.svelte:112-125,233-267` — pinned at SHA f934d43
 
 #### Problem
 
@@ -342,8 +342,8 @@ treatment, `var(--font-size-sm)` vs raw `12.5px`. Proposed a `Segmented.svelte` 
 **State at triage (2026-07-27):** Still three sites, still drifted — the finding fully holds, with
 two updates since f934d43:
 
-* **The orientation selector moved.** ParentCenter's compact layout was extracted into
-  `web/src/lib/components/parent/CompactShell.svelte`; the `.orient-seg` control now lives there
+* **The orientation selector moved.** SettingsModal's compact layout was extracted into
+  `web/src/lib/components/settings/CompactShell.svelte`; the `.orient-seg` control now lives there
   (markup 97-111, styles 162-219), comment still saying "matching the Theme picker in
   AppearanceSection". It also gained real deselect behavior: tapping the active side releases the
   rotation lock (`CompactShell.svelte:46-55`), so the `allowDeselect`/toggle mode is now a hard
@@ -419,7 +419,7 @@ comment was supposed to prevent has already happened, and a fourth copy is likel
 single-select setting).
 
 **Landing note:** Re-stage in docs/AUDIT.md (or file as a `type:audit` issue) with the updated
-file/line references above — the ParentCenter citations are stale, the control is in
+file/line references above — SettingsModal citations are stale, the control is in
 `CompactShell.svelte` now. Implement together with the sibling entry "Two identical segmented
 controls use inconsistent ARIA semantics" (the `mode` prop is its decision); the sibling
 `.setting + .setting` spacing entry is independent and can land separately.
@@ -442,8 +442,8 @@ mirror updated, but `.agents/skills/design/SKILL.md` is stale.
 
 ### [P4][accessibility] Two identical segmented controls use inconsistent ARIA semantics (radiogroup vs group/pressed)
 
-**File(s):** `web/src/lib/components/parent/AppearanceSection.svelte:32-45` (radiogroup/radio) ·
-`web/src/lib/components/ParentCenter.svelte:223-237` (group + aria-pressed) — pinned at SHA f934d43
+**File(s):** `web/src/lib/components/settings/AppearanceSection.svelte:32-45` (radiogroup/radio) ·
+`web/src/lib/components/SettingsModal.svelte:223-237` (group + aria-pressed) — pinned at SHA f934d43
 
 #### Problem
 
@@ -456,7 +456,7 @@ proposed encoding the choice as a `mode: 'radio' | 'toggle'` prop.
 
 **State at triage (2026-07-27):** The split persists, one file moved: the theme picker is unchanged
 (`AppearanceSection.svelte:33-45`, radiogroup/radio/`aria-checked`); the orientation selector now
-lives in `web/src/lib/components/parent/CompactShell.svelte:97-110` (`role="group"` +
+lives in `web/src/lib/components/settings/CompactShell.svelte:97-110` (`role="group"` +
 `aria-pressed`); the report-kind picker is radiogroup/radio (`ReportForm.svelte:115-127`). Neither
 radiogroup implements roving tabindex or arrow keys — every segment is a tab stop, so the role
 promises keyboard behavior it doesn't deliver (an APG-pattern violation, not just inconsistency).
@@ -526,7 +526,7 @@ Reviewer's unresolved objections:
 #### What was tried
 
 Introduced a shared segmented picker that provides roving keyboard radio behavior while preserving
-the orientation selector’s pressed-toggle semantics. Updated Parent Center interaction coverage and
+the orientation selector’s pressed-toggle semantics. Updated Settings interaction coverage and
 registered the new primitive in the design reference and styleguide.
 
 #### Draft implementation
@@ -1028,8 +1028,8 @@ The rolled-back draft is kept at
 
 **File(s):** `web/src/lib/notchBand.ts:38`, `web/src/lib/state/layout.svelte.ts:4`,
 `web/src/lib/orientation.ts:5`, `web/src/lib/state/books.ts:49`, `state/canvas.svelte.ts:18`,
-`drawing/engine.ts:258`, `components/ParentCenter.svelte:60`, `tests/global.d.ts:48` — pinned at SHA
-f934d43
+`drawing/engine.ts:258`, `components/SettingsModal.svelte:60`, `tests/global.d.ts:48` — pinned at
+SHA f934d43
 
 **Rolled-back draft patch:**
 docs/audit-deferred/p2-duplication-orientation-portrait-landscape-is-redeclared-in-8-places.patch
@@ -1045,8 +1045,8 @@ semantically-distinct aliases as `type X = Orientation` where the name adds mean
 
 **State at triage (2026-07-27):** All eight duplication sites hold at HEAD (verified by grep):
 `notchBand.ts:38`, `layout.svelte.ts:4`, `orientation.ts:5`, `books.ts:50`, `canvas.svelte.ts:26`,
-`engine.ts:262`, `tests/global.d.ts:49`, and — the one drift — the `ParentCenter.svelte` copy now
-lives in the extracted `components/parent/CompactShell.svelte:29` (`LockedOrientation`). The draft
+`engine.ts:262`, `tests/global.d.ts:49`, and — the one drift — the `SettingsModal.svelte` copy now
+lives in the extracted `components/settings/CompactShell.svelte:29` (`LockedOrientation`). The draft
 was cut after that extraction: it targets `CompactShell.svelte`, and `git apply --check` passes at
 HEAD. It adds `export type Orientation` to `platform.ts:52` beside `Platform`, converts all eight
 consumers to type-only imports, keeps the meaningful aliases (`BookOrientation`,

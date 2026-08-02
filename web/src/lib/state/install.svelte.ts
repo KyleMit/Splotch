@@ -28,7 +28,7 @@ export type InstallDeviceOs = 'ios' | 'android' | 'desktop';
 
 export const install = $state({
   mode: 'none' as InstallMode,
-  // Parent tapped "not now" — suppress the floating banner (the Parent Center
+  // Parent tapped "not now" — suppress the floating banner (Settings
   // setup guide stays available regardless).
   dismissed: false,
   installed: false,
@@ -49,7 +49,7 @@ function isIosSafari() {
 }
 
 // Single source of truth for "what kind of device is this" — consumers (the
-// Parent Center setup guide) must not re-sniff the UA themselves.
+// Settings setup guide) must not re-sniff the UA themselves.
 export function installDeviceOs(): InstallDeviceOs {
   if (isIosDevice()) return 'ios';
   if (isAndroidBrowser()) return 'android';

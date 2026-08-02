@@ -502,7 +502,7 @@ and 20 findings) landed **35 fixes** one-commit-each on `audit/burndown` →
 [PR #540](https://github.com/KyleMit/Splotch/pull/540); deferred 4, dropped 3 as invalid; 514 of 613
 remain. Themes: design-system consolidation (extracted `Segmented`, disclosure-chevron,
 status-message, and flyout primitives; z-index scale; token-ized off-scale sizes/shadows/radii),
-duplication removal across ParentCenter's sections, and a11y (`aria-describedby` on ToggleRow,
+duplication removal across SettingsModal's sections, and a11y (`aria-describedby` on ToggleRow,
 consistent radiogroup semantics). Four driver defects found and fixed mid-session, all one class — a
 **tooling failure being recorded as a model verdict**: an implementer that committed but omitted the
 optional `sha` had its finished fix `reset --hard`-ed away and deferred (hit 2 of 14 findings, ~$4
@@ -532,7 +532,7 @@ P4×176, P5×43). Dominant cross-cutting themes: pervasive magic-value/constant 
 silently drifts (luma/ink thresholds reimplemented across asset-gen `lib`, storage keys with no
 registry, palette hexes re-typed in tests + scripts, auth header names, HTTP status codes, z-index,
 off-scale design values vs tokens); god-modules/functions to split (`engine.initDrawingCanvas`,
-`ParentCenter` 771 LOC, `ActionsPanel`, `settings.svelte.ts`, `api-smoke.mjs`,
+`SettingsModal` 771 LOC, `ActionsPanel`, `settings.svelte.ts`, `api-smoke.mjs`,
 `engine.spec`/`flows.spec` ~2k LOC each); runtime `isNative()` gates that should be build-time
 `__IS_CAPACITOR__`; missing shared helpers (Gemini transport + keep-best-of-N ladder reimplemented
 5–6× in asset-gen bin, CLI arg parsing, canvas pixel scanners, flyout/segmented UI primitives); dead
@@ -609,7 +609,7 @@ and deleted.
 
 ## 2026-07-23 · code-audit (run 1)
 
-Full-repo pass via six parallel area agents (drawing engine, toddler UI, Parent Center + admin,
+Full-repo pass via six parallel area agents (drawing engine, toddler UI, Settings + admin,
 state/storage/PWA, server + `/api`, scripts/build/CI) → 15 merged findings. Top themes: two `/api`
 endpoints share one rate-limit bucket with opposite charging policies (a valid family behind one NAT
 can be locked out of their first generation); pervasive duplication that silently drifts
@@ -882,9 +882,8 @@ keyframes), silent admin error paths, CI waste, and three ADR-0017 cross-platfor
 
 Resolved the last item (load-time TBT): a new `perf:mount` profile showed the suspected
 `+page.svelte` onMount work is only ~18 ms of the ~470 ms hydration long task; the real lever was
-hydrating the six boot-hidden overlays — now idle-mounted (Parent Center dialog on first open),
-cutting the load long task to ~256–325 ms with no idle long tasks. `docs/AUDIT.md` is empty and
-deleted.
+hydrating the six boot-hidden overlays — now idle-mounted (Settings dialog on first open), cutting
+the load long task to ~256–325 ms with no idle long tasks. `docs/AUDIT.md` is empty and deleted.
 
 ## 2026-07-05 · lighthouse-audit (run 2)
 
@@ -917,4 +916,4 @@ upgraded the safe leaf/dev packages one commit at a time.
 ## 2026-06-25 · code-audit
 
 First audit list: swept every sticky `:hover` rule that stays stuck after tap on touch devices,
-ordered toddler-UI → Parent Center → web-only, each to be guarded with `@media (hover: hover)`.
+ordered toddler-UI → Settings → web-only, each to be guarded with `@media (hover: hover)`.

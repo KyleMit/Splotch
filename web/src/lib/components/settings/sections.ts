@@ -2,7 +2,7 @@ import type { IconName } from '../icon-names';
 import { APP_VERSION } from '$lib/appVersion';
 import { aiCredentialKind, settings } from '$lib/state/settings.svelte';
 
-// The Parent Center is one flat list of sections (ADR-0061). Both shells — the
+// Settings is one flat list of sections (ADR-0061). Both shells — the
 // phone hub with full-page drill-in and the tablet sidebar + content pane —
 // render from this single ordered list, so the two layouts can never drift.
 export interface SectionMeta {

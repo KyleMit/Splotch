@@ -11,8 +11,8 @@
   import ActionsPanel from '$lib/components/ActionsPanel.svelte';
   import ClearButton from '$lib/components/ClearButton.svelte';
   import NotchBand from '$lib/components/NotchBand.svelte';
-  import ParentHelpButton from '$lib/components/ParentHelpButton.svelte';
-  import { parentCenter } from '$lib/state/ui.svelte';
+  import SettingsButton from '$lib/components/SettingsButton.svelte';
+  import { settingsModal } from '$lib/state/ui.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
   import { pwaUpdates } from '$lib/pwa/updates';
   import { captureAiAccessTokenFromUrl, settings } from '$lib/state/settings.svelte';
@@ -61,15 +61,15 @@
   // Filled one at a time by the idle mount pump (see boot/bootHiddenOverlays.ts).
   let overlays = $state<Component[]>([]);
 
-  // The Parent Center dialog is the one overlay too heavy even for an idle
+  // Settings dialog is the one overlay too heavy even for an idle
   // slice (~200 ms mounted under a 4× throttle), so it waits for its first
-  // open — the tap that flips parentCenter.open latches the mount, and the
+  // open — the tap that flips settingsModal.open latches the mount, and the
   // dialog's modalDialog $effect shows it as soon as it lands. The corner
-  // button that opens it (ParentHelpButton) stays eagerly mounted above.
-  let ParentCenter = $state<Component | null>(null);
-  let parentCenterEverOpened = $state(false);
+  // button that opens it (SettingsButton) stays eagerly mounted above.
+  let SettingsModal = $state<Component | null>(null);
+  let settingsModalEverOpened = $state(false);
   $effect(() => {
-    if (parentCenter.open) parentCenterEverOpened = true;
+    if (settingsModal.open) settingsModalEverOpened = true;
   });
 
   onMount(() => {
@@ -83,7 +83,7 @@
 
     const teardowns = [
       mountBootHiddenOverlays(
-        (overlay) => (ParentCenter = overlay),
+        (overlay) => (SettingsModal = overlay),
         (overlay) => (overlays = [...overlays, overlay])
       ),
       installContextMenuGuard(),
@@ -104,10 +104,10 @@
 
 <ClearButton />
 <ActionsPanel />
-<ParentHelpButton />
+<SettingsButton />
 {#each overlays as Overlay (Overlay)}
   <Overlay />
 {/each}
-{#if ParentCenter && parentCenterEverOpened}
-  <ParentCenter />
+{#if SettingsModal && settingsModalEverOpened}
+  <SettingsModal />
 {/if}

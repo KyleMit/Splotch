@@ -87,7 +87,7 @@ const BASELINE = new Map(
     // Paper-white backing behind the baked-light style-cover thumbnails.
     'lib/components/AiImagePrompt.svelte': 1,
     // Constant on-paper ink for the floating "?" button.
-    'lib/components/ParentHelpButton.svelte': 1,
+    'lib/components/SettingsButton.svelte': 1,
     // Deliberate console-key chip (dark slab + white glyph in both themes).
     'routes/dev/ai-timer/+page.svelte': 1,
   })

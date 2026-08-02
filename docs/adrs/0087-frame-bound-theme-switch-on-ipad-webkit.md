@@ -28,7 +28,7 @@ used only to locate the one-second tier.
 | 02 | Hide only the line-art overlay                                |     ~1,100 |                    ~0 | Fail; overlay was not the dominant work     |
 | 03 | Hide the canvas stack                                         |     ~1,100 |                    ~0 | Fail                                        |
 | 04 | Hide every drawing and paper presentation layer               |     ~1,100 |                    ~0 | Fail                                        |
-| 05 | Hide or close Parent Center during the mutation               |     ~1,100 |                    ~0 | Fail                                        |
+| 05 | Hide or close Settings during the mutation                    |     ~1,100 |                    ~0 | Fail                                        |
 | 06 | Remove theme-color metadata and all CSS transitions           |     ~1,100 |                    ~0 | Fail                                        |
 | 07 | Click the already-selected theme (no state change)            |       9–26 |       about −1,080 ms | Diagnostic pass                             |
 | 08 | Set `data-theme` directly without app asset effects           |      35–46 |       about −1,060 ms | Located the async asset path                |

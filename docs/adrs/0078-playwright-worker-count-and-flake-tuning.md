@@ -366,8 +366,8 @@ the button that opened it**, and `modalDialog` arms a launch dead zone at that s
 (`launchGuard`: 72px, 600ms) whose capture-phase `pointerdown` handler swallows everything inside it
 — dialog content included, deliberately, so a toddler's repeat taps cannot work the controls that
 painted under the finger (issue \#308). So for the opening frames the *whole dialog* sits in that
-dead zone. Stepping the animation by hand, the Parent Center's content pane centers **6px** from the
-launch origin at the first keyframe, 60px at 10ms, and only clears the 72px radius around 13ms.
+dead zone. Stepping the animation by hand, Settings' content pane centers **6px** from the launch
+origin at the first keyframe, 60px at 10ms, and only clears the 72px radius around 13ms.
 
 The specs read that pane's **live** rect and dispatched synthetic pointer events at it from an
 `evaluate`, which skips the actionability checks a real Playwright click performs — so they could
@@ -378,7 +378,7 @@ the zoom stays 1, which reproduces the failure exactly. `a two-finger pinch enla
 structurally identical and never failed in 70 reps — its extra `paneZoom` round trip lets the fly-in
 advance first, which is the tell that the window is about one round trip wide.
 
-**Fix.** `openParentCenter` awaits the fly-in's `Animation.finished` (`settleFlyIn` in
+**Fix.** `openSettingsModal` awaits the fly-in's `Animation.finished` (`settleFlyIn` in
 `tests/helpers.ts`). Landed, the pane rests 574px from the launch origin, so the dependency on
 animation progress is removed rather than timed. Nothing in the app changed: the dead zone
 swallowing content that is momentarily sitting on the launch button is what it is for.

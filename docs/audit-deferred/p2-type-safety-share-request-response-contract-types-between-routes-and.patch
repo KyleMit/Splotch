@@ -54,10 +54,10 @@ index 00000000..e8e6ece1
 +export type VerifyKeyResponse = { ok: true } | ApiErrorResponse;
 +
 +export type ReportResponse = { ok: true; url?: string } | ApiErrorResponse;
-diff --git a/web/src/lib/components/parent/ReportForm.svelte b/web/src/lib/components/parent/ReportForm.svelte
+diff --git a/web/src/lib/components/settings/ReportForm.svelte b/web/src/lib/components/settings/ReportForm.svelte
 index b5528457..ad9b9bfd 100644
---- a/web/src/lib/components/parent/ReportForm.svelte
-+++ b/web/src/lib/components/parent/ReportForm.svelte
+--- a/web/src/lib/components/settings/ReportForm.svelte
++++ b/web/src/lib/components/settings/ReportForm.svelte
 @@ -4,6 +4,7 @@
    import Disclosure from '../design/Disclosure.svelte';
    import StatusMessage from '../design/StatusMessage.svelte';

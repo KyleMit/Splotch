@@ -1,10 +1,10 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { adminConsole, signInToAdmin } from './admin-helpers';
-import { openParentCenter } from './helpers';
+import { openSettingsModal } from './helpers';
 
 // Axe-core scans for the adult-facing surfaces (issue #458): /privacy,
-// /android-beta, /feedback, /admin (both auth states), and the Parent Center
+// /android-beta, /feedback, /admin (both auth states), and Settings
 // dialog. The
 // toddler-facing canvas chrome is deliberately out of scope — its UX rules
 // (giant wordless buttons, no reading order) aren't WCAG's — so the Parent
@@ -90,10 +90,10 @@ test('/admin logged in has no serious accessibility violations', async ({ page }
   await expect(page.getByText(token, { exact: true })).toBeHidden();
 });
 
-test('the Parent Center has no serious accessibility violations', async ({ page }) => {
+test('Settings has no serious accessibility violations', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#drawingCanvas')).toBeVisible();
-  await openParentCenter(page);
+  await openSettingsModal(page);
 
-  await expectNoSeriousViolations(page, '#parentHelpModal');
+  await expectNoSeriousViolations(page, '#settingsModal');
 });

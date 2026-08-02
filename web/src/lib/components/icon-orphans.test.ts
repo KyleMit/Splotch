@@ -46,9 +46,8 @@ const sources = import.meta.glob<string>(
 
 // Pre-existing orphans, grandfathered rather than deleted here — this guard's
 // job is to stop *new* orphans appearing. chevron-up: the drawer's chevron is a
-// single chevron-right rotated with CSS. settings: nothing renders it; the only
-// mentions of the word are prose about the `settings` state module.
-const KNOWN_ORPHANS = ['chevron-up', 'settings'];
+// single chevron-right rotated with CSS.
+const KNOWN_ORPHANS = ['chevron-up'];
 
 // Only a quoted string literal counts — `name="close"`, `icon: 'theme-auto'`,
 // the ERASER_SIZE_ICON maps. That's the form every real reference takes, and

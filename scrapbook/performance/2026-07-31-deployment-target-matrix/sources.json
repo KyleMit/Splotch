@@ -166,7 +166,7 @@
           "kind": "full"
         },
         {
-          "source": "perf-profiles/2026-08-01T02-12-01-818Z-android-web-actions-final-action-regression-parent-settings-trace/actions.json",
+          "source": "perf-profiles/2026-08-01T02-12-01-818Z-android-web-actions-final-action-regression-settings-controls-trace/actions.json",
           "productCommit": "b91fcc08fa63",
           "kind": "focused",
           "labels": ["disable advanced controls"]

@@ -4,11 +4,11 @@
 
 ## Context
 
-The Parent Center's only "report a problem" path was a link to
-`github.com/KyleMit/Splotch/issues/new/choose`. That excludes almost everyone who would actually use
-it: a parent of a toddler rarely has a GitHub account, doesn't know the repo's issue conventions,
-and won't leave the app to file a formatted issue. We wanted an in-app form — pick bug or feature,
-type a sentence, optionally attach device info, submit — that lands as a real, labelled issue.
+Settings' only "report a problem" path was a link to `github.com/KyleMit/Splotch/issues/new/choose`.
+That excludes almost everyone who would actually use it: a parent of a toddler rarely has a GitHub
+account, doesn't know the repo's issue conventions, and won't leave the app to file a formatted
+issue. We wanted an in-app form — pick bug or feature, type a sentence, optionally attach device
+info, submit — that lands as a real, labelled issue.
 
 The blocker is auth: creating an issue needs a GitHub credential, and a static/native client can't
 hold one. GitHub write access must live server-side. Splotch already has a web-only server tier
@@ -56,9 +56,9 @@ A new `POST /api/report` endpoint (`web/src/routes/api/report/+server.ts`) recei
   `navigator`/`window`/`screen` fields plus the raw user-agent. It deliberately excludes anything
   identifying — no `Device.getId()`, no advertising id, no added IP.
 
-The form is a section in the Parent Center's About tab (`ReportForm.svelte`), not a new tab, to keep
-the tab bar uncluttered. The privacy page gained a "Sending feedback" section describing the opt-in
-path honestly.
+The form is a section in Settings' About tab (`ReportForm.svelte`), not a new tab, to keep the tab
+bar uncluttered. The privacy page gained a "Sending feedback" section describing the opt-in path
+honestly.
 
 Alternatives considered:
 

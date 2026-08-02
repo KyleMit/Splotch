@@ -93,7 +93,7 @@ re-open the question, and don't "fix" their raw palettes by migrating them to th
 
 `Button.svelte` shipped with the original decision but had no production consumers for its whole
 life — only `/dev/design` rendered it, so the primitive documented a convention that no real surface
-followed. It is now adopted by the text-labeled actions on the parent surfaces: Send report
+followed. It is now adopted by the text-labeled actions on the Settings surfaces: Send report
 (`ReportForm`), Save / Forget (`AiKeyManager`), Install Splotch (`SetupInstructions`), and both
 folder controls (`SavingSection` — Choose folder as `brand`, the selected-folder pill as `wash`).
 Each call site keeps only its **placement** (`align-self`, `flex-shrink`, the pill radius, the
@@ -111,11 +111,11 @@ the migration":
 * **Selection controls**, whichever ARIA pattern they use — the `role="radiogroup"` segments
   (`AppearanceSection`'s theme picker, `ReportForm`'s report-kind row) *and* the `aria-pressed`
   toggle segments (`ControlsSection`'s `.chip` grid, `CompactShell`'s orientation segment). All four
-  are text-labeled buttons on a parent surface, so the distinction is not how they are marked up: a
-  control that renders a **selected state** is a picker, not an action. `Button` has no selected
+  are text-labeled buttons on a Settings surface, so the distinction is not how they are marked up:
+  a control that renders a **selected state** is a picker, not an action. `Button` has no selected
   variant and shouldn't grow one — a `selected` prop would have to fight every variant's fill, and
   these four already carry their own `on`/`active` rules.
-* **`ParentCenter`'s own chrome** — the close button, sidebar nav items, hub rows, and back arrow
+* **`SettingsModal`'s own chrome** — the close button, sidebar nav items, hub rows, and back arrow
   are navigation, mostly icon-only, and already share `.modal-close-btn` / their own scoped rules.
 
 So the rule is narrower than "modal/parent/admin surfaces use `Button`": **text-labeled actions on

@@ -68,8 +68,8 @@ token guarantees the next hardcoded duplicate (a failure review has caught three
 ## Primitives
 
 Shared UI primitives live in **`web/src/lib/components/design/`**. They style themselves entirely
-from tokens and are for modal/parent surfaces — the canvas-floating controls (Actions Panel, corner
-buttons, Clear Button) keep their bespoke paper treatments, and **`/admin` is excluded**: the
+from tokens and are for modal/settings surfaces — the canvas-floating controls (Actions Panel,
+corner buttons, Clear Button) keep their bespoke paper treatments, and **`/admin` is excluded**: the
 primitives are built from themed washes, which would flip on a page that is deliberately light-only
 (see the ADR-0071 amendments).
 
@@ -92,12 +92,12 @@ Shared *global* patterns are classes in **`web/src/app.css`** rather than compon
 |                                          | `.modal-dialog` alone                                                      |
 | `.modal-shell`                           | The centered modal card — surface, radius, shadow, and re-inked            |
 |                                          | monochrome icons. Width/max-height/overflow stay per-modal. AiImagePrompt, |
-|                                          | AiImageResult, ColoringBook, ParentCenter                                  |
+|                                          | AiImageResult, ColoringBook, SettingsModal                                 |
 | `.modal-close-btn` / `.modal-close-icon` | The outlined 44px close disc in a modal's top-right corner — the same four |
 |                                          | modals                                                                     |
 | `.corner-button` / `.corner-button-icon` | Muted canvas-corner chrome: a 48px transparent button whose opacity and    |
 |                                          | icon tint step idle → hover → pressed. Drawer toggle (ActionsPanel),       |
-|                                          | Fullscreen Toggle, Parent Help Button; positioning and z-index stay        |
+|                                          | Fullscreen Toggle, Settings Button; positioning and z-index stay           |
 |                                          | per-component                                                              |
 | `.flyout-menu` / `.flyout-option`        | The popover shell and its option buttons — BrushMenu, StrokeWidthMenu      |
 

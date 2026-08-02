@@ -2,7 +2,7 @@ import Foundation
 import Capacitor
 import UIKit
 
-// Surfaces whether Guided Access is currently engaged so the Parent Center can confirm
+// Surfaces whether Guided Access is currently engaged so Settings can confirm
 // the lock is on (green check) and swap its "enable" steps for "exit" steps.
 //
 // Capacitor 8 does NOT auto-discover plugin classes — registerPlugins() only loads the

@@ -3,7 +3,7 @@ import { settings } from './settings.svelte';
 // folderSave is save-time-only, so it loads on demand and stays out of the
 // startup bundle (issue #461). The first load registers the stale-folder
 // listener: a save that discovers the chosen folder is gone (moved/deleted)
-// drops the stored handle itself, and this mirror keeps the Parent Center pill
+// drops the stored handle itself, and this mirror keeps Settings pill
 // from naming a folder that no longer receives saves. Saves reach folderSave
 // through the same module instance (screenshot.ts's static import), and on any
 // platform that can save to a folder the boot hydration below has already run
@@ -30,7 +30,7 @@ function loadFolderSave() {
 
 // These three are UI/boot entry points wired straight into onclick/onMount, so
 // a chunk-load failure must be contained here — not surface as an unhandled
-// rejection on a Parent Center tap.
+// rejection on a Settings tap.
 async function tryLoadFolderSave() {
   try {
     return await loadFolderSave();
@@ -42,7 +42,7 @@ async function tryLoadFolderSave() {
 
 // Pick (or re-pick) the optional destination folder for web saves. Must be
 // called from a click handler so the picker keeps its user activation (the
-// import resolves from the module cache — the Parent Center section that hosts
+// import resolves from the module cache — Settings section that hosts
 // this action already loaded folderSave). Keeps the current folder if the
 // parent cancels. Purely a convenience — it doesn't enable or disable any save
 // action; saves work the same with or without a folder.
@@ -63,7 +63,7 @@ export async function forgetSaveFolder() {
 }
 
 // Boot hydration (web/desktop only): read the remembered folder name from the
-// directory handle in IndexedDB into the live store so the Parent Center can
+// directory handle in IndexedDB into the live store so Settings can
 // show it. No side effects on the save features. The support check is inlined
 // (same predicate as folderSaveSupported) so unsupported platforms — every
 // phone — never fetch the folder-save chunk just to learn there's nothing to

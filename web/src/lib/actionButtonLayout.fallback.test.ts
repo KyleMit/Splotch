@@ -7,7 +7,7 @@ import {
   MAX_ACTION_BUTTON_COUNT,
   PALETTE_BAR_RESERVE,
   PALETTE_CLEARANCE,
-  PARENT_BUTTON_RESERVE,
+  SETTINGS_BUTTON_RESERVE,
   WORST_CASE_CHROME,
 } from './actionButtonLayout';
 
@@ -34,8 +34,8 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
   it('landscape fallback matches the constants', () => {
     const [landscape] = fallbackBlocks;
     expect(landscape).toContain(`${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)`);
-    // 100vw minus the right-edge Parent Help Button reserve + worst-case chrome.
-    expect(landscape).toContain(`100vw - ${PARENT_BUTTON_RESERVE + WORST_CASE_CHROME}px`);
+    // 100vw minus the right-edge Settings Button reserve + worst-case chrome.
+    expect(landscape).toContain(`100vw - ${SETTINGS_BUTTON_RESERVE + WORST_CASE_CHROME}px`);
     expect(landscape).toContain(`/ ${MAX_ACTION_BUTTON_COUNT}`);
   });
 

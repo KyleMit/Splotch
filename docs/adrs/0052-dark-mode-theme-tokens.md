@@ -9,8 +9,8 @@ this ADR's "no pre-generated inverted assets" clause. **Date:** 2026-07
 ## Context
 
 Parents asked for a dark mode with three choices — Light, Dark, or System (follow the OS) — picked
-in the Parent Center, with the drawing paper itself going dark (not pure black, texture kept) and
-the coloring pages adapting. The design questions with real alternatives:
+in Settings, with the drawing paper itself going dark (not pure black, texture kept) and the
+coloring pages adapting. The design questions with real alternatives:
 
 1. **How the theme reaches CSS.** `light-dark()` would let every color declare both values inline,
    but it needs Chrome 123 / Safari 17.5 — above the supported floor (Chrome 111 / Safari 16.4,
@@ -59,11 +59,11 @@ the duplication is the accepted cost; keep the blocks in sync.
   `docs/COMPATIBILITY.md`).
 * **Controls on the paper darken too.** The Actions Panel cards and stroke flyout use
   `--float-surface` (dark: a step *lighter* than `--paper`, since their drop shadows vanish on a
-  dark ground); corner buttons (drawer toggle, Fullscreen Toggle, Parent Help) swapped their
-  hand-tuned `invert()` icon chains for theme-token `fill`s — the old active state inverted to
-  black, invisible on dark paper. Near-black `currentColor` ink on the cards gets a light keyline
-  via `.dark-stroke` + `--dark-ink-keyline` (`isDarkInk` in `colors.svelte.ts`) — the exact mirror
-  of the existing white-ink `.white-stroke` black keyline; the token is transparent in light mode so
+  dark ground); corner buttons (drawer toggle, Fullscreen Toggle, Settings) swapped their hand-tuned
+  `invert()` icon chains for theme-token `fill`s — the old active state inverted to black, invisible
+  on dark paper. Near-black `currentColor` ink on the cards gets a light keyline via
+  `.dark-stroke` + `--dark-ink-keyline` (`isDarkInk` in `colors.svelte.ts`) — the exact mirror of
+  the existing white-ink `.white-stroke` black keyline; the token is transparent in light mode so
   the class is inert there. The **Clear Button** is the one deliberately unthemed control — its red
   danger chrome reads the same on either paper.
 * **Coloring pages stay on the DARK paper — white "chalk" line art + pre-colored NIGHT fills

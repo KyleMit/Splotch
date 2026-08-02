@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { draw, firstOpaquePixel, gotoApp, openParentCenter, PICKER_GREEN } from './helpers';
+import { draw, firstOpaquePixel, gotoApp, openSettingsModal, PICKER_GREEN } from './helpers';
 
 // WebKit critical-path smoke — the only spec the `webkit` project runs (see
 // playwright.config.ts). The rest of the E2E suite is Chromium-only, but
 // Safari/iOS is the floor engine docs/COMPATIBILITY.md worries about most, so
 // this tiny subset proves the core toddler path — boot, draw a stroke, open
-// the Parent Center and Color Picker dialogs — works on the WebKit engine.
+// Settings and Color Picker dialogs — works on the WebKit engine.
 //
 // Keep it small and WebKit-portable: no CDP sessions (the viewport-rotation
 // coverage in flows-coloring-book.spec.ts and flows-magic-brush.spec.ts is
@@ -14,9 +14,11 @@ import { draw, firstOpaquePixel, gotoApp, openParentCenter, PICKER_GREEN } from 
 // rasterizer. The shared helpers imported above are held to the same
 // WebKit-portable bar.
 
-test('the app boots: canvas, palette, and Parent Center button render', async ({ page }) => {
+test('the app boots: canvas, palette, and Settings button render', async ({ page }) => {
   await gotoApp(page);
-  await expect(page.getByRole('button', { name: 'Parent Center' })).toBeVisible();
+  const settingsButton = page.getByRole('button', { name: 'Settings' });
+  await expect(settingsButton).toBeVisible();
+  await expect(settingsButton.locator('[data-icon="settings"]')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Custom Color' })).toBeVisible();
 });
 
@@ -31,9 +33,10 @@ test('a pointer stroke puts ink on the canvas', async ({ page }) => {
   await expect.poll(() => firstOpaquePixel(page)).not.toBeNull();
 });
 
-test('the Parent Center dialog opens and closes', async ({ page }) => {
+test('Settings dialog opens and closes', async ({ page }) => {
   await gotoApp(page);
-  const modal = await openParentCenter(page);
+  const modal = await openSettingsModal(page);
+  await expect(modal.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
   await modal.getByRole('button', { name: 'Close' }).click();
   await expect(modal).not.toBeVisible();
 });

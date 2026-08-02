@@ -119,8 +119,8 @@ Verifies a parent-supplied Gemini API key with a minimal live call. Rate-limited
 
 ### `POST /api/report`
 
-Opens a GitHub issue from the in-app "report a bug / suggest a feature" form (Parent Center → About
-→ Send Feedback). Unauthenticated and a *write*, so it is rate-limited per IP with a deliberately
+Opens a GitHub issue from the in-app "report a bug / suggest a feature" form (Settings → About →
+Send Feedback). Unauthenticated and a *write*, so it is rate-limited per IP with a deliberately
 tight budget (5/min, vs the oracles' 10). Every issue is labelled `user-report` plus `type:bug` /
 `type:feature` (`docs/ISSUE-WORKFLOW.md`; both labels also live in `.github/labels.yml`).
 

@@ -12,10 +12,10 @@ index da4375b4..63d70405 100644
    import { resetToolAfterClear } from '$lib/state/tool.svelte';
 
    let containerEl: HTMLDivElement;
-diff --git a/web/src/lib/components/parent/CompactShell.svelte b/web/src/lib/components/parent/CompactShell.svelte
+diff --git a/web/src/lib/components/settings/CompactShell.svelte b/web/src/lib/components/settings/CompactShell.svelte
 index 85b8e358..5c27a779 100644
---- a/web/src/lib/components/parent/CompactShell.svelte
-+++ b/web/src/lib/components/parent/CompactShell.svelte
+--- a/web/src/lib/components/settings/CompactShell.svelte
++++ b/web/src/lib/components/settings/CompactShell.svelte
 @@ -13,6 +13,7 @@
    } from '$lib/state/settings.svelte';
    import { resolvedTheme } from '$lib/state/appearance.svelte';

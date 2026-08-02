@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { rotateViewportViaCdp } from './cdp';
-import { draw, gotoApp, openParentCenter, renderedCanvasHandle } from './helpers';
+import { draw, gotoApp, openSettingsModal, renderedCanvasHandle } from './helpers';
 
 import {
   applyFarmPage,
@@ -238,7 +238,7 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
     };
   });
 
-  await openParentCenter(page);
+  await openSettingsModal(page);
   await page.locator('#themeOption-dark').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(overlay).toHaveAttribute('src', /(?<!\.dark)\.overlay\.webp$/);

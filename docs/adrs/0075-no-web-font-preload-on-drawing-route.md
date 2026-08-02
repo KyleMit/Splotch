@@ -61,8 +61,8 @@ motivated the change was a single bad-variance run (reproduced here once as SI 3
   paint never uses is the kind of thing Lighthouse's "preloaded but not used" heuristic exists to
   catch.
 * − The font still isn't fetched until the idle warm-up runs (~1.6–1.9 s). Acceptable: the first
-  text-bearing surface is a parent-facing dialog (Parent Center, AI prompts) opened well after boot,
-  by which point the warm-up has long since resolved.
+  text-bearing surface is a parent-facing dialog (Settings, AI prompts) opened well after boot, by
+  which point the warm-up has long since resolved.
 * − If a future redesign puts Quicksand text on the initial drawing viewport, this decision must be
   revisited — the font would then be on the visual path and a scoped preload could help. Re-measure
   before assuming.

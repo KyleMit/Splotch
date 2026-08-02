@@ -16,7 +16,7 @@ Alternatives considered for the violation data source:
   sink).
 * **A soak period on report-only with reporting wired, flip later** — rejected in favor of flipping
   now because a deliberate Playwright sweep of every app surface (draw/undo/clear, coloring book,
-  screenshot save, AI dialog flow, Parent Center, `/admin` full session, `/privacy`, service-worker
+  screenshot save, AI dialog flow, Settings, `/admin` full session, `/privacy`, service-worker
   registration and SW-controlled repeat visit) against the exact candidate enforcing policy on the
   production build produced zero violations. Reporting stays wired after the flip, so residual
   real-world breakage still surfaces in the function log.

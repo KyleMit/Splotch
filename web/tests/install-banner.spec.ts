@@ -14,8 +14,8 @@ test.use({
 
 // The banner's exit is mostly a fixed in-app wait, not work: InstallBanner
 // spends PARTING_MESSAGE_MS (4s) showing the parting note, then
-// BANNER_SHRINK_EXIT_MS (550ms) shrinking the pill into the Parent Help button —
-// the auto-clear path this test drives sets exitIntoParentButton, so it takes
+// BANNER_SHRINK_EXIT_MS (550ms) shrinking the pill into Settings button —
+// the auto-clear path this test drives sets exitIntoSettingsButton, so it takes
 // that exit rather than the shorter plain fly-down. So ~4.6s of any budget here is
 // floor that contention cannot compress, and only what is left absorbs
 // inflation. Measured at 8 workers this step took up to 5.0s — half of the 10s it
@@ -68,7 +68,7 @@ test('the install banner parts after five additional strokes', async ({ page }) 
   }
 
   await expect(banner.locator('.install-parting')).toContainText(
-    'No rush — these steps are always in the Parent Center.'
+    'No rush — these steps are always in Settings.'
   );
   await expect
     .poll(() => page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS.installDismissed))

@@ -30,7 +30,7 @@ describe('findStrayReleasePaths', () => {
       ' M package.json',
       ' M package-lock.json',
       ' M web/src/lib/releases.json',
-      ' M web/src/lib/components/parent/CurrentReleaseNotes.svelte',
+      ' M web/src/lib/components/settings/CurrentReleaseNotes.svelte',
       ' M android/app/build.gradle',
       ' M ios/App/project.pbxproj',
       ' M fastlane/Fastfile',

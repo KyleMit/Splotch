@@ -66,7 +66,7 @@ const BOOL_SETTINGS = {
   pencilEraserEnabled: [STORAGE_KEYS.pencilEraserEnabled, true],
   // Sticky per-device detection flag, set the first time an Apple Pencil
   // double-tap fires. Not a user toggle itself — it's what reveals the
-  // pencilEraserEnabled row in the Parent Center.
+  // pencilEraserEnabled row in Settings.
   applePencilSeen: [STORAGE_KEYS.applePencilSeen, false],
 } satisfies Record<string, [StorageKey, boolean]>;
 
@@ -125,7 +125,7 @@ interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey
   // Desktop web only: the name of the optional folder web saves are written into
   // (File System Access API). Not persisted here — derived from the directory
   // handle in IndexedDB and hydrated on boot by hydrateSaveFolder(). Null when no
-  // folder is set, in which case saves just download. Drives the Parent Center
+  // folder is set, in which case saves just download. Drives Settings
   // folder display; nothing else depends on it.
   saveFolderName: string | null;
 }

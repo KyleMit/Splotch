@@ -1,4 +1,4 @@
-# ADR-0076: Scope the Toddler Zoom-Lock to Element Level (Drop `user-scalable=no`), Add Scoped Pinch-to-Enlarge in the Parent Center
+# ADR-0076: Scope the Toddler Zoom-Lock to Element Level (Drop `user-scalable=no`), Add Scoped Pinch-to-Enlarge in Settings
 
 **Status:** Active **Date:** 2026-07
 
@@ -11,8 +11,8 @@ page out from under them — but it carried two costs ADR-0041 accepted as a del
 
 * It is the **only** Lighthouse accessibility deduction (score **92, not 100**) on both form
   factors, flagged as `[user-scalable="no"]`.
-* **No** part of the UI — including the adult-facing `/privacy`, `/admin`, and the Parent Center —
-  can be pinch-zoomed, so a low-vision parent can't enlarge text anywhere.
+* **No** part of the UI — including the adult-facing `/privacy`, `/admin`, and Settings — can be
+  pinch-zoomed, so a low-vision parent can't enlarge text anywhere.
 
 ADR-0041 explicitly anticipated this revisit: it listed "scope the zoom lock to the canvas only" as
 a rejected-for-now alternative and said that if the accessibility gain were later judged worth it,
@@ -68,9 +68,9 @@ This clears the Lighthouse deduction (92 → 100 — confirmed by a category run
 audit passes).
 
 **Tier 2 — app-controlled zoom inside the drawing page's overlays.** Because browser zoom must stay
-off on `/` (no reset API), the Parent Center gets its own zoom that resets cleanly. A new action
-`web/src/lib/actions/pinchTextZoom.svelte.ts` drives CSS `zoom` on a `.pc-zoom` wrapper inside the
-scrolling pane (`web/src/lib/components/ParentCenter.svelte`). Invariants:
+off on `/` (no reset API), Settings gets its own zoom that resets cleanly. A new action
+`web/src/lib/actions/pinchTextZoom.svelte.ts` drives CSS `zoom` on a `.settings-zoom` wrapper inside
+the scrolling pane (`web/src/lib/components/SettingsModal.svelte`). Invariants:
 
 * **One finger never engages** — a single pointer falls through to native scrolling; only a genuine
   two-finger pinch sets `zoom`. This is the key difference from the transform-based `pinchZoom`
@@ -85,11 +85,12 @@ scrolling pane (`web/src/lib/components/ParentCenter.svelte`). Invariants:
   reach the canvas.
 
 Coverage: gesture math is unit-tested (`pinchTextZoom.svelte.test.ts`); an E2E synthesizes a
-two-finger spread and asserts the pane enlarges then resets on close (`tests/parent-zoom.spec.ts`);
-`tests/page.spec.ts` asserts the viewport meta carries neither attribute and `/privacy` permits
-touch zoom; `tests/multitouch.spec.ts` asserts `visualViewport.scale` stays 1 after a five-pointer
-spread. CSS `zoom` is registered in `docs/COMPATIBILITY.md` (above the Firefox 114 floor —
-standardized in Firefox 126; below that it is a graceful no-op).
+two-finger spread and asserts the pane enlarges then resets on close
+(`tests/settings-zoom.spec.ts`); `tests/page.spec.ts` asserts the viewport meta carries neither
+attribute and `/privacy` permits touch zoom; `tests/multitouch.spec.ts` asserts
+`visualViewport.scale` stays 1 after a five-pointer spread. CSS `zoom` is registered in
+`docs/COMPATIBILITY.md` (above the Firefox 114 floor — standardized in Firefox 126; below that it is
+a graceful no-op).
 
 ## How the zoom model works
 
@@ -137,9 +138,9 @@ viewport:
   **fixed-size** AI image preview. A CSS `transform: translate() scale()` on an inner layer; the
   surface stays at scale 1 as a stable coordinate reference; pan is clamped to the surface bounds.
   It owns its surface with `touch-action: none` and pans with one finger once zoomed.
-* `pinchTextZoom` (`lib/actions/pinchTextZoom.svelte.ts`) — for the **scrollable** Parent Center
-  pane. Drives CSS `zoom` (not a transform), which reflows and grows the scroll container's extent,
-  so enlarged text stays reachable by ordinary one-finger scrolling — no custom pan, native momentum
+* `pinchTextZoom` (`lib/actions/pinchTextZoom.svelte.ts`) — for the **scrollable** Settings pane.
+  Drives CSS `zoom` (not a transform), which reflows and grows the scroll container's extent, so
+  enlarged text stays reachable by ordinary one-finger scrolling — no custom pan, native momentum
   preserved. It deliberately does **not** reuse `createPinchZoom`, whose pan clamp assumes the
   target fits the surface at scale 1 (false for a taller-than-viewport document), and it never
   intercepts a single pointer, so native scroll survives.
@@ -162,8 +163,8 @@ Recorded because each is a natural next idea, and each fails on a fact above:
   coordinates are untouched), so the coordinate handler is a no-op; and (2) the thing that *would*
   need resetting is the zoom level, and `visualViewport.scale` cannot be set, so native zoom can't
   be reset at all. Rejected.
-* **Allow browser zoom inside a Parent Center overlay only.** Same no-reset wall: a parent who
-  zoomed then closed the overlay leaves the *canvas* zoomed with no recovery. Hence the overlays use
+* **Allow browser zoom inside a Settings overlay only.** Same no-reset wall: a parent who zoomed
+  then closed the overlay leaves the *canvas* zoomed with no recovery. Hence the overlays use
   app-controlled zoom (CSS transform / CSS `zoom`) instead of browser zoom.
 * **Tier 3 — make the canvas itself a pan/zoom drawing surface, as a feature.** This is the *only*
   architecture where "allow zoom + reset" works: the engine would draw in canvas-space through an
@@ -197,5 +198,5 @@ Recorded because each is a natural next idea, and each fails on a fact above:
 * `−` CSS `zoom` enlarges the box (it does not re-wrap text to the pane width), so a strongly
   enlarged pane can require horizontal as well as vertical scrolling — acceptable for an adult
   utility surface, and the panes were switched to `overflow: auto` to allow it.
-* `−` On Firefox 114–125 the Parent Center enlarge is inert (no zoom); scrolling and everything else
-  are unaffected.
+* `−` On Firefox 114–125 Settings enlarge is inert (no zoom); scrolling and everything else are
+  unaffected.

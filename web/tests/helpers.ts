@@ -114,13 +114,13 @@ async function settleFlyIn(dialog: Locator) {
   );
 }
 
-// Open the Parent Center robustly and return its modal locator. It idle-mounts
+// Open Settings robustly and return its modal locator. It idle-mounts
 // on first open (ADR-0049), so the first click can be lost before its handler is
 // wired — retryOpen rides that out and skips the click when it's already open.
-export async function openParentCenter(page: Page) {
-  const modal = page.locator('#parentHelpModal');
+export async function openSettingsModal(page: Page) {
+  const modal = page.locator('#settingsModal');
   await retryOpen(modal, () =>
-    page.getByRole('button', { name: 'Parent Center' }).click({ timeout: 3000 })
+    page.getByRole('button', { name: 'Settings' }).click({ timeout: 3000 })
   );
   await settleFlyIn(modal);
   return modal;

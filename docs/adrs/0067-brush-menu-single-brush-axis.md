@@ -50,7 +50,7 @@ keeps its independent level.
 **First paint.** The Brush Button's face can't swap its `{@html}` icon on client-only state
 (hydration caveat in `.claude/rules/svelte.md`), so all four icons are in the DOM and CSS shows the
 one matching `data-brush` — on `<html>` for the app.html pre-paint seed (absent = pen), then on the
-panel after its hydration marker appears (ADR-0040). The Parent Center's existing Eraser toggle
+panel after its hydration marker appears (ADR-0040). Settings' existing Eraser toggle
 (`data-off-eraser`) hides the eraser's menu entry instead of a top-level button.
 
 ## Alternatives considered

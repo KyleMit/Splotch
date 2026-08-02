@@ -6,7 +6,7 @@ is generated from them:
 
 | Target                                 | Generated artifact                                             |
 | -------------------------------------- | -------------------------------------------------------------- |
-| In-app Parent Center ("What's New")    | `web/src/lib/releases.json` + generated release-note component |
+| In-app Settings ("What's New")         | `web/src/lib/releases.json` + generated release-note component |
 | Google Play "What's new"               | `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` |
 | App Store "What's New in This Version" | `fastlane/metadata/en-US/release_notes.txt`                    |
 | GitHub Release                         | the file body, via `gh release create`                         |

@@ -2,18 +2,18 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
-import { gotoApp, openParentCenter, retryOpen } from './helpers';
+import { gotoApp, openSettingsModal, retryOpen } from './helpers';
 
 async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
-  await openParentCenter(page);
-  // The Parent Center is a section list — a sidebar item on tablet/desktop, a
+  await openSettingsModal(page);
+  // Settings is a section list — a sidebar item on tablet/desktop, a
   // hub row on phone. Either way the control carries the section label; opening
   // it (sidebar select or phone drill-in) reveals the section content.
   //
   // Retried rather than clicked once: the dialog itself mounts on first open
   // (ADR-0049) and flies in, so this click lands on markup that is still
   // arriving, and a lost one would leave the section closed with nothing to
-  // re-open it — the same hazard openParentCenter above rides out.
+  // re-open it — the same hazard openSettingsModal above rides out.
   await retryOpen(page.locator(expectedField), () =>
     page.getByRole('button', { name: 'AI Art' }).click({ timeout: 3000 })
   );
@@ -28,10 +28,10 @@ async function submitAiKey(page: Page, value: string) {
   await save.click();
 }
 
-test('parent center sidebar switches the content pane (tablet layout)', async ({ page }) => {
+test('Settings sidebar switches the content pane (tablet layout)', async ({ page }) => {
   await gotoApp(page);
 
-  const modal = await openParentCenter(page);
+  const modal = await openSettingsModal(page);
   // The default Playwright viewport is desktop-width, so the two-pane shell with
   // a persistent sidebar renders and the first section is selected.
   await expect(modal).toHaveClass(/wide/);
@@ -79,7 +79,7 @@ test("What's New formats the current release date without runtime locale initial
   });
   await gotoApp(page);
 
-  await openParentCenter(page);
+  await openSettingsModal(page);
   await page.getByRole('button', { name: "What's New" }).click();
 
   const dates = page.locator('.whats-new-date');
@@ -96,15 +96,15 @@ test('setting card spacing only applies to direct section siblings', async ({ pa
   );
   await gotoApp(page);
 
-  const modal = await openParentCenter(page);
-  const directCards = page.locator('.pc-pane .setting-group > .setting');
+  const modal = await openSettingsModal(page);
+  const directCards = page.locator('.settings-pane .setting-group > .setting');
   await expect(directCards).toHaveCount(3);
   await expect(directCards.nth(1)).toHaveCSS('margin-top', '6px');
   await expect(directCards.nth(2)).toHaveCSS('margin-top', '6px');
 
   await page.getByRole('button', { name: 'AI Art' }).click();
   await expect(page.locator('#aiCodeActive')).toBeVisible();
-  const aiFeatureCards = page.locator('.pc-pane .ai-controls > .setting');
+  const aiFeatureCards = page.locator('.settings-pane .ai-controls > .setting');
   await expect(aiFeatureCards).toHaveCount(3);
   await expect(aiFeatureCards.nth(1)).toHaveCSS('margin-top', '0px');
   await expect(aiFeatureCards.nth(2)).toHaveCSS('margin-top', '0px');
@@ -118,11 +118,11 @@ test('setting card spacing only applies to direct section siblings', async ({ pa
   await expect(quickToggleCells.nth(3)).toHaveCSS('margin-top', '0px');
 });
 
-test('parent center hub drills into a section and back (phone layout)', async ({ page }) => {
+test('Settings hub drills into a section and back (phone layout)', async ({ page }) => {
   await page.setViewportSize({ width: 460, height: 852 });
   await gotoApp(page);
 
-  const modal = await openParentCenter(page);
+  const modal = await openSettingsModal(page);
   // Below the breakpoint the hub renders instead of the sidebar.
   await expect(modal).not.toHaveClass(/wide/);
   await expect(page.locator('.hub-list')).toBeVisible();
@@ -140,24 +140,24 @@ test('parent center hub drills into a section and back (phone layout)', async ({
   await expect(page.locator('#advancedControlsToggle')).toHaveCount(0);
 });
 
-async function openParentCenterCompact(page: Page) {
+async function openSettingsModalCompact(page: Page) {
   await page.setViewportSize({ width: 852, height: 390 });
   await gotoApp(page);
-  return openParentCenter(page);
+  return openSettingsModal(page);
 }
 
 // A landscape phone has the width of the tablet shell but almost none of its
-// height, so the full section list is unusably cramped there. The Parent Center
+// height, so the full section list is unusably cramped there. Settings
 // collapses to a strip of quick toggles plus a pointer to portrait; a landscape
 // tablet (height ≥ 600px, e.g. the default desktop viewport above) keeps the
 // two-pane shell.
 test('landscape phone renders compact quick toggles', async ({ page }) => {
-  const modal = await openParentCenterCompact(page);
+  const modal = await openSettingsModalCompact(page);
   await expect(modal).toHaveClass(/compact/);
 
   // Quick toggles render instead of the hub list or the sidebar.
   await expect(page.locator('.hub-list')).toHaveCount(0);
-  await expect(page.locator('.pc-nav')).toHaveCount(0);
+  await expect(page.locator('.settings-nav')).toHaveCount(0);
   await expect(page.locator('#quickSoundToggle')).toBeVisible();
   await expect(page.locator('#quickNightToggle')).toBeVisible();
   await expect(page.locator('#quickAdvancedControlsToggle')).toBeVisible();
@@ -171,7 +171,7 @@ test('landscape phone renders compact quick toggles', async ({ page }) => {
 });
 
 test('the orientation lock selector cycles portrait, landscape, and off', async ({ page }) => {
-  await openParentCenterCompact(page);
+  await openSettingsModalCompact(page);
 
   // A phone-sized screen defaults to a portrait lock, so Portrait starts active.
   await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'true');
@@ -193,8 +193,8 @@ test('the orientation lock selector cycles portrait, landscape, and off', async 
   await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('quick-toggle changes persist into the full portrait Parent Center', async ({ page }) => {
-  await openParentCenterCompact(page);
+test('quick-toggle changes persist into the full portrait Settings', async ({ page }) => {
+  await openSettingsModalCompact(page);
 
   // A quick toggle drives the same persisted setting as the full section...
   await page.locator('#quickAdvancedControlsToggle').click();
@@ -252,7 +252,7 @@ test('a lock-incapable device fills the empty quick-toggle slot with a mini Abou
   });
   await gotoApp(page);
 
-  const modal = await openParentCenter(page);
+  const modal = await openSettingsModal(page);
   await expect(modal).toHaveClass(/compact/);
 
   // The orientation lock selector is gone, and the About cell keeps the grid at
@@ -321,7 +321,7 @@ test('only the current API key verification can persist across a close and reope
   await expect.poll(() => requestCount).toBe(1);
 
   await page.getByRole('button', { name: 'Close' }).click();
-  await expect(page.locator('#parentHelpModal')).toBeHidden();
+  await expect(page.locator('#settingsModal')).toBeHidden();
   await openAiSettings(page);
   await submitAiKey(page, 'AIza-credential-BBBB');
 

@@ -156,7 +156,7 @@ const ZOOM_FIX_NOTES = [
     'button that opened it, and <code>modalDialog</code> arms a launch dead zone at that same point ' +
     '(72px, 600ms) whose capture-phase <code>pointerdown</code> handler swallows everything inside ' +
     'it — dialog content included, deliberately. So for the opening frames the whole dialog sits in ' +
-    'that dead zone: the Parent Center’s pane centers <b>6px</b> from the launch origin at the first ' +
+    'that dead zone: Settings’ pane centers <b>6px</b> from the launch origin at the first ' +
     'keyframe and only clears the radius ~13ms in. The specs read that pane’s live rect and ' +
     'dispatched synthetic pointer events at it, skipping the actionability checks a real click ' +
     'performs — so they aimed into the guard and the pinch did nothing.',

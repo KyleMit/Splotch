@@ -283,17 +283,16 @@ npm run perf:ipad:actions --ignore-scripts -- --device-id=<UDID> \
 ```
 
 The default four-repeat suite retains one warmup and three scored samples across the action drawer,
-palette, brushes, stroke width, Parent Center and every section, themes, coloring-page
-selection/removal, screenshot, undo, drag-to-clear, and rotation. It writes `actions.json` and fails
-a grouped action when frame P95 exceeds 20 ms or the first/worst frame exceeds 33.5 ms. Use
-`--report-only` for a broad discovery sweep, then `--actions=` for one-change trials against the
-failing family.
+palette, brushes, stroke width, Settings and every section, themes, coloring-page selection/removal,
+screenshot, undo, drag-to-clear, and rotation. It writes `actions.json` and fails a grouped action
+when frame P95 exceeds 20 ms or the first/worst frame exceeds 33.5 ms. Use `--report-only` for a
+broad discovery sweep, then `--actions=` for one-change trials against the failing family.
 
 The rAF recorder runs inside MobileSafari, so WebDriver's Mac/device round-trip is not part of the
 frame score. The reported first-observed readiness is only an upper bound: the driver must return
 from native context before it can observe the DOM condition. Drawing controls use native XCUITest
 pointer sequences because `scribbleTap` intentionally ignores an element-click pointer surrogate;
-ordinary dialog and Parent Center controls use semantic WebDriver clicks.
+ordinary dialog and Settings controls use semantic WebDriver clicks.
 
 For a hosted real-device endpoint, pass a credentialed `--appium-url=`,
 `--capabilities-file=/path/outside/repo/provider.json`, and a preview URL the device can reach. ADR

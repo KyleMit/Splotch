@@ -54,8 +54,7 @@
     <p>
       Splotch has an optional “magic image” button that re-imagines a child's drawing as a polished
       illustration. A grown-up has to switch it on first — the button stays hidden until an access
-      code or Gemini key is entered in the Parent Center — and it only ever runs when someone taps
-      it.
+      code or Gemini key is entered in Settings — and it only ever runs when someone taps it.
     </p>
     <ul>
       <li>
@@ -75,11 +74,11 @@
         Google's, not ours.
       </li>
       <li>
-        If you've added your <em>own</em> Gemini key in the Parent Center, the drawing still passes
-        through our service on the way to Google, along with your key — which we use for that one
-        request and never store. It reaches Google under <em>your</em> account and the terms that apply
-        to it, rather than ours. On a free Gemini key, those terms let Google use the content to improve
-        its own products, so it's worth reading them before you add one.
+        If you've added your <em>own</em> Gemini key in Settings, the drawing still passes through
+        our service on the way to Google, along with your key — which we use for that one request
+        and never store. It reaches Google under <em>your</em> account and the terms that apply to it,
+        rather than ours. On a free Gemini key, those terms let Google use the content to improve its
+        own products, so it's worth reading them before you add one.
       </li>
       <li>
         We keep a simple count of how often each access code is used, purely to prevent abuse —
@@ -97,8 +96,8 @@
 
     <h2>Sending feedback</h2>
     <p>
-      Grown-ups can report a bug or suggest a feature from the Parent Center. When you tap “Send
-      report”, only what you type is sent, so we can post it as an issue on our
+      Grown-ups can report a bug or suggest a feature from Settings. When you tap “Send report”,
+      only what you type is sent, so we can post it as an issue on our
       <strong>public</strong> issue tracker on GitHub, where anyone can read it. Please don't type personal
       details (like a name or email address) into a report — the form reminds you of this too.
     </p>

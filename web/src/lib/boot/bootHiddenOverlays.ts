@@ -5,11 +5,11 @@ import { scheduleIdle } from '$lib/idle';
 // at idle so the ~470 ms first-load hydration long task doesn't pay for subtrees
 // that are invisible until a tap or a few strokes later. One overlay per idle
 // callback: mounting them all at once just relocates a long task to idle, where
-// it would jank a stroke already in progress. ParentCenter is handed back
+// it would jank a stroke already in progress. SettingsModal is handed back
 // separately — it's too heavy even for an idle slice and waits for its first
 // open.
 export function mountBootHiddenOverlays(
-  onParentCenter: (overlay: Component) => void,
+  onSettingsModal: (overlay: Component) => void,
   onOverlay: (overlay: Component) => void
 ): () => void {
   // The cancel handle scheduleIdle returns can't reach the async import().then
@@ -19,7 +19,7 @@ export function mountBootHiddenOverlays(
   scheduleIdle(() => {
     import('$lib/components/bootHiddenOverlays')
       .then((module) => {
-        onParentCenter(module.ParentCenter);
+        onSettingsModal(module.SettingsModal);
         const queue = [
           module.ColorPicker,
           module.ColoringBook,
@@ -38,7 +38,7 @@ export function mountBootHiddenOverlays(
       })
       .catch((err) => {
         // A failed chunk load leaves the overlays unmounted for this session;
-        // surface it rather than silently losing the Parent Center et al.
+        // surface it rather than silently losing Settings et al.
         console.error('Boot-hidden overlay chunk failed to load:', err);
       });
   });
