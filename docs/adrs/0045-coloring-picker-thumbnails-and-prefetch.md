@@ -143,6 +143,9 @@ picker thumbnails remain unchanged.
   **Measured impact** below).
 * **+** Save and Magic-fill state follow the same ready gate: a pending composition cannot export a
   thumbnail or paint with the previous page's fill.
+* **−** A Magic stroke made during that gate is recorded as an undoable command but stays invisible
+  until the selected fill raster is ready; the ready repaint reveals it against the new page. This
+  preserves the child's gesture and Undo entry instead of dropping input based on network timing.
 * **+** One derivation point (`thumbPath` + `bookAssetPaths`) keeps the catalog, the asset check,
   and the native strip in agreement automatically.
 * **−** ~100 picker-thumbnail binary files and roughly a doubling of the picker-facing coloring
