@@ -135,21 +135,27 @@ test('a save during overlay decode omits the overlay instead of capturing a thum
     await expect(page.locator('#coloringOverlay')).toHaveAttribute('src', '');
 
     await page.evaluate(() => {
-      window.createImageBitmap = new Proxy(window.createImageBitmap, {
-        apply(target, thisArg, args) {
-          const source = args[0];
-          if (source instanceof HTMLImageElement && source.id === 'coloringOverlay') {
-            document.documentElement.dataset.overlayBitmapCaptured = 'true';
-          }
-          return Reflect.apply(target, thisArg, args);
-        },
-      });
+      const probeDrawImage = (prototype: Pick<CanvasRenderingContext2D, 'drawImage'>) => {
+        prototype.drawImage = new Proxy(prototype.drawImage, {
+          apply(target, thisArg, args) {
+            const source = args[0];
+            if (source instanceof HTMLImageElement && source.id === 'coloringOverlay') {
+              document.documentElement.dataset.overlayCompositedIntoExport = 'true';
+            }
+            return Reflect.apply(target, thisArg, args);
+          },
+        });
+      };
+      probeDrawImage(CanvasRenderingContext2D.prototype);
+      if (typeof OffscreenCanvasRenderingContext2D !== 'undefined') {
+        probeDrawImage(OffscreenCanvasRenderingContext2D.prototype);
+      }
     });
     const download = page.waitForEvent('download');
     await page.locator('#screenshotButton').click();
     await download;
 
-    await expect(page.locator('html')).not.toHaveAttribute('data-overlay-bitmap-captured');
+    await expect(page.locator('html')).not.toHaveAttribute('data-overlay-composited-into-export');
   } finally {
     releaseFullImage();
   }
