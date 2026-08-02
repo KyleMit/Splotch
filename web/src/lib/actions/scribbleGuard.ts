@@ -164,12 +164,17 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
     if (!press || e.pointerId !== press.pointerId) return;
     const now = Date.now();
     const jump = Math.hypot(e.clientX - press.lastX, e.clientY - press.lastY);
-    const isMissingPenLift =
+    let isMissingPenLift = false;
+    if (
       press.pointerType === 'pen' &&
       e.pointerType === 'pen' &&
       e.buttons !== 0 &&
-      !press.dragged &&
-      pointerWasResumed(now - press.lastTime, jump, minViewportSide());
+      !press.dragged
+    ) {
+      const viewportSide = minViewportSide();
+      isMissingPenLift =
+        viewportSide > 0 && pointerWasResumed(now - press.lastTime, jump, viewportSide);
+    }
 
     if (isMissingPenLift) {
       // The engine's window-capture adopter runs first; for a control-targeted

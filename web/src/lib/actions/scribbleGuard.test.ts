@@ -280,6 +280,33 @@ describe('scribbleTap', () => {
     expect(activate).not.toHaveBeenCalled();
   });
 
+  it.each([0, -1])(
+    'falls back to drag classification when the viewport side is %s',
+    (viewportSide) => {
+      vi.useFakeTimers();
+      vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(viewportSide);
+      vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(viewportSide);
+      const { el, activate } = tapElement();
+      vi.mocked(document.elementFromPoint).mockImplementation((x) => (x < 20 ? el : document.body));
+      el.dispatchEvent(
+        pointerEvent('pointerdown', 1, { pointerType: 'pen', buttons: 1, clientX: 10 })
+      );
+      vi.advanceTimersByTime(POINTER_RESUME_GAP_MS + 1);
+      const drag = pointerEvent('pointermove', 1, {
+        pointerType: 'pen',
+        buttons: 1,
+        clientX: 30,
+      });
+      window.dispatchEvent(drag);
+      expect(drag.defaultPrevented).toBe(false);
+      expect(activate).not.toHaveBeenCalled();
+      expect(forgetPenPointer).not.toHaveBeenCalled();
+      expect(flushSync).not.toHaveBeenCalled();
+      window.dispatchEvent(pointerEvent('pointerup', 1, { clientX: 10 }));
+      expect(activate).not.toHaveBeenCalled();
+    }
+  );
+
   it('does not reinterpret a dragged pen as a tap after a later idle jump', () => {
     vi.useFakeTimers();
     const { el, activate } = tapElement();
