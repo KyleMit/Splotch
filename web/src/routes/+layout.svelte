@@ -18,7 +18,7 @@
 
   // @font-face only fetches a font when text using it is first painted. The
   // drawing screen has no visible text, so Quicksand wouldn't download until a
-  // text-bearing dialog (Parent Center, AI prompts) first opens — flashing the
+  // text-bearing dialog (Settings, AI prompts) first opens — flashing the
   // system fallback for a beat. Warm it in the background at boot so it's ready.
   onMount(() => {
     if ('fonts' in document) {

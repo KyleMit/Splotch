@@ -132,8 +132,8 @@ callback a timeout.
 Two un-retried opens against lazily-wired controls are now retried, per the flake checklist in
 `.claude/rules/testing.md`: the colour picker in `flows-palette-brush` (`gotoApp` returns on the
 prerendered canvas, so a click can land before the `scribbleTap` action exists and be lost outright
-— the sibling keyboard test already opened it this way) and the Parent Center's AI Art section in
-`flows-parent-center` (the dialog mounts on first open, ADR-0049, and flies in).
+— the sibling keyboard test already opened it this way) and Settings' AI Art section in
+`flows-settings` (the dialog mounts on first open, ADR-0049, and flies in).
 
 ## Consequences
 

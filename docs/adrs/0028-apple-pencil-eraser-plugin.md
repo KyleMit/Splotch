@@ -33,9 +33,9 @@ tool state.
   confused, so parents need an off switch — but only the minority of devices have a pencil, so a
   permanent toggle would be clutter for everyone else. There is no reliable web-exposed API to ask
   "is an Apple Pencil paired," so instead of proactive detection we detect **lazily**: the first
-  double-tap sets a sticky per-device flag, and the Parent Center toggle appears only once that flag
-  is set. The feature defaults **on** so it works out of the box; the very first double-tap both
-  erases and reveals the off switch.
+  double-tap sets a sticky per-device flag, and Settings toggle appears only once that flag is set.
+  The feature defaults **on** so it works out of the box; the very first double-tap both erases and
+  reveals the off switch.
 
 ## Decision
 
@@ -80,8 +80,8 @@ to the on-screen button), keeping the toggle logic in one unit-testable place.
 * **+** On iPad with an Apple Pencil 2 / Pro, a double-tap toggles pen ↔ eraser with a haptic tick,
   matching the on-screen button — no web/Android impact.
 * **+** Parents get an off switch that only shows up on devices where it's relevant (a pencil has
-  been used), so the Parent Center stays uncluttered for the finger-only majority while giving
-  pencil households a way to stop accidental tool-flipping.
+  been used), so Settings stays uncluttered for the finger-only majority while giving pencil
+  households a way to stop accidental tool-flipping.
 * **+** Extends ADR-0027's local-plugin pattern to **event-emitting** plugins (`notifyListeners` + a
   JS `addListener` facade) and to **attaching a UIKit interaction to the web view** from
   `capacitorDidLoad()` — documented in the `mobile` skill.

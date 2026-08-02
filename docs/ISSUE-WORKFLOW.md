@@ -52,7 +52,7 @@ files it on every audit finding that survives validation, and `fix-audits` burns
 | `area:coloring-book`  | Coloring-book pages, packs, workflow                |
 | `area:dark-mode`      | Dark-mode theming and assets                        |
 | `area:ux`             | Layout, polish, responsiveness                      |
-| `area:parent-center`  | Parent Center settings and controls                 |
+| `area:settings`       | Settings modal and controls                         |
 | `area:admin-security` | Admin console, access codes, quotas, ops            |
 | `area:native`         | Android / iOS / Capacitor                           |
 | `area:ci-testing`     | CI pipeline and test infrastructure                 |

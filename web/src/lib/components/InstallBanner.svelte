@@ -11,11 +11,11 @@
     armInstallAutoClear,
     autoDismissInstallIfDue,
   } from '$lib/state/install.svelte';
-  import { PARENT_HELP_BUTTON_ID } from '$lib/state/ui.svelte';
+  import { SETTINGS_BUTTON_ID } from '$lib/state/ui.svelte';
 
-  // The banner sits above the corner controls (actions toggle, Parent Help), so
+  // The banner sits above the corner controls (the actions toggle and the Settings Button), so
   // it must not linger: once the child has kept drawing past it, clear it and
-  // hand off to the Parent Center setup guide with a short parting message.
+  // hand off to the Setup Guide in Settings with a short parting message.
   const PARTING_MESSAGE_MS = 4000;
 
   // Shared motion vocabulary for the banner's enter/exit transitions.
@@ -31,7 +31,7 @@
   let showHint = $state(false);
   let busy = $state(false);
   let parting = $state(false);
-  let exitIntoParentButton = $state(false);
+  let exitIntoSettingsButton = $state(false);
 
   // Wait until the child has actually drawn a little, so the prompt feels earned
   // and never competes with the very first finger-on-screen moment.
@@ -51,17 +51,17 @@
     if (!autoDismissInstallIfDue()) return;
     parting = true;
     setTimeout(() => {
-      exitIntoParentButton = true;
+      exitIntoSettingsButton = true;
       parting = false;
     }, PARTING_MESSAGE_MS);
   });
 
-  // Auto-clear exit: shrink the pill into the Parent Help button so the parting
-  // message's "it lives in the Parent Center" lands visually too. Manual
+  // Auto-clear exit: shrink the pill into the Settings Button so the parting
+  // message's "it lives in Settings" lands visually too. Manual
   // dismiss / completed install keep the plain fly-down.
   function bannerExit(node: HTMLElement) {
-    if (!exitIntoParentButton) return fly(node, { y: BANNER_FLY_Y, duration: BANNER_EXIT_MS });
-    const target = document.getElementById(PARENT_HELP_BUTTON_ID)?.getBoundingClientRect();
+    if (!exitIntoSettingsButton) return fly(node, { y: BANNER_FLY_Y, duration: BANNER_EXIT_MS });
+    const target = document.getElementById(SETTINGS_BUTTON_ID)?.getBoundingClientRect();
     const from = node.getBoundingClientRect();
     const dx = target ? target.left + target.width / 2 - (from.left + from.width / 2) : 0;
     const dy = target
@@ -105,9 +105,9 @@
           <SplotchyIcon class="install-mascot-icon" />
         </span>
         <p>
-          No rush — these steps are always in the
-          <Icon name="parent" class="install-inline-icon" aria-hidden="true" />
-          <strong>Parent Center</strong>.
+          No rush — these steps are always in
+          <Icon name="settings" class="install-inline-icon" aria-hidden="true" />
+          <strong>Settings</strong>.
         </p>
       </div>
     {:else}

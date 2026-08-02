@@ -44,10 +44,10 @@ WHAT KIDS CAN DO
 • Gentle drawing sounds make every stroke feel alive (and can be turned off).
 
 MADE FOR LITTLE HANDS
-Splotch is designed for ages 2 and up. The canvas fills the whole screen, the buttons are large and out of the way, and there's nothing a small tap can break. Advanced tools can be hidden entirely from the Parent Center, so you can keep things as simple as a blank page and a box of crayons.
+Splotch is designed for ages 2 and up. The canvas fills the whole screen, the buttons are large and out of the way, and there's nothing a small tap can break. Advanced tools can be hidden entirely from Settings, so you can keep things as simple as a blank page and a box of crayons.
 
-A PARENT CENTER, NOT A PAYWALL
-Tucked in the corner, behind a button kids tend to ignore, the Parent Center lets you:
+SETTINGS, NOT A PAYWALL
+Tucked in the corner, behind a button kids tend to ignore, Settings lets you:
 • Turn individual tools on or off (eraser, coloring books, undo, the camera, sounds).
 • Read quick tips for locking the app to one screen using your device's built-in Guided Access, so playtime stays in Splotch.
 
@@ -117,9 +117,9 @@ Connect takes the 1024×1024 `AppIcon` from the binary's asset catalog
 ## Kids Category notes (review will check these)
 
 * No third-party analytics or advertising — true, keep it that way.
-* External links / purchases must sit behind a parental gate. The only outbound surfaces are in the
-  Parent Center and About tab (GitHub, privacy policy); verify they're acceptable or gate them
-  before submission.
+* External links / purchases must sit behind a parental gate. The outbound links are in Settings'
+  About section (GitHub, privacy policy); opening Settings is not proof of adulthood, so verify each
+  link and gate the affected action before submission.
 * The AI feature sends the child's own drawing for processing at an explicit tap, requires a parent
-  to enable it in the Parent Center first, and involves no browsing, chat, or sharing — document
-  this in the review notes field.
+  to enable it in Settings first, and involves no browsing, chat, or sharing — document this in the
+  review notes field.

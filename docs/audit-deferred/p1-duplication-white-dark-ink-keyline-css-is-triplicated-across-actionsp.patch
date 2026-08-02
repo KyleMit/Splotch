@@ -3,7 +3,7 @@ index 66b4042e..29dd2582 100644
 --- a/.claude/skills/design/SKILL.md
 +++ b/.claude/skills/design/SKILL.md
 @@ -95,6 +95,8 @@ Shared *global* patterns are classes in **`web/src/app.css`** rather than compon
- |                                          | Fullscreen Toggle, Parent Help Button; positioning and z-index stay        |
+ |                                          | Fullscreen Toggle, Settings Button; positioning and z-index stay        |
  |                                          | per-component                                                              |
  | `.flyout-menu` / `.flyout-option`        | The popover shell and its option buttons — BrushMenu, StrokeWidthMenu      |
 +| `.white-stroke` / `.dark-stroke`         | Ink keylines for current-color brush and stroke previews — ActionsPanel,   |
@@ -16,7 +16,7 @@ index 66b4042e..29dd2582 100644
 --- a/.ruler/skills/design/SKILL.md
 +++ b/.ruler/skills/design/SKILL.md
 @@ -95,6 +95,8 @@ Shared *global* patterns are classes in **`web/src/app.css`** rather than compon
- |                                          | Fullscreen Toggle, Parent Help Button; positioning and z-index stay        |
+ |                                          | Fullscreen Toggle, Settings Button; positioning and z-index stay        |
  |                                          | per-component                                                              |
  | `.flyout-menu` / `.flyout-option`        | The popover shell and its option buttons — BrushMenu, StrokeWidthMenu      |
 +| `.white-stroke` / `.dark-stroke`         | Ink keylines for current-color brush and stroke previews — ActionsPanel,   |

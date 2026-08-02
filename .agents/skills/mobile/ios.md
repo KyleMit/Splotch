@@ -121,9 +121,9 @@ npx @capacitor/assets generate --ios
       1024×1024 `AppIcon` doubles as the App Store icon.
 * [ ] Test on a real iPhone/iPad: AI flow (access code → image round-trip against
       `https://splotch.art`), offline airplane mode (AI button hides), save-to-photos (add-only
-      permission prompt wording), Guided Access tips in the Parent Center read correctly for iOS —
-      and with Guided Access **on**, the lock section shows a green ✓ + the exit steps (via the
-      custom `DeviceLock` plugin, `ios/App/App/DeviceLockPlugin.swift`).
+      permission prompt wording), Guided Access tips in Settings read correctly for iOS — and with
+      Guided Access **on**, the lock section shows a green ✓ + the exit steps (via the custom
+      `DeviceLock` plugin, `ios/App/App/DeviceLockPlugin.swift`).
 
 ### Apple Developer account (one-time)
 
@@ -171,8 +171,7 @@ npx @capacitor/assets generate --ios
 * [ ] **TestFlight**: internal testing needs no review; invite yourself, smoke the production build
       on hardware.
 * [ ] Submit for **App Review**. Kids Category review is stricter and slower — in *App Review
-      notes*, explain the Parent Center and the parent-enabled, bring-your-own-key AI feature up
-      front.
+      notes*, explain Settings and the parent-enabled, bring-your-own-key AI feature up front.
 
 ### Kids Category (kids compliance)
 
@@ -189,9 +188,10 @@ policy). The Apple Kids Category adds:
 * [ ] Note: the AI button is an external network feature — confirm it doesn't need a parental gate
       (it sends the child's own drawing for processing; no external browsing/links). Re-check
       against current Kids Category rules.
-* [ ] Audit outbound links (About tab / Parent Center → GitHub, privacy policy): Kids Category
-      requires external links to sit behind a parental gate. The Parent Center itself may qualify as
-      the gate — verify against the current guideline 1.3 wording before submitting.
+* [ ] Audit outbound links (About section / Settings → GitHub, privacy policy): Kids Category
+      requires external links to sit behind a parental gate. Opening Settings is not proof of
+      adulthood; gate each affected action at the point where it leaves the app, then verify the
+      interaction against the current guideline 1.3 wording before submitting.
 
 ## 5. Known follow-ups
 

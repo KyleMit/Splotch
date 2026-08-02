@@ -6,9 +6,9 @@
 
 On the web target, the best way to "install" Splotch is to add it to the home screen so it launches
 full-screen like the native apps. Until now the only in-app help was a static, per-OS step list
-buried in the Parent Center Setup tab (`SetupInstructions.svelte`). Parents had to find the faint
-Parent Help button, open the Setup tab, and follow written instructions — far from the "one tap to
-install" experience modern browsers can offer.
+buried in Settings Setup tab (`SetupInstructions.svelte`). Parents had to find the faint Settings
+button, open the Setup tab, and follow written instructions — far from the "one tap to install"
+experience modern browsers can offer.
 
 Browsers expose install very differently, and the difference drives the whole design:
 
@@ -60,19 +60,19 @@ Two surfaces consume the state:
    It is dismissible, and the dismissal is remembered.
 
    On phones the banner is wider than the gap between the bottom-corner controls (actions toggle,
-   Parent Help button), and shrinking it to fit would cram the parent-facing copy into ~260px.
+   the Settings Button), and shrinking it to fit would cram the parent-facing copy into ~260px.
    Instead it stacks **above** those controls (`z-index` over their 900/901), and the takeover is
    kept short: five strokes after it appears — proof the child kept drawing and no parent is
    engaging (the countdown pauses while the how-to is expanded or the native dialog is up) — it
    auto-dismisses. The auto-clear persists the same `dismissed` flag as the × button, briefly swaps
-   the pill to a parting message ("these steps are always in the Parent Center"), then animates the
-   pill into the Parent Help button so the message lands spatially too. Lifting the banner above the
-   corner controls instead was rejected: with the actions panel expanded the required lift would
-   push the banner toward mid-canvas.
-2. **Parent Center → Setup tab** — the existing step list, upgraded to show the one-tap button above
-   the per-OS manual steps when available (the prompt is browser-wide — Android *or* desktop
-   Chromium — so it belongs to no single OS section). Section ordering and the installed checkmark
-   come from the install module (`installDeviceOs()`, `install.installed`), not a component-local
+   the pill to a parting message ("these steps are always in Settings"), then animates the pill into
+   the Settings Button so the message lands spatially too. Lifting the banner above the corner
+   controls instead was rejected: with the actions panel expanded the required lift would push the
+   banner toward mid-canvas.
+2. **Settings → Setup tab** — the existing step list, upgraded to show the one-tap button above the
+   per-OS manual steps when available (the prompt is browser-wide — Android *or* desktop Chromium —
+   so it belongs to no single OS section). Section ordering and the installed checkmark come from
+   the install module (`installDeviceOs()`, `install.installed`), not a component-local
    re-detection. The Setup guide ignores the banner's `dismissed` flag, so a parent can always find
    it.
 

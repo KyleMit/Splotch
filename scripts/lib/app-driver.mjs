@@ -15,7 +15,7 @@ const STROKE_SIZE_BUTTON_SELECTOR = (size) => `button[aria-label="Size ${size}"]
 const COLORING_BOOK_SELECTOR = (name) => `button[aria-label="${name} coloring book"]`;
 const COLORING_PAGE_SELECTOR = (name) => `button[aria-label="${name} coloring page"]`;
 const COLORING_OVERLAY_READY_SELECTOR = '#coloringOverlay.overlay-ready';
-const PARENT_HELP_BUTTON_SELECTOR = '#parentHelpButton';
+const SETTINGS_BUTTON_SELECTOR = '#settingsButton';
 
 const APP_STARTUP_SETTLE_DELAY_MS = 400;
 const DRAWER_TRANSITION_DELAY_MS = 350;
@@ -170,6 +170,6 @@ export async function openColorPicker(page) {
   await page.locator(COLOR_SWATCH_SELECTOR('custom')).click();
 }
 
-export async function openParentCenter(page) {
-  await page.locator(PARENT_HELP_BUTTON_SELECTOR).click();
+export async function openSettingsModal(page) {
+  await page.locator(SETTINGS_BUTTON_SELECTOR).click();
 }

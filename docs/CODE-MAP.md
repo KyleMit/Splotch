@@ -75,7 +75,7 @@ though a few functional boundaries are judgment calls.
 | ------------------------------- | ----: | ----: |
 | Drawing / canvas engine         | 7,239 |    27 |
 | AI image generation             | 3,774 |    36 |
-| Parent Center / settings        | 3,112 |    15 |
+| Settings / settings             | 3,112 |    15 |
 | App state (runes)               | 2,923 |    25 |
 | Admin console + token backend   | 2,669 |    17 |
 | Routes / app shell / dev        | 2,376 |    31 |

@@ -98,8 +98,8 @@ tree-shaken from release output. Run the applicable release build after changing
   `--native-app --native-webview-class=android.webkit.WebView`.
 
 Appium automation round-trip time is not an application frame metric. The probe must measure inside
-the page. Native rotation must change the real Parent Center rotation-lock setting and restore it;
-do not bypass product persistence with a test-only preference mutation.
+the page. Native rotation must change the real Settings rotation-lock setting and restore it; do not
+bypass product persistence with a test-only preference mutation.
 
 ## Apply fidelity tiers
 

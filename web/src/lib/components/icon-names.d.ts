@@ -36,7 +36,6 @@ export type IconName =
   | 'mobile-rotate'
   | 'more-colors'
   | 'more-horiz'
-  | 'parent'
   | 'pen'
   | 'photo-size-select-small'
   | 'pin'

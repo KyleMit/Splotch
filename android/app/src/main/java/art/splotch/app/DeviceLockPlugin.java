@@ -10,7 +10,7 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 /**
- * Surfaces whether App Pinning (lock-task mode) is currently engaged so the Parent Center
+ * Surfaces whether App Pinning (lock-task mode) is currently engaged so Settings
  * can confirm the lock is on (green check) and swap its "enable" steps for "unpin" steps.
  */
 @CapacitorPlugin(name = "DeviceLock")

@@ -87,7 +87,7 @@ probe report.
 `perf:ipad:actions` opens the production route and repeats these families:
 
 * action drawer, palette, brush selection, and stroke width;
-* first Parent Center open, every section, theme changes, and close;
+* first Settings open, every section, theme changes, and close;
 * coloring picker, book, page selection, and page removal;
 * screenshot export, undo, drag-to-clear, both blank/ink rotation directions, and undoing both clear
   and its restored older stroke after a blank rotation.
@@ -133,8 +133,8 @@ summaries and fails the 20/33.5 ms action gates. `--report-only` lets an explora
 every failure instead of stopping at the first one. `--actions=` selects a focused family for
 one-change trials. Parent-setting actions normalize known baselines around every sound, auto-save,
 advanced-control, and button-visibility round trip, then restore the device's observed initial
-preference in a `finally` block, including after a measurement failure. Parent Center navigation
-uses each section's stable `data-section` id rather than its position in the list.
+preference in a `finally` block, including after a measurement failure. Settings navigation uses
+each section's stable `data-section` id rather than its position in the list.
 
 The first full-suite campaign separated genuine action-local failures from native intervals that
 began before event delivery, then fixed the genuine cases one at a time:
@@ -156,9 +156,9 @@ post-action P95 was 17 ms throughout, and post-action maxima were at most 32 ms.
 open reached that hard-max boundary; its immediate five-repeat follow-up measured 17 ms P95 and 20
 ms max, so it was not a reproducible failure. The slower repeatable passing tails were custom-color
 selection at 29 ms, coloring-page selection at 27 ms, What's New at 25 ms, ink-color selection at 24
-ms, and rotations at 20–22 ms. The added Parent Center setting round trips measured 17 ms P95
-throughout and at most 24 ms in their five-repeat audit. These remain ranked watchpoints rather than
-additional fixes because they pass both action gates and have no repeated P95 miss.
+ms, and rotations at 20–22 ms. The added Settings setting round trips measured 17 ms P95 throughout
+and at most 24 ms in their five-repeat audit. These remain ranked watchpoints rather than additional
+fixes because they pass both action gates and have no repeated P95 miss.
 
 ### Hosted-device CI uses the same Appium protocol
 
@@ -209,7 +209,7 @@ and native Capacitor WebViews. `--native-app` attaches to the app-owned WebView 
 it to an HTTP URL, `--native-webview-class` supplies the platform accessibility class, and context
 selection accepts both `WEBVIEW_*` and Android's `CHROMIUM` name. CSS canvas coordinates are mapped
 through browser chrome for mobile web and directly through the edge-to-edge WebView for native apps.
-The action runner supports both the Parent Center's tablet sidebar and phone drill-in shell.
+The action runner supports both Settings' tablet sidebar and phone drill-in shell.
 
 This is transport and metric-schema reuse, not baseline inheritance. Safari's trusted-input
 calibration does not approve simulator input, Android automation with missing contact geometry, or a
@@ -233,13 +233,13 @@ The Simulator therefore catches a reintroduction of the original drawing-starvat
 classes without physical hardware. It may reject a candidate before the device run; only calibrated
 physical input may approve one.
 
-Native Splotch defaults to a persisted orientation lock. A rotation sweep opens the real Parent
-Center Appearance section, disables the lock through `#lockRotationToggle`, reloads so the Capacitor
-plugin releases the Activity/controller lock, and restores the setting through the same UI before
-closing the session. Forcing Appium orientation while leaving the product lock active is invalid: it
-either fails at the driver or measures a state the app intentionally prevents. A profiling-only
-preference mutation seam was rejected because it would measure a state transition that no parent
-performs and would need a second implementation of product persistence semantics.
+Native Splotch defaults to a persisted orientation lock. A rotation sweep opens the real Settings
+Appearance section, disables the lock through `#lockRotationToggle`, reloads so the Capacitor plugin
+releases the Activity/controller lock, and restores the setting through the same UI before closing
+the session. Forcing Appium orientation while leaving the product lock active is invalid: it either
+fails at the driver or measures a state the app intentionally prevents. A profiling-only preference
+mutation seam was rejected because it would measure a state transition that no parent performs and
+would need a second implementation of product persistence semantics.
 
 Native screenshot profiling has one narrower seam at the external persistence boundary. A
 `PERF_MARKS` build may provide `window.__screenshotSaveSink` so the action suite observes completion

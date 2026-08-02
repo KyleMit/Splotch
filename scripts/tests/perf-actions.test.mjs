@@ -20,8 +20,8 @@ const SCREENSHOT_FEEDBACK = readFileSync(
   join(ROOT, 'web', 'src', 'lib', 'drawing', 'screenshotFeedback.ts'),
   'utf8'
 );
-const PARENT_CENTER = readFileSync(
-  join(ROOT, 'web', 'src', 'lib', 'components', 'ParentCenter.svelte'),
+const SETTINGS_MODAL = readFileSync(
+  join(ROOT, 'web', 'src', 'lib', 'components', 'SettingsModal.svelte'),
   'utf8'
 );
 
@@ -81,8 +81,8 @@ describe('trusted action setup', () => {
     expect(expression).not.toContain('#undoButton');
   });
 
-  it('keeps Parent Center navigation semantic and restores observed settings', () => {
-    expect(PARENT_CENTER.match(/data-section=\{section\.id\}/g)).toHaveLength(2);
+  it('keeps Settings navigation semantic and restores observed settings', () => {
+    expect(SETTINGS_MODAL.match(/data-section=\{section\.id\}/g)).toHaveLength(2);
   });
 });
 

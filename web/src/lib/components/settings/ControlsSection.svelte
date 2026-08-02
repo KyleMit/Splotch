@@ -24,9 +24,9 @@
 
   // Ceiling the Button Size slider at what the current screen can actually
   // fit, so the parent can't pick a size the Actions Panel would have to cap
-  // anyway (landscape: the row would hit the Parent Help Button; portrait: the
+  // anyway (landscape: the row would hit the Settings Button; portrait: the
   // column would hit the palette). Recomputed reactively from the shared
-  // layout state, so it tracks rotation while the Parent Center is open. A
+  // layout state, so it tracks rotation while Settings is open. A
   // stored value above today's ceiling (e.g. set on a wider screen) is only
   // displayed clamped — it isn't rewritten unless the parent drags the slider.
   const scaleCeiling = $derived(maxActionButtonScale());
@@ -88,8 +88,8 @@
     },
   ];
 
-  // While the button-size slider is dragged, the Parent Center melts away to just
-  // the slider (see ParentCenter) so the parent can watch the action buttons
+  // While the button-size slider is dragged, Settings melts away to just
+  // the slider (see SettingsModal) so the parent can watch the action buttons
   // resize live behind it.
   function onScaleActive(active: boolean) {
     setResizingActionButtons(active);

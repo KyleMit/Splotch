@@ -3,7 +3,7 @@ import { createModal } from './modal.svelte';
 import type { Origin } from './modal.svelte';
 
 export interface UiState {
-  // True while the parent is dragging the button-size slider. The Parent Center
+  // True while the parent is dragging the button-size slider. Settings
   // hides everything but the slider so the live-resizing action buttons show.
   resizingActionButtons: boolean;
   clearTutorialVisible: boolean;
@@ -33,11 +33,11 @@ export const ui: UiState = $state({
   aiErrorKind: 'generic',
 });
 
-export const PARENT_HELP_BUTTON_ID = 'parentHelpButton';
+export const SETTINGS_BUTTON_ID = 'settingsButton';
 
 export const colorPicker = createModal();
 export const coloringBook = createModal();
-export const parentCenter = createModal();
+export const settingsModal = createModal();
 export const aiPrompt = createModal();
 
 export function buttonCenter(el: HTMLElement): Origin {

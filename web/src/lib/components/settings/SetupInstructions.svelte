@@ -24,7 +24,7 @@
   }
 
   interface Props {
-    // `open` flips true when the Parent Center modal opens; we re-run device/OS
+    // `open` flips true when the Settings modal opens; we re-run device/OS
     // detection then so the instructions match the current device and install state.
     open?: boolean;
   }

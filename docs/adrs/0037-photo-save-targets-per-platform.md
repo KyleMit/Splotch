@@ -53,7 +53,7 @@ and **clearing the folder doesn't stop saving** (it reverts to downloads). The p
 folder is the *only* thing that decides where a web save lands — there's no separate enable flag and
 nothing is gated.
 
-Folder management lives in a one-line **"Save drawings to"** row in the Parent Center
+Folder management lives in a one-line **"Save drawings to"** row in Settings
 (`SettingsToggles.svelte`), shown only when `folderSaveSupported()`:
 
 * No folder → a primary **Choose folder** button (`changeSaveFolder()` → `chooseSaveFolder()`, the
@@ -80,7 +80,7 @@ raw `createWritable` would silently overwrite a same-second save.
 
 `saveBlobToFolder(blob, filename, { allowPrompt })` takes `allowPrompt: true` for user-initiated
 saves (the Screenshot button) and false for background saves. It never opens the folder picker —
-that's a separate Parent Center action. `allowPrompt` only lets a user-initiated save **re-confirm a
+that's a separate Settings action. `allowPrompt` only lets a user-initiated save **re-confirm a
 write permission** the browser dropped between sessions (in-tab origins lose it; installed PWAs keep
 it). Background saves leave `allowPrompt` false and degrade to a download rather than surprising
 anyone with a dialog.

@@ -5,7 +5,7 @@
   import { describeDeviceInfo, type DeviceInfo } from '$lib/deviceReport';
   import { MAX_REPORT_MESSAGE_LENGTH, REPORT_KINDS, type ReportKind } from '$lib/report';
 
-  // The feedback form's field set, shared by its two hosts: the Parent Center's
+  // The feedback form's field set, shared by its two hosts: Settings'
   // ReportForm (which posts JSON to /api/report) and the standalone /feedback
   // page (which posts to a SvelteKit form action). Only the submit mechanism,
   // heading, and card chrome differ, so everything between the kind picker and
@@ -14,7 +14,7 @@
   //
   // Every control is a real, named form control rather than a scripted one, so
   // the whole field set submits correctly with JavaScript unavailable. Inside
-  // the Parent Center there is no <form> around them and the names are inert.
+  // Settings there is no <form> around them and the names are inert.
   interface Props {
     kind: ReportKind;
     message: string;

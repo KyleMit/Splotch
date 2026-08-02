@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openParentCenter } from './helpers';
+import { openSettingsModal } from './helpers';
 
 // Tier-2 accessibility (ADR-0076): a low-vision parent can pinch to enlarge the
-// Parent Center's reading content, while the drawing page itself stays
-// zoom-locked. The pinchTextZoom action drives CSS `zoom` on a `.pc-zoom` wrapper
+// Settings' reading content, while the drawing page itself stays
+// zoom-locked. The pinchTextZoom action drives CSS `zoom` on a `.settings-zoom` wrapper
 // inside the scrolling pane. The gesture math is unit-tested
 // (pinchTextZoom.svelte.test.ts); this covers the action wiring — that two
 // fingers enlarge and reset, that ONE finger is never intercepted (so native
@@ -12,7 +12,7 @@ import { openParentCenter } from './helpers';
 
 // Read the inline CSS `zoom` the action sets (blank/absent ⇒ normal size ⇒ 1).
 async function paneZoom(page: Page): Promise<number> {
-  return page.locator('.pc-zoom').evaluate((el) => {
+  return page.locator('.settings-zoom').evaluate((el) => {
     const z = (el as HTMLElement).style.zoom;
     return z === '' ? 1 : Number(z);
   });
@@ -32,7 +32,7 @@ async function gestureOnPane(
   opts: { fingers: 1 | 2; pointerType?: 'touch' | 'mouse'; factor?: number }
 ): Promise<{ movePrevented: boolean }> {
   return page
-    .locator('.pc-pane, .pc-scroll')
+    .locator('.settings-pane, .settings-scroll')
     .first()
     .evaluate((node, o) => {
       const r = node.getBoundingClientRect();
@@ -80,7 +80,7 @@ async function pinchUntilZoomed(page: Page, factor = 2): Promise<boolean> {
 
 test('a two-finger pinch enlarges the pane (and intercepts the gesture)', async ({ page }) => {
   await page.goto('/');
-  await openParentCenter(page);
+  await openSettingsModal(page);
 
   expect(await paneZoom(page)).toBe(1);
 
@@ -93,14 +93,14 @@ test('a pinch swallows the trailing click, so it never toggles the control benea
   page,
 }) => {
   await page.goto('/');
-  await openParentCenter(page);
+  await openSettingsModal(page);
 
   // A two-finger gesture leaves the action primed to eat the primary finger's
   // click (which would otherwise open a section or flip a toggle under the
   // finger). Exactly one click is swallowed; the next is a real tap again.
   await pinchUntilZoomed(page);
   const { first, second } = await page
-    .locator('.pc-pane, .pc-scroll')
+    .locator('.settings-pane, .settings-scroll')
     .first()
     .evaluate((node) => {
       const clickOnce = () => {
@@ -118,7 +118,7 @@ test('a one-finger drag actually scrolls the pane (native scrolling survives)', 
   page,
 }) => {
   await page.goto('/');
-  await openParentCenter(page);
+  await openSettingsModal(page);
 
   // Part 1: the action never intercepts a lone pointer (no zoom, no preventDefault).
   const { movePrevented } = await gestureOnPane(page, { fingers: 1 });
@@ -130,10 +130,10 @@ test('a one-finger drag actually scrolls the pane (native scrolling survives)', 
   // real compositor touch (not synthetic pointer events) via CDP: a future
   // `touch-action: none` on the pane or an ancestor would block this and fail
   // here, where the `movePrevented` check alone would sail past it.
-  await page.locator('.pc-nav').getByRole('button', { name: 'Setup Guide' }).click();
+  await page.locator('.settings-nav').getByRole('button', { name: 'Setup Guide' }).click();
   await pinchUntilZoomed(page, 3);
 
-  const pane = page.locator('.pc-pane, .pc-scroll').first();
+  const pane = page.locator('.settings-pane, .settings-scroll').first();
   const box = await pane.boundingBox();
   if (!box) throw new Error('pane not visible');
   const cx = box.x + box.width / 2;
@@ -159,7 +159,7 @@ test('a one-finger drag actually scrolls the pane (native scrolling survives)', 
 
 test('a non-touch (mouse) pinch is ignored', async ({ page }) => {
   await page.goto('/');
-  await openParentCenter(page);
+  await openSettingsModal(page);
 
   const { movePrevented } = await gestureOnPane(page, { fingers: 2, pointerType: 'mouse' });
   // Desktop uses browser zoom; the action only engages real touch, so a
@@ -170,13 +170,13 @@ test('a non-touch (mouse) pinch is ignored', async ({ page }) => {
 
 test('navigating to another section resets the zoom', async ({ page }) => {
   await page.goto('/');
-  await openParentCenter(page);
+  await openSettingsModal(page);
 
   await pinchUntilZoomed(page);
 
   // Switching sections (resetKey: view) returns the pane to normal size, so a
   // parent never lands on a new section still enlarged from the previous one.
-  await page.locator('.pc-nav').getByRole('button', { name: 'Sound' }).click();
+  await page.locator('.settings-nav').getByRole('button', { name: 'Sound' }).click();
   await expect.poll(() => paneZoom(page)).toBe(1);
 });
 
@@ -188,7 +188,7 @@ test('parent-facing inputs on the drawing route render ≥16px (no iOS focus-zoo
   page,
 }) => {
   await page.goto('/');
-  await openParentCenter(page);
+  await openSettingsModal(page);
 
   const fontPx = (selector: string) =>
     page
@@ -196,23 +196,23 @@ test('parent-facing inputs on the drawing route render ≥16px (no iOS focus-zoo
       .first()
       .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
 
-  await page.locator('.pc-nav').getByRole('button', { name: 'AI Art' }).click();
+  await page.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
   await expect(page.locator('.access-code-input').first()).toBeVisible();
   expect(await fontPx('.access-code-input')).toBeGreaterThanOrEqual(16);
 
-  await page.locator('.pc-nav').getByRole('button', { name: 'Submit Feedback' }).click();
+  await page.locator('.settings-nav').getByRole('button', { name: 'Submit Feedback' }).click();
   await expect(page.locator('.report-textarea')).toBeVisible();
   expect(await fontPx('.report-textarea')).toBeGreaterThanOrEqual(16);
 });
 
 test('closing the overlay resets the zoom for the next open', async ({ page }) => {
   await page.goto('/');
-  await openParentCenter(page);
+  await openSettingsModal(page);
 
   await pinchUntilZoomed(page);
 
   await page.getByRole('button', { name: 'Close' }).click();
-  await expect(page.locator('#parentHelpModal')).toBeHidden();
-  await openParentCenter(page);
+  await expect(page.locator('#settingsModal')).toBeHidden();
+  await openSettingsModal(page);
   expect(await paneZoom(page)).toBe(1);
 });

@@ -1,6 +1,6 @@
 // Generates every artifact derived from releases/*.md (the source of truth):
 //   - web/src/lib/releases.json                               (in-app release metadata)
-//   - web/src/lib/components/parent/CurrentReleaseNotes.svelte (compiled in-app notes)
+//   - web/src/lib/components/settings/CurrentReleaseNotes.svelte (compiled in-app notes)
 //   - fastlane/metadata/android/en-US/changelogs/<code>.txt    (Google Play)
 //   - fastlane/metadata/en-US/release_notes.txt                (App Store, latest)
 //
@@ -124,7 +124,7 @@ function main() {
   }));
   write(join(ROOT, 'web', 'src', 'lib', 'releases.json'), JSON.stringify(appData, null, 2) + '\n');
   write(
-    join(ROOT, 'web', 'src', 'lib', 'components', 'parent', 'CurrentReleaseNotes.svelte'),
+    join(ROOT, 'web', 'src', 'lib', 'components', 'settings', 'CurrentReleaseNotes.svelte'),
     renderReleaseComponent(releases[0].body, releases[0].filename)
   );
 

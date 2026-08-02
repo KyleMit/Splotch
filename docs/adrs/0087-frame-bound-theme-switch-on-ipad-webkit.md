@@ -6,11 +6,11 @@ alpha-native follow-up is implemented by [ADR-0091](0091-alpha-overlays-and-work
 
 ## Context
 
-The tiled renderer made drawing and undo responsive on the physical iPad, but changing the Parent
-Center theme still froze the screen for about a second. A trusted MobileSafari dark-to-light
-baseline took 1–2 ms to update `data-theme`, then missed animation frames for 978–1,214 ms. The
-event handler and Svelte update were not slow; WebKit was flushing work caused by the
-theme-dependent coloring assets and the drawing compositor stack after JavaScript returned.
+The tiled renderer made drawing and undo responsive on the physical iPad, but changing the Settings
+theme still froze the screen for about a second. A trusted MobileSafari dark-to-light baseline took
+1–2 ms to update `data-theme`, then missed animation frames for 978–1,214 ms. The event handler and
+Svelte update were not slow; WebKit was flushing work caused by the theme-dependent coloring assets
+and the drawing compositor stack after JavaScript returned.
 
 Theme changes use the same generic interaction gate as other non-drawing actions: a frame gap above
 33.5 ms is a long frame. The drawing and undo contracts from ADR-0085 and ADR-0086 remain
@@ -28,7 +28,7 @@ used only to locate the one-second tier.
 | 02 | Hide only the line-art overlay                                |     ~1,100 |                    ~0 | Fail; overlay was not the dominant work     |
 | 03 | Hide the canvas stack                                         |     ~1,100 |                    ~0 | Fail                                        |
 | 04 | Hide every drawing and paper presentation layer               |     ~1,100 |                    ~0 | Fail                                        |
-| 05 | Hide or close Parent Center during the mutation               |     ~1,100 |                    ~0 | Fail                                        |
+| 05 | Hide or close Settings during the mutation                    |     ~1,100 |                    ~0 | Fail                                        |
 | 06 | Remove theme-color metadata and all CSS transitions           |     ~1,100 |                    ~0 | Fail                                        |
 | 07 | Click the already-selected theme (no state change)            |       9–26 |       about −1,080 ms | Diagnostic pass                             |
 | 08 | Set `data-theme` directly without app asset effects           |      35–46 |       about −1,060 ms | Located the async asset path                |
@@ -133,8 +133,8 @@ long-frame boundary with millisecond timer quantization, rather than the prior o
 
 ### Authoritative Theme Measurement
 
-Use the production `/` route from a `PERF_MARKS` build, select a wide coloring page, open Parent
-Center, and measure dark-to-light separately from setup:
+Use the production `/` route from a `PERF_MARKS` build, select a wide coloring page, open Settings,
+and measure dark-to-light separately from setup:
 
 1. Set dark theme and wait for the themed overlay and magic fill to decode.
 2. Wait at least two animation frames so dialog animation is not attributed to the click.

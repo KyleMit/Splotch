@@ -8,7 +8,7 @@
   import { supportEmail } from '$lib/supportEmail';
   import type { PageProps } from './$types';
 
-  // The shareable half of the Parent Center's Send Feedback section: same fields
+  // The shareable half of Settings' Send Feedback section: same fields
   // (ReportFields), same server core ($lib/server/report), reached by a URL that
   // can go in the Play Store listing instead of behind the in-app modal. It
   // posts to a form action rather than /api/report so a report still sends with

@@ -45,8 +45,8 @@ export const layout: LayoutState = $state({
 
   safeArea: { ...ZERO_INSETS },
 
-  // Viewport dimensions in CSS px, for JS-side layout math (e.g. the Parent
-  // Center's dynamic Button Size ceiling). 0 during prerender; synced from
+  // Viewport dimensions in CSS px, for JS-side layout math (e.g. the dynamic
+  // Button Size ceiling in Settings). 0 during prerender; synced from
   // module load on the client.
   viewportWidth: 0,
   viewportHeight: 0,

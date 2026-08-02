@@ -48,9 +48,9 @@ const ALL_ACTIONS = new Set([
   'color-picker',
   'brushes',
   'stroke-width',
-  'parent-center',
-  'parent-sections',
-  'parent-settings',
+  'settings',
+  'settings-sections',
+  'settings-controls',
   'theme',
   'coloring',
   'screenshot',
@@ -137,19 +137,19 @@ async function clickSetupElement(execute, selector) {
 }
 
 async function setNativeRotationLock(execute, locked) {
-  await clickSetupElement(execute, 'button[aria-label="Parent Center"]');
+  await clickSetupElement(execute, 'button[aria-label="Settings"]');
   await waitForReady(
     execute,
-    `document.querySelector('#parentHelpModal')?.open === true`,
-    'Parent Center for rotation setup'
+    `document.querySelector('#settingsModal')?.open === true`,
+    'Settings for rotation setup'
   );
   if (!(await execute(`return document.querySelector('#lockRotationToggle') !== null;`))) {
     const appearanceSelector = await execute(`
-      if (document.querySelector('#parentHelpModal .pc-nav-item')) {
-        return '#parentHelpModal .pc-nav-item:first-child';
+      if (document.querySelector('#settingsModal .settings-nav-item')) {
+        return '#settingsModal .settings-nav-item:first-child';
       }
-      if (document.querySelector('#parentHelpModal .hub-row')) {
-        return '#parentHelpModal .hub-list li:first-child .hub-row';
+      if (document.querySelector('#settingsModal .hub-row')) {
+        return '#settingsModal .hub-list li:first-child .hub-row';
       }
       return null;
     `);
@@ -174,11 +174,11 @@ async function setNativeRotationLock(execute, locked) {
       `rotation lock to become ${locked ? 'enabled' : 'disabled'}`
     );
   }
-  await clickSetupElement(execute, '#parentHelpModal button[aria-label="Close"]');
+  await clickSetupElement(execute, '#settingsModal button[aria-label="Close"]');
   await waitForReady(
     execute,
-    `document.querySelector('#parentHelpModal')?.open !== true`,
-    'Parent Center to close after rotation setup'
+    `document.querySelector('#settingsModal')?.open !== true`,
+    'Settings to close after rotation setup'
   );
   await sleep(ANIMATED_ACTION_SETTLE_MS);
   return initial;
@@ -706,9 +706,9 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   }
 
   if (
-    actions.has('parent-center') ||
-    actions.has('parent-sections') ||
-    actions.has('parent-settings') ||
+    actions.has('settings') ||
+    actions.has('settings-sections') ||
+    actions.has('settings-controls') ||
     actions.has('theme')
   ) {
     await closeDialogs(execute);
@@ -717,67 +717,63 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         client,
         sessionId,
         execute,
-        label: 'open Parent Center',
-        selector: 'button[aria-label="Parent Center"]',
-        ready: `document.querySelector('#parentHelpModal')?.open === true`,
+        label: 'open Settings',
+        selector: 'button[aria-label="Settings"]',
+        ready: `document.querySelector('#settingsModal')?.open === true`,
         settleMs: ANIMATED_ACTION_SETTLE_MS,
       })
     );
   }
 
   if (
-    actions.has('parent-center') ||
-    actions.has('parent-sections') ||
-    actions.has('parent-settings') ||
+    actions.has('settings') ||
+    actions.has('settings-sections') ||
+    actions.has('settings-controls') ||
     actions.has('theme')
   ) {
     await waitForReady(
       execute,
-      `document.querySelector('#parentHelpModal .pc-nav-item') !== null || document.querySelector('#parentHelpModal .hub-list') !== null`,
-      'Parent Center navigation'
+      `document.querySelector('#settingsModal .settings-nav-item') !== null || document.querySelector('#settingsModal .hub-list') !== null`,
+      'Settings navigation'
     );
   }
-  const parentCenterUsesSidebar = await execute(
-    `return document.querySelector('#parentHelpModal .pc-nav-item') !== null;`
+  const settingsModalUsesSidebar = await execute(
+    `return document.querySelector('#settingsModal .settings-nav-item') !== null;`
   );
-  const parentSectionSelector = (section) =>
-    parentCenterUsesSidebar
-      ? `#parentHelpModal .pc-nav-item[data-section=${JSON.stringify(section)}]`
-      : `#parentHelpModal .hub-row[data-section=${JSON.stringify(section)}]`;
-  const ensureParentHub = async () => {
+  const settingsSectionSelector = (section) =>
+    settingsModalUsesSidebar
+      ? `#settingsModal .settings-nav-item[data-section=${JSON.stringify(section)}]`
+      : `#settingsModal .hub-row[data-section=${JSON.stringify(section)}]`;
+  const ensureSettingsHub = async () => {
     if (
-      parentCenterUsesSidebar ||
+      settingsModalUsesSidebar ||
       (await execute(`return !!document.querySelector('.hub-list');`))
     ) {
       return;
     }
-    await clickSetupElement(execute, '#parentHelpModal .pc-back');
-    await waitForReady(
-      execute,
-      `document.querySelector('.hub-list') !== null`,
-      'Parent Center hub'
-    );
+    await clickSetupElement(execute, '#settingsModal .settings-back');
+    await waitForReady(execute, `document.querySelector('.hub-list') !== null`, 'Settings hub');
   };
-  const openParentSection = async (section, ready, hint) => {
-    await ensureParentHub();
-    await clickSetupElement(execute, parentSectionSelector(section));
+  const openSettingsSection = async (section, ready, hint) => {
+    await ensureSettingsHub();
+    await clickSetupElement(execute, settingsSectionSelector(section));
     await waitForReady(execute, ready, hint);
   };
 
-  if (actions.has('parent-sections')) {
+  if (actions.has('settings-sections')) {
     const sectionIds = await execute(`
       return [...document.querySelectorAll(
         ${JSON.stringify(
-          parentCenterUsesSidebar ? '#parentHelpModal .pc-nav-item' : '#parentHelpModal .hub-row'
+          settingsModalUsesSidebar ? '#settingsModal .settings-nav-item' : '#settingsModal .hub-row'
         )}
       )].map((element) => element.dataset.section).filter(Boolean);
     `);
     for (const section of sectionIds.slice(1)) {
-      await ensureParentHub();
-      const selector = parentSectionSelector(section);
+      await ensureSettingsHub();
+      const selector = settingsSectionSelector(section);
       const label = await execute(
         `return document.querySelector(${JSON.stringify(
-          parentCenterUsesSidebar ? selector : `${selector} .hub-title`
+          settingsModalUsesSidebar ? selector : `${selector} .hub-title`
         )})?.textContent?.trim();`
       );
       await record(
@@ -785,16 +781,16 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
           client,
           sessionId,
           execute,
-          label: `open Parent Center section: ${label}`,
+          label: `open Settings section: ${label}`,
           selector,
-          ready: parentCenterUsesSidebar
+          ready: settingsModalUsesSidebar
             ? `document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-current') === 'page'`
-            : `document.querySelector('#parentHelpModal .pc-back') !== null`,
+            : `document.querySelector('#settingsModal .settings-back') !== null`,
           activation: 'webdriver',
         })
       );
     }
-    await openParentSection(
+    await openSettingsSection(
       'appearance',
       `document.querySelector('#themeOption-light') !== null`,
       'Appearance section'
@@ -802,7 +798,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   }
 
   if (actions.has('theme')) {
-    await openParentSection(
+    await openSettingsSection(
       'appearance',
       `document.querySelector('#themeOption-light') !== null`,
       'Appearance section'
@@ -840,8 +836,8 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     );
   }
 
-  if (actions.has('parent-settings')) {
-    await openParentSection(
+  if (actions.has('settings-controls')) {
+    await openSettingsSection(
       'sound',
       `document.querySelector('#soundToggle') !== null`,
       'Sound section'
@@ -854,7 +850,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         `document.querySelector('#soundVolumeLabel') ${enabled ? '!== null' : '=== null'}`,
     });
 
-    await openParentSection(
+    await openSettingsSection(
       'saving',
       `document.querySelector('#saveOnDeleteToggle') !== null`,
       'Saving section'
@@ -865,7 +861,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       baseline: false,
     });
 
-    await openParentSection(
+    await openSettingsSection(
       'controls',
       `document.querySelector('#advancedControlsToggle') !== null`,
       'Controls & Buttons section'
@@ -890,9 +886,9 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   }
 
   if (
-    actions.has('parent-center') ||
-    actions.has('parent-sections') ||
-    actions.has('parent-settings') ||
+    actions.has('settings') ||
+    actions.has('settings-sections') ||
+    actions.has('settings-controls') ||
     actions.has('theme')
   ) {
     await record(
@@ -900,9 +896,9 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         client,
         sessionId,
         execute,
-        label: 'close Parent Center',
-        selector: '#parentHelpModal button[aria-label="Close"]',
-        ready: `document.querySelector('#parentHelpModal')?.open !== true`,
+        label: 'close Settings',
+        selector: '#settingsModal button[aria-label="Close"]',
+        ready: `document.querySelector('#settingsModal')?.open !== true`,
         settleMs: ANIMATED_ACTION_SETTLE_MS,
         activation: 'webdriver',
       })

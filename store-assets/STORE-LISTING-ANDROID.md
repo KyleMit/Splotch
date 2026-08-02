@@ -32,10 +32,10 @@ WHAT KIDS CAN DO
 • Gentle drawing sounds make every stroke feel alive (and can be turned off).
 
 MADE FOR LITTLE HANDS
-Splotch is designed for ages 2 and up. The canvas fills the whole screen, the buttons are large and out of the way, and there's nothing a small tap can break. Advanced tools can be hidden entirely from the Parent Center, so you can keep things as simple as a blank page and a box of crayons.
+Splotch is designed for ages 2 and up. The canvas fills the whole screen, the buttons are large and out of the way, and there's nothing a small tap can break. Advanced tools can be hidden entirely from Settings, so you can keep things as simple as a blank page and a box of crayons.
 
-A PARENT CENTER, NOT A PAYWALL
-Tucked in the corner, behind a button kids tend to ignore, the Parent Center lets you:
+SETTINGS, NOT A PAYWALL
+Tucked in the corner, behind a button kids tend to ignore, Settings lets you:
 • Turn individual tools on or off (eraser, coloring books, undo, the camera, sounds).
 • Read quick tips for locking the app to one screen using your device's built-in screen pinning, so playtime stays in Splotch.
 

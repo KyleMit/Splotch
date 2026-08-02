@@ -135,12 +135,12 @@ immediately; CI retries, so a flake can still ship green — which is why a retr
 specs that can't race in the first place:
 
 * **Never assert on a single interaction against a lazily-wired control.** Overlays that idle-mount
-  (the Parent Center, ADR-0049) can drop the first click before their handler is attached, so a bare
+  (Settings, ADR-0049) can drop the first click before their handler is attached, so a bare
   `.click()` + `expect(modal).toBeVisible()` flakes. `flows.spec.ts` has a shared
   `retryOpen(ready,
   open, opts?)` primitive for this — it retries `open()` until the `ready`
   sentinel shows, skipping the click when it's already open;
-  `openDrawer`/`openParentCenter`/`openStrokeMenu`/`openBrushMenu`/ `openColoringDialog` are all
+  `openDrawer`/`openSettingsModal`/`openStrokeMenu`/`openBrushMenu`/ `openColoringDialog` are all
   one-liners over it. Reach for it (or wrap open-then-assert in `expect(...).toPass()`) rather than
   repeating a bare click.
 * **No fixed `waitForTimeout` to wait for something to *happen*.** Use a web-first assertion that
@@ -178,19 +178,19 @@ specs that can't race in the first place:
   at `scale(0.05)` **on the button that opened it**, and `modalDialog` arms a launch dead zone at
   that same point (`launchGuard`: 72px, 600ms) whose capture-phase `pointerdown` handler swallows
   everything inside it — dialog content included, by design (issue \#308's ghost click). So for the
-  opening frames the whole dialog sits in the dead zone: the Parent Center's content pane centers
-  **6px** from the launch origin at the first keyframe and only clears the radius ~13ms into the
-  animation. A CSS animation advances with *rendered frames*, so a starved worker parks the dialog
-  on that keyframe for far longer than 13ms of wall clock, and the gesture is aimed straight into
-  the guard and silently does nothing. That was issue \#665 — the three zoom/pinch specs that were
-  the entire residual flake rate (ADR-0078 §4), all failing as "the pinch produced no zoom". The fix
-  is to await the dialog's `Animation.finished` before reading any coordinate off it —
-  `openParentCenter` does this, which puts the pane 574px from the origin and removes the dependency
-  on animation progress instead of timing it. Three other dialogs carry `modal-fly-in`
-  (`#color-picker`, `#coloring-book-dialog`, `.ai-prompt-modal`); the helper is private to
-  `tests/helpers.ts` until a second caller needs it, so lift it there rather than copying the wait.
-  Query `getAnimations()` on the dialog element alone — the fly-in animates it directly, and
-  `{ subtree: true }` would start waiting on unrelated descendant animations too.
+  opening frames the whole dialog sits in the dead zone: Settings' content pane centers **6px** from
+  the launch origin at the first keyframe and only clears the radius ~13ms into the animation. A CSS
+  animation advances with *rendered frames*, so a starved worker parks the dialog on that keyframe
+  for far longer than 13ms of wall clock, and the gesture is aimed straight into the guard and
+  silently does nothing. That was issue \#665 — the three zoom/pinch specs that were the entire
+  residual flake rate (ADR-0078 §4), all failing as "the pinch produced no zoom". The fix is to
+  await the dialog's `Animation.finished` before reading any coordinate off it — `openSettingsModal`
+  does this, which puts the pane 574px from the origin and removes the dependency on animation
+  progress instead of timing it. Three other dialogs carry `modal-fly-in` (`#color-picker`,
+  `#coloring-book-dialog`, `.ai-prompt-modal`); the helper is private to `tests/helpers.ts` until a
+  second caller needs it, so lift it there rather than copying the wait. Query `getAnimations()` on
+  the dialog element alone — the fly-in animates it directly, and `{ subtree: true }` would start
+  waiting on unrelated descendant animations too.
 * **Drive strokes through `draw`/`dragStroke`, never a hand-rolled run of `mouse.move`s.** The
   engine reads a sample far from the previous one and more than `POINTER_RESUME_GAP_MS` later as a
   finger that lifted and set down (`strokeMath.pointerWasResumed`), restarts the stroke there, and
@@ -223,8 +223,8 @@ specs that can't race in the first place:
 ### WebKit critical-path smoke — `tests/webkit-smoke.spec.ts`
 
 The full suite is Chromium-only, but Safari/iOS is the engine `docs/COMPATIBILITY.md` worries about
-most, so a tiny critical-path subset (boot, draw a stroke, Parent Center dialog, Color Picker
-dialog) also runs on **WebKit** as the `webkit` Playwright project:
+most, so a tiny critical-path subset (boot, draw a stroke, Settings dialog, Color Picker dialog)
+also runs on **WebKit** as the `webkit` Playwright project:
 
 * The project only joins the run when the WebKit binary is installed
   (`npx playwright install --with-deps webkit`) — local checkouts and cloud sessions with Chromium
@@ -246,10 +246,10 @@ devDependency per ADR-0070 — CI-only tooling, never in the Netlify build) as p
 run — no separate command or workflow:
 
 * **What's scanned:** `/privacy`, `/admin` (logged-out *and* logged-in, via the `test-admin-secret`
-  web-server key), and the Parent Center dialog opened over `/`.
+  web-server key), and Settings dialog opened over `/`.
 * **What's deliberately not:** the drawing canvas and toddler-facing chrome. Toddler UX (giant
-  wordless buttons, no reading order) isn't WCAG's model, so the Parent Center scan is **scoped to
-  `#parentHelpModal`** via `AxeBuilder.include()` instead of scanning the whole drawing page.
+  wordless buttons, no reading order) isn't WCAG's model, so Settings scan is **scoped to
+  `#settingsModal`** via `AxeBuilder.include()` instead of scanning the whole drawing page.
 * **The gate:** only violations with impact `serious` or `critical` fail the test, but the failure
   message prints *every* violation axe found (id, impact, offending selectors, fix hints), so the
   moderate/minor tail is visible in any red run.
@@ -284,9 +284,9 @@ boots. The smoke test fills that gap: it installs the app on a real Android emul
 simulator, launches it, and asserts that the UI renders — proving the Capacitor WebView started
 **and** loaded the production web bundle (not a white screen or a crash).
 
-The assertion is a single, meaningful signal: the **"Parent Center"** button (the always-present
-help button, `web/src/lib/components/ParentCenter.svelte`) must become visible. Seeing its
-accessibility label means real UI painted, not just that the process launched.
+The assertion is a single, meaningful signal: the **"Settings"** button (the always-present help
+button, `web/src/lib/components/SettingsModal.svelte`) must become visible. Seeing its accessibility
+label means real UI painted, not just that the process launched.
 
 ### The flow
 
@@ -298,7 +298,7 @@ appId: art.splotch.app
 - launchApp:
     clearState: true
 - extendedWaitUntil:
-    visible: 'Parent Center'
+    visible: 'Settings'
     timeout: 30000
 - takeScreenshot: smoke-launch
 ```

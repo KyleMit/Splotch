@@ -48,7 +48,7 @@ index 3896c02e..ff70a456 100644
 @@ -134,13 +134,13 @@ alone won't compile/register the new Swift/Java classes.
  ### Screen orientation
 
- The parent-center rotation toggle (`lockRotationEnabled` + `forceLandscapeOrientation`) is applied
+ The Settings rotation toggle (`lockRotationEnabled` + `forceLandscapeOrientation`) is applied
 -by `web/src/lib/orientation.ts`. On native it locks via **`@capacitor/screen-orientation`**, which
 -calls Android's `Activity.setRequestedOrientation` — this **overrides the OS Auto-Rotate setting**,
 -so the parent's choice is honored even on a device with rotation turned off. The Web Screen
@@ -116,7 +116,7 @@ index 3896c02e..ff70a456 100644
 @@ -134,13 +134,13 @@ alone won't compile/register the new Swift/Java classes.
  ### Screen orientation
 
- The parent-center rotation toggle (`lockRotationEnabled` + `forceLandscapeOrientation`) is applied
+ The Settings rotation toggle (`lockRotationEnabled` + `forceLandscapeOrientation`) is applied
 -by `web/src/lib/orientation.ts`. On native it locks via **`@capacitor/screen-orientation`**, which
 -calls Android's `Activity.setRequestedOrientation` — this **overrides the OS Auto-Rotate setting**,
 -so the parent's choice is honored even on a device with rotation turned off. The Web Screen
@@ -184,7 +184,7 @@ index 3896c02e..ff70a456 100644
 @@ -134,13 +134,13 @@ alone won't compile/register the new Swift/Java classes.
  ### Screen orientation
 
- The parent-center rotation toggle (`lockRotationEnabled` + `forceLandscapeOrientation`) is applied
+ The Settings rotation toggle (`lockRotationEnabled` + `forceLandscapeOrientation`) is applied
 -by `web/src/lib/orientation.ts`. On native it locks via **`@capacitor/screen-orientation`**, which
 -calls Android's `Activity.setRequestedOrientation` — this **overrides the OS Auto-Rotate setting**,
 -so the parent's choice is honored even on a device with rotation turned off. The Web Screen
@@ -489,7 +489,7 @@ index 7800dea3..4f2f8d85 100644
 +import { applyDeviceOrientationPreference } from '$lib/platform/orientation';
 
  export async function hydratePersistedState(): Promise<void> {
-   // Load the optional saved-photo folder name for the Parent Center display
+   // Load the optional saved-photo folder name for Settings display
 diff --git a/web/src/lib/components/NotchBand.svelte b/web/src/lib/components/NotchBand.svelte
 index f074e14c..2c50f657 100644
 --- a/web/src/lib/components/NotchBand.svelte
@@ -503,10 +503,10 @@ index f074e14c..2c50f657 100644
    import { layout } from '$lib/state/layout.svelte';
    import { resolvedTheme } from '$lib/state/appearance.svelte';
    import { PAPER_COLORS, setThemeColorMeta } from '$lib/theme';
-diff --git a/web/src/lib/components/parent/ReportForm.svelte b/web/src/lib/components/parent/ReportForm.svelte
+diff --git a/web/src/lib/components/settings/ReportForm.svelte b/web/src/lib/components/settings/ReportForm.svelte
 index b5528457..125036e4 100644
---- a/web/src/lib/components/parent/ReportForm.svelte
-+++ b/web/src/lib/components/parent/ReportForm.svelte
+--- a/web/src/lib/components/settings/ReportForm.svelte
++++ b/web/src/lib/components/settings/ReportForm.svelte
 @@ -5,8 +5,8 @@
    import StatusMessage from '../design/StatusMessage.svelte';
    import { apiUrl } from '$lib/api';
@@ -517,7 +517,7 @@ index b5528457..125036e4 100644
 +  import { describeDeviceInfo, type DeviceInfo } from '$lib/platform/deviceReport';
 
    interface Props {
-     // Flips true when the Parent Center modal opens; we use it to clear the form
+     // Flips true when Settings modal opens; we use it to clear the form
 diff --git a/web/src/lib/deviceInfo.ts b/web/src/lib/platform/deviceInfo.ts
 similarity index 97%
 rename from web/src/lib/deviceInfo.ts

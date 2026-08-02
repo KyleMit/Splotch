@@ -175,7 +175,7 @@ Use an instrumented build for actual profiling. Drawing and actions use the Appi
 ```
 
 Do not navigate the native WebView to the hosted URL. Rotation runs must unlock and restore the real
-Parent Center preference; the action runner owns that sequence.
+Settings preference; the action runner owns that sequence.
 
 ## Physical Android web
 
@@ -217,7 +217,7 @@ calibration advisory until native/web hand input establishes expected cadence an
 ## Focused action reruns
 
 Use `--actions=` to isolate one family. Current families are printed by `npm run info`; examples
-include `theme`, `coloring`, `screenshot`, `undo`, `clear`, `rotation`, `parent-settings`, and
+include `theme`, `coloring`, `screenshot`, `undo`, `clear`, `rotation`, `settings-controls`, and
 `idle`. Use at least ten repeats for a marginal candidate and three for the cross-target check.
 
 When an Android web action is red, rerun its direct-CDP command with `--trace`. Compare a late

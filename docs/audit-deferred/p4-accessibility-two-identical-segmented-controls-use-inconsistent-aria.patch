@@ -151,10 +151,10 @@ index 00000000..bef4bd68
 +      box-shadow var(--duration-fast) ease;
 +  }
 +</style>
-diff --git a/web/src/lib/components/parent/AppearanceSection.svelte b/web/src/lib/components/parent/AppearanceSection.svelte
+diff --git a/web/src/lib/components/settings/AppearanceSection.svelte b/web/src/lib/components/settings/AppearanceSection.svelte
 index 32bcfc85..f40aaf1b 100644
---- a/web/src/lib/components/parent/AppearanceSection.svelte
-+++ b/web/src/lib/components/parent/AppearanceSection.svelte
+--- a/web/src/lib/components/settings/AppearanceSection.svelte
++++ b/web/src/lib/components/settings/AppearanceSection.svelte
 @@ -12,15 +12,21 @@
    import type { ThemePreference } from '$lib/theme';
    import type { CommonIconName } from '../iconTypes';
@@ -267,10 +267,10 @@ index 32bcfc85..f40aaf1b 100644
      background: var(--surface);
      color: var(--text-strong);
      box-shadow: var(--shadow-segment);
-diff --git a/web/src/lib/components/parent/CompactShell.svelte b/web/src/lib/components/parent/CompactShell.svelte
+diff --git a/web/src/lib/components/settings/CompactShell.svelte b/web/src/lib/components/settings/CompactShell.svelte
 index 85b8e358..8770dbba 100644
---- a/web/src/lib/components/parent/CompactShell.svelte
-+++ b/web/src/lib/components/parent/CompactShell.svelte
+--- a/web/src/lib/components/settings/CompactShell.svelte
++++ b/web/src/lib/components/settings/CompactShell.svelte
 @@ -14,6 +14,7 @@
    import { resolvedTheme } from '$lib/state/appearance.svelte';
    import { supportsOrientationLock } from '$lib/platform';
@@ -368,10 +368,10 @@ index 85b8e358..8770dbba 100644
      background: var(--surface);
      color: var(--text-strong);
      box-shadow: var(--shadow-segment);
-diff --git a/web/src/lib/components/parent/ReportForm.svelte b/web/src/lib/components/parent/ReportForm.svelte
+diff --git a/web/src/lib/components/settings/ReportForm.svelte b/web/src/lib/components/settings/ReportForm.svelte
 index b5528457..78ea34b1 100644
---- a/web/src/lib/components/parent/ReportForm.svelte
-+++ b/web/src/lib/components/parent/ReportForm.svelte
+--- a/web/src/lib/components/settings/ReportForm.svelte
++++ b/web/src/lib/components/settings/ReportForm.svelte
 @@ -3,6 +3,7 @@
    import Button from '../design/Button.svelte';
    import Disclosure from '../design/Disclosure.svelte';
@@ -532,17 +532,17 @@ index 01cd9c64..6a462c47 100644
    .disclosure-demo-body {
      margin: 0;
      padding: 0 var(--space-3) var(--space-3);
-diff --git a/web/tests/flows-parent-center.spec.ts b/web/tests/flows-parent-center.spec.ts
+diff --git a/web/tests/flows-settings.spec.ts b/web/tests/flows-settings.spec.ts
 index f26709ac..f347d386 100644
---- a/web/tests/flows-parent-center.spec.ts
-+++ b/web/tests/flows-parent-center.spec.ts
-@@ -52,6 +52,49 @@ test('parent center sidebar switches the content pane (tablet layout)', async ({
+--- a/web/tests/flows-settings.spec.ts
++++ b/web/tests/flows-settings.spec.ts
+@@ -52,6 +52,49 @@ test('Settings sidebar switches the content pane (tablet layout)', async ({
    await expect(aboutMascot).toHaveClass(/icon-color/);
  });
 
-+test('Parent Center radio pickers use roving keyboard selection', async ({ page }) => {
++test('Settings radio pickers use roving keyboard selection', async ({ page }) => {
 +  await gotoApp(page);
-+  await openParentCenter(page);
++  await openSettingsModal(page);
 +
 +  const themePicker = page.getByRole('radiogroup', { name: 'Theme' });
 +  const light = themePicker.getByRole('radio', { name: 'Light' });
@@ -586,7 +586,7 @@ index f26709ac..f347d386 100644
  test('setting card spacing only applies to direct section siblings', async ({ page }) => {
    await page.addInitScript(
      (aiAccessToken) => localStorage.setItem(aiAccessToken, 'test-access-code'),
-@@ -139,6 +182,12 @@ test('parent center shows quick toggles on a landscape phone', async ({ page })
+@@ -139,6 +182,12 @@ test('Settings shows quick toggles on a landscape phone', async ({ page })
    // A phone-sized screen defaults to a portrait lock, so Portrait starts active.
    await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'true');
    await expect(page.locator('#quickLockLandscape')).toHaveAttribute('aria-pressed', 'false');

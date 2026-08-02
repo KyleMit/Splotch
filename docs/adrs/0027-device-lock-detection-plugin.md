@@ -4,11 +4,10 @@
 
 ## Context
 
-The Parent Center's setup panel (`SetupInstructions.svelte`) teaches parents how to lock the app for
-a toddler — **Guided Access** on iOS, **App Pinning** on Android — and already shows a green ✓ when
-the *web PWA* is installed (`display-mode: standalone`). We wanted the same confirmation for the
-device lock: when the lock is actually engaged, show a ✓ and swap the "enable" steps for "how to
-exit" steps.
+Settings' setup panel (`SetupInstructions.svelte`) teaches parents how to lock the app for a toddler
+— **Guided Access** on iOS, **App Pinning** on Android — and already shows a green ✓ when the *web
+PWA* is installed (`display-mode: standalone`). We wanted the same confirmation for the device lock:
+when the lock is actually engaged, show a ✓ and swap the "enable" steps for "how to exit" steps.
 
 Neither lock state is visible to the WebView/JS layer — both are native-only:
 
@@ -55,7 +54,7 @@ Add a minimal local Capacitor plugin, **`DeviceLock`**, with a single method
   state). Loaded through an `__IS_CAPACITOR__`-gated lazy `import()` so `@capacitor/core` stays out
   of the SSR/prerender graph and the web bundle (the same convention `NotchBand.svelte` uses).
 
-`SetupInstructions.svelte` re-checks **on Parent Center open only** — reusing its existing
+`SetupInstructions.svelte` re-checks **on Settings open only** — reusing its existing
 `$effect(open)` re-detect pattern with a `cancelled` guard — rather than subscribing to a live
 listener. iOS offers a change notification but Android has no clean lock-task event; on-open
 detection is accurate whenever a parent looks at the panel and keeps the plugin surface to one

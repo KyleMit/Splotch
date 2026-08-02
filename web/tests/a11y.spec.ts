@@ -1,14 +1,13 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { adminConsole, signInToAdmin } from './admin-helpers';
-import { openParentCenter } from './helpers';
+import { openSettingsModal } from './helpers';
 
-// Axe-core scans for the adult-facing surfaces (issue #458): /privacy,
-// /android-beta, /feedback, /admin (both auth states), and the Parent Center
-// dialog. The
-// toddler-facing canvas chrome is deliberately out of scope — its UX rules
-// (giant wordless buttons, no reading order) aren't WCAG's — so the Parent
-// Center scan is scoped to the dialog itself rather than the whole drawing page.
+// Axe-core scans the adult-facing surfaces (issue #458): /privacy,
+// /android-beta, /feedback, /admin (both auth states), and the Settings dialog.
+// The toddler-facing canvas chrome is deliberately out of scope — its UX rules
+// (giant wordless buttons, no reading order) aren't WCAG's — so the Settings scan
+// is scoped to the dialog itself rather than the whole drawing page.
 //
 // Only serious/critical violations fail the test, but the failure message
 // reports every violation axe found so the full picture is one run away.
@@ -90,10 +89,10 @@ test('/admin logged in has no serious accessibility violations', async ({ page }
   await expect(page.getByText(token, { exact: true })).toBeHidden();
 });
 
-test('the Parent Center has no serious accessibility violations', async ({ page }) => {
+test('Settings has no serious accessibility violations', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#drawingCanvas')).toBeVisible();
-  await openParentCenter(page);
+  await openSettingsModal(page);
 
-  await expectNoSeriousViolations(page, '#parentHelpModal');
+  await expectNoSeriousViolations(page, '#settingsModal');
 });

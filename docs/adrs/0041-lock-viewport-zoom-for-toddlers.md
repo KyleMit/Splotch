@@ -40,14 +40,14 @@ comment in `web/src/app.html` records the rationale next to the tag and points b
 
 The obvious way to recover the accessibility point is to remove `user-scalable=no` from the viewport
 and instead suppress zoom gestures only on the canvas element (e.g. `touch-action` on the canvas,
-per-element gesture handling), leaving the rest of the UI — the Parent Center, setup instructions,
-and other parent-facing chrome — pinch-zoomable for low-vision users.
+per-element gesture handling), leaving the rest of the UI — Settings, setup instructions, and other
+parent-facing chrome — pinch-zoomable for low-vision users.
 
 This is a reasonable future direction but is **out of scope as an autonomous change** because it is
 a product/UX decision, not a mechanical fix:
 
 * It changes real behavior for parents and children, and would need design review and testing across
-  the drawing surface, the action controls, and the Parent Center.
+  the drawing surface, the action controls, and Settings.
 * The parent-facing text is intentionally minimal and already large; the added complexity of a mixed
   zoomable/non-zoomable page has to earn its keep.
 

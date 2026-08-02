@@ -66,7 +66,7 @@
      60px button minus its 2px borders), so the icons' 56-unit viewBox maps 1:1
      to CSS px — the level-5 hole is exactly the 44px the eraser actually wipes.
      Pinning (not 100%) keeps that mapping when the touch target shrinks or grows
-     — the portrait 55px buttons and the Parent Center's --action-btn-scale
+     — the portrait 55px buttons and the --action-btn-scale set in Settings
      (70–130%) must never rescale the holes. */
   .stroke-width-menu.eraser-mode .flyout-option {
     padding: 0;

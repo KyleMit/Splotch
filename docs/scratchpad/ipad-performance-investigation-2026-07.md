@@ -26,7 +26,7 @@ architecture decision: retain one production renderer rather than add platform d
 implementations.
 
 Subsequent work made theme switching, screenshot save, coloring-page selection, rotation, clear,
-brush selection, Parent Center transitions, and several cold UI mounts frame-bound. A committed
+brush selection, Settings transitions, and several cold UI mounts frame-bound. A committed
 seven-target deployment matrix and interactive report now compare web/native behavior across the
 physical iPad, iOS Simulator, Android emulator, and Mac. Physical Android web/native remain the two
 missing rows.
@@ -250,9 +250,9 @@ physical device, but it can catch reintroduction of the original architecture.
   global scheduling noise and is not an approval path.
 * Android native uses Appium to attach to the Capacitor WebView.
 * Mac uses headed Playwright WebKit.
-* Native rotation must unlock the real product preference through Parent Center, reload so the
-  Capacitor plugin releases the platform lock, then restore the preference. A profiling-only state
-  mutation would test a path no parent performs.
+* Native rotation must unlock the real product preference through Settings, reload so the Capacitor
+  plugin releases the platform lock, then restore the preference. A profiling-only state mutation
+  would test a path no parent performs.
 
 ### Measure the action, not a convenient nearby window
 
@@ -280,7 +280,7 @@ The original 30-repeat idle artifact re-scores at 16.8 ms P95 and attributed max
 66.6 ms raw max. A fresh 30-repeat physical-Android run scored 120 of 8,991 raw frames and passed at
 16.8 ms P95/max. Focused current-build checks kept sound off/on, theme, coloring, screenshot, and
 portrait-to-landscape rotation inside the gates. They also retained three action-attributed reds for
-the final regression pass: Parent Center open at 41.6 ms, advanced-controls disable at 41.7 ms, and
+the final regression pass: Settings open at 41.6 ms, advanced-controls disable at 41.7 ms, and
 landscape-to-portrait rotation at 75 ms. Historical pre-fix theme, coloring, screenshot, and
 rotation artifacts still fail through the legacy raw-frame fallback.
 
@@ -352,7 +352,7 @@ The branch history is the most exact chronology of retained work:
 | `67d1fe14` | Keep What's New frames responsive                      |
 | `81470266` | Make theme profiling self-contained                    |
 | `a977f457` | Add action-aligned performance diagnostics             |
-| `3b8ca269` | Scope live Parent Center state to its panel            |
+| `3b8ca269` | Scope live Settings state to its panel                 |
 | `b91fcc08` | Group advanced-control transitions                     |
 
 ## Current status and unfinished work
@@ -366,10 +366,10 @@ task-specific files in `docs/handoff/`:
 * refresh the committed report to the final product commit;
 * address PR review feedback against the final branch, revalidating every comment.
 
-One behavior-test follow-up is also known: the full Parent Center Playwright file passed 9/10 after
-the advanced-controls change; the remaining assertion expected five separate What’s New date rows,
-while the new grouped release-history UI presents one group. That is a stale test expectation, not
-an observed performance regression, but it must be validated against intended UX before changing.
+One behavior-test follow-up is also known: the full Settings Playwright file passed 9/10 after the
+advanced-controls change; the remaining assertion expected five separate What’s New date rows, while
+the new grouped release-history UI presents one group. That is a stale test expectation, not an
+observed performance regression, but it must be validated against intended UX before changing.
 
 ## Authoritative references
 

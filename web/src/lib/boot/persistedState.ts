@@ -5,7 +5,7 @@ import { hydrateDurableStorage } from '$lib/storage';
 import { applyDeviceOrientationPreference } from '$lib/orientation';
 
 export async function hydratePersistedState(): Promise<void> {
-  // Load the optional saved-photo folder name for the Parent Center display
+  // Load the optional saved-photo folder name for display in Settings
   // (web/desktop only; no effect on whether saves happen). Fire-and-forget:
   // nothing downstream needs the folder name before it arrives.
   void hydrateSaveFolder();

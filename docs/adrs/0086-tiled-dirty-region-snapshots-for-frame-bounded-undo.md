@@ -402,7 +402,7 @@ Before shipping a change to this architecture:
 ### Context
 
 The original three-paper budget deliberately allowed canvas-spanning commands to reduce effective
-depth to two or three. Parent Center simultaneously advertised “Undo now goes back 20 steps.” The
+depth to two or three. Settings simultaneously advertised “Undo now goes back 20 steps.” The
 adaptive test established a memory ceiling but did not establish whether the reduced depth occurred
 under realistic child input.
 
@@ -428,11 +428,11 @@ that fits the measured twenty-command workload.
 
 ### Decision
 
-`TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE` is six. `MAX_UNDO_DEPTH` and the Parent Center release note
-remain twenty. The same trusted-touch sweep on the final code retained all twenty commands with
-103,859,876 patch bytes under the 106,580,352-byte budget; the small-stroke control again retained
-twenty with 4,990,880 patch bytes. All forty final undos completed in 0–1 ms and both cohorts ended
-at zero snapshots with `aria-disabled=true`.
+`TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE` is six. `MAX_UNDO_DEPTH` and Settings release note remain
+twenty. The same trusted-touch sweep on the final code retained all twenty commands with 103,859,876
+patch bytes under the 106,580,352-byte budget; the small-stroke control again retained twenty with
+4,990,880 patch bytes. All forty final undos completed in 0–1 ms and both cohorts ended at zero
+snapshots with `aria-disabled=true`.
 
 The contract is executable in two layers:
 
@@ -449,7 +449,7 @@ update the user-facing promise in the same change if twenty realistic sweeps no 
 
 ### Consequences
 
-* \+ Realistic large sweeping input and small marks both deliver the twenty steps Parent Center
+* \+ Realistic large sweeping input and small marks both deliver the twenty steps Settings
   advertises.
 * \+ Patch restore remains frame-bounded; the change adds resident capacity without adding encode or
   decode work.

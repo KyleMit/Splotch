@@ -35,7 +35,7 @@ asset catalog.
 | 02 | `02-coloring-book.png` | The built-in coloring books (Animals pages)                                               |
 | 03 | `03-color-page.png`    | Coloring a page inside the lines                                                          |
 | 04 | `04-color-picker.png`  | The rainbow color picker (hundreds of colors)                                             |
-| 05 | `05-parent-center.png` | The Parent Center — toggle tools, "no ads, no tracking, no accounts"                      |
+| 05 | `05-settings.png`      | Settings — toggle tools, "no ads, no tracking, no accounts"                               |
 
 ## Portrait vs. landscape
 

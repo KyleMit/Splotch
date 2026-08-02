@@ -217,13 +217,13 @@ multi-touch input — the best way to get accurate profiles.
       (Android 16), which satisfies the **Aug 31, 2026** deadline. Play raises this yearly — recheck
       each August against the
       [target API level policy](https://support.google.com/googleplay/android-developer/answer/11926878).
-* [ ] Test the AI flow on a real device: enter an access code in Parent Center, verify the image
+* [ ] Test the AI flow on a real device: enter an access code in Settings, verify the image
       round-trips against `https://splotch.art`.
 * [ ] Test offline: enable airplane mode → AI button disappears, everything else works.
 * [ ] Test "save to gallery" → confirm a **Splotch** album with the PNG, and that the photo-add
       permission prompt reads sensibly.
-* [ ] Test App Pinning: pin Splotch, reopen the Parent Center → the lock section shows a green ✓ +
-      the unpin steps (via the custom `DeviceLock` plugin,
+* [ ] Test App Pinning: pin Splotch, reopen Settings → the lock section shows a green ✓ + the unpin
+      steps (via the custom `DeviceLock` plugin,
       `android/app/src/main/java/art/splotch/app/DeviceLockPlugin.java`, registered in
       `MainActivity`).
 
@@ -304,14 +304,15 @@ re-verify if that flow changes:
 * **Consent** — generation is never automatic; it fires only on a tap, and only after a grown-up
   supplied a credential. There are **two** unlock paths, and a Play reviewer asking how consent is
   obtained needs both:
-  1. **Typed in the Parent Center** — `AiKeyManager.svelte` verifies the input and stores it
+  1. **Typed in Settings** — `AiKeyManager.svelte` verifies the input and stores it
      (`setAiAccessToken` for an access code, `setAiUserApiKey` for a BYO Gemini key). Consent is the
-     grown-up's own deliberate entry, behind the Parent Center gate a child can't pass.
+     grown-up's own deliberate entry. Opening Settings is not itself a parental gate; if policy
+     requires a challenge for credential entry, apply it to this operation.
   2. **An invite link** — `captureAiAccessTokenFromUrl` (`state/settings.svelte.ts:236-241`) reads
      `?ai_access_token=` on load, stores it, and rewrites the URL. The links are minted by
      `buildInvites` in `/admin` (`server/admin.ts:92-95`). Consent is still parent-mediated — an
-     admin hands the link to a specific grown-up — but it is *not* a Parent Center interaction, so
-     don't describe the Parent Center as the only gate.
+     admin hands the link to a specific grown-up — but it is *not* a Settings interaction, so don't
+     describe Settings as a gate.
 
   Keep both paths grown-up-initiated. Anything that unlocks generation without a credential a
   grown-up chose to supply breaks the consent story.
@@ -340,7 +341,7 @@ assumption breaks:
 
 | Policy                                          | Why it's N/A                                                                                                                         |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Anonymous / random chat, Child Safety Standards | No chat, social, or user-to-user features at all. The Parent Center report form is one-way to our GitHub issue tracker.              |
+| Anonymous / random chat, Child Safety Standards | No chat, social, or user-to-user features at all. Settings report form is one-way to our GitHub issue tracker.                       |
 | SMS & Call Log Permissions (`READ_CALL_LOG`)    | Manifest declares only `INTERNET`, `ACCESS_NETWORK_STATE`, `WRITE_EXTERNAL_STORAGE` (maxSdk 28). No accounts, no phone verification. |
 | Location disclosures                            | No location permission and no Geolocation use; `securityHeaders.ts` denies `geolocation=()` outright.                                |
 | Personal Loans / Earned Wage Access             | Not a financial app.                                                                                                                 |

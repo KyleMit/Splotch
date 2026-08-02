@@ -76,7 +76,7 @@ export const scale = {
   // Text-input font-size floor: iOS Safari / WKWebView zooms the visual
   // viewport when a focused input's font-size is < 16px, which on the
   // drawing route would strand the canvas zoomed with no way to reset it
-  // (ADR-0076). Every parent-center text input must reference this.
+  // (ADR-0076). Every text input in Settings must reference this.
   inputFontSize: 'max(16px, var(--font-size-md))',
 
   // The app-wide sans stack. Components reference var(--font-family) rather
@@ -142,7 +142,7 @@ export const zIndex = {
   zClearPreview: 400,
   zRipple: 500,
 
-  zCornerButton: 900, // ParentHelpButton
+  zCornerButton: 900, // SettingsButton
   zPanel: 901, // ActionsPanel
   // app.css .flyout-menu (Brush Menu + Stroke Width Menu) — the one value here
   // that is NOT in the root context. .actions-panel is position: fixed with a

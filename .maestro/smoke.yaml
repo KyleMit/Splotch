@@ -1,8 +1,8 @@
 # Deployment smoke test (Maestro), shared by Android and iOS. Proves the
 # shipped app actually boots: the Capacitor WebView starts AND the production
-# web bundle renders — not a white screen or a crash. "Parent Center" is the
+# web bundle renders — not a white screen or a crash. "Settings" is the
 # accessibility label of the always-present help button
-# (src/lib/components/ParentCenter.svelte), so seeing it means real UI painted,
+# (src/lib/components/SettingsModal.svelte), so seeing it means real UI painted,
 # not just that the process launched.
 #
 # It also opens the admin console from the About section. That guards a native-only
@@ -22,17 +22,17 @@ appId: art.splotch.app
 - launchApp:
     clearState: true
 - extendedWaitUntil:
-    visible: 'Parent Center'
+    visible: 'Settings'
     timeout: 30000
 - takeScreenshot: .maestro/screenshots/smoke-launch
 
-# Open Parent Center → About, reveal the hidden admin link (5 taps on the
+# Open Settings → About, reveal the hidden admin link (5 taps on the
 # version, which sits in the footer below the fold — scroll to it first), follow
 # it, and confirm the admin console actually painted. The "Manage AI access
 # codes" subtitle renders offline (it's above the login form), so this needs no
 # network — only that /admin/native loaded and rendered instead of a blank.
-- tapOn: 'Parent Center'
-# The Parent Center is a flat section list (ParentCenter.svelte): a hub row on a
+- tapOn: 'Settings'
+# Settings is a flat section list (SettingsModal.svelte): a hub row on a
 # phone-width WebView, a sidebar item on a tablet. Tapping "About" opens that
 # section either way — no horizontal tab swipe anymore — and the tagline proves
 # we landed on it.

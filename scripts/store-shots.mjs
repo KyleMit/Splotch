@@ -30,7 +30,7 @@ import {
   pickPage,
   waitForColoringOverlay,
   openColorPicker,
-  openParentCenter,
+  openSettingsModal,
 } from './lib/app-driver.mjs';
 
 const OUT = join(ROOT, 'store-assets');
@@ -176,14 +176,14 @@ async function sceneColorPicker(browser, base, device, dir) {
 }
 sceneColorPicker.label = '04-color-picker';
 
-async function sceneParentCenter(browser, base, device, dir) {
+async function sceneSettingsModal(browser, base, device, dir) {
   const { ctx, page } = await openAppPage(browser, base, device);
-  await openParentCenter(page);
+  await openSettingsModal(page);
   await sleep(SCREENSHOT_SETTLE_MS);
-  await shot(page, `${dir}/05-parent-center.png`);
+  await shot(page, `${dir}/05-settings.png`);
   await ctx.close();
 }
-sceneParentCenter.label = '05-parent-center';
+sceneSettingsModal.label = '05-settings';
 
 function featureGraphicHtml(iconB64) {
   return `<!doctype html><html><head><meta charset="utf-8">
@@ -229,7 +229,7 @@ const SCENES = [
   sceneColoringBook,
   sceneColorPage,
   sceneColorPicker,
-  sceneParentCenter,
+  sceneSettingsModal,
 ];
 
 const { base, stop } = await ensureDevServer(PORT);

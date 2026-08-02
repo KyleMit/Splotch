@@ -74,8 +74,8 @@ that are already correct in the prerendered HTML:
    * `--action-btn-scale` — button size; set only when ≠ 100% (the CSS `var()` fallback is the
      default). Keep the key/clamp in sync with `ACTION_BUTTON_SCALE_*`.
    * `data-drawer-open` — present only when the drawer is open (default: closed).
-   * `data-off-adv` / `data-off-<control>` — present only when advanced controls, or that
-     Parent-Center control, is switched **off** (default: on/shown).
+   * `data-off-adv` / `data-off-<control>` — present only when advanced controls, or that Settings
+     control, is switched **off** (default: on/shown).
    * `data-brush` — present for a persisted non-default brush (default: pen).
 
    This is what lets the drawer be **always rendered** (in the DOM) yet shown/hidden and the
