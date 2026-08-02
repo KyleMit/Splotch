@@ -374,6 +374,8 @@ body {
   justify-content: center;
 }
 
+/* Camera flash and photographic paper stay white across themes so the
+   effect reads as a physical polaroid. */
 .polaroid-flash {
   position: absolute;
   inset: 0;
