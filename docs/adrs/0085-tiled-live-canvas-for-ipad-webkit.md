@@ -184,10 +184,10 @@ time, into a 4×4 offscreen raster base after 1.5 seconds without active input. 
 pending compaction. Each base tile tracks whether folding has painted it; blank base tiles neither
 blit nor make their matching live canvas visible during repaint. ADR-0086 replaces ordinary
 vector-replay undo with cropped, tile-local pre-command patches: a pop restores only the pixels that
-command changed. Twenty realistic full-paper sweeps retain twenty undo steps within ADR-0086's
-six-paper resident byte budget; still-larger retained regions remain adaptively bounded. Clear is an
-ordinary full-tile snapshot command, and export composites the tiled base and retained commands into
-its destination.
+command changed. Twenty realistic large sweeps retain twenty undo steps within ADR-0086's six-paper
+resident byte budget; still-larger retained regions remain adaptively bounded. Clear is an ordinary
+full-tile snapshot command, and export composites the tiled base and retained commands into its
+destination.
 
 Brush-specific invariants are:
 
