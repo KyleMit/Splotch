@@ -14,7 +14,6 @@ export const STORAGE_KEYS = {
   aiAccessToken: 'splotch-ai-access-token',
   advancedControls: 'splotch-advanced-controls',
   drawerOpen: 'splotch-drawer-open',
-  adminLinkVisible: 'splotch-admin-link-visible',
   lockRotation: 'splotch-lock-rotation',
   forceLandscape: 'splotch-force-landscape',
   pencilEraserEnabled: 'splotch-pencil-eraser-enabled',

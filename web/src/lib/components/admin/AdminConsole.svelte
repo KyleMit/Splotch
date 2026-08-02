@@ -1,9 +1,8 @@
 <script module lang="ts">
-  // Presentational shell for the admin console, shared by the two front doors:
-  // /admin (web, server-rendered with form actions + cookie session) and
-  // /admin/native (native apps, JSON API + bearer session). The pages own the
-  // auth transport and data; this component owns the markup, styles, and
-  // small interaction state (copy feedback, clearing inputs). Callbacks return
+  // Presentational shell for the admin console at /admin (web-only,
+  // server-rendered with form actions + cookie session). The page owns the auth
+  // transport and data; this component owns the markup, styles, and small
+  // interaction state (copy feedback, clearing inputs). Callbacks return
   // whether the operation succeeded so the component knows when to reset.
   // Per-token AI generation tally (mirrors $lib/server/usage TokenUsage). Kept
   // structural here so this client component never imports server code.

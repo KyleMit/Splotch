@@ -49,11 +49,6 @@ const BOOL_SETTINGS = {
   advancedControlsEnabled: [STORAGE_KEYS.advancedControls, true],
   // Remembered open/closed state of the drawer (defaults closed).
   drawerOpen: [STORAGE_KEYS.drawerOpen, false],
-  // Whether the hidden link to the /admin console is shown in the About tab.
-  // Unlocked by the version-tap easter egg and kept visible for anyone who has
-  // an admin_session cookie; reset to hidden on logout / failed login / leaving
-  // the admin page without signing in (see /admin and AboutSection).
-  adminLinkVisible: [STORAGE_KEYS.adminLinkVisible, false],
   // Parent device-orientation controls. The force-landscape default is filled
   // in below from the viewport so phones start portrait while tablet-class
   // devices, including iPad Mini, start landscape.
@@ -167,7 +162,6 @@ export const setAiCustomization = makeBoolSetter('aiCustomizationEnabled');
 export const setAutoSaveAi = makeBoolSetter('autoSaveAiEnabled');
 export const setAdvancedControls = makeBoolSetter('advancedControlsEnabled');
 export const setDrawerOpen = makeBoolSetter('drawerOpen');
-export const setAdminLinkVisible = makeBoolSetter('adminLinkVisible');
 export const setLockRotation = makeBoolSetter('lockRotationEnabled');
 export const setForceLandscapeOrientation = makeBoolSetter('forceLandscapeOrientation');
 export const setPencilEraserEnabled = makeBoolSetter('pencilEraserEnabled');

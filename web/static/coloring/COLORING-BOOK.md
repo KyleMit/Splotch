@@ -1,96 +1,11 @@
 # Coloring Book Sections
 
-## IP
+Every book here is original work. Third-party characters and franchises are out of scope: the app
+ships to the Play Store and the App Store declared for a children's audience, where trademarked
+likenesses are an IP-rejection risk, and this file is served from `static/` — so it is copied into
+the web build and into both native app bundles, where its contents are readable.
 
-### Frozen
-
-* Ana
-* Elsa
-* Kristoph
-* Sven
-* Olaf
-* Pabbie
-
-### Bluey
-
-* Bluey
-* Bingo
-* Bandit
-* Chili
-* Muffin
-* Socks
-
-### Paw Patrol
-
-* Chase
-* Marshall
-* Skye
-* Rubble
-* Rocky
-* Zuma
-* ---
-* Ryder
-* Everest
-* Tracker
-* Liberty
-
-### Spidey and His Amazing Friends
-
-* Spidey
-* Ghost-Spider
-* Spin
-* Web-E
-* Hulk
-* Green Goblin
-* ---
-* Rhino
-* Black Panther
-* Iron Man
-* Doc Ock
-
-### Classic Disney / Mickey Mouse
-
-* Mickey Mouse
-* Minnie Mouse
-* Donald Duck
-* Goofy
-* Pluto
-* Daisy Duck
-* ---
-* Pete
-* Clarabelle Cow
-* Chip
-* Dale
-
-### Disney Princesses
-
-* Moana
-* Ariel
-* Rapunzel
-* Belle
-* Cinderella
-* Tiana
-* ---
-* Jasmine
-* Mulan
-* Snow White
-* Aurora
-
-### Gabby's Dollhouse
-
-* Gabby
-* Pandy Paws
-* Cakey Cat
-* Mercat
-* CatRat
-* Kitty Fairy
-* ---
-* Baby Box
-* DJ Catnip
-* Pillow Cat
-* Carlita
-
-## Generic
+## Books
 
 ### Farm Animals
 

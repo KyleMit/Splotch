@@ -22,10 +22,14 @@ server, so they build a **fully static** export instead:
   `capacitor.config.json`).
 * The server-only routes (`/api`, `/admin`, `/dev`) are excluded from the bundle (`strict: false`).
   The home page is prerendered to `index.html`; `200.html` is the SPA fallback.
-* The admin console is still reachable on device: the bundle includes a prerendered `/admin/native`,
-  a static page that manages the same access tokens through the hosted `/api/admin/*` endpoints
-  (bearer-session auth, stored in the Keychain/Keystore — see the `api` skill). The About-tab admin
-  link points there on native.
+* The admin console is **web-only** and has no native counterpart. It is also unlinked from the app
+  on every platform — reached by typing `/admin`. A hidden in-app gesture that reveals a
+  token-minting console is exactly the shape Play's Deceptive Behavior policy and App Review 2.3.1
+  are written against, and worse in an app declared for a children's audience.
+* Routes that must not reach the bundle at all are listed in `web/nativeExcludedRoutes.ts`, whose
+  Vite plugin blanks their module source at build time; `scripts/check-native-bundle.mjs` scans the
+  built output and fails `build:cap` if a forbidden host survives. A route's `prerender` flag alone
+  drops only its HTML — the JS chunk, and every string in it, still ships.
 
 ### Offline vs. online
 
@@ -75,8 +79,8 @@ Never let a Promise resolve to the plugin object itself (e.g.
 registered plugin is a Proxy whose every property — `then` included — is a native-method call, so
 it's "thenable": promise assimilation invokes `plugin.then(resolve, reject)`, Capacitor dispatches a
 native method named `then` ("not implemented"), and it **never settles**. The awaiting promise hangs
-forever. This silently blanked `/admin/native` (its render gated on `await loadAdminSession()`)
-until the loaders were funnelled through `lazyPluginModule`. A gated inline
+forever. This silently blanked a since-removed native page whose render gated on an awaited plugin
+load, until the loaders were funnelled through `lazyPluginModule`. A gated inline
 `import('…').then(({ Plugin }) => …)` in a component is equally safe — it resolves to the module
 namespace, never the proxy.
 

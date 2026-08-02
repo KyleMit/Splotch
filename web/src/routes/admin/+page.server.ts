@@ -47,12 +47,6 @@ function requireAdmin(cookies: Cookies) {
 }
 
 export const load: PageServerLoad = async ({ cookies, url }) => {
-  // `hasSession` just reports whether an admin_session cookie is present (valid
-  // or not). The client uses it only to decide whether to keep the public
-  // /admin link visible in the About tab — it's not a security signal, so a
-  // stale/invalid cookie still counts as "this user found their way in".
-  const hasSession = Boolean(cookies.get(SESSION_COOKIE));
-
   // Unauthenticated visitors get the login form instead of a 403, so the page
   // is usable without ever putting the secret in a link.
   if (!isAdmin(cookies)) {
@@ -60,7 +54,6 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
     // simple — the invites section only renders in the authed branch anyway.
     return {
       authed: false,
-      hasSession,
       persistent: ASSUME_PERSISTENT,
       invites: [] as { token: string; url: string }[],
     };
@@ -69,17 +62,16 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
   // forward — an actively-used admin never has to log in again.
   setSession(cookies);
   const { tokens, persistent } = await getTokensStatus();
-  // Pair each invite with its generation tally (web admin only — the native
-  // /api/admin/tokens snapshot doesn't carry usage, so AdminConsole renders
-  // the stats only when `usage` is present). `usage[token] ?? null` keeps the
-  // field always-defined here so the component can tell "never used" (null)
-  // apart from "usage unavailable" (undefined, the native case).
+  // Pair each invite with its generation tally. `usage[token] ?? null` keeps the
+  // field always-defined so the component can tell "never used" (null) apart
+  // from "usage unavailable" (undefined, the JSON /api/admin/tokens snapshot,
+  // which carries no usage).
   const usage = await getUsage(tokens);
   const invites = buildInvites(tokens, url.origin).map((invite) => ({
     ...invite,
     usage: usage[invite.token] ?? null,
   }));
-  return { authed: true, hasSession, persistent, invites };
+  return { authed: true, persistent, invites };
 };
 
 // The `add`/`remove` actions differ only in which core mutation they call and

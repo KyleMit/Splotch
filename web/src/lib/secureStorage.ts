@@ -4,9 +4,7 @@ import { isNative } from './platform';
 import { lazyPluginModule } from './nativePlugin';
 import { idbKvStore, lazyIdbDatabase } from './idb';
 
-// Secure home for the app's client-held secrets — the parent's Gemini API key
-// and the admin session token (used by the native apps to authenticate against
-// /api/admin/*).
+// Secure home for the app's client-held secrets — the parent's Gemini API key.
 //
 //  • Native (iOS/Android): secrets are handed to @aparajita/capacitor-secure-storage,
 //    which stores them in the iOS Keychain / Android Keystore — hardware-backed and
@@ -22,7 +20,6 @@ import { idbKvStore, lazyIdbDatabase } from './idb';
 // Each secret has a stable name that doubles as the native store key and the
 // IndexedDB row key for its { iv, data } payload on the web.
 const API_KEY = 'gemini-api-key';
-const ADMIN_SESSION = 'admin-session';
 
 // IndexedDB layout for the web path.
 const DB_NAME = 'splotch-secure';
@@ -204,9 +201,3 @@ async function clearSecret(name: string) {
 export const saveApiKey = (value: string) => saveSecret(API_KEY, value);
 export const loadApiKey = () => loadSecret(API_KEY);
 export const clearApiKey = () => clearSecret(API_KEY);
-
-// The derived admin session token (never the raw admin secret), returned by
-// POST /api/admin/login and replayed as a bearer header by the admin console.
-export const saveAdminSession = (value: string) => saveSecret(ADMIN_SESSION, value);
-export const loadAdminSession = () => loadSecret(ADMIN_SESSION);
-export const clearAdminSession = () => clearSecret(ADMIN_SESSION);
