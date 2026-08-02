@@ -85,17 +85,23 @@ export async function openColoringDialog(page: Page) {
   );
 }
 
+export async function openFarmPageGrid(page: Page) {
+  const dialog = page.locator('#coloring-book-dialog');
+  const pages = dialog.getByRole('button', { name: /Farm coloring page/i });
+  await retryOpen(
+    pages.first(),
+    () => dialog.getByRole('button', { name: /Farm coloring book/i }).click({ timeout: 1000 }),
+    { settle: 1000 }
+  );
+  return pages;
+}
+
 // Apply the first Farm page and wait for its ready-gated full-resolution
 // overlay; that decoded line art enables the deferred fill.
 export async function applyFarmPage(page: Page) {
   await openColoringDialog(page);
   const dialog = page.locator('#coloring-book-dialog');
-  const farmPage = dialog.getByRole('button', { name: /Farm coloring page/i }).first();
-  await retryOpen(
-    farmPage,
-    () => dialog.getByRole('button', { name: /Farm coloring book/i }).click({ timeout: 1000 }),
-    { settle: 1000 }
-  );
+  const farmPage = (await openFarmPageGrid(page)).first();
   await expect(async () => {
     if (await dialog.isVisible()) await farmPage.click();
     await expect(dialog).toBeHidden({ timeout: COLORING_DIALOG_CLOSE_SETTLE_MS });

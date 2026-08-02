@@ -1,9 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { rotateViewportViaCdp } from './cdp';
-import { draw, gotoApp, openParentCenter, renderedCanvasHandle, retryOpen } from './helpers';
+import { draw, gotoApp, openParentCenter, renderedCanvasHandle } from './helpers';
 
-import { applyFarmPage, openColoringDialog, openDrawer, pickBrush } from './flows-harness';
+import {
+  applyFarmPage,
+  openColoringDialog,
+  openDrawer,
+  openFarmPageGrid,
+  pickBrush,
+} from './flows-harness';
 
 async function opaquePixelCount(page: Page) {
   const canvas = await renderedCanvasHandle(page);
@@ -21,17 +27,6 @@ async function opaquePixelCount(page: Page) {
   } finally {
     await canvas.dispose();
   }
-}
-
-async function openFarmPageGrid(page: Page) {
-  const dialog = page.locator('#coloring-book-dialog');
-  const pages = dialog.getByRole('button', { name: /Farm coloring page/i });
-  await retryOpen(
-    pages.first(),
-    () => dialog.getByRole('button', { name: /Farm coloring book/i }).click({ timeout: 1000 }),
-    { settle: 1000 }
-  );
-  return pages;
 }
 
 // ── coloring book overlay ───────────────────────────────────────────────────
