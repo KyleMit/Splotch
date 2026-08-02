@@ -1,3 +1,10 @@
+import { flushSync } from 'svelte';
+import { pointerWasResumed } from '$lib/drawing/strokeMath';
+
+// Browsers tolerate small click movement; match that forgiveness before a
+// control exit irreversibly turns the press into a drag.
+const TAP_MOVEMENT_TOLERANCE_PX = 8;
+
 // iPadOS Scribble claims an Apple Pencil stroke that starts within ~450ms of a
 // pen TAP anywhere on the page: the stroke's pointer events still arrive, the
 // engine paints it, but the system never presents those frames — the ink is
@@ -37,43 +44,123 @@ export function scribbleGuard(node: HTMLElement) {
 // Companion for click-driven controls under scribbleGuard: cancelling a stylus
 // tap's touchstart also suppresses its synthesized click, so activation moves
 // to pointerup. The press must have started on the same control with the same
-// pointer (pen gets no implicit capture, so a drag that merely ends on the
-// control sees no matching pointerdown and never fires it; sliding off clears
-// the press via pointerleave). click stays wired for keyboard/assistive-tech
-// activation — those clicks have detail 0, no pointer press — while a real
-// pointer's trailing click (detail ≥ 1) is ignored, so the control never
-// double-fires where the guard is inert (finger, mouse, stylus outside iPadOS).
+// pointer (a drag that merely ends on the control sees no matching pointerdown
+// and never fires it). click stays wired for keyboard/assistive-tech activation
+// — those clicks have detail 0, no pointer press — while a real pointer's
+// trailing click (detail ≥ 1) is ignored, so the control never double-fires
+// where the guard is inert (finger, mouse, stylus outside iPadOS).
 export function scribbleTap(node: HTMLElement, activate: () => void) {
   let current = activate;
-  let pressedId: number | null = null;
-  const down = (e: PointerEvent) => {
-    pressedId = e.pointerId;
-  };
-  const clearPress = () => {
-    pressedId = null;
-  };
-  const up = (e: PointerEvent) => {
-    if (e.pointerId !== pressedId) return;
-    pressedId = null;
-    current();
-  };
+  let press:
+    | {
+        pointerId: number;
+        pointerType: string;
+        startX: number;
+        startY: number;
+        lastX: number;
+        lastY: number;
+        lastTime: number;
+        dragged: boolean;
+      }
+    | undefined;
+  const ownerWindow = node.ownerDocument.defaultView;
+
+  function finishPress(shouldActivate: boolean) {
+    if (!press) return;
+    press = undefined;
+    if (shouldActivate) {
+      current();
+      flushSync();
+    }
+  }
+
+  function eventHitsControl(e: PointerEvent): boolean {
+    const hit = node.ownerDocument.elementFromPoint(e.clientX, e.clientY);
+    return hit === node || (hit !== null && node.contains(hit));
+  }
+
+  function minViewportSide(): number {
+    const root = node.ownerDocument.documentElement;
+    return Math.min(
+      root.clientWidth || ownerWindow?.innerWidth || 0,
+      root.clientHeight || ownerWindow?.innerHeight || 0
+    );
+  }
+
+  function move(e: PointerEvent) {
+    if (!press || e.pointerId !== press.pointerId) return;
+    const now = Date.now();
+    const jump = Math.hypot(e.clientX - press.lastX, e.clientY - press.lastY);
+    const isMissingPenLift =
+      press.pointerType === 'pen' &&
+      e.pointerType === 'pen' &&
+      e.buttons !== 0 &&
+      !press.dragged &&
+      pointerWasResumed(now - press.lastTime, jump, minViewportSide());
+
+    if (isMissingPenLift) {
+      // The move belongs to the next physical contact. Keep it away from the
+      // canvas until activation and its reactive engine bridge have flushed.
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      finishPress(true);
+      return;
+    }
+
+    if (
+      Math.hypot(e.clientX - press.startX, e.clientY - press.startY) > TAP_MOVEMENT_TOLERANCE_PX &&
+      !eventHitsControl(e)
+    ) {
+      press.dragged = true;
+    }
+    press.lastX = e.clientX;
+    press.lastY = e.clientY;
+    press.lastTime = now;
+  }
+
+  function up(e: PointerEvent) {
+    if (!press || e.pointerId !== press.pointerId) return;
+    finishPress(!press.dragged && eventHitsControl(e));
+  }
+
+  function cancel(e: PointerEvent) {
+    if (press && e.pointerId === press.pointerId) finishPress(false);
+  }
+
+  function down(e: PointerEvent) {
+    if (press) return;
+    press = {
+      pointerId: e.pointerId,
+      pointerType: e.pointerType,
+      startX: e.clientX,
+      startY: e.clientY,
+      lastX: e.clientX,
+      lastY: e.clientY,
+      lastTime: Date.now(),
+      dragged: false,
+    };
+  }
+
   const click = (e: MouseEvent) => {
     if (e.detail === 0) current();
   };
+  // Lifetime-scoped capture listeners make their ordering stable. A resumed
+  // move is selected and flushed before target-phase drawing can observe it.
+  ownerWindow?.addEventListener('pointermove', move, true);
+  ownerWindow?.addEventListener('pointerup', up, true);
+  ownerWindow?.addEventListener('pointercancel', cancel, true);
   node.addEventListener('pointerdown', down);
-  node.addEventListener('pointerup', up);
-  node.addEventListener('pointercancel', clearPress);
-  node.addEventListener('pointerleave', clearPress);
   node.addEventListener('click', click);
   return {
     update(next: () => void) {
       current = next;
     },
     destroy() {
+      press = undefined;
+      ownerWindow?.removeEventListener('pointermove', move, true);
+      ownerWindow?.removeEventListener('pointerup', up, true);
+      ownerWindow?.removeEventListener('pointercancel', cancel, true);
       node.removeEventListener('pointerdown', down);
-      node.removeEventListener('pointerup', up);
-      node.removeEventListener('pointercancel', clearPress);
-      node.removeEventListener('pointerleave', clearPress);
       node.removeEventListener('click', click);
     },
   };
