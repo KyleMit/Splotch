@@ -75,6 +75,7 @@ declare global {
           pointerId: number;
           x: number;
           y: number;
+          buttons?: number;
         }[],
         pointerType?: string
       ): void;

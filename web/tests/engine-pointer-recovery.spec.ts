@@ -188,6 +188,26 @@ test('a merged pen stream still targeted at a UI control paints once over the ca
   expect(s.canUndo).toBe(true);
 });
 
+test('a pen that exits at the edge and returns resumes drawing', async ({ page }) => {
+  const s = await page.evaluate(() => {
+    window.__engine.pointerEventsSync(
+      [
+        { type: 'pointerdown', pointerId: 1, x: 40, y: 150, buttons: 1 },
+        { type: 'pointermove', pointerId: 1, x: 120, y: 150, buttons: 1 },
+        { type: 'pointerout', pointerId: 1, x: 299, y: 150, buttons: 1 },
+        // Returns still down — no pointerdown.
+        { type: 'pointermove', pointerId: 1, x: 200, y: 150, buttons: 1 },
+        { type: 'pointermove', pointerId: 1, x: 260, y: 150, buttons: 1 },
+        { type: 'pointerup', pointerId: 1, x: 260, y: 150, buttons: 0 },
+      ],
+      'pen'
+    );
+    return { ...window.__engineState, painted: window.__engine.nonTransparentCount() };
+  });
+  expect(s.strokeEnds).toBe(2);
+  expect(s.painted).toBeGreaterThan(500);
+});
+
 // Adoption must only fire for streams whose pointerdown was genuinely dropped.
 // A pen gesture that BEGAN on a UI control with a delivered pointerdown
 // (drag-to-clear, a picker drag, a slide off a swatch) crossing the canvas
