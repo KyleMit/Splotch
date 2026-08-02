@@ -69,12 +69,14 @@ record says whether any committed fast scenario also breached. A breach confined
 fast-set miss; two consecutive misses fail even if the membership calculation has no legal swap.
 
 The release job restores the newest unexpired `webkit-undo-full-history` Actions artifact through
-the repository API, passes its path to the full command, and uploads the updated record after
-success or failure with 90-day retention. A committed seed from the first compatible seven-scenario
-P95 run starts the chain when no artifact exists or restored history fails schema validation. A full
-run enters history only when every scenario produced at least one valid commit sample. The seed
-deliberately excludes older full runs that stored only commit maxima: mixing max and P95 would
-manufacture a trend from two measurement definitions.
+the repository API, passes its path to the full command, and uploads the record after success or
+failure with 90-day retention. A committed seed from the first compatible seven-scenario P95 run
+starts the chain when no artifact exists. The runner validates a restored candidate after download;
+if validation fails, it leaves that durable input untouched and writes the seed-derived current run
+only to the diagnostics directory rather than erasing the accumulated record. A full run enters
+history only when every scenario produced at least one valid commit sample. The seed deliberately
+excludes older full runs that stored only commit maxima: mixing max and P95 would manufacture a
+trend from two measurement definitions.
 
 The gate evaluates each scenario's `engine.commit` P95 and retains its maximum plus every raw sample
 in `undo-scenarios.json`. At the scenarios' sample size, P95 excludes one isolated maximum. GitHub's

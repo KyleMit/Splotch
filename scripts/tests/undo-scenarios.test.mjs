@@ -365,7 +365,8 @@ describe('engine selection', () => {
 
   it('falls back to the compatible seed when restored history is invalid', async () => {
     const historyPath = join(fixtureDir, 'restored-history.json');
-    writeFileSync(historyPath, '{"schemaVersion":0,"runs":[]}');
+    const invalidHistory = '{"schemaVersion":0,"runs":[]}';
+    writeFileSync(historyPath, invalidHistory);
     process.argv = [...process.argv, '--engine=webkit', `--fast-set-history=${historyPath}`];
     fakeBrowser(fakePage(), { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
@@ -379,9 +380,12 @@ describe('engine selection', () => {
     expect(warning).toHaveBeenCalledWith(
       expect.stringContaining('Could not use restored fast-set history')
     );
-    const history = JSON.parse(readFileSync(historyPath, 'utf8'));
-    expect(history.schemaVersion).toBe(1);
-    expect(history.runs).toHaveLength(2);
+    expect(readFileSync(historyPath, 'utf8')).toBe(invalidHistory);
+    const diagnosticHistory = JSON.parse(
+      readFileSync(join(fixtureDir, 'undo-fast-set-history.json'), 'utf8')
+    );
+    expect(diagnosticHistory.schemaVersion).toBe(1);
+    expect(diagnosticHistory.runs).toHaveLength(2);
   });
 
   it('does not append a full run when a scenario has no commit samples', async () => {

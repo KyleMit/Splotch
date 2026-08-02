@@ -709,7 +709,8 @@ export async function runUndoScenarios() {
 }
 
 function persistFastSetHistory({ results, settings, outDir, historyPath }) {
-  let history = readRestoredHistoryOrSeed(historyPath);
+  const restored = readRestoredHistoryOrSeed(historyPath);
+  let history = restored.history;
   const complete =
     results.length === ALL_UNDO_SCENARIO_KEYS.length &&
     results.every(
@@ -728,7 +729,7 @@ function persistFastSetHistory({ results, settings, outDir, historyPath }) {
   const artifactPath = join(outDir, 'undo-fast-set-history.json');
   const json = `${JSON.stringify(history, null, 2)}\n`;
   writeFileSync(artifactPath, json);
-  if (historyPath) {
+  if (historyPath && restored.canUpdateHistoryPath) {
     mkdirSync(dirname(historyPath), { recursive: true });
     writeFileSync(historyPath, json);
   }
@@ -767,7 +768,7 @@ function persistFastSetHistory({ results, settings, outDir, historyPath }) {
 function readRestoredHistoryOrSeed(historyPath) {
   if (historyPath && existsSync(historyPath)) {
     try {
-      return readFastSetHistory(historyPath);
+      return { history: readFastSetHistory(historyPath), canUpdateHistoryPath: true };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.warn(
@@ -775,7 +776,10 @@ function readRestoredHistoryOrSeed(historyPath) {
       );
     }
   }
-  return readFastSetHistory(FAST_SET_HISTORY_SEED_PATH);
+  return {
+    history: readFastSetHistory(FAST_SET_HISTORY_SEED_PATH),
+    canUpdateHistoryPath: !historyPath || !existsSync(historyPath),
+  };
 }
 
 // The commit gate, and why only WebKit gets it.
