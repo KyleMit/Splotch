@@ -3,7 +3,7 @@ import { SCREENSHOT_BUTTON_ID } from './screenshotFeedback';
 import { POLAROID_CLEANUP_TIMEOUT_MS } from './screenshotTiming';
 
 const POLAROID_MAX_WIDTH_PX = 480;
-const POLAROID_MIN_WIDTH_PX = 260;
+const POLAROID_PREFERRED_MIN_WIDTH_PX = 260;
 const POLAROID_VIEWPORT_WIDTH_FRACTION = 0.54;
 const POLAROID_VIEWPORT_MAX_WIDTH_FRACTION = 0.8;
 const POLAROID_MAX_HEIGHT_FRACTION = 0.7;
@@ -26,7 +26,7 @@ function polaroidSize(): PolaroidSize | null {
 
   const aspectRatio = paperCssWidth / paperCssHeight;
   const preferredWidth = Math.max(
-    POLAROID_MIN_WIDTH_PX,
+    POLAROID_PREFERRED_MIN_WIDTH_PX,
     Math.min(POLAROID_MAX_WIDTH_PX, window.innerWidth * POLAROID_VIEWPORT_WIDTH_FRACTION)
   );
   const cssWidth = Math.min(
