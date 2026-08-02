@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { encodeTiledPng } from './tiledPngCompositor';
+import { createTiledPngPreview, encodeTiledPng } from './tiledPngCompositor';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -80,5 +80,36 @@ describe('encodeTiledPng', () => {
       { fillStyle: '#fffaf0', compositeOperation: 'destination-over' },
     ]);
     expect(convertToBlob).toHaveBeenCalledWith({ type: 'image/png' });
+  });
+
+  it('downscales the composed export into a transferable preview bitmap', () => {
+    const source = { width: 400, height: 300 } as OffscreenCanvas;
+    const bitmap = {} as ImageBitmap;
+    const context = {
+      imageSmoothingEnabled: false,
+      imageSmoothingQuality: 'low' as ImageSmoothingQuality,
+      drawImage: vi.fn(),
+    };
+    const transferToImageBitmap = vi.fn(() => bitmap);
+    vi.stubGlobal(
+      'OffscreenCanvas',
+      class {
+        constructor(
+          readonly width: number,
+          readonly height: number
+        ) {}
+        getContext() {
+          return context;
+        }
+        transferToImageBitmap = transferToImageBitmap;
+      }
+    );
+
+    expect(createTiledPngPreview(source, 200)).toBe(bitmap);
+
+    expect(context.imageSmoothingEnabled).toBe(true);
+    expect(context.imageSmoothingQuality).toBe('high');
+    expect(context.drawImage).toHaveBeenCalledWith(source, 0, 0, 200, 150);
+    expect(transferToImageBitmap).toHaveBeenCalledOnce();
   });
 });

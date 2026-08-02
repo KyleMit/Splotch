@@ -6,11 +6,12 @@ interface PendingEncode {
   resolve: (blob: Blob) => void;
   reject: (error: Error) => void;
   timeoutId: ReturnType<typeof setTimeout>;
+  onPreview?: (preview: ImageBitmap) => void;
 }
 
 interface PngEncoder {
   encode(bitmap: ImageBitmap): Promise<Blob>;
-  encodeTiles(input: TiledPngInput): Promise<Blob>;
+  encodeTiles(input: TiledPngInput, onPreview?: (preview: ImageBitmap) => void): Promise<Blob>;
   terminate(error: Error): void;
 }
 
@@ -27,7 +28,8 @@ function createPngEncoder(): PngEncoder {
 
   function request<T extends EncodePngPayload>(
     message: T,
-    transfer: Transferable[]
+    transfer: Transferable[],
+    onPreview?: (preview: ImageBitmap) => void
   ): Promise<Blob> {
     const id = ++nextRequestId;
     return new Promise((resolve, reject) => {
@@ -36,7 +38,7 @@ function createPngEncoder(): PngEncoder {
         encoder.terminate(error);
         if (cachedEncoder === encoder) cachedEncoder = null;
       }, ENCODE_TIMEOUT_MS);
-      pending.set(id, { resolve, reject, timeoutId });
+      pending.set(id, { resolve, reject, timeoutId, onPreview });
       try {
         worker.postMessage({ id, ...message }, transfer);
       } catch (error) {
@@ -59,13 +61,13 @@ function createPngEncoder(): PngEncoder {
     encode(bitmap) {
       return request({ kind: 'canvas', bitmap }, [bitmap]);
     },
-    encodeTiles(input) {
+    encodeTiles(input, onPreview) {
       const transfer = [
         ...input.tiles.map((tile) => tile.bitmap),
         ...(input.texture ? [input.texture] : []),
         ...(input.overlay ? [input.overlay] : []),
       ];
-      return request({ kind: 'tiles', ...input }, transfer);
+      return request({ kind: 'tiles', ...input }, transfer, onPreview);
     },
     terminate(error) {
       worker.terminate();
@@ -75,7 +77,22 @@ function createPngEncoder(): PngEncoder {
 
   worker.addEventListener('message', (event: MessageEvent<EncodePngResponse>) => {
     const request = pending.get(event.data.id);
-    if (!request) return;
+    if (!request) {
+      if ('preview' in event.data) event.data.preview.close();
+      return;
+    }
+    if ('preview' in event.data) {
+      if (!request.onPreview) {
+        event.data.preview.close();
+        return;
+      }
+      try {
+        request.onPreview(event.data.preview);
+      } catch {
+        event.data.preview.close();
+      }
+      return;
+    }
     clearTimeout(request.timeoutId);
     pending.delete(event.data.id);
     if ('error' in event.data) {
@@ -108,10 +125,13 @@ function encodeOnMainThread(canvas: HTMLCanvasElement | OffscreenCanvas): Promis
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
 }
 
-export async function encodeTiledCanvasPng(input: TiledPngInput): Promise<Blob | null> {
+export async function encodeTiledCanvasPng(
+  input: TiledPngInput,
+  onPreview?: (preview: ImageBitmap) => void
+): Promise<Blob | null> {
   try {
     cachedEncoder ??= createPngEncoder();
-    const blob = await cachedEncoder.encodeTiles(input);
+    const blob = await cachedEncoder.encodeTiles(input, onPreview);
     if (blob.type !== 'image/png') throw new Error(`PNG encoder returned ${blob.type}`);
     return blob;
   } catch (error) {

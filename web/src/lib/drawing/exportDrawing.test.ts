@@ -158,7 +158,34 @@ describe('composeExportPng overlay', () => {
         tiles: [{ bitmap, x: 100, y: 75 }],
         texture: null,
         overlay: null,
-      })
+      }),
+      undefined
+    );
+  });
+
+  it('forwards a low-resolution preview request to the tiled worker encoder', async () => {
+    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    const onReady = vi.fn();
+    pngMock.encodeTiledCanvasPng.mockResolvedValue(new Blob(['tiles'], { type: 'image/png' }));
+    const { composeExportPng } = await import('./exportDrawing');
+
+    await composeExportPng(
+      {
+        source: {
+          width: 400,
+          height: 300,
+          tiles: [{ bitmap: Promise.resolve(bitmap), x: 0, y: 0 }],
+        },
+        sourceScale: 2,
+      },
+      2,
+      null,
+      { includePaperTexture: false, preview: { width: 640, onReady } }
+    );
+
+    expect(pngMock.encodeTiledCanvasPng).toHaveBeenCalledWith(
+      expect.objectContaining({ previewWidth: 640 }),
+      onReady
     );
   });
 

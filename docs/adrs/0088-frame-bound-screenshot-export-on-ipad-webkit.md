@@ -2,8 +2,8 @@
 
 **Status:** Active — amends [ADR-0015](0015-capped-dpr-canvas-rendering.md) for saved-image quality,
 complements [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md), and is amended by
-[ADR-0089](0089-css-presented-tiled-paper-on-rotation.md) for rotated settled tiles. **Date:**
-2026-07
+[ADR-0089](0089-css-presented-tiled-paper-on-rotation.md) for rotated settled tiles; bounded
+polaroid feedback amended 2026-08-02. **Date:** 2026-07
 
 ## Context
 
@@ -124,6 +124,29 @@ full-page backing still synchronized. The reliable distinction is whether the UI
 creates that full-page drawing surface: the retained path transfers the live renderer's already
 settled small tiles and assembles the only full page inside the worker.
 
+### Bounded polaroid amendment (2026-08-02)
+
+Issue #694 revisited screenshot celebration feedback after the settled-tile export path was in
+production. Three implementations used the same 1.9-second transform-and-opacity animation, four
+trusted activations on the same physical iPad running iPadOS 26.5, one warmup, three scored repeats,
+and a three-second observation window:
+
+| Preview source                    | First P95 ms | Ready P95 ms | Post P95/max ms | Raw max ms | Result |
+| --------------------------------- | -----------: | -----------: | --------------: | ---------: | ------ |
+| Resize the completed PNG blob     |            5 |          236 |           17/49 |         49 | Fail   |
+| Raster visible live tiles locally |            7 |          230 |           17/19 |         26 | Pass   |
+| Downscale the worker composition  |            7 |          234 |           17/19 |         24 | Pass   |
+
+The worker preview won despite a 4 ms slower ready P95 than the local-tile candidate. It kept raster
+work off the UI thread, had the lowest raw maximum, and derived the photograph from the same
+composited surface as the saved PNG, so paper texture, theme treatment, and coloring-page overlay
+cannot drift between feedback and output. The completed-blob decode remains forbidden: its 49 ms
+maximum crossed the action gate.
+
+The final worker-only build then passed a ten-activation confirmation with one warmup and nine
+scored repeats: first-frame P95 10 ms, ready P95 242 ms, post-action frame P95 17 ms, post-action
+maximum 23 ms, and raw maximum 28 ms across 1,153 scored and 1,745 raw frames.
+
 ## Decision
 
 At matched live/export scale with an identity paper view, screenshot export reuses the tiled live
@@ -144,8 +167,13 @@ renderer's already-settled pixels instead of replaying into a new full-page surf
    keeps rotated tile pixels in the full upright paper and applies presentation through CSS, so a
    rotated settled snapshot is eligible too. A scale mismatch still needs vector replay rather than
    interpolated live pixels and retains the disposable full-snapshot architecture.
-5. The full-screen polaroid preview is removed. `screenshotFeedback.ts` immediately animates the
-   existing camera icon, so feedback does not decode or composite the just-created PNG.
+5. `screenshotFeedback.ts` immediately animates the existing camera icon before export work begins.
+   When screenshot export uses the tiled worker path, that worker starts the full-resolution PNG
+   encode, downsamples the canonical composited canvas to a preview no wider than 480 CSS pixels at
+   most 2× backing scale, and transfers the resulting `ImageBitmap`. The main thread copies only
+   that bounded bitmap into a decorative canvas, closes it, and runs the 1.9-second polaroid flight
+   with transform and opacity. Preview creation or delivery failure does not cancel or delay the
+   already-started save; compatibility paths retain camera-icon feedback without a polaroid.
 6. `screenshot.ts` continues coalescing concurrent Screenshot Button taps into one active save.
 7. After a successful save finishes, `screenshot.ts` suppresses further Screenshot Button taps for
    the four-second interval exported by `screenshotTiming.ts`. A failed save remains immediately
@@ -155,8 +183,9 @@ renderer's already-settled pixels instead of replaying into a new full-page surf
    while a failed tiled export remains immediately retryable.
 9. `exportCompositor.ts` owns smoothing, paper/texture order, and contain-fit overlay placement for
    both the compatibility and tiled-worker paths. `pngEncoderProtocol.ts` is the single typed
-   request/response vocabulary. Unit tests execute the real tiled compositor, and a 2× browser test
-   reaches the matched-scale worker path.
+   request/response vocabulary, including the optional intermediate preview response. Unit tests
+   execute the real tiled compositor, and a 2× browser test reaches the matched-scale worker path,
+   observes the polaroid, and waits for its cleanup.
 
 Do not first assemble the live tiles on the main thread, render a new set of export tiles all at
 once, pool a full-resolution export canvas, resize one to zero, or explicitly release it as an
@@ -182,8 +211,9 @@ because the tiled path requires the full set of transferable canvas APIs.
 * \+ Tile snapshot invocation still precedes the first `await`, preserving save-on-delete
   correctness.
 * \+ The worker and compositor stay out of the initial drawing-route preload graph.
-* − The large full-screen polaroid animation is replaced by smaller camera-button feedback.
-  Restoring any PNG preview requires its own physical-iPad frame-budget proof.
+* \+ The celebratory polaroid is restored without decoding the saved PNG or constructing another
+  full-page surface. Its bounded worker preview passed the physical-iPad action gate at 17 ms frame
+  P95, 23 ms post-action maximum, and 28 ms raw maximum in the final ten-activation run.
 * \+ The affected 2× iPad path no longer creates a full-resolution drawing surface on the main
   thread. Only the worker owns the full composed output.
 * − Active pointers and devices whose live and export scales differ retain the replay fallback. They
@@ -210,7 +240,8 @@ Use the production `/` route from a `PERF_MARKS` build on the physical iPad:
    completion without writing to Photos or reaching a permission sheet. Record the generated blob
    type and byte count before suppressing persistence.
 3. Start a `requestAnimationFrame` loop, wait two frames, then click the Screenshot Button.
-4. Stop 100 ms after the PNG reaches `URL.createObjectURL`.
+4. Stop after the PNG reaches `URL.createObjectURL` and at least three seconds after the click. The
+   latter bound observes the complete polaroid flight when preview feedback is present.
 5. Record completion time, largest frame interval, and pooled frame P95.
 6. First bypass the production cooldown and repeat at least 15 times at approximately one-second
    cadence to expose graphics cleanup behavior. Then restore the cooldown and repeat at least 20

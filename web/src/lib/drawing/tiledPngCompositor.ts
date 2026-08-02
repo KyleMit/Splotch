@@ -1,7 +1,7 @@
 import { drawExportOverlay, paintExportPaper } from './exportCompositor';
 import type { TiledPngInput } from './pngEncoderProtocol';
 
-export async function encodeTiledPng(data: TiledPngInput): Promise<Blob> {
+export function composeTiledPngCanvas(data: TiledPngInput): OffscreenCanvas {
   const width = Math.round((data.sourceWidth / data.sourceScale) * data.exportScale);
   const height = Math.round((data.sourceHeight / data.sourceScale) * data.exportScale);
   const logicalWidth = width / data.exportScale;
@@ -29,5 +29,20 @@ export async function encodeTiledPng(data: TiledPngInput): Promise<Blob> {
       { width: logicalWidth, height: logicalHeight, scale: data.exportScale }
     );
   }
-  return canvas.convertToBlob({ type: 'image/png' });
+  return canvas;
+}
+
+export function createTiledPngPreview(canvas: OffscreenCanvas, previewWidth: number): ImageBitmap {
+  const previewHeight = Math.max(1, Math.round((canvas.height / canvas.width) * previewWidth));
+  const preview = new OffscreenCanvas(previewWidth, previewHeight);
+  const context = preview.getContext('2d');
+  if (!context) throw new Error('PNG encoder could not allocate a preview context');
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = 'high';
+  context.drawImage(canvas, 0, 0, previewWidth, previewHeight);
+  return preview.transferToImageBitmap();
+}
+
+export async function encodeTiledPng(data: TiledPngInput): Promise<Blob> {
+  return composeTiledPngCanvas(data).convertToBlob({ type: 'image/png' });
 }

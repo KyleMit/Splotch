@@ -145,10 +145,13 @@ test.describe('tiled screenshot export', () => {
 
     const downloadPromise = page.waitForEvent('download');
     await page.locator('#screenshotButton').click();
+    const polaroid = page.locator('.polaroid-frame');
+    await expect(polaroid).toBeVisible();
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toMatch(/^splotch-.+\.png$/);
     expect(await download.failure()).toBeNull();
+    await expect(polaroid).toHaveCount(0, { timeout: 3_000 });
   });
 });
 

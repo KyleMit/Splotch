@@ -7,6 +7,7 @@ export interface TiledPngInput {
   texture: ImageBitmap | null;
   overlay: ImageBitmap | null;
   paperColor: string;
+  previewWidth?: number;
 }
 
 interface EncodeCanvasPngPayload {
@@ -20,4 +21,7 @@ interface EncodeTiledPngPayload extends TiledPngInput {
 
 export type EncodePngPayload = EncodeCanvasPngPayload | EncodeTiledPngPayload;
 export type EncodePngRequest = EncodePngPayload & { id: number };
-export type EncodePngResponse = { id: number; blob: Blob } | { id: number; error: string };
+export type EncodePngResponse =
+  | { id: number; blob: Blob }
+  | { id: number; preview: ImageBitmap }
+  | { id: number; error: string };

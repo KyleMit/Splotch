@@ -33,6 +33,7 @@ const POLL_MS = 50;
 const SCRIPT_TIMEOUT_MS = 45_000;
 const ACTION_SETTLE_MS = 650;
 const ANIMATED_ACTION_SETTLE_MS = 1_100;
+const SCREENSHOT_ACTION_SETTLE_MS = 3_000;
 const IDLE_CONTROL_MS = 5_000;
 const REPEAT_SETTLE_MS = 500;
 const TRUSTED_STROKE_MS = 650;
@@ -992,7 +993,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         label: 'save screenshot',
         selector: '#screenshotButton',
         ready: `Number.isFinite(window.__actionDownloadReadyAt)`,
-        settleMs: ANIMATED_ACTION_SETTLE_MS,
+        settleMs: SCREENSHOT_ACTION_SETTLE_MS,
       })
     );
     await execute(`

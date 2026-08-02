@@ -12,6 +12,7 @@ import { saveBlobToFolder } from './folderSave';
 import { playScreenshotFeedback, playScreenshotSuppressedFeedback } from './screenshotFeedback';
 import { SCREENSHOT_COOLDOWN_MS } from './screenshotTiming';
 import { PERF_MARKS } from './perf';
+import { createPolaroidPreviewRequest } from './polaroidAnimation';
 
 const ALBUM_NAME = 'Splotch';
 
@@ -93,7 +94,9 @@ export async function saveImageBlob(
 
 async function saveScreenshotImage() {
   playScreenshotFeedback();
-  const blob = await exportCanvasBlob(getActiveOverlayImage());
+  const overlayImage = getActiveOverlayImage();
+  const preview = createPolaroidPreviewRequest();
+  const blob = await exportCanvasBlob(overlayImage, preview ? { preview } : undefined);
   if (!blob) return false;
   return saveImageBlob(blob, undefined, { allowPrompt: true });
 }

@@ -25,6 +25,10 @@ export type ExportSnapshot = ExportCanvas | TiledExportSnapshot;
 
 export interface ExportOptions {
   includePaperTexture?: boolean;
+  preview?: {
+    width: number;
+    onReady: (preview: ImageBitmap) => void;
+  };
 }
 
 type ExportBitmapResult =
@@ -71,7 +75,7 @@ export async function composeExportPng(
   overlayImage: HTMLImageElement | null = null,
   options: ExportOptions = {}
 ): Promise<Blob | null> {
-  const { includePaperTexture = true } = options;
+  const { includePaperTexture = true, preview } = options;
 
   // Resolve once up front so an OS theme switch mid-export can't mismatch the
   // paper fill and the overlay treatment. Coloring pages follow the resolved
@@ -117,16 +121,20 @@ export async function composeExportPng(
       } else if (result.value.kind === 'texture') textureBitmap = result.value.bitmap;
       else overlayBitmap = result.value.bitmap;
     }
-    return encodeTiledCanvasPng({
-      sourceWidth: snapshot.source.width,
-      sourceHeight: snapshot.source.height,
-      sourceScale: snapshot.sourceScale,
-      exportScale: renderScale,
-      tiles,
-      texture: textureBitmap,
-      overlay: overlayBitmap,
-      paperColor: PAPER_COLORS[theme],
-    });
+    return encodeTiledCanvasPng(
+      {
+        sourceWidth: snapshot.source.width,
+        sourceHeight: snapshot.source.height,
+        sourceScale: snapshot.sourceScale,
+        exportScale: renderScale,
+        tiles,
+        texture: textureBitmap,
+        overlay: overlayBitmap,
+        paperColor: PAPER_COLORS[theme],
+        previewWidth: preview?.width,
+      },
+      preview?.onReady
+    );
   }
 
   const w = snapshot.width / renderScale;

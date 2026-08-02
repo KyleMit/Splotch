@@ -5,12 +5,18 @@ interface WorkerMessage {
   kind: 'canvas' | 'tiles';
   bitmap?: ImageBitmap;
   tiles?: Array<{ bitmap: ImageBitmap; x: number; y: number }>;
+  previewWidth?: number;
 }
+
+type WorkerResponse =
+  | { id: number; blob: Blob }
+  | { id: number; preview: ImageBitmap }
+  | { id: number; error: string };
 
 class ControllableWorker {
   static instances: ControllableWorker[] = [];
 
-  readonly messageListeners: Array<(event: MessageEvent<{ id: number; blob: Blob }>) => void> = [];
+  readonly messageListeners: Array<(event: MessageEvent<WorkerResponse>) => void> = [];
   readonly errorListeners: Array<(event: ErrorEvent) => void> = [];
   readonly posted: Array<{ message: WorkerMessage; transfer: Transferable[] }> = [];
   terminated = false;
@@ -21,9 +27,7 @@ class ControllableWorker {
 
   addEventListener(type: string, listener: EventListener) {
     if (type === 'message') {
-      this.messageListeners.push(
-        listener as (event: MessageEvent<{ id: number; blob: Blob }>) => void
-      );
+      this.messageListeners.push(listener as (event: MessageEvent<WorkerResponse>) => void);
     } else if (type === 'error') {
       this.errorListeners.push(listener as (event: ErrorEvent) => void);
     }
@@ -41,6 +45,13 @@ class ControllableWorker {
     const id = this.posted.at(-1)!.message.id;
     for (const listener of this.messageListeners) {
       listener(new MessageEvent('message', { data: { id, blob } }));
+    }
+  }
+
+  sendPreview(preview: ImageBitmap) {
+    const id = this.posted.at(-1)!.message.id;
+    for (const listener of this.messageListeners) {
+      listener(new MessageEvent('message', { data: { id, preview } }));
     }
   }
 }
@@ -162,6 +173,39 @@ describe('encodeCanvasPng', () => {
       tiles: [{ bitmap: tile, x: 10, y: 20 }],
     });
     expect(worker.posted[0].transfer).toEqual([tile, texture, overlay]);
+    worker.resolve(expected);
+    await expect(encoded).resolves.toBe(expected);
+  });
+
+  it('delivers a transferred preview without settling the PNG request', async () => {
+    const tile = { close: vi.fn() } as unknown as ImageBitmap;
+    const preview = { close: vi.fn() } as unknown as ImageBitmap;
+    const onPreview = vi.fn();
+    const expected = new Blob(['worker'], { type: 'image/png' });
+    vi.stubGlobal('Worker', ControllableWorker);
+    const { encodeTiledCanvasPng } = await import('./pngEncoder');
+
+    const encoded = encodeTiledCanvasPng(
+      {
+        sourceWidth: 400,
+        sourceHeight: 300,
+        sourceScale: 2,
+        exportScale: 2,
+        tiles: [{ bitmap: tile, x: 10, y: 20 }],
+        texture: null,
+        overlay: null,
+        paperColor: '#fff',
+        previewWidth: 640,
+      },
+      onPreview
+    );
+    const worker = ControllableWorker.instances[0];
+
+    expect(worker.posted[0].message.previewWidth).toBe(640);
+    worker.sendPreview(preview);
+    expect(onPreview).toHaveBeenCalledWith(preview);
+    expect(preview.close).not.toHaveBeenCalled();
+
     worker.resolve(expected);
     await expect(encoded).resolves.toBe(expected);
   });
