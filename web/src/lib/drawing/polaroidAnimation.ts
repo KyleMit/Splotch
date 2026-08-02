@@ -1,5 +1,6 @@
 import { getViewState } from './engine';
 import { SCREENSHOT_BUTTON_ID } from './screenshotFeedback';
+import { POLAROID_CLEANUP_TIMEOUT_MS } from './screenshotTiming';
 
 const POLAROID_MAX_WIDTH_PX = 480;
 const POLAROID_MIN_WIDTH_PX = 260;
@@ -71,7 +72,12 @@ function mountPolaroidAnimation(canvas: HTMLCanvasElement, size: PolaroidSize) {
   frame.appendChild(canvas);
   overlay.appendChild(flash);
   overlay.appendChild(frame);
-  frame.addEventListener('animationend', () => overlay.remove(), { once: true });
+  const removeOverlay = () => {
+    window.clearTimeout(cleanupTimer);
+    overlay.remove();
+  };
+  const cleanupTimer = window.setTimeout(removeOverlay, POLAROID_CLEANUP_TIMEOUT_MS);
+  frame.addEventListener('animationend', removeOverlay, { once: true });
   document.body.appendChild(overlay);
 }
 

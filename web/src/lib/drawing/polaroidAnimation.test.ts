@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { POLAROID_CLEANUP_TIMEOUT_MS } from './screenshotTiming';
+
 const mocks = vi.hoisted(() => ({
   getViewState: vi.fn(),
 }));
@@ -17,6 +19,7 @@ beforeEach(() => {
 
 afterEach(() => {
   document.body.replaceChildren();
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
@@ -67,5 +70,20 @@ describe('createPolaroidPreviewRequest', () => {
     const { createPolaroidPreviewRequest } = await import('./polaroidAnimation');
 
     expect(createPolaroidPreviewRequest()).toBeNull();
+  });
+
+  it('removes the preview when the frame animation does not finish', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    const preview = { width: 960, height: 720, close: vi.fn() } as unknown as ImageBitmap;
+    const { createPolaroidPreviewRequest } = await import('./polaroidAnimation');
+
+    createPolaroidPreviewRequest()?.onReady(preview);
+    expect(document.querySelector('.polaroid-overlay')).not.toBeNull();
+
+    vi.advanceTimersByTime(POLAROID_CLEANUP_TIMEOUT_MS);
+    expect(document.querySelector('.polaroid-overlay')).toBeNull();
   });
 });
