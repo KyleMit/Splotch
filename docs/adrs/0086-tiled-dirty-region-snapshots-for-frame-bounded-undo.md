@@ -141,8 +141,8 @@ attributed to `engine.resize` or undo.
 Resident patches use an adaptive byte budget:
 
 * Normal history still caps at `MAX_UNDO_DEPTH = 20`.
-* Retained patch bytes may consume at most three aggregate normal-ink papers
-  (`TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE = 3`).
+* Retained patch bytes may consume at most six aggregate normal-ink papers
+  (`TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE = 6`).
 * At least the newest two commands remain undoable.
 * When canvas-spanning commands exceed the byte budget, the oldest undo steps lose their patches and
   therefore leave the undo window. Their vector commands remain visible and fold into the tiled
@@ -187,8 +187,9 @@ Resident patches use an adaptive byte budget:
 * − Full repaints reconstruct patches through vector replay. They are off the ordinary drawing and
   undo paths, but their work scales with the undoable tail; resize must retain `engine.resize`
   instrumentation.
-* − A pathological sequence of full-paper marks can offer only two or three undo steps. This is a
-  deliberate product tradeoff in favor of drawing and undo responsiveness.
+* − A pathological sequence whose patches exceed six aggregate papers can still shorten below twenty
+  undo steps, but never below the newest two. This is a deliberate product tradeoff in favor of
+  bounded memory, drawing, and undo responsiveness.
 * − The legacy `/dev/engine` snapshot stack remains a different architecture. Production tiled undo
   must be validated on `/`, not inferred from legacy harness passes.
 
@@ -358,7 +359,7 @@ the straddling stroke can resurrect pixels the clear removed.
 
 Compute patch cost as the retained cropped canvases' `width × height × 4`, not their encoded file
 size and not tile count. Walk newest to oldest. Keep at most twenty entries while their total stays
-within three aggregate paper rasters, never keeping fewer than two.
+within six aggregate paper rasters, never keeping fewer than two.
 
 When the next older entry would exceed the budget:
 
@@ -367,11 +368,16 @@ When the next older entry would exceed the budget:
 3. Let the existing one-command-at-a-time idle scheduler fold it into the tiled base.
 4. Never rebuild patches for that non-undoable prefix during resize.
 
-The production regression draws twenty center-origin, canvas-spanning strokes. It asserts that patch
-bytes stay under the three-paper budget, depth decreases but remains at least two, all offered undo
-steps work, and the older non-undoable drawing remains visible. Start synthetic strokes away from
-safe-area edge bands; otherwise the edge-swipe guard can discard the gesture and make the memory
-test look artificially cheap.
+An idle fold validates that paper geometry exists before removing the prefix command from vector
+history. Layout transitions can temporarily make that geometry unavailable; the command stays queued
+and the scheduler retries instead of dropping ink that the oldest retained patch depends on.
+
+The production regressions cover both sides of the adaptive contract. Twenty realistic large sweeps
+must retain all twenty advertised steps under the six-paper budget, and a separate sequence of
+deliberately pathological strokes must stay within that budget while reducing depth no lower than
+two. Both invoke every offered undo; the pathological case also requires the older non-undoable
+drawing to remain visible. Start synthetic strokes away from safe-area edge bands; otherwise the
+edge-swipe guard can discard the gesture and make the memory test look artificially cheap.
 
 Encoding old patches is the main revisitable alternative. Re-attempt it only with physical WebKit
 measurements for both the `toBlob` demotion and the first cold decode. A memory win that moves

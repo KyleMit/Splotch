@@ -476,11 +476,12 @@ describe('idle tiled canvas visibility', () => {
     expect(createBitmap).not.toHaveBeenCalled();
   });
 
-  it('keeps blank folded history tiles out of the compositor tree', () => {
+  it('waits for paper geometry before folding and keeps blank base tiles hidden', () => {
     vi.useFakeTimers();
     const { host, canvas } = rendererElements();
+    let paperReady = true;
     adoptTiledRenderer(canvas, {
-      paperSize: () => ({ width: 400, height: 400 }),
+      paperSize: () => (paperReady ? { width: 400, height: 400 } : null),
       hasActivePointers: () => false,
     });
     resizeTiledRenderer(400, 400, 1);
@@ -493,6 +494,7 @@ describe('idle tiled canvas visibility', () => {
       color: '#ff0000',
       erase: false,
     };
+    const initialHistoryLength = tiledHistoryDebug().historyLength ?? 0;
     for (let index = 0; index < 21; index++) {
       beginTiledCommand(index === 0);
       renderTiledOp(dot);
@@ -500,7 +502,19 @@ describe('idle tiled canvas visibility', () => {
       commitTiledCommand();
     }
 
+    paperReady = false;
     vi.advanceTimersByTime(1_500);
+    expect(tiledHistoryDebug()).toMatchObject({
+      baseRasters: 0,
+      historyLength: initialHistoryLength + 21,
+    });
+
+    paperReady = true;
+    vi.advanceTimersByTime(1_500);
+    expect(tiledHistoryDebug()).toMatchObject({
+      baseRasters: 16,
+      historyLength: initialHistoryLength + 20,
+    });
     repaintTiledRenderer(false);
 
     expect(host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]:not([hidden])')).toHaveLength(

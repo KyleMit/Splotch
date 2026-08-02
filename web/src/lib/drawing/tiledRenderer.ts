@@ -29,7 +29,7 @@ import {
 } from './tiledSurfaces';
 
 interface TiledRendererHost {
-  paperSize: () => { width: number; height: number };
+  paperSize: () => { width: number; height: number } | null;
   hasActivePointers: () => boolean;
 }
 
@@ -303,9 +303,10 @@ function renderCommandAcrossTiles(command: StrokeGroupCommand, captureUndo = fal
 }
 
 function foldOldestCommand() {
-  const command = history.shift();
   const paper = host?.paperSize();
-  if (!command || !paper) return;
+  if (!paper) return;
+  const command = history.shift();
+  if (!command) return;
   undoPatches.delete(command);
   ensureHistoryBase();
   for (const tile of historyBase) {

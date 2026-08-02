@@ -161,10 +161,11 @@ Vector replay was a useful diagnostic and fallback, but replaying twenty command
 design captures cropped before-images only for touched regions and only for intersecting tiles. Undo
 restores those patches rather than repainting the whole drawing.
 
-Normal history retains twenty undo steps. Canvas-spanning commands reduce depth adaptively before
-patches exceed a three-paper resident byte budget. Clear is also a snapshot command, but empty-tile
-state and deferred clearing avoid allocating or flushing unnecessary surfaces. Geometry-changing
-fallbacks may replay retained vector operations when old patches no longer fit.
+Normal history, including the measured large-sweep workload, retains twenty undo steps. Pathological
+sequences reduce depth adaptively before patches exceed the six-paper resident byte budget
+established by ADR-0086's 2026-08 amendment. Clear is also a snapshot command, but empty-tile state
+and deferred clearing avoid allocating or flushing unnecessary surfaces. Geometry-changing fallbacks
+may replay retained vector operations when old patches no longer fit.
 
 The serial undo trial table, clear sub-trials, and re-attempt instructions are in
 [ADR-0086](../adrs/0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md). The main lesson is
