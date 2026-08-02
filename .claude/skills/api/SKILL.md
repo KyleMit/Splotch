@@ -192,10 +192,10 @@ with no body; browsers ignore the response, so there is nothing to return.
 
 ## Admin (access-token management)
 
-JSON twin of the server-rendered `/admin` console, used by the native apps' `/admin/native` page
-(the static bundle has no server to run the console's form actions). Both front doors call the same
-core (`web/src/lib/server/admin.ts` \+ `web/src/lib/server/tokens.ts`) — the web console executes it
-directly in its form actions and **never** loops back through these endpoints.
+JSON twin of the server-rendered `/admin` console, driven by `scripts/lib/adminClient.mjs` (the
+local and deploy smoke tests). Both front doors call the same core (`web/src/lib/server/admin.ts` \+
+`web/src/lib/server/tokens.ts`) — the web console executes it directly in its form actions and
+**never** loops back through these endpoints.
 
 ### Authentication model
 

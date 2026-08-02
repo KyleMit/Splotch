@@ -72,7 +72,7 @@ describe('readString / writeString', () => {
   it('round-trips a string and falls back when absent', () => {
     writeString(STORAGE_KEYS.aiAccessToken, 'hello');
     expect(readString(STORAGE_KEYS.aiAccessToken, 'fallback')).toBe('hello');
-    expect(readString(STORAGE_KEYS.adminLinkVisible, 'fallback')).toBe('fallback');
+    expect(readString(STORAGE_KEYS.brushType, 'fallback')).toBe('fallback');
   });
 });
 

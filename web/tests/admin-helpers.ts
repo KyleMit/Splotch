@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
-// Shared helpers for the two admin consoles (server-rendered /admin and the
-// static /admin/native). Keep this module's imports limited to @playwright/test:
+// Shared helpers for the server-rendered /admin console.
+// Keep this module's imports limited to @playwright/test:
 // playwright.shared.ts imports ADMIN_ACCESS_TOKEN from here to declare the web
 // server's env, so anything reachable from this file is also parsed while loading
 // the Playwright config.
@@ -39,22 +39,22 @@ export async function submitAdminKey(page: Page, key: string) {
 //
 // Which matters, because rateLimitPolicy.adminLogin allows 10 hits per IP per
 // minute and `beginAdminLogin` spends one *before* verifying the key, so even the
-// wrong-key spec counts. The whole suite performs ~9 sign-ins from one IP inside
-// one ~66s run. A helper that can submit two or four times per call multiplies
+// wrong-key spec counts, and the whole suite signs in from a single IP inside one
+// run. A helper that can submit two or four times per call multiplies
 // against that shared budget and manufactures 429s — the same self-contamination
 // ADR-0078 §4 spent this branch diagnosing in the sweep harness. Flake absorption
 // belongs to Playwright's own `retries`, which re-runs the spec instead of
 // stacking hits inside one.
 //
 // One consequence worth knowing before reaching for `--repeat-each` on these
-// specs: nine sign-ins per repetition against a 10-per-minute bucket means two
-// repetitions already exceed it, so the runs go red on 429s that say nothing
-// about the code. That ceiling is the suite's, not this helper's — a retrying
-// helper merely hid it by waiting for the window to age out. Verify these specs
-// with repeated *full* runs (the whole suite takes long enough to stay under),
-// which is also what CI does.
-export async function signInToAdmin(page: Page, path = '/admin') {
-  await page.goto(path);
+// specs: the sign-ins in one repetition sit close enough to the 10-per-minute
+// bucket that a couple of repetitions exceed it, so the runs go red on 429s that
+// say nothing about the code. That ceiling is the suite's, not this helper's — a
+// retrying helper merely hid it by waiting for the window to age out. Verify
+// these specs with repeated *full* runs (the whole suite takes long enough to
+// stay under), which is also what CI does.
+export async function signInToAdmin(page: Page) {
+  await page.goto('/admin');
   await submitAdminKey(page, ADMIN_ACCESS_TOKEN);
   await expect(adminConsole(page)).toBeVisible({ timeout: SIGN_IN_SETTLE_MS });
 }

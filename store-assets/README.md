@@ -66,10 +66,11 @@ using `icon-512.png`.
 
 ## Notes / things to double-check before you submit
 
-* **Third-party IP kept out.** The app's coloring books include Bluey and Frozen pages, which are
-  trademarked. The screenshots deliberately use only the generic **Animals** book to avoid a
-  metadata/IP rejection. Consider whether those branded packs should ship in the public store builds
-  at all.
+* **Third-party IP kept out.** Every shipped coloring book is original work — no trademarked
+  characters or franchises, in the packs themselves or in any doc that reaches the bundle. Keep it
+  that way: a branded pack is an IP-rejection risk on both stores, and worse in a
+  children's-audience app. Note that anything under `web/static/` is copied into the web build and
+  both native bundles, so a planning doc parked there ships too.
 * **App icon transparency.** `icon-512.png` is a 24-bit PNG on a solid (white) background — accepted
   by Play, which applies its own shape mask. iOS icons must not have alpha; `@capacitor/assets`
   flattens them when generating the asset catalog. If you prefer a colored backdrop behind the "S",

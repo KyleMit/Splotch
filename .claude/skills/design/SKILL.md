@@ -153,7 +153,7 @@ component table above when you do.
 ## Page chrome — standalone pages
 
 Every standalone page — the link-shareable parent pages (`/privacy`, `/android-beta`, `/feedback`)
-and the admin console (`/admin` + `/admin/native`, via `AdminConsole`) — wears one shell, in
+and the admin console (`/admin`, via `AdminConsole`) — wears one shell, in
 **`web/src/lib/components/page/`**. The `/design` styleguide is the one standalone page with its own
 shell (sticky header + scrollspy TOC, in its route file); it still signs itself with `BrandMark`:
 

@@ -15,8 +15,8 @@
  * it, JS's promise-assimilation calls `plugin.then(resolve, reject)`. Capacitor
  * dispatches that as a native method literally named `then`, which is "not
  * implemented" and so **never calls resolve/reject** — the promise hangs
- * forever and every awaiter stalls. (This is what blanked the /admin/native
- * page, whose render gated on `await loadAdminSession()`.) The module namespace
+ * forever and every awaiter stalls. (This is what blanked a since-removed native
+ * page whose render gated on an awaited plugin load.) The module namespace
  * has no `then` export, so resolving to it is safe; the plugin proxy is only
  * ever touched synchronously, after the await.
  */
