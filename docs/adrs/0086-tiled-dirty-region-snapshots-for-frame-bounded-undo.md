@@ -457,6 +457,8 @@ update the user-facing promise in the same change if twenty realistic sweeps no 
   from drifting independently.
 * − The maximum patch allowance doubles from 50.8 MiB to 101.6 MiB on the measured paper. The final
   large-stroke cohort used 99.0 MiB of patches; live paper plus retained patches measured 116.0 MiB.
+* − Retaining twenty commands doubles the longest undoable tail replayed with undo-patch capture
+  after resize or remount. The fast performance suite measures commit latency, not this replay cost.
 * − Truly full-paper commands can still exhaust six papers before twenty entries. Supporting every
   possible twenty-command sequence would require a twenty-paper worst-case allowance and was
   rejected as disproportionate memory pressure.
