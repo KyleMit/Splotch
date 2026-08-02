@@ -56,8 +56,10 @@ export function createPenStreamAdopter(deps: PenStreamAdopterDeps) {
 
   // WebKit can end a canvas stroke with pointerout at the screen edge, then
   // return the still-down Pencil under the same pointer id without another
-  // pointerdown. Only a contact the engine owns at the exit is eligible: a pen
-  // drag that began on a UI control stays protected by its liveDownIds entry.
+  // pointerdown. Only a contact the engine still owns at the exit is eligible:
+  // the isTracked gate excludes a pen drag that began on a UI control before
+  // it reaches canvasExitIds. Once an id is in that set, liveDownIds no longer
+  // excludes it from the orphan predicate.
   function trackCanvasExit(e: PointerEvent): void {
     if (e.pointerType !== 'pen' || !deps.isTracked(e.pointerId)) return;
     canvasExitIds.add(e.pointerId);
