@@ -1394,6 +1394,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
     startDrawing,
     draw,
     stopDrawing,
+    trackPenCanvasExit: penStreamAdopter.trackCanvasExit,
     cancelTouch,
     registerPenListeners: penStreamAdopter.registerWindowListeners,
   });

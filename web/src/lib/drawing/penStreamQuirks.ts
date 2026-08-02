@@ -1,9 +1,10 @@
-// iOS/WebKit can silently merge a fast tap-then-drag into one pointer stream
-// (see engine.ts's restartStrokeIfResumed for the sibling merge case). Split
-// out of engine.ts so the down-less event sequences below can be unit-tested
-// without a canvas; the adopter still needs to reach into the host engine's
-// pointer/canvas state and its stroke-start action, so those are taken as
-// injected dependencies rather than closed over directly.
+// iOS/WebKit can omit the pointerdown that should start a canvas pen stream,
+// both when it merges a fast tap-then-drag and when a still-down Pencil returns
+// after leaving the screen edge. Split out of engine.ts so those event
+// sequences can be unit-tested without a canvas; the adopter still needs to
+// reach into the host engine's pointer/canvas state and its stroke-start
+// action, so those are taken as injected dependencies rather than closed over
+// directly.
 
 export interface PenStreamAdopterDeps {
   canvas: () => HTMLCanvasElement;
@@ -28,17 +29,35 @@ export function createPenStreamAdopter(deps: PenStreamAdopterDeps) {
   // on a UI control (drag-to-clear's uncaptured drag, the color picker's
   // captured drag, a slide off a swatch).
   const liveDownIds = new Set<number>();
-  const trackPointerDown = (e: PointerEvent) => liveDownIds.add(e.pointerId);
-  const trackPointerLift = (e: PointerEvent) => liveDownIds.delete(e.pointerId);
+  const canvasExitIds = new Set<number>();
+  const trackPointerDown = (e: PointerEvent) => {
+    liveDownIds.add(e.pointerId);
+    canvasExitIds.delete(e.pointerId);
+  };
+  const trackPointerLift = (e: PointerEvent) => {
+    liveDownIds.delete(e.pointerId);
+    canvasExitIds.delete(e.pointerId);
+  };
 
-  // The WebKit merge quirk of POINTER_RESUME_GAP_MS, for a stream that began
-  // on a UI control: a fast pen tap on e.g. a color swatch merged with the
-  // following stroke drops the intervening pointerup + pointerdown, so the
-  // stroke arrives as bare pointermoves — a down-less contact stream. Hover
-  // moves (buttons === 0) never match, and touch keeps its 100ms
-  // color-change debounce precisely to absorb this kind of tap fallout.
+  // A missing pointerdown licenses adoption only for a pen whose tip is down.
+  // Most such streams have no live down anywhere; screen-edge re-entry is the
+  // exception, licensed by trackCanvasExit before the engine closes the old
+  // stroke. Touch keeps its 100ms color-change debounce for tap fallout.
   function isOrphanPenContact(e: PointerEvent): boolean {
-    return e.pointerType === 'pen' && e.buttons !== 0 && !liveDownIds.has(e.pointerId);
+    return (
+      e.pointerType === 'pen' &&
+      e.buttons !== 0 &&
+      (!liveDownIds.has(e.pointerId) || canvasExitIds.has(e.pointerId))
+    );
+  }
+
+  // WebKit can end a canvas stroke with pointerout at the screen edge, then
+  // return the still-down Pencil under the same pointer id without another
+  // pointerdown. Only a contact the engine owns at the exit is eligible: a pen
+  // drag that began on a UI control stays protected by its liveDownIds entry.
+  function trackCanvasExit(e: PointerEvent): void {
+    if (e.pointerType !== 'pen' || !deps.isTracked(e.pointerId)) return;
+    canvasExitIds.add(e.pointerId);
   }
 
   // Pens get no implicit capture, so an orphaned stream's moves usually
@@ -65,7 +84,8 @@ export function createPenStreamAdopter(deps: PenStreamAdopterDeps) {
 
   function reset(): void {
     liveDownIds.clear();
+    canvasExitIds.clear();
   }
 
-  return { isOrphanPenContact, registerWindowListeners, reset };
+  return { isOrphanPenContact, registerWindowListeners, reset, trackCanvasExit };
 }
