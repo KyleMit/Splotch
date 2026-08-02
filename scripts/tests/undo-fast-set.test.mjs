@@ -36,15 +36,22 @@ describe('undo fast-set coverage', () => {
 });
 
 describe('data-derived membership', () => {
-  it('fills non-mandatory slots with the lowest measured-to-budget ratio', () => {
+  it('fills non-mandatory slots with the highest measured-to-budget ratio', () => {
     const history = {
       schemaVersion: 1,
       runs: [
         {
           scenarios: [
             { key: 'mandatory', headroomRatio: 0.5, breached: false },
-            { key: 'lowest', headroomRatio: 0.1, breached: false },
-            { key: 'higher', headroomRatio: 0.2, breached: false },
+            { key: 'variable', headroomRatio: 0.75, breached: false },
+            { key: 'steady', headroomRatio: 0.5, breached: false },
+          ],
+        },
+        {
+          scenarios: [
+            { key: 'mandatory', headroomRatio: 0.5, breached: false },
+            { key: 'variable', headroomRatio: 0.05, breached: false },
+            { key: 'steady', headroomRatio: 0.5, breached: false },
           ],
         },
       ],
@@ -53,15 +60,15 @@ describe('data-derived membership', () => {
     expect(
       deriveIdealFastSet({
         history,
-        scenarioKeys: ['mandatory', 'lowest', 'higher'],
+        scenarioKeys: ['mandatory', 'variable', 'steady'],
         scenarioPaths: {
           mandatory: ['sole'],
-          lowest: ['shared'],
-          higher: ['shared'],
+          variable: ['shared'],
+          steady: ['shared'],
         },
         fastSetSize: 2,
       }).ideal
-    ).toEqual(['mandatory', 'lowest']);
+    ).toEqual(['mandatory', 'variable']);
   });
 
   it('replaces a stale member when a non-member was recently near budget', () => {

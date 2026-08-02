@@ -39,6 +39,7 @@ function scenarioStats(historyWindow, scenarioKeys) {
         key,
         {
           lowestHeadroomRatio: ratios.length > 0 ? Math.min(...ratios) : Number.POSITIVE_INFINITY,
+          highestHeadroomRatio: ratios.length > 0 ? Math.max(...ratios) : 0,
           nearBudget: ratios.some((ratio) => ratio >= FAST_SET_NEAR_BUDGET_RATIO),
           breached: samples.some((sample) => sample.breached),
         },
@@ -49,6 +50,11 @@ function scenarioStats(historyWindow, scenarioKeys) {
 
 const compareHeadroom = (stats) => (left, right) => {
   const difference = stats.get(left).lowestHeadroomRatio - stats.get(right).lowestHeadroomRatio;
+  return difference || left.localeCompare(right);
+};
+
+const compareBudgetProximity = (stats) => (left, right) => {
+  const difference = stats.get(right).highestHeadroomRatio - stats.get(left).highestHeadroomRatio;
   return difference || left.localeCompare(right);
 };
 
@@ -72,7 +78,7 @@ export function deriveIdealFastSet({
   // Ranking becomes active only when mandatory sole exercisers leave an open fast-set slot.
   const ranked = scenarioKeys
     .filter((key) => !mandatory.includes(key))
-    .sort(compareHeadroom(stats));
+    .sort(compareBudgetProximity(stats));
   const ideal = [...mandatory, ...ranked.slice(0, fastSetSize - mandatory.length)];
   if (historyWindow.length < FAST_SET_HISTORY_WINDOW_RUNS) {
     return { ideal, mandatory, historyWindowRuns: historyWindow.length };
@@ -84,7 +90,7 @@ export function deriveIdealFastSet({
     .filter((key) => !ideal.includes(key) && stats.get(key).nearBudget)
     .sort((left, right) => {
       const breachDifference = Number(stats.get(right).breached) - Number(stats.get(left).breached);
-      return breachDifference || compareHeadroom(stats)(left, right);
+      return breachDifference || compareBudgetProximity(stats)(left, right);
     });
 
   while (staleMembers.length > 0 && recentChallengers.length > 0) {

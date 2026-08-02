@@ -55,7 +55,8 @@ Every completed release-tag full run computes each scenario's headroom ratio as
 membership uses the latest three full runs in priority order:
 
 1. scenarios that solely exercise a declared path are mandatory;
-2. remaining slots take the lowest measured-to-budget ratio;
+2. remaining slots take the highest measured-to-budget ratio, prioritizing scenarios closest to or
+   beyond the budget;
 3. a non-mandatory member that has not been near the budget in the window yields to a non-member
    that has, with an actual breach winning a tie.
 
