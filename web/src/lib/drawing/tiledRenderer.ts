@@ -304,9 +304,8 @@ function renderCommandAcrossTiles(command: StrokeGroupCommand, captureUndo = fal
 
 function foldOldestCommand() {
   const paper = host?.paperSize();
-  if (!paper) return;
-  const command = history.shift();
-  if (!command) return;
+  const command = paper ? history.shift() : undefined;
+  if (!paper || !command) return;
   undoPatches.delete(command);
   ensureHistoryBase();
   for (const tile of historyBase) {
