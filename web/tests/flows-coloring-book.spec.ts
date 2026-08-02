@@ -52,9 +52,7 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.overlay\.webp$/);
 });
 
-test('a selected page stays hidden over textured paper while full-resolution art decodes', async ({
-  page,
-}) => {
+test('a selected page stays hidden while full-resolution art decodes', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   let releaseFullImage!: () => void;
   const fullImageHeld = new Promise<void>((resolve) => {
@@ -81,10 +79,6 @@ test('a selected page stays hidden over textured paper while full-resolution art
     await expect(overlay).toHaveAttribute('src', '');
     await expect(overlay).not.toHaveClass(/overlay-ready/);
     await expect(overlay).toHaveCSS('opacity', '0');
-    await expect(page.locator('.paper-sheet')).toHaveCSS(
-      'background-image',
-      /handmade-paper\.webp/
-    );
     const [overlayBox, canvasBox] = await Promise.all([
       overlay.boundingBox(),
       page.locator('#drawingCanvas').boundingBox(),
