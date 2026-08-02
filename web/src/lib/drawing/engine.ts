@@ -1375,7 +1375,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   ctx = canvas.getContext('2d')!;
 
   adoptTiledRenderer(canvas, {
-    paperSize: () => ({ width: paper.pxW, height: paper.pxH }),
+    paperSize: () => (paperIsSized() ? { width: paper.pxW, height: paper.pxH } : null),
     hasActivePointers: () => activePointers.size > 0,
   });
   if (tiledRendererActive()) syncCrayonOverlayMix();

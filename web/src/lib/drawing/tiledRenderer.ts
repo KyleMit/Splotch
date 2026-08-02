@@ -16,6 +16,7 @@ import { LIVE_TILE_COLUMNS, LIVE_TILE_ROWS } from './liveTiles';
 import { createTiledUndoPatches } from './tiledUndoPatches';
 import {
   clearTileBacking,
+  clipTilesToPaper,
   createHistoryBaseTiles,
   createLiveTiles,
   deferHiddenTileClear,
@@ -23,6 +24,7 @@ import {
   ensureNormalTileBacking,
   liveTileSurfaces,
   renderHistoryBaseOp,
+  restoreTileContexts,
   type HistoryBaseTile,
   type LiveTile,
   type TiledCanvasSnapshot,
@@ -289,33 +291,24 @@ function renderHistoryCommand(target: CanvasRenderingContext2D, command: StrokeG
 function renderCommandAcrossTiles(command: StrokeGroupCommand, captureUndo = false) {
   const paper = host?.paperSize();
   if (!paper) return;
-  for (const tile of liveTiles) {
-    tile.ctx.save();
-    tile.ctx.beginPath();
-    tile.ctx.rect(0, 0, paper.width, paper.height);
-    tile.ctx.clip();
-  }
+  clipTilesToPaper(liveTiles, paper);
   for (const op of command.ops) {
     renderTiledOpForCommand(op, captureUndo ? command : null);
   }
-  for (const tile of liveTiles) tile.ctx.restore();
+  restoreTileContexts(liveTiles);
   if (captureUndo) undoPatches.crop(command);
 }
 
 function foldOldestCommand() {
   const paper = host?.paperSize();
-  const command = paper ? history.shift() : undefined;
-  if (!paper || !command) return;
+  if (!paper || paper.width <= 0 || paper.height <= 0) return;
+  const command = history.shift();
+  if (!command) return;
   undoPatches.delete(command);
   ensureHistoryBase();
-  for (const tile of historyBase) {
-    tile.ctx.save();
-    tile.ctx.beginPath();
-    tile.ctx.rect(0, 0, paper.width, paper.height);
-    tile.ctx.clip();
-  }
+  clipTilesToPaper(historyBase, paper);
   for (const op of command.ops) renderHistoryBaseOp(historyBase, op);
-  for (const tile of historyBase) tile.ctx.restore();
+  restoreTileContexts(historyBase);
 }
 
 function cancelHistoryFold() {

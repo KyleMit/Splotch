@@ -481,7 +481,7 @@ describe('idle tiled canvas visibility', () => {
     const { host, canvas } = rendererElements();
     let paperReady = true;
     adoptTiledRenderer(canvas, {
-      paperSize: () => (paperReady ? { width: 400, height: 400 } : null),
+      paperSize: () => (paperReady ? { width: 400, height: 400 } : { width: 0, height: 0 }),
       hasActivePointers: () => false,
     });
     resizeTiledRenderer(400, 400, 1);

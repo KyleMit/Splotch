@@ -30,6 +30,24 @@ export function liveTileSurfaces(tile: LiveTile) {
   return [tile.canvas, tile.crayonBottom, tile.crayonTop] as const;
 }
 
+type TileWithContext = Pick<LiveTile, 'ctx'>;
+
+export function clipTilesToPaper(
+  tiles: readonly TileWithContext[],
+  paper: { width: number; height: number }
+) {
+  for (const tile of tiles) {
+    tile.ctx.save();
+    tile.ctx.beginPath();
+    tile.ctx.rect(0, 0, paper.width, paper.height);
+    tile.ctx.clip();
+  }
+}
+
+export function restoreTileContexts(tiles: readonly TileWithContext[]) {
+  for (const tile of tiles) tile.ctx.restore();
+}
+
 export function createLiveTiles(canvasElement: HTMLCanvasElement): LiveTile[] {
   const elements =
     canvasElement.parentElement?.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]') ??
