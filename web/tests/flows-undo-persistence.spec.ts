@@ -1,7 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
-import { SCREENSHOT_COOLDOWN_MS } from '../src/lib/drawing/screenshotTiming';
+import {
+  POLAROID_OBSERVATION_MS,
+  SCREENSHOT_COOLDOWN_MS,
+} from '../src/lib/drawing/screenshotTiming';
 
 import { draw, firstOpaquePixel, gotoApp, retryOpen } from './helpers';
 
@@ -145,10 +148,31 @@ test.describe('tiled screenshot export', () => {
 
     const downloadPromise = page.waitForEvent('download');
     await page.locator('#screenshotButton').click();
+    const polaroid = page.locator('.polaroid-frame');
+    await expect(polaroid).toBeVisible();
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toMatch(/^splotch-.+\.png$/);
     expect(await download.failure()).toBeNull();
+    await expect(polaroid).toHaveCount(0, { timeout: POLAROID_OBSERVATION_MS });
+  });
+
+  test('suppresses the polaroid flash for reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await gotoApp(page);
+    await openDrawer(page);
+    await draw(page, [
+      { x: 140, y: 140 },
+      { x: 240, y: 200 },
+    ]);
+
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('#screenshotButton').click();
+    const flash = page.locator('.polaroid-flash');
+    await expect(flash).toHaveCount(1);
+    await expect(flash).toHaveCSS('animation-name', 'none');
+    await expect(flash).toHaveCSS('opacity', '0');
+    await downloadPromise;
   });
 });
 

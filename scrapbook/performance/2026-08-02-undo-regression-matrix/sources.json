@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "recordedOn": "2026-08-02",
+  "productCommit": "dce45b894af978eb2b0c997641a30c6408b1bb9a",
+  "rawCapturePolicy": "Raw event tables remain ephemeral; this collection commits only normalized evidence and provenance.",
+  "acceptedCaptures": [
+    {
+      "scenario": "pen drawing and 10 serial undos",
+      "mode": "xcuitest:pr717-etw-final-pen",
+      "source": "/private/tmp/pr717-etw-final-pen.json",
+      "productCommit": "dce45b894af978eb2b0c997641a30c6408b1bb9a",
+      "commitAttribution": "checked-out HEAD at capture",
+      "status": "accepted"
+    },
+    {
+      "scenario": "crayon drawing and 10 serial undos",
+      "mode": "xcuitest:pr717-etw-final-crayon",
+      "source": "/private/tmp/pr717-etw-final-crayon.json",
+      "productCommit": "dce45b894af978eb2b0c997641a30c6408b1bb9a",
+      "commitAttribution": "checked-out HEAD at capture",
+      "status": "accepted"
+    },
+    {
+      "scenario": "Magic drawing and 10 serial undos",
+      "mode": "xcuitest:pr717-etw-final-magic",
+      "source": "/private/tmp/pr717-etw-final-magic.json",
+      "productCommit": "dce45b894af978eb2b0c997641a30c6408b1bb9a",
+      "commitAttribution": "checked-out HEAD at capture",
+      "status": "accepted"
+    },
+    {
+      "scenario": "eraser drawing and 10 serial undos",
+      "mode": "xcuitest:pr717-etw-final-eraser",
+      "source": "/private/tmp/pr717-etw-final-eraser.json",
+      "productCommit": "dce45b894af978eb2b0c997641a30c6408b1bb9a",
+      "commitAttribution": "checked-out HEAD at capture",
+      "status": "accepted"
+    },
+    {
+      "scenario": "draw in portrait, manually rotate to landscape, visually settle, then run 10 serial undos",
+      "mode": "xcuitest:pr717-etw-final-rotation-manual",
+      "source": "/private/tmp/pr717-etw-final-rotation-manual.json",
+      "productCommit": "dce45b894af978eb2b0c997641a30c6408b1bb9a",
+      "commitAttribution": "checked-out HEAD at capture",
+      "rotationInput": "manual physical device rotation after the twentieth stroke",
+      "status": "accepted"
+    }
+  ],
+  "rejectedAttempts": [
+    {
+      "scenario": "pen drawing and 10 serial undos",
+      "mode": "xcuitest:pr717-etw-pen",
+      "source": "/private/tmp/pr717-etw-pen.json",
+      "productCommit": "7b035f7627e2f3efc42e97654df867cd99e6d2c5",
+      "status": "rejected",
+      "reason": "The capture predates the final review-followup HEAD; its 2.03% lost-frame-time share also exceeds the 1% gate."
+    },
+    {
+      "scenario": "draw, rotate, visually settle, then run at least 10 undos",
+      "mode": null,
+      "source": null,
+      "productCommit": "dce45b894af978eb2b0c997641a30c6408b1bb9a",
+      "attemptCount": 2,
+      "status": "failed-pre-capture",
+      "reason": "The stale-server and missing-server attempts never reached drawing and produced no artifact."
+    },
+    {
+      "scenario": "draw, request automated rotation, visually settle, then run at least 10 undos",
+      "mode": null,
+      "source": null,
+      "productCommit": "dce45b894af978eb2b0c997641a30c6408b1bb9a",
+      "status": "failed-no-artifact",
+      "reason": "WebDriverAgent returned success for the orientation command, but the physical device and viewport remained landscape until the settle timeout."
+    }
+  ],
+  "baseline": {
+    "report": "../2026-07-31-deployment-target-matrix/index.md",
+    "data": "../2026-07-31-deployment-target-matrix/data.json",
+    "sourceManifest": "../2026-07-31-deployment-target-matrix/sources.json",
+    "productCommit": "09c4efac27ca",
+    "targetId": "ipad-device-web"
+  }
+}

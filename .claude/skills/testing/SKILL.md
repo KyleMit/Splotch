@@ -390,6 +390,15 @@ with no `engine.commit` samples fails the job. Either tier attempts to upload `u
 and `undo-scenarios.md` after a failure; an early build/browser failure may leave no reports, which
 warns without masking the original error.
 
+`FAST_UNDO_SCENARIO_KEYS` is the fast set's only declaration. A repo-script unit test derives sole
+exercisers from every scenario's declared paths and requires each one in that set. Release runs also
+restore and update the durable `webkit-undo-full-history` artifact: the harness records each
+scenario's measured-to-budget ratio, recomputes ideal membership from the three most recent full
+runs, and records whether the fast tier would have caught a breach. Membership drift and two
+consecutive fast-set misses fail the full job; the updated history and full diagnostics upload even
+when that check fails. Invalid restored history falls back to the compatible seed, and a full run
+without commit samples is rejected without appending zero-valued evidence.
+
 The native smoke workflows are deliberately tag-only — an emulator/simulator job is the heaviest
 thing in CI, and a launch crash is exactly the kind of regression you want caught at release time.
 The Android job runs on **Ubuntu + KVM** (the emulator-runner's most reliable path; macOS ARM

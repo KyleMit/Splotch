@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -331,6 +331,98 @@ describe('engine selection', () => {
     // And they must not all sit on top of each other at ts 0, or the analyzer
     // reads three scenarios as one overlapping instant.
     expect(traceEvents.map((e) => e.ts)).toEqual([0, 1000, 2000]);
+  });
+
+  it('derives and persists fast-set evidence after a complete WebKit run', async () => {
+    process.argv = [...process.argv, '--engine=webkit'];
+    fakeBrowser(fakePage(), { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    expect(gate.fastSetEvaluation).toMatchObject({
+      evaluated: true,
+      committed: ['multi-finger', 'crayon-scribbles'],
+      ideal: ['multi-finger', 'crayon-scribbles'],
+      drifted: false,
+      latestMiss: false,
+      consecutiveMisses: 0,
+    });
+    const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
+    expect(report.scenarios.every((scenario) => scenario.paths.length > 0)).toBe(true);
+    expect(report.scenarios.every((scenario) => scenario.draw.headroomRatio === 0.04)).toBe(true);
+    const history = JSON.parse(
+      readFileSync(join(fixtureDir, 'undo-fast-set-history.json'), 'utf8')
+    );
+    expect(history.runs).toHaveLength(2);
+    expect(history.runs.at(-1)).toMatchObject({
+      fastSetWouldCatch: null,
+      fastSetMiss: false,
+    });
+  });
+
+  it('falls back to the compatible seed when restored history is invalid', async () => {
+    const historyPath = join(fixtureDir, 'restored-history.json');
+    const invalidHistory = '{"schemaVersion":0,"runs":[]}';
+    writeFileSync(historyPath, invalidHistory);
+    process.argv = [...process.argv, '--engine=webkit', `--fast-set-history=${historyPath}`];
+    fakeBrowser(fakePage(), { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    expect(gate.fastSetEvaluation).toMatchObject({ evaluated: true, historyWindowRuns: 2 });
+    expect(warning).toHaveBeenCalledWith(
+      expect.stringContaining('Could not use restored fast-set history')
+    );
+    expect(readFileSync(historyPath, 'utf8')).toBe(invalidHistory);
+    const diagnosticHistory = JSON.parse(
+      readFileSync(join(fixtureDir, 'undo-fast-set-history.json'), 'utf8')
+    );
+    expect(diagnosticHistory.schemaVersion).toBe(1);
+    expect(diagnosticHistory.runs).toHaveLength(2);
+  });
+
+  it('does not append a full run when a scenario has no commit samples', async () => {
+    const historyPath = join(fixtureDir, 'zero-sample-history.json');
+    process.argv = [...process.argv, '--engine=webkit', `--fast-set-history=${historyPath}`];
+    fakeBrowser(fakePage({ commitCount: 0 }), { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    expect(gate).toMatchObject({ evaluated: false });
+    expect(gate.fastSetEvaluation).toMatchObject({
+      evaluated: false,
+      reason: expect.stringContaining('valid commit samples'),
+    });
+    const history = JSON.parse(readFileSync(historyPath, 'utf8'));
+    expect(history.runs).toHaveLength(1);
+  });
+
+  it('resolves the fast suite through the exported membership constant', async () => {
+    process.argv = [...process.argv, '--engine=webkit', '--suite=fast'];
+    fakeBrowser(fakePage(), { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    await runUndoScenarios();
+
+    const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
+    expect(report.scenarios.map((scenario) => scenario.key)).toEqual([
+      'multi-finger',
+      'crayon-scribbles',
+    ]);
+    expect(report.fastSetEvaluation).toBeNull();
   });
 
   it('rejects an unknown engine instead of silently falling back to Chromium', async () => {

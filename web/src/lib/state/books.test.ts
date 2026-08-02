@@ -8,7 +8,6 @@ import {
   pageCompositionKey,
   pageImage,
   pageOverlayImage,
-  pageOverlayThumbnail,
   pageThumb,
   thumbPath,
 } from './books';
@@ -75,15 +74,6 @@ describe('pageOverlayImage', () => {
       '/coloring/farm/cat-wide.dark.overlay.webp'
     );
   });
-
-  it('uses transparent thumbnails as full-resolution decode bridges', () => {
-    expect(pageOverlayThumbnail(cat, 'portrait', 'light')).toBe(
-      '/coloring/farm/cat-tall.overlay.thumb.webp'
-    );
-    expect(pageOverlayThumbnail(cat, 'portrait', 'dark')).toBe(
-      '/coloring/farm/cat-tall.dark.overlay.thumb.webp'
-    );
-  });
 });
 
 describe('pageCompositionKey', () => {
@@ -97,8 +87,6 @@ describe('pageCompositionKey', () => {
       '/coloring/farm/cat-tall.chalk.thumb.webp',
       '/coloring/farm/cat-tall.overlay.webp',
       '/coloring/farm/cat-tall.dark.overlay.webp?version=1',
-      '/coloring/farm/cat-tall.overlay.thumb.webp',
-      '/coloring/farm/cat-tall.dark.overlay.thumb.webp',
     ];
 
     expect(new Set(siblings.map(pageCompositionKey))).toEqual(new Set(['/coloring/farm/cat-tall']));
@@ -153,8 +141,6 @@ describe('bookAssetPaths', () => {
       for (const orientation of ['portrait', 'landscape'] as const) {
         expect(paths).toContain(pageOverlayImage(page, orientation, 'light'));
         expect(paths).toContain(pageOverlayImage(page, orientation, 'dark'));
-        expect(paths).toContain(pageOverlayThumbnail(page, orientation, 'light'));
-        expect(paths).toContain(pageOverlayThumbnail(page, orientation, 'dark'));
       }
     }
   });
@@ -168,15 +154,10 @@ describe('bookAssetPaths', () => {
     // Exactly the line art gets a thumb: pen (cover + 2 orientations/page) and
     // chalk (2 orientations/page — no cover chalk yet).
     const penThumbs = paths.filter(
-      (p) =>
-        p.endsWith('.thumb.webp') &&
-        !p.endsWith('.chalk.thumb.webp') &&
-        !p.endsWith('.overlay.thumb.webp')
+      (p) => p.endsWith('.thumb.webp') && !p.endsWith('.chalk.thumb.webp')
     );
     const chalkThumbs = paths.filter((p) => p.endsWith('.chalk.thumb.webp'));
-    const overlayThumbs = paths.filter((p) => p.endsWith('.overlay.thumb.webp'));
     expect(penThumbs.length).toBe(1 + farm.pages.length * 2);
     expect(chalkThumbs.length).toBe(farm.pages.length * 2);
-    expect(overlayThumbs.length).toBe(farm.pages.length * 4);
   });
 });

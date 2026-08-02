@@ -1,6 +1,7 @@
 # ADR-0045: Coloring-Picker Thumbnails + Prefetch (Two Resolutions per Page)
 
-**Status:** Active **Date:** 2026-07
+**Status:** Active — the 2026-07-31 thumbnail decode bridge is superseded by the 2026-08-01
+amendment below. **Date:** 2026-07
 
 ## Context
 
@@ -103,26 +104,59 @@ fallback: on the physical iPad it lasted 19 ms; on fast 4G it lasted 300 ms. On 
 extreme link it remains soft for about three seconds, but the correctly centered page is usable in
 the first frame instead of leaving the child on a blank canvas.
 
+### 4. Retire the thumbnail decode bridge; keep request prioritization
+
+**Amendment (2026-08-01, issue #693).** The progressive canvas thumbnail was removed after
+cold-cache measurements showed that it did not solve the transfer gap it targeted. Network
+throttling alone hid the problem behind cache hits; the reproducing gate clears the browser cache
+through CDP immediately before applying a page and then enables Slow 3G.
+
+The first bridge used the picker's opaque ink-on-white thumbnail, which covered the paper texture
+and rendered with the wrong polarity in dark mode. A follow-up alpha-thumbnail bridge fixed that
+compositing defect but retained the low-resolution full-canvas swap, a separate cold transfer, and
+192 bridge-only assets. Under the reproducing profile the 400×267 alpha thumbnail became complete at
+about 1.2–1.5 seconds and the 1536×1024 overlay replaced it at about 1.9–3.2 seconds. The bridge
+therefore showed no art during the first transfer and then showed visibly soft art only until the
+real file arrived.
+
+When a new page composition is selected, `DrawingCanvas.svelte` now clears the displayed overlay,
+decodes only the full-resolution alpha overlay off-DOM at high fetch priority, and fades it in when
+ready. The textured paper stays visible throughout the decode window. A same-composition theme
+sibling may keep the prior full-resolution overlay until its registered sibling decodes; no
+thumbnail participates. The transfer cancellation, high-priority selected request, deferred Magic
+fill, and alternate-orientation idle warm from the earlier amendment remain.
+
+Clearing the displayed composition also clears the active Magic fill until the selected overlay is
+ready, so strokes cannot sample the previous page. Screenshot export reads the same ready-gated
+overlay element and therefore receives either the correct full-resolution art or no overlay during
+the decode window. The generator and catalog no longer produce or ship alpha overlay thumbnails;
+picker thumbnails remain unchanged.
+
 ## Consequences
 
 * **+** Grid downloads drop ~85% (thumbnails ~15 KB vs. 84–120 KB); the picker paints fast even on a
   cold visit, and decode cost per tile falls with the pixel count.
-* **+** The steady-state overlay stays full-res. A matching thumbnail bridges a cold full-image
-  transfer instead of leaving the canvas blank.
+* **+** The steady-state overlay stays full-res, and its decode window preserves the paper texture
+  instead of displaying a low-resolution or opaque full-canvas substitute.
 * **+** Prefetch turns each hop (open → book → apply) from first-fetch latency into a cache hit on
   the common path — measured at 14–137× faster first open and 1.5–44× faster page-apply (see
   **Measured impact** below).
-* **+** Page selection is frame-bound on the physical iPad: 29 ms maximum and 14 ms frame P95, with
-  the preview visible 1 ms and full art visible 20 ms after click.
+* **+** Save and Magic-fill state follow the same ready gate: a pending composition cannot export a
+  thumbnail or paint with the previous page's fill.
+* **−** A Magic stroke made during that gate is recorded as an undoable command but stays invisible
+  until the selected fill raster is ready; the ready repaint reveals it against the new page. This
+  preserves the child's gesture and Undo entry instead of dropping input based on network timing.
 * **+** One derivation point (`thumbPath` + `bookAssetPaths`) keeps the catalog, the asset check,
   and the native strip in agreement automatically.
-* **−** ~100 new committed binary files and roughly a doubling of the coloring precache entry count
-  (still small — thumbs are tiny). Regenerate with `npm run gen:coloring-thumbs` whenever a source
-  page changes; `check:assets` fails loudly if a thumb is missing.
+* **−** ~100 picker-thumbnail binary files and roughly a doubling of the picker-facing coloring
+  precache entry count (still small — thumbs are tiny). Regenerate with
+  `npm run gen:coloring-thumbs` whenever a source page changes; `check:assets` fails loudly if a
+  thumb is missing.
 * **−** Two files per page to keep in sync. The generator is the source of truth and is idempotent,
   so the sync step is "re-run the script," not hand-editing.
-* **−** A cold constrained connection shows the lower-resolution thumbnail until the full art
-  decodes. The progressive softening is preferable to an empty or apparently misplaced page.
+* **−** A cold constrained connection shows textured blank paper until the full-resolution alpha
+  overlay decodes. This is deliberate: the retired bridge remained blank for its own transfer and
+  then substituted visibly soft art for the rest of the window.
 
 ### When to escalate
 
@@ -220,8 +254,9 @@ serializing only detached idle prefetches does not control the real `<img>` elem
 Removing or hiding a dialog is also insufficient unless its in-flight image requests are explicitly
 cancelled. Check the request waterfall rather than inferring cancellation from DOM visibility.
 
-For the retained path, stall the full-resolution request in Playwright and assert that the thumbnail
-remains visible, has the same bounding box as `#drawingCanvas`, and is replaced by full art only
-after release. Reopen the dialog afterward: its cover images must regain `src`, proving cancelled
-URLs can be warmed again. Re-run Magic Brush, rotation, theme switching, undo, and screenshot export
-on the physical device after changing this ordering.
+For the retained path, stall the full-resolution request in Playwright and assert that the overlay
+has no displayed source or ready class, the textured paper stays visible, and only the
+full-resolution art appears after release. No `.overlay.thumb.webp` request may occur. Reopen the
+dialog afterward: its cover images must regain `src`, proving cancelled URLs can be warmed again.
+Re-run Magic Brush, rotation, theme switching, undo, and screenshot export on the physical device
+after changing this ordering.

@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { encodeTiledPng } from './tiledPngCompositor';
+import { composeTiledPngCanvas, createTiledPngPreview } from './tiledPngCompositor';
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('encodeTiledPng', () => {
+describe('composeTiledPngCanvas', () => {
   it('executes the shared paper and overlay compositor around the live tiles', async () => {
     const expected = new Blob(['png'], { type: 'image/png' });
     const drawImage = vi.fn();
@@ -56,7 +56,7 @@ describe('encodeTiledPng', () => {
     const overlay = { width: 100, height: 200 } as ImageBitmap;
 
     await expect(
-      encodeTiledPng({
+      composeTiledPngCanvas({
         sourceWidth: 400,
         sourceHeight: 300,
         sourceScale: 2,
@@ -65,7 +65,7 @@ describe('encodeTiledPng', () => {
         texture,
         overlay,
         paperColor: '#fffaf0',
-      })
+      }).convertToBlob({ type: 'image/png' })
     ).resolves.toBe(expected);
 
     expect(canvases).toHaveLength(1);
@@ -80,5 +80,36 @@ describe('encodeTiledPng', () => {
       { fillStyle: '#fffaf0', compositeOperation: 'destination-over' },
     ]);
     expect(convertToBlob).toHaveBeenCalledWith({ type: 'image/png' });
+  });
+
+  it('downscales the composed export into a transferable preview bitmap', () => {
+    const source = { width: 400, height: 300 } as OffscreenCanvas;
+    const bitmap = {} as ImageBitmap;
+    const context = {
+      imageSmoothingEnabled: false,
+      imageSmoothingQuality: 'low' as ImageSmoothingQuality,
+      drawImage: vi.fn(),
+    };
+    const transferToImageBitmap = vi.fn(() => bitmap);
+    vi.stubGlobal(
+      'OffscreenCanvas',
+      class {
+        constructor(
+          readonly width: number,
+          readonly height: number
+        ) {}
+        getContext() {
+          return context;
+        }
+        transferToImageBitmap = transferToImageBitmap;
+      }
+    );
+
+    expect(createTiledPngPreview(source, 200)).toBe(bitmap);
+
+    expect(context.imageSmoothingEnabled).toBe(true);
+    expect(context.imageSmoothingQuality).toBe('high');
+    expect(context.drawImage).toHaveBeenCalledWith(source, 0, 0, 200, 150);
+    expect(transferToImageBitmap).toHaveBeenCalledOnce();
   });
 });

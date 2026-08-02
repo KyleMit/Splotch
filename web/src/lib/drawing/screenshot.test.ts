@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   saveBlobToFolder: vi.fn(),
   playScreenshotFeedback: vi.fn(),
   playScreenshotSuppressedFeedback: vi.fn(),
+  createPolaroidPreviewRequest: vi.fn(),
   perfMarks: false,
 }));
 
@@ -17,6 +18,9 @@ vi.mock('./folderSave', () => ({ saveBlobToFolder: mocks.saveBlobToFolder }));
 vi.mock('./screenshotFeedback', () => ({
   playScreenshotFeedback: mocks.playScreenshotFeedback,
   playScreenshotSuppressedFeedback: mocks.playScreenshotSuppressedFeedback,
+}));
+vi.mock('./polaroidAnimation', () => ({
+  createPolaroidPreviewRequest: mocks.createPolaroidPreviewRequest,
 }));
 vi.mock('./screenshotTiming', () => ({ SCREENSHOT_COOLDOWN_MS: 4_000 }));
 vi.mock('./perf', () => ({
@@ -46,6 +50,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.perfMarks = false;
   mocks.isNative.mockReturnValue(false);
+  mocks.createPolaroidPreviewRequest.mockReturnValue(null);
   delete window.__screenshotSaveSink;
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:polaroid');
 });
@@ -61,6 +66,7 @@ describe('saveScreenshot', () => {
     expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
     expect(mocks.playScreenshotFeedback).toHaveBeenCalledWith();
     expect(mocks.saveBlobToFolder).not.toHaveBeenCalled();
+    expect(mocks.createPolaroidPreviewRequest).toHaveBeenCalledOnce();
 
     exported.resolve(null);
     await save;
@@ -70,7 +76,20 @@ describe('saveScreenshot', () => {
     await saveScreenshot();
 
     expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
+    expect(mocks.createPolaroidPreviewRequest).toHaveBeenCalledTimes(2);
     expect(mocks.playScreenshotSuppressedFeedback).not.toHaveBeenCalled();
+  });
+
+  it('requests the worker preview alongside the settled export snapshot', async () => {
+    const preview = { width: 640, onReady: vi.fn() };
+    mocks.createPolaroidPreviewRequest.mockReturnValue(preview);
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
+    mocks.saveBlobToFolder.mockResolvedValue(true);
+    const { saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledWith(null, { preview });
   });
 
   it('coalesces overlapping saves and permits a later save after persistence settles', async () => {

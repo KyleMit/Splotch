@@ -2,7 +2,8 @@
 
 **Status:** Active — amends [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) for production
 undo; amended by [ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md) for tile visibility
-snapshots. **Date:** 2026-07
+snapshots; amended in 2026-08 to preserve the advertised twenty-step depth for measured large
+sweeps. **Date:** 2026-07
 
 ## Context
 
@@ -140,8 +141,8 @@ attributed to `engine.resize` or undo.
 Resident patches use an adaptive byte budget:
 
 * Normal history still caps at `MAX_UNDO_DEPTH = 20`.
-* Retained patch bytes may consume at most three aggregate normal-ink papers
-  (`TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE = 3`).
+* Retained patch bytes may consume at most six aggregate normal-ink papers
+  (`TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE = 6`).
 * At least the newest two commands remain undoable.
 * When canvas-spanning commands exceed the byte budget, the oldest undo steps lose their patches and
   therefore leave the undo window. Their vector commands remain visible and fold into the tiled
@@ -186,8 +187,9 @@ Resident patches use an adaptive byte budget:
 * − Full repaints reconstruct patches through vector replay. They are off the ordinary drawing and
   undo paths, but their work scales with the undoable tail; resize must retain `engine.resize`
   instrumentation.
-* − A pathological sequence of full-paper marks can offer only two or three undo steps. This is a
-  deliberate product tradeoff in favor of drawing and undo responsiveness.
+* − A pathological sequence whose patches exceed six aggregate papers can still shorten below twenty
+  undo steps, but never below the newest two. This is a deliberate product tradeoff in favor of
+  bounded memory, drawing, and undo responsiveness.
 * − The legacy `/dev/engine` snapshot stack remains a different architecture. Production tiled undo
   must be validated on `/`, not inferred from legacy harness passes.
 
@@ -357,7 +359,7 @@ the straddling stroke can resurrect pixels the clear removed.
 
 Compute patch cost as the retained cropped canvases' `width × height × 4`, not their encoded file
 size and not tile count. Walk newest to oldest. Keep at most twenty entries while their total stays
-within three aggregate paper rasters, never keeping fewer than two.
+within six aggregate paper rasters, never keeping fewer than two.
 
 When the next older entry would exceed the budget:
 
@@ -366,11 +368,16 @@ When the next older entry would exceed the budget:
 3. Let the existing one-command-at-a-time idle scheduler fold it into the tiled base.
 4. Never rebuild patches for that non-undoable prefix during resize.
 
-The production regression draws twenty center-origin, canvas-spanning strokes. It asserts that patch
-bytes stay under the three-paper budget, depth decreases but remains at least two, all offered undo
-steps work, and the older non-undoable drawing remains visible. Start synthetic strokes away from
-safe-area edge bands; otherwise the edge-swipe guard can discard the gesture and make the memory
-test look artificially cheap.
+An idle fold validates that paper geometry exists before removing the prefix command from vector
+history. Layout transitions can temporarily make that geometry unavailable; the command stays queued
+and the scheduler retries instead of dropping ink that the oldest retained patch depends on.
+
+The production regressions cover both sides of the adaptive contract. Twenty realistic large sweeps
+must retain all twenty advertised steps under the six-paper budget, and a separate sequence of
+deliberately pathological strokes must stay within that budget while reducing depth no lower than
+two. Both invoke every offered undo; the pathological case also requires the older non-undoable
+drawing to remain visible. Start synthetic strokes away from safe-area edge bands; otherwise the
+edge-swipe guard can discard the gesture and make the memory test look artificially cheap.
 
 Encoding old patches is the main revisitable alternative. Re-attempt it only with physical WebKit
 measurements for both the `toBlob` demotion and the first cold decode. A memory win that moves
@@ -389,3 +396,69 @@ Before shipping a change to this architecture:
 5. Re-check ADR-0085's live drawing metrics in every physical capture.
 6. Reject a change that improves undo by lowering render scale, disabling a brush/audio feature, or
    reintroducing a frequently mutated full-size canvas.
+
+## Amendment (2026-08): Preserve Twenty Steps for Realistic Large Sweeps
+
+### Context
+
+The original three-paper budget deliberately allowed canvas-spanning commands to reduce effective
+depth to two or three. Parent Center simultaneously advertised “Undo now goes back 20 steps.” The
+adaptive test established a memory ceiling but did not establish whether the reduced depth occurred
+under realistic child input.
+
+Issue 695 measured two separate trusted-touch cohorts on a physical iPad13,8 running iPadOS 26.5.
+Each cohort began from blank paper, drew exactly twenty commands through XCUITest on the production
+route, recorded `getUndoDebug()`, and then invoked every offered undo until `aria-disabled` reported
+the history boundary:
+
+| Three-paper baseline                                      | Retained depth | Patch bytes | Pending commands |
+| --------------------------------------------------------- | -------------: | ----------: | ---------------: |
+| Twenty zigzag sweeps crossing most of the paper           |             10 |  51,595,632 |                0 |
+| Twenty short marks distributed across the paper (control) |             20 |   4,990,880 |                0 |
+
+The aggregate paper was 17,763,392 bytes, so the baseline budget was 53,290,176 bytes. Every
+retained undo completed in 0–1 ms, proving response time was healthy but the product promise was
+not: a realistic large-stroke session lost half of its advertised depth.
+
+Changing the copy to “up to 20 steps” or removing a fixed number would accurately describe the
+three-paper behavior but make the feature less predictable. Compression was also rejected for this
+fix: the existing WebKit evidence shows that encoding on commit or decoding on deep undo can violate
+the frame-bounded interaction contract. The chosen alternative is the smallest whole-paper budget
+that fits the measured twenty-command workload.
+
+### Decision
+
+`TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE` is six. `MAX_UNDO_DEPTH` and the Parent Center release note
+remain twenty. The same trusted-touch sweep on the final code retained all twenty commands with
+103,859,876 patch bytes under the 106,580,352-byte budget; the small-stroke control again retained
+twenty with 4,990,880 patch bytes. All forty final undos completed in 0–1 ms and both cohorts ended
+at zero snapshots with `aria-disabled=true`.
+
+The contract is executable in two layers:
+
+* `flows-tile-history.spec.ts` draws twenty large sweeps at the measured iPad viewport, requires
+  `MAX_UNDO_DEPTH` snapshots within the six-paper ceiling, invokes all twenty undos, and requires
+  blank paper plus the exhausted Undo state.
+* `undoDepthContract.test.ts` reads the generated release source and requires its advertised number
+  to equal `MAX_UNDO_DEPTH`.
+
+The two-command floor remains a safety valve for inputs whose retained dirty rectangles exceed six
+aggregate papers. It is not permission to calibrate the budget below the measured large-sweep
+contract. Any future budget reduction must rerun the physical twenty-large/twenty-small protocol and
+update the user-facing promise in the same change if twenty realistic sweeps no longer fit.
+
+### Consequences
+
+* \+ Realistic large sweeping input and small marks both deliver the twenty steps Parent Center
+  advertises.
+* \+ Patch restore remains frame-bounded; the change adds resident capacity without adding encode or
+  decode work.
+* \+ Cross-file and production-route tests prevent the copy, depth cap, and measured budget behavior
+  from drifting independently.
+* − The maximum patch allowance doubles from 50.8 MiB to 101.6 MiB on the measured paper. The final
+  large-stroke cohort used 99.0 MiB of patches; live paper plus retained patches measured 116.0 MiB.
+* − Retaining twenty commands doubles the longest undoable tail replayed with undo-patch capture
+  after resize or remount. The fast performance suite measures commit latency, not this replay cost.
+* − Truly full-paper commands can still exhaust six papers before twenty entries. Supporting every
+  possible twenty-command sequence would require a twenty-paper worst-case allowance and was
+  rejected as disproportionate memory pressure.

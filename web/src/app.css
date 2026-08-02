@@ -360,3 +360,100 @@ body {
     transform: scale(0.82);
   }
 }
+
+/* The save-time-only polaroid module creates these elements imperatively on
+   <body>, so the animation must stay global. The image is a small pre-rasterized
+   canvas; only transform and opacity change during flight. */
+.polaroid-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-polaroid);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Camera flash and photographic paper stay white across themes so the
+   effect reads as a physical polaroid. */
+.polaroid-flash {
+  position: absolute;
+  inset: 0;
+  background: white;
+  opacity: 0;
+  will-change: opacity;
+  animation: polaroid-flash var(--duration-slow) ease-out forwards;
+}
+
+.polaroid-frame {
+  --from-x: 0px;
+  --from-y: 0px;
+
+  background: #fdfcf7;
+  padding: 16px 16px 64px;
+  border-radius: 3px;
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, 0.35),
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  transform-origin: center;
+  opacity: 0;
+  contain: layout paint;
+  will-change: transform, opacity;
+  animation: polaroid-show 1.9s var(--ease-glide) forwards;
+}
+
+.polaroid-image {
+  display: block;
+  background: #fcfbf8;
+  border-radius: 1px;
+}
+
+@keyframes polaroid-flash {
+  15% {
+    opacity: 0.85;
+  }
+}
+
+@keyframes polaroid-show {
+  0% {
+    transform: translate3d(var(--from-x), var(--from-y), 0) scale(0.1) rotate(-18deg);
+    opacity: 0;
+  }
+  6% {
+    transform: translate3d(var(--from-x), var(--from-y), 0) scale(0.15) rotate(-15deg);
+    opacity: 0.6;
+  }
+  30% {
+    transform: translate3d(0, 0, 0) scale(1.06) rotate(-6deg);
+    opacity: 1;
+  }
+  38%,
+  68% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(-4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--from-x), var(--from-y), 0) scale(0.1) rotate(-18deg);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .polaroid-flash {
+    animation: none;
+  }
+
+  .polaroid-frame {
+    animation-name: polaroid-fade;
+    animation-duration: 0.7s;
+  }
+}
+
+@keyframes polaroid-fade {
+  15%,
+  70% {
+    transform: rotate(-4deg);
+    opacity: 1;
+  }
+}

@@ -16,6 +16,7 @@ import { LIVE_TILE_COLUMNS, LIVE_TILE_ROWS } from './liveTiles';
 import { createTiledUndoPatches } from './tiledUndoPatches';
 import {
   clearTileBacking,
+  clipTilesToPaper,
   createHistoryBaseTiles,
   createLiveTiles,
   deferHiddenTileClear,
@@ -23,18 +24,21 @@ import {
   ensureNormalTileBacking,
   liveTileSurfaces,
   renderHistoryBaseOp,
+  restoreTileContexts,
   type HistoryBaseTile,
   type LiveTile,
   type TiledCanvasSnapshot,
 } from './tiledSurfaces';
 
 interface TiledRendererHost {
-  paperSize: () => { width: number; height: number };
+  paperSize: () => { width: number; height: number } | null;
   hasActivePointers: () => boolean;
 }
 
 export const TILE_HISTORY_FOLD_IDLE_MS = 1_500;
-export const TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE = 3;
+// Six papers is the smallest whole-paper budget that retained all twenty
+// trusted large sweeps on the target iPad; see ADR-0086.
+export const TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE = 6;
 export const MIN_TILED_UNDO_COMMANDS = 2;
 
 let canvas: HTMLCanvasElement | null = null;
@@ -287,33 +291,24 @@ function renderHistoryCommand(target: CanvasRenderingContext2D, command: StrokeG
 function renderCommandAcrossTiles(command: StrokeGroupCommand, captureUndo = false) {
   const paper = host?.paperSize();
   if (!paper) return;
-  for (const tile of liveTiles) {
-    tile.ctx.save();
-    tile.ctx.beginPath();
-    tile.ctx.rect(0, 0, paper.width, paper.height);
-    tile.ctx.clip();
-  }
+  clipTilesToPaper(liveTiles, paper);
   for (const op of command.ops) {
     renderTiledOpForCommand(op, captureUndo ? command : null);
   }
-  for (const tile of liveTiles) tile.ctx.restore();
+  restoreTileContexts(liveTiles);
   if (captureUndo) undoPatches.crop(command);
 }
 
 function foldOldestCommand() {
-  const command = history.shift();
   const paper = host?.paperSize();
-  if (!command || !paper) return;
+  if (!paper || paper.width <= 0 || paper.height <= 0) return;
+  const command = history.shift();
+  if (!command) return;
   undoPatches.delete(command);
   ensureHistoryBase();
-  for (const tile of historyBase) {
-    tile.ctx.save();
-    tile.ctx.beginPath();
-    tile.ctx.rect(0, 0, paper.width, paper.height);
-    tile.ctx.clip();
-  }
+  clipTilesToPaper(historyBase, paper);
   for (const op of command.ops) renderHistoryBaseOp(historyBase, op);
-  for (const tile of historyBase) tile.ctx.restore();
+  restoreTileContexts(historyBase);
 }
 
 function cancelHistoryFold() {
