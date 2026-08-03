@@ -5,7 +5,7 @@
 // and the night fill's drift/bgLuma/lineWhite generation gates
 // (lib/night-scores.mjs) — frozen into one committed JSON
 // (golden/golden-scores.json), so any pipeline change can re-run the audits and
-// diff against the snapshot: "improved train-wide" can't silently degrade the
+// diff against the snapshot: "improved train-wide" can't silently degrade
 // any other page.
 //
 //   npm run gen:coloring-golden:freeze   score the whole catalog -> golden/golden-scores.json
