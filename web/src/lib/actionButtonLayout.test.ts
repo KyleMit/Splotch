@@ -21,9 +21,11 @@ import {
 } from './design/trimGeometry';
 import {
   ACTION_PANEL_LIVE_ATTRIBUTE,
+  PALETTE_BAR_RESERVE,
   isAiImageButtonVisible,
   visibleActionButtonCount,
   resolvedLandscapePaletteWidth,
+  resolvedPortraitPaletteHeight,
   maxActionButtonScale,
   publishActionPanelState,
 } from './actionButtonLayout';
@@ -141,6 +143,20 @@ describe('resolvedLandscapePaletteWidth', () => {
   });
 });
 
+describe('resolvedPortraitPaletteHeight', () => {
+  it('keeps the measured height as the hydrated correction', () => {
+    layout.orientation = 'portrait';
+    layout.paletteMeasurement = { width: 768, height: 76.5, orientation: 'portrait' };
+    expect(resolvedPortraitPaletteHeight()).toBe(76.5);
+  });
+
+  it('ignores a landscape measurement after rotating to portrait', () => {
+    layout.orientation = 'portrait';
+    layout.paletteMeasurement = { width: 84, height: 768, orientation: 'landscape' };
+    expect(resolvedPortraitPaletteHeight()).toBe(PALETTE_BAR_RESERVE);
+  });
+});
+
 // Landscape budget: viewportWidth − palette width − 64 (reserve for the Settings
 // Button) − side insets − (8 inset + 8 margin + 48 toggle + gaps). Portrait
 // swaps in viewportHeight − measured palette height − 8 clearance − vertical insets.
@@ -175,6 +191,21 @@ describe('maxActionButtonScale', () => {
     layout.orientation = 'portrait';
     layout.viewportWidth = 360;
     layout.viewportHeight = 740;
+    expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
+  });
+
+  it('uses portrait fallback geometry immediately after rotating from landscape', () => {
+    layout.orientation = 'portrait';
+    layout.viewportWidth = 768;
+    layout.viewportHeight = 1024;
+    layout.paletteMeasurement = { width: 84, height: 768, orientation: 'landscape' };
+    expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
+
+    layout.paletteMeasurement = {
+      width: 768,
+      height: PALETTE_BAR_RESERVE,
+      orientation: 'portrait',
+    };
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 

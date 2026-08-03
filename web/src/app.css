@@ -36,6 +36,8 @@ body {
    palette geometry source. */
 :root {
   --palette-landscape-width: 156px;
+  --action-btn-first-paint-count: 5;
+  --action-btn-first-paint-gap-total: 48px;
 }
 
 @media (orientation: landscape) and (min-height: 444px) {

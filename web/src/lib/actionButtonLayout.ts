@@ -43,11 +43,13 @@ export const PALETTE_CLEARANCE = 8;
 export const MAX_ACTION_BUTTON_COUNT = 6;
 
 // The AI button is always hidden in the prerendered HTML because its visibility
-// depends on client-only credential and network state.
-export const PRERENDERED_ACTION_BUTTON_COUNT = MAX_ACTION_BUTTON_COUNT - 1;
+// depends on client-only credential and network state. app.html corrects this
+// default count before first paint when persisted settings hide other buttons.
+export const FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT = MAX_ACTION_BUTTON_COUNT - 1;
+export const FIRST_PAINT_ACTION_BUTTON_GAP_TOTAL_DEFAULT =
+  (FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT - 1) * ACTION_BUTTON_GAP;
 
-export const PRERENDERED_ACTION_BUTTON_CHROME =
-  (PRERENDERED_ACTION_BUTTON_COUNT - 1) * ACTION_BUTTON_GAP + PANEL_FIXED_CHROME;
+export const LANDSCAPE_FIXED_RESERVE = SETTINGS_BUTTON_RESERVE + PANEL_FIXED_CHROME;
 
 // Conservative portrait fallback chrome: all MAX_ACTION_BUTTON_COUNT buttons
 // (so MAX-1 gaps) plus the panel's screen inset, drawer→toggle collapse margin,
@@ -95,6 +97,18 @@ export function resolvedLandscapePaletteWidth(): number {
     : PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns;
 }
 
+export function resolvedPortraitPaletteHeight(): number {
+  const measurement = layout.paletteMeasurement;
+  if (
+    layout.orientation === 'portrait' &&
+    measurement.orientation === 'portrait' &&
+    measurement.height > 0
+  ) {
+    return measurement.height;
+  }
+  return PALETTE_BAR_RESERVE;
+}
+
 // The space one button may occupy on the current screen, in px, before the row
 // (landscape: up to the reserve for the Settings Button) or the column (portrait:
 // up to the palette bar) runs out. Mirrors the CSS cap in ActionsPanel — keep
@@ -105,7 +119,7 @@ function availablePerButton(buttonCount: number): number {
   const budget =
     orientation === 'portrait'
       ? layout.viewportHeight -
-        layout.paletteMeasurement.height -
+        resolvedPortraitPaletteHeight() -
         PALETTE_CLEARANCE -
         safeArea.top -
         safeArea.bottom -

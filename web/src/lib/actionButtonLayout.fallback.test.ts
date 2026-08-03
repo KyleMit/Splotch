@@ -10,18 +10,22 @@ import {
 import {
   ACTION_BUTTON_BASE_LANDSCAPE,
   ACTION_BUTTON_BASE_PORTRAIT,
+  ACTION_BUTTON_GAP,
   ACTION_PANEL_LIVE_ATTRIBUTE,
+  FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT,
+  FIRST_PAINT_ACTION_BUTTON_GAP_TOTAL_DEFAULT,
+  LANDSCAPE_FIXED_RESERVE,
   MAX_ACTION_BUTTON_COUNT,
+  PANEL_FIXED_CHROME,
   PANEL_INSET,
   PALETTE_BAR_RESERVE,
   PALETTE_CLEARANCE,
-  PRERENDERED_ACTION_BUTTON_CHROME,
-  PRERENDERED_ACTION_BUTTON_COUNT,
   SETTINGS_BUTTON_RESERVE,
   WORST_CASE_CHROME,
 } from './actionButtonLayout';
 
 const appCssSource = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
+const appHtmlSource = readFileSync(resolve(process.cwd(), 'src/app.html'), 'utf8');
 
 // The CSS `--action-btn-fallback` in ActionsPanel.svelte owns the action-button
 // size at first paint (before any TS loads — ADR-0040), so it bakes the sizing
@@ -70,12 +74,24 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
   it('landscape fallback matches the constants', () => {
     const [landscape] = fallbackBlocks;
     expect(landscape).toContain(`${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)`);
-    // 100vw minus the palette, right-edge Settings Button, and the chrome around
-    // the five buttons that can exist in the prerendered DOM.
+    // 100vw minus the palette, fixed chrome, and the dynamic gap total around
+    // the 1–5 buttons that persisted settings leave visible before hydration.
     expect(landscape).toContain(
-      `100vw - var(--palette-landscape-width) - ${SETTINGS_BUTTON_RESERVE + PRERENDERED_ACTION_BUTTON_CHROME}px`
+      `100vw - var(--palette-landscape-width) - ${LANDSCAPE_FIXED_RESERVE}px`
     );
-    expect(landscape).toMatch(new RegExp(`/\\s*${PRERENDERED_ACTION_BUTTON_COUNT}`));
+    expect(landscape).toContain('var(--action-btn-first-paint-gap-total)');
+    expect(landscape).toMatch(/\/\s*var\(--action-btn-first-paint-count\)(?:\s|$)/);
+    expect(appCssSource).toMatch(
+      new RegExp(`--action-btn-first-paint-count:\\s*${FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT}\\b`)
+    );
+    expect(appCssSource).toContain(
+      `--action-btn-first-paint-gap-total: ${FIRST_PAINT_ACTION_BUTTON_GAP_TOTAL_DEFAULT}px`
+    );
+    expect(appHtmlSource).toMatch(
+      new RegExp(`if \\(actionButtonCount !== ${FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT}\\b`)
+    );
+    expect(appHtmlSource).toContain(`${ACTION_BUTTON_GAP} * (actionButtonCount - 1) + 'px'`);
+    expect(LANDSCAPE_FIXED_RESERVE).toBe(SETTINGS_BUTTON_RESERVE + PANEL_FIXED_CHROME);
   });
 
   it('portrait fallback matches the constants', () => {
@@ -85,6 +101,6 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
     expect(portrait).toContain(
       `100vh - ${PALETTE_CLEARANCE + WORST_CASE_CHROME + PALETTE_BAR_RESERVE}px`
     );
-    expect(portrait).toMatch(new RegExp(`/\\s*${MAX_ACTION_BUTTON_COUNT}`));
+    expect(portrait).toMatch(new RegExp(`/\\s*${MAX_ACTION_BUTTON_COUNT}\\b`));
   });
 });

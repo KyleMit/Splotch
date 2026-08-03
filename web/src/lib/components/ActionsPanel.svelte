@@ -24,6 +24,7 @@
     isAiImageButtonVisible,
     visibleActionButtonCount,
     resolvedLandscapePaletteWidth,
+    resolvedPortraitPaletteHeight,
     publishActionPanelState,
   } from '$lib/actionButtonLayout';
   import { undo } from '$lib/drawing/engine';
@@ -65,6 +66,7 @@
   // palette right by env(safe-area-inset-left) (the Android landscape hole-punch),
   // and the measured width doesn't include that padding — so we clear inset + width.
   const landscapePaletteWidth = $derived(resolvedLandscapePaletteWidth());
+  const portraitPaletteHeight = $derived(resolvedPortraitPaletteHeight());
   const leftOffset = $derived(
     !browser || isPortrait
       ? undefined
@@ -104,7 +106,7 @@
     !browser
       ? undefined
       : isPortrait
-        ? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((${layout.viewportHeight - layout.paletteMeasurement.height - PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
+        ? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((${layout.viewportHeight - portraitPaletteHeight - PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
         : `min(calc(${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)), calc((100vw - ${landscapePaletteWidth + SETTINGS_BUTTON_RESERVE}px - env(safe-area-inset-left) - env(safe-area-inset-right) - ${buttonSpread}px) / ${buttonCount}))`
   );
 
@@ -593,26 +595,28 @@
     /* --action-btn-size (inline) is the precise measured cap ActionsPanel sets
        once hydrated, so the row clears the Settings Button (landscape) / the
        palette bar (portrait). Until then it's unset and --action-btn-fallback
-       owns first paint: the landscape formula budgets for the five buttons the
-       prerendered DOM can show (the AI button requires client-only state), while
+       owns first paint: the landscape formula budgets for the 1–5 buttons the
+       boot script leaves visible (the AI button requires client-only state), while
        the media query picks the right orientation. The old inline SSR bake was
        always the landscape formula, so portrait phones painted tiny buttons that
        jumped to full size (issue #317).
        Square via width = height so a capped button shrinks like a smaller scale
        instead of squishing. Landscape 100vw (unaffected by the URL bar); the
        --palette-landscape-width reserves the Color Palette before it can be
-       measured. 176px = SETTINGS_BUTTON_RESERVE (64) +
-       PRERENDERED_ACTION_BUTTON_CHROME (112). These literals mirror the
-       actionButtonLayout constants and are drift-guarded by
+       measured. 128px = SETTINGS_BUTTON_RESERVE (64) + PANEL_FIXED_CHROME
+       (64); the inherited count and gap total default to the five-button raw
+       HTML state and app.html overrides them for persisted hidden controls.
+       These literals mirror the actionButtonLayout constants and are drift-guarded by
        actionButtonLayout.fallback.test.ts — update both together. */
     --action-btn-fallback: min(
       calc(60px * var(--action-btn-scale, 1)),
       calc(
         (
-            100vw - var(--palette-landscape-width) - 176px - env(safe-area-inset-left) -
+            100vw - var(--palette-landscape-width) - 128px -
+              var(--action-btn-first-paint-gap-total) - env(safe-area-inset-left) -
               env(safe-area-inset-right)
           ) /
-          5
+          var(--action-btn-first-paint-count)
       )
     );
     width: var(--action-btn-size, var(--action-btn-fallback));

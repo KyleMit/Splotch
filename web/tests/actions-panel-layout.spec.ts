@@ -9,6 +9,23 @@ const LANDSCAPE_VIEWPORTS = [
 ] as const;
 
 const NARROW_LANDSCAPE_VIEWPORTS = LANDSCAPE_VIEWPORTS.slice(0, 2);
+const PERSISTED_VISIBILITY_CONFIGURATIONS = [
+  {
+    name: 'three-button row',
+    hiddenKeys: ['splotch-screenshot-enabled', 'splotch-undo-button-enabled'],
+    visibleButtonCount: 3,
+  },
+  {
+    name: 'brush-only row',
+    hiddenKeys: [
+      'splotch-stroke-width-control',
+      'splotch-coloring-book-enabled',
+      'splotch-screenshot-enabled',
+      'splotch-undo-button-enabled',
+    ],
+    visibleButtonCount: 1,
+  },
+] as const;
 
 interface ActionPanelGeometry {
   paletteRight: number;
@@ -27,7 +44,9 @@ function actionPanelGeometry(page: Page): Promise<ActionPanelGeometry> {
     const settingsButton = document.querySelector('button[aria-label="Settings"]');
     const visibleButtons = [...document.querySelectorAll('.action-button')].filter(
       (element): element is HTMLElement =>
-        element instanceof HTMLElement && getComputedStyle(element).display !== 'none'
+        element instanceof HTMLElement &&
+        getComputedStyle(element).display !== 'none' &&
+        element.getClientRects().length > 0
     );
     if (
       !(palette instanceof HTMLElement) ||
@@ -47,6 +66,16 @@ function actionPanelGeometry(page: Page): Promise<ActionPanelGeometry> {
       settingsLeft: settingsButton.getBoundingClientRect().left,
     };
   });
+}
+
+async function seedPersistedHiddenControls(
+  page: Page,
+  hiddenKeys: readonly string[]
+): Promise<void> {
+  await page.addInitScript((keys) => {
+    localStorage.setItem('splotch-drawer-open', 'true');
+    for (const key of keys) localStorage.setItem(key, 'false');
+  }, hiddenKeys);
 }
 
 for (const viewport of LANDSCAPE_VIEWPORTS) {
@@ -78,6 +107,32 @@ for (const viewport of LANDSCAPE_VIEWPORTS) {
     expect(hydrated.visibleButtonCount).toBe(5);
     expect(preHydration.panelLeft).toBe(hydrated.panelLeft);
     expect(preHydration.buttonWidth).toBeCloseTo(hydrated.buttonWidth, 2);
+  });
+}
+
+for (const configuration of PERSISTED_VISIBILITY_CONFIGURATIONS) {
+  test(`${configuration.name} first paint matches hydrated geometry`, async ({ browser, page }) => {
+    const viewport = LANDSCAPE_VIEWPORTS[0];
+    const firstPaintContext = await browser.newContext({ viewport });
+    const firstPaintPage = await firstPaintContext.newPage();
+    await seedPersistedHiddenControls(firstPaintPage, configuration.hiddenKeys);
+    await firstPaintPage.route('**/_app/immutable/**/*.js', (route) => route.abort());
+    await firstPaintPage.goto('/');
+    await expect(firstPaintPage.locator('.color-palette')).toBeVisible();
+    const firstPaint = await actionPanelGeometry(firstPaintPage);
+    await firstPaintContext.close();
+
+    expect(firstPaint.visibleButtonCount).toBe(configuration.visibleButtonCount);
+
+    await seedPersistedHiddenControls(page, configuration.hiddenKeys);
+    await page.setViewportSize(viewport);
+    await gotoApp(page);
+    await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
+    const hydrated = await actionPanelGeometry(page);
+
+    expect(hydrated.visibleButtonCount).toBe(configuration.visibleButtonCount);
+    expect(firstPaint.panelLeft).toBe(hydrated.panelLeft);
+    expect(firstPaint.buttonWidth).toBeCloseTo(hydrated.buttonWidth, 2);
   });
 }
 
