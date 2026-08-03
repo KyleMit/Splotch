@@ -3971,51 +3971,6 @@ fixtures — making the mirror mechanical instead of prose. Gotcha: the CSS stri
 insets while the JS uses measured `layout.safeArea`; the test should pin both formulas with zero
 insets and document that divergence surface.
 
-### [Maintainability] `buttonSpread` in ActionsPanel re-derives the chrome sum owned by `availablePerButton`
-
-**File(s):** `web/src/lib/components/ActionsPanel.svelte` (lines 94–96),
-`web/src/lib/actionButtonLayout.ts` (lines 75–76) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The same four-term sum is computed independently in both files:
-
-`ActionsPanel.svelte:94–96`:
-
-```ts
-const buttonSpread = $derived(
-  (buttonCount - 1) * ACTION_BUTTON_GAP + PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE,
-);
-```
-
-`actionButtonLayout.ts:75–76`:
-
-```ts
-const chrome = PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE
-  + (buttonCount - 1) * ACTION_BUTTON_GAP;
-```
-
-(and a third, fixed-count variant as `WORST_CASE_CHROME`, lines 47–51). Both import the same
-constants, so drift risk is lower than a raw literal, but adding a new fixed cost (another margin, a
-divider) requires editing both sums — and missing one desynchronizes the slider ceiling from the
-render cap, the exact failure this module exists to prevent.
-
-#### Proposed solution
-
-Export one helper and use it in all three places:
-
-```ts
-export function panelChromePx(buttonCount: number): number {
-  return (buttonCount - 1) * ACTION_BUTTON_GAP + PANEL_INSET + DRAWER_TOGGLE_MARGIN
-    + DRAWER_TOGGLE_SIZE;
-}
-```
-
-`WORST_CASE_CHROME` becomes `panelChromePx(MAX_ACTION_BUTTON_COUNT)`. This is subsumed by the
-`buttonSizeCssExpr` extraction above if that lands first; on its own it is a five-minute change.
-
 ### [Maintainability] The drawer gap's "keep in sync" comment pair needs a drift-guard test instead
 
 **File(s):** `web/src/lib/components/ActionsPanel.svelte` (lines 436–437),
