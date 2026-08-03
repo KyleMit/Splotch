@@ -24,6 +24,12 @@
 
   const cssVar = (key: string) => `var(${toCssVarName(key)})`;
 
+  // --brand-rgb is a channel triplet for rgba() composition, not a complete
+  // color — a bare var() in `background` is invalid CSS and computes as
+  // transparent (design.spec.ts asserts every swatch paints).
+  const brandSwatchFill = (key: string) =>
+    key === 'brandRgb' ? `rgb(${cssVar(key)})` : cssVar(key);
+
   const weightSpecimens = [
     { weight: 700, note: 'headings', sample: 'Let them make a mess.' },
     { weight: 600, note: '--font-weight-semibold', sample: 'Settings, not a paywall' },
@@ -43,7 +49,7 @@
   <div class="swatch-grid">
     {#each Object.entries(brand).filter(([k]) => k !== 'brandTintFilter') as [key, value] (key)}
       <div class="swatch-card">
-        <div class="swatch" style:background={cssVar(key)}></div>
+        <div class="swatch" style:background={brandSwatchFill(key)}></div>
         <code>{toCssVarName(key)}</code>
         <span class="value">{value}</span>
       </div>
