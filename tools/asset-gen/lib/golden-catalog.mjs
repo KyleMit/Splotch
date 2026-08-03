@@ -23,6 +23,7 @@ const GOLDEN_METRICS = {
   'outline.strokeWidth': { noise: 0, worse: null },
   'outline.ringDepth': { noise: 0, worse: 'up' },
   'outline.frameCoverage': { noise: 0.005, worse: 'up' },
+  'outline.ghostCoverage': { noise: 0.005, worse: 'up' },
   'light.keep': { noise: 0.005, worse: 'down' },
   'light.localKeep': { noise: 0.005, worse: 'down' },
   'light.eyeCores': { noise: 0, worse: null },

@@ -187,6 +187,7 @@ for (let attempt = 0; attempt < maxAttempts; attempt++) {
     inkOk: ink >= INK_MIN && ink <= INK_MAX,
     borderWhite,
     frameCoverage: frame.sideCoverage,
+    ghostCoverage: frame.ghostCoverage,
     ink,
   };
 
@@ -199,7 +200,10 @@ for (let attempt = 0; attempt < maxAttempts; attempt++) {
   if (!cand.ringsOk) flags.push(`rings ${cand.ringDepth}`);
   if (!cand.eyesOk) flags.push('no eye cores');
   if (!cand.borderOk) flags.push(`border ${(borderWhite * 100).toFixed(1)}%`);
-  if (!cand.frameOk) flags.push(`page frame ${(cand.frameCoverage * 100).toFixed(1)}%`);
+  if (!cand.frameOk)
+    flags.push(
+      `page frame ${(cand.frameCoverage * 100).toFixed(1)}%/ghost ${(cand.ghostCoverage * 100).toFixed(1)}%`
+    );
   if (!cand.inkOk) flags.push(`ink ${(ink * 100).toFixed(1)}%`);
   console.log(
     `blob ${cand.biggestBlob}  interior ${cand.interiorPx}  rings ${cand.ringDepth}` +

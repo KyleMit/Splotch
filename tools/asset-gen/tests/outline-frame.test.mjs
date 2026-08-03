@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { FRAME_SIDE_COVERAGE_MIN, scoreOutlineFrame } from '../lib/outline-frame.mjs';
+import {
+  FRAME_SIDE_COVERAGE_MIN,
+  GHOST_SIDE_COVERAGE_MIN,
+  scoreOutlineFrame,
+} from '../lib/outline-frame.mjs';
 import {
   edgeNearArtOutline,
   framedOutline,
+  fringedEdgeArtOutline,
+  ghostFrameOutline,
   goodEyeSource,
   partiallyOccludedFrameOutline,
   swirlEyeSource,
@@ -51,6 +57,21 @@ describe('outline frame gate', () => {
     const result = await scoreOutlineFrame(await buildFixture());
 
     expect(result.sideCoverage).toBeLessThan(EYE_FIXTURE_FRAME_COVERAGE_MAX);
+    expect(result.passes).toBe(true);
+  });
+
+  it('flags the orphaned near-white fringe an erased frame leaves behind', async () => {
+    const result = await scoreOutlineFrame(await ghostFrameOutline());
+
+    expect(result.sideCoverage).toBeLessThan(FRAME_SIDE_COVERAGE_MIN);
+    expect(result.ghostCoverage).toBeGreaterThan(GHOST_SIDE_COVERAGE_MIN);
+    expect(result.passes).toBe(false);
+  });
+
+  it('attributes gray hugging a live stroke to that stroke, not a ghost', async () => {
+    const result = await scoreOutlineFrame(await fringedEdgeArtOutline());
+
+    expect(result.ghostCoverage).toBeLessThan(0.05);
     expect(result.passes).toBe(true);
   });
 });

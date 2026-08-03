@@ -1,8 +1,8 @@
 // Audit every shipped line art for solid black regions, over-ringed eyes, and
 // page frames. Solid ink and excess eye rings violate the thin-stroke contract
 // used by punch/invert (lib/solid-regions.mjs, lib/eye-fill.mjs); four-sided
-// frames are unwanted enclosures (lib/outline-frame.mjs). Deterministic, no API
-// key/network.
+// frames and page-spanning near-white ghost lines are unwanted enclosures
+// (lib/outline-frame.mjs). Deterministic, no API key/network.
 //
 //   npm run gen:coloring-outlines:audit                 whole catalog
 //   npm run gen:coloring-outlines:audit -- nature       one category
@@ -13,7 +13,11 @@ import { fail } from '../lib/cli.mjs';
 import { COLORING_DIR } from '../lib/paths.mjs';
 import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, EYE_RING_DEPTH_MAX } from '../lib/eye-fill.mjs';
-import { scoreOutlineFrame, FRAME_SIDE_COVERAGE_MIN } from '../lib/outline-frame.mjs';
+import {
+  scoreOutlineFrame,
+  FRAME_SIDE_COVERAGE_MIN,
+  GHOST_SIDE_COVERAGE_MIN,
+} from '../lib/outline-frame.mjs';
 import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 
@@ -46,6 +50,7 @@ for (const page of pages) {
       biggestBlob: solidity.biggestBlob,
       ringDepth: rings.maxDepth,
       frameCoverage: frame.sideCoverage,
+      ghostCoverage: frame.ghostCoverage,
       passes: solidity.passes && rings.passes && frame.passes,
       solidOk: solidity.passes,
       ringsOk: rings.passes,
@@ -65,6 +70,7 @@ console.log(
   'biggest blob'.padStart(13),
   'ring depth'.padStart(11),
   'frame sides'.padStart(12),
+  'ghost side'.padStart(11),
   '  verdict'
 );
 for (const r of rows) {
@@ -72,7 +78,12 @@ for (const r of rows) {
   if (!r.solidOk)
     problems.push(`SOLID (blob > ${SOLID_BLOB_MAX} or interior > ${SOLID_INTERIOR_MAX})`);
   if (!r.ringsOk) problems.push(`OVER-RINGED (depth > ${EYE_RING_DEPTH_MAX})`);
-  if (!r.frameOk) problems.push(`PAGE FRAME (side coverage >= ${FRAME_SIDE_COVERAGE_MIN * 100}%)`);
+  if (!r.frameOk)
+    problems.push(
+      r.frameCoverage >= FRAME_SIDE_COVERAGE_MIN
+        ? `PAGE FRAME (side coverage >= ${FRAME_SIDE_COVERAGE_MIN * 100}%)`
+        : `GHOST FRAME (side coverage >= ${GHOST_SIDE_COVERAGE_MIN * 100}%)`
+    );
   console.log(
     r.rel.padEnd(36),
     String(r.solidPx).padStart(9),
@@ -80,6 +91,7 @@ for (const r of rows) {
     String(r.biggestBlob).padStart(13),
     String(r.ringDepth).padStart(11),
     `${(r.frameCoverage * 100).toFixed(1)}%`.padStart(12),
+    `${(r.ghostCoverage * 100).toFixed(1)}%`.padStart(11),
     ' ',
     problems.length ? problems.join(' + ') : 'ok'
   );
