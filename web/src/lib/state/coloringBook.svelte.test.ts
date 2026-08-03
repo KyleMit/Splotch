@@ -6,6 +6,7 @@ import {
   overlayUrl,
   chalkUrl,
   themedOverlayUrl,
+  themedOverlayImageSource,
   colorSheetUrl,
   nightSheetUrl,
   clearOverlay,
@@ -103,6 +104,15 @@ describe('coloring book state', () => {
     expect(themedOverlayUrl('dark')).toBe(
       spacePage.images.landscape.replace('.outline.webp', '.dark.overlay.webp')
     );
+  });
+
+  it('pairs the active overlay with its responsive web candidate', () => {
+    setOverlayPage(spacePage, 'portrait');
+    expect(themedOverlayImageSource('dark')).toEqual({
+      src: spacePage.images.portrait.replace('.outline.webp', '.dark.overlay.webp'),
+      srcset:
+        '/coloring/max-1152px/space/astronaut-tall.dark.overlay.webp 768w, /coloring/space/astronaut-tall.dark.overlay.webp 1024w',
+    });
   });
 
   it('can derive another orientation without changing the active orientation', () => {

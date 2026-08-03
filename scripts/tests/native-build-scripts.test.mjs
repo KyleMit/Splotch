@@ -53,6 +53,7 @@ vi.mock('../lib/proc.mjs', async (importOriginal) => {
 
 vi.mock('../../web/src/lib/state/books.ts', () => ({
   BOOKS: state.books,
+  RESPONSIVE_COLORING_TIER_DIRECTORIES: ['/coloring/max-1152px', '/coloring/max-240px'],
   booksForPlatform: () => state.mobileEligibleBooks,
   bookAssetPaths: (book) => [
     book.cover,
@@ -224,7 +225,9 @@ describe('native build script entry points', () => {
     }
     writeFixture(
       join(fixtureRoot, 'web', 'src', 'lib', 'state', 'books.ts'),
-      'export const BOOKS = [];\nexport const bookAssetPaths = () => [];\n'
+      'export const BOOKS = [];\n' +
+        'export const RESPONSIVE_COLORING_TIER_DIRECTORIES = [];\n' +
+        'export const bookAssetPaths = () => [];\n'
     );
     const favicon = join(fixtureRoot, 'web', 'build', 'favicon.ico');
     writeFixture(favicon);
@@ -257,6 +260,8 @@ describe('native build script entry points', () => {
     writeFixture(join(mobileDir, 'cover.outline.webp'));
     writeFixture(join(mobileDir, 'page-tall.outline.webp'));
     writeFixture(join(mobileDir, 'page-tall.chalk.webp'));
+    writeFixture(join(buildDir, 'coloring', 'max-1152px', 'mobile', 'page-tall.overlay.webp'));
+    writeFixture(join(buildDir, 'coloring', 'max-240px', 'mobile', 'page-tall.thumb.webp'));
     writeFixture(join(buildDir, 'index.html'), fixtureHtml);
     writeFixture(join(buildDir, 'about', 'index.html'), fixtureHtml);
     exit.mockClear();
@@ -272,6 +277,8 @@ describe('native build script entry points', () => {
     expect(existsSync(join(mobileDir, 'cover.outline.webp'))).toBe(false);
     expect(existsSync(join(mobileDir, 'page-tall.outline.webp'))).toBe(false);
     expect(existsSync(join(mobileDir, 'page-tall.chalk.webp'))).toBe(false);
+    expect(existsSync(join(buildDir, 'coloring', 'max-1152px'))).toBe(false);
+    expect(existsSync(join(buildDir, 'coloring', 'max-240px'))).toBe(false);
     expect(readFileSync(join(buildDir, 'index.html'), 'utf8')).not.toContain('favicon.ico');
     expect(readFileSync(join(buildDir, 'about', 'index.html'), 'utf8')).not.toContain('og:title');
     expect(readFileSync(join(buildDir, 'index.html'), 'utf8')).toContain('name="viewport"');
@@ -282,6 +289,9 @@ describe('native build script entry points', () => {
       '[strip-native-assets] expected but not found: /coloring/mobile/page-wide.outline.webp'
     );
     expect(log).toHaveBeenCalledWith('[strip-native-assets] removed /coloring/web-only');
+    expect(log).toHaveBeenCalledWith(
+      '[strip-native-assets] stripped 2 web-responsive coloring tier(s).'
+    );
   });
 
   it('throws exported-function failures before the CLI wrapper handles them', () => {

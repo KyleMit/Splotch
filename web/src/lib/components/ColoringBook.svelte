@@ -10,17 +10,23 @@
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
   import {
-    pageOverlayImage,
-    pageThumb,
-    thumbPath,
+    COLORING_IMAGE_SIZES,
+    coverThumbImageSource,
+    pageOverlayImageSource,
+    pageThumbImageSource,
     type Book,
     type ColoringPage,
+    type ResponsiveColoringImage,
   } from '$lib/state/books';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { layout } from '$lib/state/layout.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
-  import { cancelImagePrefetchesExcept, prefetchImages } from '$lib/imagePrefetch';
+  import {
+    cancelImagePrefetchesExcept,
+    prefetchImages,
+    type ResponsiveImageRequest,
+  } from '$lib/imagePrefetch';
   import { scheduleIdle } from '$lib/idle';
 
   // Only show books licensed for this platform. Native builds also strip the
@@ -36,20 +42,54 @@
   // mid-lock must match that same locked space. The viewport-driven
   // layout.orientation is only a fallback until the engine mounts.
   const orientation = $derived(canvasState.paperOrientation ?? layout.orientation);
+  const overlayActive = $derived(!!overlayUrl());
+  const coverThumbnailSizes = $derived(
+    overlayActive
+      ? COLORING_IMAGE_SIZES.coverThumbnail.withClear
+      : COLORING_IMAGE_SIZES.coverThumbnail.withoutClear
+  );
+  const pageThumbnailSizes = $derived(COLORING_IMAGE_SIZES.pageThumbnail[orientation]);
 
   // Warm the cover thumbnails once at idle so the very first open of the picker
   // paints instantly instead of fetching every book's cover thumbnail on demand.
-  $effect(() => scheduleIdle(() => prefetchImages(books.map((book) => thumbPath(book.cover)))));
+  function imageRequest(
+    image: ResponsiveColoringImage,
+    sizes: string
+  ): string | ResponsiveImageRequest {
+    return __IS_CAPACITOR__ ? image.src : { ...image, sizes };
+  }
+
+  function currentCanvasImageSize(): string {
+    const width = document.getElementById('drawingCanvas')?.getBoundingClientRect().width;
+    return width ? `${width}px` : COLORING_IMAGE_SIZES.overlay;
+  }
+
+  $effect(() =>
+    scheduleIdle(() =>
+      prefetchImages(
+        books.map((book) => imageRequest(coverThumbImageSource(book), coverThumbnailSizes))
+      )
+    )
+  );
 
   // Pressing/hovering a book tile warms that book's page thumbs before the
   // sub-grid renders; hovering a page tile warms its full-res overlay so applying
   // it to the canvas is immediate. Page thumbs are theme-aware (chalk in dark
   // mode) — reading resolvedTheme() keeps the warmed set and the grid in sync.
   function prefetchBookPages(book: Book) {
-    prefetchImages(book.pages.map((page) => pageThumb(page, orientation, resolvedTheme())));
+    prefetchImages(
+      book.pages.map((page) =>
+        imageRequest(pageThumbImageSource(page, orientation, resolvedTheme()), pageThumbnailSizes)
+      )
+    );
   }
   function prefetchPageOverlay(page: ColoringPage) {
-    prefetchImages([pageOverlayImage(page, orientation, resolvedTheme())]);
+    prefetchImages([
+      imageRequest(
+        pageOverlayImageSource(page, orientation, resolvedTheme()),
+        currentCanvasImageSize()
+      ),
+    ]);
   }
 
   // Swap the active overlay to the paper's portrait/landscape art when the
@@ -60,7 +100,7 @@
   });
 
   function pickPage(page: ColoringPage) {
-    const selectedOverlayUrl = pageOverlayImage(page, orientation, resolvedTheme());
+    const selectedOverlayUrl = pageOverlayImageSource(page, orientation, resolvedTheme()).src;
     cancelImagePrefetchesExcept(selectedOverlayUrl);
     for (const img of dialogEl.querySelectorAll('img')) img.removeAttribute('src');
     setOverlayPage(page, orientation);
@@ -91,7 +131,6 @@
     hoverArmed = false;
   }
 
-  const overlayActive = $derived(!!overlayUrl());
   const visibleBookTileCount: number = $derived(books.length + (overlayActive ? 1 : 0));
   const bookGridHasOrphan: boolean = $derived(
     visibleBookTileCount > 1 && visibleBookTileCount % 4 === 1
@@ -139,6 +178,7 @@
             </button>
           {/if}
           {#each books as book (book.id)}
+            {@const coverImage = coverThumbImageSource(book)}
             <button
               class="coloring-tile coloring-book-tile"
               type="button"
@@ -147,7 +187,13 @@
               onpointerenter={() => prefetchBookPages(book)}
               onpointerdown={() => prefetchBookPages(book)}
             >
-              <img src={thumbPath(book.cover)} alt="" loading="lazy" />
+              <img
+                src={coverImage.src}
+                srcset={__IS_CAPACITOR__ ? undefined : coverImage.srcset}
+                sizes={__IS_CAPACITOR__ ? undefined : coverThumbnailSizes}
+                alt=""
+                loading="lazy"
+              />
               <span class="coloring-book-label">{book.name}</span>
             </button>
           {/each}
@@ -166,6 +212,7 @@
           class:portrait-pages={orientation === 'portrait'}
         >
           {#each activeBook.pages as page (page.id)}
+            {@const pageImage = pageThumbImageSource(page, orientation, resolvedTheme())}
             <button
               class="coloring-tile"
               type="button"
@@ -174,7 +221,13 @@
               onpointerenter={() => prefetchPageOverlay(page)}
               onpointerdown={() => prefetchPageOverlay(page)}
             >
-              <img src={pageThumb(page, orientation, resolvedTheme())} alt="" loading="lazy" />
+              <img
+                src={pageImage.src}
+                srcset={__IS_CAPACITOR__ ? undefined : pageImage.srcset}
+                sizes={__IS_CAPACITOR__ ? undefined : pageThumbnailSizes}
+                alt=""
+                loading="lazy"
+              />
             </button>
           {/each}
         </div>

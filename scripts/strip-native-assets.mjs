@@ -14,6 +14,8 @@
 //   3. Full-resolution opaque line-art sources. Runtime presentation uses the
 //      generated alpha overlays and picker thumbnails; the opaque files remain
 //      committed beside them only as asset-pipeline inputs.
+//   4. Web-responsive image tiers. Native ships the one canonical runtime width
+//      until downloadable asset packs can select a tier (issue #200).
 //
 // books.ts is TypeScript, so this script is launched with Node's
 // --experimental-strip-types (see the build:cap npm script) to import it directly.
@@ -23,7 +25,11 @@ import { join, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { nativeUnusedLineArt, webOnlyBooks } from './lib/book-assets.mjs';
 import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from './lib/native-export.mjs';
 import { ROOT, fail, isMain } from './lib/proc.mjs';
-import { BOOKS, bookAssetPaths } from '../web/src/lib/state/books.ts';
+import {
+  BOOKS,
+  RESPONSIVE_COLORING_TIER_DIRECTORIES,
+  bookAssetPaths,
+} from '../web/src/lib/state/books.ts';
 
 const BUILD_DIR = join(ROOT, 'web', 'build'); // capacitor.config.json webDir
 
@@ -113,6 +119,20 @@ function stripUnusedLineArt(buildDir, books) {
   );
 }
 
+function stripResponsiveColoringTiers(buildDir) {
+  let removed = 0;
+  for (const directory of RESPONSIVE_COLORING_TIER_DIRECTORIES) {
+    const target = join(buildDir, directory);
+    if (!existsSync(target)) {
+      console.warn(`[strip-native-assets] expected but not found: ${directory}`);
+      continue;
+    }
+    rmSync(target, { recursive: true, force: true });
+    removed++;
+  }
+  console.log(`[strip-native-assets] stripped ${removed} web-responsive coloring tier(s).`);
+}
+
 export function stripNativeAssets(buildDir, books) {
   if (!existsSync(buildDir)) {
     throw new Error(`[strip-native-assets] no build output at ${displayBuildPath(buildDir)}`);
@@ -121,6 +141,7 @@ export function stripNativeAssets(buildDir, books) {
   stripWebOnlyBooks(buildDir, books);
   stripWebOnlyFiles(buildDir);
   stripUnusedLineArt(buildDir, books);
+  stripResponsiveColoringTiers(buildDir);
 }
 
 if (isMain(import.meta.url)) {
