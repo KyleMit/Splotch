@@ -14,7 +14,7 @@
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
   import { colorPicker, buttonCenter } from '$lib/state/ui.svelte';
   import { toolState, selectInkBrush } from '$lib/state/tool.svelte';
-  import { layout } from '$lib/state/layout.svelte';
+  import { clearPaletteMeasurement, publishPaletteMeasurement } from '$lib/state/layout.svelte';
   import { getRingColor } from '$lib/colorRing';
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
@@ -45,14 +45,12 @@
   onMount(() => {
     const ro = new ResizeObserver(() => {
       const rect = paletteEl.getBoundingClientRect();
-      layout.paletteWidth = rect.width;
-      layout.paletteHeight = rect.height;
+      publishPaletteMeasurement(rect.width, rect.height);
     });
     ro.observe(paletteEl);
     return () => {
       ro.disconnect();
-      layout.paletteWidth = 0;
-      layout.paletteHeight = 0;
+      clearPaletteMeasurement();
     };
   });
 

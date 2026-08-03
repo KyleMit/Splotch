@@ -87,6 +87,10 @@ export function landscapeSingleColumnFloorPx(
   return landscapeSingleColumnMinHeightPx(LANDSCAPE_SINGLE_COLUMN_LADDER.at(-1)!, geometry);
 }
 
+export function landscapeSingleColumnMediaQuery(): string {
+  return `(orientation: landscape) and (min-height: ${landscapeSingleColumnFloorPx()}px)`;
+}
+
 /**
  * Heights below which the single column loses another swatch. One step shorter
  * than the ladder: its last entry is the floor above, not a trim.

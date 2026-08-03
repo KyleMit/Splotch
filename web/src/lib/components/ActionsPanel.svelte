@@ -63,7 +63,7 @@
   // The inline left wins over the stylesheet, so the safe-area inset has to ride
   // along in this value or it's lost: .app-container's padding-left shifts the
   // palette right by env(safe-area-inset-left) (the Android landscape hole-punch),
-  // and paletteWidth doesn't include that padding — so we clear inset + width.
+  // and the measured width doesn't include that padding — so we clear inset + width.
   const landscapePaletteWidth = $derived(resolvedLandscapePaletteWidth());
   const leftOffset = $derived(
     !browser || isPortrait
@@ -86,10 +86,8 @@
   // portrait phones — which painted the buttons "incredibly small" until
   // hydration swapped in the real size (issue #317). Instead we leave
   // --action-btn-size unset at SSR and let the CSS --action-btn-fallback own
-  // first paint: it's the same worst-case cap but expressed per-orientation via
-  // media query, so it's correct in both. Once hydrated this value overrides it,
-  // and CSS keeps size out of `transition` so the swap snaps rather than
-  // animating.
+  // first paint via media query. Once hydrated this value overrides it, and CSS
+  // keeps size out of `transition` so the swap snaps rather than animating.
   //
   // Viewport units: landscape uses 100vw — the URL bar doesn't affect width.
   // Portrait uses layout.viewportHeight (not 100vh): on mobile web 100vh is the
@@ -106,7 +104,7 @@
     !browser
       ? undefined
       : isPortrait
-        ? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((${layout.viewportHeight - layout.paletteHeight - PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
+        ? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((${layout.viewportHeight - layout.paletteMeasurement.height - PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
         : `min(calc(${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)), calc((100vw - ${landscapePaletteWidth + SETTINGS_BUTTON_RESERVE}px - env(safe-area-inset-left) - env(safe-area-inset-right) - ${buttonSpread}px) / ${buttonCount}))`
   );
 
@@ -595,25 +593,26 @@
     /* --action-btn-size (inline) is the precise measured cap ActionsPanel sets
        once hydrated, so the row clears the Settings Button (landscape) / the
        palette bar (portrait). Until then it's unset and --action-btn-fallback
-       owns first paint: the same worst-case cap (all 7 buttons, palette not yet
-       measured) but expressed in CSS so the media query picks the right
-       orientation — the old inline SSR bake was always the landscape formula, so
-       portrait phones painted tiny buttons that jumped to full size (issue #317).
+       owns first paint: the landscape formula budgets for the five buttons the
+       prerendered DOM can show (the AI button requires client-only state), while
+       the media query picks the right orientation. The old inline SSR bake was
+       always the landscape formula, so portrait phones painted tiny buttons that
+       jumped to full size (issue #317).
        Square via width = height so a capped button shrinks like a smaller scale
        instead of squishing. Landscape 100vw (unaffected by the URL bar); the
        --palette-landscape-width reserves the Color Palette before it can be
-       measured. 188px = SETTINGS_BUTTON_RESERVE (64) + WORST_CASE_CHROME
-       (124). These literals mirror the actionButtonLayout constants and are
-       drift-guarded by actionButtonLayout.fallback.test.ts — update both
-       together. */
+       measured. 176px = SETTINGS_BUTTON_RESERVE (64) +
+       PRERENDERED_ACTION_BUTTON_CHROME (112). These literals mirror the
+       actionButtonLayout constants and are drift-guarded by
+       actionButtonLayout.fallback.test.ts — update both together. */
     --action-btn-fallback: min(
       calc(60px * var(--action-btn-scale, 1)),
       calc(
         (
-            100vw - var(--palette-landscape-width) - 188px - env(safe-area-inset-left) -
+            100vw - var(--palette-landscape-width) - 176px - env(safe-area-inset-left) -
               env(safe-area-inset-right)
           ) /
-          6
+          5
       )
     );
     width: var(--action-btn-size, var(--action-btn-fallback));

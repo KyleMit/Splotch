@@ -3,7 +3,10 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import actionsPanelSource from './components/ActionsPanel.svelte?raw';
 import colorPaletteSource from './components/ColorPalette.svelte?raw';
-import { landscapeSingleColumnFloorPx, PALETTE_LANDSCAPE_WIDTHS_PX } from './design/trimGeometry';
+import {
+  landscapeSingleColumnMediaQuery,
+  PALETTE_LANDSCAPE_WIDTHS_PX,
+} from './design/trimGeometry';
 import {
   ACTION_BUTTON_BASE_LANDSCAPE,
   ACTION_BUTTON_BASE_PORTRAIT,
@@ -12,6 +15,8 @@ import {
   PANEL_INSET,
   PALETTE_BAR_RESERVE,
   PALETTE_CLEARANCE,
+  PRERENDERED_ACTION_BUTTON_CHROME,
+  PRERENDERED_ACTION_BUTTON_COUNT,
   SETTINGS_BUTTON_RESERVE,
   WORST_CASE_CHROME,
 } from './actionButtonLayout';
@@ -58,20 +63,19 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
       PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns,
       PALETTE_LANDSCAPE_WIDTHS_PX.singleColumn,
     ]);
-    expect(appCssSource).toContain(
-      `(orientation: landscape) and (min-height: ${landscapeSingleColumnFloorPx()}px)`
-    );
+    expect(appCssSource).toContain(landscapeSingleColumnMediaQuery());
     expect(colorPaletteSource).toContain('width: var(--palette-landscape-width)');
   });
 
   it('landscape fallback matches the constants', () => {
     const [landscape] = fallbackBlocks;
     expect(landscape).toContain(`${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)`);
-    // 100vw minus the reserve for the right-edge Settings Button + worst-case chrome.
+    // 100vw minus the palette, right-edge Settings Button, and the chrome around
+    // the five buttons that can exist in the prerendered DOM.
     expect(landscape).toContain(
-      `100vw - var(--palette-landscape-width) - ${SETTINGS_BUTTON_RESERVE + WORST_CASE_CHROME}px`
+      `100vw - var(--palette-landscape-width) - ${SETTINGS_BUTTON_RESERVE + PRERENDERED_ACTION_BUTTON_CHROME}px`
     );
-    expect(landscape).toMatch(new RegExp(`/\\s*${MAX_ACTION_BUTTON_COUNT}`));
+    expect(landscape).toMatch(new RegExp(`/\\s*${PRERENDERED_ACTION_BUTTON_COUNT}`));
   });
 
   it('portrait fallback matches the constants', () => {

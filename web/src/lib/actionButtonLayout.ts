@@ -13,7 +13,7 @@ import { network } from '$lib/state/network.svelte';
 import { layout } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
 import {
-  landscapeSingleColumnFloorPx,
+  landscapeSingleColumnMediaQuery,
   PALETTE_LANDSCAPE_WIDTHS_PX,
 } from '$lib/design/trimGeometry';
 
@@ -38,18 +38,22 @@ export const PANEL_FIXED_CHROME = PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TO
 // Breathing room between the top of the portrait column and the palette bar.
 export const PALETTE_CLEARANCE = 8;
 
-// Every button the panel can show: brush menu, stroke width, coloring book,
-// screenshot, AI image, undo. The prerendered page sizes for this worst case —
-// the server can't know a stored AI credential or toggle states.
+// Every button the hydrated panel can show: brush menu, stroke width, coloring
+// book, screenshot, AI image, undo.
 export const MAX_ACTION_BUTTON_COUNT = 6;
 
-// Worst-case fixed chrome the CSS first-paint fallback must budget for: all
-// MAX_ACTION_BUTTON_COUNT buttons (so MAX-1 gaps) plus the panel's screen
-// inset, the drawer→toggle collapse margin, and the drawer toggle. The CSS
-// --action-btn-fallback bakes the resolved totals as literals (188 landscape,
-// 208 portrait) because it owns first paint before any TS loads (ADR-0040);
-// actionButtonLayout.fallback.test.ts guards those literals against these
-// constants so a change here can't silently leave the CSS stale.
+// The AI button is always hidden in the prerendered HTML because its visibility
+// depends on client-only credential and network state.
+export const PRERENDERED_ACTION_BUTTON_COUNT = MAX_ACTION_BUTTON_COUNT - 1;
+
+export const PRERENDERED_ACTION_BUTTON_CHROME =
+  (PRERENDERED_ACTION_BUTTON_COUNT - 1) * ACTION_BUTTON_GAP + PANEL_FIXED_CHROME;
+
+// Conservative portrait fallback chrome: all MAX_ACTION_BUTTON_COUNT buttons
+// (so MAX-1 gaps) plus the panel's screen inset, drawer→toggle collapse margin,
+// and drawer toggle. The CSS --action-btn-fallback bakes the resolved portrait
+// total as a literal because it owns first paint before any TS loads (ADR-0040);
+// actionButtonLayout.fallback.test.ts guards it against these constants.
 export const WORST_CASE_CHROME =
   (MAX_ACTION_BUTTON_COUNT - 1) * ACTION_BUTTON_GAP + PANEL_FIXED_CHROME;
 
@@ -78,8 +82,15 @@ export function visibleActionButtonCount(): number {
 // two values app.css exposes through --palette-landscape-width instead of
 // briefly treating the palette as zero-width.
 export function resolvedLandscapePaletteWidth(): number {
-  if (layout.paletteWidth > 0) return layout.paletteWidth;
-  return layout.viewportHeight >= landscapeSingleColumnFloorPx()
+  const measurement = layout.paletteMeasurement;
+  if (
+    layout.orientation === 'landscape' &&
+    measurement.orientation === 'landscape' &&
+    measurement.width > 0
+  ) {
+    return measurement.width;
+  }
+  return typeof matchMedia !== 'undefined' && matchMedia(landscapeSingleColumnMediaQuery()).matches
     ? PALETTE_LANDSCAPE_WIDTHS_PX.singleColumn
     : PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns;
 }
@@ -94,7 +105,7 @@ function availablePerButton(buttonCount: number): number {
   const budget =
     orientation === 'portrait'
       ? layout.viewportHeight -
-        layout.paletteHeight -
+        layout.paletteMeasurement.height -
         PALETTE_CLEARANCE -
         safeArea.top -
         safeArea.bottom -

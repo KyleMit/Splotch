@@ -59,8 +59,12 @@ that are already correct in the prerendered HTML:
    assets*), and the clear-button home-corner reset (imperative geometry). The Actions Panel's
    landscape palette-clearing offset is deterministic at first paint: `app.css` publishes the Color
    Palette's one- or two-column width as `--palette-landscape-width` at the same media-query
-   breakpoint that selects its layout, and both components consume it. The palette's
-   `ResizeObserver` measurement remains the post-hydration correction for browser rounding. A
+   breakpoint that selects its layout, and both components consume it. The landscape button cap
+   likewise budgets for the five buttons present in prerendered HTML; hydrated sizing uses the live
+   five- or six-button count once client-only AI visibility resolves. The palette's `ResizeObserver`
+   measurement remains the post-hydration correction for browser rounding, tagged with the
+   orientation it measured so a portrait width cannot enter landscape sizing during rotation. JS
+   selects the fallback through the same media query rather than the visible viewport height. A
    drift-guard test derives the CSS literals from `design/trimGeometry.ts`, so this shared
    non-importable geometry cannot silently diverge.
 2. **Pre-paint head-script stamp** (`web/src/app.html`) + CSS. A tiny synchronous inline script runs
