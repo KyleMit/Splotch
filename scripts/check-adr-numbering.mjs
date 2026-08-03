@@ -133,9 +133,9 @@ export function checkAdrNumbering() {
   for (const file of index.missing) {
     annotate('error', file, 'ADR record is missing from README.md');
   }
-  for (const { entries } of index.duplicates) {
+  for (const { file, entries } of index.duplicates) {
     for (const { line } of entries) {
-      annotate('error', 'README.md', 'ADR record is indexed more than once', line);
+      annotate('error', 'README.md', `${file} is indexed more than once`, line);
     }
   }
   for (const { file, expected, line } of index.mismatches) {

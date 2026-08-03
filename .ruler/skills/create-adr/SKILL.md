@@ -49,7 +49,11 @@ decisions in `docs/adrs/`.
    Superseded/Rejected/Moved records. Slot the new row into the matching area section, in numeric
    order within that section. New ADRs default to their area section — only promote one to "Start
    here" when the decision is genuinely load-bearing for the whole project (rare). Every ADR appears
-   exactly once in the index.
+   exactly once in the index. The integrity check recognizes two canonical entry shapes: an
+   unindented Start here bullet whose leading link is bold
+   (`* **[NNNN — Title](NNNN-kebab-title.md)**`), or a section table row whose first cell is
+   `[NNNN](NNNN-kebab-title.md)`. Status text, summaries, and other cross-links do not count as the
+   record's index entry.
 
 ## ADR template
 

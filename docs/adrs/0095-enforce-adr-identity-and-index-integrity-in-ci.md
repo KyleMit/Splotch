@@ -47,9 +47,10 @@ available in the runner image's default Node rather than assuming the contributo
 
 The checker validates the resulting tree unconditionally, including manual audits of branches that
 did not change an ADR. Pure logic in `scripts/lib/adr-numbering.mjs`, covered by
-`scripts/tests/adr-numbering.test.mjs`, enforces these invariants:
+`scripts/tests/adr-numbering.test.mjs`, reports a filename starting with four digits but not
+matching lower-kebab-case as a warning and omits it from the remaining checks rather than failing.
+The checker then enforces these invariants:
 
-* every record filename is lower-kebab-case with a four-digit prefix;
 * every number identifies exactly one record in the tree;
 * a genuinely added record does not take a number the live base already assigns to another record;
 * every record H1 names the same number as its filename;
