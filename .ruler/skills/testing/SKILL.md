@@ -91,11 +91,11 @@ automation helpers whose regressions would be silent — currently the audit-bur
 surgery in `scripts/audit-burndown/lib.mjs` (entry-boundary parsing, pure block removal,
 dprint-clean seams; see the `burn-down-audits` skill) and complete runner-specific skill replacement
 in `scripts/apply-ruler-skill-forks.mjs` (package isolation, paired-runner coverage, and
-shared-source collision guards). The latter covers generic Ruler-managed forks; `burn-down-audits`
-itself is a direct provider fork under `.claude/` and `.agents/`, maintained independently and
-excluded from Ruler drift ownership. `scripts/ruler-apply.mjs` snapshots and restores those direct
-paths around generation, including its failure path. Add a test here when a `scripts/` helper's
-failure mode is corrupting state rather than crashing.
+shared-source collision guards). The latter covers generic Ruler-managed forks; packages listed in
+`scripts/direct-provider-skills.mjs` are maintained directly in their declared provider trees and
+excluded from Ruler drift ownership. `scripts/ruler-apply.mjs` snapshots and restores every
+registered path around generation, including its failure path. Add a test here when a `scripts/`
+helper's failure mode is corrupting state rather than crashing.
 
 ## E2E web tests — Playwright
 
