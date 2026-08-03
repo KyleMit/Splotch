@@ -25,9 +25,9 @@ export const SETTINGS_BUTTON_RESERVE = 64;
 
 // The panel's other fixed costs: its 8px screen inset, the drawer→toggle
 // collapse margin (8px), and the 48px drawer toggle.
-export const PANEL_INSET = 8;
-export const DRAWER_TOGGLE_MARGIN = 8;
-export const DRAWER_TOGGLE_SIZE = 48;
+const PANEL_INSET = 8;
+const DRAWER_TOGGLE_MARGIN = 8;
+const DRAWER_TOGGLE_SIZE = 48;
 export const PANEL_FIXED_CHROME = PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE;
 
 // Breathing room between the top of the portrait column and the palette bar.
