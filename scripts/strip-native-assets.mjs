@@ -22,13 +22,13 @@ import { globSync, readFileSync, rmSync, existsSync, statSync, writeFileSync } f
 import { join, dirname, relative } from 'node:path';
 import { nativeUnusedLineArt, webOnlyBooks } from './lib/book-assets.mjs';
 import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from './lib/native-export.mjs';
-import { ROOT, fail } from './lib/proc.mjs';
+import { ROOT, fail, isMain } from './lib/proc.mjs';
 import { BOOKS, bookAssetPaths } from '../web/src/lib/state/books.ts';
 
 const BUILD_DIR = join(ROOT, 'web', 'build'); // capacitor.config.json webDir
 
-function stripWebOnlyBooks() {
-  const webOnly = webOnlyBooks(BOOKS);
+function stripWebOnlyBooks(buildDir, books) {
+  const webOnly = webOnlyBooks(books);
   if (webOnly.length === 0) {
     console.log('[strip-native-assets] no web-only books — nothing to strip.');
     return;
@@ -40,7 +40,7 @@ function stripWebOnlyBooks() {
 
   let removed = 0;
   for (const dir of dirs) {
-    const target = join(BUILD_DIR, dir);
+    const target = join(buildDir, dir);
     if (existsSync(target)) {
       rmSync(target, { recursive: true, force: true });
       console.log(`[strip-native-assets] removed ${dir}`);
@@ -56,11 +56,11 @@ function stripWebOnlyBooks() {
   );
 }
 
-function stripWebOnlyFiles() {
+function stripWebOnlyFiles(buildDir) {
   let freedBytes = 0;
   let removed = 0;
   for (const file of WEB_ONLY_STATIC_FILES) {
-    const target = join(BUILD_DIR, file);
+    const target = join(buildDir, file);
     if (!existsSync(target)) {
       // A rename upstream would silently stop saving these bytes, so say so.
       console.warn(`[strip-native-assets] expected but not found: ${file}`);
@@ -73,8 +73,8 @@ function stripWebOnlyFiles() {
 
   // Every page is prerendered from the same app.html, so the favicon/manifest
   // links live in all of them, not just index.html.
-  for (const html of globSync('**/*.html', { cwd: BUILD_DIR })) {
-    const path = join(BUILD_DIR, html);
+  for (const html of globSync('**/*.html', { cwd: buildDir })) {
+    const path = join(buildDir, html);
     const source = readFileSync(path, 'utf8');
     const stripped = stripWebOnlyHeadTags(source);
     if (stripped !== source) writeFileSync(path, stripped);
@@ -86,11 +86,11 @@ function stripWebOnlyFiles() {
   );
 }
 
-function stripUnusedLineArt() {
+function stripUnusedLineArt(buildDir, books) {
   let freedBytes = 0;
   let removed = 0;
-  for (const file of nativeUnusedLineArt(BOOKS)) {
-    const target = join(BUILD_DIR, file);
+  for (const file of nativeUnusedLineArt(books)) {
+    const target = join(buildDir, file);
     if (!existsSync(target)) {
       console.warn(`[strip-native-assets] expected but not found: ${file}`);
       continue;
@@ -105,10 +105,15 @@ function stripUnusedLineArt() {
   );
 }
 
-if (!existsSync(BUILD_DIR)) {
-  fail(`[strip-native-assets] no build output at ${relative(ROOT, BUILD_DIR)}`);
+export function stripNativeAssets(buildDir, books) {
+  if (!existsSync(buildDir)) {
+    fail(`[strip-native-assets] no build output at ${relative(ROOT, buildDir)}`);
+    return;
+  }
+
+  stripWebOnlyBooks(buildDir, books);
+  stripWebOnlyFiles(buildDir);
+  stripUnusedLineArt(buildDir, books);
 }
 
-stripWebOnlyBooks();
-stripWebOnlyFiles();
-stripUnusedLineArt();
+if (isMain(import.meta.url)) stripNativeAssets(BUILD_DIR, BOOKS);
