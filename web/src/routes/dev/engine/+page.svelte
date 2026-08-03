@@ -71,13 +71,15 @@
     type: string,
     pointerId: number,
     p: { x: number; y: number },
-    pointerType: string
+    pointerType: string,
+    buttons = 0
   ) {
     const rect = canvasEl.getBoundingClientRect();
     canvasEl.dispatchEvent(
       new PointerEvent(type, {
         pointerId,
         pointerType,
+        buttons,
         clientX: rect.left + p.x,
         clientY: rect.top + p.y,
         bubbles: true,
@@ -257,11 +259,12 @@
           pointerId: number;
           x: number;
           y: number;
+          buttons?: number;
         }[],
         pointerType = 'touch'
       ) {
         for (const e of events) {
-          firePointerEvent(e.type, e.pointerId, { x: e.x, y: e.y }, pointerType);
+          firePointerEvent(e.type, e.pointerId, { x: e.x, y: e.y }, pointerType, e.buttons ?? 0);
         }
       },
     };

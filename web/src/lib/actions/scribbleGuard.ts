@@ -1,3 +1,11 @@
+import { flushSync } from 'svelte';
+import { forgetPenPointer } from '$lib/drawing/engine';
+import { pointerWasResumed } from '$lib/drawing/strokeMath';
+
+// Browsers tolerate small click movement; match that forgiveness before a
+// control exit irreversibly turns the press into a drag.
+const TAP_MOVEMENT_TOLERANCE_PX = 8;
+
 // iPadOS Scribble claims an Apple Pencil stroke that starts within ~450ms of a
 // pen TAP anywhere on the page: the stroke's pointer events still arrive, the
 // engine paints it, but the system never presents those frames — the ink is
@@ -13,6 +21,80 @@
 // color palette); the canvas guards itself inside the engine.
 // Safari-only field (the whole point: Scribble only exists there).
 type StylusAwareTouch = Touch & { touchType?: 'direct' | 'stylus' };
+
+interface ScribbleTapStreamHandlers {
+  move: (event: PointerEvent) => void;
+  up: (event: PointerEvent) => void;
+  cancel: (event: PointerEvent) => void;
+}
+
+function createScribbleTapDispatcher(ownerWindow: Window) {
+  const handlersByPointerId = new Map<number, ScribbleTapStreamHandlers>();
+  let subscriptionCount = 0;
+
+  const move = (event: PointerEvent) => handlersByPointerId.get(event.pointerId)?.move(event);
+  const up = (event: PointerEvent) => handlersByPointerId.get(event.pointerId)?.up(event);
+  const cancel = (event: PointerEvent) => handlersByPointerId.get(event.pointerId)?.cancel(event);
+
+  function addWindowListeners() {
+    ownerWindow.addEventListener('pointermove', move, true);
+    ownerWindow.addEventListener('pointerup', up, true);
+    ownerWindow.addEventListener('pointercancel', cancel, true);
+  }
+
+  function removeWindowListeners() {
+    ownerWindow.removeEventListener('pointermove', move, true);
+    ownerWindow.removeEventListener('pointerup', up, true);
+    ownerWindow.removeEventListener('pointercancel', cancel, true);
+  }
+
+  return {
+    subscribe(handlers: ScribbleTapStreamHandlers) {
+      let active = true;
+      let claimedPointerId: number | undefined;
+      if (subscriptionCount === 0) addWindowListeners();
+      subscriptionCount += 1;
+
+      function release(pointerId: number) {
+        if (claimedPointerId === pointerId && handlersByPointerId.get(pointerId) === handlers) {
+          handlersByPointerId.delete(pointerId);
+        }
+        if (claimedPointerId === pointerId) claimedPointerId = undefined;
+      }
+
+      return {
+        claim(pointerId: number) {
+          if (!active) return;
+          if (claimedPointerId !== undefined) release(claimedPointerId);
+          claimedPointerId = pointerId;
+          handlersByPointerId.set(pointerId, handlers);
+        },
+        release,
+        destroy() {
+          if (!active) return;
+          active = false;
+          if (claimedPointerId !== undefined) release(claimedPointerId);
+          subscriptionCount -= 1;
+          if (subscriptionCount === 0) removeWindowListeners();
+        },
+      };
+    },
+  };
+}
+
+const scribbleTapDispatchers = new WeakMap<
+  Window,
+  ReturnType<typeof createScribbleTapDispatcher>
+>();
+
+function dispatcherFor(ownerWindow: Window) {
+  let dispatcher = scribbleTapDispatchers.get(ownerWindow);
+  if (!dispatcher) {
+    dispatcher = createScribbleTapDispatcher(ownerWindow);
+    scribbleTapDispatchers.set(ownerWindow, dispatcher);
+  }
+  return dispatcher;
+}
 
 export function scribbleGuard(node: HTMLElement) {
   const cancel = (e: TouchEvent) => {
@@ -37,43 +119,127 @@ export function scribbleGuard(node: HTMLElement) {
 // Companion for click-driven controls under scribbleGuard: cancelling a stylus
 // tap's touchstart also suppresses its synthesized click, so activation moves
 // to pointerup. The press must have started on the same control with the same
-// pointer (pen gets no implicit capture, so a drag that merely ends on the
-// control sees no matching pointerdown and never fires it; sliding off clears
-// the press via pointerleave). click stays wired for keyboard/assistive-tech
-// activation — those clicks have detail 0, no pointer press — while a real
-// pointer's trailing click (detail ≥ 1) is ignored, so the control never
-// double-fires where the guard is inert (finger, mouse, stylus outside iPadOS).
+// pointer (a drag that merely ends on the control sees no matching pointerdown
+// and never fires it). click stays wired for keyboard/assistive-tech activation
+// — those clicks have detail 0, no pointer press — while a real pointer's
+// trailing click (detail ≥ 1) is ignored, so the control never double-fires
+// where the guard is inert (finger, mouse, stylus outside iPadOS).
 export function scribbleTap(node: HTMLElement, activate: () => void) {
   let current = activate;
-  let pressedId: number | null = null;
-  const down = (e: PointerEvent) => {
-    pressedId = e.pointerId;
-  };
-  const clearPress = () => {
-    pressedId = null;
-  };
-  const up = (e: PointerEvent) => {
-    if (e.pointerId !== pressedId) return;
-    pressedId = null;
-    current();
-  };
+  let press:
+    | {
+        pointerId: number;
+        pointerType: string;
+        startX: number;
+        startY: number;
+        lastX: number;
+        lastY: number;
+        lastTime: number;
+        dragged: boolean;
+      }
+    | undefined;
+  const ownerWindow = node.ownerDocument.defaultView;
+
+  function finishPress(shouldActivate: boolean) {
+    if (!press) return;
+    stream?.release(press.pointerId);
+    press = undefined;
+    if (shouldActivate) current();
+  }
+
+  function eventHitsControl(e: PointerEvent): boolean {
+    const hit = node.ownerDocument.elementFromPoint(e.clientX, e.clientY);
+    return node.contains(hit);
+  }
+
+  function minViewportSide(): number {
+    const root = node.ownerDocument.documentElement;
+    return Math.min(
+      root.clientWidth || ownerWindow?.innerWidth || 0,
+      root.clientHeight || ownerWindow?.innerHeight || 0
+    );
+  }
+
+  function move(e: PointerEvent) {
+    if (!press || e.pointerId !== press.pointerId) return;
+    const now = Date.now();
+    const jump = Math.hypot(e.clientX - press.lastX, e.clientY - press.lastY);
+    let isMissingPenLift = false;
+    if (
+      press.pointerType === 'pen' &&
+      e.pointerType === 'pen' &&
+      e.buttons !== 0 &&
+      !press.dragged
+    ) {
+      const viewportSide = minViewportSide();
+      isMissingPenLift =
+        viewportSide > 0 && pointerWasResumed(now - press.lastTime, jump, viewportSide);
+    }
+
+    if (isMissingPenLift) {
+      // The engine's window-capture adopter runs first; for a control-targeted
+      // stream its live-pointer gate declines adoption. Consume the resumed
+      // move before target phase, then forget and flush the activated state.
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      forgetPenPointer(e.pointerId);
+      finishPress(true);
+      flushSync();
+      return;
+    }
+
+    if (
+      !press.dragged &&
+      Math.hypot(e.clientX - press.startX, e.clientY - press.startY) > TAP_MOVEMENT_TOLERANCE_PX &&
+      !eventHitsControl(e)
+    ) {
+      press.dragged = true;
+    }
+    press.lastX = e.clientX;
+    press.lastY = e.clientY;
+    press.lastTime = now;
+  }
+
+  function up(e: PointerEvent) {
+    if (!press || e.pointerId !== press.pointerId) return;
+    finishPress(!press.dragged && eventHitsControl(e));
+  }
+
+  function cancel(e: PointerEvent) {
+    if (press && e.pointerId === press.pointerId) finishPress(false);
+  }
+
+  function down(e: PointerEvent) {
+    press = {
+      pointerId: e.pointerId,
+      pointerType: e.pointerType,
+      startX: e.clientX,
+      startY: e.clientY,
+      lastX: e.clientX,
+      lastY: e.clientY,
+      lastTime: Date.now(),
+      dragged: false,
+    };
+    stream?.claim(e.pointerId);
+  }
+
   const click = (e: MouseEvent) => {
     if (e.detail === 0) current();
   };
+  // Direct pointer-id routing keeps the drawing hot path at one window handler.
+  const stream = ownerWindow
+    ? dispatcherFor(ownerWindow).subscribe({ move, up, cancel })
+    : undefined;
   node.addEventListener('pointerdown', down);
-  node.addEventListener('pointerup', up);
-  node.addEventListener('pointercancel', clearPress);
-  node.addEventListener('pointerleave', clearPress);
   node.addEventListener('click', click);
   return {
     update(next: () => void) {
       current = next;
     },
     destroy() {
+      press = undefined;
+      stream?.destroy();
       node.removeEventListener('pointerdown', down);
-      node.removeEventListener('pointerup', up);
-      node.removeEventListener('pointercancel', clearPress);
-      node.removeEventListener('pointerleave', clearPress);
       node.removeEventListener('click', click);
     },
   };

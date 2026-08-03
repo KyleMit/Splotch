@@ -1,12 +1,12 @@
 // Golden-set regression fixtures for the coloring catalog. Every cheap offline
-// audit score the pipeline computes — outline solidity + eye-ring depth
+// audit score the pipeline computes — outline solidity, eye-ring depth, and frame coverage
 // (audit-outline-solidity.mjs), light-fill outline keep/localKeep
 // (check-coloring-drift.mjs), light/night eye + blank-orb verdicts (audit-fill-eyes.mjs),
 // and the night fill's drift/bgLuma/lineWhite generation gates
 // (lib/night-scores.mjs) — frozen into one committed JSON
 // (golden/golden-scores.json), so any pipeline change can re-run the audits and
-// diff against the snapshot: "improved train-wide" can't silently degrade the
-// other 93 pages.
+// diff against the snapshot: "improved train-wide" can't silently degrade
+// any other page.
 //
 //   npm run gen:coloring-golden:freeze   score the whole catalog -> golden/golden-scores.json
 //   npm run gen:coloring-golden:diff     re-score and diff; exit 1 on any regression
@@ -42,6 +42,8 @@ import {
   judgeLightEyes,
 } from '../lib/eye-fill.mjs';
 import { compositeNight } from '../lib/night-composite.mjs';
+import { scoreOutlineFrame, FRAME_SIDE_COVERAGE_MIN } from '../lib/outline-frame.mjs';
+import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
 import { diffGoldenPage, GOLDEN_VERDICTS, scoreGoldenNightEyes } from '../lib/golden-catalog.mjs';
 import {
   scoreDrift,
@@ -64,9 +66,13 @@ const round = (v, digits) => {
 async function scorePage(outlinePath) {
   const rel = toPosix(relative(COLORING_DIR, outlinePath).replace(/\.outline\.webp$/, ''));
   const pen = await readFile(outlinePath);
+  const analysis = await prepareOutlineAnalysis(pen);
 
-  const solidity = await scoreSolidity(pen);
-  const rings = await scoreEyeRings(pen);
+  const [solidity, rings, frame] = await Promise.all([
+    scoreSolidity(analysis),
+    scoreEyeRings(analysis),
+    scoreOutlineFrame(analysis),
+  ]);
   const outline = {
     darkPx: solidity.darkPx,
     interiorPx: solidity.interiorPx,
@@ -74,8 +80,10 @@ async function scorePage(outlinePath) {
     biggestBlob: solidity.biggestBlob,
     strokeWidth: solidity.strokeWidth,
     ringDepth: rings.maxDepth,
+    frameCoverage: round(frame.sideCoverage, 4),
     solidOk: solidity.passes,
     ringsOk: rings.passes,
+    frameOk: frame.passes,
   };
 
   const entry = { outline };
@@ -168,7 +176,7 @@ async function scoreCatalog() {
   for (const rel of [...results.keys()].sort()) pages[rel] = results.get(rel);
   return {
     catalog: {
-      version: 2,
+      version: 3,
       thresholds: {
         keep: KEEP_THRESHOLD,
         localKeep: LOCAL_KEEP_THRESHOLD,
@@ -178,6 +186,7 @@ async function scoreCatalog() {
         solidBlobMax: SOLID_BLOB_MAX,
         solidInteriorMax: SOLID_INTERIOR_MAX,
         eyeRingDepthMax: EYE_RING_DEPTH_MAX,
+        frameSideCoverageMin: FRAME_SIDE_COVERAGE_MIN,
       },
       pages,
     },

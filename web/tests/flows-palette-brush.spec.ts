@@ -406,7 +406,15 @@ test('action buttons activate on a pointer press alone, without a synthesized cl
   await expect(eraser).toHaveAttribute('aria-pressed', 'false');
   await page.evaluate(() => {
     const btn = document.getElementById('eraserButton')!;
-    const opts = { pointerId: 42, pointerType: 'pen', bubbles: true, cancelable: true };
+    const rect = btn.getBoundingClientRect();
+    const opts = {
+      pointerId: 42,
+      pointerType: 'pen',
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+      bubbles: true,
+      cancelable: true,
+    };
     btn.dispatchEvent(new PointerEvent('pointerdown', opts));
     btn.dispatchEvent(new PointerEvent('pointerup', opts));
   });

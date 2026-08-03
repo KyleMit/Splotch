@@ -17,6 +17,29 @@ function diff(was, now) {
   return out;
 }
 
+describe('golden catalog frame coverage direction', () => {
+  it('reports an increase beyond noise as a regression', () => {
+    const out = diff({ outline: { frameCoverage: 0.11 } }, { outline: { frameCoverage: 0.12 } });
+
+    expect(out.regressions).toContain('fixture/page  outline.frameCoverage 0.11 -> 0.12');
+    expect(out.info).toEqual([]);
+  });
+
+  it('reports a decrease beyond noise as informational movement', () => {
+    const out = diff({ outline: { frameCoverage: 0.12 } }, { outline: { frameCoverage: 0.11 } });
+
+    expect(out.regressions).toEqual([]);
+    expect(out.info).toContain('fixture/page  outline.frameCoverage 0.12 -> 0.11 (moved)');
+  });
+
+  it('ignores movement within noise', () => {
+    const out = diff({ outline: { frameCoverage: 0.11 } }, { outline: { frameCoverage: 0.114 } });
+
+    expect(out.regressions).toEqual([]);
+    expect(out.info).toEqual([]);
+  });
+});
+
 describe('golden catalog blank-orb verdict', () => {
   it('reports shipped-good to recovered-blank as a regression while the band judge stays true', async () => {
     const good = await scoreFixture('unicorn-tall');

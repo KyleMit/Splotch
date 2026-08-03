@@ -14,6 +14,13 @@ import {
 // A healthy Magic fill commits well within this window; holding the next overlay for the full
 // interval distinguishes no ink from an async paint that is merely late.
 const PENDING_FILL_SETTLE_MS = 500;
+const WHOLE_PIXEL_TOLERANCE_PX = 1;
+const STANDARD_LAPTOP_VIEWPORT_HEIGHT_PX = 800;
+const CLEAR_PAGE_GRID_VIEWPORTS = [
+  { width: 1200, columns: 3 },
+  { width: 700, columns: 3 },
+  { width: 500, columns: 2 },
+] as const;
 
 async function opaquePixelCount(page: Page) {
   const canvas = await renderedCanvasHandle(page);
@@ -50,6 +57,38 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await expect(overlay).toBeVisible();
   // The src lands once the art has decoded (the ready-gated swap), so retry.
   await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.overlay\.webp$/);
+});
+
+test('the Clear Page book grid stays responsive and fits a standard laptop modal', async ({
+  page,
+}) => {
+  await page.setViewportSize({
+    width: CLEAR_PAGE_GRID_VIEWPORTS[0].width,
+    height: STANDARD_LAPTOP_VIEWPORT_HEIGHT_PX,
+  });
+  await gotoApp(page);
+  await openDrawer(page);
+  await applyFarmPage(page);
+  await openColoringDialog(page);
+
+  const dialog = page.locator('#coloring-book-dialog');
+  const grid = dialog.locator('.coloring-books-grid');
+  await expect(grid.locator(':scope > .coloring-tile')).toHaveCount(9);
+  await expect
+    .poll(() => dialog.evaluate((element) => element.scrollHeight - element.clientHeight))
+    .toBeLessThanOrEqual(WHOLE_PIXEL_TOLERANCE_PX);
+
+  for (const { width, columns } of CLEAR_PAGE_GRID_VIEWPORTS) {
+    await page.setViewportSize({ width, height: STANDARD_LAPTOP_VIEWPORT_HEIGHT_PX });
+    await expect
+      .poll(() =>
+        grid.evaluate((element) => {
+          const tracks = getComputedStyle(element).gridTemplateColumns.trim();
+          return tracks === 'none' ? 0 : tracks.split(/\s+/).length;
+        })
+      )
+      .toBe(columns);
+  }
 });
 
 test('a selected page stays hidden while full-resolution art decodes', async ({ page }) => {

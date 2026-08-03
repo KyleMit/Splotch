@@ -92,6 +92,11 @@
   }
 
   const overlayActive = $derived(!!overlayUrl());
+  const visibleBookTileCount: number = $derived(books.length + (overlayActive ? 1 : 0));
+  const bookGridHasOrphan: boolean = $derived(
+    visibleBookTileCount > 1 && visibleBookTileCount % 4 === 1
+  );
+  const bookGridHasNineTiles: boolean = $derived(visibleBookTileCount === 9);
 </script>
 
 <dialog
@@ -117,7 +122,11 @@
     {#if !activeBook}
       <div class="coloring-book-view">
         <h2>Coloring Books</h2>
-        <div class="coloring-grid coloring-books-grid">
+        <div
+          class="coloring-grid coloring-books-grid"
+          class:book-grid-has-orphan={bookGridHasOrphan}
+          class:book-grid-has-nine-tiles={bookGridHasNineTiles}
+        >
           {#if overlayActive}
             <button
               class="coloring-tile coloring-book-tile coloring-remove-tile"
@@ -176,9 +185,10 @@
 
 <style>
   .coloring-book-modal {
+    --coloring-book-modal-max-height: 85vh;
     max-width: min(920px, calc(100vw - 32px));
     width: 90%;
-    max-height: 85vh;
+    max-height: var(--coloring-book-modal-max-height);
     overflow-y: auto;
   }
 
@@ -253,7 +263,29 @@
   }
 
   .coloring-books-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    --book-cols: 4;
+    --book-grid-max-width: 856px;
+    width: min(100%, var(--book-grid-max-width));
+    margin-inline: auto;
+    grid-template-columns: repeat(var(--book-cols), minmax(0, 1fr));
+  }
+
+  @media (min-width: 741px) {
+    /* A last row of one reads as accidental, so catalog sizes that would leave
+       that orphan use the next-lower column count. This also covers Clear Page. */
+    .coloring-books-grid.book-grid-has-orphan {
+      --book-cols: 3;
+    }
+  }
+
+  .coloring-books-grid.book-grid-has-nine-tiles {
+    --book-grid-roomy-max-width: 639px;
+    /* Reserve the non-grid content and whole-pixel rounding inside the modal cap. */
+    --book-grid-height-reserve: 115px;
+    --book-grid-max-width: min(
+      var(--book-grid-roomy-max-width),
+      calc(var(--coloring-book-modal-max-height) - var(--book-grid-height-reserve))
+    );
   }
 
   .coloring-pages-grid {
@@ -335,13 +367,21 @@
     aspect-ratio: 2 / 3;
   }
 
+  /* Keep four cover tiles at least 140px wide after the modal's content padding
+     and grid gaps are accounted for. */
+  @media (max-width: 740px) {
+    .coloring-books-grid {
+      --book-cols: 3;
+    }
+  }
+
   @media (max-width: 520px) {
     .coloring-book-content {
       padding: 24px 18px;
     }
 
     .coloring-books-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      --book-cols: 2;
     }
 
     .coloring-pages-grid.portrait-pages {

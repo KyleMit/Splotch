@@ -1,7 +1,8 @@
-// Audit every shipped line art for SOLID black regions — the areas that break
-// dark mode (blanket invert paints them as white blobs; see lib/solid-regions.mjs
-// for the mechanism and the measure). Offenders are candidates for
-// normalize-outline-strokes.mjs. Deterministic, no API key/network.
+// Audit every shipped line art for solid black regions, over-ringed eyes, and
+// page frames. Solid ink and excess eye rings violate the thin-stroke contract
+// used by punch/invert (lib/solid-regions.mjs, lib/eye-fill.mjs); four-sided
+// frames are unwanted enclosures (lib/outline-frame.mjs). Deterministic, no API
+// key/network.
 //
 //   npm run gen:coloring-outlines:audit                 whole catalog
 //   npm run gen:coloring-outlines:audit -- nature       one category
@@ -12,6 +13,8 @@ import { fail } from '../lib/cli.mjs';
 import { COLORING_DIR } from '../lib/paths.mjs';
 import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, EYE_RING_DEPTH_MAX } from '../lib/eye-fill.mjs';
+import { scoreOutlineFrame, FRAME_SIDE_COVERAGE_MIN } from '../lib/outline-frame.mjs';
+import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 
 const args = process.argv.slice(2);
@@ -29,18 +32,24 @@ for (const page of pages) {
   const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
   try {
     const buf = await readFile(page);
-    const { darkPx, solidPx, interiorPx, biggestBlob, passes } = await scoreSolidity(buf);
-    const rings = await scoreEyeRings(buf);
+    const analysis = await prepareOutlineAnalysis(buf);
+    const [solidity, rings, frame] = await Promise.all([
+      scoreSolidity(analysis),
+      scoreEyeRings(analysis),
+      scoreOutlineFrame(analysis),
+    ]);
     rows.push({
       rel,
-      darkPx,
-      solidPx,
-      interiorPx,
-      biggestBlob,
+      darkPx: solidity.darkPx,
+      solidPx: solidity.solidPx,
+      interiorPx: solidity.interiorPx,
+      biggestBlob: solidity.biggestBlob,
       ringDepth: rings.maxDepth,
-      passes: passes && rings.passes,
-      solidOk: passes,
+      frameCoverage: frame.sideCoverage,
+      passes: solidity.passes && rings.passes && frame.passes,
+      solidOk: solidity.passes,
       ringsOk: rings.passes,
+      frameOk: frame.passes,
     });
   } catch (error) {
     console.error(`${rel}  ERROR (${error instanceof Error ? error.message : String(error)})`);
@@ -55,6 +64,7 @@ console.log(
   'interior px'.padStart(12),
   'biggest blob'.padStart(13),
   'ring depth'.padStart(11),
+  'frame sides'.padStart(12),
   '  verdict'
 );
 for (const r of rows) {
@@ -62,19 +72,35 @@ for (const r of rows) {
   if (!r.solidOk)
     problems.push(`SOLID (blob > ${SOLID_BLOB_MAX} or interior > ${SOLID_INTERIOR_MAX})`);
   if (!r.ringsOk) problems.push(`OVER-RINGED (depth > ${EYE_RING_DEPTH_MAX})`);
+  if (!r.frameOk) problems.push(`PAGE FRAME (side coverage >= ${FRAME_SIDE_COVERAGE_MIN * 100}%)`);
   console.log(
     r.rel.padEnd(36),
     String(r.solidPx).padStart(9),
     String(r.interiorPx).padStart(12),
     String(r.biggestBlob).padStart(13),
     String(r.ringDepth).padStart(11),
+    `${(r.frameCoverage * 100).toFixed(1)}%`.padStart(12),
     ' ',
     problems.length ? problems.join(' + ') : 'ok'
   );
 }
 const offenders = rows.filter((r) => !r.passes);
+const solidOffenders = rows.filter((r) => !r.solidOk).length;
+const ringOffenders = rows.filter((r) => !r.ringsOk).length;
+const frameOffenders = rows.filter((r) => !r.frameOk).length;
 console.log(
-  `\n${offenders.length}/${rows.length} outline(s) need normalizing (solid regions or over-ringed eyes)` +
-    (offenders.length ? ` — npm run gen:coloring-outlines:normalize -- <page>` : '')
+  `\n${offenders.length}/${rows.length} outline(s) need attention · ` +
+    `${solidOffenders} solid · ${ringOffenders} over-ringed · ${frameOffenders} page frame(s)`
 );
+if (solidOffenders || ringOffenders) {
+  console.log(
+    'Normalize solid/over-ringed outlines: npm run gen:coloring-outlines:normalize -- <page>'
+  );
+}
+if (frameOffenders) {
+  console.log(
+    'For framed -tall/-wide pages, supply a scene and generate a fresh outline: ' +
+      'npm run gen:coloring-outlines:fresh -- <page> --scene "<description>"'
+  );
+}
 if (errors) process.exitCode = 1;

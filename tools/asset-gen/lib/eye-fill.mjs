@@ -20,7 +20,7 @@
 // light sclera); a flat-flooded eye contrasts in neither. Pages with no
 // detected eye core aren't gated.
 import sharp from 'sharp';
-import { OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
+import { prepareOutlineAnalysis, prepareOutlineRegions } from './outline-analysis.mjs';
 import { quantile } from './stats.mjs';
 
 // Pass bars, shared by the generation gates and the raw-fill auditor: of the
@@ -38,72 +38,8 @@ const CORE_MAX_FRAC = 0.005;
 const PARENT_MAX_FRAC = 0.05;
 const MIN_BAND_SAMPLES = 8;
 
-async function inkMask(buf) {
-  const { data, info } = await sharp(buf).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  const { width: w, height: h } = info;
-  const ink = new Uint8Array(w * h);
-  for (let p = 0, i = 0; p < w * h; p++, i += 3) {
-    const luma = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-    if (luma < OUTLINE_LUMA_THRESHOLD) ink[p] = 1;
-  }
-  return { ink, w, h };
-}
-
-// Label 4-connected components of the non-ink pixels.
-function labelRegions(ink, w, h) {
-  const label = new Int32Array(w * h).fill(-1);
-  const regions = [];
-  const stack = new Int32Array(w * h);
-  for (let start = 0; start < w * h; start++) {
-    if (ink[start] || label[start] !== -1) continue;
-    const id = regions.length;
-    const reg = { id, area: 0, minX: w, minY: h, maxX: 0, maxY: 0, leftmost: start, border: false };
-    let sp = 0;
-    stack[sp++] = start;
-    label[start] = id;
-    while (sp) {
-      const p = stack[--sp];
-      reg.area++;
-      const x = p % w;
-      const y = (p / w) | 0;
-      if (x < reg.minX) reg.minX = x;
-      if (x > reg.maxX) reg.maxX = x;
-      if (y < reg.minY) reg.minY = y;
-      if (y > reg.maxY) reg.maxY = y;
-      const lx = reg.leftmost % w;
-      if (x < lx || (x === lx && y < ((reg.leftmost / w) | 0))) reg.leftmost = p;
-      if (x === 0 || x === w - 1 || y === 0 || y === h - 1) reg.border = true;
-      const tryPush = (q) => {
-        if (!ink[q] && label[q] === -1) {
-          label[q] = id;
-          stack[sp++] = q;
-        }
-      };
-      if (x > 0) tryPush(p - 1);
-      if (x < w - 1) tryPush(p + 1);
-      if (y > 0) tryPush(p - w);
-      if (y < h - 1) tryPush(p + w);
-    }
-    regions.push(reg);
-  }
-  return { label, regions };
-}
-
-const eyePageAnalyses = new WeakMap();
-
-function analyzeEyePage(sourceBuf) {
-  const existing = eyePageAnalyses.get(sourceBuf);
-  if (existing) return existing;
-  const analysis = analyzeEyePageOnce(sourceBuf);
-  eyePageAnalyses.set(sourceBuf, analysis);
-  return analysis;
-}
-
-async function analyzeEyePageOnce(sourceBuf) {
-  const { ink, w, h } = await inkMask(sourceBuf);
-  const { label, regions } = labelRegions(ink, w, h);
-  const parents = new Int32Array(regions.length).fill(-2);
-  return { ink, label, regions, parents, w, h };
+async function analyzeEyePage(source) {
+  return prepareOutlineRegions(await prepareOutlineAnalysis(source));
 }
 
 // The region enclosing `reg`: march left from its leftmost pixel across the ink

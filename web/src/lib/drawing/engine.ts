@@ -727,10 +727,11 @@ function commitStrokeGroup() {
 
 // The last pointer of a group is gone: reset the per-group flag, commit, and let
 // consumers know drawing has stopped.
-function finishStrokeGroup() {
+function finishStrokeGroup(notifyDrawStop = true) {
   groupHasDrawn = false;
   commitStrokeGroup();
-  callbacks.onDrawStop?.();
+  // An off-canvas pen lift passes false because pointerout stopped its audio segment.
+  if (notifyDrawStop) callbacks.onDrawStop?.();
 }
 
 // --- Pointer tracking -------------------------------------------------------
@@ -769,6 +770,12 @@ interface PointerState {
 }
 
 const activePointers = new Map<number, PointerState>();
+
+function finishGroupWhenCanvasIdle() {
+  if (activePointers.size > 0) return;
+  if (penStreamAdopter.hasCanvasExit()) callbacks.onDrawStop?.();
+  else finishStrokeGroup();
+}
 
 // Pointer speed (which drives the drawing sound) is averaged over the most
 // recent slice of the stroke so the audio cue tracks gesture speed without
@@ -833,6 +840,9 @@ function startDrawing(e: PointerEvent) {
   ) {
     return;
   }
+
+  // Re-entry gets fresh pointer geometry below without closing the physical gesture's command.
+  penStreamAdopter.consumeCanvasExit(e.pointerId);
 
   // The eraser runs a bit larger than the pen at the same stroke level. Stroke
   // widths are authored in CSS pixels, so they scale to backing-store pixels.
@@ -915,7 +925,7 @@ function discardPointer(e: PointerEvent) {
   activePointers.delete(e.pointerId);
   ctx.beginPath();
   releaseCaptureSafe(e.pointerId);
-  if (activePointers.size === 0) finishStrokeGroup();
+  finishGroupWhenCanvasIdle();
 }
 
 // Edge-gesture candidate: withhold rendering until the direction is decided.
@@ -1070,9 +1080,13 @@ function stopDrawing(e: PointerEvent) {
     }
   }
 
-  if (activePointers.size === 0) finishStrokeGroup();
-
+  finishGroupWhenCanvasIdle();
   releaseCaptureSafe(e.pointerId);
+}
+
+function finishPenCanvasExit(e: PointerEvent) {
+  if (!penStreamAdopter.consumeCanvasExit(e.pointerId)) return;
+  if (activePointers.size === 0 && !penStreamAdopter.hasCanvasExit()) finishStrokeGroup(false);
 }
 
 export function releaseAllPointers() {
@@ -1091,6 +1105,7 @@ export function releaseAllPointers() {
 
   const ids = [...activePointers.keys()];
   activePointers.clear();
+  penStreamAdopter.clearCanvasExits();
   finishStrokeGroup();
 
   ids.forEach(releaseCaptureSafe);
@@ -1105,6 +1120,10 @@ const penStreamAdopter = createPenStreamAdopter({
   isTracked: (pointerId) => activePointers.has(pointerId),
   adopt: startDrawing,
 });
+
+export function forgetPenPointer(pointerId: number) {
+  penStreamAdopter.forgetPointer(pointerId);
+}
 
 const cancelTouch = (e: TouchEvent) => e.preventDefault();
 
@@ -1376,7 +1395,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
 
   adoptTiledRenderer(canvas, {
     paperSize: () => (paperIsSized() ? { width: paper.pxW, height: paper.pxH } : null),
-    hasActivePointers: () => activePointers.size > 0,
+    hasActivePointers: () => activePointers.size > 0 || penStreamAdopter.hasCanvasExit(),
   });
   if (tiledRendererActive()) syncCrayonOverlayMix();
   else setupLegacyCrayonOverlays(canvas, ctx, String(1 - crayonColorMix()));
@@ -1394,6 +1413,8 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
     startDrawing,
     draw,
     stopDrawing,
+    finishPenCanvasExit,
+    trackPenCanvasExit: penStreamAdopter.trackCanvasExit,
     cancelTouch,
     registerPenListeners: penStreamAdopter.registerWindowListeners,
   });

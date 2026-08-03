@@ -22,7 +22,8 @@ before a human picks one:
 | solidity    | `scoreSolidity` passes (blob ≤ 100 px, interior ≤ 60 px) | the accident-era defect the pass exists to remove                                          |
 | ring depth  | `scoreEyeRings` ≤ 4                                      | no hypno-swirl eyes                                                                        |
 | eye cores   | `--eyes`: `findEyeCores` ≥ 1                             | a face page whose eyes the detector can't see would make every downstream eye gate vacuous |
-| border      | outer 8 px ≥ 97% white                                   | catches grey washes, border frames, edge-to-edge crops                                     |
+| border      | outer 8 px ≥ 97% white                                   | catches grey washes and edge-to-edge crops                                                 |
+| frame       | every inset side has ≥ 70% continuous ink coverage       | catches rectangular page borders, frames, and page outlines                                |
 | ink density | 1–20% dark px                                            | catches empty or dense/greyscale renders                                                   |
 
 ## The 2026-07-13 pass

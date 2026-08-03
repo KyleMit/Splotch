@@ -23,19 +23,25 @@ that suite keeps its recovered webp crops (`tests/fixtures/composite-eye/`).
 
 ## Group A — line-art gates
 
-Both read a single black-on-white outline buffer. `✓` = the gate flags the fixture.
+All three read a single black-on-white outline buffer. `✓` = the gate flags the fixture.
 
-| fixture (\* = broken) | `scoreSolidity` | `scoreEyeRings` |
-| --------------------- | :-------------: | :-------------: |
-| solid pupil \*        |        ✓        |                 |
-| fake-hollow \*        |        ✓        |                 |
-| hypno-swirl eye \*    |                 |        ✓        |
-| thin strokes (good)   |                 |                 |
-| normal eye (good)     |                 |                 |
+| fixture (\* = broken)    | `scoreSolidity` | `scoreEyeRings` | `scoreOutlineFrame` |
+| ------------------------ | :-------------: | :-------------: | :-----------------: |
+| solid pupil \*           |        ✓        |                 |                     |
+| fake-hollow \*           |        ✓        |                 |                     |
+| hypno-swirl eye \*       |                 |        ✓        |                     |
+| four-sided frame \*      |                 |                 |          ✓          |
+| thin strokes (good)      |                 |                 |                     |
+| normal-depth eye (good)  |                 |                 |                     |
+| edge-near art (good)     |                 |                 |                     |
+| three-sided frame (good) |                 |                 |                     |
 
 Perfectly diagonal. `scoreSolidity` solely catches the solid-pupil (blob bar) and fake-hollow
-(interior bar) classes; `scoreEyeRings` solely catches the over-deep swirl. Both load-bearing; the
-two bars inside `scoreSolidity` are themselves independently justified by their two fixtures.
+(interior bar) classes; `scoreEyeRings` solely catches the over-deep swirl; `scoreOutlineFrame`
+solely catches the continuous four-sided page enclosure. All three are load-bearing. The
+normal-depth eye, edge-near-art, and three-sided fixtures pin that the frame judge requires
+continuity on all four sides instead of treating ordinary margin-adjacent lines as a frame. The two
+bars inside `scoreSolidity` are themselves independently justified by their two fixtures.
 
 ## Group B — night-fill gates
 

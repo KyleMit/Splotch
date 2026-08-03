@@ -52,11 +52,29 @@ const encode = (c) =>
     .toBuffer();
 
 // ===================== SOLIDITY (lib/solid-regions.mjs) =====================
+const SOLIDITY_FRAME_NOTCH_HALF_HEIGHT_PX = 80;
+
+function solidityFixtureCanvas() {
+  const c = canvas(400, 400);
+  rectStroke(c, 40, 40, 360, 360, 4);
+  const centerY = c.h / 2;
+  // The wide opening keeps the border from tripping the independent frame gate,
+  // preserving each fixture's single-gate role in the redundancy matrix.
+  fillRect(
+    c,
+    356,
+    centerY - SOLIDITY_FRAME_NOTCH_HALF_HEIGHT_PX,
+    365,
+    centerY + SOLIDITY_FRAME_NOTCH_HALF_HEIGHT_PX,
+    255
+  );
+  return c;
+}
+
 // BROKEN: a large SOLID black pupil disc — the class the punch/invert can't
 // survive (biggestBlob far over SOLID_BLOB_MAX).
 export function solidPupilOutline() {
-  const c = canvas(400, 400);
-  rectStroke(c, 40, 40, 360, 360, 4);
+  const c = solidityFixtureCanvas();
   ring(c, 150, 200, 40, 4);
   disc(c, 150, 200, 22, 0); // the solid pupil
   ring(c, 260, 200, 40, 4);
@@ -66,8 +84,7 @@ export function solidPupilOutline() {
 // GOOD: the same page drawn with thin strokes only — nothing survives the
 // erosion (biggestBlob ≈ 0).
 export function thinStrokeOutline() {
-  const c = canvas(400, 400);
-  rectStroke(c, 40, 40, 360, 360, 4);
+  const c = solidityFixtureCanvas();
   ring(c, 150, 200, 40, 4);
   ring(c, 150, 200, 18, 4);
   ring(c, 260, 200, 40, 4);
@@ -78,8 +95,7 @@ export function thinStrokeOutline() {
 // the blob bar, but whose TOTAL surviving interior clears SOLID_INTERIOR_MAX —
 // the fake-hollow class the interiorPx bar exists to catch.
 export function fakeHollowOutline() {
-  const c = canvas(400, 400);
-  rectStroke(c, 40, 40, 360, 360, 4);
+  const c = solidityFixtureCanvas();
   disc(c, 150, 200, 14, 0);
   disc(c, 250, 200, 14, 0);
   return encode(c);
@@ -90,14 +106,75 @@ export function fakeHollowOutline() {
 // keys on. Depth ≈ ring count; the page is large so every ring stays eye-scale.
 // nRings=3 → a normal eye (depth 3, passes); nRings=5 → the "hypno swirl"
 // (depth 5, over EYE_RING_DEPTH_MAX).
+const EYE_FRAME_NOTCH_HALF_HEIGHT_PX = 100;
+
 export function concentricEyeSource(nRings) {
   const c = canvas(600, 600);
   rectStroke(c, 20, 20, 580, 580, 4);
+  const centerY = c.h / 2;
+  // Keep eye fixtures scoped to ring depth rather than the independent frame gate.
+  fillRect(
+    c,
+    576,
+    centerY - EYE_FRAME_NOTCH_HALF_HEIGHT_PX,
+    585,
+    centerY + EYE_FRAME_NOTCH_HALF_HEIGHT_PX,
+    255
+  );
   for (let k = 0; k < nRings; k++) ring(c, 300, 300, 12 + k * 8, 2);
   return encode(c);
 }
 export const goodEyeSource = () => concentricEyeSource(3);
 export const swirlEyeSource = () => concentricEyeSource(5);
+
+// ================= OUTLINE FRAME (lib/outline-frame.mjs) =================
+// BROKEN: a continuous rectangle inset from all four page edges. The centered
+// subject proves the gate detects the page enclosure rather than an empty page.
+export function framedOutline() {
+  const c = canvas(600, 600);
+  rectStroke(c, 30, 30, 570, 570, 4);
+  ring(c, 300, 300, 100, 4);
+  return encode(c);
+}
+
+const PARTIAL_FRAME_GAP_HEIGHT_PX = 120;
+
+// BROKEN: the same frame with one side partly occluded. A page enclosure need
+// not be nearly perfect to remain an unwanted four-sided frame.
+export function partiallyOccludedFrameOutline() {
+  const c = canvas(600, 600);
+  rectStroke(c, 30, 30, 570, 570, 4);
+  const gapStart = (c.h - PARTIAL_FRAME_GAP_HEIGHT_PX) / 2;
+  fillRect(c, 566, gapStart, 575, gapStart + PARTIAL_FRAME_GAP_HEIGHT_PX - 1, 255);
+  ring(c, 300, 300, 100, 4);
+  return encode(c);
+}
+
+// GOOD: ordinary scene marks approach every edge but leave wide breaks, so no
+// four-sided page enclosure exists.
+export function edgeNearArtOutline() {
+  const c = canvas(600, 600);
+  ring(c, 300, 300, 100, 4);
+  fillRect(c, 30, 24, 180, 27, 0);
+  fillRect(c, 400, 24, 570, 27, 0);
+  fillRect(c, 30, 572, 210, 575, 0);
+  fillRect(c, 420, 572, 570, 575, 0);
+  fillRect(c, 24, 30, 27, 200, 0);
+  fillRect(c, 24, 400, 27, 570, 0);
+  fillRect(c, 572, 30, 575, 225, 0);
+  fillRect(c, 572, 425, 575, 570, 0);
+  return encode(c);
+}
+
+// GOOD: three continuous sides are not a page frame. The right edge is erased
+// completely so the fixture pins the all-four-sides requirement directly.
+export function threeSidedFrameOutline() {
+  const c = canvas(600, 600);
+  rectStroke(c, 30, 30, 570, 570, 4);
+  fillRect(c, 566, 0, 599, 599, 255);
+  ring(c, 300, 300, 100, 4);
+  return encode(c);
+}
 
 // Fills measured against goodEyeSource() (eye center at 300,300).
 // LIVELY: a dark pupil disc on a white sclera — strong dark-core contrast.

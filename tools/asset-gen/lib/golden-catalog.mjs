@@ -22,6 +22,7 @@ const GOLDEN_METRICS = {
   'outline.biggestBlob': { noise: 15, worse: 'up' },
   'outline.strokeWidth': { noise: 0, worse: null },
   'outline.ringDepth': { noise: 0, worse: 'up' },
+  'outline.frameCoverage': { noise: 0.005, worse: 'up' },
   'light.keep': { noise: 0.005, worse: 'down' },
   'light.localKeep': { noise: 0.005, worse: 'down' },
   'light.eyeCores': { noise: 0, worse: null },
@@ -43,6 +44,7 @@ const GOLDEN_METRICS = {
 export const GOLDEN_VERDICTS = [
   'outline.solidOk',
   'outline.ringsOk',
+  'outline.frameOk',
   'light.driftOk',
   'light.eyesOk',
   'night.driftOk',

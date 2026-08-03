@@ -110,9 +110,18 @@ test('a burst of screenshot taps shares one save before allowing the next', asyn
   page.on('download', (download) => downloads.push(download.suggestedFilename()));
 
   await shot.evaluate((button) => {
+    const rect = button.getBoundingClientRect();
+    const coordinates = {
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+    };
     for (let pointerId = 1; pointerId <= 3; pointerId++) {
-      button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId }));
-      button.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId }));
+      button.dispatchEvent(
+        new PointerEvent('pointerdown', { ...coordinates, bubbles: true, pointerId })
+      );
+      button.dispatchEvent(
+        new PointerEvent('pointerup', { ...coordinates, bubbles: true, pointerId })
+      );
     }
   });
 

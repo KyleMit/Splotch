@@ -28,6 +28,8 @@ import { fail, parsePositiveInt, parseTemperature } from '../lib/cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { scoreSolidity } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, scoreEyes } from '../lib/eye-fill.mjs';
+import { scoreOutlineFrame } from '../lib/outline-frame.mjs';
+import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
 import { FRESH_STYLE_PROMPT } from '../lib/prompts.mjs';
 
 const WEBP_QUALITY = 90;
@@ -134,12 +136,13 @@ const outDir = join(SAMPLES_DIR, 'fresh', pageRel.split('/')[0]);
 await mkdir(outDir, { recursive: true });
 const pageName = pageRel.split('/')[1];
 
-const passes = (c) => c.solidOk && c.ringsOk && c.eyesOk && c.borderOk && c.inkOk;
+const passes = (c) => c.solidOk && c.ringsOk && c.eyesOk && c.borderOk && c.frameOk && c.inkOk;
 const rank = (c) =>
   (passes(c) ? 1000 : 0) +
   (c.solidOk ? 200 : 0) +
   (c.eyesOk ? 150 : 0) +
   (c.ringsOk ? 100 : 0) +
+  (c.frameOk ? 75 : 0) +
   (c.borderOk ? 50 : 0) +
   (c.inkOk ? 50 : 0) -
   c.biggestBlob / 100;
@@ -158,13 +161,15 @@ for (let attempt = 0; attempt < maxAttempts; attempt++) {
     continue;
   }
 
+  const analysis = await prepareOutlineAnalysis(pen);
   const eyeScores = args.values.eyes
-    ? scoreEyes(pen)
-    : scoreEyeRings(pen).then((rings) => ({ rings, cores: null }));
-  const [solidity, { rings, cores }, borderWhite, ink] = await Promise.all([
-    scoreSolidity(pen),
+    ? scoreEyes(analysis)
+    : scoreEyeRings(analysis).then((rings) => ({ rings, cores: null }));
+  const [solidity, { rings, cores }, borderWhite, frame, ink] = await Promise.all([
+    scoreSolidity(analysis),
     eyeScores,
     borderWhiteFraction(pen),
+    scoreOutlineFrame(analysis),
     inkFraction(pen),
   ]);
   const cand = {
@@ -178,8 +183,10 @@ for (let attempt = 0; attempt < maxAttempts; attempt++) {
     ringsOk: rings.passes,
     eyesOk: cores === null ? true : cores.cores.length >= 1,
     borderOk: borderWhite >= BORDER_WHITE_MIN,
+    frameOk: frame.passes,
     inkOk: ink >= INK_MIN && ink <= INK_MAX,
     borderWhite,
+    frameCoverage: frame.sideCoverage,
     ink,
   };
 
@@ -192,11 +199,12 @@ for (let attempt = 0; attempt < maxAttempts; attempt++) {
   if (!cand.ringsOk) flags.push(`rings ${cand.ringDepth}`);
   if (!cand.eyesOk) flags.push('no eye cores');
   if (!cand.borderOk) flags.push(`border ${(borderWhite * 100).toFixed(1)}%`);
+  if (!cand.frameOk) flags.push(`page frame ${(cand.frameCoverage * 100).toFixed(1)}%`);
   if (!cand.inkOk) flags.push(`ink ${(ink * 100).toFixed(1)}%`);
   console.log(
     `blob ${cand.biggestBlob}  interior ${cand.interiorPx}  rings ${cand.ringDepth}` +
       (cand.coreCount === null ? '' : `  cores ${cand.coreCount}`) +
-      `  border ${(borderWhite * 100).toFixed(1)}%  ink ${(ink * 100).toFixed(1)}%` +
+      `  border ${(borderWhite * 100).toFixed(1)}%  frame ${(cand.frameCoverage * 100).toFixed(1)}%  ink ${(ink * 100).toFixed(1)}%` +
       (flags.length ? `  ⚠ ${flags.join(' + ')}` : '  ✓') +
       `  -> ${relative(REPO_ROOT, file)}`
   );

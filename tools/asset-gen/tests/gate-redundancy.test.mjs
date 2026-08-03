@@ -19,6 +19,7 @@
 import { describe, it, expect } from 'vitest';
 import { scoreSolidity } from '../lib/solid-regions.mjs';
 import { scoreEyeRings } from '../lib/eye-fill.mjs';
+import { scoreOutlineFrame } from '../lib/outline-frame.mjs';
 import {
   scoreNightness,
   scoreDrift,
@@ -29,6 +30,8 @@ import {
 } from '../lib/night-scores.mjs';
 import { detectInventedShapes } from '../lib/invented-shapes.mjs';
 import * as F from './fixtures/synthetic.mjs';
+
+const SOLIDITY_FIXTURE_FRAME_COVERAGE_MAX = 0.6;
 
 // Run a group's gates over its fixtures → { fixture: Set<gateName that caught it> }.
 async function catchMatrix(gates, fixtures) {
@@ -50,20 +53,24 @@ function loadBearing(gates, matrix, broken) {
   return report;
 }
 
-describe('line-art gates (solidity, eye-rings)', () => {
+describe('line-art gates (solidity, eye-rings, frame)', () => {
   const gates = {
     solidity: async (buf) => !(await scoreSolidity(buf)).passes,
     eyeRings: async (buf) => !(await scoreEyeRings(buf)).passes,
+    frame: async (buf) => !(await scoreOutlineFrame(buf)).passes,
   };
   const fixtures = {
     solidPupil: F.solidPupilOutline, // broken
     fakeHollow: F.fakeHollowOutline, // broken
     swirlEye: F.swirlEyeSource, // broken
+    framed: F.framedOutline, // broken
     thinStroke: F.thinStrokeOutline, // good
     goodEye: F.goodEyeSource, // good
+    edgeNearArt: F.edgeNearArtOutline, // good
+    threeSidedFrame: F.threeSidedFrameOutline, // good
   };
-  const broken = ['solidPupil', 'fakeHollow', 'swirlEye'];
-  const good = ['thinStroke', 'goodEye'];
+  const broken = ['solidPupil', 'fakeHollow', 'swirlEye', 'framed'];
+  const good = ['thinStroke', 'goodEye', 'edgeNearArt', 'threeSidedFrame'];
 
   it('every gate is the sole catcher of ≥1 broken fixture', async () => {
     const matrix = await catchMatrix(gates, fixtures);
@@ -78,6 +85,16 @@ describe('line-art gates (solidity, eye-rings)', () => {
   it('no gate fires on a good fixture', async () => {
     const matrix = await catchMatrix(gates, fixtures);
     for (const f of good) expect([...matrix[f]], `${f} should pass every gate`).toEqual([]);
+  });
+
+  it.each([
+    ['solid-pupil', F.solidPupilOutline],
+    ['fake-hollow', F.fakeHollowOutline],
+    ['thin-stroke', F.thinStrokeOutline],
+  ])('keeps the %s fixture well outside frame territory', async (_name, buildFixture) => {
+    const result = await scoreOutlineFrame(await buildFixture());
+
+    expect(result.sideCoverage).toBeLessThan(SOLIDITY_FIXTURE_FRAME_COVERAGE_MAX);
   });
 });
 
