@@ -6,6 +6,13 @@
   let demoToggle = $state(true);
   let demoSlider = $state(60);
 
+  const demoBrushes = [
+    { icon: 'pen', label: 'Pen' },
+    { icon: 'crayon', label: 'Crayon' },
+    { icon: 'magic-brush', label: 'Magic brush' },
+  ] as const;
+  let demoBrush = $state<(typeof demoBrushes)[number]['icon']>('pen');
+
   // Bespoke, single-instance chrome: named here so it's discoverable, never
   // recreated (the live app is its documentation). Canonical names live in the
   // architecture skill's UI element glossary.
@@ -145,10 +152,13 @@
   </p>
 
   <h4>Modal shell + close button · <code>.modal-shell</code> <code>.modal-close-btn</code></h4>
+  <!-- The close disc is presentation here — a specimen has nothing to close,
+       and a focusable control that does nothing is worse than none (the real
+       behavior lives with each modal). Spans stay out of the tab order. -->
   <div class="modal-shell demo-modal-shell">
-    <button class="modal-close-btn" aria-label="Close">
+    <span class="modal-close-btn demo-inert" aria-hidden="true">
       <Icon name="close" class="modal-close-icon" />
-    </button>
+    </span>
     <div class="demo-modal-body">
       <p class="demo-modal-title">Modal title</p>
       <p class="demo-modal-copy">
@@ -162,26 +172,29 @@
 
   <h4>Flyout menu + options · <code>.flyout-menu</code> <code>.flyout-option</code></h4>
   <div class="flyout-menu demo-flyout" role="group" aria-label="Flyout specimen">
-    <button class="flyout-option active" aria-label="Pen" aria-pressed="true">
-      <Icon name="pen" class="action-icon demo-flyout-icon" />
-    </button>
-    <button class="flyout-option" aria-label="Crayon" aria-pressed="false">
-      <Icon name="crayon" class="action-icon demo-flyout-icon" />
-    </button>
-    <button class="flyout-option" aria-label="Magic brush" aria-pressed="false">
-      <Icon name="magic-brush" class="action-icon demo-flyout-icon" />
-    </button>
+    {#each demoBrushes as brush (brush.icon)}
+      <button
+        class="flyout-option"
+        class:active={demoBrush === brush.icon}
+        aria-label={brush.label}
+        aria-pressed={demoBrush === brush.icon}
+        onclick={() => (demoBrush = brush.icon)}
+      >
+        <Icon name={brush.icon} class="action-icon demo-flyout-icon" />
+      </button>
+    {/each}
   </div>
   <span class="value">
-    Paper-card popover on --float-surface with --float-shadow-flyout; the selected option wears the
-    brand ring.
+    Paper-card popover on --float-surface with --float-shadow-flyout — live: pick an option and the
+    selected entry wears the brand ring.
   </span>
 
   <h4>Corner button · <code>.corner-button</code></h4>
+  <!-- Presentation-only for the same reason as the close disc above. -->
   <div class="demo-corner-row">
-    <button class="corner-button" aria-label="Settings (specimen)">
+    <span class="corner-button demo-inert" aria-hidden="true">
       <Icon name="settings" class="corner-button-icon" />
-    </button>
+    </span>
     <span class="value">
       Muted canvas-corner chrome: whole-button opacity and icon tint step idle (0.4) → hover →
       pressed. Drawer toggle, Fullscreen Toggle, Settings Button.
@@ -319,6 +332,16 @@
   .demo-flyout :global(.demo-flyout-icon) {
     width: 100%;
     height: 100%;
+  }
+
+  /* Inert specimens keep the shared chrome classes for their look but are
+     spans, not buttons — give them the box the button element provided and
+     drop the pointer affordance. */
+  .demo-inert {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
   }
 
   .demo-corner-row {
