@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { rotateViewportViaCdp } from './cdp';
 import { draw, gotoApp, openSettingsModal, renderedCanvasHandle } from './helpers';
-import { COLORING_IMAGE_SIZES } from '../src/lib/state/books';
+import { COLORING_IMAGE_SIZES, coloringBookGridLayout } from '../src/lib/state/books';
 
 import {
   applyFarmPage,
@@ -53,14 +53,25 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   // Farm ships on web and mobile; open it and pick its first page.
   const cover = dialog.getByRole('button', { name: 'Farm coloring book' }).locator('img');
   await expect(cover).toHaveAttribute('srcset', /\/coloring\/max-240px\/farm\/cover\.thumb\.webp/);
-  await expect(cover).toHaveAttribute('sizes', COLORING_IMAGE_SIZES.coverThumbnail.withoutClear);
+  await expect(cover).toHaveAttribute('sizes', coloringBookGridLayout(8).imageSizes);
   const pageTiles = await openFarmPageGrid(page);
+  const pageImages = dialog.locator('.coloring-pages-grid img');
   const pageThumb = pageTiles.first().locator('img');
   await expect(pageThumb).toHaveAttribute('srcset', /\/coloring\/max-240px\/farm\/.+\.thumb\.webp/);
   await expect(pageThumb).toHaveAttribute('sizes', COLORING_IMAGE_SIZES.pageThumbnail.landscape);
   await pageTiles.first().click();
 
   await expect(dialog).toBeHidden();
+  await expect
+    .poll(() =>
+      pageImages.evaluateAll((images) => ({
+        count: images.length,
+        allCleared: images.every(
+          (image) => !image.hasAttribute('src') && !image.hasAttribute('srcset')
+        ),
+      }))
+    )
+    .toEqual({ count: 6, allCleared: true });
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toBeVisible();
   // The src lands once the art has decoded (the ready-gated swap), so retry.
@@ -105,6 +116,41 @@ test.describe('responsive coloring selection at DPR 1', () => {
     await expect
       .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
       .toMatch(/\/coloring\/max-1152px\/farm\/cat-tall\.overlay\.webp$/);
+  });
+
+  test('prefetches against the locked paper width after rotation', async ({ page }) => {
+    await gotoApp(page);
+    await openDrawer(page);
+    await applyFarmPage(page);
+    await draw(page, [
+      { x: 100, y: 180 },
+      { x: 260, y: 260 },
+    ]);
+
+    await rotateViewportViaCdp(page, { width: 1000, height: 390, angle: 90 });
+    const overlay = page.locator('#coloringOverlay');
+    await expect(page.locator('.paper-sheet.paper-lifted')).toBeVisible();
+    await expect(overlay).toHaveAttribute('sizes', '390px');
+    await expect
+      .poll(() =>
+        page.locator('#drawingCanvas').evaluate((canvas) => canvas.getBoundingClientRect().width)
+      )
+      .toBeGreaterThan(768);
+
+    const cowOverlayRequests: string[] = [];
+    page.on('request', (request) => {
+      if (/\/coloring\/(?:max-1152px\/)?farm\/cow-tall\.overlay\.webp$/.test(request.url())) {
+        cowOverlayRequests.push(request.url());
+      }
+    });
+    await openColoringDialog(page);
+    const cow = (await openFarmPageGrid(page)).nth(1);
+    await cow.dispatchEvent('pointerenter', { pointerType: 'mouse' });
+
+    await expect
+      .poll(() => cowOverlayRequests.some((url) => url.includes('/coloring/max-1152px/')))
+      .toBe(true);
+    expect(cowOverlayRequests.some((url) => /\/coloring\/farm\//.test(url))).toBe(false);
   });
 });
 
@@ -151,6 +197,10 @@ test('the Clear Page book grid stays responsive and fits a standard laptop modal
   const dialog = page.locator('#coloring-book-dialog');
   const grid = dialog.locator('.coloring-books-grid');
   await expect(grid.locator(':scope > .coloring-tile')).toHaveCount(9);
+  await expect(grid.locator('img').first()).toHaveAttribute(
+    'sizes',
+    coloringBookGridLayout(9).imageSizes
+  );
   await expect
     .poll(() => dialog.evaluate((element) => element.scrollHeight - element.clientHeight))
     .toBeLessThanOrEqual(WHOLE_PIXEL_TOLERANCE_PX);

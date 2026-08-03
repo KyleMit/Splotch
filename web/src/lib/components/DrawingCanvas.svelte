@@ -26,7 +26,11 @@
     nightSheetUrl,
   } from '$lib/state/coloringBook.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { COLORING_IMAGE_SIZES, pageCompositionKey } from '$lib/state/books';
+  import {
+    COLORING_IMAGE_SIZES,
+    coloringOverlayImageSize,
+    pageCompositionKey,
+  } from '$lib/state/books';
   import { settings } from '$lib/state/settings.svelte';
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
   import { isNative } from '$lib/platform';
@@ -71,9 +75,7 @@
   const paperCssHeight = $derived(
     paperView.paperCssHeight ? `${paperView.paperCssHeight}px` : '100%'
   );
-  const overlaySizes = $derived(
-    paperView.paperCssWidth ? `${paperView.paperCssWidth}px` : COLORING_IMAGE_SIZES.overlay
-  );
+  const overlaySizes = $derived(coloringOverlayImageSize(paperView.paperCssWidth));
 
   onMount(() => {
     // Adopt, don't init (ADR-0072): earlyBoot.ts already started the engine on
@@ -107,6 +109,7 @@
       onViewChange: (view) => {
         Object.assign(paperView, view);
         canvasState.paperOrientation = view.paperOrientation;
+        canvasState.paperCssWidth = view.paperCssWidth;
       },
     });
 

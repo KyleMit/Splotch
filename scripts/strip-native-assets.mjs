@@ -3,7 +3,7 @@
 // against the freshly produced `build/` output — it never touches the source
 // `static/` tree.
 //
-// Three independent prunes:
+// Four independent prunes:
 //
 //   1. Coloring books whose `platforms` field omits 'mobile' (e.g. licensed IP
 //      like Bluey / Frozen). Source of truth is src/lib/state/books.ts, matching
@@ -48,9 +48,18 @@ function stripWebOnlyBooks(buildDir, books) {
     return;
   }
 
-  // Each book's assets live under one folder (derived from its asset paths, so we
-  // stay correct even if a folder name ever diverges from the book id).
-  const dirs = new Set(webOnly.flatMap((book) => bookAssetPaths(book).map((p) => dirname(p))));
+  // Responsive roots are removed wholesale below; this pass owns only each
+  // web-only book's canonical folder(s).
+  const dirs = new Set(
+    webOnly.flatMap((book) =>
+      bookAssetPaths(book)
+        .filter(
+          (path) =>
+            !RESPONSIVE_COLORING_TIER_DIRECTORIES.some((tier) => path.startsWith(`${tier}/`))
+        )
+        .map((path) => dirname(path))
+    )
+  );
 
   let removed = 0;
   for (const dir of dirs) {
@@ -65,7 +74,8 @@ function stripWebOnlyBooks(buildDir, books) {
   }
 
   console.log(
-    `[strip-native-assets] stripped ${removed} folder(s) for ${webOnly.length} web-only book(s): ` +
+    `[strip-native-assets] stripped ${removed}/${dirs.size} canonical folder(s) for ` +
+      `${webOnly.length} web-only book(s): ` +
       webOnly.map((b) => b.id).join(', ')
   );
 }
@@ -130,7 +140,10 @@ function stripResponsiveColoringTiers(buildDir) {
     rmSync(target, { recursive: true, force: true });
     removed++;
   }
-  console.log(`[strip-native-assets] stripped ${removed} web-responsive coloring tier(s).`);
+  console.log(
+    `[strip-native-assets] stripped ${removed}/${RESPONSIVE_COLORING_TIER_DIRECTORIES.length} ` +
+      'web-responsive coloring tier root(s).'
+  );
 }
 
 export function stripNativeAssets(buildDir, books) {

@@ -67,6 +67,12 @@ export interface ResponsiveColoringAsset {
   encoding: 'overlay' | 'thumbnail';
 }
 
+interface ColoringBookGridLayout {
+  hasNineTiles: boolean;
+  hasOrphan: boolean;
+  imageSizes: string;
+}
+
 export interface ColoringPage {
   id: string;
   name: string;
@@ -115,12 +121,16 @@ const RESPONSIVE_COLORING_TIERS = {
 export const RESPONSIVE_COLORING_TIER_DIRECTORIES = Object.values(RESPONSIVE_COLORING_TIERS).map(
   (tier) => `${COLORING_ROOT}/${tier.directory}`
 );
+const BOOK_GRID_DEFAULT_COLUMNS = 4;
+const BOOK_GRID_NINE_TILE_COUNT = 9;
 export const COLORING_IMAGE_SIZES = {
   overlay: '100vw',
   coverThumbnail: {
-    withoutClear:
+    standard:
       '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), (max-width: 1022px) calc((90vw - 100px) / 4), 205px',
-    withClear:
+    orphan:
+      '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 88px) / 3), 277px',
+    nineTiles:
       '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), 205px',
   },
   pageThumbnail: {
@@ -130,6 +140,21 @@ export const COLORING_IMAGE_SIZES = {
       '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 76px) / 2), 422px',
   },
 } as const;
+
+export function coloringBookGridLayout(visibleTileCount: number): ColoringBookGridLayout {
+  const hasNineTiles = visibleTileCount === BOOK_GRID_NINE_TILE_COUNT;
+  const hasOrphan = visibleTileCount > 1 && visibleTileCount % BOOK_GRID_DEFAULT_COLUMNS === 1;
+  const imageSizes = hasNineTiles
+    ? COLORING_IMAGE_SIZES.coverThumbnail.nineTiles
+    : hasOrphan
+      ? COLORING_IMAGE_SIZES.coverThumbnail.orphan
+      : COLORING_IMAGE_SIZES.coverThumbnail.standard;
+  return { hasNineTiles, hasOrphan, imageSizes };
+}
+
+export function coloringOverlayImageSize(paperCssWidth: number): string {
+  return paperCssWidth ? `${paperCssWidth}px` : COLORING_IMAGE_SIZES.overlay;
+}
 const ORIENTATION_SLUGS: Record<BookOrientation, string> = {
   portrait: 'tall',
   landscape: 'wide',

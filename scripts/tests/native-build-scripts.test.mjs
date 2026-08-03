@@ -63,6 +63,8 @@ vi.mock('../../web/src/lib/state/books.ts', () => ({
       ...Object.values(page.nightImages),
       ...Object.values(page.chalkImages),
     ]),
+    `/coloring/max-1152px/${book.id}/page-tall.overlay.webp`,
+    `/coloring/max-240px/${book.id}/page-tall.thumb.webp`,
   ],
 }));
 
@@ -290,7 +292,10 @@ describe('native build script entry points', () => {
     );
     expect(log).toHaveBeenCalledWith('[strip-native-assets] removed /coloring/web-only');
     expect(log).toHaveBeenCalledWith(
-      '[strip-native-assets] stripped 2 web-responsive coloring tier(s).'
+      '[strip-native-assets] stripped 1/1 canonical folder(s) for 1 web-only book(s): web-only'
+    );
+    expect(log).toHaveBeenCalledWith(
+      '[strip-native-assets] stripped 2/2 web-responsive coloring tier root(s).'
     );
   });
 
@@ -356,6 +361,8 @@ describe('native build script entry points', () => {
         ...Object.values(page.nightImages),
         ...Object.values(page.chalkImages),
       ]),
+      `/coloring/max-1152px/${mobileBook.id}/page-tall.overlay.webp`,
+      `/coloring/max-240px/${mobileBook.id}/page-tall.thumb.webp`,
     ];
     for (const assetPath of assetPaths) writeFixture(join(staticDir, assetPath));
     exit.mockClear();

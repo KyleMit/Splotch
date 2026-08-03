@@ -11,6 +11,8 @@
   import { isNative } from '$lib/platform';
   import {
     COLORING_IMAGE_SIZES,
+    coloringBookGridLayout,
+    coloringOverlayImageSize,
     coverThumbImageSource,
     pageOverlayImageSource,
     pageThumbImageSource,
@@ -23,6 +25,7 @@
   import { layout } from '$lib/state/layout.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import {
+    cancelImageRequest,
     cancelImagePrefetchesExcept,
     prefetchImages,
     type ResponsiveImageRequest,
@@ -43,11 +46,9 @@
   // layout.orientation is only a fallback until the engine mounts.
   const orientation = $derived(canvasState.paperOrientation ?? layout.orientation);
   const overlayActive = $derived(!!overlayUrl());
-  const coverThumbnailSizes = $derived(
-    overlayActive
-      ? COLORING_IMAGE_SIZES.coverThumbnail.withClear
-      : COLORING_IMAGE_SIZES.coverThumbnail.withoutClear
-  );
+  const visibleBookTileCount: number = $derived(books.length + (overlayActive ? 1 : 0));
+  const bookGridLayout = $derived(coloringBookGridLayout(visibleBookTileCount));
+  const coverThumbnailSizes = $derived(bookGridLayout.imageSizes);
   const pageThumbnailSizes = $derived(COLORING_IMAGE_SIZES.pageThumbnail[orientation]);
 
   // Warm the cover thumbnails once at idle so the very first open of the picker
@@ -59,9 +60,8 @@
     return __IS_CAPACITOR__ ? image.src : { ...image, sizes };
   }
 
-  function currentCanvasImageSize(): string {
-    const width = document.getElementById('drawingCanvas')?.getBoundingClientRect().width;
-    return width ? `${width}px` : COLORING_IMAGE_SIZES.overlay;
+  function currentPaperImageSize(): string {
+    return coloringOverlayImageSize(canvasState.paperCssWidth);
   }
 
   $effect(() =>
@@ -87,7 +87,7 @@
     prefetchImages([
       imageRequest(
         pageOverlayImageSource(page, orientation, resolvedTheme()),
-        currentCanvasImageSize()
+        currentPaperImageSize()
       ),
     ]);
   }
@@ -102,7 +102,7 @@
   function pickPage(page: ColoringPage) {
     const selectedOverlayUrl = pageOverlayImageSource(page, orientation, resolvedTheme()).src;
     cancelImagePrefetchesExcept(selectedOverlayUrl);
-    for (const img of dialogEl.querySelectorAll('img')) img.removeAttribute('src');
+    for (const img of dialogEl.querySelectorAll('img')) cancelImageRequest(img);
     setOverlayPage(page, orientation);
     coloringBook.hide();
   }
@@ -130,12 +130,6 @@
     activeBook = book;
     hoverArmed = false;
   }
-
-  const visibleBookTileCount: number = $derived(books.length + (overlayActive ? 1 : 0));
-  const bookGridHasOrphan: boolean = $derived(
-    visibleBookTileCount > 1 && visibleBookTileCount % 4 === 1
-  );
-  const bookGridHasNineTiles: boolean = $derived(visibleBookTileCount === 9);
 </script>
 
 <dialog
@@ -163,8 +157,8 @@
         <h2>Coloring Books</h2>
         <div
           class="coloring-grid coloring-books-grid"
-          class:book-grid-has-orphan={bookGridHasOrphan}
-          class:book-grid-has-nine-tiles={bookGridHasNineTiles}
+          class:book-grid-has-orphan={bookGridLayout.hasOrphan}
+          class:book-grid-has-nine-tiles={bookGridLayout.hasNineTiles}
         >
           {#if overlayActive}
             <button

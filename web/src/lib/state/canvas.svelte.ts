@@ -24,4 +24,7 @@ export const canvasState = $state({
   // tall/wide art variant off this, not the live viewport, so a locked page
   // keeps the art the child colored on. null until the engine mounts.
   paperOrientation: null as 'portrait' | 'landscape' | null,
+  // CSS width of that same adopted/locked paper. Responsive overlay prefetches
+  // use this instead of the full pointer canvas, which diverges under ADR-0050.
+  paperCssWidth: 0,
 });

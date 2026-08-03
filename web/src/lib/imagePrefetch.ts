@@ -17,6 +17,11 @@ export interface ResponsiveImageRequest {
   sizes: string;
 }
 
+export function cancelImageRequest(img: HTMLImageElement): void {
+  if (img.srcset) img.removeAttribute('srcset');
+  img.removeAttribute('src');
+}
+
 export function prefetchImages(requests: Iterable<string | ResponsiveImageRequest>): void {
   if (typeof Image === 'undefined') return;
   for (const request of requests) {
@@ -42,8 +47,7 @@ export function prefetchImages(requests: Iterable<string | ResponsiveImageReques
 export function cancelImagePrefetchesExcept(preservedUrl: string): void {
   for (const [url, img] of activePrefetches) {
     if (url === preservedUrl) continue;
-    if (img.srcset) img.removeAttribute('srcset');
-    img.removeAttribute('src');
+    cancelImageRequest(img);
     activePrefetches.delete(url);
     warmed.delete(url);
   }
