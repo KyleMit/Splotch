@@ -159,6 +159,22 @@ one-line entry in the `scripts-info` block of `package.json`.
 
 <!-- Source: .ruler/github.md -->
 
+## Talking to GitHub
+
+**The GitHub MCP tools (`mcp__github__*`) are the interface to the GitHub API.** Reach for them
+first for PRs, issues, comments, reviews, labels, releases, and checks.
+
+The `gh` CLI is a **local-only** convenience. In a Claude Code on the web cloud session it is not
+installed and cannot be made to work — `GH_TOKEN` is inert (the egress proxy injects the real
+credential, so even a bogus value authenticates), `origin` is a loopback git proxy rather than a
+GitHub remote, GraphQL is refused, and direct REST to `api.github.com` is refused. A `gh` failure
+there is never an auth problem to fix: use the MCP tool.
+[ADR-0095](../docs/adrs/0095-cloud-sessions-use-github-mcp-not-gh-cli.md) has the probes and the
+rejected alternatives — do not re-derive them by installing `gh` or hunting for a token.
+
+Plain git (`fetch`, `commit`, `push`) is unaffected in both environments. Where a skill offers a
+`gh` recipe and an MCP equivalent, the `gh` one is for local sessions only.
+
 ## Writing on GitHub
 
 GitHub auto-links a `#` followed by digits (`#12`) into a reference to the issue or pull request

@@ -61,18 +61,17 @@ comment (per the per-item loop), don't force a shaky fix.
    * **Branch only** — commit + push to the branch, deliver the full per-item summary in the final
      response, open no PR.
 
-   If the environment can open a PR without an explicit ask (e.g. `gh` present and no harness
-   restriction), skip the question and default to **Draft PR**. Record the chosen mode; every
-   PR-touching step below (`gh pr comment`, `gh pr edit`, `gh pr ready`) runs only in Draft-PR mode
-   and is replaced by "carry it into the final summary" in Branch-only mode.
+   If the environment can open a PR without an explicit ask (the GitHub MCP tools are available and
+   no harness restriction applies), skip the question and default to **Draft PR**. Record the chosen
+   mode; every PR-touching step below runs only in Draft-PR mode and is replaced by "carry it into
+   the final summary" in Branch-only mode.
 4. Set up the branch, and in **Draft-PR mode** the PR. If an open draft PR from a previous run
    exists (branch `claude/audit-sweep-*`), check out that branch and resume. Otherwise, from `main`,
    create `claude/audit-sweep-<YYYY-MM-DD>` (or reuse the session's designated working branch if one
    is set), and push it with `git push -u origin <branch>`. Then, **in Draft-PR mode only**, open a
    **draft PR** titled "Audit sweep: <date>" with a body noting the run is in progress (final
-   summary comes at the end). Create it with `gh pr create
-   --draft` where `gh` is available,
-   otherwise the GitHub MCP `create_pull_request` tool with `draft: true`.
+   summary comes at the end). Create it with the GitHub MCP `create_pull_request` tool and
+   `draft: true` (or `gh pr create --draft` in a local session).
 
 ## Per-item loop
 
@@ -144,7 +143,7 @@ Process the issues in the sweep order chosen in Setup. For each issue:
      closes on merge** — `Fixes #<NN>` in the commit body — then push.
    * Record — the issue number/title, the commit SHA, the subagent's summary, test/check results,
      and any caveats worth a reviewer's attention. **In Draft-PR mode**, post it as a PR comment
-     (`gh pr comment`, or the GitHub MCP `add_issue_comment` tool on the PR number). **In
+     (the GitHub MCP `add_issue_comment` tool on the PR number, or `gh pr comment` locally). **In
      Branch-only mode**, accumulate it for the final response instead.
 3. **On Skip:**
    * Confirm the working tree is clean again (revert it yourself if the subagent didn't).
@@ -154,9 +153,9 @@ Process the issues in the sweep order chosen in Setup. For each issue:
      intentional / not reproducible), say so in the comment; a human can then close it. If it's
      blocked on a decision and the issue isn't already `needs-triage`, add that label
      (`issue_write`). Do **not** reference the issue in any commit — a skipped issue must not close.
-   * Flag the skipped issue and its reason — as a PR comment in Draft-PR mode (`gh pr comment`, or
-     the GitHub MCP `add_issue_comment` tool on the PR), or in the final summary in Branch-only
-     mode.
+   * Flag the skipped issue and its reason — as a PR comment in Draft-PR mode (the GitHub MCP
+     `add_issue_comment` tool on the PR, or `gh pr comment` locally), or in the final summary in
+     Branch-only mode.
 4. Move to the next issue. Do not stop between issues, do not ask the user anything mid-run — a
    decision point is handled by step 3, not by pausing.
 
@@ -180,13 +179,13 @@ When every issue is either fixed or skipped:
 3. Add one entry to `docs/AUDIT-LOG.md` for this run per `.claude/audit-conventions.md` §2 (date ·
    `fix-audits` · one-line summary with the PR link, or the branch name in Branch-only mode),
    committed and pushed with the completion changes.
-4. **In Draft-PR mode**, update the PR description (`gh pr edit --body`, or the GitHub MCP
-   `update_pull_request` tool's `body`): a one-line summary per change (linking each commit and the
-   issue it closes), plus — if any — a **"Needs your decision"** section listing each skipped issue
-   and what it's waiting on. **In Branch-only mode** there is no PR description — this content goes
-   in the final response instead.
-5. **In Draft-PR mode**, mark the PR ready for review (`gh pr ready`, or the GitHub MCP
-   `update_pull_request` tool with `draft: false`). Branch-only mode has no PR to ready.
+4. **In Draft-PR mode**, update the PR description (the GitHub MCP `update_pull_request` tool's
+   `body`, or `gh pr edit --body` locally): a one-line summary per change (linking each commit and
+   the issue it closes), plus — if any — a **"Needs your decision"** section listing each skipped
+   issue and what it's waiting on. **In Branch-only mode** there is no PR description — this content
+   goes in the final response instead.
+5. **In Draft-PR mode**, mark the PR ready for review (the GitHub MCP `update_pull_request` tool
+   with `draft: false`, or `gh pr ready` locally). Branch-only mode has no PR to ready.
 6. In your final response: how many issues were fixed (with their numbers), how many were skipped
    (and what each is waiting on), and — in Draft-PR mode — the PR URL, or in Branch-only mode the
    branch name plus the per-item summaries accumulated above.

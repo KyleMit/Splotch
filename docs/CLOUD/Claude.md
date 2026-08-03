@@ -20,6 +20,34 @@ The constraint that matters here is **networking**:
   The container shares no network with your phone or laptop, so the LAN (`dev:host`) and USB
   (`adb:reverse`) flows in the mobile guide do **not** apply in a cloud session.
 
+## GitHub access
+
+**Use the GitHub MCP tools (`mcp__github__*`) for every GitHub API interaction. The `gh` CLI does
+not work here and cannot be made to.** The rule is injected into every cloud session by
+`.claude/hooks/cloud-github-access.sh` (registered in `.claude/settings.json`, guarded by
+`CLAUDE_CODE_REMOTE` so `gh` still works locally).
+
+This is not an auth gap to plug. Four independent layers each break `gh` on their own:
+
+* **The binary is absent** (`gh: command not found`).
+* **`GH_TOKEN` / `GITHUB_TOKEN` are inert.** They're set, which makes a token fix look plausible,
+  but the egress proxy injects the real credential — a deliberately bogus `GH_TOKEN` still returns
+  the right user from `gh api user`. There is no token to install durably. (`gh auth status`
+  separately reports the token as invalid even when calls succeed; ignore it.)
+* **`origin` is a loopback git proxy**, not a github.com remote, so every repo-inferring `gh`
+  command fails with `none of the git remotes … point to a known GitHub host`.
+* **The API is gated for both transports** — GraphQL returns `403` outside a pinned PR-review set
+  (which is most of the CLI: `pr list`, `issue list`, `pr view`), and direct REST to
+  `api.github.com` returns `403` even for this repo.
+
+The MCP server holds its own installation credential out-of-band, which is why the same query
+succeeds through `mcp__github__*` and fails through `gh`. Full probes, the rejected alternatives
+(installing `gh` in the setup script, rewriting `origin`, connecting the App for direct API access),
+and the consequences are in [ADR-0095](../adrs/0095-cloud-sessions-use-github-mcp-not-gh-cli.md).
+
+**Plain git is unaffected** — `fetch`, `commit`, and `push` through `origin` work normally. Skills
+that ship `gh` recipes keep them for local use; take the MCP branch here.
+
 ## Per-session branch + Netlify preview
 
 Cloud sessions follow a fixed branching convention, injected into every session by

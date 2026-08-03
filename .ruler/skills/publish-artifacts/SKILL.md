@@ -23,10 +23,12 @@ Optional argument: a version (e.g. `/publish-artifacts 1.4.0`). If omitted it us
 
 ## Steps
 
-1. **Check what is on the release now.** Run
-   `gh release view v<version> --json assets --jq '.assets[].name'`. Report what is already attached
-   — if the expected artifacts are all there, say so and ask whether the user wants to re-upload
-   (the script clobbers by design, so re-running is safe and is the right fix for a wrong asset).
+1. **Check what is on the release now.** Run the GitHub MCP `get_release_by_tag` tool for
+   `v<version>` and read its asset names (locally,
+   `gh release view v<version> --json assets --jq '.assets[].name'`). Report what is already
+   attached — if the expected artifacts are all there, say so and ask whether the user wants to
+   re-upload (the script clobbers by design, so re-running is safe and is the right fix for a wrong
+   asset).
 
 2. **Verify before uploading.** Run `npm run release:publish -- --dry-run`. This reads the version
    out of each artifact's own bytes (the `.aab`'s protobuf `AndroidManifest.xml`, the `.ipa`'s
