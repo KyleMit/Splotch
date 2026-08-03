@@ -31,6 +31,8 @@ import {
 import { detectInventedShapes } from '../lib/invented-shapes.mjs';
 import * as F from './fixtures/synthetic.mjs';
 
+const SOLIDITY_FIXTURE_FRAME_COVERAGE_MAX = 0.6;
+
 // Run a group's gates over its fixtures → { fixture: Set<gateName that caught it> }.
 async function catchMatrix(gates, fixtures) {
   const rows = {};
@@ -82,6 +84,16 @@ describe('line-art gates (solidity, eye-rings, frame)', () => {
   it('no gate fires on a good fixture', async () => {
     const matrix = await catchMatrix(gates, fixtures);
     for (const f of good) expect([...matrix[f]], `${f} should pass every gate`).toEqual([]);
+  });
+
+  it.each([
+    ['solid-pupil', F.solidPupilOutline],
+    ['fake-hollow', F.fakeHollowOutline],
+    ['thin-stroke', F.thinStrokeOutline],
+  ])('keeps the %s fixture well outside frame territory', async (_name, buildFixture) => {
+    const result = await scoreOutlineFrame(await buildFixture());
+
+    expect(result.sideCoverage).toBeLessThan(SOLIDITY_FIXTURE_FRAME_COVERAGE_MAX);
   });
 });
 

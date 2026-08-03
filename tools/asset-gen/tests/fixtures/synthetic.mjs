@@ -52,12 +52,29 @@ const encode = (c) =>
     .toBuffer();
 
 // ===================== SOLIDITY (lib/solid-regions.mjs) =====================
+const SOLIDITY_FRAME_NOTCH_HALF_HEIGHT_PX = 80;
+
+function solidityFixtureCanvas() {
+  const c = canvas(400, 400);
+  rectStroke(c, 40, 40, 360, 360, 4);
+  const centerY = c.h / 2;
+  // The wide opening keeps the border from tripping the independent frame gate,
+  // preserving each fixture's single-gate role in the redundancy matrix.
+  fillRect(
+    c,
+    356,
+    centerY - SOLIDITY_FRAME_NOTCH_HALF_HEIGHT_PX,
+    365,
+    centerY + SOLIDITY_FRAME_NOTCH_HALF_HEIGHT_PX,
+    255
+  );
+  return c;
+}
+
 // BROKEN: a large SOLID black pupil disc — the class the punch/invert can't
 // survive (biggestBlob far over SOLID_BLOB_MAX).
 export function solidPupilOutline() {
-  const c = canvas(400, 400);
-  rectStroke(c, 40, 40, 360, 360, 4);
-  fillRect(c, 356, 170, 365, 230, 255);
+  const c = solidityFixtureCanvas();
   ring(c, 150, 200, 40, 4);
   disc(c, 150, 200, 22, 0); // the solid pupil
   ring(c, 260, 200, 40, 4);
@@ -67,9 +84,7 @@ export function solidPupilOutline() {
 // GOOD: the same page drawn with thin strokes only — nothing survives the
 // erosion (biggestBlob ≈ 0).
 export function thinStrokeOutline() {
-  const c = canvas(400, 400);
-  rectStroke(c, 40, 40, 360, 360, 4);
-  fillRect(c, 356, 170, 365, 230, 255);
+  const c = solidityFixtureCanvas();
   ring(c, 150, 200, 40, 4);
   ring(c, 150, 200, 18, 4);
   ring(c, 260, 200, 40, 4);
@@ -80,9 +95,7 @@ export function thinStrokeOutline() {
 // the blob bar, but whose TOTAL surviving interior clears SOLID_INTERIOR_MAX —
 // the fake-hollow class the interiorPx bar exists to catch.
 export function fakeHollowOutline() {
-  const c = canvas(400, 400);
-  rectStroke(c, 40, 40, 360, 360, 4);
-  fillRect(c, 356, 170, 365, 230, 255);
+  const c = solidityFixtureCanvas();
   disc(c, 150, 200, 14, 0);
   disc(c, 250, 200, 14, 0);
   return encode(c);
