@@ -180,8 +180,8 @@ dd296826c4cd5035dd4eb6263c844d8abfe6b3e7abe5439ef69efebe935f5e94  tools/asset-ge
 424396a2eea577bb773f17d1868cafdb5ff0996579944cffe990e2fb4e44aa6a  tools/asset-gen/fill-src/vehicles/garbage-wide.night.raw.webp
 8dd50421f4cf92b42412c61e4a9faff3340fff4fb2e6df4899224bb55dbefec6  tools/asset-gen/fill-src/vehicles/monster-tall.light.raw.webp
 04d59c5cab3cfbfc64dadb35a755fc9e9ed9378d62853fe90c0c015424015b24  tools/asset-gen/fill-src/vehicles/monster-tall.night.raw.webp
-050d15618f9e7113e3bb7d09999e95f020568ef486ead78e103df0904a6fc7ef  tools/asset-gen/fill-src/vehicles/monster-wide.light.raw.webp
-d333442ec2c5fe5750a856e64d2f5696c49099c6f623ba52015f9f43cb013dac  tools/asset-gen/fill-src/vehicles/monster-wide.night.raw.webp
+f4a9b21eaede1172d15d502405b2baa7928b19a4434971709392c26925d29cf2  tools/asset-gen/fill-src/vehicles/monster-wide.light.raw.webp
+9b03d2aa568218cd2a58daa7d546ccc8deee6683cdc06475073933d34ffdffcd  tools/asset-gen/fill-src/vehicles/monster-wide.night.raw.webp
 c8cba536edc713a808c8a24272c1e03de49d00d320e8e3f9706b67f29904542d  tools/asset-gen/fill-src/vehicles/police-tall.light.raw.webp
 39d16e416060e1efb2405d431c31fc5f2ebc203df4c9dd3c38a4fb74f5e7514c  tools/asset-gen/fill-src/vehicles/police-tall.night.raw.webp
 d17615bffefdad27456622a0ccb333667e1864c613954dbf6cc2be64d3e39227  tools/asset-gen/fill-src/vehicles/police-wide.light.raw.webp
@@ -667,7 +667,7 @@ ee22ae0795e7fdb17fe6b789b3c4547416b2b435d3747fdc4fbe245572d3e772  web/static/col
 7f49d191e913cec1b1d2ad9071521ef2c73f3fa72a28fb997029da12d9720809  web/static/coloring/max-1152px/vehicles/monster-tall.dark.overlay.webp
 c29063b33cfda9fe2b3e05746c8faa50f40c16f9c798cc5f363c767235ef5f6e  web/static/coloring/max-1152px/vehicles/monster-tall.overlay.webp
 9c6ee3297b8fd763d9565a2b69816e6d2f23afc3c5e6ec2c3d791497eb86d635  web/static/coloring/max-1152px/vehicles/monster-wide.dark.overlay.webp
-15480759015e74c28e145155f66463aa72daf4a5813423c6238466cedc14fc03  web/static/coloring/max-1152px/vehicles/monster-wide.overlay.webp
+f91a9c660d29389356b4506546cace6ef1b60321ea7b49143bfbba67fc23265c  web/static/coloring/max-1152px/vehicles/monster-wide.overlay.webp
 7c13c903b21d95cf8e6f88a432a4a589a8f52a85bed408153cbbcf7f8bf3d2e2  web/static/coloring/max-1152px/vehicles/police-tall.dark.overlay.webp
 ca5c631fd9fb3affc4cd6c68cba1f636f6f55c0df563fbe415d00d270d5c7713  web/static/coloring/max-1152px/vehicles/police-tall.overlay.webp
 6348904b2ec1c00db8271fef784f059b9a90ca6ce0acc127f8e60fc3069180e0  web/static/coloring/max-1152px/vehicles/police-wide.dark.overlay.webp
@@ -867,7 +867,7 @@ d90ed87fe3e83a42c10a26d39434b0716ee7f18ac461986346ff391d0a2c3e2e  web/static/col
 436c83bcab554de9610238ba5d5d405261375a2628f233772aa88f0289d5c59e  web/static/coloring/max-240px/vehicles/monster-tall.chalk.thumb.webp
 9176751effa6256a387bb615b27acf46d53fefa50a672a1b0211330556e8b7a7  web/static/coloring/max-240px/vehicles/monster-tall.thumb.webp
 6ba34e68114010f8b16313f921b7b3fa10754710538cff42f53e3734c5732fd3  web/static/coloring/max-240px/vehicles/monster-wide.chalk.thumb.webp
-f8a64c07c0d92e468be9efc2419eaa231db6ef622a1634d2a94029826464c2a8  web/static/coloring/max-240px/vehicles/monster-wide.thumb.webp
+91d346842fe629ea59a96aa1c729ff23b8b37c716975c14e38973e9e2b515752  web/static/coloring/max-240px/vehicles/monster-wide.thumb.webp
 29fa948b4f685bb9b048828c92f2bc3b48e0e9c97b763f118ff9d2ef0f7c1222  web/static/coloring/max-240px/vehicles/police-tall.chalk.thumb.webp
 32ec510cdf7d34ea396745595d56e55c61c3e00447d330fec7fbdf428bce6914  web/static/coloring/max-240px/vehicles/police-tall.thumb.webp
 8a494dd2b64a89102fc0401bc16c794d1da047c82435497b2d8be5318cda2647  web/static/coloring/max-240px/vehicles/police-wide.chalk.thumb.webp
@@ -1329,11 +1329,11 @@ cf440846c73f54a1bf107b382f5852128fc5fa816bd022a4208a83d1c4807084  web/static/col
 13280bd40b951328670de648c0b5e6ef82e23626b253f8449b24c7419405b79d  web/static/coloring/vehicles/monster-wide.chalk.thumb.webp
 7e14c4d0ebd1dc0c71bca558f8fc20c95cd9c640dbf7d63866559ef488333676  web/static/coloring/vehicles/monster-wide.chalk.webp
 8fe44700e4ed33d96638f590804c1dadc6f0a6d867b5c9ccfd0c6b3ccc195b1b  web/static/coloring/vehicles/monster-wide.dark.overlay.webp
-3a7611b8d0d8a18d9c3dfe68bbac0e205e21950492aee73a4eb65b99f5fc04db  web/static/coloring/vehicles/monster-wide.light.webp
-d7cf141b062b9e80b6de14fc300a6bd2d2b1b8d98afef490d97f07b97e02e94e  web/static/coloring/vehicles/monster-wide.night.webp
-7a55a8c41e28a5f0dcfcd6356eedcb7f7b2947f718c816f7555e81cc431e6dd0  web/static/coloring/vehicles/monster-wide.outline.webp
-0f9cf855d0a28da86c12f7cfd5238a03a9f9cfa60b35a3a6234e14ee94429709  web/static/coloring/vehicles/monster-wide.overlay.webp
-64b06c9d8738fa7830f206de03b71d3df9531f7eb0e167afc937f32f3535c069  web/static/coloring/vehicles/monster-wide.thumb.webp
+787f3e6910f7a7db195d1c524b736402a0d344e9716fda79cfd6534b53d3e5ad  web/static/coloring/vehicles/monster-wide.light.webp
+0dfc6adcc83eba1ce470658c61e014a131ffe7a46f648944d0eb27d100e77be1  web/static/coloring/vehicles/monster-wide.night.webp
+9c9a01ad02770ef334f793947983f677133f44922070916a8b9d373903ffa221  web/static/coloring/vehicles/monster-wide.outline.webp
+584f00b4a589a3d734584fd7f775d525dfb6c9ab6ea529680cf7e2fb79a05040  web/static/coloring/vehicles/monster-wide.overlay.webp
+92358e5b54fa7245d652e57693acb6228623d3490a63b683fb8dc46de61dbbb9  web/static/coloring/vehicles/monster-wide.thumb.webp
 31b226facb5c75d6e95612fd21c0cd39998c44ac834311c18e4b16106550e7c0  web/static/coloring/vehicles/police-tall.chalk.thumb.webp
 a0e79ef784aefb0ab9198db8c7345e23f76b62f2fcc296890bb3f8402ca98230  web/static/coloring/vehicles/police-tall.chalk.webp
 faf51f7706dbd829041a8fa1ba887aa4c239e4d827d5a33741873167d2c5b1c3  web/static/coloring/vehicles/police-tall.dark.overlay.webp
