@@ -3,6 +3,7 @@
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import Button from '$lib/components/design/Button.svelte';
   import BrandSections from '$lib/components/styleguide/BrandSections.svelte';
+  import ChromeSections from '$lib/components/styleguide/ChromeSections.svelte';
   import PrimitiveSections from '$lib/components/styleguide/PrimitiveSections.svelte';
   import TokenSections from '$lib/components/styleguide/TokenSections.svelte';
   import { applyTheme, isThemePreference, type ThemePreference } from '$lib/theme';
@@ -58,6 +59,7 @@
   <BrandSections />
   <TokenSections />
   <PrimitiveSections />
+  <ChromeSections />
 </main>
 
 <style>

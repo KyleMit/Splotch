@@ -148,10 +148,12 @@ component table above when you do.
 
 `/design` — public, live at <https://splotch.art/design> — renders the whole system from the real
 source objects: the voice specimens and brand marks, every token group, the icon set split by
-`COLOR_ICONS`, and the primitives, with a light/system/dark toggle. Its sections are the partials in
-`lib/components/styleguide/` (`BrandSections`, `TokenSections`, `PrimitiveSections`); because
-everything is imported from `tokens.ts`, `palette.ts`, and the icon glob, the page cannot drift from
-the implementation. `prerender = false` keeps the page out of the native static export — no native
+`COLOR_ICONS`, the primitives, the settings furniture (`ToggleRow`, `SliderRow`), specimens of the
+shared `app.css` chrome classes, and a named index of the bespoke canvas/page chrome, with a
+light/system/dark toggle. Its sections are the partials in `lib/components/styleguide/`
+(`BrandSections`, `TokenSections`, `PrimitiveSections`, `ChromeSections`); because everything is
+imported from `tokens.ts`, `palette.ts`, and the icon glob, the page cannot drift from the
+implementation. `prerender = false` keeps the page out of the native static export — no native
 surface links to it — and serves it via SSR on the web. Use it to:
 
 * review a token or primitive change in both themes (screenshot it for the PR — see the
