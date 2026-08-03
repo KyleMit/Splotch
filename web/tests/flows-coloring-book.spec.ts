@@ -52,6 +52,20 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.overlay\.webp$/);
 });
 
+test('the Clear Page book grid fits a short laptop modal without scrolling', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await gotoApp(page);
+  await openDrawer(page);
+  await applyFarmPage(page);
+  await openColoringDialog(page);
+
+  const dialog = page.locator('#coloring-book-dialog');
+  await expect(dialog.locator('.coloring-books-grid > .coloring-tile')).toHaveCount(9);
+  await expect
+    .poll(() => dialog.evaluate((element) => element.scrollHeight - element.clientHeight))
+    .toBeLessThanOrEqual(0);
+});
+
 test('a selected page stays hidden while full-resolution art decodes', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   let releaseFullImage!: () => void;

@@ -176,9 +176,10 @@
 
 <style>
   .coloring-book-modal {
+    --coloring-book-modal-max-height: 85vh;
     max-width: min(920px, calc(100vw - 32px));
     width: 90%;
-    max-height: 85vh;
+    max-height: var(--coloring-book-modal-max-height);
     overflow-y: auto;
   }
 
@@ -254,6 +255,9 @@
 
   .coloring-books-grid {
     --book-cols: 4;
+    --book-grid-max-width: 856px;
+    width: min(100%, var(--book-grid-max-width));
+    margin-inline: auto;
     grid-template-columns: repeat(var(--book-cols), minmax(0, 1fr));
   }
 
@@ -261,6 +265,16 @@
      that orphan use the next-lower column count. This also covers Clear Page. */
   .coloring-books-grid:has(> :where(:nth-child(5):last-child, :nth-child(9):last-child)) {
     --book-cols: 3;
+  }
+
+  .coloring-books-grid:has(> :nth-child(9):last-child) {
+    --book-grid-roomy-max-width: 639px;
+    /* Reserve the non-grid content and whole-pixel rounding inside the modal cap. */
+    --book-grid-height-reserve: 115px;
+    --book-grid-max-width: min(
+      var(--book-grid-roomy-max-width),
+      calc(var(--coloring-book-modal-max-height) - var(--book-grid-height-reserve))
+    );
   }
 
   .coloring-pages-grid {
