@@ -55,7 +55,7 @@ The checker then enforces these invariants:
 * a genuinely added record does not take a number the live base already assigns to another record;
 * every record H1 names the same number as its filename;
 * every record appears exactly once in `docs/adrs/README.md`; and
-* each canonical index link's text number matches its target filename, and the target exists.
+* every local ADR link's text number matches its target filename, and the target exists.
 
 The base comparison uses rename-aware Git additions so retitling a record without changing its
 number does not resemble a collision. An unreadable base emits a warning and narrows validation to
@@ -63,9 +63,11 @@ the working tree rather than silently claiming the stronger comparison.
 
 Index parsing is deliberately targeted rather than a general Markdown parser. Canonical entries are
 the leading link in a Start here bullet or the leading link in a section table row; links in status
-text and prose are cross-references and do not count as entries. This is sufficient to test coverage
-and link-text agreement while leaving section placement and order to review. Failures emit plain
-diagnostics locally and dependency-free GitHub workflow annotations in CI.
+text and prose are cross-references and do not count toward exact-once coverage, but their labels
+and targets are still validated. Fenced examples are ignored, while a leading `./` and a fragment on
+a local target are normalized because they do not change the linked record. This is sufficient to
+test coverage and link-text agreement while leaving section placement and order to review. Failures
+emit plain diagnostics locally and dependency-free GitHub workflow annotations in CI.
 
 ## Consequences
 

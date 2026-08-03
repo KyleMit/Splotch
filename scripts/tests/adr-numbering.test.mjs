@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   adrIndexEntries,
+  adrLinks,
   adrNumber,
   collisionsAgainstBase,
   duplicateNumbers,
@@ -148,6 +149,38 @@ describe('adrIndexEntries', () => {
       { number: '0002', file: '0002-two.md', line: 6 },
     ]);
   });
+
+  it('ignores Historical bare-number rows and their moved-record links', () => {
+    const markdown =
+      '| 0053 | Asset-Generation Pipeline | Moved to [asset-gen docs](../../tools/asset-gen/docs/architecture.md) |';
+
+    expect(adrIndexEntries(markdown)).toEqual([]);
+    expect(adrLinks(markdown)).toEqual([]);
+    expect(indexIntegrity([], markdown)).toEqual({
+      missing: [],
+      duplicates: [],
+      mismatches: [],
+      unknown: [],
+    });
+  });
+
+  it('ignores canonical-looking examples inside backtick and tilde fences', () => {
+    const markdown = `\`\`\`markdown
+| [0001](0001-one.md) | One | Active |
+\`\`\`
+~~~markdown
+* **[0002 — Two](0002-two.md)**
+~~~`;
+
+    expect(adrIndexEntries(markdown)).toEqual([]);
+    expect(adrLinks(markdown)).toEqual([]);
+  });
+
+  it('normalizes relative prefixes and fragments in canonical targets', () => {
+    const markdown = '| [0001](./0001-one.md#context) | One | Active |';
+
+    expect(adrIndexEntries(markdown)).toEqual([{ number: '0001', file: '0001-one.md', line: 1 }]);
+  });
 });
 
 describe('indexIntegrity', () => {
@@ -196,6 +229,44 @@ describe('indexIntegrity', () => {
         file: '0082-resident-snapshot-tier-byte-budget.md',
         line: 1,
       },
+    ]);
+  });
+
+  it('checks a Status-cell cross-reference without counting it as a canonical entry', () => {
+    const markdown = `| [0001](0001-one.md) | One | Superseded by [0002](0003-three.md) |
+| [0003](0003-three.md) | Three | Active |`;
+
+    const integrity = indexIntegrity(['0001-one.md', '0003-three.md'], markdown);
+    expect(integrity.duplicates).toEqual([]);
+    expect(integrity.mismatches).toEqual([
+      { number: '0002', expected: '0003', file: '0003-three.md', line: 1 },
+    ]);
+  });
+
+  it('reports a nonexistent target from a Status-cell cross-reference', () => {
+    const markdown = '| [0001](0001-one.md) | One | Superseded by [0002](0002-missing.md) |';
+
+    expect(indexIntegrity(['0001-one.md'], markdown).unknown).toEqual([
+      { number: '0002', file: '0002-missing.md', line: 1 },
+    ]);
+  });
+
+  it('accepts relative prefixes and fragments as equivalent local ADR targets', () => {
+    const markdown = '| [0001](./0001-one.md#context) | One | Active |';
+
+    expect(indexIntegrity(['0001-one.md'], markdown)).toEqual({
+      missing: [],
+      duplicates: [],
+      mismatches: [],
+      unknown: [],
+    });
+  });
+
+  it('reports an ADR target whose link text has no canonical four-digit label', () => {
+    const markdown = '| [0001 - One](0001-one.md) | One | Active |';
+
+    expect(indexIntegrity(['0001-one.md'], markdown).mismatches).toEqual([
+      { number: null, expected: '0001', file: '0001-one.md', line: 1 },
     ]);
   });
 
@@ -272,9 +343,26 @@ describe('formatProblems', () => {
     });
 
     expect(lines).toHaveLength(4);
-    expect(lines[0]).toContain('no canonical entry');
+    expect(lines[0]).toContain('no entry in a canonical index position');
     expect(lines[1]).toContain('lines 10, 20');
     expect(lines[2]).toContain('ADR-0078');
     expect(lines[3]).toContain('not an ADR record');
+  });
+
+  it('describes an index link label that has no canonical four-digit number', () => {
+    const [line] = formatProblems({
+      duplicates: [],
+      collisions: [],
+      mismatches: [],
+      index: {
+        missing: [],
+        duplicates: [],
+        mismatches: [{ number: null, expected: '0001', file: '0001-one.md', line: 5 }],
+        unknown: [],
+      },
+      baseRef: 'origin/main',
+    });
+
+    expect(line).toContain('something other than a four-digit ADR number');
   });
 });

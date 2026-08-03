@@ -53,7 +53,7 @@ decisions in `docs/adrs/`.
    unindented Start here bullet whose leading link is bold
    (`* **[NNNN — Title](NNNN-kebab-title.md)**`), or a section table row whose first cell is
    `[NNNN](NNNN-kebab-title.md)`. Status text, summaries, and other cross-links do not count as the
-   record's index entry.
+   record's index entry, but every local ADR link label must still match its target filename.
 
 ## ADR template
 

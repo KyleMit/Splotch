@@ -179,7 +179,7 @@
     "precheck": "Verify every native/tooling app ID matches canonical capacitor.config.json.appId, then generate .svelte-kit types (svelte-kit sync) so type checking can run standalone",
     "check": "svelte-check / type checking (one-shot; warnings fail too, so compiler hints like non_reactive_update gate CI)",
     "check:watch": "svelte-check in watch mode",
-    "check:adrs": "Fails when docs/adrs/ identity or index invariants drift: unique numbers across this tree and its base, matching H1s, and exactly one correctly numbered index entry per record; run by the ADR Integrity workflow on every PR (pass --base=<ref>; defaults to origin/main)",
+    "check:adrs": "Fails when docs/adrs/ identity or index invariants drift: unique numbers across this tree and its base, matching H1s, exactly one canonical index entry per record, and matching labels and targets for every local ADR link; run by the ADR Integrity workflow on every PR (pass --base=<ref>; defaults to origin/main)",
     "check:assets": "Validate that every coloring-book asset exists on disk (auto-runs before release)",
     "check:assets:manifest": "CI guard for gen:assets:manifest: fail if any committed art asset's bytes drifted from tools/asset-gen/golden/asset-manifest.sha256 (e.g. a night pass touched a light file); run gen:assets:manifest and commit to fix",
     "img:audit": "Optimize every shipped/inlined SVG under web/ in place with SVGO (visually-lossless preset; keeps viewBox). Idempotent — re-running only rewrites new/edited SVGs. Skips generator-input SVGs (large-image.svg, styles/source.svg)",

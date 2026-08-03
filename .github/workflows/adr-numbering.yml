@@ -1,8 +1,9 @@
 # Guards the mechanical identity and index invariants for docs/adrs/: each number
 # identifies one record permanently, each H1 agrees with its filename, and each
-# record has one correctly numbered canonical index entry. Two records sharing a
-# number makes every "ADR-NNNN" reference ambiguous, including references already
-# written into merged records and commit messages that cannot be rewritten.
+# record has one canonical index entry while every local ADR link agrees with its
+# target. Two records sharing a number makes every "ADR-NNNN" reference ambiguous,
+# including references already written into merged records and commit messages
+# that cannot be rewritten.
 #
 # Deliberately NOT path-filtered, so it reports on every pull request and is safe
 # to mark required. A workflow skipped by a path filter leaves its check Pending

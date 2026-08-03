@@ -109,7 +109,8 @@ export function checkAdrNumbering() {
   if (problems.length === 0) {
     const records = head.filter((entry) => adrNumber(entry) !== null).length;
     console.log(
-      `ADR integrity OK — ${records} records, every number unique and every record indexed once.`
+      `ADR integrity OK — ${records} records, every number unique, every record indexed once, ` +
+        `and every local ADR link valid.`
     );
     return;
   }
@@ -131,7 +132,7 @@ export function checkAdrNumbering() {
     annotate('error', file, `Heading does not match the filename's number ${expected}`);
   }
   for (const file of index.missing) {
-    annotate('error', file, 'ADR record is missing from README.md');
+    annotate('error', file, 'ADR record has no entry in a canonical README.md position');
   }
   for (const { file, entries } of index.duplicates) {
     for (const { line } of entries) {
@@ -154,7 +155,8 @@ export function checkAdrNumbering() {
   for (const problem of problems) console.error(`  • ${problem}`);
   console.error(
     `\nEvery ADR must have one unique number, a matching H1, and exactly one ` +
-      `correctly numbered canonical entry in ${ADR_DIR}/README.md.`
+      `canonical entry in ${ADR_DIR}/README.md; every local ADR link must have a matching ` +
+      `label and existing target.`
   );
   if (duplicates.length > 0 || collisions.length > 0) {
     const free = nextAdrNumber([...head, ...(base ?? [])]);

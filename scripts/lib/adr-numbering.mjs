@@ -1,8 +1,10 @@
 const ADR_FILENAME = /^(\d{4})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
 const NUMBER_PREFIXED = /^\d{4}/;
 const ADR_HEADING = /^#\s*ADR-(\d{4})\b/;
-const ADR_INDEX_ENTRY = /^(?:\* \*\*|\| )\[([^\]]+)\]\(([^)\s]+\.md)\)/;
+const ADR_INDEX_ENTRY = /^(?:\* \*\*|\| )\[([^\]]+)\]\(([^)\s]+)\)/;
 const ADR_INDEX_NUMBER = /^(\d{4})(?:\s+—|$)/;
+const MARKDOWN_LINK = /\[([^\]]+)\]\(([^)\s]+)\)/g;
+const FENCE_MARKER = /^\s*(`{3,}|~{3,})/;
 
 export const ADR_DIR = 'docs/adrs';
 
@@ -90,6 +92,31 @@ export function headingMismatches(records) {
   return mismatches;
 }
 
+function* unfencedLines(markdown) {
+  let fence = null;
+  for (const [index, line] of markdown.split('\n').entries()) {
+    const match = FENCE_MARKER.exec(line);
+    if (match) {
+      const marker = match[1];
+      if (fence === null) {
+        fence = marker;
+      } else if (
+        marker[0] === fence[0] &&
+        marker.length >= fence.length &&
+        line.slice(match[0].length).trim() === ''
+      ) {
+        fence = null;
+      }
+      continue;
+    }
+    if (fence === null) yield [index, line];
+  }
+}
+
+function normalizedAdrTarget(target) {
+  return target.replace(/^(?:\.\/)+/, '').split('#', 1)[0];
+}
+
 /**
  * The index's canonical entries are either the leading link in a Start here
  * bullet or the leading link in a section table row. Restricting parsing to
@@ -98,22 +125,41 @@ export function headingMismatches(records) {
  */
 export function adrIndexEntries(markdown) {
   const entries = [];
-  for (const [index, line] of markdown.split('\n').entries()) {
+  for (const [index, line] of unfencedLines(markdown)) {
     const match = ADR_INDEX_ENTRY.exec(line);
     if (!match) continue;
     entries.push({
       number: ADR_INDEX_NUMBER.exec(match[1])?.[1] ?? null,
-      file: match[2],
+      file: normalizedAdrTarget(match[2]),
       line: index + 1,
     });
   }
   return entries;
 }
 
+/**
+ * Every local ADR link participates in label/target agreement, including links
+ * in Status cells and prose. External moved-record links are outside this
+ * directory's identity contract.
+ */
+export function adrLinks(markdown) {
+  const links = [];
+  for (const [index, line] of unfencedLines(markdown)) {
+    for (const match of line.matchAll(MARKDOWN_LINK)) {
+      const number = ADR_INDEX_NUMBER.exec(match[1])?.[1] ?? null;
+      const file = normalizedAdrTarget(match[2]);
+      if (file.includes('/') || !NUMBER_PREFIXED.test(file)) continue;
+      links.push({ number, file, line: index + 1 });
+    }
+  }
+  return links;
+}
+
 export function indexIntegrity(filenames, markdown) {
   const records = adrFilenames(filenames);
   const recordSet = new Set(records);
   const entries = adrIndexEntries(markdown);
+  const links = adrLinks(markdown);
   const entriesByFile = new Map();
 
   for (const entry of entries) {
@@ -127,11 +173,19 @@ export function indexIntegrity(filenames, markdown) {
     const matches = entriesByFile.get(file) ?? [];
     return matches.length > 1 ? [{ file, entries: matches }] : [];
   });
-  const mismatches = entries.flatMap((entry) => {
-    const expected = adrNumber(entry.file);
-    return expected !== null && entry.number !== expected ? [{ ...entry, expected }] : [];
+  const mismatches = links.flatMap((link) => {
+    const expected = adrNumber(link.file);
+    return expected !== null && link.number !== expected ? [{ ...link, expected }] : [];
   });
-  const unknown = entries.filter((entry) => !recordSet.has(entry.file));
+  const unknown = links.filter((link) => !recordSet.has(link.file));
+  for (const entry of entries) {
+    if (
+      !recordSet.has(entry.file) &&
+      !unknown.some(({ file, line }) => file === entry.file && line === entry.line)
+    ) {
+      unknown.push(entry);
+    }
+  }
 
   return { missing, duplicates, mismatches, unknown };
 }
@@ -160,7 +214,7 @@ export function formatProblems({ duplicates, collisions, mismatches, index, base
     );
   }
   for (const file of index?.missing ?? []) {
-    lines.push(`${file} has no canonical entry in ${ADR_DIR}/README.md`);
+    lines.push(`${file} has no entry in a canonical index position in ${ADR_DIR}/README.md`);
   }
   for (const { file, entries } of index?.duplicates ?? []) {
     lines.push(
