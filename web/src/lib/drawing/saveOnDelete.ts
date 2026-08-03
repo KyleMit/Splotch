@@ -1,6 +1,5 @@
 import { settings } from '$lib/state/settings.svelte';
 import { exportCanvasBlob, isCanvasEmpty } from './engine';
-import { getActiveOverlayImage } from './overlay';
 
 // Deliberately imported statically by ClearButton (unlike the other save
 // entry points): onClear must invoke exportCanvasBlob synchronously so its
@@ -14,7 +13,7 @@ export async function saveDrawingIfEnabled() {
 
   const screenshotModule = import('./screenshot');
   void screenshotModule.catch(() => undefined);
-  const blob = await exportCanvasBlob(getActiveOverlayImage());
+  const blob = await exportCanvasBlob();
   if (!blob) return;
   const { saveImageBlob } = await screenshotModule;
   await saveImageBlob(blob);

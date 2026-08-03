@@ -4,7 +4,8 @@
 // a book's page thumbs are warmed when its tile is pressed, and a page's presentation
 // overlay is warmed on hover/press so applying it to the canvas is immediate.
 //
-// Each canonical URL is requested once per session (deduped) via a detached Image(); the
+// Each logical image is keyed by its canonical src and requested once per
+// session via a detached Image(); srcset may select a responsive candidate. The
 // element is never inserted, so it just primes the cache and is GC'd. No-ops
 // during SSR where Image is undefined.
 

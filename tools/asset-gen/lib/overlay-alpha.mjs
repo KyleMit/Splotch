@@ -14,6 +14,11 @@ export function quantizeOverlayRgba(rgba) {
 }
 
 export function maxOverlayAlphaError(expectedRgba, actualRgba) {
+  if (expectedRgba.length !== actualRgba.length) {
+    throw new RangeError(
+      `Overlay buffers must have the same byte length (${expectedRgba.length} !== ${actualRgba.length}).`
+    );
+  }
   let maxError = 0;
   for (let offset = 3; offset < expectedRgba.length; offset += 4) {
     maxError = Math.max(maxError, Math.abs(expectedRgba[offset] - actualRgba[offset]));

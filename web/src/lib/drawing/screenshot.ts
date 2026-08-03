@@ -1,6 +1,5 @@
 import type { MediaPlugin } from '@capacitor-community/media';
 import { exportCanvasBlob } from './engine';
-import { getActiveOverlayImage } from './overlay';
 import { isNative, getPlatform } from '$lib/platform';
 import {
   DRAWING_BASENAME,
@@ -94,9 +93,8 @@ export async function saveImageBlob(
 
 async function saveScreenshotImage() {
   playScreenshotFeedback();
-  const overlayImage = getActiveOverlayImage();
   const preview = createPolaroidPreviewRequest();
-  const blob = await exportCanvasBlob(overlayImage, preview ? { preview } : undefined);
+  const blob = await exportCanvasBlob(preview ? { preview } : undefined);
   if (!blob) return false;
   return saveImageBlob(blob, undefined, { allowPrompt: true });
 }

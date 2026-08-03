@@ -69,7 +69,11 @@ describe('responsive coloring catalog', () => {
 
         if (asset.encoding === 'overlay') {
           const expected = await sharp(sourcePath)
-            .resize(asset.maxEdgePx, asset.maxEdgePx, { fit: 'inside', kernel: 'lanczos3' })
+            .resize(asset.maxEdgePx, asset.maxEdgePx, {
+              fit: 'inside',
+              kernel: 'lanczos3',
+              withoutEnlargement: true,
+            })
             .ensureAlpha()
             .raw()
             .toBuffer();

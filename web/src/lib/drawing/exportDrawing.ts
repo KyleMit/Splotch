@@ -13,6 +13,7 @@
 import { PAPER_COLORS } from '../theme';
 import { resolvedTheme } from '../state/appearance.svelte';
 import { drawExportOverlay, paintExportPaper, type ExportContext } from './exportCompositor';
+import type { ExportOverlaySource } from './overlay';
 import { encodeCanvasPng, encodeTiledCanvasPng } from './pngEncoder';
 import type { TiledCanvasSnapshot } from './tiledSurfaces';
 
@@ -63,6 +64,23 @@ function loadPaperTexture(): Promise<HTMLImageElement | null> {
   return paperTexturePromise;
 }
 
+function loadExportOverlay(
+  overlaySource: ExportOverlaySource | null
+): Promise<HTMLImageElement | null> {
+  if (!overlaySource) return Promise.resolve(null);
+  if (overlaySource.decodedCanonicalImage) {
+    return Promise.resolve(overlaySource.decodedCanonicalImage);
+  }
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => {
+      reject(new Error(`Failed to load canonical coloring overlay: ${overlaySource.canonicalUrl}`));
+    };
+    image.src = overlaySource.canonicalUrl;
+  });
+}
+
 // Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
 // first export. The engine calls this from its own idle warm of this module.
 export function warmPaperTexture() {
@@ -72,7 +90,7 @@ export function warmPaperTexture() {
 export async function composeExportPng(
   snapshot: ExportSnapshot,
   renderScale: number,
-  overlayImage: HTMLImageElement | null = null,
+  overlaySource: ExportOverlaySource | null = null,
   options: ExportOptions = {}
 ): Promise<Blob | null> {
   const { includePaperTexture = true, preview } = options;
@@ -98,9 +116,9 @@ export async function composeExportPng(
       Promise.resolve(texture ? createImageBitmap(texture) : null).then(
         (bitmap): ExportBitmapResult => (bitmap ? { kind: 'texture', bitmap } : null)
       ),
-      Promise.resolve(overlayImage?.naturalWidth ? createImageBitmap(overlayImage) : null).then(
-        (bitmap): ExportBitmapResult => (bitmap ? { kind: 'overlay', bitmap } : null)
-      ),
+      loadExportOverlay(overlaySource)
+        .then((image) => (image ? createImageBitmap(image) : null))
+        .then((bitmap): ExportBitmapResult => (bitmap ? { kind: 'overlay', bitmap } : null)),
     ];
     const settledBitmaps = await Promise.allSettled(bitmapRequests);
     const failure = settledBitmaps.find((result) => result.status === 'rejected');
@@ -142,7 +160,10 @@ export async function composeExportPng(
 
   const target = getExportContext(snapshot);
   if (!target) return null;
-  const texture = includePaperTexture ? await loadPaperTexture() : null;
+  const [texture, overlayImage] = await Promise.all([
+    includePaperTexture ? loadPaperTexture() : null,
+    loadExportOverlay(overlaySource),
+  ]);
   paintExportPaper(target, {
     width: w,
     height: h,

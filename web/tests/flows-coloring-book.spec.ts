@@ -118,6 +118,33 @@ test.describe('responsive coloring selection at DPR 1', () => {
       .toMatch(/\/coloring\/max-1152px\/farm\/cat-tall\.overlay\.webp$/);
   });
 
+  test('loads the canonical overlay only when exporting the responsive presentation', async ({
+    page,
+  }) => {
+    await gotoApp(page);
+    await openDrawer(page);
+    await applyFarmPage(page);
+    const overlay = page.locator('#coloringOverlay');
+    await expect
+      .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
+      .toMatch(/\/coloring\/max-1152px\/farm\/cat-tall\.overlay\.webp$/);
+    await draw(page, [
+      { x: 100, y: 180 },
+      { x: 260, y: 260 },
+    ]);
+
+    let canonicalOverlayRequests = 0;
+    await page.route(/\/coloring\/farm\/cat-tall\.overlay\.webp$/, async (route) => {
+      canonicalOverlayRequests += 1;
+      await route.continue();
+    });
+    const download = page.waitForEvent('download');
+    await page.locator('#screenshotButton').click();
+    expect(await (await download).failure()).toBeNull();
+
+    expect(canonicalOverlayRequests).toBe(1);
+  });
+
   test('prefetches against the locked paper width after rotation', async ({ page }) => {
     await gotoApp(page);
     await openDrawer(page);

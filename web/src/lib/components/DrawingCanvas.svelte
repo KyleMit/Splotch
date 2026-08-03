@@ -231,7 +231,7 @@
 
   // The line art is the only asset needed to make a selected page visible.
   // Start the magic fill and rotation warm-up after it decodes so those
-  // full-resolution transfers cannot delay the page the child just picked.
+  // other art transfers cannot delay the page the child just picked.
   $effect(() => {
     const url = themedOverlayUrl;
     const displayed = displayedOverlayUrl;

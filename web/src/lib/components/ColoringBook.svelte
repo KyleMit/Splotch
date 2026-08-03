@@ -73,8 +73,8 @@
   );
 
   // Pressing/hovering a book tile warms that book's page thumbs before the
-  // sub-grid renders; hovering a page tile warms its full-res overlay so applying
-  // it to the canvas is immediate. Page thumbs are theme-aware (chalk in dark
+  // sub-grid renders; hovering a page tile warms its selected overlay candidate
+  // so applying it to the canvas is immediate. Page thumbs are theme-aware (chalk in dark
   // mode) — reading resolvedTheme() keeps the warmed set and the grid in sync.
   function prefetchBookPages(book: Book) {
     prefetchImages(

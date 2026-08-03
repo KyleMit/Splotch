@@ -100,6 +100,7 @@ import {
 import { scanCanvasIsEmpty } from './emptyScan';
 import { createPenStreamAdopter } from './penStreamQuirks';
 import type { ExportOptions, ExportSnapshot } from './exportDrawing';
+import { getActiveOverlayExportSource } from './overlay';
 import { currentExportScale } from './exportScale';
 import { captureTiledSnapshot, createStrokeSnapshot } from './strokeSnapshot';
 import { registerDrawingEngineListeners } from './engineListeners';
@@ -1529,15 +1530,13 @@ function snapshotStrokes(snapshotScale: number): ExportSnapshot {
 // The compositor is save-time-only, so it loads on demand and stays out of the
 // startup bundle (issue #461). A dead connection can reject the import —
 // callers own surfacing that (their tap handlers catch).
-export async function exportCanvasBlob(
-  overlayImage: HTMLImageElement | null = null,
-  options: ExportOptions = {}
-): Promise<Blob | null> {
+export async function exportCanvasBlob(options: ExportOptions = {}): Promise<Blob | null> {
   if (!canvas || paper.pxW === 0 || paper.pxH === 0) return null;
+  const overlaySource = getActiveOverlayExportSource();
   const scale = currentExportScale();
   // The snapshot MUST stay before the import await: save-on-delete fire-and-forgets
   // this call and clears the live engine synchronously (the E2E spec pins the race).
   const snapshot = snapshotStrokes(scale);
   const { composeExportPng } = await import('./exportDrawing');
-  return composeExportPng(snapshot, scale, overlayImage, options);
+  return composeExportPng(snapshot, scale, overlaySource, options);
 }

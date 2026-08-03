@@ -46,7 +46,7 @@
   });
 
   // First-visit service worker registration waits for the Install Banner's
-  // "a few strokes drawn" signal so the ~39 MB precache never lands on top of
+  // "a few strokes drawn" signal so the ~35 MB precache never lands on top of
   // boot or the first strokes (issue #462). Repeat visits don't pass through
   // here — initPWAUpdates re-registers an existing registration at idle.
   // The gate waits for the shared settled-in signal (the same one the Install

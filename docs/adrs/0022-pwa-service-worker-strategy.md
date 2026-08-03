@@ -1,11 +1,8 @@
 # ADR-0022: PWA Service Worker Strategy — vite-plugin-pwa as Manifest Injector with Custom Update Lifecycle
 
-**Status:** Active — amended 2026-07 (issue #462): registration is no longer plugin-injected.
-`injectRegister: null` (the auto-injected `registerSW.js` never actually loaded under SvelteKit —
-`transformIndexHtml` doesn't run — so fresh visitors were never registering at all);
-`src/lib/pwa/updates.ts` now owns registration end-to-end: first visits register at idle after the
-shared settled-in stroke threshold (skipped under Save-Data), repeat visits re-register immediately
-at idle via the persisted registration. **Date:** 2026-06
+**Status:** Active — amended 2026-07 (issue #462) to make `src/lib/pwa/updates.ts` own registration
+end-to-end, and 2026-08-02 (issue #621) to keep responsive coloring derivatives out of the precache
+with an explicit canonical offline fallback. **Date:** 2026-06
 
 ## Context
 
@@ -61,15 +58,36 @@ update-lifecycle and manifest-generation features are explicitly disabled. A cus
 
 ### vite-plugin-pwa configuration (`vite.config.ts`)
 
-| Option                     | Value                                               | Reason                                                                                                                      |
-| -------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `registerType`             | `'prompt'`                                          | Disables the auto-update injection; `updates.ts` is the sole driver                                                         |
-| `manifest`                 | `false`                                             | Web manifest is maintained manually in `static/site.webmanifest`                                                            |
-| `workbox.skipWaiting`      | *(omitted)*                                         | New SW enters the waiting state; `updates.ts` activates it only when canvas is blank                                        |
-| `workbox.clientsClaim`     | `true`                                              | New SW claims all clients immediately after activation                                                                      |
-| `workbox.navigateFallback` | `''`                                                | Suppresses the default `NavigationRoute(createHandlerBoundToURL('index.html'))` which would shadow the NetworkFirst handler |
-| `workbox.globPatterns`     | no `html`                                           | HTML is not precached; navigation uses the runtime NetworkFirst cache instead                                               |
-| `workbox.runtimeCaching`   | `NetworkFirst` for `navigate` requests, 5 s timeout | Manual refresh always fetches fresh markup; falls back to cached HTML when offline                                          |
+| Option                      | Value                                                                             | Reason                                                                                                                      |
+| --------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `registerType`              | `'prompt'`                                                                        | Disables the auto-update injection; `updates.ts` is the sole driver                                                         |
+| `manifest`                  | `false`                                                                           | Web manifest is maintained manually in `static/site.webmanifest`                                                            |
+| `workbox.skipWaiting`       | *(omitted)*                                                                       | New SW enters the waiting state; `updates.ts` activates it only when canvas is blank                                        |
+| `workbox.clientsClaim`      | `true`                                                                            | New SW claims all clients immediately after activation                                                                      |
+| `workbox.navigateFallback`  | `''`                                                                              | Suppresses the default `NavigationRoute(createHandlerBoundToURL('index.html'))` which would shadow the NetworkFirst handler |
+| `workbox.globPatterns`      | no `html`                                                                         | HTML is not precached; navigation uses the runtime NetworkFirst cache instead                                               |
+| `workbox.globIgnores`       | source-only line art plus responsive coloring tiers                               | Avoids caching runtime-unused sources and duplicate resolutions of the same coloring art                                    |
+| `additionalManifestEntries` | `'_app/env.js'`, revisioned by build time                                         | Precaches SvelteKit's runtime-generated public-environment module so an offline navigation can hydrate                      |
+| `workbox.runtimeCaching`    | custom responsive-coloring handler; `NetworkFirst` navigations with a 5 s timeout | Keeps responsive derivatives network-first without runtime caching and makes navigation fall back to cached HTML offline    |
+
+### Responsive coloring and offline fallback
+
+The web UI offers smaller `srcset` candidates under `/coloring/max-1152px/` and
+`/coloring/max-240px/`, but the corresponding canonical files under `/coloring/<book>/` remain the
+source of truth. Precaching both resolutions added 392 entries and 12,223,226 bytes (11.66 MiB) to
+every install. The responsive tier directories are therefore explicit `globIgnores`.
+
+A custom Workbox runtime route attempts the responsive request from the network. On a network error
+or non-success response it removes the `max-<edge>px` path segment and resolves the canonical URL
+from the revisioned precache with `ignoreSearch: true`. It does not put responsive responses in a
+runtime cache. This preserves the smaller transfer on a cold online visit while keeping offline
+coloring complete without storing duplicate art. A browser may still report the responsive URL as an
+image's `currentSrc` offline; the bytes returned for that request are the canonical asset.
+
+`scripts/check-pwa-precache.mjs` runs after every web build. It rejects responsive entries, a
+responsive derivative without a canonical precache entry, a missing `/_app/env.js`, or a precache
+above the named size budget. The production Playwright suite clears the HTTP cache and verifies the
+offline DPR 1 and DPR 3 picker and canvas paths against decoded response dimensions.
 
 ### Custom update lifecycle (`src/lib/pwa/updates.ts`)
 
@@ -112,6 +130,12 @@ with their HTTP `Cache-Control`, is documented in
 **+** Manual browser refresh always hits the network for HTML (NetworkFirst), so a user can unstick
 themselves without clearing the SW cache manually.
 
+**+** Offline coloring keeps the canonical catalog while the install omits 11.66 MiB of duplicate
+responsive derivatives. Online responsive requests still receive the smaller candidate.
+
+**+** The runtime-generated SvelteKit environment module is explicitly precached, so an offline
+navigation can hydrate rather than stopping after server-rendered markup.
+
 **+** The `version.json` cache-bust handles clients that were already stuck on a broken SW before
 this strategy was locked in, without requiring a server-side redirect or unregistering the SW.
 
@@ -130,3 +154,6 @@ indefinitely until the app is closed and reopened.
 
 **-** `version.json` adds one extra network round-trip per page load (async, non-blocking, only in
 production). It fails silently when offline.
+
+**-** The responsive-coloring handler is serialized into the generated worker by Workbox. It must
+remain self-contained; a unit test evaluates the serialized function to guard that constraint.

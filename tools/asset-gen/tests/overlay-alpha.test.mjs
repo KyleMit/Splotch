@@ -31,4 +31,10 @@ describe('alpha overlay conversion', () => {
     expect([...quantized]).toEqual([0, 0, 0, 120, 255, 255, 255, 255]);
     expect(maxOverlayAlphaError(rgba, quantized)).toBeLessThanOrEqual(OVERLAY_MAX_CHANNEL_ERROR);
   });
+
+  it('rejects unequal buffers instead of failing open with a NaN comparison', () => {
+    expect(() => maxOverlayAlphaError(Buffer.alloc(8), Buffer.alloc(4))).toThrow(
+      'Overlay buffers must have the same byte length'
+    );
+  });
 });
