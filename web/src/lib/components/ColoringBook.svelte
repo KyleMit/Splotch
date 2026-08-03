@@ -270,10 +270,12 @@
     grid-template-columns: repeat(var(--book-cols), minmax(0, 1fr));
   }
 
-  /* A last row of one reads as accidental, so catalog sizes that would leave
-     that orphan use the next-lower column count. This also covers Clear Page. */
-  .coloring-books-grid.book-grid-has-orphan {
-    --book-cols: 3;
+  @media (min-width: 741px) {
+    /* A last row of one reads as accidental, so catalog sizes that would leave
+       that orphan use the next-lower column count. This also covers Clear Page. */
+    .coloring-books-grid.book-grid-has-orphan {
+      --book-cols: 3;
+    }
   }
 
   .coloring-books-grid.book-grid-has-nine-tiles {
