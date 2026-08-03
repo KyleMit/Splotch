@@ -39,8 +39,10 @@ decisions in `docs/adrs/`.
    in the codebase — read the relevant file(s) and grep for the key patterns. Do not document a
    decision that has already been reversed.
 
-4. **Determine the next ADR number.** Count existing files in `docs/adrs/` (excluding `README.md`)
-   and use the next four-digit number (`0015`, `0016`, etc.).
+4. **Determine the next ADR number.** Find the highest four-digit prefix among the ADR records in
+   `docs/adrs/`, add one, and zero-pad the result to four digits. Do not count files: moved records
+   `0053`–`0056` leave gaps, so a count can reuse an existing number. This is the same rule as the
+   canonical `nextAdrNumber()` implementation used by `npm run check:adrs`.
 
 5. **Write the ADR file** at `docs/adrs/NNNN-kebab-case-title.md` using the template below.
 
