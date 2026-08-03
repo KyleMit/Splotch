@@ -62,14 +62,15 @@ describe('line-art gates (solidity, eye-rings, frame)', () => {
   const fixtures = {
     solidPupil: F.solidPupilOutline, // broken
     fakeHollow: F.fakeHollowOutline, // broken
-    swirlEye: F.isolatedSwirlEyeSource, // broken
+    swirlEye: F.swirlEyeSource, // broken
     framed: F.framedOutline, // broken
     thinStroke: F.thinStrokeOutline, // good
+    goodEye: F.goodEyeSource, // good
     edgeNearArt: F.edgeNearArtOutline, // good
     threeSidedFrame: F.threeSidedFrameOutline, // good
   };
   const broken = ['solidPupil', 'fakeHollow', 'swirlEye', 'framed'];
-  const good = ['thinStroke', 'edgeNearArt', 'threeSidedFrame'];
+  const good = ['thinStroke', 'goodEye', 'edgeNearArt', 'threeSidedFrame'];
 
   it('every gate is the sole catcher of ≥1 broken fixture', async () => {
     const matrix = await catchMatrix(gates, fixtures);

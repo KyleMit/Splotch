@@ -40,7 +40,7 @@ describe('eye-ring-depth gate', () => {
     const good = await scoreEyes(await goodEyeSource());
     const swirl = await scoreEyes(await swirlEyeSource());
 
-    expect(good.cores.cores).toHaveLength(2);
+    expect(good.cores.cores).toHaveLength(1);
     expect(good.rings).toEqual({
       maxDepth: 3,
       worst: { x: 300, y: 300, depth: 3 },

@@ -3,8 +3,12 @@ import { FRAME_SIDE_COVERAGE_MIN, scoreOutlineFrame } from '../lib/outline-frame
 import {
   edgeNearArtOutline,
   framedOutline,
+  goodEyeSource,
+  swirlEyeSource,
   threeSidedFrameOutline,
 } from './fixtures/synthetic.mjs';
+
+const EYE_FIXTURE_FRAME_COVERAGE_MAX = 0.6;
 
 describe('outline frame gate', () => {
   it('flags a continuous inset rectangle on all four sides', async () => {
@@ -30,6 +34,16 @@ describe('outline frame gate', () => {
     expect(result.sides.bottom.coverage).toBeGreaterThan(FRAME_SIDE_COVERAGE_MIN);
     expect(result.sides.left.coverage).toBeGreaterThan(FRAME_SIDE_COVERAGE_MIN);
     expect(result.sides.right.coverage).toBeLessThan(FRAME_SIDE_COVERAGE_MIN);
+    expect(result.passes).toBe(true);
+  });
+
+  it.each([
+    ['normal-depth', goodEyeSource],
+    ['over-deep', swirlEyeSource],
+  ])('keeps the %s eye fixture well outside frame territory', async (_name, buildFixture) => {
+    const result = await scoreOutlineFrame(await buildFixture());
+
+    expect(result.sideCoverage).toBeLessThan(EYE_FIXTURE_FRAME_COVERAGE_MAX);
     expect(result.passes).toBe(true);
   });
 });

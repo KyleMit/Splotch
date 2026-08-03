@@ -106,19 +106,26 @@ export function fakeHollowOutline() {
 // keys on. Depth ≈ ring count; the page is large so every ring stays eye-scale.
 // nRings=3 → a normal eye (depth 3, passes); nRings=5 → the "hypno swirl"
 // (depth 5, over EYE_RING_DEPTH_MAX).
-function concentricEye(nRings, openPageFrame) {
+const EYE_FRAME_NOTCH_HALF_HEIGHT_PX = 100;
+
+export function concentricEyeSource(nRings) {
   const c = canvas(600, 600);
   rectStroke(c, 20, 20, 580, 580, 4);
-  if (openPageFrame) fillRect(c, 576, 250, 585, 350, 255);
+  const centerY = c.h / 2;
+  // Keep eye fixtures scoped to ring depth rather than the independent frame gate.
+  fillRect(
+    c,
+    576,
+    centerY - EYE_FRAME_NOTCH_HALF_HEIGHT_PX,
+    585,
+    centerY + EYE_FRAME_NOTCH_HALF_HEIGHT_PX,
+    255
+  );
   for (let k = 0; k < nRings; k++) ring(c, 300, 300, 12 + k * 8, 2);
   return encode(c);
 }
-export function concentricEyeSource(nRings) {
-  return concentricEye(nRings, false);
-}
 export const goodEyeSource = () => concentricEyeSource(3);
 export const swirlEyeSource = () => concentricEyeSource(5);
-export const isolatedSwirlEyeSource = () => concentricEye(5, true);
 
 // ================= OUTLINE FRAME (lib/outline-frame.mjs) =================
 // BROKEN: a continuous rectangle inset from all four page edges. The centered
