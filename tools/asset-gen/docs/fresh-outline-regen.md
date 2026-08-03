@@ -23,7 +23,7 @@ before a human picks one:
 | ring depth  | `scoreEyeRings` ≤ 4                                      | no hypno-swirl eyes                                                                        |
 | eye cores   | `--eyes`: `findEyeCores` ≥ 1                             | a face page whose eyes the detector can't see would make every downstream eye gate vacuous |
 | border      | outer 8 px ≥ 97% white                                   | catches grey washes and edge-to-edge crops                                                 |
-| frame       | every inset side has ≥ 97% continuous ink coverage       | catches rectangular page borders, frames, and page outlines                                |
+| frame       | every inset side has ≥ 70% continuous ink coverage       | catches rectangular page borders, frames, and page outlines                                |
 | ink density | 1–20% dark px                                            | catches empty or dense/greyscale renders                                                   |
 
 ## The 2026-07-13 pass

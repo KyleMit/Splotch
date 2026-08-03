@@ -4,6 +4,7 @@ import {
   edgeNearArtOutline,
   framedOutline,
   goodEyeSource,
+  partiallyOccludedFrameOutline,
   swirlEyeSource,
   threeSidedFrameOutline,
 } from './fixtures/synthetic.mjs';
@@ -17,6 +18,15 @@ describe('outline frame gate', () => {
     expect(result.passes).toBe(false);
     expect(result.frameDetected).toBe(true);
     expect(result.sideCoverage).toBeGreaterThan(FRAME_SIDE_COVERAGE_MIN);
+  });
+
+  it('flags a four-sided frame when part of one side is occluded', async () => {
+    const result = await scoreOutlineFrame(await partiallyOccludedFrameOutline());
+
+    expect(result.sides.right.coverage).toBeCloseTo(0.733, 3);
+    expect(result.sideCoverage).toBeGreaterThan(FRAME_SIDE_COVERAGE_MIN);
+    expect(result.frameDetected).toBe(true);
+    expect(result.passes).toBe(false);
   });
 
   it('passes ordinary art near every edge when it does not form a continuous frame', async () => {

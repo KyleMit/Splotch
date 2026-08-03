@@ -9,7 +9,7 @@
     "solidBlobMax": 100,
     "solidInteriorMax": 60,
     "eyeRingDepthMax": 4,
-    "frameSideCoverageMin": 0.97
+    "frameSideCoverageMin": 0.7
   },
   "pages": {
     "creatures/cover": {

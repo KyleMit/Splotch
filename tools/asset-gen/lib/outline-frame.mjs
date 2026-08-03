@@ -1,7 +1,8 @@
 import sharp from 'sharp';
 
-// A page enclosure is continuous; the small gap allowance absorbs WebP antialias noise.
-export const FRAME_SIDE_COVERAGE_MIN = 0.97;
+// Partial or occluded page frames remain four-sided; this bar catches them while
+// leaving a wide margin above disconnected edge-near subject marks.
+export const FRAME_SIDE_COVERAGE_MIN = 0.7;
 
 // Lossy WebP softens black line edges above the outline-match scorer's stricter ink floor.
 const INK_LUMA_MAX = 180;

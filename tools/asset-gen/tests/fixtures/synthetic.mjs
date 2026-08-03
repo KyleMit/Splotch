@@ -137,19 +137,32 @@ export function framedOutline() {
   return encode(c);
 }
 
+const PARTIAL_FRAME_GAP_HEIGHT_PX = 120;
+
+// BROKEN: the same frame with one side partly occluded. A page enclosure need
+// not be nearly perfect to remain an unwanted four-sided frame.
+export function partiallyOccludedFrameOutline() {
+  const c = canvas(600, 600);
+  rectStroke(c, 30, 30, 570, 570, 4);
+  const gapStart = (c.h - PARTIAL_FRAME_GAP_HEIGHT_PX) / 2;
+  fillRect(c, 566, gapStart, 575, gapStart + PARTIAL_FRAME_GAP_HEIGHT_PX - 1, 255);
+  ring(c, 300, 300, 100, 4);
+  return encode(c);
+}
+
 // GOOD: ordinary scene marks approach every edge but leave wide breaks, so no
 // four-sided page enclosure exists.
 export function edgeNearArtOutline() {
   const c = canvas(600, 600);
   ring(c, 300, 300, 100, 4);
-  fillRect(c, 30, 24, 220, 27, 0);
-  fillRect(c, 280, 24, 570, 27, 0);
-  fillRect(c, 30, 572, 330, 575, 0);
-  fillRect(c, 390, 572, 570, 575, 0);
-  fillRect(c, 24, 30, 27, 250, 0);
-  fillRect(c, 24, 320, 27, 570, 0);
-  fillRect(c, 572, 30, 575, 300, 0);
-  fillRect(c, 572, 360, 575, 570, 0);
+  fillRect(c, 30, 24, 180, 27, 0);
+  fillRect(c, 400, 24, 570, 27, 0);
+  fillRect(c, 30, 572, 210, 575, 0);
+  fillRect(c, 420, 572, 570, 575, 0);
+  fillRect(c, 24, 30, 27, 200, 0);
+  fillRect(c, 24, 400, 27, 570, 0);
+  fillRect(c, 572, 30, 575, 225, 0);
+  fillRect(c, 572, 425, 575, 570, 0);
   return encode(c);
 }
 

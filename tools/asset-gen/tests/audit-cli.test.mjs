@@ -93,7 +93,7 @@ vi.mock('../lib/composite-eye.mjs', () => ({
 }));
 
 vi.mock('../lib/outline-frame.mjs', () => ({
-  FRAME_SIDE_COVERAGE_MIN: 0.97,
+  FRAME_SIDE_COVERAGE_MIN: 0.7,
   scoreOutlineFrame: async (buffer) => {
     assertReadable(buffer);
     return { sideCoverage: 0, frameDetected: false, passes: true };
