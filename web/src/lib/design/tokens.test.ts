@@ -10,8 +10,8 @@ describe('toCssVarName', () => {
     expect(toCssVarName('appBg')).toBe('--app-bg');
     expect(toCssVarName('surface2')).toBe('--surface-2');
     expect(toCssVarName('fontSize2xl')).toBe('--font-size-2xl');
-    expect(toCssVarName('radiusXs')).toBe('--radius-xs');
-    expect(toCssVarName('brandTintFilter')).toBe('--brand-tint-filter');
+    expect(toCssVarName('radiusXl')).toBe('--radius-xl');
+    expect(toCssVarName('brandSolidHover')).toBe('--brand-solid-hover');
   });
 
   it('emits a well-formed kebab-case custom property for every token', () => {

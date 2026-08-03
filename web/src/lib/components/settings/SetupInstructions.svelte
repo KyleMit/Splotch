@@ -218,8 +218,8 @@
 
   .os-section :global(.help-section summary) {
     padding: 16px;
-    font-size: var(--font-size-xl);
-    font-weight: 600;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
     color: var(--text);
     background: var(--surface-2);
     transition: background var(--duration-base) ease;
@@ -247,8 +247,8 @@
   .os-heading {
     margin: 0 0 10px 0;
     font-size: var(--font-size-sm);
-    font-weight: 700;
-    color: var(--text-muted);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-soft);
     text-transform: uppercase;
     letter-spacing: 0.6px;
   }
@@ -258,8 +258,8 @@
   .lock-heading {
     margin: 0;
     padding: 16px 16px 0;
-    font-size: var(--font-size-xl);
-    font-weight: 600;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
     color: var(--text);
   }
 
@@ -275,7 +275,7 @@
 
   .install-check {
     color: var(--success-accent);
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     margin-left: 8px;
     font-size: 20px;
   }
@@ -294,7 +294,7 @@
   .one-tap-hint {
     margin: 8px 0 0;
     font-size: var(--font-size-sm);
-    color: var(--text-faint);
+    color: var(--text-soft);
   }
 
   :global(.step-icon) {
@@ -307,7 +307,7 @@
   .steps {
     padding: 16px 24px 16px 40px;
     margin: 0;
-    color: var(--text-mid);
+    color: var(--text-soft);
     line-height: 1.8;
   }
 

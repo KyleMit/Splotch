@@ -185,8 +185,8 @@
     border: 2px solid var(--border-warm);
     border-radius: 50%;
     background: var(--surface);
-    color: var(--text-muted);
-    font-size: var(--font-size-2xl);
+    color: var(--text-soft);
+    font-size: var(--font-size-xl);
     line-height: 1;
     display: flex;
     align-items: center;
@@ -225,8 +225,8 @@
 
   .install-parting p {
     margin: 0;
-    color: var(--text-mid);
-    font-size: var(--font-size-md);
+    color: var(--text-soft);
+    font-size: var(--font-size-sm);
     line-height: 1.5;
     text-align: left;
   }
@@ -253,12 +253,12 @@
 
   .install-copy strong {
     color: var(--text-strong);
-    font-size: var(--font-size-lg);
-    font-weight: 700;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-bold);
   }
 
   .install-sub {
-    color: var(--text-muted);
+    color: var(--text-soft);
     font-size: var(--font-size-xs);
     margin-top: 2px;
   }
@@ -273,8 +273,8 @@
     border-radius: var(--radius-lg);
     background: var(--brand, #ab71e1);
     color: var(--on-brand, #fff);
-    font-size: var(--font-size-lg);
-    font-weight: 700;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
     touch-action: manipulation;
     transition:
@@ -309,8 +309,8 @@
 
   .install-hint p {
     margin: 0;
-    color: var(--text-mid);
-    font-size: var(--font-size-md);
+    color: var(--text-soft);
+    font-size: var(--font-size-sm);
     line-height: 1.6;
   }
 

@@ -170,7 +170,7 @@
      visitor came to answer. */
   .card :global(.report-label) {
     font-size: 17px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     color: var(--page-ink);
   }
 
@@ -203,7 +203,7 @@
     color: var(--page-on-accent);
     font-family: inherit;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
     touch-action: manipulation;
     transition:
@@ -232,7 +232,7 @@
 
   .fallback-link {
     color: inherit;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     text-decoration: underline;
     /* The address is the one string here a reporter may have to read out or
        retype, so it never breaks mid-word. */
@@ -251,7 +251,7 @@
   .aside h2 {
     margin: 0 0 8px;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     color: var(--page-ink);
   }
 
@@ -265,7 +265,7 @@
 
   .aside li {
     font-size: 15px;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     line-height: 1.55;
     color: var(--page-body);
   }
@@ -291,7 +291,7 @@
     background: var(--page-accent);
     color: var(--page-on-accent);
     font-size: 15px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     text-decoration: none;
     transition:
       background var(--duration-base) ease,
@@ -305,7 +305,7 @@
   .done-again,
   .aside a {
     color: var(--page-link);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     text-underline-offset: 3px;
     text-decoration-thickness: 1px;
   }

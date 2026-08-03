@@ -79,6 +79,19 @@
       The vocabulary every style is built from — tokens, paper, the drawing inks, and the icon set.
       Consume these by reference (<code>var(--…)</code>, imports), never by copied value.
     </p>
+    <aside class="defaults" aria-label="Default choices">
+      <h3>Not sure? Start here</h3>
+      <p>
+        Most styling decisions should never reach the tables below. A card is
+        <code>--surface</code> with a <code>--border</code> hairline, <code>--radius-lg</code>
+        corners, and <code>--space-4</code> padding. UI chrome is <code>--font-size-sm</code>, prose
+        is <code>--font-size-md</code>, both in <code>--text</code>; headings are
+        <code>--text-strong</code> at <code>--font-weight-bold</code>. The primary action is the
+        <code>Button</code> primitive's <code>brand</code> variant. Transitions run
+        <code>--duration-base</code>; anything that pops in takes <code>--ease-pop</code>. Reach
+        past a default only when its rule below says so.
+      </p>
+    </aside>
     <TokenSections />
     <AssetSections />
   </section>
@@ -124,21 +137,21 @@
 
   /* Breadcrumb pins its current crumb to #666 for the light-only /admin host;
      this page is themed (and its toggle flips to dark, where #666 is 3.1:1).
-     --text-mid is the same #666 in light theme, so only dark changes. */
+     --text-soft is the same #666 in light theme, so only dark changes. */
   .styleguide :global(.crumb-current) {
-    color: var(--text-mid);
+    color: var(--text-soft);
   }
 
   header p,
   .part > p {
     max-width: 60ch;
     margin: var(--space-2) 0 var(--space-3);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
   }
 
   h1 {
     color: var(--text-strong);
-    font-size: var(--font-size-3xl);
+    font-size: var(--font-size-2xl);
   }
 
   code {
@@ -165,10 +178,10 @@
     border: none;
     border-radius: 9px;
     background: transparent;
-    color: var(--text-mid);
+    color: var(--text-soft);
     font-family: inherit;
     font-size: var(--font-size-sm);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     cursor: pointer;
     transition:
       background var(--duration-fast) ease,
@@ -185,7 +198,7 @@
   .theme-option.active {
     background: var(--surface);
     color: var(--text-strong);
-    box-shadow: var(--shadow-segment);
+    box-shadow: var(--shadow-control);
   }
 
   .part-nav {
@@ -194,7 +207,7 @@
     gap: var(--space-2);
     margin-top: var(--space-4);
     font-size: var(--font-size-sm);
-    color: var(--text-mid);
+    color: var(--text-soft);
   }
 
   .part-nav a {
@@ -211,6 +224,26 @@
 
   .part > h2 {
     color: var(--text-strong);
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-xl);
+  }
+
+  .defaults {
+    max-width: 66ch;
+    margin-top: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    background: var(--brand-wash);
+    border-radius: var(--radius-lg);
+  }
+
+  .defaults h3 {
+    margin: 0 0 var(--space-2);
+    color: var(--text-strong);
+    font-size: var(--font-size-md);
+  }
+
+  .defaults p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
   }
 </style>

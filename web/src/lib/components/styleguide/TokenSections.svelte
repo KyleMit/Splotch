@@ -1,6 +1,8 @@
 <script lang="ts">
   import { brand, scale, themes, toCssVarName, zIndex, type ThemeTokens } from '$lib/design/tokens';
+  import { brandUsage, scaleUsage, themeUsage } from '$lib/design/tokenUsage';
 
+  const brandKeys = Object.keys(brand) as (keyof typeof brand)[];
   const themeKeys = Object.keys(themes.light) as (keyof ThemeTokens)[];
   // Tokens whose value isn't a paintable color get listed as text, not swatches.
   const nonColorKeys = new Set<keyof ThemeTokens>([
@@ -11,13 +13,12 @@
   ]);
   const colorKeys = themeKeys.filter((k) => !nonColorKeys.has(k));
 
-  const spaceKeys = Object.keys(scale).filter((k) => k.startsWith('space'));
-  const radiusKeys = Object.keys(scale).filter((k) => k.startsWith('radius') && k !== 'radiusPill');
-  const fontSizeKeys = Object.keys(scale).filter((k) => k.startsWith('fontSize'));
-  const shadowKeys = Object.keys(scale).filter((k) => k.startsWith('shadow'));
-  const motionEntries = Object.entries(scale).filter(
-    ([k]) => k.startsWith('duration') || k.startsWith('ease')
-  );
+  const scaleKeys = Object.keys(scale) as (keyof typeof scale)[];
+  const spaceKeys = scaleKeys.filter((k) => k.startsWith('space'));
+  const radiusKeys = scaleKeys.filter((k) => k.startsWith('radius') && k !== 'radiusPill');
+  const fontSizeKeys = scaleKeys.filter((k) => k.startsWith('fontSize'));
+  const shadowKeys = scaleKeys.filter((k) => k.startsWith('shadow'));
+  const durationKeys = scaleKeys.filter((k) => k.startsWith('duration'));
   // Already authored low-to-high in tokens.ts; render it in that order so the
   // page shows the stacking order, not just the values.
   const zIndexEntries = Object.entries(zIndex);
@@ -31,27 +32,23 @@
     key === 'brandRgb' ? `rgb(${cssVar(key)})` : cssVar(key);
 
   const weightSpecimens = [
-    { weight: 700, note: 'headings', sample: 'Let them make a mess.' },
-    { weight: 600, note: '--font-weight-semibold', sample: 'Settings, not a paywall' },
-    { weight: 500, note: 'labels', sample: 'Sound · Night Mode · Advanced Controls' },
-    { weight: 400, note: 'body', sample: 'Draw with big, chunky, crayon-like strokes.' },
+    { weight: 700, token: 'fontWeightBold', sample: 'Let them make a mess.' },
+    { weight: 600, token: 'fontWeightSemibold', sample: 'Settings, not a paywall' },
+    { weight: 500, token: 'fontWeightMedium', sample: 'Sound · Night Mode · Advanced Controls' },
   ] as const;
 
-  const motionLanes = [
-    { token: 'easePop', note: 'overshoot · dialog fly-ins' },
-    { token: 'easeGlide', note: 'settle · the polaroid, the clear ripple' },
-    { token: 'easePopStrong', note: 'celebration · swatch ring, Clear Button' },
-  ] as const;
+  const easeKeys = ['easePop', 'easeGlide'] as const;
 </script>
 
 <section>
   <h3>Brand</h3>
   <div class="swatch-grid">
-    {#each Object.entries(brand).filter(([k]) => k !== 'brandTintFilter') as [key, value] (key)}
+    {#each brandKeys as key (key)}
       <div class="swatch-card">
         <div class="swatch" style:background={brandSwatchFill(key)}></div>
         <code>{toCssVarName(key)}</code>
-        <span class="value">{value}</span>
+        <span class="value">{brand[key]}</span>
+        <span class="usage">{brandUsage[key]}</span>
       </div>
     {/each}
   </div>
@@ -65,6 +62,7 @@
       <div class="swatch" style:background={cssVar('clearGradientRest')}></div>
       <code>--clear-gradient-rest</code>
       <span class="value">{scale.clearGradientRest}</span>
+      <span class="usage">{scaleUsage.clearGradientRest}</span>
     </div>
   </div>
 </section>
@@ -78,6 +76,7 @@
         <div class="swatch" style:background={cssVar(key)}></div>
         <code>{toCssVarName(key)}</code>
         <span class="value">{themes.light[key]} · {themes.dark[key]}</span>
+        <span class="usage">{themeUsage[key]}</span>
       </div>
     {/each}
   </div>
@@ -87,6 +86,7 @@
       <li>
         <code>{toCssVarName(key)}</code>
         <span class="value">{themes.light[key]} · {themes.dark[key]}</span>
+        <span class="usage">{themeUsage[key]}</span>
       </li>
     {/each}
   </ul>
@@ -97,9 +97,12 @@
   <div class="row-list">
     {#each spaceKeys as key (key)}
       <div class="scale-row">
-        <code>{toCssVarName(key)}</code>
+        <div class="row-head">
+          <code>{toCssVarName(key)}</code>
+          <span class="usage">{scaleUsage[key]}</span>
+        </div>
         <div class="space-bar" style:width={cssVar(key)}></div>
-        <span class="value">{scale[key as keyof typeof scale]}</span>
+        <span class="value">{scale[key]}</span>
       </div>
     {/each}
   </div>
@@ -112,13 +115,15 @@
       <div class="swatch-card">
         <div class="radius-box" style:border-radius={cssVar(key)}></div>
         <code>{toCssVarName(key)}</code>
-        <span class="value">{scale[key as keyof typeof scale]}</span>
+        <span class="value">{scale[key]}</span>
+        <span class="usage">{scaleUsage[key]}</span>
       </div>
     {/each}
     <div class="swatch-card">
       <div class="radius-box pill" style:border-radius={cssVar('radiusPill')}></div>
       <code>--radius-pill</code>
       <span class="value">{scale.radiusPill}</span>
+      <span class="usage">{scaleUsage.radiusPill}</span>
     </div>
   </div>
   <h4>Border width</h4>
@@ -127,42 +132,59 @@
       <div class="border-box"></div>
       <code>{toCssVarName('borderWidth')}</code>
       <span class="value">{scale.borderWidth}</span>
+      <span class="usage">{scaleUsage.borderWidth}</span>
     </div>
   </div>
 </section>
 
 <section>
   <h3>Type scale</h3>
+  <p>Six steps, one role each — if two steps both look right, take the smaller.</p>
   <div class="row-list">
     {#each fontSizeKeys as key (key)}
       <div class="scale-row">
-        <code>{toCssVarName(key)}</code>
+        <div class="row-head">
+          <code>{toCssVarName(key)}</code>
+          <span class="usage">{scaleUsage[key]}</span>
+        </div>
         <span class="type-sample" style:font-size={cssVar(key)}>Splotch says hello</span>
-        <span class="value">{scale[key as keyof typeof scale]}</span>
+        <span class="value">{scale[key]}</span>
       </div>
     {/each}
     <div class="scale-row">
-      <code>{toCssVarName('inputFontSize')}</code>
+      <div class="row-head">
+        <code>{toCssVarName('inputFontSize')}</code>
+        <span class="usage">{scaleUsage.inputFontSize}</span>
+      </div>
       <span class="type-sample" style:font-size={cssVar('inputFontSize')}>Splotch says hello</span>
       <span class="value">{scale.inputFontSize}</span>
     </div>
     <div class="scale-row">
-      <code>{toCssVarName('fontFamily')}</code>
+      <div class="row-head">
+        <code>{toCssVarName('fontFamily')}</code>
+        <span class="usage">{scaleUsage.fontFamily}</span>
+      </div>
       <span class="type-sample" style:font-family={cssVar('fontFamily')}>Splotch says hello</span>
       <span class="value">{scale.fontFamily}</span>
     </div>
     <div class="scale-row">
-      <code>{toCssVarName('fontMono')}</code>
+      <div class="row-head">
+        <code>{toCssVarName('fontMono')}</code>
+        <span class="usage">{scaleUsage.fontMono}</span>
+      </div>
       <span class="type-sample" style:font-family={cssVar('fontMono')}>Splotch says hello</span>
       <span class="value">{scale.fontMono}</span>
     </div>
   </div>
   <h4>Weights</h4>
-  <p>Only 600 carries a token; 500 and 700 are written raw where they appear.</p>
+  <p>Body prose stays at the untokenized 400 default; everything heavier goes through a token.</p>
   <div class="row-list">
     {#each weightSpecimens as specimen (specimen.weight)}
       <div class="scale-row">
-        <code>{specimen.note}</code>
+        <div class="row-head">
+          <code>{toCssVarName(specimen.token)}</code>
+          <span class="usage">{scaleUsage[specimen.token]}</span>
+        </div>
         <span class="type-sample" style:font-weight={specimen.weight}>{specimen.sample}</span>
         <span class="value">{specimen.weight}</span>
       </div>
@@ -177,15 +199,18 @@
       <div class="swatch-card">
         <div class="shadow-box" style:box-shadow={cssVar(key)}></div>
         <code>{toCssVarName(key)}</code>
+        <span class="usage">{scaleUsage[key]}</span>
       </div>
     {/each}
     <div class="swatch-card">
       <div class="shadow-box float" style:box-shadow={cssVar('floatShadow')}></div>
       <code>--float-shadow</code>
+      <span class="usage">{themeUsage.floatShadow}</span>
     </div>
     <div class="swatch-card">
       <div class="shadow-box float" style:box-shadow={cssVar('floatShadowFlyout')}></div>
       <code>--float-shadow-flyout</code>
+      <span class="usage">{themeUsage.floatShadowFlyout}</span>
     </div>
   </div>
 </section>
@@ -193,23 +218,28 @@
 <section>
   <h3>Motion</h3>
   <p>
-    Springy overshoot for kid moments, glides for settles. Press states scale down (0.9–0.96);
-    hovers swap to a wash or hover token. The lanes run each easing curve on a loop.
+    Two curves: the springy overshoot for anything that pops in or celebrates, the glide for
+    anything that settles or leaves. Press states scale down (0.9–0.96); hovers swap to a wash or
+    hover token. Pair every curve with a duration token. The lanes run each easing curve on a loop.
   </p>
   <div class="motion-lanes">
-    {#each motionLanes as lane (lane.token)}
+    {#each easeKeys as key (key)}
       <div class="motion-lane-col">
         <div class="motion-lane">
-          <span class="lane-dot" style:animation-timing-function={cssVar(lane.token)}></span>
+          <span class="lane-dot" style:animation-timing-function={cssVar(key)}></span>
         </div>
-        <code>{toCssVarName(lane.token)}</code>
-        <span class="value">{lane.note}</span>
+        <code>{toCssVarName(key)}</code>
+        <span class="usage">{scaleUsage[key]}</span>
       </div>
     {/each}
   </div>
   <ul class="raw-list">
-    {#each motionEntries as [key, value] (key)}
-      <li><code>{toCssVarName(key)}</code> <span class="value">{value}</span></li>
+    {#each durationKeys as key (key)}
+      <li>
+        <code>{toCssVarName(key)}</code>
+        <span class="value">{scale[key]}</span>
+        <span class="usage">{scaleUsage[key]}</span>
+      </li>
     {/each}
   </ul>
 </section>
@@ -240,18 +270,18 @@
   section > p {
     max-width: 60ch;
     margin: var(--space-2) 0 var(--space-3);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
   }
 
   h3 {
     color: var(--text-strong);
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
     margin-bottom: var(--space-2);
   }
 
   h4 {
     color: var(--text-strong);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
     margin: var(--space-4) 0 var(--space-2);
   }
 
@@ -260,11 +290,16 @@
     color: var(--brand-text);
   }
 
-  /* --text-mid, not --text-muted: these 12px labels must hold 4.5:1 on the
-     page ground (the axe scan in a11y.spec.ts enforces it). */
-  .value {
+  /* Both stay on --text-soft: it is pinned to hold 4.5:1 at these 12px sizes
+     (the axe scan in a11y.spec.ts enforces it). */
+  .value,
+  .usage {
     font-size: var(--font-size-xs);
-    color: var(--text-mid);
+    color: var(--text-soft);
+  }
+
+  .usage {
+    line-height: 1.4;
   }
 
   .swatch-grid,
@@ -299,15 +334,23 @@
 
   .scale-row {
     display: grid;
-    grid-template-columns: 10rem 1fr 6rem;
+    grid-template-columns: 16rem 1fr 6rem;
     align-items: center;
     gap: var(--space-3);
+  }
+
+  .row-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
   .space-bar {
     height: var(--space-4);
     background: var(--brand);
-    border-radius: var(--radius-xs);
+    /* Demo bar, not a control: the radius ramp's smallest step would pill the
+       narrowest bars, so this keeps a raw sliver of rounding. */
+    border-radius: 2px;
   }
 
   .type-sample {
@@ -389,5 +432,9 @@
     .lane-dot {
       animation: none;
     }
+  }
+
+  .raw-list .usage {
+    display: block;
   }
 </style>

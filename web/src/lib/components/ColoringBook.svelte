@@ -248,7 +248,7 @@
     margin: 0 0 20px 0;
     font-size: 24px;
     color: var(--text-strong);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
   }
 
   .coloring-book-close {
@@ -446,8 +446,8 @@
        the theme so the caption sits on the tile's own paper tone. */
     background: rgba(255, 255, 255, 0.92);
     background: color-mix(in srgb, var(--surface-2) 92%, transparent);
-    font-size: var(--font-size-md);
-    font-weight: 600;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
     color: var(--text);
     text-align: center;
   }

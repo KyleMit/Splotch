@@ -218,7 +218,7 @@
   }
 
   .color-swatch.ring-animate:not(.gradient-swatch)::before {
-    animation: swatch-ring-expand 0.45s var(--ease-pop-strong) forwards;
+    animation: swatch-ring-expand 0.45s var(--ease-pop) forwards;
   }
 
   @keyframes swatch-ring-expand {

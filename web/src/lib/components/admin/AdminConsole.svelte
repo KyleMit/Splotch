@@ -396,7 +396,7 @@
 
   h1 {
     margin: 0;
-    font-size: var(--font-size-3xl);
+    font-size: var(--font-size-2xl);
     font-weight: 700;
     letter-spacing: -0.01em;
   }
@@ -412,7 +412,7 @@
   .flash {
     padding: 12px 16px;
     border-radius: var(--radius-md);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
     font-weight: 600;
     margin-bottom: 20px;
   }
@@ -460,7 +460,7 @@
 
   .card h2 {
     margin: 0 0 16px;
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
     font-weight: 600;
     color: #444;
   }
@@ -541,7 +541,7 @@
   /* Buttons */
   .btn {
     font-family: inherit;
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
     font-weight: 600;
     border-radius: 10px;
     border: none;
@@ -725,7 +725,7 @@
 
   .empty p {
     margin: 0;
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
     max-width: 320px;
     margin-inline: auto;
   }

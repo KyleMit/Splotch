@@ -247,18 +247,18 @@
   section > p {
     max-width: 60ch;
     margin: var(--space-2) 0 var(--space-3);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
   }
 
   h3 {
     color: var(--text-strong);
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
     margin-bottom: var(--space-2);
   }
 
   h4 {
     color: var(--text-strong);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
     margin: var(--space-5) 0 var(--space-2);
   }
 
@@ -267,14 +267,14 @@
     color: var(--brand-text);
   }
 
-  /* --text-mid, not --text-muted: these 12px labels must hold 4.5:1 on the
-     page ground (the axe scan in a11y.spec.ts enforces it). */
+  /* --text-soft is pinned to hold 4.5:1 at these 12px sizes on the page
+     ground (the axe scan in a11y.spec.ts enforces it). */
   .value {
     display: block;
     max-width: 60ch;
     margin-top: var(--space-2);
     font-size: var(--font-size-xs);
-    color: var(--text-mid);
+    color: var(--text-soft);
   }
 
   .furniture-demo {
@@ -311,7 +311,7 @@
 
   .demo-modal-title {
     color: var(--text-strong);
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-md);
     font-weight: var(--font-weight-semibold);
     margin-bottom: var(--space-2);
     padding-right: 44px;
@@ -389,7 +389,7 @@
 
   .chrome-name {
     color: var(--text-strong);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
   }
 </style>

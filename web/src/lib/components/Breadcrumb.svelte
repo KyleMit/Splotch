@@ -23,8 +23,8 @@
     align-items: center;
     gap: 8px;
     margin-bottom: 20px;
-    font-size: var(--font-size-md);
-    font-weight: 600;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
   }
 
   .crumb {
@@ -57,15 +57,15 @@
   }
 
   .crumb-sep {
-    color: var(--text-faint);
+    color: var(--text-soft);
   }
 
-  /* Hardcoded #666, not --text-mid, for the light-pinned host: /admin's
-     background is a hardcoded #f5f5f5, so --text-mid's dark-theme value
+  /* Hardcoded #666, not --text-soft, for the light-pinned host: /admin's
+     background is a hardcoded #f5f5f5, so --text-soft's dark-theme value
      (#b3b1bf) would drop to 1.9:1 there, while #666 clears 4.5:1 (the old
-     --text-faint #999 was a 2.6:1 axe serious). #666 is only safe on a light
+     --text-soft #999 was a 2.6:1 axe serious). #666 is only safe on a light
      background — it is 3.1:1 on the dark --app-bg — so the themed hosts (the
-     /dev harnesses) override this with var(--text-mid), whose light value is
+     /dev harnesses) override this with var(--text-soft), whose light value is
      this same #666. A themed host that adds a breadcrumb needs that override. */
   .crumb-current {
     color: #666;

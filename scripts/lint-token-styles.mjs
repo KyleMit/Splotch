@@ -58,11 +58,12 @@ const BASELINE = new Map(
     // palette-source.test.mjs requires.
     'lib/components/androidBeta/StepLedger.svelte': 10,
     // Deliberate constant: #666 is contrast-pinned for the one light-only host
-    // (/admin), where --text-mid's dark value would be 1.9:1. Themed hosts (the
-    // /dev harnesses) override it — see the note on .crumb-current.
+    // (/admin), where --text-soft's dark value would be 1.9:1. Themed hosts
+    // (the /dev harnesses) override it — see the note on .crumb-current.
     'lib/components/Breadcrumb.svelte': 1,
     // Photographic stage/polaroid whites + the #9559cd download-button hover
-    // (≠ --brand-hover #9961d1; converging it is a visible change).
+    // (a deliberate one-off shade; converging it onto the --brand-solid ramp
+    // is a visible change).
     'lib/components/AiImageResult.svelte': 3,
     // #000 white-stroke keyline for the Brush/Stroke trigger faces.
     'lib/components/ActionsPanel.svelte': 1,

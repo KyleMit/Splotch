@@ -60,8 +60,8 @@
   }
 
   .whats-new-date {
-    font-size: var(--font-size-md);
-    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     color: var(--text-strong);
   }
 
@@ -69,8 +69,8 @@
   .whats-new-body :global(h2),
   .whats-new-body :global(h3) {
     margin: 12px 0 6px 0;
-    font-size: var(--font-size-md);
-    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     color: var(--text-strong);
   }
 
@@ -85,7 +85,7 @@
   }
 
   .whats-new-body :global(li) {
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
     color: var(--text);
     line-height: 1.5;
     margin-bottom: 4px;
@@ -103,7 +103,7 @@
   .all-releases a {
     color: var(--brand-text);
     text-decoration: none;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
   }
 
   @media (hover: hover) {

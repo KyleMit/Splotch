@@ -112,7 +112,7 @@
     padding: 16px 20px;
     text-align: left;
     font-family: inherit;
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-md);
     font-weight: 600;
     color: var(--admin-accent);
     background: transparent;

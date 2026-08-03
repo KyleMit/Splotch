@@ -165,7 +165,7 @@
     --legal-bg: #f5f5f5; /* = --app-bg, light */
     --legal-sheet: #ffffff; /* = --surface, light */
     --legal-text: #2b2b33; /* ~ --text-strong (#333), light */
-    --legal-text-muted: #6c6c76; /* ~ --text-mid (#666), light */
+    --legal-text-muted: #6c6c76; /* ~ --text-soft (#666), light */
     --legal-heading: #6b3fa0; /* ~ --brand-text (#7c50bb), light */
     --legal-card: #f7f2fd; /* ~ --brand-wash (#ede7f6), light */
     /* No token; paired with --legal-card, which it has to outline visibly. */

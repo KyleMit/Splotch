@@ -30,7 +30,7 @@
 
   .wordmark {
     font-size: var(--font-size-xs);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     letter-spacing: 0.14em;
     text-transform: uppercase;
     /* Inside PageShell the page palette wins; anywhere else, the themed ink. */

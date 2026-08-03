@@ -77,8 +77,8 @@
 
   .about-tagline {
     margin: 0;
-    font-size: var(--font-size-md);
-    color: var(--text-mid);
+    font-size: var(--font-size-sm);
+    color: var(--text-soft);
     line-height: 1.5;
     max-width: 320px;
   }
@@ -87,8 +87,8 @@
     padding-top: 20px;
     border-top: 1px solid var(--border);
     text-align: center;
-    color: var(--text-faint);
-    font-size: var(--font-size-md);
+    color: var(--text-soft);
+    font-size: var(--font-size-sm);
   }
 
   .about-links p {
@@ -98,7 +98,7 @@
   .about-links a {
     color: var(--brand);
     text-decoration: none;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 
   @media (hover: hover) {
@@ -115,8 +115,8 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: var(--text-mid);
-    font-size: var(--font-size-md);
+    color: var(--text-soft);
+    font-size: var(--font-size-sm);
     transition: color var(--duration-base) ease;
   }
 
@@ -152,7 +152,7 @@
     cursor: pointer;
     text-align: center;
     font-size: var(--font-size-xs);
-    color: var(--text-faint);
+    color: var(--text-soft);
     font-family: var(--font-mono);
     user-select: none;
   }

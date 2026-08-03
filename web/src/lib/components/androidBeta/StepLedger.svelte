@@ -269,21 +269,21 @@
     background: var(--step-wash);
     color: var(--step-ink);
     font-size: 15px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     font-variant-numeric: tabular-nums;
   }
 
   h3 {
     margin: 0;
     font-size: 21px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     line-height: 1.25;
     color: var(--page-ink);
   }
 
   .optional {
     font-size: 11px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--page-muted);
@@ -293,7 +293,7 @@
     margin: 14px 0 0;
     max-width: var(--page-measure);
     font-size: 16px;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     line-height: 1.65;
     color: var(--page-body);
     text-wrap: pretty;
@@ -322,7 +322,7 @@
     background: var(--page-accent);
     color: var(--page-on-accent);
     font-size: 15px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     text-decoration: none;
     transition:
       background var(--duration-base) ease,
@@ -337,7 +337,7 @@
     margin: 0;
     max-width: 34ch;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     line-height: 1.5;
     color: var(--page-muted);
   }
@@ -357,7 +357,7 @@
   .card-label {
     margin: 0 0 4px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--step-ink);
@@ -366,7 +366,7 @@
   .card-body {
     margin: 0;
     font-size: 15px;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     line-height: 1.6;
     color: var(--callout-ink);
   }

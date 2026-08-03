@@ -47,39 +47,51 @@ privacy — is plain, professional, and direct ("We never keep a copy of your ke
 
 ## Token vocabulary
 
-| Group     | Tokens                                                                                                                                      |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Brand     | `--brand`, `--brand-rgb` (plain-RGBA brand fallbacks), `--brand-hover`, `--brand-tint-filter`, `--on-brand` (text/icon ink on brand fills), |
-|           | `--brand-solid` + `--brand-solid-hover` — the darkened brand **fill that carries text**. `--brand`                                          |
-|           | is only 3.4:1 against `--on-brand`, so a solid purple control with a white label fails WCAG AA at                                           |
-|           | body size; keep `--brand` for hairlines, focus rings, `accent-color` and tints (3:1 non-text)                                               |
-| Spacing   | `--space-1` (4px) … `--space-8` (40px), a 4px-based ramp                                                                                    |
-| Radius    | `--radius-xs/sm/md/lg/xl` (4/8/12/16/22px), `--radius-pill`                                                                                 |
-| Border    | `--border-width` (1px) — the hairline width; the color comes from a theme token (`--border`,                                                |
-|           | `--border-warm`, `--float-border`). Older components still write `1px solid` raw — prefer the token                                         |
-| Type      | `--font-size-xs/sm/md/lg/xl/2xl/3xl` (12–28px), `--font-family` (the app-wide sans stack),                                                  |
-|           | `--font-mono`, `--font-weight-semibold` (600 — the only weight with a token; 500/700 are still raw                                          |
-|           | everywhere they appear)                                                                                                                     |
-| Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s), `--ease-pop` (overshoot), `--ease-pop-strong` (harder                                         |
-|           | overshoot — visibly springier than `--ease-pop`, don't converge them), `--ease-glide` (settle)                                              |
-| Elevation | `--shadow-sm`, `--shadow-pop`, `--shadow-segment` (neutral; the last is the tight active-segment                                            |
-|           | lift — tighter and harder than `--shadow-sm`, don't converge them); `--float-shadow`,                                                       |
-|           | `--float-shadow-flyout` (themed, paper cards)                                                                                               |
-| Fill      | `--clear-gradient-rest` — the Clear Button's at-rest red, painted identically by the                                                        |
-|           | drag-to-clear coachmark ghost so the tutorial can't drift from the real control. Unthemed on                                                |
-|           | purpose (ADR-0052): it reads the same on both papers                                                                                        |
-| Stacking  | `--z-*` — the cross-component chrome order, `--z-canvas-chrome` (4) up to `--z-polaroid`                                                    |
-|           | (1003), listed low-to-high in `tokens.ts`. One list, not one context: all root-context except                                               |
-|           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under                                        |
-|           | `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers                                                             |
-| Theme     | surfaces, borders, text ramp, icon inks, brand/success/danger washes, paper, float-card chrome — the full                                   |
-|           | list with per-token docs is in `tokens.ts` (`ThemeTokens`)                                                                                  |
+Every token carries a one-line "reach for it when…" rule in **`web/src/lib/design/tokenUsage.ts`**,
+rendered beside its specimen on `/design` (ADR-0097). The table below is the shape of the
+vocabulary; the usage rules are the law — start from the defaults callout at the top of `/design`'s
+Foundations and only reach past a default when a rule says so.
+
+| Group     | Tokens                                                                                                 |
+| --------- | ------------------------------------------------------------------------------------------------------ |
+| Brand     | `--brand`, `--brand-rgb` (plain-RGBA brand fallbacks), `--on-brand` (the ink on brand fills).          |
+|           | `--brand` is the identity hue — hairlines, focus rings, `accent-color`, tints, and **textless** fills  |
+|           | (it is only 3.4:1 against `--on-brand`). A brand fill that carries a label rests on the themed         |
+|           | `--brand-solid`, and every brand fill hovers through the same ramp (`--brand-solid`, then              |
+|           | `--brand-solid-hover`) — there is deliberately no second, unthemed hover step (ADR-0097)               |
+| Spacing   | `--space-1` (4px) … `--space-8` (40px), a 4px-based ramp                                               |
+| Radius    | `--radius-sm/md/lg/xl` (8/12/16/22px), `--radius-pill` — inline chips sm, controls md, cards lg,       |
+|           | sheet-scale surfaces xl, pills pill. There is no xs step                                               |
+| Border    | `--border-width` (1px) — the hairline width; the color comes from a theme token (`--border`,           |
+|           | `--border-warm`, `--float-border`). Older components still write `1px solid` raw — prefer the token    |
+| Type      | `--font-size-xs/sm/md/lg/xl/2xl` (12/14/16/18/22/28px) — fine print · UI chrome · body prose ·         |
+|           | ledes/section heads · modal titles · page H1s. `--font-family`, `--font-mono`,                         |
+|           | `--font-weight-medium/semibold/bold` (500/600/700 — quiet labels · buttons/active states/sub-heads ·   |
+|           | headings; body prose stays at the untokenized 400 default)                                             |
+| Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s); two curves only — `--ease-pop` (springy overshoot:       |
+|           | anything that pops in or celebrates) and `--ease-glide` (anything that settles or leaves). Pair        |
+|           | every curve with a duration token, never a raw seconds literal                                         |
+| Elevation | `--shadow-control` (the tight lift on a small raised control — modal close disc, selected segment      |
+|           | thumb), `--shadow-pop` (deep overlay lift under modal cards); `--float-shadow`,                        |
+|           | `--float-shadow-flyout` (themed, paper cards)                                                          |
+| Fill      | `--clear-gradient-rest` — the Clear Button's at-rest red, painted identically by the                   |
+|           | drag-to-clear coachmark ghost so the tutorial can't drift from the real control. Unthemed on           |
+|           | purpose (ADR-0052): it reads the same on both papers                                                   |
+| Stacking  | `--z-*` — the cross-component chrome order, `--z-canvas-chrome` (4) up to `--z-polaroid`               |
+|           | (1003), listed low-to-high in `tokens.ts`. One list, not one context: all root-context except          |
+|           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under   |
+|           | `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers                        |
+| Theme     | surfaces, borders, the three-step text ramp (`--text-strong` headings · `--text` body ·                |
+|           | `--text-soft` de-emphasized, pinned to hold 4.5:1 at small sizes), icon inks, brand/success/danger     |
+|           | washes, paper, float-card chrome — the full list with per-token docs is in `tokens.ts` (`ThemeTokens`) |
 
 **Adding a token:** it must earn its place — a semantic meaning used (or clearly about to be used)
-in 2–3 places. Prefer reusing an existing step of a ramp over minting a near-duplicate. New themed
-tokens need both light and dark values (the compiler enforces this). Minting a token isn't done
-until it's registered in the vocabulary table above and renders on `/design` — an undiscoverable
-token guarantees the next hardcoded duplicate (a failure review has caught three times).
+in 2–3 places. Prefer reusing an existing step of a ramp over minting a near-duplicate (ADR-0097
+pruned the last crop of ≤2-consumer tokens; don't regrow them). New themed tokens need both light
+and dark values (the compiler enforces this). Minting a token isn't done until it's registered in
+the vocabulary table above, has its usage rule in `tokenUsage.ts` (the `Record` types make the
+compiler demand one), and renders on `/design` — an undiscoverable token guarantees the next
+hardcoded duplicate (a failure review has caught three times).
 
 ## Primitives
 

@@ -23,17 +23,18 @@ const BRAND_RGB = [
 // Brand accent used for active/hover chrome across parent + AI UI.
 // Custom properties pierce Svelte's style scoping, so components reference
 // these directly via var().
+//
+// --brand is the identity hue: hairlines, focus rings, accent-color, and the
+// fills that carry no text (it is only 3.4:1 against --on-brand). A brand fill
+// that carries a label rests on the themed --brand-solid instead, and every
+// brand fill — labeled or not — darkens through the same themed ramp on hover
+// (--brand-solid, then --brand-solid-hover). There is deliberately no second,
+// unthemed hover step.
 export const brand = {
   brand: BRAND_HEX,
   // Plain-RGBA brand-shadow fallbacks source their channels from --brand-rgb;
   // the following color-mix declaration remains the modern rendering path.
   brandRgb: BRAND_RGB,
-  brandHover: '#9961d1',
-  // Filter chain that renders a black icon in --brand. Filters can't reference
-  // a color directly, so this hand-tuned chain re-encodes the brand color —
-  // keep the two in sync if the brand color ever changes.
-  brandTintFilter:
-    'invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%)',
   // Text/icon ink on --brand fills. Lives here (unthemed) because --brand
   // itself is constant across themes, so what sits on it is too.
   onBrand: '#fff',
@@ -54,7 +55,8 @@ export const scale = {
   space7: '32px',
   space8: '40px',
 
-  radiusXs: '4px',
+  // Controls sit on sm/md, cards on lg, sheet-scale surfaces on xl, pills on
+  // pill. There is no xs step: inline chips (code, kbd) round at sm.
   radiusSm: '8px',
   radiusMd: '12px',
   radiusLg: '16px',
@@ -64,14 +66,15 @@ export const scale = {
   borderWidth: '1px',
 
   // Named --font-size-*, not --text-*, so the type ramp can't collide with
-  // the themed text-color family (--text, --text-strong, --text-muted, …).
+  // the themed text-color family (--text, --text-strong, --text-soft).
+  // Six steps, one role each: xs fine print · sm UI chrome · md body prose ·
+  // lg ledes and section heads · xl modal titles · 2xl page H1s.
   fontSizeXs: '12px',
-  fontSizeSm: '13px',
-  fontSizeMd: '14px',
-  fontSizeLg: '16px',
-  fontSizeXl: '18px',
-  fontSize2xl: '22px',
-  fontSize3xl: '28px',
+  fontSizeSm: '14px',
+  fontSizeMd: '16px',
+  fontSizeLg: '18px',
+  fontSizeXl: '22px',
+  fontSize2xl: '28px',
 
   // Text-input font-size floor: iOS Safari / WKWebView zooms the visual
   // viewport when a focused input's font-size is < 16px, which on the
@@ -87,28 +90,32 @@ export const scale = {
   // Raw code/version values (masked API keys, version strings, inline code).
   fontMono: "'Courier New', monospace",
 
+  // The weight ladder: 400 (untokenized default) body prose · medium quiet
+  // labels · semibold buttons, active states, sub-heads · bold headings.
+  fontWeightMedium: '500',
   fontWeightSemibold: '600',
+  fontWeightBold: '700',
 
   durationFast: '0.15s',
   durationBase: '0.2s',
   durationSlow: '0.35s',
-  // The overshoot pop shared by the fly-in dialogs; the settle glide the
-  // polaroid uses; the harder overshoot for celebratory accents (download-done
-  // pop, swatch ring, Clear Button) — deliberately springier than --ease-pop,
-  // so don't converge the two without design review.
-  easePop: 'cubic-bezier(0.34, 1.4, 0.64, 1)',
+  // Two curves only: the springy overshoot for anything that pops in or
+  // celebrates (dialog fly-ins, download-done, swatch ring, Clear Button),
+  // and the glide for anything that settles or leaves (the polaroid, the
+  // clear ripple). ADR-0097 folded the former softer pop into this one.
+  easePop: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
   easeGlide: 'cubic-bezier(0.22, 1, 0.36, 1)',
-  easePopStrong: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
 
   // Neutral (unthemed) elevation. The paper-floating cards use the *themed*
   // --float-shadow tokens instead — these are for modal-layer chrome where
   // one shadow reads correctly on both themes.
-  shadowSm: '0 2px 6px rgba(0, 0, 0, 0.12)',
+  //
+  // shadowControl is the tight, hard lift on a small raised control — the
+  // modal close disc, a segmented toggle's selected thumb — close enough that
+  // the control reads as sitting just above its surface. shadowPop is the
+  // deep overlay lift for whole modal cards.
+  shadowControl: '0 1px 4px rgba(0, 0, 0, 0.18)',
   shadowPop: '0 8px 32px rgba(0, 0, 0, 0.3)',
-  // The tight lift on the selected segment of a segmented toggle (theme,
-  // orientation). Deliberately harder and closer than --shadow-sm so the
-  // thumb reads as sitting just above its track — don't converge the two.
-  shadowSegment: '0 1px 4px rgba(0, 0, 0, 0.18)',
 
   // The Clear Button's at-rest fill, mirrored by the drag-to-clear coachmark
   // ghost so the tutorial always matches the real control.
@@ -187,9 +194,12 @@ export interface ThemeTokens {
   sliderNotch: string;
   textStrong: string;
   text: string;
-  textMid: string;
-  textMuted: string;
-  textFaint: string;
+  /**
+   * The single de-emphasized step — help text, metadata, separators,
+   * placeholders. Its value is pinned to hold 4.5:1 on the app grounds in
+   * both themes, so small soft text never needs a darker exception.
+   */
+  textSoft: string;
   /** monochrome icon fill (matches the SVGs' baked fill) */
   iconInk: string;
   iconMuted: string;
@@ -287,9 +297,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     sliderNotch: 'rgba(0, 0, 0, 0.22)',
     textStrong: '#333',
     text: '#555',
-    textMid: '#666',
-    textMuted: '#888',
-    textFaint: '#999',
+    textSoft: '#666',
     iconInk: '#1f1f1f',
     iconMuted: '#737373',
     iconMutedHover: '#404040',
@@ -330,9 +338,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     sliderNotch: 'rgba(255, 255, 255, 0.4)',
     textStrong: '#eceaf2',
     text: '#c9c7d3',
-    textMid: '#b3b1bf',
-    textMuted: '#918f9c',
-    textFaint: '#85838f',
+    textSoft: '#b3b1bf',
     iconInk: '#dedce8',
     iconMuted: '#a8a6b3',
     iconMutedHover: '#e8e6f0',

@@ -90,7 +90,7 @@
     right: calc(-10px + env(safe-area-inset-right));
     z-index: var(--z-clear-button);
     pointer-events: none; /* Allow clicks through container to children */
-    transition: transform 0.4s var(--ease-pop-strong);
+    transition: transform 0.4s var(--ease-pop);
   }
 
   /* While the finger is in control, snap to position with no easing.
@@ -204,7 +204,7 @@
     transform: scale(0.85);
     transition:
       opacity var(--duration-base) ease,
-      transform 0.3s var(--ease-pop-strong),
+      transform 0.3s var(--ease-pop),
       border-color var(--duration-fast) ease,
       border-style var(--duration-fast) ease,
       background var(--duration-fast) ease;

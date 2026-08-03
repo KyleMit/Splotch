@@ -112,8 +112,8 @@
   }
 
   .ai-prompt-styles legend {
-    font-size: var(--font-size-md);
-    font-weight: 600;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
     color: var(--text);
     padding: 0;
     margin-bottom: 12px;
@@ -151,7 +151,7 @@
 
   .ai-style-label {
     font-size: var(--font-size-sm);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--text);
     user-select: none;
   }

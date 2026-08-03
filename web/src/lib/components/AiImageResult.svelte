@@ -330,13 +330,13 @@
   }
   .ai-result-error p {
     margin: 0;
-    font-size: var(--font-size-lg);
-    font-weight: 600;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
   }
   .ai-result-error p.ai-result-error-sub {
-    font-size: var(--font-size-md);
-    font-weight: 500;
-    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-soft);
     max-width: 280px;
   }
 
@@ -345,8 +345,8 @@
     margin: 0;
     color: var(--success-accent);
     font-size: 15px;
-    font-weight: 700;
-    animation: downloadPop 0.4s backwards 0.25s var(--ease-pop-strong);
+    font-weight: var(--font-weight-bold);
+    animation: downloadPop 0.4s backwards 0.25s var(--ease-pop);
   }
 
   /* ── Download button ── */
@@ -363,13 +363,13 @@
     gap: 8px;
     color: white;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.4);
     box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 40%, transparent);
     transition:
       transform var(--duration-fast) ease,
       background var(--duration-base) ease;
-    animation: downloadPop 0.4s backwards 0.25s var(--ease-pop-strong);
+    animation: downloadPop 0.4s backwards 0.25s var(--ease-pop);
   }
 
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
@@ -414,7 +414,7 @@
        The fly-out's delay (0.9s) covers the morph + a brief hold in the center. */
     transform: translate(-50%, -50%) rotate(-3deg);
     transition:
-      transform 0.4s var(--ease-pop-strong),
+      transform 0.4s var(--ease-pop),
       background 0.4s ease;
     animation: ai-polaroid-fly 0.85s 0.9s cubic-bezier(0.55, 0, 0.85, 0.2) forwards;
   }

@@ -57,7 +57,7 @@
     --page-sheet: var(--surface);
     --page-ink: var(--text-strong);
     --page-body: var(--text);
-    --page-muted: var(--text-mid);
+    --page-muted: var(--text-soft);
     --page-rule: var(--border);
     /* --brand itself is 3.4:1 on the light sheet and fails WCAG AA for body-size
        text; --brand-text is the ramp's accessible step in both themes. */
@@ -154,7 +154,7 @@
     white-space: nowrap;
     color: var(--page-link);
     font-size: 15px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     text-decoration: none;
   }
 
@@ -172,7 +172,7 @@
   h1 {
     margin: 0;
     font-size: 46px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     line-height: 1.06;
     letter-spacing: -0.015em;
     color: var(--page-ink);
@@ -183,7 +183,7 @@
     margin: 16px 0 0;
     max-width: var(--page-measure);
     font-size: 18px;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     line-height: 1.6;
     color: var(--page-body);
   }

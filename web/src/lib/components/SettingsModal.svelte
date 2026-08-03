@@ -271,7 +271,7 @@
     margin: 0;
     font-size: 24px;
     color: var(--text-strong);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
   }
 
   .settings-header-sub h2 {
@@ -386,14 +386,14 @@
   }
 
   .hub-title {
-    font-size: var(--font-size-lg);
-    font-weight: 600;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
     color: var(--text-strong);
   }
 
   .hub-subtitle {
     font-size: var(--font-size-sm);
-    color: var(--text-muted);
+    color: var(--text-soft);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -406,7 +406,7 @@
   }
 
   :global(.hub-chevron svg) {
-    fill: var(--text-faint);
+    fill: var(--text-soft);
   }
 
   /* ── Tablet two-pane ────────────────────────────────────────────────────── */
@@ -437,10 +437,10 @@
     border: none;
     border-radius: var(--radius-md);
     background: transparent;
-    color: var(--text-mid);
+    color: var(--text-soft);
     font-family: inherit;
     font-size: 15px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     cursor: pointer;
     text-align: left;
     transition:
@@ -482,8 +482,8 @@
 
   .settings-pane-title {
     margin: 0 0 20px 0;
-    font-size: var(--font-size-2xl);
-    font-weight: 600;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
     color: var(--text-strong);
   }
 
