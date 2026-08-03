@@ -70,9 +70,28 @@ scope, and GitHub protections own that boundary. The wrappers are intentionally 
 macOS paths, and `allowUnsandboxedCommands: true` is weaker isolation than a VM.
 
 The checkpoint names CI attempts `ciRepairContinuations`: only handing a confirmed failure back to
-the implementer for code or configuration changes consumes the limit. Polls, infrastructure reruns,
-and external-service waits do not. Quarantine clears the recorded stack number immediately after
-GitHub confirms unstacking so a resumed run cannot accidentally mutate the old stack.
+the implementer for product-code changes consumes the limit. Polls, infrastructure reruns,
+controlled head/base diagnosis, support work on a shared gate, and external-service waits do not.
+Quarantine clears the recorded stack number immediately after GitHub confirms unstacking so a
+resumed run cannot accidentally mutate the old stack.
+
+## CI self-heal decision
+
+PR #729 exposed a classification error in the first real issue-stack run. Its fast WebKit crayon
+scenario failed twice under system-wide renderer slowdown even though the changed audio path could
+not execute in `/dev/engine`, exact head/base measurements were indistinguishable, and the sibling
+multi-finger control remained healthy. The workflow treated exhaustion of a product repair budget as
+sufficient reason to quarantine issue #709. That was procedurally consistent with the original
+skill, but wrong on the merits: the evidence belonged to the gate, not the product change. Issue
+#709 was later replayed and merged through PR #739; issue #740 owns the gate repair.
+
+The durable rule is causal isolation before budget accounting. A red check never becomes optional,
+but a non-causal red check also never becomes product blame. The orchestrator pauses the queue,
+creates a support layer below the affected product PR, repairs the shared gate with a negative
+control and stability evidence, and then reruns the product PR on the repaired base. This adds one
+support PR when necessary rather than overloading the product PR or discarding good work. If the
+gate cannot be repaired safely, the queue is globally blocked because later green results from the
+same gate are not credible.
 
 Open validation questions:
 

@@ -88,6 +88,31 @@ on multiple commits as patches cross the resident budget. Requiring the expensiv
 keeps that regression detectable without treating one host interruption as product behavior. The
 real-device maximum gates in ADR-0090 remain responsible for isolated user-visible hitches.
 
+The fast pull-request tier also normalizes `crayon-scribbles` against a same-run renderer control.
+Its gate value is raw commit P95 divided by the slowdown in `engine.draw total / calls` relative to
+the controlled healthy reference of 0.4 ms per crayon draw call. The factor never goes below one, so
+a fast host cannot make a regression look worse. The 25 ms threshold is unchanged and still means
+new stroke-end work relative to healthy renderer throughput. A commit-only full-raster regression
+with normal live-draw throughput therefore still fails. `multi-finger`, the deterministic negative
+control for a cold encode returning to the commit path, always gates raw P95. Release-tag and
+on-demand full runs also gate every scenario on raw P95 and keep feeding raw values to fast-set
+history.
+
+This exception is specific to the shared-runner fast crayon scenario. PR #729 supplied the evidence:
+two attempts reported crayon commit P95 of 60 ms and 43 ms while the same scenario's complete draw
+phase slowed to roughly 100 and 86 seconds; its sibling multi-finger scenario remained within the
+raw gate, the changed audio code could not execute in `/dev/engine`, and controlled head/base runs
+were indistinguishable. Treating those failures as product evidence quarantined valid issue #709
+until it was replayed through PR #739. The gate repair retains the failing raw values in both report
+formats and has unit controls for the noisy healthy measurements, the known-bad commit-only shape,
+and the unnormalized release path.
+
+The harness captures `drawEnd` inside the same browser evaluation that dispatches the final
+synchronous stroke. Capturing it in a later Playwright round trip left a scheduling gap where
+Safari's 200 ms `scheduleIdle` fallback could begin a healthy deferred encode, causing the report to
+misclassify that encode as synchronous commit work. The phase helper returns the in-page boundary;
+its later user-timing bookkeeping is outside the attribution window.
+
 A third full-suite tier on every `main` push or a nightly schedule was considered and rejected. It
 would spend an additional macOS runner after the pull-request gate has already exercised the two
 distinct load-bearing paths. The other five scenarios broaden shape coverage but do not guard a
@@ -107,6 +132,8 @@ rather than in a delayed middle tier.
   headroom and miss-rate drift that static declarations cannot.
 * \+ The rolling artifact makes the current miss streak and the full-run inputs to membership
   selection inspectable without granting the workflow repository write access.
+* \+ The noisy fast crayon scenario remains blocking without confusing renderer-wide shared-host
+  slowdown with a new commit-only work shape; raw release evidence remains unchanged.
 * − Shared-runner noise still limits the gate to recurrent catastrophic regressions; isolated and
   smaller real timing regressions can pass and belong to deterministic counters or physical-device
   measurements.

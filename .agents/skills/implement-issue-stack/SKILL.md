@@ -29,14 +29,19 @@ for another repository during preflight.
 * Never merge, auto-merge, close as successful, deploy, release, or push to the trunk branch.
 * Never skip red CI. Every applicable red or pending check makes CI repair the immediate next task,
   whether or not GitHub labels it required.
+* Never deliver a PR with a red or pending check. A check proved non-causal to the product diff is a
+  defect in the gate or its infrastructure to repair for the whole queue, not an exception to grant
+  one PR.
 * Never wait for the user on an ordinary product choice. Record options, pros/cons, ranking, chosen
   option, rejected alternatives, and reversibility in the PR, then proceed with the best reversible
   in-scope choice.
 * Do stop for a global boundary that cannot be chosen safely: missing authorization, repository or
   account mismatch, unavailable GitHub/Claude infrastructure after retry, destructive data work,
   secrets, spending, deployments, or required access outside this repository.
-* A failure confined to one issue does not strand the queue. Quarantine that issue as described
-  below and continue from the last successful base.
+* A product failure confined to one issue does not strand the queue. Quarantine that issue as
+  described below and continue from the last successful base. A gate or infrastructure failure is
+  queue-wide: pause product work, repair the shared gate, and retry the affected PR before
+  continuing.
 
 ## Preflight the whole queue
 
@@ -133,17 +138,46 @@ draft.
 ### 4. Drive initial CI to green
 
 Inspect all checks with `gh pr checks` and Actions logs. Its nonzero exit for red or pending checks
-is loop state, not an orchestration crash. A failed check is blocking unless it is demonstrably
-inapplicable to this PR and that rationale is recorded. Resume the original implementer with the
-failure names, relevant log excerpts, and current head OID. Its next task is to diagnose, fix,
-verify locally, commit, push, and return control. Then re-run CI.
+is loop state, not an orchestration crash. A failed check is blocking. Resume the original
+implementer with the failure names, relevant log excerpts, and current head OID. Its next task is to
+diagnose, fix, verify locally, commit, push, and return control. Then re-run CI.
+
+Before charging a product repair continuation or quarantining an issue, establish causality. Read
+the raw failure artifact and compare the failing head with its exact base OID under the same
+command, environment, and runner class. Use repeated or interleaved head/base runs when timing or
+randomness is involved. A failure is a gate/infrastructure defect when the exact base also fails
+with the same shape, head and base distributions are indistinguishable, or the product diff cannot
+execute on the failing path. One passing rerun is diagnostic evidence only; it does not repair a
+flaky gate.
+
+For a gate/infrastructure defect:
+
+1. Keep the product PR open and on the success path. Do not remove `Fixes #<issue>`, close it, or
+   quarantine it on this evidence. Pause the product queue and checkpoint the failing run, exact
+   head/base OIDs, controlled comparison, and classification.
+2. Create an isolated support branch from `last_good_base` and open a draft support PR for the gate
+   repair. If a tracking issue exists, link it normally; otherwise reference the affected product
+   PRs. A support PR is an explicit exception to the one-product-issue/one-PR mapping.
+3. Repair the owning test, harness, workflow, or runner configuration without weakening the product
+   contract. Add a deterministic negative control that still fails for the defect the gate exists to
+   catch, plus repeated or load-varied evidence that the healthy base is stable. Run the relevant
+   `testing` or `profiling` workflow and the standalone Claude review on the support PR.
+4. Put the green support PR immediately below the product PR in the GitHub stack, rebase or replay
+   the product branch onto that repaired support branch, re-link the stack, and rerun all checks and
+   review for the new product head. The infrastructure work does not consume the product issue's CI
+   repair budget.
+
+If the shared gate cannot be repaired safely within the repository, stop with a global blocker.
+Continuing the queue or quarantining one product issue would treat unreliable CI as trustworthy for
+the remaining issues.
 
 Poll pending checks every 30 seconds for up to 45 minutes. At the deadline, inspect the underlying
 run: retry one canceled or GitHub-infrastructure run; treat repository-wide GitHub unavailability as
-a global blocker; otherwise send the evidence through the normal repair budget and quarantine the
-issue when exhausted. Allow the initial attempt plus two focused repair continuations total for the
-issue, including failures after review pushes. Never pause merely because CI is red, and never
-advance to review or the next issue while an applicable check is red or pending.
+a global blocker; classify repository-owned gate failures with the procedure above; otherwise send
+confirmed product failures through the normal repair budget and quarantine the issue when exhausted.
+Allow the initial attempt plus two focused product repair continuations total for the issue,
+including failures after review pushes. Never pause merely because CI is red, and never advance to
+review or the next issue while an applicable check is red or pending.
 
 ### 5. Run a standalone Claude adversarial review
 
@@ -205,11 +239,15 @@ clean up only its disposable local worktree, and begin the next issue.
 
 Use these per-issue budgets: initial implementation plus two CI repair continuations, and two review
 rounds. `ciRepairContinuations` starts at zero and increments only when the implementer is resumed
-to change code or configuration in response to a CI failure; polling and the one infrastructure
-rerun do not consume it. A new, well-evidenced failure may justify one final focused implementer
-continuation; record why. Do not loop indefinitely on unchanged evidence.
+to change product code in response to a product-caused CI failure; polling, the one infrastructure
+rerun, controlled head/base diagnosis, and shared-gate support work do not consume it. A new,
+well-evidenced product failure may justify one final focused implementer continuation; record why.
+Do not loop indefinitely on unchanged evidence.
 
-When an issue remains broken after its budget:
+Quarantine is only for an implementation defect that reproduces on the product head but not its
+exact base, or remains after the owning gate has been repaired. Never quarantine a product issue for
+a base failure, shared-runner flake, canceled job, service outage, or other non-causal check
+failure. When a product issue remains broken after its budget:
 
 1. Preserve its remote branch. Replace `Fixes #<issue>` with `Refs #<issue>` so closure is not
    implied, add a rich failure postmortem to the PR, and close that PR as unsuccessful.
@@ -229,4 +267,5 @@ When an issue remains broken after its budget:
 Write `.issue-stack/summary.md` and finish with the same compact table in the final response: issue,
 PR, branch/base OIDs, status, CI, review rounds, and autonomous decisions. Call out quarantined
 issues and global blockers with exact recovery commands. Re-read every delivered PR and stack base
-one final time. State explicitly that no PR was merged.
+one final time. Include any gate-repair support PRs and the product PRs they unblocked. State
+explicitly that no PR was merged.

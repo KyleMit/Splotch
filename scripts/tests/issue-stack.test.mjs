@@ -207,6 +207,13 @@ describe('skill contracts', () => {
       'utf8'
     );
     expect(stackSkill).toContain('A failed check is blocking');
+    expect(stackSkill).toContain('establish causality');
+    expect(stackSkill).toContain('One passing rerun is diagnostic evidence only');
+    expect(stackSkill).toContain('Keep the product PR open and on the success path');
+    expect(stackSkill).toContain('immediately below the product PR in the GitHub stack');
+    expect(stackSkill).toMatch(/does not consume the product issue's CI\s+repair budget/);
+    expect(stackSkill).toContain('Never quarantine a product issue for');
+    expect(stackSkill).not.toContain('demonstrably inapplicable to this PR');
     expect(stackSkill).toContain('Never pause merely because CI is red');
     expect(stackSkill).toContain('last_good_base');
     expect(stackSkill).toMatch(/`ready_for_review`\s+event/);

@@ -422,6 +422,10 @@ describe('engine selection', () => {
       'multi-finger',
       'crayon-scribbles',
     ]);
+    expect(report.gate.scenarioTimings).toEqual([
+      expect.objectContaining({ key: 'multi-finger', normalized: false }),
+      expect.objectContaining({ key: 'crayon-scribbles', normalized: true }),
+    ]);
     expect(report.fastSetEvaluation).toBeNull();
   });
 
@@ -478,6 +482,8 @@ describe('the commit gate', () => {
     expect(gate.breaches.map((s) => s.key)).toEqual(['multi-finger']);
     expect(process.exitCode).toBe(1);
     expect(error).toHaveBeenCalledWith(expect.stringContaining('Commit gate FAILED on webkit'));
+    const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
+    expect(report.gate.breaches).toEqual(['multi-finger']);
     // The breach has to name its own cause, or the run says "too slow" and
     // leaves the reader where #444 was left — guessing at which stage.
     expect(error).toHaveBeenCalledWith(expect.stringContaining('encode 55.0'));
