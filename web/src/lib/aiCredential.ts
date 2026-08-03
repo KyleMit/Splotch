@@ -1,11 +1,12 @@
 import { apiUrl } from '$lib/api';
 
-const GEMINI_KEY_PREFIX = 'AIza';
+// Gemini API keys are issued as classic "AIza…" Standard keys or the "AQ.…"
+// Auth keys Google switched to in 2026. Anything else is treated as a secret
+// access code and checked against the managed allowlist instead.
+const GEMINI_KEY_PREFIXES = ['AIza', 'AQ.'] as const;
 
-// Gemini API keys are issued in the form "AIza…". Anything else is treated as a
-// secret access code and checked against the managed allowlist instead.
 export function looksLikeApiKey(value: string): boolean {
-  return value.startsWith(GEMINI_KEY_PREFIX);
+  return GEMINI_KEY_PREFIXES.some((prefix) => value.startsWith(prefix));
 }
 
 type CredentialKind = 'apiKey' | 'accessCode';
