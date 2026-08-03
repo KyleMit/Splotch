@@ -188,7 +188,7 @@ test('a merged pen stream still targeted at a UI control paints once over the ca
   expect(s.canUndo).toBe(true);
 });
 
-test('a pen that exits at the edge and returns resumes drawing', async ({ page }) => {
+test('a pen edge return resumes fresh geometry inside one undo group', async ({ page }) => {
   const s = await page.evaluate(() => {
     window.__engine.pointerEventsSync(
       [
@@ -202,11 +202,86 @@ test('a pen that exits at the edge and returns resumes drawing', async ({ page }
       ],
       'pen'
     );
-    return { ...window.__engineState, painted: window.__engine.nonTransparentCount() };
+    return {
+      ...window.__engineState,
+      painted: window.__engine.nonTransparentCount(),
+      gapAlpha: window.__engine.pixelAt(140, 150)[3],
+      snapshots: window.__engine.getUndoDebug().snapshots,
+    };
   });
-  expect(s.strokeEnds).toBe(2);
+  expect(s.strokeEnds).toBe(1);
+  expect(s.drawStops).toBe(2);
+  expect(s.snapshots).toBe(1);
+  expect(s.gapAlpha).toBe(0);
   expect(s.painted).toBeGreaterThan(500);
+
+  await page.evaluate(() => window.__engine.undo());
+  await expect.poll(() => page.evaluate(() => window.__engine.nonTransparentCount())).toBe(0);
+  expect((await state(page)).canUndo).toBe(false);
 });
+
+for (const liftType of ['pointerup', 'pointercancel'] as const) {
+  test(`a pen that never returns closes its undo group on window ${liftType}`, async ({ page }) => {
+    const atExit = await page.evaluate(() => {
+      window.__engine.pointerEventsSync(
+        [
+          { type: 'pointerdown', pointerId: 1, x: 40, y: 80, buttons: 1 },
+          { type: 'pointermove', pointerId: 1, x: 120, y: 80, buttons: 1 },
+          { type: 'pointerout', pointerId: 1, x: 299, y: 80, buttons: 1 },
+        ],
+        'pen'
+      );
+      return { ...window.__engineState };
+    });
+    expect(atExit.strokeEnds).toBe(0);
+    expect(atExit.drawStops).toBe(1);
+    expect(atExit.canUndo).toBe(false);
+
+    const afterLift = await page.evaluate((eventType) => {
+      document.body.dispatchEvent(
+        new PointerEvent(eventType, {
+          pointerId: 1,
+          pointerType: 'pen',
+          buttons: 0,
+          clientX: 320,
+          clientY: 80,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      return {
+        ...window.__engineState,
+        snapshots: window.__engine.getUndoDebug().snapshots,
+      };
+    }, liftType);
+    expect(afterLift.strokeEnds).toBe(1);
+    expect(afterLift.drawStops).toBe(1);
+    expect(afterLift.canUndo).toBe(true);
+    expect(afterLift.snapshots).toBe(1);
+
+    const afterNextStroke = await page.evaluate(() => {
+      window.__engine.strokeSync(
+        [
+          { x: 40, y: 220 },
+          { x: 120, y: 220 },
+        ],
+        'pen'
+      );
+      return {
+        ...window.__engineState,
+        snapshots: window.__engine.getUndoDebug().snapshots,
+      };
+    });
+    expect(afterNextStroke.strokeEnds).toBe(2);
+    expect(afterNextStroke.snapshots).toBe(2);
+
+    await page.evaluate(() => window.__engine.undo());
+    expect(await page.evaluate(() => window.__engine.pixelAt(60, 80)[3])).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.__engine.pixelAt(60, 220)[3])).toBe(0);
+    await page.evaluate(() => window.__engine.undo());
+    await expect.poll(() => page.evaluate(() => window.__engine.nonTransparentCount())).toBe(0);
+  });
+}
 
 // Adoption must only fire for streams whose pointerdown was genuinely dropped.
 // A pen gesture that BEGAN on a UI control with a delivered pointerdown

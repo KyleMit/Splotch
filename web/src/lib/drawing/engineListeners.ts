@@ -8,6 +8,7 @@ interface EngineListenerHandlers {
   startDrawing: (event: PointerEvent) => void;
   draw: (event: PointerEvent) => void;
   stopDrawing: (event: PointerEvent) => void;
+  finishPenCanvasExit: (event: PointerEvent) => void;
   trackPenCanvasExit: (event: PointerEvent) => void;
   cancelTouch: (event: TouchEvent) => void;
   registerPenListeners: (listen: ListenWindowFn) => void;
@@ -41,6 +42,9 @@ export function registerDrawingEngineListeners(
     handlers.stopDrawing(event);
   });
   listen(removers, canvas, 'pointercancel', handlers.stopDrawing);
+  listen(removers, window, 'pointerdown', handlers.finishPenCanvasExit, true);
+  listen(removers, window, 'pointerup', handlers.finishPenCanvasExit, true);
+  listen(removers, window, 'pointercancel', handlers.finishPenCanvasExit, true);
   // iPadOS Scribble claims an Apple Pencil stroke that starts soon after a pen
   // tap: pointer events still arrive and the engine paints, but the system never
   // presents those frames. Cancelling the parallel TOUCH stream is the only

@@ -59,11 +59,16 @@ export function createPenStreamAdopter(deps: PenStreamAdopterDeps) {
   // pointerdown. Only a contact the engine still owns at the exit is eligible:
   // the isTracked gate excludes a pen drag that began on a UI control before
   // it reaches canvasExitIds. Once an id is in that set, liveDownIds no longer
-  // excludes it from the orphan predicate.
+  // excludes it from the orphan predicate, and the engine keeps its undo
+  // command open until re-entry or a window-level lift consumes the id.
   function trackCanvasExit(e: PointerEvent): void {
     if (e.pointerType !== 'pen' || !deps.isTracked(e.pointerId)) return;
     canvasExitIds.add(e.pointerId);
   }
+
+  const clearCanvasExits = () => canvasExitIds.clear();
+  const consumeCanvasExit = (pointerId: number) => canvasExitIds.delete(pointerId);
+  const hasCanvasExit = () => canvasExitIds.size > 0;
 
   // Pens get no implicit capture, so an orphaned stream's moves usually
   // hit-test onto the canvas (engine.ts's draw() adopts those directly) — but
@@ -92,5 +97,14 @@ export function createPenStreamAdopter(deps: PenStreamAdopterDeps) {
     canvasExitIds.clear();
   }
 
-  return { forgetPointer, isOrphanPenContact, registerWindowListeners, reset, trackCanvasExit };
+  return {
+    clearCanvasExits,
+    consumeCanvasExit,
+    forgetPointer,
+    hasCanvasExit,
+    isOrphanPenContact,
+    registerWindowListeners,
+    reset,
+    trackCanvasExit,
+  };
 }

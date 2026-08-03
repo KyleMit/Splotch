@@ -6,7 +6,7 @@ import {
   TILE_HISTORY_FOLD_IDLE_MS,
 } from '../src/lib/drawing/tiledRenderer';
 import { MAX_UNDO_DEPTH } from '../src/lib/drawing/undoHistory';
-import { openDrawer } from './flows-harness';
+import { openDrawer, pickBrush } from './flows-harness';
 import { draw, firstOpaquePixel, gotoApp, renderedCanvasHandle } from './helpers';
 
 async function alphaAt(page: Page, xFraction: number, yFraction: number) {
@@ -28,6 +28,77 @@ async function alphaAt(page: Page, xFraction: number, yFraction: number) {
   } finally {
     await rendered.dispose();
   }
+}
+
+async function opaquePixelsInBand(page: Page, leftFraction: number, rightFraction: number) {
+  const rendered = await renderedCanvasHandle(page);
+  try {
+    return await rendered.evaluate(
+      (canvas, { leftFraction, rightFraction }) => {
+        const x = Math.floor(canvas.width * leftFraction);
+        const y = Math.floor(canvas.height * 0.38);
+        const width = Math.ceil(canvas.width * (rightFraction - leftFraction));
+        const height = Math.ceil(canvas.height * 0.04);
+        const data = canvas.getContext('2d')!.getImageData(x, y, width, height).data;
+        let opaque = 0;
+        for (let index = 3; index < data.length; index += 4) {
+          if (data[index] > 0) opaque++;
+        }
+        return opaque;
+      },
+      { leftFraction, rightFraction }
+    );
+  } finally {
+    await rendered.dispose();
+  }
+}
+
+async function dispatchPenEdgeReturn(page: Page) {
+  await page.locator('#drawingCanvas').evaluate((canvas: HTMLCanvasElement) => {
+    const rect = canvas.getBoundingClientRect();
+    const fire = (type: string, xFraction: number, buttons: number) =>
+      canvas.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: 1,
+          pointerType: 'pen',
+          buttons,
+          clientX: rect.left + rect.width * xFraction,
+          clientY: rect.top + rect.height * 0.4,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    fire('pointerdown', 0.1, 1);
+    fire('pointermove', 0.25, 1);
+    fire('pointerout', 0.99, 1);
+    fire('pointermove', 0.65, 1);
+    fire('pointermove', 0.8, 1);
+    fire('pointerup', 0.8, 0);
+  });
+}
+
+for (const brush of ['pen', 'crayon'] as const) {
+  test(`a tiled ${brush} edge return keeps fresh geometry in one undo command`, async ({
+    page,
+  }) => {
+    await gotoApp(page);
+    await openDrawer(page);
+    if (brush === 'crayon') await pickBrush(page, '#crayonBrushButton');
+
+    await dispatchPenEdgeReturn(page);
+
+    expect(await page.evaluate(() => window.__drawingDebug?.getUndoDebug().snapshots)).toBe(1);
+    expect(await page.evaluate(() => window.__drawingDebug?.getUndoDebug().pendingCommands)).toBe(
+      0
+    );
+    expect(await opaquePixelsInBand(page, 0.08, 0.3)).toBeGreaterThan(50);
+    expect(await opaquePixelsInBand(page, 0.35, 0.55)).toBe(0);
+    expect(await opaquePixelsInBand(page, 0.62, 0.82)).toBeGreaterThan(50);
+
+    await page.locator('#undoButton').click();
+    await expect(page.locator('#undoButton')).toBeDisabled();
+    await expect.poll(() => firstOpaquePixel(page)).toBeNull();
+  });
 }
 
 test('tiled history folds its old prefix and retains twenty undo steps', async ({ page }) => {

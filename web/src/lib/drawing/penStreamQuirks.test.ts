@@ -83,6 +83,7 @@ describe('createPenStreamAdopter', () => {
       listeners.get('pointerdown')!(penEvent());
       adopter.trackCanvasExit(penEvent({ type: 'pointerout' }));
 
+      expect(adopter.hasCanvasExit()).toBe(true);
       expect(adopter.isOrphanPenContact(penEvent({ type: 'pointermove' }))).toBe(true);
     });
 
@@ -95,6 +96,7 @@ describe('createPenStreamAdopter', () => {
       listeners.get('pointerdown')!(penEvent());
       adopter.trackCanvasExit(penEvent({ type: 'pointerout' }));
 
+      expect(adopter.hasCanvasExit()).toBe(false);
       expect(adopter.isOrphanPenContact(penEvent({ type: 'pointermove' }))).toBe(false);
     });
 
