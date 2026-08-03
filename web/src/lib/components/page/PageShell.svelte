@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import CrayonStrip from '../CrayonStrip.svelte';
+  import BrandMark from './BrandMark.svelte';
 
   // The chrome every standalone, link-shareable page wears: a ground, a centered
   // sheet, a masthead (back link + crayon strip + wordmark) and a hero. Shared
@@ -34,8 +34,7 @@
       <!-- The mark is the masthead's second way home; the strip is decorative
            (aria-hidden), so the wordmark is the link's whole accessible name. -->
       <a class="brand" href="/">
-        <CrayonStrip />
-        <span class="wordmark">{wordmark}</span>
+        <BrandMark {wordmark} />
       </a>
     </div>
 
@@ -163,20 +162,7 @@
      wordmark stays quiet enough not to compete with the H1. */
   .brand {
     display: inline-flex;
-    align-items: center;
-    gap: 8px;
     text-decoration: none;
-    --crayon-width: 11px;
-    --crayon-height: 7px;
-    --crayon-gap: 4px;
-  }
-
-  .wordmark {
-    font-size: var(--font-size-xs);
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--page-body);
   }
 
   .hero {
@@ -211,20 +197,6 @@
   }
 
   @media (max-width: 540px) {
-    /* Small enough to stay on the back link's line rather than stacking under
-       it, which cost the topbar a whole row for one word. */
-    .brand {
-      gap: 6px;
-      --crayon-width: 7px;
-      --crayon-height: 6px;
-      --crayon-gap: 2px;
-    }
-
-    .wordmark {
-      font-size: 10px;
-      letter-spacing: 0.08em;
-    }
-
     .hero {
       padding-bottom: 28px;
     }

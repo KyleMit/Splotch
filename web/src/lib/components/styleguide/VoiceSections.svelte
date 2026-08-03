@@ -1,6 +1,6 @@
 <script lang="ts">
-  import CrayonStrip from '$lib/components/CrayonStrip.svelte';
   import SplotchyIcon from '$lib/components/SplotchyIcon.svelte';
+  import BrandMark from '$lib/components/page/BrandMark.svelte';
 </script>
 
 <section>
@@ -37,9 +37,10 @@
 <section>
   <h3>Mascot &amp; wordmark</h3>
   <p>
-    Splotchy — a rainbow-crayoned splotch — is the mascot and the PWA icon. The wordmark is plain
-    Quicksand with no drawn logo; the crayon strip (seven pill chips in rainbow order, hues looked
-    up from the drawing palette) is its companion mark on parent pages.
+    Splotchy — a rainbow-crayoned splotch — is the mascot and the PWA icon. There is no drawn logo:
+    parent pages sign themselves with the brand mark below — the crayon strip (seven pills in
+    rainbow order, hues looked up from the drawing palette) beside a small-caps wordmark — while
+    page titles are plain Quicksand headings.
   </p>
   <div class="brand-marks">
     <figure>
@@ -47,15 +48,10 @@
       <figcaption class="value">splotchy.svg</figcaption>
     </figure>
     <figure>
-      <span class="wordmark">Splotch</span>
-      <figcaption class="value">wordmark · Quicksand 700</figcaption>
-    </figure>
-    <figure>
-      <span class="strip-lockup">
-        <CrayonStrip />
-        <span class="strip-label">Splotch for Android</span>
-      </span>
-      <figcaption class="value">crayon strip · rainbow order</figcaption>
+      <BrandMark wordmark="Splotch for Android" />
+      <figcaption class="value">
+        brand mark · page/BrandMark.svelte, as PageShell wears it
+      </figcaption>
     </figure>
   </div>
 </section>
@@ -128,28 +124,5 @@
   .brand-marks :global(.mascot-demo) {
     width: 96px;
     height: 96px;
-  }
-
-  .wordmark {
-    /* PageShell H1 specimen — deliberately above the type ramp (46px/700/-0.015em). */
-    font-size: 46px;
-    font-weight: 700;
-    letter-spacing: -0.015em;
-    color: var(--brand-solid);
-  }
-
-  .strip-lockup {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-2);
-  }
-
-  .strip-label {
-    font-size: var(--font-size-xs);
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--text);
   }
 </style>
