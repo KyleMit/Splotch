@@ -55,10 +55,11 @@
   status instead of exiting. `prompts/*.md` are runner-neutral role prompts. Entry points are the
   `audit:*` npm scripts. The backlog surgery and runner seam are locked by
   `scripts/tests/audit-burndown-*.test.mjs` (`npm run test:scripts`, in CI).
-* `ruler-apply.mjs` snapshots and restores the direct provider skill paths around Ruler's atomic
-  skill-tree replacement, including on failure. `apply-ruler-skill-forks.mjs` then replaces complete
-  generated packages for any Ruler-managed exceptional skills. The focused
-  `scripts/tests/ruler-*.test.mjs` files lock both seams.
+* `direct-provider-skills.mjs` declares the provider packages and notes that are edited in place.
+  `ruler-apply.mjs` snapshots and restores those paths around Ruler's atomic skill-tree replacement,
+  including on failure. `apply-ruler-skill-forks.mjs` then replaces complete generated packages for
+  any Ruler-managed exceptional skills. The focused `scripts/tests/ruler-*.test.mjs` files lock both
+  seams.
 * The app-driving `gen:*` generators that stay here — `gen:shots` (`store-shots.mjs`) and
   `gen:large-image` (`gen-large-image.mjs`) — drive the live app by selector through
   `scripts/lib/app-driver.mjs` and only run on demand, so that module rots silently when app markup,

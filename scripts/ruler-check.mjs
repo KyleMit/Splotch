@@ -1,9 +1,9 @@
 // Drift guard for ruler-generated agent files (ADR-0058). CI re-applies Ruler
-// and fails if generated output changes. The provider-specific
-// burn-down-audits packages and notes are direct tracked sources, so their four
-// paths are excluded alongside .ruler itself.
+// and fails if generated output changes. Direct provider packages and notes are
+// tracked sources, so their registered paths are excluded alongside .ruler.
 
 import { run, capture, fail } from './lib/proc.mjs';
+import { directProviderPathspecExclusions } from './direct-provider-skills.mjs';
 
 run('npm', ['run', 'ruler:apply']);
 
@@ -15,10 +15,7 @@ const generatedPathspecs = [
   '.claude/skill-notes',
   '.agents/skill-notes',
   ':(exclude).ruler',
-  ':(exclude).claude/skills/burn-down-audits',
-  ':(exclude).agents/skills/burn-down-audits',
-  ':(exclude).claude/skill-notes/burn-down-audits.md',
-  ':(exclude).agents/skill-notes/burn-down-audits.md',
+  ...directProviderPathspecExclusions(),
 ];
 // Only worktree-side changes (second status column) and untracked files count
 // as drift — an entry that is merely staged means the apply changed nothing.
@@ -37,7 +34,7 @@ if (drift) {
       '',
       'Run `npm run ruler:apply` and commit the regenerated files.',
       'Never edit generated files directly — edit .ruler/** instead.',
-      'The direct provider-specific burn-down-audits packages are the only exception.',
+      'Registered direct provider packages are the only exceptions.',
     ].join('\n')
   );
 }

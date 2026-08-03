@@ -13,6 +13,13 @@ either a fix (and a reply pointing at it) or a reasoned reply explaining why no 
 This is the receiving side of [`leave-pr-review`](../leave-pr-review/SKILL.md) — that sister skill
 authors and posts review comments; this one works through them.
 
+An orchestrator may invoke this skill with `mode=autonomous`. The default remains interactive. In
+autonomous mode, an ordinary ambiguity or product choice must not wait for the user: enumerate the
+viable options, state the pros and cons, rank them, choose the best reversible option, proceed, and
+return that decision record to the orchestrator for the PR body or comment. This mode does not
+authorize crossing a security boundary, merging or closing a PR, weakening tests or protections,
+destructive data changes, spending money, or acting outside the named PR; those remain blockers.
+
 ## Setup
 
 1. **Identify the PR.** Use the PR the user named, or the open PR for the current branch. If the
@@ -40,6 +47,12 @@ authors and posts review comments; this one works through them.
    your own comments elsewhere, but treat bot reviews (Copilot, CI annotations) the same as human
    ones — triage them on merit, not on author.
 
+   One orchestrated exception is load-bearing: a standalone Claude reviewer may authenticate as the
+   same GitHub user as the implementer. In `mode=autonomous`, a review body containing
+   `<!-- splotch-claude-review:` identifies that independent review. Include the marked review body
+   itself and every inline comment belonging to that review ID even though GitHub reports your own
+   account as its author.
+
 ## Plan the order before starting
 
 With the full comment list in hand, decide the order to address them **before** touching anything —
@@ -47,9 +60,10 @@ working comments in arrival order wastes effort when a later comment invalidates
 out the plan (a short ordered list of comments with a one-line reason for the sequencing), then work
 it top to bottom:
 
-1. **Ambiguous / scope-changing comments first.** Anything that will need an `AskUserQuestion` (see
-   Triage) goes to the front — ask early so the answer arrives while you work the rest, instead of
-   blocking the end of the sweep.
+1. **Ambiguous / scope-changing comments first.** In the default mode, anything that will need an
+   `AskUserQuestion` (see Triage) goes to the front — ask early so the answer arrives while you work
+   the rest. In `mode=autonomous`, decide it using the ranked-options rule above before dependent
+   fixes.
 2. **Broad before narrow.** A comment questioning an approach, an abstraction, or a file's whole
    structure comes before line-level comments *inside* that structure — a restructure can moot or
    relocate the nits, and fixing the nits first means fixing them twice.
@@ -88,8 +102,9 @@ For each remaining comment, read the code it points at **as it exists now** and 
 * **Ambiguous or architecturally significant** — the comment could be read multiple ways, the fix
   would ripple beyond the PR's scope, or valid-vs-invalid genuinely depends on a product call. → Ask
   the user with `AskUserQuestion` before acting, with enough context to answer without scrolling
-  back. Never resolve a thread you weren't sure about — a wrong "resolved with rationale" reads as
-  dismissing the reviewer.
+  back. In `mode=autonomous`, instead use the ranked-options rule, choose the smallest reversible
+  in-scope interpretation, and explicitly record what was chosen and rejected. Never resolve a
+  thread you still cannot classify safely.
 
 ### The verify pass — empirical, not rhetorical
 
@@ -154,3 +169,6 @@ reviewer sees a verdict that was checked, not asserted.
    **replied-and-resolved** (rationale in one line), **answered**, or **escalated to the user** —
    plus the overall check/test result. Every comment fetched in Setup must appear; a comment with no
    disposition means the sweep isn't done.
+4. In `mode=autonomous`, include every autonomous decision as: question, ranked options with brief
+   pros/cons, chosen option and rationale, alternatives ruled out, and how to reverse it. The
+   orchestrator must copy this record to the PR even when no code change resulted.

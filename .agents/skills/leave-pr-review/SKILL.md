@@ -11,16 +11,24 @@ input side of [`address-pr-review`](../address-pr-review/SKILL.md): the comments
 exactly what that skill later triages on the receiving branch, so every comment must stand on its
 own as an actionable, anchored critique.
 
-The flow has a hard gate in the middle: **analyze and present first, post only after the user
-approves.** Nothing lands on GitHub until the user says so.
+The default flow has a hard gate in the middle: **analyze and present first, post only after the
+user approves.** Nothing lands on GitHub until the user says so.
+
+An orchestrator may invoke this skill with `mode=post-comments` after the user has already
+authorized review comments on a specific PR. That mode changes only the gate: perform the same full
+analysis, then submit a `COMMENT` review without asking again. It never authorizes approval,
+request-changes, commits, pushes, merges, closing the PR, or any action on another PR. If no mode is
+specified, use the gated default behavior above.
 
 ## Setup — always check out the PR branch locally
 
 Never review from API diff hunks alone. Check out the PR's head branch so you can run offline git
 diffs and actually execute the code:
 
-1. Make sure the working tree is clean; never mix a review checkout with local work in progress.
-2. Fetch and check out the head branch:
+1. Read the PR itself and record its repository, number, state, base branch + OID, and head branch +
+   OID. The PR metadata is authoritative; never assume the merge target is `main`.
+2. Make sure the working tree is clean; never mix a review checkout with local work in progress.
+3. Fetch and check out the recorded head branch:
 
    ```sh
    git fetch origin <head-branch>
@@ -29,9 +37,11 @@ diffs and actually execute the code:
 
    For a fork PR (head repo ≠ origin), fetch the PR ref instead:
    `git fetch origin pull/<n>/head:pr-<n> && git checkout pr-<n>`.
-3. Diff against the merge target locally: `git diff origin/main...HEAD` (three dots — changes the PR
-   introduces, not drift from main). `git log origin/main..HEAD --oneline` gives the commit story;
-   per-file diffs and `git blame` are all offline from here.
+4. Fetch the recorded base and diff exactly the range defined by the PR:
+   `git diff <base-oid>...<head-oid>` (three dots — changes this PR introduces relative to its
+   actual merge target). `git log <base-oid>..<head-oid> --oneline` gives the commit story; per-file
+   diffs and `git blame` are all offline from here. This is load-bearing for stacked PRs, whose base
+   is the preceding feature branch rather than `main`.
 
 ## Analysis — verify empirically, anchor as you go
 
@@ -70,7 +80,7 @@ Every finding carries, from the moment it's drafted:
 * **Concrete fix** — what to do instead. When it's a small in-place replacement, include a
   ```suggestion`` block so the author can one-click apply it.
 
-## Present findings — then stop
+## Present findings — then stop by default
 
 Show the user the full findings before anything is posted: a numbered list with severity,
 `file:line`, and the draft comment text for each, plus the overall verdict and anything destined for
@@ -85,22 +95,33 @@ end the turn:
 The user may first cull, reword, or reprioritize findings — acting only on what survives is the
 point of the gate. If the user never says go, the review stays in chat.
 
+In `mode=post-comments`, do not stop or request confirmation here. Continue directly to Posting with
+every finding that survived the adversarial self-check. An empty review is allowed only after the
+review made a serious empirical attempt to find defects; submit its verification summary in the
+review body.
+
 ## Posting — one pending review, on the go-ahead
 
 Post as a **single review**, not N standalone comments (one notification, one atomic unit the author
 can respond to):
 
-1. `pull_request_review_write` with `method: "create"` to open a pending review.
-2. `add_comment_to_pending_review` per finding, with the anchor recorded during analysis (`path`,
+1. Re-read the PR metadata. If its head OID differs from the OID reviewed, do not post stale
+   findings: fetch the new head, repeat the affected analysis, and update every anchor first.
+2. `pull_request_review_write` with `method: "create"` to open a pending review.
+3. `add_comment_to_pending_review` per finding, with the anchor recorded during analysis (`path`,
    `line`, `side`, `startLine` for ranges). Prefix each comment with its severity tag
    (`**blocking:**`, `**suggestion:**`, `**nit:**`, `**question:**`).
-3. `pull_request_review_write` with `method: "submit_pending"` — event `COMMENT` unless the user
+4. `pull_request_review_write` with `method: "submit_pending"` — event `COMMENT` unless the user
    explicitly asked to approve or request changes. Put the overall summary and any un-anchorable
    findings in the review body.
 
 Escape `#`-numbers that aren't deliberate issue/PR references (`\#1` or backticks) — see "Writing on
 GitHub" in the root instructions. If a comment fails to attach (anchor not in the diff), fix the
 anchor or move it to the review body — don't silently drop it.
+
+When the GitHub MCP is intentionally unavailable (for example, a trusted standalone reviewer), use
+the equivalent `gh api` pending-review endpoints. Preserve the same single-review, inline-anchor,
+head-OID recheck, and `COMMENT`-only rules.
 
 Afterwards, report what was posted (comment count, severities, review event) so the author knows
 what to expect — and know that working through those comments is `address-pr-review`' job on the

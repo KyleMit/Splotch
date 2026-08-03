@@ -8,26 +8,23 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ROOT } from './lib/proc.mjs';
 import { sharedNoteSource } from './mirror-skill-notes.mjs';
+import {
+  ALL_PROVIDERS,
+  DIRECT_PROVIDER_PATHS,
+  DIRECT_PROVIDER_SKILLS,
+} from './direct-provider-skills.mjs';
 
-export const DIRECT_PROVIDER_PATHS = [
-  '.claude/skills/burn-down-audits',
-  '.agents/skills/burn-down-audits',
-  '.claude/skill-notes/burn-down-audits.md',
-  '.agents/skill-notes/burn-down-audits.md',
-];
+export { DIRECT_PROVIDER_PATHS };
 
-export const FORBIDDEN_DIRECT_PROVIDER_SOURCES = [
-  '.ruler/skills/burn-down-audits',
-  // A shared note is authored with SHARED_NOTE_SUFFIX; the bare .md stays listed
-  // so a stray one is rejected here, by the guard that names the actual rule,
-  // rather than downstream by the mirror's generic suffix check.
-  '.ruler/skill-notes/burn-down-audits.md',
-  `.ruler/skill-notes/${sharedNoteSource('burn-down-audits')}`,
-  '.ruler/skill-forks/claude/skills/burn-down-audits',
-  '.ruler/skill-forks/codex/skills/burn-down-audits',
-  '.ruler/skill-forks/claude/skill-notes/burn-down-audits.md.template',
-  '.ruler/skill-forks/codex/skill-notes/burn-down-audits.md.template',
-];
+export const FORBIDDEN_DIRECT_PROVIDER_SOURCES = DIRECT_PROVIDER_SKILLS.flatMap(({ name }) => [
+  `.ruler/skills/${name}`,
+  `.ruler/skill-notes/${name}.md`,
+  `.ruler/skill-notes/${sharedNoteSource(name)}`,
+  ...ALL_PROVIDERS.flatMap((provider) => [
+    `.ruler/skill-forks/${provider}/skills/${name}`,
+    `.ruler/skill-forks/${provider}/skill-notes/${name}.md.template`,
+  ]),
+]);
 
 export function withPreservedDirectProviderPaths(root, apply) {
   for (const path of FORBIDDEN_DIRECT_PROVIDER_SOURCES) {

@@ -4,9 +4,10 @@
 > Every `CLAUDE.md` and `AGENTS.md` in this repo and nearly every package in `.claude/skills/` and
 > `.agents/skills/` is **generated** by [ruler](https://github.com/intellectronica/ruler) — never
 > edit generated files directly. Edit their `.ruler/` source, run `npm run ruler:apply`, and commit
-> the output. The one exception is `burn-down-audits`: its Claude package under `.claude/` and Codex
-> package under `.agents/` are direct, provider-specific sources maintained independently. Edit only
-> the provider package and note you intend to change; never sync one from the other.
+> the output. Direct provider packages registered in `scripts/direct-provider-skills.mjs` are the
+> exceptions: `burn-down-audits` has independent Claude and Codex implementations, while
+> `implement-issue-stack` is intentionally Codex-only. Edit only the registered provider package and
+> note you intend to change; never manufacture a missing provider by copying another one.
 
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
 

@@ -41,8 +41,8 @@ The decisions that shape everything else, in rough order of importance. All are 
 * **[0071 — Design Tokens from One Generated Source](0071-design-token-single-source.md)** — all
   component styling draws from the generated token vocabulary; no raw one-off values.
 * **[0058 — Agent Instruction Files Generated from `.ruler/`](0058-ruler-generated-agent-files.md)**
-  — `CLAUDE.md`, `AGENTS.md`, and nearly every skill are generated; `burn-down-audits` is a direct,
-  independently maintained Claude/Codex provider fork.
+  — `CLAUDE.md`, `AGENTS.md`, and nearly every skill are generated; a small registry preserves
+  explicitly direct provider packages, including the Codex-only issue-stack orchestrator.
 
 ## Canvas & drawing
 

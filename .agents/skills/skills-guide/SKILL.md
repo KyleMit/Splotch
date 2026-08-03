@@ -65,6 +65,7 @@ All three augment the built-in PR flows rather than replacing them.
 | `pr-screenshots`        | **Opening** a PR that touches UI — screenshot/before-after/gif conventions         |
 | `leave-pr-review`       | **Authoring** a review of someone's PR — local checkout, empirical verification    |
 | `address-pr-review`     | **Receiving** a review — triage every comment, fix or rebut, reply and resolve     |
+| `implement-issue-stack` | **Orchestrating** ordered issues into reviewed, green stacked PRs (Codex-only)     |
 | `triage-dependabot-prs` | **Clearing** the open Dependabot PRs — verify, sequence the merges, close the rest |
 
 `triage-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
@@ -114,10 +115,10 @@ shipped a 1.2.0 bundle; see ADR-0077.
 
 Every skill must appear here in exactly one primary group (cross-reference a second group in prose
 when a skill genuinely spans two, as `lighthouse-audit` does). Most skills are generated from
-`.ruler/skills/` or `.ruler/skill-forks/`. `burn-down-audits` is the exception: Claude and Codex
-have complete, directly maintained implementations under `.claude/skills/burn-down-audits/` and
-`.agents/skills/burn-down-audits/`, with independent notes in the parallel `skill-notes/` trees.
-When editing it, change only the intended provider; never copy one implementation over the other.
+`.ruler/skills/` or `.ruler/skill-forks/`. Direct packages are registered in
+`scripts/direct-provider-skills.mjs`: `burn-down-audits` has independent Claude and Codex
+implementations, while `implement-issue-stack` is Codex-only. When editing one, change only the
+declared provider; never copy one implementation into an undeclared provider tree.
 
 **When you add, rename, or delete a skill, update this guide in the same change**, then run
 `npm run ruler:apply` for generated surfaces. If a new skill fits no existing group, add a group
