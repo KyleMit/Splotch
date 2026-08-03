@@ -14,16 +14,21 @@ function stubFetch(status: number, body: unknown) {
 }
 
 describe('looksLikeApiKey', () => {
-  it('is true for a Gemini key prefix', () => {
+  it('is true for a Standard key prefix', () => {
     expect(looksLikeApiKey('AIzaSyExampleKey1234')).toBe(true);
+  });
+
+  it('is true for an Auth key prefix', () => {
+    expect(looksLikeApiKey('AQ.Ab8ExampleKey1234')).toBe(true);
   });
 
   it('is false for an access code', () => {
     expect(looksLikeApiKey('sunny-meadow')).toBe(false);
   });
 
-  it('is false for a value that merely contains AIza later on', () => {
+  it('is false for a value that merely contains a key prefix later on', () => {
     expect(looksLikeApiKey('xAIzaSyKey')).toBe(false);
+    expect(looksLikeApiKey('xAQ.Key')).toBe(false);
   });
 });
 
@@ -37,6 +42,17 @@ describe('verifyCredential', () => {
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toContain('/api/verify-key');
     expect(JSON.parse(init.body as string)).toEqual({ apiKey: 'AIzaSyKey' });
+    expect(result).toMatchObject({ kind: 'apiKey', ok: true });
+  });
+
+  it('routes an Auth key to /api/verify-key', async () => {
+    const fetchMock = stubFetch(200, { ok: true });
+
+    const result = await verifyCredential('AQ.Ab8Key');
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/api/verify-key');
+    expect(JSON.parse(init.body as string)).toEqual({ apiKey: 'AQ.Ab8Key' });
     expect(result).toMatchObject({ kind: 'apiKey', ok: true });
   });
 

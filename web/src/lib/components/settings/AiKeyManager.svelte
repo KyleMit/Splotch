@@ -158,7 +158,10 @@
           </li>
           <li>Sign in with a Google account.</li>
           <li>Click <strong>Create API key</strong> and confirm.</li>
-          <li>Copy the key (it starts with <code>AIza…</code>) and paste it below.</li>
+          <li>
+            Copy the key (it starts with <code>AQ.…</code> or <code>AIza…</code>) and paste it
+            below.
+          </li>
         </ol>
         <p class="byok-howto-note">The free tier is generous and is plenty for occasional use.</p>
       </Disclosure>

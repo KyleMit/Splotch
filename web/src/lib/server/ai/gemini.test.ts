@@ -3,10 +3,13 @@ import { geminiProvider } from './gemini';
 
 // Mock the SDK so the tests exercise the adapter's mapping from Gemini
 // responses/errors to the provider-agnostic AiImageResult, with no live calls.
-const { generateContent } = vi.hoisted(() => ({ generateContent: vi.fn() }));
+const { generateContent, countTokens } = vi.hoisted(() => ({
+  generateContent: vi.fn(),
+  countTokens: vi.fn(),
+}));
 vi.mock('@google/genai', () => ({
   GoogleGenAI: class {
-    models = { generateContent };
+    models = { generateContent, countTokens };
   },
   HarmCategory: {
     HARM_CATEGORY_DANGEROUS_CONTENT: 'HARM_CATEGORY_DANGEROUS_CONTENT',
@@ -25,6 +28,7 @@ const request = {
 
 beforeEach(() => {
   generateContent.mockReset();
+  countTokens.mockReset();
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
@@ -80,22 +84,35 @@ describe('geminiProvider.generateImage', () => {
 
 describe('geminiProvider.verifyKey', () => {
   it('returns ok when the probe call succeeds', async () => {
-    generateContent.mockResolvedValue({});
+    countTokens.mockResolvedValue({ totalTokens: 2 });
     await expect(geminiProvider.verifyKey('good-key')).resolves.toEqual({ ok: true });
   });
 
   it('returns the rejection reason when the probe call throws', async () => {
-    generateContent.mockRejectedValue(new Error('API key invalid'));
+    countTokens.mockRejectedValue(new Error('API key invalid'));
     await expect(geminiProvider.verifyKey('bad-key')).resolves.toEqual({
       ok: false,
       reason: 'API key invalid',
     });
   });
 
-  it('bounds the probe with an abort signal so a hung provider cannot occupy the invocation', async () => {
-    generateContent.mockResolvedValue({});
+  it('probes the image model generation uses, without generating', async () => {
+    countTokens.mockResolvedValue({ totalTokens: 2 });
+    generateContent.mockResolvedValue({
+      candidates: [
+        { content: { parts: [{ inlineData: { data: 'BBBB', mimeType: 'image/webp' } }] } },
+      ],
+    });
     await geminiProvider.verifyKey('good-key');
-    const config = generateContent.mock.calls[0][0].config;
+    await geminiProvider.generateImage(request);
+    expect(generateContent).toHaveBeenCalledOnce();
+    expect(countTokens.mock.calls[0][0].model).toBe(generateContent.mock.calls[0][0].model);
+  });
+
+  it('bounds the probe with an abort signal so a hung provider cannot occupy the invocation', async () => {
+    countTokens.mockResolvedValue({ totalTokens: 2 });
+    await geminiProvider.verifyKey('good-key');
+    const config = countTokens.mock.calls[0][0].config;
     expect(config.abortSignal).toBeInstanceOf(AbortSignal);
   });
 });
