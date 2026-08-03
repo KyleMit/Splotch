@@ -5,6 +5,7 @@ import {
   ACTION_BUTTON_BASE_PORTRAIT,
   ACTION_PANEL_LIVE_ATTRIBUTE,
   MAX_ACTION_BUTTON_COUNT,
+  PANEL_INSET,
   PALETTE_BAR_RESERVE,
   PALETTE_CLEARANCE,
   SETTINGS_BUTTON_RESERVE,
@@ -29,6 +30,15 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
 
   it('has exactly two fallback blocks (landscape + portrait)', () => {
     expect(fallbackBlocks).toHaveLength(2);
+  });
+
+  it('panel inset literals match PANEL_INSET', () => {
+    expect(actionsPanelSource).toContain(
+      `bottom: calc(${PANEL_INSET}px + env(safe-area-inset-bottom))`
+    );
+    expect(actionsPanelSource).toContain(
+      `left: calc(${PANEL_INSET}px + env(safe-area-inset-left))`
+    );
   });
 
   it('landscape fallback matches the constants', () => {
