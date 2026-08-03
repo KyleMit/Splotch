@@ -31,14 +31,20 @@ Two homes were considered:
 The dev-gated `/dev/design` route moved to **public `/design`** (`web/src/routes/design/`), with the
 salvaged brand content ported into Svelte sections that import the real sources:
 
-* Section partials live in `web/src/lib/components/styleguide/` — `BrandSections.svelte` (voice &
-  copy specimens, mascot/wordmark/crayon strip, paper, the crayon palette from `PALETTE_COLORS`, and
-  the icon set), `TokenSections.svelte` (every token group, now including weight specimens and
-  animated easing lanes), `PrimitiveSections.svelte` — split so each file stays under the
-  `max-lines` ratchet.
-* The icon grids iterate `ICON_NAMES`, a new module-context export of `Icon.svelte` (the glob and
-  name map moved from instance to module scope), split by the existing `COLOR_ICONS` set — a new
-  icon appears on the page with no styleguide edit.
+* The route composes five section partials from `web/src/lib/components/styleguide/` into three
+  parts ordered most-reusable-first, each split so the files stay under the `max-lines` ratchet:
+  **Foundations** — `TokenSections.svelte` (every token group, weight specimens, animated easing
+  lanes) and `AssetSections.svelte` (paper, the crayon palette from `PALETTE_COLORS`, the icon set);
+  **Components & chrome** — `PrimitiveSections.svelte` (the `design/` primitives) and
+  `ChromeSections.svelte` (the settings furniture `ToggleRow`/`SliderRow` mounted live, specimens of
+  the shared `app.css` chrome classes, and a named index of the bespoke canvas/page chrome, which is
+  deliberately *not* recreated); **Brand & voice** — `VoiceSections.svelte` (the copy rules and the
+  brand marks).
+* The specimens render shipped code, not copies: the icon grids iterate `ICON_NAMES`, a
+  module-context export of `Icon.svelte` (the glob and name map moved from instance to module
+  scope), split by the existing `COLOR_ICONS` set — a new icon appears on the page with no
+  styleguide edit — and the brand lockup is `page/BrandMark.svelte`, extracted from `PageShell`'s
+  masthead so the page shows the component the parent pages actually wear.
 * `prerender = false` (`web/src/routes/design/+page.ts`) is the native exclusion: the Capacitor
   static export builds with `strict: false`, which emits no page for a route that opts out of
   prerendering, so the styleguide page never lands in the native export while staying SSR on the
