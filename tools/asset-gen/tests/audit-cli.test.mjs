@@ -96,7 +96,7 @@ vi.mock('../lib/outline-frame.mjs', () => ({
   FRAME_SIDE_COVERAGE_MIN: 0.7,
   scoreOutlineFrame: async (buffer) => {
     assertReadable(buffer);
-    return { sideCoverage: 0, frameDetected: false, passes: true };
+    return { sideCoverage: 0, passes: true };
   },
 }));
 

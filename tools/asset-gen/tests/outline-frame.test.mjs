@@ -16,16 +16,14 @@ describe('outline frame gate', () => {
     const result = await scoreOutlineFrame(await framedOutline());
 
     expect(result.passes).toBe(false);
-    expect(result.frameDetected).toBe(true);
     expect(result.sideCoverage).toBeGreaterThan(FRAME_SIDE_COVERAGE_MIN);
   });
 
   it('flags a four-sided frame when part of one side is occluded', async () => {
     const result = await scoreOutlineFrame(await partiallyOccludedFrameOutline());
 
-    expect(result.sides.right.coverage).toBeCloseTo(0.733, 3);
+    expect(result.sides.right).toBeCloseTo(0.733, 3);
     expect(result.sideCoverage).toBeGreaterThan(FRAME_SIDE_COVERAGE_MIN);
-    expect(result.frameDetected).toBe(true);
     expect(result.passes).toBe(false);
   });
 
@@ -33,17 +31,16 @@ describe('outline frame gate', () => {
     const result = await scoreOutlineFrame(await edgeNearArtOutline());
 
     expect(result.passes).toBe(true);
-    expect(result.frameDetected).toBe(false);
     expect(result.sideCoverage).toBeLessThan(FRAME_SIDE_COVERAGE_MIN - 0.05);
   });
 
   it('requires all four continuous sides', async () => {
     const result = await scoreOutlineFrame(await threeSidedFrameOutline());
 
-    expect(result.sides.top.coverage).toBeGreaterThan(FRAME_SIDE_COVERAGE_MIN);
-    expect(result.sides.bottom.coverage).toBeGreaterThan(FRAME_SIDE_COVERAGE_MIN);
-    expect(result.sides.left.coverage).toBeGreaterThan(FRAME_SIDE_COVERAGE_MIN);
-    expect(result.sides.right.coverage).toBeLessThan(FRAME_SIDE_COVERAGE_MIN);
+    expect(result.sides.top).toBeGreaterThan(FRAME_SIDE_COVERAGE_MIN);
+    expect(result.sides.bottom).toBeGreaterThan(FRAME_SIDE_COVERAGE_MIN);
+    expect(result.sides.left).toBeGreaterThan(FRAME_SIDE_COVERAGE_MIN);
+    expect(result.sides.right).toBeLessThan(FRAME_SIDE_COVERAGE_MIN);
     expect(result.passes).toBe(true);
   });
 

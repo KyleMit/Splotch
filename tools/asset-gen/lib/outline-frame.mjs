@@ -48,13 +48,13 @@ function verticalCoverage(data, width, height, x) {
 
 function bestEdgeCoverage(length, coverageAt, fromFarEdge) {
   const maxInset = Math.floor(length * MAX_INSET_FRACTION);
-  let best = { position: fromFarEdge ? length - 1 : 0, coverage: 0 };
+  let bestCoverage = 0;
   for (let inset = 0; inset <= maxInset; inset++) {
     const position = fromFarEdge ? length - 1 - inset : inset;
     const coverage = coverageAt(position);
-    if (coverage > best.coverage) best = { position, coverage };
+    if (coverage > bestCoverage) bestCoverage = coverage;
   }
-  return best;
+  return bestCoverage;
 }
 
 export async function scoreOutlineFrame(outlineBuf) {
@@ -68,11 +68,10 @@ export async function scoreOutlineFrame(outlineBuf) {
   const left = bestEdgeCoverage(width, (x) => verticalCoverage(data, width, height, x), false);
   const right = bestEdgeCoverage(width, (x) => verticalCoverage(data, width, height, x), true);
   const sides = { top, right, bottom, left };
-  const sideCoverage = Math.min(...Object.values(sides).map((side) => side.coverage));
+  const sideCoverage = Math.min(...Object.values(sides));
   return {
     sides,
     sideCoverage,
-    frameDetected: sideCoverage >= FRAME_SIDE_COVERAGE_MIN,
     passes: sideCoverage < FRAME_SIDE_COVERAGE_MIN,
   };
 }
