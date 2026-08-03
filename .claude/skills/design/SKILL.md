@@ -1,6 +1,6 @@
 ---
 name: design
-description: Design-system reference — the token vocabulary (color, spacing, radius, type, elevation, motion), the primitives in lib/components/design/, and the rules for styling UI. Use before writing or changing any component styles, picking a color/size/shadow/easing, adding a UI element, or when visual consistency or the /dev/design styleguide comes up.
+description: Design-system reference — the token vocabulary (color, spacing, radius, type, elevation, motion), the primitives in lib/components/design/, the voice & copy rules, brand/iconography, and the rules for styling UI. Use before writing or changing any component styles, picking a color/size/shadow/easing, adding a UI element, writing user-facing copy, or when visual consistency or the /design styleguide comes up.
 ---
 
 # Splotch design system
@@ -28,6 +28,22 @@ pierce Svelte's style scoping, so every component references them directly via `
 4. **JS never mirrors a token by hand.** The few JS consumers of token values (canvas export fill,
    Notch Band, theme-color meta) import from `$lib/design/tokens` — see `lib/theme.ts`
    (`PAPER_COLORS`). Don't paste a hex into TypeScript.
+
+## Voice & copy
+
+Two voices, one maker. Kid-adjacent copy is playful and warm ("Open it up, hand over the device, and
+let them make a mess. That's the whole idea."). Parent-facing copy — Settings, store listings,
+privacy — is plain, professional, and direct ("We never keep a copy of your key.").
+
+* **Sentence case everywhere** — buttons, labels, headings ("Clear drawing", "Save screenshot").
+  Title Case only for proper feature names (Night Mode, Advanced Controls, Guided Access).
+* **"You" is the parent, "they"/"kids" is the child.** First-person-plural "we" for the maker's
+  promises.
+* **No emoji in UI chrome.** One documented exception: `/privacy` uses emoji as friendly bullet
+  leads on its "no ___" highlight cards — legal copy softened for a 30-second parent skim.
+* **Short, concrete, reassuring.** Feature bullets lead with verbs ("Draw with big, chunky,
+  crayon-like strokes"); Settings help text is one calm sentence.
+* **Honest about tradeoffs** — copy explains *why* ("so playtime stays in Splotch").
 
 ## Token vocabulary
 
@@ -62,7 +78,7 @@ pierce Svelte's style scoping, so every component references them directly via `
 **Adding a token:** it must earn its place — a semantic meaning used (or clearly about to be used)
 in 2–3 places. Prefer reusing an existing step of a ramp over minting a near-duplicate. New themed
 tokens need both light and dark values (the compiler enforces this). Minting a token isn't done
-until it's registered in the vocabulary table above and renders on `/dev/design` — an undiscoverable
+until it's registered in the vocabulary table above and renders on `/design` — an undiscoverable
 token guarantees the next hardcoded duplicate (a failure review has caught three times).
 
 ## Primitives
@@ -107,14 +123,36 @@ That second case is how a canvas-floating control de-duplicates: hoist the share
 `app.css` with a comment naming the consumers, leaving each component only what genuinely differs —
 not a wrapper component, which the bespoke-paper-treatment carve-out above rules out anyway.
 
-**Extract a new primitive at the third duplicate**, not before — and add it to `/dev/design` and the
+**Extract a new primitive at the third duplicate**, not before — and add it to `/design` and the
 component table above when you do.
+
+## Brand & iconography
+
+* **Mascot & marks.** Splotchy (`static/splotchy.svg`) is the mascot and PWA icon, rendered
+  structurally via `SplotchyIcon.svelte` (it's in `NON_RENDERABLE_ICONS`, so `<Icon>` won't take
+  it). The wordmark is plain Quicksand — no drawn logo. The crayon strip (`CrayonStrip.svelte`,
+  seven pills in rainbow order, hues looked up from `lib/palette.ts`) is the wordmark's companion
+  mark on parent pages.
+* **Icons are first-party inline SVG** through `<Icon name="…">` — no icon font, no CDN set, no
+  emoji-as-icons. Monochrome glyphs bake a near-black fill and get re-inked with
+  `fill: var(--icon-ink)` on themed surfaces; full-color "spot" icons carry their own palette and
+  are **never tinted** — the split is the `COLOR_ICONS` set in `Icon.svelte`. Adding an icon: see
+  the icon steps in `.claude/rules/svelte.md`.
+* **Paper.** The canvas is warm off-white `--paper` under the low-alpha handmade-paper grain
+  (`static/icons/handmade-paper.webp`, tiled); dark paper keeps the same grain and changes only the
+  color beneath. `--paper-margin` is the flat tone behind the rotation-locked sheet.
+* **Touch targets are chunky.** Nothing interactive goes below 44px; kid-facing controls run
+  deliberately larger. Don't shrink a control to fit a layout — rework the layout.
 
 ## The living styleguide
 
-`/dev/design` (gated by `PUBLIC_ENABLE_DEV_HARNESS=true`, like the other `routes/dev/*` harnesses)
-renders every token group and primitive from the real source objects, with a light/system/dark
-toggle. Use it to:
+`/design` — public, live at <https://splotch.art/design> — renders the whole system from the real
+source objects: the voice specimens and brand marks, every token group, the icon set split by
+`COLOR_ICONS`, and the primitives, with a light/system/dark toggle. Its sections are the partials in
+`lib/components/styleguide/` (`BrandSections`, `TokenSections`, `PrimitiveSections`); because
+everything is imported from `tokens.ts`, `palette.ts`, and the icon glob, the page cannot drift from
+the implementation. `prerender = false` keeps the page out of the native static export — no native
+surface links to it — and serves it via SSR on the web. Use it to:
 
 * review a token or primitive change in both themes (screenshot it for the PR — see the
   `pr-screenshots` skill);

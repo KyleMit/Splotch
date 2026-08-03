@@ -3,11 +3,6 @@
 
   const harnesses = [
     {
-      href: '/dev/design',
-      name: 'Design tokens',
-      blurb: 'Live styleguide of every token and primitive.',
-    },
-    {
       href: '/dev/engine',
       name: 'Drawing engine',
       blurb: 'Bare canvas harness driven by the Playwright specs.',
@@ -30,7 +25,8 @@
   <h1>Dev harnesses</h1>
   <p class="intro">
     Development-only pages, unlocked under <code>vite dev</code> or with
-    <code>PUBLIC_ENABLE_DEV_HARNESS=true</code>. They 404 in production.
+    <code>PUBLIC_ENABLE_DEV_HARNESS=true</code>. They 404 in production. The design-system
+    styleguide is public at <a href="/design">/design</a>.
   </p>
 
   <ul class="harness-list">

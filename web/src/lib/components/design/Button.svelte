@@ -62,8 +62,10 @@
     font-size: var(--font-size-sm);
   }
 
+  /* --brand-solid, not --brand: this fill carries a text label, and --brand is
+     only 3.4:1 against --on-brand (fails WCAG AA at body size). */
   .brand {
-    background: var(--brand);
+    background: var(--brand-solid);
     color: var(--on-brand);
   }
 
@@ -85,7 +87,7 @@
 
   @media (hover: hover) {
     .brand:hover:not(:disabled) {
-      background: var(--brand-hover);
+      background: var(--brand-solid-hover);
     }
 
     .wash:hover:not(:disabled) {

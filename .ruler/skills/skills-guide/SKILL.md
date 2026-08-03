@@ -16,7 +16,7 @@ Standalone lookups; none depend on another skill.
 | Skill          | Covers                                                                           |
 | -------------- | -------------------------------------------------------------------------------- |
 | `architecture` | Tech stack, source map of `web/src/`, route table, canonical UI element glossary |
-| `design`       | Design tokens, primitives in `lib/components/design/`, styling rules             |
+| `design`       | Design tokens, primitives, voice & copy, brand — and the public `/design` page   |
 | `api`          | Every `/api/*` endpoint plus the CORS, rate-limiting, and auth model             |
 | `mobile`       | Android/iOS/Capacitor toolchain, on-device testing, store-release checklists     |
 | `testing`      | Three-tier test strategy (Vitest, Playwright, Maestro), commands, CI triggers    |

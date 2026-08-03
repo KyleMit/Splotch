@@ -1,5 +1,5 @@
 <script module lang="ts">
-  import type { CommonIconName } from './iconTypes';
+  import { iconNameFromPath, type CommonIconName } from './iconTypes';
 
   // Full-color "spot" icons carry their own palette, so callers that tint
   // monochrome icons with a CSS `filter` must leave these alone. We tag them
@@ -41,11 +41,6 @@
     'eraser-size-4',
     'eraser-size-5',
   ]);
-</script>
-
-<script lang="ts">
-  import type { HTMLAttributes } from 'svelte/elements';
-  import { iconNameFromPath } from './iconTypes';
 
   // The exclusions must be spelled out literally here — Vite resolves
   // import.meta.glob statically — but NON_RENDERABLE_ICONS in iconTypes.ts is
@@ -60,6 +55,13 @@
   for (const [path, src] of Object.entries(modules)) {
     icons[iconNameFromPath(path)] = src as string;
   }
+
+  /** Every name <Icon> can render, sorted — the /design styleguide iterates it. */
+  export const ICON_NAMES = Object.keys(icons).sort() as CommonIconName[];
+</script>
+
+<script lang="ts">
+  import type { HTMLAttributes } from 'svelte/elements';
 
   interface Props extends HTMLAttributes<HTMLSpanElement> {
     name: CommonIconName;
