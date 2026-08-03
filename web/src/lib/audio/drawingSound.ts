@@ -41,12 +41,13 @@ function loadSound(ctx: AudioContext, url: string): Promise<void> {
     .then((data) => ctx.decodeAudioData(data))
     .then((buffer) => {
       buffers.push(buffer);
-      startPlaybackIfReady();
     })
     .catch(() => {
       loadPromises.delete(url);
       failedUrls.add(url);
-    });
+    })
+    .then(() => startPlaybackIfReady())
+    .catch(() => {});
   loadPromises.set(url, pending);
   return pending;
 }
@@ -67,10 +68,12 @@ export function preloadDrawSounds() {
 
 export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
   if (!settings.soundEnabled) return;
-  if (isStrokeStart) failedUrls.clear();
   playbackRequested = true;
   requestedSpeed = speed;
-  preloadFirstDrawSound();
+  if (isStrokeStart) {
+    failedUrls.clear();
+    preloadDrawSounds();
+  } else preloadFirstDrawSound();
   const ctx = audioContext;
   if (!ctx) return;
 
