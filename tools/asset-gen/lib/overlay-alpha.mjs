@@ -1,7 +1,7 @@
 const OVERLAY_ALPHA_STEP = 8;
 export const OVERLAY_MAX_CHANNEL_ERROR = OVERLAY_ALPHA_STEP / 2;
 
-export function quantizeOverlayAlpha(alpha) {
+function quantizeOverlayAlpha(alpha) {
   return Math.min(255, Math.round(alpha / OVERLAY_ALPHA_STEP) * OVERLAY_ALPHA_STEP);
 }
 

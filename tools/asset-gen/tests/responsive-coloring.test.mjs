@@ -13,6 +13,9 @@ import { WEB_STATIC } from '../lib/paths.mjs';
 import { maxOverlayAlphaError, OVERLAY_MAX_CHANNEL_ERROR } from '../lib/overlay-alpha.mjs';
 import { RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION } from '../lib/responsive-coloring.mjs';
 
+// The catalog fidelity pass decodes every committed derivative and is I/O-bound on CI runners.
+const RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS = 15_000;
+
 function srcsetWidths() {
   const widths = new Map();
   const record = ({ srcset }) => {
@@ -37,45 +40,49 @@ function srcsetWidths() {
 }
 
 describe('responsive coloring catalog', () => {
-  it('keeps every srcset width descriptor equal to the committed intrinsic width', async () => {
-    const widths = srcsetWidths();
-    const assets = BOOKS.flatMap(responsiveColoringAssets);
-    let sourceBytes = 0;
-    let targetBytes = 0;
+  it(
+    'keeps every srcset width descriptor equal to the committed intrinsic width',
+    async () => {
+      const widths = srcsetWidths();
+      const assets = BOOKS.flatMap(responsiveColoringAssets);
+      let sourceBytes = 0;
+      let targetBytes = 0;
 
-    expect(assets).toHaveLength(392);
-    for (const asset of assets) {
-      const sourceMetadata = await sharp(join(WEB_STATIC, asset.source)).metadata();
-      const targetMetadata = await sharp(join(WEB_STATIC, asset.target)).metadata();
-      expect(widths.get(asset.source), asset.source).toBe(sourceMetadata.width);
-      expect(widths.get(asset.target), asset.target).toBe(targetMetadata.width);
-      expect(targetMetadata.width, asset.target).toBe(asset.widthPx);
-      expect(Math.max(targetMetadata.width ?? 0, targetMetadata.height ?? 0), asset.target).toBe(
-        asset.maxEdgePx
-      );
-      expect(targetMetadata.hasAlpha, asset.target).toBe(sourceMetadata.hasAlpha);
-      const sourcePath = join(WEB_STATIC, asset.source);
-      const targetPath = join(WEB_STATIC, asset.target);
-      const sourceSize = (await stat(sourcePath)).size;
-      const targetSize = (await stat(targetPath)).size;
-      expect(targetSize, asset.target).toBeLessThan(sourceSize);
-      sourceBytes += sourceSize;
-      targetBytes += targetSize;
-
-      if (asset.encoding === 'overlay') {
-        const expected = await sharp(sourcePath)
-          .resize(asset.maxEdgePx, asset.maxEdgePx, { fit: 'inside', kernel: 'lanczos3' })
-          .ensureAlpha()
-          .raw()
-          .toBuffer();
-        const actual = await sharp(targetPath).ensureAlpha().raw().toBuffer();
-        expect(maxOverlayAlphaError(expected, actual), asset.target).toBeLessThanOrEqual(
-          OVERLAY_MAX_CHANNEL_ERROR
+      expect(assets).toHaveLength(392);
+      for (const asset of assets) {
+        const sourceMetadata = await sharp(join(WEB_STATIC, asset.source)).metadata();
+        const targetMetadata = await sharp(join(WEB_STATIC, asset.target)).metadata();
+        expect(widths.get(asset.source), asset.source).toBe(sourceMetadata.width);
+        expect(widths.get(asset.target), asset.target).toBe(targetMetadata.width);
+        expect(targetMetadata.width, asset.target).toBe(asset.widthPx);
+        expect(Math.max(targetMetadata.width ?? 0, targetMetadata.height ?? 0), asset.target).toBe(
+          asset.maxEdgePx
         );
+        expect(targetMetadata.hasAlpha, asset.target).toBe(sourceMetadata.hasAlpha);
+        const sourcePath = join(WEB_STATIC, asset.source);
+        const targetPath = join(WEB_STATIC, asset.target);
+        const sourceSize = (await stat(sourcePath)).size;
+        const targetSize = (await stat(targetPath)).size;
+        expect(targetSize, asset.target).toBeLessThan(sourceSize);
+        sourceBytes += sourceSize;
+        targetBytes += targetSize;
+
+        if (asset.encoding === 'overlay') {
+          const expected = await sharp(sourcePath)
+            .resize(asset.maxEdgePx, asset.maxEdgePx, { fit: 'inside', kernel: 'lanczos3' })
+            .ensureAlpha()
+            .raw()
+            .toBuffer();
+          const actual = await sharp(targetPath).ensureAlpha().raw().toBuffer();
+          expect(maxOverlayAlphaError(expected, actual), asset.target).toBeLessThanOrEqual(
+            OVERLAY_MAX_CHANNEL_ERROR
+          );
+        }
       }
-    }
-    expect((sourceBytes - targetBytes) / sourceBytes).toBeGreaterThanOrEqual(
-      RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION
-    );
-  });
+      expect((sourceBytes - targetBytes) / sourceBytes).toBeGreaterThanOrEqual(
+        RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION
+      );
+    },
+    RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS
+  );
 });

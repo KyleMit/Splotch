@@ -15,7 +15,7 @@ function staticAssetPath(staticDir, url) {
   return join(staticDir, url);
 }
 
-export async function generateResponsiveColoringAsset(staticDir, asset) {
+async function generateResponsiveColoringAsset(staticDir, asset) {
   const sourcePath = staticAssetPath(staticDir, asset.source);
   const targetPath = staticAssetPath(staticDir, asset.target);
   const sourceMetadata = await sharp(sourcePath).metadata();
