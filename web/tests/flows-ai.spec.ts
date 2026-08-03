@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
+
 import { draw, gotoApp } from './helpers';
 
 import { openDrawer } from './flows-harness';
@@ -8,6 +10,17 @@ import { openDrawer } from './flows-harness';
 // ── AI generation flow (mocked endpoint) ────────────────────────────────────
 
 const webp = readFileSync(new URL('../static/icons/handmade-paper.webp', import.meta.url));
+
+test('a saved BYO key alone reveals the AI button', async ({ page }) => {
+  await page.addInitScript(
+    (aiUserApiKey) => localStorage.setItem(aiUserApiKey, 'test-byo-key'),
+    STORAGE_KEYS.legacyAiUserApiKey
+  );
+  await gotoApp(page);
+  await openDrawer(page);
+
+  await expect(page.locator('#aiImageButton')).toBeVisible();
+});
 
 test('the AI button posts the drawing and reveals the generated result', async ({ page }) => {
   let postedImage = false;
