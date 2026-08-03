@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "thresholds": {
     "keep": 0.92,
     "localKeep": 0.8,
@@ -9,7 +9,9 @@
     "solidBlobMax": 100,
     "solidInteriorMax": 60,
     "eyeRingDepthMax": 4,
-    "frameSideCoverageMin": 0.7
+    "frameSideCoverageMin": 0.7,
+    "ghostLumaMax": 245,
+    "ghostSideCoverageMin": 0.9
   },
   "pages": {
     "creatures/cover": {
