@@ -10,6 +10,7 @@ import {
   duplicateNumbers,
   formatProblems,
   headingMismatches,
+  indexIntegrity,
   malformedRecordNames,
   nextAdrNumber,
 } from './lib/adr-numbering.mjs';
@@ -69,9 +70,9 @@ function firstLines(entries) {
  * than through @actions/core so this script keeps its only-node-builtins
  * dependency profile, which is what lets its workflow skip installing anything.
  */
-function annotate(kind, file, message) {
+function annotate(kind, file, message, line = 1) {
   if (!process.env.GITHUB_ACTIONS) return;
-  console.log(`::${kind} file=${ADR_DIR}/${file},line=1::${message}`);
+  console.log(`::${kind} file=${ADR_DIR}/${file},line=${line}::${message}`);
 }
 
 function warn(message) {
@@ -102,11 +103,14 @@ export function checkAdrNumbering() {
   const duplicates = duplicateNumbers(head);
   const collisions = added === null ? [] : collisionsAgainstBase(base, added);
   const mismatches = headingMismatches(firstLines(head));
-  const problems = formatProblems({ duplicates, collisions, mismatches, baseRef });
+  const index = indexIntegrity(head, readFileSync(join(ROOT, ADR_DIR, 'README.md'), 'utf8'));
+  const problems = formatProblems({ duplicates, collisions, mismatches, index, baseRef });
 
   if (problems.length === 0) {
     const records = head.filter((entry) => adrNumber(entry) !== null).length;
-    console.log(`ADR numbering OK — ${records} records, every number unique.`);
+    console.log(
+      `ADR integrity OK — ${records} records, every number unique and every record indexed once.`
+    );
     return;
   }
 
@@ -126,15 +130,39 @@ export function checkAdrNumbering() {
   for (const { file, expected } of mismatches) {
     annotate('error', file, `Heading does not match the filename's number ${expected}`);
   }
+  for (const file of index.missing) {
+    annotate('error', file, 'ADR record is missing from README.md');
+  }
+  for (const { entries } of index.duplicates) {
+    for (const { line } of entries) {
+      annotate('error', 'README.md', 'ADR record is indexed more than once', line);
+    }
+  }
+  for (const { file, expected, line } of index.mismatches) {
+    annotate(
+      'error',
+      'README.md',
+      `Index link text does not match ${file}'s number ${expected}`,
+      line
+    );
+  }
+  for (const { file, line } of index.unknown) {
+    annotate('error', 'README.md', `Index target ${file} is not an ADR record`, line);
+  }
 
-  const free = nextAdrNumber([...head, ...(base ?? [])]);
-  console.error('ADR numbering check failed:\n');
+  console.error('ADR integrity check failed:\n');
   for (const problem of problems) console.error(`  • ${problem}`);
   console.error(
-    `\nAn ADR number identifies one record permanently. Give the later-landed record ` +
-      `of each pair a free number — ${free} is the next one — and update its H1 heading, ` +
-      `its row in ${ADR_DIR}/README.md, and every ADR-NNNN reference pointing at it.`
+    `\nEvery ADR must have one unique number, a matching H1, and exactly one ` +
+      `correctly numbered canonical entry in ${ADR_DIR}/README.md.`
   );
+  if (duplicates.length > 0 || collisions.length > 0) {
+    const free = nextAdrNumber([...head, ...(base ?? [])]);
+    console.error(
+      `For a numbering collision, give the later-landed record a free number — ${free} is ` +
+        `the next one — then update its H1, index entry, and every ADR-NNNN reference to it.`
+    );
+  }
   process.exit(1);
 }
 

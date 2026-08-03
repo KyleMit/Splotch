@@ -1,6 +1,8 @@
 const ADR_FILENAME = /^(\d{4})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
 const NUMBER_PREFIXED = /^\d{4}/;
 const ADR_HEADING = /^#\s*ADR-(\d{4})\b/;
+const ADR_INDEX_ENTRY = /^(?:\* \*\*|\| )\[([^\]]+)\]\(([^)\s]+\.md)\)/;
+const ADR_INDEX_NUMBER = /^(\d{4})(?:\s+—|$)/;
 
 export const ADR_DIR = 'docs/adrs';
 
@@ -88,6 +90,52 @@ export function headingMismatches(records) {
   return mismatches;
 }
 
+/**
+ * The index's canonical entries are either the leading link in a Start here
+ * bullet or the leading link in a section table row. Restricting parsing to
+ * those positions keeps amendment and supersession links from counting as
+ * duplicate index entries.
+ */
+export function adrIndexEntries(markdown) {
+  const entries = [];
+  for (const [index, line] of markdown.split('\n').entries()) {
+    const match = ADR_INDEX_ENTRY.exec(line);
+    if (!match) continue;
+    entries.push({
+      number: ADR_INDEX_NUMBER.exec(match[1])?.[1] ?? null,
+      file: match[2],
+      line: index + 1,
+    });
+  }
+  return entries;
+}
+
+export function indexIntegrity(filenames, markdown) {
+  const records = adrFilenames(filenames);
+  const recordSet = new Set(records);
+  const entries = adrIndexEntries(markdown);
+  const entriesByFile = new Map();
+
+  for (const entry of entries) {
+    const matches = entriesByFile.get(entry.file);
+    if (matches) matches.push(entry);
+    else entriesByFile.set(entry.file, [entry]);
+  }
+
+  const missing = records.filter((file) => !entriesByFile.has(file));
+  const duplicates = records.flatMap((file) => {
+    const matches = entriesByFile.get(file) ?? [];
+    return matches.length > 1 ? [{ file, entries: matches }] : [];
+  });
+  const mismatches = entries.flatMap((entry) => {
+    const expected = adrNumber(entry.file);
+    return expected !== null && entry.number !== expected ? [{ ...entry, expected }] : [];
+  });
+  const unknown = entries.filter((entry) => !recordSet.has(entry.file));
+
+  return { missing, duplicates, mismatches, unknown };
+}
+
 export function nextAdrNumber(filenames) {
   const highest = adrFilenames(filenames).reduce(
     (max, filename) => Math.max(max, Number(adrNumber(filename))),
@@ -96,7 +144,7 @@ export function nextAdrNumber(filenames) {
   return String(highest + 1).padStart(4, '0');
 }
 
-export function formatProblems({ duplicates, collisions, mismatches, baseRef }) {
+export function formatProblems({ duplicates, collisions, mismatches, index, baseRef }) {
   const lines = [];
   for (const { number, files } of duplicates) {
     lines.push(`ADR number ${number} is used by ${files.length} records: ${files.join(', ')}`);
@@ -109,6 +157,27 @@ export function formatProblems({ duplicates, collisions, mismatches, baseRef }) 
   for (const { file, expected, found } of mismatches ?? []) {
     lines.push(
       `${file} is numbered ${expected} but its heading reads ${found === null ? 'no ADR-NNNN heading' : `ADR-${found}`}`
+    );
+  }
+  for (const file of index?.missing ?? []) {
+    lines.push(`${file} has no canonical entry in ${ADR_DIR}/README.md`);
+  }
+  for (const { file, entries } of index?.duplicates ?? []) {
+    lines.push(
+      `${file} appears ${entries.length} times in ${ADR_DIR}/README.md on lines ` +
+        entries.map(({ line }) => line).join(', ')
+    );
+  }
+  for (const { file, line, number, expected } of index?.mismatches ?? []) {
+    lines.push(
+      `${ADR_DIR}/README.md line ${line} labels ${file} as ` +
+        `${number === null ? 'something other than a four-digit ADR number' : `ADR-${number}`}, ` +
+        `but its target filename is ADR-${expected}`
+    );
+  }
+  for (const { file, line } of index?.unknown ?? []) {
+    lines.push(
+      `${ADR_DIR}/README.md line ${line} links to ${file}, which is not an ADR record in ${ADR_DIR}`
     );
   }
   return lines;

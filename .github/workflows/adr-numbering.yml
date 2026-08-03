@@ -1,7 +1,8 @@
-# Guards the one invariant docs/adrs/ cannot repair after the fact: an ADR number
-# identifies exactly one record, permanently. Two records sharing a number makes
-# every "ADR-NNNN" reference ambiguous, including references already written into
-# merged records and commit messages that cannot be rewritten.
+# Guards the mechanical identity and index invariants for docs/adrs/: each number
+# identifies one record permanently, each H1 agrees with its filename, and each
+# record has one correctly numbered canonical index entry. Two records sharing a
+# number makes every "ADR-NNNN" reference ambiguous, including references already
+# written into merged records and commit messages that cannot be rewritten.
 #
 # Deliberately NOT path-filtered, so it reports on every pull request and is safe
 # to mark required. A workflow skipped by a path filter leaves its check Pending
@@ -68,5 +69,5 @@ jobs:
       # git diff. Skipping on "no ADR records changed" would also report success
       # against a tree that already holds duplicates, which is the exact state a
       # workflow_dispatch audit exists to find.
-      - name: Check ADR numbering
+      - name: Check ADR integrity
         run: node scripts/check-adr-numbering.mjs "--base=origin/${BASE_REF}"
