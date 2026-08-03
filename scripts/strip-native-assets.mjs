@@ -19,13 +19,21 @@
 // --experimental-strip-types (see the build:cap npm script) to import it directly.
 
 import { globSync, readFileSync, rmSync, existsSync, statSync, writeFileSync } from 'node:fs';
-import { join, dirname, relative } from 'node:path';
+import { join, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { nativeUnusedLineArt, webOnlyBooks } from './lib/book-assets.mjs';
 import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from './lib/native-export.mjs';
 import { ROOT, fail, isMain } from './lib/proc.mjs';
 import { BOOKS, bookAssetPaths } from '../web/src/lib/state/books.ts';
 
 const BUILD_DIR = join(ROOT, 'web', 'build'); // capacitor.config.json webDir
+
+function displayBuildPath(buildDir) {
+  const absoluteBuildDir = resolve(buildDir);
+  const repoRelative = relative(ROOT, absoluteBuildDir);
+  const outsideRoot =
+    repoRelative === '..' || repoRelative.startsWith(`..${sep}`) || isAbsolute(repoRelative);
+  return outsideRoot ? absoluteBuildDir : repoRelative || '.';
+}
 
 function stripWebOnlyBooks(buildDir, books) {
   const webOnly = webOnlyBooks(books);
@@ -107,7 +115,7 @@ function stripUnusedLineArt(buildDir, books) {
 
 export function stripNativeAssets(buildDir, books) {
   if (!existsSync(buildDir)) {
-    throw new Error(`[strip-native-assets] no build output at ${relative(ROOT, buildDir)}`);
+    throw new Error(`[strip-native-assets] no build output at ${displayBuildPath(buildDir)}`);
   }
 
   stripWebOnlyBooks(buildDir, books);

@@ -1,5 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -102,6 +110,12 @@ function writeFixture(path, contents = 'fixture') {
   writeFileSync(path, contents);
 }
 
+function copyRepoFile(fixtureRoot, relativePath) {
+  const destination = join(fixtureRoot, relativePath);
+  mkdirSync(dirname(destination), { recursive: true });
+  copyFileSync(join(repoRoot, relativePath), destination);
+}
+
 describe('native build script entry points', () => {
   let checkAssets;
   let error;
@@ -126,13 +140,15 @@ describe('native build script entry points', () => {
     ({ stripNativeAssets } = await import('../strip-native-assets.mjs'));
     ({ checkAssets } = await import('../check-assets.mjs'));
 
+    const filesystemCalls = [...state.filesystemCalls];
+    const sentinel = readFileSync(importSentinel, 'utf8');
     importEffects = {
       errors: [...error.mock.calls],
       entryArguments: [...state.isMainInputs],
       exits: [...exit.mock.calls],
-      filesystemCalls: [...state.filesystemCalls],
+      filesystemCalls,
       logs: [...log.mock.calls],
-      sentinel: readFileSync(importSentinel, 'utf8'),
+      sentinel,
       warnings: [...warn.mock.calls],
     };
   });
@@ -196,6 +212,38 @@ describe('native build script entry points', () => {
     expect(result.stdout).toContain('[check-assets] all checks passed.');
   });
 
+  it('runs the real native-strip CLI against an isolated build', () => {
+    const fixtureRoot = join(state.root, 'strip-cli');
+    for (const relativePath of [
+      'scripts/strip-native-assets.mjs',
+      'scripts/lib/book-assets.mjs',
+      'scripts/lib/native-export.mjs',
+      'scripts/lib/proc.mjs',
+    ]) {
+      copyRepoFile(fixtureRoot, relativePath);
+    }
+    writeFixture(
+      join(fixtureRoot, 'web', 'src', 'lib', 'state', 'books.ts'),
+      'export const BOOKS = [];\nexport const bookAssetPaths = () => [];\n'
+    );
+    const favicon = join(fixtureRoot, 'web', 'build', 'favicon.ico');
+    writeFixture(favicon);
+
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--experimental-strip-types',
+        '--disable-warning=ExperimentalWarning',
+        join(fixtureRoot, 'scripts', 'strip-native-assets.mjs'),
+      ],
+      { cwd: fixtureRoot, encoding: 'utf8' }
+    );
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('[strip-native-assets] stripped 1 web-only file(s)');
+    expect(existsSync(favicon)).toBe(false);
+  });
+
   it('strips a temporary native build including directories, files, and HTML references', () => {
     const buildDir = join(state.root, 'orchestration-build');
     const mobileBook = fixtureBook('mobile', ['mobile']);
@@ -237,7 +285,7 @@ describe('native build script entry points', () => {
   });
 
   it('throws exported-function failures before the CLI wrapper handles them', () => {
-    const missingBuild = join(state.root, 'missing-build');
+    const missingBuild = `${state.root}-missing-build`;
     const missingStatic = join(state.root, 'missing-static');
     const webBook = fixtureBook('web-only', ['web']);
     exit.mockClear();
@@ -245,7 +293,7 @@ describe('native build script entry points', () => {
     log.mockClear();
 
     expect(() => stripNativeAssets(missingBuild, [])).toThrow(
-      '[strip-native-assets] no build output at'
+      `[strip-native-assets] no build output at ${missingBuild}`
     );
     expect(() => checkAssets(missingStatic, [webBook], [webBook])).toThrow(
       /^\[check-assets\] \d+ error\(s\) found/
@@ -280,9 +328,7 @@ describe('native build script entry points', () => {
 
     expect(exit).toHaveBeenNthCalledWith(1, 1);
     expect(exit).toHaveBeenNthCalledWith(2, 1);
-    expect(error).toHaveBeenCalledWith(
-      expect.stringContaining('[strip-native-assets] no build output at')
-    );
+    expect(error).toHaveBeenCalledWith('[strip-native-assets] no build output at web/build');
     expect(error).toHaveBeenCalledWith(
       expect.stringMatching(/^\[check-assets\] \d+ error\(s\) found/)
     );

@@ -78,6 +78,29 @@ describe('command helpers', () => {
     }
   });
 
+  it('returns false when the entry argument is not a file', () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'splotch-is-main-missing-'));
+    const missingEntry = join(fixtureDir, 'missing.mjs');
+    const script = `
+      import { isMain } from ${JSON.stringify(procUrl)};
+      process.stdout.write(String(isMain('file:///not-the-entry.mjs')));
+    `;
+
+    try {
+      const result = spawnSync(
+        process.execPath,
+        ['--input-type=module', '-e', script, missingEntry],
+        { encoding: 'utf8' }
+      );
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(result.stdout).toBe('false');
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true });
+    }
+  });
+
   it('keeps deliberate shell syntax available through sh', () => {
     const script = `
       import { sh } from ${JSON.stringify(procUrl)};
