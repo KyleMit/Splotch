@@ -94,7 +94,7 @@
   const overlayActive = $derived(!!overlayUrl());
   const visibleBookTileCount: number = $derived(books.length + (overlayActive ? 1 : 0));
   const bookGridHasOrphan: boolean = $derived(
-    visibleBookTileCount === 5 || visibleBookTileCount === 9
+    visibleBookTileCount > 1 && visibleBookTileCount % 4 === 1
   );
   const bookGridHasNineTiles: boolean = $derived(visibleBookTileCount === 9);
 </script>
