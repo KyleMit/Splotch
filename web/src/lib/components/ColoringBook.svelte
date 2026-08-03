@@ -92,6 +92,11 @@
   }
 
   const overlayActive = $derived(!!overlayUrl());
+  const visibleBookTileCount: number = $derived(books.length + (overlayActive ? 1 : 0));
+  const bookGridHasOrphan: boolean = $derived(
+    visibleBookTileCount === 5 || visibleBookTileCount === 9
+  );
+  const bookGridHasNineTiles: boolean = $derived(visibleBookTileCount === 9);
 </script>
 
 <dialog
@@ -117,7 +122,11 @@
     {#if !activeBook}
       <div class="coloring-book-view">
         <h2>Coloring Books</h2>
-        <div class="coloring-grid coloring-books-grid">
+        <div
+          class="coloring-grid coloring-books-grid"
+          class:book-grid-has-orphan={bookGridHasOrphan}
+          class:book-grid-has-nine-tiles={bookGridHasNineTiles}
+        >
           {#if overlayActive}
             <button
               class="coloring-tile coloring-book-tile coloring-remove-tile"
@@ -263,11 +272,11 @@
 
   /* A last row of one reads as accidental, so catalog sizes that would leave
      that orphan use the next-lower column count. This also covers Clear Page. */
-  .coloring-books-grid:has(> :where(:nth-child(5):last-child, :nth-child(9):last-child)) {
+  .coloring-books-grid.book-grid-has-orphan {
     --book-cols: 3;
   }
 
-  .coloring-books-grid:has(> :nth-child(9):last-child) {
+  .coloring-books-grid.book-grid-has-nine-tiles {
     --book-grid-roomy-max-width: 639px;
     /* Reserve the non-grid content and whole-pixel rounding inside the modal cap. */
     --book-grid-height-reserve: 115px;
