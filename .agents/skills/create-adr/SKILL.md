@@ -39,10 +39,14 @@ decisions in `docs/adrs/`.
    in the codebase — read the relevant file(s) and grep for the key patterns. Do not document a
    decision that has already been reversed.
 
-4. **Determine the next ADR number.** Find the highest four-digit prefix among the ADR records in
-   `docs/adrs/`, add one, and zero-pad the result to four digits. Do not count files: moved records
-   `0053`–`0056` leave gaps, so a count can reuse an existing number. This is the same rule as the
-   canonical `nextAdrNumber()` implementation used by `npm run check:adrs`.
+4. **Determine the next ADR number.** Identify the branch this work will merge into (`origin/main`
+   for a direct PR, its parent branch for a stack). Find the highest four-digit ADR prefix across
+   both `docs/adrs/` and `git ls-tree --name-only <base-ref>:docs/adrs`, add one, and zero-pad to
+   four digits. Do not count files: ADR numbers are never reused, so any gap — such as the one left
+   by moved records `0053`–`0056` — makes a count reuse an existing number. This matches the
+   canonical `nextAdrNumber()` used by `npm run check:adrs -- --base=<base-ref>`, which unions the
+   branch with its base before picking and rejects a working-tree number that collides with its
+   merge target.
 
 5. **Write the ADR file** at `docs/adrs/NNNN-kebab-case-title.md` using the template below.
 
