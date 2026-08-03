@@ -1,6 +1,8 @@
 # ADR-0040: Per-Route Render Modes — the Home Route Stays Prerendered (SSG), Not Per-Request SSR
 
-**Status:** Active **Date:** 2026-07
+**Status:** Active **Date:** 2026-07. Amended 2026-08-03: the landscape Color Palette and Actions
+Panel share deterministic first-paint geometry for the persisted visible-button count, with
+orientation-tagged measurement retained as a hydrated correction.
 
 ## Context
 
@@ -54,8 +56,20 @@ that are already correct in the prerendered HTML:
    the `[data-drawer-open]` attribute (see mechanism 2). Orientation that *can't* be pure CSS stays
    in JS (`lib/state/layout.svelte.ts`): the notch-band edge (combines orientation with *measured*
    insets and native status-bar calls), the coloring-book art (portrait vs landscape *image
-   assets*), the clear-button home-corner reset (imperative geometry), and the actions-panel
-   palette-clearing offset (needs the *measured* palette width).
+   assets*), and the clear-button home-corner reset (imperative geometry). The Actions Panel's
+   landscape palette-clearing offset is deterministic at first paint: `app.css` publishes the Color
+   Palette's one- or two-column width as `--palette-landscape-width` at the same media-query
+   breakpoint that selects its layout, and both components consume it. The landscape button cap
+   likewise budgets for the one to five buttons the boot script leaves visible after reading the
+   persisted control toggles; the raw HTML defaults to five, and hydrated sizing uses the live
+   one-to-six-button count once client-only AI visibility resolves. The palette's `ResizeObserver`
+   measurement remains the post-hydration correction for browser rounding, tagged with the
+   orientation it measured. Landscape width and portrait height resolvers reject a measurement from
+   the other orientation during rotation and use the same deterministic CSS fallback geometry until
+   the matching measurement arrives. JS selects the landscape fallback through the same media query
+   rather than the visible viewport height. Drift-guard tests derive the CSS literals from
+   `design/trimGeometry.ts` and the Actions Panel constants, so this shared non-importable geometry
+   cannot silently diverge.
 2. **Pre-paint head-script stamp** (`web/src/app.html`) + CSS. A tiny synchronous inline script runs
    before first paint and stamps `<html>` from `localStorage`, and the Action-center panel's CSS
    reads those stamps so the state is correct at render. During hydration, a publish `$effect` in
@@ -76,6 +90,9 @@ that are already correct in the prerendered HTML:
    * `data-drawer-open` — present only when the drawer is open (default: closed).
    * `data-off-adv` / `data-off-<control>` — present only when advanced controls, or that Settings
      control, is switched **off** (default: on/shown).
+   * `--action-btn-first-paint-count` / `--action-btn-first-paint-gap-total` — set only when those
+     persisted off-states reduce the default five-button row. They are derived from the same
+     booleans that stamp `data-off-<control>`, so first-paint sizing matches the visible controls.
    * `data-brush` — present for a persisted non-default brush (default: pen).
 
    This is what lets the drawer be **always rendered** (in the DOM) yet shown/hidden and the
@@ -96,14 +113,15 @@ always boots to Purple) needs no treatment either.
 
 The head script was measured (prod build, real browser): **~0.1 ms cold** (the one-time,
 parser-blocking cost) / ~10 µs warm; ~9 `localStorage` reads + a `matchMedia` + a few `<html>`
-attribute writes, no reflow (the `<body>` isn't rendered yet). FCP impact is within noise. It pays
-for itself easily: under a 6× CPU throttle (representative of the low-end Android floor) a
-returning-open drawer without the stamp rendered **closed from FCP (~260 ms) until hydration
-corrected it at ~930 ms** — a ~670 ms wrong-state window, then the open animation — versus
-open-from-first-paint with the stamp. The deviation-only polarity is what keeps that a pure win:
-because the raw prerendered HTML already carries the defaults, the ~99% of visits that *are* default
-pay the ~0.1 ms for nothing visible but risk nothing if the script is skipped, while only customized
-returning visits actually consume the benefit.
+attribute/style writes, no reflow (the `<body>` isn't rendered yet). FCP impact is within noise. The
+visible-button count reuses the existing setting reads. The script pays for itself easily: under a
+6× CPU throttle (representative of the low-end Android floor) a returning-open drawer without the
+stamp rendered **closed from FCP (~260 ms) until hydration corrected it at ~930 ms** — a ~670 ms
+wrong-state window, then the open animation — versus open-from-first-paint with the stamp. The
+deviation-only polarity is what keeps that a pure win: because the raw prerendered HTML already
+carries the defaults, the ~99% of visits that *are* default pay the ~0.1 ms for nothing visible but
+risk nothing if the script is skipped, while only customized returning visits actually consume the
+benefit.
 
 Keeping the same attributes live on `<html>` was rejected after Android Chrome action traces showed
 that re-enabling the Screenshot Button could invalidate and repaint the entire 1440×2780 document.
@@ -136,13 +154,14 @@ surfaces.
   dropping `prerender` for `/`, moving the relevant prefs to a cookie, and adding a
   `+layout.server.ts`/`+page.server.ts` load — with the serverless-cost, native-divergence, and
   PWA-cache trade-offs listed above. Orientation would still need the client.
-* **−** The head script duplicates a handful of `localStorage` keys, their defaults, and the
-  button-scale clamp from `settings.svelte.ts` (it runs in `<head>` before `<body>` exists, so it
-  can only stamp `<html>` — it can't import the source of truth or touch the buttons directly). Both
-  files call this out; a mismatch would silently mis-seed until hydration corrects it. The root
-  attributes intentionally remain the first-paint snapshot and are not a live-state inspection API.
-  The bootstrap/panel handoff is covered by an E2E test (`flows-undo-persistence.spec.ts`,
-  "persisted-open drawer … at first paint").
+* **−** The head script duplicates a handful of `localStorage` keys, their defaults, the
+  button-scale clamp, and the default count/gap literals from the typed modules (it runs in `<head>`
+  before `<body>` exists, so it can only stamp `<html>` — it can't import the source of truth or
+  touch the buttons directly). Both files call this out; mechanical drift guards cover the
+  duplicated literals, and E2E tests compare first-paint and hydrated geometry for default,
+  three-button, and brush-only rows. The root attributes and variables intentionally remain the
+  first-paint snapshot and are not a live-state inspection API. The wider bootstrap/panel handoff is
+  covered by `flows-undo-persistence.spec.ts` ("persisted-open drawer … at first paint").
 * **−** The drawer moved from a Svelte `{#if}` + `slide` to always-rendered markup gated by CSS
   (grid accordion + delayed `visibility`). More CSS mechanism, and the buttons are always in the DOM
   — but inert when closed, so no a11y/interaction cost.

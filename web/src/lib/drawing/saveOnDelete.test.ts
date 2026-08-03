@@ -4,7 +4,6 @@ const mocks = vi.hoisted(() => ({
   settings: { saveOnDeleteEnabled: true },
   exportCanvasBlob: vi.fn(),
   isCanvasEmpty: vi.fn(() => false),
-  getActiveOverlayImage: vi.fn(() => null),
   screenshotModuleLoads: 0,
   saveImageBlob: vi.fn(),
 }));
@@ -14,7 +13,6 @@ vi.mock('./engine', () => ({
   exportCanvasBlob: mocks.exportCanvasBlob,
   isCanvasEmpty: mocks.isCanvasEmpty,
 }));
-vi.mock('./overlay', () => ({ getActiveOverlayImage: mocks.getActiveOverlayImage }));
 vi.mock('./screenshot', () => {
   mocks.screenshotModuleLoads += 1;
   return { saveImageBlob: mocks.saveImageBlob };

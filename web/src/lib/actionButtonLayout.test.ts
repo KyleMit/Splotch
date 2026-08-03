@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { layout } from './state/layout.svelte';
 import { network } from './state/network.svelte';
 import {
+  settings,
   setAdvancedControls,
   setAiAccessToken,
   setAiImage,
@@ -15,11 +16,35 @@ import {
 } from './state/settings.svelte';
 import { selectBrush } from './state/tool.svelte';
 import {
+  landscapeSingleColumnMediaQuery,
+  PALETTE_LANDSCAPE_WIDTHS_PX,
+} from './design/trimGeometry';
+import {
   ACTION_PANEL_LIVE_ATTRIBUTE,
+  PALETTE_BAR_RESERVE,
+  isAiImageButtonVisible,
   visibleActionButtonCount,
+  resolvedLandscapePaletteWidth,
+  resolvedPortraitPaletteHeight,
   maxActionButtonScale,
   publishActionPanelState,
 } from './actionButtonLayout';
+
+const originalMatchMedia = window.matchMedia;
+let singleColumnMediaMatches = false;
+
+function mediaQueryList(query: string, matches: boolean): MediaQueryList {
+  return {
+    matches,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(() => true),
+  };
+}
 
 function resetState() {
   setAdvancedControls(true);
@@ -30,32 +55,54 @@ function resetState() {
   setUndoButton(true);
   setAiImage(true);
   setAiAccessToken('');
+  settings.aiUserApiKey = '';
   network.online = true;
 
   layout.orientation = 'landscape';
   layout.viewportWidth = 1280;
   layout.viewportHeight = 800;
-  layout.paletteWidth = 156;
-  layout.paletteHeight = 76;
+  layout.paletteMeasurement = { width: 156, height: 76, orientation: 'landscape' };
   Object.assign(layout.safeArea, { top: 0, right: 0, bottom: 0, left: 0 });
+
+  singleColumnMediaMatches = false;
+  window.matchMedia = vi.fn((query: string) =>
+    mediaQueryList(query, query === landscapeSingleColumnMediaQuery() && singleColumnMediaMatches)
+  );
 }
 
 beforeEach(resetState);
+afterAll(() => {
+  window.matchMedia = originalMatchMedia;
+});
 
 describe('visibleActionButtonCount', () => {
-  it('counts the five always-available buttons by default (no AI token)', () => {
-    expect(visibleActionButtonCount()).toBe(5);
-  });
+  it.each([
+    { credentialState: 'neither credential', apiKey: '', accessCode: '', visible: false },
+    { credentialState: 'a BYO key only', apiKey: 'key', accessCode: '', visible: true },
+    { credentialState: 'an access code only', apiKey: '', accessCode: 'code', visible: true },
+    { credentialState: 'both credentials', apiKey: 'key', accessCode: 'code', visible: true },
+  ])(
+    'keeps layout counting in sync with visibility for $credentialState',
+    ({ apiKey, accessCode, visible }) => {
+      settings.aiUserApiKey = apiKey;
+      setAiAccessToken(accessCode);
 
-  it('adds the AI button only when token + toggle + connectivity all hold', () => {
-    setAiAccessToken('tok');
+      expect(isAiImageButtonVisible()).toBe(visible);
+      expect(visibleActionButtonCount()).toBe(visible ? 6 : 5);
+    }
+  );
+
+  it('requires the AI toggle and connectivity even with a credential', () => {
+    settings.aiUserApiKey = 'key';
     expect(visibleActionButtonCount()).toBe(6);
 
     network.online = false;
+    expect(isAiImageButtonVisible()).toBe(false);
     expect(visibleActionButtonCount()).toBe(5);
 
     network.online = true;
     setAiImage(false);
+    expect(isAiImageButtonVisible()).toBe(false);
     expect(visibleActionButtonCount()).toBe(5);
   });
 
@@ -71,9 +118,48 @@ describe('visibleActionButtonCount', () => {
   });
 });
 
-// Landscape budget: viewportWidth − paletteWidth − 64 (reserve for the Settings
+describe('resolvedLandscapePaletteWidth', () => {
+  it('uses the two-column media-query geometry before the palette measures', () => {
+    layout.paletteMeasurement = { width: 0, height: 0, orientation: null };
+    layout.viewportHeight = 768;
+    expect(resolvedLandscapePaletteWidth()).toBe(PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns);
+  });
+
+  it('uses the single-column media-query geometry instead of visible viewport height', () => {
+    layout.paletteMeasurement = { width: 0, height: 0, orientation: null };
+    layout.viewportHeight = 375;
+    singleColumnMediaMatches = true;
+    expect(resolvedLandscapePaletteWidth()).toBe(PALETTE_LANDSCAPE_WIDTHS_PX.singleColumn);
+  });
+
+  it('keeps the measured width as the hydrated correction', () => {
+    layout.paletteMeasurement = { width: 84.5, height: 768, orientation: 'landscape' };
+    expect(resolvedLandscapePaletteWidth()).toBe(84.5);
+  });
+
+  it('ignores a portrait measurement after rotating to landscape', () => {
+    layout.paletteMeasurement = { width: 375, height: 76, orientation: 'portrait' };
+    expect(resolvedLandscapePaletteWidth()).toBe(PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns);
+  });
+});
+
+describe('resolvedPortraitPaletteHeight', () => {
+  it('keeps the measured height as the hydrated correction', () => {
+    layout.orientation = 'portrait';
+    layout.paletteMeasurement = { width: 768, height: 76.5, orientation: 'portrait' };
+    expect(resolvedPortraitPaletteHeight()).toBe(76.5);
+  });
+
+  it('ignores a landscape measurement after rotating to portrait', () => {
+    layout.orientation = 'portrait';
+    layout.paletteMeasurement = { width: 84, height: 768, orientation: 'landscape' };
+    expect(resolvedPortraitPaletteHeight()).toBe(PALETTE_BAR_RESERVE);
+  });
+});
+
+// Landscape budget: viewportWidth − palette width − 64 (reserve for the Settings
 // Button) − side insets − (8 inset + 8 margin + 48 toggle + gaps). Portrait
-// swaps in viewportHeight − paletteHeight − 8 clearance − vertical insets.
+// swaps in viewportHeight − measured palette height − 8 clearance − vertical insets.
 describe('maxActionButtonScale', () => {
   it('returns the static max when the screen has room to spare', () => {
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
@@ -105,6 +191,21 @@ describe('maxActionButtonScale', () => {
     layout.orientation = 'portrait';
     layout.viewportWidth = 360;
     layout.viewportHeight = 740;
+    expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
+  });
+
+  it('uses portrait fallback geometry immediately after rotating from landscape', () => {
+    layout.orientation = 'portrait';
+    layout.viewportWidth = 768;
+    layout.viewportHeight = 1024;
+    layout.paletteMeasurement = { width: 84, height: 768, orientation: 'landscape' };
+    expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
+
+    layout.paletteMeasurement = {
+      width: 768,
+      height: PALETTE_BAR_RESERVE,
+      orientation: 'portrait',
+    };
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 

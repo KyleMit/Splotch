@@ -44,6 +44,14 @@ function stackExtentPx(
   return items * swatchPx + (items - 1) * gapPx + paddingPx;
 }
 
+// The landscape Color Palette and Actions Panel both need this inline extent
+// before hydration. app.css emits the values as a responsive custom property;
+// actionButtonLayout.fallback.test.ts guards that copy against this source.
+export const PALETTE_LANDSCAPE_WIDTHS_PX = {
+  singleColumn: stackExtentPx(1, PALETTE_COLUMN_GEOMETRY),
+  twoColumns: stackExtentPx(2, PALETTE_COLUMN_GEOMETRY),
+} as const;
+
 /**
  * Swatch counts the landscape single column is sized for, tallest first. Below
  * the last one a third swatch would have to go, so the layout falls back to the
@@ -77,6 +85,10 @@ export function landscapeSingleColumnFloorPx(
   geometry: PaletteStackGeometry = PALETTE_COLUMN_GEOMETRY
 ): number {
   return landscapeSingleColumnMinHeightPx(LANDSCAPE_SINGLE_COLUMN_LADDER.at(-1)!, geometry);
+}
+
+export function landscapeSingleColumnMediaQuery(): string {
+  return `(orientation: landscape) and (min-height: ${landscapeSingleColumnFloorPx()}px)`;
 }
 
 /**

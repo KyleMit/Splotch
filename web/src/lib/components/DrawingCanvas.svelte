@@ -21,12 +21,16 @@
   import {
     overlayUrl,
     coloringBookState,
-    themedOverlayUrl as currentThemedOverlayUrl,
+    themedOverlayImageSource as currentThemedOverlayImageSource,
     colorSheetUrl,
     nightSheetUrl,
   } from '$lib/state/coloringBook.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { pageCompositionKey } from '$lib/state/books';
+  import {
+    COLORING_IMAGE_SIZES,
+    coloringOverlayImageSize,
+    pageCompositionKey,
+  } from '$lib/state/books';
   import { settings } from '$lib/state/settings.svelte';
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
   import { isNative } from '$lib/platform';
@@ -65,6 +69,14 @@
     getStrokeWidthPx(strokeState.penSize) * (paperView.active ? paperView.scale : 1)
   );
 
+  // The sheet/wrapper track the engine's paper; before the engine reports a
+  // size, fill the container and let responsive-image selection use the viewport.
+  const paperCssWidth = $derived(paperView.paperCssWidth ? `${paperView.paperCssWidth}px` : '100%');
+  const paperCssHeight = $derived(
+    paperView.paperCssHeight ? `${paperView.paperCssHeight}px` : '100%'
+  );
+  const overlaySizes = $derived(coloringOverlayImageSize(paperView.paperCssWidth));
+
   onMount(() => {
     // Adopt, don't init (ADR-0072): earlyBoot.ts already started the engine on
     // this prerendered canvas at module-evaluation time, so drawing works
@@ -97,6 +109,7 @@
       onViewChange: (view) => {
         Object.assign(paperView, view);
         canvasState.paperOrientation = view.paperOrientation;
+        canvasState.paperCssWidth = view.paperCssWidth;
       },
     });
 
@@ -169,19 +182,23 @@
   // black pen ink and dark mode uses generated transparent white chalk, falling
   // back to a white overlay derived from the pen for un-forked pages. Reading
   // resolvedTheme() re-picks the art on a live theme switch.
-  const themedOverlayUrl = $derived(currentThemedOverlayUrl(resolvedTheme()));
+  const themedOverlayImage = $derived(currentThemedOverlayImageSource(resolvedTheme()));
+  const themedOverlayUrl = $derived(themedOverlayImage?.src ?? null);
 
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
   // and swaps the page art to the other tall/wide composition. Hide art when
-  // the composition changes, decode the full-resolution file off-DOM, and fade
+  // the composition changes, decode the browser-selected file off-DOM, and fade
   // it in only once ready. A theme sibling has identical registration, so it
   // keeps the current art visible until the sibling is ready.
   let displayedOverlayUrl = $state<string | null>(null);
+  let displayedOverlaySrcset = $state<string | null>(null);
 
   $effect(() => {
     const url = themedOverlayUrl;
+    const image = themedOverlayImage;
     if (!url) {
       displayedOverlayUrl = null;
+      displayedOverlaySrcset = null;
       return;
     }
     const displayed = untrack(() => displayedOverlayUrl);
@@ -191,11 +208,20 @@
     let stale = false;
     const img = new Image();
     img.fetchPriority = 'high';
+    if (!__IS_CAPACITOR__ && image) {
+      // DOM selection follows live paper geometry; an in-flight decode must not
+      // restart merely because a resize reported a new width.
+      img.sizes = untrack(() => overlaySizes);
+      img.srcset = image.srcset;
+    }
     img.src = url;
     // Show on decode failure too — the <img> then surfaces the same broken
     // state a direct src assignment would have.
     const show = () => {
-      if (!stale) displayedOverlayUrl = url;
+      if (!stale) {
+        displayedOverlayUrl = url;
+        displayedOverlaySrcset = image?.srcset ?? null;
+      }
     };
     img.decode().then(show, show);
     return () => {
@@ -205,7 +231,7 @@
 
   // The line art is the only asset needed to make a selected page visible.
   // Start the magic fill and rotation warm-up after it decodes so those
-  // full-resolution transfers cannot delay the page the child just picked.
+  // other art transfers cannot delay the page the child just picked.
   $effect(() => {
     const url = themedOverlayUrl;
     const displayed = displayedOverlayUrl;
@@ -221,18 +247,15 @@
     const nightUrl = theme === 'dark' ? nightSheetUrl() : null;
     setColorSheet(nightUrl ?? colorSheetUrl());
     const other = coloringBookState.orientation === 'portrait' ? 'landscape' : 'portrait';
-    const otherUrl = currentThemedOverlayUrl(theme, other);
-    if (!otherUrl) return;
-    return scheduleIdle(() => prefetchImages([otherUrl]));
+    const otherImage = currentThemedOverlayImageSource(theme, other);
+    if (!otherImage) return;
+    // The opposite orientation has no reliable paper width until it is adopted.
+    return scheduleIdle(() =>
+      prefetchImages([
+        __IS_CAPACITOR__ ? otherImage.src : { ...otherImage, sizes: COLORING_IMAGE_SIZES.overlay },
+      ])
+    );
   });
-
-  // The sheet/wrapper track the engine's paper; before the engine mounts and
-  // reports a size, fall back to filling the container so the SSR'd shell shows
-  // the full-bleed paper texture with no flash.
-  const paperCssWidth = $derived(paperView.paperCssWidth ? `${paperView.paperCssWidth}px` : '100%');
-  const paperCssHeight = $derived(
-    paperView.paperCssHeight ? `${paperView.paperCssHeight}px` : '100%'
-  );
 </script>
 
 <div class="canvas-container">
@@ -263,6 +286,10 @@
       class:overlay-ready={!!displayedOverlayUrl}
       id={COLORING_OVERLAY_ID}
       src={displayedOverlayUrl ?? ''}
+      srcset={!__IS_CAPACITOR__ && displayedOverlayUrl
+        ? (displayedOverlaySrcset ?? undefined)
+        : undefined}
+      sizes={!__IS_CAPACITOR__ ? overlaySizes : undefined}
       alt=""
       hidden={!overlayUrl()}
     />

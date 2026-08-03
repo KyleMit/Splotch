@@ -2,7 +2,6 @@
   import Icon from './Icon.svelte';
   import { aiPrompt } from '$lib/state/ui.svelte';
   import { exportCanvasBlob } from '$lib/drawing/engine';
-  import { getActiveOverlayImage } from '$lib/drawing/overlay';
   import { generateAiImage } from '$lib/drawing/aiImage';
   import { STYLE_NAMES, type StyleName, styleThumbPath } from '$lib/ai/styles';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
@@ -11,7 +10,7 @@
   let drawingBlob = $state<Blob | null>(null);
 
   const previewLoader = createAiPreviewLoader(
-    () => exportCanvasBlob(getActiveOverlayImage(), { includePaperTexture: false }),
+    () => exportCanvasBlob({ includePaperTexture: false }),
     (blob) => (drawingBlob = blob)
   );
 

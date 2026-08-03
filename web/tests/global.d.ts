@@ -56,8 +56,7 @@ declare global {
       };
       inkBounds(): { minX: number; minY: number; maxX: number; maxY: number } | null;
       exportCanvasBlob(
-        overlayImage?: HTMLImageElement | null,
-        options?: { includePaperTexture?: boolean }
+        options?: import('../src/lib/drawing/exportDrawing').ExportOptions
       ): Promise<Blob | null>;
       blobRedPixelCount(blob: Blob | null): Promise<number>;
       nonTransparentCount(): number;

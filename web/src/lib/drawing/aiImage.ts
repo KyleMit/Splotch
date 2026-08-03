@@ -13,7 +13,6 @@ import { apiUrl } from '$lib/api';
 import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
 import { exportCanvasBlob } from './engine';
 import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
-import { getActiveOverlayImage } from './overlay';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import { AI_IMAGE_BASENAME, DRAWING_BASENAME } from '$lib/saveNaming';
 import type { StyleName } from '$lib/ai/styles';
@@ -121,8 +120,7 @@ async function exportUploadImage(
   blob: Blob | null,
   runId: number
 ): Promise<{ preview: Blob; upload: Blob } | null> {
-  const imageBlob =
-    blob ?? (await exportCanvasBlob(getActiveOverlayImage(), { includePaperTexture: false }));
+  const imageBlob = blob ?? (await exportCanvasBlob({ includePaperTexture: false }));
   if (!isAiGenerationActive(runId)) return null;
   if (!imageBlob) {
     closeAiResult();

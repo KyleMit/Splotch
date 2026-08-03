@@ -4,10 +4,18 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { buildDefines } from './defines';
 import { BROWSER_TARGETS } from './browserTargets';
 import { buildMetadata } from './buildVersion';
+import {
+  RESPONSIVE_COLORING_URL_PATTERN,
+  serveResponsiveColoringWithCanonicalFallback,
+} from './src/lib/pwa/coloringFallback';
+import { RESPONSIVE_COLORING_TIER_DIRECTORIES } from './src/lib/state/books';
 
 // The native apps bundle a static export and never use a service worker (the
 // shell and all assets are already on-device), so skip the PWA plugin there.
 const isCapacitor = process.env.CAPACITOR === 'true';
+const responsiveColoringGlobIgnores = RESPONSIVE_COLORING_TIER_DIRECTORIES.map(
+  (directory) => `${directory.slice(1)}/**/*`
+);
 
 // Opt-in `performance.mark/measure` instrumentation on the drawing engine's hot
 // paths, read by the profiling harness (scripts/perf/, `npm run perf:web`). Off
@@ -75,7 +83,7 @@ export default defineConfig({
             // auto-reload, leaving updates.ts as the sole driver. This preserves
             // the canvas-empty guard (never interrupt a mid-drawing session).
             registerType: 'prompt',
-            // No auto-injected registerSW.js: the precache is ~39 MB (the full
+            // No auto-injected registerSW.js: the precache is ~35 MB (the full
             // offline coloring-page set), and a window.load registration would
             // saturate a slow connection right as boot's idle-deferred work runs
             // and the child starts drawing. updates.ts registers the SW itself —
@@ -90,10 +98,15 @@ export default defineConfig({
             ],
             manifest: false,
             workbox: {
+              additionalManifestEntries: [{ url: '_app/env.js', revision: BUILD_TIME }],
               // Exclude html — navigation requests use the NetworkFirst runtime
               // cache below so a manual refresh always fetches fresh markup.
               globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}'],
-              globIgnores: ['**/*.outline.webp', '**/*.chalk.webp'],
+              globIgnores: [
+                '**/*.outline.webp',
+                '**/*.chalk.webp',
+                ...responsiveColoringGlobIgnores,
+              ],
               // Do NOT set skipWaiting here. The new SW enters "waiting" state
               // and updates.ts activates it (via SKIP_WAITING message) only when
               // the canvas is blank, so mid-drawing sessions are never disrupted.
@@ -103,6 +116,10 @@ export default defineConfig({
               // NetworkFirst handler. Override to '' to suppress it.
               navigateFallback: '',
               runtimeCaching: [
+                {
+                  urlPattern: RESPONSIVE_COLORING_URL_PATTERN,
+                  handler: serveResponsiveColoringWithCanonicalFallback,
+                },
                 {
                   urlPattern: ({ request }) => request.mode === 'navigate',
                   handler: 'NetworkFirst',

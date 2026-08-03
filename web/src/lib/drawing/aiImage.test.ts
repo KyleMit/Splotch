@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('./engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob }));
-vi.mock('./overlay', () => ({ getActiveOverlayImage: vi.fn(() => null) }));
 vi.mock('./screenshot', () => ({
   saveImageBlob: mocks.saveImageBlob,
 }));

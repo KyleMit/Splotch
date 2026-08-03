@@ -1,7 +1,8 @@
 # ADR-0045: Coloring-Picker Thumbnails + Prefetch (Two Resolutions per Page)
 
 **Status:** Active — the 2026-07-31 thumbnail decode bridge is superseded by the 2026-08-01
-amendment below. **Date:** 2026-07
+amendment, and the 2026-08-02 issue #621 amendment adds responsive web presentation while keeping
+canonical export and offline authority. **Date:** 2026-07
 
 ## Context
 
@@ -127,17 +128,52 @@ thumbnail participates. The transfer cancellation, high-priority selected reques
 fill, and alternate-orientation idle warm from the earlier amendment remain.
 
 Clearing the displayed composition also clears the active Magic fill until the selected overlay is
-ready, so strokes cannot sample the previous page. Screenshot export reads the same ready-gated
-overlay element and therefore receives either the correct full-resolution art or no overlay during
-the decode window. The generator and catalog no longer produce or ship alpha overlay thumbnails;
-picker thumbnails remain unchanged.
+ready, so strokes cannot sample the previous page. Export observes the same ready gate and therefore
+receives either the correct composition or no overlay during the decode window. The generator and
+catalog no longer produce or ship alpha overlay thumbnails; picker thumbnails remain unchanged. The
+next amendment separates the ready element's presentation candidate from the canonical bytes used
+once export begins.
+
+### 5. Responsive web presentation; canonical export and offline authority
+
+**Amendment (2026-08-02, issue #621).** The escalation anticipated below is now implemented with
+`srcset` rather than more semantic suffixes. Web builds offer one generated candidate beside each
+canonical picker thumbnail and canvas overlay:
+
+* `/coloring/max-240px/` bounds picker images to a 240 px longest edge (240 px covers and landscape
+  thumbs; 160 px portrait widths).
+* `/coloring/max-1152px/` bounds canvas overlays to a 1,152 px longest edge (768 px portrait widths
+  and 1,152 px landscape widths).
+
+`books.ts` owns the source URL, candidate URL, intrinsic width descriptors, and generated-asset
+inventory. The picker publishes layout-specific `sizes`; the canvas publishes its locked paper
+width. Native builds omit `srcset` and strip both responsive directories, so they retain the prior
+single-canonical behavior. `gen:coloring-responsive` deterministically derives all candidates, and
+the catalog fidelity test checks dimensions, alpha preservation, overlay channel error, and total
+byte savings against those same catalog records.
+
+The DOM's ready-gated image may decode a responsive candidate on web. That is presentation only: the
+element's `src` remains the canonical root URL, and every exported drawing resolves that URL.
+`engine.exportCanvasBlob()` captures the active ready overlay source synchronously with the stroke
+snapshot. The save-time compositor reuses an already decoded canonical image when available or loads
+the canonical URL on demand before drawing/bitmap transfer. Screenshot, save-on-delete, and AI
+preview/upload all use that central path. A canonical load failure rejects the export; it never
+silently omits the overlay or substitutes the selected low-resolution candidate.
+
+The responsive derivatives are network-only service-worker routes, not precache entries (ADR-0022).
+Offline, a request for a responsive candidate maps explicitly to the corresponding revisioned
+canonical entry. This removes 11.66 MiB of duplicate install data while retaining the complete
+canonical coloring catalog. Production PWA tests clear the HTTP cache and decode the responses
+selected at DPR 1 and DPR 3, so both the responsive URL path and its canonical fallback bytes are
+exercised.
 
 ## Consequences
 
 * **+** Grid downloads drop ~85% (thumbnails ~15 KB vs. 84–120 KB); the picker paints fast even on a
   cold visit, and decode cost per tile falls with the pixel count.
-* **+** The steady-state overlay stays full-res, and its decode window preserves the paper texture
-  instead of displaying a low-resolution or opaque full-canvas substitute.
+* **+** The steady-state web overlay uses the browser-selected resolution appropriate for the locked
+  paper width, and its decode window preserves the paper texture instead of displaying an opaque
+  substitute. Canonical art remains mandatory for export.
 * **+** Prefetch turns each hop (open → book → apply) from first-fetch latency into a cache hit on
   the common path — measured at 14–137× faster first open and 1.5–44× faster page-apply (see
   **Measured impact** below).
@@ -158,10 +194,17 @@ picker thumbnails remain unchanged.
   overlay decodes. This is deliberate: the retired bridge remained blank for its own transfer and
   then substituted visibly soft art for the rest of the window.
 
-### When to escalate
+* **+** Responsive presentation reduces cold web transfer and decode cost without changing native
+  assets, exported PNG fidelity, or the canonical offline catalog.
 
-If more than two sizes are ever needed (e.g. a distinct 2-up vs. 3-up grid density), move to a
-`srcset`/`<picture>` responsive-image approach rather than adding more hand-named suffixes.
+* **−** The web catalog carries 392 deterministic derivatives. They are committed and manifest-
+  guarded, but excluded from the PWA precache so installs do not store both resolutions.
+
+### Superseded escalation threshold
+
+The earlier instruction to adopt `srcset` if more sizes became necessary was exercised by the
+2026-08-02 amendment. Future tiers belong in the same catalog/generator contract; they must not add
+new semantic filename suffixes or enter the PWA precache without revisiting ADR-0022's byte budget.
 
 ## Measured impact (prefetch A/B, 2026-07)
 

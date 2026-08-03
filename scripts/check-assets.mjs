@@ -6,47 +6,65 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { webOnlyBooks } from './lib/book-assets.mjs';
-import { ROOT, fail } from './lib/proc.mjs';
+import { ROOT, fail, isMain } from './lib/proc.mjs';
 import { BOOKS, booksForPlatform, bookAssetPaths } from '../web/src/lib/state/books.ts';
 
 const STATIC_DIR = join(ROOT, 'web', 'static');
 
-let errors = 0;
-let checked = 0;
+function reportMissingCatalogAssets(staticDir, books) {
+  let missing = 0;
+  let checked = 0;
 
-// 1. Verify every catalog asset exists in static/.
-for (const book of BOOKS) {
-  for (const assetPath of bookAssetPaths(book)) {
-    checked++;
-    if (!existsSync(join(STATIC_DIR, assetPath))) {
-      console.error(`[check-assets] MISSING: ${assetPath}  (book: ${book.id})`);
-      errors++;
+  for (const book of books) {
+    for (const assetPath of bookAssetPaths(book)) {
+      checked++;
+      if (!existsSync(join(staticDir, assetPath))) {
+        console.error(`[check-assets] MISSING: ${assetPath}  (book: ${book.id})`);
+        missing++;
+      }
     }
   }
+  console.log(`[check-assets] ${checked} asset(s) checked across ${books.length} book(s).`);
+  return missing;
 }
-console.log(`[check-assets] ${checked} asset(s) checked across ${BOOKS.length} book(s).`);
 
-// 2. Cross-check platform filtering: strip-native-assets drops webOnlyBooks
-//    (defined script-side in lib/book-assets.mjs); booksForPlatform('mobile') is the
-//    app-side complement. If any book appears in both sets, the filters disagree.
-const mobileBooks = new Set(booksForPlatform('mobile').map((b) => b.id));
-const webOnly = webOnlyBooks(BOOKS);
-const overlap = webOnly.filter((b) => mobileBooks.has(b.id));
+function reportPlatformFilterMismatch(books, mobileEligibleBooks) {
+  // webOnlyBooks is script-side; the app-side booksForPlatform('mobile') result must complement it.
+  const mobileBookIds = new Set(mobileEligibleBooks.map((book) => book.id));
+  const webOnly = webOnlyBooks(books);
+  const overlap = webOnly.filter((book) => mobileBookIds.has(book.id));
 
-if (overlap.length > 0) {
-  console.error(
-    `[check-assets] PLATFORM MISMATCH: book(s) simultaneously mobile-eligible and web-only: ` +
-      overlap.map((b) => b.id).join(', ')
-  );
-  errors++;
-} else {
+  if (overlap.length > 0) {
+    console.error(
+      `[check-assets] PLATFORM MISMATCH: book(s) simultaneously mobile-eligible and web-only: ` +
+        overlap.map((book) => book.id).join(', ')
+    );
+    return 1;
+  }
+
   console.log(
     `[check-assets] platform filtering OK — ` +
       (webOnly.length > 0
-        ? `${webOnly.length} web-only book(s) will be stripped from native: ${webOnly.map((b) => b.id).join(', ')}`
+        ? `${webOnly.length} web-only book(s) will be stripped from native: ${webOnly.map((book) => book.id).join(', ')}`
         : 'all books ship on mobile.')
   );
+  return 0;
 }
 
-if (errors > 0) fail(`[check-assets] ${errors} error(s) found — fix before releasing.`);
-console.log('[check-assets] all checks passed.');
+export function checkAssets(staticDir, books, mobileEligibleBooks) {
+  const errors =
+    reportMissingCatalogAssets(staticDir, books) +
+    reportPlatformFilterMismatch(books, mobileEligibleBooks);
+  if (errors > 0) {
+    throw new Error(`[check-assets] ${errors} error(s) found — fix before releasing.`);
+  }
+  console.log('[check-assets] all checks passed.');
+}
+
+if (isMain(import.meta.url)) {
+  try {
+    checkAssets(STATIC_DIR, BOOKS, booksForPlatform('mobile'));
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error));
+  }
+}

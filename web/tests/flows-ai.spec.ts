@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
+
 import { draw, gotoApp } from './helpers';
 
 import { openDrawer } from './flows-harness';
@@ -8,6 +10,33 @@ import { openDrawer } from './flows-harness';
 // ── AI generation flow (mocked endpoint) ────────────────────────────────────
 
 const webp = readFileSync(new URL('../static/icons/handmade-paper.webp', import.meta.url));
+const AI_KEY_SEED_MARKER = 'splotch-test-ai-key-seeded';
+
+test('a migrated BYO key reveals the AI button on the next launch', async ({ page }) => {
+  await page.addInitScript(
+    ({ aiUserApiKey, seedMarker }) => {
+      if (sessionStorage.getItem(seedMarker)) return;
+      localStorage.setItem(aiUserApiKey, 'test-byo-key');
+      sessionStorage.setItem(seedMarker, 'true');
+    },
+    { aiUserApiKey: STORAGE_KEYS.legacyAiUserApiKey, seedMarker: AI_KEY_SEED_MARKER }
+  );
+  await gotoApp(page);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (aiUserApiKey) => localStorage.getItem(aiUserApiKey),
+        STORAGE_KEYS.legacyAiUserApiKey
+      )
+    )
+    .toBeNull();
+
+  await page.reload();
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  await openDrawer(page);
+
+  await expect(page.locator('#aiImageButton')).toBeVisible();
+});
 
 test('the AI button posts the drawing and reveals the generated result', async ({ page }) => {
   let postedImage = false;

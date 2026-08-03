@@ -19,6 +19,7 @@
 //   static/coloring/{book}/{page}-wide.light.webp     landscape colored fill
 //   static/coloring/{book}/{page}-tall.night.webp     portrait night fill (dark mode)
 //   static/coloring/{book}/{page}-wide.night.webp     landscape night fill (dark mode)
+//   static/coloring/max-{edge}px/{book}/{name}.{variant}.webp web-responsive derivatives
 //
 // The PEN outline (black ink on white) is the light-mode overlay and the source
 // every other asset derives from. The CHALK outline is the dark-mode overlay —
@@ -38,7 +39,8 @@
 // version of the line-art page (tools/asset-gen/bin/gen-coloring-fills.mjs) that the magic
 // brush reveals where the child paints (ADR-0043); it never appears in the grid,
 // so it has no thumbnail. `bookAssetPaths()` lists them all so check-assets
-// validates and strip-native-assets removes them together. Thumbnails: ADR-0045.
+// validates and strip-native-assets removes them together. Responsive tiers are
+// web-only; native keeps the canonical runtime width. Thumbnails: ADR-0045.
 //
 // `platforms` controls distribution per book:
 //   ['web']            -> web only          (hidden + assets stripped on native)
@@ -51,6 +53,25 @@ import type { ResolvedTheme } from '../theme';
 // platform in platform.ts (which also has 'ios'/'android').
 export type BookPlatform = 'web' | 'mobile';
 export type BookOrientation = 'portrait' | 'landscape';
+
+export interface ResponsiveColoringImage {
+  src: string;
+  srcset: string;
+}
+
+export interface ResponsiveColoringAsset {
+  source: string;
+  target: string;
+  maxEdgePx: number;
+  widthPx: number;
+  encoding: 'overlay' | 'thumbnail';
+}
+
+interface ColoringBookGridLayout {
+  hasNineTiles: boolean;
+  hasOrphan: boolean;
+  imageSizes: string;
+}
 
 export interface ColoringPage {
   id: string;
@@ -78,6 +99,62 @@ export interface Book {
 }
 
 const COLORING_ROOT = '/coloring';
+const RESPONSIVE_COLORING_TIERS = {
+  overlay: {
+    directory: 'max-1152px',
+    maxEdgePx: 1152,
+    widths: {
+      portrait: { candidate: 768, source: 1024 },
+      landscape: { candidate: 1152, source: 1536 },
+    },
+  },
+  thumbnail: {
+    directory: 'max-240px',
+    maxEdgePx: 240,
+    widths: {
+      cover: { candidate: 240, source: 400 },
+      portrait: { candidate: 160, source: 267 },
+      landscape: { candidate: 240, source: 400 },
+    },
+  },
+} as const;
+export const RESPONSIVE_COLORING_TIER_DIRECTORIES = Object.values(RESPONSIVE_COLORING_TIERS).map(
+  (tier) => `${COLORING_ROOT}/${tier.directory}`
+);
+const BOOK_GRID_DEFAULT_COLUMNS = 4;
+const BOOK_GRID_NINE_TILE_COUNT = 9;
+export const COLORING_IMAGE_SIZES = {
+  overlay: '100vw',
+  coverThumbnail: {
+    standard:
+      '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), (max-width: 1022px) calc((90vw - 100px) / 4), 205px',
+    orphan:
+      '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 88px) / 3), 277px',
+    nineTiles:
+      '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), 205px',
+  },
+  pageThumbnail: {
+    portrait:
+      '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 88px) / 3), 277px',
+    landscape:
+      '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 76px) / 2), 422px',
+  },
+} as const;
+
+export function coloringBookGridLayout(visibleTileCount: number): ColoringBookGridLayout {
+  const hasNineTiles = visibleTileCount === BOOK_GRID_NINE_TILE_COUNT;
+  const hasOrphan = visibleTileCount > 1 && visibleTileCount % BOOK_GRID_DEFAULT_COLUMNS === 1;
+  const imageSizes = hasNineTiles
+    ? COLORING_IMAGE_SIZES.coverThumbnail.nineTiles
+    : hasOrphan
+      ? COLORING_IMAGE_SIZES.coverThumbnail.orphan
+      : COLORING_IMAGE_SIZES.coverThumbnail.standard;
+  return { hasNineTiles, hasOrphan, imageSizes };
+}
+
+export function coloringOverlayImageSize(paperCssWidth: number): string {
+  return paperCssWidth ? `${paperCssWidth}px` : COLORING_IMAGE_SIZES.overlay;
+}
 const ORIENTATION_SLUGS: Record<BookOrientation, string> = {
   portrait: 'tall',
   landscape: 'wide',
@@ -130,6 +207,26 @@ function optionalPageAssetPaths(
 
 function coverPath(bookId: string): string {
   return `${COLORING_ROOT}/${bookId}/cover${ASSET_SUFFIXES.outline}`;
+}
+
+function responsiveTierPath(src: string, directory: string): string {
+  const coloringPrefix = `${COLORING_ROOT}/`;
+  if (!src.startsWith(coloringPrefix)) {
+    throw new Error(`Coloring asset path must start with ${coloringPrefix}: ${src}`);
+  }
+  return `${coloringPrefix}${directory}/${src.slice(coloringPrefix.length)}`;
+}
+
+function responsiveImage(
+  src: string,
+  directory: string,
+  candidateWidthPx: number,
+  sourceWidthPx: number
+): ResponsiveColoringImage {
+  return {
+    src,
+    srcset: `${responsiveTierPath(src, directory)} ${candidateWidthPx}w, ${src} ${sourceWidthPx}w`,
+  };
 }
 
 // A page ships night fills + chalk outlines for BOTH orientations by default —
@@ -287,6 +384,17 @@ export function pageOverlayImage(
   return source.slice(0, -ASSET_SUFFIXES.outline.length) + suffix;
 }
 
+export function pageOverlayImageSource(
+  page: ColoringPage,
+  orientation: BookOrientation,
+  theme: ResolvedTheme
+): ResponsiveColoringImage {
+  const src = pageOverlayImage(page, orientation, theme);
+  const tier = RESPONSIVE_COLORING_TIERS.overlay;
+  const widths = tier.widths[orientation];
+  return responsiveImage(src, tier.directory, widths.candidate, widths.source);
+}
+
 /** Grid-thumbnail path for a picker-facing line-art image (`x.outline.webp` -> `x.thumb.webp`). */
 export function thumbPath(src: string): string {
   return src.endsWith(ASSET_SUFFIXES.outline)
@@ -313,6 +421,66 @@ export function pageThumb(
 ): string {
   const chalk = theme === 'dark' ? page.chalkImages[orientation] : undefined;
   return chalk ? chalkThumbPath(chalk) : thumbPath(page.images[orientation]);
+}
+
+export function coverThumbImageSource(book: Book): ResponsiveColoringImage {
+  const src = thumbPath(book.cover);
+  const tier = RESPONSIVE_COLORING_TIERS.thumbnail;
+  const widths = tier.widths.cover;
+  return responsiveImage(src, tier.directory, widths.candidate, widths.source);
+}
+
+export function pageThumbImageSource(
+  page: ColoringPage,
+  orientation: BookOrientation,
+  theme: ResolvedTheme
+): ResponsiveColoringImage {
+  const src = pageThumb(page, orientation, theme);
+  const tier = RESPONSIVE_COLORING_TIERS.thumbnail;
+  const widths = tier.widths[orientation];
+  return responsiveImage(src, tier.directory, widths.candidate, widths.source);
+}
+
+export function responsiveColoringAssets(book: Book): ResponsiveColoringAsset[] {
+  const overlayTier = RESPONSIVE_COLORING_TIERS.overlay;
+  const thumbnailTier = RESPONSIVE_COLORING_TIERS.thumbnail;
+  const overlayAssets = book.pages.flatMap((page) =>
+    ALL_ORIENTATIONS.flatMap((orientation) => {
+      const widths = overlayTier.widths[orientation];
+      return (['light', 'dark'] as const).map((theme) => {
+        const source = pageOverlayImage(page, orientation, theme);
+        return {
+          source,
+          target: responsiveTierPath(source, overlayTier.directory),
+          maxEdgePx: overlayTier.maxEdgePx,
+          widthPx: widths.candidate,
+          encoding: 'overlay' as const,
+        };
+      });
+    })
+  );
+  const thumbnailSources: Array<{
+    source: string;
+    shape: BookOrientation | 'cover';
+  }> = [{ source: thumbPath(book.cover), shape: 'cover' }];
+  for (const page of book.pages) {
+    for (const orientation of ALL_ORIENTATIONS) {
+      thumbnailSources.push({ source: thumbPath(page.images[orientation]), shape: orientation });
+      const chalk = page.chalkImages[orientation];
+      if (chalk) thumbnailSources.push({ source: chalkThumbPath(chalk), shape: orientation });
+    }
+  }
+  const thumbnailAssets = thumbnailSources.map(({ source, shape }) => {
+    const widths = thumbnailTier.widths[shape];
+    return {
+      source,
+      target: responsiveTierPath(source, thumbnailTier.directory),
+      maxEdgePx: thumbnailTier.maxEdgePx,
+      widthPx: widths.candidate,
+      encoding: 'thumbnail' as const,
+    };
+  });
+  return [...overlayAssets, ...thumbnailAssets];
 }
 
 export function bookAssetPaths(book: Book): string[] {
@@ -351,5 +519,6 @@ export function bookAssetPaths(book: Book): string[] {
     ...lineArt.map(thumbPath),
     ...chalkOutlines.map(chalkThumbPath),
     ...overlays,
+    ...responsiveColoringAssets(book).map((asset) => asset.target),
   ];
 }
