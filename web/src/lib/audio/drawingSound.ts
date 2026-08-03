@@ -15,6 +15,7 @@ const TEARDOWN_SLACK_MS = 20;
 let audioContext: AudioContext | null = null;
 const buffers: AudioBuffer[] = [];
 const loadPromises = new Map<string, Promise<void>>();
+const failedUrls = new Set<string>();
 let currentPlayback: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
 let playbackRequested = false;
 let requestedSpeed = 0;
@@ -33,6 +34,7 @@ function ensureContext(): AudioContext | null {
 function loadSound(ctx: AudioContext, url: string): Promise<void> {
   const existing = loadPromises.get(url);
   if (existing) return existing;
+  if (failedUrls.has(url)) return Promise.resolve();
 
   const pending = fetch(url)
     .then((response) => response.arrayBuffer())
@@ -43,25 +45,29 @@ function loadSound(ctx: AudioContext, url: string): Promise<void> {
     })
     .catch(() => {
       loadPromises.delete(url);
+      failedUrls.add(url);
     });
   loadPromises.set(url, pending);
   return pending;
 }
 
 export function preloadFirstDrawSound() {
+  if (!settings.soundEnabled) return;
   const ctx = ensureContext();
   if (!ctx) return;
   void loadSound(ctx, SOUND_URLS[0]);
 }
 
 export function preloadDrawSounds() {
+  if (!settings.soundEnabled) return;
   const ctx = ensureContext();
   if (!ctx) return;
   for (const url of SOUND_URLS) void loadSound(ctx, url);
 }
 
-export function playDrawSound({ speed }: DrawSoundData) {
+export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
   if (!settings.soundEnabled) return;
+  if (isStrokeStart) failedUrls.clear();
   playbackRequested = true;
   requestedSpeed = speed;
   preloadFirstDrawSound();
@@ -106,6 +112,7 @@ function updateGain(param: AudioParam, speed: number, now: number) {
 }
 
 export function stopDrawSound() {
+  failedUrls.clear();
   playbackRequested = false;
   requestedSpeed = 0;
   const playback = currentPlayback;
