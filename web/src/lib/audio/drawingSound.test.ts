@@ -14,6 +14,7 @@ describe('playDrawSound', () => {
   afterEach(() => {
     stopDrawSound?.();
     stopDrawSound = undefined;
+    localStorage.clear();
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.resetModules();
@@ -141,31 +142,52 @@ describe('playDrawSound', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     setSound(false);
+    drawingSound.preloadFirstDrawSound();
+    drawingSound.preloadDrawSounds();
     drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: true });
 
     expect(AudioContext).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('retries a sound whose preload failed', async () => {
+  it('retries a failed preload once per gesture instead of once per pointer event', async () => {
+    const { setSound } = await import('$lib/state/settings.svelte');
     const drawingSound = await import('./drawingSound');
-    const fetchMock = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('load failed'))
-      .mockResolvedValue({ arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    stopDrawSound = drawingSound.stopDrawSound;
+    const fetchMock = vi.fn().mockResolvedValue({
+      arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)),
+    });
+    const decodeAudioData = vi.fn().mockRejectedValue(new Error('decode failed'));
     vi.stubGlobal('fetch', fetchMock);
     vi.stubGlobal(
       'AudioContext',
       class {
-        decodeAudioData = vi.fn().mockResolvedValue({ duration: 1 });
+        state = 'running';
+        currentTime = 0;
+        resume = vi.fn().mockResolvedValue(undefined);
+        decodeAudioData = decodeAudioData;
       }
     );
 
+    setSound(true);
     drawingSound.preloadFirstDrawSound();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    drawingSound.preloadFirstDrawSound();
+    await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledOnce());
 
-    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: true });
+    await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledTimes(2));
+
+    for (let i = 0; i < 60; i++) {
+      drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: false });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(decodeAudioData).toHaveBeenCalledTimes(2);
+
+    drawingSound.stopDrawSound();
+    drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: true });
+
+    await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledTimes(3));
   });
 
   it('declicks running playback before disconnecting it', async () => {

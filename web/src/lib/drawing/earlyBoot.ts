@@ -1,7 +1,6 @@
 import { browser } from '$app/environment';
 import { playDrawSound, preloadFirstDrawSound, stopDrawSound } from '$lib/audio/drawingSound';
 import { colors } from '$lib/state/colors.svelte';
-import { settings } from '$lib/state/settings.svelte';
 import { toolState } from '$lib/state/tool.svelte';
 import { activeStrokeSize, getStrokeWidthPx } from '$lib/state/strokeWidth.svelte';
 import {
@@ -47,7 +46,7 @@ export function pushToolStateToEngine(): void {
 function bootDrawingEngine() {
   const canvas = document.getElementById('drawingCanvas');
   if (!(canvas instanceof HTMLCanvasElement) || engineOwnsCanvas(canvas)) return;
-  if (settings.soundEnabled) preloadFirstDrawSound();
+  preloadFirstDrawSound();
   initDrawingCanvas(canvas, {
     initialColor: colors.activeColor,
     onDrawSound: playDrawSound,
