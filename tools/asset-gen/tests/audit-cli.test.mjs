@@ -70,13 +70,14 @@ vi.mock('../lib/solid-regions.mjs', () => ({
   SOLID_INTERIOR_MAX: 60,
   scoreSolidity: async (buffer) => {
     assertReadable(buffer);
+    const passes = !buffer.toString().includes('solid');
     return {
       darkPx: 1,
-      solidPx: 0,
-      interiorPx: 0,
-      biggestBlob: 0,
+      solidPx: passes ? 0 : 101,
+      interiorPx: passes ? 0 : 61,
+      biggestBlob: passes ? 0 : 101,
       strokeWidth: 1,
-      passes: true,
+      passes,
     };
   },
 }));
@@ -85,7 +86,8 @@ vi.mock('../lib/eye-fill.mjs', () => ({
   EYE_RING_DEPTH_MAX: 5,
   scoreEyeRings: async (buffer) => {
     assertReadable(buffer);
-    return { maxDepth: 0, passes: true };
+    const passes = !buffer.toString().includes('ring');
+    return { maxDepth: passes ? 0 : 6, passes };
   },
   scoreEyeFill: async (buffer) => {
     assertReadable(buffer);
@@ -103,7 +105,8 @@ vi.mock('../lib/outline-frame.mjs', () => ({
   FRAME_SIDE_COVERAGE_MIN: 0.7,
   scoreOutlineFrame: async (buffer) => {
     assertReadable(buffer);
-    return { sideCoverage: 0, passes: true };
+    const passes = !buffer.toString().includes('frame');
+    return { sideCoverage: passes ? 0 : 0.7, passes };
   },
 }));
 
@@ -142,11 +145,11 @@ const outputOf = (spy) => spy.mock.calls.map((args) => args.join(' ')).join('\n'
 
 async function addPage(
   name,
-  { corruptOutline = false, corruptFill = false, drifted = false } = {}
+  { corruptOutline = false, corruptFill = false, drifted = false, outlineIssues = [] } = {}
 ) {
   const outline = join(state.roots.coloring, `test/${name}.outline.webp`);
   const fill = join(state.roots.fillSrc, `test/${name}.light.raw.webp`);
-  await writeFile(outline, corruptOutline ? 'corrupt' : 'valid outline');
+  await writeFile(outline, corruptOutline ? 'corrupt' : `valid outline ${outlineIssues.join(' ')}`);
   await writeFile(fill, corruptFill ? 'corrupt' : drifted ? 'drift fill' : 'valid fill');
   return outline;
 }
@@ -224,6 +227,47 @@ it('outline solidity reports a corrupt outline, continues, and exits non-zero', 
   expect(outputOf(error)).toContain('test/bad  ERROR (corrupt image)');
   expect(outputOf(log)).toContain('test/good');
   expect(process.exitCode).toBe(1);
+});
+
+it.each([
+  {
+    name: 'solid-only',
+    issues: ['solid'],
+    summary: '1 solid · 0 over-ringed · 0 page frame(s)',
+    normalize: true,
+    fresh: false,
+  },
+  {
+    name: 'ring-only',
+    issues: ['ring'],
+    summary: '0 solid · 1 over-ringed · 0 page frame(s)',
+    normalize: true,
+    fresh: false,
+  },
+  {
+    name: 'frame-only',
+    issues: ['frame'],
+    summary: '0 solid · 0 over-ringed · 1 page frame(s)',
+    normalize: false,
+    fresh: true,
+  },
+  {
+    name: 'mixed',
+    issues: ['solid', 'ring', 'frame'],
+    summary: '1 solid · 1 over-ringed · 1 page frame(s)',
+    normalize: true,
+    fresh: true,
+  },
+])('outline audit prints the right remediation for $name failures', async (scenario) => {
+  state.pages = [await addPage('bad', { outlineIssues: scenario.issues })];
+
+  await runCli('audit-outline-solidity.mjs');
+
+  const output = outputOf(log);
+  expect(output).toContain(scenario.summary);
+  expect(output.includes('gen:coloring-outlines:normalize')).toBe(scenario.normalize);
+  expect(output.includes('gen:coloring-outlines:fresh')).toBe(scenario.fresh);
+  if (scenario.fresh) expect(output).toContain('--scene "<description>"');
 });
 
 it('golden diff reports a corrupt outline, retains successful pages, and exits non-zero', async () => {

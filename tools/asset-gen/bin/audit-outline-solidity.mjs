@@ -1,5 +1,8 @@
 // Audit every shipped line art for solid black regions, over-ringed eyes, and
-// page frames. Deterministic, no API key/network.
+// page frames. Solid ink and excess eye rings violate the thin-stroke contract
+// used by punch/invert (lib/solid-regions.mjs, lib/eye-fill.mjs); four-sided
+// frames are unwanted enclosures (lib/outline-frame.mjs). Deterministic, no API
+// key/network.
 //
 //   npm run gen:coloring-outlines:audit                 whole catalog
 //   npm run gen:coloring-outlines:audit -- nature       one category
@@ -89,4 +92,15 @@ console.log(
   `\n${offenders.length}/${rows.length} outline(s) need attention · ` +
     `${solidOffenders} solid · ${ringOffenders} over-ringed · ${frameOffenders} page frame(s)`
 );
+if (solidOffenders || ringOffenders) {
+  console.log(
+    'Normalize solid/over-ringed outlines: npm run gen:coloring-outlines:normalize -- <page>'
+  );
+}
+if (frameOffenders) {
+  console.log(
+    'For framed -tall/-wide pages, supply a scene and generate a fresh outline: ' +
+      'npm run gen:coloring-outlines:fresh -- <page> --scene "<description>"'
+  );
+}
 if (errors) process.exitCode = 1;
