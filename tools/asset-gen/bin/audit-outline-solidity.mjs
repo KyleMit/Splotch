@@ -11,6 +11,7 @@ import { COLORING_DIR } from '../lib/paths.mjs';
 import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, EYE_RING_DEPTH_MAX } from '../lib/eye-fill.mjs';
 import { scoreOutlineFrame, FRAME_SIDE_COVERAGE_MIN } from '../lib/outline-frame.mjs';
+import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 
 const args = process.argv.slice(2);
@@ -28,10 +29,11 @@ for (const page of pages) {
   const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
   try {
     const buf = await readFile(page);
+    const analysis = await prepareOutlineAnalysis(buf);
     const [solidity, rings, frame] = await Promise.all([
-      scoreSolidity(buf),
-      scoreEyeRings(buf),
-      scoreOutlineFrame(buf),
+      scoreSolidity(analysis),
+      scoreEyeRings(analysis),
+      scoreOutlineFrame(analysis),
     ]);
     rows.push({
       rel,

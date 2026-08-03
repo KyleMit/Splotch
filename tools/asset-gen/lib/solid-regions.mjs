@@ -18,13 +18,11 @@
 // hundreds of px, stroke junctions and antialiasing residue in the tens.
 import sharp from 'sharp';
 import { chamferDistance, dilateMask, erodeMask } from './morphology.mjs';
-import { OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
+import { prepareOutlineAnalysis } from './outline-analysis.mjs';
 import { quantile } from './stats.mjs';
 
 // Same ink bar as the punch mask (lib/punch-fill.mjs OUTLINE_LUMA_THRESHOLD),
 // so "solid" is judged on exactly the pixels the punch would cut.
-const SOLID_LUMA_THRESHOLD = OUTLINE_LUMA_THRESHOLD;
-
 // Bounds for the erosion radius. The radius is derived per page from the
 // MEASURED stroke width (see strokeWidthP90) rather than fixed: a fixed r=8
 // missed nature/bee-tall's small solid pupils (~22px across — their core
@@ -91,26 +89,15 @@ function largestComponent(mask, w, h) {
 // Score one line art (webp/png buffer) at native resolution. Returns the counts
 // plus the masks so callers can post-process (the normalizer whitens solid
 // interiors before registration scoring).
-//   darkPx      — ink pixels (luma < SOLID_LUMA_THRESHOLD)
+//   darkPx      — ink pixels from the shared outline analysis
 //   interiorPx  — ink that survives the erosion (definitely not a stroke)
 //   solidPx     — the opening (interior re-grown, clipped to ink): the full
 //                 footprint of every solid region
 //   biggestBlob — largest connected interior component; the gate signal
-export async function scoreSolidity(outlineBuf, { openRadius } = {}) {
-  const { data, info } = await sharp(outlineBuf)
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  const { width: w, height: h } = info;
-  const dark = new Uint8Array(w * h);
+export async function scoreSolidity(source, { openRadius } = {}) {
+  const { ink: dark, w, h } = await prepareOutlineAnalysis(source);
   let darkPx = 0;
-  for (let p = 0, i = 0; p < w * h; p++, i += 3) {
-    const luma = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-    if (luma < SOLID_LUMA_THRESHOLD) {
-      dark[p] = 1;
-      darkPx++;
-    }
-  }
+  for (const pixel of dark) darkPx += pixel;
   const strokeW = strokeWidthP90(dark, w, h);
   const r =
     openRadius ?? Math.min(OPEN_RADIUS_MAX, Math.max(OPEN_RADIUS_MIN, Math.ceil(strokeW / 2) + 2));

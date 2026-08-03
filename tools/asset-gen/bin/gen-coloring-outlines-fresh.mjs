@@ -29,6 +29,7 @@ import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { scoreSolidity } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, scoreEyes } from '../lib/eye-fill.mjs';
 import { scoreOutlineFrame } from '../lib/outline-frame.mjs';
+import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
 import { FRESH_STYLE_PROMPT } from '../lib/prompts.mjs';
 
 const WEBP_QUALITY = 90;
@@ -160,14 +161,15 @@ for (let attempt = 0; attempt < maxAttempts; attempt++) {
     continue;
   }
 
+  const analysis = await prepareOutlineAnalysis(pen);
   const eyeScores = args.values.eyes
-    ? scoreEyes(pen)
-    : scoreEyeRings(pen).then((rings) => ({ rings, cores: null }));
+    ? scoreEyes(analysis)
+    : scoreEyeRings(analysis).then((rings) => ({ rings, cores: null }));
   const [solidity, { rings, cores }, borderWhite, frame, ink] = await Promise.all([
-    scoreSolidity(pen),
+    scoreSolidity(analysis),
     eyeScores,
     borderWhiteFraction(pen),
-    scoreOutlineFrame(pen),
+    scoreOutlineFrame(analysis),
     inkFraction(pen),
   ]);
   const cand = {

@@ -48,6 +48,7 @@ import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outli
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, scoreEyes } from '../lib/eye-fill.mjs';
+import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
 import { NORMALIZE_INSTRUCTION } from '../lib/prompts.mjs';
 import { formatCandidateLine } from '../lib/report.mjs';
 
@@ -186,9 +187,10 @@ for (const arg of positionals) {
   }
   const source = await readFile(src);
   const { width, height } = await sharp(source).metadata();
-  const srcSolidity = await scoreSolidity(source);
+  const sourceAnalysis = await prepareOutlineAnalysis(source);
+  const srcSolidity = await scoreSolidity(sourceAnalysis);
   if (srcSolidity.passes && !values.force) {
-    const srcRings = await scoreEyeRings(source);
+    const srcRings = await scoreEyeRings(sourceAnalysis);
     if (srcRings.passes) {
       console.log(
         `${arg}  already thin-stroke (biggest blob ${srcSolidity.biggestBlob}, ring depth ${srcRings.maxDepth}) — skipping (--force to redraw anyway)`
@@ -196,7 +198,7 @@ for (const arg of positionals) {
       continue;
     }
   }
-  const { cores: srcCores, rings: srcRings } = await scoreEyes(source);
+  const { cores: srcCores, rings: srcRings } = await scoreEyes(sourceAnalysis);
   // An over-ringed eye's interior is REPLACEABLE (the redraw simplifies it to
   // one pupil + one catchlight), so clear it on BOTH sides of the registration
   // scoring — from the reference for the same reason solid interiors are
@@ -242,8 +244,9 @@ for (const arg of positionals) {
       const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
       const candidate = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
-      const solidity = await scoreSolidity(candidate);
-      const { cores, rings } = await scoreEyes(candidate);
+      const candidateAnalysis = await prepareOutlineAnalysis(candidate);
+      const solidity = await scoreSolidity(candidateAnalysis);
+      const { cores, rings } = await scoreEyes(candidateAnalysis);
       const fwd = await outlineMatch(reference, candidate);
       const revCandidate = srcRings.overDeep.length
         ? await whitenEyeInteriors(candidate)

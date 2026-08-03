@@ -43,6 +43,7 @@ import {
 } from '../lib/eye-fill.mjs';
 import { compositeNight } from '../lib/night-composite.mjs';
 import { scoreOutlineFrame, FRAME_SIDE_COVERAGE_MIN } from '../lib/outline-frame.mjs';
+import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
 import { diffGoldenPage, GOLDEN_VERDICTS, scoreGoldenNightEyes } from '../lib/golden-catalog.mjs';
 import {
   scoreDrift,
@@ -65,11 +66,12 @@ const round = (v, digits) => {
 async function scorePage(outlinePath) {
   const rel = toPosix(relative(COLORING_DIR, outlinePath).replace(/\.outline\.webp$/, ''));
   const pen = await readFile(outlinePath);
+  const analysis = await prepareOutlineAnalysis(pen);
 
   const [solidity, rings, frame] = await Promise.all([
-    scoreSolidity(pen),
-    scoreEyeRings(pen),
-    scoreOutlineFrame(pen),
+    scoreSolidity(analysis),
+    scoreEyeRings(analysis),
+    scoreOutlineFrame(analysis),
   ]);
   const outline = {
     darkPx: solidity.darkPx,

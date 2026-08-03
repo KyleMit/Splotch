@@ -41,6 +41,13 @@ vi.mock('../lib/outline-targets.mjs', () => ({
   resolveOutlineTargets: async () => state.pages,
 }));
 
+vi.mock('../lib/outline-analysis.mjs', () => ({
+  prepareOutlineAnalysis: async (buffer) => {
+    assertReadable(buffer);
+    return buffer;
+  },
+}));
+
 vi.mock('../lib/outline-match.mjs', () => ({
   KEEP_THRESHOLD: 0.92,
   LOCAL_KEEP_THRESHOLD: 0.8,

@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import { prepareOutlineAnalysis } from './outline-analysis.mjs';
 
 // Partial or occluded page frames remain four-sided; this bar catches them while
 // leaving a wide margin above disconnected edge-near subject marks.
@@ -57,12 +57,8 @@ function bestEdgeCoverage(length, coverageAt, fromFarEdge) {
   return bestCoverage;
 }
 
-export async function scoreOutlineFrame(outlineBuf) {
-  const { data, info } = await sharp(outlineBuf)
-    .greyscale()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  const { width, height } = info;
+export async function scoreOutlineFrame(source) {
+  const { luma: data, w: width, h: height } = await prepareOutlineAnalysis(source);
   const top = bestEdgeCoverage(height, (y) => horizontalCoverage(data, width, height, y), false);
   const bottom = bestEdgeCoverage(height, (y) => horizontalCoverage(data, width, height, y), true);
   const left = bestEdgeCoverage(width, (x) => verticalCoverage(data, width, height, x), false);
