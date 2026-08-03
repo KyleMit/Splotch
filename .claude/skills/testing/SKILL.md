@@ -230,6 +230,12 @@ also runs on **WebKit** as the `webkit` Playwright project:
   (`npx playwright install --with-deps webkit`) — local checkouts and cloud sessions with Chromium
   only keep working, and **CI installs WebKit explicitly** (`test.yml`), so the subset always gates
   pushes/PRs there.
+* CI does *not* use `--with-deps` for WebKit's system libraries: that list pulls in the whole
+  GStreamer/ffmpeg video stack, which this app never decodes. `npm run test:e2e:deps`
+  (`scripts/install-browser-deps.mjs`) installs a trimmed set instead and then checks the WebKit
+  bundle for unresolved shared libraries. A CI failure reading **"WebKit is missing N shared
+  libraries"** means a Playwright upgrade added a dependency — add the named package to
+  `WEBKIT_PACKAGES` there.
 * Keep the spec WebKit-portable: no CDP sessions (the viewport-rotation and touch-synthesis helpers
   in `flows.spec.ts` are Chromium-only), no dev-harness routes, no assertions tied to Chromium's
   rasterizer. The Chromium project ignores the spec (its coverage is already in the full suite).

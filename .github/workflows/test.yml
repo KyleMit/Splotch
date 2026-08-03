@@ -143,13 +143,16 @@ jobs:
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps ${{ env.PW_BROWSERS }}
+        run: npx playwright install ${{ env.PW_BROWSERS }}
 
-      # The browser binaries cache, but the apt packages don't — install-deps
-      # is still required on a cache hit.
+      # The browser binaries cache, but the apt packages don't, so the system
+      # libraries are installed on every run — hence the trimmed set in
+      # scripts/install-browser-deps.mjs rather than `playwright install-deps`,
+      # whose WebKit list adds ~110 packages of video codecs this app never
+      # decodes. The script verifies the WebKit bundle afterward, so a trim that
+      # goes too far fails here rather than at browser launch.
       - name: Install Playwright system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps ${{ env.PW_BROWSERS }}
+        run: npm run test:e2e:deps
 
       - name: Run e2e tests
         run: npm run test:e2e
