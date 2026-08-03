@@ -339,19 +339,40 @@
      is a normal scrollable, selectable, zoomable document — the drawing-route
      app-surface locks (app.css) don't reach this route, so no opt-out is needed. */
   .admin-page {
+    /* The WCAG-tuned accent family (darker than --brand, whose 3.4:1 fails
+       AA under white text). */
     --admin-accent: #7c4dcf;
     --admin-accent-hover: #6b3fbe;
     --admin-accent-tint: #f5f0fc;
     --admin-accent-tint-strong: #f0e9fb;
     --admin-accent-tint-hover: #ece0fb;
+    /* Grounds and inks, pinned to the light theme values they mirror. */
+    --admin-ground: #f5f5f5; /* = --app-bg, light */
+    --admin-sheet: #ffffff; /* = --surface, light */
+    --admin-on-accent: #fff; /* = --on-brand */
+    --admin-ink: #333; /* = --text-strong, light */
+    --admin-ink-muted: #666; /* = --text-soft, light */
     --admin-hairline: #f0f0f0;
-    --admin-ink-muted: #666;
-    --admin-ink-subtle: #757575;
+    --admin-line: #ddd; /* input borders, separator glyphs */
+    /* The app's semantic wash pairs, pinned at their light values so the
+       console's banners and buttons agree with StatusMessage and the danger
+       chrome everywhere else. */
+    --admin-success-wash: #e9f7ec; /* = --success-wash, light */
+    --admin-success-ink: #2e7d4f; /* = --success-text, light */
+    --admin-danger-wash: #fdecec; /* = --danger-wash, light */
+    --admin-danger-ink: #b04a4a; /* = --danger-text, light */
+    --admin-danger-wash-hover: #fbe0de;
+    /* Warning amber — no app token yet; the persistence banner is the only
+       warning surface in the product. */
+    --admin-warn-wash: #fffaeb;
+    --admin-warn-ink: #93600b;
+    --admin-warn-border: #fce5a8;
+    --admin-warn-chip: #fdefc7;
 
     position: fixed;
     inset: 0;
     overflow-y: auto;
-    background: #f5f5f5;
+    background: var(--admin-ground);
     -webkit-overflow-scrolling: touch;
   }
 
@@ -360,7 +381,7 @@
     margin: 0 auto;
     padding: clamp(20px, 5vw, 48px) 16px 64px;
     font-family: var(--font-family);
-    color: #333;
+    color: var(--admin-ink);
   }
 
   .admin-header {
@@ -397,15 +418,15 @@
   h1 {
     margin: 0;
     font-size: var(--font-size-2xl);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     letter-spacing: -0.01em;
   }
 
   .subtitle {
     margin: 2px 0 0;
     color: var(--admin-ink-muted);
-    font-size: 15px;
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
   }
 
   /* Flash messages */
@@ -413,45 +434,43 @@
     padding: 12px 16px;
     border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     margin-bottom: 20px;
   }
 
   .flash-success {
-    background: #ecfdf3;
-    color: #1f7a4d;
-    border: 1px solid #b6f0cf;
+    background: var(--admin-success-wash);
+    color: var(--admin-success-ink);
   }
 
   .flash-error {
-    background: #fef2f2;
-    color: #b42318;
-    border: 1px solid #fbd5d2;
+    background: var(--admin-danger-wash);
+    color: var(--admin-danger-ink);
   }
 
   .flash-warning {
-    background: #fffaeb;
-    color: #93600b;
-    border: 1px solid #fce5a8;
-    font-weight: 500;
+    background: var(--admin-warn-wash);
+    color: var(--admin-warn-ink);
+    border: 1px solid var(--admin-warn-border);
+    font-weight: var(--font-weight-medium);
     line-height: 1.45;
   }
 
   .flash-warning strong {
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
   }
 
   .flash-warning code {
     font-family: var(--font-mono);
-    font-size: 0.92em;
-    background: #fdefc7;
+    font-size: var(--font-size-xs);
+    background: var(--admin-warn-chip);
     padding: 1px 5px;
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
   }
 
   /* Cards */
   .card {
-    background: #fff;
+    background: var(--admin-sheet);
     border-radius: var(--radius-lg);
     padding: 24px;
     margin-bottom: 20px;
@@ -461,8 +480,8 @@
   .card h2 {
     margin: 0 0 16px;
     font-size: var(--font-size-lg);
-    font-weight: 600;
-    color: #444;
+    font-weight: var(--font-weight-semibold);
+    color: var(--admin-ink);
   }
 
   .card-head {
@@ -487,7 +506,7 @@
     background: var(--admin-accent-tint-strong);
     color: var(--admin-accent);
     font-size: var(--font-size-sm);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
   }
 
   /* Add form (shared by the sign-in card and the standalone add bar) */
@@ -505,12 +524,12 @@
     flex: 1;
     min-width: 0;
     padding: 11px 14px;
-    font-size: 15px;
+    font-size: var(--input-font-size);
     font-family: inherit;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    background: #fff;
-    color: #333;
+    border: 1px solid var(--admin-line);
+    border-radius: var(--radius-md);
+    background: var(--admin-sheet);
+    color: var(--admin-ink);
     transition:
       border-color var(--duration-fast) ease,
       box-shadow var(--duration-fast) ease;
@@ -542,8 +561,8 @@
   .btn {
     font-family: inherit;
     font-size: var(--font-size-sm);
-    font-weight: 600;
-    border-radius: 10px;
+    font-weight: var(--font-weight-semibold);
+    border-radius: var(--radius-md);
     border: none;
     cursor: pointer;
     transition:
@@ -566,7 +585,7 @@
      --brand, whose 3.4:1 fails WCAG AA (axe serious). */
   .btn-primary {
     padding: 11px 18px;
-    color: #fff;
+    color: var(--admin-on-accent);
     background: var(--admin-accent);
     flex-shrink: 0;
   }
@@ -592,19 +611,19 @@
   }
 
   .btn-ghost.copied {
-    color: #1f7a4d;
-    background: #ecfdf3;
+    color: var(--admin-success-ink);
+    background: var(--admin-success-wash);
   }
 
   .btn-danger {
     padding: 8px 14px;
-    color: #b42318;
-    background: #fef2f2;
+    color: var(--admin-danger-ink);
+    background: var(--admin-danger-wash);
   }
 
   @media (hover: hover) {
     .btn-danger:hover {
-      background: #fbe0de;
+      background: var(--admin-danger-wash-hover);
     }
   }
 
@@ -616,7 +635,7 @@
     width: 38px;
     height: 38px;
     padding: 0;
-    color: #999;
+    color: var(--admin-ink-muted);
     background: transparent;
   }
 
@@ -629,7 +648,12 @@
   :global(.btn-icon .more-icon) {
     width: 20px;
     height: 20px;
-    filter: invert(63%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(95%) contrast(85%);
+  }
+
+  /* Re-inked via fill (not a filter chain), the modal-close-icon pattern:
+     CSS fill beats the SVG's baked near-black presentation attribute. */
+  :global(.btn-icon .more-icon svg) {
+    fill: var(--admin-ink-muted);
   }
 
   /* Invite list — one card of rows split by hairline dividers. */
@@ -665,30 +689,30 @@
   }
 
   .token {
-    font-weight: 700;
-    font-size: 15px;
-    color: #333;
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-md);
+    color: var(--admin-ink);
   }
 
   .usage {
-    font-size: 12.5px;
-    font-weight: 500;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
     color: var(--admin-ink-muted);
   }
 
   .usage strong {
     color: var(--admin-accent);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
   }
 
   .usage-sep {
     margin: 0 4px;
-    color: #ccc;
+    color: var(--admin-line);
   }
 
   .usage-none {
     font-style: italic;
-    color: var(--admin-ink-subtle);
+    color: var(--admin-ink-muted);
   }
 
   .invite-actions {

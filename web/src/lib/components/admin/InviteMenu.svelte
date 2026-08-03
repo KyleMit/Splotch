@@ -33,7 +33,7 @@
   }
 </script>
 
-<dialog class="more-menu" bind:this={menuEl} onclick={onMenuClick} {onclose}>
+<dialog class="more-menu modal-dialog modal-shell" bind:this={menuEl} onclick={onMenuClick} {onclose}>
   {#if invite}
     {@const inv = invite}
     <div class="more-menu-card">
@@ -74,35 +74,25 @@
 </dialog>
 
 <style>
-  /* Modal sheet opened by the "⋯" button on narrow screens. The --admin-*
-     custom properties are inherited from the .admin-page wrapper this dialog
-     is mounted inside. */
+  /* Modal sheet opened by the "⋯" button on narrow screens. The shared
+     .modal-dialog / .modal-shell classes (app.css) carry the backdrop,
+     centering, radius, and shadow; only the width and the pinned light
+     surface stay here — .modal-shell's var(--surface) is themed and would
+     flip this light-only sheet dark. The --admin-* custom properties are
+     inherited from the .admin-page wrapper this dialog is mounted inside. */
   .more-menu {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    margin: 0;
     width: min(340px, calc(100vw - 48px));
-    padding: 0;
-    border: none;
-    border-radius: 18px;
-    background: #fff;
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
-  }
-
-  .more-menu::backdrop {
-    background: rgba(20, 16, 30, 0.45);
+    background: var(--admin-sheet);
   }
 
   .more-menu-title {
     margin: 0;
     padding: 16px 20px 12px;
     font-size: var(--font-size-xs);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--admin-ink-subtle);
+    color: var(--admin-ink-muted);
     border-bottom: 1px solid var(--admin-hairline);
   }
 
@@ -113,7 +103,7 @@
     text-align: left;
     font-family: inherit;
     font-size: var(--font-size-md);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--admin-accent);
     background: transparent;
     border: none;
@@ -127,17 +117,17 @@
 
   @media (hover: hover) {
     .more-menu-item:hover {
-      background: #faf7ff;
+      background: var(--admin-accent-tint);
     }
   }
 
   .more-menu-item-danger {
-    color: #d92d20;
+    color: var(--admin-danger-ink);
   }
 
   @media (hover: hover) {
     .more-menu-item-danger:hover {
-      background: #fff5f5;
+      background: var(--admin-danger-wash);
     }
   }
 

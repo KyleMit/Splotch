@@ -89,7 +89,7 @@
       name: 'PageShell + RuleLabel',
       file: 'page/PageShell.svelte',
       blurb:
-        'The standalone-page chrome: ground, centered sheet, crayon-strip masthead, wordmark, hero. The reference look for parent pages (/android-beta, /feedback).',
+        'The standalone-page chrome: ground, centered sheet, crayon-strip masthead, wordmark, hero. The reference look for parent pages (/android-beta, /feedback, /privacy).',
     },
     {
       name: 'Breadcrumb',

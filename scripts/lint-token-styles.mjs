@@ -32,16 +32,14 @@ import { isMain } from './lib/proc.mjs';
 const BASELINE = new Map(
   Object.entries({
     // Light-only surface with its own WCAG-tuned accent palette (#7c4dcf
-    // family); themed color tokens would half-dark-theme it. See the note at
-    // the top of its <style> block.
-    'lib/components/admin/AdminConsole.svelte': 34,
-    // The /admin overflow modal, lifted out of AdminConsole with its
-    // `.more-menu*` rules intact — same light-only surface, same reasoning.
-    // Its four are the sheet white, the hover tint, and the destructive
-    // red + its tint; none has an --admin-* equivalent to point at.
-    'lib/components/admin/InviteMenu.svelte': 4,
-    // Light-only page, same reasoning as /admin.
-    'routes/privacy/+page.svelte': 8,
+    // family); themed color tokens would half-dark-theme it. Every hex sits
+    // in the declared --admin-* palette at the top of its <style> block, each
+    // pinned value commented with the light-theme token it mirrors.
+    'lib/components/admin/AdminConsole.svelte': 21,
+    // Light-only page, same reasoning as /admin — pins PageShell's themed
+    // --page-* defaults to the same light values /android-beta pins (eleven),
+    // plus the highlight cards' brand-tinted wash and its border (two).
+    'routes/privacy/+page.svelte': 13,
     // Light-only page, same reasoning as /admin — a palette pinned to a light
     // ground, declared once as custom properties at the top of its <style>
     // block. Its eleven pin PageShell's themed --page-* defaults (whose dark
