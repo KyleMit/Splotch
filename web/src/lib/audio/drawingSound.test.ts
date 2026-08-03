@@ -102,6 +102,16 @@ describe('playDrawSound', () => {
       start: vi.fn(),
       stop: vi.fn(),
     };
+    const gainNode = {
+      gain: {
+        value: 0,
+        cancelScheduledValues: vi.fn(),
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+      },
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    };
 
     vi.stubGlobal(
       'fetch',
@@ -117,14 +127,14 @@ describe('playDrawSound', () => {
 
         resume = vi.fn().mockResolvedValue(undefined);
         decodeAudioData = decodeAudioData;
-        createGain = vi.fn();
+        createGain = vi.fn(() => gainNode);
         createBufferSource = vi.fn(() => sourceNode);
       }
     );
 
     setSound(true);
     drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: true });
-    await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledTimes(3));
     drawingSound.stopDrawSound();
 
     decoded.resolve({ duration: 1 } as AudioBuffer);
@@ -174,20 +184,138 @@ describe('playDrawSound', () => {
     await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledOnce());
 
     drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: true });
-    await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledTimes(4));
 
     for (let i = 0; i < 60; i++) {
       drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: false });
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(decodeAudioData).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(decodeAudioData).toHaveBeenCalledTimes(4);
 
     drawingSound.stopDrawSound();
     drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: true });
 
+    await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledTimes(7));
+  });
+
+  it('does not reload a decoded sound when playback startup throws', async () => {
+    const { setSound } = await import('$lib/state/settings.svelte');
+    const drawingSound = await import('./drawingSound');
+    stopDrawSound = drawingSound.stopDrawSound;
+    const fetchMock = vi.fn().mockResolvedValue({
+      arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)),
+    });
+    const decodeAudioData = vi.fn().mockResolvedValue({ duration: 1 } as AudioBuffer);
+    const gainNode = {
+      gain: {
+        value: 0,
+        cancelScheduledValues: vi.fn(),
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+      },
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    };
+    const createGain = vi.fn(() => gainNode);
+    createGain.mockImplementationOnce(() => {
+      throw new Error('playback startup failed');
+    });
+    const sourceNode = {
+      buffer: null as AudioBuffer | null,
+      loop: false,
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+    };
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal(
+      'AudioContext',
+      class {
+        state = 'running';
+        currentTime = 0;
+        destination = {};
+        decodeAudioData = decodeAudioData;
+        createGain = createGain;
+        createBufferSource = vi.fn(() => sourceNode);
+      }
+    );
+
+    setSound(true);
+    drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: false });
+    await vi.waitFor(() => expect(createGain).toHaveBeenCalledOnce());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    drawingSound.stopDrawSound();
+    drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: false });
+    await vi.waitFor(() => expect(sourceNode.start).toHaveBeenCalledOnce());
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(decodeAudioData).toHaveBeenCalledOnce();
+  });
+
+  it('retries every failed variant at the next stroke start', async () => {
+    const { setSound } = await import('$lib/state/settings.svelte');
+    const drawingSound = await import('./drawingSound');
+    stopDrawSound = drawingSound.stopDrawSound;
+    const attempts = new Map<string, number>();
+    const fetchMock = vi.fn(async (url: string) => {
+      const attempt = (attempts.get(url) ?? 0) + 1;
+      attempts.set(url, attempt);
+      if (url !== '/sounds/pencil-1.mp3' && attempt === 1) throw new Error('load failed');
+      return { arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)) };
+    });
+    const decodeAudioData = vi.fn().mockResolvedValue({ duration: 1 } as AudioBuffer);
+    const gainNode = {
+      gain: {
+        value: 0,
+        cancelScheduledValues: vi.fn(),
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+      },
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    };
+    const sourceNode = {
+      buffer: null as AudioBuffer | null,
+      loop: false,
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+    };
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal(
+      'AudioContext',
+      class {
+        state = 'suspended';
+        currentTime = 0;
+        destination = {};
+        resume = vi.fn().mockResolvedValue(undefined);
+        decodeAudioData = decodeAudioData;
+        createGain = vi.fn(() => gainNode);
+        createBufferSource = vi.fn(() => sourceNode);
+      }
+    );
+
+    setSound(true);
+    drawingSound.preloadDrawSounds();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledOnce());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: true });
+
     await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledTimes(3));
+    expect(attempts).toEqual(
+      new Map([
+        ['/sounds/pencil-1.mp3', 1],
+        ['/sounds/pencil-2.mp3', 2],
+        ['/sounds/pencil-3.mp3', 2],
+      ])
+    );
   });
 
   it('declicks running playback before disconnecting it', async () => {
