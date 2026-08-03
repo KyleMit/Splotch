@@ -88,6 +88,23 @@ test('the end-of-history cue still plays with reduced motion enabled', async ({ 
   await expect(undo).not.toHaveClass(/action-unavailable/, { timeout: 2000 });
 });
 
+test('an unavailable Undo cue clears while the button is hidden', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const panel = page.locator('.actions-panel');
+  const undo = page.locator('#undoButton');
+  await panel.evaluate((element) => element.setAttribute('data-off-undo', ''));
+  await expect(undo).toBeHidden();
+
+  await page.keyboard.press('Control+Z');
+  await panel.evaluate((element) => element.removeAttribute('data-off-undo'));
+
+  await expect(undo).toBeVisible();
+  await expect(undo).not.toHaveClass(/action-unavailable/);
+  await expect.poll(() => undo.evaluate((button) => button.getAnimations().length)).toBe(0);
+});
+
 test('the screenshot button is gated on the canvas being non-empty', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
@@ -146,6 +163,14 @@ test('a burst of screenshot taps shares one save before allowing the next', asyn
   });
   expect(animation.names).toEqual(['action-unavailable-shake', 'action-unavailable-flash']);
   expect(new Set(animation.durations.split(', ')).size).toBe(1);
+  await expect(shot).not.toHaveClass(/action-unavailable/, { timeout: 2000 });
+
+  const panel = page.locator('.actions-panel');
+  await panel.evaluate((element) => element.setAttribute('data-off-screenshot', ''));
+  await expect(shot).toBeHidden();
+  await panel.evaluate((element) => element.removeAttribute('data-off-screenshot'));
+  await expect(shot).toBeVisible();
+  await expect.poll(() => shot.evaluate((button) => button.getAnimations().length)).toBe(0);
 
   // …then idle past the window a second save would have arrived in, which is
   // what proves the burst was coalesced rather than merely slow.

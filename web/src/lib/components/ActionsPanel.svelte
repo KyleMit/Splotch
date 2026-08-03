@@ -28,10 +28,7 @@
   import { undo } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
   import { SCREENSHOT_BUTTON_ID } from '$lib/drawing/screenshotFeedback';
-  import {
-    ACTION_UNAVAILABLE_CLASS,
-    replayActionUnavailableFeedback,
-  } from '$lib/actionUnavailableFeedback';
+  import { replayActionUnavailableFeedback } from '$lib/actionUnavailableFeedback';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
 
   let brushWrapperEl: HTMLDivElement | undefined = $state();
@@ -211,12 +208,6 @@
     replayActionUnavailableFeedback(undoBtnEl);
   }
 
-  function finishUndoUnavailableCue(event: AnimationEvent) {
-    if (event.target === event.currentTarget) {
-      undoBtnEl?.classList.remove(ACTION_UNAVAILABLE_CLASS);
-    }
-  }
-
   // The save pipeline (export compositor, polaroid, folder save) is
   // save-time-only, so it loads at tap time and stays out of the startup
   // bundle (issue #461). The catch keeps a dead-connection chunk load from
@@ -392,7 +383,6 @@
         id="undoButton"
         aria-label="Undo"
         aria-disabled={!canvasState.canUndo}
-        onanimationend={finishUndoUnavailableCue}
         use:scribbleTap={handleUndoClick}
         bind:this={undoBtnEl}
       >

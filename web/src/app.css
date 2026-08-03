@@ -345,10 +345,10 @@ body {
   animation: screenshot-capture var(--duration-slow) var(--ease-pop-strong);
 }
 
-/* Undo's end-of-history wall and rejected screenshot saves share this whole-button cue. The
-   durations stay equal so animationend cleanup cannot truncate either half. */
+/* Undo's end-of-history wall and rejected screenshot saves share this whole-button cue. Equal
+   durations keep both halves synchronized as one response. */
 .action-unavailable {
-  --action-unavailable-duration: calc(var(--duration-base) + var(--duration-base));
+  --action-unavailable-duration: calc(var(--duration-base) * 2);
   animation:
     action-unavailable-shake var(--action-unavailable-duration) ease-in-out,
     action-unavailable-flash var(--action-unavailable-duration) ease-in-out;
