@@ -44,6 +44,12 @@ Alternatives considered:
   modules (`tool.svelte.ts`, `strokeWidth.svelte.ts`) read their persisted keys synchronously at
   their own module evaluation, so early boot gets the child's last brush and stroke width for free
   (the active color has no persisted key and wakes on its default).
+* **Drawing sound is wired into the same early window.** `earlyBoot.ts` attaches the sound callbacks
+  when it initializes the engine and, when sound is enabled, starts fetching and decoding one pencil
+  variant immediately. The other variants remain idle-loaded so their transfer and decode stay off
+  the first-paint path. The `AudioContext` stays suspended until drawing input resumes it; if the
+  first gesture arrives before that first decode completes, the pending playback catches up only
+  while the gesture remains active.
 * **`engine.ts` splits init from callback attachment.** `initDrawingCanvas()` still does the full
   wire-up (and now tears down a previous live instance first, so a re-init can never double up
   window listeners); `adoptDrawingCanvas()` is what components call on mount: when the engine is
@@ -63,12 +69,12 @@ Alternatives considered:
   creates and inline-styles its own only where the markup has none (the `/dev/engine` harness, which
   inits after hydration where injection is safe).
 * **The interim window is explicit and accepted.** Between engine-live and hydration-complete the
-  engine runs on defaults: no draw sound, no undo-button/empty-state sync (replayed at adopt), no
-  stroke-count ticks (pre-hydration strokes don't count toward the install-banner threshold), zero
-  safe-area insets (the tablet long-bottom-edge extra guard is inactive; the orientation-driven edge
-  guards work regardless), and no coloring-page sheet (not persisted — a persisted magic brush
-  reveals the rainbow, its blank-canvas behavior). All of these are the engine's existing defaults;
-  nothing new is synthesized for the window.
+  engine has drawing sound but otherwise runs on defaults: no undo-button/empty-state sync (replayed
+  at adopt), no stroke-count ticks (pre-hydration strokes don't count toward the install-banner
+  threshold), zero safe-area insets (the tablet long-bottom-edge extra guard is inactive; the
+  orientation-driven edge guards work regardless), and no coloring-page sheet (not persisted — a
+  persisted magic brush reveals the rainbow, its blank-canvas behavior). Nothing else is synthesized
+  for the window.
 
 Non-obvious invariants:
 
@@ -90,9 +96,9 @@ Non-obvious invariants:
   adopt fallback means every remount path degrades to exactly the old mount-time init.
 * \+ The engine's component-independence (ADR-0004/0066) is now load-bearing in both directions:
   state survives unmount *and* predates mount.
-* − Pre-hydration strokes are silent, un-counted (`strokeCount`), and un-reflected in the not-yet-
-  interactive UI until adopt replays state; the tablet-landscape bottom-edge inset guard is off for
-  the same window. Accepted: seconds at most, and strictly better than a dead canvas.
+* − Pre-hydration strokes are un-counted (`strokeCount`) and unreflected in the not-yet-interactive
+  UI until adopt replays state; the tablet-landscape bottom-edge inset guard is off for the same
+  window. Accepted: seconds at most, and strictly better than a dead canvas.
 * − Boot state is split across `earlyBoot.ts` (pre-hydration) and `DrawingCanvas.svelte`'s
   mount/`$effect` bridges (post-hydration); a new engine-facing setting must decide whether the
   interim window needs it (add to earlyBoot) or not (bridges only).

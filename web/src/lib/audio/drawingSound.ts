@@ -13,9 +13,11 @@ const STOP_DECLICK_S = 0.005;
 const TEARDOWN_SLACK_MS = 20;
 
 let audioContext: AudioContext | null = null;
-let buffers: AudioBuffer[] | null = null;
-let loadStarted = false;
+const buffers: AudioBuffer[] = [];
+const loadPromises = new Map<string, Promise<void>>();
 let currentPlayback: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
+let playbackRequested = false;
+let requestedSpeed = 0;
 
 function volumeMultiplier() {
   return settings.soundVolume / SOUND_VOLUME_DEFAULT;
@@ -28,62 +30,84 @@ function ensureContext(): AudioContext | null {
   return audioContext;
 }
 
-/**
- * Eagerly fetch and decode the pencil sounds into `AudioBuffer`s so the first
- * stroke plays instantly. Without this, loading is deferred until the first
- * `playDrawSound` call, leaving a multi-second silent gap on a fresh page
- * load. The AudioContext is created here in a suspended state — decoding
- * needs no user gesture, only playback does, so `playDrawSound` resumes the
- * context on the first pointerdown.
- */
-export function preloadDrawSounds() {
-  if (loadStarted) return;
-  const ctx = ensureContext();
-  if (!ctx) return;
-  loadStarted = true;
-  Promise.all(
-    SOUND_URLS.map(async (url) => {
-      const response = await fetch(url);
-      return ctx.decodeAudioData(await response.arrayBuffer());
-    })
-  )
-    .then((decoded) => {
-      buffers = decoded;
+function loadSound(ctx: AudioContext, url: string): Promise<void> {
+  const existing = loadPromises.get(url);
+  if (existing) return existing;
+
+  const pending = fetch(url)
+    .then((response) => response.arrayBuffer())
+    .then((data) => ctx.decodeAudioData(data))
+    .then((buffer) => {
+      buffers.push(buffer);
+      startPlaybackIfReady();
     })
     .catch(() => {
-      loadStarted = false;
+      loadPromises.delete(url);
     });
+  loadPromises.set(url, pending);
+  return pending;
 }
 
-export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
+export function preloadFirstDrawSound() {
+  const ctx = ensureContext();
+  if (!ctx) return;
+  void loadSound(ctx, SOUND_URLS[0]);
+}
+
+export function preloadDrawSounds() {
+  const ctx = ensureContext();
+  if (!ctx) return;
+  for (const url of SOUND_URLS) void loadSound(ctx, url);
+}
+
+export function playDrawSound({ speed }: DrawSoundData) {
   if (!settings.soundEnabled) return;
-  if (isStrokeStart) preloadDrawSounds();
+  playbackRequested = true;
+  requestedSpeed = speed;
+  preloadFirstDrawSound();
   const ctx = audioContext;
-  if (!ctx || !buffers) return;
+  if (!ctx) return;
 
-  if (!currentPlayback) {
-    // Stroke start runs from pointerdown, satisfying the autoplay gesture
-    // requirement for resuming the context.
-    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  // playDrawSound only runs from drawing or slider pointer input. Resume while
+  // that user gesture is active, even if decoding has not finished yet.
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  if (currentPlayback) updateGain(currentPlayback.gain.gain, speed, ctx.currentTime);
+  else startPlaybackIfReady();
+}
 
-    const buffer = buffers[Math.floor(Math.random() * buffers.length)];
-    const gain = ctx.createGain();
-    gain.gain.value = 0;
-    gain.connect(ctx.destination);
+function startPlaybackIfReady() {
+  const ctx = audioContext;
+  if (
+    !ctx ||
+    currentPlayback ||
+    !playbackRequested ||
+    !settings.soundEnabled ||
+    buffers.length === 0
+  )
+    return;
 
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.loop = true;
-    source.connect(gain);
-    source.start(0, Math.random() * buffer.duration);
-    currentPlayback = { source, gain };
-  }
+  const buffer = buffers[Math.floor(Math.random() * buffers.length)];
+  const gain = ctx.createGain();
+  gain.gain.value = 0;
+  gain.connect(ctx.destination);
 
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  source.connect(gain);
+  source.start(0, Math.random() * buffer.duration);
+  currentPlayback = { source, gain };
+  updateGain(gain.gain, requestedSpeed, ctx.currentTime);
+}
+
+function updateGain(param: AudioParam, speed: number, now: number) {
   const target = BASE_SCRATCH_GAIN * volumeMultiplier() * Math.min(speed / FULL_VOLUME_SPEED, 1);
-  rampGainTo(currentPlayback.gain.gain, target, ctx.currentTime, GAIN_RAMP_S);
+  rampGainTo(param, target, now, GAIN_RAMP_S);
 }
 
 export function stopDrawSound() {
+  playbackRequested = false;
+  requestedSpeed = 0;
   const playback = currentPlayback;
   if (playback && audioContext) {
     const now = audioContext.currentTime;
