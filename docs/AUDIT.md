@@ -4234,40 +4234,6 @@ Add literal fallbacks matching the tokens' light values (e.g. `var(--font-size-l
 token use here needs a fallback; or a tiny drift test over the component source asserting each
 `var(--` in this file carries a comma fallback.
 
-### [Maintainability] PANEL_INSET is re-typed as bare `8` in `leftOffset`, and the portrait branch duplicates the stylesheet
-
-**File(s):** `web/src/lib/components/ActionsPanel.svelte` (`leftOffset`, lines 59–63; CSS lines
-395–396) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const leftOffset = $derived(
-  isPortrait
-    ? 'calc(8px + env(safe-area-inset-left))'
-    : `calc(${layout.paletteWidth + 8}px + env(safe-area-inset-left))`,
-);
-```
-
-Both `8`s are the panel's screen inset — the exported `PANEL_INSET` constant (actionButtonLayout.ts
-line 28) that this same file already imports and uses three lines later in `buttonSpread`. The CSS
-base rule (lines 395–396) types the same `8px` again. Worse, the portrait string exactly reproduces
-the stylesheet's own `left: calc(8px + env(safe-area-inset-left))` — an inline style whose only
-effect is overriding the stylesheet with an identical value.
-
-#### Proposed solution
-
-* Use the constant:
-  `` `calc(${layout.paletteWidth + PANEL_INSET}px + env(safe-area-inset-left))` ``.
-* Return `undefined` for portrait so `style:left` is simply absent and the stylesheet owns it
-  (Svelte removes the style for `undefined`), shrinking the derived to the one case that needs JS
-  (measured palette width).
-* The CSS literals (`bottom`/`left` 8px) can either stay (first-paint owner, like the fallback
-  formula) with coverage added to `actionButtonLayout.fallback.test.ts`, or be judged plain
-  geometry; at minimum the JS side should stop re-typing the constant it already imports.
-
 ### [Maintainability] Alarm-palette rgba literals repeated 5–7× per file in ClearButton and ClearCoachmark styles
 
 **File(s):** `web/src/lib/components/ClearButton.svelte` (lines 180, 200–201, 220, 222),

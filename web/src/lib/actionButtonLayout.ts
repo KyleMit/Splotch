@@ -4,6 +4,7 @@
 // the screen (portrait), and the Button Size slider in Settings caps its
 // range so a parent can't even pick a size the current screen can't fit.
 import {
+  aiCredentialKind,
   settings,
   ACTION_BUTTON_SCALE_MIN,
   ACTION_BUTTON_SCALE_MAX,
@@ -25,7 +26,7 @@ export const SETTINGS_BUTTON_RESERVE = 64;
 
 // The panel's other fixed costs: its 8px screen inset, the drawer→toggle
 // collapse margin (8px), and the 48px drawer toggle.
-const PANEL_INSET = 8;
+export const PANEL_INSET = 8;
 const DRAWER_TOGGLE_MARGIN = 8;
 const DRAWER_TOGGLE_SIZE = 48;
 export const PANEL_FIXED_CHROME = PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE;
@@ -35,7 +36,7 @@ export const PALETTE_CLEARANCE = 8;
 
 // Every button the panel can show: brush menu, stroke width, coloring book,
 // screenshot, AI image, undo. The prerendered page sizes for this worst case —
-// the server can't know a stored AI token or toggle states.
+// the server can't know a stored AI credential or toggle states.
 export const MAX_ACTION_BUTTON_COUNT = 6;
 
 // Worst-case fixed chrome the CSS first-paint fallback must budget for: all
@@ -54,9 +55,7 @@ export const WORST_CASE_CHROME =
 export const PALETTE_BAR_RESERVE = 76;
 
 export function isAiImageButtonVisible(): boolean {
-  return Boolean(
-    (settings.aiAccessToken || settings.aiUserApiKey) && settings.aiImageEnabled && network.online
-  );
+  return aiCredentialKind() !== 'none' && settings.aiImageEnabled && network.online;
 }
 
 export function visibleActionButtonCount(): number {
@@ -76,8 +75,7 @@ export function visibleActionButtonCount(): number {
 // the two formulas in step.
 function availablePerButton(buttonCount: number): number {
   const { orientation, safeArea } = layout;
-  const chrome =
-    PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE + (buttonCount - 1) * ACTION_BUTTON_GAP;
+  const chrome = PANEL_FIXED_CHROME + (buttonCount - 1) * ACTION_BUTTON_GAP;
   const budget =
     orientation === 'portrait'
       ? layout.viewportHeight -

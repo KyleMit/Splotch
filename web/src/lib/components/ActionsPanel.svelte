@@ -17,6 +17,7 @@
     ACTION_BUTTON_BASE_LANDSCAPE,
     ACTION_BUTTON_BASE_PORTRAIT,
     SETTINGS_BUTTON_RESERVE,
+    PANEL_INSET,
     PANEL_FIXED_CHROME,
     PALETTE_CLEARANCE,
     MAX_ACTION_BUTTON_COUNT,
@@ -51,10 +52,10 @@
   // owns the listeners.
   const isPortrait = $derived(layout.orientation === 'portrait');
 
-  // Landscape: sit just past the color palette so we clear it. Portrait: pin to
-  // the bottom-left corner. paletteWidth is published by ColorPalette (0 until
-  // measured), so this settles once the palette lays out — no querySelector and
-  // no mount-time setTimeout to dodge the layout race.
+  // Landscape: sit just past the color palette so we clear it. The stylesheet
+  // owns the portrait bottom-left position. paletteWidth is published by
+  // ColorPalette (0 until measured), so this settles once the palette lays out —
+  // no querySelector and no mount-time setTimeout to dodge the layout race.
   //
   // The inline left wins over the stylesheet, so the safe-area inset has to ride
   // along in this value or it's lost: .app-container's padding-left shifts the
@@ -62,8 +63,8 @@
   // and paletteWidth doesn't include that padding — so we clear inset + width.
   const leftOffset = $derived(
     isPortrait
-      ? 'calc(8px + env(safe-area-inset-left))'
-      : `calc(${layout.paletteWidth + 8}px + env(safe-area-inset-left))`
+      ? undefined
+      : `calc(${layout.paletteWidth + PANEL_INSET}px + env(safe-area-inset-left))`
   );
 
   // Cap the button size so the expanded panel always fits the screen —
