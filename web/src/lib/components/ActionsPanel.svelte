@@ -28,6 +28,10 @@
   import { undo } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
   import { SCREENSHOT_BUTTON_ID } from '$lib/drawing/screenshotFeedback';
+  import {
+    ACTION_UNAVAILABLE_CLASS,
+    replayActionUnavailableFeedback,
+  } from '$lib/actionUnavailableFeedback';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
 
   let brushWrapperEl: HTMLDivElement | undefined = $state();
@@ -35,6 +39,8 @@
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
   let aiBtnEl: HTMLButtonElement | undefined = $state();
   let panelEl: HTMLDivElement | undefined = $state();
+  // Intentionally untracked: this ref is read only by imperative tap and animation handlers.
+  let undoBtnEl: HTMLButtonElement | undefined;
   let drawerMotion = $state(false);
   // Intentionally untracked: only the reactive drawer-expanded value should rerun this comparison.
   let lastDrawerExpanded: boolean | undefined;
@@ -197,19 +203,18 @@
     };
   });
 
-  // End-of-history nudge: taps that can't undo any further shake the undo
-  // button instead of going silent (the history folds older strokes into the
-  // baseline, so the wall is invisible otherwise). Cleared on animationend;
-  // re-triggered through a frame so back-to-back taps restart the shake.
-  let undoNudge = $state(false);
-
   function handleUndoClick() {
     if (canvasState.canUndo) {
       undo();
       return;
     }
-    undoNudge = false;
-    requestAnimationFrame(() => (undoNudge = true));
+    replayActionUnavailableFeedback(undoBtnEl);
+  }
+
+  function finishUndoUnavailableCue(event: AnimationEvent) {
+    if (event.target === event.currentTarget) {
+      undoBtnEl?.classList.remove(ACTION_UNAVAILABLE_CLASS);
+    }
   }
 
   // The save pipeline (export compositor, polaroid, folder save) is
@@ -380,16 +385,16 @@
 
       <!-- aria-disabled (not the disabled attribute) so the button still
            receives taps at the end of history and can answer with the
-           end-of-history shake; handleUndoClick guards the actual undo. -->
+           unavailable cue; handleUndoClick guards the actual undo. -->
       <button
         class="action-button"
         class:disabled={!canvasState.canUndo}
-        class:end-of-history={undoNudge}
         id="undoButton"
         aria-label="Undo"
         aria-disabled={!canvasState.canUndo}
-        onanimationend={() => (undoNudge = false)}
+        onanimationend={finishUndoUnavailableCue}
         use:scribbleTap={handleUndoClick}
+        bind:this={undoBtnEl}
       >
         <Icon name="undo" class="action-icon" />
       </button>
@@ -684,56 +689,6 @@
   #undoButton.disabled:active {
     transform: scale(0.95);
     background: var(--brand-wash);
-  }
-
-  /* End-of-history cue: a tap on the dimmed undo button answers with a shake
-     plus a whole-button flash — a wordless "that's as far back as I can go"
-     for pre-readers. The pair matters: a fingertip fully occludes the 55–60px
-     button, so the positional wobble alone is invisible mid-tap (issue #304);
-     the flash's glow ring spreads past the finger. Equal durations so the
-     first animationend (which clears the class) doesn't cut the other short. */
-  .action-button.end-of-history {
-    animation:
-      undo-nudge 0.4s ease-in-out,
-      undo-flash 0.4s ease-in-out;
-  }
-
-  @keyframes undo-nudge {
-    20% {
-      transform: translateX(-8px) rotate(-6deg);
-    }
-    40% {
-      transform: translateX(8px) rotate(6deg);
-    }
-    60% {
-      transform: translateX(-5px) rotate(-3deg);
-    }
-    80% {
-      transform: translateX(5px) rotate(3deg);
-    }
-  }
-
-  /* The occlusion-proof half: pulse from the disabled dim to full opacity
-     behind a brand glow ring that spreads well beyond the button's edge, so
-     the cue reads around a covering fingertip in both themes. */
-  @keyframes undo-flash {
-    15%,
-    70% {
-      opacity: 1;
-      border-color: var(--brand);
-      background: var(--brand-wash);
-      box-shadow: 0 0 0 10px rgba(var(--brand-rgb), 0.5);
-      box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 50%, transparent);
-    }
-  }
-
-  /* Reduced motion drops the positional shake but keeps the flash — an
-     opacity/color pulse, not motion — so the end-of-history cue never
-     disappears entirely (and animationend still fires to clear the class). */
-  @media (prefers-reduced-motion: reduce) {
-    .action-button.end-of-history {
-      animation: undo-flash 0.4s ease-in-out;
-    }
   }
 
   .action-button:disabled,

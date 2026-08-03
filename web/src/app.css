@@ -345,8 +345,13 @@ body {
   animation: screenshot-capture var(--duration-slow) var(--ease-pop-strong);
 }
 
-.screenshot-suppressed-feedback [data-icon='camera'] {
-  animation: screenshot-suppressed var(--duration-base) var(--ease-glide);
+/* Undo's end-of-history wall and rejected screenshot saves share this whole-button cue. The
+   durations stay equal so animationend cleanup cannot truncate either half. */
+.action-unavailable {
+  --action-unavailable-duration: calc(var(--duration-base) + var(--duration-base));
+  animation:
+    action-unavailable-shake var(--action-unavailable-duration) ease-in-out,
+    action-unavailable-flash var(--action-unavailable-duration) ease-in-out;
 }
 
 @keyframes screenshot-capture {
@@ -355,9 +360,37 @@ body {
   }
 }
 
-@keyframes screenshot-suppressed {
-  50% {
-    transform: scale(0.82);
+@keyframes action-unavailable-shake {
+  20% {
+    transform: translateX(-8px) rotate(-6deg);
+  }
+  40% {
+    transform: translateX(8px) rotate(6deg);
+  }
+  60% {
+    transform: translateX(-5px) rotate(-3deg);
+  }
+  80% {
+    transform: translateX(5px) rotate(3deg);
+  }
+}
+
+/* The glow ring spreads beyond a fingertip that covers the button, so the cue stays visible. */
+@keyframes action-unavailable-flash {
+  15%,
+  70% {
+    opacity: 1;
+    border-color: var(--brand);
+    background: var(--brand-wash);
+    box-shadow: 0 0 0 10px rgba(var(--brand-rgb), 0.5);
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 50%, transparent);
+  }
+}
+
+/* The non-positional flash keeps unavailable actions legible without the shake. */
+@media (prefers-reduced-motion: reduce) {
+  .action-unavailable {
+    animation: action-unavailable-flash var(--action-unavailable-duration) ease-in-out;
   }
 }
 
