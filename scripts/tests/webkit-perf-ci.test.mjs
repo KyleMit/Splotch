@@ -2,6 +2,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import {
+  COMMIT_GATE_MS,
+  CRAYON_DRAW_REFERENCE_MS_PER_CALL,
+  evaluateCommitTiming,
+} from '../perf/undo-commit-gate.mjs';
 import { ALL_UNDO_SCENARIO_KEYS, FAST_UNDO_SCENARIO_KEYS } from '../perf/undo-scenario-keys.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
@@ -16,6 +21,17 @@ function job(id) {
   const body = workflow.match(new RegExp(`\\n  ${id}:\\n([\\s\\S]*?)(?=\\n  [\\w-]+:\\n|$)`))?.[1];
   if (!body) throw new Error(`Workflow job not found: ${id}`);
   return body;
+}
+
+function timingScenario({ key = 'crayon-scribbles', commitP95Ms, drawTotalMs, drawOps }) {
+  return {
+    key,
+    draw: {
+      commitP95Ms,
+      totalMs: drawTotalMs,
+      ops: drawOps,
+    },
+  };
 }
 
 describe('WebKit performance CI', () => {
@@ -53,6 +69,43 @@ describe('WebKit performance CI', () => {
     expect(fastJob).toContain('runs-on: macos-latest');
     expect(fastJob).toContain('run: npm run perf:undo:webkit:fast');
     expect(fastJob).not.toContain('continue-on-error');
+  });
+
+  it('normalizes shared-runner crayon slowdown while preserving the 25 ms work-shape gate', () => {
+    const noisyHealthy = evaluateCommitTiming(
+      timingScenario({ commitP95Ms: 60, drawTotalMs: 100_186, drawOps: 26_378 }),
+      { normalizeSharedRunnerCrayon: true }
+    );
+    const knownBad = evaluateCommitTiming(
+      timingScenario({
+        commitP95Ms: 47,
+        drawTotalMs: CRAYON_DRAW_REFERENCE_MS_PER_CALL * 26_378,
+        drawOps: 26_378,
+      }),
+      { normalizeSharedRunnerCrayon: true }
+    );
+    const encodeRegression = evaluateCommitTiming(
+      timingScenario({
+        key: 'multi-finger',
+        commitP95Ms: 47,
+        drawTotalMs: 100_186,
+        drawOps: 26_378,
+      }),
+      { normalizeSharedRunnerCrayon: true }
+    );
+
+    expect(noisyHealthy).toMatchObject({ normalized: true, breached: false });
+    expect(noisyHealthy.gateP95Ms).toBeLessThan(COMMIT_GATE_MS);
+    expect(knownBad).toMatchObject({ slowdownFactor: 1, gateP95Ms: 47, breached: true });
+    expect(encodeRegression).toMatchObject({ normalized: false, gateP95Ms: 47, breached: true });
+  });
+
+  it('keeps full and on-demand WebKit runs on raw absolute timing', () => {
+    const timing = evaluateCommitTiming(
+      timingScenario({ commitP95Ms: 60, drawTotalMs: 100_186, drawOps: 26_378 })
+    );
+
+    expect(timing).toMatchObject({ normalized: false, gateP95Ms: 60, breached: true });
   });
 
   it('runs the full seven-scenario command on release tags', () => {
