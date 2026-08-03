@@ -1,10 +1,15 @@
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
+  books: [],
+  directEntry: false,
   filesystemCalls: [],
+  isMainInputs: [],
+  mobileEligibleBooks: [],
   root: '',
 }));
 
@@ -26,14 +31,21 @@ vi.mock('node:fs', async (importOriginal) => {
   };
 });
 
-vi.mock('../lib/proc.mjs', async (importOriginal) => ({
-  ...(await importOriginal()),
-  ROOT: state.root,
-}));
+vi.mock('../lib/proc.mjs', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    ROOT: state.root,
+    isMain: (url) => {
+      state.isMainInputs.push(url);
+      return state.directEntry && typeof url === 'string';
+    },
+  };
+});
 
 vi.mock('../../web/src/lib/state/books.ts', () => ({
-  BOOKS: [],
-  booksForPlatform: () => [],
+  BOOKS: state.books,
+  booksForPlatform: () => state.mobileEligibleBooks,
   bookAssetPaths: (book) => [
     book.cover,
     ...book.pages.flatMap((page) => [
@@ -54,6 +66,8 @@ const fixtureHtml = `<!doctype html>
   </head>
 </html>
 `;
+const repoRoot = join(import.meta.dirname, '..', '..');
+const checkAssetsScript = join(repoRoot, 'scripts', 'check-assets.mjs');
 
 function fixturePage(directory) {
   return {
@@ -107,12 +121,14 @@ describe('native build script entry points', () => {
     warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     error = vi.spyOn(console, 'error').mockImplementation(() => {});
     state.filesystemCalls.length = 0;
+    state.isMainInputs.length = 0;
 
     ({ stripNativeAssets } = await import('../strip-native-assets.mjs'));
     ({ checkAssets } = await import('../check-assets.mjs'));
 
     importEffects = {
       errors: [...error.mock.calls],
+      entryArguments: [...state.isMainInputs],
       exits: [...exit.mock.calls],
       filesystemCalls: [...state.filesystemCalls],
       logs: [...log.mock.calls],
@@ -129,12 +145,55 @@ describe('native build script entry points', () => {
   it('imports without filesystem work, output, or process exit', () => {
     expect(importEffects).toEqual({
       errors: [],
+      entryArguments: [
+        expect.stringMatching(/^file:.*strip-native-assets\.mjs$/),
+        expect.stringMatching(/^file:.*check-assets\.mjs$/),
+      ],
       exits: [],
       filesystemCalls: [],
       logs: [],
       sentinel: 'keep',
       warnings: [],
     });
+  });
+
+  it('runs both guarded entry branches with URL arguments', async () => {
+    const directBuildDir = join(state.root, 'web', 'build');
+    writeFixture(join(directBuildDir, 'favicon.ico'));
+    exit.mockClear();
+    log.mockClear();
+    state.books.length = 0;
+    state.directEntry = true;
+    state.isMainInputs.length = 0;
+    state.mobileEligibleBooks = [];
+
+    try {
+      vi.resetModules();
+      ({ stripNativeAssets } = await import('../strip-native-assets.mjs'));
+      ({ checkAssets } = await import('../check-assets.mjs'));
+    } finally {
+      state.directEntry = false;
+    }
+
+    expect(state.isMainInputs).toEqual([
+      expect.stringMatching(/^file:.*strip-native-assets\.mjs$/),
+      expect.stringMatching(/^file:.*check-assets\.mjs$/),
+    ]);
+    expect(existsSync(join(directBuildDir, 'favicon.ico'))).toBe(false);
+    expect(log).toHaveBeenCalledWith('[check-assets] all checks passed.');
+    expect(exit).not.toHaveBeenCalled();
+  });
+
+  it('runs the real asset-check CLI', () => {
+    const result = spawnSync(
+      process.execPath,
+      ['--experimental-strip-types', '--disable-warning=ExperimentalWarning', checkAssetsScript],
+      { cwd: repoRoot, encoding: 'utf8' }
+    );
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toContain('[check-assets] all checks passed.');
   });
 
   it('strips a temporary native build including directories, files, and HTML references', () => {
@@ -177,24 +236,80 @@ describe('native build script entry points', () => {
     expect(log).toHaveBeenCalledWith('[strip-native-assets] removed /coloring/web-only');
   });
 
-  it('keeps failure paths on exit code 1', () => {
+  it('throws exported-function failures before the CLI wrapper handles them', () => {
     const missingBuild = join(state.root, 'missing-build');
     const missingStatic = join(state.root, 'missing-static');
     const webBook = fixtureBook('web-only', ['web']);
     exit.mockClear();
     error.mockClear();
+    log.mockClear();
 
-    stripNativeAssets(missingBuild, []);
-    checkAssets(missingStatic, [webBook], [webBook]);
+    expect(() => stripNativeAssets(missingBuild, [])).toThrow(
+      '[strip-native-assets] no build output at'
+    );
+    expect(() => checkAssets(missingStatic, [webBook], [webBook])).toThrow(
+      /^\[check-assets\] \d+ error\(s\) found/
+    );
+
+    expect(exit).not.toHaveBeenCalled();
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('[check-assets] PLATFORM MISMATCH:')
+    );
+    expect(log).not.toHaveBeenCalledWith('[check-assets] all checks passed.');
+  });
+
+  it('translates direct-entry failures to exit code 1', async () => {
+    const webBook = fixtureBook('web-only-direct', ['web']);
+    rmSync(join(state.root, 'web', 'build'), { recursive: true, force: true });
+    state.books.splice(0, state.books.length, webBook);
+    state.directEntry = true;
+    state.mobileEligibleBooks = [webBook];
+    exit.mockClear();
+    error.mockClear();
+    log.mockClear();
+
+    try {
+      vi.resetModules();
+      await import('../strip-native-assets.mjs');
+      await import('../check-assets.mjs');
+    } finally {
+      state.books.length = 0;
+      state.directEntry = false;
+      state.mobileEligibleBooks = [];
+    }
 
     expect(exit).toHaveBeenNthCalledWith(1, 1);
     expect(exit).toHaveBeenNthCalledWith(2, 1);
     expect(error).toHaveBeenCalledWith(
-      expect.stringContaining('[check-assets] PLATFORM MISMATCH:')
+      expect.stringContaining('[strip-native-assets] no build output at')
     );
     expect(error).toHaveBeenCalledWith(
       expect.stringMatching(/^\[check-assets\] \d+ error\(s\) found/)
     );
     expect(log).not.toHaveBeenCalledWith('[check-assets] all checks passed.');
+  });
+
+  it('reports success for a complete catalog', () => {
+    const staticDir = join(state.root, 'complete-static');
+    const mobileBook = fixtureBook('mobile-complete', ['mobile']);
+    const assetPaths = [
+      mobileBook.cover,
+      ...mobileBook.pages.flatMap((page) => [
+        ...Object.values(page.images),
+        ...Object.values(page.colorImages),
+        ...Object.values(page.nightImages),
+        ...Object.values(page.chalkImages),
+      ]),
+    ];
+    for (const assetPath of assetPaths) writeFixture(join(staticDir, assetPath));
+    exit.mockClear();
+    error.mockClear();
+    log.mockClear();
+
+    expect(() => checkAssets(staticDir, [mobileBook], [mobileBook])).not.toThrow();
+
+    expect(exit).not.toHaveBeenCalled();
+    expect(error).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith('[check-assets] all checks passed.');
   });
 });

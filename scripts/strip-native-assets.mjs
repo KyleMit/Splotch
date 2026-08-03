@@ -107,8 +107,7 @@ function stripUnusedLineArt(buildDir, books) {
 
 export function stripNativeAssets(buildDir, books) {
   if (!existsSync(buildDir)) {
-    fail(`[strip-native-assets] no build output at ${relative(ROOT, buildDir)}`);
-    return;
+    throw new Error(`[strip-native-assets] no build output at ${relative(ROOT, buildDir)}`);
   }
 
   stripWebOnlyBooks(buildDir, books);
@@ -116,4 +115,10 @@ export function stripNativeAssets(buildDir, books) {
   stripUnusedLineArt(buildDir, books);
 }
 
-if (isMain(import.meta.url)) stripNativeAssets(BUILD_DIR, BOOKS);
+if (isMain(import.meta.url)) {
+  try {
+    stripNativeAssets(BUILD_DIR, BOOKS);
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error));
+  }
+}
