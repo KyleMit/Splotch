@@ -1,7 +1,8 @@
 # ADR-0071: Design Tokens from One Generated Source (In-Repo Design System)
 
 **Status:** Active. **Date:** 2026-07. Amended 2026-07-22: `/admin` and `/privacy` are permanently
-light-only — see the amendment at the end.
+light-only — see the amendment at the end. Amended 2026-08-03: the styleguide is now the public
+`/design` route (ADR-0096) — see the amendment at the end.
 
 ## Context
 
@@ -121,3 +122,12 @@ the migration":
 So the rule is narrower than "modal/parent/admin surfaces use `Button`": **text-labeled actions on
 parent/modal surfaces use `Button`**. Canvas-floating controls keep bespoke paper treatments, as
 before.
+
+## Amendment (2026-08-03): the styleguide moved to public `/design`
+
+The living styleguide left the dev harness: it now lives at the public `/design` route, extended
+with the brand half of the design language (voice & copy, mascot/wordmark, paper, the crayon
+palette, the icon set) — see ADR-0096 for the decision and the alternatives (a static
+scrapbook-published copy was rejected as a drift hazard). Everything this ADR says about
+`/dev/design` — token registration renders there, primitives demo there, PR screenshots come from
+there — now applies to `/design`.

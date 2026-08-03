@@ -48,11 +48,13 @@
   }
 
   /* Indented past the icon column so the help line starts under the label:
-     .setting-icon's width + .setting-info's gap, both declared below. */
+     .setting-icon's width + .setting-info's gap, both declared below.
+     --text-mid, not --text-muted: 13px help text at --text-muted is 3.54:1 on
+     --surface, under WCAG AA (the /design axe scan enforces it). */
   .setting-help {
     margin: 6px 0 0 calc(20px + 10px);
     font-size: var(--font-size-sm);
-    color: var(--text-muted);
+    color: var(--text-mid);
     line-height: 1.4;
   }
 

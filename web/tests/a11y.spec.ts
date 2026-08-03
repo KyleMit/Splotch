@@ -4,7 +4,8 @@ import { adminConsole, signInToAdmin } from './admin-helpers';
 import { openSettingsModal } from './helpers';
 
 // Axe-core scans the adult-facing surfaces (issue #458): /privacy,
-// /android-beta, /feedback, /admin (both auth states), and the Settings dialog.
+// /android-beta, /feedback, /design, /admin (both auth states), and the
+// Settings dialog.
 // The toddler-facing canvas chrome is deliberately out of scope — its UX rules
 // (giant wordless buttons, no reading order) aren't WCAG's — so the Settings scan
 // is scoped to the dialog itself rather than the whole drawing page.
@@ -65,6 +66,12 @@ test('/feedback has no serious accessibility violations', async ({ page }) => {
   // in the DOM once the parent opts in.
   await page.getByRole('checkbox').check();
   await expect(page.getByText('What will be sent?')).toBeVisible();
+  await expectNoSeriousViolations(page);
+});
+
+test('/design has no serious accessibility violations', async ({ page }) => {
+  await page.goto('/design');
+  await expect(page.getByRole('heading', { name: 'Splotch design system' })).toBeVisible();
   await expectNoSeriousViolations(page);
 });
 
