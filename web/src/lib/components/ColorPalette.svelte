@@ -157,6 +157,7 @@
     grid-template-columns: repeat(2, 1fr);
     justify-items: center;
     align-content: center;
+    width: var(--palette-landscape-width);
     gap: 12px;
     padding: 12px;
     background: var(--surface);

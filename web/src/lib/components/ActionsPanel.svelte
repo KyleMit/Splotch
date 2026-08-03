@@ -23,6 +23,7 @@
     MAX_ACTION_BUTTON_COUNT,
     isAiImageButtonVisible,
     visibleActionButtonCount,
+    resolvedLandscapePaletteWidth,
     publishActionPanelState,
   } from '$lib/actionButtonLayout';
   import { undo } from '$lib/drawing/engine';
@@ -49,25 +50,25 @@
 
   const erasing = $derived(toolState.brush === 'eraser');
 
-  // Orientation drives the landscape palette-clearing offset below, which needs
-  // the measured palette width in JS. Everything else orientation-dependent here
-  // (drawer collapse axis, chevron direction) is CSS. The shared layout module
-  // owns the listeners.
+  // Orientation drives the landscape palette-clearing offset below. Everything
+  // else orientation-dependent here (drawer collapse axis, chevron direction)
+  // is CSS. The shared layout module owns the listeners.
   const isPortrait = $derived(layout.orientation === 'portrait');
 
-  // Landscape: sit just past the color palette so we clear it. The stylesheet
-  // owns the portrait bottom-left position. paletteWidth is published by
-  // ColorPalette (0 until measured), so this settles once the palette lays out —
-  // no querySelector and no mount-time setTimeout to dodge the layout race.
+  // Landscape: sit just past the Color Palette so we clear it. The raw
+  // prerendered page gets the same deterministic width from the shared CSS
+  // custom property; hydrated JS uses that geometry until ColorPalette publishes
+  // its measured width, which remains the correction for browser rounding.
   //
   // The inline left wins over the stylesheet, so the safe-area inset has to ride
   // along in this value or it's lost: .app-container's padding-left shifts the
   // palette right by env(safe-area-inset-left) (the Android landscape hole-punch),
   // and paletteWidth doesn't include that padding — so we clear inset + width.
+  const landscapePaletteWidth = $derived(resolvedLandscapePaletteWidth());
   const leftOffset = $derived(
-    isPortrait
+    !browser || isPortrait
       ? undefined
-      : `calc(${layout.paletteWidth + PANEL_INSET}px + env(safe-area-inset-left))`
+      : `calc(${landscapePaletteWidth + PANEL_INSET}px + env(safe-area-inset-left))`
   );
 
   // Cap the button size so the expanded panel always fits the screen —
@@ -106,7 +107,7 @@
       ? undefined
       : isPortrait
         ? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((${layout.viewportHeight - layout.paletteHeight - PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
-        : `min(calc(${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)), calc((100vw - ${layout.paletteWidth + SETTINGS_BUTTON_RESERVE}px - env(safe-area-inset-left) - env(safe-area-inset-right) - ${buttonSpread}px) / ${buttonCount}))`
+        : `min(calc(${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)), calc((100vw - ${landscapePaletteWidth + SETTINGS_BUTTON_RESERVE}px - env(safe-area-inset-left) - env(safe-area-inset-right) - ${buttonSpread}px) / ${buttonCount}))`
   );
 
   // When advanced controls are disabled the chevron is hidden and the drawer
@@ -405,7 +406,7 @@
   .actions-panel {
     position: fixed;
     bottom: calc(8px + env(safe-area-inset-bottom));
-    left: calc(8px + env(safe-area-inset-left));
+    left: calc(var(--palette-landscape-width) + 8px + env(safe-area-inset-left));
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -415,6 +416,7 @@
   @media (orientation: portrait) {
     .actions-panel {
       flex-direction: column-reverse;
+      left: calc(8px + env(safe-area-inset-left));
     }
   }
 
@@ -599,12 +601,20 @@
        portrait phones painted tiny buttons that jumped to full size (issue #317).
        Square via width = height so a capped button shrinks like a smaller scale
        instead of squishing. Landscape 100vw (unaffected by the URL bar); the
-       188px = SETTINGS_BUTTON_RESERVE (64) + WORST_CASE_CHROME (124). These
-       literals mirror the actionButtonLayout constants and are drift-guarded by
-       actionButtonLayout.fallback.test.ts — update both together. */
+       --palette-landscape-width reserves the Color Palette before it can be
+       measured. 188px = SETTINGS_BUTTON_RESERVE (64) + WORST_CASE_CHROME
+       (124). These literals mirror the actionButtonLayout constants and are
+       drift-guarded by actionButtonLayout.fallback.test.ts — update both
+       together. */
     --action-btn-fallback: min(
       calc(60px * var(--action-btn-scale, 1)),
-      calc((100vw - 188px - env(safe-area-inset-left) - env(safe-area-inset-right)) / 6)
+      calc(
+        (
+            100vw - var(--palette-landscape-width) - 188px - env(safe-area-inset-left) -
+              env(safe-area-inset-right)
+          ) /
+          6
+      )
     );
     width: var(--action-btn-size, var(--action-btn-fallback));
     height: var(--action-btn-size, var(--action-btn-fallback));

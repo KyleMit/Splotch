@@ -12,6 +12,10 @@ import {
 import { network } from '$lib/state/network.svelte';
 import { layout } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
+import {
+  landscapeSingleColumnFloorPx,
+  PALETTE_LANDSCAPE_WIDTHS_PX,
+} from '$lib/design/trimGeometry';
 
 // Keep in sync with the .actions-drawer-inner gap in ActionsPanel.svelte.
 export const ACTION_BUTTON_GAP = 12;
@@ -69,6 +73,17 @@ export function visibleActionButtonCount(): number {
   );
 }
 
+// ColorPalette publishes its measured width after hydration. Until then its
+// responsive CSS geometry is deterministic, so layout consumers use the same
+// two values app.css exposes through --palette-landscape-width instead of
+// briefly treating the palette as zero-width.
+export function resolvedLandscapePaletteWidth(): number {
+  if (layout.paletteWidth > 0) return layout.paletteWidth;
+  return layout.viewportHeight >= landscapeSingleColumnFloorPx()
+    ? PALETTE_LANDSCAPE_WIDTHS_PX.singleColumn
+    : PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns;
+}
+
 // The space one button may occupy on the current screen, in px, before the row
 // (landscape: up to the reserve for the Settings Button) or the column (portrait:
 // up to the palette bar) runs out. Mirrors the CSS cap in ActionsPanel — keep
@@ -85,7 +100,7 @@ function availablePerButton(buttonCount: number): number {
         safeArea.bottom -
         chrome
       : layout.viewportWidth -
-        layout.paletteWidth -
+        resolvedLandscapePaletteWidth() -
         SETTINGS_BUTTON_RESERVE -
         safeArea.left -
         safeArea.right -

@@ -15,10 +15,12 @@ import {
   ACTION_BUTTON_SCALE_MAX,
 } from './state/settings.svelte';
 import { selectBrush } from './state/tool.svelte';
+import { PALETTE_LANDSCAPE_WIDTHS_PX } from './design/trimGeometry';
 import {
   ACTION_PANEL_LIVE_ATTRIBUTE,
   isAiImageButtonVisible,
   visibleActionButtonCount,
+  resolvedLandscapePaletteWidth,
   maxActionButtonScale,
   publishActionPanelState,
 } from './actionButtonLayout';
@@ -85,6 +87,25 @@ describe('visibleActionButtonCount', () => {
   it('the eraser toggle hides a Brush Menu entry, not a button', () => {
     setEraser(false);
     expect(visibleActionButtonCount()).toBe(5);
+  });
+});
+
+describe('resolvedLandscapePaletteWidth', () => {
+  it('uses the two-column geometry before a short palette measures', () => {
+    layout.paletteWidth = 0;
+    layout.viewportHeight = 375;
+    expect(resolvedLandscapePaletteWidth()).toBe(PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns);
+  });
+
+  it('uses the single-column geometry before a tall palette measures', () => {
+    layout.paletteWidth = 0;
+    layout.viewportHeight = 768;
+    expect(resolvedLandscapePaletteWidth()).toBe(PALETTE_LANDSCAPE_WIDTHS_PX.singleColumn);
+  });
+
+  it('keeps the measured width as the hydrated correction', () => {
+    layout.paletteWidth = 84.5;
+    expect(resolvedLandscapePaletteWidth()).toBe(84.5);
   });
 });
 

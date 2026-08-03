@@ -1,5 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import actionsPanelSource from './components/ActionsPanel.svelte?raw';
+import colorPaletteSource from './components/ColorPalette.svelte?raw';
+import { landscapeSingleColumnFloorPx, PALETTE_LANDSCAPE_WIDTHS_PX } from './design/trimGeometry';
 import {
   ACTION_BUTTON_BASE_LANDSCAPE,
   ACTION_BUTTON_BASE_PORTRAIT,
@@ -11,6 +15,8 @@ import {
   SETTINGS_BUTTON_RESERVE,
   WORST_CASE_CHROME,
 } from './actionButtonLayout';
+
+const appCssSource = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
 
 // The CSS `--action-btn-fallback` in ActionsPanel.svelte owns the action-button
 // size at first paint (before any TS loads — ADR-0040), so it bakes the sizing
@@ -39,14 +45,33 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
     expect(actionsPanelSource).toContain(
       `left: calc(${PANEL_INSET}px + env(safe-area-inset-left))`
     );
+    expect(actionsPanelSource).toContain(
+      `left: calc(var(--palette-landscape-width) + ${PANEL_INSET}px + env(safe-area-inset-left))`
+    );
+  });
+
+  it('shares the responsive landscape palette width before hydration', () => {
+    const widths = [...appCssSource.matchAll(/--palette-landscape-width:\s*(\d+)px/g)].map(
+      (match) => Number(match[1])
+    );
+    expect(widths).toEqual([
+      PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns,
+      PALETTE_LANDSCAPE_WIDTHS_PX.singleColumn,
+    ]);
+    expect(appCssSource).toContain(
+      `(orientation: landscape) and (min-height: ${landscapeSingleColumnFloorPx()}px)`
+    );
+    expect(colorPaletteSource).toContain('width: var(--palette-landscape-width)');
   });
 
   it('landscape fallback matches the constants', () => {
     const [landscape] = fallbackBlocks;
     expect(landscape).toContain(`${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)`);
     // 100vw minus the reserve for the right-edge Settings Button + worst-case chrome.
-    expect(landscape).toContain(`100vw - ${SETTINGS_BUTTON_RESERVE + WORST_CASE_CHROME}px`);
-    expect(landscape).toContain(`/ ${MAX_ACTION_BUTTON_COUNT}`);
+    expect(landscape).toContain(
+      `100vw - var(--palette-landscape-width) - ${SETTINGS_BUTTON_RESERVE + WORST_CASE_CHROME}px`
+    );
+    expect(landscape).toMatch(new RegExp(`/\\s*${MAX_ACTION_BUTTON_COUNT}`));
   });
 
   it('portrait fallback matches the constants', () => {
@@ -56,6 +81,6 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
     expect(portrait).toContain(
       `100vh - ${PALETTE_CLEARANCE + WORST_CASE_CHROME + PALETTE_BAR_RESERVE}px`
     );
-    expect(portrait).toContain(`/ ${MAX_ACTION_BUTTON_COUNT}`);
+    expect(portrait).toMatch(new RegExp(`/\\s*${MAX_ACTION_BUTTON_COUNT}`));
   });
 });

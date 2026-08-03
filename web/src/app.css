@@ -30,6 +30,20 @@ body {
   background: var(--app-bg);
 }
 
+/* Shared first-paint width of the landscape Color Palette. The palette and
+   Actions Panel both consume it before ResizeObserver can publish the measured
+   width; actionButtonLayout.fallback.test.ts guards these literals against the
+   palette geometry source. */
+:root {
+  --palette-landscape-width: 156px;
+}
+
+@media (orientation: landscape) and (min-height: 444px) {
+  :root {
+    --palette-landscape-width: 84px;
+  }
+}
+
 /* The drawing route is an immersive app surface, not a document: it never
    scrolls, selects text, zooms, or shows an iOS long-press callout. These locks
    used to sit on `body` globally (set back when `/` was the only page), which

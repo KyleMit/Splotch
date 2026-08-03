@@ -10,9 +10,8 @@ import { retryOpen } from './helpers';
 
 // The action drawer is collapsed by default (drawerOpen=false), so its buttons
 // (brush menu, undo, screenshot, AI, coloring) aren't rendered until the chevron
-// is tapped. The chevron also snaps next to the palette once its width is
-// measured on mount, so it can shift on the first frame; retrying the tap rides
-// that out and any first-click hydration lag under parallel load.
+// is tapped. Retrying the tap handles first-click hydration lag under parallel
+// load.
 export async function openDrawer(page: Page) {
   await retryOpen(
     page.locator('#undoButton'),

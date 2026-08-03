@@ -30,8 +30,8 @@ export const layout: LayoutState = $state({
   // Rendered size of the color palette bar. ActionsPanel sits just past its
   // width (paletteWidth + gap) in landscape so it clears the palette, and the
   // action-button sizing math clears its height in portrait (the top bar).
-  // 0 until the palette has measured itself, so dependents settle once it
-  // lays out.
+  // 0 until the palette has measured itself. Landscape first-paint consumers
+  // use the deterministic responsive geometry until this correction arrives.
   paletteWidth: 0,
   paletteHeight: 0,
 

@@ -1,6 +1,8 @@
 # ADR-0040: Per-Route Render Modes — the Home Route Stays Prerendered (SSG), Not Per-Request SSR
 
-**Status:** Active **Date:** 2026-07
+**Status:** Active **Date:** 2026-07. Amended 2026-08-03: the landscape Color Palette and Actions
+Panel share deterministic first-paint width geometry, with measurement retained as a hydrated
+correction.
 
 ## Context
 
@@ -54,8 +56,13 @@ that are already correct in the prerendered HTML:
    the `[data-drawer-open]` attribute (see mechanism 2). Orientation that *can't* be pure CSS stays
    in JS (`lib/state/layout.svelte.ts`): the notch-band edge (combines orientation with *measured*
    insets and native status-bar calls), the coloring-book art (portrait vs landscape *image
-   assets*), the clear-button home-corner reset (imperative geometry), and the actions-panel
-   palette-clearing offset (needs the *measured* palette width).
+   assets*), and the clear-button home-corner reset (imperative geometry). The Actions Panel's
+   landscape palette-clearing offset is deterministic at first paint: `app.css` publishes the Color
+   Palette's one- or two-column width as `--palette-landscape-width` at the same media-query
+   breakpoint that selects its layout, and both components consume it. The palette's
+   `ResizeObserver` measurement remains the post-hydration correction for browser rounding. A
+   drift-guard test derives the CSS literals from `design/trimGeometry.ts`, so this shared
+   non-importable geometry cannot silently diverge.
 2. **Pre-paint head-script stamp** (`web/src/app.html`) + CSS. A tiny synchronous inline script runs
    before first paint and stamps `<html>` from `localStorage`, and the Action-center panel's CSS
    reads those stamps so the state is correct at render. During hydration, a publish `$effect` in
