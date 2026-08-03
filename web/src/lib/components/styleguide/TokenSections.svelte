@@ -39,7 +39,7 @@
 </script>
 
 <section>
-  <h2>Brand</h2>
+  <h3>Brand</h3>
   <div class="swatch-grid">
     {#each Object.entries(brand).filter(([k]) => k !== 'brandTintFilter') as [key, value] (key)}
       <div class="swatch-card">
@@ -52,7 +52,7 @@
 </section>
 
 <section>
-  <h2>Unthemed fills</h2>
+  <h3>Unthemed fills</h3>
   <p>Constant chrome color — it reads the same on both papers, so it has no light/dark pair.</p>
   <div class="swatch-grid">
     <div class="swatch-card">
@@ -64,7 +64,7 @@
 </section>
 
 <section>
-  <h2>Theme colors</h2>
+  <h3>Theme colors</h3>
   <p>Swatches paint the live CSS variable — flip the theme above to see the dark values.</p>
   <div class="swatch-grid">
     {#each colorKeys as key (key)}
@@ -75,7 +75,7 @@
       </div>
     {/each}
   </div>
-  <h3>Non-color theme tokens</h3>
+  <h4>Non-color theme tokens</h4>
   <ul class="raw-list">
     {#each [...nonColorKeys] as key (key)}
       <li>
@@ -87,7 +87,7 @@
 </section>
 
 <section>
-  <h2>Spacing</h2>
+  <h3>Spacing</h3>
   <div class="row-list">
     {#each spaceKeys as key (key)}
       <div class="scale-row">
@@ -100,7 +100,7 @@
 </section>
 
 <section>
-  <h2>Radius</h2>
+  <h3>Radius</h3>
   <div class="radius-grid">
     {#each radiusKeys as key (key)}
       <div class="swatch-card">
@@ -115,7 +115,7 @@
       <span class="value">{scale.radiusPill}</span>
     </div>
   </div>
-  <h3>Border width</h3>
+  <h4>Border width</h4>
   <div class="radius-grid">
     <div class="swatch-card">
       <div class="border-box"></div>
@@ -126,7 +126,7 @@
 </section>
 
 <section>
-  <h2>Type scale</h2>
+  <h3>Type scale</h3>
   <div class="row-list">
     {#each fontSizeKeys as key (key)}
       <div class="scale-row">
@@ -151,7 +151,7 @@
       <span class="value">{scale.fontMono}</span>
     </div>
   </div>
-  <h3>Weights</h3>
+  <h4>Weights</h4>
   <p>Only 600 carries a token; 500 and 700 are written raw where they appear.</p>
   <div class="row-list">
     {#each weightSpecimens as specimen (specimen.weight)}
@@ -165,7 +165,7 @@
 </section>
 
 <section>
-  <h2>Elevation</h2>
+  <h3>Elevation</h3>
   <div class="shadow-grid">
     {#each shadowKeys as key (key)}
       <div class="swatch-card">
@@ -185,7 +185,7 @@
 </section>
 
 <section>
-  <h2>Motion</h2>
+  <h3>Motion</h3>
   <p>
     Springy overshoot for kid moments, glides for settles. Press states scale down (0.9–0.96);
     hovers swap to a wash or hover token. The lanes run each easing curve on a loop.
@@ -209,7 +209,7 @@
 </section>
 
 <section>
-  <h2>Stacking</h2>
+  <h3>Stacking</h3>
   <p>
     The cross-component chrome order, low to high — one list, but not one stacking context, so a
     bigger number doesn't always win. Everything resolves in the root context except
@@ -237,13 +237,13 @@
     font-size: var(--font-size-md);
   }
 
-  h2 {
+  h3 {
     color: var(--text-strong);
     font-size: var(--font-size-xl);
     margin-bottom: var(--space-2);
   }
 
-  h3 {
+  h4 {
     color: var(--text-strong);
     font-size: var(--font-size-md);
     margin: var(--space-4) 0 var(--space-2);

@@ -1,7 +1,5 @@
 <script lang="ts">
-  import CrayonStrip from '$lib/components/CrayonStrip.svelte';
   import Icon, { COLOR_ICONS, ICON_NAMES } from '$lib/components/Icon.svelte';
-  import SplotchyIcon from '$lib/components/SplotchyIcon.svelte';
   import { themes } from '$lib/design/tokens';
   import { PALETTE_COLORS } from '$lib/palette';
 
@@ -20,64 +18,7 @@
 </script>
 
 <section>
-  <h2>Voice &amp; copy</h2>
-  <p>
-    Two voices, one maker. Kid-adjacent copy is playful and warm; parent-facing copy (Settings,
-    store listings, privacy) is plain and direct. Sentence case everywhere — Title Case only for
-    proper feature names (Night Mode, Guided Access). "You" is the parent, "they" is the child, "we"
-    makes the maker's promises. No emoji in UI chrome. Feature bullets lead with verbs, and copy is
-    honest about why a tradeoff exists.
-  </p>
-  <div class="voice-cols">
-    <div class="voice-col">
-      <h3>Kid-adjacent · playful</h3>
-      <blockquote class="voice-quote">
-        Open it up, hand over the device, and let them make a mess. That's the whole idea.
-      </blockquote>
-      <blockquote class="voice-quote">
-        A blank page and a box of crayons — no ads, no accounts, nothing to buy.
-      </blockquote>
-    </div>
-    <div class="voice-col">
-      <h3>Parent-facing · plain</h3>
-      <blockquote class="voice-quote">
-        Your key is stored only on your device. We never keep a copy.
-      </blockquote>
-      <blockquote class="voice-quote">
-        Splotch collects nothing. No ads. No tracking. No analytics.
-      </blockquote>
-    </div>
-  </div>
-</section>
-
-<section>
-  <h2>Mascot &amp; wordmark</h2>
-  <p>
-    Splotchy — a rainbow-crayoned splotch — is the mascot and the PWA icon. The wordmark is plain
-    Quicksand with no drawn logo; the crayon strip (seven pill chips in rainbow order, hues looked
-    up from the drawing palette) is its companion mark on parent pages.
-  </p>
-  <div class="brand-marks">
-    <figure>
-      <SplotchyIcon class="mascot-demo" />
-      <figcaption class="value">splotchy.svg</figcaption>
-    </figure>
-    <figure>
-      <span class="wordmark">Splotch</span>
-      <figcaption class="value">wordmark · Quicksand 700</figcaption>
-    </figure>
-    <figure>
-      <span class="strip-lockup">
-        <CrayonStrip />
-        <span class="strip-label">Splotch for Android</span>
-      </span>
-      <figcaption class="value">crayon strip · rainbow order</figcaption>
-    </figure>
-  </div>
-</section>
-
-<section>
-  <h2>Paper</h2>
+  <h3>Paper</h3>
   <p>
     The canvas is warm off-white paper under a low-alpha handmade-paper grain (<code
       >icons/handmade-paper.webp</code
@@ -100,7 +41,7 @@
 </section>
 
 <section>
-  <h2>Crayon palette</h2>
+  <h3>Crayon palette</h3>
   <p>
     The drawing inks from <code>lib/palette.ts</code>, in the palette's own order — purple first
     because it's the default selection; "bonus" swatches only appear when the layout has the most
@@ -117,7 +58,7 @@
 </section>
 
 <section>
-  <h2>Icons</h2>
+  <h3>Icons</h3>
   <p>
     A first-party SVG set rendered inline through <code>&lt;Icon&gt;</code> — no icon font, no CDN
     set, no emoji-as-icons. Monochrome glyphs bake a near-black fill and get re-inked via
@@ -125,7 +66,7 @@
     palette and are never tinted — the split below is <code>COLOR_ICONS</code> in
     <code>Icon.svelte</code>.
   </p>
-  <h3>Monochrome · re-inked ({monoIcons.length})</h3>
+  <h4>Monochrome · re-inked ({monoIcons.length})</h4>
   <div class="icon-grid mono">
     {#each monoIcons as name (name)}
       <div class="icon-cell">
@@ -134,7 +75,7 @@
       </div>
     {/each}
   </div>
-  <h3>Spot color · never tinted ({spotIcons.length})</h3>
+  <h4>Spot color · never tinted ({spotIcons.length})</h4>
   <div class="icon-grid spot">
     {#each spotIcons as name (name)}
       <div class="icon-cell">
@@ -156,13 +97,13 @@
     font-size: var(--font-size-md);
   }
 
-  h2 {
+  h3 {
     color: var(--text-strong);
     font-size: var(--font-size-xl);
     margin-bottom: var(--space-2);
   }
 
-  h3 {
+  h4 {
     color: var(--text-strong);
     font-size: var(--font-size-md);
     margin: var(--space-4) 0 var(--space-2);
@@ -178,69 +119,6 @@
   .value {
     font-size: var(--font-size-xs);
     color: var(--text-mid);
-  }
-
-  .voice-cols {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: var(--space-4);
-    max-width: 70ch;
-  }
-
-  .voice-col h3 {
-    margin-top: 0;
-  }
-
-  .voice-quote {
-    margin: 0 0 var(--space-2);
-    padding: var(--space-3);
-    background: var(--surface-2);
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-sm);
-    line-height: 1.5;
-  }
-
-  .brand-marks {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-7);
-  }
-
-  .brand-marks figure {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-2);
-    margin: 0;
-  }
-
-  .brand-marks :global(.mascot-demo) {
-    width: 96px;
-    height: 96px;
-  }
-
-  .wordmark {
-    /* PageShell H1 specimen — deliberately above the type ramp (46px/700/-0.015em). */
-    font-size: 46px;
-    font-weight: 700;
-    letter-spacing: -0.015em;
-    color: var(--brand-solid);
-  }
-
-  .strip-lockup {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-2);
-  }
-
-  .strip-label {
-    font-size: var(--font-size-xs);
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--text);
   }
 
   .paper-grid {

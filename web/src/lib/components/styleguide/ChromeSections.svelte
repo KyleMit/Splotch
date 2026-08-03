@@ -104,7 +104,7 @@
 </script>
 
 <section>
-  <h2>Settings furniture</h2>
+  <h3>Settings furniture</h3>
   <p>
     The shared rows every Settings section is built from — pure props, themed end to end, icons from
     the app set. Live and interactive below.
@@ -137,20 +137,20 @@
 </section>
 
 <section>
-  <h2>Shared chrome classes</h2>
+  <h3>Shared chrome classes</h3>
   <p>
     Global classes in <code>app.css</code>, not components — dialogs and imperative DOM need them
     unscoped. Specimens below use the real classes; only placement is overridden, which stays with
     the consumer anyway.
   </p>
 
-  <h3>Modal shell + close button · <code>.modal-shell</code> <code>.modal-close-btn</code></h3>
+  <h4>Modal shell + close button · <code>.modal-shell</code> <code>.modal-close-btn</code></h4>
   <div class="modal-shell demo-modal-shell">
     <button class="modal-close-btn" aria-label="Close">
       <Icon name="close" class="modal-close-icon" />
     </button>
     <div class="demo-modal-body">
-      <h4>Modal title</h4>
+      <p class="demo-modal-title">Modal title</p>
       <p class="demo-modal-copy">
         The centered card — surface, radius, <code>--shadow-pop</code> — shared by all four modals.
         Monochrome icons inside re-ink automatically:
@@ -160,7 +160,7 @@
     </div>
   </div>
 
-  <h3>Flyout menu + options · <code>.flyout-menu</code> <code>.flyout-option</code></h3>
+  <h4>Flyout menu + options · <code>.flyout-menu</code> <code>.flyout-option</code></h4>
   <div class="flyout-menu demo-flyout" role="group" aria-label="Flyout specimen">
     <button class="flyout-option active" aria-label="Pen" aria-pressed="true">
       <Icon name="pen" class="action-icon demo-flyout-icon" />
@@ -177,7 +177,7 @@
     brand ring.
   </span>
 
-  <h3>Corner button · <code>.corner-button</code></h3>
+  <h4>Corner button · <code>.corner-button</code></h4>
   <div class="demo-corner-row">
     <button class="corner-button" aria-label="Settings (specimen)">
       <Icon name="settings" class="corner-button-icon" />
@@ -188,7 +188,7 @@
     </span>
   </div>
 
-  <h3>Polaroid frame · <code>.polaroid-frame</code></h3>
+  <h4>Polaroid frame · <code>.polaroid-frame</code></h4>
   <div class="polaroid-frame demo-polaroid">
     <div class="polaroid-image demo-polaroid-image"></div>
   </div>
@@ -199,12 +199,12 @@
 </section>
 
 <section>
-  <h2>Named chrome</h2>
+  <h3>Named chrome</h3>
   <p>
     Bespoke, single-instance chrome — named so it's discoverable, not recreated (the running app is
     its documentation; the canonical glossary is in the <code>architecture</code> skill).
   </p>
-  <h3>Canvas chrome</h3>
+  <h4>Canvas chrome</h4>
   <ul class="chrome-list">
     {#each canvasChrome as item (item.name)}
       <li>
@@ -214,7 +214,7 @@
       </li>
     {/each}
   </ul>
-  <h3>Page chrome</h3>
+  <h4>Page chrome</h4>
   <ul class="chrome-list">
     {#each pageChrome as item (item.name)}
       <li>
@@ -237,13 +237,13 @@
     font-size: var(--font-size-md);
   }
 
-  h2 {
+  h3 {
     color: var(--text-strong);
     font-size: var(--font-size-xl);
     margin-bottom: var(--space-2);
   }
 
-  h3 {
+  h4 {
     color: var(--text-strong);
     font-size: var(--font-size-md);
     margin: var(--space-5) 0 var(--space-2);
@@ -296,9 +296,10 @@
     padding: var(--space-5);
   }
 
-  .demo-modal-body h4 {
+  .demo-modal-title {
     color: var(--text-strong);
     font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
     margin-bottom: var(--space-2);
     padding-right: 44px;
   }

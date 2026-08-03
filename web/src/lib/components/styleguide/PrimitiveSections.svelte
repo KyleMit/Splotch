@@ -9,7 +9,7 @@
 </script>
 
 <section>
-  <h2>Button</h2>
+  <h3>Button</h3>
   <p><code>lib/components/design/Button.svelte</code></p>
   {#each buttonSizes as size (size)}
     <div class="button-row">
@@ -22,7 +22,7 @@
 </section>
 
 <section>
-  <h2>Status message</h2>
+  <h3>Status message</h3>
   <p><code>lib/components/design/StatusMessage.svelte</code></p>
   {#each statusMessageStatuses as status (status)}
     <StatusMessage {status}
@@ -32,7 +32,7 @@
 </section>
 
 <section>
-  <h2>Disclosure</h2>
+  <h3>Disclosure</h3>
   <p><code>lib/components/design/Disclosure.svelte</code></p>
   <Disclosure class="disclosure-demo">
     {#snippet summary()}What does the primitive own?{/snippet}
@@ -55,7 +55,7 @@
     font-size: var(--font-size-md);
   }
 
-  h2 {
+  h3 {
     color: var(--text-strong);
     font-size: var(--font-size-xl);
     margin-bottom: var(--space-2);
