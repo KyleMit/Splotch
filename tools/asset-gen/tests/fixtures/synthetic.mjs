@@ -176,6 +176,29 @@ export function threeSidedFrameOutline() {
   return encode(c);
 }
 
+const GHOST_FRAME_LUMA = 220;
+
+// BROKEN: the near-white fringe an erased ink frame leaves behind — a gray
+// rectangle with no ink core anywhere near it. One page-spanning side is
+// enough; this ghost keeps all four to mirror the shipped monster-wide case.
+export function ghostFrameOutline() {
+  const c = canvas(600, 600);
+  rectStroke(c, 2, 2, 597, 597, 2, GHOST_FRAME_LUMA);
+  ring(c, 300, 300, 100, 4);
+  return encode(c);
+}
+
+// GOOD: a live edge-near stroke wearing its own gray fringe. The ink core
+// within FRINGE_INK_PAD_PX claims the gray, so soft-edged art is not a ghost.
+export function fringedEdgeArtOutline() {
+  const c = canvas(600, 600);
+  ring(c, 300, 300, 100, 4);
+  fillRect(c, 30, 24, 570, 27, 0);
+  fillRect(c, 30, 23, 570, 23, GHOST_FRAME_LUMA);
+  fillRect(c, 30, 28, 570, 28, GHOST_FRAME_LUMA);
+  return encode(c);
+}
+
 // Fills measured against goodEyeSource() (eye center at 300,300).
 // LIVELY: a dark pupil disc on a white sclera — strong dark-core contrast.
 export function eyeLivelyFill() {

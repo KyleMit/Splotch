@@ -81,6 +81,7 @@ async function scorePage(outlinePath) {
     strokeWidth: solidity.strokeWidth,
     ringDepth: rings.maxDepth,
     frameCoverage: round(frame.sideCoverage, 4),
+    ghostCoverage: round(frame.ghostCoverage, 4),
     solidOk: solidity.passes,
     ringsOk: rings.passes,
     frameOk: frame.passes,

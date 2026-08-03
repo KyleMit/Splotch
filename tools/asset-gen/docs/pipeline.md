@@ -81,6 +81,7 @@ regeneration flows from a pen change**, so a pen edit means regenerating the pag
 | …including fragmented ones | **total** interior px page-wide                                                                                                                              | ≤ 60 px    | bee-tall's first redraw kept a solid pupil whose catchlight holes fragmented the eroded interior into pieces that each ducked the blob bar (103 total vs 0–4 on honest pages)           |
 | Sane eye complexity        | deepest eye-scale nesting chain (`scoreEyeRings`)                                                                                                            | ≤ 4 levels | caterpillar-tall's redraw produced "hypno swirl" eyes — extra concentric circles that registration *can't* catch (they hug the old pupil boundary) and solidity can't either (all thin) |
 | No page frame              | minimum continuous ink coverage across the best inset line on each of all four sides (`scoreOutlineFrame`)                                                   | < 70%      | monster-truck-wide's one-pixel rectangular page border; partial or occluded frames fail while ordinary edge-near art and three-sided enclosures stay below the bar                      |
+| No ghost frame             | maximum page-spanning near-white (luma ≤ 245) line coverage on any single side, counting only gray with no ink within 3 px (`scoreOutlineFrame`)             | < 90%      | monster-truck-wide's first frame removal erased the ink core but left the anti-aliased fringe — a gray ring the ink scan (and so the whole audit) certified as frame-free               |
 
 Since the pen/chalk fork, a solid pen region is a **light-theme quality call**, not a dark-mode
 breaker: light mode covers punched holes with its own black ink, and the chalk redraw makes its own
@@ -125,9 +126,10 @@ low-temperature de-swirl) now auto-load from the [notes registry](#the-per-page-
 misreading), don't edit the drawing — replace it. Text-to-image with a baseline style prompt
 matching the shipped catalog plus a 1–2 sentence scene (same subject, deliberately NOT the same
 composition), gated offline on solidity, ring depth, eye-core presence (`--eyes`), border whiteness,
-four-sided frame detection, and ink density; candidates land in `.coloring-samples/fresh/`. A fresh
-pen invalidates the page's entire suite — regenerate thumb → light → chalk → night → punch. Decision
-record + the 2026-07-13 five-page pass: [fresh-outline-regen.md](fresh-outline-regen.md).
+frame detection (four-sided ink and single-side ghost), and ink density; candidates land in
+`.coloring-samples/fresh/`. A fresh pen invalidates the page's entire suite — regenerate thumb →
+light → chalk → night → punch. Decision record + the 2026-07-13 five-page pass:
+[fresh-outline-regen.md](fresh-outline-regen.md).
 
 ## Stage 1.5 — Chalk outlines
 
