@@ -136,6 +136,21 @@ test('a burst of screenshot taps shares one save before allowing the next', asyn
   page.on('download', (download) => downloads.push(download.suggestedFilename()));
 
   await shot.evaluate((button) => {
+    const panel = button.closest('.actions-panel');
+    if (!panel) throw new Error('Screenshot button has no actions panel');
+    const observer = new MutationObserver(() => {
+      if (!button.classList.contains('action-unavailable')) return;
+      const style = getComputedStyle(button);
+      button.dataset.observedUnavailableNames = style.animationName;
+      button.dataset.observedUnavailableDurations = style.animationDuration;
+      button.dataset.observedUnavailableRunningCount = String(
+        button.getAnimations().filter((animation) => animation.playState === 'running').length
+      );
+      panel.setAttribute('data-off-screenshot', '');
+      observer.disconnect();
+    });
+    observer.observe(button, { attributes: true, attributeFilter: ['class'] });
+
     const rect = button.getBoundingClientRect();
     const coordinates = {
       clientX: rect.left + rect.width / 2,
@@ -156,21 +171,35 @@ test('a burst of screenshot taps shares one save before allowing the next', asyn
   // takes longer than any sleep sized on an idle one — this is what failed 3 of
   // 12 CI reps at 4 workers, issue #653)…
   await expect.poll(() => downloads.length).toBe(1);
-  await expect(shot).toHaveClass(/action-unavailable/);
-  const animation = await shot.evaluate((button) => {
-    const style = getComputedStyle(button);
-    return { names: style.animationName.split(', '), durations: style.animationDuration };
-  });
+  const animation = {
+    names: (await shot.getAttribute('data-observed-unavailable-names'))?.split(', '),
+    durations: await shot.getAttribute('data-observed-unavailable-durations'),
+    runningCount: Number(await shot.getAttribute('data-observed-unavailable-running-count')),
+  };
   expect(animation.names).toEqual(['action-unavailable-shake', 'action-unavailable-flash']);
-  expect(new Set(animation.durations.split(', ')).size).toBe(1);
-  await expect(shot).not.toHaveClass(/action-unavailable/, { timeout: 2000 });
+  expect(new Set(animation.durations?.split(', ')).size).toBe(1);
+  expect(animation.runningCount).toBeGreaterThanOrEqual(2);
 
   const panel = page.locator('.actions-panel');
-  await panel.evaluate((element) => element.setAttribute('data-off-screenshot', ''));
   await expect(shot).toBeHidden();
   await panel.evaluate((element) => element.removeAttribute('data-off-screenshot'));
   await expect(shot).toBeVisible();
-  await expect.poll(() => shot.evaluate((button) => button.getAnimations().length)).toBe(0);
+  await expect(shot).not.toHaveClass(/action-unavailable/);
+  await expect
+    .poll(() =>
+      shot.evaluate(
+        (button) =>
+          button
+            .getAnimations()
+            .filter(
+              (candidate) =>
+                'animationName' in candidate &&
+                typeof candidate.animationName === 'string' &&
+                candidate.animationName.startsWith('action-unavailable-')
+            ).length
+      )
+    )
+    .toBe(0);
 
   // …then idle past the window a second save would have arrived in, which is
   // what proves the burst was coalesced rather than merely slow.

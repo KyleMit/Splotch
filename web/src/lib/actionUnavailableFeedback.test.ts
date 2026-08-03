@@ -17,10 +17,15 @@ function deferred(): Deferred {
   return { promise, resolve };
 }
 
-function mockAnimations(element: HTMLElement, finished: Promise<void>[]) {
+interface MockAnimation {
+  animationName?: string;
+  finished: Promise<void>;
+}
+
+function mockAnimations(element: HTMLElement, animations: MockAnimation[]) {
   Object.defineProperty(element, 'getAnimations', {
     configurable: true,
-    value: vi.fn(() => finished.map((promise) => ({ finished: promise }))),
+    value: vi.fn(() => animations),
   });
 }
 
@@ -33,7 +38,10 @@ describe('action unavailable feedback', () => {
     const button = document.querySelector('button')!;
     const shake = deferred();
     const flash = deferred();
-    mockAnimations(button, [shake.promise, flash.promise]);
+    mockAnimations(button, [
+      { animationName: 'action-unavailable-shake', finished: shake.promise },
+      { animationName: 'action-unavailable-flash', finished: flash.promise },
+    ]);
 
     replayActionUnavailableFeedback(button);
     expect(button.classList.contains(ACTION_UNAVAILABLE_CLASS)).toBe(true);
@@ -55,6 +63,23 @@ describe('action unavailable feedback', () => {
     await vi.waitFor(() => expect(button.classList.contains(ACTION_UNAVAILABLE_CLASS)).toBe(false));
   });
 
+  it('does not let unrelated animations delay cue cleanup', async () => {
+    const button = document.querySelector('button')!;
+    const cue = deferred();
+    const transition = deferred();
+    const spinner = deferred();
+    mockAnimations(button, [
+      { finished: transition.promise },
+      { animationName: 'ai-spin', finished: spinner.promise },
+      { animationName: 'action-unavailable-shake', finished: cue.promise },
+    ]);
+
+    replayActionUnavailableFeedback(button);
+    cue.resolve();
+
+    await vi.waitFor(() => expect(button.classList.contains(ACTION_UNAVAILABLE_CLASS)).toBe(false));
+  });
+
   it('does not let a superseded replay clear the current cue', async () => {
     const button = document.querySelector('button')!;
     const first = deferred();
@@ -62,7 +87,12 @@ describe('action unavailable feedback', () => {
     let callCount = 0;
     Object.defineProperty(button, 'getAnimations', {
       configurable: true,
-      value: vi.fn(() => [{ finished: callCount++ === 0 ? first.promise : second.promise }]),
+      value: vi.fn(() => [
+        {
+          animationName: 'action-unavailable-shake',
+          finished: callCount++ === 0 ? first.promise : second.promise,
+        },
+      ]),
     });
 
     replayActionUnavailableFeedback(button);
