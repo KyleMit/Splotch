@@ -1,7 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
-  import Button from '$lib/components/design/Button.svelte';
   import AssetSections from '$lib/components/styleguide/AssetSections.svelte';
   import ChromeSections from '$lib/components/styleguide/ChromeSections.svelte';
   import PrimitiveSections from '$lib/components/styleguide/PrimitiveSections.svelte';
@@ -49,15 +48,20 @@
       <code>lib/palette.ts</code>, the icon set, and the shipped components. If it's not on this
       page, it's not part of the visual language.
     </p>
-    <div class="theme-toggle" role="group" aria-label="Theme">
+    <!-- A selected-state control is a picker, not a Button (design skill) —
+         same radiogroup segment as Settings' theme picker, restated here until
+         the shared primitive lands (issue #748 tracks the extraction). -->
+    <div class="theme-picker" role="radiogroup" aria-label="Theme">
       {#each themeOptions as option (option)}
-        <Button
-          variant={theme === option ? 'brand' : 'ghost'}
-          size="sm"
+        <button
+          class="theme-option"
+          class:active={theme === option}
+          role="radio"
+          aria-checked={theme === option}
           onclick={() => setTheme(option)}
         >
           {option}
-        </Button>
+        </button>
       {/each}
     </div>
     <nav class="part-nav" aria-label="Page sections">
@@ -142,10 +146,46 @@
     color: var(--brand-text);
   }
 
-  .theme-toggle {
-    display: flex;
-    gap: var(--space-2);
+  /* iOS-style segmented control, matching Settings' theme picker: the active
+     segment reads as a raised card. */
+  .theme-picker {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
     margin-top: var(--space-3);
+    background: var(--slider-track);
+    border-radius: var(--radius-md);
+  }
+
+  .theme-option {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text-mid);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background var(--duration-fast) ease,
+      color var(--duration-fast) ease,
+      box-shadow var(--duration-fast) ease;
+  }
+
+  @media (hover: hover) {
+    .theme-option:not(.active):hover {
+      color: var(--text-strong);
+    }
+  }
+
+  .theme-option.active {
+    background: var(--surface);
+    color: var(--text-strong);
+    box-shadow: var(--shadow-segment);
   }
 
   .part-nav {
