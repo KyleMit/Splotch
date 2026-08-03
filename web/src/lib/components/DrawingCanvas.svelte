@@ -32,7 +32,12 @@
     pageCompositionKey,
   } from '$lib/state/books';
   import { settings } from '$lib/state/settings.svelte';
-  import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
+  import {
+    playDrawSound,
+    preloadDrawSounds,
+    preloadFirstDrawSound,
+    stopDrawSound,
+  } from '$lib/audio/drawingSound';
   import { isNative } from '$lib/platform';
   import { scheduleIdle } from '$lib/idle';
   import { prefetchImages } from '$lib/imagePrefetch';
@@ -147,14 +152,16 @@
     setSafeAreaInsets({ ...layout.safeArea });
   });
 
-  // Warm up the pencil-sound assets (357 KB — half the first-visit transfer) so
-  // the first stroke isn't silent while they fetch/decode. Deferred to idle time
-  // so they don't compete with the canvas for first-visit bandwidth; if the kid
-  // draws first, `playDrawSound` triggers the same preload on pointerdown, so the
-  // audible-first-stroke guarantee holds either way. Skipped while sound is off.
+  // The first 119 KB pencil sound is prepared on the earliest drawing boot path.
+  // The other variants stay behind idle so their transfer and decode do not
+  // compete with first paint. Enabling sound later takes the same fast path.
   $effect(() => {
-    if (!settings.soundEnabled) return;
-    return scheduleIdle(() => preloadDrawSounds());
+    if (!settings.soundEnabled) {
+      stopDrawSound();
+      return;
+    }
+    preloadFirstDrawSound();
+    return scheduleIdle(preloadDrawSounds);
   });
 
   // Reactive bridges: when the store changes, push into the imperative engine.
