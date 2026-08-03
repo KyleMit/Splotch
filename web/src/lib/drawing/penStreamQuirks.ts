@@ -62,7 +62,7 @@ export function createPenStreamAdopter(deps: PenStreamAdopterDeps) {
   // excludes it from the orphan predicate, and the engine keeps its undo
   // command open until re-entry or a window-level lift consumes the id.
   function trackCanvasExit(e: PointerEvent): void {
-    if (e.pointerType !== 'pen' || !deps.isTracked(e.pointerId)) return;
+    if (e.pointerType !== 'pen' || e.buttons === 0 || !deps.isTracked(e.pointerId)) return;
     canvasExitIds.add(e.pointerId);
   }
 

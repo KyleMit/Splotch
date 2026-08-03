@@ -24,6 +24,26 @@ describe('createPenStreamAdopter', () => {
     vi.spyOn(document, 'elementFromPoint').mockReturnValue(canvas);
   });
 
+  describe('trackCanvasExit', () => {
+    it('makes a tracked down pen eligible for canvas-exit recovery', () => {
+      isTracked.mockReturnValue(true);
+      const adopter = createPenStreamAdopter({ canvas: () => canvas, isTracked, adopt });
+
+      adopter.trackCanvasExit(penEvent({ type: 'pointerout' }));
+
+      expect(adopter.hasCanvasExit()).toBe(true);
+    });
+
+    it('does not arm canvas-exit suspension for a tracked lifted or hovering pen', () => {
+      isTracked.mockReturnValue(true);
+      const adopter = createPenStreamAdopter({ canvas: () => canvas, isTracked, adopt });
+
+      adopter.trackCanvasExit(penEvent({ type: 'pointerout', buttons: 0 }));
+
+      expect(adopter.hasCanvasExit()).toBe(false);
+    });
+  });
+
   describe('isOrphanPenContact', () => {
     it('is orphan for a down-less pen contact', () => {
       const adopter = createPenStreamAdopter({ canvas: () => canvas, isTracked, adopt });
