@@ -11,18 +11,16 @@
   import { toolState, selectBrush, type BrushType } from '$lib/state/tool.svelte';
   import { ui, coloringBook, aiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
-  import { network } from '$lib/state/network.svelte';
   import { layout } from '$lib/state/layout.svelte';
   import {
     ACTION_BUTTON_GAP,
     ACTION_BUTTON_BASE_LANDSCAPE,
     ACTION_BUTTON_BASE_PORTRAIT,
     SETTINGS_BUTTON_RESERVE,
-    PANEL_INSET,
-    DRAWER_TOGGLE_MARGIN,
-    DRAWER_TOGGLE_SIZE,
+    PANEL_FIXED_CHROME,
     PALETTE_CLEARANCE,
     MAX_ACTION_BUTTON_COUNT,
+    isAiImageButtonVisible,
     visibleActionButtonCount,
     publishActionPanelState,
   } from '$lib/actionButtonLayout';
@@ -96,10 +94,8 @@
   // resize listener, which fires on URL-bar show/hide), so the render cap and
   // the ceiling can't disagree.
   const buttonCount = $derived(browser ? visibleActionButtonCount() : MAX_ACTION_BUTTON_COUNT);
-
-  const buttonSpread = $derived(
-    (buttonCount - 1) * ACTION_BUTTON_GAP + PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE
-  );
+  const aiImageButtonVisible = $derived(isAiImageButtonVisible());
+  const buttonSpread = $derived((buttonCount - 1) * ACTION_BUTTON_GAP + PANEL_FIXED_CHROME);
 
   const buttonSize = $derived(
     !browser
@@ -364,7 +360,7 @@
 
       <!-- AI button keeps its reactive `hidden`: its visibility also depends on a
            runtime, non-persisted signal (network.online) the head script can't
-           know pre-paint, and it defaults hidden (no access token) so there's no
+           know pre-paint, and it defaults hidden (no credential) so there's no
            first-paint flash to seed away. -->
       <button
         class="action-button"
@@ -374,7 +370,7 @@
         aria-label="Create AI image"
         aria-busy={ui.aiGenerating}
         disabled={canvasState.canvasEmpty || ui.aiGenerating}
-        hidden={!settings.aiAccessToken || !settings.aiImageEnabled || !network.online}
+        hidden={!aiImageButtonVisible}
         use:scribbleTap={handleAiImageClick}
         bind:this={aiBtnEl}
       >

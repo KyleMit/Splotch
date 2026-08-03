@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { layout } from './state/layout.svelte';
 import { network } from './state/network.svelte';
 import {
+  settings,
   setAdvancedControls,
   setAiAccessToken,
   setAiImage,
@@ -16,6 +17,7 @@ import {
 import { selectBrush } from './state/tool.svelte';
 import {
   ACTION_PANEL_LIVE_ATTRIBUTE,
+  isAiImageButtonVisible,
   visibleActionButtonCount,
   maxActionButtonScale,
   publishActionPanelState,
@@ -30,6 +32,7 @@ function resetState() {
   setUndoButton(true);
   setAiImage(true);
   setAiAccessToken('');
+  settings.aiUserApiKey = '';
   network.online = true;
 
   layout.orientation = 'landscape';
@@ -43,19 +46,33 @@ function resetState() {
 beforeEach(resetState);
 
 describe('visibleActionButtonCount', () => {
-  it('counts the five always-available buttons by default (no AI token)', () => {
-    expect(visibleActionButtonCount()).toBe(5);
-  });
+  it.each([
+    { credentialState: 'neither credential', apiKey: '', accessCode: '', visible: false },
+    { credentialState: 'a BYO key only', apiKey: 'key', accessCode: '', visible: true },
+    { credentialState: 'an access code only', apiKey: '', accessCode: 'code', visible: true },
+    { credentialState: 'both credentials', apiKey: 'key', accessCode: 'code', visible: true },
+  ])(
+    'keeps layout counting in sync with visibility for $credentialState',
+    ({ apiKey, accessCode, visible }) => {
+      settings.aiUserApiKey = apiKey;
+      setAiAccessToken(accessCode);
 
-  it('adds the AI button only when token + toggle + connectivity all hold', () => {
-    setAiAccessToken('tok');
+      expect(isAiImageButtonVisible()).toBe(visible);
+      expect(visibleActionButtonCount()).toBe(visible ? 6 : 5);
+    }
+  );
+
+  it('requires the AI toggle and connectivity even with a credential', () => {
+    settings.aiUserApiKey = 'key';
     expect(visibleActionButtonCount()).toBe(6);
 
     network.online = false;
+    expect(isAiImageButtonVisible()).toBe(false);
     expect(visibleActionButtonCount()).toBe(5);
 
     network.online = true;
     setAiImage(false);
+    expect(isAiImageButtonVisible()).toBe(false);
     expect(visibleActionButtonCount()).toBe(5);
   });
 

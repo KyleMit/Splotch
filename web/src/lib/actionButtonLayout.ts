@@ -28,6 +28,7 @@ export const SETTINGS_BUTTON_RESERVE = 64;
 export const PANEL_INSET = 8;
 export const DRAWER_TOGGLE_MARGIN = 8;
 export const DRAWER_TOGGLE_SIZE = 48;
+export const PANEL_FIXED_CHROME = PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE;
 
 // Breathing room between the top of the portrait column and the palette bar.
 export const PALETTE_CLEARANCE = 8;
@@ -45,15 +46,18 @@ export const MAX_ACTION_BUTTON_COUNT = 6;
 // actionButtonLayout.fallback.test.ts guards those literals against these
 // constants so a change here can't silently leave the CSS stale.
 export const WORST_CASE_CHROME =
-  (MAX_ACTION_BUTTON_COUNT - 1) * ACTION_BUTTON_GAP +
-  PANEL_INSET +
-  DRAWER_TOGGLE_MARGIN +
-  DRAWER_TOGGLE_SIZE;
+  (MAX_ACTION_BUTTON_COUNT - 1) * ACTION_BUTTON_GAP + PANEL_FIXED_CHROME;
 
 // Stable portrait palette-bar height the CSS portrait fallback reserves so the
 // column clears the palette on short screens (the hydrated formula subtracts
 // the measured palette height instead).
 export const PALETTE_BAR_RESERVE = 76;
+
+export function isAiImageButtonVisible(): boolean {
+  return Boolean(
+    (settings.aiAccessToken || settings.aiUserApiKey) && settings.aiImageEnabled && network.online
+  );
+}
 
 export function visibleActionButtonCount(): number {
   return (
@@ -61,7 +65,7 @@ export function visibleActionButtonCount(): number {
     (settings.strokeWidthControlEnabled ? 1 : 0) +
     (settings.coloringBookEnabled ? 1 : 0) +
     (settings.screenshotEnabled ? 1 : 0) +
-    (settings.aiAccessToken && settings.aiImageEnabled && network.online ? 1 : 0) +
+    (isAiImageButtonVisible() ? 1 : 0) +
     (settings.undoButtonEnabled ? 1 : 0)
   );
 }
