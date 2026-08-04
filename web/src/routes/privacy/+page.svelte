@@ -198,9 +198,11 @@
     color: var(--page-muted);
   }
 
-  /* The headline "no ___" promises, as a friendly card list. */
+  /* The headline "no ___" promises, as a friendly card list — the one block
+     that escapes the reading measure and fills the sheet. */
   .highlights {
     list-style: none;
+    max-width: none;
     padding: 0;
     margin: 0 0 34px;
     display: grid;
