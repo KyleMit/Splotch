@@ -403,7 +403,11 @@ public repo, wall clock is not. The Vitest suites (`test:unit` + `test:asset-gen
 run in a browser-free `unit` job, and the Playwright e2e suite runs as a three-way `--shard=N/3`
 matrix in `Tests` — each shard builds the app itself (a shared build artifact was measured slower:
 it serializes shards behind `needs:`), and each uploads its own `playwright-report-shard-N`
-artifact. The app-driver smoke rides shard 1 only.
+artifact. The app-driver smoke rides shard 1 only. With `fullyParallel` on, `--shard` deals out
+individual tests (not files) in a deterministic order, balanced by count and blind to duration — so
+the longest shard is bounded by the slowest single test, which lives among the deliberately heavy
+stress tests of `tests/flows-tile-history.spec.ts` (the header comment there explains why their cost
+is intrinsic).
 
 The `blobs-smoke` workflow needs a repo secret `ADMIN_ACCESS_TOKEN` matching the deploy's admin
 secret; without it the job fails at the login step. The iOS smoke mirrors Android but on a

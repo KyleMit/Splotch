@@ -1,3 +1,12 @@
+// The stress tests in this file are the suite's heaviest by an order of
+// magnitude, and irreducibly so: each draws up to MAX_UNDO_DEPTH real strokes
+// and steps back through every one, because depth-at-the-cap under the patch
+// budget is the claim under test. The loop count is the assertion — it cannot
+// shrink without weakening the claim, faster pointer pacing trips the engine's
+// dropped-pointer threshold (.claude/rules/testing.md), and CI sharding cannot
+// split below a single test, so the slowest test here bounds the longest e2e
+// shard. The one legitimate diet is per-stroke point density, and only with
+// proof the patch budget still trips plus a --repeat-each flake check.
 import { expect, test, type Page } from '@playwright/test';
 import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
 import {
