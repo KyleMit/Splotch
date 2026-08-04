@@ -367,9 +367,9 @@
     border-radius: var(--radius-sm);
   }
 
-  /* Cards — bordered panels on the shell's white sheet (the /privacy
-     highlights treatment), since the old sheet-on-ground drop shadow reads as
-     nothing on white-on-white. */
+  /* Cards — bordered panels in the /privacy highlights treatment: a drop
+     shadow reads as nothing when the card and the sheet share the white
+     surface, so the border is what separates them. */
   .card {
     border: 2px solid var(--admin-card-border);
     border-radius: var(--radius-lg);
