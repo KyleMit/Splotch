@@ -4,7 +4,9 @@
 full-page canvas uses generated alpha-native overlays and ordinary source-over composition. Also
 amended by [the pen/chalk fork](../../tools/asset-gen/docs/pen-chalk-fork.md): coloring pages with a
 shipped chalk outline derive their dark presentation from it instead of the shared pen, superseding
-this ADR's "no pre-generated inverted assets" clause. **Date:** 2026-07
+this ADR's "no pre-generated inverted assets" clause. Also amended by
+[ADR-0098](0098-second-token-prune-consolidated-ramps.md): `--float-shadow-flyout` folded into the
+one `--float-shadow` lift. **Date:** 2026-07
 
 ## Context
 
