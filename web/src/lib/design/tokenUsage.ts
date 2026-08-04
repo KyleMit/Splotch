@@ -38,6 +38,8 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
   fontSizeLg: 'Ledes and section headings.',
   fontSizeXl: 'Modal and card titles.',
   fontSize2xl: 'Page-level H1s.',
+  fontSizeDisplay:
+    'The standalone parent pages’ hero — PageShell’s H1, fluid from phone to desktop.',
   inputFontSize:
     'Every text input — floors the size at 16px so iOS Safari never zoom-strands the canvas (ADR-0076).',
   fontFamily: 'The app-wide sans stack; reference it, never restate it.',

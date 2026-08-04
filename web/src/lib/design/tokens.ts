@@ -75,6 +75,10 @@ export const scale = {
   fontSizeLg: '18px',
   fontSizeXl: '22px',
   fontSize2xl: '28px',
+  // The display tier above the body ramp: the standalone parent pages' hero
+  // (PageShell's H1). Fluid — 34px on a phone, 46px once the sheet has room —
+  // replacing the old fixed-size breakpoint swap.
+  fontSizeDisplay: 'clamp(34px, 3.2vw + 17px, 46px)',
 
   // Text-input font-size floor: iOS Safari / WKWebView zooms the visual
   // viewport when a focused input's font-size is < 16px, which on the

@@ -65,7 +65,8 @@ Foundations and only reach past a default when a rule says so.
 | Border    | `--border-width` (1px) — the hairline width; the color comes from a theme token (`--border`,           |
 |           | `--border-warm`, `--float-border`). Older components still write `1px solid` raw — prefer the token    |
 | Type      | `--font-size-xs/sm/md/lg/xl/2xl` (12/14/16/18/22/28px) — fine print · UI chrome · body prose ·         |
-|           | ledes/section heads · modal titles · page H1s. `--font-family`, `--font-mono`,                         |
+|           | ledes/section heads · modal titles · page H1s — plus `--font-size-display` (fluid 34–46px), the        |
+|           | standalone parent pages' PageShell hero. `--font-family`, `--font-mono`,                               |
 |           | `--font-weight-medium/semibold/bold` (500/600/700 — quiet labels · buttons/active states/sub-heads ·   |
 |           | headings; body prose stays at the untokenized 400 default)                                             |
 | Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s); two curves only — `--ease-pop` (springy overshoot:       |

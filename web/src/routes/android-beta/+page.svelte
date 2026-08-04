@@ -164,7 +164,7 @@
      {@html}, which hydration does not reconcile (.claude/rules/svelte.md). */
   .trouble :global(.beta-disclosure) {
     border: 1px solid var(--beta-row-border);
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     background: var(--beta-row);
     transition:
       background var(--duration-base) ease,
@@ -195,13 +195,13 @@
      under "How to join" and nothing marks where the sign-up path ends. */
   .trouble-label {
     margin: 0;
-    font-size: 17px;
+    font-size: var(--font-size-lg);
     font-weight: var(--font-weight-bold);
     color: var(--page-ink);
   }
 
   .trouble-sub {
-    font-size: 14px;
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     line-height: 1.45;
     color: var(--page-muted);
@@ -250,14 +250,14 @@
 
   .row h3 {
     margin: 0 0 4px;
-    font-size: 16px;
+    font-size: var(--font-size-md);
     font-weight: var(--font-weight-bold);
     color: var(--page-ink);
   }
 
   .row p {
     margin: 0;
-    font-size: 15px;
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     line-height: 1.6;
     color: var(--page-body);
@@ -287,10 +287,6 @@
   @media (max-width: 480px) {
     .trouble-sub-clause {
       display: none;
-    }
-
-    .trouble-sub {
-      font-size: 13px;
     }
   }
 </style>

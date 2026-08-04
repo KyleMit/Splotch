@@ -71,4 +71,6 @@ styleguide partials, so the guidance strings never enter the drawing route's bun
   deliberately skipped the light-only pages so their cleanup lands as one review.
 * The audit's remaining findings — the off-ramp `PageShell` type scale, whole-file raw-size opt-outs
   (`StepLedger`, `/feedback`), duration-token adoption, primitive adoption beyond the Settings
-  subtree — are downstream work, not part of this decision.
+  subtree — are downstream work, not part of this decision. (Amended 2026-08: the PageShell family
+  moved onto the ramp, adding one display-tier step above it — `--font-size-display`, the fluid
+  standalone-page hero.)

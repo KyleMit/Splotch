@@ -89,7 +89,7 @@
     background: var(--page-ground);
     padding: 32px 16px 72px;
     color: var(--page-ink);
-    font-size: 16px;
+    font-size: var(--font-size-md);
     line-height: 1.62;
     text-wrap: pretty;
   }
@@ -153,7 +153,7 @@
     flex-shrink: 0;
     white-space: nowrap;
     color: var(--page-link);
-    font-size: 15px;
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     text-decoration: none;
   }
@@ -171,9 +171,9 @@
 
   h1 {
     margin: 0;
-    font-size: 46px;
+    font-size: var(--font-size-display);
     font-weight: var(--font-weight-bold);
-    line-height: 1.06;
+    line-height: 1.08;
     letter-spacing: -0.015em;
     color: var(--page-ink);
     text-wrap: balance;
@@ -182,7 +182,7 @@
   .lede {
     margin: 16px 0 0;
     max-width: var(--page-measure);
-    font-size: 18px;
+    font-size: var(--font-size-lg);
     font-weight: var(--font-weight-medium);
     line-height: 1.6;
     color: var(--page-body);
@@ -201,13 +201,8 @@
       padding-bottom: 28px;
     }
 
-    h1 {
-      font-size: 34px;
-      line-height: 1.1;
-    }
-
     .lede {
-      font-size: 16px;
+      font-size: var(--font-size-md);
     }
   }
 </style>
