@@ -1,9 +1,10 @@
 # WebKit timing is split by cost: pull requests run multi-finger (the sole
 # encode-path exerciser) plus crayon-scribbles (mid-stroke pass splits) in a
 # job parallel to Tests, while release tags run all seven scenarios. The fast
-# subset stays below the existing Tests job's duration on the measured macOS
-# runner; Ubuntu's WebKit runtime exceeds that budget. The tag-only full run
-# buys broader path coverage without adding its cost to every change.
+# subset was sized to stay below the pre-shard Tests job's duration on the
+# measured macOS runner; Ubuntu's WebKit runtime exceeds that budget. With the
+# e2e suite sharded it is the wall-clock floor of a PR run. The tag-only full
+# run buys broader path coverage without adding its cost to every change.
 name: Tests
 
 on:
@@ -106,11 +107,14 @@ jobs:
       - name: Audit dependencies
         run: npm audit --audit-level=critical
 
-  test:
-    name: Tests
+  # No browser and no app build: these suites are pure Vitest, so putting them
+  # in the e2e job would drag them through its Playwright setup while every
+  # shard waits. Runner minutes are free on this public repo; wall clock isn't.
+  unit:
+    name: Unit tests
     if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -125,6 +129,24 @@ jobs:
       - name: Run repo-script tests
         run: npm run test:scripts
 
+  # Each shard builds the app itself rather than restoring it from a build job:
+  # a shared artifact serializes every shard behind `needs:` (measured ≈81s +
+  # tests) while concurrent per-shard builds overlap (≈69s + tests). Playwright's
+  # `--shard` self-balances by file as tests are added — no hand-kept partition.
+  test:
+    name: Tests
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node
+
       # Chromium alone: WebKit is deliberately absent, so playwright.config.ts
       # drops the webkit project and this runs Chromium only. The webkit-smoke
       # job below owns that coverage.
@@ -133,19 +155,21 @@ jobs:
           browsers: chromium
 
       - name: Run e2e tests
-        run: npm run test:e2e
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/3
 
       # The gen:* generators drive the live app through scripts/lib/app-driver.mjs
       # and never run elsewhere in CI, so this smoke keeps that module from rotting
       # silently on selector/import changes. Reuses the chromium installed above.
+      # One shard suffices — the smoke doesn't shard, it just needs to run once.
       - name: App-driver smoke
+        if: ${{ matrix.shard == 1 }}
         run: npm run test:driver:smoke
 
       - name: Upload report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: playwright-report
+          name: playwright-report-shard-${{ matrix.shard }}
           path: web/playwright-report/
           retention-days: 7
 
