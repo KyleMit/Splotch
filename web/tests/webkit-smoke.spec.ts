@@ -1,11 +1,14 @@
 import { expect, test } from '@playwright/test';
 import { draw, firstOpaquePixel, gotoApp, openSettingsModal, PICKER_GREEN } from './helpers';
+import { WEBKIT_ONLY_TAG } from './tags';
 
-// WebKit critical-path smoke — the only spec the `webkit` project runs (see
-// playwright.config.ts). The rest of the E2E suite is Chromium-only, but
-// Safari/iOS is the floor engine docs/COMPATIBILITY.md worries about most, so
-// this tiny subset proves the core toddler path — boot, draw a stroke, open
-// Settings and Color Picker dialogs — works on the WebKit engine.
+// WebKit critical-path smoke. The WEBKIT_ONLY_TAG on the describe below is what
+// routes these to the `webkit` project and out of `chromium` — the tag, not the
+// filename, so a spec's engine is declared where the spec is. The rest of the
+// E2E suite is Chromium-only, but Safari/iOS is the floor engine
+// docs/COMPATIBILITY.md worries about most, so this tiny subset proves the core
+// toddler path — boot, draw a stroke, open Settings and Color Picker dialogs —
+// works on the WebKit engine.
 //
 // Keep it small and WebKit-portable: no CDP sessions (the viewport-rotation
 // coverage in flows-coloring-book.spec.ts and flows-magic-brush.spec.ts is
@@ -14,40 +17,42 @@ import { draw, firstOpaquePixel, gotoApp, openSettingsModal, PICKER_GREEN } from
 // rasterizer. The shared helpers imported above are held to the same
 // WebKit-portable bar.
 
-test('the app boots: canvas, palette, and Settings Button render', async ({ page }) => {
-  await gotoApp(page);
-  const settingsButton = page.getByRole('button', { name: 'Settings' });
-  await expect(settingsButton).toBeVisible();
-  await expect(settingsButton.locator('[data-icon="settings"]')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Custom Color' })).toBeVisible();
-});
+test.describe('WebKit critical-path smoke', { tag: WEBKIT_ONLY_TAG }, () => {
+  test('the app boots: canvas, palette, and Settings Button render', async ({ page }) => {
+    await gotoApp(page);
+    const settingsButton = page.getByRole('button', { name: 'Settings' });
+    await expect(settingsButton).toBeVisible();
+    await expect(settingsButton.locator('[data-icon="settings"]')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Custom Color' })).toBeVisible();
+  });
 
-test('a pointer stroke puts ink on the canvas', async ({ page }) => {
-  await gotoApp(page);
-  expect(await firstOpaquePixel(page)).toBeNull();
-  await draw(page, [
-    { x: 120, y: 120 },
-    { x: 180, y: 160 },
-    { x: 240, y: 200 },
-  ]);
-  await expect.poll(() => firstOpaquePixel(page)).not.toBeNull();
-});
+  test('a pointer stroke puts ink on the canvas', async ({ page }) => {
+    await gotoApp(page);
+    expect(await firstOpaquePixel(page)).toBeNull();
+    await draw(page, [
+      { x: 120, y: 120 },
+      { x: 180, y: 160 },
+      { x: 240, y: 200 },
+    ]);
+    await expect.poll(() => firstOpaquePixel(page)).not.toBeNull();
+  });
 
-test('Settings dialog opens and closes', async ({ page }) => {
-  await gotoApp(page);
-  const modal = await openSettingsModal(page);
-  await expect(modal.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
-  await modal.getByRole('button', { name: 'Close' }).click();
-  await expect(modal).not.toBeVisible();
-});
+  test('Settings dialog opens and closes', async ({ page }) => {
+    await gotoApp(page);
+    const modal = await openSettingsModal(page);
+    await expect(modal.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
+    await modal.getByRole('button', { name: 'Close' }).click();
+    await expect(modal).not.toBeVisible();
+  });
 
-test('the Color Picker dialog opens and commits a color', async ({ page }) => {
-  await gotoApp(page);
-  await page.getByRole('button', { name: 'Custom Color' }).click();
-  const dialog = page.locator('#color-picker');
-  await expect(dialog).toBeVisible();
-  const green = dialog.locator(`.grid.landscape .hexagon[data-color="${PICKER_GREEN}"]`);
-  await green.click();
-  await expect(dialog).not.toBeVisible();
-  await expect(page.getByRole('button', { name: 'Custom Color' })).toHaveClass(/active/);
+  test('the Color Picker dialog opens and commits a color', async ({ page }) => {
+    await gotoApp(page);
+    await page.getByRole('button', { name: 'Custom Color' }).click();
+    const dialog = page.locator('#color-picker');
+    await expect(dialog).toBeVisible();
+    const green = dialog.locator(`.grid.landscape .hexagon[data-color="${PICKER_GREEN}"]`);
+    await green.click();
+    await expect(dialog).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Custom Color' })).toHaveClass(/active/);
+  });
 });

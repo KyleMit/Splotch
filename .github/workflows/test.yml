@@ -173,7 +173,7 @@ jobs:
           browsers: webkit
 
       - name: Run WebKit smoke
-        run: npm run test:e2e:webkit
+        run: npm run test:webkit:smoke
         env:
           # Assert (not just assume) the WebKit project is in the run —
           # playwright.config.ts throws if the binary is missing, so a bad cache

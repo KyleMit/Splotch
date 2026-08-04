@@ -18,7 +18,7 @@ run only on tagged releases.
 | Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`        | every push / PR                         |
 | Unit (repo scripts)   | Vitest (Node)       | `npm run test:scripts`          | every push / PR                         |
 | E2E (web)             | Playwright          | `npm run test:e2e`              | every push / PR                         |
-| E2E (WebKit subset)   | Playwright WebKit   | `npm run test:e2e:webkit`       | every push / PR (parallel job)          |
+| Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`     | every push / PR (parallel job)          |
 | Smoke (Android)       | Maestro + emulator  | `npm run test:android`          | **tagged releases only**                |
 | Smoke (iOS)           | Maestro + simulator | `npm run test:ios`              | **tagged releases only** (macOS runner) |
 | WebKit commit timing  | Playwright WebKit   | `npm run perf:undo:webkit:fast` | every PR; full suite on release tags    |
@@ -230,7 +230,7 @@ also runs on **WebKit** as the `webkit` Playwright project:
 * The project only joins the run when the WebKit binary is installed
   (`npx playwright install --with-deps webkit`) — local checkouts and cloud sessions with Chromium
   only keep working, and **CI installs WebKit explicitly** (`test.yml`), so the subset always gates
-  pushes/PRs there. Run it alone with `npm run test:e2e:webkit`.
+  pushes/PRs there. Run it alone with `npm run test:webkit:smoke`.
 * In CI it is its own `webkit-smoke` job, parallel to Tests, rather than a project inside the Tests
   run. WebKit's apt dependencies pull the whole GStreamer/ffmpeg media stack — ~110 packages the
   Chromium suite doesn't need — and unlike the browser binaries they can't be cached, so that
@@ -240,9 +240,15 @@ also runs on **WebKit** as the `webkit` Playwright project:
 * Both Ubuntu jobs get their browsers from `.github/actions/setup-playwright` (browser cache +
   `install-deps`, keyed per browser set); macOS keeps its own `setup-playwright-webkit`, which needs
   no apt step and caches elsewhere.
+* **Routing is by tag, not filename.** `WEBKIT_ONLY_TAG` (`tests/tags.ts`) sits on the spec's
+  `test.describe`; the `webkit` project `grep`s for it and `chromium` `grepInvert`s it, from the one
+  shared constant. The two projects are therefore exact complements — a test runs on exactly one
+  engine, and a tag that matches nothing fails the WebKit job with `No tests found` rather than
+  quietly demoting the spec to Chromium. To add WebKit coverage, tag it; a new spec with no tag runs
+  under Chromium wherever it lives.
 * Keep the spec WebKit-portable: no CDP sessions (the viewport-rotation and touch-synthesis helpers
   in `flows.spec.ts` are Chromium-only), no dev-harness routes, no assertions tied to Chromium's
-  rasterizer. The Chromium project ignores the spec (its coverage is already in the full suite).
+  rasterizer. Chromium skips the tagged specs — their coverage is already in the full suite.
 * `web/playwright.webkit-scratch.config.ts` stays for ad-hoc "run *any* spec under WebKit"
   debugging; it is still not part of `npm test`.
 

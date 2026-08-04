@@ -10,6 +10,7 @@ import {
   playwrightPort,
   productionPreviewCommand,
 } from './playwright.shared';
+import { WEBKIT_ONLY } from './tests/tags';
 
 // Cloud sessions cache Chromium under PLAYWRIGHT_BROWSERS_PATH, but the pinned
 // revision can drift from what playwright-core resolves (e.g. the env installed
@@ -162,9 +163,9 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      // webkit-smoke.spec.ts is the WebKit project's critical-path subset —
-      // everything it covers already runs under Chromium via the full suite.
-      testIgnore: /webkit-smoke\.spec\.ts/,
+      // Everything a WEBKIT_ONLY-tagged spec covers already runs under Chromium
+      // via the full suite, so the two projects partition on that one tag.
+      grepInvert: WEBKIT_ONLY,
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: { slowMo, executablePath: chromiumExecutablePath() },
@@ -174,7 +175,7 @@ export default defineConfig({
       ? [
           {
             name: 'webkit',
-            testMatch: /webkit-smoke\.spec\.ts/,
+            grep: WEBKIT_ONLY,
             use: { ...devices['Desktop Safari'], launchOptions: { slowMo } },
           },
         ]
