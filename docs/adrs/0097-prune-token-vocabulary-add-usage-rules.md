@@ -1,6 +1,9 @@
 # ADR-0097: Prune the token vocabulary and attach a usage rule to every token
 
-**Status:** Active **Date:** 2026-08
+**Status:** Active — the "kept deliberately" carve-outs for `--surface-warm-hover` and
+`--float-shadow-flyout` are superseded by [ADR-0098](0098-second-token-prune-consolidated-ramps.md),
+which also folded `--radius-xl`, `--font-size-2xl`, `--slider-track`, `--icon-muted-hover`, and
+`--success-accent` into their nearest neighbors. **Date:** 2026-08
 
 ## Context
 

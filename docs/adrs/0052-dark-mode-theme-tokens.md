@@ -4,7 +4,9 @@
 full-page canvas uses generated alpha-native overlays and ordinary source-over composition. Also
 amended by [the pen/chalk fork](../../tools/asset-gen/docs/pen-chalk-fork.md): coloring pages with a
 shipped chalk outline derive their dark presentation from it instead of the shared pen, superseding
-this ADR's "no pre-generated inverted assets" clause. **Date:** 2026-07
+this ADR's "no pre-generated inverted assets" clause. Also amended by
+[ADR-0098](0098-second-token-prune-consolidated-ramps.md): `--float-shadow-flyout` folded into the
+one `--float-shadow` lift. **Date:** 2026-07
 
 ## Context
 
@@ -101,9 +103,11 @@ the duplication is the accepted cost; keep the blocks in sync.
   `bookAssetPaths()` lists the shipped night fills and presentation overlays so `check-assets`
   validates them (fills and overlays have no picker thumbnails).
 * **Prominence of the float cards in dark mode.** The action buttons' warm drop shadow vanishes on
-  dark paper, so `--float-border` (a faint light hairline) + `--float-shadow` /
-  `--float-shadow-flyout` give each card a visible edge and lift in dark mode; both are
-  byte-identical to the prior light styling in light mode (transparent border + the warm shadow).
+  dark paper, so `--float-border` (a faint light hairline) + `--float-shadow` (originally with a
+  stronger flyout variant, since folded into the one lift by
+  [ADR-0098](0098-second-token-prune-consolidated-ramps.md)) give each card a visible edge and lift
+  in dark mode; both are byte-identical to the prior light styling in light mode (transparent
+  border + the warm shadow).
 * **Icons.** Monochrome Material SVGs bake in `fill="#1f1f1f"`; the CSS `fill` property beats that
   presentation attribute, so one zero-specificity rule
   (`:where(.modal-shell) :where([data-icon]:not(.icon-color):not(.icon-tinted)) svg`) re-inks them

@@ -725,7 +725,7 @@
 
   .action-button:disabled :global(.action-icon:not(.icon-color) svg),
   .action-button.disabled :global(.action-icon:not(.icon-color) svg) {
-    fill: var(--control-track-hover);
+    fill: var(--icon-muted);
   }
 
   /* Spin the loading icon while AI generation is running.

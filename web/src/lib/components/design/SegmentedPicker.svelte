@@ -105,7 +105,7 @@
     display: inline-flex;
     gap: var(--space-1);
     padding: var(--space-1);
-    background: var(--slider-track);
+    background: var(--control-track);
     border-radius: var(--radius-md);
   }
 

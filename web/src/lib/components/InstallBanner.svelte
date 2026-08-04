@@ -172,7 +172,7 @@
     padding: 14px 16px;
     background: var(--surface);
     border: 2px solid var(--brand, #ab71e1);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-lg);
     box-shadow: var(--shadow-pop);
     font-family: inherit;
   }
@@ -206,7 +206,7 @@
   @media (hover: hover) {
     .install-dismiss:hover {
       color: var(--text);
-      background: var(--surface-warm-hover);
+      background: var(--surface-hover);
       border-color: var(--border-warm-strong);
     }
   }

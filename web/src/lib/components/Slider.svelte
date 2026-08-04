@@ -193,7 +193,7 @@
     width: 100%;
     height: 28px;
     border-radius: var(--radius-pill);
-    background: var(--slider-track);
+    background: var(--control-track);
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
     overflow: hidden;
   }

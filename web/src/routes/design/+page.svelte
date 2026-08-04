@@ -87,7 +87,8 @@
         <code>--surface</code> with a <code>--border</code> hairline, <code>--radius-lg</code>
         corners, and <code>--space-4</code> padding. UI chrome is <code>--font-size-sm</code>, prose
         is <code>--font-size-md</code>, both in <code>--text</code>; headings are
-        <code>--text-strong</code> at <code>--font-weight-bold</code>. The primary action is the
+        <code>--text-strong</code> at <code>--font-weight-bold</code>; a title is
+        <code>--font-size-xl</code> unless it heads a whole page. The primary action is the
         <code>Button</code> primitive's <code>brand</code> variant. Transitions run
         <code>--duration-base</code>; anything that pops in takes <code>--ease-pop</code>. Reach
         past a default only when its rule below says so.

@@ -62,13 +62,15 @@ Foundations and only reach past a default when a rule says so.
 |           | `--brand-solid`, and every brand fill hovers through the same ramp (`--brand-solid`, then              |
 |           | `--brand-solid-hover`) — there is deliberately no second, unthemed hover step (ADR-0097)               |
 | Spacing   | `--space-1` (4px) … `--space-8` (40px), a 4px-based ramp                                               |
-| Radius    | `--radius-sm/md/lg/xl` (8/12/16/22px), `--radius-pill` — inline chips sm, controls md, cards lg,       |
-|           | sheet-scale surfaces xl, pills pill. There is no xs step                                               |
+| Radius    | `--radius-sm/md/lg` (8/12/16px), `--radius-pill` — inline chips sm, controls md, everything            |
+|           | card-sized and up (cards, modal cards, banners, page sheets) lg, pills pill. There is no xs step       |
+|           | and no xl step (ADR-0098 folded it into lg)                                                            |
 | Border    | `--border-width` (1px) — the hairline width; the color comes from a theme token (`--border`,           |
 |           | `--border-warm`, `--float-border`). Older components still write `1px solid` raw — prefer the token    |
-| Type      | `--font-size-xs/sm/md/lg/xl/2xl` (12/14/16/18/22/28px) — fine print · UI chrome · body prose ·         |
-|           | ledes/section heads · modal titles · page H1s — plus `--font-size-display` (fluid 34–46px), the        |
-|           | standalone parent pages' PageShell hero. `--font-family`, `--font-mono`,                               |
+| Type      | `--font-size-xs/sm/md/lg/xl` (12/14/16/18/22px) — fine print · UI chrome · body prose ·                |
+|           | ledes/section heads · titles (the ceiling inside any surface) — plus `--font-size-display`             |
+|           | (fluid 34–46px), the H1 of a whole page: PageShell's hero, the crash screen. There is no 2xl           |
+|           | step between them (ADR-0098). `--font-family`, `--font-mono`,                                          |
 |           | `--font-weight-medium/semibold/bold` (500/600/700 — quiet labels · buttons/active states/sub-heads ·   |
 |           | headings; body prose stays at the untokenized 400 default)                                             |
 | Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s); two curves only — `--ease-pop` (springy overshoot:       |
@@ -76,9 +78,9 @@ Foundations and only reach past a default when a rule says so.
 |           | Control-state motion (hover, press, reveal, fades) pairs a curve with a duration token; tuned          |
 |           | one-shot choreography — celebration keyframes, staged sequences like the AI reveal and polaroid        |
 |           | flight, gesture feedback — carries its own timing, whichever CSS mechanism renders it                  |
-| Elevation | `--shadow-control` (the tight lift on a small raised control — modal close disc, selected segment      |
-|           | thumb), `--shadow-pop` (deep overlay lift under modal cards); `--float-shadow`,                        |
-|           | `--float-shadow-flyout` (themed, paper cards)                                                          |
+| Elevation | Three shadows only: `--shadow-control` (the tight lift on a small raised control — modal close         |
+|           | disc, selected segment thumb), `--shadow-pop` (deep overlay lift under modal cards), and the           |
+|           | themed `--float-shadow` (everything floating on the paper — cards, flyouts, page sheets)               |
 | Fill      | `--clear-gradient-rest` — the Clear Button's at-rest red, painted identically by the                   |
 |           | drag-to-clear coachmark ghost so the tutorial can't drift from the real control. Unthemed on           |
 |           | purpose (ADR-0052): it reads the same on both papers                                                   |

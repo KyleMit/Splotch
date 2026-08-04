@@ -9,8 +9,8 @@ describe('toCssVarName', () => {
   it('maps the tricky key shapes', () => {
     expect(toCssVarName('appBg')).toBe('--app-bg');
     expect(toCssVarName('surface2')).toBe('--surface-2');
-    expect(toCssVarName('fontSize2xl')).toBe('--font-size-2xl');
-    expect(toCssVarName('radiusXl')).toBe('--radius-xl');
+    expect(toCssVarName('space1')).toBe('--space-1');
+    expect(toCssVarName('fontSizeXs')).toBe('--font-size-xs');
     expect(toCssVarName('brandSolidHover')).toBe('--brand-solid-hover');
   });
 

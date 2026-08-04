@@ -159,7 +159,7 @@
 <style>
   .parental-gate {
     width: min(92vw, 336px);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-lg);
   }
 
   .gate-content {
@@ -235,7 +235,7 @@
     width: 54px;
     height: 54px;
     flex-shrink: 0;
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-xl);
     font-weight: var(--font-weight-bold);
     /* The splat is a brand/crayon fill, so its digit wears the on-brand ink. */
     color: var(--on-brand);
@@ -257,7 +257,7 @@
     border-radius: 52% 48% 55% 45% / 45% 55% 45% 55%;
     border: 2px dashed var(--border-warm-strong);
     background: transparent;
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-xl);
     font-weight: var(--font-weight-bold);
     color: var(--brand-text);
     transition:

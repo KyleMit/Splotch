@@ -126,12 +126,12 @@
     border: none;
     border-radius: 50%;
     color: var(--text-soft);
-    background: var(--slider-track);
+    background: var(--surface);
     cursor: pointer;
   }
 
   .folder-clear:hover {
-    background: var(--control-track-hover);
+    background: var(--surface-hover);
   }
 
   :global(.folder-clear-icon) {

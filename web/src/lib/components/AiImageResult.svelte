@@ -344,7 +344,7 @@
   /* ── Saved caption (auto-save mode, replaces the Download button) ── */
   .ai-result-saved {
     margin: 0;
-    color: var(--success-accent);
+    color: var(--success-text);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     animation: downloadPop 0.4s backwards 0.25s var(--ease-pop);
@@ -359,7 +359,7 @@
        large-text size). */
     background: var(--brand-solid);
     border: none;
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-pill);
     cursor: pointer;
     display: flex;
     align-items: center;

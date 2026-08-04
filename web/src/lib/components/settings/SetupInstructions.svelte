@@ -274,7 +274,7 @@
   }
 
   .install-check {
-    color: var(--success-accent);
+    color: var(--success-text);
     font-weight: var(--font-weight-bold);
     margin-left: 8px;
     font-size: var(--font-size-lg);

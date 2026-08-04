@@ -109,7 +109,7 @@
     margin: 0 auto;
     padding: 0 var(--page-gutter) 40px;
     background: var(--page-sheet);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-lg);
     box-shadow: var(--page-shadow);
   }
 
