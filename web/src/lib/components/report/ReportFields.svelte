@@ -253,8 +253,8 @@
     margin: -2px 0 0 0;
     font-size: var(--font-size-xs);
     line-height: 1.45;
-    /* --text-soft is 3.5:1 on the light sheet — this note is fine print, but
-       fine print still owes 4.5:1. */
+    /* --text-soft, deliberately: this note is fine print, but fine print
+       still owes 4.5:1, which the soft step is pinned to hold. */
     color: var(--text-soft);
   }
 
@@ -321,8 +321,8 @@
     word-break: break-word;
   }
 
-  /* --text-soft is 2.9:1 on the panel and carries text here, so the whole
-     preview steps up to --text-soft; the key stays distinct on weight. */
+  /* The whole preview sits on --text-soft (pinned to hold 4.5:1 on the
+     panel); the key stays distinct on weight alone. */
   .report-device-key {
     color: var(--text-soft);
     font-weight: var(--font-weight-semibold);

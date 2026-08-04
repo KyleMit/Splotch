@@ -123,10 +123,10 @@
     --page-sheet: #ffffff; /* = --surface, light */
     --page-ink: #26262e; /* ~ --text-strong (#333), light */
     --page-body: #55555f; /* ~ --text (#555), light */
-    /* The spec's muted ink was #9a98a3 (~ --text-soft). That is 2.8:1 on the
-       sheet and fails WCAG AA everywhere it carries text — the wordmark, the
-       hero note, fine print, and callout labels. This is the darkest value that
-       still reads as recessive and clears 4.5:1. */
+    /* The external spec proposed #9a98a3 for the muted ink. That is 2.8:1 on
+       the sheet and fails WCAG AA everywhere it carries text — the wordmark,
+       the hero note, fine print, and callout labels. This is the darkest value
+       that still reads as recessive and clears 4.5:1. */
     --page-muted: #6c6c76; /* ~ --text-soft (#666), light */
     --page-rule: #eeeae4; /* ~ --border-warm (#ddd6cc), lightened */
     /* Darker than --brand, whose 3.4:1 fails WCAG AA for body-size text; this
