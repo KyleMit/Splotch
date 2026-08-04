@@ -54,6 +54,9 @@ test('native console /admin/native signs in via the API and manages tokens', asy
   // fallback status to the native console just as the web page data does.
   await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
   await addsAndRemovesToken(page, `e2e-native-${Date.now()}`);
+  // The native door has no usage tracking, so the ledger must drop the usage
+  // columns rather than labelling permanently blank cells.
+  await expect(page.getByRole('columnheader', { name: 'Generations' })).toHaveCount(0);
 
   // The bearer session persists in secure storage, so a reload stays signed in.
   await page.reload();

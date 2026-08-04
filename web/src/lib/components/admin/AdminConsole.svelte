@@ -89,6 +89,12 @@
 
   let submitDisabled = $derived(busy || !hydrated);
 
+  // The native front door has no usage tracking (every invite's `usage` is
+  // undefined there — see the Invite doc above), so the ledger drops the
+  // Generations / Last used columns entirely rather than labelling
+  // permanently blank cells.
+  let showUsage = $derived(invites.some((invite) => invite.usage !== undefined));
+
   // Callbacks that reject (e.g. a fetch failing offline) would otherwise be
   // unhandled rejections with no UI feedback, so catch here and surface a
   // generic message in whichever branch (login form or console) is visible.
@@ -230,12 +236,14 @@
            laid out with grid/flex, and overriding a real table's display strips
            its implicit table semantics in the major engines. The role attributes
            keep the columnheader↔cell associations no matter what the CSS does. -->
-      <div class="ledger" role="table" aria-label="Access codes">
+      <div class="ledger" class:no-usage={!showUsage} role="table" aria-label="Access codes">
         <div role="rowgroup" class="ledger-head">
           <div role="row" class="ledger-head-row">
             <span role="columnheader">Code</span>
-            <span role="columnheader">Generations</span>
-            <span role="columnheader">Last used</span>
+            {#if showUsage}
+              <span role="columnheader">Generations</span>
+              <span role="columnheader">Last used</span>
+            {/if}
             <span role="columnheader">Actions</span>
           </div>
         </div>
@@ -258,17 +266,19 @@
                 {/if}
               </div>
 
-              {#if invite.usage}
-                <span role="cell" class="cell-gens" title={usageDetail(invite.usage)}>
-                  {invite.usage.count}
-                </span>
-                <span role="cell" class="cell-last">{timeAgo(invite.usage.lastUsed)}</span>
-              {:else if invite.usage === null}
-                <span role="cell" class="cell-gens cell-none">—</span>
-                <span role="cell" class="cell-last cell-none">Never used</span>
-              {:else}
-                <span role="cell" class="cell-gens"></span>
-                <span role="cell" class="cell-last"></span>
+              {#if showUsage}
+                {#if invite.usage}
+                  <span role="cell" class="cell-gens" title={usageDetail(invite.usage)}>
+                    {invite.usage.count}
+                  </span>
+                  <span role="cell" class="cell-last">{timeAgo(invite.usage.lastUsed)}</span>
+                {:else if invite.usage === null}
+                  <span role="cell" class="cell-gens cell-none">—</span>
+                  <span role="cell" class="cell-last cell-none">Never used</span>
+                {:else}
+                  <span role="cell" class="cell-gens"></span>
+                  <span role="cell" class="cell-last"></span>
+                {/if}
               {/if}
 
               <div role="cell" class="cell-actions">
@@ -483,6 +493,12 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     overflow: hidden;
+  }
+
+  /* Without usage tracking (the native front door) the grid is just
+     Code / Actions. */
+  .ledger.no-usage {
+    --ledger-columns: 1fr 240px;
   }
 
   .ledger-head-row {
