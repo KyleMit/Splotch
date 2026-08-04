@@ -73,6 +73,9 @@ test('/feedback has no serious accessibility violations', async ({ page }) => {
 test('/design has no serious accessibility violations', async ({ page }) => {
   await page.goto('/design');
   await expect(page.getByRole('heading', { name: 'Splotch design system' })).toBeVisible();
+  // The color chips stay in scope: chipInk.ts picks black/white by WCAG
+  // contrast, so every on-fill label clears 4.5:1 (chipInk.test.ts holds the
+  // exhaustive dual-theme proof; this scan is the rendered-page check).
   await expectNoSeriousViolations(page);
 });
 

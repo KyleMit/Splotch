@@ -41,9 +41,10 @@
   }
 </script>
 
-<section>
-  <h3>Button</h3>
-  <p><code>lib/components/design/Button.svelte</code></p>
+<section id="primitives" data-sg-section>
+  <h3>Primitives</h3>
+
+  <h4>Button <code class="file-path">design/Button.svelte</code></h4>
   {#each buttonSizes as size (size)}
     <div class="button-row">
       {#each buttonVariants as variant (variant)}
@@ -52,17 +53,12 @@
       <Button variant="brand" {size} disabled>disabled</Button>
     </div>
   {/each}
-</section>
 
-<section>
-  <h3>Segmented picker</h3>
-  <p>
-    <code>lib/components/design/SegmentedPicker.svelte</code> — a control with a
-    <strong>selected state</strong> is a picker, not a <code>Button</code>. <code>mode</code> picks
-    the semantics (<code>radio</code> chooses one; <code>toggle</code> leaves deselection and
-    multi-select to the caller), <code>variant</code> the skin: the <code>segment</code> track's
-    active option reads as a raised card on <code>--shadow-control</code>, and <code>chip</code> is the
-    bordered toggle grid.
+  <h4>Segmented picker <code class="file-path">design/SegmentedPicker.svelte</code></h4>
+  <p class="sub-intro">
+    A control with a <strong>selected state</strong> is a picker, not a <code>Button</code>.
+    <code>segment</code> is the raised-thumb track; <code>chip</code> is the bordered toggle grid; radio
+    vs toggle semantics stay with the caller.
   </p>
   <div class="picker-demo">
     <SegmentedPicker
@@ -92,46 +88,46 @@
       onSelect={toggleDemoChip}
     />
   </div>
-</section>
 
-<section>
-  <h3>Status message</h3>
-  <p><code>lib/components/design/StatusMessage.svelte</code></p>
-  {#each statusMessageStatuses as status (status)}
-    <StatusMessage {status}
-      >The {status} wash, as a form shows it after a submit resolves.</StatusMessage
-    >
-  {/each}
-</section>
+  <h4>Status message <code class="file-path">design/StatusMessage.svelte</code></h4>
+  <div class="status-demo">
+    {#each statusMessageStatuses as status (status)}
+      <StatusMessage {status}
+        >The {status} wash, as a form shows it after a submit resolves.</StatusMessage
+      >
+    {/each}
+  </div>
 
-<section>
-  <h3>Disclosure</h3>
-  <p><code>lib/components/design/Disclosure.svelte</code></p>
+  <h4>Disclosure <code class="file-path">design/Disclosure.svelte</code></h4>
+  <p class="sub-intro">
+    The primitive owns the bordered shell, the hidden native marker, and the <code>›</code> chevron
+    that rotates on open. Padding, type, color, and background stay with the call site, through the
+    forwarded <code>class</code>.
+  </p>
   <Disclosure class="disclosure-demo">
-    {#snippet summary()}What does the primitive own?{/snippet}
-    <p class="disclosure-demo-body">
-      The bordered shell, the hidden native marker, and the <code>›</code> chevron that rotates on
-      open. Padding, type, color, and background stay with the call site, through the forwarded
-      <code>class</code>.
-    </p>
+    {#snippet summary()}Advanced controls{/snippet}
+    <p class="disclosure-demo-body">Help text is one calm sentence, styled by the call site.</p>
   </Disclosure>
 </section>
 
 <style>
   section {
-    margin-top: var(--space-8);
-  }
-
-  section > p {
-    max-width: 60ch;
-    margin: var(--space-2) 0 var(--space-3);
-    font-size: var(--font-size-sm);
+    margin-top: 48px;
+    scroll-margin-top: 96px;
   }
 
   h3 {
+    margin: 0 0 6px;
     color: var(--text-strong);
     font-size: var(--font-size-lg);
-    margin-bottom: var(--space-2);
+    font-weight: var(--font-weight-bold);
+  }
+
+  h4 {
+    margin: 22px 0 var(--space-1);
+    color: var(--text-strong);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
   }
 
   code {
@@ -142,7 +138,25 @@
     overflow-wrap: anywhere;
   }
 
+  .file-path {
+    font-weight: 400;
+  }
+
+  .sub-intro {
+    max-width: 62ch;
+    margin: 0 0 10px;
+    font-size: var(--font-size-sm);
+    color: var(--text-soft);
+  }
+
+  section :global(.disclosure-demo) {
+    max-width: 480px;
+  }
+
   section :global(.disclosure-demo summary) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: var(--space-3);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
@@ -152,7 +166,7 @@
 
   .disclosure-demo-body {
     margin: 0;
-    padding: 0 var(--space-3) var(--space-3);
+    padding: var(--space-3);
     font-size: var(--font-size-sm);
     line-height: 1.5;
     color: var(--text-soft);
@@ -163,7 +177,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-3);
-    margin-bottom: var(--space-3);
+    margin: 10px 0;
   }
 
   /* Settings-column width, so the specimens read at their real proportions. */
@@ -174,5 +188,12 @@
 
   .picker-demo-narrow {
     max-width: 240px;
+  }
+
+  .status-demo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    max-width: 480px;
   }
 </style>

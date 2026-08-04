@@ -152,9 +152,10 @@ component table above when you do.
 
 ## Page chrome — standalone pages
 
-Every standalone page — the link-shareable parent pages (`/privacy`, `/android-beta`, `/feedback`),
-the `/design` styleguide, and the admin console (`/admin` + `/admin/native`, via `AdminConsole`) —
-wears one shell, in **`web/src/lib/components/page/`**:
+Every standalone page — the link-shareable parent pages (`/privacy`, `/android-beta`, `/feedback`)
+and the admin console (`/admin` + `/admin/native`, via `AdminConsole`) — wears one shell, in
+**`web/src/lib/components/page/`**. The `/design` styleguide is the one standalone page with its own
+shell (sticky header + scrollspy TOC, in its route file); it still signs itself with `BrandMark`:
 
 | Component            | Use for                                                                                     |
 | -------------------- | ------------------------------------------------------------------------------------------- |
@@ -172,10 +173,10 @@ to clear 4.5:1). Read the pinned values from each route's own style block — th
 raw-value exception, not candidates for tokens. The values that must agree across the pinned pages —
 the sheet shadow — are locked by the drift guard
 `web/src/lib/components/page/pinnedPalette.test.ts`, which fails on divergence; extend it when a new
-cross-page agreement appears. Content inside the shell reads `--page-*`, never restates a color.
-`/design` and the admin console stay on the themed defaults — `/design`'s theme toggle must keep
-working, and `/admin` follows light/dark since the 2026-08 redesign — so neither forwards palette
-overrides.
+cross-page agreement appears. Content inside the shell reads `--page-*`, never restates a color. The
+admin console stays on the themed defaults — `/admin` follows light/dark since the 2026-08 redesign
+— so it forwards no palette overrides; `/design` styles itself from the themed app tokens directly,
+so its theme toggle keeps working.
 
 ## Brand & iconography
 
@@ -203,12 +204,14 @@ paper, the crayon palette, the icon set split by `COLOR_ICONS`, and the composed
 form row, callout, CTA — showing tokens assembled into real surfaces), **Components & chrome** (the
 primitives, the settings furniture `ToggleRow`/`SliderRow`, specimens of the shared `app.css` chrome
 classes, and a named index of the bespoke canvas/page chrome), and **Brand & voice** (the copy rules
-and brand marks), with a light/system/dark toggle and a jump nav. Each part's sections are partials
-in `lib/components/styleguide/` (`TokenSections` + `AssetSections` + `RecipeSections`,
-`PrimitiveSections` + `ChromeSections`, `VoiceSections`); because everything is imported from
-`tokens.ts`, `palette.ts`, and the icon glob, the page cannot drift from the implementation.
-`prerender = false` keeps the page out of the native static export — no native surface links to it —
-and serves it via SSR on the web. Use it to:
+and brand marks), under a sticky header with a binary light/dark preview toggle (the 3-way choice
+with System stays with the app Settings) and a scrollspy-driven table of contents — a sidebar on
+wide screens, a horizontally scrolling chip row on narrow ones. Each part's sections are partials in
+`lib/components/styleguide/` (`ColorSections` + `TypeSections` + `ScaleSections` + `AssetSections` +
+`RecipeSections`, `PrimitiveSections` + `ChromeSections`, `VoiceSections`); because everything is
+imported from `tokens.ts`, `palette.ts`, and the icon glob, the page cannot drift from the
+implementation. `prerender = false` keeps the page out of the native static export — no native
+surface links to it — and serves it via SSR on the web. Use it to:
 
 * review a token or primitive change in both themes (screenshot it for the PR — see the
   `pr-screenshots` skill);
