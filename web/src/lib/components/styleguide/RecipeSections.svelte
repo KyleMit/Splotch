@@ -50,7 +50,9 @@
           placeholder="splotch-1234"
           aria-describedby="recipe-input-help"
         />
-        <span class="form-help" id="recipe-input-help">We never keep a copy of your code.</span>
+        <span class="form-help" id="recipe-input-help"
+          >Saved on this device — forget it any time.</span
+        >
       </div>
     </figure>
 
