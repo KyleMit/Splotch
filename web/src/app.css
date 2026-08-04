@@ -275,7 +275,7 @@ body {
   padding: 6px;
   background: var(--float-surface);
   border: none;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--float-shadow);
   z-index: var(--z-flyout);
 }
