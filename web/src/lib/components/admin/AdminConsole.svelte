@@ -218,23 +218,31 @@
       </button>
     </form>
 
-    <div class="ledger">
-      {#if invites.length === 0}
+    {#if invites.length === 0}
+      <div class="ledger">
         <div class="empty">
           <Icon name="wand-stars" class="empty-icon" />
           <p>No access codes yet. Add one above to start handing out invites.</p>
         </div>
-      {:else}
-        <div class="ledger-head">
-          <span>Code</span>
-          <span>Generations</span>
-          <span>Last used</span>
-          <span>Actions</span>
+      </div>
+    {:else}
+      <!-- Explicit ARIA table roles, not <table> elements: the ledger's rows are
+           laid out with grid/flex, and overriding a real table's display strips
+           its implicit table semantics in the major engines. The role attributes
+           keep the columnheader↔cell associations no matter what the CSS does. -->
+      <div class="ledger" role="table" aria-label="Access codes">
+        <div role="rowgroup" class="ledger-head">
+          <div role="row" class="ledger-head-row">
+            <span role="columnheader">Code</span>
+            <span role="columnheader">Generations</span>
+            <span role="columnheader">Last used</span>
+            <span role="columnheader">Actions</span>
+          </div>
         </div>
-        <ul class="invites">
+        <div role="rowgroup" class="invites">
           {#each invites as invite (invite.token)}
-            <li class="invite">
-              <div class="invite-info">
+            <div role="row" class="invite">
+              <div role="cell" class="invite-info">
                 <span class="token">{invite.token}</span>
                 {#if invite.usage !== undefined}
                   {#if invite.usage}
@@ -251,69 +259,71 @@
               </div>
 
               {#if invite.usage}
-                <span class="cell-gens" title={usageDetail(invite.usage)}>
+                <span role="cell" class="cell-gens" title={usageDetail(invite.usage)}>
                   {invite.usage.count}
                 </span>
-                <span class="cell-last">{timeAgo(invite.usage.lastUsed)}</span>
+                <span role="cell" class="cell-last">{timeAgo(invite.usage.lastUsed)}</span>
               {:else if invite.usage === null}
-                <span class="cell-gens cell-none">—</span>
-                <span class="cell-last cell-none">Never used</span>
+                <span role="cell" class="cell-gens cell-none">—</span>
+                <span role="cell" class="cell-last cell-none">Never used</span>
               {:else}
-                <span class="cell-gens"></span>
-                <span class="cell-last"></span>
+                <span role="cell" class="cell-gens"></span>
+                <span role="cell" class="cell-last"></span>
               {/if}
 
-              <div class="cell-actions">
-                <button
-                  type="button"
-                  class="copy-btn"
-                  class:copied={copied === copyKey(invite.token, 'code')}
-                  onclick={() => copy(copyKey(invite.token, 'code'), invite.token)}
-                >
-                  {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
-                </button>
-                <button
-                  type="button"
-                  class="link-action"
-                  class:copied={copied === copyKey(invite.token, 'url')}
-                  onclick={() => copy(copyKey(invite.token, 'url'), invite.url)}
-                >
-                  {copied === copyKey(invite.token, 'url') ? 'Copied!' : 'Copy link'}
-                </button>
-                <button
-                  type="button"
-                  class="link-action link-action-danger"
-                  disabled={busy}
-                  aria-label={`Remove ${invite.token}`}
-                  onclick={() => run(() => onremove(invite.token))}
-                >
-                  Remove
-                </button>
-              </div>
+              <div role="cell" class="cell-actions">
+                <div class="wide-actions">
+                  <button
+                    type="button"
+                    class="copy-btn"
+                    class:copied={copied === copyKey(invite.token, 'code')}
+                    onclick={() => copy(copyKey(invite.token, 'code'), invite.token)}
+                  >
+                    {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
+                  </button>
+                  <button
+                    type="button"
+                    class="link-action"
+                    class:copied={copied === copyKey(invite.token, 'url')}
+                    onclick={() => copy(copyKey(invite.token, 'url'), invite.url)}
+                  >
+                    {copied === copyKey(invite.token, 'url') ? 'Copied!' : 'Copy link'}
+                  </button>
+                  <button
+                    type="button"
+                    class="link-action link-action-danger"
+                    disabled={busy}
+                    aria-label={`Remove ${invite.token}`}
+                    onclick={() => run(() => onremove(invite.token))}
+                  >
+                    Remove
+                  </button>
+                </div>
 
-              <div class="compact-actions">
-                <button
-                  type="button"
-                  class="copy-btn"
-                  class:copied={copied === copyKey(invite.token, 'code')}
-                  onclick={() => copy(copyKey(invite.token, 'code'), invite.token)}
-                >
-                  {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
-                </button>
-                <button
-                  type="button"
-                  class="more-btn"
-                  aria-label={`More options for ${invite.token}`}
-                  onclick={() => openMenu(invite)}
-                >
-                  <Icon name="more-horiz" class="more-icon" />
-                </button>
+                <div class="compact-actions">
+                  <button
+                    type="button"
+                    class="copy-btn"
+                    class:copied={copied === copyKey(invite.token, 'code')}
+                    onclick={() => copy(copyKey(invite.token, 'code'), invite.token)}
+                  >
+                    {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
+                  </button>
+                  <button
+                    type="button"
+                    class="more-btn"
+                    aria-label={`More options for ${invite.token}`}
+                    onclick={() => openMenu(invite)}
+                  >
+                    <Icon name="more-horiz" class="more-icon" />
+                  </button>
+                </div>
               </div>
-            </li>
+            </div>
           {/each}
-        </ul>
-      {/if}
-    </div>
+        </div>
+      </div>
+    {/if}
   {/if}
 </PageShell>
 
@@ -475,7 +485,7 @@
     overflow: hidden;
   }
 
-  .ledger-head {
+  .ledger-head-row {
     display: grid;
     grid-template-columns: var(--ledger-columns);
     gap: var(--space-2);
@@ -485,18 +495,12 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .ledger-head span {
+  .ledger-head-row span {
     font-size: var(--ledger-label-size);
     font-weight: var(--font-weight-bold);
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--text-soft);
-  }
-
-  .invites {
-    list-style: none;
-    padding: 0;
-    margin: 0;
   }
 
   .invite {
@@ -572,7 +576,7 @@
     font-size: var(--font-size-sm);
   }
 
-  .cell-actions {
+  .wide-actions {
     display: flex;
     align-items: center;
     gap: 14px;
@@ -707,7 +711,7 @@
     .ledger-head,
     .cell-gens,
     .cell-last,
-    .cell-actions,
+    .wide-actions,
     .add-label-full {
       display: none;
     }

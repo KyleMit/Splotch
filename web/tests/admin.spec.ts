@@ -15,8 +15,9 @@ async function addsAndRemovesToken(page: Page, token: string) {
   await page.getByRole('button', { name: 'Add code' }).click();
   await expect(page.getByText(`Added “${token}”`)).toBeVisible();
   // The invite row shows the raw token and exposes its prebuilt invite link
-  // behind a "Copy link" action (no longer rendered as a visible URL).
-  const row = page.getByRole('listitem').filter({ hasText: token });
+  // behind a "Copy link" action (no longer rendered as a visible URL). The
+  // ledger carries explicit ARIA table semantics, so rows expose role="row".
+  const row = page.getByRole('row').filter({ hasText: token });
   await expect(page.getByText(token, { exact: true })).toBeVisible();
   await expect(row.getByRole('button', { name: 'Copy link' })).toBeVisible();
 
