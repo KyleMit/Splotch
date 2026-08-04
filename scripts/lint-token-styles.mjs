@@ -29,7 +29,7 @@
 //    while keyword-only forms (font: inherit) stay legal. box-shadow was
 //    considered for the same treatment and rejected: raw shadows are
 //    dominated by the canvas-floating chrome's legitimate one-off alpha
-//    lifts (~25 sites), so a baseline would blunt the signal the way raw
+//    lifts, so a baseline would blunt the signal the way raw
 //    rgba() would for color — the elevation tokens cover the modal/settings
 //    surfaces, and rule 2 of the design skill governs the rest.
 //
