@@ -137,9 +137,9 @@
     />
   </div>
   <p>
-    A control with a <strong>selected state</strong> is a picker, not a <code>Button</code> — the theme
-    picker, the orientation segment, and the controls chips are each hand-rolled segments today (see the
-    design skill's primitives table).
+    A control with a <strong>selected state</strong> is a picker, not a <code>Button</code> — the
+    theme picker, the orientation segment, and the controls chips all render through the
+    <code>SegmentedPicker</code> primitive above.
   </p>
 </section>
 

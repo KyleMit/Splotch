@@ -6,6 +6,9 @@
   import PrimitiveSections from '$lib/components/styleguide/PrimitiveSections.svelte';
   import TokenSections from '$lib/components/styleguide/TokenSections.svelte';
   import VoiceSections from '$lib/components/styleguide/VoiceSections.svelte';
+  import SegmentedPicker, {
+    type SegmentedPickerOption,
+  } from '$lib/components/design/SegmentedPicker.svelte';
   import { applyTheme, isThemePreference, type ThemePreference } from '$lib/theme';
 
   // Start from whatever data-theme the app has already stamped on <html> (no
@@ -20,7 +23,10 @@
     applyTheme(next);
   }
 
-  const themeOptions: ThemePreference[] = ['light', 'system', 'dark'];
+  // Lowercase labels on purpose: the styleguide shows the raw preference values.
+  const themeOptions: SegmentedPickerOption<ThemePreference>[] = (
+    ['light', 'system', 'dark'] as const
+  ).map((value) => ({ value, label: value }));
 
   const parts = [
     { id: 'foundations', title: 'Foundations' },
@@ -48,21 +54,14 @@
       <code>lib/palette.ts</code>, the icon set, and the shipped components. If it's not on this
       page, it's not part of the visual language.
     </p>
-    <!-- A selected-state control is a picker, not a Button (design skill) —
-         same radiogroup segment as Settings' theme picker, restated here until
-         the shared primitive lands (issue #748 tracks the extraction). -->
-    <div class="theme-picker" role="radiogroup" aria-label="Theme">
-      {#each themeOptions as option (option)}
-        <button
-          class="theme-option"
-          class:active={theme === option}
-          role="radio"
-          aria-checked={theme === option}
-          onclick={() => setTheme(option)}
-        >
-          {option}
-        </button>
-      {/each}
+    <div class="theme-toggle">
+      <SegmentedPicker
+        label="Theme"
+        fill={false}
+        options={themeOptions}
+        selected={theme}
+        onSelect={setTheme}
+      />
     </div>
     <nav class="part-nav" aria-label="Page sections">
       On this page:
@@ -159,46 +158,8 @@
     color: var(--brand-text);
   }
 
-  /* iOS-style segmented control, matching Settings' theme picker: the active
-     segment reads as a raised card. */
-  .theme-picker {
-    display: inline-flex;
-    gap: 4px;
-    padding: 4px;
+  .theme-toggle {
     margin-top: var(--space-3);
-    background: var(--slider-track);
-    border-radius: var(--radius-md);
-  }
-
-  .theme-option {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 14px;
-    border: none;
-    border-radius: 9px;
-    background: transparent;
-    color: var(--text-soft);
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-    transition:
-      background var(--duration-fast) ease,
-      color var(--duration-fast) ease,
-      box-shadow var(--duration-fast) ease;
-  }
-
-  @media (hover: hover) {
-    .theme-option:not(.active):hover {
-      color: var(--text-strong);
-    }
-  }
-
-  .theme-option.active {
-    background: var(--surface);
-    color: var(--text-strong);
-    box-shadow: var(--shadow-control);
   }
 
   .part-nav {

@@ -104,15 +104,19 @@ corner buttons, Clear Button) keep their bespoke paper treatments, and **`/admin
 primitives are built from themed washes, which would flip on a page that is deliberately light-only
 (see the ADR-0071 amendments).
 
-| Primitive              | Use for                                                                                      |
-| ---------------------- | -------------------------------------------------------------------------------------------- |
-| `Button.svelte`        | Text-labeled actions. Variants `brand` / `wash` / `danger` / `ghost`, sizes `md` / `sm`. Not |
-|                        | for controls with a **selected state**, whether `role="radio"` (theme picker, report-kind    |
-|                        | row) or `aria-pressed` (the controls chips, the orientation segment) — those are pickers,    |
-|                        | not actions, and the primitive has no selected variant                                       |
-| `Disclosure.svelte`    | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the         |
-|                        | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`)  |
-| `StatusMessage.svelte` | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error`  |
+| Primitive                | Use for                                                                                      |
+| ------------------------ | -------------------------------------------------------------------------------------------- |
+| `Button.svelte`          | Text-labeled actions. Variants `brand` / `wash` / `danger` / `ghost`, sizes `md` / `sm`. Not |
+|                          | for controls with a **selected state** — those are pickers, not actions: use                 |
+|                          | `SegmentedPicker`. (The report-kind row stays hand-rolled on native radios so the            |
+|                          | `/feedback` form posts without JavaScript)                                                   |
+| `SegmentedPicker.svelte` | Controls with a **selected state**. `mode` = `radio` (choose-one radiogroup: the theme       |
+|                          | pickers) / `toggle` (`aria-pressed`; deselection and multi-select stay with the caller: the  |
+|                          | orientation segment, the controls chips). `variant` = `segment` (raised-thumb track) /       |
+|                          | `chip` (bordered toggle grid); sizes `md` / `sm`; `fill={false}` hugs content                |
+| `Disclosure.svelte`      | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the         |
+|                          | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`)  |
+| `StatusMessage.svelte`   | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error`  |
 
 Shared *global* patterns are classes in **`web/src/app.css`** rather than components:
 

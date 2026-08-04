@@ -11,7 +11,9 @@ import { themes, toCssVarName, type ThemeTokens } from '../src/lib/design/tokens
 
 test('theme picker exposes and updates its selected state', async ({ page }) => {
   await page.goto('/design');
-  const picker = page.getByRole('radiogroup', { name: 'Theme' });
+  // Scoped to the header: the SegmentedPicker specimens further down include
+  // their own radiogroup, whose accessible name also starts with "Theme".
+  const picker = page.locator('header').getByRole('radiogroup', { name: 'Theme' });
   const system = picker.getByRole('radio', { name: 'system' });
   const dark = picker.getByRole('radio', { name: 'dark' });
   await expect(system).toHaveAttribute('aria-checked', 'true');

@@ -2,6 +2,7 @@
   import Icon from '../Icon.svelte';
   import SplotchyIcon from '../SplotchyIcon.svelte';
   import ToggleRow from './ToggleRow.svelte';
+  import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
   import { APP_VERSION } from '$lib/appVersion';
   import {
     settings,
@@ -13,7 +14,6 @@
   } from '$lib/state/settings.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { supportsOrientationLock } from '$lib/platform';
-  import type { CommonIconName } from '../iconTypes';
 
   const showOrientationControls = supportsOrientationLock();
 
@@ -27,12 +27,7 @@
   // upright, which rotates the device out of this cramped shell and back to the
   // full settings — the old switch could only *remove* the lock.
   type LockedOrientation = 'portrait' | 'landscape';
-  const orientationOptions: {
-    value: LockedOrientation;
-    label: string;
-    icon: CommonIconName;
-    id: string;
-  }[] = [
+  const orientationOptions: SegmentedPickerOption<LockedOrientation>[] = [
     { value: 'portrait', label: 'Portrait', icon: 'mobile-portrait', id: 'quickLockPortrait' },
     { value: 'landscape', label: 'Landscape', icon: 'mobile-landscape', id: 'quickLockLandscape' },
   ];
@@ -93,22 +88,19 @@
        supportsOrientationLock) — a mini About cell so the 2×2 stays
        flush instead of leaving a hole. -->
   {#if showOrientationControls}
+    <!-- Matches the Theme picker in AppearanceSection, at the compact size so
+         the cell's height lines up with the toggle rows beside it. No segment
+         is active while rotation is unlocked, so the pair reads as "off" until
+         the parent picks a side. -->
     <div class="setting orientation-cell">
-      <div class="orient-seg" role="group" aria-label="Lock screen orientation">
-        {#each orientationOptions as option (option.value)}
-          <button
-            type="button"
-            class="orient-opt"
-            class:active={lockedOrientation === option.value}
-            id={option.id}
-            aria-pressed={lockedOrientation === option.value}
-            onclick={() => lockOrientation(option.value)}
-          >
-            <Icon name={option.icon} class="orient-opt-icon" />
-            <span>{option.label}</span>
-          </button>
-        {/each}
-      </div>
+      <SegmentedPicker
+        label="Lock screen orientation"
+        mode="toggle"
+        size="sm"
+        options={orientationOptions}
+        selected={lockedOrientation}
+        onSelect={lockOrientation}
+      />
     </div>
   {:else}
     <div class="setting about-cell">
@@ -164,58 +156,6 @@
      fill it and its height lines up with the toggle rows beside it. */
   .setting.orientation-cell {
     padding: 6px;
-  }
-
-  /* iOS-style segmented control, matching the Theme picker in AppearanceSection.
-     No segment is active while rotation is unlocked, so the pair reads as "off"
-     until the parent picks a side. */
-  .orient-seg {
-    display: flex;
-    gap: 4px;
-    padding: 4px;
-    background: var(--slider-track);
-    border-radius: var(--radius-md);
-  }
-
-  .orient-opt {
-    flex: 1;
-    min-width: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 7px 4px;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--text-soft);
-    font-family: inherit;
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-    touch-action: manipulation;
-    transition:
-      background var(--duration-fast) ease,
-      color var(--duration-fast) ease,
-      box-shadow var(--duration-fast) ease;
-  }
-
-  @media (hover: hover) {
-    .orient-opt:not(.active):hover {
-      color: var(--text-strong);
-    }
-  }
-
-  .orient-opt.active {
-    background: var(--surface);
-    color: var(--text-strong);
-    box-shadow: var(--shadow-control);
-  }
-
-  :global(.orient-opt-icon) {
-    width: 15px;
-    height: 15px;
-    flex-shrink: 0;
   }
 
   /* Non-toggle fourth cell: mirrors ToggleRow's icon + label left edge so the
