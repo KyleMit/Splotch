@@ -45,10 +45,13 @@ near-duplicate grays.** All merges move consumers to the nearest surviving token
 * **Theme palette: four merges**
   * `--surface-warm-hover` → `--surface-hover` (dark values were already identical).
   * `--slider-track` → `--control-track`: one recessed gray for every inactive track — toggle-off,
-    slider rails, segmented-picker tracks. The merged token keeps the old *slider* values (`#e9e9e9`
-    light / `#3a3a45` dark): segmented pickers set `--text-soft` labels directly on the track, and
-    only those values hold 4.5:1 under them (the toggle's old grays fail axe at 4.2:1 — the a11y
-    suite caught the first attempt at merging in the other direction).
+    slider rails, segmented-picker tracks. The two stray non-track consumers of the old grays moved
+    to their semantic tokens instead (the folder-clear disc to `--surface`/`--surface-hover`, the
+    disabled action-button icons to `--icon-muted`), so the track token's rule holds exactly. The
+    merged token keeps the old *slider* values (`#e9e9e9` light / `#3a3a45` dark): segmented pickers
+    set `--text-soft` labels directly on the track, and only those values hold 4.5:1 under them (the
+    toggle's old grays fail axe at 4.2:1 — the a11y suite caught the first attempt at merging in the
+    other direction).
   * `--icon-muted-hover` → `--icon-ink`: quiet chrome icons rest muted and hover to full ink; no
     intermediate step.
   * `--success-accent` → `--success-text`: one success green per theme. This resolves the
