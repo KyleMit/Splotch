@@ -112,7 +112,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      PW_BROWSERS: chromium webkit
+      PW_BROWSERS: chromium
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -136,32 +136,25 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          # PW_BROWSERS marks the cache generation's browser coverage — a
-          # cache without WebKit would silently skip the WebKit smoke project
-          # (playwright.config.ts drops it when the binary is absent).
+          # PW_BROWSERS keys the cache to its browser coverage, so this job and
+          # webkit-smoke can't restore each other's half-populated cache.
           key: playwright-${{ runner.os }}-${{ env.PW_BROWSERS }}-${{ steps.playwright-version.outputs.version }}
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install ${{ env.PW_BROWSERS }}
+        run: npx playwright install --with-deps ${{ env.PW_BROWSERS }}
 
-      # The browser binaries cache, but the apt packages don't, so the system
-      # libraries are installed on every run — hence the trimmed set in
-      # scripts/install-browser-deps.mjs rather than `playwright install-deps`,
-      # whose WebKit list adds ~110 packages of video codecs this app never
-      # decodes. The script verifies the WebKit bundle afterward, so a trim that
-      # goes too far fails here rather than at browser launch.
+      # The browser binaries cache, but the apt packages don't — install-deps
+      # is still required on a cache hit.
       - name: Install Playwright system deps
-        run: npm run test:e2e:deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps ${{ env.PW_BROWSERS }}
 
+      # WebKit is deliberately absent here, so playwright.config.ts drops the
+      # webkit project and this runs Chromium only. The webkit-smoke job below
+      # owns that coverage.
       - name: Run e2e tests
         run: npm run test:e2e
-        env:
-          # Assert (not just assume) the WebKit smoke project is in the run —
-          # playwright.config.ts throws if the binary is missing, so a bad
-          # cache or edited install line fails loudly instead of silently
-          # dropping WebKit coverage.
-          REQUIRE_WEBKIT: 1
 
       # The gen:* generators drive the live app through scripts/lib/app-driver.mjs
       # and never run elsewhere in CI, so this smoke keeps that module from rotting
@@ -174,6 +167,65 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-report
+          path: web/playwright-report/
+          retention-days: 7
+
+  # WebKit's apt dependencies are the expensive half of the Ubuntu browser
+  # install: `--with-deps webkit` adds the whole GStreamer/ffmpeg media stack
+  # (~110 packages / 60 MB) that Chromium doesn't need, and the browser binaries
+  # cache while the apt packages can't — so that cost lands on every run. Paying
+  # it in a job parallel to Tests, rather than inside it, keeps ~40s off the
+  # critical path for what is four tests. The alternative — hand-listing the
+  # subset of WebKit's libraries this app actually links against — was measured
+  # as the slower option and pins ~23 apt package names that churn across Ubuntu
+  # releases, which `playwright install-deps` tracks upstream for free.
+  webkit-smoke:
+    name: WebKit smoke
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PW_BROWSERS: webkit
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node
+
+      - name: Resolve Playwright version
+        id: playwright-version
+        run: node scripts/playwright-version.mjs >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ env.PW_BROWSERS }}-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps ${{ env.PW_BROWSERS }}
+
+      # The browser binaries cache, but the apt packages don't — install-deps
+      # is still required on a cache hit.
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps ${{ env.PW_BROWSERS }}
+
+      - name: Run WebKit smoke
+        run: npm run test:e2e:webkit
+        env:
+          # Assert (not just assume) the WebKit project is in the run —
+          # playwright.config.ts throws if the binary is missing, so a bad cache
+          # or edited install line fails loudly instead of silently dropping
+          # WebKit coverage.
+          REQUIRE_WEBKIT: 1
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report-webkit
           path: web/playwright-report/
           retention-days: 7
 
