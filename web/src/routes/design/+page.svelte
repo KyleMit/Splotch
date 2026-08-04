@@ -4,6 +4,7 @@
   import AssetSections from '$lib/components/styleguide/AssetSections.svelte';
   import ChromeSections from '$lib/components/styleguide/ChromeSections.svelte';
   import PrimitiveSections from '$lib/components/styleguide/PrimitiveSections.svelte';
+  import RecipeSections from '$lib/components/styleguide/RecipeSections.svelte';
   import TokenSections from '$lib/components/styleguide/TokenSections.svelte';
   import VoiceSections from '$lib/components/styleguide/VoiceSections.svelte';
   import SegmentedPicker, {
@@ -93,6 +94,7 @@
     </aside>
     <TokenSections />
     <AssetSections />
+    <RecipeSections />
   </section>
 
   <section class="part" id="components">

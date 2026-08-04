@@ -5,6 +5,8 @@ import { describe, it, expect } from 'vitest';
 // the token tests. The script's scan-and-exit path only runs when invoked
 // directly, so this import is side-effect free.
 import {
+  countRawFontSize,
+  countRawFontSizeCss,
   countRawHex,
   countRawHexCss,
   countRawZIndex,
@@ -85,5 +87,41 @@ describe('countRawZIndex', () => {
 
   it('ignores markup outside style blocks', () => {
     expect(countRawZIndex('<div style="z-index: 40"></div>')).toBe(0);
+  });
+});
+
+describe('countRawFontSize', () => {
+  it('counts raw declarations in any unit but not tokenized ones', () => {
+    const source = `<style>
+  .a { font-size: 10px; }
+  .b { font-size: 0.9em; }
+  .c { font-size: var(--font-size-sm); }
+</style>`;
+    expect(countRawFontSize(source)).toBe(2);
+  });
+
+  it('does not backtrack past the colon into counting a tokenized declaration', () => {
+    expect(countRawFontSize('<style>.a { font-size: var(--font-size-xs); }</style>')).toBe(0);
+    expect(countRawFontSize('<style>.a { font-size:var(--font-size-xs); }</style>')).toBe(0);
+  });
+
+  it('ignores custom-property declarations and references', () => {
+    const source = `<style>
+  .a { --admin-font-size: 14px; font-size: var(--admin-font-size); }
+</style>`;
+    expect(countRawFontSize(source)).toBe(0);
+  });
+
+  it('ignores values in CSS comments and markup outside style blocks', () => {
+    expect(countRawFontSize('<style>/* was font-size: 13px */ .a { color: red; }</style>')).toBe(0);
+    expect(countRawFontSize('<div style="font-size: 40px"></div>')).toBe(0);
+  });
+});
+
+describe('countRawFontSizeCss', () => {
+  it('counts a plain .css source without needing a style tag', () => {
+    expect(
+      countRawFontSizeCss('.a { font-size: 13px; } .b { font-size: var(--font-size-sm); }')
+    ).toBe(1);
   });
 });

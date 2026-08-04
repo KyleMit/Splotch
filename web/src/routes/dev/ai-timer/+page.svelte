@@ -1,6 +1,7 @@
 <script lang="ts">
   import AiImageResult from '$lib/components/AiImageResult.svelte';
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
+  import Button from '$lib/components/design/Button.svelte';
   import { ui } from '$lib/state/ui.svelte';
   import {
     startAiGeneration,
@@ -110,28 +111,28 @@
   <div class="controls">
     <div class="group">
       <span class="group-label">Presets</span>
-      <button onclick={() => play(3000)}>▶ Fast (3s)</button>
-      <button onclick={() => play(10000)}>▶ Realistic (10s)</button>
-      <button onclick={() => play(15000)}>▶ Slow / overrun (15s)</button>
+      <Button variant="brand" size="sm" onclick={() => play(3000)}>▶ Fast (3s)</Button>
+      <Button variant="brand" size="sm" onclick={() => play(10000)}>▶ Realistic (10s)</Button>
+      <Button variant="brand" size="sm" onclick={() => play(15000)}>▶ Slow / overrun (15s)</Button>
     </div>
 
     <div class="group">
       <span class="group-label">Custom — {(delayMs / 1000).toFixed(1)}s</span>
       <input type="range" min="500" max="20000" step="500" bind:value={delayMs} />
-      <button onclick={() => play()}>▶ Play</button>
+      <Button variant="brand" size="sm" onclick={() => play()}>▶ Play</Button>
     </div>
 
     <div class="group">
       <span class="group-label">Jump</span>
-      <button onclick={finishNow}>⏩ Finish now</button>
-      <button onclick={reset}>✕ Reset</button>
+      <Button variant="brand" size="sm" onclick={finishNow}>⏩ Finish now</Button>
+      <Button variant="brand" size="sm" onclick={reset}>✕ Reset</Button>
     </div>
 
     <div class="group">
       <span class="group-label">Failures</span>
-      <button onclick={triggerSafety}>🎨 Safety blocked (422)</button>
-      <button onclick={triggerServerError}>⚠ Server error (502)</button>
-      <button onclick={triggerTimeout}>⏱ Timeout</button>
+      <Button variant="brand" size="sm" onclick={triggerSafety}>🎨 Safety blocked (422)</Button>
+      <Button variant="brand" size="sm" onclick={triggerServerError}>⚠ Server error (502)</Button>
+      <Button variant="brand" size="sm" onclick={triggerTimeout}>⏱ Timeout</Button>
     </div>
   </div>
 
@@ -231,30 +232,6 @@
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
     color: var(--text-soft);
-  }
-
-  button {
-    background: var(--brand-solid);
-    color: var(--on-brand);
-    border: none;
-    border-radius: var(--radius-sm);
-    padding: 8px 14px;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-    transition:
-      background var(--duration-fast) ease,
-      transform 0.1s ease;
-  }
-  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it stuck until the next tap elsewhere. */
-  @media (hover: hover) {
-    button:hover {
-      background: var(--brand-solid-hover);
-    }
-  }
-  button:active {
-    transform: scale(0.96);
   }
 
   input[type='range'] {

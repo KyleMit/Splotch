@@ -21,8 +21,18 @@
 //    ordering inside an isolated stacking context), var(--z-…), and calc()
 //    stay legal.
 //
+// 3. Raw font-size values — a ratchet like the hex one, against
+//    FONT_SIZE_BASELINE. The type ramp (--font-size-*, --input-font-size)
+//    covers every size the app sets on purpose; a raw declaration is either a
+//    documented one-off (the baseline) or ramp drift. box-shadow was
+//    considered for the same treatment and rejected: raw shadows are
+//    dominated by the canvas-floating chrome's legitimate one-off alpha
+//    lifts (~25 sites), so a baseline would blunt the signal the way raw
+//    rgba() would for color — the elevation tokens cover the modal/settings
+//    surfaces, and rule 2 of the design skill governs the rest.
+//
 // Run via `npm run lint:tokens` (wired into the CI Quality job).
-// countRawHex and countRawZIndex are unit-tested in
+// The countRaw* seams are unit-tested in
 // web/src/lib/design/lint-token-styles.test.ts.
 
 import { readFileSync } from 'node:fs';
@@ -96,6 +106,21 @@ const BASELINE = new Map(
   })
 );
 
+// file (relative to web/src) → allowed raw font-size count, with the reason.
+const FONT_SIZE_BASELINE = new Map(
+  Object.entries({
+    // The wordmark lockup's 10px tagline — brand typography sized to the mark
+    // it locks up with, not UI text on the ramp.
+    'lib/components/page/BrandMark.svelte': 1,
+    // The reveal stage's 48px celebration emoji and the error state's 36px —
+    // pictorial glyphs scaled as art, not type.
+    'lib/components/AiImageResult.svelte': 2,
+    // The intro's inline code chips ride their sentence at 0.9em — relative to
+    // the prose around them, so a ramp step would break the lockstep.
+    'routes/dev/ai-timer/+page.svelte': 1,
+  })
+);
+
 function styledFiles(dir) {
   // Svelte components plus plain .css (app.css, the admin palette) — every
   // hand-authored stylesheet under web/src. The generated tokens.css is the
@@ -135,12 +160,29 @@ export function countRawZIndexCss(cssText) {
   return (stripCss(cssText).match(/z-index\s*:\s*-?\d{2,}/g) ?? []).length;
 }
 
+// The lookbehind keeps custom-property declarations and references out
+// (--font-size-xs: 12px, --admin-font-size: …); stripCss has already
+// collapsed var() calls, so a tokenized font-size: var(--font-size-sm)
+// reads as font-size: var() and the lookahead skips it.
+// The whitespace lives inside the lookahead: with a \s* before it, the
+// matcher would backtrack the whitespace to a position where the lookahead
+// sees " var(" and passes, counting tokenized declarations too.
+const RAW_FONT_SIZE = /(?<![\w-])font-size\s*:(?!\s*var\()/g;
+
+export function countRawFontSizeCss(cssText) {
+  return (stripCss(cssText).match(RAW_FONT_SIZE) ?? []).length;
+}
+
 export function countRawHex(source) {
   return (strippedStyles(source).match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).length;
 }
 
 export function countRawZIndex(source) {
   return (strippedStyles(source).match(/z-index\s*:\s*-?\d{2,}/g) ?? []).length;
+}
+
+export function countRawFontSize(source) {
+  return (strippedStyles(source).match(RAW_FONT_SIZE) ?? []).length;
 }
 
 async function main() {
@@ -174,11 +216,29 @@ async function main() {
           `now lower its entry in scripts/lint-token-styles.mjs so the ratchet holds.`
       );
     }
+    const fontCount = isCss ? countRawFontSizeCss(source) : countRawFontSize(source);
+    const fontAllowed = FONT_SIZE_BASELINE.get(rel) ?? 0;
+    if (fontCount > fontAllowed) {
+      problems.push(
+        `${rel}: ${fontCount} raw font-size(s) in <style> (baseline ${fontAllowed}) — use the type ramp ` +
+          `(var(--font-size-…), see the design skill); a genuine one-off needs a comment and a baseline bump here.`
+      );
+    } else if (fontCount < fontAllowed) {
+      problems.push(
+        `${rel}: ${fontCount} raw font-size(s) in <style> but baseline says ${fontAllowed} — nice, ` +
+          `now lower its entry in scripts/lint-token-styles.mjs so the ratchet holds.`
+      );
+    }
   }
 
   for (const rel of BASELINE.keys()) {
     if (!seen.has(rel)) {
-      problems.push(`${rel}: in the baseline but no longer exists — remove its entry.`);
+      problems.push(`${rel}: in the raw-hex baseline but no longer exists — remove its entry.`);
+    }
+  }
+  for (const rel of FONT_SIZE_BASELINE.keys()) {
+    if (!seen.has(rel)) {
+      problems.push(`${rel}: in the font-size baseline but no longer exists — remove its entry.`);
     }
   }
 
@@ -187,7 +247,8 @@ async function main() {
     process.exit(1);
   }
   console.log(
-    `Token style lint passed (${BASELINE.size} allowlisted raw-hex files, 0 raw z-index).`
+    `Token style lint passed (${BASELINE.size} allowlisted raw-hex files, ` +
+      `${FONT_SIZE_BASELINE.size} allowlisted raw-font-size files, 0 raw z-index).`
   );
 }
 

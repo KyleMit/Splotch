@@ -167,15 +167,16 @@ component table above when you do.
 
 `/design` — public, live at <https://splotch.art/design> — renders the whole system from the real
 source objects, in three parts ordered most-reusable-first: **Foundations** (every token group,
-paper, the crayon palette, the icon set split by `COLOR_ICONS`), **Components & chrome** (the
+paper, the crayon palette, the icon set split by `COLOR_ICONS`, and the composed **recipes** — card,
+form row, callout, CTA — showing tokens assembled into real surfaces), **Components & chrome** (the
 primitives, the settings furniture `ToggleRow`/`SliderRow`, specimens of the shared `app.css` chrome
 classes, and a named index of the bespoke canvas/page chrome), and **Brand & voice** (the copy rules
 and brand marks), with a light/system/dark toggle and a jump nav. Each part's sections are partials
-in `lib/components/styleguide/` (`TokenSections` + `AssetSections`, `PrimitiveSections` +
-`ChromeSections`, `VoiceSections`); because everything is imported from `tokens.ts`, `palette.ts`,
-and the icon glob, the page cannot drift from the implementation. `prerender = false` keeps the page
-out of the native static export — no native surface links to it — and serves it via SSR on the web.
-Use it to:
+in `lib/components/styleguide/` (`TokenSections` + `AssetSections` + `RecipeSections`,
+`PrimitiveSections` + `ChromeSections`, `VoiceSections`); because everything is imported from
+`tokens.ts`, `palette.ts`, and the icon glob, the page cannot drift from the implementation.
+`prerender = false` keeps the page out of the native static export — no native surface links to it —
+and serves it via SSR on the web. Use it to:
 
 * review a token or primitive change in both themes (screenshot it for the PR — see the
   `pr-screenshots` skill);
@@ -185,15 +186,18 @@ Use it to:
 
 Colors, type, weights, radii, easing, and the swept surfaces' spacing are migrated; **spacing
 elsewhere is not** — raw px padding/margin/gap is still the norm in older components, and only the
-hex ratchet enforces anything, so rule 2 is what governs spacing in new and edited styles. What
-remains raw beyond that is deliberate — documented one-offs (polaroid/photographic whites,
-ClearButton's unthemed danger red, confetti colors, canvas chrome, functional literals like
+hex and font-size ratchets enforce anything, so rule 2 is what governs spacing in new and edited
+styles. What remains raw beyond that is deliberate — documented one-offs (polaroid/photographic
+whites, ClearButton's unthemed danger red, confetti colors, canvas chrome, functional literals like
 ColoringBook's label reserve) and the **deliberately light-only pages** (`/admin`, `/privacy`,
 `/android-beta`): a dark theme for them was considered and declined (owner decision, recorded in the
 ADR-0071 amendment — don't re-open it). Their self-contained palettes must not use the themed color
 tokens: those flip with `data-theme`/`prefers-color-scheme` and would half-dark-theme them.
 
-CI enforces this with `npm run lint:tokens` — a per-file raw-hex ratchet whose allowlisted baseline
-(with per-file reasons) lives in `scripts/lint-token-styles.mjs`. A new raw hex color fails the
+CI enforces this with `npm run lint:tokens` — per-file raw-hex and raw-font-size ratchets whose
+allowlisted baselines (with per-file reasons) live in `scripts/lint-token-styles.mjs`, plus a
+zero-tolerance check on multi-digit raw z-index. A new raw hex color or raw `font-size` fails the
 Quality job: use a token, or (for a genuine one-off) add a WHY comment and bump the baseline. When
-you remove a one-off, lower its baseline entry so the ratchet holds.
+you remove a one-off, lower its baseline entry so the ratchet holds. box-shadow is deliberately not
+ratcheted: raw shadows are dominated by the canvas chrome's legitimate one-off alpha lifts, so a
+baseline would blunt the signal (the elevation tokens govern modal/settings surfaces via rule 2).
