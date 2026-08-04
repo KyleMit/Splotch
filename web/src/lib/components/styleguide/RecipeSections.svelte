@@ -115,7 +115,9 @@
 
   .recipe-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    /* min(100%, …) lets the single column shrink under the 280px floor on
+       narrow phones instead of forcing sideways scroll. */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
     gap: var(--space-6);
   }
 
