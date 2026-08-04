@@ -2,6 +2,7 @@
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
   import Icon from '../Icon.svelte';
+  import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
   import { SECTION_SLIDE } from './sections';
   import {
     settings,
@@ -10,17 +11,16 @@
     setTheme,
   } from '$lib/state/settings.svelte';
   import type { ThemePreference } from '$lib/theme';
-  import type { CommonIconName } from '../iconTypes';
   import { supportsOrientationLock } from '$lib/platform';
 
   // Windowed platforms (iPadOS 26+) own device orientation through their own
   // window controls and ignore in-app locks, so the toggles are hidden there.
   const showOrientationControls = supportsOrientationLock();
 
-  const themeOptions: { value: ThemePreference; label: string; icon: CommonIconName }[] = [
-    { value: 'light', label: 'Light', icon: 'theme-light' },
-    { value: 'dark', label: 'Dark', icon: 'theme-dark' },
-    { value: 'system', label: 'System', icon: 'theme-auto' },
+  const themeOptions: SegmentedPickerOption<ThemePreference>[] = [
+    { value: 'light', label: 'Light', icon: 'theme-light', id: 'themeOption-light' },
+    { value: 'dark', label: 'Dark', icon: 'theme-dark', id: 'themeOption-dark' },
+    { value: 'system', label: 'System', icon: 'theme-auto', id: 'themeOption-system' },
   ];
 </script>
 
@@ -30,21 +30,12 @@
       <Icon name="theme-auto" class="setting-icon" />
       <span class="appearance-title">Theme</span>
     </div>
-    <div class="theme-picker" role="radiogroup" aria-label="Theme">
-      {#each themeOptions as option (option.value)}
-        <button
-          class="theme-option"
-          class:active={settings.theme === option.value}
-          id="themeOption-{option.value}"
-          role="radio"
-          aria-checked={settings.theme === option.value}
-          onclick={() => setTheme(option.value)}
-        >
-          <Icon name={option.icon} class="theme-option-icon" />
-          <span>{option.label}</span>
-        </button>
-      {/each}
-    </div>
+    <SegmentedPicker
+      label="Theme"
+      options={themeOptions}
+      selected={settings.theme}
+      onSelect={setTheme}
+    />
   </div>
 
   {#if showOrientationControls}
@@ -84,53 +75,5 @@
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     color: var(--text);
-  }
-
-  /* iOS-style segmented control: the active segment reads as a raised card. */
-  .theme-picker {
-    display: flex;
-    gap: 4px;
-    padding: 4px;
-    background: var(--slider-track);
-    border-radius: var(--radius-md);
-  }
-
-  .theme-option {
-    flex: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 4px;
-    border: none;
-    border-radius: 9px;
-    background: transparent;
-    color: var(--text-soft);
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-    transition:
-      background var(--duration-fast) ease,
-      color var(--duration-fast) ease,
-      box-shadow var(--duration-fast) ease;
-  }
-
-  @media (hover: hover) {
-    .theme-option:not(.active):hover {
-      color: var(--text-strong);
-    }
-  }
-
-  .theme-option.active {
-    background: var(--surface);
-    color: var(--text-strong);
-    box-shadow: var(--shadow-control);
-  }
-
-  :global(.theme-option-icon) {
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
   }
 </style>
