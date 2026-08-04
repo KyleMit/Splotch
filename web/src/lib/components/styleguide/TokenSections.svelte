@@ -223,8 +223,10 @@
   <p>
     Two curves: the springy overshoot for anything that pops in or celebrates, the glide for
     anything that settles or leaves. Press states scale down (0.9–0.96); hovers swap to a wash or
-    hover token. Transitions pair a curve with a duration token; a one-shot celebration keyframe may
-    carry its own tuned timing. The lanes run each easing curve on a loop.
+    hover token. Control-state motion (hover, press, reveal, fades) pairs a curve with a duration
+    token; tuned one-shot choreography — celebration keyframes, staged sequences like the AI reveal
+    and the polaroid flight, gesture feedback — carries its own timing, whichever CSS mechanism
+    renders it. The lanes run each easing curve on a loop.
   </p>
   <div class="motion-lanes">
     {#each easeKeys as key (key)}

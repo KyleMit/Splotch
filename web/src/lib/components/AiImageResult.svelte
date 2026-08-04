@@ -292,7 +292,7 @@
   .preview {
     transition:
       opacity 0.5s ease,
-      filter 0.2s linear;
+      filter var(--duration-base) linear;
     transform: scale(1.04); /* hide blur bleed at edges */
   }
 
