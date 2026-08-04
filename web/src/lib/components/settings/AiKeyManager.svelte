@@ -12,6 +12,7 @@
   } from '$lib/state/settings.svelte';
   import { setAiUserApiKey } from '$lib/state/aiKey';
   import { verifyCredential } from '$lib/aiCredential';
+  import { parentalGateLink } from '$lib/actions/parentalGateLink';
   import { createLatestRequest } from '$lib/latestRequest';
   import { getPlatform, type Platform } from '$lib/platform';
 
@@ -153,7 +154,8 @@
             Open <a
               href="https://aistudio.google.com/apikey"
               target="_blank"
-              rel="noopener noreferrer">Google AI Studio</a
+              rel="noopener noreferrer"
+              use:parentalGateLink>Google AI Studio</a
             >.
           </li>
           <li>Sign in with a Google account.</li>

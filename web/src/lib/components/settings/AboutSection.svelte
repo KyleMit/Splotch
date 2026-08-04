@@ -3,6 +3,7 @@
   import SplotchyIcon from '../SplotchyIcon.svelte';
   import { APP_VERSION } from '$lib/appVersion';
   import { settings, setAdminLinkVisible } from '$lib/state/settings.svelte';
+  import { parentalGateLink } from '$lib/actions/parentalGateLink';
 
   // Hidden admin unlock: tapping the version text 5 times reveals the link to
   // the admin console. The reveal is persisted (so it survives a refresh) and
@@ -43,6 +44,7 @@
         target="_blank"
         rel="noopener noreferrer"
         aria-label="View source on GitHub"
+        use:parentalGateLink
       >
         <Icon name="github" class="github-icon" aria-label="GitHub" role="img" />
         View on GitHub

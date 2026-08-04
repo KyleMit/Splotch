@@ -21,6 +21,7 @@ export function mountBootHiddenOverlays(
       .then((module) => {
         onSettingsModal(module.SettingsModal);
         const queue = [
+          module.ParentalGate,
           module.ColorPicker,
           module.ColoringBook,
           module.AiImagePrompt,

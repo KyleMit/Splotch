@@ -7,6 +7,7 @@
 // Late mount is safe: each dialog's modalDialog $effect reads its ui.*Open
 // flag on first run, so a tap that opened one before the chunk arrived still
 // shows it the moment it mounts.
+export { default as ParentalGate } from './ParentalGate.svelte';
 export { default as ColorPicker } from './ColorPicker.svelte';
 export { default as ColoringBook } from './ColoringBook.svelte';
 export { default as SettingsModal } from './SettingsModal.svelte';

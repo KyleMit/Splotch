@@ -2,6 +2,7 @@ import { expect, type JSHandle, type Locator, type Page } from '@playwright/test
 
 import { COLOR_FAMILIES } from '../src/lib/hexPickerLayout';
 import { POINTER_RESUME_JUMP_RATIO } from '../src/lib/drawing/strokeMath';
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 // Shared E2E helpers used across specs. Keep this module WebKit-portable — no
 // CDP sessions or dev-harness routes — because webkit-smoke.spec.ts imports it
@@ -63,8 +64,25 @@ export function touchEventPrevented(
 }
 
 /** Navigate to the app and wait for hydration: the canvas mounts on the client,
- *  so once it's visible the app has hydrated. */
-export async function gotoApp(page: Page, path = '/') {
+ *  so once it's visible the app has hydrated.
+ *
+ *  The Grown-Ups Only gate (ParentalGate.svelte) fronts Settings and the AI
+ *  flow, so by default a stored unlock is seeded and specs reach those surfaces
+ *  directly; gate specs pass `gateUnlocked: false` to exercise the real flow. */
+export async function gotoApp(
+  page: Page,
+  path = '/',
+  { gateUnlocked = true }: { gateUnlocked?: boolean } = {}
+) {
+  if (gateUnlocked) {
+    await page.addInitScript(
+      ([modeKey, unlockKey]) => {
+        localStorage.setItem(modeKey, 'forever');
+        localStorage.setItem(unlockKey, 'true');
+      },
+      [STORAGE_KEYS.gateRememberMode, STORAGE_KEYS.gateUnlockedForever]
+    );
+  }
   await page.goto(path);
   await expect(page.locator('#drawingCanvas')).toBeVisible();
 }
@@ -106,7 +124,7 @@ export async function retryOpen(
 // swallowed. Waiting for the landing removes the dependency on animation
 // progress rather than timing it. Measurements and the failure it caused:
 // ADR-0078 §4a.
-async function settleFlyIn(dialog: Locator) {
+export async function settleFlyIn(dialog: Locator) {
   await dialog.evaluate((el) =>
     // A cancelled animation (the dialog closing under us) rejects `finished`;
     // that leaves nothing to wait for, which is the same answer as landing.

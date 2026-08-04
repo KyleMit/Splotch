@@ -3,6 +3,7 @@
   import StatusMessage from '../design/StatusMessage.svelte';
   import ReportFields from '../report/ReportFields.svelte';
   import { apiUrl } from '$lib/api';
+  import { parentalGateLink } from '$lib/actions/parentalGateLink';
   import { createLatestRequest } from '$lib/latestRequest';
   import { collectDeviceInfo } from '$lib/deviceInfo';
   import type { DeviceInfo } from '$lib/deviceReport';
@@ -111,8 +112,12 @@
     <StatusMessage status={status === 'error' ? 'error' : 'success'}>
       {feedback}
       {#if status === 'success' && resultUrl}
-        <a class="report-message-link" href={resultUrl} target="_blank" rel="noopener noreferrer"
-          >View your report ↗</a
+        <a
+          class="report-message-link"
+          href={resultUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          use:parentalGateLink>View your report ↗</a
         >
       {/if}
     </StatusMessage>

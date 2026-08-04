@@ -4,6 +4,7 @@
   // Generated at build time from releases/*.md (see scripts/generate-releases.mjs).
   import releases from '$lib/releases.json';
   import CurrentReleaseNotes, { RELEASE_NOTE_SECTION_COUNT } from './CurrentReleaseNotes.svelte';
+  import { parentalGateLink } from '$lib/actions/parentalGateLink';
 
   // The current release stays in-app; the complete history lives behind the
   // GitHub link so opening this low-frequency section never parses older HTML.
@@ -40,7 +41,9 @@
   {/if}
 
   <p class="all-releases">
-    <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer">See all releases →</a>
+    <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer" use:parentalGateLink
+      >See all releases →</a
+    >
   </p>
 </section>
 

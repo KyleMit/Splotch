@@ -10,6 +10,7 @@
   import { setStrokeSize, activeStrokeSize, type StrokeSize } from '$lib/state/strokeWidth.svelte';
   import { toolState, selectBrush, type BrushType } from '$lib/state/tool.svelte';
   import { ui, coloringBook, aiPrompt, buttonCenter } from '$lib/state/ui.svelte';
+  import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { browser } from '$app/environment';
   import { layout } from '$lib/state/layout.svelte';
   import {
@@ -251,15 +252,21 @@
     coloringBook.show(buttonCenter(coloringBtnEl));
   }
 
+  // The AI flow is a grown-ups area (it sends the drawing off-device), so the
+  // tap runs through the parental gate before the prompt opens or a
+  // generation starts.
   async function handleAiImageClick() {
     if (ui.aiGenerating || canvasState.canvasEmpty || !aiBtnEl) return;
 
-    if (settings.aiCustomizationEnabled) {
-      aiPrompt.show(buttonCenter(aiBtnEl));
-      return;
-    }
+    const origin = buttonCenter(aiBtnEl);
+    requireParentalGate(() => {
+      if (settings.aiCustomizationEnabled) {
+        aiPrompt.show(origin);
+        return;
+      }
 
-    generateAiImage();
+      generateAiImage();
+    }, origin);
   }
 </script>
 

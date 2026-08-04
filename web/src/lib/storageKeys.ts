@@ -27,6 +27,8 @@ export const STORAGE_KEYS = {
   installCompleted: 'splotch-install-completed',
   legacyAiUserApiKey: 'splotch-ai-user-api-key',
   saveFolderChosen: 'splotch-save-folder-chosen',
+  gateRememberMode: 'splotch-gate-remember-mode',
+  gateUnlockedForever: 'splotch-gate-unlocked',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

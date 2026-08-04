@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 
-import { retryOpen } from './helpers';
+import { retryOpen, settleFlyIn } from './helpers';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
 // Svelte component wiring (palette, action drawer, tool/stroke state, AI fetch,
@@ -18,6 +18,45 @@ export async function openDrawer(page: Page) {
     () => page.locator('button[aria-label="Expand controls"]').click({ timeout: 3000 }),
     { timeout: 20_000 }
   );
+}
+
+// Open the Grown-Ups Only gate from the AI button — its remember-honoring
+// operation boundary (ADR-0094: Settings entry itself is ungated). Requires a
+// gotoApp with `gateUnlocked: false` and a non-empty canvas (the caller draws
+// first); the AI button lives in the collapsed drawer, so open that first.
+export async function openParentalGate(page: Page) {
+  await openDrawer(page);
+  const dialog = page.locator('#parentalGate');
+  await retryOpen(dialog, () => page.locator('#aiImageButton').click({ timeout: 3000 }));
+  await settleFlyIn(dialog);
+  return dialog;
+}
+
+// Solve the currently displayed challenge: the equation row's accessible label
+// carries the operands, and typing the last digit auto-submits. Each press is
+// verified and retried: the gate flies in over the control that opened it, and
+// a click landing inside that opening tap's launch dead zone (launchGuard,
+// 72px/600ms) is swallowed by design — one unverified click can silently type
+// nothing (bit the external-link flow, whose anchor sits mid-card under the
+// keypad).
+export async function solveParentalGate(page: Page) {
+  const label = await page.locator('.gate-equation').getAttribute('aria-label');
+  const [x, y] = label!.match(/\d+/g)!.map(Number);
+  const answer = String(x * y);
+  const keypad = page.locator('.gate-keypad');
+  for (let i = 0; i < answer.length; i++) {
+    await expect(async () => {
+      await keypad.getByRole('button', { name: answer[i], exact: true }).click({ timeout: 2000 });
+      if (i < answer.length - 1) {
+        // The digit landed when its dab fills.
+        await expect(page.locator('.gate-dab.filled')).toHaveCount(i + 1, { timeout: 1000 });
+      } else {
+        // The last digit auto-submits: the keypad leaves the DOM for the
+        // success card, or the gate closes outright (forced attempts).
+        await expect(keypad).not.toBeVisible({ timeout: 1500 });
+      }
+    }).toPass({ timeout: 15_000 });
+  }
 }
 
 // Open the Brush Menu flyout and leave it open. The eraser and magic brush live

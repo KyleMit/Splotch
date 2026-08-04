@@ -32,6 +32,9 @@ appId: art.splotch.app
 # codes" subtitle renders offline (it's above the login form), so this needs no
 # network — only that /admin/native loaded and rendered instead of a blank.
 - tapOn: 'Settings'
+# Settings opens directly — it is deliberately not parentally gated (ADR-0094);
+# the Grown-Ups Only challenge sits on individual operations (the AI flow,
+# external links) instead.
 # Settings is a flat section list (SettingsModal.svelte): a hub row on a
 # phone-width WebView, a sidebar item on a tablet. Tapping "About" opens that
 # section either way — no horizontal tab swipe anymore — and the tagline proves

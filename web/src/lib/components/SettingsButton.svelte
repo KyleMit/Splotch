@@ -4,6 +4,9 @@
 
   let buttonEl: HTMLButtonElement;
 
+  // Deliberately ungated: opening Settings is not a parental gate and must
+  // never be treated as proof of adulthood (ADR-0094). Sensitive operations
+  // inside gate themselves at their own boundary.
   function openModal() {
     if (!buttonEl) return;
     settingsModal.show(buttonCenter(buttonEl));
