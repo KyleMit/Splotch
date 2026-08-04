@@ -233,7 +233,7 @@ body {
 }
 
 .corner-button-icon svg {
-  fill: var(--text-soft);
+  fill: var(--icon-muted);
   transition: fill var(--duration-base) ease;
 }
 
@@ -243,7 +243,7 @@ body {
   }
 
   .corner-button:hover .corner-button-icon svg {
-    fill: var(--text-soft);
+    fill: var(--icon-muted-hover);
   }
 }
 
