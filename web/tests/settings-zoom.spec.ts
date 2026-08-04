@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openSettingsModal } from './helpers';
+import { gotoApp, openSettingsModal } from './helpers';
 
 // Tier-2 accessibility (ADR-0076): a low-vision parent can pinch to enlarge the
 // Settings' reading content, while the drawing page itself stays
@@ -79,7 +79,7 @@ async function pinchUntilZoomed(page: Page, factor = 2): Promise<boolean> {
 }
 
 test('a two-finger pinch enlarges the pane (and intercepts the gesture)', async ({ page }) => {
-  await page.goto('/');
+  await gotoApp(page);
   await openSettingsModal(page);
 
   expect(await paneZoom(page)).toBe(1);
@@ -92,7 +92,7 @@ test('a two-finger pinch enlarges the pane (and intercepts the gesture)', async 
 test('a pinch swallows the trailing click, so it never toggles the control beneath it', async ({
   page,
 }) => {
-  await page.goto('/');
+  await gotoApp(page);
   await openSettingsModal(page);
 
   // A two-finger gesture leaves the action primed to eat the primary finger's
@@ -117,7 +117,7 @@ test('a pinch swallows the trailing click, so it never toggles the control benea
 test('a one-finger drag actually scrolls the pane (native scrolling survives)', async ({
   page,
 }) => {
-  await page.goto('/');
+  await gotoApp(page);
   await openSettingsModal(page);
 
   // Part 1: the action never intercepts a lone pointer (no zoom, no preventDefault).
@@ -158,7 +158,7 @@ test('a one-finger drag actually scrolls the pane (native scrolling survives)', 
 });
 
 test('a non-touch (mouse) pinch is ignored', async ({ page }) => {
-  await page.goto('/');
+  await gotoApp(page);
   await openSettingsModal(page);
 
   const { movePrevented } = await gestureOnPane(page, { fingers: 2, pointerType: 'mouse' });
@@ -169,7 +169,7 @@ test('a non-touch (mouse) pinch is ignored', async ({ page }) => {
 });
 
 test('navigating to another section resets the zoom', async ({ page }) => {
-  await page.goto('/');
+  await gotoApp(page);
   await openSettingsModal(page);
 
   await pinchUntilZoomed(page);
@@ -187,7 +187,7 @@ test('navigating to another section resets the zoom', async ({ page }) => {
 test('parent-facing inputs on the drawing route render ≥16px (no iOS focus-zoom)', async ({
   page,
 }) => {
-  await page.goto('/');
+  await gotoApp(page);
   await openSettingsModal(page);
 
   const fontPx = (selector: string) =>
@@ -206,7 +206,7 @@ test('parent-facing inputs on the drawing route render ≥16px (no iOS focus-zoo
 });
 
 test('closing the overlay resets the zoom for the next open', async ({ page }) => {
-  await page.goto('/');
+  await gotoApp(page);
   await openSettingsModal(page);
 
   await pinchUntilZoomed(page);

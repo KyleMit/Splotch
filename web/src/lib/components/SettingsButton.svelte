@@ -1,12 +1,16 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import { settingsModal, buttonCenter, SETTINGS_BUTTON_ID } from '$lib/state/ui.svelte';
+  import { requireParentalGate } from '$lib/state/parentalGate.svelte';
 
   let buttonEl: HTMLButtonElement;
 
+  // Settings is a grown-ups area, so the tap runs through the parental gate;
+  // both the gate and Settings fly in from the gear.
   function openModal() {
     if (!buttonEl) return;
-    settingsModal.show(buttonCenter(buttonEl));
+    const origin = buttonCenter(buttonEl);
+    requireParentalGate(() => settingsModal.show(origin), origin);
   }
 </script>
 

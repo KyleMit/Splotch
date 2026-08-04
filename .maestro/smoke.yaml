@@ -32,10 +32,30 @@ appId: art.splotch.app
 # codes" subtitle renders offline (it's above the login form), so this needs no
 # network — only that /admin/native loaded and rendered instead of a blank.
 - tapOn: 'Settings'
+# The Grown-Ups Only parental gate (ParentalGate.svelte) fronts Settings on a
+# fresh install: read the equation from the row's accessible label, compute the
+# product, and type it on the keypad. The digit visuals inside the equation are
+# aria-hidden, so the only tappable digits in the accessibility tree are the
+# keypad keys.
+- extendedWaitUntil:
+    visible: 'What is .*'
+    timeout: 15000
+- copyTextFrom: 'What is .*'
+- evalScript: ${output.gateAnswer = String(maestro.copiedText.match(/\d+/g)[0] * maestro.copiedText.match(/\d+/g)[1])}
+- tapOn: ${output.gateAnswer[0]}
+- runFlow:
+    when:
+      true: ${output.gateAnswer.length > 1}
+    commands:
+      - tapOn: ${output.gateAnswer[1]}
 # Settings is a flat section list (SettingsModal.svelte): a hub row on a
 # phone-width WebView, a sidebar item on a tablet. Tapping "About" opens that
 # section either way — no horizontal tab swipe anymore — and the tagline proves
-# we landed on it.
+# we landed on it. The gate's success card holds briefly before Settings opens;
+# the wait rides that out.
+- extendedWaitUntil:
+    visible: 'About'
+    timeout: 15000
 - tapOn: 'About'
 - assertVisible: 'A joyful.*'
 - takeScreenshot: .maestro/screenshots/smoke-about

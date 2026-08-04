@@ -2,6 +2,7 @@ import { expect, type JSHandle, type Locator, type Page } from '@playwright/test
 
 import { COLOR_FAMILIES } from '../src/lib/hexPickerLayout';
 import { POINTER_RESUME_JUMP_RATIO } from '../src/lib/drawing/strokeMath';
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 // Shared E2E helpers used across specs. Keep this module WebKit-portable — no
 // CDP sessions or dev-harness routes — because webkit-smoke.spec.ts imports it
@@ -63,8 +64,25 @@ export function touchEventPrevented(
 }
 
 /** Navigate to the app and wait for hydration: the canvas mounts on the client,
- *  so once it's visible the app has hydrated. */
-export async function gotoApp(page: Page, path = '/') {
+ *  so once it's visible the app has hydrated.
+ *
+ *  The Grown-Ups Only gate (ParentalGate.svelte) fronts Settings and the AI
+ *  flow, so by default a stored unlock is seeded and specs reach those surfaces
+ *  directly; gate specs pass `gateUnlocked: false` to exercise the real flow. */
+export async function gotoApp(
+  page: Page,
+  path = '/',
+  { gateUnlocked = true }: { gateUnlocked?: boolean } = {}
+) {
+  if (gateUnlocked) {
+    await page.addInitScript(
+      ([modeKey, unlockKey]) => {
+        localStorage.setItem(modeKey, 'forever');
+        localStorage.setItem(unlockKey, 'true');
+      },
+      [STORAGE_KEYS.gateRememberMode, STORAGE_KEYS.gateUnlockedForever]
+    );
+  }
   await page.goto(path);
   await expect(page.locator('#drawingCanvas')).toBeVisible();
 }
@@ -124,6 +142,28 @@ export async function openSettingsModal(page: Page) {
   );
   await settleFlyIn(modal);
   return modal;
+}
+
+// Open the Grown-Ups Only gate from the Settings gear (requires a gotoApp with
+// `gateUnlocked: false` — otherwise the gear skips straight to Settings). Same
+// idle-mount retry story as openSettingsModal.
+export async function openParentalGate(page: Page) {
+  const dialog = page.locator('#parentalGate');
+  await retryOpen(dialog, () =>
+    page.getByRole('button', { name: 'Settings' }).click({ timeout: 3000 })
+  );
+  await settleFlyIn(dialog);
+  return dialog;
+}
+
+// Solve the currently displayed challenge: the equation row's accessible label
+// carries the operands, and typing the last digit auto-submits.
+export async function solveParentalGate(page: Page) {
+  const label = await page.locator('.gate-equation').getAttribute('aria-label');
+  const [x, y] = label!.match(/\d+/g)!.map(Number);
+  for (const digit of String(x * y)) {
+    await page.locator('.gate-keypad').getByRole('button', { name: digit, exact: true }).click();
+  }
 }
 
 // How much of the engine's dropped-pointer jump threshold one dispatched sample

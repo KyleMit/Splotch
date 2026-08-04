@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { adminConsole, signInToAdmin } from './admin-helpers';
-import { openSettingsModal } from './helpers';
+import { gotoApp, openParentalGate, openSettingsModal } from './helpers';
 
 // Axe-core scans the adult-facing surfaces (issue #458): /privacy,
 // /android-beta, /feedback, /design, /admin (both auth states), and the
@@ -97,11 +97,17 @@ test('/admin logged in has no serious accessibility violations', async ({ page }
 });
 
 test('Settings has no serious accessibility violations', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  await gotoApp(page);
   await openSettingsModal(page);
 
   await expectNoSeriousViolations(page, '#settingsModal');
+});
+
+test('the parental gate has no serious accessibility violations', async ({ page }) => {
+  await gotoApp(page, '/', { gateUnlocked: false });
+  await openParentalGate(page);
+
+  await expectNoSeriousViolations(page, '#parentalGate');
 });
 
 // Axe reports the dialog's color-contrast checks as incomplete (bgOverlap), so
@@ -125,8 +131,7 @@ function parseRgb(value: string): [number, number, number] {
 }
 
 test('the active Settings nav item holds WCAG AA contrast', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  await gotoApp(page);
   await openSettingsModal(page);
 
   const active = page.locator('.settings-nav-item.active').first();
