@@ -49,7 +49,9 @@ For each decision found in Step 1 that is not already covered by an existing ADR
 
 * Confirm it meets the bar (see `/create-adr` for criteria).
 * Write the new ADR file following the template from `/create-adr`.
-* Use the next available four-digit number.
+* Allocate the number with the canonical base-aware procedure in `/create-adr` step 4. Never take
+  the lowest unused number — that reissues a gap left by a moved or retired record, such as
+  `0053`–`0056`.
 * Slot a row into the matching area section of the tiered index in `docs/adrs/README.md` (see
   `/create-adr` for where a new row belongs).
 
