@@ -235,8 +235,11 @@ also runs on **WebKit** as the `webkit` Playwright project:
   run. WebKit's apt dependencies pull the whole GStreamer/ffmpeg media stack — ~110 packages the
   Chromium suite doesn't need — and unlike the browser binaries they can't be cached, so that
   install lands on every run. Off the critical path it costs nothing; inside Tests it cost ~40s per
-  run for four tests. That's also why the Tests job's `PW_BROWSERS` is Chromium alone: it *relies*
-  on WebKit being absent so the project drops.
+  run for four tests. That's also why Tests passes `browsers: chromium` to the `setup-playwright`
+  action: it *relies* on WebKit being absent so the project drops.
+* Both Ubuntu jobs get their browsers from `.github/actions/setup-playwright` (browser cache +
+  `install-deps`, keyed per browser set); macOS keeps its own `setup-playwright-webkit`, which needs
+  no apt step and caches elsewhere.
 * Keep the spec WebKit-portable: no CDP sessions (the viewport-rotation and touch-synthesis helpers
   in `flows.spec.ts` are Chromium-only), no dev-harness routes, no assertions tied to Chromium's
   rasterizer. The Chromium project ignores the spec (its coverage is already in the full suite).

@@ -111,8 +111,6 @@ jobs:
     if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      PW_BROWSERS: chromium
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -127,32 +125,13 @@ jobs:
       - name: Run repo-script tests
         run: npm run test:scripts
 
-      - name: Resolve Playwright version
-        id: playwright-version
-        run: node scripts/playwright-version.mjs >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # Chromium alone: WebKit is deliberately absent, so playwright.config.ts
+      # drops the webkit project and this runs Chromium only. The webkit-smoke
+      # job below owns that coverage.
+      - uses: ./.github/actions/setup-playwright
         with:
-          path: ~/.cache/ms-playwright
-          # PW_BROWSERS keys the cache to its browser coverage, so this job and
-          # webkit-smoke can't restore each other's half-populated cache.
-          key: playwright-${{ runner.os }}-${{ env.PW_BROWSERS }}-${{ steps.playwright-version.outputs.version }}
+          browsers: chromium
 
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps ${{ env.PW_BROWSERS }}
-
-      # The browser binaries cache, but the apt packages don't — install-deps
-      # is still required on a cache hit.
-      - name: Install Playwright system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps ${{ env.PW_BROWSERS }}
-
-      # WebKit is deliberately absent here, so playwright.config.ts drops the
-      # webkit project and this runs Chromium only. The webkit-smoke job below
-      # owns that coverage.
       - name: Run e2e tests
         run: npm run test:e2e
 
@@ -184,33 +163,14 @@ jobs:
     if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      PW_BROWSERS: webkit
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: ./.github/actions/setup-node
 
-      - name: Resolve Playwright version
-        id: playwright-version
-        run: node scripts/playwright-version.mjs >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - uses: ./.github/actions/setup-playwright
         with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ env.PW_BROWSERS }}-${{ steps.playwright-version.outputs.version }}
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps ${{ env.PW_BROWSERS }}
-
-      # The browser binaries cache, but the apt packages don't — install-deps
-      # is still required on a cache hit.
-      - name: Install Playwright system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps ${{ env.PW_BROWSERS }}
+          browsers: webkit
 
       - name: Run WebKit smoke
         run: npm run test:e2e:webkit
