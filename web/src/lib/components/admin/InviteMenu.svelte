@@ -33,7 +33,12 @@
   }
 </script>
 
-<dialog class="more-menu modal-dialog modal-shell" bind:this={menuEl} onclick={onMenuClick} {onclose}>
+<dialog
+  class="more-menu modal-dialog modal-shell"
+  bind:this={menuEl}
+  onclick={onMenuClick}
+  {onclose}
+>
   {#if invite}
     {@const inv = invite}
     <div class="more-menu-card">
