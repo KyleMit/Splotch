@@ -4,7 +4,12 @@ import { describe, it, expect } from 'vitest';
 // counting logic is the gate's only real logic, so it's pinned here beside
 // the token tests. The script's scan-and-exit path only runs when invoked
 // directly, so this import is side-effect free.
-import { countRawHex, countRawZIndex } from '../../../../scripts/lint-token-styles.mjs';
+import {
+  countRawHex,
+  countRawHexCss,
+  countRawZIndex,
+  countRawZIndexCss,
+} from '../../../../scripts/lint-token-styles.mjs';
 
 describe('countRawHex', () => {
   it('counts hex colors only inside <style> blocks', () => {
@@ -42,6 +47,22 @@ describe('countRawHex', () => {
 
   it('returns 0 for a component with no style block', () => {
     expect(countRawHex('<p>hello #333</p>')).toBe(0);
+  });
+});
+
+describe('countRawHexCss', () => {
+  it('counts a plain .css source without needing a style tag', () => {
+    expect(countRawHexCss('.admin-page { --admin-accent: #7c4dcf; color: #333; }')).toBe(2);
+  });
+
+  it('still ignores comments and var() fallbacks', () => {
+    expect(countRawHexCss('/* was #999 */ .a { color: var(--text, #333); border: #ddd; }')).toBe(1);
+  });
+});
+
+describe('countRawZIndexCss', () => {
+  it('catches multi-digit literals in a plain .css source', () => {
+    expect(countRawZIndexCss('.a { z-index: 900; } .b { z-index: var(--z-panel); }')).toBe(1);
   });
 });
 

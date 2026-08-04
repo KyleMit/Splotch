@@ -35,6 +35,7 @@
   import Icon from '../Icon.svelte';
   import Breadcrumb from '../Breadcrumb.svelte';
   import InviteMenu from './InviteMenu.svelte';
+  import './adminPalette.css';
   import { timeAgo, usageDetail } from '$lib/adminFormat';
 
   let {
@@ -328,47 +329,15 @@
 </div>
 
 <style>
-  /* Colors here are deliberately raw: the admin console is a light-only
-     surface with its own accent palette (the #7c4dcf family, chosen for WCAG
-     AA over the failing --brand). The themed color tokens flip with
-     data-theme / prefers-color-scheme, so adopting them would half-dark-theme
-     this page. Scale tokens (font sizes, radii, durations) are safe and used
-     below; theming /admin is a separate decision. */
+  /* The console styles itself from the light-pinned --admin-* palette in
+     adminPalette.css (imported above; see its header for the light-only
+     rationale). Scale tokens (font sizes, radii, durations) are theme-safe
+     and used directly. */
 
   /* A full-viewport scroll panel with its own light background. The admin console
      is a normal scrollable, selectable, zoomable document — the drawing-route
      app-surface locks (app.css) don't reach this route, so no opt-out is needed. */
   .admin-page {
-    /* The WCAG-tuned accent family (darker than --brand, whose 3.4:1 fails
-       AA under white text). */
-    --admin-accent: #7c4dcf;
-    --admin-accent-hover: #6b3fbe;
-    --admin-accent-tint: #f5f0fc;
-    --admin-accent-tint-strong: #f0e9fb;
-    --admin-accent-tint-hover: #ece0fb;
-    /* Grounds and inks, pinned to the light theme values they mirror. */
-    --admin-ground: #f5f5f5; /* = --app-bg, light */
-    --admin-sheet: #ffffff; /* = --surface, light */
-    --admin-on-accent: #fff; /* = --on-brand */
-    --admin-ink: #333; /* = --text-strong, light */
-    --admin-ink-muted: #666; /* = --text-soft, light */
-    --admin-hairline: #f0f0f0;
-    --admin-line: #ddd; /* input borders, separator glyphs */
-    /* The app's semantic wash pairs, pinned at their light values so the
-       console's banners and buttons agree with StatusMessage and the danger
-       chrome everywhere else. */
-    --admin-success-wash: #e9f7ec; /* = --success-wash, light */
-    --admin-success-ink: #2e7d4f; /* = --success-text, light */
-    --admin-danger-wash: #fdecec; /* = --danger-wash, light */
-    --admin-danger-ink: #b04a4a; /* = --danger-text, light */
-    --admin-danger-wash-hover: #fbe0de;
-    /* Warning amber — no app token yet; the persistence banner is the only
-       warning surface in the product. */
-    --admin-warn-wash: #fffaeb;
-    --admin-warn-ink: #93600b;
-    --admin-warn-border: #fce5a8;
-    --admin-warn-chip: #fdefc7;
-
     position: fixed;
     inset: 0;
     overflow-y: auto;
