@@ -37,12 +37,14 @@ privacy — is plain, professional, and direct ("We never keep a copy of your ke
 
 * **Sentence case everywhere** — buttons, labels, headings ("Clear drawing", "Save screenshot").
   Title Case only for proper feature names (Night Mode, Advanced Controls, Guided Access).
-* **"You" is the parent, "they"/"kids" is the child.** First-person-plural "we" for the maker's
-  promises.
-* **No emoji in UI chrome.** One documented exception: `/privacy` uses emoji as friendly bullet
-  leads on its "no ___" highlight cards — legal copy softened for a 30-second parent skim.
+* **No emoji in UI chrome — anywhere.** The one historical exception (`/privacy` used emoji as
+  friendly bullet leads on its "no ___" highlight cards) was retired in the 2026-08 privacy
+  redesign: list leads that want warmth get a crayon pill (`CrayonStrip` vocabulary, hues via
+  `paletteHex`) instead. Don't reintroduce the exception.
 * **Short, concrete, reassuring.** Feature bullets lead with verbs ("Draw with big, chunky,
   crayon-like strokes"); Settings help text is one calm sentence.
+* **"You" is the parent, "they"/"kids" is the child.** First-person-plural "we" for the maker's
+  promises.
 * **Honest about tradeoffs** — copy explains *why* ("so playtime stays in Splotch").
 
 ## Token vocabulary
@@ -144,6 +146,27 @@ not a wrapper component, which the bespoke-paper-treatment carve-out above rules
 
 **Extract a new primitive at the third duplicate**, not before — and add it to `/design` and the
 component table above when you do.
+
+## Page chrome — standalone parent pages
+
+The link-shareable parent pages (`/privacy`, `/android-beta`, `/feedback`) wear one shell, in
+**`web/src/lib/components/page/`**:
+
+| Component            | Use for                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------- |
+| `PageShell.svelte`   | The whole page frame: ground, centered 880px sheet, masthead (back link + `BrandMark`),     |
+|                      | hero H1 + lede. Exposes the `--page-*` palette (ground/sheet/ink/body/muted/rule/link/      |
+|                      | accent/shadow/measure/gutter, plus hover and on-accent variants), defaulting to the themed  |
+|                      | app tokens                                                                                  |
+| `RuleLabel.svelte`   | The small-caps section marker with a hairline running to the sheet edge — a real `<h2>`     |
+| `BrandMark.svelte`   | Crayon strip + small-caps wordmark lockup (the masthead's second way home)                  |
+| `CrayonStrip.svelte` | (in `lib/components/`) Seven rainbow pills, hues via `paletteHex` — decorative, aria-hidden |
+
+**Light-only pages pin the whole `--page-*` palette** on the class forwarded to `PageShell`
+(`/privacy` and `/android-beta` pin the same values, including a link purple darkened past `--brand`
+to clear 4.5:1). Read the pinned values from each route's own style block — they are the documented
+raw-value exception, not candidates for tokens. Content inside the shell reads `--page-*`, never
+restates a color.
 
 ## Brand & iconography
 
