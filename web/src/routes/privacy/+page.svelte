@@ -9,10 +9,26 @@
 
   import PageShell from '$lib/components/page/PageShell.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
+  import { paletteHex, type PaletteLabel } from '$lib/palette';
 
   const LAST_UPDATED = 'July 28, 2026';
   // Splotch has no email; questions/concerns go through GitHub issues.
   const CONTACT_URL = 'https://github.com/KyleMit/Splotch/issues/new/choose';
+
+  // The headline promises, each led by a crayon chip in the brand rainbow —
+  // the same visual vocabulary as the masthead's CrayonStrip.
+  const HIGHLIGHTS: { label: PaletteLabel; lead: string; body: string }[] = [
+    { label: 'Red', lead: 'No ads.', body: 'Ever. None.' },
+    { label: 'Orange', lead: 'No tracking.', body: "We don't follow you around the internet." },
+    { label: 'Yellow', lead: 'No accounts.', body: 'No sign-up, no login, no passwords.' },
+    { label: 'Green', lead: 'No analytics.', body: 'No third-party trackers or SDKs.' },
+    {
+      label: 'Blue',
+      lead: 'No background collection.',
+      body: 'The only info we ever receive is what a grown-up turns on or sends us — a magic-image request, or a bug report.',
+    },
+    { label: 'Purple', lead: 'Works offline.', body: 'Drawing happens entirely on your device.' },
+  ];
 </script>
 
 <svelte:head>
@@ -30,21 +46,21 @@
       version is easy to remember.
     {/snippet}
 
-    <p class="updated">Last updated: {LAST_UPDATED}</p>
+    <!-- RuleLabel's hairline is terminal (::after), so this variant with the
+         date sitting flush right after the rule is inlined here instead. -->
+    <h2 class="short-version">
+      <span>The short version</span>
+      <span class="rule" aria-hidden="true"></span>
+      <span class="updated">Last updated {LAST_UPDATED}</span>
+    </h2>
 
-    <!-- Emoji as friendly bullet leads is this page's one documented exception
-         to the no-emoji rule (design skill, Voice & copy) — legal copy softened
-         for a 30-second parent skim. -->
     <ul class="highlights">
-      <li><strong>🚫 No ads.</strong> Ever. None.</li>
-      <li><strong>🙈 No tracking.</strong> We don't follow you around the internet.</li>
-      <li><strong>👤 No accounts.</strong> No sign-up, no login, no passwords.</li>
-      <li><strong>📊 No analytics.</strong> No third-party trackers or SDKs.</li>
-      <li>
-        <strong>🗂️ No background collection.</strong> The only info we ever receive is what a grown-up
-        turns on or sends us — a magic-image request, or a bug report.
-      </li>
-      <li><strong>✈️ Works offline.</strong> Drawing happens entirely on your device.</li>
+      {#each HIGHLIGHTS as { label, lead, body } (label)}
+        <li>
+          <span class="chip" aria-hidden="true" style:background={paletteHex(label)}></span>
+          <span><strong>{lead}</strong> {body}</span>
+        </li>
+      {/each}
     </ul>
 
     <RuleLabel>The details</RuleLabel>
@@ -185,38 +201,78 @@
     --page-shadow: 0 1px 2px rgba(93, 84, 68, 0.05), 0 10px 30px rgba(93, 84, 68, 0.07);
   }
 
-  /* The highlight cards' brand-tinted wash, pinned like the palette above
-     (~ --brand-wash light, with a border that has no token equivalent). */
+  /* The highlight panel's brand-tinted strokes, pinned like the palette above
+     (~ --brand-wash light; neither has a token equivalent). */
   .privacy {
-    --privacy-card: #f7f2fd;
     --privacy-card-border: #eadcfa;
+    --privacy-row-rule: #f3eefb;
   }
 
-  .updated {
-    margin: 0 0 18px;
-    font-size: var(--font-size-sm);
+  /* RuleLabel's look with the last-updated date flush right after the hairline.
+     flex-wrap lets the date drop under the rule rather than squeeze the label;
+     the rule's min-width forces that wrap before the date crowds in. */
+  .short-version {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    margin: 0;
+    padding-bottom: 22px;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
     color: var(--page-muted);
   }
 
-  /* The headline "no ___" promises, as a friendly card list — the one block
-     that escapes the reading measure and fills the sheet. */
+  .short-version .rule {
+    flex: 1;
+    min-width: var(--space-8);
+    height: var(--border-width);
+    background: var(--page-rule);
+  }
+
+  .short-version .updated {
+    text-transform: none;
+    font-weight: var(--font-weight-medium);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  /* The headline "no ___" promises, as a bordered checklist whose rows lead
+     with crayon chips — the one block that escapes the reading measure and
+     fills the sheet. */
   .highlights {
     list-style: none;
     max-width: none;
-    padding: 0;
-    margin: 0 0 34px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 10px;
+    padding: var(--space-1) 22px;
+    margin: 0 0 var(--space-8);
+    border: 2px solid var(--privacy-card-border);
+    border-radius: var(--radius-lg);
   }
 
   .highlights li {
-    background: var(--privacy-card);
-    border: 2px solid var(--privacy-card-border);
-    border-radius: var(--radius-lg);
-    padding: 12px 14px;
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    padding: 13px 0;
     margin: 0;
+    border-bottom: var(--border-width) solid var(--privacy-row-rule);
     color: var(--page-body);
+  }
+
+  .highlights li:last-child {
+    border-bottom: none;
+  }
+
+  /* Matches the masthead CrayonStrip's pill proportions, sized up a touch; the
+     translate optically centers the chip against the first line's baseline. */
+  .highlights .chip {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 8px;
+    border-radius: var(--radius-pill);
+    transform: translateY(-2px);
   }
 
   .highlights strong {
