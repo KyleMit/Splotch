@@ -227,8 +227,8 @@
 
   .short-version .rule {
     flex: 1;
-    min-width: 40px;
-    height: 1px;
+    min-width: var(--space-8);
+    height: var(--border-width);
     background: var(--page-rule);
   }
 
@@ -245,8 +245,8 @@
   .highlights {
     list-style: none;
     max-width: none;
-    padding: 4px 22px;
-    margin: 0 0 40px;
+    padding: var(--space-1) 22px;
+    margin: 0 0 var(--space-8);
     border: 2px solid var(--privacy-card-border);
     border-radius: var(--radius-lg);
   }
@@ -257,7 +257,7 @@
     align-items: baseline;
     padding: 13px 0;
     margin: 0;
-    border-bottom: 1px solid var(--privacy-row-rule);
+    border-bottom: var(--border-width) solid var(--privacy-row-rule);
     color: var(--page-body);
   }
 
