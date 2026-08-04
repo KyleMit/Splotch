@@ -90,7 +90,7 @@
     right: calc(-10px + env(safe-area-inset-right));
     z-index: var(--z-clear-button);
     pointer-events: none; /* Allow clicks through container to children */
-    transition: transform 0.4s var(--ease-pop);
+    transition: transform var(--duration-slow) var(--ease-pop);
   }
 
   /* While the finger is in control, snap to position with no easing.
@@ -186,7 +186,7 @@
     display: block;
     pointer-events: none;
     margin-right: 2px;
-    transition: margin 0.3s ease;
+    transition: margin var(--duration-slow) ease;
   }
 
   /* Clear Accept Zone — radial ring around the button's home position

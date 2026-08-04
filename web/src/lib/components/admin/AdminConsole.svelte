@@ -356,7 +356,7 @@
   .admin-header {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: var(--space-4);
     margin-bottom: 28px;
   }
 
@@ -400,11 +400,11 @@
 
   /* Flash messages */
   .flash {
-    padding: 12px 16px;
+    padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
-    margin-bottom: 20px;
+    margin-bottom: var(--space-5);
   }
 
   .flash-success {
@@ -441,8 +441,8 @@
   .card {
     background: var(--admin-sheet);
     border-radius: var(--radius-lg);
-    padding: 24px;
-    margin-bottom: 20px;
+    padding: var(--space-6);
+    margin-bottom: var(--space-5);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   }
 
@@ -457,7 +457,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 16px;
+    margin-bottom: var(--space-4);
   }
 
   .card-head h2 {
@@ -636,7 +636,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--space-3);
     padding: 14px 4px;
     border-bottom: 1px solid var(--admin-hairline);
   }
@@ -687,7 +687,7 @@
   .invite-actions {
     align-items: center;
     justify-content: flex-end;
-    gap: 8px;
+    gap: var(--space-2);
     flex-shrink: 0;
   }
 
@@ -705,7 +705,7 @@
      the suite can't see (the logged-in scan populates a row first). */
   .empty {
     text-align: center;
-    padding: 24px 12px;
+    padding: var(--space-6) var(--space-3);
     color: var(--admin-ink-muted);
   }
 

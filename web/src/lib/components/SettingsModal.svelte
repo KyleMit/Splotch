@@ -269,13 +269,13 @@
 
   .settings-header h2 {
     margin: 0;
-    font-size: 24px;
+    font-size: var(--font-size-xl);
     color: var(--text-strong);
     font-weight: var(--font-weight-semibold);
   }
 
   .settings-header-sub h2 {
-    font-size: 20px;
+    font-size: var(--font-size-lg);
   }
 
   .settings-back {
@@ -439,7 +439,7 @@
     background: transparent;
     color: var(--text-soft);
     font-family: inherit;
-    font-size: 15px;
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
     cursor: pointer;
     text-align: left;

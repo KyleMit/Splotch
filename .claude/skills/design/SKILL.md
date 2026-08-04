@@ -70,8 +70,9 @@ Foundations and only reach past a default when a rule says so.
 |           | `--font-weight-medium/semibold/bold` (500/600/700 — quiet labels · buttons/active states/sub-heads ·   |
 |           | headings; body prose stays at the untokenized 400 default)                                             |
 | Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s); two curves only — `--ease-pop` (springy overshoot:       |
-|           | anything that pops in or celebrates) and `--ease-glide` (anything that settles or leaves). Pair        |
-|           | every curve with a duration token, never a raw seconds literal                                         |
+|           | anything that pops in or celebrates) and `--ease-glide` (anything that settles or leaves).             |
+|           | Transitions pair a curve with a duration token; a one-shot celebration keyframe (ripple, swatch        |
+|           | ring, download pop) may carry its own tuned timing                                                     |
 | Elevation | `--shadow-control` (the tight lift on a small raised control — modal close disc, selected segment      |
 |           | thumb), `--shadow-pop` (deep overlay lift under modal cards); `--float-shadow`,                        |
 |           | `--float-shadow-flyout` (themed, paper cards)                                                          |

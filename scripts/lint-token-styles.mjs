@@ -65,10 +65,8 @@ const BASELINE = new Map(
     // (/admin), where --text-soft's dark value would be 1.9:1. Themed hosts
     // (the /dev harnesses) override it — see the note on .crumb-current.
     'lib/components/Breadcrumb.svelte': 1,
-    // Photographic stage/polaroid whites + the #9559cd download-button hover
-    // (a deliberate one-off shade; converging it onto the --brand-solid ramp
-    // is a visible change).
-    'lib/components/AiImageResult.svelte': 3,
+    // Photographic stage/polaroid whites.
+    'lib/components/AiImageResult.svelte': 2,
     // #000 white-stroke keyline for the Brush/Stroke trigger faces.
     'lib/components/ActionsPanel.svelte': 1,
     // #000 white-stroke keyline for the Brush Menu popover (extracted from

@@ -174,7 +174,7 @@
     gap: 4px;
     padding: 4px;
     background: var(--slider-track);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
   }
 
   .orient-opt {
@@ -190,7 +190,7 @@
     background: transparent;
     color: var(--text-soft);
     font-family: inherit;
-    font-size: 12.5px;
+    font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
     cursor: pointer;
     touch-action: manipulation;

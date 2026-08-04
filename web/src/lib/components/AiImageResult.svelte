@@ -325,6 +325,7 @@
     text-align: center;
     color: var(--text);
   }
+  /* Emoji at illustration size — glyph art, not ramp type. */
   .ai-result-error-emoji {
     font-size: 48px;
   }
@@ -344,7 +345,7 @@
   .ai-result-saved {
     margin: 0;
     color: var(--success-accent);
-    font-size: 15px;
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     animation: downloadPop 0.4s backwards 0.25s var(--ease-pop);
   }
@@ -353,7 +354,10 @@
   .ai-result-download {
     height: 44px;
     padding: 0 22px;
-    background: var(--brand);
+    /* --brand-solid, not --brand: the fill carries its 14px bold label, and
+       --brand is only 3.4:1 against --on-brand (fails WCAG AA below
+       large-text size). */
+    background: var(--brand-solid);
     border: none;
     border-radius: var(--radius-xl);
     cursor: pointer;
@@ -361,8 +365,8 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    color: white;
-    font-size: 15px;
+    color: var(--on-brand);
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.4);
     box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 40%, transparent);
@@ -376,7 +380,7 @@
      keep it sticky, leaving the button's background stuck after a tap. */
   @media (hover: hover) {
     .ai-result-download:hover {
-      background: #9559cd;
+      background: var(--brand-solid-hover);
     }
   }
   .ai-result-download:active {
@@ -425,7 +429,7 @@
   .ai-result-modal.polaroid-mode .ai-result-download {
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s ease;
+    transition: opacity var(--duration-base) ease;
   }
 
   @keyframes ai-polaroid-fly {

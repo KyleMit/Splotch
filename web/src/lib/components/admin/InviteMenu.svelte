@@ -92,7 +92,7 @@
 
   .more-menu-title {
     margin: 0;
-    padding: 16px 20px 12px;
+    padding: var(--space-4) var(--space-5) var(--space-3);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
     letter-spacing: 0.06em;
@@ -104,7 +104,7 @@
   .more-menu-item {
     display: block;
     width: 100%;
-    padding: 16px 20px;
+    padding: var(--space-4) var(--space-5);
     text-align: left;
     font-family: inherit;
     font-size: var(--font-size-md);

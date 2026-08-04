@@ -139,7 +139,10 @@
 
 <section>
   <h3>Type scale</h3>
-  <p>Six steps, one role each — if two steps both look right, take the smaller.</p>
+  <p>
+    Six body steps plus the display tier, one role each — if two steps both look right, take the
+    smaller.
+  </p>
   <div class="row-list">
     {#each fontSizeKeys as key (key)}
       <div class="scale-row">
@@ -220,7 +223,8 @@
   <p>
     Two curves: the springy overshoot for anything that pops in or celebrates, the glide for
     anything that settles or leaves. Press states scale down (0.9–0.96); hovers swap to a wash or
-    hover token. Pair every curve with a duration token. The lanes run each easing curve on a loop.
+    hover token. Transitions pair a curve with a duration token; a one-shot celebration keyframe may
+    carry its own tuned timing. The lanes run each easing curve on a loop.
   </p>
   <div class="motion-lanes">
     {#each easeKeys as key (key)}

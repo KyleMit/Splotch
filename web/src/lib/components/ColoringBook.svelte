@@ -240,13 +240,13 @@
   }
 
   .coloring-book-content {
-    padding: 32px;
+    padding: var(--space-7);
     position: relative;
   }
 
   .coloring-book-content h2 {
-    margin: 0 0 20px 0;
-    font-size: 24px;
+    margin: 0 0 var(--space-5) 0;
+    font-size: var(--font-size-xl);
     color: var(--text-strong);
     font-weight: var(--font-weight-semibold);
   }
@@ -259,7 +259,7 @@
   .coloring-book-header {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-3);
     margin-bottom: 20px;
   }
 
@@ -277,7 +277,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 8px;
+    padding: var(--space-2);
     transition: background var(--duration-base) ease;
   }
 
@@ -306,7 +306,7 @@
 
   .coloring-grid {
     display: grid;
-    gap: 12px;
+    gap: var(--space-3);
   }
 
   .coloring-books-grid {
@@ -386,7 +386,7 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    padding: 8px;
+    padding: var(--space-2);
     pointer-events: none;
     mix-blend-mode: var(--lineart-blend);
     filter: var(--lineart-filter);
@@ -397,7 +397,7 @@
   :global(.coloring-remove-icon) {
     width: 100%;
     height: 75%;
-    padding: 8px;
+    padding: var(--space-2);
     pointer-events: none;
     mix-blend-mode: var(--lineart-blend);
   }

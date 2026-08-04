@@ -236,7 +236,7 @@
   }
 
   .os-section :global(.help-section summary::after) {
-    font-size: 24px;
+    font-size: var(--font-size-xl);
     flex-shrink: 0;
   }
 
@@ -277,7 +277,7 @@
     color: var(--success-accent);
     font-weight: var(--font-weight-bold);
     margin-left: 8px;
-    font-size: 20px;
+    font-size: var(--font-size-lg);
   }
 
   .one-tap {
