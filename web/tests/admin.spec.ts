@@ -15,8 +15,9 @@ async function addsAndRemovesToken(page: Page, token: string) {
   await page.getByRole('button', { name: 'Add code' }).click();
   await expect(page.getByText(`Added “${token}”`)).toBeVisible();
   // The invite row shows the raw token and exposes its prebuilt invite link
-  // behind a "Copy link" action (no longer rendered as a visible URL).
-  const row = page.getByRole('listitem').filter({ hasText: token });
+  // behind a "Copy link" action (no longer rendered as a visible URL). The
+  // ledger carries explicit ARIA table semantics, so rows expose role="row".
+  const row = page.getByRole('row').filter({ hasText: token });
   await expect(page.getByText(token, { exact: true })).toBeVisible();
   await expect(row.getByRole('button', { name: 'Copy link' })).toBeVisible();
 
@@ -47,12 +48,59 @@ test('web /admin signs in via cookie session, manages tokens, signs out', async 
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
 });
 
+// The ledger's column grid uses fixed usage/action tracks, so there is a band
+// of widths where the tracks fit the viewport but not the sheet's content box
+// (PR 767 review: at 561px the code column computed to 0px and rows tripled in
+// height). The collapse must key off where the grid actually fits, not just
+// phone widths. This costs one of the shared rate-limit budget's sign-ins —
+// see the tally in admin-helpers.ts.
+test('web /admin ledger keeps its rows usable across viewport widths', async ({ page }) => {
+  await signInToAdmin(page, '/admin');
+  const token = `e2e-widths-${Date.now()}`;
+  await adminConsole(page).fill(token);
+  await page.getByRole('button', { name: 'Add code' }).click();
+  const row = page.getByRole('row').filter({ hasText: token });
+  await expect(row).toBeVisible();
+
+  // Wide layouts: the full action set renders inside the ledger's box.
+  for (const width of [1280, 830]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(row.getByRole('button', { name: 'Copy link' })).toBeVisible();
+    const remove = await row.getByRole('button', { name: `Remove ${token}` }).boundingBox();
+    const ledger = await page.getByRole('table').boundingBox();
+    expect(remove).not.toBeNull();
+    expect(ledger).not.toBeNull();
+    expect(remove!.x + remove!.width).toBeLessThanOrEqual(ledger!.x + ledger!.width);
+    // The slim link treatment still has to meet the 44px interaction floor.
+    expect(remove!.height).toBeGreaterThanOrEqual(44);
+  }
+
+  // Intermediate and phone widths: the columns collapse to the compact pair
+  // instead of squeezing the code track to nothing and ballooning the row.
+  // The ceiling allows this deliberately long token one wrap on a phone
+  // (~98px) while staying far under the broken state's 206px rows.
+  for (const width of [700, 561, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(row.getByRole('button', { name: `More options for ${token}` })).toBeVisible();
+    await expect
+      .poll(async () => (await row.boundingBox())?.height ?? Number.POSITIVE_INFINITY)
+      .toBeLessThan(120);
+  }
+
+  await row.getByRole('button', { name: `More options for ${token}` }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Remove' }).click();
+  await expect(page.getByText(`Removed “${token}”`)).toBeVisible();
+});
+
 test('native console /admin/native signs in via the API and manages tokens', async ({ page }) => {
   await signInToAdmin(page, '/admin/native');
   // The preview server has no Netlify Blobs, and the API snapshot carries that
   // fallback status to the native console just as the web page data does.
   await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
   await addsAndRemovesToken(page, `e2e-native-${Date.now()}`);
+  // The native door has no usage tracking, so the ledger must drop the usage
+  // columns rather than labelling permanently blank cells.
+  await expect(page.getByRole('columnheader', { name: 'Generations' })).toHaveCount(0);
 
   // The bearer session persists in secure storage, so a reload stays signed in.
   await page.reload();

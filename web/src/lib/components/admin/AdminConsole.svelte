@@ -2,9 +2,11 @@
   // Presentational shell for the admin console, shared by the two front doors:
   // /admin (web, server-rendered with form actions + cookie session) and
   // /admin/native (native apps, JSON API + bearer session). The pages own the
-  // auth transport and data; this component owns the markup, styles, and
-  // small interaction state (copy feedback, clearing inputs). Callbacks return
-  // whether the operation succeeded so the component knows when to reset.
+  // auth transport and data; this component owns the page chrome, forms, and
+  // the interaction state shared across the row surfaces (copy feedback, the
+  // busy guard) — the codes table itself is InviteLedger, its overflow menu
+  // InviteMenu. Callbacks return whether the operation succeeded so the
+  // component knows when to reset.
   // Per-token AI generation tally (mirrors $lib/server/usage TokenUsage). Kept
   // structural here so this client component never imports server code.
   export interface Usage {
@@ -19,7 +21,7 @@
     url: string;
     // `undefined` = usage tracking isn't wired up for this front door (native);
     // `null` = tracked but never used; an object = the tally. The component
-    // renders the stats line only when this is not `undefined`.
+    // renders the usage columns only when this is not `undefined`.
     usage?: Usage | null;
   }
   export interface Flash {
@@ -32,11 +34,10 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import Icon from '../Icon.svelte';
   import PageShell from '../page/PageShell.svelte';
+  import RuleLabel from '../page/RuleLabel.svelte';
+  import InviteLedger from './InviteLedger.svelte';
   import InviteMenu from './InviteMenu.svelte';
-  import './adminPalette.css';
-  import { timeAgo, usageDetail } from '$lib/adminFormat';
 
   let {
     authed,
@@ -91,7 +92,7 @@
 
   // Callbacks that reject (e.g. a fetch failing offline) would otherwise be
   // unhandled rejections with no UI feedback, so catch here and surface a
-  // generic message in whichever branch (login card or console) is visible.
+  // generic message in whichever branch (login form or console) is visible.
   let runError = $state<string | null>(null);
 
   async function run(fn: () => Promise<void>) {
@@ -149,185 +150,96 @@
   }
 </script>
 
-<div class="admin-page">
-  <PageShell class="admin-shell" title="Admin" wordmark="Splotch">
-    {#snippet lede()}
-      Manage AI access codes.
-    {/snippet}
+<PageShell title="Admin" wordmark="Splotch Admin">
+  {#snippet lede()}
+    Manage AI access codes
+  {/snippet}
 
-    {#snippet actions()}
-      {#if authed}
-        <button type="button" class="btn btn-ghost" disabled={busy} onclick={() => run(onlogout)}>
-          Sign out
-        </button>
-      {/if}
-    {/snippet}
-
-    {#if !authed}
-      <section class="card">
-        <h2>Sign in</h2>
-        {#if shownLoginError}
-          <div class="flash flash-error" role="alert">{shownLoginError}</div>
-        {/if}
-        <form onsubmit={handleLogin} class="add-form">
-          <input
-            type="password"
-            name="access-key"
-            placeholder="Admin access key"
-            autocomplete="current-password"
-            autocapitalize="off"
-            spellcheck="false"
-            required
-            bind:value={loginKey}
-          />
-          <button type="submit" class="btn btn-primary" disabled={submitDisabled}>Sign in</button>
-        </form>
-      </section>
-    {:else}
-      {#if !persistent}
-        <div class="flash flash-warning" role="alert">
-          <strong>Netlify Blobs is unavailable.</strong> You're viewing a local-only copy seeded
-          from the <code>ALLOWED_TOKENS_LIST</code> env var. Any codes you add or remove here won't be
-          saved and may reset at any time.
-        </div>
-      {/if}
-
-      {#if shownFlash}
-        <div
-          class="flash"
-          class:flash-error={shownFlash.kind === 'error'}
-          class:flash-success={shownFlash.kind === 'success'}
-          role={shownFlash.kind === 'error' ? 'alert' : 'status'}
-        >
-          {shownFlash.text}
-        </div>
-      {/if}
-
-      <form onsubmit={handleAdd} class="add-form add-bar">
-        <input
-          type="text"
-          name="token"
-          placeholder="Add a code…"
-          autocomplete="off"
-          autocapitalize="off"
-          spellcheck="false"
-          required
-          bind:value={newToken}
-        />
-        <button
-          type="submit"
-          class="btn btn-primary add-button"
-          disabled={submitDisabled}
-          aria-label="Add code"
-        >
-          <span class="add-label">Add code</span>
-          <Icon name="plus" class="add-icon" />
-        </button>
-      </form>
-
-      <section class="card">
-        <div class="card-head">
-          <h2>Access codes</h2>
-          <span class="count">{invites.length}</span>
-        </div>
-
-        {#if invites.length === 0}
-          <div class="empty">
-            <Icon name="wand-stars" class="empty-icon" />
-            <p>No access codes yet. Add one above to start handing out invites.</p>
-          </div>
-        {:else}
-          <ul class="invites">
-            {#each invites as invite (invite.token)}
-              <li class="invite">
-                <div class="invite-info">
-                  <span class="token">{invite.token}</span>
-                  {#if invite.usage !== undefined}
-                    {#if invite.usage}
-                      <span class="usage" title={usageDetail(invite.usage)}>
-                        <strong>{invite.usage.count}</strong>
-                        {invite.usage.count === 1 ? 'generation' : 'generations'}
-                        <span class="usage-sep" aria-hidden="true">·</span>
-                        last used {timeAgo(invite.usage.lastUsed)}
-                      </span>
-                    {:else}
-                      <span class="usage usage-none">Never used</span>
-                    {/if}
-                  {/if}
-                </div>
-
-                <div class="invite-actions invite-actions-full">
-                  <button
-                    type="button"
-                    class="btn btn-ghost"
-                    class:copied={copied === copyKey(invite.token, 'code')}
-                    onclick={() => copy(copyKey(invite.token, 'code'), invite.token)}
-                  >
-                    {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy code'}
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-ghost"
-                    class:copied={copied === copyKey(invite.token, 'url')}
-                    onclick={() => copy(copyKey(invite.token, 'url'), invite.url)}
-                  >
-                    {copied === copyKey(invite.token, 'url') ? 'Copied!' : 'Copy link'}
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-danger"
-                    disabled={busy}
-                    aria-label={`Remove ${invite.token}`}
-                    onclick={() => run(() => onremove(invite.token))}
-                  >
-                    Remove
-                  </button>
-                </div>
-
-                <div class="invite-actions invite-actions-compact">
-                  <button
-                    type="button"
-                    class="btn btn-ghost"
-                    class:copied={copied === copyKey(invite.token, 'code')}
-                    onclick={() => copy(copyKey(invite.token, 'code'), invite.token)}
-                  >
-                    {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-icon"
-                    aria-label={`More options for ${invite.token}`}
-                    onclick={() => openMenu(invite)}
-                  >
-                    <Icon name="more-horiz" class="more-icon" />
-                  </button>
-                </div>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-      </section>
+  {#snippet actions()}
+    {#if authed}
+      <button type="button" class="sign-out" disabled={busy} onclick={() => run(onlogout)}>
+        Sign out
+      </button>
     {/if}
-  </PageShell>
+  {/snippet}
 
-  <InviteMenu
-    bind:this={inviteMenu}
-    invite={menuInvite}
-    {busy}
-    oncopy={copy}
-    onremove={(token) => run(() => onremove(token))}
-    onclose={() => (menuInvite = null)}
-  />
-</div>
+  {#if !authed}
+    <RuleLabel>Sign in</RuleLabel>
+    {#if shownLoginError}
+      <div class="flash flash-error" role="alert">{shownLoginError}</div>
+    {/if}
+    <form onsubmit={handleLogin} class="add-form">
+      <input
+        type="password"
+        name="access-key"
+        placeholder="Admin access key"
+        autocomplete="current-password"
+        autocapitalize="off"
+        spellcheck="false"
+        required
+        bind:value={loginKey}
+      />
+      <button type="submit" class="cta" disabled={submitDisabled}>Sign in</button>
+    </form>
+  {:else}
+    {#if !persistent}
+      <div class="flash flash-warning" role="alert">
+        <strong>Netlify Blobs is unavailable.</strong> You're viewing a local-only copy seeded from
+        the <code>ALLOWED_TOKENS_LIST</code> env var. Any codes you add or remove here won't be saved
+        and may reset at any time.
+      </div>
+    {/if}
+
+    {#if shownFlash}
+      <div
+        class="flash"
+        class:flash-error={shownFlash.kind === 'error'}
+        class:flash-success={shownFlash.kind === 'success'}
+        role={shownFlash.kind === 'error' ? 'alert' : 'status'}
+      >
+        {shownFlash.text}
+      </div>
+    {/if}
+
+    <RuleLabel>Access codes · {invites.length}</RuleLabel>
+
+    <form onsubmit={handleAdd} class="add-form">
+      <input
+        type="text"
+        name="token"
+        placeholder="Add a code…"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        required
+        bind:value={newToken}
+      />
+      <button type="submit" class="cta" disabled={submitDisabled} aria-label="Add code">
+        <span class="add-label-full">Add code</span><span class="add-label-short">Add</span>
+      </button>
+    </form>
+
+    <InviteLedger
+      {invites}
+      {busy}
+      {copied}
+      oncopy={copy}
+      onremove={(token) => run(() => onremove(token))}
+      onmore={openMenu}
+    />
+  {/if}
+</PageShell>
+
+<InviteMenu
+  bind:this={inviteMenu}
+  invite={menuInvite}
+  {busy}
+  oncopy={copy}
+  onremove={(token) => run(() => onremove(token))}
+  onclose={() => (menuInvite = null)}
+/>
 
 <style>
-  /* The console styles itself from the light-pinned --admin-* palette in
-     adminPalette.css (imported above; see its header for the light-only
-     rationale), and wears PageShell like the other standalone pages — the
-     shell's --page-* palette is pinned to the --admin-* values in that same
-     file. Scale tokens (font sizes, radii, durations) are theme-safe and
-     used directly. */
-
   /* Flash messages */
   .flash {
     padding: var(--space-3) var(--space-4);
@@ -338,19 +250,23 @@
   }
 
   .flash-success {
-    background: var(--admin-success-wash);
-    color: var(--admin-success-ink);
+    background: var(--success-wash);
+    color: var(--success-text);
   }
 
   .flash-error {
-    background: var(--admin-danger-wash);
-    color: var(--admin-danger-ink);
+    background: var(--danger-wash);
+    color: var(--danger-text);
   }
 
+  /* Warning amber has no token pair yet — the persistence banner is the
+     product's only warning surface. The light values stay pinned on both
+     themes: the banner is its own surface, so its ink/wash contrast holds
+     regardless of the sheet behind it. */
   .flash-warning {
-    background: var(--admin-warn-wash);
-    color: var(--admin-warn-ink);
-    border: 1px solid var(--admin-warn-border);
+    background: #fffaeb;
+    color: #93600b;
+    border: 1px solid #fce5a8;
     font-weight: var(--font-weight-medium);
     line-height: 1.45;
   }
@@ -362,74 +278,57 @@
   .flash-warning code {
     font-family: var(--font-mono);
     font-size: var(--font-size-xs);
-    background: var(--admin-warn-chip);
+    background: #fdefc7;
     padding: 1px 5px;
     border-radius: var(--radius-sm);
   }
 
-  /* Cards — bordered panels in the /privacy highlights treatment: a drop
-     shadow reads as nothing when the card and the sheet share the white
-     surface, so the border is what separates them. */
-  .card {
-    border: 2px solid var(--admin-card-border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-6);
-    margin-bottom: var(--space-5);
-  }
-
-  .card h2 {
-    margin: 0 0 16px;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    color: var(--admin-ink);
-  }
-
-  .card-head {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: var(--space-4);
-  }
-
-  .card-head h2 {
-    margin: 0;
-  }
-
-  .count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 24px;
-    height: 24px;
-    padding: 0 8px;
-    border-radius: var(--radius-pill);
-    background: var(--admin-accent-tint-strong);
-    color: var(--admin-accent);
+  /* Hero Sign out — the brand-wash ghost beside the H1. */
+  .sign-out {
+    padding: 8px 14px;
+    color: var(--brand-text);
+    background: var(--brand-wash);
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: inherit;
     font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--duration-fast) ease;
   }
 
-  /* Add form (shared by the sign-in card and the standalone add bar) */
+  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
+     keep it stuck until the next tap elsewhere. */
+  @media (hover: hover) {
+    .sign-out:hover {
+      background: var(--brand-wash-hover);
+    }
+  }
+
+  .sign-out:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  /* Add form (shared by the sign-in form and the add bar) */
   .add-form {
     display: flex;
     gap: 10px;
-  }
-
-  /* The add bar sits directly on the page (no card wrapper). */
-  .add-bar {
-    margin-bottom: 24px;
+    margin-bottom: var(--space-5);
   }
 
   .add-form input {
     flex: 1;
     min-width: 0;
-    padding: 11px 14px;
+    max-width: 420px;
+    padding: 13px 16px;
     font-size: var(--input-font-size);
     font-family: inherit;
-    border: 1px solid var(--admin-line);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    background: var(--admin-sheet);
-    color: var(--admin-ink);
+    background: var(--surface);
+    color: var(--text-strong);
     transition:
       border-color var(--duration-fast) ease,
       box-shadow var(--duration-fast) ease;
@@ -437,247 +336,56 @@
 
   .add-form input:focus {
     outline: none;
-    border-color: var(--brand);
+    border-color: var(--brand-solid);
+    /* rgba fallback precedes the color-mix (docs/COMPATIBILITY.md). */
     box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.18);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-solid) 18%, transparent);
   }
 
-  /* The add button shows its "Add code" label by default and collapses to the
-     "+" icon only when space is tight (handled in the media query below). */
-  .add-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  :global(.add-button .add-icon) {
-    display: none;
-    width: 22px;
-    height: 22px;
-    filter: brightness(0) invert(1);
-  }
-
-  /* Buttons */
-  .btn {
+  /* The standalone pages' solid call to action — the same shape as /feedback's
+     submit, so the consoles read as one set with the other parent pages. */
+  .cta {
+    padding: 15px 24px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--brand-solid);
+    color: var(--on-brand);
     font-family: inherit;
     font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    border-radius: var(--radius-md);
-    border: none;
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
-    transition:
-      background var(--duration-fast) ease,
-      color var(--duration-fast) ease,
-      transform 0.05s ease;
     white-space: nowrap;
+    flex-shrink: 0;
+    transition: background var(--duration-fast) ease;
   }
 
-  .btn:active {
-    transform: translateY(1px);
+  @media (hover: hover) {
+    .cta:hover {
+      background: var(--brand-solid-hover);
+    }
   }
 
-  .btn:disabled {
+  .cta:disabled {
     opacity: 0.6;
     cursor: default;
   }
 
-  /* The page's darker accent (#7c4dcf, 4.5:1+ under white text) rather than
-     --brand, whose 3.4:1 fails WCAG AA (axe serious). */
-  .btn-primary {
-    padding: 11px 18px;
-    color: var(--admin-on-accent);
-    background: var(--admin-accent);
-    flex-shrink: 0;
-  }
-
-  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it stuck until the next tap elsewhere. */
-  @media (hover: hover) {
-    .btn-primary:hover {
-      background: var(--admin-accent-hover);
-    }
-  }
-
-  .btn-ghost {
-    padding: 8px 14px;
-    color: var(--admin-accent);
-    background: var(--admin-accent-tint);
-  }
-
-  @media (hover: hover) {
-    .btn-ghost:hover {
-      background: var(--admin-accent-tint-hover);
-    }
-  }
-
-  .btn-ghost.copied {
-    color: var(--admin-success-ink);
-    background: var(--admin-success-wash);
-  }
-
-  .btn-danger {
-    padding: 8px 14px;
-    color: var(--admin-danger-ink);
-    background: var(--admin-danger-wash);
-  }
-
-  @media (hover: hover) {
-    .btn-danger:hover {
-      background: var(--admin-danger-wash-hover);
-    }
-  }
-
-  /* Square icon-only button (the "⋯" more control). */
-  .btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    padding: 0;
-    color: var(--admin-ink-muted);
-    background: transparent;
-  }
-
-  @media (hover: hover) {
-    .btn-icon:hover {
-      background: var(--admin-hairline);
-    }
-  }
-
-  :global(.btn-icon .more-icon) {
-    width: 20px;
-    height: 20px;
-  }
-
-  /* Re-inked via fill (not a filter chain), the modal-close-icon pattern:
-     CSS fill beats the SVG's baked near-black presentation attribute. */
-  :global(.btn-icon .more-icon svg) {
-    fill: var(--admin-ink-muted);
-  }
-
-  /* Invite list — one card of rows split by hairline dividers. */
-  .invites {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .invite {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    padding: 14px 4px;
-    border-bottom: 1px solid var(--admin-hairline);
-  }
-
-  .invite:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-
-  .invite:first-child {
-    padding-top: 0;
-  }
-
-  .invite-info {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-width: 0;
-  }
-
-  .token {
-    font-weight: var(--font-weight-bold);
-    font-size: var(--font-size-md);
-    color: var(--admin-ink);
-  }
-
-  .usage {
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-medium);
-    color: var(--admin-ink-muted);
-  }
-
-  .usage strong {
-    color: var(--admin-accent);
-    font-weight: var(--font-weight-bold);
-  }
-
-  .usage-sep {
-    margin: 0 4px;
-    color: var(--admin-line);
-  }
-
-  .usage-none {
-    font-style: italic;
-    color: var(--admin-ink-muted);
-  }
-
-  .invite-actions {
-    align-items: center;
-    justify-content: flex-end;
-    gap: var(--space-2);
-    flex-shrink: 0;
-  }
-
-  /* Full set of labelled actions for wide screens; the compact Copy + "⋯"
-     pair takes over on narrow ones. Only one is shown at a time. */
-  .invite-actions-full {
-    display: inline-flex;
-  }
-
-  .invite-actions-compact {
+  .add-label-short {
     display: none;
   }
 
-  /* Empty state. #666, not #999: 2.85:1 on the white card is an axe serious
-     the suite can't see (the logged-in scan populates a row first). */
-  .empty {
-    text-align: center;
-    padding: var(--space-6) var(--space-3);
-    color: var(--admin-ink-muted);
-  }
-
-  :global(.empty .empty-icon) {
-    width: 40px;
-    height: 40px;
-    opacity: 0.4;
-    margin-bottom: 10px;
-  }
-
-  .empty p {
-    margin: 0;
-    font-size: var(--font-size-sm);
-    max-width: 320px;
-    margin-inline: auto;
-  }
-
-  /* On narrow screens the three labelled actions won't fit beside the code, so
-     each row collapses to a single "Copy" plus the "⋯" overflow menu, and the
-     add button shrinks to just its "+" icon. */
+  /* Phone: the add button shortens to "Add". */
   @media (max-width: 560px) {
-    .invite-actions-full {
+    .add-label-full {
       display: none;
     }
 
-    .invite-actions-compact {
-      display: inline-flex;
+    .add-label-short {
+      display: inline;
     }
 
-    .add-button {
-      padding: 11px;
-      width: 46px;
-      flex-shrink: 0;
-    }
-
-    .add-label {
-      display: none;
-    }
-
-    :global(.add-button .add-icon) {
-      display: block;
+    .cta {
+      padding: 13px 18px;
     }
   }
 </style>

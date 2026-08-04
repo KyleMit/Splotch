@@ -104,9 +104,10 @@ hardcoded duplicate (a failure review has caught three times).
 
 Shared UI primitives live in **`web/src/lib/components/design/`**. They style themselves entirely
 from tokens and are for modal/settings surfaces — the canvas-floating controls (Actions Panel,
-corner buttons, Clear Button) keep their bespoke paper treatments, and **`/admin` is excluded**: the
-primitives are built from themed washes, which would flip on a page that is deliberately light-only
-(see the ADR-0071 amendments).
+corner buttons, Clear Button) keep their bespoke paper treatments. The admin console (`/admin`) is
+themed (the 2026-08 redesign, recorded in the ADR-0071 amendments) but keeps its own bespoke
+controls: its ledger table, link-shaped actions, and standalone-page CTA are shapes the primitives
+don't offer.
 
 | Primitive                | Use for                                                                                      |
 | ------------------------ | -------------------------------------------------------------------------------------------- |
@@ -167,14 +168,14 @@ wears one shell, in **`web/src/lib/components/page/`**:
 
 **Light-only pages pin the whole `--page-*` palette** on the class forwarded to `PageShell`
 (`/privacy` and `/android-beta` pin the same values, including a link purple darkened past `--brand`
-to clear 4.5:1; the admin console pins by referencing its `--admin-*` properties in
-`adminPalette.css`). Read the pinned values from each route's own style block — they are the
-documented raw-value exception, not candidates for tokens. The values that must agree across the
-pinned pages — the brand-tinted card border, the sheet shadow — are locked by the drift guard
+to clear 4.5:1). Read the pinned values from each route's own style block — they are the documented
+raw-value exception, not candidates for tokens. The values that must agree across the pinned pages —
+the sheet shadow — are locked by the drift guard
 `web/src/lib/components/page/pinnedPalette.test.ts`, which fails on divergence; extend it when a new
 cross-page agreement appears. Content inside the shell reads `--page-*`, never restates a color.
-`/design` is the one shell page on the themed defaults — its theme toggle must keep working, so it
-forwards no palette overrides.
+`/design` and the admin console stay on the themed defaults — `/design`'s theme toggle must keep
+working, and `/admin` follows light/dark since the 2026-08 redesign — so neither forwards palette
+overrides.
 
 ## Brand & iconography
 
@@ -220,10 +221,11 @@ elsewhere is not** — raw px padding/margin/gap is still the norm in older comp
 hex and font-size ratchets enforce anything, so rule 2 is what governs spacing in new and edited
 styles. What remains raw beyond that is deliberate — documented one-offs (polaroid/photographic
 whites, ClearButton's unthemed danger red, confetti colors, canvas chrome, functional literals like
-ColoringBook's label reserve) and the **deliberately light-only pages** (`/admin`, `/privacy`,
+ColoringBook's label reserve) and the **deliberately light-only pages** (`/privacy`,
 `/android-beta`): a dark theme for them was considered and declined (owner decision, recorded in the
-ADR-0071 amendment — don't re-open it). Their self-contained palettes must not use the themed color
-tokens: those flip with `data-theme`/`prefers-color-scheme` and would half-dark-theme them.
+ADR-0071 amendment — don't re-open it; `/admin` left that set in the 2026-08 redesign and is themed
+now). Their self-contained palettes must not use the themed color tokens: those flip with
+`data-theme`/`prefers-color-scheme` and would half-dark-theme them.
 
 CI enforces this with `npm run lint:tokens` — per-file raw-hex and raw-font-size ratchets whose
 allowlisted baselines (with per-file reasons) live in `scripts/lint-token-styles.mjs`, plus a

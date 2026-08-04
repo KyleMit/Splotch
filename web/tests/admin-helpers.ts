@@ -39,7 +39,7 @@ export async function submitAdminKey(page: Page, key: string) {
 //
 // Which matters, because rateLimitPolicy.adminLogin allows 10 hits per IP per
 // minute and `beginAdminLogin` spends one *before* verifying the key, so even the
-// wrong-key spec counts. The whole suite performs ~8 sign-ins from one IP inside
+// wrong-key spec counts. The whole suite performs ~9 sign-ins from one IP inside
 // one ~66s run. A helper that can submit two or four times per call multiplies
 // against that shared budget and manufactures 429s — the same self-contamination
 // ADR-0078 §4 spent this branch diagnosing in the sweep harness. Flake absorption
@@ -47,7 +47,7 @@ export async function submitAdminKey(page: Page, key: string) {
 // stacking hits inside one.
 //
 // One consequence worth knowing before reaching for `--repeat-each` on these
-// specs: eight sign-ins per repetition against a 10-per-minute bucket means two
+// specs: nine sign-ins per repetition against a 10-per-minute bucket means two
 // repetitions already exceed it, so the runs go red on 429s that say nothing
 // about the code. That ceiling is the suite's, not this helper's — a retrying
 // helper merely hid it by waiting for the window to age out. Verify these specs
