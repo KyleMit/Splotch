@@ -77,12 +77,14 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
 
   // Intermediate and phone widths: the columns collapse to the compact pair
   // instead of squeezing the code track to nothing and ballooning the row.
+  // The ceiling allows this deliberately long token one wrap on a phone
+  // (~98px) while staying far under the broken state's 206px rows.
   for (const width of [700, 561, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await expect(row.getByRole('button', { name: `More options for ${token}` })).toBeVisible();
     await expect
       .poll(async () => (await row.boundingBox())?.height ?? Number.POSITIVE_INFINITY)
-      .toBeLessThan(90);
+      .toBeLessThan(120);
   }
 
   await row.getByRole('button', { name: `More options for ${token}` }).click();
