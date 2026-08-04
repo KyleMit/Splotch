@@ -137,6 +137,9 @@
   code {
     font-size: var(--font-size-xs);
     color: var(--brand-text);
+    /* The full component paths have no break opportunities and outgrow the
+       narrowest phone viewports without this. */
+    overflow-wrap: anywhere;
   }
 
   section :global(.disclosure-demo summary) {
