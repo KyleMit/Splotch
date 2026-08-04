@@ -207,11 +207,11 @@ classes, and a named index of the bespoke canvas/page chrome), and **Brand & voi
 and brand marks), under a sticky header with a binary light/dark preview toggle (the 3-way choice
 with System stays with the app Settings) and a scrollspy-driven table of contents — a sidebar on
 wide screens, a horizontally scrolling chip row on narrow ones. Each part's sections are partials in
-`lib/components/styleguide/` (`TokenSections` + `AssetSections` + `RecipeSections`,
-`PrimitiveSections` + `ChromeSections`, `VoiceSections`); because everything is imported from
-`tokens.ts`, `palette.ts`, and the icon glob, the page cannot drift from the implementation.
-`prerender = false` keeps the page out of the native static export — no native surface links to it —
-and serves it via SSR on the web. Use it to:
+`lib/components/styleguide/` (`ColorSections` + `TypeSections` + `ScaleSections` + `AssetSections` +
+`RecipeSections`, `PrimitiveSections` + `ChromeSections`, `VoiceSections`); because everything is
+imported from `tokens.ts`, `palette.ts`, and the icon glob, the page cannot drift from the
+implementation. `prerender = false` keeps the page out of the native static export — no native
+surface links to it — and serves it via SSR on the web. Use it to:
 
 * review a token or primitive change in both themes (screenshot it for the PR — see the
   `pr-screenshots` skill);

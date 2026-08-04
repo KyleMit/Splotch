@@ -31,6 +31,33 @@ test('theme picker exposes and updates its selected state', async ({ page }) => 
   await expect(light).toHaveAttribute('aria-checked', 'false');
 });
 
+// A system-dark first load has no data-theme stamp — the page is dark purely
+// via prefers-color-scheme — and hydration doesn't repair attributes, so a
+// toggle initialized client-side would keep the server's Light aria-checked
+// forever. The post-mount adoption is what this locks in.
+test.describe('system-dark first load', () => {
+  test.use({ colorScheme: 'dark' });
+
+  test('the theme toggle and chip values adopt the applied dark theme', async ({ page }) => {
+    await page.goto('/design');
+    const picker = page.locator('header').getByRole('radiogroup', { name: 'Theme' });
+    // Retried, not read once: the adoption lands after hydration.
+    await expect(picker.getByRole('radio', { name: 'Dark' })).toHaveAttribute(
+      'aria-checked',
+      'true'
+    );
+    await expect(picker.getByRole('radio', { name: 'Light' })).toHaveAttribute(
+      'aria-checked',
+      'false'
+    );
+    // The chip's printed value follows the same state — derived from the
+    // token source, not a mirrored hex.
+    await expect(
+      page.locator('.color-chip', { has: page.getByText('--app-bg', { exact: true }) })
+    ).toContainText(themes.dark.appBg);
+  });
+});
+
 test('every color chip paints a real fill', async ({ page }) => {
   await page.goto('/design');
   const chips = page.locator('.color-chip');

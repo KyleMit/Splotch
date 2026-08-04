@@ -1,10 +1,12 @@
 <script lang="ts">
-  import { browser } from '$app/environment';
+  import { onMount } from 'svelte';
   import AssetSections from '$lib/components/styleguide/AssetSections.svelte';
   import ChromeSections from '$lib/components/styleguide/ChromeSections.svelte';
+  import ColorSections from '$lib/components/styleguide/ColorSections.svelte';
   import PrimitiveSections from '$lib/components/styleguide/PrimitiveSections.svelte';
   import RecipeSections from '$lib/components/styleguide/RecipeSections.svelte';
-  import TokenSections from '$lib/components/styleguide/TokenSections.svelte';
+  import ScaleSections from '$lib/components/styleguide/ScaleSections.svelte';
+  import TypeSections from '$lib/components/styleguide/TypeSections.svelte';
   import VoiceSections from '$lib/components/styleguide/VoiceSections.svelte';
   import BrandMark from '$lib/components/page/BrandMark.svelte';
   import SegmentedPicker, {
@@ -15,15 +17,23 @@
   // The header toggle is binary Light/Dark — the 3-way choice (with System)
   // stays with the app Settings, which owns the stored preference. This one
   // restamps data-theme ephemerally for preview only; the drawing page
-  // re-applies the parent's real preference on mount. First load starts from
-  // the applied theme: the stamped data-theme, else the OS preference.
+  // re-applies the parent's real preference on mount.
   function appliedTheme(): ResolvedTheme {
     const stamped = document.documentElement.dataset.theme;
     if (stamped === 'light' || stamped === 'dark') return stamped;
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
 
-  let theme = $state<ResolvedTheme>(browser ? appliedTheme() : 'light');
+  // Starts on the SSR value and adopts the applied theme (stamped data-theme,
+  // else the OS preference) only after mount: an init-time mismatch would be
+  // invisible where it matters — hydration doesn't repair attributes, so the
+  // server-rendered aria-checked would stick until the next state change
+  // (design.spec.ts covers the dark-scheme first load).
+  let theme = $state<ResolvedTheme>('light');
+
+  onMount(() => {
+    theme = appliedTheme();
+  });
 
   function setTheme(next: ResolvedTheme) {
     theme = next;
@@ -198,9 +208,10 @@
           >, imports), never by copied value.
         </p>
       </div>
-      <TokenSections group="color" {theme} />
+      <ColorSections {theme} />
       <AssetSections group="materials" />
-      <TokenSections group="scales" />
+      <TypeSections />
+      <ScaleSections />
       <AssetSections group="icons" />
       <RecipeSections />
 
@@ -297,9 +308,11 @@
     border-radius: var(--radius-pill);
   }
 
+  /* 44px, not the prototype's 32px: nothing interactive goes below the
+     design system's touch-target floor, headers included. */
   .theme-toggle :global(.picker.segment.md .option) {
     border-radius: var(--radius-pill);
-    min-height: 32px;
+    min-height: 44px;
     padding: 6px var(--space-3);
   }
 
