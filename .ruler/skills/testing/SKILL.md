@@ -243,9 +243,14 @@ also runs on **WebKit** as the `webkit` Playwright project:
 * **Routing is by tag, not filename.** `WEBKIT_ONLY_TAG` (`tests/tags.ts`) sits on the spec's
   `test.describe`; the `webkit` project `grep`s for it and `chromium` `grepInvert`s it, from the one
   shared constant. The two projects are therefore exact complements — a test runs on exactly one
-  engine, and a tag that matches nothing fails the WebKit job with `No tests found` rather than
-  quietly demoting the spec to Chromium. To add WebKit coverage, tag it; a new spec with no tag runs
-  under Chromium wherever it lives.
+  engine. To add WebKit coverage, tag it; a new spec with no tag runs under Chromium wherever it
+  lives.
+* **Import the tag, never type it.** Playwright validates no tag, so a hand-written `@webkti-only`
+  matches neither project and runs under Chromium alone — and the WebKit job stays green, because
+  the correctly tagged specs still populate it. Only editing the shared constant to match nothing
+  fails loudly (`No tests found`). `scripts/tests/e2e-engine-tags.test.mjs` covers the gap: it
+  rejects a tag string literal and any tag not exported by `tags.ts`, and asserts at least one spec
+  still carries `WEBKIT_ONLY_TAG`.
 * Keep the spec WebKit-portable: no CDP sessions (the viewport-rotation and touch-synthesis helpers
   in `flows.spec.ts` are Chromium-only), no dev-harness routes, no assertions tied to Chromium's
   rasterizer. Chromium skips the tagged specs — their coverage is already in the full suite.
