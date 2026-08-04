@@ -1,12 +1,12 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import AssetSections from '$lib/components/styleguide/AssetSections.svelte';
   import ChromeSections from '$lib/components/styleguide/ChromeSections.svelte';
   import PrimitiveSections from '$lib/components/styleguide/PrimitiveSections.svelte';
   import RecipeSections from '$lib/components/styleguide/RecipeSections.svelte';
   import TokenSections from '$lib/components/styleguide/TokenSections.svelte';
   import VoiceSections from '$lib/components/styleguide/VoiceSections.svelte';
+  import PageShell from '$lib/components/page/PageShell.svelte';
   import SegmentedPicker, {
     type SegmentedPickerOption,
   } from '$lib/components/design/SegmentedPicker.svelte';
@@ -44,17 +44,18 @@
   />
 </svelte:head>
 
-<main class="styleguide">
-  <header>
-    <Breadcrumb current="Design system" />
+<!-- The one PageShell page on the themed defaults: the styleguide must render
+     in both themes, so unlike the light-pinned parent pages it forwards no
+     palette overrides — the class is only the hook the E2E specs anchor on. -->
+<PageShell class="styleguide" title="Splotch design system" wordmark="Splotch">
+  {#snippet lede()}
+    The visual language, rendered live from its sources — <code>lib/design/tokens.ts</code>
+    (which generates <code>tokens.css</code> via <code>npm run gen:tokens</code>),
+    <code>lib/palette.ts</code>, the icon set, and the shipped components. If it's not on this page,
+    it's not part of the visual language.
+  {/snippet}
 
-    <h1>Splotch design system</h1>
-    <p>
-      The visual language, rendered live from its sources — <code>lib/design/tokens.ts</code>
-      (which generates <code>tokens.css</code> via <code>npm run gen:tokens</code>),
-      <code>lib/palette.ts</code>, the icon set, and the shipped components. If it's not on this
-      page, it's not part of the visual language.
-    </p>
+  <header class="tools">
     <div class="theme-toggle">
       <SegmentedPicker
         label="Theme"
@@ -113,46 +114,13 @@
     <p>How Splotch sounds and signs its name — the copy rules and the brand marks.</p>
     <VoiceSections />
   </section>
-</main>
+</PageShell>
 
 <style>
-  .styleguide {
-    height: 100dvh;
-    overflow-y: auto;
-    padding: var(--space-6);
-    background: var(--app-bg);
-    color: var(--text);
-    /* pan-y keeps touch scrolling working under the app's global gesture
-       guards; pinch-zoom stays allowed — this is a public reference page. */
-    touch-action: pan-y pinch-zoom;
-    user-select: text;
-    -webkit-user-select: text;
-    scroll-behavior: smooth;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .styleguide {
-      scroll-behavior: auto;
-    }
-  }
-
-  /* Breadcrumb pins its current crumb to #666 for the light-only /admin host;
-     this page is themed (and its toggle flips to dark, where #666 is 3.1:1).
-     --text-soft is the same #666 in light theme, so only dark changes. */
-  .styleguide :global(.crumb-current) {
-    color: var(--text-soft);
-  }
-
-  header p,
   .part > p {
-    max-width: 60ch;
+    max-width: var(--page-measure);
     margin: var(--space-2) 0 var(--space-3);
     font-size: var(--font-size-sm);
-  }
-
-  h1 {
-    color: var(--text-strong);
-    font-size: var(--font-size-2xl);
   }
 
   code {
@@ -160,17 +128,20 @@
     color: var(--brand-text);
   }
 
-  .theme-toggle {
-    margin-top: var(--space-3);
+  /* Sits between the shell's hero and the first part: the toggle and jump nav
+     are page furniture, not content, so they stay above the first rule. */
+  .tools {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
   }
 
   .part-nav {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
-    margin-top: var(--space-4);
     font-size: var(--font-size-sm);
-    color: var(--text-soft);
+    color: var(--page-muted);
   }
 
   .part-nav a {
@@ -180,13 +151,13 @@
 
   .part {
     margin-top: var(--space-8);
-    border-top: var(--border-width) solid var(--border);
+    border-top: var(--border-width) solid var(--page-rule);
     padding-top: var(--space-6);
     scroll-margin-top: var(--space-4);
   }
 
   .part > h2 {
-    color: var(--text-strong);
+    color: var(--page-ink);
     font-size: var(--font-size-xl);
   }
 
@@ -200,7 +171,7 @@
 
   .defaults h3 {
     margin: 0 0 var(--space-2);
-    color: var(--text-strong);
+    color: var(--page-ink);
     font-size: var(--font-size-md);
   }
 

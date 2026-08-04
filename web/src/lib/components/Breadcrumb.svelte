@@ -60,15 +60,12 @@
     color: var(--text-soft);
   }
 
-  /* Hardcoded #666, not --text-soft, for the light-pinned host: /admin's
-     background is a hardcoded #f5f5f5, so --text-soft's dark-theme value
-     (#b3b1bf) would drop to 1.9:1 there, while #666 clears 4.5:1 (this crumb
-     once used a #999 gray, a 2.6:1 axe serious). #666 is only safe on a light
-     background — it is 3.1:1 on the dark --app-bg — so the themed hosts (the
-     /dev harnesses) override this with var(--text-soft), whose light value is
-     this same #666. A themed host that adds a breadcrumb needs that override. */
+  /* --text-soft is contrast-pinned for both themes; every host (the /dev
+     harnesses) is themed. A light-pinned host would need to override this —
+     the dark-theme value drops below 2:1 on a light ground (the /admin console
+     needed exactly that before it moved onto PageShell). */
   .crumb-current {
-    color: #666;
+    color: var(--text-soft);
     cursor: default;
   }
 </style>

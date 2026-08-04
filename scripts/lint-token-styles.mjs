@@ -49,8 +49,9 @@ const BASELINE = new Map(
     // (themed color tokens would half-dark-theme it). Every hex is a declared
     // --admin-* custom property, each pinned value commented with the
     // light-theme token it mirrors; AdminConsole and InviteMenu consume only
-    // the properties.
-    'lib/components/admin/adminPalette.css': 21,
+    // the properties, and the console's PageShell --page-* pins reference
+    // them rather than restating values.
+    'lib/components/admin/adminPalette.css': 22,
     // The polaroid flight's photographic near-paper whites — the print stays
     // paper-white on both themes, like the AiImageResult stage it lands in.
     'app.css': 2,
@@ -73,10 +74,6 @@ const BASELINE = new Map(
     // here: those read their hexes out of lib/palette.ts at render, which
     // palette-source.test.mjs requires.
     'lib/components/androidBeta/StepLedger.svelte': 10,
-    // Deliberate constant: #666 is contrast-pinned for the one light-only host
-    // (/admin), where --text-soft's dark value would be 1.9:1. Themed hosts
-    // (the /dev harnesses) override it — see the note on .crumb-current.
-    'lib/components/Breadcrumb.svelte': 1,
     // Photographic stage/polaroid whites.
     'lib/components/AiImageResult.svelte': 2,
     // #000 white-stroke keyline for the Brush/Stroke trigger faces.

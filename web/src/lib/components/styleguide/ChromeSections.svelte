@@ -89,12 +89,12 @@
       name: 'PageShell + RuleLabel',
       file: 'page/PageShell.svelte',
       blurb:
-        'The standalone-page chrome: ground, centered sheet, crayon-strip masthead, wordmark, hero. The reference look for parent pages (/android-beta, /feedback, /privacy).',
+        'The standalone-page chrome: ground, centered sheet, crayon-strip masthead, wordmark, hero. Worn by every standalone page (/android-beta, /feedback, /privacy, /admin, and this one).',
     },
     {
       name: 'Breadcrumb',
       file: 'Breadcrumb.svelte',
-      blurb: 'The Home / current-page trail on utility routes (and this page).',
+      blurb: 'The Home / current-page trail on the /dev harness routes.',
     },
     {
       name: 'Settings shells',
