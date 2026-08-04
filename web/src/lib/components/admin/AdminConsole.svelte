@@ -33,7 +33,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icon from '../Icon.svelte';
-  import Breadcrumb from '../Breadcrumb.svelte';
+  import PageShell from '../page/PageShell.svelte';
   import InviteMenu from './InviteMenu.svelte';
   import './adminPalette.css';
   import { timeAgo, usageDetail } from '$lib/adminFormat';
@@ -150,26 +150,18 @@
 </script>
 
 <div class="admin-page">
-  <main class="admin">
-    <Breadcrumb current="Admin" />
+  <PageShell class="admin-shell" title="Admin" wordmark="Splotch">
+    {#snippet lede()}
+      Manage AI access codes.
+    {/snippet}
 
-    <header class="admin-header">
-      <span class="admin-badge"><Icon name="lock" class="badge-icon" /></span>
-      <div>
-        <h1>Admin</h1>
-        <p class="subtitle">Manage AI access codes</p>
-      </div>
+    {#snippet actions()}
       {#if authed}
-        <button
-          type="button"
-          class="btn btn-ghost logout-button"
-          disabled={busy}
-          onclick={() => run(onlogout)}
-        >
+        <button type="button" class="btn btn-ghost" disabled={busy} onclick={() => run(onlogout)}>
           Sign out
         </button>
       {/if}
-    </header>
+    {/snippet}
 
     {#if !authed}
       <section class="card">
@@ -316,7 +308,7 @@
         {/if}
       </section>
     {/if}
-  </main>
+  </PageShell>
 
   <InviteMenu
     bind:this={inviteMenu}
@@ -331,72 +323,10 @@
 <style>
   /* The console styles itself from the light-pinned --admin-* palette in
      adminPalette.css (imported above; see its header for the light-only
-     rationale). Scale tokens (font sizes, radii, durations) are theme-safe
-     and used directly. */
-
-  /* A full-viewport scroll panel with its own light background. The admin console
-     is a normal scrollable, selectable, zoomable document — the drawing-route
-     app-surface locks (app.css) don't reach this route, so no opt-out is needed. */
-  .admin-page {
-    position: fixed;
-    inset: 0;
-    overflow-y: auto;
-    background: var(--admin-ground);
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .admin {
-    max-width: 640px;
-    margin: 0 auto;
-    padding: clamp(20px, 5vw, 48px) 16px 64px;
-    font-family: var(--font-family);
-    color: var(--admin-ink);
-  }
-
-  .admin-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-    margin-bottom: 28px;
-  }
-
-  /* Push the sign-out control to the far end of the header row. */
-  .logout-button {
-    margin-left: auto;
-  }
-
-  .admin-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 52px;
-    height: 52px;
-    border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, var(--brand), var(--admin-accent));
-    box-shadow: 0 6px 16px rgba(124, 77, 207, 0.35);
-    box-shadow: 0 6px 16px color-mix(in srgb, var(--admin-accent) 35%, transparent);
-    flex-shrink: 0;
-  }
-
-  :global(.admin-badge .badge-icon) {
-    width: 26px;
-    height: 26px;
-    filter: brightness(0) invert(1);
-  }
-
-  h1 {
-    margin: 0;
-    font-size: var(--font-size-2xl);
-    font-weight: var(--font-weight-bold);
-    letter-spacing: -0.01em;
-  }
-
-  .subtitle {
-    margin: 2px 0 0;
-    color: var(--admin-ink-muted);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-  }
+     rationale), and wears PageShell like the other standalone pages — the
+     shell's --page-* palette is pinned to the --admin-* values in that same
+     file. Scale tokens (font sizes, radii, durations) are theme-safe and
+     used directly. */
 
   /* Flash messages */
   .flash {
@@ -437,13 +367,14 @@
     border-radius: var(--radius-sm);
   }
 
-  /* Cards */
+  /* Cards — bordered panels in the /privacy highlights treatment: a drop
+     shadow reads as nothing when the card and the sheet share the white
+     surface, so the border is what separates them. */
   .card {
-    background: var(--admin-sheet);
+    border: 2px solid var(--admin-card-border);
     border-radius: var(--radius-lg);
     padding: var(--space-6);
     margin-bottom: var(--space-5);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   }
 
   .card h2 {

@@ -50,13 +50,6 @@
     -webkit-user-select: text;
   }
 
-  /* Breadcrumb pins its current crumb to #666 for the light-only /admin host;
-     this page is themed, where that is 3.1:1 on the dark paper. --text-soft is
-     the same #666 in light theme, so only dark changes. */
-  .index :global(.crumb-current) {
-    color: var(--text-soft);
-  }
-
   h1 {
     color: var(--text-strong);
     font-size: var(--font-size-2xl);

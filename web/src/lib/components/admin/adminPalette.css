@@ -39,4 +39,28 @@
   --admin-warn-ink: #93600b;
   --admin-warn-border: #fce5a8;
   --admin-warn-chip: #fdefc7;
+  /* The cards' panel stroke on the shell's white sheet — the same brand-tinted
+     border /privacy draws around its highlights panel. */
+  --admin-card-border: #eadcfa;
+}
+
+/* The console wears PageShell like the other standalone pages, and — being
+   light-only — pins the shell's themed --page-* defaults the way /privacy and
+   /android-beta do. Here the pins reference the --admin-* properties above
+   (the shell root sits inside .admin-page) so the two vocabularies can't
+   drift; the shadow is the same pinned light lift the other pinned pages use
+   (--float-shadow's dark value would halo the white sheet). */
+.admin-page .admin-shell {
+  --page-ground: var(--admin-ground);
+  --page-sheet: var(--admin-sheet);
+  --page-ink: var(--admin-ink);
+  --page-body: var(--admin-ink-muted);
+  --page-muted: var(--admin-ink-muted);
+  --page-rule: var(--admin-hairline);
+  --page-link: var(--admin-accent);
+  --page-link-hover: var(--admin-accent-hover);
+  --page-accent: var(--admin-accent);
+  --page-accent-hover: var(--admin-accent-hover);
+  --page-on-accent: var(--admin-on-accent);
+  --page-shadow: 0 1px 2px rgba(93, 84, 68, 0.05), 0 10px 30px rgba(93, 84, 68, 0.07);
 }

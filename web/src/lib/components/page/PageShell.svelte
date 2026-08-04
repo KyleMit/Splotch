@@ -2,10 +2,11 @@
   import type { Snippet } from 'svelte';
   import BrandMark from './BrandMark.svelte';
 
-  // The chrome every standalone, link-shareable page wears: a ground, a centered
-  // sheet, a masthead (back link + crayon strip + wordmark) and a hero. Shared
-  // by /android-beta, /feedback, and /privacy so a URL handed out in a store
-  // listing or a README lands somewhere recognisably Splotch either way.
+  // The chrome every standalone page wears: a ground, a centered sheet, a
+  // masthead (back link + crayon strip + wordmark) and a hero. Shared by
+  // /android-beta, /feedback, /privacy, /design, and the admin console so a
+  // URL handed out in a store listing or a README lands somewhere recognisably
+  // Splotch either way.
   //
   // The palette is the --page-* custom properties declared in the style block
   // below, defaulting to the themed app tokens; everything nested inside — the
@@ -19,12 +20,14 @@
     /** Small-caps mark beside the crayon strip, e.g. "Splotch for Android". */
     wordmark: string;
     lede?: Snippet;
+    /** A control the hero carries beside the title (the admin console's Sign out). */
+    actions?: Snippet;
     children: Snippet;
     /** Lands on the palette-bearing root, so a page can override --page-*. */
     class?: string;
   }
 
-  let { title, wordmark, lede, children, class: className }: Props = $props();
+  let { title, wordmark, lede, actions, children, class: className }: Props = $props();
 </script>
 
 <main class={['page', className]}>
@@ -39,9 +42,14 @@
     </div>
 
     <div class="hero">
-      <h1>{title}</h1>
-      {#if lede}
-        <p class="lede">{@render lede()}</p>
+      <div class="hero-text">
+        <h1>{title}</h1>
+        {#if lede}
+          <p class="lede">{@render lede()}</p>
+        {/if}
+      </div>
+      {#if actions}
+        <div class="hero-actions">{@render actions()}</div>
       {/if}
     </div>
 
@@ -166,7 +174,23 @@
   }
 
   .hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
     padding: 8px 0 34px;
+  }
+
+  .hero-text {
+    flex: 1 1 auto;
+  }
+
+  /* Rides level with the H1's cap height rather than the hero's top edge, so a
+     compact control doesn't float above the title it belongs to. */
+  .hero-actions {
+    flex-shrink: 0;
+    padding-top: 6px;
   }
 
   h1 {

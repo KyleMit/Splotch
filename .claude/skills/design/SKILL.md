@@ -147,10 +147,11 @@ not a wrapper component, which the bespoke-paper-treatment carve-out above rules
 **Extract a new primitive at the third duplicate**, not before — and add it to `/design` and the
 component table above when you do.
 
-## Page chrome — standalone parent pages
+## Page chrome — standalone pages
 
-The link-shareable parent pages (`/privacy`, `/android-beta`, `/feedback`) wear one shell, in
-**`web/src/lib/components/page/`**:
+Every standalone page — the link-shareable parent pages (`/privacy`, `/android-beta`, `/feedback`),
+the `/design` styleguide, and the admin console (`/admin` + `/admin/native`, via `AdminConsole`) —
+wears one shell, in **`web/src/lib/components/page/`**:
 
 | Component            | Use for                                                                                     |
 | -------------------- | ------------------------------------------------------------------------------------------- |
@@ -164,9 +165,14 @@ The link-shareable parent pages (`/privacy`, `/android-beta`, `/feedback`) wear 
 
 **Light-only pages pin the whole `--page-*` palette** on the class forwarded to `PageShell`
 (`/privacy` and `/android-beta` pin the same values, including a link purple darkened past `--brand`
-to clear 4.5:1). Read the pinned values from each route's own style block — they are the documented
-raw-value exception, not candidates for tokens. Content inside the shell reads `--page-*`, never
-restates a color.
+to clear 4.5:1; the admin console pins by referencing its `--admin-*` properties in
+`adminPalette.css`). Read the pinned values from each route's own style block — they are the
+documented raw-value exception, not candidates for tokens. The values that must agree across the
+pinned pages — the brand-tinted card border, the sheet shadow — are locked by the drift guard
+`web/src/lib/components/page/pinnedPalette.test.ts`, which fails on divergence; extend it when a new
+cross-page agreement appears. Content inside the shell reads `--page-*`, never restates a color.
+`/design` is the one shell page on the themed defaults — its theme toggle must keep working, so it
+forwards no palette overrides.
 
 ## Brand & iconography
 
