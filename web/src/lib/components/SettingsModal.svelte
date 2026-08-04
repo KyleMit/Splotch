@@ -455,8 +455,10 @@
     }
   }
 
+  /* --brand-solid, not --brand: the fill carries the item's label, and
+     --brand is only 3.4:1 against --on-brand (fails WCAG AA at this size). */
   .settings-nav-item.active {
-    background: var(--brand);
+    background: var(--brand-solid);
     color: var(--on-brand);
   }
 

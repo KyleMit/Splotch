@@ -60,7 +60,9 @@
     padding: 14px 32px;
     border: none;
     border-radius: var(--radius-pill);
-    background: var(--brand, #ab71e1);
+    /* --brand-solid, not --brand: an 18px bold label sits below WCAG's
+       large-text threshold, and --brand is only 3.4:1 under white. */
+    background: var(--brand-solid, #7c50bb);
     color: var(--on-brand, #fff);
     font: inherit;
     font-size: var(--font-size-lg);

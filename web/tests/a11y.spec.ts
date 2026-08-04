@@ -103,3 +103,37 @@ test('Settings has no serious accessibility violations', async ({ page }) => {
 
   await expectNoSeriousViolations(page, '#settingsModal');
 });
+
+// Axe reports the dialog's color-contrast checks as incomplete (bgOverlap), so
+// a failing brand fill sails through the scan above. This computes the ratio
+// directly for the one selected-state fill the scan can't see.
+function contrastRatio(fg: [number, number, number], bg: [number, number, number]) {
+  const channel = (v: number) => {
+    const c = v / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = ([r, g, b]: [number, number, number]) =>
+    0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+  const [hi, lo] = [luminance(fg), luminance(bg)].sort((a, b) => b - a);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+function parseRgb(value: string): [number, number, number] {
+  const match = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!match) throw new Error(`not an rgb() color: ${value}`);
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+}
+
+test('the active Settings nav item holds WCAG AA contrast', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  await openSettingsModal(page);
+
+  const active = page.locator('.settings-nav-item.active').first();
+  await expect(active).toBeVisible();
+  const { color, backgroundColor } = await active.evaluate((el) => {
+    const style = getComputedStyle(el);
+    return { color: style.color, backgroundColor: style.backgroundColor };
+  });
+  expect(contrastRatio(parseRgb(color), parseRgb(backgroundColor))).toBeGreaterThanOrEqual(4.5);
+});

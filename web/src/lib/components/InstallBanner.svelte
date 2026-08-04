@@ -271,7 +271,9 @@
     padding: 10px 16px;
     border: none;
     border-radius: var(--radius-lg);
-    background: var(--brand, #ab71e1);
+    /* --brand-solid, not --brand: this fill carries a bold 16px label, below
+       WCAG's large-text threshold, and --brand is only 3.4:1 under white. */
+    background: var(--brand-solid, #7c50bb);
     color: var(--on-brand, #fff);
     font-size: var(--font-size-md);
     font-weight: var(--font-weight-bold);
