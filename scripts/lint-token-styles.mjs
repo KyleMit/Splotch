@@ -1,7 +1,7 @@
 // Token lints for component styles (ADR-0071). Scans the <style> blocks of
 // every web/src Svelte component — plus the hand-authored plain .css files
 // (app.css, the admin palette; the generated tokens.css is the token source
-// and is excluded) — for two classes of raw values that should be design
+// and is excluded) — for the classes of raw values that should be design
 // tokens (from web/src/lib/design/tokens.ts):
 //
 // 1. Raw hex colors — a ratchet against the committed baseline below. The
