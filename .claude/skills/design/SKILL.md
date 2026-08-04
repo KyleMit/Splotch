@@ -71,8 +71,9 @@ Foundations and only reach past a default when a rule says so.
 |           | headings; body prose stays at the untokenized 400 default)                                             |
 | Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s); two curves only — `--ease-pop` (springy overshoot:       |
 |           | anything that pops in or celebrates) and `--ease-glide` (anything that settles or leaves).             |
-|           | Transitions pair a curve with a duration token; a one-shot celebration keyframe (ripple, swatch        |
-|           | ring, download pop) may carry its own tuned timing                                                     |
+|           | Control-state motion (hover, press, reveal, fades) pairs a curve with a duration token; tuned          |
+|           | one-shot choreography — celebration keyframes, staged sequences like the AI reveal and polaroid        |
+|           | flight, gesture feedback — carries its own timing, whichever CSS mechanism renders it                  |
 | Elevation | `--shadow-control` (the tight lift on a small raised control — modal close disc, selected segment      |
 |           | thumb), `--shadow-pop` (deep overlay lift under modal cards); `--float-shadow`,                        |
 |           | `--float-shadow-flyout` (themed, paper cards)                                                          |
