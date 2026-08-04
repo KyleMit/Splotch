@@ -260,13 +260,16 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    margin-bottom: 20px;
+    margin-bottom: var(--space-5);
   }
 
   .coloring-book-header h2 {
     margin: 0;
   }
 
+  /* 36px is control sizing, not spacing — the repo has no size ramp (the 44px
+     modal close disc and 48px corner buttons in app.css are raw for the same
+     reason). */
   .coloring-back-button {
     width: 36px;
     height: 36px;
@@ -402,8 +405,11 @@
     mix-blend-mode: var(--lineart-blend);
   }
 
+  /* The 28px bottom band reserves the overlaid .coloring-book-label's height:
+     snapping down risks the caption covering the art, snapping up opens a gap.
+     Functional, not scale drift. */
   .coloring-book-tile img {
-    padding: 8px 8px 28px 8px;
+    padding: var(--space-2) var(--space-2) 28px var(--space-2);
   }
 
   .coloring-pages-grid .coloring-tile {
@@ -424,7 +430,7 @@
 
   @media (max-width: 520px) {
     .coloring-book-content {
-      padding: 24px 18px;
+      padding: var(--space-6) var(--space-4);
     }
 
     .coloring-books-grid {
@@ -441,7 +447,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 6px 8px;
+    padding: var(--space-1) var(--space-2);
     /* rgba fallback precedes the color-mix (docs/COMPATIBILITY.md); both follow
        the theme so the caption sits on the tile's own paper tone. */
     background: rgba(255, 255, 255, 0.92);

@@ -178,13 +178,15 @@ Use it to:
 
 ## Migration status
 
-The legacy migration is done: every raw value in component `<style>` blocks that mapped to a token
-was swapped (same-value, zero visual change). What remains raw is deliberate — documented one-offs
-(polaroid/photographic whites, ClearButton's unthemed danger red, confetti colors, canvas chrome)
-and the two **deliberately light-only pages** (`/admin`, `/privacy`): a dark theme for them was
-considered and declined (owner decision, recorded in the ADR-0071 amendment — don't re-open it).
-Their self-contained palettes must not use the themed color tokens: those flip with
-`data-theme`/`prefers-color-scheme` and would half-dark-theme them.
+Colors, type, weights, radii, easing, and the swept surfaces' spacing are migrated; **spacing
+elsewhere is not** — raw px padding/margin/gap is still the norm in older components, and only the
+hex ratchet enforces anything, so rule 2 is what governs spacing in new and edited styles. What
+remains raw beyond that is deliberate — documented one-offs (polaroid/photographic whites,
+ClearButton's unthemed danger red, confetti colors, canvas chrome, functional literals like
+ColoringBook's label reserve) and the **deliberately light-only pages** (`/admin`, `/privacy`,
+`/android-beta`): a dark theme for them was considered and declined (owner decision, recorded in the
+ADR-0071 amendment — don't re-open it). Their self-contained palettes must not use the themed color
+tokens: those flip with `data-theme`/`prefers-color-scheme` and would half-dark-theme them.
 
 CI enforces this with `npm run lint:tokens` — a per-file raw-hex ratchet whose allowlisted baseline
 (with per-file reasons) lives in `scripts/lint-token-styles.mjs`. A new raw hex color fails the
