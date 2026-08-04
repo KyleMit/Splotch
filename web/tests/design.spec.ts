@@ -51,3 +51,15 @@ test('every token swatch paints a real fill', async ({ page }) => {
     .map((key) => toCssVarName(key));
   expect(unpainted.sort()).toEqual(transparentByDesign.sort());
 });
+
+test('the styleguide never scrolls sideways on a phone viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/design');
+  await expect(page.locator('h1', { hasText: 'Splotch design system' })).toBeVisible();
+
+  // Polled, not read once: the font load can reflow the token tables after
+  // first paint, and overflow only exists once the widest row has laid out.
+  await expect
+    .poll(() => page.locator('main.styleguide').evaluate((el) => el.scrollWidth - el.clientWidth))
+    .toBeLessThanOrEqual(0);
+});

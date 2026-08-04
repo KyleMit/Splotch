@@ -347,6 +347,22 @@
     gap: var(--space-3);
   }
 
+  /* Phone: the three-column row can't fit (16rem of label alone eats half a
+     390px viewport), so each row stacks — head, then specimen, then value —
+     and the page never scrolls sideways (design.spec.ts asserts it). */
+  @media (max-width: 640px) {
+    .scale-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-1);
+      padding-bottom: var(--space-2);
+    }
+  }
+
+  .value,
+  code {
+    overflow-wrap: anywhere;
+  }
+
   .row-head {
     display: flex;
     flex-direction: column;
