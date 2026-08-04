@@ -720,15 +720,17 @@
     margin-inline: auto;
   }
 
-  /* On narrow screens the column grid won't fit: the header row drops, each
-     row collapses to code-over-usage beside a single Copy plus the "⋯"
-     overflow menu, and the add button shortens to "Add". */
-  @media (max-width: 560px) {
+  /* Where the column grid stops fitting, the header row drops and each row
+     collapses to code-over-usage beside a single Copy plus the "⋯" overflow
+     menu. 800px is where the sheet's content width (viewport minus PageShell's
+     page padding and gutters, ~684px here) still clears the fixed usage/action
+     tracks, gaps, and row padding (~524px) with a useful code column left over;
+     below it the code track gets squeezed toward zero. */
+  @media (max-width: 800px) {
     .ledger-head,
     .cell-gens,
     .cell-last,
-    .wide-actions,
-    .add-label-full {
+    .wide-actions {
       display: none;
     }
 
@@ -749,6 +751,13 @@
 
     .compact-actions {
       display: inline-flex;
+    }
+  }
+
+  /* Phone: the add button shortens to "Add". */
+  @media (max-width: 560px) {
+    .add-label-full {
+      display: none;
     }
 
     .add-label-short {
