@@ -55,29 +55,31 @@ export const scale = {
   space7: '32px',
   space8: '40px',
 
-  // Controls sit on sm/md, cards on lg, sheet-scale surfaces on xl, pills on
-  // pill. There is no xs step: inline chips (code, kbd) round at sm.
+  // Controls sit on sm/md, everything card-sized and up on lg, pills on pill.
+  // There is no xs step (inline chips round at sm) and no xl step (page
+  // sheets, banners, and modal cards all share lg — one corner for every
+  // surface bigger than a control).
   radiusSm: '8px',
   radiusMd: '12px',
   radiusLg: '16px',
-  radiusXl: '22px',
   radiusPill: '999px',
 
   borderWidth: '1px',
 
   // Named --font-size-*, not --text-*, so the type ramp can't collide with
   // the themed text-color family (--text, --text-strong, --text-soft).
-  // Six steps, one role each: xs fine print · sm UI chrome · md body prose ·
-  // lg ledes and section heads · xl modal titles · 2xl page H1s.
+  // Five steps, one role each: xs fine print · sm UI chrome · md body prose ·
+  // lg ledes and section heads · xl titles. xl is the ceiling inside any
+  // surface — modal titles, card titles, section H2s all share it; the only
+  // thing bigger is a full-page hero on the display tier below.
   fontSizeXs: '12px',
   fontSizeSm: '14px',
   fontSizeMd: '16px',
   fontSizeLg: '18px',
   fontSizeXl: '22px',
-  fontSize2xl: '28px',
-  // The display tier above the body ramp: the standalone parent pages' hero
-  // (PageShell's H1). Fluid — 34px on a phone, 46px once the sheet has room —
-  // replacing the old fixed-size breakpoint swap.
+  // The display tier above the body ramp: the H1 of a whole page — PageShell's
+  // hero, the crash screen, the dev index. Fluid — 34px on a phone, 46px once
+  // the sheet has room — replacing the old fixed-size breakpoint swap.
   fontSizeDisplay: 'clamp(34px, 3.2vw + 17px, 46px)',
 
   // Text-input font-size floor: iOS Safari / WKWebView zooms the visual
@@ -111,8 +113,8 @@ export const scale = {
   easeGlide: 'cubic-bezier(0.22, 1, 0.36, 1)',
 
   // Neutral (unthemed) elevation. The paper-floating cards use the *themed*
-  // --float-shadow tokens instead — these are for modal-layer chrome where
-  // one shadow reads correctly on both themes.
+  // --float-shadow instead — these are for modal-layer chrome where one
+  // shadow reads correctly on both themes.
   //
   // shadowControl is the tight, hard lift on a small raised control — the
   // modal close disc, a segmented toggle's selected thumb — close enough that
@@ -184,16 +186,20 @@ export interface ThemeTokens {
   surface: string;
   /** setting cards, inset panels */
   surface2: string;
+  /** hover fill for quiet controls on any surface, paper-toned chrome included */
   surfaceHover: string;
-  /** beige hover on paper-toned buttons */
-  surfaceWarmHover: string;
   border: string;
   borderWarm: string;
   borderWarmStrong: string;
-  /** toggle-switch off state */
+  /**
+   * Every inactive track: the toggle-switch off state, slider rails, and
+   * segmented-picker tracks — one recessed gray, so tracks read as the same
+   * kind of thing wherever they appear. Its value is pinned to hold 4.5:1
+   * under --text-soft in both themes, because segmented pickers set their
+   * unselected labels directly on the track (a11y.spec.ts enforces it).
+   */
   controlTrack: string;
   controlTrackHover: string;
-  sliderTrack: string;
   /** snap-detent tick over track + fill */
   sliderNotch: string;
   textStrong: string;
@@ -204,10 +210,13 @@ export interface ThemeTokens {
    * both themes, so small soft text never needs a darker exception.
    */
   textSoft: string;
-  /** monochrome icon fill (matches the SVGs' baked fill) */
+  /**
+   * Monochrome icon fill (matches the SVGs' baked fill). Also the hover state
+   * of --icon-muted: quiet chrome icons rest muted and hover to full ink —
+   * there is no intermediate hover step.
+   */
   iconInk: string;
   iconMuted: string;
-  iconMutedHover: string;
   /** brand-tinted active/selected fills */
   brandWash: string;
   /** one step stronger, for hovering washed elements */
@@ -230,13 +239,11 @@ export interface ThemeTokens {
   brandSolidHover: string;
   /** verification / feedback banners */
   successWash: string;
-  successText: string;
   /**
-   * Confirmation check/icon green (download-done, setup check) — brighter
-   * than --success-text. Minted same-value in both themes from the recurring
-   * raw #4caf50; a dark-tuned value would be a visible change needing review.
+   * The one success green: ink on --success-wash and the confirmation
+   * check/icon color (download-done, setup check). Tuned per theme.
    */
-  successAccent: string;
+  successText: string;
   dangerWash: string;
   dangerText: string;
   /**
@@ -272,11 +279,11 @@ export interface ThemeTokens {
    * Hairline edge + lift for the float cards. In light mode the edge is
    * transparent (the warm drop shadow does the separating); in dark mode a
    * faint light hairline plus a real drop shadow give the cards a visible
-   * edge against the dark paper, where the warm shadow vanishes.
+   * edge against the dark paper, where the warm shadow vanishes. One lift for
+   * every paper-floating surface — cards, flyouts, page sheets alike.
    */
   floatBorder: string;
   floatShadow: string;
-  floatShadowFlyout: string;
   /**
    * Keyline ringing near-black currentColor ink on the float cards — the
    * dark twin of the white-ink black keyline (ActionsPanel .white-stroke).
@@ -291,20 +298,17 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     surface: '#ffffff',
     surface2: '#f8f8f8',
     surfaceHover: '#f5f5f5',
-    surfaceWarmHover: '#f4f0ea',
     border: '#e0e0e0',
     borderWarm: '#ddd6cc',
     borderWarmStrong: '#c4bbad',
-    controlTrack: '#ddd',
+    controlTrack: '#e9e9e9',
     controlTrackHover: '#ccc',
-    sliderTrack: '#e9e9e9',
     sliderNotch: 'rgba(0, 0, 0, 0.22)',
     textStrong: '#333',
     text: '#555',
     textSoft: '#666',
     iconInk: '#1f1f1f',
     iconMuted: '#737373',
-    iconMutedHover: '#404040',
     brandWash: '#ede7f6',
     brandWashHover: '#e3d7f5',
     brandText: '#7c50bb',
@@ -312,7 +316,6 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     brandSolidHover: '#6b3fbf',
     successWash: '#e9f7ec',
     successText: '#2e7d4f',
-    successAccent: '#4caf50',
     dangerWash: '#fdecec',
     dangerText: '#b04a4a',
     paper: '#fcfbf8',
@@ -324,7 +327,6 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     floatSurfaceHover: '#f5f5f5',
     floatBorder: 'transparent',
     floatShadow: '0 2px 6px rgba(93, 84, 68, 0.14), 0 6px 16px rgba(93, 84, 68, 0.1)',
-    floatShadowFlyout: '0 6px 20px rgba(93, 84, 68, 0.2)',
     darkInkKeyline: 'transparent',
   },
   dark: {
@@ -332,20 +334,17 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     surface: '#23232b',
     surface2: '#2d2d37',
     surfaceHover: '#33333e',
-    surfaceWarmHover: '#33333e',
     border: '#3d3d49',
     borderWarm: '#3d3d49',
     borderWarmStrong: '#4d4d5b',
-    controlTrack: '#4a4a57',
+    controlTrack: '#3a3a45',
     controlTrackHover: '#575765',
-    sliderTrack: '#3a3a45',
     sliderNotch: 'rgba(255, 255, 255, 0.4)',
     textStrong: '#eceaf2',
     text: '#c9c7d3',
     textSoft: '#b3b1bf',
     iconInk: '#dedce8',
     iconMuted: '#a8a6b3',
-    iconMutedHover: '#e8e6f0',
     brandWash: '#3b2f4f',
     brandWashHover: '#46395c',
     brandText: '#c9a9f0',
@@ -353,7 +352,6 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     brandSolidHover: '#6f47b0',
     successWash: '#24382b',
     successText: '#8bcfa4',
-    successAccent: '#4caf50',
     dangerWash: '#422a2c',
     dangerText: '#e09393',
     paper: '#211f29',
@@ -365,12 +363,11 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     floatSurfaceHover: '#393744',
     floatBorder: 'rgba(255, 255, 255, 0.1)',
     floatShadow: '0 0 0 1px rgba(255, 255, 255, 0.06), 0 3px 10px rgba(0, 0, 0, 0.5)',
-    floatShadowFlyout: '0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 22px rgba(0, 0, 0, 0.6)',
     darkInkKeyline: '#e9e7f0',
   },
 };
 
-// `appBg` → `--app-bg`, `surface2` → `--surface-2`, `fontSize2xl` → `--font-size-2xl`.
+// `appBg` → `--app-bg`, `surface2` → `--surface-2`, `brandSolidHover` → `--brand-solid-hover`.
 export function toCssVarName(key: string): string {
   return `--${key.replace(/([a-z])([A-Z0-9])/g, '$1-$2').toLowerCase()}`;
 }

@@ -126,7 +126,7 @@
     border: none;
     border-radius: 50%;
     color: var(--text-soft);
-    background: var(--slider-track);
+    background: var(--control-track);
     cursor: pointer;
   }
 

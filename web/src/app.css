@@ -200,12 +200,12 @@ body {
 
 @media (hover: hover) {
   .modal-close-btn:not(:disabled):hover {
-    background: var(--surface-warm-hover);
+    background: var(--surface-hover);
     border-color: var(--border-warm-strong);
   }
 
   .modal-close-btn:not(:disabled):hover .modal-close-icon svg {
-    fill: var(--icon-muted-hover);
+    fill: var(--icon-ink);
   }
 }
 
@@ -243,7 +243,7 @@ body {
   }
 
   .corner-button:hover .corner-button-icon svg {
-    fill: var(--icon-muted-hover);
+    fill: var(--icon-ink);
   }
 }
 
@@ -276,7 +276,7 @@ body {
   background: var(--float-surface);
   border: none;
   border-radius: 16px;
-  box-shadow: var(--float-shadow-flyout);
+  box-shadow: var(--float-shadow);
   z-index: var(--z-flyout);
 }
 

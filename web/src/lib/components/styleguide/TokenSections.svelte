@@ -5,12 +5,7 @@
   const brandKeys = Object.keys(brand) as (keyof typeof brand)[];
   const themeKeys = Object.keys(themes.light) as (keyof ThemeTokens)[];
   // Tokens whose value isn't a paintable color get listed as text, not swatches.
-  const nonColorKeys = new Set<keyof ThemeTokens>([
-    'lineartFilter',
-    'lineartBlend',
-    'floatShadow',
-    'floatShadowFlyout',
-  ]);
+  const nonColorKeys = new Set<keyof ThemeTokens>(['lineartFilter', 'lineartBlend', 'floatShadow']);
   const colorKeys = themeKeys.filter((k) => !nonColorKeys.has(k));
 
   const scaleKeys = Object.keys(scale) as (keyof typeof scale)[];
@@ -140,8 +135,9 @@
 <section>
   <h3>Type scale</h3>
   <p>
-    Six body steps plus the display tier, one role each — if two steps both look right, take the
-    smaller.
+    Five body steps plus the display tier, one role each — if two steps both look right, take the
+    smaller. Titles stop at <code>xl</code>; only the H1 of a whole page takes
+    <code>display</code>.
   </p>
   <div class="row-list">
     {#each fontSizeKeys as key (key)}
@@ -209,11 +205,6 @@
       <div class="shadow-box float" style:box-shadow={cssVar('floatShadow')}></div>
       <code>--float-shadow</code>
       <span class="usage">{themeUsage.floatShadow}</span>
-    </div>
-    <div class="swatch-card">
-      <div class="shadow-box float" style:box-shadow={cssVar('floatShadowFlyout')}></div>
-      <code>--float-shadow-flyout</code>
-      <span class="usage">{themeUsage.floatShadowFlyout}</span>
     </div>
   </div>
 </section>

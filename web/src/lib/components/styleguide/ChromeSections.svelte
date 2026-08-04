@@ -185,7 +185,7 @@
     {/each}
   </div>
   <span class="value">
-    Paper-card popover on --float-surface with --float-shadow-flyout — live: pick an option and the
+    Paper-card popover on --float-surface with --float-shadow — live: pick an option and the
     selected entry wears the brand ring.
   </span>
 

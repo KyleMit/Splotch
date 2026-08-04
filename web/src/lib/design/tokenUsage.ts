@@ -26,8 +26,8 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
 
   radiusSm: 'Inline chips: code, kbd, small tags.',
   radiusMd: 'Controls: buttons, inputs, segmented pickers.',
-  radiusLg: 'Cards and grouped panels.',
-  radiusXl: 'Sheet-scale surfaces: page sheets, banners, hero cards.',
+  radiusLg:
+    'Everything bigger than a control: cards, grouped panels, modal cards, banners, page sheets.',
   radiusPill: 'Fully-round pills and toggle tracks.',
 
   borderWidth: 'The one hairline width; color comes from a themed border token.',
@@ -36,10 +36,10 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
   fontSizeSm: 'UI chrome: buttons, labels, rows, nav — the workhorse.',
   fontSizeMd: 'Body prose on parent pages and modals.',
   fontSizeLg: 'Ledes and section headings.',
-  fontSizeXl: 'Modal and card titles.',
-  fontSize2xl: 'Page-level H1s.',
+  fontSizeXl:
+    'Titles — the ceiling inside any surface: modal titles, card titles, section H2s. Nothing between this and the display tier.',
   fontSizeDisplay:
-    'The standalone parent pages’ hero — PageShell’s H1, fluid from phone to desktop.',
+    'The H1 of a whole page — PageShell’s hero, the crash screen — fluid from phone to desktop.',
   inputFontSize:
     'Every text input — floors the size at 16px so iOS Safari never zoom-strands the canvas (ADR-0076).',
   fontFamily: 'The app-wide sans stack; reference it, never restate it.',
@@ -84,21 +84,21 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   appBg: 'The ground behind parent-page content (never the drawing paper).',
   surface: 'Modal cards, the palette bar — the default card fill.',
   surface2: 'Inset panels and setting cards sitting on --surface.',
-  surfaceHover: 'Hover fill for quiet controls on a surface.',
-  surfaceWarmHover: 'Hover fill for paper-toned chrome (modal close disc, Install Banner).',
+  surfaceHover:
+    'The one hover fill for quiet controls — paper-toned chrome (modal close disc, Install Banner) included.',
   border: 'The default hairline on surfaces.',
   borderWarm: 'Hairline on paper-toned chrome.',
   borderWarmStrong: 'The hovered/emphasized step of --border-warm.',
-  controlTrack: 'A toggle switch in the off state.',
-  controlTrackHover: 'The hovered off-state toggle.',
-  sliderTrack: 'Slider rails and segmented-picker tracks.',
+  controlTrack:
+    'Every inactive track: toggle-off state, slider rails, segmented-picker tracks. Pinned to hold 4.5:1 under --text-soft labels.',
+  controlTrackHover: 'The hovered step of --control-track.',
   sliderNotch: 'The snap-detent tick over a slider track.',
   textStrong: 'Headings and emphasized copy.',
   text: 'Body copy — the default ink.',
   textSoft: 'De-emphasized copy: help text, metadata, separators. Holds 4.5:1 even at small sizes.',
-  iconInk: 'Monochrome icon fill on themed surfaces.',
+  iconInk:
+    'Monochrome icon fill on themed surfaces — and the hover state of --icon-muted: quiet icons hover to full ink.',
   iconMuted: 'Quiet chrome icons at rest.',
-  iconMutedHover: 'Quiet chrome icons on hover.',
   brandWash: 'Brand-tinted selected/active fills that keep dark ink.',
   brandWashHover: 'The hovered step of --brand-wash.',
   brandText: 'Brand-colored ink on plain surfaces: links, active labels.',
@@ -106,8 +106,7 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
     'The brand fill that carries text (4.5:1 against --on-brand) — primary actions, selected chips.',
   brandSolidHover: 'The hovered step of --brand-solid; also the hover of a textless --brand fill.',
   successWash: 'Success banner and confirmation fills.',
-  successText: 'Ink on --success-wash.',
-  successAccent: 'The brighter confirmation check/icon green.',
+  successText: 'The one success green: ink on --success-wash and confirmation checks/icons alike.',
   dangerWash: 'Destructive-action fills and error banners.',
   dangerText: 'Ink on --danger-wash.',
   paper: 'The drawing paper under the grain texture; JS reads it via PAPER_COLORS.',
@@ -118,7 +117,7 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   floatSurface: 'Cards floating over the paper: action buttons, flyouts.',
   floatSurfaceHover: 'The hovered step of --float-surface.',
   floatBorder: 'The hairline edge that keeps float cards visible on dark paper.',
-  floatShadow: 'The themed lift under paper-floating cards and page sheets.',
-  floatShadowFlyout: 'The stronger themed lift under open flyouts.',
+  floatShadow:
+    'The one themed lift for everything floating on the paper — cards, open flyouts, page sheets.',
   darkInkKeyline: 'The keyline ringing near-black ink on float cards; inert in light mode.',
 };

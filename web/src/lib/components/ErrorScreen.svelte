@@ -42,9 +42,9 @@
 
   h1 {
     margin: 0;
-    /* fallback intentionally stays 32px (not the token's 28px) to preserve today's
-       crash-path rendering size if tokens.css fails to load */
-    font-size: var(--font-size-2xl, 32px);
+    /* fallback is a fixed 32px near the token's fluid floor: the crash path
+       must render a sane size even if tokens.css fails to load */
+    font-size: var(--font-size-display, 32px);
     font-weight: var(--font-weight-bold);
   }
 

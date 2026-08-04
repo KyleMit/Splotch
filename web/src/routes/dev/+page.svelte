@@ -52,7 +52,7 @@
 
   h1 {
     color: var(--text-strong);
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-display);
   }
 
   .intro {
