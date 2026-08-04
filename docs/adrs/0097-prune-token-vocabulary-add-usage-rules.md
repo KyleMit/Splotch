@@ -24,10 +24,12 @@ of the audit each pair's "base" member had a single consumer; this ADR is that r
 
 The pruned vocabulary (same-value merges except where noted):
 
-* **Type: six steps, one role each** — `--font-size-xs/sm/md/lg/xl/2xl` = 12/14/16/18/22/28px (fine
-  print · UI chrome · body prose · ledes/section heads · modal titles · page H1s). The old 13px `sm`
-  step folded into 14 (its consumers grew 1px); every other name shifted down one slot at the same
-  value. `--input-font-size` keeps carrying the ADR-0076 iOS floor.
+* **Type: six body steps plus one display tier, one role each** — `--font-size-xs/sm/md/lg/xl/2xl` =
+  12/14/16/18/22/28px (fine print · UI chrome · body prose · ledes/section heads · modal titles ·
+  page H1s). The old 13px `sm` step folded into 14 (its consumers grew 1px); every other name
+  shifted down one slot at the same value. `--input-font-size` keeps carrying the ADR-0076 iOS
+  floor, and `--font-size-display` (fluid 34–46px) is the standalone parent pages' PageShell hero
+  above the body ramp.
 * **Weights: fully tokenized, not reduced** — `--font-weight-medium/semibold/bold` (500/600/700),
   with 400 as the untokenized body default. The audit initially suggested retiring 500, but 500 is
   the app's genuine label weight (19 coherent uses across settings rows); the defect was
@@ -67,10 +69,7 @@ styleguide partials, so the guidance strings never enter the drawing route's bun
 * The two "don't converge" comments in `tokens.ts` are superseded by this review.
 * Adding a token now has one more gate: no usage rule in `tokenUsage.ts`, no compile. The vocabulary
   table in the `design` skill and the `/design` page remain the other two registration points.
-* `/admin` and `/privacy` keep their raw weights pending their own design pass — the weight sweep
-  deliberately skipped the light-only pages so their cleanup lands as one review.
-* The audit's remaining findings — the off-ramp `PageShell` type scale, whole-file raw-size opt-outs
-  (`StepLedger`, `/feedback`), duration-token adoption, primitive adoption beyond the Settings
-  subtree — are downstream work, not part of this decision. (Amended 2026-08: the PageShell family
-  moved onto the ramp, adding one display-tier step above it — `--font-size-display`, the fluid
-  standalone-page hero.)
+* The audit's remaining findings were downstream work, not part of this decision; the follow-up
+  passes have since landed them — the light-only pages' design pass (weights included), the
+  PageShell family's move onto the ramp (which added the display tier above the six body steps), and
+  the duration reconciliation. Primitive adoption beyond the Settings subtree remains open.
