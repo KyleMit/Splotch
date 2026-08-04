@@ -3,6 +3,7 @@
   import SplotchyIcon from './SplotchyIcon.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { paletteHex } from '$lib/palette';
+  import { COLOR_FAMILIES } from '$lib/hexPickerLayout';
   import {
     gate,
     dismissGate,
@@ -10,11 +11,19 @@
     pressGateBackspace,
     setGateRememberMode,
     GATE_REMEMBER_MODES,
+    GATE_SHAKE_MS,
     type GateRememberMode,
   } from '$lib/state/parentalGate.svelte';
 
   // Operand splats wear crayon hues, not chrome tokens — they read as paint.
-  const OPERAND_FILLS = [paletteHex('Purple'), paletteHex('Blue')];
+  // Both fills must hold ≥3:1 against the --on-brand digit (WCAG AA large
+  // text, asserted in a11y.spec.ts): palette Purple #AB71E1 is 3.40:1, but
+  // palette Blue #62A2E9 is only 2.67:1, so the second splat borrows the
+  // picker's mid-blue (#2196F3, 3.12:1) instead.
+  const OPERAND_FILLS = [
+    paletteHex('Purple'),
+    COLOR_FAMILIES.find((family) => family.name === 'blues')!.shades[4],
+  ];
   // Organic blob shapes; plain geometry, one per operand so the pair reads as
   // two hand-made daubs rather than stamped circles.
   const OPERAND_RADII = ['58% 42% 55% 45% / 45% 58% 42% 55%', '45% 55% 48% 52% / 55% 45% 58% 42%'];
@@ -52,10 +61,18 @@
     open: gate.open,
     origin: gate.origin,
     onRequestClose: dismissGate,
+    // A correct answer is committed: dismissing during the success hold would
+    // silently drop the captured destination, so backdrop taps and Esc are
+    // blocked until the handoff runs.
+    allowDismiss: () => !gate.unlocked,
   })}
   onkeydown={handleKeydown}
 >
-  <div class="gate-content" class:shaking={gate.shaking}>
+  <div
+    class="gate-content"
+    class:shaking={gate.shaking}
+    style:--gate-shake-duration={`${GATE_SHAKE_MS}ms`}
+  >
     {#if gate.unlocked}
       <div class="gate-success" role="status">
         <span class="gate-success-badge">
@@ -108,29 +125,33 @@
           </button>
         </div>
       </div>
-      <!-- A fieldset's legend can't join its flex layout (it always pins to the
-           top border area), and the landscape column centers the label with the
-           rows — so the group semantic comes from the role instead. -->
-      <div class="gate-remember" role="radiogroup" aria-labelledby="gateRememberLabel">
-        <p class="gate-remember-label" id="gateRememberLabel">After I solve it</p>
-        {#each GATE_REMEMBER_MODES as mode (mode)}
-          <label class="gate-radio">
-            <input
-              class="gate-radio-input"
-              type="radio"
-              name="gate-remember"
-              value={mode}
-              checked={gate.rememberMode === mode}
-              onchange={() => setGateRememberMode(mode)}
-            />
-            <span class="gate-radio-dot" aria-hidden="true"></span>
-            <span class="gate-radio-text">
-              <span class="gate-radio-title">{REMEMBER_OPTIONS[mode].title}</span>
-              <span class="gate-radio-sub">{REMEMBER_OPTIONS[mode].sub}</span>
-            </span>
-          </label>
-        {/each}
-      </div>
+      <!-- Hidden on a forced attempt (external links): those always re-ask, so
+           offering a remember choice there would promise a skip that never
+           applies. A fieldset's legend can't join its flex layout (it always
+           pins to the top border area), and the landscape column centers the
+           label with the rows — so the group semantic comes from the role. -->
+      {#if !gate.force}
+        <div class="gate-remember" role="radiogroup" aria-labelledby="gateRememberLabel">
+          <p class="gate-remember-label" id="gateRememberLabel">After I solve it</p>
+          {#each GATE_REMEMBER_MODES as mode (mode)}
+            <label class="gate-radio">
+              <input
+                class="gate-radio-input"
+                type="radio"
+                name="gate-remember"
+                value={mode}
+                checked={gate.rememberMode === mode}
+                onchange={() => setGateRememberMode(mode)}
+              />
+              <span class="gate-radio-dot" aria-hidden="true"></span>
+              <span class="gate-radio-text">
+                <span class="gate-radio-title">{REMEMBER_OPTIONS[mode].title}</span>
+                <span class="gate-radio-sub">{REMEMBER_OPTIONS[mode].sub}</span>
+              </span>
+            </label>
+          {/each}
+        </div>
+      {/if}
     {/if}
   </div>
 </dialog>
@@ -145,14 +166,10 @@
     padding: 22px var(--space-6) var(--space-5);
   }
 
+  /* --gate-shake-duration is stamped by the markup from GATE_SHAKE_MS, the
+     same constant that clears the shaking flag — one source of truth. */
   .gate-content.shaking {
     animation: gateShakeSoft var(--gate-shake-duration) ease;
-  }
-
-  /* Duration must match GATE_SHAKE_MS in parentalGate.svelte.ts, which clears
-     the shaking flag when this animation ends. */
-  .gate-content {
-    --gate-shake-duration: 0.4s;
   }
 
   @keyframes gateShakeSoft {

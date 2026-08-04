@@ -1,7 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { adminConsole, signInToAdmin } from './admin-helpers';
-import { gotoApp, openParentalGate, openSettingsModal } from './helpers';
+import { draw, gotoApp, openSettingsModal } from './helpers';
+import { openParentalGate } from './flows-harness';
 
 // Axe-core scans the adult-facing surfaces (issue #458): /privacy,
 // /android-beta, /feedback, /design, /admin (both auth states), and the
@@ -104,7 +105,12 @@ test('Settings has no serious accessibility violations', async ({ page }) => {
 });
 
 test('the parental gate has no serious accessibility violations', async ({ page }) => {
-  await gotoApp(page, '/', { gateUnlocked: false });
+  // The access-code param reveals the AI button, the gate's opener.
+  await gotoApp(page, '/?ai_access_token=test-token', { gateUnlocked: false });
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+  ]);
   await openParentalGate(page);
 
   await expectNoSeriousViolations(page, '#parentalGate');
@@ -141,4 +147,29 @@ test('the active Settings nav item holds WCAG AA contrast', async ({ page }) => 
     return { color: style.color, backgroundColor: style.backgroundColor };
   });
   expect(contrastRatio(parseRgb(color), parseRgb(backgroundColor))).toBeGreaterThanOrEqual(4.5);
+});
+
+// The gate's operand digits are aria-hidden (the equation row's label carries
+// the semantics), so axe never contrast-checks them — but they're visible text
+// and must hold WCAG AA for large bold type (3:1) on their splat fills. The
+// fills are unthemed crayon hues and the ink is fixed, so one theme covers
+// both.
+test('the parental gate operand digits hold WCAG AA large-text contrast', async ({ page }) => {
+  // The access-code param reveals the AI button, the gate's opener.
+  await gotoApp(page, '/?ai_access_token=test-token', { gateUnlocked: false });
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+  ]);
+  await openParentalGate(page);
+
+  const operands = page.locator('.gate-operand');
+  await expect(operands).toHaveCount(2);
+  for (const operand of await operands.all()) {
+    const { color, backgroundColor } = await operand.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { color: style.color, backgroundColor: style.backgroundColor };
+    });
+    expect(contrastRatio(parseRgb(color), parseRgb(backgroundColor))).toBeGreaterThanOrEqual(3);
+  }
 });

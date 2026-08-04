@@ -19,7 +19,12 @@
   } from '$lib/state/settings.svelte';
   import { setResizingActionButtons } from '$lib/state/ui.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
-  import { gate, resetParentalGate, disableParentalGate } from '$lib/state/parentalGate.svelte';
+  import {
+    gate,
+    resetParentalGate,
+    disableParentalGate,
+    requireParentalGate,
+  } from '$lib/state/parentalGate.svelte';
   import { maxActionButtonScale } from '$lib/actionButtonLayout';
   import { SECTION_SLIDE } from './sections';
 
@@ -113,14 +118,14 @@
   }
 
   // On = the Grown-Ups Only gate will ask next time (no stored unlock).
-  // Turning it on clears any session/forever unlock; turning it off — only
-  // reachable from inside the already-gated Settings — is the same as solving
-  // the gate with "Don't ask again" selected.
+  // Turning it on clears any session/forever unlock. Turning it OFF weakens a
+  // protection, and Settings itself is ungated (ADR-0094) — so the off
+  // direction runs through a non-bypassable gate before it takes effect.
   const gateAsking = $derived(!(gate.sessionUnlocked || gate.foreverUnlocked));
 
   function toggleParentalGate(next: boolean) {
     if (next) resetParentalGate();
-    else disableParentalGate();
+    else requireParentalGate(disableParentalGate, null, { force: true });
   }
 </script>
 

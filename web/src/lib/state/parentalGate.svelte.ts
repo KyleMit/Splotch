@@ -8,14 +8,17 @@ import {
 } from '../storage';
 import type { Origin } from './modal.svelte';
 
-// The Grown-Ups Only gate (App Store Guideline 5.1.4): before a grown-ups area
-// opens (Settings, the AI art flow), an adult solves a multiplication problem
-// on a keypad. A remember preference can relax re-prompting, but only takes
-// effect after a successful solve — selecting it never unlocks anything by
-// itself, which is what keeps the gate compliant. Purchases or external links
-// on a kid-reachable surface would need to bypass the remember preference and
-// gate every time; today none exist outside the gated areas, so no bypass
-// switch is shipped.
+// The Grown-Ups Only gate (App Store Guideline 5.1.4): an adult solves a
+// multiplication problem on a keypad before a gated operation runs. Gates sit
+// at the operation boundary, never in front of Settings as a whole (ADR-0094 —
+// opening Settings must never be treated as proof of adulthood):
+//
+//  • The AI art flow gates at its button and honors the remember preference.
+//    The preference only takes effect after a successful solve — selecting it
+//    never unlocks anything by itself, which is what keeps the gate compliant.
+//  • External link-outs gate with `force: true` (see parentalGateLink), which
+//    ignores any stored unlock and stores none: links out of the app re-prove
+//    adulthood every time.
 
 export const GATE_REMEMBER_MODES = ['always', 'session', 'forever'] as const;
 export type GateRememberMode = (typeof GATE_REMEMBER_MODES)[number];
@@ -55,6 +58,9 @@ export interface ParentalGateState {
   shaking: boolean;
   /** True from a correct answer until the success card hands off. */
   unlocked: boolean;
+  /** Non-bypassable attempt (external links): ignores stored unlocks, hides
+   *  the remember preference, and stores no unlock on success. */
+  force: boolean;
   rememberMode: GateRememberMode;
   /** In-memory only, so an app relaunch always re-asks. */
   sessionUnlocked: boolean;
@@ -70,6 +76,7 @@ export const gate: ParentalGateState = $state({
   error: null,
   shaking: false,
   unlocked: false,
+  force: false,
   rememberMode: readRememberMode('always'),
   sessionUnlocked: false,
   foreverUnlocked: readBool(STORAGE_KEYS.gateUnlockedForever, false),
@@ -106,10 +113,16 @@ export function hasActiveGateUnlock(): boolean {
 /**
  * Run `destination` behind the gate: immediately when a session/forever unlock
  * is active, otherwise after the challenge is solved. `origin` is the tapped
- * button's center, for the modal fly-in.
+ * button's center, for the modal fly-in. `force: true` (purchases, external
+ * links) always asks — stored unlocks neither skip the challenge nor accrue
+ * from solving it.
  */
-export function requireParentalGate(destination: () => void, origin: Origin | null = null) {
-  if (hasActiveGateUnlock()) {
+export function requireParentalGate(
+  destination: () => void,
+  origin: Origin | null = null,
+  { force = false }: { force?: boolean } = {}
+) {
+  if (!force && hasActiveGateUnlock()) {
     destination();
     return;
   }
@@ -119,11 +132,23 @@ export function requireParentalGate(destination: () => void, origin: Origin | nu
   gate.error = null;
   gate.shaking = false;
   gate.unlocked = false;
+  gate.force = force;
   gate.origin = origin;
   gate.open = true;
 }
 
 function succeed() {
+  // Forced destinations are external navigations: the gate closes and the
+  // destination runs synchronously inside the solving tap's trusted event, or
+  // the popup gets blocked — a deferred replay loses transient user activation,
+  // and while the gate is open the anchor sits in an inert dialog underneath
+  // it. No success card, no stored unlock: the link just opens.
+  if (gate.force) {
+    const destination = pendingDestination;
+    dismissGate();
+    destination?.();
+    return;
+  }
   gate.unlocked = true;
   if (gate.rememberMode === 'session') gate.sessionUnlocked = true;
   if (gate.rememberMode === 'forever') {
@@ -172,6 +197,7 @@ export function dismissGate() {
   gate.error = null;
   gate.shaking = false;
   gate.unlocked = false;
+  gate.force = false;
   pendingDestination = null;
 }
 
@@ -189,9 +215,9 @@ export function resetParentalGate() {
   setGateRememberMode('always');
 }
 
-/** Settings → Controls "off": stop asking on this device. Reachable only from
- *  inside the already-gated Settings, so it's equivalent to solving with
- *  "Don't ask again" selected. */
+/** Settings → Controls "off": stop asking on this device. Settings itself is
+ *  ungated (ADR-0094), so callers must run this through a `force: true` gate —
+ *  disabling the protection is itself a protected operation. */
 export function disableParentalGate() {
   gate.foreverUnlocked = true;
   writeBool(STORAGE_KEYS.gateUnlockedForever, true);

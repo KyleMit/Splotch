@@ -196,6 +196,38 @@ describe('parental gate', () => {
     expect(destination).toHaveBeenCalledOnce();
   });
 
+  it('force: true asks even while a stored unlock is active', () => {
+    disableParentalGate();
+    const destination = vi.fn();
+    requireParentalGate(destination, null, { force: true });
+    expect(destination).not.toHaveBeenCalled();
+    expect(gate.open).toBe(true);
+    expect(gate.force).toBe(true);
+  });
+
+  it('a forced solve closes and runs the destination immediately, storing no unlock', () => {
+    setGateRememberMode('session');
+    const destination = vi.fn();
+    requireParentalGate(destination, null, { force: true });
+    typeAnswer(correctAnswer());
+    // Immediate — no success hold: a deferred external navigation would lose
+    // the solving tap's user activation and trip the popup blocker.
+    expect(destination).toHaveBeenCalledOnce();
+    expect(gate.open).toBe(false);
+    expect(hasActiveGateUnlock()).toBe(false);
+    expect(localStorage.getItem(STORAGE_KEYS.gateUnlockedForever)).not.toBe('true');
+    expect(gate.force).toBe(false);
+  });
+
+  it('dismissing a forced attempt clears the force flag for the next open', () => {
+    requireParentalGate(vi.fn(), null, { force: true });
+    dismissGate();
+    expect(gate.force).toBe(false);
+
+    requireParentalGate(vi.fn());
+    expect(gate.force).toBe(false);
+  });
+
   it('reloadParentalGate re-reads persisted values and rejects garbage modes', () => {
     localStorage.setItem(STORAGE_KEYS.gateRememberMode, 'forever');
     localStorage.setItem(STORAGE_KEYS.gateUnlockedForever, 'true');

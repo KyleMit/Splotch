@@ -124,7 +124,7 @@ export async function retryOpen(
 // swallowed. Waiting for the landing removes the dependency on animation
 // progress rather than timing it. Measurements and the failure it caused:
 // ADR-0078 §4a.
-async function settleFlyIn(dialog: Locator) {
+export async function settleFlyIn(dialog: Locator) {
   await dialog.evaluate((el) =>
     // A cancelled animation (the dialog closing under us) rejects `finished`;
     // that leaves nothing to wait for, which is the same answer as landing.
@@ -142,28 +142,6 @@ export async function openSettingsModal(page: Page) {
   );
   await settleFlyIn(modal);
   return modal;
-}
-
-// Open the Grown-Ups Only gate from the Settings gear (requires a gotoApp with
-// `gateUnlocked: false` — otherwise the gear skips straight to Settings). Same
-// idle-mount retry story as openSettingsModal.
-export async function openParentalGate(page: Page) {
-  const dialog = page.locator('#parentalGate');
-  await retryOpen(dialog, () =>
-    page.getByRole('button', { name: 'Settings' }).click({ timeout: 3000 })
-  );
-  await settleFlyIn(dialog);
-  return dialog;
-}
-
-// Solve the currently displayed challenge: the equation row's accessible label
-// carries the operands, and typing the last digit auto-submits.
-export async function solveParentalGate(page: Page) {
-  const label = await page.locator('.gate-equation').getAttribute('aria-label');
-  const [x, y] = label!.match(/\d+/g)!.map(Number);
-  for (const digit of String(x * y)) {
-    await page.locator('.gate-keypad').getByRole('button', { name: digit, exact: true }).click();
-  }
 }
 
 // How much of the engine's dropped-pointer jump threshold one dispatched sample
