@@ -121,7 +121,7 @@ by a full-suite run after this branch merged `main`. The banner is the last of f
 idle pump mounts, one per `requestIdleCallback` **with no timeout option**, so its mount waits for a
 genuinely idle frame however long that takes — and the third stroke, the one that makes the banner
 eligible, is also what releases the deferred service-worker registration in the same flush, whose
-~39 MB precache is precisely what keeps the page from going idle. That wait is thin by construction
+~35 MB precache is precisely what keeps the page from going idle. That wait is thin by construction
 rather than by inflation, which is why it survives isolation: the same test passes 20/20 at 4
 workers alone and failed once in three full-suite runs. Also 20s now.
 

@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -54,6 +54,51 @@ describe('command helpers', () => {
 
     expect(result.status).toBe(0);
     expect(JSON.parse(result.stdout)).toEqual(argumentsToPreserve);
+  });
+
+  it('recognizes a symlinked main module', () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'splotch-is-main-'));
+    const sourcePath = join(fixtureDir, 'source.mjs');
+    const symlinkPath = join(fixtureDir, 'entry.mjs');
+
+    try {
+      writeFileSync(
+        sourcePath,
+        `import { isMain } from ${JSON.stringify(procUrl)};\n` +
+          'process.stdout.write(String(isMain(import.meta.url)));\n'
+      );
+      symlinkSync(sourcePath, symlinkPath);
+      const result = spawnSync(process.execPath, [symlinkPath], { encoding: 'utf8' });
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(result.stdout).toBe('true');
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns false when the entry argument is not a file', () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'splotch-is-main-missing-'));
+    const missingEntry = join(fixtureDir, 'missing.mjs');
+    const script = `
+      import { isMain } from ${JSON.stringify(procUrl)};
+      process.stdout.write(String(isMain('file:///not-the-entry.mjs')));
+    `;
+
+    try {
+      const result = spawnSync(
+        process.execPath,
+        ['--input-type=module', '-e', script, missingEntry],
+        { encoding: 'utf8' }
+      );
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(result.stdout).toBe('false');
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true });
+    }
   });
 
   it('keeps deliberate shell syntax available through sh', () => {

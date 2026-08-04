@@ -66,6 +66,7 @@ npm run gen:coloring-fills:audit:halo # rank shipped night fills by residual dar
 npm run gen:coloring-punch      # re-punch the shipped fills from fill-src/ raws (no key/network)
 npm run gen:coloring-thumbs     # picker thumbnails (pen + chalk) -> web/static/coloring/**/*.{thumb,chalk.thumb}.webp
 npm run gen:coloring-overlays   # transparent light/dark runtime overlays -> web/static/coloring/**/*.{overlay,dark.overlay}.webp
+npm run gen:coloring-responsive # web srcset tiers from canonical overlays/thumbs -> web/static/coloring/max-*px/
 npm run gen:coloring-golden:diff # re-score the catalog vs the frozen golden/golden-scores.json (no key/network, ~1 min)
 npm run gen:coloring-golden:freeze # adopt the current catalog scores as the new golden baseline
 npm run gen:assets:manifest     # re-hash the committed art -> golden/asset-manifest.sha256 (CI drift guard)
@@ -146,7 +147,9 @@ The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast wit
   dark-mode line art, stored ink-on-white — see `pipeline.md`), `*.light.webp` / `*.night.webp`
   fills, `*.thumb.webp` / `*.chalk.thumb.webp` thumbnails (light / dark picker tiles),
   `*.overlay.webp` / `*.dark.overlay.webp` transparent full-page presentation layers, and
-  `web/static/styles/*.webp` covers.
+  `web/static/styles/*.webp` covers. Web-only responsive derivatives live under
+  `web/static/coloring/max-{edge}px/`; `build:cap` strips those directories so native keeps one
+  canonical runtime width.
 * **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/` — at the **repo
   root** (`lib/paths.mjs` `SAMPLES_DIR` / `SAMPLES_DARK_DIR`), not under `tools/asset-gen/`. (The
   gitignore pattern is unanchored, so the `tools/asset-gen/.coloring-samples/` dir used as the

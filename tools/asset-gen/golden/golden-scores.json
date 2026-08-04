@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "thresholds": {
     "keep": 0.92,
     "localKeep": 0.8,
@@ -9,7 +9,9 @@
     "solidBlobMax": 100,
     "solidInteriorMax": 60,
     "eyeRingDepthMax": 4,
-    "frameSideCoverageMin": 0.7
+    "frameSideCoverageMin": 0.7,
+    "ghostLumaMax": 245,
+    "ghostSideCoverageMin": 0.9
   },
   "pages": {
     "creatures/cover": {
@@ -21,6 +23,7 @@
         "strokeWidth": 4,
         "ringDepth": 3,
         "frameCoverage": 0.1341,
+        "ghostCoverage": 0.0221,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -35,6 +38,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1289,
+        "ghostCoverage": 0.0195,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -71,6 +75,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 3,
         "frameCoverage": 0.1276,
+        "ghostCoverage": 0.0169,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -107,6 +112,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1259,
+        "ghostCoverage": 0.026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -143,6 +149,7 @@
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.2552,
+        "ghostCoverage": 0.0356,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -179,6 +186,7 @@
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.1133,
+        "ghostCoverage": 0.013,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -215,6 +223,7 @@
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.1458,
+        "ghostCoverage": 0.0078,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -251,6 +260,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.0964,
+        "ghostCoverage": 0.0156,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -287,6 +297,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 3,
         "frameCoverage": 0.1519,
+        "ghostCoverage": 0.0208,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -323,6 +334,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1918,
+        "ghostCoverage": 0.0148,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -359,6 +371,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1493,
+        "ghostCoverage": 0.0169,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -395,6 +408,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1658,
+        "ghostCoverage": 0.0273,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -431,6 +445,7 @@
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.0781,
+        "ghostCoverage": 0.0234,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -467,6 +482,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1493,
+        "ghostCoverage": 0.026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -503,6 +519,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1549,
+        "ghostCoverage": 0.0143,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -539,6 +556,7 @@
         "strokeWidth": 4,
         "ringDepth": 0,
         "frameCoverage": 0.1302,
+        "ghostCoverage": 0.0169,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -553,6 +571,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1042,
+        "ghostCoverage": 0.0169,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -589,6 +608,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1372,
+        "ghostCoverage": 0.0169,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -625,6 +645,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1458,
+        "ghostCoverage": 0.0221,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -661,6 +682,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.0755,
+        "ghostCoverage": 0.0226,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -697,6 +719,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1159,
+        "ghostCoverage": 0.0247,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -733,6 +756,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1016,
+        "ghostCoverage": 0.0182,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -769,6 +793,7 @@
         "strokeWidth": 6.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.0972,
+        "ghostCoverage": 0.0313,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -805,6 +830,7 @@
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.0859,
+        "ghostCoverage": 0.0182,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -841,6 +867,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1094,
+        "ghostCoverage": 0.0182,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -877,6 +904,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1181,
+        "ghostCoverage": 0.0182,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -913,6 +941,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1658,
+        "ghostCoverage": 0.0234,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -949,6 +978,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1102,
+        "ghostCoverage": 0.026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -985,6 +1015,7 @@
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.2096,
+        "ghostCoverage": 0.013,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -999,6 +1030,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 3,
         "frameCoverage": 0.1484,
+        "ghostCoverage": 0.0208,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1035,6 +1067,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 3,
         "frameCoverage": 0.079,
+        "ghostCoverage": 0.0299,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1071,6 +1104,7 @@
         "strokeWidth": 8,
         "ringDepth": 3,
         "frameCoverage": 0.1497,
+        "ghostCoverage": 0.0087,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1107,6 +1141,7 @@
         "strokeWidth": 6.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.1155,
+        "ghostCoverage": 0.0208,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1143,6 +1178,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1458,
+        "ghostCoverage": 0.0208,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1179,6 +1215,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.125,
+        "ghostCoverage": 0.0195,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1215,6 +1252,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.125,
+        "ghostCoverage": 0.0169,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1251,6 +1289,7 @@
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.0825,
+        "ghostCoverage": 0.0252,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1287,6 +1326,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1285,
+        "ghostCoverage": 0.0143,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1323,6 +1363,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.0955,
+        "ghostCoverage": 0.0247,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1359,6 +1400,7 @@
         "strokeWidth": 6.828000068664551,
         "ringDepth": 3,
         "frameCoverage": 0.1081,
+        "ghostCoverage": 0.0091,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1395,6 +1437,7 @@
         "strokeWidth": 6,
         "ringDepth": 4,
         "frameCoverage": 0.0729,
+        "ghostCoverage": 0.0156,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1431,6 +1474,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 4,
         "frameCoverage": 0.0564,
+        "ghostCoverage": 0.0195,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1467,6 +1511,7 @@
         "strokeWidth": 6,
         "ringDepth": 4,
         "frameCoverage": 0.1337,
+        "ghostCoverage": 0.013,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1503,6 +1548,7 @@
         "strokeWidth": 6.828000068664551,
         "ringDepth": 4,
         "frameCoverage": 0.0742,
+        "ghostCoverage": 0.0091,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1539,6 +1585,7 @@
         "strokeWidth": 6.828000068664551,
         "ringDepth": 4,
         "frameCoverage": 0.0399,
+        "ghostCoverage": 0.013,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1575,6 +1622,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 3,
         "frameCoverage": 0.1094,
+        "ghostCoverage": 0.0117,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1589,6 +1637,7 @@
         "strokeWidth": 8,
         "ringDepth": 4,
         "frameCoverage": 0.0703,
+        "ghostCoverage": 0.0104,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1625,6 +1674,7 @@
         "strokeWidth": 7.656000137329102,
         "ringDepth": 4,
         "frameCoverage": 0.1493,
+        "ghostCoverage": 0.0104,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1661,6 +1711,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1523,
+        "ghostCoverage": 0.0182,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1697,6 +1748,7 @@
         "strokeWidth": 6.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.1007,
+        "ghostCoverage": 0.0104,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1733,6 +1785,7 @@
         "strokeWidth": 6,
         "ringDepth": 4,
         "frameCoverage": 0.0208,
+        "ghostCoverage": 0.0061,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1769,6 +1822,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 3,
         "frameCoverage": 0.0365,
+        "ghostCoverage": 0.0104,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1805,6 +1859,7 @@
         "strokeWidth": 8.484000205993652,
         "ringDepth": 0,
         "frameCoverage": 0.0938,
+        "ghostCoverage": 0.0299,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1841,6 +1896,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1502,
+        "ghostCoverage": 0.0182,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1877,6 +1933,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.0486,
+        "ghostCoverage": 0.0117,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1913,6 +1970,7 @@
         "strokeWidth": 6.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.1241,
+        "ghostCoverage": 0.0208,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1949,6 +2007,7 @@
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.2161,
+        "ghostCoverage": 0.0182,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1963,6 +2022,7 @@
         "strokeWidth": 9.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1233,
+        "ghostCoverage": 0.0169,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1999,6 +2059,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1016,
+        "ghostCoverage": 0.0295,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2035,6 +2096,7 @@
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.1319,
+        "ghostCoverage": 0.026,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2071,6 +2133,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.066,
+        "ghostCoverage": 0.0143,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2107,6 +2170,7 @@
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.0938,
+        "ghostCoverage": 0.0091,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2143,6 +2207,7 @@
         "strokeWidth": 7.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.2109,
+        "ghostCoverage": 0.0156,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2179,6 +2244,7 @@
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0,
+        "ghostCoverage": 0.0035,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2215,6 +2281,7 @@
         "strokeWidth": 6.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.1007,
+        "ghostCoverage": 0.0156,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2251,6 +2318,7 @@
         "strokeWidth": 7.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1276,
+        "ghostCoverage": 0.0065,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2287,6 +2355,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1432,
+        "ghostCoverage": 0.0221,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2323,6 +2392,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.2005,
+        "ghostCoverage": 0.0117,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2337,6 +2407,7 @@
         "strokeWidth": 6.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.1224,
+        "ghostCoverage": 0.0247,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2373,6 +2444,7 @@
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0,
+        "ghostCoverage": 0.0113,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2409,6 +2481,7 @@
         "strokeWidth": 8,
         "ringDepth": 0,
         "frameCoverage": 0.1484,
+        "ghostCoverage": 0.013,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2445,6 +2518,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 3,
         "frameCoverage": 0.0247,
+        "ghostCoverage": 0,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2481,6 +2555,7 @@
         "strokeWidth": 8,
         "ringDepth": 0,
         "frameCoverage": 0.0816,
+        "ghostCoverage": 0.0122,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2517,6 +2592,7 @@
         "strokeWidth": 8,
         "ringDepth": 0,
         "frameCoverage": 0.1345,
+        "ghostCoverage": 0.0148,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2553,6 +2629,7 @@
         "strokeWidth": 9.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1133,
+        "ghostCoverage": 0.0078,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2589,6 +2666,7 @@
         "strokeWidth": 8,
         "ringDepth": 0,
         "frameCoverage": 0,
+        "ghostCoverage": 0.0078,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2625,6 +2703,7 @@
         "strokeWidth": 8.484000205993652,
         "ringDepth": 0,
         "frameCoverage": 0.0981,
+        "ghostCoverage": 0.0156,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2661,6 +2740,7 @@
         "strokeWidth": 8,
         "ringDepth": 0,
         "frameCoverage": 0.1155,
+        "ghostCoverage": 0.0221,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2697,6 +2777,7 @@
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.0938,
+        "ghostCoverage": 0.0143,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2733,6 +2814,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 4,
         "frameCoverage": 0.1102,
+        "ghostCoverage": 0.0143,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2769,6 +2851,7 @@
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.1966,
+        "ghostCoverage": 0.0091,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2783,6 +2866,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1055,
+        "ghostCoverage": 0.0113,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2819,6 +2903,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 3,
         "frameCoverage": 0.1832,
+        "ghostCoverage": 0.0165,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2855,6 +2940,7 @@
         "strokeWidth": 8,
         "ringDepth": 0,
         "frameCoverage": 0.0955,
+        "ghostCoverage": 0.0182,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2891,6 +2977,7 @@
         "strokeWidth": 7.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.0417,
+        "ghostCoverage": 0.0182,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2927,6 +3014,7 @@
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.1918,
+        "ghostCoverage": 0.0139,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2963,6 +3051,7 @@
         "strokeWidth": 6,
         "ringDepth": 4,
         "frameCoverage": 0.1519,
+        "ghostCoverage": 0.0195,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2999,6 +3088,7 @@
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.0538,
+        "ghostCoverage": 0.0091,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -3035,6 +3125,7 @@
         "strokeWidth": 6.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.1502,
+        "ghostCoverage": 0.0143,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -3071,6 +3162,7 @@
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.1563,
+        "ghostCoverage": 0.0169,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -3107,6 +3199,7 @@
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.0946,
+        "ghostCoverage": 0.0195,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -3143,6 +3236,7 @@
         "strokeWidth": 4,
         "ringDepth": 4,
         "frameCoverage": 0.1953,
+        "ghostCoverage": 0.0378,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -3157,6 +3251,7 @@
         "strokeWidth": 6.828000068664551,
         "ringDepth": 4,
         "frameCoverage": 0.1571,
+        "ghostCoverage": 0.0165,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3193,6 +3288,7 @@
         "strokeWidth": 6,
         "ringDepth": 4,
         "frameCoverage": 0.0868,
+        "ghostCoverage": 0.0221,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3229,6 +3325,7 @@
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.1276,
+        "ghostCoverage": 0.0191,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3265,6 +3362,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 3,
         "frameCoverage": 0.1189,
+        "ghostCoverage": 0.0326,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3301,6 +3399,7 @@
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.1185,
+        "ghostCoverage": 0.0208,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3337,6 +3436,7 @@
         "strokeWidth": 5.656000137329102,
         "ringDepth": 4,
         "frameCoverage": 0.1285,
+        "ghostCoverage": 0.0482,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3373,6 +3473,7 @@
         "strokeWidth": 6,
         "ringDepth": 4,
         "frameCoverage": 0.1237,
+        "ghostCoverage": 0.0139,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3402,13 +3503,14 @@
     },
     "vehicles/monster-wide": {
       "outline": {
-        "darkPx": 116018,
-        "interiorPx": 1087,
-        "solidPx": 3397,
+        "darkPx": 115980,
+        "interiorPx": 1088,
+        "solidPx": 3398,
         "biggestBlob": 709,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 4,
         "frameCoverage": 0.1102,
+        "ghostCoverage": 0.026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3418,14 +3520,14 @@
         "localKeep": 1,
         "worstTile": null,
         "eyeCores": 6,
-        "eyeLively": 0,
+        "eyeLively": 2,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
-        "bgLuma": 29.2,
-        "lineWhite": 245,
+        "bgLuma": 31.4,
+        "lineWhite": 246,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
@@ -3445,6 +3547,7 @@
         "strokeWidth": 6,
         "ringDepth": 4,
         "frameCoverage": 0.0938,
+        "ghostCoverage": 0.0052,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -3481,6 +3584,7 @@
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.0903,
+        "ghostCoverage": 0.0182,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3517,6 +3621,7 @@
         "strokeWidth": 6,
         "ringDepth": 4,
         "frameCoverage": 0.1081,
+        "ghostCoverage": 0.0143,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3553,6 +3658,7 @@
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.0616,
+        "ghostCoverage": 0.0234,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true

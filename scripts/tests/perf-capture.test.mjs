@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createMeasureTimeline } from '../perf/capture.mjs';
+import { createMeasureTimeline, markPhase } from '../perf/capture.mjs';
 
 // The Performance API is per document: a navigation clears its entries and
 // restarts performance.now() at 0. A driver that reloads between scenarios and
@@ -59,5 +59,24 @@ describe('createMeasureTimeline', () => {
     two.append([{ name: 'b', ts: 0, dur: 1 }]);
 
     expect(two.events[0].ts).toBe(0);
+  });
+});
+
+describe('markPhase', () => {
+  it('returns the work result captured before the trailing browser round trip', async () => {
+    const calls = [];
+    const page = {
+      evaluate: async (fn) => {
+        calls.push(fn.toString().includes('performance.measure') ? 'measure' : 'mark');
+      },
+    };
+
+    const result = await markPhase(page, 'draw', async () => {
+      calls.push('work');
+      return 42;
+    });
+
+    expect(result).toBe(42);
+    expect(calls).toEqual(['mark', 'work', 'measure']);
   });
 });

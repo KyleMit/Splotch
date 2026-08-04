@@ -28,7 +28,7 @@ const PARTING_EXIT_TIMEOUT_MS = 20_000;
 // lib/idle.ts), so its mount waits for a genuinely idle frame however long that
 // takes. And the third stroke — the one that makes the banner eligible — is also
 // what releases the deferred service-worker registration in the same flush
-// (routes/+page.svelte), whose ~39 MB precache is exactly what keeps the page
+// (routes/+page.svelte), whose ~35 MB precache is exactly what keeps the page
 // from going idle. So this wait is thin by construction, not by inflation: under
 // full-suite load it exceeded the default 5s, while the same test passes 20/20
 // in isolation at 4 workers.

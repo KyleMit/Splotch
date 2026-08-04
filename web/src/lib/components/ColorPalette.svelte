@@ -14,7 +14,7 @@
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
   import { colorPicker, buttonCenter } from '$lib/state/ui.svelte';
   import { toolState, selectInkBrush } from '$lib/state/tool.svelte';
-  import { layout } from '$lib/state/layout.svelte';
+  import { clearPaletteMeasurement, publishPaletteMeasurement } from '$lib/state/layout.svelte';
   import { getRingColor } from '$lib/colorRing';
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
@@ -45,14 +45,12 @@
   onMount(() => {
     const ro = new ResizeObserver(() => {
       const rect = paletteEl.getBoundingClientRect();
-      layout.paletteWidth = rect.width;
-      layout.paletteHeight = rect.height;
+      publishPaletteMeasurement(rect.width, rect.height);
     });
     ro.observe(paletteEl);
     return () => {
       ro.disconnect();
-      layout.paletteWidth = 0;
-      layout.paletteHeight = 0;
+      clearPaletteMeasurement();
     };
   });
 
@@ -157,6 +155,7 @@
     grid-template-columns: repeat(2, 1fr);
     justify-items: center;
     align-content: center;
+    width: var(--palette-landscape-width);
     gap: 12px;
     padding: 12px;
     background: var(--surface);
@@ -219,7 +218,7 @@
   }
 
   .color-swatch.ring-animate:not(.gradient-swatch)::before {
-    animation: swatch-ring-expand 0.45s var(--ease-pop-strong) forwards;
+    animation: swatch-ring-expand 0.45s var(--ease-pop) forwards;
   }
 
   @keyframes swatch-ring-expand {

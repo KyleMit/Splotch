@@ -8,10 +8,6 @@ import type { AiImageProvider } from './provider';
 // model deprecation or vendor swap happens here, not in the routes.
 
 const IMAGE_MODEL = 'gemini-2.5-flash-image';
-// A cheap text model is enough to prove a key authenticates with Gemini — the
-// image model used for generation lives on the same key, so a successful auth
-// here means the key is good to go.
-const KEY_CHECK_MODEL = 'gemini-2.5-flash';
 
 // The audience is toddlers (2+), so the model must REFUSE unsafe drawings rather
 // than do what it does by default — quietly "beautify" a gun into a gilded gun or
@@ -85,17 +81,17 @@ export const geminiProvider: AiImageProvider = {
   async verifyKey(apiKey) {
     const ai = new GoogleGenAI({ apiKey });
     try {
-      await ai.models.generateContent({
-        model: KEY_CHECK_MODEL,
+      // Probe the image model itself with a free countTokens call. Model
+      // availability varies per account, not just per key — Google closed
+      // gemini-2.5-flash to accounts created after mid-2026 while this app's
+      // image model stayed open — so authenticating against a separate text
+      // model can reject a key whose account is fine for generation. The abort
+      // bounds the probe: without it a hung provider would occupy the whole
+      // invocation until Netlify kills it (ADR-0063).
+      await ai.models.countTokens({
+        model: IMAGE_MODEL,
         contents: 'ping',
-        // Keep the probe as small as possible — no thinking, one output token —
-        // and bound it: without this abort a hung provider would occupy the
-        // whole invocation until Netlify kills it (ADR-0063).
-        config: {
-          thinkingConfig: { thinkingBudget: 0 },
-          maxOutputTokens: 1,
-          abortSignal: AbortSignal.timeout(VERIFY_KEY_DEADLINE_MS),
-        },
+        config: { abortSignal: AbortSignal.timeout(VERIFY_KEY_DEADLINE_MS) },
       });
     } catch (err) {
       return { ok: false, reason: err instanceof Error ? err.message : String(err) };

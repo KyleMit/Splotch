@@ -17,10 +17,10 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   inheriting shared implementation files or disappearing from one agent. Markdown fork sources end
   in `.template`; the suffix is removed at the destination and keeps Ruler's recursive rule loader
   from concatenating them into root instructions.
-* `burn-down-audits` is the explicit direct-maintained exception to both generated layouts. Its
-  Claude implementation and design note live under `.claude/`; its Codex implementation and note
-  live under `.agents/`. They are provider forks, not mirrors: edit each directly and independently,
-  never through `.ruler/` and never by copying one provider's package over the other.
+* Direct-maintained exceptions are declared in `scripts/direct-provider-skills.mjs`.
+  `burn-down-audits` has independent Claude and Codex packages; `implement-issue-stack` has only a
+  Codex package because it orchestrates a standalone Claude reviewer. Edit registered packages and
+  notes directly, never through `.ruler/`, and never create an undeclared provider by copying one.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md.template` and mirrored, suffix stripped,
   to `.claude/skill-notes/` and `.agents/skill-notes/` by `scripts/mirror-skill-notes.mjs`. The
   `.template` suffix is load-bearing for the same reason it is on a skill fork's Markdown: ruler's
@@ -28,9 +28,9 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   a plain `.md` note would land in every session's context — exactly what this tree exists to avoid.
   The mirror script refuses to run if it finds one. A forked skill's independent note instead lives
   under `.ruler/skill-forks/<runner>/skill-notes/` and must be absent from the shared note tree. The
-  direct `burn-down-audits` notes stay beside their direct provider trees. Notes are deliberately
-  *not* part of a skill — see below.
-* `npm run ruler:apply` snapshots the direct `burn-down-audits` provider paths, runs Ruler, mirrors
+  registered direct notes stay beside their direct provider trees. Notes are deliberately *not* part
+  of a skill — see below.
+* `npm run ruler:apply` snapshots every path in the direct-provider registry, runs Ruler, mirrors
   shared skill notes, applies managed skill forks, restores the direct paths even on failure, and
   dprint-formats the output. `npm run ruler:check` repeats that pipeline and fails if generated
   output changed — the CI drift gate. `npm run ruler:dry-run` previews Ruler's shared output only;
@@ -38,10 +38,10 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
 
 **If asked to update agent instructions, docs, or skills: change `.ruler/**` sources, never the
 generated files.** A generated file carries a `<!-- Source: ... -->` marker pointing back to its
-source. For `burn-down-audits` only, edit the selected provider's direct `.claude/` or `.agents/`
-package and note instead.
+source. For a registered direct package, edit its selected `.claude/` or `.agents/` package and note
+instead.
 
-Not generated — edit in place: both provider implementations and notes for `burn-down-audits`,
+Not generated — edit in place: registered direct provider implementations and notes,
 `.claude/rules/` (path-scoped rules), `.claude/hooks/`, `.claude/settings.json`,
 `.claude/audit-conventions.md`, `.claude/cloud/`, and everything under `docs/`.
 

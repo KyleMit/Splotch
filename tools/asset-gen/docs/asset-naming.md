@@ -43,11 +43,44 @@ web/static/coloring/{book}/{name}.night.webp     dark magic-brush fill (fills-on
 tools/asset-gen/fill-src/{book}/{name}.{light,night}.raw.webp   raw (lined) fills
 ```
 
+Resolution is a separate axis and therefore lives in a directory prefix, never another filename
+suffix:
+
+```
+web/static/coloring/{book}/{name}.{variant}.webp                 canonical/master asset
+web/static/coloring/max-1152px/{book}/{name}.{variant}.webp      web page-overlay candidate
+web/static/coloring/max-240px/{book}/{name}.{variant}.webp       web picker-thumbnail candidate
+```
+
+`max-{edge}px` names the longest-edge bound, not the HTML `srcset` width descriptor. A portrait
+`max-1152px` image is 768 pixels wide and is advertised as `768w`; the landscape sibling is 1152
+pixels wide and is advertised as `1152w`. The catalog owns both paths and descriptor widths, and an
+asset-pipeline test reads every committed file's metadata so the declarations cannot drift.
+
+Only the DOM-rendered presentation overlays and picker thumbnails have responsive derivatives.
+Light/night fills stay canonical because the canvas path caps its render scale and measured no
+visible benefit from fill tiering. Native also stays canonical: `build:cap` removes every
+`max-{edge}px` directory until downloadable native packs can select a tier (issue #200).
+
+The overlay tier is `max-1152px`, the largest measured downscale where every derivative is smaller
+than its source while retaining the overlay pipeline's step-8 alpha quantization and maximum 4/255
+composite-channel error. The initially considered 1366px tier was rejected: resampling increased
+alpha entropy, 95 of 192 lossless derivatives grew, and the aggregate saved only 1%. At 1152px all
+192 shrink and the aggregate overlay saving is about 26%. `gen:coloring-responsive` enforces both
+per-file savings and a catalog-level savings floor.
+
+The picker tier is `max-240px`. Its 160px-wide portrait candidate covers the approximately 152 CSS
+pixel portrait slot on a 390px-wide DPR 1 viewport; the initially considered `max-200px` tier was
+only 134px wide and therefore lost to the 267px canonical candidate in that common layout. The 240px
+tier is the smallest round max-edge tier that crosses that selection boundary.
+
 Key implementation points:
 
 * `web/src/lib/state/books.ts` builds all catalog paths; `thumbPath()` swaps `.outline.webp` →
   `.thumb.webp`, `chalkThumbPath()` swaps `.chalk.webp` → `.chalk.thumb.webp`, and each is
   deliberately a **no-op on other paths** (only line art has thumbnails).
+* `responsiveColoringAssets()` derives the web-only tier paths from those canonical paths;
+  `bookAssetPaths()` includes them so `check:assets` rejects a partial tier.
 * The asset-gen generators select line art positively by suffix (`gen-coloring-thumbs.mjs`
   `isSource` matches `.outline.webp` + `.chalk.webp`; the `*-{tall,wide}.outline.webp` globs in
   `gen-coloring-fills.mjs` / `gen-coloring-fills-dark.mjs` / `check-coloring-drift.mjs`) — no

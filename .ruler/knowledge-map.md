@@ -4,13 +4,14 @@ On-demand **skills** (consult when the topic comes up — don't guess from memor
 auto-invokes them by description (or via `/name`); agents without skill support should read the
 skill's `SKILL.md` directly from `.agents/skills/<name>/` (or `.claude/skills/<name>/`). Most are
 generated from `.ruler/`; managed runner forks may be produced from `.ruler/skill-forks/<runner>/`.
-`burn-down-audits` is different: its `.claude/` and `.agents/` packages are direct provider-specific
-sources maintained independently.
+Registered direct provider packages are different: `burn-down-audits` is independently maintained
+under `.claude/` and `.agents/`, while Codex-only `implement-issue-stack` lives only under
+`.agents/`. See `scripts/direct-provider-skills.mjs` for the authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                          |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `architecture`                          | navigating unfamiliar code, placing new code, naming UI elements                                                                                                                                                         |
-| `design`                                | writing or changing component styles, picking a color/size/shadow/easing — the token vocabulary, primitives, and `/dev/design`                                                                                           |
+| `design`                                | writing or changing component styles, picking a color/size/shadow/easing, or writing user-facing copy — the token vocabulary, primitives, voice, and the public `/design` styleguide                                     |
 | `api`                                   | adding, changing, or calling any `/api/*` endpoint                                                                                                                                                                       |
 | `mobile`                                | touching anything Android/iOS/Capacitor, or store-release work                                                                                                                                                           |
 | `testing`                               | writing/running tests beyond the basics, or debugging CI failures                                                                                                                                                        |
@@ -28,15 +29,16 @@ applies or how skills relate.
 
 **Prefer skills over slash commands.** Reusable agent workflows are normally authored in
 `.ruler/skills/<name>/SKILL.md` or, when managed implementations must be isolated, as complete
-packages under `.ruler/skill-forks/<runner>/`; `burn-down-audits` alone is authored directly in its
-two provider trees. Do not create workflows as commands in `.claude/commands/`. A skill with a good
-`description` is both user-invocable (`/name`) and model-invocable, so Claude can reach for it on
-its own — a plain command can't. When authoring a new reusable workflow, create a skill: give it a
-`name` and a `description` that says both what it does and when to use it (add
-`disable-model-invocation: true` if it should stay user-only), and **register it in the
-`skills-guide` skill** (`.ruler/skills/skills-guide/SKILL.md`) under the group it belongs to — same
-when renaming or deleting a skill. If the user asks to create a *command*, ask whether they'd like a
-skill instead before making one.
+packages under `.ruler/skill-forks/<runner>/`; only packages registered in
+`scripts/direct-provider-skills.mjs` are authored directly in provider trees. Do not create
+workflows as commands in `.claude/commands/`. A skill with a good `description` is both
+user-invocable (`/name`) and model-invocable, so Claude can reach for it on its own — a plain
+command can't. When authoring a new reusable workflow, create a skill: give it a `name` and a
+`description` that says both what it does and when to use it (add `disable-model-invocation: true`
+if it should stay user-only), and **register it in the `skills-guide` skill**
+(`.ruler/skills/skills-guide/SKILL.md`) under the group it belongs to — same when renaming or
+deleting a skill. If the user asks to create a *command*, ask whether they'd like a skill instead
+before making one.
 
 **Skill naming:** the name's shape signals what invoking the skill does. **Workflow skills** — ones
 that perform a procedure with side effects (`create-adr`, `fix-audits`, `prune-remote-branches`) —

@@ -8,6 +8,7 @@ import {
   withPreservedDirectProviderPaths,
 } from '../ruler-apply.mjs';
 import { sharedNoteSource } from '../mirror-skill-notes.mjs';
+import { DIRECT_PROVIDER_SKILLS, directNoteNames } from '../direct-provider-skills.mjs';
 
 const roots = [];
 
@@ -93,6 +94,35 @@ describe('withPreservedDirectProviderPaths', () => {
     const source = join(root, '.ruler', 'skill-notes', 'burn-down-audits.md');
     mkdirSync(join(source, '..'), { recursive: true });
     writeFileSync(source, 'competing shared note\n');
+
+    expect(() => withPreservedDirectProviderPaths(root, () => {})).toThrow(
+      'direct provider skill must not have a Ruler source'
+    );
+  });
+
+  it('preserves only the providers declared for a direct skill', () => {
+    expect(DIRECT_PROVIDER_SKILLS).toContainEqual({
+      name: 'implement-issue-stack',
+      providers: ['codex'],
+    });
+    expect(directNoteNames('codex')).toContain('implement-issue-stack.md');
+    expect(directNoteNames('claude')).not.toContain('implement-issue-stack.md');
+  });
+
+  it('rejects a competing shared source for the Codex-only direct skill', () => {
+    const root = makeRoot();
+    const source = join(root, '.ruler', 'skills', 'implement-issue-stack');
+    mkdirSync(source, { recursive: true });
+
+    expect(() => withPreservedDirectProviderPaths(root, () => {})).toThrow(
+      'direct provider skill must not have a Ruler source'
+    );
+  });
+
+  it('rejects an undeclared Claude fork for the Codex-only direct skill', () => {
+    const root = makeRoot();
+    const source = join(root, '.ruler', 'skill-forks', 'claude', 'skills', 'implement-issue-stack');
+    mkdirSync(source, { recursive: true });
 
     expect(() => withPreservedDirectProviderPaths(root, () => {})).toThrow(
       'direct provider skill must not have a Ruler source'

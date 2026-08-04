@@ -92,11 +92,11 @@ automation helpers whose regressions would be silent — currently the audit-bur
 surgery in `scripts/audit-burndown/lib.mjs` (entry-boundary parsing, pure block removal,
 dprint-clean seams; see the `burn-down-audits` skill) and complete runner-specific skill replacement
 in `scripts/apply-ruler-skill-forks.mjs` (package isolation, paired-runner coverage, and
-shared-source collision guards). The latter covers generic Ruler-managed forks; `burn-down-audits`
-itself is a direct provider fork under `.claude/` and `.agents/`, maintained independently and
-excluded from Ruler drift ownership. `scripts/ruler-apply.mjs` snapshots and restores those direct
-paths around generation, including its failure path. Add a test here when a `scripts/` helper's
-failure mode is corrupting state rather than crashing.
+shared-source collision guards). The latter covers generic Ruler-managed forks; packages listed in
+`scripts/direct-provider-skills.mjs` are maintained directly in their declared provider trees and
+excluded from Ruler drift ownership. `scripts/ruler-apply.mjs` snapshots and restores every
+registered path around generation, including its failure path. Add a test here when a `scripts/`
+helper's failure mode is corrupting state rather than crashing.
 
 ## E2E web tests — Playwright
 
@@ -411,6 +411,13 @@ with no `engine.commit` samples fails the job. Either tier attempts to upload `u
 and `undo-scenarios.md` after a failure; an early build/browser failure may leave no reports, which
 warns without masking the original error.
 
+The fast tier evaluates `multi-finger` against raw `engine.commit` P95. For `crayon-scribbles`, it
+divides raw commit P95 by the same run's renderer slowdown from `engine.draw total / calls` against
+the controlled healthy reference. That control distinguishes a new commit-only full-raster shape
+from a shared macOS host slowing every crayon canvas operation. The 25 ms gate remains unchanged;
+the release and on-demand full tiers continue to use raw absolute timing for every scenario. The
+JSON and Markdown diagnostics retain raw P95, maximum, samples, control, factor, and gate value.
+
 `FAST_UNDO_SCENARIO_KEYS` is the fast set's only declaration. A repo-script unit test derives sole
 exercisers from every scenario's declared paths and requires each one in that set. Release runs also
 restore and update the durable `webkit-undo-full-history` artifact: the harness records each
@@ -419,6 +426,12 @@ runs, and records whether the fast tier would have caught a breach. Membership d
 consecutive fast-set misses fail the full job; the updated history and full diagnostics upload even
 when that check fails. Invalid restored history falls back to the compatible seed, and a full run
 without commit samples is rejected without appending zero-valued evidence.
+
+A timing failure is not product evidence until it is causal. Compare the failing head and its exact
+base with the same command and runner class; for noisy gates, use repeated or interleaved runs. If
+the base fails with the same shape or the changed code cannot reach the harness path, fix the test
+or harness and retry the product PR. Do not quarantine product work for a repository-owned flaky
+gate.
 
 The native smoke workflows are deliberately tag-only — an emulator/simulator job is the heaviest
 thing in CI, and a launch crash is exactly the kind of regression you want caught at release time.

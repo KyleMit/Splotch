@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   exportCanvasBlob: vi.fn(),
-  getActiveOverlayImage: vi.fn(() => null),
   isNative: vi.fn(() => false),
   saveBlobToFolder: vi.fn(),
   playScreenshotFeedback: vi.fn(),
@@ -12,7 +11,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('./engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob }));
-vi.mock('./overlay', () => ({ getActiveOverlayImage: mocks.getActiveOverlayImage }));
 vi.mock('$lib/platform', () => ({ getPlatform: vi.fn(), isNative: mocks.isNative }));
 vi.mock('./folderSave', () => ({ saveBlobToFolder: mocks.saveBlobToFolder }));
 vi.mock('./screenshotFeedback', () => ({
@@ -89,7 +87,7 @@ describe('saveScreenshot', () => {
 
     await saveScreenshot();
 
-    expect(mocks.exportCanvasBlob).toHaveBeenCalledWith(null, { preview });
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledWith({ preview });
   });
 
   it('coalesces overlapping saves and permits a later save after persistence settles', async () => {

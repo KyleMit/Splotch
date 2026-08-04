@@ -27,9 +27,10 @@ A fully forked skill keeps its independent notes beside its independent packages
 must not also exist here; that guard prevents runner-specific design history from silently becoming
 a shared contract.
 
-`burn-down-audits` is the one unmanaged provider fork. Its independent notes are edited directly at
-`.claude/skill-notes/burn-down-audits.md` and `.agents/skill-notes/burn-down-audits.md`, beside the
-provider trees they describe. Neither note has a `.ruler/` source, and the two must not be synced.
+Unmanaged provider packages are registered in `scripts/direct-provider-skills.mjs`. Their notes are
+edited directly in the matching `.claude/skill-notes/` or `.agents/skill-notes/` tree and have no
+`.ruler/` source. `burn-down-audits` has independent notes for both providers;
+`implement-issue-stack` has a Codex note only.
 
 A skill's `SKILL.md` is a runbook: it tells an agent what to do *now*, and every line it carries is
 context the agent pays for on each invocation. That leaves no room for the other half of the story —

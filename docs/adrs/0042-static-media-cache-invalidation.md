@@ -1,6 +1,7 @@
 # ADR-0042: Cache Invalidation for Stable-Filename Static Media
 
-**Status:** Active **Date:** 2026-07
+**Status:** Active — amended 2026-08-02 by issue #621 for the responsive-coloring runtime-cache
+exception. **Date:** 2026-07
 
 ## Context
 
@@ -46,6 +47,13 @@ and `md5sum web/static/styles/pixel.webp` is that same `d07387bd922d4fb670a766de
 revision changes if and only if the file's content changes** — the stable filename is irrelevant to
 invalidation because the content hash rides alongside it in the manifest.
 
+Responsive coloring derivatives are the deliberate exception to the second layer. The web app can
+request `/coloring/max-1152px/*` and `/coloring/max-240px/*` through `srcset`, but ADR-0022 excludes
+those duplicate resolutions from the precache. Their service-worker route uses the network when it
+is available and maps a failed request to the corresponding revisioned canonical
+`/coloring/<book>/*` entry. The exact responsive URL therefore follows ordinary HTTP-cache behavior
+online; the canonical asset remains the content-revisioned offline and export authority.
+
 ## Decision
 
 Keep the stable filenames and the one-week `max-age`; **do not** content-hash these paths or mark
@@ -87,8 +95,9 @@ instantly for correctness rather than freshness.
 
 ### When a contributor *does* need to act
 
-* **New asset path or file type** not matched by `globPatterns` / `includeAssets`: add it, or it
-  will be covered by layer 1 (one-week HTTP cache) only, with no SW revisioning.
+* **New asset path or file type** not matched by `globPatterns` / `includeAssets`, and not covered
+  by a documented runtime fallback such as responsive coloring: add it, or it will be covered by
+  layer 1 only, with no SW revisioning.
 * **Instant, guaranteed invalidation required** (not just eventual freshness): fingerprint that
   asset per the rejected-alternative above.
 * **Mid-drawing users**: by ADR-0022's guard, a returning user gets the new asset after the waiting
@@ -136,5 +145,6 @@ Observations:
 * **−** Invalidation depends on the SW update lifecycle (ADR-0022): a mid-drawing user sees the
   change only after the waiting SW activates (canvas blank / next launch), not guaranteed on the
   first reload.
-* **−** The `globPatterns` coverage is now load-bearing for invalidation: an asset type added
-  outside it silently falls back to layer-1-only caching. Called out above and in ADR-0022.
+* **−** The `globPatterns` plus explicit `globIgnores` coverage is load-bearing for invalidation: an
+  asset type added outside it silently falls back to layer-1-only caching unless it has a tested
+  runtime fallback. Called out above and in ADR-0022.

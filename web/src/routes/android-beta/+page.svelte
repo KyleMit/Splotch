@@ -123,11 +123,11 @@
     --page-sheet: #ffffff; /* = --surface, light */
     --page-ink: #26262e; /* ~ --text-strong (#333), light */
     --page-body: #55555f; /* ~ --text (#555), light */
-    /* The spec's muted ink was #9a98a3 (~ --text-faint). That is 2.8:1 on the
-       sheet and fails WCAG AA everywhere it carries text — the wordmark, the
-       hero note, fine print, and callout labels. This is the darkest value that
-       still reads as recessive and clears 4.5:1. */
-    --page-muted: #6c6c76; /* ~ --text-mid (#666), light */
+    /* The external spec proposed #9a98a3 for the muted ink. That is 2.8:1 on
+       the sheet and fails WCAG AA everywhere it carries text — the wordmark,
+       the hero note, fine print, and callout labels. This is the darkest value
+       that still reads as recessive and clears 4.5:1. */
+    --page-muted: #6c6c76; /* ~ --text-soft (#666), light */
     --page-rule: #eeeae4; /* ~ --border-warm (#ddd6cc), lightened */
     /* Darker than --brand, whose 3.4:1 fails WCAG AA for body-size text; this
        clears 4.5:1 as a link and as a white-on-purple button fill. Same value
@@ -164,7 +164,7 @@
      {@html}, which hydration does not reconcile (.claude/rules/svelte.md). */
   .trouble :global(.beta-disclosure) {
     border: 1px solid var(--beta-row-border);
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     background: var(--beta-row);
     transition:
       background var(--duration-base) ease,
@@ -195,14 +195,14 @@
      under "How to join" and nothing marks where the sign-up path ends. */
   .trouble-label {
     margin: 0;
-    font-size: 17px;
-    font-weight: 700;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
     color: var(--page-ink);
   }
 
   .trouble-sub {
-    font-size: 14px;
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     line-height: 1.45;
     color: var(--page-muted);
   }
@@ -250,15 +250,15 @@
 
   .row h3 {
     margin: 0 0 4px;
-    font-size: 16px;
-    font-weight: 700;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-bold);
     color: var(--page-ink);
   }
 
   .row p {
     margin: 0;
-    font-size: 15px;
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     line-height: 1.6;
     color: var(--page-body);
   }
@@ -287,10 +287,6 @@
   @media (max-width: 480px) {
     .trouble-sub-clause {
       display: none;
-    }
-
-    .trouble-sub {
-      font-size: 13px;
     }
   }
 </style>

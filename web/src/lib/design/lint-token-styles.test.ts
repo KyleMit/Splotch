@@ -4,7 +4,14 @@ import { describe, it, expect } from 'vitest';
 // counting logic is the gate's only real logic, so it's pinned here beside
 // the token tests. The script's scan-and-exit path only runs when invoked
 // directly, so this import is side-effect free.
-import { countRawHex, countRawZIndex } from '../../../../scripts/lint-token-styles.mjs';
+import {
+  countRawFontSize,
+  countRawFontSizeCss,
+  countRawHex,
+  countRawHexCss,
+  countRawZIndex,
+  countRawZIndexCss,
+} from '../../../../scripts/lint-token-styles.mjs';
 
 describe('countRawHex', () => {
   it('counts hex colors only inside <style> blocks', () => {
@@ -45,6 +52,22 @@ describe('countRawHex', () => {
   });
 });
 
+describe('countRawHexCss', () => {
+  it('counts a plain .css source without needing a style tag', () => {
+    expect(countRawHexCss('.admin-page { --admin-accent: #7c4dcf; color: #333; }')).toBe(2);
+  });
+
+  it('still ignores comments and var() fallbacks', () => {
+    expect(countRawHexCss('/* was #999 */ .a { color: var(--text, #333); border: #ddd; }')).toBe(1);
+  });
+});
+
+describe('countRawZIndexCss', () => {
+  it('catches multi-digit literals in a plain .css source', () => {
+    expect(countRawZIndexCss('.a { z-index: 900; } .b { z-index: var(--z-panel); }')).toBe(1);
+  });
+});
+
 describe('countRawZIndex', () => {
   it('catches multi-digit literals', () => {
     expect(countRawZIndex('<style>.a { z-index: 10; } .b { z-index: 100; }</style>')).toBe(2);
@@ -64,5 +87,60 @@ describe('countRawZIndex', () => {
 
   it('ignores markup outside style blocks', () => {
     expect(countRawZIndex('<div style="z-index: 40"></div>')).toBe(0);
+  });
+});
+
+describe('countRawFontSize', () => {
+  it('counts raw declarations in any unit but not tokenized ones', () => {
+    const source = `<style>
+  .a { font-size: 10px; }
+  .b { font-size: 0.9em; }
+  .c { font-size: var(--font-size-sm); }
+</style>`;
+    expect(countRawFontSize(source)).toBe(2);
+  });
+
+  it('does not backtrack past the colon into counting a tokenized declaration', () => {
+    expect(countRawFontSize('<style>.a { font-size: var(--font-size-xs); }</style>')).toBe(0);
+    expect(countRawFontSize('<style>.a { font-size:var(--font-size-xs); }</style>')).toBe(0);
+  });
+
+  it('ignores custom-property declarations and references', () => {
+    const source = `<style>
+  .a { --admin-font-size: 14px; font-size: var(--admin-font-size); }
+</style>`;
+    expect(countRawFontSize(source)).toBe(0);
+  });
+
+  it('ignores values in CSS comments and markup outside style blocks', () => {
+    expect(countRawFontSize('<style>/* was font-size: 13px */ .a { color: red; }</style>')).toBe(0);
+    expect(countRawFontSize('<div style="font-size: 40px"></div>')).toBe(0);
+  });
+
+  it('catches a size-bearing font shorthand but allows keyword-only forms', () => {
+    expect(countRawFontSize('<style>.a { font: 18px sans-serif; }</style>')).toBe(1);
+    expect(countRawFontSize('<style>.a { font: bold 18px/1.4 sans-serif; }</style>')).toBe(1);
+    expect(countRawFontSize('<style>.a { font: inherit; } .b { font: unset; }</style>')).toBe(0);
+    expect(countRawFontSize('<style>.a { font: var(--body-font); }</style>')).toBe(0);
+  });
+
+  it('does not mistake longhand font-* properties for the shorthand', () => {
+    expect(countRawFontSize('<style>.a { font-family: inherit; font-weight: 700; }</style>')).toBe(
+      0
+    );
+  });
+
+  it('matches property names case-insensitively', () => {
+    expect(countRawFontSize('<style>.a { FONT-SIZE: 13px; }</style>')).toBe(1);
+    expect(countRawFontSize('<style>.a { Font: inherit; }</style>')).toBe(0);
+    expect(countRawFontSize('<style>.a { Font: 18px sans-serif; }</style>')).toBe(1);
+  });
+});
+
+describe('countRawFontSizeCss', () => {
+  it('counts a plain .css source without needing a style tag', () => {
+    expect(
+      countRawFontSizeCss('.a { font-size: 13px; } .b { font-size: var(--font-size-sm); }')
+    ).toBe(1);
   });
 });

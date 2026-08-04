@@ -21,8 +21,8 @@
     gap: 14px;
     margin: 0;
     padding-bottom: 30px;
-    font-size: 11px;
-    font-weight: 600;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--page-muted);

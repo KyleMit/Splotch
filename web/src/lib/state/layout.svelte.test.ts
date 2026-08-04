@@ -86,4 +86,23 @@ describe('viewport tracking', () => {
     expect(layout.orientation).toBe('landscape');
     expect(layout.safeArea).toEqual({ top: 0, right: 44, bottom: 21, left: 0 });
   });
+
+  it('tags palette measurements with the live CSS orientation', async () => {
+    const { clearPaletteMeasurement, layout, publishPaletteMeasurement } = await freshModule();
+    document.documentElement.dataset.orientation = 'portrait';
+
+    publishPaletteMeasurement(84, 768);
+    expect(layout.paletteMeasurement).toEqual({
+      width: 84,
+      height: 768,
+      orientation: 'landscape',
+    });
+
+    mocks.portrait = true;
+    publishPaletteMeasurement(375, 76);
+    expect(layout.paletteMeasurement.orientation).toBe('portrait');
+
+    clearPaletteMeasurement();
+    expect(layout.paletteMeasurement).toEqual({ width: 0, height: 0, orientation: null });
+  });
 });

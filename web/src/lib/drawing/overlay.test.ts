@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { COLORING_OVERLAY_ID, getActiveOverlayImage } from './overlay';
+import { COLORING_OVERLAY_ID, getActiveOverlayExportSource } from './overlay';
 
 afterEach(() => {
   document.body.replaceChildren();
@@ -13,15 +13,15 @@ function appendLoadedOverlay() {
   return overlay;
 }
 
-describe('getActiveOverlayImage', () => {
+describe('getActiveOverlayExportSource', () => {
   it('returns null when the overlay is missing', () => {
-    expect(getActiveOverlayImage()).toBeNull();
+    expect(getActiveOverlayExportSource()).toBeNull();
   });
 
   it('returns null when the overlay is hidden', () => {
     appendLoadedOverlay().hidden = true;
 
-    expect(getActiveOverlayImage()).toBeNull();
+    expect(getActiveOverlayExportSource()).toBeNull();
   });
 
   it('returns null when the overlay has not loaded', () => {
@@ -29,7 +29,7 @@ describe('getActiveOverlayImage', () => {
     overlay.id = COLORING_OVERLAY_ID;
     document.body.append(overlay);
 
-    expect(getActiveOverlayImage()).toBeNull();
+    expect(getActiveOverlayExportSource()).toBeNull();
   });
 
   it('returns null when the overlay id belongs to another element', () => {
@@ -37,12 +37,30 @@ describe('getActiveOverlayImage', () => {
     overlay.id = COLORING_OVERLAY_ID;
     document.body.append(overlay);
 
-    expect(getActiveOverlayImage()).toBeNull();
+    expect(getActiveOverlayExportSource()).toBeNull();
   });
 
-  it('returns a visible, loaded overlay image', () => {
+  it('reuses a visible overlay when its decoded candidate is canonical', () => {
     const overlay = appendLoadedOverlay();
+    overlay.src = '/coloring/farm/cat-tall.overlay.webp';
+    Object.defineProperty(overlay, 'currentSrc', { value: overlay.src });
 
-    expect(getActiveOverlayImage()).toBe(overlay);
+    expect(getActiveOverlayExportSource()).toEqual({
+      canonicalUrl: overlay.src,
+      decodedCanonicalImage: overlay,
+    });
+  });
+
+  it('requests the canonical src when the decoded candidate is responsive', () => {
+    const overlay = appendLoadedOverlay();
+    overlay.src = '/coloring/farm/cat-tall.overlay.webp';
+    Object.defineProperty(overlay, 'currentSrc', {
+      value: `${location.origin}/coloring/max-1152px/farm/cat-tall.overlay.webp`,
+    });
+
+    expect(getActiveOverlayExportSource()).toEqual({
+      canonicalUrl: overlay.src,
+      decodedCanonicalImage: null,
+    });
   });
 });

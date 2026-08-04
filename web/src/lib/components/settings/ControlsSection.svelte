@@ -2,7 +2,7 @@
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
   import SliderRow from './SliderRow.svelte';
-  import Icon from '../Icon.svelte';
+  import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
   import type { CommonIconName } from '../iconTypes';
   import {
     settings,
@@ -50,7 +50,7 @@
     toggle: (next: boolean) => void;
   }
 
-  const buttonChips: SettingChip[] = [
+  const buttonChips = [
     {
       id: 'strokeWidthToggle',
       label: 'Stroke Width',
@@ -86,7 +86,23 @@
       checked: () => settings.undoButtonEnabled,
       toggle: setUndoButton,
     },
-  ];
+  ] as const satisfies readonly SettingChip[];
+
+  type ChipId = (typeof buttonChips)[number]['id'];
+
+  const chipOptions: SegmentedPickerOption<ChipId>[] = buttonChips.map(({ id, label, icon }) => ({
+    value: id,
+    label,
+    icon,
+    id,
+  }));
+
+  const activeChips = $derived(buttonChips.filter((chip) => chip.checked()).map((chip) => chip.id));
+
+  function toggleChip(id: ChipId) {
+    const chip = buttonChips.find((entry) => entry.id === id);
+    chip?.toggle(!chip.checked());
+  }
 
   // While the button-size slider is dragged, Settings melts away to just
   // the slider (see SettingsModal) so the parent can watch the action buttons
@@ -128,22 +144,14 @@
 
       <div class="chip-block">
         <h4 class="chip-heading">Show these buttons</h4>
-        <div class="chip-grid">
-          {#each buttonChips as chip (chip.id)}
-            <button
-              type="button"
-              class="chip"
-              class:on={chip.checked()}
-              id={chip.id}
-              aria-pressed={chip.checked()}
-              onclick={() => chip.toggle(!chip.checked())}
-            >
-              <Icon name={chip.icon} class="chip-icon" />
-              <span class="chip-label">{chip.label}</span>
-              <span class="chip-check" aria-hidden="true">{chip.checked() ? '✓' : ''}</span>
-            </button>
-          {/each}
-        </div>
+        <SegmentedPicker
+          variant="chip"
+          mode="toggle"
+          label="Show these buttons"
+          options={chipOptions}
+          selected={activeChips}
+          onSelect={toggleChip}
+        />
       </div>
     </div>
   {/if}
@@ -182,85 +190,10 @@
   .chip-heading {
     margin: 0 0 10px 0;
     font-size: var(--font-size-sm);
-    font-weight: 700;
-    color: var(--text-muted);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-soft);
     text-transform: uppercase;
     letter-spacing: 0.6px;
-  }
-
-  /* 2-column grid of toggle chips, replacing the old stack of toggle rows. */
-  .chip-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-
-  .chip {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    min-width: 0;
-    padding: 11px 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--surface-2);
-    color: var(--text-mid);
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-      background var(--duration-fast) ease,
-      color var(--duration-fast) ease,
-      border-color var(--duration-fast) ease;
-  }
-
-  @media (hover: hover) {
-    .chip:not(.on):hover {
-      background: var(--surface-hover);
-      color: var(--text-strong);
-    }
-  }
-
-  .chip.on {
-    background: var(--brand);
-    border-color: var(--brand);
-    color: var(--on-brand);
-  }
-
-  @media (hover: hover) {
-    .chip.on:hover {
-      background: var(--brand-hover);
-      border-color: var(--brand-hover);
-    }
-  }
-
-  .chip-label {
-    flex: 1;
-    min-width: 0;
-    text-align: left;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  :global(.chip-icon) {
-    width: 17px;
-    height: 17px;
-    flex-shrink: 0;
-  }
-
-  /* The chip's icon inherits the chip text color so it flips to white when on. */
-  .chip.on :global(.chip-icon svg) {
-    fill: var(--on-brand);
-  }
-
-  .chip-check {
-    flex-shrink: 0;
-    width: 14px;
-    text-align: center;
-    font-size: var(--font-size-md);
-    font-weight: 700;
   }
 
   .pencil-eraser {

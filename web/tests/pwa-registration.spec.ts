@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import { draw, gotoApp } from './helpers';
+import { openColoringDialog, openDrawer, openFarmPageGrid } from './flows-harness';
 
-// Issue #462: the service worker precaches the full offline bundle (~39 MB of
+// Issue #462: the service worker precaches the full offline bundle (~35 MB of
 // coloring-page variants), so registration no longer happens at load — it
 // waits behind the same "a few strokes drawn" signal the Install Banner uses
 // (SETTLED_IN_STROKES), then lands at idle. This pins both sides of
@@ -15,6 +16,60 @@ function hasRegistration(page: Page): Promise<boolean> {
   return page.evaluate(() =>
     navigator.serviceWorker.getRegistration().then((registration) => !!registration)
   );
+}
+
+async function registerAndControl(page: Page) {
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
+    if (navigator.serviceWorker.controller) return;
+    await new Promise<void>((resolve) => {
+      navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), {
+        once: true,
+      });
+    });
+  });
+}
+
+async function selectFarmImages(page: Page) {
+  await openDrawer(page);
+  await openColoringDialog(page);
+  const dialog = page.locator('#coloring-book-dialog');
+  const cover = dialog.getByRole('button', { name: 'Farm coloring book' }).locator('img');
+  await expect
+    .poll(() => cover.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .not.toBe(0);
+  const coverSource = await imageSourceAndDecodedWidth(cover);
+  const pages = await openFarmPageGrid(page);
+  const pageThumbnail = pages.first().locator('img');
+  await expect
+    .poll(() => pageThumbnail.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .not.toBe(0);
+  const pageThumbnailSource = await imageSourceAndDecodedWidth(pageThumbnail);
+  await pages.first().click();
+  const overlay = page.locator('#coloringOverlay');
+  await expect(overlay).toBeVisible();
+  await expect
+    .poll(() => overlay.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .not.toBe(0);
+  return {
+    cover: coverSource,
+    pageThumbnail: pageThumbnailSource,
+    overlay: await imageSourceAndDecodedWidth(overlay),
+  };
+}
+
+async function imageSourceAndDecodedWidth(image: ReturnType<Page['locator']>) {
+  return image.evaluate(async (element: HTMLImageElement) => {
+    const response = await fetch(element.currentSrc);
+    const bitmap = await createImageBitmap(await response.blob());
+    const result = {
+      currentSrc: new URL(element.currentSrc).pathname,
+      decodedWidth: bitmap.width,
+    };
+    bitmap.close();
+    return result;
+  });
 }
 
 test('the service worker registers only after the stroke-count gate passes', async ({ page }) => {
@@ -77,4 +132,78 @@ test('a repeat visit is controlled by the service worker with no stroke gate', a
   await gotoApp(page);
   expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
   expect(await hasRegistration(page)).toBe(true);
+});
+
+test.describe('responsive coloring offline fallback', () => {
+  test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+
+  test('serves canonical precache bytes for offline DPR 1 and DPR 3 srcset choices', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await gotoApp(page);
+    await registerAndControl(page);
+    await gotoApp(page);
+    expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+
+    const cachedPaths = await page.evaluate(async () => {
+      const paths: string[] = [];
+      for (const cacheName of await caches.keys()) {
+        for (const request of await (await caches.open(cacheName)).keys()) {
+          paths.push(new URL(request.url).pathname);
+        }
+      }
+      return paths;
+    });
+    expect(cachedPaths.some((path) => /^\/coloring\/max-\d+px\//.test(path))).toBe(false);
+    expect(cachedPaths).toEqual(
+      expect.arrayContaining([
+        '/coloring/farm/cover.thumb.webp',
+        '/coloring/farm/cat-tall.thumb.webp',
+        '/coloring/farm/cat-tall.overlay.webp',
+      ])
+    );
+
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Network.enable');
+    await cdp.send('Network.clearBrowserCache');
+    await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
+    await page.context().setOffline(true);
+    await gotoApp(page);
+
+    const dprOne = await selectFarmImages(page);
+    expect(dprOne.cover).toEqual({
+      currentSrc: '/coloring/max-240px/farm/cover.thumb.webp',
+      decodedWidth: 400,
+    });
+    expect(dprOne.pageThumbnail).toEqual({
+      currentSrc: '/coloring/max-240px/farm/cat-tall.thumb.webp',
+      decodedWidth: 267,
+    });
+    expect(dprOne.overlay).toEqual({
+      currentSrc: '/coloring/max-1152px/farm/cat-tall.overlay.webp',
+      decodedWidth: 1024,
+    });
+
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 393,
+      height: 852,
+      deviceScaleFactor: 3,
+      mobile: true,
+    });
+    await gotoApp(page);
+    const dprThree = await selectFarmImages(page);
+    expect(dprThree.cover).toEqual({
+      currentSrc: '/coloring/farm/cover.thumb.webp',
+      decodedWidth: 400,
+    });
+    expect(dprThree.pageThumbnail).toEqual({
+      currentSrc: '/coloring/farm/cat-tall.thumb.webp',
+      decodedWidth: 267,
+    });
+    expect(dprThree.overlay).toEqual({
+      currentSrc: '/coloring/farm/cat-tall.overlay.webp',
+      decodedWidth: 1024,
+    });
+  });
 });

@@ -31,7 +31,7 @@ re-runnable on any saved trace.
 | `npm run perf:frames:analyze -- <file>`       | re-reads a saved `real-screen.json` and recomputes every metric from the raw tables — the probe records and computes nothing, so a capture outlives the metric definitions taken with it                                                                                                                                                                                                                                                                                                           | the same tables, plus `summaries.json`                                                                                                           |
 | `npm run perf:undo`                           | the **undo** question specifically — drives `/dev/engine` (so it can read `getUndoDebug()`) through 7 shaped sessions (long squiggles, short marks, a mix, five-finger drags, pen scribbles, crayon squiggles, crayon reversal-scribbles); `--scenarios=a,b` runs a subset; tablet viewport, 4× throttle                                                                                                                                                                                           | CDP trace **+** per-scenario snapshot depth / live-raster / blob counts, commit + patch-capture + undo timing, and analytic raster + blob memory |
 | `npm run perf:undo:webkit`                    | the same 7 scenarios in Playwright **WebKit** — the engine family the iOS app ships. **Enforces the commit gate** (exits non-zero past `COMMIT_GATE_MS`); no throttle                                                                                                                                                                                                                                                                                                                              | engine marks (no CDP trace, no JS-heap table) **+** the same per-scenario tables                                                                 |
-| `npm run perf:undo:webkit:fast`               | the every-PR subset: `multi-finger` (the sole encode-path exerciser) + `crayon-scribbles` (mid-stroke pass splits). The named script owns the set; CI never repeats its scenario list                                                                                                                                                                                                                                                                                                              | the same WebKit gate and per-scenario tables                                                                                                     |
+| `npm run perf:undo:webkit:fast`               | the every-PR subset: `multi-finger` (the sole encode-path exerciser) + `crayon-scribbles` (mid-stroke pass splits). The named script owns the set; CI never repeats its scenario list. Multi-finger gates raw P95; crayon-scribbles normalizes P95 by same-run crayon renderer throughput so shared-host canvas slowdown does not impersonate new commit-only work                                                                                                                                 | raw and normalized gate evidence + the same per-scenario tables                                                                                  |
 | `npm run perf:replay -- --recording=<f>`      | **real recorded finger input** instead of synthetic strokes — replays a recording captured on-device with `scripts/perf/ipad-recorder.js` (see `ipad-device-profiling.md`) at real timing                                                                                                                                                                                                                                                                                                          | CDP trace **+** how your input landed on the snapshot stack (`getUndoDebug`) + engine.draw/commit/undo cost                                      |
 | `npm run perf:analyze -- <dir or trace.json>` | re-summarize a saved trace                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | —                                                                                                                                                |
 
@@ -79,11 +79,11 @@ raster count × full-raster size).
 Run **both** when you touch the commit or snapshot-tier path; they answer different questions and
 neither substitutes for the other.
 
-|         | `perf:undo` (Chromium)                                                       | `perf:undo:webkit`                                                          |
-| ------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Answers | how the stack *behaves* — depth, tiering, op-volume scaling, where time goes | whether a stroke-end **costs** what it should in the shipping engine family |
-| Has     | CDP trace, CPU throttle, JS-heap table, main-thread breakdown                | engine marks only                                                           |
-| Gate    | none — its ms are advisory                                                   | `engine.commit` P95 vs `COMMIT_GATE_MS`; exits non-zero                     |
+|         | `perf:undo` (Chromium)                                                       | `perf:undo:webkit`                                                           |
+| ------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Answers | how the stack *behaves* — depth, tiering, op-volume scaling, where time goes | whether a stroke-end **costs** what it should in the shipping engine family  |
+| Has     | CDP trace, CPU throttle, JS-heap table, main-thread breakdown                | engine marks only                                                            |
+| Gate    | none — its ms are advisory                                                   | full: raw P95; fast crayon: control-normalized P95; both vs `COMMIT_GATE_MS` |
 
 The split exists because a Chromium-only harness is **structurally blind** to a whole defect class:
 per-engine differences in canvas API behaviour. `toBlob` is the worked example — Chromium honours
@@ -106,6 +106,19 @@ catastrophic work shape must recur; it retains commit max and every raw duration
 isolated runner interruption. This is a catastrophic-regression gate with a wide threshold, not
 physical-iPad approval; ADR-0090's real-device tier remains the authority for frame pacing and
 device-calibrated budgets.
+
+The every-PR fast tier gates `multi-finger` on raw P95 because it is the deterministic negative
+control for a cold encode returning to the commit path. Its `crayon-scribbles` scenario divides raw
+commit P95 by the same run's `engine.draw total / calls` slowdown relative to the controlled healthy
+crayon reference. Shared macOS runs that slowed all crayon rendering by roughly 8–10× made raw
+commit P95 cross 25 ms without changing the work shape; normalization keeps those healthy runs below
+the unchanged 25 ms contract. A commit-only regression with normal live-draw throughput still fails,
+as does the known-bad multi-finger encode shape. Release and on-demand full runs stay on raw P95,
+and the artifacts retain both measurements.
+
+The draw window closes inside the same browser evaluation that dispatches the last synchronous
+stroke. Do not move that boundary to a later Playwright round trip: Safari's 200 ms idle fallback
+can start a healthy deferred encode in between and falsely report it as `encode in commit`.
 
 The named fast command reads `FAST_UNDO_SCENARIO_KEYS`; the npm script and workflow do not repeat
 its members. Each scenario declares the commit paths it exercises, and the repo-script suite fails

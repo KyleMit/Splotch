@@ -1,18 +1,18 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import CrayonStrip from '../CrayonStrip.svelte';
+  import BrandMark from './BrandMark.svelte';
 
   // The chrome every standalone, link-shareable page wears: a ground, a centered
   // sheet, a masthead (back link + crayon strip + wordmark) and a hero. Shared
-  // by /android-beta and /feedback so a URL handed out in a store listing or a
-  // README lands somewhere recognisably Splotch either way.
+  // by /android-beta, /feedback, and /privacy so a URL handed out in a store
+  // listing or a README lands somewhere recognisably Splotch either way.
   //
   // The palette is the --page-* custom properties declared in the style block
   // below, defaulting to the themed app tokens; everything nested inside — the
   // page's own body copy, RuleLabel, StepLedger — reads them rather than
   // restating a color. A page that must not follow the theme overrides them on
-  // the forwarded `class` (see /android-beta, whose link and button contrast is
-  // measured against a light ground).
+  // the forwarded `class` (see /android-beta and /privacy, whose link and
+  // button contrast is measured against a light ground).
   interface Props {
     /** The <h1>. Also the only heading the shell owns. */
     title: string;
@@ -34,8 +34,7 @@
       <!-- The mark is the masthead's second way home; the strip is decorative
            (aria-hidden), so the wordmark is the link's whole accessible name. -->
       <a class="brand" href="/">
-        <CrayonStrip />
-        <span class="wordmark">{wordmark}</span>
+        <BrandMark {wordmark} />
       </a>
     </div>
 
@@ -58,7 +57,7 @@
     --page-sheet: var(--surface);
     --page-ink: var(--text-strong);
     --page-body: var(--text);
-    --page-muted: var(--text-mid);
+    --page-muted: var(--text-soft);
     --page-rule: var(--border);
     /* --brand itself is 3.4:1 on the light sheet and fails WCAG AA for body-size
        text; --brand-text is the ramp's accessible step in both themes. */
@@ -90,7 +89,7 @@
     background: var(--page-ground);
     padding: 32px 16px 72px;
     color: var(--page-ink);
-    font-size: 16px;
+    font-size: var(--font-size-md);
     line-height: 1.62;
     text-wrap: pretty;
   }
@@ -154,8 +153,8 @@
     flex-shrink: 0;
     white-space: nowrap;
     color: var(--page-link);
-    font-size: 15px;
-    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     text-decoration: none;
   }
 
@@ -163,20 +162,7 @@
      wordmark stays quiet enough not to compete with the H1. */
   .brand {
     display: inline-flex;
-    align-items: center;
-    gap: 8px;
     text-decoration: none;
-    --crayon-width: 11px;
-    --crayon-height: 7px;
-    --crayon-gap: 4px;
-  }
-
-  .wordmark {
-    font-size: var(--font-size-xs);
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--page-body);
   }
 
   .hero {
@@ -185,9 +171,9 @@
 
   h1 {
     margin: 0;
-    font-size: 46px;
-    font-weight: 700;
-    line-height: 1.06;
+    font-size: var(--font-size-display);
+    font-weight: var(--font-weight-bold);
+    line-height: 1.08;
     letter-spacing: -0.015em;
     color: var(--page-ink);
     text-wrap: balance;
@@ -196,8 +182,8 @@
   .lede {
     margin: 16px 0 0;
     max-width: var(--page-measure);
-    font-size: 18px;
-    font-weight: 500;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
     line-height: 1.6;
     color: var(--page-body);
   }
@@ -211,31 +197,12 @@
   }
 
   @media (max-width: 540px) {
-    /* Small enough to stay on the back link's line rather than stacking under
-       it, which cost the topbar a whole row for one word. */
-    .brand {
-      gap: 6px;
-      --crayon-width: 7px;
-      --crayon-height: 6px;
-      --crayon-gap: 2px;
-    }
-
-    .wordmark {
-      font-size: 10px;
-      letter-spacing: 0.08em;
-    }
-
     .hero {
       padding-bottom: 28px;
     }
 
-    h1 {
-      font-size: 34px;
-      line-height: 1.1;
-    }
-
     .lede {
-      font-size: 16px;
+      font-size: var(--font-size-md);
     }
   }
 </style>

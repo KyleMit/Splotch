@@ -2,15 +2,24 @@
 // stays in the script that owns it.
 
 import { spawn, spawnSync } from 'node:child_process';
+import { realpathSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 // Whether the calling module is the entry point — pass it `import.meta.url`.
-// Lets a script export helpers for tests without running its CLI on import.
-export const isMain = (url) =>
-  Boolean(process.argv[1]) && pathToFileURL(process.argv[1]).href === url;
+// Node realpaths a symlinked entry before constructing that URL, so compare physical paths too.
+// This lets a script export helpers for tests without running its CLI on import.
+export function isMain(url) {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return pathToFileURL(realpathSync(entry)).href === url;
+  } catch {
+    return false;
+  }
+}
 
 export function runMain(main) {
   main().catch((err) => {

@@ -1,0 +1,6 @@
+interface:
+  display_name: 'Implement issue stack'
+  short_description: 'Ship ordered issues as reviewed, green stacked PRs'
+  default_prompt: 'Use $implement-issue-stack for the ordered Splotch issues I provide. Deliver one reviewed, green stacked PR per successful issue and never merge.'
+policy:
+  allow_implicit_invocation: false

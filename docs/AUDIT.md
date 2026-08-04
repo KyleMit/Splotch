@@ -3924,58 +3924,6 @@ it should be unaffected; the guard also only fires for `touchType === 'stylus'`.
 If the exclusion turns out to be deliberate (e.g. verified inert), the ADR-0038 rule deserves a
 written carve-out; today nothing documents it.
 
-### [Maintainability] Deduplicate the AI-button visibility predicate between the layout math and the template
-
-**File(s):** `web/src/lib/actionButtonLayout.ts` (`visibleActionButtonCount`, line 64),
-`web/src/lib/components/ActionsPanel.svelte` (line 357) @ 9ae62ff1
-
-**Priority:** P2
-
-> **Verified 2026-07-28** — both quotes exact at the cited lines. Adjacent to open issue #599 ("A
-> BYO Gemini key never unhides the magic-image button"), which is a correctness bug in this same
-> predicate: fix them together so the two sites collapse into one shared function rather than
-> re-diverging.
-
-#### Problem
-
-The condition deciding whether the AI button exists is written twice, in inverted forms that must
-agree:
-
-`actionButtonLayout.ts:64`:
-
-```ts
-(settings.aiAccessToken && settings.aiImageEnabled && network.online ? 1 : 0) +
-```
-
-`ActionsPanel.svelte:357`:
-
-```svelte
-hidden={!settings.aiAccessToken || !settings.aiImageEnabled || !network.online}
-```
-
-If one side gains a condition the other doesn't (say, a future per-child AI lockout), the failure is
-silent and geometric: `visibleActionButtonCount()` feeds the divisor of the `buttonSize` cap
-(ActionsPanel lines 92–104) and the slider ceiling in Settings (`maxActionButtonScale`), so a
-mismatch renders a row whose button count and per-button budget disagree — buttons overlap the
-Settings Button or shrink for a button that isn't there. CLAUDE.md's rule is explicit: cross-file
-agreement is never maintained by prose/duplication; boundary predicates are declared once and
-imported.
-
-#### Proposed solution
-
-Export the predicate once, next to the count it feeds:
-
-```ts
-export function aiButtonVisible(): boolean {
-  return Boolean(settings.aiAccessToken && settings.aiImageEnabled && network.online);
-}
-```
-
-Use it in `visibleActionButtonCount()` and in the template (`hidden={!aiButtonVisible()}` wrapped in
-a `$derived` in ActionsPanel so reactivity is preserved — the reads happen synchronously inside the
-call, same pattern as `publishActionPanelState`). Existing unit tests in
-`actionButtonLayout.test.ts` (lines 49–59) can pin the new function directly.
-
 ### [Maintainability] The hydrated button-size formula exists in three copies; two are kept in step only by comments
 
 **File(s):** `web/src/lib/actionButtonLayout.ts` (`availablePerButton`, lines 73–91),
@@ -4022,51 +3970,6 @@ substitution + arithmetic) and asserts it equals `min(base, availablePerButton(n
 fixtures — making the mirror mechanical instead of prose. Gotcha: the CSS string uses `env()` for
 insets while the JS uses measured `layout.safeArea`; the test should pin both formulas with zero
 insets and document that divergence surface.
-
-### [Maintainability] `buttonSpread` in ActionsPanel re-derives the chrome sum owned by `availablePerButton`
-
-**File(s):** `web/src/lib/components/ActionsPanel.svelte` (lines 94–96),
-`web/src/lib/actionButtonLayout.ts` (lines 75–76) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The same four-term sum is computed independently in both files:
-
-`ActionsPanel.svelte:94–96`:
-
-```ts
-const buttonSpread = $derived(
-  (buttonCount - 1) * ACTION_BUTTON_GAP + PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE,
-);
-```
-
-`actionButtonLayout.ts:75–76`:
-
-```ts
-const chrome = PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE
-  + (buttonCount - 1) * ACTION_BUTTON_GAP;
-```
-
-(and a third, fixed-count variant as `WORST_CASE_CHROME`, lines 47–51). Both import the same
-constants, so drift risk is lower than a raw literal, but adding a new fixed cost (another margin, a
-divider) requires editing both sums — and missing one desynchronizes the slider ceiling from the
-render cap, the exact failure this module exists to prevent.
-
-#### Proposed solution
-
-Export one helper and use it in all three places:
-
-```ts
-export function panelChromePx(buttonCount: number): number {
-  return (buttonCount - 1) * ACTION_BUTTON_GAP + PANEL_INSET + DRAWER_TOGGLE_MARGIN
-    + DRAWER_TOGGLE_SIZE;
-}
-```
-
-`WORST_CASE_CHROME` becomes `panelChromePx(MAX_ACTION_BUTTON_COUNT)`. This is subsumed by the
-`buttonSizeCssExpr` extraction above if that lands first; on its own it is a five-minute change.
 
 ### [Maintainability] The drawer gap's "keep in sync" comment pair needs a drift-guard test instead
 
@@ -4285,40 +4188,6 @@ Add literal fallbacks matching the tokens' light values (e.g. `var(--font-size-l
 `tokens.css` when implementing). Consider a comment on the block reminding future edits that *every*
 token use here needs a fallback; or a tiny drift test over the component source asserting each
 `var(--` in this file carries a comma fallback.
-
-### [Maintainability] PANEL_INSET is re-typed as bare `8` in `leftOffset`, and the portrait branch duplicates the stylesheet
-
-**File(s):** `web/src/lib/components/ActionsPanel.svelte` (`leftOffset`, lines 59–63; CSS lines
-395–396) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const leftOffset = $derived(
-  isPortrait
-    ? 'calc(8px + env(safe-area-inset-left))'
-    : `calc(${layout.paletteWidth + 8}px + env(safe-area-inset-left))`,
-);
-```
-
-Both `8`s are the panel's screen inset — the exported `PANEL_INSET` constant (actionButtonLayout.ts
-line 28) that this same file already imports and uses three lines later in `buttonSpread`. The CSS
-base rule (lines 395–396) types the same `8px` again. Worse, the portrait string exactly reproduces
-the stylesheet's own `left: calc(8px + env(safe-area-inset-left))` — an inline style whose only
-effect is overriding the stylesheet with an identical value.
-
-#### Proposed solution
-
-* Use the constant:
-  `` `calc(${layout.paletteWidth + PANEL_INSET}px + env(safe-area-inset-left))` ``.
-* Return `undefined` for portrait so `style:left` is simply absent and the stylesheet owns it
-  (Svelte removes the style for `undefined`), shrinking the derived to the one case that needs JS
-  (measured palette width).
-* The CSS literals (`bottom`/`left` 8px) can either stay (first-paint owner, like the fallback
-  formula) with coverage added to `actionButtonLayout.fallback.test.ts`, or be judged plain
-  geometry; at minimum the JS side should stop re-typing the constant it already imports.
 
 ### [Maintainability] Alarm-palette rgba literals repeated 5–7× per file in ClearButton and ClearCoachmark styles
 

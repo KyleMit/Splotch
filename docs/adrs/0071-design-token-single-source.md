@@ -1,7 +1,9 @@
 # ADR-0071: Design Tokens from One Generated Source (In-Repo Design System)
 
 **Status:** Active. **Date:** 2026-07. Amended 2026-07-22: `/admin` and `/privacy` are permanently
-light-only — see the amendment at the end.
+light-only — see the amendment at the end. Amended 2026-08-03: the styleguide is now the public
+`/design` route (ADR-0096) — see the amendment at the end. Amended 2026-08-04: the selection
+controls now share the `SegmentedPicker` primitive — see the amendment at the end.
 
 ## Context
 
@@ -121,3 +123,36 @@ the migration":
 So the rule is narrower than "modal/parent/admin surfaces use `Button`": **text-labeled actions on
 parent/modal surfaces use `Button`**. Canvas-floating controls keep bespoke paper treatments, as
 before.
+
+## Amendment (2026-08-04): the pickers share a primitive (`SegmentedPicker`)
+
+The 2026-07-25 amendment's selection-control carve-out said the selected-state controls stay
+hand-rolled, each carrying its own `on`/`active` rules. That held until the pattern crossed this
+ADR's own extraction rule — a fourth hand-rolled copy appeared as `/design`'s theme toggle — so the
+picker pattern got an owner (issue 748): **`SegmentedPicker.svelte`** in `lib/components/design/`.
+What changed, and what stands:
+
+* **The `Button` half of the carve-out stands unchanged.** A control that renders a **selected
+  state** is a picker, not an action — `Button` still has no selected variant and must not grow one.
+  What's gone is the "each hand-rolled" part: the theme picker (`AppearanceSection`), the
+  orientation segment (`CompactShell`), the controls chips (`ControlsSection`), and `/design`'s own
+  theme toggle all render through `SegmentedPicker`. `mode` carries the ARIA pattern (`radio` =
+  radiogroup/`aria-checked`, `toggle` = `aria-pressed`), `variant` the skin (`segment` track with
+  the `--shadow-control` raised thumb, `chip` bordered grid); selection *semantics* — deselection,
+  multi-select — stay with the caller, which is why one primitive can serve both the orientation
+  segment's tap-to-release and the chips' independent toggles.
+* **`/admin` stays excluded**, per the light-only amendment above: the primitive is built from
+  themed tokens (`--slider-track`, `--surface`, `--brand-solid`), which would flip on the
+  permanently light console.
+* **The report-kind row (`ReportFields`) stays native radios on purpose.** The `/feedback` page must
+  submit with JavaScript unavailable, and `SegmentedPicker`'s `<button role="radio">` markup cannot
+  — that one hand-rolled picker is a deliberate carve-out, not a migration gap.
+
+## Amendment (2026-08-03): the styleguide moved to public `/design`
+
+The living styleguide left the dev harness: it now lives at the public `/design` route, extended
+with the brand half of the design language (voice & copy, mascot/wordmark, paper, the crayon
+palette, the icon set) — see ADR-0096 for the decision and the alternatives (a static
+scrapbook-published copy was rejected as a drift hazard). Everything this ADR says about
+`/dev/design` — token registration renders there, primitives demo there, PR screenshots come from
+there — now applies to `/design`.

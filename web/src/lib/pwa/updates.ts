@@ -1,7 +1,7 @@
 // PWA service worker registration + auto-update lifecycle.
 //
 // Registration is manual and deferred (issue #462): the workbox precache is
-// ~39 MB (the full offline coloring-page set), so registering at window.load
+// ~35 MB (the full offline coloring-page set), so registering at window.load
 // would saturate a slow connection right as boot's idle-deferred work runs and
 // the child starts drawing. Instead:
 //   • First visit: +page.svelte's stroke-count gate calls
@@ -79,7 +79,7 @@ export function createPWAUpdates() {
   }
 
   // First-visit registration, called from +page.svelte's stroke-count gate.
-  // Save-Data users never get the ~39 MB precache forced on them — offline
+  // Save-Data users never get the ~35 MB precache forced on them — offline
   // support waits for a session without the preference set.
   function registerDeferredServiceWorker() {
     if (import.meta.env.DEV) return;

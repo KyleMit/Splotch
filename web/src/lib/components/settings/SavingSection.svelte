@@ -82,8 +82,8 @@
   }
 
   .folder-title {
-    font-size: var(--font-size-md);
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     color: var(--text);
     white-space: nowrap;
   }
@@ -125,7 +125,7 @@
     height: 26px;
     border: none;
     border-radius: 50%;
-    color: var(--text-mid);
+    color: var(--text-soft);
     background: var(--slider-track);
     cursor: pointer;
   }

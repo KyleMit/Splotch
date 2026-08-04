@@ -31,17 +31,23 @@ All three read a single black-on-white outline buffer. `✓` = the gate flags th
 | fake-hollow \*           |        ✓        |                 |                     |
 | hypno-swirl eye \*       |                 |        ✓        |                     |
 | four-sided frame \*      |                 |                 |          ✓          |
+| ghost frame \*           |                 |                 |          ✓          |
 | thin strokes (good)      |                 |                 |                     |
 | normal-depth eye (good)  |                 |                 |                     |
 | edge-near art (good)     |                 |                 |                     |
 | three-sided frame (good) |                 |                 |                     |
+| fringed edge art (good)  |                 |                 |                     |
 
 Perfectly diagonal. `scoreSolidity` solely catches the solid-pupil (blob bar) and fake-hollow
 (interior bar) classes; `scoreEyeRings` solely catches the over-deep swirl; `scoreOutlineFrame`
-solely catches the continuous four-sided page enclosure. All three are load-bearing. The
-normal-depth eye, edge-near-art, and three-sided fixtures pin that the frame judge requires
-continuity on all four sides instead of treating ordinary margin-adjacent lines as a frame. The two
-bars inside `scoreSolidity` are themselves independently justified by their two fixtures.
+solely catches both page-enclosure classes: the continuous four-sided ink frame and the
+page-spanning near-white ghost line an erased frame's anti-aliased fringe leaves behind (shipped by
+the first monster-wide frame removal, which validated with the ink scan alone). All three are
+load-bearing. The normal-depth eye, edge-near-art, and three-sided fixtures pin that the ink judge
+requires continuity on all four sides instead of treating ordinary margin-adjacent lines as a frame;
+the fringed-edge-art fixture pins that gray hugging a live stroke reads as that stroke's own soft
+edge, not a ghost. The two bars inside `scoreSolidity` are themselves independently justified by
+their two fixtures.
 
 ## Group B — night-fill gates
 

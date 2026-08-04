@@ -42,7 +42,12 @@ import {
   judgeLightEyes,
 } from '../lib/eye-fill.mjs';
 import { compositeNight } from '../lib/night-composite.mjs';
-import { scoreOutlineFrame, FRAME_SIDE_COVERAGE_MIN } from '../lib/outline-frame.mjs';
+import {
+  scoreOutlineFrame,
+  FRAME_SIDE_COVERAGE_MIN,
+  GHOST_LUMA_MAX,
+  GHOST_SIDE_COVERAGE_MIN,
+} from '../lib/outline-frame.mjs';
 import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
 import { diffGoldenPage, GOLDEN_VERDICTS, scoreGoldenNightEyes } from '../lib/golden-catalog.mjs';
 import {
@@ -81,6 +86,7 @@ async function scorePage(outlinePath) {
     strokeWidth: solidity.strokeWidth,
     ringDepth: rings.maxDepth,
     frameCoverage: round(frame.sideCoverage, 4),
+    ghostCoverage: round(frame.ghostCoverage, 4),
     solidOk: solidity.passes,
     ringsOk: rings.passes,
     frameOk: frame.passes,
@@ -176,7 +182,7 @@ async function scoreCatalog() {
   for (const rel of [...results.keys()].sort()) pages[rel] = results.get(rel);
   return {
     catalog: {
-      version: 3,
+      version: 4,
       thresholds: {
         keep: KEEP_THRESHOLD,
         localKeep: LOCAL_KEEP_THRESHOLD,
@@ -187,6 +193,8 @@ async function scoreCatalog() {
         solidInteriorMax: SOLID_INTERIOR_MAX,
         eyeRingDepthMax: EYE_RING_DEPTH_MAX,
         frameSideCoverageMin: FRAME_SIDE_COVERAGE_MIN,
+        ghostLumaMax: GHOST_LUMA_MAX,
+        ghostSideCoverageMin: GHOST_SIDE_COVERAGE_MIN,
       },
       pages,
     },

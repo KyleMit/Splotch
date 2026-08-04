@@ -3,11 +3,6 @@
 
   const harnesses = [
     {
-      href: '/dev/design',
-      name: 'Design tokens',
-      blurb: 'Live styleguide of every token and primitive.',
-    },
-    {
       href: '/dev/engine',
       name: 'Drawing engine',
       blurb: 'Bare canvas harness driven by the Playwright specs.',
@@ -30,7 +25,8 @@
   <h1>Dev harnesses</h1>
   <p class="intro">
     Development-only pages, unlocked under <code>vite dev</code> or with
-    <code>PUBLIC_ENABLE_DEV_HARNESS=true</code>. They 404 in production.
+    <code>PUBLIC_ENABLE_DEV_HARNESS=true</code>. They 404 in production. The design-system
+    styleguide is public at <a href="/design">/design</a>.
   </p>
 
   <ul class="harness-list">
@@ -55,21 +51,21 @@
   }
 
   /* Breadcrumb pins its current crumb to #666 for the light-only /admin host;
-     this page is themed, where that is 3.1:1 on the dark paper. --text-mid is
+     this page is themed, where that is 3.1:1 on the dark paper. --text-soft is
      the same #666 in light theme, so only dark changes. */
   .index :global(.crumb-current) {
-    color: var(--text-mid);
+    color: var(--text-soft);
   }
 
   h1 {
     color: var(--text-strong);
-    font-size: var(--font-size-3xl);
+    font-size: var(--font-size-2xl);
   }
 
   .intro {
     max-width: 60ch;
     margin: var(--space-2) 0 var(--space-6);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
   }
 
   .harness-list {
@@ -90,16 +86,16 @@
 
   a {
     color: var(--brand-text);
-    font-size: var(--font-size-lg);
-    font-weight: 600;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
   }
 
   .blurb {
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
   }
 
   code {
     font-size: var(--font-size-xs);
-    color: var(--text-muted);
+    color: var(--text-soft);
   }
 </style>

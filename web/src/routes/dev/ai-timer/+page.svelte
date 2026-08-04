@@ -1,6 +1,7 @@
 <script lang="ts">
   import AiImageResult from '$lib/components/AiImageResult.svelte';
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
+  import Button from '$lib/components/design/Button.svelte';
   import { ui } from '$lib/state/ui.svelte';
   import {
     startAiGeneration,
@@ -110,28 +111,28 @@
   <div class="controls">
     <div class="group">
       <span class="group-label">Presets</span>
-      <button onclick={() => play(3000)}>▶ Fast (3s)</button>
-      <button onclick={() => play(10000)}>▶ Realistic (10s)</button>
-      <button onclick={() => play(15000)}>▶ Slow / overrun (15s)</button>
+      <Button variant="brand" size="sm" onclick={() => play(3000)}>▶ Fast (3s)</Button>
+      <Button variant="brand" size="sm" onclick={() => play(10000)}>▶ Realistic (10s)</Button>
+      <Button variant="brand" size="sm" onclick={() => play(15000)}>▶ Slow / overrun (15s)</Button>
     </div>
 
     <div class="group">
       <span class="group-label">Custom — {(delayMs / 1000).toFixed(1)}s</span>
       <input type="range" min="500" max="20000" step="500" bind:value={delayMs} />
-      <button onclick={() => play()}>▶ Play</button>
+      <Button variant="brand" size="sm" onclick={() => play()}>▶ Play</Button>
     </div>
 
     <div class="group">
       <span class="group-label">Jump</span>
-      <button onclick={finishNow}>⏩ Finish now</button>
-      <button onclick={reset}>✕ Reset</button>
+      <Button variant="brand" size="sm" onclick={finishNow}>⏩ Finish now</Button>
+      <Button variant="brand" size="sm" onclick={reset}>✕ Reset</Button>
     </div>
 
     <div class="group">
       <span class="group-label">Failures</span>
-      <button onclick={triggerSafety}>🎨 Safety blocked (422)</button>
-      <button onclick={triggerServerError}>⚠ Server error (502)</button>
-      <button onclick={triggerTimeout}>⏱ Timeout</button>
+      <Button variant="brand" size="sm" onclick={triggerSafety}>🎨 Safety blocked (422)</Button>
+      <Button variant="brand" size="sm" onclick={triggerServerError}>⚠ Server error (502)</Button>
+      <Button variant="brand" size="sm" onclick={triggerTimeout}>⏱ Timeout</Button>
     </div>
   </div>
 
@@ -190,13 +191,13 @@
 
   /* Breadcrumb pins its current crumb to #666 for the light-only /admin host;
      .debug has no background of its own, so it sits on the themed var(--app-bg)
-     where #666 is 3.1:1. --text-mid is the same #666 in light theme. */
+     where #666 is 3.1:1. --text-soft is the same #666 in light theme. */
   .debug :global(.crumb-current) {
-    color: var(--text-mid);
+    color: var(--text-soft);
   }
 
   h1 {
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-xl);
     margin: 0 0 8px;
   }
 
@@ -208,7 +209,7 @@
 
   code {
     background: var(--brand-wash);
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-sm);
     padding: 1px 5px;
     font-size: 0.9em;
   }
@@ -229,32 +230,8 @@
   .group-label {
     width: 130px;
     font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--text-muted);
-  }
-
-  button {
-    background: var(--brand);
-    color: white;
-    border: none;
-    border-radius: var(--radius-sm);
-    padding: 8px 14px;
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-      background var(--duration-fast) ease,
-      transform 0.1s ease;
-  }
-  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it stuck until the next tap elsewhere. */
-  @media (hover: hover) {
-    button:hover {
-      background: var(--brand-hover);
-    }
-  }
-  button:active {
-    transform: scale(0.96);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-soft);
   }
 
   input[type='range'] {
@@ -266,7 +243,7 @@
   .hint {
     margin: 20px 0 0;
     font-size: var(--font-size-sm);
-    color: var(--text-muted);
+    color: var(--text-soft);
     line-height: 1.6;
   }
 
@@ -274,7 +251,7 @@
     /* Deliberate console-key chip: fixed dark slab + white glyph in both themes. */
     background: #2a2a2a;
     color: white;
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-sm);
     padding: 1px 6px;
     font-size: var(--font-size-xs);
     font-family: ui-monospace, monospace;
@@ -297,8 +274,8 @@
     font-size: var(--font-size-sm);
   }
   .state dt {
-    font-weight: 600;
-    color: var(--text-muted);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-soft);
     margin: 0;
   }
   .state dd {
@@ -325,7 +302,7 @@
   .thumbs figcaption {
     margin-top: 6px;
     font-size: var(--font-size-xs);
-    color: var(--text-muted);
+    color: var(--text-soft);
     text-align: center;
   }
 </style>

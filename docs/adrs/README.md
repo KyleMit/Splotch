@@ -41,8 +41,8 @@ The decisions that shape everything else, in rough order of importance. All are 
 * **[0071 — Design Tokens from One Generated Source](0071-design-token-single-source.md)** — all
   component styling draws from the generated token vocabulary; no raw one-off values.
 * **[0058 — Agent Instruction Files Generated from `.ruler/`](0058-ruler-generated-agent-files.md)**
-  — `CLAUDE.md`, `AGENTS.md`, and nearly every skill are generated; `burn-down-audits` is a direct,
-  independently maintained Claude/Codex provider fork.
+  — `CLAUDE.md`, `AGENTS.md`, and nearly every skill are generated; a small registry preserves
+  explicitly direct provider packages, including the Codex-only issue-stack orchestrator.
 
 ## Canvas & drawing
 
@@ -77,6 +77,8 @@ The decisions that shape everything else, in rough order of importance. All are 
 | [0076](0076-scope-toddler-zoom-lock-element-level.md)           | Scope the Toddler Zoom-Lock to Element Level (Drop `user-scalable=no`), Add Scoped Settings Pinch-to-Enlarge      | Active                                                                                                                                                                                                    |
 | [0087](0087-frame-bound-theme-switch-on-ipad-webkit.md)         | Keep iPad Theme Changes Frame-Bound by Retiring Idle Canvas Layers                                                | Active (amends [0085](0085-tiled-live-canvas-for-ipad-webkit.md), [0086](0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md); amended by [0091](0091-alpha-overlays-and-worker-magic-sheets.md)) |
 | [0094](0094-settings-surface-operation-level-parental-gates.md) | Brand the Utility Surface as Settings and Gate Sensitive Operations Individually                                  | Active                                                                                                                                                                                                    |
+| [0096](0096-public-design-styleguide-route.md)                  | The Design-System Reference Is the Public `/design` Route, Rendered from Source                                   | Active (amends [0071](0071-design-token-single-source.md))                                                                                                                                                |
+| [0097](0097-prune-token-vocabulary-add-usage-rules.md)          | Prune the Token Vocabulary and Attach a Usage Rule to Every Token                                                 | Active (amends [0071](0071-design-token-single-source.md))                                                                                                                                                |
 
 ## Native (Capacitor / Android / iOS)
 
@@ -129,6 +131,7 @@ The decisions that shape everything else, in rough order of importance. All are 
 | [0090](0090-tiered-real-ipad-performance-regression-gates.md)         | Gate iPad Performance with In-Page Timings Driven by Real XCUITest Input                                  | Active (amends [0032](0032-performance-profiling-harness.md), [0084](0084-trusted-xcuitest-input-for-ipad-real-screen-profiling.md); amended by [0092](0092-direct-cdp-android-browser-action-profiling.md), [0093](0093-two-tier-webkit-commit-gate-in-ci.md))                                                                                                                                                                                   |
 | [0092](0092-direct-cdp-android-browser-action-profiling.md)           | Drive Android Browser Action Profiles Directly over CDP                                                   | Active (amends [0032](0032-performance-profiling-harness.md), [0090](0090-tiered-real-ipad-performance-regression-gates.md))                                                                                                                                                                                                                                                                                                                      |
 | [0093](0093-two-tier-webkit-commit-gate-in-ci.md)                     | Run a Two-Tier WebKit Commit Gate in CI                                                                   | Active (amends [0032](0032-performance-profiling-harness.md), [0090](0090-tiered-real-ipad-performance-regression-gates.md))                                                                                                                                                                                                                                                                                                                      |
+| [0095](0095-enforce-adr-identity-and-index-integrity-in-ci.md)        | Enforce ADR Identity and Index Integrity in a Standalone CI Gate                                          | Active                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ## Build & tooling
 

@@ -11,7 +11,6 @@
   import { toolState, selectBrush, type BrushType } from '$lib/state/tool.svelte';
   import { ui, coloringBook, aiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
-  import { network } from '$lib/state/network.svelte';
   import { layout } from '$lib/state/layout.svelte';
   import {
     ACTION_BUTTON_GAP,
@@ -19,16 +18,19 @@
     ACTION_BUTTON_BASE_PORTRAIT,
     SETTINGS_BUTTON_RESERVE,
     PANEL_INSET,
-    DRAWER_TOGGLE_MARGIN,
-    DRAWER_TOGGLE_SIZE,
+    PANEL_FIXED_CHROME,
     PALETTE_CLEARANCE,
     MAX_ACTION_BUTTON_COUNT,
+    isAiImageButtonVisible,
     visibleActionButtonCount,
+    resolvedLandscapePaletteWidth,
+    resolvedPortraitPaletteHeight,
     publishActionPanelState,
   } from '$lib/actionButtonLayout';
   import { undo } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
   import { SCREENSHOT_BUTTON_ID } from '$lib/drawing/screenshotFeedback';
+  import { replayActionUnavailableFeedback } from '$lib/actionUnavailableFeedback';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
 
   let brushWrapperEl: HTMLDivElement | undefined = $state();
@@ -36,6 +38,8 @@
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
   let aiBtnEl: HTMLButtonElement | undefined = $state();
   let panelEl: HTMLDivElement | undefined = $state();
+  // Intentionally untracked: this ref is read only by imperative tap and animation handlers.
+  let undoBtnEl: HTMLButtonElement | undefined;
   let drawerMotion = $state(false);
   // Intentionally untracked: only the reactive drawer-expanded value should rerun this comparison.
   let lastDrawerExpanded: boolean | undefined;
@@ -47,25 +51,26 @@
 
   const erasing = $derived(toolState.brush === 'eraser');
 
-  // Orientation drives the landscape palette-clearing offset below, which needs
-  // the measured palette width in JS. Everything else orientation-dependent here
-  // (drawer collapse axis, chevron direction) is CSS. The shared layout module
-  // owns the listeners.
+  // Orientation drives the landscape palette-clearing offset below. Everything
+  // else orientation-dependent here (drawer collapse axis, chevron direction)
+  // is CSS. The shared layout module owns the listeners.
   const isPortrait = $derived(layout.orientation === 'portrait');
 
-  // Landscape: sit just past the color palette so we clear it. Portrait: pin to
-  // the bottom-left corner. paletteWidth is published by ColorPalette (0 until
-  // measured), so this settles once the palette lays out — no querySelector and
-  // no mount-time setTimeout to dodge the layout race.
+  // Landscape: sit just past the Color Palette so we clear it. The raw
+  // prerendered page gets the same deterministic width from the shared CSS
+  // custom property; hydrated JS uses that geometry until ColorPalette publishes
+  // its measured width, which remains the correction for browser rounding.
   //
   // The inline left wins over the stylesheet, so the safe-area inset has to ride
   // along in this value or it's lost: .app-container's padding-left shifts the
   // palette right by env(safe-area-inset-left) (the Android landscape hole-punch),
-  // and paletteWidth doesn't include that padding — so we clear inset + width.
+  // and the measured width doesn't include that padding — so we clear inset + width.
+  const landscapePaletteWidth = $derived(resolvedLandscapePaletteWidth());
+  const portraitPaletteHeight = $derived(resolvedPortraitPaletteHeight());
   const leftOffset = $derived(
-    isPortrait
-      ? 'calc(8px + env(safe-area-inset-left))'
-      : `calc(${layout.paletteWidth + 8}px + env(safe-area-inset-left))`
+    !browser || isPortrait
+      ? undefined
+      : `calc(${landscapePaletteWidth + PANEL_INSET}px + env(safe-area-inset-left))`
   );
 
   // Cap the button size so the expanded panel always fits the screen —
@@ -83,10 +88,8 @@
   // portrait phones — which painted the buttons "incredibly small" until
   // hydration swapped in the real size (issue #317). Instead we leave
   // --action-btn-size unset at SSR and let the CSS --action-btn-fallback own
-  // first paint: it's the same worst-case cap but expressed per-orientation via
-  // media query, so it's correct in both. Once hydrated this value overrides it,
-  // and CSS keeps size out of `transition` so the swap snaps rather than
-  // animating.
+  // first paint via media query. Once hydrated this value overrides it, and CSS
+  // keeps size out of `transition` so the swap snaps rather than animating.
   //
   // Viewport units: landscape uses 100vw — the URL bar doesn't affect width.
   // Portrait uses layout.viewportHeight (not 100vh): on mobile web 100vh is the
@@ -96,17 +99,15 @@
   // resize listener, which fires on URL-bar show/hide), so the render cap and
   // the ceiling can't disagree.
   const buttonCount = $derived(browser ? visibleActionButtonCount() : MAX_ACTION_BUTTON_COUNT);
-
-  const buttonSpread = $derived(
-    (buttonCount - 1) * ACTION_BUTTON_GAP + PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE
-  );
+  const aiImageButtonVisible = $derived(isAiImageButtonVisible());
+  const buttonSpread = $derived((buttonCount - 1) * ACTION_BUTTON_GAP + PANEL_FIXED_CHROME);
 
   const buttonSize = $derived(
     !browser
       ? undefined
       : isPortrait
-        ? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((${layout.viewportHeight - layout.paletteHeight - PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
-        : `min(calc(${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)), calc((100vw - ${layout.paletteWidth + SETTINGS_BUTTON_RESERVE}px - env(safe-area-inset-left) - env(safe-area-inset-right) - ${buttonSpread}px) / ${buttonCount}))`
+        ? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((${layout.viewportHeight - portraitPaletteHeight - PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
+        : `min(calc(${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)), calc((100vw - ${landscapePaletteWidth + SETTINGS_BUTTON_RESERVE}px - env(safe-area-inset-left) - env(safe-area-inset-right) - ${buttonSpread}px) / ${buttonCount}))`
   );
 
   // When advanced controls are disabled the chevron is hidden and the drawer
@@ -200,19 +201,12 @@
     };
   });
 
-  // End-of-history nudge: taps that can't undo any further shake the undo
-  // button instead of going silent (the history folds older strokes into the
-  // baseline, so the wall is invisible otherwise). Cleared on animationend;
-  // re-triggered through a frame so back-to-back taps restart the shake.
-  let undoNudge = $state(false);
-
   function handleUndoClick() {
     if (canvasState.canUndo) {
       undo();
       return;
     }
-    undoNudge = false;
-    requestAnimationFrame(() => (undoNudge = true));
+    replayActionUnavailableFeedback(undoBtnEl);
   }
 
   // The save pipeline (export compositor, polaroid, folder save) is
@@ -364,7 +358,7 @@
 
       <!-- AI button keeps its reactive `hidden`: its visibility also depends on a
            runtime, non-persisted signal (network.online) the head script can't
-           know pre-paint, and it defaults hidden (no access token) so there's no
+           know pre-paint, and it defaults hidden (no credential) so there's no
            first-paint flash to seed away. -->
       <button
         class="action-button"
@@ -374,7 +368,7 @@
         aria-label="Create AI image"
         aria-busy={ui.aiGenerating}
         disabled={canvasState.canvasEmpty || ui.aiGenerating}
-        hidden={!settings.aiAccessToken || !settings.aiImageEnabled || !network.online}
+        hidden={!aiImageButtonVisible}
         use:scribbleTap={handleAiImageClick}
         bind:this={aiBtnEl}
       >
@@ -383,16 +377,15 @@
 
       <!-- aria-disabled (not the disabled attribute) so the button still
            receives taps at the end of history and can answer with the
-           end-of-history shake; handleUndoClick guards the actual undo. -->
+           unavailable cue; handleUndoClick guards the actual undo. -->
       <button
         class="action-button"
         class:disabled={!canvasState.canUndo}
-        class:end-of-history={undoNudge}
         id="undoButton"
         aria-label="Undo"
         aria-disabled={!canvasState.canUndo}
-        onanimationend={() => (undoNudge = false)}
         use:scribbleTap={handleUndoClick}
+        bind:this={undoBtnEl}
       >
         <Icon name="undo" class="action-icon" />
       </button>
@@ -413,7 +406,7 @@
   .actions-panel {
     position: fixed;
     bottom: calc(8px + env(safe-area-inset-bottom));
-    left: calc(8px + env(safe-area-inset-left));
+    left: calc(var(--palette-landscape-width) + 8px + env(safe-area-inset-left));
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -423,6 +416,7 @@
   @media (orientation: portrait) {
     .actions-panel {
       flex-direction: column-reverse;
+      left: calc(8px + env(safe-area-inset-left));
     }
   }
 
@@ -601,18 +595,29 @@
     /* --action-btn-size (inline) is the precise measured cap ActionsPanel sets
        once hydrated, so the row clears the Settings Button (landscape) / the
        palette bar (portrait). Until then it's unset and --action-btn-fallback
-       owns first paint: the same worst-case cap (all 7 buttons, palette not yet
-       measured) but expressed in CSS so the media query picks the right
-       orientation — the old inline SSR bake was always the landscape formula, so
-       portrait phones painted tiny buttons that jumped to full size (issue #317).
+       owns first paint: the landscape formula budgets for the 1–5 buttons the
+       boot script leaves visible (the AI button requires client-only state), while
+       the media query picks the right orientation. The old inline SSR bake was
+       always the landscape formula, so portrait phones painted tiny buttons that
+       jumped to full size (issue #317).
        Square via width = height so a capped button shrinks like a smaller scale
        instead of squishing. Landscape 100vw (unaffected by the URL bar); the
-       188px = SETTINGS_BUTTON_RESERVE (64) + WORST_CASE_CHROME (124). These
-       literals mirror the actionButtonLayout constants and are drift-guarded by
+       --palette-landscape-width reserves the Color Palette before it can be
+       measured. 128px = SETTINGS_BUTTON_RESERVE (64) + PANEL_FIXED_CHROME
+       (64); the inherited count and gap total default to the five-button raw
+       HTML state and app.html overrides them for persisted hidden controls.
+       These literals mirror the actionButtonLayout constants and are drift-guarded by
        actionButtonLayout.fallback.test.ts — update both together. */
     --action-btn-fallback: min(
       calc(60px * var(--action-btn-scale, 1)),
-      calc((100vw - 188px - env(safe-area-inset-left) - env(safe-area-inset-right)) / 6)
+      calc(
+        (
+            100vw - var(--palette-landscape-width) - 128px -
+              var(--action-btn-first-paint-gap-total) - env(safe-area-inset-left) -
+              env(safe-area-inset-right)
+          ) /
+          var(--action-btn-first-paint-count)
+      )
     );
     width: var(--action-btn-size, var(--action-btn-fallback));
     height: var(--action-btn-size, var(--action-btn-fallback));
@@ -687,56 +692,6 @@
   #undoButton.disabled:active {
     transform: scale(0.95);
     background: var(--brand-wash);
-  }
-
-  /* End-of-history cue: a tap on the dimmed undo button answers with a shake
-     plus a whole-button flash — a wordless "that's as far back as I can go"
-     for pre-readers. The pair matters: a fingertip fully occludes the 55–60px
-     button, so the positional wobble alone is invisible mid-tap (issue #304);
-     the flash's glow ring spreads past the finger. Equal durations so the
-     first animationend (which clears the class) doesn't cut the other short. */
-  .action-button.end-of-history {
-    animation:
-      undo-nudge 0.4s ease-in-out,
-      undo-flash 0.4s ease-in-out;
-  }
-
-  @keyframes undo-nudge {
-    20% {
-      transform: translateX(-8px) rotate(-6deg);
-    }
-    40% {
-      transform: translateX(8px) rotate(6deg);
-    }
-    60% {
-      transform: translateX(-5px) rotate(-3deg);
-    }
-    80% {
-      transform: translateX(5px) rotate(3deg);
-    }
-  }
-
-  /* The occlusion-proof half: pulse from the disabled dim to full opacity
-     behind a brand glow ring that spreads well beyond the button's edge, so
-     the cue reads around a covering fingertip in both themes. */
-  @keyframes undo-flash {
-    15%,
-    70% {
-      opacity: 1;
-      border-color: var(--brand);
-      background: var(--brand-wash);
-      box-shadow: 0 0 0 10px rgba(var(--brand-rgb), 0.5);
-      box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 50%, transparent);
-    }
-  }
-
-  /* Reduced motion drops the positional shake but keeps the flash — an
-     opacity/color pulse, not motion — so the end-of-history cue never
-     disappears entirely (and animationend still fires to clear the class). */
-  @media (prefers-reduced-motion: reduce) {
-    .action-button.end-of-history {
-      animation: undo-flash 0.4s ease-in-out;
-    }
   }
 
   .action-button:disabled,

@@ -4,6 +4,7 @@
 // the screen (portrait), and the Button Size slider in Settings caps its
 // range so a parent can't even pick a size the current screen can't fit.
 import {
+  aiCredentialKind,
   settings,
   ACTION_BUTTON_SCALE_MIN,
   ACTION_BUTTON_SCALE_MAX,
@@ -11,6 +12,10 @@ import {
 import { network } from '$lib/state/network.svelte';
 import { layout } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
+import {
+  landscapeSingleColumnMediaQuery,
+  PALETTE_LANDSCAPE_WIDTHS_PX,
+} from '$lib/design/trimGeometry';
 
 // Keep in sync with the .actions-drawer-inner gap in ActionsPanel.svelte.
 export const ACTION_BUTTON_GAP = 12;
@@ -26,34 +31,42 @@ export const SETTINGS_BUTTON_RESERVE = 64;
 // The panel's other fixed costs: its 8px screen inset, the drawer→toggle
 // collapse margin (8px), and the 48px drawer toggle.
 export const PANEL_INSET = 8;
-export const DRAWER_TOGGLE_MARGIN = 8;
-export const DRAWER_TOGGLE_SIZE = 48;
+const DRAWER_TOGGLE_MARGIN = 8;
+const DRAWER_TOGGLE_SIZE = 48;
+export const PANEL_FIXED_CHROME = PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE;
 
 // Breathing room between the top of the portrait column and the palette bar.
 export const PALETTE_CLEARANCE = 8;
 
-// Every button the panel can show: brush menu, stroke width, coloring book,
-// screenshot, AI image, undo. The prerendered page sizes for this worst case —
-// the server can't know a stored AI token or toggle states.
+// Every button the hydrated panel can show: brush menu, stroke width, coloring
+// book, screenshot, AI image, undo.
 export const MAX_ACTION_BUTTON_COUNT = 6;
 
-// Worst-case fixed chrome the CSS first-paint fallback must budget for: all
-// MAX_ACTION_BUTTON_COUNT buttons (so MAX-1 gaps) plus the panel's screen
-// inset, the drawer→toggle collapse margin, and the drawer toggle. The CSS
-// --action-btn-fallback bakes the resolved totals as literals (188 landscape,
-// 208 portrait) because it owns first paint before any TS loads (ADR-0040);
-// actionButtonLayout.fallback.test.ts guards those literals against these
-// constants so a change here can't silently leave the CSS stale.
+// The AI button is always hidden in the prerendered HTML because its visibility
+// depends on client-only credential and network state. app.html corrects this
+// default count before first paint when persisted settings hide other buttons.
+export const FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT = MAX_ACTION_BUTTON_COUNT - 1;
+export const FIRST_PAINT_ACTION_BUTTON_GAP_TOTAL_DEFAULT =
+  (FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT - 1) * ACTION_BUTTON_GAP;
+
+export const LANDSCAPE_FIXED_RESERVE = SETTINGS_BUTTON_RESERVE + PANEL_FIXED_CHROME;
+
+// Conservative portrait fallback chrome: all MAX_ACTION_BUTTON_COUNT buttons
+// (so MAX-1 gaps) plus the panel's screen inset, drawer→toggle collapse margin,
+// and drawer toggle. The CSS --action-btn-fallback bakes the resolved portrait
+// total as a literal because it owns first paint before any TS loads (ADR-0040);
+// actionButtonLayout.fallback.test.ts guards it against these constants.
 export const WORST_CASE_CHROME =
-  (MAX_ACTION_BUTTON_COUNT - 1) * ACTION_BUTTON_GAP +
-  PANEL_INSET +
-  DRAWER_TOGGLE_MARGIN +
-  DRAWER_TOGGLE_SIZE;
+  (MAX_ACTION_BUTTON_COUNT - 1) * ACTION_BUTTON_GAP + PANEL_FIXED_CHROME;
 
 // Stable portrait palette-bar height the CSS portrait fallback reserves so the
 // column clears the palette on short screens (the hydrated formula subtracts
 // the measured palette height instead).
 export const PALETTE_BAR_RESERVE = 76;
+
+export function isAiImageButtonVisible(): boolean {
+  return aiCredentialKind() !== 'none' && settings.aiImageEnabled && network.online;
+}
 
 export function visibleActionButtonCount(): number {
   return (
@@ -61,9 +74,39 @@ export function visibleActionButtonCount(): number {
     (settings.strokeWidthControlEnabled ? 1 : 0) +
     (settings.coloringBookEnabled ? 1 : 0) +
     (settings.screenshotEnabled ? 1 : 0) +
-    (settings.aiAccessToken && settings.aiImageEnabled && network.online ? 1 : 0) +
+    (isAiImageButtonVisible() ? 1 : 0) +
     (settings.undoButtonEnabled ? 1 : 0)
   );
+}
+
+// ColorPalette publishes its measured width after hydration. Until then its
+// responsive CSS geometry is deterministic, so layout consumers use the same
+// two values app.css exposes through --palette-landscape-width instead of
+// briefly treating the palette as zero-width.
+export function resolvedLandscapePaletteWidth(): number {
+  const measurement = layout.paletteMeasurement;
+  if (
+    layout.orientation === 'landscape' &&
+    measurement.orientation === 'landscape' &&
+    measurement.width > 0
+  ) {
+    return measurement.width;
+  }
+  return typeof matchMedia !== 'undefined' && matchMedia(landscapeSingleColumnMediaQuery()).matches
+    ? PALETTE_LANDSCAPE_WIDTHS_PX.singleColumn
+    : PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns;
+}
+
+export function resolvedPortraitPaletteHeight(): number {
+  const measurement = layout.paletteMeasurement;
+  if (
+    layout.orientation === 'portrait' &&
+    measurement.orientation === 'portrait' &&
+    measurement.height > 0
+  ) {
+    return measurement.height;
+  }
+  return PALETTE_BAR_RESERVE;
 }
 
 // The space one button may occupy on the current screen, in px, before the row
@@ -72,18 +115,17 @@ export function visibleActionButtonCount(): number {
 // the two formulas in step.
 function availablePerButton(buttonCount: number): number {
   const { orientation, safeArea } = layout;
-  const chrome =
-    PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE + (buttonCount - 1) * ACTION_BUTTON_GAP;
+  const chrome = PANEL_FIXED_CHROME + (buttonCount - 1) * ACTION_BUTTON_GAP;
   const budget =
     orientation === 'portrait'
       ? layout.viewportHeight -
-        layout.paletteHeight -
+        resolvedPortraitPaletteHeight() -
         PALETTE_CLEARANCE -
         safeArea.top -
         safeArea.bottom -
         chrome
       : layout.viewportWidth -
-        layout.paletteWidth -
+        resolvedLandscapePaletteWidth() -
         SETTINGS_BUTTON_RESERVE -
         safeArea.left -
         safeArea.right -

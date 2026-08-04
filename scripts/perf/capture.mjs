@@ -143,9 +143,10 @@ export function createMeasureTimeline() {
 export async function markPhase(page, label, fn) {
   const startMark = `phase:${label}:start`;
   await page.evaluate((m) => performance.mark(m), startMark);
-  await fn();
+  const result = await fn();
   await page.evaluate(({ label, startMark }) => performance.measure(`phase:${label}`, startMark), {
     label,
     startMark,
   });
+  return result;
 }

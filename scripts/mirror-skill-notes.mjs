@@ -13,6 +13,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
+import { directNoteNames } from './direct-provider-skills.mjs';
 
 // Shared note sources carry the same .md.template suffix the skill forks
 // require, for the same reason: ruler's recursive rule loader concatenates every
@@ -29,8 +30,10 @@ export const SHARED_NOTE_SUFFIX = '.md.template';
 export const sharedNoteSource = (skillName) => `${skillName}${SHARED_NOTE_SUFFIX}`;
 
 const SOURCE = join('.ruler', 'skill-notes');
-const TARGETS = [join('.claude', 'skill-notes'), join('.agents', 'skill-notes')];
-const DIRECT_NOTES = new Set(['burn-down-audits.md']);
+const TARGETS = [
+  { provider: 'claude', path: join('.claude', 'skill-notes') },
+  { provider: 'codex', path: join('.agents', 'skill-notes') },
+];
 
 const noteOutputName = (file) => file.slice(0, -'.template'.length);
 
@@ -50,11 +53,12 @@ export function mirrorSkillNotes(root = ROOT) {
   const generated = new Set(sourceFiles.map(noteOutputName));
 
   for (const target of TARGETS) {
-    const targetDir = join(root, target);
+    const targetDir = join(root, target.path);
+    const directNotes = directNoteNames(target.provider);
     mkdirSync(targetDir, { recursive: true });
 
     for (const stale of readdirSync(targetDir).filter(
-      (file) => !generated.has(file) && !DIRECT_NOTES.has(file)
+      (file) => !generated.has(file) && !directNotes.has(file)
     )) {
       rmSync(join(targetDir, stale), { force: true });
     }
@@ -70,7 +74,9 @@ export function mirrorSkillNotes(root = ROOT) {
     }
   }
 
-  console.log(`[skill-notes] mirrored ${sourceFiles.length} file(s) to ${TARGETS.join(' and ')}`);
+  console.log(
+    `[skill-notes] mirrored ${sourceFiles.length} file(s) to ${TARGETS.map(({ path }) => path).join(' and ')}`
+  );
   return { notes: sourceFiles.length };
 }
 

@@ -158,7 +158,10 @@
           </li>
           <li>Sign in with a Google account.</li>
           <li>Click <strong>Create API key</strong> and confirm.</li>
-          <li>Copy the key (it starts with <code>AIza…</code>) and paste it below.</li>
+          <li>
+            Copy the key (it starts with <code>AQ.…</code> or <code>AIza…</code>) and paste it
+            below.
+          </li>
         </ol>
         <p class="byok-howto-note">The free tier is generous and is plenty for occasional use.</p>
       </Disclosure>
@@ -249,8 +252,8 @@
   /* AI access code entry */
   .access-code-label {
     display: block;
-    font-size: var(--font-size-md);
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     color: var(--text);
     margin-bottom: 4px;
   }
@@ -291,7 +294,7 @@
   }
 
   .byok-active .byok-intro {
-    color: var(--text-mid);
+    color: var(--text-soft);
   }
 
   /* The how-to's own chrome on the Disclosure primitive — reached with
@@ -304,7 +307,7 @@
   .byok :global(.byok-howto summary) {
     padding: 10px 12px;
     font-size: var(--font-size-sm);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--brand);
   }
 
@@ -315,19 +318,19 @@
   .byok :global(.byok-howto ol) {
     margin: 0;
     padding: 0 16px 8px 32px;
-    color: var(--text-mid);
+    color: var(--text-soft);
     font-size: var(--font-size-sm);
     line-height: 1.7;
   }
 
   .byok :global(.byok-howto a) {
     color: var(--brand);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
   }
 
   .byok :global(.byok-howto code) {
     background: var(--brand-wash);
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-sm);
     padding: 1px 5px;
     font-size: var(--font-size-xs);
   }
@@ -336,13 +339,13 @@
     margin: 0;
     padding: 0 12px 12px;
     font-size: var(--font-size-xs);
-    color: var(--text-faint);
+    color: var(--text-soft);
   }
 
   .byok-secret-hint {
     margin: 10px 0 0 0;
     font-size: var(--font-size-xs);
-    color: var(--text-faint);
+    color: var(--text-soft);
   }
 
   /* "Here's where your key lives" reassurance line. */
@@ -373,7 +376,7 @@
 
   .access-code-input[readonly] {
     background: var(--surface-hover);
-    color: var(--text-muted);
+    color: var(--text-soft);
     font-family: var(--font-mono);
     letter-spacing: 0.5px;
   }

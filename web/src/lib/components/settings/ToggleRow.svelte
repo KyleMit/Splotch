@@ -48,11 +48,13 @@
   }
 
   /* Indented past the icon column so the help line starts under the label:
-     .setting-icon's width + .setting-info's gap, both declared below. */
+     .setting-icon's width + .setting-info's gap, both declared below.
+     --text-soft is pinned to hold 4.5:1 for this small help text on --surface
+     (the /design axe scan enforces it). */
   .setting-help {
     margin: 6px 0 0 calc(20px + 10px);
     font-size: var(--font-size-sm);
-    color: var(--text-muted);
+    color: var(--text-soft);
     line-height: 1.4;
   }
 
@@ -70,8 +72,8 @@
   }
 
   .setting-label {
-    font-size: var(--font-size-md);
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     color: var(--text);
   }
 
@@ -100,8 +102,10 @@
   }
 
   @media (hover: hover) {
+    /* The textless --brand fill darkens through the same themed ramp the
+       labeled fills rest on — there is no separate unthemed hover step. */
     .toggle-switch.active:hover {
-      background: var(--brand-hover);
+      background: var(--brand-solid);
     }
   }
 

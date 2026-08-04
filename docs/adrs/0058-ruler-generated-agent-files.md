@@ -40,8 +40,8 @@ Alternatives considered:
 
 `.ruler/` is the source of truth for generated agent instructions and skills
 (`@intellectronica/ruler`, pinned exactly in `devDependencies` — the drift gate depends on
-byte-stable output, so bumps are deliberate). `burn-down-audits` is the single direct-maintained
-exception:
+byte-stable output, so bumps are deliberate). A deliberately small registry in
+`scripts/direct-provider-skills.mjs` declares provider-native packages that are edited directly:
 
 * **Sources:** root instructions in `.ruler/*.md` (concatenated in sorted order, `AGENTS.md` first);
   per-directory orientation in nested `<dir>/.ruler/AGENTS.md` (ruler's experimental `nested = true`
@@ -55,36 +55,36 @@ exception:
   that genuinely needs independent implementations can be authored as complete packages in
   `.ruler/skill-forks/<runner>/skills/<name>/` (`claude` → `.claude/skills`, `codex` →
   `.agents/skills`). `scripts/apply-ruler-skill-forks.mjs` runs after Ruler and replaces the whole
-  destination package while enforcing paired providers and shared-source isolation.
-  `burn-down-audits` is intentionally not managed by that layer: its complete Claude and Codex
-  packages are edited directly in `.claude/skills/burn-down-audits/` and
-  `.agents/skills/burn-down-audits/`. They are independent implementations; changing one never
-  implies changing or synchronizing the other. Shared discovery surfaces describe only the common
-  capability, not either provider's procedure.
+  destination package while enforcing paired providers and shared-source isolation. Direct packages
+  are intentionally not managed by that layer. `burn-down-audits` has complete, independent
+  implementations in `.claude/skills/burn-down-audits/` and `.agents/skills/burn-down-audits/`.
+  `implement-issue-stack` exists only in `.agents/skills/implement-issue-stack/`: its defining
+  operation is Codex orchestrating a fresh Claude Code adversarial reviewer, so a Claude package
+  would misrepresent the workflow. The registry declares exactly which providers exist; changing one
+  never implies creating or syncing another provider.
 * **Config:** `.ruler/ruler.toml` — `default_agents = ["claude", "codex"]`, gitignore/MCP/backup all
   disabled (files are tracked; there are no project MCP servers; `.bak` files would be noise).
 * **Skill design notes:** shared notes in `.ruler/skill-notes/` are mirrored to both agents. A
-  managed fork keeps independent notes in `.ruler/skill-forks/<runner>/skill-notes/`.
-  `burn-down-audits` keeps direct independent notes at the parallel `.claude/skill-notes/` and
-  `.agents/skill-notes/` paths.
-* **Commands:** `npm run ruler:apply` snapshots the four direct provider paths, regenerates shared
-  output, mirrors shared skill notes, applies managed skill forks, restores the direct paths even
-  when generation fails, and then runs `dprint fmt` (Ruler's raw output carries extra blank lines
-  dprint collapses — formatting post-apply keeps the committed files inside the ADR-0057 gate).
-  `npm run ruler:check` (`scripts/ruler-check.mjs`) repeats the whole pipeline and fails on any
-  worktree change or untracked generated file; the Quality CI job runs it. The direct
-  `burn-down-audits` packages and notes are excluded from generated-file drift accounting and are
-  reviewed like ordinary tracked source. `ruler:dry-run` previews only Ruler's shared pass because
-  upstream has no concept of the fork layer.
+  managed fork keeps independent notes in `.ruler/skill-forks/<runner>/skill-notes/`. Every direct
+  package keeps its note in the matching provider's `skill-notes/` tree.
+* **Commands:** `npm run ruler:apply` snapshots every package and note path derived from the direct
+  registry, regenerates shared output, mirrors shared skill notes, applies managed skill forks,
+  restores the direct paths even when generation fails, and then runs `dprint fmt` (Ruler's raw
+  output carries extra blank lines dprint collapses — formatting post-apply keeps the committed
+  files inside the ADR-0057 gate). `npm run ruler:check` (`scripts/ruler-check.mjs`) repeats the
+  whole pipeline and fails on any worktree change or untracked generated file; the Quality CI job
+  runs it. Registered direct packages and notes are excluded from generated-file drift accounting
+  and are reviewed like ordinary tracked source. `ruler:dry-run` previews only Ruler's shared pass
+  because upstream has no concept of the fork layer.
 * **Not generated** (edited in place): `.claude/rules/` path-scoped rules, `.claude/hooks/`,
-  `.claude/settings.json`, `.claude/audit-conventions.md`, `.claude/cloud/`, both provider
-  `burn-down-audits` packages and notes, and `docs/`.
+  `.claude/settings.json`, `.claude/audit-conventions.md`, `.claude/cloud/`, registered direct
+  provider packages and notes, and `docs/`.
 
 Gotchas encoded here: the blanket `build/` ignore needs negations for all three `skills/build/`
 locations (`.gitignore`); deleting a skill from `.ruler/skills/` makes the next apply delete its
 generated copies, which must be committed too; and the generated-files warning lives in the
-`.ruler/` sources themselves so every agent is told both the normal `.ruler/**` rule and the one
-direct-provider exception.
+`.ruler/` sources themselves so every agent is told both the normal `.ruler/**` rule and the direct
+provider registry exception.
 
 ## Consequences
 
@@ -92,13 +92,13 @@ direct-provider exception.
   from one authored `.ruler/` tree. Exceptional runner-native workflows can diverge completely
   without direct edits to generated output.
 * \+ Drift is structurally impossible to land for generated surfaces: CI re-generates and fails on
-  any difference in either direction. The direct provider skill is ordinary reviewed source rather
+  any difference in either direction. Direct provider packages are ordinary reviewed source rather
   than generator output.
 * \+ Skill helper files (`driver.mjs`, extra reference docs) propagate verbatim, so skills stay more
   than just prose.
 * \+ A managed fork replaces the complete package and rejects a shared package or note with the same
-  name. The direct `burn-down-audits` fork is even more explicit: each provider owns its package in
-  the path it executes.
+  name. The direct registry is even more explicit: each skill declares exactly which providers own
+  packages in the paths they execute.
 * − Instruction content is duplicated three ways in the repo (source + two generated trees);
   reviewers see every shared skill edit twice more in diffs, while a forked skill additionally
   duplicates any high-level concepts each implementation chooses to restate.
@@ -111,6 +111,6 @@ direct-provider exception.
 * − Claude Code-specific routing (skill auto-invocation, path-scoped rules, `memory/`) has no Codex
   equivalent — the shared text can only *ask* other agents to read those files, not make it
   automatic.
-* − Contributors (human and agent) must learn one exception to the indirection: editing the file an
-  agent loaded is normally wrong, but is correct for the selected provider's `burn-down-audits`
-  package.
+* − Contributors (human and agent) must learn a narrow exception to the indirection: editing the
+  file an agent loaded is normally wrong, but is correct for a package registered to that provider
+  in `scripts/direct-provider-skills.mjs`.

@@ -19,6 +19,8 @@ class ControllableImage {
   onload: (() => void) | null = null;
   onerror: (() => void) | null = null;
   src = '';
+  naturalWidth = 100;
+  naturalHeight = 50;
 
   constructor() {
     requested.push(this);
@@ -67,6 +69,13 @@ function createOverlayImage(): HTMLImageElement {
     naturalHeight: { value: 50 },
   });
   return overlay;
+}
+
+function createOverlaySource(decodedCanonicalImage: HTMLImageElement | null) {
+  return {
+    canonicalUrl: `${location.origin}/coloring/farm/cat-tall.overlay.webp`,
+    decodedCanonicalImage,
+  };
 }
 
 function createSnapshot(): HTMLCanvasElement {
@@ -217,6 +226,65 @@ describe('composeExportPng overlay', () => {
     expect(pngMock.encodeTiledCanvasPng).not.toHaveBeenCalled();
   });
 
+  it('loads the canonical overlay on demand for a responsive tiled export', async () => {
+    const tileBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    const overlayBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    const createBitmap = vi.fn(async () => overlayBitmap);
+    vi.stubGlobal('createImageBitmap', createBitmap);
+    pngMock.encodeTiledCanvasPng.mockResolvedValue(new Blob(['tiles'], { type: 'image/png' }));
+    const { composeExportPng } = await import('./exportDrawing');
+
+    const exported = composeExportPng(
+      {
+        source: {
+          width: 400,
+          height: 300,
+          tiles: [{ bitmap: Promise.resolve(tileBitmap), x: 0, y: 0 }],
+        },
+        sourceScale: 2,
+      },
+      2,
+      createOverlaySource(null),
+      { includePaperTexture: false }
+    );
+
+    await vi.waitFor(() => expect(requested).toHaveLength(1));
+    expect(requested[0].src).toBe(`${location.origin}/coloring/farm/cat-tall.overlay.webp`);
+    requested[0].onload!();
+    await exported;
+
+    expect(createBitmap).toHaveBeenCalledWith(requested[0]);
+    expect(pngMock.encodeTiledCanvasPng).toHaveBeenCalledWith(
+      expect.objectContaining({ overlay: overlayBitmap }),
+      undefined
+    );
+  });
+
+  it('rejects a failed canonical overlay load and closes settled tiled bitmaps', async () => {
+    const tileBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    const { composeExportPng } = await import('./exportDrawing');
+
+    const exported = composeExportPng(
+      {
+        source: {
+          width: 400,
+          height: 300,
+          tiles: [{ bitmap: Promise.resolve(tileBitmap), x: 0, y: 0 }],
+        },
+        sourceScale: 2,
+      },
+      2,
+      createOverlaySource(null),
+      { includePaperTexture: false }
+    );
+    await vi.waitFor(() => expect(requested).toHaveLength(1));
+    requested[0].onerror!();
+
+    await expect(exported).rejects.toThrow('Failed to load canonical coloring overlay');
+    expect(tileBitmap.close).toHaveBeenCalledOnce();
+    expect(pngMock.encodeTiledCanvasPng).not.toHaveBeenCalled();
+  });
+
   it('returns null when the output canvas cannot allocate a context', async () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     const toBlob = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob');
@@ -232,7 +300,9 @@ describe('composeExportPng overlay', () => {
     const overlay = createOverlayImage();
     const { composeExportPng } = await import('./exportDrawing');
 
-    await composeExportPng(createSnapshot(), 1, overlay, { includePaperTexture: false });
+    await composeExportPng(createSnapshot(), 1, createOverlaySource(overlay), {
+      includePaperTexture: false,
+    });
 
     expect(contexts.draws[0]).toMatchObject({
       source: overlay,
@@ -247,12 +317,27 @@ describe('composeExportPng overlay', () => {
     const { composeExportPng } = await import('./exportDrawing');
     const overlay = createOverlayImage();
 
-    await composeExportPng(createSnapshot(), 1, overlay, { includePaperTexture: false });
+    await composeExportPng(createSnapshot(), 1, createOverlaySource(overlay), {
+      includePaperTexture: false,
+    });
 
     expect(contexts.draws[0]).toMatchObject({
       source: overlay,
       compositeOperation: 'source-over',
     });
     expect(contexts.outputContext.globalCompositeOperation).toBe('source-over');
+  });
+
+  it('rejects instead of exporting without an unavailable canonical overlay', async () => {
+    const contexts = setupExportContexts(null);
+    const { composeExportPng } = await import('./exportDrawing');
+
+    const exported = composeExportPng(createSnapshot(), 1, createOverlaySource(null), {
+      includePaperTexture: false,
+    });
+    requested[0].onerror!();
+
+    await expect(exported).rejects.toThrow('Failed to load canonical coloring overlay');
+    expect(contexts.outputContext.fillRect).not.toHaveBeenCalled();
   });
 });

@@ -44,14 +44,14 @@
     margin: 0;
     /* fallback intentionally stays 32px (not the token's 28px) to preserve today's
        crash-path rendering size if tokens.css fails to load */
-    font-size: var(--font-size-3xl, 32px);
-    font-weight: 700;
+    font-size: var(--font-size-2xl, 32px);
+    font-weight: var(--font-weight-bold);
   }
 
   p {
     margin: 0;
-    font-size: var(--font-size-lg);
-    color: var(--text-mid, #666);
+    font-size: var(--font-size-md);
+    color: var(--text-soft, #666);
     max-width: 320px;
   }
 
@@ -60,11 +60,13 @@
     padding: 14px 32px;
     border: none;
     border-radius: var(--radius-pill);
-    background: var(--brand, #ab71e1);
+    /* --brand-solid, not --brand: an 18px bold label sits below WCAG's
+       large-text threshold, and --brand is only 3.4:1 under white. */
+    background: var(--brand-solid, #7c50bb);
     color: var(--on-brand, #fff);
     font: inherit;
-    font-size: var(--font-size-xl);
-    font-weight: 700;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
   }
 
