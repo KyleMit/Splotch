@@ -24,7 +24,9 @@
 // 3. Raw font-size values — a ratchet like the hex one, against
 //    FONT_SIZE_BASELINE. The type ramp (--font-size-*, --input-font-size)
 //    covers every size the app sets on purpose; a raw declaration is either a
-//    documented one-off (the baseline) or ramp drift. box-shadow was
+//    documented one-off (the baseline) or ramp drift. Size-bearing `font`
+//    shorthands count too — the shorthand grammar always carries a size —
+//    while keyword-only forms (font: inherit) stay legal. box-shadow was
 //    considered for the same treatment and rejected: raw shadows are
 //    dominated by the canvas-floating chrome's legitimate one-off alpha
 //    lifts (~25 sites), so a baseline would blunt the signal the way raw
@@ -167,10 +169,25 @@ export function countRawZIndexCss(cssText) {
 // The whitespace lives inside the lookahead: with a \s* before it, the
 // matcher would backtrack the whitespace to a position where the lookahead
 // sees " var(" and passes, counting tokenized declarations too.
-const RAW_FONT_SIZE = /(?<![\w-])font-size\s*:(?!\s*var\()/g;
+// Property names are case-insensitive in CSS, so the matchers are too.
+const RAW_FONT_SIZE = /(?<![\w-])font-size\s*:(?!\s*var\()/gi;
+
+// The font shorthand's grammar requires a size in every non-keyword form, so
+// a shorthand that isn't a CSS-wide keyword (or a collapsed var()) sets a raw
+// size the longhand matcher above cannot see. System-font keywords
+// (font: menu) also apply an off-ramp size and stay counted on purpose.
+const FONT_SHORTHAND = /(?<![\w-])font\s*:\s*([^;}]*)/gi;
+const SIZELESS_FONT_VALUE = /^(inherit|initial|unset|revert(-layer)?|var\(\))$/i;
+
+function countRawFontShorthand(strippedCss) {
+  return [...strippedCss.matchAll(FONT_SHORTHAND)].filter(
+    (m) => !SIZELESS_FONT_VALUE.test(m[1].trim())
+  ).length;
+}
 
 export function countRawFontSizeCss(cssText) {
-  return (stripCss(cssText).match(RAW_FONT_SIZE) ?? []).length;
+  const stripped = stripCss(cssText);
+  return (stripped.match(RAW_FONT_SIZE) ?? []).length + countRawFontShorthand(stripped);
 }
 
 export function countRawHex(source) {
@@ -182,7 +199,8 @@ export function countRawZIndex(source) {
 }
 
 export function countRawFontSize(source) {
-  return (strippedStyles(source).match(RAW_FONT_SIZE) ?? []).length;
+  const stripped = strippedStyles(source);
+  return (stripped.match(RAW_FONT_SIZE) ?? []).length + countRawFontShorthand(stripped);
 }
 
 async function main() {

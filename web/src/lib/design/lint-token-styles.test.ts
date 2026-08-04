@@ -116,6 +116,25 @@ describe('countRawFontSize', () => {
     expect(countRawFontSize('<style>/* was font-size: 13px */ .a { color: red; }</style>')).toBe(0);
     expect(countRawFontSize('<div style="font-size: 40px"></div>')).toBe(0);
   });
+
+  it('catches a size-bearing font shorthand but allows keyword-only forms', () => {
+    expect(countRawFontSize('<style>.a { font: 18px sans-serif; }</style>')).toBe(1);
+    expect(countRawFontSize('<style>.a { font: bold 18px/1.4 sans-serif; }</style>')).toBe(1);
+    expect(countRawFontSize('<style>.a { font: inherit; } .b { font: unset; }</style>')).toBe(0);
+    expect(countRawFontSize('<style>.a { font: var(--body-font); }</style>')).toBe(0);
+  });
+
+  it('does not mistake longhand font-* properties for the shorthand', () => {
+    expect(countRawFontSize('<style>.a { font-family: inherit; font-weight: 700; }</style>')).toBe(
+      0
+    );
+  });
+
+  it('matches property names case-insensitively', () => {
+    expect(countRawFontSize('<style>.a { FONT-SIZE: 13px; }</style>')).toBe(1);
+    expect(countRawFontSize('<style>.a { Font: inherit; }</style>')).toBe(0);
+    expect(countRawFontSize('<style>.a { Font: 18px sans-serif; }</style>')).toBe(1);
+  });
 });
 
 describe('countRawFontSizeCss', () => {
