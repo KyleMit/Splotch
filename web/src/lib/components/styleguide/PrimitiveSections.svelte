@@ -52,12 +52,12 @@
   section > p {
     max-width: 60ch;
     margin: var(--space-2) 0 var(--space-3);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
   }
 
   h3 {
     color: var(--text-strong);
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
     margin-bottom: var(--space-2);
   }
 
@@ -68,8 +68,8 @@
 
   section :global(.disclosure-demo summary) {
     padding: var(--space-3);
-    font-size: var(--font-size-md);
-    font-weight: 600;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
     color: var(--brand-text);
     background: var(--surface-2);
   }
@@ -79,7 +79,7 @@
     padding: 0 var(--space-3) var(--space-3);
     font-size: var(--font-size-sm);
     line-height: 1.5;
-    color: var(--text-mid);
+    color: var(--text-soft);
   }
 
   .button-row {

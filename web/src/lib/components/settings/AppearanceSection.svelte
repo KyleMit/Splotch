@@ -81,8 +81,8 @@
   }
 
   .appearance-title {
-    font-size: var(--font-size-md);
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     color: var(--text);
   }
 
@@ -105,10 +105,10 @@
     border: none;
     border-radius: 9px;
     background: transparent;
-    color: var(--text-mid);
+    color: var(--text-soft);
     font-family: inherit;
     font-size: var(--font-size-sm);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     cursor: pointer;
     transition:
       background var(--duration-fast) ease,
@@ -125,7 +125,7 @@
   .theme-option.active {
     background: var(--surface);
     color: var(--text-strong);
-    box-shadow: var(--shadow-segment);
+    box-shadow: var(--shadow-control);
   }
 
   :global(.theme-option-icon) {

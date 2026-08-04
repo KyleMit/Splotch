@@ -268,22 +268,22 @@
     border-radius: 50%;
     background: var(--step-wash);
     color: var(--step-ink);
-    font-size: 15px;
-    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     font-variant-numeric: tabular-nums;
   }
 
   h3 {
     margin: 0;
-    font-size: 21px;
-    font-weight: 700;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
     line-height: 1.25;
     color: var(--page-ink);
   }
 
   .optional {
-    font-size: 11px;
-    font-weight: 600;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--page-muted);
@@ -292,8 +292,8 @@
   .body {
     margin: 14px 0 0;
     max-width: var(--page-measure);
-    font-size: 16px;
-    font-weight: 500;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
     line-height: 1.65;
     color: var(--page-body);
     text-wrap: pretty;
@@ -318,11 +318,11 @@
   .btn {
     display: inline-block;
     padding: 15px 24px;
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     background: var(--page-accent);
     color: var(--page-on-accent);
-    font-size: 15px;
-    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     text-decoration: none;
     transition:
       background var(--duration-base) ease,
@@ -336,8 +336,8 @@
   .fine {
     margin: 0;
     max-width: 34ch;
-    font-size: 14px;
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     line-height: 1.5;
     color: var(--page-muted);
   }
@@ -350,14 +350,14 @@
     margin-top: 22px;
     padding: 14px 18px;
     border-left: 3px solid var(--card-accent);
-    border-radius: 0 12px 12px 0;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
     background: var(--step-wash);
   }
 
   .card-label {
     margin: 0 0 4px;
-    font-size: 11px;
-    font-weight: 700;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--step-ink);
@@ -365,8 +365,8 @@
 
   .card-body {
     margin: 0;
-    font-size: 15px;
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     line-height: 1.6;
     color: var(--callout-ink);
   }
@@ -412,15 +412,11 @@
 
     .num {
       position: static;
-      font-size: 13px;
+      font-size: var(--font-size-xs);
     }
 
     h3 {
-      font-size: 19px;
-    }
-
-    .body {
-      font-size: 15px;
+      font-size: var(--font-size-lg);
     }
 
     /* Full-width tap target; the fine print drops below it. */
@@ -436,7 +432,6 @@
 
     .fine {
       max-width: none;
-      font-size: 13.5px;
     }
   }
 </style>

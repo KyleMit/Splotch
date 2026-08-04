@@ -94,18 +94,18 @@
   section > p {
     max-width: 60ch;
     margin: var(--space-2) 0 var(--space-3);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
   }
 
   h3 {
     color: var(--text-strong);
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
     margin-bottom: var(--space-2);
   }
 
   h4 {
     color: var(--text-strong);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
     margin: var(--space-4) 0 var(--space-2);
   }
 
@@ -114,11 +114,11 @@
     color: var(--brand-text);
   }
 
-  /* --text-mid, not --text-muted: these 12px labels must hold 4.5:1 on the
-     page ground (the axe scan in a11y.spec.ts enforces it). */
+  /* --text-soft is pinned to hold 4.5:1 at these 12px sizes on the page
+     ground (the axe scan in a11y.spec.ts enforces it). */
   .value {
     font-size: var(--font-size-xs);
-    color: var(--text-mid);
+    color: var(--text-soft);
   }
 
   .paper-grid {
@@ -160,14 +160,14 @@
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-control);
   }
 
   .crayon-dot.selected {
     box-shadow:
       0 0 0 3px var(--surface),
       0 0 0 6px var(--brand),
-      var(--shadow-sm);
+      var(--shadow-control);
   }
 
   .icon-grid {

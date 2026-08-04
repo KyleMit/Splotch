@@ -169,23 +169,23 @@
      prompt is a 14px label among many, but here it is the one question the
      visitor came to answer. */
   .card :global(.report-label) {
-    font-size: 17px;
-    font-weight: 700;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
     color: var(--page-ink);
   }
 
   .card :global(.report-public-note) {
-    font-size: 13px;
+    font-size: var(--font-size-sm);
   }
 
-  /* Three radii on the page, one family: 22 the sheet, 14 the buttons and the
-     control they sit in, 12 the fields. */
+  /* Three radii on the page, one family: the sheet on xl, the buttons, fields,
+     and the kind control on md, its nested options one step in on sm. */
   .card :global(.report-kind) {
-    border-radius: 14px;
+    border-radius: var(--radius-md);
   }
 
   .card :global(.report-kind-option) {
-    border-radius: 11px;
+    border-radius: var(--radius-sm);
   }
 
   .card :global(.report-textarea),
@@ -198,12 +198,12 @@
     margin-top: 4px;
     padding: 15px 24px;
     border: none;
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     background: var(--page-accent);
     color: var(--page-on-accent);
     font-family: inherit;
-    font-size: 15px;
-    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
     touch-action: manipulation;
     transition:
@@ -232,7 +232,7 @@
 
   .fallback-link {
     color: inherit;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     text-decoration: underline;
     /* The address is the one string here a reporter may have to read out or
        retype, so it never breaks mid-word. */
@@ -250,8 +250,8 @@
 
   .aside h2 {
     margin: 0 0 8px;
-    font-size: 15px;
-    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     color: var(--page-ink);
   }
 
@@ -264,8 +264,8 @@
   }
 
   .aside li {
-    font-size: 15px;
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     line-height: 1.55;
     color: var(--page-body);
   }
@@ -287,11 +287,11 @@
   .done-link {
     display: inline-block;
     padding: 15px 24px;
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     background: var(--page-accent);
     color: var(--page-on-accent);
-    font-size: 15px;
-    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     text-decoration: none;
     transition:
       background var(--duration-base) ease,
@@ -305,7 +305,7 @@
   .done-again,
   .aside a {
     color: var(--page-link);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     text-underline-offset: 3px;
     text-decoration-thickness: 1px;
   }
@@ -340,10 +340,6 @@
   }
 
   @media (max-width: 540px) {
-    .aside li {
-      font-size: 15px;
-    }
-
     .card {
       gap: 12px;
     }

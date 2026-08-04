@@ -143,9 +143,9 @@
 
   .settings-header-compact h2 {
     margin: 0;
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
     color: var(--text-strong);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
   }
 
   .quick-toggles {
@@ -174,7 +174,7 @@
     gap: 4px;
     padding: 4px;
     background: var(--slider-track);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
   }
 
   .orient-opt {
@@ -188,10 +188,10 @@
     border: none;
     border-radius: var(--radius-sm);
     background: transparent;
-    color: var(--text-mid);
+    color: var(--text-soft);
     font-family: inherit;
-    font-size: 12.5px;
-    font-weight: 600;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
     cursor: pointer;
     touch-action: manipulation;
     transition:
@@ -209,7 +209,7 @@
   .orient-opt.active {
     background: var(--surface);
     color: var(--text-strong);
-    box-shadow: var(--shadow-segment);
+    box-shadow: var(--shadow-control);
   }
 
   :global(.orient-opt-icon) {
@@ -233,9 +233,9 @@
   }
 
   .about-cell-version {
-    font-size: var(--font-size-md);
-    font-weight: 500;
-    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-soft);
   }
 
   .portrait-note {
@@ -247,7 +247,7 @@
     margin: 0;
     padding: 10px 24px 14px;
     font-size: var(--font-size-sm);
-    color: var(--text-muted);
+    color: var(--text-soft);
     text-align: center;
   }
 
@@ -258,6 +258,6 @@
   }
 
   :global(.portrait-note-icon svg) {
-    fill: var(--text-muted);
+    fill: var(--text-soft);
   }
 </style>

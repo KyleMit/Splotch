@@ -67,16 +67,16 @@
     gap: 12px;
     margin-bottom: 8px;
     font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--text-mid);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-soft);
   }
 
   .slider-label-name {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    font-size: var(--font-size-md);
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     color: var(--text);
   }
 </style>

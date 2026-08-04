@@ -39,7 +39,7 @@
 
   .disclosure summary::after {
     content: '›';
-    color: var(--text-faint);
+    color: var(--text-soft);
     transition: transform var(--duration-base) ease;
   }
 

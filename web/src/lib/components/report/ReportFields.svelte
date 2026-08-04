@@ -162,9 +162,9 @@
     justify-content: center;
     text-align: center;
     padding: 10px 12px;
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    color: var(--text-mid);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-soft);
     background: transparent;
     border: none;
     border-radius: 7px;
@@ -223,8 +223,8 @@
   }
 
   .report-label {
-    font-size: var(--font-size-md);
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     color: var(--text);
   }
 
@@ -253,9 +253,9 @@
     margin: -2px 0 0 0;
     font-size: var(--font-size-xs);
     line-height: 1.45;
-    /* --text-muted is 3.5:1 on the light sheet — this note is fine print, but
-       fine print still owes 4.5:1. */
-    color: var(--text-mid);
+    /* --text-soft, deliberately: this note is fine print, but fine print
+       still owes 4.5:1, which the soft step is pinned to hold. */
+    color: var(--text-soft);
   }
 
   .report-public-note strong {
@@ -289,7 +289,7 @@
 
   .report-check em {
     font-style: normal;
-    color: var(--text-mid);
+    color: var(--text-soft);
   }
 
   /* The device-info preview's own chrome on the Disclosure primitive — reached
@@ -304,7 +304,7 @@
     justify-content: space-between;
     padding: 8px 12px;
     font-size: var(--font-size-sm);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--brand-text);
   }
 
@@ -316,30 +316,30 @@
 
   .report-device-list li {
     font-size: var(--font-size-xs);
-    color: var(--text-mid);
+    color: var(--text-soft);
     line-height: 1.7;
     word-break: break-word;
   }
 
-  /* --text-faint is 2.9:1 on the panel and carries text here, so the whole
-     preview steps up to --text-mid; the key stays distinct on weight. */
+  /* The whole preview sits on --text-soft (pinned to hold 4.5:1 on the
+     panel); the key stays distinct on weight alone. */
   .report-device-key {
-    color: var(--text-mid);
-    font-weight: 600;
+    color: var(--text-soft);
+    font-weight: var(--font-weight-semibold);
   }
 
   .report-device-empty {
     margin: 0;
     padding: 0 12px 8px;
     font-size: var(--font-size-xs);
-    color: var(--text-mid);
+    color: var(--text-soft);
   }
 
   .report-device-note {
     margin: 0;
     padding: 4px 12px 10px;
     font-size: var(--font-size-xs);
-    color: var(--text-mid);
+    color: var(--text-soft);
     line-height: 1.4;
   }
 

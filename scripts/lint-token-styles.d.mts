@@ -2,3 +2,5 @@
 // web/src/lib/design/lint-token-styles.test.ts type-checks the import.
 export function countRawHex(source: string): number;
 export function countRawZIndex(source: string): number;
+export function countRawHexCss(cssText: string): number;
+export function countRawZIndexCss(cssText: string): number;

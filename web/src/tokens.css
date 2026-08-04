@@ -15,8 +15,6 @@
 
   --brand: #ab71e1;
   --brand-rgb: 171, 113, 225;
-  --brand-hover: #9961d1;
-  --brand-tint-filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
   --on-brand: #fff;
 
   --space-1: 4px;
@@ -27,7 +25,6 @@
   --space-6: 24px;
   --space-7: 32px;
   --space-8: 40px;
-  --radius-xs: 4px;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
@@ -35,25 +32,25 @@
   --radius-pill: 999px;
   --border-width: 1px;
   --font-size-xs: 12px;
-  --font-size-sm: 13px;
-  --font-size-md: 14px;
-  --font-size-lg: 16px;
-  --font-size-xl: 18px;
-  --font-size-2xl: 22px;
-  --font-size-3xl: 28px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 22px;
+  --font-size-2xl: 28px;
+  --font-size-display: clamp(34px, 3.2vw + 17px, 46px);
   --input-font-size: max(16px, var(--font-size-md));
   --font-family: 'Quicksand Variable', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Courier New', monospace;
+  --font-weight-medium: 500;
   --font-weight-semibold: 600;
+  --font-weight-bold: 700;
   --duration-fast: 0.15s;
   --duration-base: 0.2s;
   --duration-slow: 0.35s;
-  --ease-pop: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-pop-strong: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.12);
+  --shadow-control: 0 1px 4px rgba(0, 0, 0, 0.18);
   --shadow-pop: 0 8px 32px rgba(0, 0, 0, 0.3);
-  --shadow-segment: 0 1px 4px rgba(0, 0, 0, 0.18);
   --clear-gradient-rest: linear-gradient(135deg, #ff6b6b, #ee5a6f);
 
   --z-canvas-chrome: 4;
@@ -84,9 +81,7 @@
   --slider-notch: rgba(0, 0, 0, 0.22);
   --text-strong: #333;
   --text: #555;
-  --text-mid: #666;
-  --text-muted: #888;
-  --text-faint: #999;
+  --text-soft: #666;
   --icon-ink: #1f1f1f;
   --icon-muted: #737373;
   --icon-muted-hover: #404040;
@@ -129,9 +124,7 @@
   --slider-notch: rgba(255, 255, 255, 0.4);
   --text-strong: #eceaf2;
   --text: #c9c7d3;
-  --text-mid: #b3b1bf;
-  --text-muted: #918f9c;
-  --text-faint: #85838f;
+  --text-soft: #b3b1bf;
   --icon-ink: #dedce8;
   --icon-muted: #a8a6b3;
   --icon-muted-hover: #e8e6f0;
@@ -175,9 +168,7 @@
     --slider-notch: rgba(255, 255, 255, 0.4);
     --text-strong: #eceaf2;
     --text: #c9c7d3;
-    --text-mid: #b3b1bf;
-    --text-muted: #918f9c;
-    --text-faint: #85838f;
+    --text-soft: #b3b1bf;
     --icon-ink: #dedce8;
     --icon-muted: #a8a6b3;
     --icon-muted-hover: #e8e6f0;

@@ -123,16 +123,16 @@
   .report-heading {
     margin: 0 0 6px 0;
     font-size: var(--font-size-sm);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--text-soft);
   }
 
   .report-intro {
     margin: 0 0 12px 0;
     font-size: var(--font-size-sm);
-    color: var(--text-mid);
+    color: var(--text-soft);
     line-height: 1.5;
   }
 
@@ -151,7 +151,7 @@
     display: inline-block;
     margin-left: 4px;
     color: inherit;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     text-decoration: underline;
   }
 </style>

@@ -1,6 +1,8 @@
 // Token lints for component styles (ADR-0071). Scans the <style> blocks of
-// every web/src Svelte component for two classes of raw values that should be
-// design tokens (from web/src/lib/design/tokens.ts):
+// every web/src Svelte component — plus the hand-authored plain .css files
+// (app.css, the admin palette; the generated tokens.css is the token source
+// and is excluded) — for two classes of raw values that should be design
+// tokens (from web/src/lib/design/tokens.ts):
 //
 // 1. Raw hex colors — a ratchet against the committed baseline below. The
 //    baseline is the explicit allowlist of documented one-offs. A count ABOVE
@@ -31,17 +33,19 @@ import { isMain } from './lib/proc.mjs';
 // file (relative to web/src) → allowed raw-hex count, with the reason.
 const BASELINE = new Map(
   Object.entries({
-    // Light-only surface with its own WCAG-tuned accent palette (#7c4dcf
-    // family); themed color tokens would half-dark-theme it. See the note at
-    // the top of its <style> block.
-    'lib/components/admin/AdminConsole.svelte': 34,
-    // The /admin overflow modal, lifted out of AdminConsole with its
-    // `.more-menu*` rules intact — same light-only surface, same reasoning.
-    // Its four are the sheet white, the hover tint, and the destructive
-    // red + its tint; none has an --admin-* equivalent to point at.
-    'lib/components/admin/InviteMenu.svelte': 4,
-    // Light-only page, same reasoning as /admin.
-    'routes/privacy/+page.svelte': 8,
+    // The /admin palette file — the light-only console's answer to tokens.css
+    // (themed color tokens would half-dark-theme it). Every hex is a declared
+    // --admin-* custom property, each pinned value commented with the
+    // light-theme token it mirrors; AdminConsole and InviteMenu consume only
+    // the properties.
+    'lib/components/admin/adminPalette.css': 21,
+    // The polaroid flight's photographic near-paper whites — the print stays
+    // paper-white on both themes, like the AiImageResult stage it lands in.
+    'app.css': 2,
+    // Light-only page, same reasoning as /admin — pins PageShell's themed
+    // --page-* defaults to the same light values /android-beta pins (eleven),
+    // plus the highlight cards' brand-tinted wash and its border (two).
+    'routes/privacy/+page.svelte': 13,
     // Light-only page, same reasoning as /admin — a palette pinned to a light
     // ground, declared once as custom properties at the top of its <style>
     // block. Its eleven pin PageShell's themed --page-* defaults (whose dark
@@ -58,12 +62,11 @@ const BASELINE = new Map(
     // palette-source.test.mjs requires.
     'lib/components/androidBeta/StepLedger.svelte': 10,
     // Deliberate constant: #666 is contrast-pinned for the one light-only host
-    // (/admin), where --text-mid's dark value would be 1.9:1. Themed hosts (the
-    // /dev harnesses) override it — see the note on .crumb-current.
+    // (/admin), where --text-soft's dark value would be 1.9:1. Themed hosts
+    // (the /dev harnesses) override it — see the note on .crumb-current.
     'lib/components/Breadcrumb.svelte': 1,
-    // Photographic stage/polaroid whites + the #9559cd download-button hover
-    // (≠ --brand-hover #9961d1; converging it is a visible change).
-    'lib/components/AiImageResult.svelte': 3,
+    // Photographic stage/polaroid whites.
+    'lib/components/AiImageResult.svelte': 2,
     // #000 white-stroke keyline for the Brush/Stroke trigger faces.
     'lib/components/ActionsPanel.svelte': 1,
     // #000 white-stroke keyline for the Brush Menu popover (extracted from
@@ -93,10 +96,17 @@ const BASELINE = new Map(
   })
 );
 
-function svelteFiles(dir) {
+function styledFiles(dir) {
+  // Svelte components plus plain .css (app.css, the admin palette) — every
+  // hand-authored stylesheet under web/src. The generated tokens.css is the
+  // token source itself, so it is the one exclusion.
   // recursive readdir + parentPath needs Node >= 20.12 (see package.json engines).
   return readdirSync(dir, { withFileTypes: true, recursive: true })
-    .filter((e) => e.isFile() && e.name.endsWith('.svelte'))
+    .filter(
+      (e) =>
+        e.isFile() &&
+        (e.name.endsWith('.svelte') || (e.name.endsWith('.css') && e.name !== 'tokens.css'))
+    )
     .map((e) => join(e.parentPath, e.name));
 }
 
@@ -105,12 +115,24 @@ function svelteFiles(dir) {
 // up as a baseline bump to investigate, not a silent pass), and the var()
 // strip doesn't survive nested parens (var(--x, rgba(…))) — fine while
 // fallbacks stay simple, since the leftover text contains no hex.
+function stripCss(cssText) {
+  return cssText.replace(/\/\*[\s\S]*?\*\//g, '').replace(/var\([^)]*\)/g, 'var()');
+}
+
+// A .svelte source contributes its <style> blocks; a .css source is one big
+// style block already.
 function strippedStyles(source) {
-  return [...source.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)]
-    .map((m) => m[1])
-    .join('\n')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/var\([^)]*\)/g, 'var()');
+  return stripCss(
+    [...source.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n')
+  );
+}
+
+export function countRawHexCss(cssText) {
+  return (stripCss(cssText).match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).length;
+}
+
+export function countRawZIndexCss(cssText) {
+  return (stripCss(cssText).match(/z-index\s*:\s*-?\d{2,}/g) ?? []).length;
 }
 
 export function countRawHex(source) {
@@ -127,13 +149,14 @@ async function main() {
   const problems = [];
   const seen = new Set();
 
-  for (const file of svelteFiles(SRC)) {
+  for (const file of styledFiles(SRC)) {
     const rel = relative(SRC, file);
     const source = readFileSync(file, 'utf8');
-    const count = countRawHex(source);
+    const isCss = file.endsWith('.css');
+    const count = isCss ? countRawHexCss(source) : countRawHex(source);
     const allowed = BASELINE.get(rel) ?? 0;
     seen.add(rel);
-    const zCount = countRawZIndex(source);
+    const zCount = isCss ? countRawZIndexCss(source) : countRawZIndex(source);
     if (zCount > 0) {
       problems.push(
         `${rel}: ${zCount} raw multi-digit z-index value(s) in <style> — chrome-tier stacking must ` +

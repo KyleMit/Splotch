@@ -190,13 +190,13 @@
 
   /* Breadcrumb pins its current crumb to #666 for the light-only /admin host;
      .debug has no background of its own, so it sits on the themed var(--app-bg)
-     where #666 is 3.1:1. --text-mid is the same #666 in light theme. */
+     where #666 is 3.1:1. --text-soft is the same #666 in light theme. */
   .debug :global(.crumb-current) {
-    color: var(--text-mid);
+    color: var(--text-soft);
   }
 
   h1 {
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-xl);
     margin: 0 0 8px;
   }
 
@@ -208,7 +208,7 @@
 
   code {
     background: var(--brand-wash);
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-sm);
     padding: 1px 5px;
     font-size: 0.9em;
   }
@@ -229,18 +229,18 @@
   .group-label {
     width: 130px;
     font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--text-muted);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-soft);
   }
 
   button {
-    background: var(--brand);
-    color: white;
+    background: var(--brand-solid);
+    color: var(--on-brand);
     border: none;
     border-radius: var(--radius-sm);
     padding: 8px 14px;
-    font-size: var(--font-size-md);
-    font-weight: 600;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
     cursor: pointer;
     transition:
       background var(--duration-fast) ease,
@@ -250,7 +250,7 @@
      keep it stuck until the next tap elsewhere. */
   @media (hover: hover) {
     button:hover {
-      background: var(--brand-hover);
+      background: var(--brand-solid-hover);
     }
   }
   button:active {
@@ -266,7 +266,7 @@
   .hint {
     margin: 20px 0 0;
     font-size: var(--font-size-sm);
-    color: var(--text-muted);
+    color: var(--text-soft);
     line-height: 1.6;
   }
 
@@ -274,7 +274,7 @@
     /* Deliberate console-key chip: fixed dark slab + white glyph in both themes. */
     background: #2a2a2a;
     color: white;
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-sm);
     padding: 1px 6px;
     font-size: var(--font-size-xs);
     font-family: ui-monospace, monospace;
@@ -297,8 +297,8 @@
     font-size: var(--font-size-sm);
   }
   .state dt {
-    font-weight: 600;
-    color: var(--text-muted);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-soft);
     margin: 0;
   }
   .state dd {
@@ -325,7 +325,7 @@
   .thumbs figcaption {
     margin-top: 6px;
     font-size: var(--font-size-xs);
-    color: var(--text-muted);
+    color: var(--text-soft);
     text-align: center;
   }
 </style>

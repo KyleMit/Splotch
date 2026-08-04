@@ -35,6 +35,7 @@
   import Icon from '../Icon.svelte';
   import Breadcrumb from '../Breadcrumb.svelte';
   import InviteMenu from './InviteMenu.svelte';
+  import './adminPalette.css';
   import { timeAgo, usageDetail } from '$lib/adminFormat';
 
   let {
@@ -328,30 +329,19 @@
 </div>
 
 <style>
-  /* Colors here are deliberately raw: the admin console is a light-only
-     surface with its own accent palette (the #7c4dcf family, chosen for WCAG
-     AA over the failing --brand). The themed color tokens flip with
-     data-theme / prefers-color-scheme, so adopting them would half-dark-theme
-     this page. Scale tokens (font sizes, radii, durations) are safe and used
-     below; theming /admin is a separate decision. */
+  /* The console styles itself from the light-pinned --admin-* palette in
+     adminPalette.css (imported above; see its header for the light-only
+     rationale). Scale tokens (font sizes, radii, durations) are theme-safe
+     and used directly. */
 
   /* A full-viewport scroll panel with its own light background. The admin console
      is a normal scrollable, selectable, zoomable document — the drawing-route
      app-surface locks (app.css) don't reach this route, so no opt-out is needed. */
   .admin-page {
-    --admin-accent: #7c4dcf;
-    --admin-accent-hover: #6b3fbe;
-    --admin-accent-tint: #f5f0fc;
-    --admin-accent-tint-strong: #f0e9fb;
-    --admin-accent-tint-hover: #ece0fb;
-    --admin-hairline: #f0f0f0;
-    --admin-ink-muted: #666;
-    --admin-ink-subtle: #757575;
-
     position: fixed;
     inset: 0;
     overflow-y: auto;
-    background: #f5f5f5;
+    background: var(--admin-ground);
     -webkit-overflow-scrolling: touch;
   }
 
@@ -360,13 +350,13 @@
     margin: 0 auto;
     padding: clamp(20px, 5vw, 48px) 16px 64px;
     font-family: var(--font-family);
-    color: #333;
+    color: var(--admin-ink);
   }
 
   .admin-header {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: var(--space-4);
     margin-bottom: 28px;
   }
 
@@ -396,80 +386,78 @@
 
   h1 {
     margin: 0;
-    font-size: var(--font-size-3xl);
-    font-weight: 700;
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
     letter-spacing: -0.01em;
   }
 
   .subtitle {
     margin: 2px 0 0;
     color: var(--admin-ink-muted);
-    font-size: 15px;
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
   }
 
   /* Flash messages */
   .flash {
-    padding: 12px 16px;
+    padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-md);
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    margin-bottom: 20px;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--space-5);
   }
 
   .flash-success {
-    background: #ecfdf3;
-    color: #1f7a4d;
-    border: 1px solid #b6f0cf;
+    background: var(--admin-success-wash);
+    color: var(--admin-success-ink);
   }
 
   .flash-error {
-    background: #fef2f2;
-    color: #b42318;
-    border: 1px solid #fbd5d2;
+    background: var(--admin-danger-wash);
+    color: var(--admin-danger-ink);
   }
 
   .flash-warning {
-    background: #fffaeb;
-    color: #93600b;
-    border: 1px solid #fce5a8;
-    font-weight: 500;
+    background: var(--admin-warn-wash);
+    color: var(--admin-warn-ink);
+    border: 1px solid var(--admin-warn-border);
+    font-weight: var(--font-weight-medium);
     line-height: 1.45;
   }
 
   .flash-warning strong {
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
   }
 
   .flash-warning code {
     font-family: var(--font-mono);
-    font-size: 0.92em;
-    background: #fdefc7;
+    font-size: var(--font-size-xs);
+    background: var(--admin-warn-chip);
     padding: 1px 5px;
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
   }
 
   /* Cards */
   .card {
-    background: #fff;
+    background: var(--admin-sheet);
     border-radius: var(--radius-lg);
-    padding: 24px;
-    margin-bottom: 20px;
+    padding: var(--space-6);
+    margin-bottom: var(--space-5);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   }
 
   .card h2 {
     margin: 0 0 16px;
-    font-size: var(--font-size-xl);
-    font-weight: 600;
-    color: #444;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--admin-ink);
   }
 
   .card-head {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 16px;
+    margin-bottom: var(--space-4);
   }
 
   .card-head h2 {
@@ -487,7 +475,7 @@
     background: var(--admin-accent-tint-strong);
     color: var(--admin-accent);
     font-size: var(--font-size-sm);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
   }
 
   /* Add form (shared by the sign-in card and the standalone add bar) */
@@ -505,12 +493,12 @@
     flex: 1;
     min-width: 0;
     padding: 11px 14px;
-    font-size: 15px;
+    font-size: var(--input-font-size);
     font-family: inherit;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    background: #fff;
-    color: #333;
+    border: 1px solid var(--admin-line);
+    border-radius: var(--radius-md);
+    background: var(--admin-sheet);
+    color: var(--admin-ink);
     transition:
       border-color var(--duration-fast) ease,
       box-shadow var(--duration-fast) ease;
@@ -541,9 +529,9 @@
   /* Buttons */
   .btn {
     font-family: inherit;
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    border-radius: 10px;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    border-radius: var(--radius-md);
     border: none;
     cursor: pointer;
     transition:
@@ -566,7 +554,7 @@
      --brand, whose 3.4:1 fails WCAG AA (axe serious). */
   .btn-primary {
     padding: 11px 18px;
-    color: #fff;
+    color: var(--admin-on-accent);
     background: var(--admin-accent);
     flex-shrink: 0;
   }
@@ -592,19 +580,19 @@
   }
 
   .btn-ghost.copied {
-    color: #1f7a4d;
-    background: #ecfdf3;
+    color: var(--admin-success-ink);
+    background: var(--admin-success-wash);
   }
 
   .btn-danger {
     padding: 8px 14px;
-    color: #b42318;
-    background: #fef2f2;
+    color: var(--admin-danger-ink);
+    background: var(--admin-danger-wash);
   }
 
   @media (hover: hover) {
     .btn-danger:hover {
-      background: #fbe0de;
+      background: var(--admin-danger-wash-hover);
     }
   }
 
@@ -616,7 +604,7 @@
     width: 38px;
     height: 38px;
     padding: 0;
-    color: #999;
+    color: var(--admin-ink-muted);
     background: transparent;
   }
 
@@ -629,7 +617,12 @@
   :global(.btn-icon .more-icon) {
     width: 20px;
     height: 20px;
-    filter: invert(63%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(95%) contrast(85%);
+  }
+
+  /* Re-inked via fill (not a filter chain), the modal-close-icon pattern:
+     CSS fill beats the SVG's baked near-black presentation attribute. */
+  :global(.btn-icon .more-icon svg) {
+    fill: var(--admin-ink-muted);
   }
 
   /* Invite list — one card of rows split by hairline dividers. */
@@ -643,7 +636,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--space-3);
     padding: 14px 4px;
     border-bottom: 1px solid var(--admin-hairline);
   }
@@ -665,36 +658,36 @@
   }
 
   .token {
-    font-weight: 700;
-    font-size: 15px;
-    color: #333;
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-md);
+    color: var(--admin-ink);
   }
 
   .usage {
-    font-size: 12.5px;
-    font-weight: 500;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
     color: var(--admin-ink-muted);
   }
 
   .usage strong {
     color: var(--admin-accent);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
   }
 
   .usage-sep {
     margin: 0 4px;
-    color: #ccc;
+    color: var(--admin-line);
   }
 
   .usage-none {
     font-style: italic;
-    color: var(--admin-ink-subtle);
+    color: var(--admin-ink-muted);
   }
 
   .invite-actions {
     align-items: center;
     justify-content: flex-end;
-    gap: 8px;
+    gap: var(--space-2);
     flex-shrink: 0;
   }
 
@@ -712,7 +705,7 @@
      the suite can't see (the logged-in scan populates a row first). */
   .empty {
     text-align: center;
-    padding: 24px 12px;
+    padding: var(--space-6) var(--space-3);
     color: var(--admin-ink-muted);
   }
 
@@ -725,7 +718,7 @@
 
   .empty p {
     margin: 0;
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
     max-width: 320px;
     margin-inline: auto;
   }

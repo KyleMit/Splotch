@@ -7,6 +7,9 @@
   // (see MOBILE.md). Keep the tone simple enough for a parent to skim in 30
   // seconds. Bump LAST_UPDATED whenever the wording changes.
 
+  import PageShell from '$lib/components/page/PageShell.svelte';
+  import RuleLabel from '$lib/components/page/RuleLabel.svelte';
+
   const LAST_UPDATED = 'July 28, 2026';
   // Splotch has no email; questions/concerns go through GitHub issues.
   const CONTACT_URL = 'https://github.com/KyleMit/Splotch/issues/new/choose';
@@ -20,18 +23,18 @@
   />
 </svelte:head>
 
-<main class="legal">
-  <div class="sheet">
-    <a class="back" href="/">← Back to drawing</a>
+<div class="privacy">
+  <PageShell class="privacy-palette" title="Privacy policy" wordmark="Splotch">
+    {#snippet lede()}
+      Splotch is a drawing app made for little kids. We built it to be safe and simple, so the short
+      version is easy to remember.
+    {/snippet}
 
-    <h1>Privacy Policy <span aria-hidden="true">🎨</span></h1>
     <p class="updated">Last updated: {LAST_UPDATED}</p>
 
-    <p class="intro">
-      Splotch is a drawing app made for little kids. We built it to be safe and simple, so the short
-      version is easy to remember:
-    </p>
-
+    <!-- Emoji as friendly bullet leads is this page's one documented exception
+         to the no-emoji rule (design skill, Voice & copy) — legal copy softened
+         for a 30-second parent skim. -->
     <ul class="highlights">
       <li><strong>🚫 No ads.</strong> Ever. None.</li>
       <li><strong>🙈 No tracking.</strong> We don't follow you around the internet.</li>
@@ -44,13 +47,15 @@
       <li><strong>✈️ Works offline.</strong> Drawing happens entirely on your device.</li>
     </ul>
 
-    <h2>The simple truth</h2>
+    <RuleLabel>The details</RuleLabel>
+
+    <h3>The simple truth</h3>
     <p>
       Everything you draw stays on your device. Splotch does not create a profile about you or your
       child, does not sell or share any information, and does not show advertising of any kind.
     </p>
 
-    <h2>When the internet is used</h2>
+    <h3>When the internet is used</h3>
     <p>
       Splotch has an optional “magic image” button that re-imagines a child's drawing as a polished
       illustration. A grown-up has to switch it on first — the button stays hidden until an access
@@ -94,7 +99,7 @@
       </li>
     </ul>
 
-    <h2>Sending feedback</h2>
+    <h3>Sending feedback</h3>
     <p>
       Grown-ups can report a bug or suggest a feature from Settings. When you tap “Send report”,
       only what you type is sent, so we can post it as an issue on our
@@ -109,19 +114,19 @@
       We never include your name, account, or location, because Splotch doesn't have any of those.
     </p>
 
-    <h2>Saving pictures</h2>
+    <h3>Saving pictures</h3>
     <p>
       When you save a drawing, it's stored <strong>locally</strong> in your device's own photo gallery.
       Splotch never uploads your saved photos anywhere.
     </p>
 
-    <h2>Settings on your device</h2>
+    <h3>Settings on your device</h3>
     <p>
       Splotch remembers small preferences (like sound on/off and your last color or brush size)
       using your device's local storage. This stays on your device and is never sent to us.
     </p>
 
-    <h2>Children's privacy</h2>
+    <h3>Children's privacy</h3>
     <p>
       Splotch is designed for young children. It has no accounts, ads, tracking, or analytics, and
       gathers nothing on its own. The one place any information is sent is the grown-ups' feedback
@@ -131,113 +136,108 @@
       links out, or in-app purchases.
     </p>
 
-    <h2>Changes to this policy</h2>
+    <h3>Changes to this policy</h3>
     <p>
       If we ever change this policy, we'll update the date at the top of this page. We'll keep it
       just as plain and honest as it is today.
     </p>
 
-    <h2>Contact</h2>
+    <h3>Contact</h3>
     <p>
       Questions or concerns? Please
       <a href={CONTACT_URL} target="_blank" rel="noopener noreferrer">open an issue on GitHub</a>
       and we'll take a look.
     </p>
-  </div>
-</main>
+  </PageShell>
+</div>
 
 <style>
-  /* This page is deliberately light-only, like /admin: the themed color tokens
-     flip with data-theme / prefers-color-scheme (tokens.css sets them on
+  /* Deliberately light-only, like /android-beta and /admin: the themed color
+     tokens flip with data-theme / prefers-color-scheme (tokens.css sets them on
      :root, which reaches this route too), so adopting them would
-     half-dark-theme legal copy whose links are contrast-pinned to a light
-     background. So the colors are declared once below as a local palette
-     instead of scattered literals. Each value is the page's own — hoisting
-     them changed no pixels — with a comment naming the light-theme token it
-     approximates, for whoever revisits the pinning. The one real token this
-     page uses is --brand (h1), which is exempt because it is theme-invariant:
-     tokens.css defines it once and never redefines it in a dark block. */
+     half-dark-theme legal copy whose link contrast is pinned to a light ground.
+     PageShell defaults its --page-* palette to those themed tokens, so this
+     route pins every one of them — the same values /android-beta pins, so the
+     standalone parent pages share one look. Theme-invariant tokens
+     (--font-size-*, --font-weight-*, --radius-*) are used directly.
 
-  /* A full-viewport scroll panel with its own light background. The legal copy is
-     a normal scrollable, selectable, zoomable document — the drawing-route
-     app-surface locks (app.css) don't reach this route, so no opt-out is needed. */
-  .legal {
-    --legal-bg: #f5f5f5; /* = --app-bg, light */
-    --legal-sheet: #ffffff; /* = --surface, light */
-    --legal-text: #2b2b33; /* ~ --text-strong (#333), light */
-    --legal-text-muted: #6c6c76; /* ~ --text-mid (#666), light */
-    --legal-heading: #6b3fa0; /* ~ --brand-text (#7c50bb), light */
-    --legal-card: #f7f2fd; /* ~ --brand-wash (#ede7f6), light */
-    /* No token; paired with --legal-card, which it has to outline visibly. */
-    --legal-card-border: #eadcfa;
-    /* Darker than --brand, whose 3.4:1 fails WCAG AA for body-size text (axe
-       serious); this clears 4.5:1 on the sheet. */
-    --legal-link: #7c4dcf;
-
-    position: fixed;
-    inset: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    background: var(--legal-bg);
-    padding: 24px 16px 64px;
-    color: var(--legal-text);
-    line-height: 1.6;
+     The overrides land on PageShell's own root via the forwarded class, which
+     is the only element they can sit on: a custom property declared on a
+     wrapper would otherwise lose to the same property set on .page itself. */
+  .privacy :global(.privacy-palette) {
+    --page-ground: #f0efed; /* ~ --app-bg (#f5f5f5), warmed */
+    --page-sheet: #ffffff; /* = --surface, light */
+    --page-ink: #26262e; /* ~ --text-strong (#333), light */
+    --page-body: #55555f; /* ~ --text (#555), light */
+    --page-muted: #6c6c76; /* ~ --text-soft (#666), light */
+    --page-rule: #eeeae4; /* ~ --border-warm (#ddd6cc), lightened */
+    /* Darker than --brand, whose 3.4:1 fails WCAG AA for body-size text; this
+       clears 4.5:1 on the sheet. Same value /android-beta pins. */
+    --page-link: #7c4dcf;
+    --page-link-hover: #6b3fbf;
+    /* Unused on this page (no accent-filled control), pinned anyway so the
+       palette stays complete and copy-safe for the next section added here. */
+    --page-accent: #7c4dcf;
+    --page-accent-hover: #6b3fbf;
+    --page-on-accent: #ffffff;
+    /* The sheet's lift, pinned for the same reason: --float-shadow's dark value
+       is a light keyline that would show as a halo on this white sheet. */
+    --page-shadow: 0 1px 2px rgba(93, 84, 68, 0.05), 0 10px 30px rgba(93, 84, 68, 0.07);
   }
 
-  .sheet {
-    max-width: 680px;
-    margin: 0 auto;
-    background: var(--legal-sheet);
-    border-radius: 20px;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
-    padding: 32px clamp(20px, 5vw, 44px) 40px;
-  }
-
-  .back {
-    display: inline-block;
-    margin-bottom: 20px;
-    color: var(--legal-link);
-    text-decoration: none;
-    font-weight: 600;
-  }
-
-  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it stuck until the next tap elsewhere. */
-  @media (hover: hover) {
-    .back:hover {
-      text-decoration: underline;
-    }
-  }
-
-  h1 {
-    font-size: clamp(1.8rem, 5vw, 2.4rem);
-    color: var(--brand);
-    margin-bottom: 4px;
+  /* The highlight cards' brand-tinted wash, pinned like the palette above
+     (~ --brand-wash light, with a border that has no token equivalent). */
+  .privacy {
+    --privacy-card: #f7f2fd;
+    --privacy-card-border: #eadcfa;
   }
 
   .updated {
-    color: var(--legal-text-muted);
-    font-size: 0.9rem;
-    margin-bottom: 24px;
+    margin: 0 0 18px;
+    font-size: var(--font-size-sm);
+    color: var(--page-muted);
   }
 
-  .intro {
-    font-size: 1.1rem;
-    margin-bottom: 20px;
+  /* The headline "no ___" promises, as a friendly card list — the one block
+     that escapes the reading measure and fills the sheet. */
+  .highlights {
+    list-style: none;
+    max-width: none;
+    padding: 0;
+    margin: 0 0 34px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
   }
 
-  h2 {
-    font-size: 1.25rem;
-    color: var(--legal-heading);
-    margin: 28px 0 8px;
+  .highlights li {
+    background: var(--privacy-card);
+    border: 2px solid var(--privacy-card-border);
+    border-radius: var(--radius-lg);
+    padding: 12px 14px;
+    margin: 0;
+    color: var(--page-body);
   }
 
-  p {
-    margin-bottom: 12px;
+  .highlights strong {
+    color: var(--page-ink);
+  }
+
+  h3 {
+    margin: 28px 0 6px;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--page-ink);
+  }
+
+  p,
+  ul {
+    max-width: var(--page-measure);
+    margin: 0 0 12px;
+    color: var(--page-body);
   }
 
   ul {
-    margin: 0 0 12px;
     padding-left: 1.2em;
   }
 
@@ -245,25 +245,17 @@
     margin-bottom: 8px;
   }
 
-  /* The headline "no ___" promises, as a friendly card list. */
-  .highlights {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 8px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 10px;
-  }
-
-  .highlights li {
-    background: var(--legal-card);
-    border: 2px solid var(--legal-card-border);
-    border-radius: 14px;
-    padding: 12px 14px;
-    margin: 0;
-  }
-
   a {
-    color: var(--legal-link);
+    color: var(--page-link);
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+
+  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
+     keep it stuck until the next tap elsewhere. */
+  @media (hover: hover) {
+    a:hover {
+      color: var(--page-link-hover);
+    }
   }
 </style>

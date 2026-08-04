@@ -173,7 +173,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-control);
   touch-action: manipulation;
   transition:
     border-color var(--duration-base) ease,
@@ -233,7 +233,7 @@ body {
 }
 
 .corner-button-icon svg {
-  fill: var(--text-faint);
+  fill: var(--icon-muted);
   transition: fill var(--duration-base) ease;
 }
 
@@ -243,7 +243,7 @@ body {
   }
 
   .corner-button:hover .corner-button-icon svg {
-    fill: var(--text-mid);
+    fill: var(--icon-muted-hover);
   }
 }
 
@@ -358,7 +358,7 @@ body {
 }
 
 .screenshot-capture-feedback [data-icon='camera'] {
-  animation: screenshot-capture var(--duration-slow) var(--ease-pop-strong);
+  animation: screenshot-capture var(--duration-slow) var(--ease-pop);
 }
 
 /* Undo's end-of-history wall and rejected screenshot saves share this whole-button cue. Equal

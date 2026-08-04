@@ -182,8 +182,8 @@
   .chip-heading {
     margin: 0 0 10px 0;
     font-size: var(--font-size-sm);
-    font-weight: 700;
-    color: var(--text-muted);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-soft);
     text-transform: uppercase;
     letter-spacing: 0.6px;
   }
@@ -204,10 +204,10 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: var(--surface-2);
-    color: var(--text-mid);
+    color: var(--text-soft);
     font-family: inherit;
     font-size: var(--font-size-sm);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     cursor: pointer;
     transition:
       background var(--duration-fast) ease,
@@ -222,16 +222,18 @@
     }
   }
 
+  /* --brand-solid, not --brand: the chip carries its label on this fill, and
+     --brand is only 3.4:1 against --on-brand (fails WCAG AA at body size). */
   .chip.on {
-    background: var(--brand);
-    border-color: var(--brand);
+    background: var(--brand-solid);
+    border-color: var(--brand-solid);
     color: var(--on-brand);
   }
 
   @media (hover: hover) {
     .chip.on:hover {
-      background: var(--brand-hover);
-      border-color: var(--brand-hover);
+      background: var(--brand-solid-hover);
+      border-color: var(--brand-solid-hover);
     }
   }
 
@@ -259,8 +261,8 @@
     flex-shrink: 0;
     width: 14px;
     text-align: center;
-    font-size: var(--font-size-md);
-    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
   }
 
   .pencil-eraser {

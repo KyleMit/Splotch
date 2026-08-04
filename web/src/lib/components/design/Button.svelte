@@ -54,7 +54,7 @@
 
   .md {
     padding: var(--space-3) var(--space-5);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
   }
 
   .sm {
@@ -82,7 +82,7 @@
   .ghost {
     background: transparent;
     border: var(--border-width) solid var(--border);
-    color: var(--text-mid);
+    color: var(--text-soft);
   }
 
   @media (hover: hover) {

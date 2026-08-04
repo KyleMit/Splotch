@@ -292,7 +292,7 @@
   .preview {
     transition:
       opacity 0.5s ease,
-      filter 0.2s linear;
+      filter var(--duration-base) linear;
     transform: scale(1.04); /* hide blur bleed at edges */
   }
 
@@ -325,18 +325,19 @@
     text-align: center;
     color: var(--text);
   }
+  /* Emoji at illustration size — glyph art, not ramp type. */
   .ai-result-error-emoji {
     font-size: 48px;
   }
   .ai-result-error p {
     margin: 0;
-    font-size: var(--font-size-lg);
-    font-weight: 600;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
   }
   .ai-result-error p.ai-result-error-sub {
-    font-size: var(--font-size-md);
-    font-weight: 500;
-    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-soft);
     max-width: 280px;
   }
 
@@ -344,16 +345,19 @@
   .ai-result-saved {
     margin: 0;
     color: var(--success-accent);
-    font-size: 15px;
-    font-weight: 700;
-    animation: downloadPop 0.4s backwards 0.25s var(--ease-pop-strong);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    animation: downloadPop 0.4s backwards 0.25s var(--ease-pop);
   }
 
   /* ── Download button ── */
   .ai-result-download {
     height: 44px;
     padding: 0 22px;
-    background: var(--brand);
+    /* --brand-solid, not --brand: the fill carries its 14px bold label, and
+       --brand is only 3.4:1 against --on-brand (fails WCAG AA below
+       large-text size). */
+    background: var(--brand-solid);
     border: none;
     border-radius: var(--radius-xl);
     cursor: pointer;
@@ -361,22 +365,22 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    color: white;
-    font-size: 15px;
-    font-weight: 700;
+    color: var(--on-brand);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.4);
     box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 40%, transparent);
     transition:
       transform var(--duration-fast) ease,
       background var(--duration-base) ease;
-    animation: downloadPop 0.4s backwards 0.25s var(--ease-pop-strong);
+    animation: downloadPop 0.4s backwards 0.25s var(--ease-pop);
   }
 
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
      keep it sticky, leaving the button's background stuck after a tap. */
   @media (hover: hover) {
     .ai-result-download:hover {
-      background: #9559cd;
+      background: var(--brand-solid-hover);
     }
   }
   .ai-result-download:active {
@@ -414,7 +418,7 @@
        The fly-out's delay (0.9s) covers the morph + a brief hold in the center. */
     transform: translate(-50%, -50%) rotate(-3deg);
     transition:
-      transform 0.4s var(--ease-pop-strong),
+      transform 0.4s var(--ease-pop),
       background 0.4s ease;
     animation: ai-polaroid-fly 0.85s 0.9s cubic-bezier(0.55, 0, 0.85, 0.2) forwards;
   }
@@ -425,7 +429,7 @@
   .ai-result-modal.polaroid-mode .ai-result-download {
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s ease;
+    transition: opacity var(--duration-base) ease;
   }
 
   @keyframes ai-polaroid-fly {

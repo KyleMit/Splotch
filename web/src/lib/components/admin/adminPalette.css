@@ -1,0 +1,42 @@
+/* The /admin palette — the one deliberately light-only surface's answer to
+   tokens.css. Colors here are raw on purpose: the themed color tokens flip
+   with data-theme / prefers-color-scheme, so adopting them would
+   half-dark-theme the console (ADR-0071 amendment). Each pinned value is
+   commented with the light-theme token it mirrors.
+
+   Declared on .admin-page and imported by AdminConsole.svelte; InviteMenu's
+   dialog inherits the properties through the DOM, which is why this lives in
+   its own cross-component file rather than either component's scoped block.
+   Scanned by scripts/lint-token-styles.mjs like any component style block. */
+
+.admin-page {
+  /* The WCAG-tuned accent family (darker than --brand, whose 3.4:1 fails
+     AA under white text). */
+  --admin-accent: #7c4dcf;
+  --admin-accent-hover: #6b3fbe;
+  --admin-accent-tint: #f5f0fc;
+  --admin-accent-tint-strong: #f0e9fb;
+  --admin-accent-tint-hover: #ece0fb;
+  /* Grounds and inks, pinned to the light theme values they mirror. */
+  --admin-ground: #f5f5f5; /* = --app-bg, light */
+  --admin-sheet: #ffffff; /* = --surface, light */
+  --admin-on-accent: #fff; /* = --on-brand */
+  --admin-ink: #333; /* = --text-strong, light */
+  --admin-ink-muted: #666; /* = --text-soft, light */
+  --admin-hairline: #f0f0f0;
+  --admin-line: #ddd; /* input borders, separator glyphs */
+  /* The app's semantic wash pairs, pinned at their light values so the
+     console's banners and buttons agree with StatusMessage and the danger
+     chrome everywhere else. */
+  --admin-success-wash: #e9f7ec; /* = --success-wash, light */
+  --admin-success-ink: #2e7d4f; /* = --success-text, light */
+  --admin-danger-wash: #fdecec; /* = --danger-wash, light */
+  --admin-danger-ink: #b04a4a; /* = --danger-text, light */
+  --admin-danger-wash-hover: #fbe0de;
+  /* Warning amber — no app token yet; the persistence banner is the only
+     warning surface in the product. */
+  --admin-warn-wash: #fffaeb;
+  --admin-warn-ink: #93600b;
+  --admin-warn-border: #fce5a8;
+  --admin-warn-chip: #fdefc7;
+}
