@@ -3,8 +3,9 @@
 # job parallel to Tests, while release tags run all seven scenarios. The fast
 # subset was sized to stay below the pre-shard Tests job's duration on the
 # measured macOS runner; Ubuntu's WebKit runtime exceeds that budget. With the
-# e2e suite sharded it is the wall-clock floor of a PR run. The tag-only full
-# run buys broader path coverage without adding its cost to every change.
+# e2e suite sharded it is the expected floor of a PR run, though it trades the
+# critical path with the longest e2e shard inside runner noise. The tag-only
+# full run buys broader path coverage without adding its cost to every change.
 name: Tests
 
 on:
@@ -136,7 +137,8 @@ jobs:
   # Each shard builds the app itself rather than restoring it from a build job:
   # a shared artifact serializes every shard behind `needs:` (measured ≈81s +
   # tests) while concurrent per-shard builds overlap (≈69s + tests). Playwright's
-  # `--shard` self-balances by file as tests are added — no hand-kept partition.
+  # `--shard` deals out individual tests (fullyParallel), self-balancing by
+  # count as tests are added — no hand-kept partition.
   test:
     name: Tests (${{ matrix.shard }}/3)
     if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
@@ -174,7 +176,10 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-report-shard-${{ matrix.shard }}
-          path: web/playwright-report/
+          # The HTML reporter resolves its default folder against the
+          # package.json directory — the repo root here (ADR-0024), not web/.
+          path: playwright-report/
+          if-no-files-found: error
           retention-days: 7
 
   # WebKit's apt dependencies are the expensive half of the Ubuntu browser
@@ -214,7 +219,9 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-report-webkit
-          path: web/playwright-report/
+          # Same package.json-relative resolution as the shard reports above.
+          path: playwright-report/
+          if-no-files-found: error
           retention-days: 7
 
   webkit-commit-gate-fast:

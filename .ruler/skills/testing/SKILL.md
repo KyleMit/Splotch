@@ -77,9 +77,9 @@ npm run test:asset-gen
 ```
 
 Configured in `tools/asset-gen/vitest.config.mjs`. These run in Node against committed fixtures and
-mocked generator workflows, with no Gemini calls or network access. CI runs them immediately after
-the app-unit suite and before installing Playwright's browser dependencies, so image-analysis gate
-regressions fail fast.
+mocked generator workflows, with no Gemini calls or network access. CI runs them in the browser-free
+`unit` job, after the app-unit suite and alongside the repo-script suite, in parallel with the e2e
+shards.
 
 ## Repo-script unit tests — Vitest
 
@@ -417,11 +417,12 @@ The WebKit commit gate is split by path coverage and cost (ADR-0093). Pull reque
 `multi-finger` (the sole encode-path exerciser) and `crayon-scribbles` (mid-stroke pass splits) in a
 parallel `macos-latest` job sized to stay below the pre-shard Tests job's duration; the Ubuntu
 WebKit runtime did not meet that wall-clock constraint. With the e2e suite now sharded, this gate is
-the wall-clock floor of a PR run. Release tags run all seven scenarios. A timing breach, an
-incomplete or unknown requested scenario, a run with no encode-path coverage, or a bundle with no
-`engine.commit` samples fails the job. Either tier attempts to upload `undo-scenarios.json` and
-`undo-scenarios.md` after a failure; an early build/browser failure may leave no reports, which
-warns without masking the original error.
+the expected floor of a PR run — though it trades the critical path with the longest e2e shard
+inside runner noise. Release tags run all seven scenarios. A timing breach, an incomplete or unknown
+requested scenario, a run with no encode-path coverage, or a bundle with no `engine.commit` samples
+fails the job. Either tier attempts to upload `undo-scenarios.json` and `undo-scenarios.md` after a
+failure; an early build/browser failure may leave no reports, which warns without masking the
+original error.
 
 The fast tier evaluates `multi-finger` against raw `engine.commit` P95. For `crayon-scribbles`, it
 divides raw commit P95 by the same run's renderer slowdown from `engine.draw total / calls` against
