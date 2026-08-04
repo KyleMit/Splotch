@@ -4,10 +4,11 @@
   // Composed specimens — the styleguide's bridge from single tokens to real
   // surfaces. Every rule in these specimens is a token reference; each recipe
   // names what it reaches for so a contributor can copy the composition, not
-  // the values.
+  // the values. Specimen first, caption below: the specimen is the object,
+  // the caption its label.
 </script>
 
-<section>
+<section id="recipes" data-sg-section>
   <h3>Recipes</h3>
   <p>
     The defaults, composed — how a handful of tokens assemble into the surfaces the app builds.
@@ -17,6 +18,11 @@
 
   <div class="recipe-grid">
     <figure class="recipe">
+      <div class="specimen card">
+        <h5>Coloring Book</h5>
+        <p>Line-art pages for the crayons to color in — open one up and let them scribble.</p>
+        <span class="card-meta">Two books · updated with each release</span>
+      </div>
       <figcaption>
         <h4>Card</h4>
         <p class="recipe-tokens">
@@ -25,23 +31,9 @@
           <code>--text</code> body and <code>--text-soft</code> meta
         </p>
       </figcaption>
-      <div class="specimen card">
-        <h5>Coloring Book</h5>
-        <p>Line-art pages for the crayons to color in — open one up and let them scribble.</p>
-        <span class="card-meta">Two books · updated with each release</span>
-      </div>
     </figure>
 
     <figure class="recipe">
-      <figcaption>
-        <h4>Form row</h4>
-        <p class="recipe-tokens">
-          <code>--font-size-sm</code> <code>--font-weight-medium</code> label ·
-          <code>--input-font-size</code> input on <code>--surface</code> with a
-          <code>--border</code> hairline at <code>--radius-sm</code> ·
-          <code>--font-size-xs</code> <code>--text-soft</code> help
-        </p>
-      </figcaption>
       <div class="specimen form-row">
         <label for="recipe-input">Access code</label>
         <input
@@ -54,9 +46,25 @@
           >Saved on this device — forget it any time.</span
         >
       </div>
+      <figcaption>
+        <h4>Form row</h4>
+        <p class="recipe-tokens">
+          <code>--font-size-sm</code> <code>--font-weight-medium</code> label ·
+          <code>--input-font-size</code> input on <code>--surface</code> with a
+          <code>--border</code> hairline at <code>--radius-sm</code> ·
+          <code>--font-size-xs</code> <code>--text-soft</code> help
+        </p>
+      </figcaption>
     </figure>
 
     <figure class="recipe">
+      <div class="specimen callout">
+        <h5>Not sure? Start here</h5>
+        <p>
+          A brand-tinted aside that guides without shouting — the wash flips with the theme and the
+          ink stays readable on it.
+        </p>
+      </div>
       <figcaption>
         <h4>Callout</h4>
         <p class="recipe-tokens">
@@ -65,16 +73,14 @@
           use the <code>StatusMessage</code> primitive instead
         </p>
       </figcaption>
-      <div class="specimen callout">
-        <h5>Not sure? Start here</h5>
-        <p>
-          A brand-tinted aside that guides without shouting — the wash flips with the theme and the
-          ink stays readable on it.
-        </p>
-      </div>
     </figure>
 
     <figure class="recipe">
+      <div class="specimen card cta">
+        <h5 class="cta-lede">Ready when they are</h5>
+        <p>Open it up, hand over the device, and let them make a mess. That's the whole idea.</p>
+        <Button variant="brand">Start drawing</Button>
+      </div>
       <figcaption>
         <h4>CTA block</h4>
         <p class="recipe-tokens">
@@ -82,30 +88,28 @@
           <code>--font-size-lg</code> lede · <code>--space-3</code> between body and action
         </p>
       </figcaption>
-      <div class="specimen card cta">
-        <h5 class="cta-lede">Ready when they are</h5>
-        <p>Open it up, hand over the device, and let them make a mess. That's the whole idea.</p>
-        <Button variant="brand">Start drawing</Button>
-      </div>
     </figure>
   </div>
 </section>
 
 <style>
   section {
-    margin-top: var(--space-8);
+    margin-top: 48px;
+    scroll-margin-top: 96px;
   }
 
   section > p {
-    max-width: 60ch;
-    margin: var(--space-2) 0 var(--space-3);
+    max-width: 62ch;
+    margin: 0 0 18px;
     font-size: var(--font-size-sm);
+    color: var(--text);
   }
 
   h3 {
+    margin: 0 0 6px;
     color: var(--text-strong);
     font-size: var(--font-size-lg);
-    margin-bottom: var(--space-2);
+    font-weight: var(--font-weight-bold);
   }
 
   code {
@@ -125,26 +129,26 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: 10px;
   }
 
   h4 {
     margin: 0;
     color: var(--text-strong);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
   }
 
   .recipe-tokens {
     max-width: 60ch;
-    margin: var(--space-1) 0 0;
-    font-size: var(--font-size-sm);
+    margin: 2px 0 0;
+    font-size: var(--font-size-xs);
     color: var(--text-soft);
     line-height: 1.6;
   }
 
-  /* The specimens grow to a shared row height so the grid reads as a set. */
   .specimen {
-    flex: 1;
+    flex: none;
   }
 
   .card {

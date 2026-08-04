@@ -4,9 +4,9 @@ import { themes, toCssVarName, type ThemeTokens } from '../src/lib/design/tokens
 // /design is the public living styleguide (ADR-0096). Axe coverage lives in
 // a11y.spec.ts; the value here is the two regressions a scan can't see: the
 // theme picker must expose its selected state to assistive tech (a role=radio
-// aria-checked segment, not styled buttons), and every token swatch must paint
+// aria-checked segment, not styled buttons), and every color chip must paint
 // a real fill — a non-color token dropped straight into `background` computes
-// as transparent and renders a silently blank card (the --brand-rgb channel
+// as transparent and renders a silently blank chip (the --brand-rgb channel
 // triplet did exactly that).
 
 test('theme picker exposes and updates its selected state', async ({ page }) => {
@@ -14,9 +14,11 @@ test('theme picker exposes and updates its selected state', async ({ page }) => 
   // Scoped to the header: the SegmentedPicker specimens further down include
   // their own radiogroup, whose accessible name also starts with "Theme".
   const picker = page.locator('header').getByRole('radiogroup', { name: 'Theme' });
-  const system = picker.getByRole('radio', { name: 'system' });
-  const dark = picker.getByRole('radio', { name: 'dark' });
-  await expect(system).toHaveAttribute('aria-checked', 'true');
+  const light = picker.getByRole('radio', { name: 'Light' });
+  const dark = picker.getByRole('radio', { name: 'Dark' });
+  // The toggle is binary and initializes from the applied theme — no stamp and
+  // a light-scheme browser resolve to Light.
+  await expect(light).toHaveAttribute('aria-checked', 'true');
 
   // The picker is server-rendered before it's wired; retry the click until
   // hydration makes it land rather than racing it once.
@@ -26,20 +28,20 @@ test('theme picker exposes and updates its selected state', async ({ page }) => 
   }).toPass();
 
   await expect(dark).toHaveAttribute('aria-checked', 'true');
-  await expect(system).toHaveAttribute('aria-checked', 'false');
+  await expect(light).toHaveAttribute('aria-checked', 'false');
 });
 
-test('every token swatch paints a real fill', async ({ page }) => {
+test('every color chip paints a real fill', async ({ page }) => {
   await page.goto('/design');
-  const swatches = page.locator('.swatch');
-  expect(await swatches.count()).toBeGreaterThan(20);
-  const unpainted = await swatches.evaluateAll((els) =>
+  const chips = page.locator('.color-chip');
+  expect(await chips.count()).toBeGreaterThan(20);
+  const unpainted = await chips.evaluateAll((els) =>
     els
       .map((el) => {
         const style = getComputedStyle(el);
         return {
           fill: `${style.backgroundColor} ${style.backgroundImage}`,
-          token: el.nextElementSibling?.textContent ?? '(unlabelled)',
+          token: el.querySelector('.chip-name')?.textContent ?? '(unlabelled)',
         };
       })
       .filter(({ fill }) => fill === 'rgba(0, 0, 0, 0) none')

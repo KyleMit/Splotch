@@ -44,11 +44,6 @@ const sources = import.meta.glob<string>(
   { eager: true, query: '?raw', import: 'default' }
 );
 
-// Pre-existing orphans, grandfathered rather than deleted here — this guard's
-// job is to stop *new* orphans appearing. chevron-up: the drawer's chevron is a
-// single chevron-right rotated with CSS.
-const KNOWN_ORPHANS = ['chevron-up'];
-
 // Only a quoted string literal counts — `name="close"`, `icon: 'theme-auto'`,
 // the ERASER_SIZE_ICON maps. That's the form every real reference takes, and
 // requiring the quotes is what makes the guard work at all for icons named
@@ -93,22 +88,17 @@ describe('NON_RENDERABLE_ICONS matches the glob literals', () => {
   });
 });
 
+// The last grandfathered orphan (chevron-up — the drawer rotates chevron-right
+// with CSS) left the carve-out list when the styleguide's icon-family strips
+// began naming every chevron; a new orphan fails here directly.
 describe('no orphan icons', () => {
   it.each(Object.keys(svgs).map(iconNameFromPath).sort())(
     '%s: is referenced from source',
     (name) => {
-      if (KNOWN_ORPHANS.includes(name)) return;
       expect(
         isReferenced(name),
         `${name}.svg is never referenced by name — delete it, or render it via <Icon name="${name}">`
       ).toBe(true);
-    }
-  );
-
-  it.each(KNOWN_ORPHANS)(
-    '%s: is still an orphan, so the carve-out still earns its place',
-    (name) => {
-      expect(isReferenced(name)).toBe(false);
     }
   );
 });
