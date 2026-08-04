@@ -25,11 +25,21 @@ if (!cmd) {
   process.exit(1);
 }
 
-// `vite dev` regenerates .svelte-kit/ (generated types + tsconfig) itself on startup via the
-// SvelteKit vite plugin, so pre-syncing on every boot is redundant — it just doubles the work and
-// adds ~1.5s to a warm `npm run dev`. Sync explicitly only when the generated dir is absent (a
-// fresh clone), so types resolve for the editor even before the first dev server finishes booting.
-if (cmd === 'vite' && args[0] === 'dev' && !existsSync(join(web, '.svelte-kit', 'tsconfig.json'))) {
+// Commands that need .svelte-kit/tsconfig.json (generated types + path aliases) to already exist:
+//
+// `vite dev` regenerates it itself on startup via the SvelteKit vite plugin, so pre-syncing on
+// every boot is redundant — it just doubles the work and adds ~1.5s to a warm `npm run dev`. It is
+// synced anyway when absent (a fresh clone) so types resolve for the editor even before the first
+// dev server finishes booting.
+//
+// `playwright` needs it up front: specs import app modules through the `$lib` alias, which
+// Playwright maps by reading web/tsconfig.json (it extends the generated one). That resolution
+// happens as specs are collected — before, and independently of, the webServer's `vite build`, so
+// letting the build generate the file is too late and collection dies with "Cannot find package
+// '$lib'". A job that runs Playwright without a preceding vitest run (which syncs via the
+// SvelteKit plugin) has nothing else to generate it — the CI WebKit smoke job is exactly that.
+const needsGeneratedTsconfig = (cmd === 'vite' && args[0] === 'dev') || cmd === 'playwright';
+if (needsGeneratedTsconfig && !existsSync(join(web, '.svelte-kit', 'tsconfig.json'))) {
   run('svelte-kit', ['sync'], { cwd: web });
 }
 

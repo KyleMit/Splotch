@@ -16026,35 +16026,6 @@ Build once, inspect the generated service worker's precache manifest, and if (as
 note in the commit. If some entry is *only* reachable via `includeAssets`, keep it and add a WHY
 comment saying which and why — either outcome removes the ambiguity.
 
-### [Maintainability] The webkit-smoke partition regex is declared twice in one file
-
-**File(s):** `web/playwright.config.ts` (lines 91 and 101) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The chromium project excludes and the webkit project matches the same file via two separately-typed
-regex literals:
-
-```ts
-testIgnore: /webkit-smoke\.spec\.ts/,   // line 91
-...
-testMatch: /webkit-smoke\.spec\.ts/,    // line 101
-```
-
-These two literals *are* the partition invariant (webkit-smoke runs exactly once, under WebKit). If
-the spec is renamed and only one regex follows, the failure is silent: either the file runs twice
-(once under Chromium, wasted) or stops running under WebKit while `testIgnore` still hides it from
-Chromium — the exact "quietly stop running" failure the `REQUIRE_WEBKIT` machinery elsewhere in this
-file exists to prevent.
-
-#### Proposed solution
-
-`const WEBKIT_SMOKE_SPEC = /webkit-smoke\.spec\.ts/;` at module scope, referenced by both
-`testIgnore` and `testMatch`. One-line change; the constant name also gives the partition a
-greppable handle.
-
 ### [Maintainability] Manifest reuses identical PNGs for both `any` and `maskable` icon purposes
 
 **File(s):** `web/static/site.webmanifest` (lines 7–32) @ 9ae62ff1

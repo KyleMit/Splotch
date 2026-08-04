@@ -1,0 +1,41 @@
+name: Set up Playwright
+description: Cache and install Playwright browsers plus their apt system libraries, on the Ubuntu runners
+
+# macOS has its own setup-playwright-webkit: no apt step, and a different
+# browser cache path. Keeping them separate avoids per-OS branching in both.
+
+inputs:
+  browsers:
+    description: Space-separated Playwright browsers to install (e.g. "chromium", "webkit")
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve Playwright version
+      id: playwright-version
+      shell: bash
+      run: node scripts/playwright-version.mjs >> "$GITHUB_OUTPUT"
+
+    - name: Cache Playwright browsers
+      id: playwright-cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ms-playwright
+        # The browser set is part of the key, so jobs installing different
+        # browsers can't restore each other's half-populated cache — a cache
+        # missing WebKit would silently drop the WebKit project
+        # (playwright.config.ts omits it when the binary is absent).
+        key: playwright-${{ runner.os }}-${{ inputs.browsers }}-${{ steps.playwright-version.outputs.version }}
+
+    - name: Install Playwright browsers
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: npx playwright install --with-deps ${{ inputs.browsers }}
+
+    # The browser binaries cache, but the apt packages don't — install-deps
+    # is still required on a cache hit.
+    - name: Install Playwright system deps
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: npx playwright install-deps ${{ inputs.browsers }}

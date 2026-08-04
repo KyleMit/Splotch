@@ -18,6 +18,7 @@ run only on tagged releases.
 | Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`        | every push / PR                         |
 | Unit (repo scripts)   | Vitest (Node)       | `npm run test:scripts`          | every push / PR                         |
 | E2E (web)             | Playwright          | `npm run test:e2e`              | every push / PR                         |
+| Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`     | every push / PR (parallel job)          |
 | Smoke (Android)       | Maestro + emulator  | `npm run test:android`          | **tagged releases only**                |
 | Smoke (iOS)           | Maestro + simulator | `npm run test:ios`              | **tagged releases only** (macOS runner) |
 | WebKit commit timing  | Playwright WebKit   | `npm run perf:undo:webkit:fast` | every PR; full suite on release tags    |
@@ -229,10 +230,30 @@ also runs on **WebKit** as the `webkit` Playwright project:
 * The project only joins the run when the WebKit binary is installed
   (`npx playwright install --with-deps webkit`) — local checkouts and cloud sessions with Chromium
   only keep working, and **CI installs WebKit explicitly** (`test.yml`), so the subset always gates
-  pushes/PRs there.
+  pushes/PRs there. Run it alone with `npm run test:webkit:smoke`.
+* In CI it is its own `webkit-smoke` job, parallel to Tests, rather than a project inside the Tests
+  run. WebKit's apt dependencies pull the whole GStreamer/ffmpeg media stack — ~110 packages the
+  Chromium suite doesn't need — and unlike the browser binaries they can't be cached, so that
+  install lands on every run. Off the critical path it costs nothing; inside Tests it cost ~40s per
+  run for four tests. That's also why Tests passes `browsers: chromium` to the `setup-playwright`
+  action: it *relies* on WebKit being absent so the project drops.
+* Both Ubuntu jobs get their browsers from `.github/actions/setup-playwright` (browser cache +
+  `install-deps`, keyed per browser set); macOS keeps its own `setup-playwright-webkit`, which needs
+  no apt step and caches elsewhere.
+* **Routing is by tag, not filename.** `WEBKIT_ONLY_TAG` (`tests/tags.ts`) sits on the spec's
+  `test.describe`; the `webkit` project `grep`s for it and `chromium` `grepInvert`s it, from the one
+  shared constant. The two projects are therefore exact complements — a test runs on exactly one
+  engine. To add WebKit coverage, tag it; a new spec with no tag runs under Chromium wherever it
+  lives.
+* **Import the tag, never type it.** Playwright validates no tag, so a hand-written `@webkti-only`
+  matches neither project and runs under Chromium alone — and the WebKit job stays green, because
+  the correctly tagged specs still populate it. Only editing the shared constant to match nothing
+  fails loudly (`No tests found`). `scripts/tests/e2e-engine-tags.test.mjs` covers the gap: it
+  rejects a tag string literal and any tag not exported by `tags.ts`, and asserts at least one spec
+  still carries `WEBKIT_ONLY_TAG`.
 * Keep the spec WebKit-portable: no CDP sessions (the viewport-rotation and touch-synthesis helpers
   in `flows.spec.ts` are Chromium-only), no dev-harness routes, no assertions tied to Chromium's
-  rasterizer. The Chromium project ignores the spec (its coverage is already in the full suite).
+  rasterizer. Chromium skips the tagged specs — their coverage is already in the full suite.
 * `web/playwright.webkit-scratch.config.ts` stays for ad-hoc "run *any* spec under WebKit"
   debugging; it is still not part of `npm test`.
 
@@ -370,12 +391,12 @@ npm run test:android:device     # re-run as often as you like
 
 ## Continuous integration
 
-| Workflow                               | Trigger                                                          | What it runs                                                                                        |
-| -------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push**                | normal quality/tests on branch/PR events; fast WebKit commit gate on PRs; full gate on release tags |
-| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`                   | Android Maestro smoke test                                                                          |
-| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`                   | iOS Maestro smoke test (macOS runner)                                                               |
-| `.github/workflows/blobs-smoke.yml`    | Netlify `deployment_status` success + manual `workflow_dispatch` | Netlify Blobs persistence round-trip (ADR-0025)                                                     |
+| Workflow                               | Trigger                                                          | What it runs                                                                                                                            |
+| -------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push**                | normal quality/tests on branch/PR events, plus the parallel WebKit smoke job; fast WebKit commit gate on PRs; full gate on release tags |
+| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`                   | Android Maestro smoke test                                                                                                              |
+| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`                   | iOS Maestro smoke test (macOS runner)                                                                                                   |
+| `.github/workflows/blobs-smoke.yml`    | Netlify `deployment_status` success + manual `workflow_dispatch` | Netlify Blobs persistence round-trip (ADR-0025)                                                                                         |
 
 The `blobs-smoke` workflow needs a repo secret `ADMIN_ACCESS_TOKEN` matching the deploy's admin
 secret; without it the job fails at the login step. The iOS smoke mirrors Android but on a

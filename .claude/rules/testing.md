@@ -38,6 +38,12 @@ paths:
 * `tests/webkit-smoke.spec.ts` is a WebKit critical-path subset (boot, stroke, the two dialogs) run
   by the `webkit` Playwright project — CI installs WebKit so it always gates there; locally it only
   runs if the WebKit binary is installed. Keep that spec free of CDP and dev-harness dependencies.
+  Engine routing is by tag, not filename: `WEBKIT_ONLY_TAG` (`tests/tags.ts`) on the spec's
+  `test.describe` is what `webkit` greps for and `chromium` greps out, from one shared constant. Tag
+  a new WebKit-only spec the same way — an untagged spec runs under Chromium wherever it lives.
+  **Import the tag; never write the string.** Playwright validates no tag, so a typo'd literal
+  routes the spec to Chromium silently while the WebKit job stays green on the other specs —
+  `scripts/tests/e2e-engine-tags.test.mjs` rejects tag literals and unknown tags for that reason.
 * Adult-facing surfaces (`/privacy`, `/admin`, Settings dialog) get axe-core scans in
   `tests/a11y.spec.ts` — serious/critical violations fail. The toddler-facing canvas chrome is out
   of scope by design; scans of overlays over it are scoped via `AxeBuilder.include()`. Details in
