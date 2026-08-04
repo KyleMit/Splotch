@@ -60,10 +60,9 @@
     color: var(--text-soft);
   }
 
-  /* --text-soft is contrast-pinned for both themes; every host (the /dev
-     harnesses) is themed. A light-pinned host would need to override this —
-     the dark-theme value drops below 2:1 on a light ground (the /admin console
-     needed exactly that before it moved onto PageShell). */
+  /* --text-soft holds contrast on the themed hosts (the /dev harnesses). A
+     light-pinned host must override this: --text-soft's dark-theme value
+     drops below 2:1 on a light ground. */
   .crumb-current {
     color: var(--text-soft);
     cursor: default;
