@@ -1,9 +1,10 @@
 <script lang="ts">
   import { copyKey, type Invite } from './AdminConsole.svelte';
 
-  // The narrow layout collapses the per-row actions into a single "Copy" plus a
-  // "⋯" button that opens this modal sheet — the same Copy code / Copy link /
-  // Remove actions, just one tap deeper. `invite` is the row it belongs to.
+  // The narrow layout collapses the per-row actions into Copy plus a "⋯"
+  // button that opens this modal sheet with the rest — Copy link / Remove,
+  // one tap deeper (Copy code stays on the row). `invite` is the row it
+  // belongs to.
   let {
     invite,
     busy,
@@ -47,16 +48,6 @@
         type="button"
         class="more-menu-item"
         onclick={() => {
-          oncopy(copyKey(inv.token, 'code'), inv.token);
-          closeMenu();
-        }}
-      >
-        Copy code
-      </button>
-      <button
-        type="button"
-        class="more-menu-item"
-        onclick={() => {
           oncopy(copyKey(inv.token, 'url'), inv.url);
           closeMenu();
         }}
@@ -81,13 +72,9 @@
 <style>
   /* Modal sheet opened by the "⋯" button on narrow screens. The shared
      .modal-dialog / .modal-shell classes (app.css) carry the backdrop,
-     centering, radius, and shadow; only the width and the pinned light
-     surface stay here — .modal-shell's var(--surface) is themed and would
-     flip this light-only sheet dark. The --admin-* custom properties are
-     inherited from the .admin-page wrapper this dialog is mounted inside. */
+     centering, surface, radius, and shadow; only the width stays here. */
   .more-menu {
     width: min(340px, calc(100vw - 48px));
-    background: var(--admin-sheet);
   }
 
   .more-menu-title {
@@ -97,8 +84,8 @@
     font-weight: var(--font-weight-bold);
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--admin-ink-muted);
-    border-bottom: 1px solid var(--admin-hairline);
+    color: var(--text-soft);
+    border-bottom: 1px solid var(--border);
   }
 
   .more-menu-item {
@@ -109,10 +96,10 @@
     font-family: inherit;
     font-size: var(--font-size-md);
     font-weight: var(--font-weight-semibold);
-    color: var(--admin-accent);
+    color: var(--brand-text);
     background: transparent;
     border: none;
-    border-bottom: 1px solid var(--admin-hairline);
+    border-bottom: 1px solid var(--border);
     cursor: pointer;
   }
 
@@ -122,17 +109,17 @@
 
   @media (hover: hover) {
     .more-menu-item:hover {
-      background: var(--admin-accent-tint);
+      background: var(--brand-wash);
     }
   }
 
   .more-menu-item-danger {
-    color: var(--admin-danger-ink);
+    color: var(--danger-text);
   }
 
   @media (hover: hover) {
     .more-menu-item-danger:hover {
-      background: var(--admin-danger-wash);
+      background: var(--danger-wash);
     }
   }
 

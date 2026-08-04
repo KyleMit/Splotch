@@ -41,7 +41,6 @@ export type IconName =
   | 'pen'
   | 'photo-size-select-small'
   | 'pin'
-  | 'plus'
   | 'remove-page'
   | 'settings'
   | 'shapes'

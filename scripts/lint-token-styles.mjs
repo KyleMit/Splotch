@@ -1,7 +1,7 @@
 // Token lints for component styles (ADR-0071). Scans the <style> blocks of
 // every web/src Svelte component — plus the hand-authored plain .css files
-// (app.css, the admin palette; the generated tokens.css is the token source
-// and is excluded) — for the classes of raw values that should be design
+// (app.css; the generated tokens.css is the token source and is excluded) —
+// for the classes of raw values that should be design
 // tokens (from web/src/lib/design/tokens.ts):
 //
 // 1. Raw hex colors — a ratchet against the committed baseline below. The
@@ -45,21 +45,19 @@ import { isMain } from './lib/proc.mjs';
 // file (relative to web/src) → allowed raw-hex count, with the reason.
 const BASELINE = new Map(
   Object.entries({
-    // The /admin palette file — the light-only console's answer to tokens.css
-    // (themed color tokens would half-dark-theme it). Every hex is a declared
-    // --admin-* custom property, each pinned value commented with the
-    // light-theme token it mirrors; AdminConsole and InviteMenu consume only
-    // the properties, and the console's PageShell --page-* pins reference
-    // them rather than restating values.
-    'lib/components/admin/adminPalette.css': 22,
+    // The persistence banner's warning amber — no warn token pair exists yet
+    // (it is the product's only warning surface), so the four light values
+    // (wash, ink, border, code chip) stay pinned on both themes; the WHY
+    // comment lives on .flash-warning.
+    'lib/components/admin/AdminConsole.svelte': 4,
     // The polaroid flight's photographic near-paper whites — the print stays
     // paper-white on both themes, like the AiImageResult stage it lands in.
     'app.css': 2,
-    // Light-only page, same reasoning as /admin — pins PageShell's themed
+    // Light-only page (ADR-0071 amendment) — pins PageShell's themed
     // --page-* defaults to the same light values /android-beta pins (eleven),
     // plus the highlight panel's brand-tinted border and row hairline (two).
     'routes/privacy/+page.svelte': 13,
-    // Light-only page, same reasoning as /admin — a palette pinned to a light
+    // Light-only page (ADR-0071 amendment) — a palette pinned to a light
     // ground, declared once as custom properties at the top of its <style>
     // block. Its eleven pin PageShell's themed --page-* defaults (whose dark
     // values would half-dark-theme the page), including /privacy's AA-safe
@@ -121,7 +119,7 @@ const FONT_SIZE_BASELINE = new Map(
 );
 
 function styledFiles(dir) {
-  // Svelte components plus plain .css (app.css, the admin palette) — every
+  // Svelte components plus plain .css (app.css) — every
   // hand-authored stylesheet under web/src. The generated tokens.css is the
   // token source itself, so it is the one exclusion.
   // recursive readdir + parentPath needs Node >= 20.12 (see package.json engines).

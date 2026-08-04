@@ -3,7 +3,9 @@
 **Status:** Active. **Date:** 2026-07. Amended 2026-07-22: `/admin` and `/privacy` are permanently
 light-only — see the amendment at the end. Amended 2026-08-03: the styleguide is now the public
 `/design` route (ADR-0096) — see the amendment at the end. Amended 2026-08-04: the selection
-controls now share the `SegmentedPicker` primitive — see the amendment at the end.
+controls now share the `SegmentedPicker` primitive — see the amendment at the end. Amended
+2026-08-04: `/admin` left the light-only set — the console redesign moved it onto the themed tokens
+— see the amendment at the end.
 
 ## Context
 
@@ -84,6 +86,9 @@ swaps.
 
 ## Amendment (2026-07-22): light-only surfaces
 
+> Superseded for `/admin` by the 2026-08-04 admin-redesign amendment below; still in force for
+> `/privacy` (and `/android-beta`, which adopted the same pinned palette).
+
 `/admin` and `/privacy` will **not** get a dark theme — a dark theme was considered and declined
 (owner decision, 2026-07-22). Both keep self-contained, WCAG-tuned light palettes that are exempt
 from the themed color tokens: themed tokens flip with `data-theme` / `prefers-color-scheme`, so
@@ -156,3 +161,21 @@ palette, the icon set) — see ADR-0096 for the decision and the alternatives (a
 scrapbook-published copy was rejected as a drift hazard). Everything this ADR says about
 `/dev/design` — token registration renders there, primitives demo there, PR screenshots come from
 there — now applies to `/design`.
+
+## Amendment (2026-08-04): `/admin` is themed
+
+The admin console redesign (owner decision, 2026-08) reversed the 2026-07-22 amendment for `/admin`
+only: `AdminConsole` and `InviteMenu` now style themselves from the themed tokens (`--brand-wash`,
+`--brand-solid`, `--surface-2`, the text ramp, the semantic washes), so the console follows
+light/dark like the rest of the app. `adminPalette.css` and its `--admin-*` vocabulary are deleted,
+along with the console's `--page-*` pins — `PageShell` runs on its themed defaults there, like
+`/design`. Consequences:
+
+* The parts of the earlier amendments that excluded `/admin` from `Button` / `SegmentedPicker` on
+  light-only grounds no longer apply; the console still hand-rolls its controls because its shapes
+  (ledger table actions, the standalone-page CTA) aren't ones the primitives offer.
+* The one raw-hex survivor is the persistence banner's warning amber (no warn token pair exists — it
+  is the product's only warning surface); it stays light-pinned on both themes with its own
+  self-contained contrast, allowlisted in the ratchet.
+* `/privacy` and `/android-beta` remain light-only per the 2026-07-22 amendment; their shared
+  `--page-shadow` drift guard (`pinnedPalette.test.ts`) now covers just those two pages.
