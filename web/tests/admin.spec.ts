@@ -71,6 +71,8 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
     expect(remove).not.toBeNull();
     expect(ledger).not.toBeNull();
     expect(remove!.x + remove!.width).toBeLessThanOrEqual(ledger!.x + ledger!.width);
+    // The slim link treatment still has to meet the 44px interaction floor.
+    expect(remove!.height).toBeGreaterThanOrEqual(44);
   }
 
   // Intermediate and phone widths: the columns collapse to the compact pair

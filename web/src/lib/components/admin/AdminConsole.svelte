@@ -489,6 +489,9 @@
     --ledger-label-size: 11px;
     --ledger-meta-size: 13px;
     --ledger-count-size: 15px;
+    /* The design system's interaction-target floor: every row action meets
+       44px even where its visual treatment is a slim link or outline chip. */
+    --ledger-target-min: 44px;
 
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
@@ -519,12 +522,14 @@
     color: var(--text-soft);
   }
 
+  /* 6px block padding, not the mock's 12px: the 44px action targets already
+     carry the row to the mock's ~56px height. */
   .invite {
     display: grid;
     grid-template-columns: var(--ledger-columns);
     gap: var(--space-2);
     align-items: center;
-    padding: 12px 20px;
+    padding: 6px 20px;
     border-bottom: 1px solid var(--border);
   }
 
@@ -600,6 +605,10 @@
 
   /* Copy — the row's one outlined button. */
   .copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--ledger-target-min);
     padding: 7px 14px;
     color: var(--brand-text);
     background: transparent;
@@ -629,8 +638,12 @@
     background: var(--success-wash);
   }
 
-  /* Copy link / Remove — quiet link-shaped buttons. */
+  /* Copy link / Remove — quiet link-shaped buttons. The box is invisible, so
+     the 44px floor costs nothing visually. */
   .link-action {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--ledger-target-min);
     padding: 0;
     color: var(--brand-text);
     background: transparent;
@@ -673,8 +686,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
+    width: var(--ledger-target-min);
+    height: var(--ledger-target-min);
     padding: 0;
     background: transparent;
     border: none;
