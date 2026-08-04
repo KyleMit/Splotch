@@ -56,7 +56,7 @@ const BASELINE = new Map(
     'app.css': 2,
     // Light-only page, same reasoning as /admin — pins PageShell's themed
     // --page-* defaults to the same light values /android-beta pins (eleven),
-    // plus the highlight cards' brand-tinted wash and its border (two).
+    // plus the highlight panel's brand-tinted border and row hairline (two).
     'routes/privacy/+page.svelte': 13,
     // Light-only page, same reasoning as /admin — a palette pinned to a light
     // ground, declared once as custom properties at the top of its <style>
