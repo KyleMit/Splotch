@@ -22,8 +22,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  release-build:
-    name: Release build
+  # A compile smoke of the exact configuration Netlify ships: the artifact is
+  # discarded. Every other job builds with the dev-harness/profiling seams
+  # compiled in, so only this job proves the release bundle — where those
+  # branches dead-code-eliminate (ADR-0010, ADR-0083) — still builds.
+  release-build-smoke:
+    name: Release build smoke
     if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -134,7 +138,7 @@ jobs:
   # tests) while concurrent per-shard builds overlap (≈69s + tests). Playwright's
   # `--shard` self-balances by file as tests are added — no hand-kept partition.
   test:
-    name: Tests
+    name: Tests (${{ matrix.shard }}/3)
     if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
