@@ -17,9 +17,9 @@
 
   // Operand splats wear crayon hues, not chrome tokens — they read as paint.
   // Both fills must hold ≥3:1 against the --on-brand digit (WCAG AA large
-  // text, asserted in a11y.spec.ts): palette Purple #AB71E1 is 3.40:1, but
-  // palette Blue #62A2E9 is only 2.67:1, so the second splat borrows the
-  // picker's mid-blue (#2196F3, 3.12:1) instead.
+  // text, asserted in a11y.spec.ts): palette Purple passes at 3.40:1, but
+  // palette Blue only reaches 2.67:1, so the second splat borrows the
+  // picker's mid-blue (3.12:1) instead.
   const OPERAND_FILLS = [
     paletteHex('Purple'),
     COLOR_FAMILIES.find((family) => family.name === 'blues')!.shades[4],
