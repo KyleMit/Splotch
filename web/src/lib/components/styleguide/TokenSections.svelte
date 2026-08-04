@@ -1,6 +1,6 @@
 <script lang="ts">
   import { brand, scale, themes, toCssVarName, zIndex, type ThemeTokens } from '$lib/design/tokens';
-  import { brandUsage, scaleUsage, themeUsage } from '$lib/design/tokenUsage';
+  import { brandUsage, scaleUsage, themeUsage, zIndexUsage } from '$lib/design/tokenUsage';
 
   const brandKeys = Object.keys(brand) as (keyof typeof brand)[];
   const themeKeys = Object.keys(themes.light) as (keyof ThemeTokens)[];
@@ -21,7 +21,7 @@
   const durationKeys = scaleKeys.filter((k) => k.startsWith('duration'));
   // Already authored low-to-high in tokens.ts; render it in that order so the
   // page shows the stacking order, not just the values.
-  const zIndexEntries = Object.entries(zIndex);
+  const zIndexKeys = Object.keys(zIndex) as (keyof typeof zIndex)[];
 
   const cssVar = (key: string) => `var(${toCssVarName(key)})`;
 
@@ -260,8 +260,12 @@
     <code>--z-clear-button</code>/<code>--z-notch</code> tie is real and resolved by DOM order.
   </p>
   <ul class="raw-list">
-    {#each zIndexEntries as [key, value] (key)}
-      <li><code>{toCssVarName(key)}</code> <span class="value">{value}</span></li>
+    {#each zIndexKeys as key (key)}
+      <li>
+        <code>{toCssVarName(key)}</code>
+        <span class="value">{zIndex[key]}</span>
+        <span class="usage">{zIndexUsage[key]}</span>
+      </li>
     {/each}
   </ul>
 </section>

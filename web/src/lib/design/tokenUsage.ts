@@ -1,5 +1,5 @@
 import type { ThemeTokens } from './tokens';
-import type { brand, scale } from './tokens';
+import type { brand, scale, zIndex } from './tokens';
 
 // One "reach for it when…" rule per token, rendered beside each specimen on
 // /design (ADR-0097). Lives apart from tokens.ts so the styleguide is the only
@@ -61,6 +61,23 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
 
   clearGradientRest:
     'Only the Clear Button at rest and its coachmark ghost — unthemed so the tutorial cannot drift from the control.',
+};
+
+export const zIndexUsage: Record<keyof typeof zIndex, string> = {
+  zCanvasChrome: 'The floor of the shared root context — chrome that must clear the canvas layers.',
+  zClearPreview: 'The full-viewport paper wash previewing a drag-to-clear.',
+  zRipple: 'The clear-confirmation ripple, over the preview wash.',
+  zCornerButton: 'The muted corner buttons (Settings Button).',
+  zPanel: 'The Actions Panel drawer — caps its own subtree, including the flyouts.',
+  zFlyout:
+    'Orders the flyout inside .actions-panel only; the root-context tie with --z-panel is inert.',
+  zBanner: 'The Install Banner, taking over the corner controls while shown.',
+  zClearAcceptZone: 'The drag-accept ring, below the button it rings.',
+  zClearButton: 'The Clear Button itself.',
+  zNotch: 'The safe-area Notch Band; its tie with --z-clear-button resolves by DOM order.',
+  zClearCoachmark: 'The tutorial ghost button, above the real one.',
+  zPalette: 'The Color Palette bar.',
+  zPolaroid: 'The save-screenshot polaroid flight — the top of the chrome order.',
 };
 
 export const themeUsage: Record<keyof ThemeTokens, string> = {
