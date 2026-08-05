@@ -4881,30 +4881,6 @@ The prune is worth keeping (it's the timer-free reclamation strategy); consider 
 step so the side effect is named where it happens (`pruneLapsedZones()` instead of assigning from
 `liveZones()` inline).
 
-### [Readability] `allowDismiss && o.allowDismiss() === false` — verbose gate duplicated twice
-
-**File(s):** `web/src/lib/actions/modalDialog.svelte.ts` (lines 72, 95) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-if (o.allowDismiss && o.allowDismiss() === false) return;   // onPointerDown
-...
-if (o.allowDismiss && o.allowDismiss() === false) e.preventDefault();  // onCancel
-```
-
-The double mention plus `=== false` obscures the simple semantics ("absent gate means allowed") and
-calls the getter through a guard that optional chaining already handles:
-`o.allowDismiss?.() === false` is exactly equivalent (absent → `undefined === false` → allowed).
-
-#### Proposed solution
-
-Extract `function dismissAllowed(o: ModalOptions) { return o.allowDismiss?.() !== false; }` and use
-it at both sites (`if (!dismissAllowed(o)) ...`). One name, one place, one truth for the
-default-allowed policy.
-
 ### [Docs] launchGuard comment restates the fly-in duration owned by tokens.css — and misattributes the file
 
 **File(s):** `web/src/lib/actions/launchGuard.ts` (lines 21–23) @ 9ae62ff1; `web/src/tokens.css`

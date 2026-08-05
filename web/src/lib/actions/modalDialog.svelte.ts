@@ -45,6 +45,11 @@ interface ModalOptions {
   blockBackdropAt?: (x: number, y: number) => boolean;
 }
 
+// Absent gate means dismissal is allowed.
+function dismissAllowed(o: ModalOptions) {
+  return o.allowDismiss?.() !== false;
+}
+
 export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOptions) {
   function isInsideDialog(x: number, y: number) {
     const r = node.getBoundingClientRect();
@@ -69,7 +74,7 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
     e.stopPropagation();
     const o = getOptions();
     if (o.blockBackdropAt?.(e.clientX, e.clientY)) return;
-    if (o.allowDismiss && o.allowDismiss() === false) return;
+    if (!dismissAllowed(o)) return;
     o.onRequestClose?.();
   }
 
@@ -92,7 +97,7 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
     const o = getOptions();
     // Block Esc when dismissal is currently disallowed (e.g. an in-flight
     // request the dialog can't get back).
-    if (o.allowDismiss && o.allowDismiss() === false) e.preventDefault();
+    if (!dismissAllowed(o)) e.preventDefault();
   }
 
   function onClose() {
