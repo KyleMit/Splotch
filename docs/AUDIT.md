@@ -18256,22 +18256,3 @@ One clause in each spot: e.g. agent-files.md — "…live in
 `scripts/tests/`)"; skill-notes README — "one file per skill, named after it (absent until a skill
 accrues design history — currently only the direct `burn-down-audits` notes exist, in the provider
 trees)". Cheap, and it converts a dead-end search into a one-line read.
-
-### [Readability] Stray apostrophe garbles the address-pr-review handoff sentence in leave-pr-review
-
-**File(s):** `.ruler/skills/leave-pr-review/SKILL.md` (lines 105–107) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The closing paragraph reads: "…and know that working through those comments is `address-pr-review`'
-job on the other side." — a code span followed by a bare apostrophe
-(`` `address-pr-review`' job ``), which renders as a dangling quote rather than a possessive.
-Trivial, but it sits in the sentence that wires the two PR skills together, and the sister skill's
-mirror sentence (address-pr-review line 13) is clean.
-
-#### Proposed solution
-
-Reword to avoid possessive-on-code-span: "…working through those comments is the job of
-`address-pr-review` on the other side."
