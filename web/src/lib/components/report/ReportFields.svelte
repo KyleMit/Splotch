@@ -41,9 +41,11 @@
     /** Bindable for the same reason — no host has business reading a bot trap. */
     honeypot?: string;
     /**
-     * Bindable so ReportForm can await the same memoizing collection this
-     * component's own effect uses, instead of calling collectDeviceInfo
-     * independently and risking a second, unpreviewed snapshot.
+     * Bindable so ReportForm can await the same in-flight/memoized collection
+     * this component's own effect starts, instead of calling
+     * collectDeviceInfo independently — the two callers share one collection
+     * (in flight or already resolved into `device`), never two concurrent
+     * ones, so submit always sends what the preview last rendered.
      */
     ensureDevice?: () => Promise<DeviceInfo | undefined>;
   }
@@ -66,19 +68,31 @@
     kind === 'bug' && includeDevice && device ? JSON.stringify(device) : ''
   );
 
+  // In-flight collectDeviceInfo() call, so a second caller awaits the same
+  // collection instead of starting its own — intentionally untracked, no
+  // template reads it. Cleared on rejection so a later opt-in can retry.
+  let pendingDevice: Promise<DeviceInfo | undefined> | null = null;
+
   // Collect the device snapshot the first time the parent opts in, so the
   // preview below reflects exactly what will be sent. Shared with ReportForm
-  // via the bindable ensureDevice above, so both call sites write through the
-  // same memoizing function into the same device state.
-  async function ensureDeviceInfo(): Promise<DeviceInfo | undefined> {
-    if (device) return device;
-    try {
-      const info = await collectDeviceInfo();
-      device = info;
-      return info;
-    } catch {
-      return undefined;
+  // via the bindable ensureDevice above: both call sites await this same
+  // pending collection (never two concurrent ones) and write through it into
+  // the same device state, so submit can't send a snapshot the preview never
+  // rendered.
+  function ensureDeviceInfo(): Promise<DeviceInfo | undefined> {
+    if (device) return Promise.resolve(device);
+    if (!pendingDevice) {
+      pendingDevice = collectDeviceInfo()
+        .then((info) => {
+          device = info;
+          return info;
+        })
+        .catch(() => {
+          pendingDevice = null;
+          return undefined;
+        });
     }
+    return pendingDevice;
   }
   ensureDevice = ensureDeviceInfo;
 

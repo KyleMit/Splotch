@@ -335,3 +335,45 @@ test('only the current API key verification can persist across a close and reope
   await openAiSettings(page, '#aiKeyActive');
   await expect(page.locator('#aiKeyActive')).toHaveValue(/BBBB$/);
 });
+
+// Settings' ReportForm posts JSON to /api/report directly (no <form>, unlike
+// /feedback's plain post) and sends `device` from its own `ensureDevice`-bound
+// state rather than the hidden field ReportFields also renders — a binding
+// that silently failed to propagate would strip device info from every
+// Settings bug report with feedback.spec.ts (which never binds it) still
+// green. Intercepted rather than posted for real: the report bucket is
+// 5 requests/minute per IP and feedback.spec.ts already spends the one real
+// submission that budget affords in a run.
+test('Settings sends the collected device info with a bug report', async ({ page }) => {
+  let reportBody: { device?: unknown } | undefined;
+  await page.route('**/api/report', async (route) => {
+    reportBody = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, url: 'https://github.com/example/example/issues/1' }),
+    });
+  });
+  await gotoApp(page);
+
+  await openSettingsModal(page);
+  await retryOpen(page.locator('#reportMessage'), () =>
+    page.getByRole('button', { name: 'Submit Feedback' }).click({ timeout: 3000 })
+  );
+
+  await page.locator('#reportMessage').fill('The purple crayon draws green');
+  await page.getByRole('checkbox', { name: /Include device info/ }).check();
+  // Same hidden field /feedback reads (ReportFields renders it for both
+  // hosts): wait for the preview's collection to resolve before sending, so
+  // the assertion below tells apart "never collected" from "collected but not
+  // sent".
+  const devicePayload = page.locator('input[name="device"]');
+  await expect
+    .poll(async () => JSON.parse((await devicePayload.inputValue()) || '{}').platform)
+    .toBe('Web');
+
+  await page.getByRole('button', { name: 'Send report' }).click();
+
+  await expect(page.getByText('Thanks! Your report was sent.')).toBeVisible();
+  expect(reportBody?.device).toMatchObject({ platform: 'Web' });
+});

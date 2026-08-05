@@ -25,48 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Readability] ReportForm's submit-time device fallback duplicates the effect's collection and can send data the preview never showed
-
-**File(s):** `web/src/lib/components/settings/ReportForm.svelte` (collection `$effect`, lines 56–62;
-`submit`, line 81) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Device info is collected in two places. The effect populates `device` when the parent opts in (so
-"the preview below reflects exactly what will be sent", per its comment):
-
-```ts
-$effect(() => {
-  if (includeDevice && kind === 'bug' && !device) {
-    collectDeviceInfo().then((info) => (device = info)).catch(() => {});
-  }
-});
-```
-
-and `submit` has an inline fallback re-collection:
-
-```ts
-device: attachDevice ? (device ?? (await collectDeviceInfo())) : undefined,
-```
-
-Problems: (a) the fallback races the effect — check the box and tap Send before collection resolves
-(native path awaits a Capacitor plugin) and a *second* collection runs, its result is sent but never
-stored into `device`, so the payload was sent while the preview still said "Gathering device info…"
-— quietly contradicting the effect's stated exactly-what-you-saw guarantee; (b) if this fallback
-ever rejects, the outer catch reports "Could not reach the server" — wrong diagnosis (the effect's
-`.catch(() => {})` acknowledges collection can fail); (c) the duplication itself: one collection
-concern, two call sites with different error handling.
-
-#### Proposed solution
-
-Make the collection single-path: extract
-`async function ensureDeviceInfo(): Promise<DeviceInfo | undefined>` that memoizes into `device`
-(and catches, returning `undefined`), call it from both the effect and `submit`. Then `submit` sends
-exactly the state the preview renders, a collection failure degrades to "no device info attached"
-instead of a fake network error, and the two sites can't drift.
-
 ### [Readability] SettingsModal's two media-query flags are four pieces of duplicated wiring — extract a `mediaQueryFlag` helper
 
 **File(s):** `web/src/lib/components/SettingsModal.svelte` (lines 26–61) @ 9ae62ff1
