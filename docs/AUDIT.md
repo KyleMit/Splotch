@@ -25,47 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Maintainability] ReportForm's 4000-char limit and `hp` honeypot field duplicate the server's contract as bare literals
-
-**File(s):** `web/src/lib/components/settings/ReportForm.svelte` (line 137 `maxlength={4000}`, line
-83 `hp: honeypot`), `web/src/routes/api/report/+server.ts` (line 10 `MAX_MESSAGE_LENGTH = 4000`,
-line 68 `body?.hp`) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The client textarea caps input at a literal `4000`:
-
-```svelte
-<textarea id="reportMessage" class="report-textarea" rows="4" maxlength={4000} …>
-```
-
-while the server independently declares `const MAX_MESSAGE_LENGTH = 4000;` and truncates at it
-(`+server.ts:82`). If the server limit changes, the client cap silently disagrees — either users hit
-an invisible wall short of the real limit, or their text gets truncated server-side after the UI
-accepted it. Same story for the honeypot field name: the string `hp` is typed independently on both
-sides of the wire. CLAUDE.md is categorical: values that must agree cross-file come from one
-exported constant, and boundary strings are "declared once, imported everywhere."
-
-Server route modules can't be imported client-side, but the constant doesn't have to live in the
-route — the repo already keeps shared wire contracts in `$lib` (e.g. `$lib/inviteLink`'s
-`AI_ACCESS_TOKEN_PARAM`, imported by `settings.svelte.ts:13`).
-
-#### Proposed solution
-
-Add a small shared module, e.g. `web/src/lib/reportContract.ts`:
-
-```ts
-export const REPORT_MESSAGE_MAX_LENGTH = 4000;
-export const REPORT_HONEYPOT_FIELD = 'hp';
-```
-
-Import it from both `ReportForm.svelte` and `routes/api/report/+server.ts` (the route already
-imports other `$lib` modules, so there's no layering issue — it's an isomorphic constants file, not
-client code in the server). The `hp` key in the JSON body becomes
-`[REPORT_HONEYPOT_FIELD]: honeypot` client-side and `body?.[REPORT_HONEYPOT_FIELD]` server-side.
-
 ### [Maintainability] ReportForm's inline `slide` durations are unnamed tuning literals that bypass the section-wide `SECTION_SLIDE` convention
 
 **File(s):** `web/src/lib/components/settings/ReportForm.svelte` (lines 149, 158),

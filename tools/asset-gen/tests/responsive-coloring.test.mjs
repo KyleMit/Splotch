@@ -13,8 +13,10 @@ import { WEB_STATIC } from '../lib/paths.mjs';
 import { maxOverlayAlphaError, OVERLAY_MAX_CHANNEL_ERROR } from '../lib/overlay-alpha.mjs';
 import { RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION } from '../lib/responsive-coloring.mjs';
 
-// The catalog fidelity pass decodes every committed derivative and is I/O-bound on CI runners.
-const RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS = 15_000;
+// The catalog fidelity pass decodes every committed derivative and is I/O-bound on CI runners. Its
+// wall time tracks how many sibling files vitest decodes on the same cores, not its own work, so the
+// budget is several times the solo run — a margin under contention, not a performance assertion.
+const RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS = 60_000;
 
 function srcsetWidths() {
   const widths = new Map();
