@@ -15451,3 +15451,165 @@ One clause in each spot: e.g. agent-files.md — "…live in
 `scripts/tests/`)"; skill-notes README — "one file per skill, named after it (absent until a skill
 accrues design history — currently only the direct `burn-down-audits` notes exist, in the provider
 trees)". Cheap, and it converts a dead-end search into a one-line read.
+
+## Source: Session audit
+
+Filed 2026-08-05 from a session that addressed a nine-comment review round on PR #771, wrote a
+handoff packet, and filed issue #772. Scope is deliberately narrow: instruction, doc, and skill gaps
+where a wording change would have prevented the friction. Ordered by recurrence x cost.
+
+### [Execution] Give Vitest the raw-runner warning Playwright already has, and state what `--` paths are relative to
+
+#### Problem
+
+`slow` — Running one newly-written unit test took four attempts:
+
+1. `npx vitest run web/src/lib/components/settings/sections.test.ts` ->
+   `Error: Cannot find module
+   '$lib/appVersion'`. Raw `npx` misses the `web/` cwd and the `$lib`
+   alias.
+2. Re-ran the same way for a negative check. It reported `Tests  no tests` for **both** the
+   deliberately-broken source and the restored one — which reads as "the guard never fires" rather
+   than "the file never loaded."
+3. `npm run test:unit -- web/src/lib/components/settings/sections.test.ts` -> `No test files found`
+   (the runner did print `include: src/**/*`).
+4. `npm run test:unit -- src/lib/components/settings/sections.test.ts` -> passed.
+
+The `testing` skill already documents this exact failure for the *other* runner
+(`.claude/skills/testing/SKILL.md:113-118`): filter through the npm script, "**not** raw
+`npx
+playwright test`", because config and `baseURL` live in `web/` so raw `npx` yields
+`Cannot navigate
+to invalid URL`. That warning is accurate and named the error verbatim. Its Vitest
+sibling one screen up (`:57-63`) shows only `npm run test:unit` / `:watch` — no filtering example,
+no equivalent warning. Same root cause (`scripts/web.mjs` sets `cwd = web/`), documented for one
+runner and not the other: a divergence to close, not a new doc to invent.
+
+Neither block states that a path after `--` resolves **relative to `web/`**. The e2e example at
+`:109` happens to use a web-relative path but never says so, so it reads as a filename rather than a
+rule.
+
+Step 2 is the one that outranks the rest: it produced a *false negative* rather than an error. A
+session trusting it would conclude a correctly-working drift guard was broken and go rewrite it.
+
+#### Proposed solution
+
+`.ruler/skills/testing/SKILL.md` (generated into `.claude/` and `.agents/` — never edit those
+copies). Two edits:
+
+* In the Vitest block, add the sibling of the Playwright warning: filter through the npm script, not
+  raw `npx vitest`, which loses the `web/` cwd and the `$lib` alias
+  (`Cannot find module '$lib/...'`) and can report `Tests  no tests` — a *load* failure wearing the
+  shape of a *result*.
+* State once, covering both runners: paths after `--` are relative to `web/` because
+  `scripts/web.mjs` sets that cwd — `src/lib/foo.test.ts` and `tests/foo.spec.ts`, never
+  `web/src/...`. Give the Vitest block a filtering example mirroring the e2e one.
+
+#### Verification
+
+A future session filtering a single unit test gets it right on the first call, and the literal
+string `Tests  no tests` appears in the skill so the false-negative is recognizable on sight.
+
+### [Tooling] Partial `vi.mock` factories break when the mocked module gains an export
+
+#### Problem
+
+`slow` — Consolidating a duplicated `600` threshold into one exported constant on
+`web/src/lib/platform.ts` broke two suites unrelated to the change:
+
+```
+Error: [vitest] No "TABLET_MIN_SIDE_PX" export is defined on the "./platform" mock.
+Did you forget to return it from "vi.mock"?
+```
+
+`web/src/lib/storage.restore.integration.test.ts:23` and `web/src/lib/boot/persistedState.test.ts:7`
+each mock `./platform` with a literal factory returning only `isNative` and `getPlatform`, so any
+export added to that module breaks every partial mock of it. Diagnosis cost a full `test:unit` run
+plus a grep for the second site. The error names the missing export but not the fix, and the
+tempting fix — add the constant to each factory — restates the value in two more places, re-creating
+the exact drift the consolidation had just removed.
+
+The repo states the general principle forcefully in root CLAUDE.md ("Cross-file agreement is never
+maintained by prose ... imported from one exported constant"). Its **testing analogue** — stub the
+behaviours, inherit the constants — appears nowhere in `.claude/rules/testing.md`, so this session
+had to derive it mid-task.
+
+#### Proposed solution
+
+`.claude/rules/testing.md` (path-scoped rule, edit in place — not ruler-generated). Add a short
+rule: a `vi.mock` factory that only needs to stub *behaviour* spreads the real module first, so
+constants stay owned by one file and an added export can't break unrelated suites:
+
+```ts
+vi.mock('./platform', async (importActual) => ({
+  ...(await importActual<typeof import('./platform')>()),
+  isNative: () => ctrl.native,
+}));
+```
+
+Cite the two sites above as worked examples.
+
+#### Verification
+
+The next constant added to a widely-mocked module (`platform.ts`, `storage.ts`) lands without
+breaking unrelated suites, and a grep of `vi.mock(` for behaviour-only literal factories returns
+none.
+
+### [Docs] `create-handoff` cites a worked example that the handoff lifecycle guarantees will vanish
+
+#### Problem
+
+`minor` — `create-handoff` step 2 ends: "The `docs/handoff/coloring-fill-drift.md` handoff is a
+worked example of the right density." Following it: `ls docs/handoff/` returns only `AGENTS.md`,
+`CLAUDE.md`, and `audit-burndown-473.md`. The cited file is gone — consumed and deleted by a past
+`/resume-handoff`, exactly as prescribed.
+
+This is structurally guaranteed to recur rather than being ordinary rot: the skill cites a file from
+a folder whose own documented lifecycle is "deleted the moment it's consumed"
+(`docs/handoff/CLAUDE.md`). Any example named there dies on the next resume. The cost is one wasted
+`ls` and a fallback to whatever packet happens to still be present, but it fires for every handoff
+author from now on, and a pointer that doesn't resolve quietly discounts the rest of the skill.
+
+#### Proposed solution
+
+`.ruler/skills/create-handoff/SKILL.md` (generated). Either drop the file-specific citation and let
+the inline guidance carry it — "prefer a `file:line` pointer over a paragraph re-explaining the
+code" already states the density rule — or point at a permanent location. Do **not** swap in another
+live handoff filename: that reintroduces the identical rot on the next resume.
+
+#### Verification
+
+Grep the skill for `docs/handoff/*.md` and get no file-specific citation, so no future
+`/resume-handoff` can invalidate it.
+
+### [Docs] "Writing on GitHub" covers auto-linking but not tag stripping
+
+#### Problem
+
+`minor` — Filing issue #772, this line went out:
+
+> regex for `name="hp"`, `report-hp`, or `aria-hidden="true"` on an `<input type="text">`.
+
+and came back rendered as `...on an`.`` — the `<input type="text">` was stripped as HTML **from
+inside a code span**. It was caught only because the issue was read back after posting; otherwise a
+truncated sentence ships. Non-tag angle brackets elsewhere in the same body (`width <= 1`) survived,
+so this is well-formed-tag stripping, not escaping.
+
+Root CLAUDE.md's **Writing on GitHub** section is strong on the two auto-*linking* traps
+(`#`-numbers silently becoming issue references, SHAs needing bare text) and both demonstrably saved
+work in this session. Tag *stripping* is the same class of hazard — agent-authored text silently
+altered on the way to GitHub, with no error — and is absent. It recurs disproportionately in this
+repo because the codebase is Svelte and HTML: writing `<input>`, `<dialog>`, or `<canvas>` into an
+issue or PR body is routine.
+
+#### Proposed solution
+
+`.ruler/github.md` (the source of the root CLAUDE.md section; never edit `CLAUDE.md` directly). One
+bullet in the existing section: a literal HTML tag can be stripped from an issue/PR body even inside
+backticks — write it escaped, name it in prose ("a text input"), or put it in a fenced block. The
+section's existing verify-after-posting stance already covers the detection half.
+
+#### Verification
+
+A future issue body containing markup renders the tag intact, and the read-back-after-posting step
+the section already recommends for SHAs now carries a second documented reason.

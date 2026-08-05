@@ -18,6 +18,7 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
+| 2026-08-05 | [session-audit](#2026-08-05--session-audit)                     |
 | 2026-08-05 | [burn-down-audits](#2026-08-05--burn-down-audits-run-2)         |
 | 2026-08-05 | [burn-down-audits](#2026-08-05--burn-down-audits-run-1)         |
 | 2026-07-29 | [burn-down-audits](#2026-07-29--burn-down-audits-run-3)         |
@@ -80,6 +81,27 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-07-03 | [code-audit](#2026-07-03--code-audit)                           |
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
+
+## 2026-08-05 · session-audit
+
+Retrospective on a session that addressed a nine-comment review round on PR #771, wrote the
+`ai-image-offscreen-canvas` handoff, and filed issue #772. Filed four instruction/doc findings, all
+scoped to wording changes that would have prevented the friction.
+
+Lead finding: the `testing` skill warns against raw `npx playwright test` and names the exact error
+it produces, but its Vitest sibling one screen up carries no equivalent warning and no filtering
+example — and neither block says that paths after `--` resolve relative to `web/`. Running one new
+unit test took four attempts, and the raw-`npx` failure surfaced as `Tests  no tests`, a load
+failure wearing the shape of a result. Also filed: partial `vi.mock` factories breaking when the
+mocked module gains an export (the testing analogue of the repo's own cross-file-agreement rule);
+`create-handoff` citing a worked-example handoff that its own folder lifecycle guarantees will be
+deleted; and "Writing on GitHub" covering auto-linking but not tag stripping, which silently
+truncated a sentence in issue #772.
+
+Passed on three candidates that did not clear the recurrence bar: a single unreproducible unit-test
+flake (unnamed, possibly pre-existing, flagged on the PR instead); a guessed ADR filename caught by
+this session's own verification step; and the escalated-review-thread handling, which
+`address-pr-review` already covers correctly.
 
 ## 2026-08-05 · burn-down-audits (run 2)
 
