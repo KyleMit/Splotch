@@ -56,9 +56,9 @@ auto-detection would otherwise need a `web/package.json`.
   `netlify.toml` build command) then copies `web/build → build` and `web/.netlify → .netlify`,
   reproducing the standard "app at root" layout Netlify expects (`publish = "build"`, SSR function
   at `.netlify/functions-internal`). Two `netlify.toml` files result: the root one for production,
-  `web/netlify.toml` for local `netlify dev`. **This must still be confirmed green on a Netlify
-  deploy preview before merging** — it is implemented but not yet validated against a real Netlify
-  build.
+  `web/netlify.toml` for local `netlify dev`. Validated in production since 2026-06 — see ADR-0025's
+  end-to-end deploy-preview verification of the SSR function and ADR-0030's tag-fetch fix for the
+  deploy-time wrinkles found since.
 
 Supersedes the root-level layout assumed by ADR-0001 (the dual-adapter strategy itself is unchanged;
 only the file locations moved).

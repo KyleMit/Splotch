@@ -16983,38 +16983,6 @@ the file's own convention ("it's okay to drain the audit finding, but do so with
 and delete the associated `.patch` file. Fold the outstanding DEPENDENCIES.md update into the
 DEPENDENCIES refresh finding rather than keeping this entry open for it.
 
-### [Docs] Stale "not yet validated on a real Netlify build" caveats — the root staging deploy has been production for weeks
-
-**File(s):** `docs/adrs/0024-web-app-subdirectory-for-netlify-watcher.md` (lines 59–61),
-`docs/CONTRIBUTING.md` (lines 103–104) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-Both docs carry the same warning about the `stage-netlify.mjs` production deploy path:
-
-* ADR-0024:59–61: "**This must still be confirmed green on a Netlify deploy preview before merging**
-  — it is implemented but not yet validated against a real Netlify build."
-* CONTRIBUTING.md:103–104: "This is implemented but **must be confirmed green on a Netlify deploy
-  preview before merging to `main`** — don't assume the live `splotch.art` deploy works until that
-  preview passes."
-
-The layout has been the live production path since June 2026 and has been validated many times over:
-ADR-0025 records an end-to-end deploy-preview verification of the SSR function ("verified end-to-end
-on a deploy preview"), ADR-0063 measured the *deployed* function's 26 s ceiling on a branch preview,
-ADR-0030 documents fixing the tag fetch in the root `netlify.toml` build after observing real
-deploys, and releases 1.0.0–1.4.0 all shipped through it. A reader today is told to distrust
-infrastructure that has been production-proven for six-plus weeks — the exact "temporal phrasing /
-mutable facts" smell the repo's comment convention bans in code.
-
-#### Proposed solution
-
-In CONTRIBUTING.md, delete the caveat sentence. In ADR-0024, replace the bolded warning with a short
-validation note ("Validated in production since 2026-06; see ADR-0025's deploy-preview verification
-and ADR-0030's tag-fetch fix for the deploy-time wrinkles found since"), keeping the record's
-history intact.
-
 ### [Docs] CONTRIBUTING.md dev-routes table omits `/dev/design` (and the `/dev` index)
 
 **File(s):** `docs/CONTRIBUTING.md` (lines 129–137) @ 9ae62ff1

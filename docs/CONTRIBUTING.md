@@ -100,8 +100,6 @@ run from the repo root; the web toolchain is dispatched into `web/` by `scripts/
 > then `node scripts/stage-netlify.mjs`, which copies `web/build → build` and
 > `web/.netlify → .netlify` so Netlify sees the standard root layout (`publish = "build"`, SSR
 > function in `.netlify/functions-internal`). Local `netlify dev` uses `web/netlify.toml` instead.
-> This is implemented but **must be confirmed green on a Netlify deploy preview before merging to
-> `main`** — don't assume the live `splotch.art` deploy works until that preview passes.
 
 On native the AI button calls the **hosted** endpoint (`https://splotch.art/api/generate-image`) via
 `__NATIVE_API_BASE__`. On web it uses a same-origin relative path.
