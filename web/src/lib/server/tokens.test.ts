@@ -93,6 +93,27 @@ async function freshTokensWithSeedRace(seed: string, list: string[], hiddenReads
   return import('./tokens');
 }
 
+// Blobs is configured and holds `list`, but every read of it throws until
+// `recoverBlobs()` is called — the transient-outage shape, as distinct from the
+// unconfigured-Blobs shape `freshTokens` sets up.
+async function freshTokensWithFailingBlobs(seed: string, list: string[]) {
+  vi.resetModules();
+  envState.ALLOWED_TOKENS_LIST = seed;
+  blobsState.stores = new Map();
+  const store = storeFor('access-tokens');
+  await store.setJSON('list', list);
+  const read = store.getWithMetadata.bind(store);
+  store.getWithMetadata = async () => {
+    throw new Error('transient blobs read failure');
+  };
+  return {
+    tokens: await import('./tokens'),
+    recoverBlobs: () => {
+      store.getWithMetadata = read;
+    },
+  };
+}
+
 async function freshTokensWithEmptyBlobs(seed: string) {
   vi.resetModules();
   envState.ALLOWED_TOKENS_LIST = seed;
@@ -289,6 +310,44 @@ describe('concurrent mutations against Blobs', () => {
       error: TOKEN_CONFLICT_ERROR,
       reason: 'conflict',
     });
+  });
+});
+
+describe('mutations during a transient Blobs read failure', () => {
+  it('refuses a revocation instead of reporting one the durable list never saw', async () => {
+    const { tokens, recoverBlobs } = await freshTokensWithFailingBlobs('legacy,durable', [
+      'legacy',
+      'durable',
+    ]);
+    expect(await tokens.removeToken('durable')).toEqual({
+      ok: false,
+      error: tokens.TOKEN_UNAVAILABLE_ERROR,
+      reason: 'unavailable',
+    });
+    // The in-memory stand-in must not absorb the write either: a revocation
+    // that only lands there is undone the moment Blobs recovers.
+    expect(await tokens.getTokens()).toEqual(['legacy', 'durable']);
+    recoverBlobs();
+    expect(await tokens.isAllowedToken('durable')).toBe(true);
+    expect(await storeFor('access-tokens').get('list')).toEqual(['legacy', 'durable']);
+  });
+
+  it('refuses an add rather than banking it in memory', async () => {
+    const { tokens, recoverBlobs } = await freshTokensWithFailingBlobs('legacy', ['legacy']);
+    expect(await tokens.addToken('mine')).toEqual({
+      ok: false,
+      error: tokens.TOKEN_UNAVAILABLE_ERROR,
+      reason: 'unavailable',
+    });
+    expect(await tokens.getTokens()).toEqual(['legacy']);
+    recoverBlobs();
+    expect(await tokens.isAllowedToken('mine')).toBe(false);
+  });
+
+  it('still serves reads from the in-memory stand-in', async () => {
+    const { tokens } = await freshTokensWithFailingBlobs('legacy', ['legacy', 'durable']);
+    expect(await tokens.getTokensStatus()).toEqual({ tokens: ['legacy'], persistent: false });
+    expect(await tokens.isAllowedToken('legacy')).toBe(true);
   });
 });
 

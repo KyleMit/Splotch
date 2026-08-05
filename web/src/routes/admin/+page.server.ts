@@ -1,7 +1,12 @@
 import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
 import { sessionToken, beginAdminLogin, verifySessionToken, buildInvites } from '$lib/server/admin';
 import { throttledMessage } from '$lib/server/http';
-import { getTokensStatus, addToken, removeToken } from '$lib/server/tokens';
+import {
+  getTokensStatus,
+  addToken,
+  removeToken,
+  MUTATION_FAILURE_STATUS,
+} from '$lib/server/tokens';
 import type { MutationResult } from '$lib/server/tokens';
 import { getUsage } from '$lib/server/usage';
 import { ASSUME_PERSISTENT } from '$lib/adminFormat';
@@ -83,10 +88,9 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 };
 
 // The `add`/`remove` actions differ only in which core mutation they call and
-// how they word success, so they share one body. The status mapping mirrors
-// /api/admin/tokens' mutationError: a caller-fault validation failure is 400, a
-// transient CAS conflict is 409 so both front doors answer the same underlying
-// error the same way.
+// how they word success, so they share one body. The status comes from
+// MUTATION_FAILURE_STATUS, the same map /api/admin/tokens' mutationError reads,
+// so both front doors answer the same underlying error the same way.
 async function tokenMutation(
   cookies: Cookies,
   request: Request,
@@ -97,7 +101,7 @@ async function tokenMutation(
   const form = await request.formData();
   const token = String(form.get('token') ?? '').trim();
   const result = await op(token);
-  if (!result.ok) return fail(result.reason === 'conflict' ? 409 : 400, { error: result.error });
+  if (!result.ok) return fail(MUTATION_FAILURE_STATUS[result.reason], { error: result.error });
   return { success: true, message: `${verb} “${token}”` };
 }
 

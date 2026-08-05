@@ -22,6 +22,8 @@ import { POST as login } from './login/+server';
 
 const SECRET = 'the-raw-secret';
 const CONFLICT_ERROR = 'The token list changed while saving — please try again';
+const UNAVAILABLE_ERROR =
+  'Token storage is unavailable right now — nothing was saved. Please try again.';
 
 function loginRequest(address: string, key: string) {
   const request = new Request('https://splotch.art/api/admin/login', {
@@ -143,6 +145,21 @@ describe('native admin API wire responses', () => {
 
     expect(response.status).toBe(409);
     expect(body).toEqual({ ok: false, error: CONFLICT_ERROR });
+    expect(body).not.toHaveProperty('reason');
+  });
+
+  it('returns an unavailable failure as a 503 without its producer reason', async () => {
+    removeToken.mockResolvedValue({
+      ok: false,
+      error: UNAVAILABLE_ERROR,
+      reason: 'unavailable',
+    });
+
+    const response = await tokenRequest('DELETE', 'existing');
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body).toEqual({ ok: false, error: UNAVAILABLE_ERROR });
     expect(body).not.toHaveProperty('reason');
   });
 

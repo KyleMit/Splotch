@@ -1,6 +1,11 @@
 import { error, json } from '@sveltejs/kit';
 import { verifySessionToken, buildInvites, bearerToken } from '$lib/server/admin';
-import { getTokensStatus, addToken, removeToken } from '$lib/server/tokens';
+import {
+  getTokensStatus,
+  addToken,
+  removeToken,
+  MUTATION_FAILURE_STATUS,
+} from '$lib/server/tokens';
 import type { MutationFailure } from '$lib/server/tokens';
 import { readJsonBody, stringField } from '$lib/server/http';
 import type { RequestHandler } from './$types';
@@ -58,12 +63,12 @@ async function snapshot(origin: string, tokens?: string[]) {
   return json(payload);
 }
 
-// Validation failures (empty/duplicate) are the caller's fault → 400; a CAS
-// conflict (concurrent admin mutations kept colliding, see $lib/server/tokens)
-// is transient and worth retrying as-is → 409.
+// The status per failure reason is MUTATION_FAILURE_STATUS in
+// $lib/server/tokens, shared with the /admin form action so the two front doors
+// can't drift. The `reason` itself stays server-side: clients read the status.
 function mutationError(result: MutationFailure) {
   const payload = { ok: false, error: result.error } satisfies TokenMutationError;
-  return json(payload, { status: result.reason === 'conflict' ? 409 : 400 });
+  return json(payload, { status: MUTATION_FAILURE_STATUS[result.reason] });
 }
 
 /** List access tokens and their prebuilt invite URLs. */
