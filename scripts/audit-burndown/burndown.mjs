@@ -43,6 +43,7 @@ import {
   DRAFT_DIR,
   draftPatchPath,
   ensureWorkDirs,
+  entryTitle,
   findingPriority,
   getEntry,
   git,
@@ -534,7 +535,7 @@ while (done < MAX_ISSUES) {
   const briefPath = join(WORK, 'current-brief.md');
   writeFileSync(issuePath, `${issue}\n`);
   const issueWrittenAt = statSync(issuePath).mtimeMs;
-  const title = issue.split('\n', 1)[0].replace(/^### /, '');
+  const title = entryTitle(issue.split('\n', 1)[0]);
   const remaining = countEntries();
   logLine(`${tag}  (${remaining} remaining)  ${title}`);
 

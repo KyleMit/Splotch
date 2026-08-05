@@ -13842,28 +13842,6 @@ duration math becomes plain `Date` subtraction. Gotcha: a format change orphans 
 *existing* run.logs mid-campaign; land it between runs, or accept both formats in the helper for one
 transition.
 
-### [Maintainability] status.mjs re-implements lib.mjs's entry-heading detection for AUDIT-DEFERRED headings
-
-**File(s):** `scripts/audit-burndown/status.mjs` (line 21), `lib.mjs` (`isEntryStart`, line 356) @
-9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-lib.mjs owns the finding-heading grammar — `const isEntryStart = (line) => /^### \[/.test(line);`
-(line 356, module-private) — with a comment block explaining the format's source of truth
-(`.claude/audit-conventions.md`). status.mjs pastes the same regex inline to count deferred
-findings: `.filter((l) => /^### \[/.test(l))` (line 21), then strips the prefix again at line 114
-(`l.replace(/^### /, '')`), which also duplicates the title-from-heading strip in burndown.mjs line
-535 and lib.mjs line 418. If the heading grammar ever changes (it has one owner and three shadow
-copies), status silently reports zero deferred.
-
-#### Proposed solution
-
-Export `isEntryStart` (and a small `entryTitle(line)` for the `replace(/^### /, '')` triplet) from
-lib.mjs and import in status.mjs/burndown.mjs. Zero behavior change; one grammar owner.
-
 ### [Testing] `runAgentStep` — the retry/cap/session-minting core — has no test despite carrying injected seams for one
 
 **File(s):** `scripts/audit-burndown/agent-runner.mjs` (`runAgentStep`, lines 216–323) @ 9ae62ff1;

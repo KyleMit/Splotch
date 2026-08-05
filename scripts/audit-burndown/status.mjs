@@ -2,7 +2,16 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { chdirRoot, countEntries, gitOut, LOGS, runCmd, WORK } from './lib.mjs';
+import {
+  chdirRoot,
+  countEntries,
+  entryTitle,
+  gitOut,
+  isEntryStart,
+  LOGS,
+  runCmd,
+  WORK,
+} from './lib.mjs';
 
 chdirRoot();
 
@@ -16,9 +25,7 @@ const countLines = (file) =>
 const remaining = countEntries() ?? 0;
 const done = countLines(join(WORK, 'completed.log'));
 const deferredHeadings = existsSync('docs/AUDIT-DEFERRED.md')
-  ? readFileSync('docs/AUDIT-DEFERRED.md', 'utf8')
-      .split('\n')
-      .filter((l) => /^### \[/.test(l))
+  ? readFileSync('docs/AUDIT-DEFERRED.md', 'utf8').split('\n').filter(isEntryStart)
   : [];
 const total = done + deferredHeadings.length + remaining;
 
@@ -111,7 +118,7 @@ if (deferredHeadings.length > 0) {
   console.log(
     deferredHeadings
       .slice(-10)
-      .map((l) => `  ${l.replace(/^### /, '')}`)
+      .map((l) => `  ${entryTitle(l)}`)
       .join('\n')
   );
 }
