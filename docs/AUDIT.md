@@ -17121,31 +17121,6 @@ Heal": if the retro pattern is genuinely reusable, it belongs in the skill machi
 relevant skill or skill-notes), not here; otherwise delete it too. If any workflow prompt is kept,
 at minimum retitle the doc's purpose line in CLAUDE.md — but trimming the file is the better fix.
 
-### [Docs] releases/README.md cites pre-ADR-0024 paths and the wrong iOS version artifact
-
-**File(s):** `releases/README.md` (lines 9, 13) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The generated-artifacts table has two loose facts:
-
-* Line 9: "In-app About tab → `src/lib/releases.json`" — the generator writes
-  `web/src/lib/releases.json` (`scripts/generate-releases.mjs:73`:
-  `write(join(ROOT, 'web', 'src', 'lib', 'releases.json'), …)`). `src/lib/…` was the pre-ADR-0024
-  layout; every path in a root-level doc should be repo-root-relative.
-* Line 13: "App version → `package.json`, Android `build.gradle`, iOS `Info.plist`" — the iOS value
-  `release.mjs` writes is `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` in
-  `ios/App/App.xcodeproj/project.pbxproj`; `Info.plist` merely contains the `$(MARKETING_VERSION)`
-  build-setting passthrough (verified at `ios/App/App/Info.plist:21–24`). Someone auditing "did the
-  version bump land" would open the wrong file and find no literal version in it.
-
-#### Proposed solution
-
-Change line 9 to `web/src/lib/releases.json` and line 13's iOS cell to "iOS `project.pbxproj`
-(`MARKETING_VERSION`/`CURRENT_PROJECT_VERSION`)".
-
 ### [Docs] CONTRIBUTING.md's `npm test` description omits the repo-script test tier
 
 **File(s):** `docs/CONTRIBUTING.md` (line 120) @ 9ae62ff1
