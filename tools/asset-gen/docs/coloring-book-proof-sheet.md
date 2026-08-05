@@ -67,7 +67,8 @@ Each **light** tile carries an outline-keep badge: the % of the source line art 
 scored by the shared `lib/outline-match.mjs` (the same scorer as the `gen:coloring-fills:audit`
 drift audit). It is computed from the **lined raw fill** in `fill-src/` — the shipped fill is
 punched fills-only, leaving nothing to register. Night tiles have no badge: night raws have *white*
-outlines, which the dark-ink mask can't read. Badge colors: green ≥ 99, yellow ≥ 96, red below.
+outlines, which the dark-ink mask can't read. Badge color buckets are defined by
+`KEEP_GOOD`/`KEEP_OK` in `coloring-book-proof-sheet.client.js`.
 
 ## Where the code lives
 

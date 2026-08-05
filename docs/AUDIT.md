@@ -10611,37 +10611,6 @@ Use `${dirs.length}` in the subtitle (or drop the denominator), and log the miss
 explicitly (`console.error(\`missing meta.json in ${d}\`)`) before`continue` so the exit message's
 promise holds for both failure modes.
 
-### [Readability] Proof-sheet review thresholds restate cross-file gate values in prose
-
-**File(s):** `tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js`
-(lines 135–138), `tools/asset-gen/docs/coloring-book-proof-sheet.md` (line 70) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```js
-// Review buckets are deliberately stricter than the KEEP_THRESHOLD ship gate (92%,
-// lib/outline-match.mjs) — a page can pass the pipeline gate and still show yellow/red here.
-const KEEP_GOOD = 99;
-const KEEP_OK = 96;
-```
-
-The comment correctly names the owning identifier and file (good) but also restates its current
-value ("92%"), which the root conventions forbid ("no restating mutable facts (counts, dates,
-values…) owned elsewhere"): if `KEEP_THRESHOLD` in `lib/outline-match.mjs` (line 38, `0.92`) ever
-moves, this comment silently lies. Likewise `docs/coloring-book-proof-sheet.md` line 70 restates the
-client's bucket values as prose: "Badge colors: green ≥ 99, yellow ≥ 96, red below."
-
-#### Proposed solution
-
-In the comment, drop the literal: "deliberately stricter than `KEEP_THRESHOLD`
-(`lib/outline-match.mjs`)". In the doc, either drop the numbers ("badge buckets are defined by
-`KEEP_GOOD`/`KEEP_OK` in `coloring-book-proof-sheet.client.js`") or accept the doc restatement as
-the one place a human reads the values and instead leave a pointer next to the constants. The
-client.js file is browser-side plain JS and can't import from `lib/`, so a comment pointer (without
-the value) is the right form there.
-
 ## Source: Code audit — scripts — root build/dev drivers
 
 ### [Correctness] Hand-rolled flag parsing in release.mjs silently ignores typos — a misspelled `--dry-run` performs the full destructive release
