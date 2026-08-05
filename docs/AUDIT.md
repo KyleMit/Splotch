@@ -10264,25 +10264,6 @@ The eight bytes are the PNG file signature, but nothing says so — a reader mus
 scope (hex makes the ASCII visible), then
 `expect(r.overlay.subarray(0, 8)).toEqual(PNG_SIGNATURE);`.
 
-### [Readability] addOutline derives the parent directory with `join(path, '..')` instead of `dirname`
-
-**File(s):** `tools/asset-gen/tests/outline-targets.test.mjs` (`addOutline`, lines 9–14) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```js
-await mkdir(join(path, '..'), { recursive: true });
-```
-
-`join(path, '..')` works, but it makes the reader resolve the `..` mentally; `dirname(path)` states
-the intent (`node:path` is already imported one symbol away).
-
-#### Proposed solution
-
-Import `dirname` alongside `join` and use `await mkdir(dirname(path), { recursive: true });`.
-
 ### [Maintainability] audit-cli's corrupt/drift sentinels are bare strings coordinated across three sites
 
 **File(s):** `tools/asset-gen/tests/audit-cli.test.mjs` (`assertReadable` lines 8–10, `outlineMatch`
