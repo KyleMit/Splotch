@@ -3509,29 +3509,6 @@ when `gen:icons` drops a deleted icon from the union) and add one assertion that
 key of `svgs`, so a stale entry fails with "no longer exists — remove the carve-out" instead of
 passing silently.
 
-### [Maintainability] Disclosure hard-codes `1px` instead of the `--border-width` token
-
-**File(s):** `web/src/lib/components/design/Disclosure.svelte` (line 25) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```css
-.disclosure {
-  border: 1px solid var(--border);
-```
-
-`scale.borderWidth` exists precisely for this (`tokens.ts` line 64), and the sibling primitive
-`Button.svelte` uses it (`border: var(--border-width) solid var(--border)`, line 82). A
-design-system primitive off its own token vocabulary is the worst place for the inconsistency — it's
-the exemplar other components copy.
-
-#### Proposed solution
-
-`border: var(--border-width) solid var(--border);`. One-line change, no visual difference at the
-current token value.
-
 ### [Readability] StatusMessage: off-ramp `10px` padding and hand-rolled class toggles
 
 **File(s):** `web/src/lib/components/design/StatusMessage.svelte` (lines 20–21, 31) @ 9ae62ff1
