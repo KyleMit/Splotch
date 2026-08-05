@@ -10172,30 +10172,6 @@ canonical paths (the report's Status line already says this). The `gen/` dir (ou
 previews that never shipped) is genuine evidence and stays. Fold into the same commit as the other
 ideas-exploration pruning.
 
-### [Maintainability] Duplicate identical JSON committed twice within idea-15 and idea-18
-
-**File(s):** `tools/asset-gen/ideas-exploration/idea-15/hotspots.json` vs
-`idea-15/hotspots/hotspots.json`;
-`idea-18/code/{creatures-mermaid-tall,objects-balloon-tall,shapes-circle-tall}-plan.json` vs the
-same three names under `idea-18/work/` @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`diff -q` confirms each pair is byte-identical. idea-15 commits `hotspots.json` both at the idea
-root and inside `hotspots/`; idea-18 commits its three color-plan JSONs in both `code/` (presented
-as the re-appliable artifact) and `work/` (the run dir). Frozen records are read by future sessions
-deciding whether to promote an OPEN idea (idea-18 *is* OPEN) — two copies with no marked canonical
-one invites reading the wrong file if they ever diverge, and pads the record for no benefit.
-
-#### Proposed solution
-
-Keep one canonical copy each: `idea-15/hotspots.json` at the root (where `report.md` line 163's
-evidence list points) and the plans under `idea-18/code/` (the "working code" home the README layout
-defines); delete the duplicates. Verify `report.md`/`meta.json` don't reference the removed paths
-before deleting.
-
 ### [Maintainability] Crayon stage vocabulary triplicated — and the samples.mjs copy already drifted (missing stage 6)
 
 **File(s):** `tools/asset-gen/crayon-brush-samples/samples.mjs` (header lines 1–10, stage arrays
