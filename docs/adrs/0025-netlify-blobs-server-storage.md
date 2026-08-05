@@ -89,11 +89,15 @@ already saved.
 the instance) and `tokens.ts` serves a per-instance in-memory list seeded from the env var; a
 *transient* operation error degrades for that one request only (it must not latch, or one blip
 silently drops every later write). **Degrading covers reads, not writes:** `tokens.ts` tells the two
-in-memory cases apart, and a token mutation on an instance whose Blobs read merely failed is refused
+in-memory cases apart, and a token mutation on an instance whose Blobs *operation* failed is refused
 (`503`) rather than written to the fallback — banking it there would report an add or a revocation
-that the durable list never saw and that disappears on recovery. `usage.ts` returns an empty map on
-any failure so a Blobs hiccup never 500s the admin page; usage writes are best-effort and fire from
-`generate-image` via `waitUntil` so the image response never waits on them.
+that the durable list never saw and that disappears on recovery. The refusal does **not** extend to
+the latched `getStore()` failure above, which covers both local dev and the V1-function production
+case: there a mutation is still accepted into the in-memory list and still reports success, with the
+`persistent: false` banner as its only mitigation. That residual hole is tracked in issue #798.
+`usage.ts` returns an empty map on any failure so a Blobs hiccup never 500s the admin page; usage
+writes are best-effort and fire from `generate-image` via `waitUntil` so the image response never
+waits on them.
 
 **Surface the fallback.** Because the degrade is silent by design, `/admin` must not pretend
 env-seeded data is live. `tokens.ts` exports `getTokensStatus()` returning `{ tokens, persistent }`

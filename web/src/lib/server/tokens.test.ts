@@ -198,6 +198,35 @@ describe('stale-empty seed races', () => {
     expect(await isAllowedToken('legacy')).toBe(false);
   });
 
+  it('calls an all-throws confirmation an outage, not a losable race', async () => {
+    vi.resetModules();
+    envState.ALLOWED_TOKENS_LIST = 'legacy';
+    blobsState.stores = new Map();
+    const store = storeFor('access-tokens');
+    await store.setJSON('list', ['current']);
+    let calls = 0;
+    store.getWithMetadata = async () => {
+      // Each readStore consumes four calls: a lagging initial read reporting
+      // the key absent (→ seed branch → modified:false), then three
+      // confirmation rereads that an unreachable store never answers.
+      if (calls++ % 4 === 0) return null;
+      throw new Error('blobs unreachable');
+    };
+    const { addToken, isAllowedToken, TOKEN_UNAVAILABLE_ERROR } = await import('./tokens');
+    // Nothing changed and the store never answered — the same shape as a
+    // degraded read, so it must not be reported as a retryable CAS conflict.
+    expect(await addToken('mine')).toEqual({
+      ok: false,
+      error: TOKEN_UNAVAILABLE_ERROR,
+      reason: 'unavailable',
+    });
+    // Still fails closed: an unconfirmed winner denies every token, including
+    // the env seed that lost the race.
+    expect(await isAllowedToken('legacy')).toBe(false);
+    expect(await isAllowedToken('current')).toBe(false);
+    expect(await storeFor('access-tokens').get('list')).toEqual(['current']);
+  });
+
   it('fails closed and rejects mutations when the winning list cannot be confirmed', async () => {
     const { isAllowedToken, addToken, TOKEN_CONFLICT_ERROR } = await freshTokensWithSeedRace(
       'legacy',
