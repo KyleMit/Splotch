@@ -42,12 +42,12 @@ Two guards, scoped by what each surface can afford:
   synthesis and already has `touch-action: none`, so cancelling everything is free.
 * **Every tappable control near the canvas** (`web/src/lib/actions/scribbleGuard.ts`, applied via
   `use:scribbleGuard` in `ColorPalette.svelte`, `ColorPicker.svelte` — where the `<dialog>` guard
-  also covers backdrop taps, since backdrop events target the dialog element — and
-  `ActionsPanel.svelte`): non-passive `touchstart`/`touchmove`/`touchend` → `preventDefault()` only
-  when every changed touch has `touchType === 'stylus'` (a Safari-only `Touch` field — see the
-  `docs/COMPATIBILITY.md` risk register). Cancelling `touchstart` suppresses the synthesized
-  `click`, so finger touches must pass through untouched: on non-iOS browsers `touchType` is
-  `undefined` and the guard is inert.
+  also covers backdrop taps, since backdrop events target the dialog element —
+  `ActionsPanel.svelte`, and `ClearButton.svelte`): non-passive `touchstart`/`touchmove`/`touchend`
+  → `preventDefault()` only when every changed touch has `touchType === 'stylus'` (a Safari-only
+  `Touch` field — see the `docs/COMPATIBILITY.md` risk register). Cancelling `touchstart` suppresses
+  the synthesized `click`, so finger touches must pass through untouched: on non-iOS browsers
+  `touchType` is `undefined` and the guard is inert.
 
 Suppressing the stylus click synthesis means a guarded surface cannot rely on `click`. The palette
 and picker were already pointerup-driven; ActionsPanel's buttons were click-driven and now activate
