@@ -31,36 +31,38 @@ async function encodeWebpUpload(png: Blob): Promise<Blob | null> {
   try {
     const bitmap = await createImageBitmap(png);
     // OffscreenCanvas.convertToBlob keeps the encode off the layout-coupled
-    // HTMLCanvasElement/toBlob path; fall back to the DOM canvas where it's
-    // unavailable. `HTMLCanvasElement.getContext` and `OffscreenCanvas.getContext`
-    // return distinct context types the compiler won't unify across a union
-    // canvas, so each path builds and reads its own concretely-typed canvas.
-    let webp: Blob | null;
+    // HTMLCanvasElement/toBlob path. `HTMLCanvasElement.getContext` and
+    // `OffscreenCanvas.getContext` return distinct context types the compiler
+    // won't unify across a union canvas, so each path builds and reads its own
+    // concretely-typed canvas. A constructor with no working 2D context, or a
+    // `convertToBlob` that rejects, falls through to the DOM-canvas path below
+    // rather than giving up — the bitmap stays open across both attempts.
+    let webp: Blob | null = null;
     if (typeof OffscreenCanvas !== 'undefined') {
       const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
       const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        bitmap.close();
-        return null;
+      if (ctx) {
+        ctx.drawImage(bitmap, 0, 0);
+        try {
+          webp = await canvas.convertToBlob({ type: 'image/webp', quality: UPLOAD_WEBP_QUALITY });
+        } catch {
+          webp = null;
+        }
       }
-      ctx.drawImage(bitmap, 0, 0);
-      bitmap.close();
-      webp = await canvas.convertToBlob({ type: 'image/webp', quality: UPLOAD_WEBP_QUALITY });
-    } else {
+    }
+    if (!webp) {
       const canvas = document.createElement('canvas');
       canvas.width = bitmap.width;
       canvas.height = bitmap.height;
       const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        bitmap.close();
-        return null;
+      if (ctx) {
+        ctx.drawImage(bitmap, 0, 0);
+        webp = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob(resolve, 'image/webp', UPLOAD_WEBP_QUALITY)
+        );
       }
-      ctx.drawImage(bitmap, 0, 0);
-      bitmap.close();
-      webp = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, 'image/webp', UPLOAD_WEBP_QUALITY)
-      );
     }
+    bitmap.close();
     // A platform without WebP encoding hands back a PNG (or null) here; only take
     // the result when it's genuinely smaller WebP, so we never upload a fatter
     // re-encode than the original.

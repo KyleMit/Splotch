@@ -23,30 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Performance] WebP transcode runs on the main thread with a DOM canvas; OffscreenCanvas would avoid dial jank
-
-**File(s):** `web/src/lib/drawing/aiImage.ts` (`encodeWebpUpload`, lines 30–53) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`encodeWebpUpload` decodes the full-resolution drawing PNG, creates a DOM `<canvas>`, draws into it,
-and calls `canvas.toBlob` — all on the main thread, at the exact moment the progress-dial rAF loop
-(`AiDial.svelte` `loop()`) and the modal's open animation are running. On a low-end tablet with a
-large canvas, the synchronous `drawImage` + encoder work can produce a visible hitch in the dial
-right after tap — the most scrutinized moment of the flow. `createImageBitmap` and `toBlob` are
-async, but the raster copy and encode still contend with the animation frames.
-
-#### Proposed solution
-
-Prefer `OffscreenCanvas` + `convertToBlob({ type: 'image/webp', quality: UPLOAD_WEBP_QUALITY })`
-when available (feature-detect; fall back to the current DOM-canvas path — the browser floor in
-`docs/COMPATIBILITY.md` should be consulted before assuming availability). `convertToBlob` keeps the
-encode off the layout-coupled canvas path, and the whole helper could later move into a worker if
-profiling (`npm run perf:*`) shows the hitch is real — measure first; if the profile shows nothing
-on floor devices, downgrade this to a comment.
-
 ### [Testing] `deferred<T>()` helper is re-declared per test file
 
 **File(s):** `web/src/lib/drawing/aiImage.test.ts` (lines 22–36),
