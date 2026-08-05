@@ -18,7 +18,8 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
-| 2026-08-05 | [burn-down-audits](#2026-08-05--burn-down-audits)               |
+| 2026-08-05 | [burn-down-audits](#2026-08-05--burn-down-audits-run-2)         |
+| 2026-08-05 | [burn-down-audits](#2026-08-05--burn-down-audits-run-1)         |
 | 2026-07-29 | [burn-down-audits](#2026-07-29--burn-down-audits-run-3)         |
 | 2026-07-29 | [burn-down-audits](#2026-07-29--burn-down-audits-run-2)         |
 | 2026-07-29 | [burn-down-audits](#2026-07-29--burn-down-audits-run-1)         |
@@ -80,7 +81,47 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
 
-## 2026-08-05 · burn-down-audits
+## 2026-08-05 · burn-down-audits (run 2)
+
+Scripted burndown on
+[`claude/audit-burndown-overnight-6isff3`](https://github.com/KyleMit/Splotch/pull/771): **31
+fixed**, 1 dropped and 5 deferred across 37 findings; backlog 473 → 436. Three driver sessions — a
+5-finding canary, a 22-finding overnight run, and a 4-finding run after a mid-campaign pause — each
+finding going through verify → implement → adversarial review → fix inside one-shot `claude -p`
+subprocesses.
+
+`BUDGET_IMPL` was raised 4.00 → 7.00 after the canary. Every other role call finished under $2
+(verify peaked at $0.94, review at $0.89 against $3.00 caps), but a three-component extraction hit
+exactly $4.0036 on its fix round and deferred — the cap was binding only on multi-file extraction
+fix rounds, which are common in a code-audit tail. No budget deferral followed the raise.
+
+The run was paused once, on a red CI run rather than on any driver signal. `startup-bundle.spec.ts`
+failed — the save pipeline had been pulled onto the startup critical path — and `git bisect` over a
+build-and-grep script pinned 42960c3fbf84, which had implemented a finding that read
+`saveFolder.svelte.ts`'s inlined support check as duplication maintained by prose. The inlining was
+deliberate: that module is on the startup path and reaches the save pipeline only through a dynamic
+import, so a static import into `lib/drawing/` — even of a six-line predicate — gives the bundler an
+edge into the save graph, and Rollup's re-partitioning landed `screenshotFeedback`'s body in a
+modulepreloaded chunk. The failing marker named a module the commit never touched, so bisect rather
+than diff-reading was the path to attribution. 62236bff532c reverts it and 0ef58358e0fd rewrites the
+comment to state the constraint and name the enforcing spec; the finding was not re-staged, because
+its premise is wrong as written. Bundle composition is invisible to the type-check, unit, lint and
+targeted-E2E gates by construction, so the draft PR's CI was the only thing that could have caught
+it.
+
+The five deferrals had five distinct causes — implementer budget cap, a genuine review rejection, a
+verifier turn cap, a verifier that returned `verdict: VALID` without writing its brief, and an
+implementer turn cap — so no mechanism recurred and none met the bar for intervention. Both turn
+caps landed on sweeping multi-file findings. The single drop was a finding already fixed since its
+pin. No eslint `max-lines` cap was raised and no ratchet baseline widened across all 31 fixes; the
+one ratchet edit lowered a raw-hex baseline to 0 after a dead declaration was removed. Entry
+accounting reconciles exactly: 473 − 37 == 436 == `pop.mjs --count`, with commit-derived deferral
+and drop counts matching the run logs independently, and `capture` reporting
+`skipped 31 already
+posted` against 31 fixes. Four `## Source:` sections were emptied and removed in
+the closeout.
+
+## 2026-08-05 · burn-down-audits (run 1)
 
 Hand-driven cherry-pick on
 [`claude/audit-burndown-sprint-ewc5s2`](https://github.com/KyleMit/Splotch/pull/770): **58 fixed**

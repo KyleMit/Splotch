@@ -17,14 +17,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 `> **Verified 2026-07-28**` blockquote have been through that pass; the rest have not, so
 `/vet-audits` still owns validating them.
 
-## Source: Code audit — Drawing engine — undo & snapshot history
-
-## Source: Code audit — Drawing engine — export/save, paper view & pointer math
-
-## Source: Code audit — AI image generation (client + state + UI)
-
-## Source: Code audit — Settings / settings UI
-
 ## Source: Code audit — App state (runes)
 
 ### [Testing] `fullscreen.svelte.ts` has no unit tests

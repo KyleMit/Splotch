@@ -4,7 +4,13 @@
 > [#771](https://github.com/KyleMit/Splotch/pull/771) · Bulk-burn the `docs/AUDIT.md` backlog with
 > `scripts/audit-burndown/burndown.mjs`, running unattended overnight.
 
-## Current state
+## Current state — wrapped up, resumable
+
+Wrapped on request after **31 fixed · 1 dropped · 5 deferred**; backlog 473 → 436. Nothing is in
+flight: no `burndown.mjs` or `claude -p` process, `HEAD` == `origin/<branch>`, the comment store is
+drained, and PR 771 is out of draft. Continue by relaunching with the command below — or, if PR 771
+has merged by then, fork a fresh branch from the new `main` and open a new PR, because a merged PR
+cannot track new work.
 
 Fresh campaign forked from `origin/main` at f775675a996a751dde0cee270219ae3439ef4135. The previous
 packet (`audit-burndown-636.md`) was **spent** — its PR
@@ -84,8 +90,10 @@ Deliberately **excluded**, each for a reason:
 ## State
 
 * Base: f775675a996a751dde0cee270219ae3439ef4135 (`origin/main` at launch).
-* Progress: **27 fixed · 0 dropped · 4 deferred · 442 remaining** as of 2026-08-05 09:09 (canary 5 +
-  overnight run 22). Plus two supervisor commits repairing the startup-bundle regression.
+* Progress: **31 fixed · 1 dropped · 5 deferred · 436 remaining** — wrapped 2026-08-05 09:58 (canary
+  5 + overnight 22 + post-repair run 4). Plus two supervisor commits repairing the startup-bundle
+  regression. Accounting reconciles: 473 − 37 consumed == 436 == `pop.mjs --count`, and `capture`
+  reports `skipped 31 already posted` against 31 fixes.
 * Backlog at launch: **473** findings (`node scripts/audit-burndown/pop.mjs --count`).
 * Priority mix: P1 8 · P2 52 · P3 136 · P4 194 · P5 83 → **277 route to `MODEL_IMPL_MINOR`**.
 * Priority parse verified before launch: 473 findings, **0 unparsable** — impl tiering will fire.
