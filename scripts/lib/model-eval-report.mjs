@@ -159,12 +159,11 @@ const SWAP_SCRIPT = `<script>
 // Pure HTML assembly. Every result must already carry `_thumb` (or null) and
 // `inThumb[id]` must resolve — no filesystem or browser work happens here, so
 // this is shared by the browser build and the no-browser reskin path.
-function renderReportHtml({ runId, results, samples, inThumb, verdictHtml }) {
+function renderReportHtml({ runId, results, samples, inThumb, verdictHtml, agg }) {
   const ids = [...new Set(results.map((r) => r.id))];
   const cats = [...new Set(results.map((r) => r.category))];
   const modelIds = MODELS.map((m) => m.id);
 
-  const agg = Object.fromEntries(modelIds.map((m) => [m, statsFor(results, m)]));
   const A = agg[modelIds[0]],
     B = agg[modelIds[1]];
   const ratio = A.avgCost && B.avgCost ? B.avgCost / A.avgCost : null;
@@ -342,13 +341,16 @@ export async function buildReport({
       : null;
   await th.close();
 
-  const html = renderReportHtml({ runId, results, samples, inThumb, verdictHtml });
+  // One aggregation for both outputs, so the report HTML and summary.json can
+  // never describe different numbers.
+  const agg = Object.fromEntries(MODELS.map((m) => [m.id, statsFor(results, m.id)]));
+
+  const html = renderReportHtml({ runId, results, samples, inThumb, verdictHtml, agg });
   const htmlPath = join(bundleDir, 'index.html');
   writeFileSync(htmlPath, html);
 
   // Provenance stays in the run dir, NOT in the published bundle (ADR-0059: only
   // index.html + assets/ are promoted to scrapbook/).
-  const agg = Object.fromEntries(MODELS.map((m) => [m.id, statsFor(results, m.id)]));
   writeFileSync(join(outDir, 'summary.json'), JSON.stringify({ runId, agg }, null, 2));
   return htmlPath;
 }

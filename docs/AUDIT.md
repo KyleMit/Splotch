@@ -12539,29 +12539,6 @@ scripts" / "Playwright helpers for scripts that drive the live Splotch app in a 
 generators, driver smoke, perf sessions)". Grep, not the header, is the source of truth for the
 actual list.
 
-### [Performance] `statsFor` aggregates are computed twice per report build
-
-**File(s):** `scripts/lib/model-eval-report.mjs` (`renderReportHtml` line 167; `buildReport`
-line 351) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`renderReportHtml` computes
-`const agg = Object.fromEntries(modelIds.map((m) => [m, statsFor(results, m)]))` (line 167), and
-`buildReport` then recomputes the identical structure at line 351 for `summary.json`. Each
-`statsFor` call itself makes five-plus filter passes over `results` (lines 66–83). The corpus is
-small so the cost is negligible; the real issue is duplication — the two aggregates can drift if one
-call site changes (e.g. someone adds a filter to one), and the double computation obscures that
-report HTML and summary.json are meant to describe the same numbers.
-
-#### Proposed solution
-
-Compute `agg` once in `buildReport`, pass it into `renderReportHtml({ …, agg })`, and reuse it for
-`summary.json`. Alternatively have `renderReportHtml` return `{ html, agg }`. Either way there is
-exactly one aggregation.
-
 ### [Readability] Zip structural sizes/offsets in artifact-version are unnamed magic numbers
 
 **File(s):** `scripts/lib/artifact-version.mjs` (`findEndOfCentralDirectory` lines 21–28;
