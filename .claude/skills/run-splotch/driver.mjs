@@ -27,7 +27,7 @@ import { parseArgs } from 'node:util';
 // The generated copies under .claude/skills/ and .agents/skills/ sit at the same
 // depth as this .ruler/skills/ source, so one relative specifier resolves from
 // all three; scripts/tests/run-splotch-driver.test.mjs holds that depth.
-import { spawnViteServer } from '../../../scripts/lib/vite-server.mjs';
+import { RELEASABLE_STDIO, spawnViteServer } from '../../../scripts/lib/vite-server.mjs';
 
 const repoRoot = resolve(fileURLToPath(import.meta.url), '../../../..');
 
@@ -108,22 +108,22 @@ function startServer() {
   // child.kill() orphans a `vite dev` on the port for hours, the failure this
   // skill's own SKILL.md warns about.
   //
-  // --keep releases that group instead of killing it, so the server must hold
-  // none of this process's stdio. An inherited stream is a dup of our own fd: a
-  // released vite pins the caller's stderr pipe open and the invoking command
-  // never sees EOF (every agent Bash call and CI log capture). A piped stream
-  // release() has dropped is the opposite hazard — vite's routine chatter is
-  // stdout, and a kept server whose stdout pipe is gone dies of EPIPE within a
-  // few HMR reloads, while the same server with stdout on /dev/null survives.
-  // So under --keep: chatter to /dev/null, diagnostics on a pipe release() cuts.
+  // --keep releases that group instead of killing it, so a kept server takes
+  // RELEASABLE_STDIO: /dev/null on both streams, the only sink that outlives
+  // this process. Inheriting either one pins the caller's pipe open and the
+  // invoking command never sees EOF (every agent Bash call and CI log capture);
+  // piping either one is the opposite hazard, because release() would have to
+  // drop the pipe and the survivor's next log line then dies of EPIPE. Both
+  // halves are load-bearing: vite's routine chatter is stdout (a few HMR
+  // reloads), its diagnostics are stderr (one fs-allowlist 403). A kept server
+  // therefore prints nothing; run without --keep to watch it.
   vite = spawnViteServer(port, {
     env: { PUBLIC_ENABLE_DEV_HARNESS: 'true' },
-    stdout: keep ? 'ignore' : 'pipe',
-    stderr: keep ? 'pipe' : 'inherit',
+    ...(keep ? RELEASABLE_STDIO : { stdout: 'pipe', stderr: 'inherit' }),
   });
-  const forwardToStderr = (d) => process.stderr.write(d); // vite logs on stderr
-  vite.server.stdout?.on('data', forwardToStderr);
-  vite.server.stderr?.on('data', forwardToStderr);
+  // vite's own chatter joins its diagnostics on our stderr, leaving this
+  // process's stdout to the report main() prints.
+  vite.server.stdout?.on('data', (chunk) => process.stderr.write(chunk));
 }
 
 function finishServer(baseURL) {

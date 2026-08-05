@@ -48,13 +48,9 @@ describe('freePort', () => {
 // real process exit, long after the process.kill spy is restored.
 describe('spawnViteServer', () => {
   const FAKE_PID = 424242;
-  const fakeChild = () => ({
-    pid: FAKE_PID,
-    unref: vi.fn(),
-    kill: vi.fn(),
-    stdout: { destroy: vi.fn() },
-    stderr: { destroy: vi.fn() },
-  });
+  // No stream properties: every case that reaches release() spawns durable
+  // sinks, and node gives such a child a null stdout/stderr.
+  const fakeChild = () => ({ pid: FAKE_PID, unref: vi.fn(), kill: vi.fn() });
 
   /** Both nets, because dropping only one still leaks a listener per server. */
   const netCounts = () => ({
@@ -65,11 +61,11 @@ describe('spawnViteServer', () => {
   it('runs vite directly under node in its own process group', () => {
     spawn.mockReturnValue(fakeChild());
 
-    const { release } = spawnViteServer(5199, {
+    const { stop } = spawnViteServer(5199, {
       env: { PUBLIC_ENABLE_DEV_HARNESS: 'true' },
       stdout: 'pipe',
     });
-    release();
+    stop();
 
     const [command, args, options] = spawn.mock.calls[0];
     expect(command).toBe(process.execPath);
@@ -83,8 +79,8 @@ describe('spawnViteServer', () => {
   it('gives the child the stderr the caller asked for', () => {
     spawn.mockReturnValue(fakeChild());
 
-    const { release } = spawnViteServer(5199, { stdout: 'ignore', stderr: 'pipe' });
-    release();
+    const { stop } = spawnViteServer(5199, { stdout: 'ignore', stderr: 'pipe' });
+    stop();
 
     expect(spawn.mock.calls[0][2].stdio).toEqual(['ignore', 'ignore', 'pipe']);
   });
@@ -101,22 +97,48 @@ describe('spawnViteServer', () => {
     expect(netCounts()).toEqual(before);
   });
 
-  // A released server outlives this process, so anything it still holds is a leak
-  // in the other direction: an undropped pipe keeps the event loop alive and the
-  // invoking command never returns.
-  it('release() drops the pipes and unrefs the child, without killing vite', () => {
+  it('release() unrefs the child and drops its safety nets, without killing vite', () => {
     const child = fakeChild();
     spawn.mockReturnValue(child);
     const before = netCounts();
 
-    const { release } = spawnViteServer(5199, { stdout: 'pipe', stderr: 'pipe' });
+    const { release } = spawnViteServer(5199, { stdout: 'ignore', stderr: 'ignore' });
     release();
 
-    expect(child.stdout.destroy).toHaveBeenCalledOnce();
-    expect(child.stderr.destroy).toHaveBeenCalledOnce();
     expect(child.unref).toHaveBeenCalledOnce();
     expect(process.kill).not.toHaveBeenCalled();
     expect(child.kill).not.toHaveBeenCalled();
     expect(netCounts()).toEqual(before);
+  });
+
+  // Which stream, and which borrowed target, decide nothing: a survivor holding
+  // any handle of this process's breaks something once this process exits, so
+  // release() refuses instead of choosing. scripts/tests/vite-server-release.test.mjs
+  // is where the two failures are demonstrated against a live server.
+  it.each([
+    ['stdout', { stdout: 'pipe', stderr: 'ignore' }],
+    ['stderr', { stdout: 'ignore', stderr: 'pipe' }],
+    ['an inherited stream', { stdout: 'ignore', stderr: 'inherit' }],
+    ['the defaults', undefined],
+  ])('release() refuses a server holding %s', (_label, options) => {
+    spawn.mockReturnValue(fakeChild());
+    const before = netCounts();
+
+    const { stop, release } = spawnViteServer(5199, options);
+
+    expect(release).toThrow(/durable stdio sinks/);
+    stop();
+    expect(netCounts()).toEqual(before);
+  });
+
+  it('release() accepts a file descriptor as a sink', () => {
+    const child = fakeChild();
+    spawn.mockReturnValue(child);
+    const logFd = 7;
+
+    const { release } = spawnViteServer(5199, { stdout: logFd, stderr: logFd });
+    release();
+
+    expect(child.unref).toHaveBeenCalledOnce();
   });
 });

@@ -18,7 +18,9 @@
   env and arg handling, the OS opener); `net.mjs` has `waitForUrl()` for polling a URL until ready;
   `playwright.mjs` resolves the Chromium binary; `maestro.mjs` the Maestro location;
   `frontmatter.mjs` the release frontmatter/semver parsing; `vite-server.mjs` spawns a throwaway
-  vite dev/preview server in a detached process group so `stop()` can't orphan the vite grandchild;
+  vite dev/preview server in a detached process group so `stop()` can't orphan the vite grandchild,
+  and `release()` hands that group to the OS instead — which is why it takes only the
+  `RELEASABLE_STDIO` sinks it exports and throws on anything this process would take with it;
   `smoke.mjs` has the `check()`/`fatal()`/`summarize()` pass-fail reporter shared by the smoke
   tests; `adminClient.mjs` the `/api/admin` login + token-CRUD request plumbing they both drive; and
   `native-export.mjs` owns what the native static export drops — the web-only static file list plus

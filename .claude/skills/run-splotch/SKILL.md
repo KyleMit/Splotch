@@ -45,15 +45,15 @@ stroke on the canvas. A blank canvas with no stroke means the draw flow regresse
 
 Options (see the header of `driver.mjs`):
 
-| Flag              | Effect                                                                 |
-| ----------------- | ---------------------------------------------------------------------- |
-| `--route <path>`  | Route to open — `/`, `/admin`, `/privacy`, `/dev/engine` (default `/`) |
-| `--draw`          | Drag a stroke across the canvas before the shot (route `/` only)       |
-| `--out <file>`    | Screenshot path (default `screenshots/splotch.png`)                    |
-| `--headed`        | Show the browser window instead of headless                            |
-| `--keep`          | Leave the dev server running afterward and print its URL               |
-| `--url <baseURL>` | Drive an already-running server instead of launching one               |
-| `--port <n>`      | Dev server port (default `5199`)                                       |
+| Flag              | Effect                                                                          |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `--route <path>`  | Route to open — `/`, `/admin`, `/privacy`, `/dev/engine` (default `/`)          |
+| `--draw`          | Drag a stroke across the canvas before the shot (route `/` only)                |
+| `--out <file>`    | Screenshot path (default `screenshots/splotch.png`)                             |
+| `--headed`        | Show the browser window instead of headless                                     |
+| `--keep`          | Leave the dev server running afterward and print its URL (it then logs nowhere) |
+| `--url <baseURL>` | Drive an already-running server instead of launching one                        |
+| `--port <n>`      | Dev server port (default `5199`)                                                |
 
 Output (`screenshots/`) is gitignored. **Write your shots there** (or another gitignored dir) — a
 PNG dropped elsewhere in the repo shows up as an untracked file and trips the stop-hook git check.
@@ -148,14 +148,18 @@ and wait for `#coloringOverlay` to be visible. A full worked example (all these 
 > * **Reuse the driver's server** (preferred): `driver.mjs … --keep`, connect your own Playwright
 >   script with `--url`/`page.goto`, and when done free the port with `npx kill-port <n>` (default
 >   5199). Your script should only manage the *browser*, never the server.
-> * **If you truly must spawn one**, use `spawnViteServer(port, { env, stdout })` from
+> * **If you truly must spawn one**, use `spawnViteServer(port, { env, stdout, stderr })` from
 >   `scripts/lib/vite-server.mjs` — it launches vite in a **detached process group** and its
 >   `stop()` kills the whole group (`process.kill(-pid)`), so nothing is orphaned. `freePort(port)`
 >   clears a stale listener first, and `release()` hands a still-running server to the OS (what
->   `--keep` does) so your script can exit without killing it — give a server you intend to release
->   `'pipe'`/`'ignore'` streams, never `'inherit'`, or the survivor holds your caller's pipe open
->   and the command that ran you never returns. `driver.mjs`'s `startServer` / `finishServer` are
->   the worked example — copy those, not a fresh `spawn`.
+>   `--keep` does) so your script can exit without killing it. **A server you intend to release
+>   needs a durable OS sink on *both* streams — `'ignore'` or a file descriptor**, because the
+>   alternatives fail in opposite directions: `'inherit'` hands the survivor a dup of your own fd,
+>   so it holds your caller's pipe open and the command that ran you never returns, while `'pipe'`
+>   is a handle `release()` must drop, and the survivor's next log line then dies of EPIPE — a few
+>   HMR reloads on stdout, a single filesystem-allowlist 403 on stderr. `release()` throws rather
+>   than accept anything else. `driver.mjs`'s `startServer` / `finishServer` are the worked example
+>   — copy those, not a fresh `spawn`.
 >
 > Either way, **reap what you spawned before ending**: kill the script/browser, run
 > `npx kill-port <n>`, and confirm with `ps`/`ss -ltnp` that no `vite dev` or headless Chromium is
