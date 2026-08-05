@@ -98,6 +98,14 @@ excluded from Ruler drift ownership. `scripts/ruler-apply.mjs` snapshots and res
 registered path around generation, including its failure path. Add a test here when a `scripts/`
 helper's failure mode is corrupting state rather than crashing.
 
+The suite also hosts the **drift guards** over things prose can't keep in agreement —
+`e2e-engine-tags.test.mjs` and `e2e-harness-imports.test.mjs` over the specs themselves, and
+`skill-spec-citations.test.mjs` over the docs: every `tests/…` path an agent-instruction file names
+must resolve to a real file in `web/tests/`, so a spec split can't strand a documented command that
+then selects zero tests. Globs and placeholders (`engine-*.spec.ts`, `tests/<name>.ts`) read as
+prose and are skipped; design history — skill notes, ADRs, `docs/AUDIT.md` — is outside the scanned
+surface on purpose.
+
 ## E2E web tests — Playwright
 
 ```bash
@@ -107,7 +115,7 @@ npm run test:e2e:headed    # headed, slowed down (SLOWMO=500)
 npm run test:e2e:debug     # inspector
 
 # one spec / one title, not the whole suite (trailing args pass through to Playwright):
-npm run test:e2e -- flows.spec.ts -g "the undo button enables on a stroke and reverts it"
+npm run test:e2e -- flows-undo-persistence.spec.ts -g "the undo button enables on a stroke and reverts it"
 ```
 
 For ad-hoc validation of a single change, filter through the npm script — **not** raw
@@ -137,21 +145,21 @@ specs that can't race in the first place:
 
 * **Never assert on a single interaction against a lazily-wired control.** Overlays that idle-mount
   (Settings, ADR-0049) can drop the first click before their handler is attached, so a bare
-  `.click()` + `expect(modal).toBeVisible()` flakes. `flows.spec.ts` has a shared
+  `.click()` + `expect(modal).toBeVisible()` flakes. `tests/helpers.ts` exports a shared
   `retryOpen(ready,
   open, opts?)` primitive for this — it retries `open()` until the `ready`
-  sentinel shows, skipping the click when it's already open;
-  `openDrawer`/`openSettingsModal`/`openStrokeMenu`/`openBrushMenu`/ `openColoringDialog` are all
-  one-liners over it. Reach for it (or wrap open-then-assert in `expect(...).toPass()`) rather than
-  repeating a bare click.
+  sentinel shows, skipping the click when it's already open. `openSettingsModal` (also
+  `tests/helpers.ts`) and `openDrawer`/`openBrushMenu`/`openColoringDialog`/`openParentalGate`
+  (`tests/flows-harness.ts`) are all one-liners over it. Reach for it (or wrap open-then-assert in
+  `expect(...).toPass()`) rather than repeating a bare click.
 * **No fixed `waitForTimeout` to wait for something to *happen*.** Use a web-first assertion that
   retries until the condition holds (`expect(locator).toBeVisible()`, `expect.poll(() => …)`,
   `expect(...).toPass()`). A fixed sleep is only legitimate when it is **monotonic-safe under
   load**: (a) deliberately idling *past* a known threshold to reproduce a timing bug (e.g. the
-  stroke-resume gap in `engine.spec.ts`), or (b) proving a *negative* — that state must **not**
-  change within a window (e.g. the "SW never registers" check in `pwa-registration.spec.ts`). A
-  slower worker only lengthens the real wait in both cases, so they can't false-red. Comment the
-  reason when you keep one.
+  stroke-resume gap in `engine-pointer-recovery.spec.ts`), or (b) proving a *negative* — that state
+  must **not** change within a window (e.g. the "SW never registers" check in
+  `pwa-registration.spec.ts`). A slower worker only lengthens the real wait in both cases, so they
+  can't false-red. Comment the reason when you keep one.
 * **Poll async render/canvas state; size the window for a *starved* worker.** Canvas reveals and
   debounced relayouts settle asynchronously and lag hard under contention. The magic brush samples a
   sheet that rasterizes async, holding a stroke's ops out of the paper until a fold-in repaint
@@ -251,9 +259,10 @@ also runs on **WebKit** as the `webkit` Playwright project:
   fails loudly (`No tests found`). `scripts/tests/e2e-engine-tags.test.mjs` covers the gap: it
   rejects a tag string literal and any tag not exported by `tags.ts`, and asserts at least one spec
   still carries `WEBKIT_ONLY_TAG`.
-* Keep the spec WebKit-portable: no CDP sessions (the viewport-rotation and touch-synthesis helpers
-  in `flows.spec.ts` are Chromium-only), no dev-harness routes, no assertions tied to Chromium's
-  rasterizer. Chromium skips the tagged specs — their coverage is already in the full suite.
+* Keep the spec WebKit-portable: no CDP sessions (`rotateViewportViaCdp` in `tests/cdp.ts` and the
+  `touchDriver` in `tests/settings-zoom.spec.ts` are Chromium-only), no dev-harness routes, no
+  assertions tied to Chromium's rasterizer. Chromium skips the tagged specs — their coverage is
+  already in the full suite.
 * `web/playwright.webkit-scratch.config.ts` stays for ad-hoc "run *any* spec under WebKit"
   debugging; it is still not part of `npm test`.
 
