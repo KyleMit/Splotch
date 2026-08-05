@@ -9543,27 +9543,6 @@ Extract a shared helper, e.g. `tools/asset-gen/tests/helpers/pipeline-harness.mj
 line while the shape lives once. Gotcha: `state` must stay in `vi.hoisted`, so the helper functions
 should take it as a parameter rather than importing it.
 
-### [Performance] golden-catalog scores the same fixture pair in both async tests
-
-**File(s):** `tools/asset-gen/tests/golden-catalog.test.mjs` (`scoreFixture`, lines 6–12; tests at
-lines 21–33, 35–42) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`scoreFixture` runs `scoreEyeFill` + `scoreGoldenNightEyes` over the full-resolution composite-eye
-fixtures (~550 ms per fixture). The regression-direction test (lines 21–33) and the
-improvement-direction test (lines 35–42) each compute the identical `unicorn-tall` /
-`stegosaurus-tall` pair — the only difference is the argument order to `diff()`. Measured: 1125 ms +
-1136 ms, half of it duplicate work.
-
-#### Proposed solution
-
-Score the pair once in a `beforeAll` (or memoize `scoreFixture` the same way as proposed for
-composite-eye.test.mjs) and let both direction tests diff the shared results. The score objects are
-treated as read-only by `diffGoldenPage`, so sharing is safe.
-
 ### [Maintainability] gate-redundancy leans on a mutable module `src` closure and states the broken/good split twice
 
 **File(s):** `tools/asset-gen/tests/gate-redundancy.test.mjs` (lines 85–103) @ 9ae62ff1
