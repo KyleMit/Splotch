@@ -4761,29 +4761,6 @@ Extract `cancelHoldTimer()` and call it from both sites; have the scheduled call
 `onPointerMove`'s `o.onTutorialDismiss()` at line 155 must stay *outside* the null-guard — it also
 dismisses a tutorial the hold already showed.
 
-### [Readability] `playClearExit` shadows the action's `node` with a redundant parameter
-
-**File(s):** `web/src/lib/actions/dragToClear.ts` (`playClearExit`, lines 224–244; call site
-line 272) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-function playClearExit(node: HTMLButtonElement, o: DragToClearOptions): void {
-```
-
-The only call passes the enclosing action's `node` (line 272: `playClearExit(node, o)`), so the
-parameter shadows the closure variable every sibling helper (`finishDrag`, `resetDragVisuals`,
-`onTransitionEnd`) reads directly. The shadowing invites the classic bug of the two diverging, and
-the inconsistency makes a reader ask why this one helper is parameterized.
-
-#### Proposed solution
-
-Drop the parameter; use the closed-over `node` like the other helpers:
-`function playClearExit(o: DragToClearOptions): void`.
-
 ### [Performance] Pinch move path allocates per pointermove, against the repo's hot-path rule
 
 **File(s):** `web/src/lib/actions/pinchZoom.svelte.ts` (`centroid` lines 54–62, `recompute` lines

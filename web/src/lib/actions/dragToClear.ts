@@ -218,7 +218,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   // Commit exit choreography: the button's fade/shrink and the page-turn ripple
   // live in ClearButton.svelte's CSS; the delays below only hand the classes over
   // at each stage.
-  function playClearExit(node: HTMLButtonElement, o: DragToClearOptions): void {
+  function playClearExit(o: DragToClearOptions): void {
     node.classList.add('clearing');
     o.pageTurnOverlayEl.classList.add('animating');
 
@@ -266,7 +266,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       o.onTutorialDismiss();
       o.onClear();
 
-      playClearExit(node, o);
+      playClearExit(o);
     } else {
       resetDragVisuals(o);
     }
