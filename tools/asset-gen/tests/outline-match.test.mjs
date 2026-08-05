@@ -10,9 +10,9 @@
 // reproducing the "passes global, fails local" split exactly.
 import { describe, it, expect } from 'vitest';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
+import { matchSource, matchDrifted } from './fixtures/synthetic.mjs';
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-import { matchSource, matchDrifted } from './fixtures/synthetic.mjs';
 
 describe('outlineMatch — localized drift the global keep buries', () => {
   it('a perfectly registered candidate keeps both scores at 1', async () => {
