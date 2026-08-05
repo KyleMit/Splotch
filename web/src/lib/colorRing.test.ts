@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { getRingColor } from './colorRing';
+import { getRingColor, isLightColor } from './colorRing';
 import { PALETTE_COLORS } from './state/colors.svelte';
+import { PICKER_DIM_BORDER } from './hexPickerLayout';
 
 describe('getRingColor', () => {
   it('darkens a normal-luminance swatch by ~10%', () => {
@@ -35,5 +36,20 @@ describe('getRingColor', () => {
     for (const { hex } of PALETTE_COLORS) {
       expect(getRingColor(hex)).toMatch(/^#[0-9a-f]{6}$/);
     }
+  });
+});
+
+describe('isLightColor', () => {
+  it('claims colors at or above the brightness cutoff', () => {
+    expect(isLightColor('#ffffff')).toBe(true);
+    // Red sits at 0.503 — the closest any palette color comes to the 0.5 cutoff
+    // from above, so a retune of LIGHT_COLOR_BRIGHTNESS flips it first.
+    expect(isLightColor('#EC534E')).toBe(true);
+  });
+
+  it('leaves the dark inks below it', () => {
+    expect(isLightColor('#000000')).toBe(false);
+    expect(isLightColor('#0a0b10')).toBe(false);
+    expect(isLightColor(PICKER_DIM_BORDER)).toBe(false);
   });
 });

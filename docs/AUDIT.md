@@ -5393,32 +5393,6 @@ function resetDragState() {
 whether `hexCenters = null` belongs in it too (currently only reset on window resize, line 119) —
 clearing per-drag cache on drag end is cheap and removes a class of staleness questions.
 
-### [Testing] `isDarkInk` (and `isLightColor`) have zero direct unit coverage beside heavily-tested siblings
-
-**File(s):** `web/src/lib/state/colors.svelte.ts` (`isDarkInk`, lines 83–85);
-`web/src/lib/colorRing.ts` (`isLightColor`, lines 24–26) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`colors.svelte.test.ts` exhaustively tests its neighbors — `isWhite` gets three describe-blocks
-including palette-wide negative cases (lines 93–113) — but `isDarkInk`, the function gating the
-dark-ink keyline on action buttons (`ActionsPanel.svelte` line 142, per ADR-0052), is never imported
-by any test. Its load-bearing invariants are unpinned: `BLACK_INK` must be dark ink, every other
-palette color (and `WHITE_INK`) must not be, and the darkest picker greys sit on a deliberate side
-of the `0.15` cutoff. A retune of `DARK_INK_LUMINANCE_MAX` or a palette color edit could silently
-flip a keyline. `isLightColor` is only covered transitively through `notchBand` tests (outside this
-section), so its own threshold semantics are similarly unpinned.
-
-#### Proposed solution
-
-Add a `describe('isDarkInk')` to `colors.svelte.test.ts` mirroring the `isWhite` structure:
-`expect(isDarkInk(BLACK_INK)).toBe(true)`, loop `PALETTE_COLORS` excluding `BLACK_INK` expecting
-`false`, plus the boundary greys from the picker (`PICKER_DIM_BORDER` true, `'#263238'`/nearby
-expected value). A small direct `isLightColor` spec in `colorRing.test.ts` (both sides of `0.5`)
-closes the other gap.
-
 ### [Maintainability] Picker's dim keyline `#4d4d5b` coincides with the dark-theme `borderWarmStrong` token value with no declared relationship
 
 **File(s):** `web/src/lib/components/ColorPicker.svelte` (`.hexagon.border-dim`, lines 453–455);

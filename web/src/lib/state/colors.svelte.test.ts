@@ -13,6 +13,7 @@ import {
   isWhite,
   isDarkInk,
 } from './colors.svelte';
+import { PICKER_DIM_BORDER } from '$lib/hexPickerLayout';
 
 beforeEach(() => {
   // Reset to the documented default selection (Purple at index 0).
@@ -124,5 +125,9 @@ describe('isDarkInk', () => {
       expect(isDarkInk(hex), hex).toBe(false);
     }
     expect(isDarkInk(WHITE_INK)).toBe(false);
+  });
+
+  it("claims the picker's darkest swatch, which carries the dim border for the same reason", () => {
+    expect(isDarkInk(PICKER_DIM_BORDER)).toBe(true);
   });
 });
