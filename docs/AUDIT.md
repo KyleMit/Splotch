@@ -27,39 +27,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — App state (runes)
 
-### [Maintainability] `BRUSH_TYPES` and `BRUSH_OPTIONS` are two hand-maintained copies of the same ordered list
-
-**File(s):** `web/src/lib/state/tool.svelte.ts` (lines 15–33, 46–51) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-Line 16 declares `export const BRUSH_TYPES: BrushType[] = ['pen', 'crayon', 'magic', 'eraser'];`
-with the comment "Presentation order in the Brush Menu", and lines 23–33 declare `BRUSH_OPTIONS` —
-also "in presentation order" — whose `brush` fields are the same four values in the same order.
-Adding or reordering a brush requires editing both lists and keeping their order aligned; nothing
-enforces the agreement (a unit test asserts `BRUSH_TYPES`' content but not its correspondence to
-`BRUSH_OPTIONS`). Two smaller issues in the same lines: `BRUSH_TYPES` and `BRUSH_OPTIONS` are
-mutable exported arrays (contrast `STROKE_SIZES: readonly StrokeSize[]` in
-`strokeWidth.svelte.ts:6`), and `readBrush` (line 48) validates via a widening cast
-`(BRUSH_TYPES as string[]).includes(raw)`.
-
-#### Proposed solution
-
-Derive one from the other so a single list owns the order:
-
-```ts
-export const BRUSH_OPTIONS: readonly BrushOption[] = [/* the four entries */];
-export const BRUSH_TYPES: readonly BrushType[] = BRUSH_OPTIONS.map((o) => o.brush);
-```
-
-with a named
-`interface BrushOption { brush: BrushType; icon: CommonIconName; label: string; id: string }`.
-Optionally add `function isBrushType(raw: string): raw is BrushType` to replace the `as string[]`
-widening in `readBrush`. Consumers (`BrushMenu.svelte:34`, `ActionsPanel.svelte:287`, tests) are
-unaffected.
-
 ### [Types] `TRIM_ORDER`'s label lookup lets a typo produce a silent `undefined` entry
 
 **File(s):** `web/src/lib/state/colors.svelte.ts` (lines 21–33) @ 9ae62ff1
