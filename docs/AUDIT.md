@@ -25,32 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Readability] AboutSection's `typeof __IS_CAPACITOR__ !== 'undefined'` guard is dead defensive code, unique in the codebase
-
-**File(s):** `web/src/lib/components/settings/AboutSection.svelte` (lines 22–23) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-const adminHref = typeof __IS_CAPACITOR__ !== 'undefined' && __IS_CAPACITOR__
-  ? '/admin/native'
-  : '/admin';
-```
-
-Everywhere else — including this section's own `SetupInstructions.svelte:44`
-(`const native = __IS_CAPACITOR__ && isNative()`) — the compile-time define is read bare, per the
-src-orientation doc ("Compile-time constants from Vite"). `app.d.ts:25` declares it, both Vite and
-Vitest define it, and `buildDefines.test.ts` asserts it. The `typeof` guard defends against an
-environment that doesn't exist in this repo, and its uniqueness makes a reader wonder what special
-hazard this one call site knows about (none).
-
-#### Proposed solution
-
-`const adminHref = __IS_CAPACITOR__ ? '/admin/native' : '/admin';` — and run `npm run check` + unit
-tests to confirm no config actually relies on the guard.
-
 ### [Docs] SettingsModal's pinch-zoom comment says "whichever scroll shell is mounted binds it," but the compact shell never does
 
 **File(s):** `web/src/lib/components/SettingsModal.svelte` (comment, lines 76–79; compact branch,

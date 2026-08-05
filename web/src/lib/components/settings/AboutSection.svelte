@@ -19,8 +19,7 @@
   // sticks on '/admin', whose full-navigation white-screens in the WebView.
   const ADMIN_UNLOCK_TAPS = 5;
   let versionClicks = $state(0);
-  const adminHref =
-    typeof __IS_CAPACITOR__ !== 'undefined' && __IS_CAPACITOR__ ? '/admin/native' : '/admin';
+  const adminHref = __IS_CAPACITOR__ ? '/admin/native' : '/admin';
   function handleVersionClick() {
     versionClicks += 1;
     if (versionClicks < ADMIN_UNLOCK_TAPS) return;
