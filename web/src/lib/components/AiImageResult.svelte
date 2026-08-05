@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
   import AiDial from './AiDial.svelte';
   import AiConfetti from './AiConfetti.svelte';
@@ -22,14 +21,21 @@
   // Tracks the stage's rendered height so AiConfetti's fall distance (--stage-h)
   // spans the real stage instead of a fixed pixel guess — the stage's height is
   // capped by .stage-sizer's viewport-relative max-height, which varies by
-  // viewport and by the autosave variant.
+  // viewport and by the autosave variant. Reactive on aiStageEl (not onMount):
+  // the error state's {:else} unmounts .ai-stage and swaps in a fresh element
+  // on retry, so the observer must be re-attached each time the element
+  // changes, not just once at component mount.
   let stageHeight = $state(0);
-  onMount(() => {
-    if (!aiStageEl) return;
+  $effect(() => {
+    if (!aiStageEl) {
+      stageHeight = 0;
+      return;
+    }
+    const el = aiStageEl;
     const ro = new ResizeObserver(([entry]) => {
       stageHeight = entry.contentRect.height;
     });
-    ro.observe(aiStageEl);
+    ro.observe(el);
     return () => ro.disconnect();
   });
 

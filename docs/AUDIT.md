@@ -23,43 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Maintainability] AiConfetti's fall keyframes are hardcoded to a ~540 px stage; leaves vanish mid-air on taller stages
-
-**File(s):** `web/src/lib/components/AiConfetti.svelte` (`@keyframes leafFall`, lines 97–121) @
-9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The fall path is a fixed pixel ladder:
-
-```css
-0%   { transform: translateY(-40px) ... }
-25%  { transform: translateY(110px) ... }
-50%  { transform: translateY(260px) ... }
-75%  { transform: translateY(410px) ... }
-100% { transform: translateY(540px) ...; opacity: 0; }
-```
-
-The confetti layer is `inset: 0` of `.ai-stage`, whose height tracks the drawing's aspect and the
-viewport (`stage-sizer` allows up to `calc(96vh - 70px)` — comfortably over 540 px on tablets in
-portrait). On any stage taller than ~540 px, every leaf fades out partway down and the bottom of the
-stage stays permanently empty; on a short stage the tail of the fall is clipped invisibly (fine).
-The magic pixel ladder also violates the named-tuning-literal convention — the component
-painstakingly names every other knob (`LEFT_SPAN`, `DURATION_MIN`, …, lines 19–28) but the fall
-geometry is inline in CSS.
-
-#### Proposed solution
-
-Drive the fall distance from the stage: keyframes in percentages of a custom property, e.g.
-`transform: translateY(calc(var(--fall-distance, 540px) * 0.25 - 40px))`-style stops, with
-`--fall-distance` set to `100% of stage` via `AiImageResult` (it already passes
-`--confetti-rx`/`--confetti-ry` down, lines 121). Simplest robust variant: keyframe the leaf from
-`-40px` to `calc(var(--stage-h, 540px) + 40px)` with intermediate stops as fractions, where
-`.ai-stage` sets `--stage-h` from a resize observer — or accept viewport-relative units (`vh`) as an
-approximation with a comment. Whichever route, name the ladder's constants.
-
 ### [Performance] WebP transcode runs on the main thread with a DOM canvas; OffscreenCanvas would avoid dial jank
 
 **File(s):** `web/src/lib/drawing/aiImage.ts` (`encodeWebpUpload`, lines 30–53) @ 9ae62ff1

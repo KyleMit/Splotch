@@ -92,4 +92,46 @@ test.describe('AI render timer', () => {
     expect(result.transform).toMatch(/scale\(/);
     expect(result.transform).not.toMatch(/scale\(1\)/);
   });
+
+  // AiConfetti's fall keyframes read --stage-h off .ai-stage (set by a
+  // ResizeObserver in AiImageResult) instead of a fixed 540px, so the leaves
+  // reach the bottom of the real stage on any viewport.
+  test.describe('--stage-h tracks the stage element', () => {
+    const stageHeightVar = (page: Page) =>
+      page
+        .locator('.ai-stage')
+        .evaluate((el) => getComputedStyle(el).getPropertyValue('--stage-h').trim());
+
+    test('reflects the stage element’s real rendered height', async ({ page }) => {
+      await page.goto('/dev/ai-timer');
+      await trigger(page, /fast/i);
+
+      await expect.poll(() => stageHeightVar(page)).toMatch(/^[\d.]+px$/);
+
+      const { stageH, rectHeight } = await page.locator('.ai-stage').evaluate((el) => ({
+        stageH: parseFloat(getComputedStyle(el).getPropertyValue('--stage-h')),
+        rectHeight: el.getBoundingClientRect().height,
+      }));
+      expect(stageH).toBeCloseTo(rectHeight, 0);
+    });
+
+    // The error state's {:else} unmounts .ai-stage; a retry mounts a fresh
+    // element. Regression coverage for the observer staying bound to the old,
+    // now-detached element instead of following aiStageEl to the new one.
+    test('re-observes a fresh .ai-stage after an error-then-retry', async ({ page }) => {
+      await page.goto('/dev/ai-timer');
+      await trigger(page, /fast/i);
+      await expect.poll(() => stageHeightVar(page)).toMatch(/^[\d.]+px$/);
+
+      // The open <dialog> is modal, so the button row below it is inert —
+      // drive the error + retry via the harness's global hotkeys instead
+      // (same reason `trigger()` above only works before the dialog opens).
+      await page.keyboard.press('e');
+      await expect(page.getByText(/didn't work/i)).toBeVisible();
+
+      await page.keyboard.press('p');
+      await expect(page.locator('.dial')).toBeVisible();
+      await expect.poll(() => stageHeightVar(page)).toMatch(/^[\d.]+px$/);
+    });
+  });
 });
