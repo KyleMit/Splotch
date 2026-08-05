@@ -1282,3 +1282,110 @@ half-implies that policy; the type should state it.
 #### Why it was deferred
 
 verifier gave no usable brief
+
+### [Maintainability] Three hand-rolled copies of the iOS-style segmented control — extract a design primitive
+
+**File(s):** `web/src/lib/components/settings/AppearanceSection.svelte` (`.theme-picker`, lines
+33–47 markup, 89–135 styles), `web/src/lib/components/settings/CompactShell.svelte` (`.orient-seg`,
+lines 97–111 markup, 169–219 styles), `web/src/lib/components/settings/ReportForm.svelte`
+(`.report-kind`, lines 115–128 markup, 235–270 styles) @ 9ae62ff1
+
+**Priority:** P2
+
+#### Problem
+
+The same segmented-control widget is implemented three times inside this one section, and two of the
+copies openly admit it in comments:
+
+* `AppearanceSection.svelte:89`:
+  `/* iOS-style segmented control: the active segment reads as a raised card. */`
+* `CompactShell.svelte:169`:
+  `/* iOS-style segmented control, matching the Theme picker in AppearanceSection. … */`
+* `ReportForm.svelte:235`:
+  `/* Bug / feature segmented control — mirrors the Appearance theme picker. */`
+
+Each copy re-declares the flex row + `--slider-track` well + padded segments + active raised card +
+hover rules, but they have already drifted: the theme picker uses `border-radius: var(--radius-md)`
+outer / `9px` inner with `--shadow-segment`; CompactShell uses `10px` outer / `var(--radius-sm)`
+inner, `12.5px` font, and `touch-action: manipulation`; ReportForm uses a bordered `--surface` well,
+`10px`/`7px` radii, **no** `--shadow-segment` on the active segment, and a filled `--brand` active
+state instead of the raised-card look. The accessibility patterns diverge too: two are
+`role="radiogroup"`/`role="radio"`+`aria-checked`, one is `role="group"`+`aria-pressed`.
+"Matching"/"mirrors" comments are cross-file agreement by prose — exactly what CLAUDE.md calls a
+defect, and the drift shows the prose isn't holding.
+
+The design-system tree (`web/src/lib/components/design/`) already exists for this (Button,
+Disclosure, StatusMessage), and `web/src/lib/design/tokens.ts:108` even documents `--shadow-segment`
+as "the tight lift on the selected segment of a segmented toggle (theme, …)" — the vocabulary
+anticipates a shared primitive that never got built.
+
+#### Proposed solution
+
+Add `web/src/lib/components/design/SegmentedControl.svelte`, generic over the option value:
+
+```svelte
+<script lang="ts" generics="T extends string">
+  interface Option { value: T; label: string; icon?: CommonIconName; id?: string }
+  interface Props {
+    options: Option[];
+    selected: T | null;          // null = nothing active (CompactShell's unlocked state)
+    onSelect: (value: T) => void;
+    ariaLabel: string;
+  }
+</script>
+```
+
+The primitive owns the well, segment chrome, active state, and the radiogroup/radio ARIA wiring;
+call sites keep sizing tweaks via a forwarded `class`, the established Disclosure pattern.
+CompactShell's "tap the active side to release" behavior stays in its `onSelect` handler.
+ReportForm's filled-brand active style can either adopt the raised-card look (visual consistency
+win) or pass a variant — decide with the `design` skill open. Note the a11y wrinkle:
+`selected: null` with `role="radio"` is legal (no radio checked), so CompactShell's `aria-pressed`
+variant can be dropped.
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `docs/adrs/0071-design-token-single-source.md:152-155` still states "The report-kind row
+  (`ReportFields`) stays native radios on purpose … `SegmentedPicker`'s `<button role="radio">`
+  markup cannot [submit without JavaScript] — that one hand-rolled picker is a deliberate carve-out,
+  not a migration gap." That is now false; amend the picker amendment to record that `inputName`
+  gives the primitive a native-radio skin and the report-kind row migrated onto it.
+* `.ruler/skills/design/SKILL.md:116-117` still tells the reader "(The report-kind row stays
+  hand-rolled on native radios so the `/feedback` form posts without JavaScript)", and the
+  `SegmentedPicker.svelte` row of that same table (lines 118-121) lists
+  `mode`/`variant`/sizes/`fill` but not the new `inputName` prop. Fix both in the `.ruler/` source
+  and run `npm run ruler:apply` so `.claude/skills/design/SKILL.md` and
+  `.agents/skills/design/SKILL.md` regenerate.
+* `docs/COMPATIBILITY.md:128` locates the CSS `:has()` usage at
+  `lib/components/report/ReportFields.svelte:190` ("focus ring around the report-kind label"); that
+  selector now lives at `web/src/lib/components/design/SegmentedPicker.svelte:136` and applies to
+  every native-radio picker, not just the report kind. Update the row's file:line and description.
+* ReportFields' `@media (max-width: 400px)` tightening (gap/padding shrink, `font-size-xs`,
+  `white-space: nowrap`) was deleted with no equivalent in the primitive or at the call site, and
+  `SegmentedPicker` forwards no `class` prop. `.segment.md .option` is `font-size-sm` with
+  `min-width: 0` and no nowrap/ellipsis, so on a ~320-360px viewport the two long labels
+  ("Something's broken", "I have an idea") can wrap to two lines in both `/feedback` and the
+  settings Send Feedback card — the exact narrow-phone case the removed comment says was handled
+  deliberately. Restore the tightening (a forwarded `class`, an extra size, or a `:global()`
+  override in `ReportFields`) and cover it with a narrow-viewport assertion, since no current spec
+  exercises it.
+
+#### What was tried
+
+Gave SegmentedPicker an opt-in `inputName` prop that renders its options as a native
+`<input type="radio">` group inside the same track/option chrome (shared with the button skin via a
+snippet), so the feedback kind picker can drop its hand-rolled copy without losing no-JS form
+submission. ReportFields now renders it with the default `segment` variant — the choose-one skin,
+matching Appearance/CompactShell — and `/feedback`'s `:global()` radius overrides are deleted since
+the primitive's md/sm radii already land in the page's one radius family.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/maintainability-three-hand-rolled-copies-of-the-ios-style-segmented-cont.patch`
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/maintainability-three-hand-rolled-copies-of-the-ios-style-segmented-cont.patch`.

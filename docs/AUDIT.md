@@ -25,66 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Maintainability] Three hand-rolled copies of the iOS-style segmented control — extract a design primitive
-
-**File(s):** `web/src/lib/components/settings/AppearanceSection.svelte` (`.theme-picker`, lines
-33–47 markup, 89–135 styles), `web/src/lib/components/settings/CompactShell.svelte` (`.orient-seg`,
-lines 97–111 markup, 169–219 styles), `web/src/lib/components/settings/ReportForm.svelte`
-(`.report-kind`, lines 115–128 markup, 235–270 styles) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-The same segmented-control widget is implemented three times inside this one section, and two of the
-copies openly admit it in comments:
-
-* `AppearanceSection.svelte:89`:
-  `/* iOS-style segmented control: the active segment reads as a raised card. */`
-* `CompactShell.svelte:169`:
-  `/* iOS-style segmented control, matching the Theme picker in AppearanceSection. … */`
-* `ReportForm.svelte:235`:
-  `/* Bug / feature segmented control — mirrors the Appearance theme picker. */`
-
-Each copy re-declares the flex row + `--slider-track` well + padded segments + active raised card +
-hover rules, but they have already drifted: the theme picker uses `border-radius: var(--radius-md)`
-outer / `9px` inner with `--shadow-segment`; CompactShell uses `10px` outer / `var(--radius-sm)`
-inner, `12.5px` font, and `touch-action: manipulation`; ReportForm uses a bordered `--surface` well,
-`10px`/`7px` radii, **no** `--shadow-segment` on the active segment, and a filled `--brand` active
-state instead of the raised-card look. The accessibility patterns diverge too: two are
-`role="radiogroup"`/`role="radio"`+`aria-checked`, one is `role="group"`+`aria-pressed`.
-"Matching"/"mirrors" comments are cross-file agreement by prose — exactly what CLAUDE.md calls a
-defect, and the drift shows the prose isn't holding.
-
-The design-system tree (`web/src/lib/components/design/`) already exists for this (Button,
-Disclosure, StatusMessage), and `web/src/lib/design/tokens.ts:108` even documents `--shadow-segment`
-as "the tight lift on the selected segment of a segmented toggle (theme, …)" — the vocabulary
-anticipates a shared primitive that never got built.
-
-#### Proposed solution
-
-Add `web/src/lib/components/design/SegmentedControl.svelte`, generic over the option value:
-
-```svelte
-<script lang="ts" generics="T extends string">
-  interface Option { value: T; label: string; icon?: CommonIconName; id?: string }
-  interface Props {
-    options: Option[];
-    selected: T | null;          // null = nothing active (CompactShell's unlocked state)
-    onSelect: (value: T) => void;
-    ariaLabel: string;
-  }
-</script>
-```
-
-The primitive owns the well, segment chrome, active state, and the radiogroup/radio ARIA wiring;
-call sites keep sizing tweaks via a forwarded `class`, the established Disclosure pattern.
-CompactShell's "tap the active side to release" behavior stays in its `onSelect` handler.
-ReportForm's filled-brand active style can either adopt the raised-card look (visual consistency
-win) or pass a variant — decide with the `design` skill open. Note the a11y wrinkle:
-`selected: null` with `role="radio"` is legal (no radio checked), so CompactShell's `aria-pressed`
-variant can be dropped.
-
 ### [Types] Section→content mapping is an unchecked if/else chain — a new `SectionId` silently renders nothing
 
 **File(s):** `web/src/lib/components/SettingsModal.svelte` (`sectionContent` snippet, lines 88–108;
