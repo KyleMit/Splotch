@@ -109,12 +109,12 @@ The decisions that shape everything else, in rough order of importance. All are 
 
 ## Web platform & PWA
 
-| #                                                   | Title                                                                                           | Status                                                    |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| [0005](0005-dual-layer-storage.md)                  | Dual-Layer Storage (localStorage + Capacitor Preferences)                                       | Active                                                    |
-| [0022](0022-pwa-service-worker-strategy.md)         | PWA Service Worker Strategy — vite-plugin-pwa as Manifest Injector with Custom Update Lifecycle | Active (amended: deferred manual registration, issue 462) |
-| [0040](0040-per-route-render-modes-and-ssg-home.md) | Per-Route Render Modes — the Home Route Stays Prerendered (SSG), Not Per-Request SSR            | Active                                                    |
-| [0042](0042-static-media-cache-invalidation.md)     | Cache Invalidation for Stable-Filename Static Media                                             | Active                                                    |
+| #                                                   | Title                                                                                           | Status                                                                                                              |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| [0005](0005-dual-layer-storage.md)                  | Dual-Layer Storage (localStorage + Capacitor Preferences)                                       | Active                                                                                                              |
+| [0022](0022-pwa-service-worker-strategy.md)         | PWA Service Worker Strategy — vite-plugin-pwa as Manifest Injector with Custom Update Lifecycle | Active (amended: deferred manual registration, issue 462; canvas-empty guard on the cache-bust redirect, issue 778) |
+| [0040](0040-per-route-render-modes-and-ssg-home.md) | Per-Route Render Modes — the Home Route Stays Prerendered (SSG), Not Per-Request SSR            | Active                                                                                                              |
+| [0042](0042-static-media-cache-invalidation.md)     | Cache Invalidation for Stable-Filename Static Media                                             | Active                                                                                                              |
 
 ## Testing & quality
 
