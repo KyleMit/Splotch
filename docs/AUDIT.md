@@ -4714,44 +4714,6 @@ browsers in `docs/COMPATIBILITY.md`) reveals an engine that still honors them �
 WHY comment naming that engine. Verify with the existing `settings-zoom.spec.ts` plus a manual iOS
 Safari pass, since this is exactly the class of behavior E2E in Chromium can't fully certify.
 
-### [Readability] `isPointInLaunchZone` is a query with hidden writes and a hand-rolled loop
-
-**File(s):** `web/src/lib/actions/launchGuard.ts` (lines 52–61) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-export function isPointInLaunchZone(x: number, y: number): boolean {
-  zones = liveZones();
-  let hit = false;
-  for (const zone of zones) {
-    ...
-    if (dx * dx + dy * dy <= zone.radiusSq) hit = true;
-  }
-  return hit;
-}
-```
-
-Two small things: an `is*` predicate mutates module state (the prune) — the comment discloses it,
-but the *name* doesn't; and the loop keeps scanning after a hit instead of early-returning (or just
-`return zones.some(...)`). Neither matters for perf (zones is ~1 element), but both cost a beat of
-reader attention in a security-adjacent input path.
-
-#### Proposed solution
-
-```ts
-export function isPointInLaunchZone(x: number, y: number): boolean {
-  zones = liveZones();
-  return zones.some((z) => (x - z.x) ** 2 + (y - z.y) ** 2 <= z.radiusSq);
-}
-```
-
-The prune is worth keeping (it's the timer-free reclamation strategy); consider renaming the private
-step so the side effect is named where it happens (`pruneLapsedZones()` instead of assigning from
-`liveZones()` inline).
-
 ### [Docs] launchGuard comment restates the fly-in duration owned by tokens.css — and misattributes the file
 
 **File(s):** `web/src/lib/actions/launchGuard.ts` (lines 21–23) @ 9ae62ff1; `web/src/tokens.css`

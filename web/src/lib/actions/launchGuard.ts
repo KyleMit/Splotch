@@ -38,7 +38,7 @@ let zones: DeadZone[] = [];
 // opened with no anchor, e.g. via keyboard) simply arms nothing.
 export function guardLaunchZone(origin: Origin | null) {
   if (!origin) return;
-  zones = liveZones();
+  pruneLapsedZones();
   zones.push({
     x: origin.x,
     y: origin.y,
@@ -47,17 +47,9 @@ export function guardLaunchZone(origin: Origin | null) {
   });
 }
 
-// True while a point sits inside an unexpired dead zone. Prunes lapsed zones as
-// it goes, so no timer is needed to reclaim them.
+// True while a point sits inside an unexpired dead zone.
 export function isPointInLaunchZone(x: number, y: number): boolean {
-  zones = liveZones();
-  let hit = false;
-  for (const zone of zones) {
-    const dx = x - zone.x;
-    const dy = y - zone.y;
-    if (dx * dx + dy * dy <= zone.radiusSq) hit = true;
-  }
-  return hit;
+  return pruneLapsedZones().some((zone) => (x - zone.x) ** 2 + (y - zone.y) ** 2 <= zone.radiusSq);
 }
 
 // Drop every armed zone. modalDialog calls this on close so a zone from the
@@ -66,7 +58,11 @@ export function clearLaunchZones() {
   zones = [];
 }
 
-function liveZones() {
+// Drops lapsed zones in place and returns what survives. Both the arm and the
+// query path run it, which is the timer-free reclamation strategy — and the
+// reason isPointInLaunchZone has a write behind it.
+function pruneLapsedZones(): DeadZone[] {
   const now = Date.now();
-  return zones.filter((zone) => zone.expiresAt > now);
+  zones = zones.filter((zone) => zone.expiresAt > now);
+  return zones;
 }
