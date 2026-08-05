@@ -27,46 +27,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — App state (runes)
 
-### [Architecture] `ColorPalette` mutates `layout.paletteWidth/Height` directly instead of through a setter
-
-**File(s):** `web/src/lib/state/layout.svelte.ts` (lines 29–36) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`.claude/rules/svelte.md` states: "Components read state and call setters; they never own shared
-state." Yet `ColorPalette.svelte:47-54` assigns the shared store directly from its ResizeObserver
-and unmount cleanup:
-
-```ts
-layout.paletteWidth = rect.width;
-layout.paletteHeight = rect.height;
-// …and on teardown:
-layout.paletteWidth = 0;
-layout.paletteHeight = 0;
-```
-
-`layout.svelte.ts` exposes no setter for these two fields (every other write to `layout` happens
-inside the module's own `syncViewport`). The module comment (lines 5–10) documents the publish
-mechanism but not the raw-assignment API; a setter would also give the "0 = unmeasured" sentinel
-(documented at lines 33–35) a single named home instead of being re-encoded at the component's
-teardown site.
-
-#### Proposed solution
-
-Add to `layout.svelte.ts`:
-
-```ts
-export function publishPaletteSize(width: number, height: number) {
-  layout.paletteWidth = width;
-  layout.paletteHeight = height;
-}
-```
-
-`ColorPalette` calls `publishPaletteSize(rect.width, rect.height)` and `publishPaletteSize(0, 0)` on
-teardown. Small change; brings the one rule-breaking write site in the state layer into line.
-
 ### [Testing] `fullscreen.svelte.ts` has no unit tests
 
 **File(s):** `web/src/lib/state/fullscreen.svelte.ts` (whole file, 67 lines) @ 9ae62ff1
