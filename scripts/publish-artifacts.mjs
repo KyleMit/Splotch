@@ -65,8 +65,11 @@ export function parsePublishArgs(args) {
     throw new Error(`Not a version: ${version}\n${PUBLISH_USAGE}`);
   }
 
+  // Tested against undefined rather than falsiness: `--only=` parses as the
+  // empty string, and a truthiness check would let it through as "no filter",
+  // widening a scoped publish back to every platform.
   const only = parsed.values.only;
-  if (only && !PLATFORMS.includes(only)) {
+  if (only !== undefined && !PLATFORMS.includes(only)) {
     throw new Error(`--only must be one of: ${PLATFORMS.join(', ')}`);
   }
 

@@ -70,6 +70,9 @@ describe('parsePublishArgs', () => {
   it('rejects a bad version, an unknown platform, and a stray positional', () => {
     expect(() => parsePublishArgs(['v1.4.0'])).toThrow(/Not a version: v1\.4\.0/);
     expect(() => parsePublishArgs(['--only=web'])).toThrow(/--only must be one of: android, ios/);
+    // An empty --only= must fail closed, not fall through to publishing every platform.
+    expect(() => parsePublishArgs(['--only='])).toThrow(/--only must be one of: android, ios/);
+    expect(() => parsePublishArgs(['--only', ''])).toThrow(/--only must be one of: android, ios/);
     expect(() => parsePublishArgs(['1.4.0', '1.5.0'])).toThrow(/Unexpected argument: 1\.5\.0/);
   });
 });
