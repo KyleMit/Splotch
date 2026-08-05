@@ -1501,30 +1501,6 @@ window.history.replaceState({}, '', url);
 
 Same length, no behavior change for current links, and future-proof against additional params.
 
-### [Testing] Small coverage gaps: `isDarkInk` and the layout viewport dimensions
-
-**File(s):** `web/src/lib/state/colors.svelte.test.ts` (imports, lines 2–14),
-`web/src/lib/state/layout.svelte.test.ts` (lines 38–89) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-Two exports in the section have colocated test files that skip them entirely. (a)
-`colors.svelte.test.ts` tests `isWhite` thoroughly (lines 93–113) but never imports `isDarkInk`
-(`colors.svelte.ts:83-85`) — the tuned `DARK_INK_LUMINANCE_MAX = 0.15` cutoff that drives the
-keyline on dark action-button cards has no test pinning that Black ink is below it and, say, Purple
-is above. (b) `layout.svelte.test.ts` asserts orientation and safe-area syncing but never
-`layout.viewportWidth`/`viewportHeight` (`layout.svelte.ts:62-63`), which `actionButtonLayout.ts`
-and Settings size ceiling consume; a regression that stopped syncing them would pass the suite.
-
-#### Proposed solution
-
-(a) Add an `isDarkInk` describe: `expect(isDarkInk(BLACK_INK)).toBe(true)` and false for each
-non-black palette hex. (b) In the existing "re-measures on resize" test, set
-`window.innerWidth/innerHeight` (happy-dom allows assignment) before dispatching `resize` and assert
-the two fields track.
-
 ### [Readability] `tool.svelte.test.ts` duplicates its three-line `beforeEach` in both describes
 
 **File(s):** `web/src/lib/state/tool.svelte.test.ts` (lines 15–19, 101–105) @ 9ae62ff1

@@ -45,15 +45,25 @@ describe('viewport tracking', () => {
   });
 
   it('re-measures on resize', async () => {
+    window.innerWidth = 1024;
+    window.innerHeight = 768;
     const { layout } = await freshModule();
     expect(layout.orientation).toBe('landscape');
+    expect(layout.viewportWidth).toBe(1024);
+    expect(layout.viewportHeight).toBe(768);
 
     mocks.portrait = true;
     mocks.insets = { top: 44, right: 0, bottom: 34, left: 0 };
+    // The dimensions feed JS-side layout math (actionButtonLayout, the Settings
+    // size ceiling), so a resize that stopped syncing them has to fail here.
+    window.innerWidth = 768;
+    window.innerHeight = 1024;
     window.dispatchEvent(new Event('resize'));
 
     expect(layout.orientation).toBe('portrait');
     expect(layout.safeArea.top).toBe(44);
+    expect(layout.viewportWidth).toBe(768);
+    expect(layout.viewportHeight).toBe(1024);
   });
 
   it('re-measures on re-entry when the device rotated while backgrounded', async () => {

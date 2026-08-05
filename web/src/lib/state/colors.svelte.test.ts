@@ -11,6 +11,7 @@ import {
   pickCustomColor,
   themedSwatchColor,
   isWhite,
+  isDarkInk,
 } from './colors.svelte';
 
 beforeEach(() => {
@@ -109,5 +110,19 @@ describe('isWhite', () => {
   it('returns false for malformed input', () => {
     expect(isWhite('')).toBe(false);
     expect(isWhite('#fffffe')).toBe(false);
+  });
+});
+
+describe('isDarkInk', () => {
+  it('claims the near-black ink that drives the keyline', () => {
+    expect(isDarkInk(BLACK_INK)).toBe(true);
+  });
+
+  it('leaves every other palette color and the white ink alone', () => {
+    for (const { hex } of PALETTE_COLORS) {
+      if (hex === BLACK_INK) continue;
+      expect(isDarkInk(hex), hex).toBe(false);
+    }
+    expect(isDarkInk(WHITE_INK)).toBe(false);
   });
 });
