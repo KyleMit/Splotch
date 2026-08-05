@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="410" height="24" viewBox="0 0 410 24" role="img" aria-label="Splotch">
+  <rect x="0" y="7" width="30" height="10" rx="5" fill="#EC534E"/>
+  <rect x="36" y="7" width="30" height="10" rx="5" fill="#F89C45"/>
+  <rect x="72" y="7" width="30" height="10" rx="5" fill="#F9D24F"/>
+  <rect x="108" y="7" width="30" height="10" rx="5" fill="#8CC864"/>
+  <rect x="144" y="7" width="30" height="10" rx="5" fill="#62A2E9"/>
+  <rect x="180" y="7" width="30" height="10" rx="5" fill="#AB71E1"/>
+  <rect x="216" y="7" width="30" height="10" rx="5" fill="#F47CB0"/>
+  <text x="262" y="17" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="17" font-weight="700" letter-spacing="4" fill="#8a8593">SPLOTCH</text>
+</svg>

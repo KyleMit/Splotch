@@ -73,6 +73,9 @@ CLI, which is installed globally (it is not a project dependency):
 npm install -g netlify-cli
 ```
 
+In production, AI access is granted per user: append one of the `AI_ACCESS_TOKENS` values to the app
+URL as the `ai_access_token` query param — `https://splotch.art/?ai_access_token=YOUR_TOKEN`.
+
 ## The dual-build
 
 Splotch ships as two distinct build targets from the same source:
@@ -103,6 +106,20 @@ run from the repo root; the web toolchain is dispatched into `web/` by `scripts/
 
 On native the AI button calls the **hosted** endpoint (`https://splotch.art/api/generate-image`) via
 `__NATIVE_API_BASE__`. On web it uses a same-origin relative path.
+
+To get the static build into the native projects (full toolchain setup, on-device testing, and the
+store release flow live in the [mobile guide](../.claude/skills/mobile/SKILL.md)):
+
+```bash
+npm run cap:sync       # static build + copy into the native projects
+npm run cap:android    # also open the Android project in Android Studio
+```
+
+### Deployment
+
+The web app deploys to Netlify, which builds automatically on push using the settings in
+`netlify.toml` (see the production-deploy note above for how the root/`web/` layout is staged). A
+manual deploy also works via the Netlify CLI: `netlify deploy --prod`.
 
 ## Type checking
 
@@ -181,6 +198,15 @@ implementations: edit only the intended provider directly and never synchronize 
 Claude Code's `Read(//tmp/**)` permission intentionally uses an absolute-path double slash so
 sessions can read scratch files under `/tmp`. Do not change it to `Read(/tmp/**)`: that syntax is
 project-relative, and the broad `/tmp` scope is deliberate for session scratch files.
+
+## Images
+
+* **Docs-only images** (README screenshots and the like) live in `docs/assets/`, committed as
+  optimized `.webp` — never raw PNGs.
+* **Shipped PNGs** under `web/static/` get a WebP sibling before committing:
+  `node tools/asset-gen/bin/png-to-webp.mjs`.
+* **Committed run outputs** (proof sheets, Lighthouse reports, model tests) belong in
+  [`/scrapbook`](../scrapbook/README.md), not `docs/`.
 
 ## Adding a new icon
 
