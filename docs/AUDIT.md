@@ -27,47 +27,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — App state (runes)
 
-### [Types] `TRIM_ORDER`'s label lookup lets a typo produce a silent `undefined` entry
-
-**File(s):** `web/src/lib/state/colors.svelte.ts` (lines 21–33) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-const paletteByLabel = Object.fromEntries(PALETTE_COLORS.map(({ hex, label }) => [label, hex]));
-export const TRIM_ORDER: string[] = [
-  'Brown',
-  'Teal',
-  'Pink',
-  'Red',
-  'Orange',
-  'Green',
-  'Yellow',
-  'Blue',
-  'Purple',
-  'Black',
-].map((label) => paletteByLabel[label]);
-```
-
-`PALETTE_COLORS` types `label` as bare `string` (`lib/palette.ts`), and `Object.fromEntries` yields
-`Record<string, string>`, so a misspelled or stale label here type-checks and maps to `undefined` at
-runtime — `TRIM_ORDER`'s declared `string[]` is a lie in that case. The only guard is a unit test
-(`colors.svelte.test.ts:29-31`) comparing sorted hex sets, i.e. a runtime check for what the "close
-finite value sets in the type" convention says should be a compile error. `TRIM_ORDER` is also a
-mutable exported array.
-
-#### Proposed solution
-
-In `lib/palette.ts`, make the labels a literal union: declare the array
-`as const satisfies readonly PaletteColor[]` (or give `PaletteColor` a generic label parameter) and
-export `type PaletteLabel = (typeof PALETTE_COLORS)[number]['label']`. Then in `colors.svelte.ts`
-type the literal list as `readonly PaletteLabel[]` (renaming a palette label becomes a compile error
-here) and export `TRIM_ORDER` as `readonly string[]`. `palette.ts` belongs to the color-palette
-section — coordinate that half. The existing unit test stays as the completeness check (the type
-can't prove every label appears exactly once).
-
 ### [Types] Collapse the `aiError`/`aiErrorMessage`/`aiErrorKind` tri-field into one nullable error value
 
 **File(s):** `web/src/lib/state/ui.svelte.ts` (lines 14–19, 29–31) @ 9ae62ff1
