@@ -52,10 +52,10 @@ function reportPlatformFilterMismatch(books, mobileEligibleBooks) {
   return 0;
 }
 
-// Everything under static/ is served verbatim from splotch.art and copied into
-// the native bundles, so an authoring doc dropped here is published the moment
-// it is committed — the trap COLORING-BOOK.md fell into. Prose belongs in
-// docs/ or tools/asset-gen/docs/; nothing the app fetches is Markdown.
+// Everything under static/ is served verbatim from splotch.art, so an authoring
+// doc dropped here is published the moment it is committed — the trap
+// COLORING-BOOK.md fell into. Prose belongs in docs/ or tools/asset-gen/docs/;
+// nothing the app fetches is Markdown.
 function reportPubliclyServedDocs(staticDir) {
   const docs = globSync('**/*.md', { cwd: staticDir });
   for (const doc of docs) {
