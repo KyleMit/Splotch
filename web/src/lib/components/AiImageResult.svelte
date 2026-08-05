@@ -2,8 +2,7 @@
   import Icon from './Icon.svelte';
   import AiDial from './AiDial.svelte';
   import AiConfetti from './AiConfetti.svelte';
-  import { ui } from '$lib/state/ui.svelte';
-  import { closeAiResult } from '$lib/state/aiGeneration.svelte';
+  import { aiResult, closeAiResult } from '$lib/state/aiGeneration.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
@@ -15,7 +14,29 @@
   } from '$lib/saveNaming';
 
   let dialogEl: HTMLDialogElement;
+  let aiStageEl = $state<HTMLDivElement | undefined>();
   let zoomLayerEl = $state<HTMLDivElement | undefined>();
+
+  // Tracks the stage's rendered height so AiConfetti's fall distance (--stage-h)
+  // spans the real stage instead of a fixed pixel guess — the stage's height is
+  // capped by .stage-sizer's viewport-relative max-height, which varies by
+  // viewport and by the autosave variant. Reactive on aiStageEl (not onMount):
+  // the error state's {:else} unmounts .ai-stage and swaps in a fresh element
+  // on retry, so the observer must be re-attached each time the element
+  // changes, not just once at component mount.
+  let stageHeight = $state(0);
+  $effect(() => {
+    if (!aiStageEl) {
+      stageHeight = 0;
+      return;
+    }
+    const el = aiStageEl;
+    const ro = new ResizeObserver(([entry]) => {
+      stageHeight = entry.contentRect.height;
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
 
   let revealed = $state(false);
   let progress = $state(0);
@@ -29,7 +50,7 @@
   // so the placeholder box closely matches the preview that slots in a beat later.
   let imgAspect = $state(DEFAULT_ASPECT);
   $effect(() => {
-    if (ui.aiResultOpen && ui.aiGenerating) {
+    if (aiResult.open && aiResult.generating) {
       if (window.innerHeight > 0) {
         imgAspect = window.innerWidth / window.innerHeight;
       }
@@ -41,7 +62,7 @@
   // sees the modal close. Without this, `revealed` stays true and the spinner
   // never mounts on the next generation.
   $effect(() => {
-    if (!ui.aiResultOpen) {
+    if (!aiResult.open) {
       exiting = false;
       revealed = false;
       progress = 0;
@@ -64,11 +85,16 @@
   const DIAL_MASK_RX = 31;
   const confettiMaskRy = $derived(`${(DIAL_MASK_RX * imgAspect).toFixed(1)}%`);
 
+  const stageStyle = $derived(
+    `--confetti-rx: ${DIAL_MASK_RX}%; --confetti-ry: ${confettiMaskRy};` +
+      (stageHeight > 0 ? ` --stage-h: ${stageHeight}px;` : '')
+  );
+
   function handleDownload() {
-    if (!ui.aiResultUrl || exiting) return;
+    if (!aiResult.resultUrl || exiting) return;
     triggerDownload(
-      ui.aiResultUrl,
-      `${AI_IMAGE_BASENAME}-${timestamp()}.${extensionForImageType(ui.aiResultType ?? '')}`
+      aiResult.resultUrl,
+      `${AI_IMAGE_BASENAME}-${timestamp()}.${extensionForImageType(aiResult.resultType ?? '')}`
     );
 
     // Morph the modal into a polaroid, hold it in the center, then let it fly
@@ -94,13 +120,13 @@
   class:autosave={settings.autoSaveAiEnabled}
   bind:this={dialogEl}
   use:modalDialog={() => ({
-    open: ui.aiResultOpen,
+    open: aiResult.open,
     onRequestClose: closeAiResult,
     // While the image is still generating, neither a backdrop tap nor Esc may
     // dismiss — that would throw away an in-flight request the child can't get
     // back. Only the X closes the spinner; once revealed or errored, off-taps
     // and Esc dismiss as usual.
-    allowDismiss: () => !ui.aiGenerating,
+    allowDismiss: () => !aiResult.generating,
     // During the polaroid send-off the modal is animating away; swallow stray
     // backdrop taps without dismissing (the fly-out's end closes it).
     blockBackdropAt: () => exiting,
@@ -112,11 +138,11 @@
       <Icon name="close" class="modal-close-icon" />
     </button>
 
-    {#if ui.aiError}
-      {@const safety = ui.aiErrorKind === 'safety'}
+    {#if aiResult.error}
+      {@const safety = aiResult.error.kind === 'safety'}
       <div class="ai-result-error" class:safety>
         <span class="ai-result-error-emoji">{safety ? '🎨' : '😕'}</span>
-        <p>{ui.aiErrorMessage ?? "Hmm, that didn't work. Please try again!"}</p>
+        <p>{aiResult.error.message ?? "Hmm, that didn't work. Please try again!"}</p>
         {#if safety}
           <p class="ai-result-error-sub">
             That picture didn't work — try drawing something different!
@@ -126,14 +152,15 @@
     {:else}
       <div
         class="ai-stage"
-        style="--confetti-rx: {DIAL_MASK_RX}%; --confetti-ry: {confettiMaskRy};"
+        bind:this={aiStageEl}
+        style={stageStyle}
         use:pinchZoom={() => ({
           target: zoomLayerEl!,
           // Only once the finished picture is on screen — the loading dial and
           // blurred preview shouldn't zoom.
-          enabled: revealed && !!ui.aiResultUrl && !exiting,
+          enabled: revealed && !!aiResult.resultUrl && !exiting,
           // A fresh result resets the zoom back to fit.
-          resetKey: ui.aiResultUrl,
+          resetKey: aiResult.resultUrl,
         })}
       >
         <!-- The zoom layer holds only the picture; the dial and confetti stay
@@ -145,10 +172,10 @@
                aspect-ratio + max-width box, which WebKit collapses/distorts. The
                visible images below overlay it. Uses the result once it's here, or
                the preview while loading (same aspect, so no resize on reveal). -->
-          {#if ui.aiResultUrl || ui.aiPreviewUrl}
+          {#if aiResult.resultUrl || aiResult.previewUrl}
             <img
               class="stage-sizer"
-              src={ui.aiResultUrl || ui.aiPreviewUrl}
+              src={aiResult.resultUrl || aiResult.previewUrl}
               alt=""
               aria-hidden="true"
               onload={handleImgLoad}
@@ -163,18 +190,18 @@
             ></div>
           {/if}
 
-          {#if ui.aiPreviewUrl}
+          {#if aiResult.previewUrl}
             <img
               class="stage-img preview"
               class:gone={revealed}
               style="filter: blur({previewBlur}) saturate(1.1);"
-              src={ui.aiPreviewUrl}
+              src={aiResult.previewUrl}
               alt=""
             />
           {/if}
 
-          {#if ui.aiResultUrl}
-            <img class="stage-img result" class:shown={revealed} src={ui.aiResultUrl} alt="" />
+          {#if aiResult.resultUrl}
+            <img class="stage-img result" class:shown={revealed} src={aiResult.resultUrl} alt="" />
           {/if}
         </div>
 
@@ -184,7 +211,7 @@
         {/if}
       </div>
 
-      {#if revealed && ui.aiResultUrl}
+      {#if revealed && aiResult.resultUrl}
         {#if settings.autoSaveAiEnabled}
           <p class="ai-result-saved">✓ Saved to your photos</p>
         {:else}

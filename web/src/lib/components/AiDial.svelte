@@ -1,7 +1,7 @@
 <script lang="ts">
   import { scale } from 'svelte/transition';
   import { backOut } from 'svelte/easing';
-  import { ui } from '$lib/state/ui.svelte';
+  import { aiResult } from '$lib/state/aiGeneration.svelte';
   import { createDialProgress } from './aiDialProgress';
 
   interface Props {
@@ -52,27 +52,27 @@
   }
 
   $effect(() => {
-    if (ui.aiResultOpen && ui.aiGenerating) startDial();
+    if (aiResult.open && aiResult.generating) startDial();
   });
 
   $effect(() => {
-    if (ui.aiResultOpen && !ui.aiGenerating && ui.aiResultUrl) {
+    if (aiResult.open && !aiResult.generating && aiResult.resultUrl) {
       dial.markDone();
       if (!rafId) rafId = requestAnimationFrame(loop);
     }
   });
 
   $effect(() => {
-    if (ui.aiError) stopDial();
+    if (aiResult.error) stopDial();
   });
 
   // The reactive stop paths above are skipped if the parent unmounts this
-  // component in the same flush (e.g. the aiError branch swap), so the rAF
+  // component in the same flush (e.g. the aiResult.error branch swap), so the rAF
   // loop must also be cancelled unconditionally at destroy.
   $effect(() => () => cancelAnimationFrame(rafId));
 
   $effect(() => {
-    if (!ui.aiResultOpen) {
+    if (!aiResult.open) {
       stopDial();
       progress = 0;
       revealed = false;

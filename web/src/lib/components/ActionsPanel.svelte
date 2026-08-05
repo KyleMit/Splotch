@@ -10,6 +10,7 @@
   import { setStrokeSize, activeStrokeSize, type StrokeSize } from '$lib/state/strokeWidth.svelte';
   import { toolState, selectBrush, type BrushType } from '$lib/state/tool.svelte';
   import { ui, coloringBook, aiPrompt, buttonCenter } from '$lib/state/ui.svelte';
+  import { aiResult } from '$lib/state/aiGeneration.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { browser } from '$app/environment';
   import { layout } from '$lib/state/layout.svelte';
@@ -256,7 +257,7 @@
   // tap runs through the parental gate before the prompt opens or a
   // generation starts.
   async function handleAiImageClick() {
-    if (ui.aiGenerating || canvasState.canvasEmpty || !aiBtnEl) return;
+    if (aiResult.generating || canvasState.canvasEmpty || !aiBtnEl) return;
 
     const origin = buttonCenter(aiBtnEl);
     requireParentalGate(() => {
@@ -369,17 +370,17 @@
            first-paint flash to seed away. -->
       <button
         class="action-button"
-        class:disabled={canvasState.canvasEmpty || ui.aiGenerating}
-        class:loading={ui.aiGenerating}
+        class:disabled={canvasState.canvasEmpty || aiResult.generating}
+        class:loading={aiResult.generating}
         id="aiImageButton"
         aria-label="Create AI image"
-        aria-busy={ui.aiGenerating}
-        disabled={canvasState.canvasEmpty || ui.aiGenerating}
+        aria-busy={aiResult.generating}
+        disabled={canvasState.canvasEmpty || aiResult.generating}
         hidden={!aiImageButtonVisible}
         use:scribbleTap={handleAiImageClick}
         bind:this={aiBtnEl}
       >
-        <Icon name={ui.aiGenerating ? 'loading' : 'wand-stars'} class="action-icon" />
+        <Icon name={aiResult.generating ? 'loading' : 'wand-stars'} class="action-icon" />
       </button>
 
       <!-- aria-disabled (not the disabled attribute) so the button still

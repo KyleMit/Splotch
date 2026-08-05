@@ -2,14 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 let stopDrawSound: (() => void) | undefined;
 
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => {
-    resolve = done;
-  });
-  return { promise, resolve };
-}
-
 describe('playDrawSound', () => {
   afterEach(() => {
     stopDrawSound?.();
@@ -45,7 +37,11 @@ describe('playDrawSound', () => {
       stop: vi.fn(),
       onended: null,
     };
-    const decoded = [deferred<AudioBuffer>(), deferred<AudioBuffer>(), deferred<AudioBuffer>()];
+    const decoded = [
+      Promise.withResolvers<AudioBuffer>(),
+      Promise.withResolvers<AudioBuffer>(),
+      Promise.withResolvers<AudioBuffer>(),
+    ];
     const fetch = vi
       .fn()
       .mockResolvedValue({ arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
@@ -93,7 +89,7 @@ describe('playDrawSound', () => {
     const { setSound } = await import('$lib/state/settings.svelte');
     const drawingSound = await import('./drawingSound');
     stopDrawSound = drawingSound.stopDrawSound;
-    const decoded = deferred<AudioBuffer>();
+    const decoded = Promise.withResolvers<AudioBuffer>();
     const sourceNode = {
       buffer: null as AudioBuffer | null,
       loop: false,

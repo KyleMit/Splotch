@@ -46,6 +46,17 @@ body {
   }
 }
 
+/* The settings rows' icon column: the icon box and the gap to its label, shared
+   by every icon-and-label row in Settings, plus the indent that lines a help
+   line or an icon-less sub-row (SliderRow) up under that label. Global rather
+   than scoped to SettingsModal because those rows also render outside it, in
+   the /design styleguide's furniture demo. */
+:root {
+  --setting-icon-size: 20px;
+  --setting-icon-gap: 10px;
+  --setting-indent: calc(var(--setting-icon-size) + var(--setting-icon-gap));
+}
+
 /* The drawing route is an immersive app surface, not a document: it never
    scrolls, selects text, zooms, or shows an iOS long-press callout. These locks
    used to sit on `body` globally (set back when `/` was the only page), which
@@ -155,16 +166,31 @@ body {
   fill: var(--icon-ink);
 }
 
+/* The close disc's touch-target size and its inset from the modal's top-right
+   corner, plus the room a header must leave so its own content clears the disc
+   — horizontally beside it, vertically below it. Global so the modal headers
+   that reserve that room derive it from the button's own geometry instead of
+   restating it. */
+:root {
+  --modal-close-size: 44px;
+  --modal-close-inset: var(--space-3);
+  --modal-close-clearance-x: calc(
+    var(--modal-close-inset) + var(--modal-close-size) + var(--space-2)
+  );
+  --modal-close-clearance-y: calc(var(--modal-close-inset) + var(--modal-close-size) + 6px);
+}
+
 /* Absolute-positioned close button (top-right corner) and its icon, shared
-   across all icon-style modal close buttons. An outlined white disc, sized as a
-   44px touch target so small fingers can spot and hit it (the icon inside stays
-   ~20px — the extra box is hit area and the ring that makes it pop). */
+   across all icon-style modal close buttons. An outlined white disc sized to
+   --modal-close-size, deliberately chunky so small fingers can spot and hit it;
+   the padding below keeps the glyph itself visibly smaller than the disc, so
+   the extra box reads as hit area and the ring that makes it pop. */
 .modal-close-btn {
   position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
-  width: 44px;
-  height: 44px;
+  top: var(--modal-close-inset);
+  right: var(--modal-close-inset);
+  width: var(--modal-close-size);
+  height: var(--modal-close-size);
   background: var(--surface);
   border: 2px solid var(--border-warm);
   border-radius: 50%;

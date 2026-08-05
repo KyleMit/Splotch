@@ -11,10 +11,45 @@
     aiCredentialKind,
   } from '$lib/state/settings.svelte';
   import { setAiUserApiKey } from '$lib/state/aiKey';
-  import { verifyCredential } from '$lib/aiCredential';
+  import {
+    verifyCredential,
+    type CredentialKind,
+    type VerifyCredentialResult,
+  } from '$lib/aiCredential';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
-  import { createLatestRequest } from '$lib/latestRequest';
+  import {
+    createLatestRequest,
+    NETWORK_ERROR_MESSAGE,
+    type SubmitStatus,
+  } from '$lib/latestRequest';
   import { getPlatform, type Platform } from '$lib/platform';
+
+  // The copy for every kind-dependent outcome of a submission, so each terminal
+  // branch of `submitKey` is a single lookup rather than an inline ternary.
+  const KEY_MESSAGES: Record<
+    'invalid' | 'saveFailed' | 'accepted',
+    Record<CredentialKind, string>
+  > = {
+    invalid: {
+      apiKey: "That key didn't work. Double-check it and try again.",
+      accessCode: "That doesn't look like a valid key or access code. Please try again.",
+    },
+    saveFailed: {
+      apiKey: 'Your key works, but could not be saved securely on this device. Please try again.',
+      accessCode: 'Your credential works, but could not be saved securely.',
+    },
+    accepted: {
+      apiKey: 'Your key works and has been accepted!',
+      accessCode: 'Access granted! You have special access — no API key needed.',
+    },
+  };
+
+  const KEY_STORAGE_NOTE: Record<Platform, string> = {
+    ios: "Your key is saved in this device's iOS Keychain — encrypted by the system and kept only on this device.",
+    android:
+      "Your key is saved in this device's Android Keystore — encrypted by the system and kept only on this device.",
+    web: 'Your key is encrypted and stored only in this browser on this device.',
+  };
 
   interface Props {
     // `open` flips true when the Settings modal opens; we use it to clear
@@ -29,7 +64,7 @@
   // The single AI field accepts either a Gemini API key (BYOK) or a secret
   // access code. AI unlocks when the parent has provided either one.
   let keyInput = $state('');
-  let keyStatus = $state<'idle' | 'checking' | 'error' | 'success'>('idle');
+  let keyStatus = $state<SubmitStatus>('idle');
   let keyMessage = $state('');
   let credentialKind = $derived(aiCredentialKind());
   let hasApiKey = $derived(credentialKind === 'apiKey');
@@ -47,13 +82,7 @@
   }
 
   // How/where the key is stored, in plain language, per platform.
-  let keyStorageNote = $derived(
-    platform === 'ios'
-      ? "Your key is saved in this device's iOS Keychain — encrypted by the system and kept only on this device"
-      : platform === 'android'
-        ? "Your key is saved in this device's Android Keystore — encrypted by the system and kept only on this device."
-        : 'Your key is encrypted and stored only in this browser on this device.'
-  );
+  let keyStorageNote = $derived(KEY_STORAGE_NOTE[platform]);
 
   function resetKeyFeedback() {
     keyStatus = 'idle';
@@ -70,11 +99,26 @@
     }
   });
 
+  // Throws when the credential could not be stored; returns false when a newer
+  // submitKey superseded this one and its outcome should be discarded.
+  async function persistCredential(
+    result: VerifyCredentialResult,
+    value: string,
+    id: number
+  ): Promise<boolean> {
+    if (result.kind === 'apiKey') {
+      await setAiUserApiKey(value, () => latest.isCurrent(id));
+    } else {
+      setAiAccessToken(result.accessCode || value);
+    }
+    return latest.isCurrent(id);
+  }
+
   async function submitKey() {
     const value = keyInput.trim();
-    if (!value || keyStatus === 'checking') return;
+    if (!value || keyStatus === 'busy') return;
     const { id, signal } = latest.begin();
-    keyStatus = 'checking';
+    keyStatus = 'busy';
     keyMessage = '';
 
     try {
@@ -83,43 +127,30 @@
 
       if (!result.ok) {
         keyStatus = 'error';
-        keyMessage =
-          result.error ||
-          (result.kind === 'apiKey'
-            ? "That key didn't work. Double-check it and try again."
-            : "That doesn't look like a valid key or access code. Please try again.");
+        keyMessage = result.error || KEY_MESSAGES.invalid[result.kind];
         return;
       }
 
+      let persisted: boolean;
       try {
-        if (result.kind === 'apiKey') {
-          await setAiUserApiKey(value, () => latest.isCurrent(id));
-        } else {
-          setAiAccessToken(result.accessCode || value);
-        }
+        persisted = await persistCredential(result, value, id);
       } catch {
         if (latest.isCurrent(id)) {
           keyStatus = 'error';
-          keyMessage =
-            result.kind === 'apiKey'
-              ? 'Your key works, but could not be saved securely on this device. Please try again.'
-              : 'Your credential works, but could not be saved securely.';
+          keyMessage = KEY_MESSAGES.saveFailed[result.kind];
         }
         return;
       }
-      if (!latest.isCurrent(id)) return;
+      if (!persisted) return;
 
       setAiImage(true); // turn the feature on the moment a valid credential lands
       keyInput = '';
       keyStatus = 'success';
-      keyMessage =
-        result.kind === 'apiKey'
-          ? 'Your key works and has been accepted!'
-          : 'Access granted! You have special access — no API key needed.';
+      keyMessage = KEY_MESSAGES.accepted[result.kind];
     } catch {
       if (latest.isCurrent(id)) {
         keyStatus = 'error';
-        keyMessage = 'Could not reach the server. Check your connection and try again.';
+        keyMessage = NETWORK_ERROR_MESSAGE;
       }
     }
   }
@@ -186,9 +217,9 @@
           variant="brand"
           class="access-code-submit"
           onclick={submitKey}
-          disabled={!keyInput.trim() || keyStatus === 'checking'}
+          disabled={!keyInput.trim() || keyStatus === 'busy'}
         >
-          {keyStatus === 'checking' ? 'Checking…' : 'Save'}
+          {keyStatus === 'busy' ? 'Checking…' : 'Save'}
         </Button>
       </div>
       <p class="byok-storage-note">

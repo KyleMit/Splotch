@@ -54,10 +54,9 @@
 <style>
   /* An icon-less row is a sub-setting of the ToggleRow above it, so the whole
      row — label and track — shifts past that toggle's icon column to line up
-     with its label. Mirrors ToggleRow's .setting-icon width + .setting-info
-     gap; there's no shared token for that pairing. */
+     with its label. */
   .slider-row.indented {
-    margin-left: calc(20px + 10px);
+    margin-left: var(--setting-indent);
   }
 
   .slider-label {
@@ -74,7 +73,7 @@
   .slider-label-name {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--setting-icon-gap);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     color: var(--text);

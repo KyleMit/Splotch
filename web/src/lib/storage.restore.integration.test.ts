@@ -20,7 +20,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // factories so they can close over this mutable state (mirrors storage.test.ts).
 const ctrl = vi.hoisted(() => ({ native: false }));
 
-vi.mock('./platform', () => ({
+// Spread the real module so only the two platform *behaviours* are faked; the
+// constants it also exports stay real rather than being restated here.
+vi.mock('./platform', async (importActual) => ({
+  ...(await importActual<typeof import('./platform')>()),
   isNative: () => ctrl.native,
   getPlatform: () => (ctrl.native ? 'android' : 'web'),
 }));

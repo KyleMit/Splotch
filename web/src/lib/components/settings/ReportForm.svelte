@@ -4,10 +4,13 @@
   import ReportFields from '../report/ReportFields.svelte';
   import { apiUrl } from '$lib/api';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
-  import { createLatestRequest } from '$lib/latestRequest';
-  import { collectDeviceInfo } from '$lib/deviceInfo';
+  import {
+    createLatestRequest,
+    NETWORK_ERROR_MESSAGE,
+    type SubmitStatus,
+  } from '$lib/latestRequest';
   import type { DeviceInfo } from '$lib/deviceReport';
-  import type { ReportKind } from '$lib/report';
+  import { REPORT_HONEYPOT_FIELD, type ReportKind } from '$lib/report';
 
   interface Props {
     // Flips true when the Settings modal opens; we use it to clear the form
@@ -21,12 +24,13 @@
   let includeDevice = $state(false);
   let device = $state<DeviceInfo | null>(null);
   let honeypot = $state('');
+  let ensureDevice = $state<() => Promise<DeviceInfo | undefined>>();
 
-  let status = $state<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  let status = $state<SubmitStatus>('idle');
   let feedback = $state('');
   let resultUrl = $state('');
 
-  let submitting = $derived(status === 'submitting');
+  let submitting = $derived(status === 'busy');
 
   const latest = createLatestRequest();
 
@@ -50,7 +54,7 @@
     if (!text || submitting) return;
 
     const { id, signal } = latest.begin();
-    status = 'submitting';
+    status = 'busy';
     feedback = '';
     resultUrl = '';
 
@@ -62,8 +66,8 @@
         body: JSON.stringify({
           kind,
           message: text,
-          device: attachDevice ? (device ?? (await collectDeviceInfo())) : undefined,
-          hp: honeypot,
+          device: attachDevice ? await ensureDevice?.() : undefined,
+          [REPORT_HONEYPOT_FIELD]: honeypot,
         }),
         signal,
       });
@@ -83,7 +87,7 @@
     } catch {
       if (!latest.isCurrent(id)) return;
       status = 'error';
-      feedback = 'Could not reach the server. Check your connection and try again.';
+      feedback = NETWORK_ERROR_MESSAGE;
     }
   }
 </script>
@@ -96,7 +100,14 @@
   </p>
 
   <div class="setting report-card">
-    <ReportFields bind:kind bind:message bind:includeDevice bind:device bind:honeypot />
+    <ReportFields
+      bind:kind
+      bind:message
+      bind:includeDevice
+      bind:device
+      bind:honeypot
+      bind:ensureDevice
+    />
 
     <Button
       variant="brand"

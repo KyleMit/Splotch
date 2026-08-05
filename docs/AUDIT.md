@@ -17,1373 +17,7 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 `> **Verified 2026-07-28**` blockquote have been through that pass; the rest have not, so
 `/vet-audits` still owns validating them.
 
-## Source: Code audit — Drawing engine — undo & snapshot history
-
-## Source: Code audit — Drawing engine — export/save, paper view & pointer math
-
-## Source: Code audit — AI image generation (client + state + UI)
-
-### [Maintainability] AiConfetti's fall keyframes are hardcoded to a ~540 px stage; leaves vanish mid-air on taller stages
-
-**File(s):** `web/src/lib/components/AiConfetti.svelte` (`@keyframes leafFall`, lines 97–121) @
-9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The fall path is a fixed pixel ladder:
-
-```css
-0%   { transform: translateY(-40px) ... }
-25%  { transform: translateY(110px) ... }
-50%  { transform: translateY(260px) ... }
-75%  { transform: translateY(410px) ... }
-100% { transform: translateY(540px) ...; opacity: 0; }
-```
-
-The confetti layer is `inset: 0` of `.ai-stage`, whose height tracks the drawing's aspect and the
-viewport (`stage-sizer` allows up to `calc(96vh - 70px)` — comfortably over 540 px on tablets in
-portrait). On any stage taller than ~540 px, every leaf fades out partway down and the bottom of the
-stage stays permanently empty; on a short stage the tail of the fall is clipped invisibly (fine).
-The magic pixel ladder also violates the named-tuning-literal convention — the component
-painstakingly names every other knob (`LEFT_SPAN`, `DURATION_MIN`, …, lines 19–28) but the fall
-geometry is inline in CSS.
-
-#### Proposed solution
-
-Drive the fall distance from the stage: keyframes in percentages of a custom property, e.g.
-`transform: translateY(calc(var(--fall-distance, 540px) * 0.25 - 40px))`-style stops, with
-`--fall-distance` set to `100% of stage` via `AiImageResult` (it already passes
-`--confetti-rx`/`--confetti-ry` down, lines 121). Simplest robust variant: keyframe the leaf from
-`-40px` to `calc(var(--stage-h, 540px) + 40px)` with intermediate stops as fractions, where
-`.ai-stage` sets `--stage-h` from a resize observer — or accept viewport-relative units (`vh`) as an
-approximation with a comment. Whichever route, name the ladder's constants.
-
-### [Performance] WebP transcode runs on the main thread with a DOM canvas; OffscreenCanvas would avoid dial jank
-
-**File(s):** `web/src/lib/drawing/aiImage.ts` (`encodeWebpUpload`, lines 30–53) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`encodeWebpUpload` decodes the full-resolution drawing PNG, creates a DOM `<canvas>`, draws into it,
-and calls `canvas.toBlob` — all on the main thread, at the exact moment the progress-dial rAF loop
-(`AiDial.svelte` `loop()`) and the modal's open animation are running. On a low-end tablet with a
-large canvas, the synchronous `drawImage` + encoder work can produce a visible hitch in the dial
-right after tap — the most scrutinized moment of the flow. `createImageBitmap` and `toBlob` are
-async, but the raster copy and encode still contend with the animation frames.
-
-#### Proposed solution
-
-Prefer `OffscreenCanvas` + `convertToBlob({ type: 'image/webp', quality: UPLOAD_WEBP_QUALITY })`
-when available (feature-detect; fall back to the current DOM-canvas path — the browser floor in
-`docs/COMPATIBILITY.md` should be consulted before assuming availability). `convertToBlob` keeps the
-encode off the layout-coupled canvas path, and the whole helper could later move into a worker if
-profiling (`npm run perf:*`) shows the hitch is real — measure first; if the profile shows nothing
-on floor devices, downgrade this to a comment.
-
-### [Testing] `deferred<T>()` helper is re-declared per test file
-
-**File(s):** `web/src/lib/drawing/aiImage.test.ts` (lines 22–36),
-`web/src/lib/components/aiPreview.test.ts` (lines 5–11) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-Both files (and, outside this section, `pwa/updates.test.ts`, `drawing/undoHistory.test.ts`,
-`state/install.svelte.test.ts` — five in total) hand-roll the identical
-promise-with-exposed-resolvers helper. The testing rule that "a page-driving helper needed by a
-second spec moves to the shared helpers module at that moment" is written for Playwright, but the
-same duplication cost applies here: five drifting copies of the same fixture (some with `reject`,
-some without).
-
-#### Proposed solution
-
-Add a shared test util (e.g. `web/src/lib/testUtils/deferred.ts`, or adopt the platform's
-`Promise.withResolvers()` if the toolchain's TS lib target includes it — it's Baseline 2024, and
-Vitest's runtime certainly has it) and migrate the five call sites. Low urgency; do it
-opportunistically when next touching these specs.
-
-### [Readability] `generateAiImage`'s `blob` option and `exportUploadImage`'s `blob` parameter under-describe what they carry
-
-**File(s):** `web/src/lib/drawing/aiImage.ts` (`generateAiImage`, lines 198–201;
-`exportUploadImage`, lines 121–126) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The public entry point reads:
-
-```ts
-export async function generateAiImage({
-  blob = null,
-  style = '',
-}: { blob?: Blob | null; style?: StyleName | '' } = {});
-```
-
-`blob` is specifically *the already-exported drawing handed over by the style picker* (vs. `null`
-meaning "export the canvas yourself") — a meaning only recoverable from the comment at lines 205–210
-and from reading `AiImagePrompt.svelte`. Inside, `exportUploadImage(blob, runId)` reuses the same
-bare name, and `if (!blob) setAiPreview(...)` (line 132) makes the branch's intent opaque.
-Everywhere else the module names blobs by role (`aiBlob`, `drawingBlob`, `uploadBlob`, `imageBlob`).
-
-#### Proposed solution
-
-Rename the option to `drawing` (or `drawingBlob`) at both signatures:
-`generateAiImage({ drawing = null, style = '' }: { drawing?: Blob | null; ... })`. Two call sites
-change (`AiImagePrompt.svelte` line 45 becomes `generateAiImage({ drawing: blob, style })`;
-`ActionsPanel.svelte` line 247 passes nothing).
-
-## Source: Code audit — Settings / settings UI
-
-### [Maintainability] Three hand-rolled copies of the iOS-style segmented control — extract a design primitive
-
-**File(s):** `web/src/lib/components/settings/AppearanceSection.svelte` (`.theme-picker`, lines
-33–47 markup, 89–135 styles), `web/src/lib/components/settings/CompactShell.svelte` (`.orient-seg`,
-lines 97–111 markup, 169–219 styles), `web/src/lib/components/settings/ReportForm.svelte`
-(`.report-kind`, lines 115–128 markup, 235–270 styles) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-The same segmented-control widget is implemented three times inside this one section, and two of the
-copies openly admit it in comments:
-
-* `AppearanceSection.svelte:89`:
-  `/* iOS-style segmented control: the active segment reads as a raised card. */`
-* `CompactShell.svelte:169`:
-  `/* iOS-style segmented control, matching the Theme picker in AppearanceSection. … */`
-* `ReportForm.svelte:235`:
-  `/* Bug / feature segmented control — mirrors the Appearance theme picker. */`
-
-Each copy re-declares the flex row + `--slider-track` well + padded segments + active raised card +
-hover rules, but they have already drifted: the theme picker uses `border-radius: var(--radius-md)`
-outer / `9px` inner with `--shadow-segment`; CompactShell uses `10px` outer / `var(--radius-sm)`
-inner, `12.5px` font, and `touch-action: manipulation`; ReportForm uses a bordered `--surface` well,
-`10px`/`7px` radii, **no** `--shadow-segment` on the active segment, and a filled `--brand` active
-state instead of the raised-card look. The accessibility patterns diverge too: two are
-`role="radiogroup"`/`role="radio"`+`aria-checked`, one is `role="group"`+`aria-pressed`.
-"Matching"/"mirrors" comments are cross-file agreement by prose — exactly what CLAUDE.md calls a
-defect, and the drift shows the prose isn't holding.
-
-The design-system tree (`web/src/lib/components/design/`) already exists for this (Button,
-Disclosure, StatusMessage), and `web/src/lib/design/tokens.ts:108` even documents `--shadow-segment`
-as "the tight lift on the selected segment of a segmented toggle (theme, …)" — the vocabulary
-anticipates a shared primitive that never got built.
-
-#### Proposed solution
-
-Add `web/src/lib/components/design/SegmentedControl.svelte`, generic over the option value:
-
-```svelte
-<script lang="ts" generics="T extends string">
-  interface Option { value: T; label: string; icon?: CommonIconName; id?: string }
-  interface Props {
-    options: Option[];
-    selected: T | null;          // null = nothing active (CompactShell's unlocked state)
-    onSelect: (value: T) => void;
-    ariaLabel: string;
-  }
-</script>
-```
-
-The primitive owns the well, segment chrome, active state, and the radiogroup/radio ARIA wiring;
-call sites keep sizing tweaks via a forwarded `class`, the established Disclosure pattern.
-CompactShell's "tap the active side to release" behavior stays in its `onSelect` handler.
-ReportForm's filled-brand active style can either adopt the raised-card look (visual consistency
-win) or pass a variant — decide with the `design` skill open. Note the a11y wrinkle:
-`selected: null` with `role="radio"` is legal (no radio checked), so CompactShell's `aria-pressed`
-variant can be dropped.
-
-### [Types] Section→content mapping is an unchecked if/else chain — a new `SectionId` silently renders nothing
-
-**File(s):** `web/src/lib/components/SettingsModal.svelte` (`sectionContent` snippet, lines 88–108;
-`activeMeta`, line 44), `web/src/lib/components/settings/sections.ts` (`SectionId`, lines 18–27;
-`SECTIONS`, lines 29–39) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-Three artifacts must agree for a section to work, and only one of them is compiler-checked:
-
-1. The `SectionId` union (`sections.ts:18–27`) — hand-written.
-2. The `SECTIONS` array (`sections.ts:29–39`) — each entry's `id` is checked *against* the union,
-   but nothing guarantees every union member appears (or appears once). Removing an entry while
-   forgetting the union member compiles clean.
-3. The `sectionContent` snippet in `SettingsModal.svelte:88–108` — a 9-branch `{#if}/{:else if}`
-   chain with no final `{:else}` and no exhaustiveness: add a tenth `SectionId`, register it in
-   `SECTIONS`, and the hub row/nav item appears but drilling in renders an empty pane.
-   `sectionSubtitle`'s `switch` (`sections.ts:50–83`) is the only exhaustiveness-checked consumer
-   (via the `string` return type with no default).
-
-The `?? SECTIONS[0]` fallback on line 44
-(`SECTIONS.find((s) => s.id === activeSection) ?? SECTIONS[0]`) exists only because the array lookup
-isn't total — dead code under a closed mapping, and a `find` scan per render besides.
-
-CLAUDE.md's convention is explicit: "Close finite value sets in the type … constant maps are
-`Record<UnionType, V>` (or `satisfies`), not `Record<string, V>`."
-
-#### Proposed solution
-
-Two steps:
-
-1. In `sections.ts`, derive the union from the data instead of maintaining it by hand:
-
-```ts
-export const SECTIONS = [
-  { id: 'appearance', label: 'Appearance & Display', icon: 'theme-auto' },
-  // …
-] as const satisfies readonly { id: string; label: string; title?: string; icon: IconName }[];
-export type SectionId = (typeof SECTIONS)[number]['id'];
-```
-
-Duplicates and drift become impossible; `SectionMeta` becomes `(typeof SECTIONS)[number]`.
-
-2. In `SettingsModal.svelte`, replace the chain with a closed component map (Svelte 5 components are
-   values):
-
-```ts
-const SECTION_CONTENT: Record<SectionId, Component<{ open?: boolean }>> = {
-  appearance: AppearanceSection,
-  sound: SoundSection, /* … */
-};
-```
-
-then `{@const Section = SECTION_CONTENT[id]}<Section open={settingsModal.open} />`. Wrinkle: only
-`AiKeyManager`, `SetupInstructions`, and `ReportForm` accept `open` today; passing it to all nine
-either means adding an unused prop (violates no-speculative-surface) or typing the map as
-`Component<{ open?: boolean }>` and letting Svelte ignore the extra prop for the others — the latter
-is fine, but say so at the map. `activeMeta` similarly becomes a `Record<SectionId, SectionMeta>`
-lookup (or keep `find` and drop the now-provably-dead `??` fallback).
-
-### [Maintainability] ReportForm's 4000-char limit and `hp` honeypot field duplicate the server's contract as bare literals
-
-**File(s):** `web/src/lib/components/settings/ReportForm.svelte` (line 137 `maxlength={4000}`, line
-83 `hp: honeypot`), `web/src/routes/api/report/+server.ts` (line 10 `MAX_MESSAGE_LENGTH = 4000`,
-line 68 `body?.hp`) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The client textarea caps input at a literal `4000`:
-
-```svelte
-<textarea id="reportMessage" class="report-textarea" rows="4" maxlength={4000} …>
-```
-
-while the server independently declares `const MAX_MESSAGE_LENGTH = 4000;` and truncates at it
-(`+server.ts:82`). If the server limit changes, the client cap silently disagrees — either users hit
-an invisible wall short of the real limit, or their text gets truncated server-side after the UI
-accepted it. Same story for the honeypot field name: the string `hp` is typed independently on both
-sides of the wire. CLAUDE.md is categorical: values that must agree cross-file come from one
-exported constant, and boundary strings are "declared once, imported everywhere."
-
-Server route modules can't be imported client-side, but the constant doesn't have to live in the
-route — the repo already keeps shared wire contracts in `$lib` (e.g. `$lib/inviteLink`'s
-`AI_ACCESS_TOKEN_PARAM`, imported by `settings.svelte.ts:13`).
-
-#### Proposed solution
-
-Add a small shared module, e.g. `web/src/lib/reportContract.ts`:
-
-```ts
-export const REPORT_MESSAGE_MAX_LENGTH = 4000;
-export const REPORT_HONEYPOT_FIELD = 'hp';
-```
-
-Import it from both `ReportForm.svelte` and `routes/api/report/+server.ts` (the route already
-imports other `$lib` modules, so there's no layering issue — it's an isomorphic constants file, not
-client code in the server). The `hp` key in the JSON body becomes
-`[REPORT_HONEYPOT_FIELD]: honeypot` client-side and `body?.[REPORT_HONEYPOT_FIELD]` server-side.
-
-### [Maintainability] ReportForm's inline `slide` durations are unnamed tuning literals that bypass the section-wide `SECTION_SLIDE` convention
-
-**File(s):** `web/src/lib/components/settings/ReportForm.svelte` (lines 149, 158),
-`web/src/lib/components/settings/sections.ts` (`SECTION_SLIDE`, lines 41–44) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`sections.ts` establishes exactly one reveal timing for conditional blocks in this section, with a
-comment explaining why it's a JS constant:
-
-```ts
-// Reveal timing shared by every conditional settings block inside a section.
-export const SECTION_SLIDE = { duration: 220 };
-```
-
-Every other conditional block in the section uses it (AppearanceSection, SoundSection,
-ControlsSection ×3, AiFeatureToggles ×2). ReportForm alone hand-rolls two different anonymous
-durations:
-
-```svelte
-<div class="report-device" transition:slide={{ duration: 180 }}>
-…
-<div transition:slide={{ duration: 160 }}>
-```
-
-That's a double convention miss: the "every conditional settings block" claim in the `SECTION_SLIDE`
-comment is now false, and `180`/`160` are unnamed tuning literals (CLAUDE.md: "Tuning literals get
-names… the WHY comment lives on the constant"). There is no visible reason these two reveals need to
-be 40–60ms faster than every sibling.
-
-#### Proposed solution
-
-Use `SECTION_SLIDE` for both. If the slightly snappier feel inside the nested disclosure is
-deliberate, name it in `sections.ts` beside `SECTION_SLIDE` (e.g.
-`NESTED_SLIDE = { duration: 160 }`) with a WHY comment, and update `SECTION_SLIDE`'s "every
-conditional settings block" comment to describe the two-tier scheme.
-
-### [Maintainability] ToggleRow's icon-column indent is duplicated into SliderRow and kept in sync by prose
-
-**File(s):** `web/src/lib/components/settings/ToggleRow.svelte` (`.setting-help`, lines 50–57;
-`.setting-icon`/`.setting-info`, lines 59–70), `web/src/lib/components/settings/SliderRow.svelte`
-(`.slider-row.indented`, lines 55–61) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-ToggleRow indents its help line past the icon column:
-
-```css
-/* Indented past the icon column so the help line starts under the label:
-   .setting-icon's width + .setting-info's gap, both declared below. */
-.setting-help { margin: 6px 0 0 calc(20px + 10px); … }
-```
-
-SliderRow re-derives the same `calc(20px + 10px)` and documents the coupling instead of fixing it:
-
-```css
-/* … Mirrors ToggleRow's .setting-icon width + .setting-info gap; there's no
-   shared token for that pairing. */
-.slider-row.indented { margin-left: calc(20px + 10px); }
-```
-
-CLAUDE.md: "Cross-file agreement is never maintained by prose … A 'keep in sync with X' comment
-marks a defect, not a mitigation." Change ToggleRow's icon size or gap and SliderRow's sub-setting
-alignment silently drifts — the exact failure mode the rule exists for. The comment even
-acknowledges the missing token.
-
-#### Proposed solution
-
-Since scoped `<style>` blocks can't import TS constants, use the CSS-native sharing mechanism:
-declare the pairing once as custom properties in `tokens.css` (or on `.settings-content` in
-`SettingsModal.svelte`, whose `:global(.setting)` rules already act as the shared setting-card token
-block, lines 489–508):
-
-```css
---setting-icon-size: 20px;
---setting-icon-gap: 10px;
---setting-indent: calc(var(--setting-icon-size) + var(--setting-icon-gap));
-```
-
-Both components then consume `var(--setting-indent)`, and ToggleRow's
-`.setting-icon`/`.setting-info` use the two base properties. The prose comments go away.
-
-### [Maintainability] Close-button clearance is hardcoded at four sites against geometry owned by `app.css`, with a comment restating the numbers
-
-**File(s):** `web/src/lib/components/SettingsModal.svelte` (`.settings-header`
-`padding-right: 68px`, line 266; media-query `padding-right: 64px`, line 513),
-`web/src/lib/components/settings/CompactShell.svelte` (`.settings-header-compact`
-`padding-right: 64px` and `min-height: 62px`, lines 129–142), `web/src/app.css` (`.modal-close-btn`,
-lines 146–151) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The modal close button's geometry — `top: var(--space-3)` (12px), `width/height: 44px` — is owned by
-`.modal-close-btn` in `app.css`. Four rules in this section hardcode clearances derived from it, and
-CompactShell's comment restates the owned values verbatim:
-
-```css
-/* Reserve the close button's full vertical extent (top:12 + 44px height =
-   56px, plus a little breathing room) so the top-right toggle cell starts
-   below it instead of sliding up under the button. … */
-min-height: 62px;
-```
-
-CLAUDE.md forbids exactly this: comments must not restate values "owned elsewhere — name the owning
-identifier or file instead", and cross-file numeric agreement should flow through one declared
-value. If the touch target ever grows (it's sized for "small fingers" per the app.css comment, a
-plausible knob), the header paddings and CompactShell's `min-height` all silently stop clearing it.
-
-#### Proposed solution
-
-Beside `.modal-close-btn` in `app.css`, declare the derived clearances as custom properties on
-`:root` (or on `.modal-shell`):
-
-```css
---modal-close-size: 44px;
---modal-close-inset: var(--space-3);
---modal-close-clearance-x: calc(var(--modal-close-inset) + var(--modal-close-size) + var(--space-2));
---modal-close-clearance-y: calc(var(--modal-close-inset) + var(--modal-close-size) + 6px);
-```
-
-`.modal-close-btn` consumes `--modal-close-size`/`--modal-close-inset`; SettingsModal headers and
-CompactShell consume the clearance values. The 68px/64px variance between breakpoints suggests the
-horizontal clearance can collapse to one value once it's computed instead of eyeballed — verify
-visually at both widths (the `run-splotch` skill covers screenshots).
-
-### [Readability] `submitKey` is a 52-line four-outcome state machine — extract the persist step and name the phases
-
-**File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (`submitKey`, lines 72–124) @
-9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`submitKey` interleaves five concerns in one function body: input gating, latest-request
-bookkeeping, network verification, credential persistence (with its own inner `try/catch` and
-kind-dependent branching), and four different terminal UI states — verify-failed (86–91),
-persist-failed (99–107), superseded (81, 100, 109), and success (111–117). The staleness guard
-`latest.isCurrent(id)` appears four times at different depths, and the inner `try/catch` around
-persistence (93–108) nests a kind-ternary inside a guard inside a catch. A first-time reader has to
-simulate the whole flow to answer "what happens if the save fails after a successful verify?".
-
-Per the audit brief, a long function splittable into named helpers that explain the steps is itself
-a finding; the numbered-steps rule in CLAUDE.md ("write it that way the first time") points the same
-direction.
-
-#### Proposed solution
-
-Extract the persistence phase, which is the self-contained chunk with a clean boundary:
-
-```ts
-// throws on persist failure; returns false when superseded
-async function persistCredential(
-  result: VerifyCredentialResult,
-  value: string,
-  id: number,
-): Promise<boolean>;
-```
-
-and hoist the four user-facing message pairs into a small `const` map (e.g.
-`KEY_MESSAGES: Record<'invalid' | 'saveFailed' | 'accepted', Record<CredentialKind, string>>`),
-which also removes the string-building ternaries from the control flow. `submitKey` then reads as:
-gate → verify → persist → celebrate, each ≤6 lines. Keep `latest` handling in `submitKey` itself so
-the supersede semantics stay in one place.
-
-### [Readability] AiKeyManager's open-effect calls `latest.begin()` for its side effect only, behind a pointless alias
-
-**File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (`$effect`, lines 62–70) @
-9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-$effect(() => {
-  const isOpen = open;
-  latest.begin();
-  if (isOpen) {
-    platform = getPlatform();
-    keyInput = '';
-    resetKeyFeedback();
-  }
-});
-```
-
-Two readability problems. First, `latest.begin()` is called with its return value (`{ id, signal }`)
-discarded — the *actual* intent is "abort any in-flight verify whenever the modal opens or closes,
-and invalidate its `isCurrent` token", but nothing says so; `begin` reads like the start of a
-request, so a discarded `begin()` looks like a half-finished refactor or a bug. Second,
-`const isOpen = open` exists (presumably) to establish the reactive read before the early-branch,
-but `open` is read in the `if` anyway, so the alias adds nothing — the untracked-reads subtlety it
-hints at doesn't apply here.
-
-Compare `ReportForm.svelte:50–52`, which handles the same prop with a bare `if (open) reset();` and
-no abort — the asymmetry (does ReportForm leak an in-flight submit across close? it deliberately
-doesn't abort, or it was missed?) is unanswerable from the code.
-
-#### Proposed solution
-
-Give the abort a name on the `LatestRequest` interface — e.g. add `cancel(): void` to
-`web/src/lib/latestRequest.ts` (aborts the controller and bumps the counter, same as `begin` minus
-the handout) — and write the effect as:
-
-```ts
-$effect(() => {
-  latest.cancel(); // opening or closing obsoletes any in-flight verify
-  if (open) {
-    platform = getPlatform();
-    keyInput = '';
-    resetKeyFeedback();
-  }
-});
-```
-
-Then decide whether `ReportForm` should do the same on close (it probably should — a success message
-from a submit that finished after close would greet the next open, except `reset()` on open happens
-to clear it; a one-line comment either way).
-
-### [Maintainability] AiKeyManager and ReportForm hand-roll the same async-submit status machine, including identical error copy
-
-**File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (lines 31–32, 57–60, 118–123,
-239–241), `web/src/lib/components/settings/ReportForm.svelte` (lines 30–31, 34, 99–103, 200–209) @
-9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Both components independently implement: a status union (`'idle' | 'checking' | 'error' | 'success'`
-vs `'idle' | 'submitting' | 'success' | 'error'` — same shape, different busy-word), a message
-string, a `createLatestRequest()` guard, a network-failure catch that checks `latest.isCurrent(id)`
-and sets the **byte-identical** message
-`'Could not reach the server. Check your connection and try again.'` (AiKeyManager:121,
-ReportForm:102), and a `<StatusMessage status={x === 'error' ? 'error' : 'success'}>` render. The
-duplicated copy string alone means a wording fix will miss one of the two.
-
-This stops short of a full extraction mandate — the two flows differ enough (verify-then-persist vs
-single POST) that a heavy abstraction would obscure them — but the shared vocabulary should be
-shared.
-
-#### Proposed solution
-
-Minimum: hoist the shared copy to one exported constant (e.g. `NETWORK_ERROR_MESSAGE` in
-`web/src/lib/latestRequest.ts` or a small `$lib/submitCopy.ts`) and unify the status union name
-(`type SubmitStatus = 'idle' | 'busy' | 'success' | 'error'`, exported once). Optional next step if
-a third form ever appears: a `createSubmitState()` rune factory owning `status` + `message` + the
-latest-request guard, with the fetch itself staying in the component. Don't build that third-caller
-abstraction speculatively — the constant + type is the right size today.
-
-### [Correctness] CompactShell's Night Mode toggle silently discards a parent's `system` theme preference
-
-**File(s):** `web/src/lib/components/settings/CompactShell.svelte` (Night Mode `ToggleRow`, lines
-73–81) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```svelte
-<ToggleRow
-  icon={resolvedTheme() === 'dark' ? 'theme-dark' : 'theme-light'}
-  label="Night Mode"
-  checked={resolvedTheme() === 'dark'}
-  onToggle={(next) => setTheme(next ? 'dark' : 'light')}
-/>
-```
-
-A parent whose theme is `system` (the default follow-the-OS mode, one of three explicit choices in
-AppearanceSection) who taps this toggle — even toggling it off again immediately — has their
-preference rewritten to a pinned `'dark'` or `'light'`. Nothing restores `system`; the only way back
-is finding the three-way picker in the full portrait settings. Every other CompactShell cell
-round-trips losslessly to its full-settings counterpart (sound, advanced controls, orientation
-lock), so this one silently destroying state is surprising. The file's other subtle behaviors (the
-orientation release-on-retap, lines 46–55) get thorough WHY comments; this tradeoff gets none, so it
-reads as an oversight rather than a decision.
-
-#### Proposed solution
-
-Cheapest correct option: when the requested resolved theme equals what `system` would currently
-resolve to, set `'system'` instead of pinning:
-
-```ts
-onToggle={(next) => {
-  const wanted: ResolvedTheme = next ? 'dark' : 'light';
-  setTheme(resolveTheme('system', appearanceSystemDark()) === wanted ? 'system' : wanted);
-}}
-```
-
-(needs a small exported read of the OS preference from `appearance.svelte.ts`, or a
-`setResolvedTheme(wanted)` helper there). If pinning is actually the intended semantic for a "quick
-toggle", keep the code and add the WHY comment — but the asymmetric data loss deserves one or the
-other.
-
-### [Readability] `keyStorageNote`'s nested ternary should be a `Record<Platform, string>` per the closed-union convention
-
-**File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (lines 48–55) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-let keyStorageNote = $derived(
-  platform === 'ios'
-    ? "Your key is saved in this device's iOS Keychain — encrypted by the system and kept only on this device"
-    : platform === 'android'
-    ? "Your key is saved in this device's Android Keystore — encrypted by the system and kept only on this device."
-    : 'Your key is encrypted and stored only in this browser on this device.',
-);
-```
-
-`Platform` is a closed literal union (`'android' | 'ios' | 'web'`, `platform.ts:69`). CLAUDE.md:
-"constant maps are `Record<UnionType, V>` … not bare string plus a runtime fallback" — and a nested
-ternary over a union is the fallback-shaped version of that. A `Record` also gets exhaustiveness for
-free (adding a platform breaks the build here instead of silently landing in the web copy).
-Incidentally, the iOS string is missing its trailing period while the other two have one — the kind
-of asymmetry a table layout makes visible.
-
-The codebase already does this correctly for the same union:
-`PLATFORM_LABEL: Record<Platform, string>` in `deviceInfo.ts:7`.
-
-#### Proposed solution
-
-```ts
-const KEY_STORAGE_NOTE: Record<Platform, string> = {
-  ios:
-    "Your key is saved in this device's iOS Keychain — encrypted by the system and kept only on this device.",
-  android:
-    "Your key is saved in this device's Android Keystore — encrypted by the system and kept only on this device.",
-  web: 'Your key is encrypted and stored only in this browser on this device.',
-};
-let keyStorageNote = $derived(KEY_STORAGE_NOTE[platform]);
-```
-
-### [Maintainability] Off-scale hardcoded font sizes where the token scale is the convention
-
-**File(s):** `web/src/lib/components/SettingsModal.svelte` (lines 271 `24px`, 277 `20px`, 441
-`15px`), `web/src/lib/components/settings/CompactShell.svelte` (line 193 `12.5px`),
-`web/src/lib/components/settings/SetupInstructions.svelte` (lines 239 `24px`, 280 `20px`) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`tokens.css:37–43` defines a seven-step type scale (`--font-size-xs` 12px … `--font-size-3xl` 28px)
-and these same files use it dozens of times — then break out into raw pixels in six places: the
-SettingsModal `h2` at `24px` and `20px`, the sidebar nav item at `15px`, CompactShell's segment
-label at `12.5px`, and SetupInstructions' chevron at `24px` / check at `20px`. Three of these
-(`15px`, `12.5px`, `24px`) don't even exist on the scale, so they can't be a token-name-forgotten
-slip — they're ad-hoc sizes that silently fork the type ramp. The `design` skill owns this
-vocabulary ("read before … picking a color/size"), and a mixed file (tokens on line 388, raw px on
-line 441 of the same component) is the worst of both: a reader can't tell which sizes are decisions
-and which are drift.
-
-#### Proposed solution
-
-Audit each against the scale with the `design` skill open: `20px` and `24px` headings likely become
-`--font-size-2xl` (22px) or justify a new heading token; `15px` nav items are a hair off
-`--font-size-lg`/`md` and almost certainly round to one; `12.5px` rounds to `--font-size-sm` (13px)
-or `--font-size-xs` (12px) — CompactShell is space-constrained, so verify in the landscape-phone
-viewport. Any size that genuinely must stay off-scale gets a local named custom property with a WHY
-comment (the `--drawer-transition` pattern from the svelte rules). Same treatment for the
-`install-check`'s `font-size: 20px`.
-
-### [Maintainability] SettingsButton hardcodes `color: #999` instead of a theme token
-
-**File(s):** `web/src/lib/components/SettingsButton.svelte` (line 28) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```css
-.settings-button {
-  position: fixed;
-  bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
-  right: calc(var(--space-2) + env(safe-area-inset-right));
-  color: #999;
-  z-index: var(--z-corner-button);
-}
-```
-
-Every other declaration in the rule uses tokens; the `color` is a raw hex. `app.css:196–199`
-describes the shared corner-button chrome ("gray icon tint … steps up idle → hover → pressed") that
-this component participates in, and the theme system has muted-gray tokens (`--text-muted`,
-`--icon-muted` — the latter is what the sibling modal-close icon uses at `app.css:181`). A literal
-`#999` is invisible to theme switches: whatever dark-mode treatment the token family gets, this
-button keeps its light-mode gray.
-
-#### Proposed solution
-
-Replace with the token that matches the corner-button family's intent — check with the `design`
-skill whether `.corner-button` chrome expects `currentColor` fed by `--icon-muted` or
-`--text-muted`, and whether `FullscreenToggle.svelte` (the other corner button) has the same
-literal; if it does, fix both and consider moving the color into the shared `.corner-button` rule in
-`app.css` so the family can't diverge.
-
-### [Maintainability] SoundSection's non-reactive `previewingVolume` latch lacks the required "intentionally untracked" comment
-
-**File(s):** `web/src/lib/components/settings/SoundSection.svelte` (line 15) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const PREVIEW_SPEED = 0.45;
-let previewingVolume = false;
-```
-
-`.claude/rules/svelte.md`: "Mutable component-level state defaults to `$state`; a deliberately
-non-reactive `let` (timer handles, transition-time latches) carries a one-line comment saying it's
-intentionally untracked." `previewingVolume` is mutated in `onVolumeActive` (line 25) and read in
-`previewVolume` (line 20), never in the template — a legitimate untracked latch, but the mandatory
-comment is missing, so the next reader (or reviewer) must re-derive whether the missing `$state` is
-a bug. The nearby comment (lines 17–18) explains the *feature*, not the tracking choice.
-
-#### Proposed solution
-
-One line:
-
-```ts
-// Intentionally untracked: only read inside event handlers, never rendered.
-let previewingVolume = false;
-```
-
-### [Readability] ReportForm's submit-time device fallback duplicates the effect's collection and can send data the preview never showed
-
-**File(s):** `web/src/lib/components/settings/ReportForm.svelte` (collection `$effect`, lines 56–62;
-`submit`, line 81) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Device info is collected in two places. The effect populates `device` when the parent opts in (so
-"the preview below reflects exactly what will be sent", per its comment):
-
-```ts
-$effect(() => {
-  if (includeDevice && kind === 'bug' && !device) {
-    collectDeviceInfo().then((info) => (device = info)).catch(() => {});
-  }
-});
-```
-
-and `submit` has an inline fallback re-collection:
-
-```ts
-device: attachDevice ? (device ?? (await collectDeviceInfo())) : undefined,
-```
-
-Problems: (a) the fallback races the effect — check the box and tap Send before collection resolves
-(native path awaits a Capacitor plugin) and a *second* collection runs, its result is sent but never
-stored into `device`, so the payload was sent while the preview still said "Gathering device info…"
-— quietly contradicting the effect's stated exactly-what-you-saw guarantee; (b) if this fallback
-ever rejects, the outer catch reports "Could not reach the server" — wrong diagnosis (the effect's
-`.catch(() => {})` acknowledges collection can fail); (c) the duplication itself: one collection
-concern, two call sites with different error handling.
-
-#### Proposed solution
-
-Make the collection single-path: extract
-`async function ensureDeviceInfo(): Promise<DeviceInfo | undefined>` that memoizes into `device`
-(and catches, returning `undefined`), call it from both the effect and `submit`. Then `submit` sends
-exactly the state the preview renders, a collection failure degrades to "no device info attached"
-instead of a fake network error, and the two sites can't drift.
-
-### [Readability] SettingsModal's two media-query flags are four pieces of duplicated wiring — extract a `mediaQueryFlag` helper
-
-**File(s):** `web/src/lib/components/SettingsModal.svelte` (lines 26–61) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Each of `wide` and `compact` needs: a query constant, a seeded `$state`
-(`browser ? matchMedia(Q).matches : false`), a `MediaQueryList` re-created inside the `$effect`, and
-paired add/remove listener calls — eight lines of ceremony per flag, interleaved so the effect body
-syncs both at once:
-
-```ts
-let wide = $state(browser ? matchMedia(WIDE_QUERY).matches : false);
-…
-let compact = $state(browser ? matchMedia(COMPACT_QUERY).matches : false);
-$effect(() => {
-  if (typeof matchMedia === 'undefined') return;
-  const wideMql = matchMedia(WIDE_QUERY);
-  const compactMql = matchMedia(COMPACT_QUERY);
-  const sync = () => { wide = wideMql.matches; compact = compactMql.matches; };
-  sync();
-  wideMql.addEventListener('change', sync);
-  compactMql.addEventListener('change', sync);
-  return () => { … };
-});
-```
-
-The excellent WHY comments (seed-before-first-frame, landscape-phone detection) are the valuable
-part; the plumbing around them is boilerplate that a third breakpoint would copy again. The
-immediate `sync()` inside the effect also re-does the seeding the `$state` initializers already did
-— harmless, but a reader must convince themselves of that.
-
-#### Proposed solution
-
-A small rune factory in `$lib` (or file-local, if no second consumer exists yet — check
-`bootHiddenOverlays`/layout code before promoting):
-
-```ts
-function mediaQueryFlag(query: string): { readonly matches: boolean }; // seeds from matchMedia, subscribes in $effect.root or via action
-```
-
-used as `const wide = mediaQueryFlag(WIDE_QUERY);` … `wide.matches` in the template. Gotcha: the
-current design deliberately seeds *before* mount to avoid the narrow-then-wide flash — the helper
-must keep constructor-time seeding, not effect-time. If a shared helper feels heavy, even a local
-`function watchMedia(mql: MediaQueryList, apply: () => void)` collapsing the listener pairs would
-halve the block.
-
-### [Readability] ControlsSection's `.slider-setting` class duplicates `.button-size-setting` on the same lone element
-
-**File(s):** `web/src/lib/components/settings/ControlsSection.svelte` (line 112; styles, lines
-162–168) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```svelte
-<div class="setting slider-setting button-size-setting" transition:slide={SECTION_SLIDE}>
-```
-
-is the only element in this component carrying either class, and the two scoped rules say the same
-thing twice:
-
-```css
-.slider-setting { margin-top: 12px; }
-.button-size-setting { margin: 12px 0 0; }
-```
-
-`.button-size-setting` is load-bearing (SettingsModal's resize-melt reaches it via
-`:global(.button-size-setting)`, SettingsModal.svelte:240); `.slider-setting` here is a leftover
-from the shared naming that `SoundSection.svelte:65` still uses for its own scoped rule. One
-redundant class + one dead-weight rule.
-
-#### Proposed solution
-
-Drop `slider-setting` from the element and delete the `.slider-setting` rule in this component (keep
-SoundSection's — it's a separate scoped rule). Grep `web/tests` for `.slider-setting` first; the E2E
-suite selects by ids (`actionButtonScaleLabel`), so this should be inert.
-
-### [Readability] AboutSection's `typeof __IS_CAPACITOR__ !== 'undefined'` guard is dead defensive code, unique in the codebase
-
-**File(s):** `web/src/lib/components/settings/AboutSection.svelte` (lines 22–23) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-const adminHref = typeof __IS_CAPACITOR__ !== 'undefined' && __IS_CAPACITOR__
-  ? '/admin/native'
-  : '/admin';
-```
-
-Everywhere else — including this section's own `SetupInstructions.svelte:44`
-(`const native = __IS_CAPACITOR__ && isNative()`) — the compile-time define is read bare, per the
-src-orientation doc ("Compile-time constants from Vite"). `app.d.ts:25` declares it, both Vite and
-Vitest define it, and `buildDefines.test.ts` asserts it. The `typeof` guard defends against an
-environment that doesn't exist in this repo, and its uniqueness makes a reader wonder what special
-hazard this one call site knows about (none).
-
-#### Proposed solution
-
-`const adminHref = __IS_CAPACITOR__ ? '/admin/native' : '/admin';` — and run `npm run check` + unit
-tests to confirm no config actually relies on the guard.
-
-### [Docs] SettingsModal's pinch-zoom comment says "whichever scroll shell is mounted binds it," but the compact shell never does
-
-**File(s):** `web/src/lib/components/SettingsModal.svelte` (comment, lines 76–79; compact branch,
-lines 131–132), `web/src/lib/components/settings/CompactShell.svelte` (`.quick-toggles` scroller,
-lines 151–160) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The tier-2 accessibility comment claims universal coverage:
-
-```ts
-// Tier-2 accessibility (ADR-0076): let a low-vision parent pinch to enlarge the
-// reading content. The bound element gets CSS `zoom`; whichever scroll shell is
-// mounted binds it.
-```
-
-but the compact branch renders `<CompactShell />` with no `use:pinchTextZoom` and no
-`.settings-zoom` target — CompactShell has its own scroll region (`.quick-toggles`,
-`overflow-y: auto`) that a low-vision parent cannot enlarge. Skipping the cramped landscape-phone
-shell may well be the right call (there's barely room at 1×, and its content is toggles rather than
-reading material), but as written the comment asserts coverage the code doesn't provide, so a reader
-auditing ADR-0076 compliance gets a false all-clear.
-
-#### Proposed solution
-
-Either amend the comment to record the exclusion and its rationale ("…both full shells bind it; the
-compact quick-toggle shell is deliberately excluded — no prose to read, no vertical room to zoom
-into") or, if the exclusion wasn't a decision, thread the action through CompactShell like the other
-shells (bind `.quick-toggles`' inner content and pass the `textZoom` getter as a prop). Check
-ADR-0076 for whether the tier-2 commitment scoped itself to reading content before choosing.
-
 ## Source: Code audit — App state (runes)
-
-### [Architecture] Move the seven `ai*` fields out of `ui.svelte.ts` into the AI-generation state module
-
-**File(s):** `web/src/lib/state/ui.svelte.ts` (`UiState`/`ui`, lines 1–32) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-Seven of the nine fields in the generic `ui` state object are AI-result view state:
-
-```ts
-interface UiState {
-  resizingActionButtons: boolean;
-  clearTutorialVisible: boolean;
-  aiGenerating: boolean;
-  aiResultOpen: boolean;
-  aiResultUrl: string | null;
-  aiPreviewUrl: string | null;
-  aiError: boolean;
-  aiErrorMessage: string | null;
-  aiErrorKind: AiErrorKind;
-}
-```
-
-Every writer of those fields lives in `web/src/lib/state/aiGeneration.svelte.ts`
-(`startAiGeneration`, `setAiPreview`, `finishAiGeneration`, `failAiGeneration`, `closeAiResult` —
-that module's entire body is `ui.ai* = …` assignments). The split produces a module cycle as its
-telltale: `ui.svelte.ts:1` does `import type { AiErrorKind } from './aiGeneration.svelte'` while
-`aiGeneration.svelte.ts:1` does `import { ui } from './ui.svelte'`. The type-only import erases at
-runtime so nothing breaks, but the cycle is the signature of state declared on the wrong side of the
-boundary: the lifecycle owner (`aiGeneration`) has to reach into a foreign module for every
-mutation, and a first-time reader looking for "where does `aiResultUrl` live" finds the declaration
-in a file that knows nothing about its invariants.
-
-#### Proposed solution
-
-Move the seven `ai*` fields into an exported `$state` object in `aiGeneration.svelte.ts` (e.g.
-`export const aiResult = $state({ generating: false, open: false, resultUrl: null, … })`), dropping
-the `ai` prefix that the module name now carries. `ui.svelte.ts` keeps `resizingActionButtons`, the
-modal instances, `SETTINGS_BUTTON_ID`, and `buttonCenter`, and loses its `aiGeneration` import —
-cycle gone. Readers to update: `ActionsPanel.svelte`, `AiImageResult.svelte`, `AiDial.svelte`,
-`SettingsModal.svelte` (reads `ui.resizingActionButtons` only), `lib/drawing/aiImage.ts`,
-`routes/dev/ai-timer/+page.svelte`, plus tests. Mechanical rename churn is the only cost;
-`aiGeneration.svelte.ts` itself is owned by the AI section, so coordinate the halves as one change.
-
-### [Readability] Delete the dead `clearTutorialVisible` field
-
-**File(s):** `web/src/lib/state/ui.svelte.ts` (lines 9, 24) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-`clearTutorialVisible: boolean` is declared in `UiState` (line 9) and initialized to `false` (line
-24), but a repo-wide grep (`web/src` + `web/tests`, `.ts`/`.svelte`/`.spec.ts`) finds no other
-reference — nothing ever reads or writes it. It is a leftover from a removed (or never-shipped)
-clear-tutorial feature and now misleads a reader into hunting for a tutorial flow that doesn't
-exist.
-
-#### Proposed solution
-
-Remove both lines. If a clear tutorial is planned, its state should arrive with the feature (the "no
-speculative surface" convention).
-
-### [Maintainability] The folder-save support predicate is duplicated and kept in sync by prose
-
-**File(s):** `web/src/lib/state/saveFolder.svelte.ts` (`hydrateSaveFolder`, lines 65–76) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-Line 72 inlines the support check:
-
-```ts
-if (typeof window === 'undefined' || !('showDirectoryPicker' in window)) return;
-```
-
-and the comment above (lines 67–70) says it is "the same predicate as folderSaveSupported" — which
-lives in `web/src/lib/drawing/folderSave.ts:75-76` as
-`return browser && 'showDirectoryPicker' in window;`. CLAUDE.md is explicit that this pattern is a
-defect, not a mitigation: "Cross-file agreement is never maintained by prose. … A 'keep in sync with
-X' comment marks a defect." If the folderSave predicate ever changes (e.g. adds a permissions
-probe), the boot hydration gate silently diverges. The duplication exists for a good reason —
-importing `folderSave.ts` here would defeat the lazy-chunk optimization (issue #461) — but the fix
-doesn't require importing the chunk.
-
-#### Proposed solution
-
-Extract the predicate to a tiny dependency-light module, e.g.
-`web/src/lib/drawing/folderSaveSupport.ts` exporting `folderSaveSupported(): boolean`, imported
-statically by both `folderSave.ts` and `saveFolder.svelte.ts`. A one-function module adds nothing
-measurable to the startup bundle, keeps the folderSave chunk lazy, and deletes the prose contract.
-Alternative (weaker): a drift-guard test that greps both sites, per the `app.html.test.ts` pattern —
-but the shared module is simpler here since both sides are importable TS. `folderSave.ts` is owned
-by the drawing section; coordinate.
-
-### [Maintainability] Sound-volume bounds 0/100 are duplicated between `clampVolume` and the slider markup
-
-**File(s):** `web/src/lib/state/settings.svelte.ts` (`clampVolume`, lines 78–81) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-function clampVolume(v: number) {
-  if (!Number.isFinite(v)) return SOUND_VOLUME_DEFAULT;
-  return Math.max(0, Math.min(100, Math.round(v)));
-}
-```
-
-The `0`/`100` bounds are re-stated as bare literals in
-`web/src/lib/components/settings/SoundSection.svelte:53-54` (`min={0} max={100}`). These two sites
-must agree — a slider whose range exceeds the clamp silently snaps on release; a clamp wider than
-the slider makes stored values unreachable. The module already demonstrates the correct pattern one
-screen down: `ACTION_BUTTON_SCALE_MIN`/`MAX` (lines 86–87) are exported and imported by
-`ControlsSection.svelte:118` and `actionButtonLayout.ts:103`. Volume is the one slider setting that
-skipped it.
-
-#### Proposed solution
-
-Export `SOUND_VOLUME_MIN = 0` and `SOUND_VOLUME_MAX = 100` beside `SOUND_VOLUME_DEFAULT`, use them
-in `clampVolume`, and import them in `SoundSection.svelte` for `min`/`max`. Mirrors the existing
-scale-constant pattern exactly.
-
-### [Maintainability] Name the 600px tablet threshold in `defaultForceLandscapeOrientation`
-
-**File(s):** `web/src/lib/state/settings.svelte.ts` (`defaultForceLandscapeOrientation`, lines
-15–21) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-function defaultForceLandscapeOrientation() {
-  if (typeof window === 'undefined') return true;
-  // iPad Mini and larger tablets have a smallest CSS viewport side around
-  // 744px; Android tablet layouts commonly start at 600dp. Phone-class devices
-  // stay below that, even in landscape, so they default to portrait.
-  return Math.min(window.innerWidth, window.innerHeight) >= 600;
-}
-```
-
-`600` is a tuning literal — a device-classification threshold with a researched rationale — and
-CLAUDE.md requires exactly this kind of number to be a named module-scope constant with the unit in
-the name ("Tuning literals get names… the WHY comment lives on the constant"). Inline, it can't be
-found by grepping for a name, and the comment is attached to the function instead of the decision.
-
-#### Proposed solution
-
-```ts
-// iPad Mini and larger tablets have a smallest CSS viewport side around 744px;
-// Android tablet layouts commonly start at 600dp. Phone-class devices stay
-// below this even in landscape, so they default to portrait.
-const TABLET_MIN_VIEWPORT_SIDE_PX = 600;
-```
-
-and use it in the comparison.
-
-### [Maintainability] `BRUSH_TYPES` and `BRUSH_OPTIONS` are two hand-maintained copies of the same ordered list
-
-**File(s):** `web/src/lib/state/tool.svelte.ts` (lines 15–33, 46–51) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-Line 16 declares `export const BRUSH_TYPES: BrushType[] = ['pen', 'crayon', 'magic', 'eraser'];`
-with the comment "Presentation order in the Brush Menu", and lines 23–33 declare `BRUSH_OPTIONS` —
-also "in presentation order" — whose `brush` fields are the same four values in the same order.
-Adding or reordering a brush requires editing both lists and keeping their order aligned; nothing
-enforces the agreement (a unit test asserts `BRUSH_TYPES`' content but not its correspondence to
-`BRUSH_OPTIONS`). Two smaller issues in the same lines: `BRUSH_TYPES` and `BRUSH_OPTIONS` are
-mutable exported arrays (contrast `STROKE_SIZES: readonly StrokeSize[]` in
-`strokeWidth.svelte.ts:6`), and `readBrush` (line 48) validates via a widening cast
-`(BRUSH_TYPES as string[]).includes(raw)`.
-
-#### Proposed solution
-
-Derive one from the other so a single list owns the order:
-
-```ts
-export const BRUSH_OPTIONS: readonly BrushOption[] = [/* the four entries */];
-export const BRUSH_TYPES: readonly BrushType[] = BRUSH_OPTIONS.map((o) => o.brush);
-```
-
-with a named
-`interface BrushOption { brush: BrushType; icon: CommonIconName; label: string; id: string }`.
-Optionally add `function isBrushType(raw: string): raw is BrushType` to replace the `as string[]`
-widening in `readBrush`. Consumers (`BrushMenu.svelte:34`, `ActionsPanel.svelte:287`, tests) are
-unaffected.
-
-### [Types] `TRIM_ORDER`'s label lookup lets a typo produce a silent `undefined` entry
-
-**File(s):** `web/src/lib/state/colors.svelte.ts` (lines 21–33) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-const paletteByLabel = Object.fromEntries(PALETTE_COLORS.map(({ hex, label }) => [label, hex]));
-export const TRIM_ORDER: string[] = [
-  'Brown',
-  'Teal',
-  'Pink',
-  'Red',
-  'Orange',
-  'Green',
-  'Yellow',
-  'Blue',
-  'Purple',
-  'Black',
-].map((label) => paletteByLabel[label]);
-```
-
-`PALETTE_COLORS` types `label` as bare `string` (`lib/palette.ts`), and `Object.fromEntries` yields
-`Record<string, string>`, so a misspelled or stale label here type-checks and maps to `undefined` at
-runtime — `TRIM_ORDER`'s declared `string[]` is a lie in that case. The only guard is a unit test
-(`colors.svelte.test.ts:29-31`) comparing sorted hex sets, i.e. a runtime check for what the "close
-finite value sets in the type" convention says should be a compile error. `TRIM_ORDER` is also a
-mutable exported array.
-
-#### Proposed solution
-
-In `lib/palette.ts`, make the labels a literal union: declare the array
-`as const satisfies readonly PaletteColor[]` (or give `PaletteColor` a generic label parameter) and
-export `type PaletteLabel = (typeof PALETTE_COLORS)[number]['label']`. Then in `colors.svelte.ts`
-type the literal list as `readonly PaletteLabel[]` (renaming a palette label becomes a compile error
-here) and export `TRIM_ORDER` as `readonly string[]`. `palette.ts` belongs to the color-palette
-section — coordinate that half. The existing unit test stays as the completeness check (the type
-can't prove every label appears exactly once).
-
-### [Types] Collapse the `aiError`/`aiErrorMessage`/`aiErrorKind` tri-field into one nullable error value
-
-**File(s):** `web/src/lib/state/ui.svelte.ts` (lines 14–19, 29–31) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The error state is spread across three parallel fields:
-
-```ts
-aiError: boolean;
-aiErrorMessage: string | null;
-aiErrorKind: AiErrorKind;
-```
-
-Illegal combinations are representable (`aiError: false` with a stale message/kind), so every writer
-must reset all three in lockstep — and does, three times over, in `aiGeneration.svelte.ts`
-(`startAiGeneration`, `failAiGeneration`, `closeAiResult` each touch the full triple). Readers
-re-derive the grouping too: `AiImageResult.svelte:107-111` branches on `aiError`, then reads
-`aiErrorKind` and `aiErrorMessage` separately.
-
-#### Proposed solution
-
-One field models the whole thing:
-
-```ts
-aiError: { kind: AiErrorKind; message: string | null } | null;
-```
-
-`failAiGeneration` sets it in one assignment; `startAiGeneration`/`closeAiResult` reset with
-`= null`; truthiness replaces the boolean at every read site. Best folded into the `ai*`-field
-relocation finding above (same files, same writers) rather than done as a separate pass.
-
-### [Performance] `syncViewport` constructs a fresh `MediaQueryList` on every resize event
-
-**File(s):** `web/src/lib/state/layout.svelte.ts` (`syncViewport`, lines 55–64; `readOrientation`,
-line 26) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-function syncViewport() {
-  const next = window.matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape';
-```
-
-`window.matchMedia(...)` allocates and evaluates a new `MediaQueryList` per call, and `syncViewport`
-runs on every `resize` — which fires in bursts during desktop window drags and mobile URL-bar
-show/hide transitions. The repo's hot-path rule flags per-resize allocation; the fix is the standard
-hoist. Line 26 (`readOrientation`'s fallback) creates another one at module load — harmless once,
-but it can share the same hoisted instance. Secondary micro-nit in the same function:
-`document.documentElement.dataset.orientation = next` (line 59) writes the attribute even when
-unchanged; engines short-circuit same-value `setAttribute`, so this is optional to guard.
-
-#### Proposed solution
-
-```ts
-const portraitQuery = browser ? window.matchMedia('(orientation: portrait)') : null;
-```
-
-at module scope; `syncViewport` and `readOrientation`'s fallback read `portraitQuery.matches`.
-(Keeping the resize/orientationchange listeners rather than subscribing to the MQL's `change` event
-is fine — the function must re-measure insets/viewport anyway.) The existing `layout.svelte.test.ts`
-stubs `window.matchMedia` per test and calls `freshModule()`, so a module-scope query still picks up
-the stub; verify the stub is installed before import (it is — `beforeEach` runs `setMatchMedia()`
-first).
-
-### [Maintainability] Three different SSR-guard idioms across the state modules (and docs say `appearance` uses `browser`)
-
-**File(s):** `web/src/lib/state/appearance.svelte.ts` (lines 17–18, 35),
-`web/src/lib/state/settings.svelte.ts` (lines 16, 234), `web/src/lib/state/saveFolder.svelte.ts`
-(line 72) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The state directory's documented pattern (web/src CLAUDE.md) is self-initialization "gated on
-`browser`", and it explicitly lists `appearance.svelte.ts` among the examples. In fact `appearance`
-gates on `typeof matchMedia !== 'undefined'` (line 17) and `typeof document !== 'undefined'` (line
-35); `settings.svelte.ts` uses `typeof window === 'undefined'` (lines 16, 234);
-`saveFolder.svelte.ts` uses `typeof window === 'undefined'` (line 72); while `layout`, `network`,
-`fullscreen`, and `install` import `browser` from `$app/environment`. Three idioms for one concept
-make it harder to grep for "client-only" gates and leave the orientation doc mildly wrong about one
-of its own examples.
-
-#### Proposed solution
-
-Standardize on `browser` from `$app/environment` in all five spots. Gotcha:
-`appearance.svelte.test.ts` and `settings.svelte.test.ts` currently import these modules without
-mocking `$app/environment`; under Vitest the SvelteKit plugin resolves it but `browser` may be
-`false`, so the tests will need the same `vi.mock('$app/environment', () => ({ browser: true }))`
-that `layout.svelte.test.ts` and `install.svelte.test.ts` already use. If that test churn is judged
-not worth it, the fallback is to fix the CLAUDE.md source (`.ruler/`) so the doc stops claiming
-`appearance` is browser-gated — either way the current doc/code disagreement should not stand.
-
-### [Types] `settings.svelte.ts` repeats its typed-entries casts in two places
-
-**File(s):** `web/src/lib/state/settings.svelte.ts` (lines 133–147, 213–229) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The `$state` initializer casts `Object.fromEntries(Object.entries(BOOL_SETTINGS)...)` through
-`as Record<BoolSettingKey, boolean>` (lines 134–136) and the INT equivalent (137–142), and
-`reloadSettings` re-states the sibling casts
-`Object.entries(BOOL_SETTINGS) as [BoolSettingKey, [StorageKey, boolean]][]` (lines 214–217) and the
-three-tuple INT form (220–223). Four `as`-casts encode the same two facts (the entries of each table
-keep their key/value types), each written out longhand, and any change to a table's tuple shape must
-be mirrored in two casts.
-
-#### Proposed solution
-
-Hoist the typed iteration once, next to each table:
-
-```ts
-const boolSettingEntries = () =>
-  Object.entries(BOOL_SETTINGS) as [BoolSettingKey, [StorageKey, boolean]][];
-const intSettingEntries = () =>
-  Object.entries(INT_SETTINGS) as [IntSettingKey, [StorageKey, number, (v: number) => number]][];
-```
-
-Both the `$state` initializer (`Object.fromEntries(boolSettingEntries().map(...))`) and
-`reloadSettings` iterate the helpers; the casts live exactly once per table, beside the structure
-they describe.
-
-### [Readability] The persistence-split comment sits on `SIZE_TO_PX` instead of on `strokeState`
-
-**File(s):** `web/src/lib/state/strokeWidth.svelte.ts` (lines 33–42, 48–51) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-// Drawing brushes (pen/crayon/magic) share one remembered level and the eraser
-// keeps its own, persisted separately, so switching tools restores the size the
-// child last used for that tool.
-const SIZE_TO_PX: Record<StrokeSize, number> = { ... };
-```
-
-The comment describes the pen/eraser persistence split — i.e. the `strokeState` object declared at
-lines 48–51 — but is attached to the level→pixel lookup table, which has nothing to do with
-persistence. A reader scanning `SIZE_TO_PX` gets an explanation for the wrong thing, and
-`strokeState` (the thing that actually encodes the split via its two keys) carries no comment.
-
-#### Proposed solution
-
-Move the comment down to sit directly above `export const strokeState = $state({ ... })`. If
-`SIZE_TO_PX` wants a comment at all, one line ("stroke level → brush width in CSS px") suffices,
-though the name already says it.
-
-### [Maintainability] `getStrokeWidthPx`/`getEraserWidthPx` default parameters and the `??` fallback have no production caller
-
-**File(s):** `web/src/lib/state/strokeWidth.svelte.ts` (lines 80–86) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-export function getStrokeWidthPx(size: StrokeSize = strokeState.penSize): number {
-  return SIZE_TO_PX[size] ?? SIZE_TO_PX[DEFAULT_SIZE];
-}
-export function getEraserWidthPx(size: StrokeSize = strokeState.eraserSize): number {
-  return getStrokeWidthPx(size) * ERASER_SIZE_MULTIPLIER;
-}
-```
-
-Every production call site passes an explicit argument (`DrawingCanvas.svelte:82,88,177,231`,
-`earlyBoot.ts:39`); only the unit test exercises the no-arg form (`strokeWidth.svelte.test.ts:34`,
-via `undefined`). Per the "no speculative surface" convention, an optional parameter needs a
-production caller or a test-only-seam comment. The defaults are also subtly hazardous: they read
-reactive state, so a future zero-arg call inside a `$derived` would silently subscribe to `penSize`.
-Separately, the `?? SIZE_TO_PX[DEFAULT_SIZE]` fallback is unreachable for the closed `StrokeSize`
-union — the only unvalidated inputs are the test's deliberate `0 as StrokeSize` casts, and the
-storage path already validates through `readStrokeLevel`'s allowed-list. A runtime fallback
-shadowing a closed union is exactly what the "close finite value sets in the type" convention argues
-against.
-
-#### Proposed solution
-
-Make `size` required in both functions and drop the `??` fallback (updating the garbage-input test,
-which currently proves behavior no caller can reach). If the defensive fallback is judged worth
-keeping for belt-and-braces, keep it but delete the default parameters and add the convention's
-test-only-seam comment.
-
-### [Architecture] `ColorPalette` mutates `layout.paletteWidth/Height` directly instead of through a setter
-
-**File(s):** `web/src/lib/state/layout.svelte.ts` (lines 29–36) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`.claude/rules/svelte.md` states: "Components read state and call setters; they never own shared
-state." Yet `ColorPalette.svelte:47-54` assigns the shared store directly from its ResizeObserver
-and unmount cleanup:
-
-```ts
-layout.paletteWidth = rect.width;
-layout.paletteHeight = rect.height;
-// …and on teardown:
-layout.paletteWidth = 0;
-layout.paletteHeight = 0;
-```
-
-`layout.svelte.ts` exposes no setter for these two fields (every other write to `layout` happens
-inside the module's own `syncViewport`). The module comment (lines 5–10) documents the publish
-mechanism but not the raw-assignment API; a setter would also give the "0 = unmeasured" sentinel
-(documented at lines 33–35) a single named home instead of being re-encoded at the component's
-teardown site.
-
-#### Proposed solution
-
-Add to `layout.svelte.ts`:
-
-```ts
-export function publishPaletteSize(width: number, height: number) {
-  layout.paletteWidth = width;
-  layout.paletteHeight = height;
-}
-```
-
-`ColorPalette` calls `publishPaletteSize(rect.width, rect.height)` and `publishPaletteSize(0, 0)` on
-teardown. Small change; brings the one rule-breaking write site in the state layer into line.
 
 ### [Testing] `fullscreen.svelte.ts` has no unit tests
 
@@ -16817,3 +15451,165 @@ One clause in each spot: e.g. agent-files.md — "…live in
 `scripts/tests/`)"; skill-notes README — "one file per skill, named after it (absent until a skill
 accrues design history — currently only the direct `burn-down-audits` notes exist, in the provider
 trees)". Cheap, and it converts a dead-end search into a one-line read.
+
+## Source: Session audit
+
+Filed 2026-08-05 from a session that addressed a nine-comment review round on PR #771, wrote a
+handoff packet, and filed issue #772. Scope is deliberately narrow: instruction, doc, and skill gaps
+where a wording change would have prevented the friction. Ordered by recurrence x cost.
+
+### [Execution] Give Vitest the raw-runner warning Playwright already has, and state what `--` paths are relative to
+
+#### Problem
+
+`slow` — Running one newly-written unit test took four attempts:
+
+1. `npx vitest run web/src/lib/components/settings/sections.test.ts` ->
+   `Error: Cannot find module
+   '$lib/appVersion'`. Raw `npx` misses the `web/` cwd and the `$lib`
+   alias.
+2. Re-ran the same way for a negative check. It reported `Tests  no tests` for **both** the
+   deliberately-broken source and the restored one — which reads as "the guard never fires" rather
+   than "the file never loaded."
+3. `npm run test:unit -- web/src/lib/components/settings/sections.test.ts` -> `No test files found`
+   (the runner did print `include: src/**/*`).
+4. `npm run test:unit -- src/lib/components/settings/sections.test.ts` -> passed.
+
+The `testing` skill already documents this exact failure for the *other* runner
+(`.claude/skills/testing/SKILL.md:113-118`): filter through the npm script, "**not** raw
+`npx
+playwright test`", because config and `baseURL` live in `web/` so raw `npx` yields
+`Cannot navigate
+to invalid URL`. That warning is accurate and named the error verbatim. Its Vitest
+sibling one screen up (`:57-63`) shows only `npm run test:unit` / `:watch` — no filtering example,
+no equivalent warning. Same root cause (`scripts/web.mjs` sets `cwd = web/`), documented for one
+runner and not the other: a divergence to close, not a new doc to invent.
+
+Neither block states that a path after `--` resolves **relative to `web/`**. The e2e example at
+`:109` happens to use a web-relative path but never says so, so it reads as a filename rather than a
+rule.
+
+Step 2 is the one that outranks the rest: it produced a *false negative* rather than an error. A
+session trusting it would conclude a correctly-working drift guard was broken and go rewrite it.
+
+#### Proposed solution
+
+`.ruler/skills/testing/SKILL.md` (generated into `.claude/` and `.agents/` — never edit those
+copies). Two edits:
+
+* In the Vitest block, add the sibling of the Playwright warning: filter through the npm script, not
+  raw `npx vitest`, which loses the `web/` cwd and the `$lib` alias
+  (`Cannot find module '$lib/...'`) and can report `Tests  no tests` — a *load* failure wearing the
+  shape of a *result*.
+* State once, covering both runners: paths after `--` are relative to `web/` because
+  `scripts/web.mjs` sets that cwd — `src/lib/foo.test.ts` and `tests/foo.spec.ts`, never
+  `web/src/...`. Give the Vitest block a filtering example mirroring the e2e one.
+
+#### Verification
+
+A future session filtering a single unit test gets it right on the first call, and the literal
+string `Tests  no tests` appears in the skill so the false-negative is recognizable on sight.
+
+### [Tooling] Partial `vi.mock` factories break when the mocked module gains an export
+
+#### Problem
+
+`slow` — Consolidating a duplicated `600` threshold into one exported constant on
+`web/src/lib/platform.ts` broke two suites unrelated to the change:
+
+```
+Error: [vitest] No "TABLET_MIN_SIDE_PX" export is defined on the "./platform" mock.
+Did you forget to return it from "vi.mock"?
+```
+
+`web/src/lib/storage.restore.integration.test.ts:23` and `web/src/lib/boot/persistedState.test.ts:7`
+each mock `./platform` with a literal factory returning only `isNative` and `getPlatform`, so any
+export added to that module breaks every partial mock of it. Diagnosis cost a full `test:unit` run
+plus a grep for the second site. The error names the missing export but not the fix, and the
+tempting fix — add the constant to each factory — restates the value in two more places, re-creating
+the exact drift the consolidation had just removed.
+
+The repo states the general principle forcefully in root CLAUDE.md ("Cross-file agreement is never
+maintained by prose ... imported from one exported constant"). Its **testing analogue** — stub the
+behaviours, inherit the constants — appears nowhere in `.claude/rules/testing.md`, so this session
+had to derive it mid-task.
+
+#### Proposed solution
+
+`.claude/rules/testing.md` (path-scoped rule, edit in place — not ruler-generated). Add a short
+rule: a `vi.mock` factory that only needs to stub *behaviour* spreads the real module first, so
+constants stay owned by one file and an added export can't break unrelated suites:
+
+```ts
+vi.mock('./platform', async (importActual) => ({
+  ...(await importActual<typeof import('./platform')>()),
+  isNative: () => ctrl.native,
+}));
+```
+
+Cite the two sites above as worked examples.
+
+#### Verification
+
+The next constant added to a widely-mocked module (`platform.ts`, `storage.ts`) lands without
+breaking unrelated suites, and a grep of `vi.mock(` for behaviour-only literal factories returns
+none.
+
+### [Docs] `create-handoff` cites a worked example that the handoff lifecycle guarantees will vanish
+
+#### Problem
+
+`minor` — `create-handoff` step 2 ends: "The `docs/handoff/coloring-fill-drift.md` handoff is a
+worked example of the right density." Following it: `ls docs/handoff/` returns only `AGENTS.md`,
+`CLAUDE.md`, and `audit-burndown-473.md`. The cited file is gone — consumed and deleted by a past
+`/resume-handoff`, exactly as prescribed.
+
+This is structurally guaranteed to recur rather than being ordinary rot: the skill cites a file from
+a folder whose own documented lifecycle is "deleted the moment it's consumed"
+(`docs/handoff/CLAUDE.md`). Any example named there dies on the next resume. The cost is one wasted
+`ls` and a fallback to whatever packet happens to still be present, but it fires for every handoff
+author from now on, and a pointer that doesn't resolve quietly discounts the rest of the skill.
+
+#### Proposed solution
+
+`.ruler/skills/create-handoff/SKILL.md` (generated). Either drop the file-specific citation and let
+the inline guidance carry it — "prefer a `file:line` pointer over a paragraph re-explaining the
+code" already states the density rule — or point at a permanent location. Do **not** swap in another
+live handoff filename: that reintroduces the identical rot on the next resume.
+
+#### Verification
+
+Grep the skill for `docs/handoff/*.md` and get no file-specific citation, so no future
+`/resume-handoff` can invalidate it.
+
+### [Docs] "Writing on GitHub" covers auto-linking but not tag stripping
+
+#### Problem
+
+`minor` — Filing issue #772, this line went out:
+
+> regex for `name="hp"`, `report-hp`, or `aria-hidden="true"` on an `<input type="text">`.
+
+and came back rendered as `...on an`.`` — the `<input type="text">` was stripped as HTML **from
+inside a code span**. It was caught only because the issue was read back after posting; otherwise a
+truncated sentence ships. Non-tag angle brackets elsewhere in the same body (`width <= 1`) survived,
+so this is well-formed-tag stripping, not escaping.
+
+Root CLAUDE.md's **Writing on GitHub** section is strong on the two auto-*linking* traps
+(`#`-numbers silently becoming issue references, SHAs needing bare text) and both demonstrably saved
+work in this session. Tag *stripping* is the same class of hazard — agent-authored text silently
+altered on the way to GitHub, with no error — and is absent. It recurs disproportionately in this
+repo because the codebase is Svelte and HTML: writing `<input>`, `<dialog>`, or `<canvas>` into an
+issue or PR body is routine.
+
+#### Proposed solution
+
+`.ruler/github.md` (the source of the root CLAUDE.md section; never edit `CLAUDE.md` directly). One
+bullet in the existing section: a literal HTML tag can be stripped from an issue/PR body even inside
+backticks — write it escaped, name it in prose ("a text input"), or put it in a fenced block. The
+section's existing verify-after-posting stance already covers the detection half.
+
+#### Verification
+
+A future issue body containing markup renders the tag intact, and the read-back-after-posting step
+the section already recommends for SHAs now carries a second documented reason.

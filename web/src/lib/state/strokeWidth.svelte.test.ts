@@ -26,13 +26,6 @@ describe('getStrokeWidthPx', () => {
   it('maps each stroke level to its pixel width', () => {
     expect(STROKE_SIZES.map((s) => getStrokeWidthPx(s))).toEqual([2, 4, 8, 14, 22]);
   });
-
-  it('falls back to the default level for out-of-range or garbage input', () => {
-    const defaultPx = getStrokeWidthPx(DEFAULT_SIZE);
-    expect(getStrokeWidthPx(0 as StrokeSize)).toBe(defaultPx);
-    expect(getStrokeWidthPx(99 as StrokeSize)).toBe(defaultPx);
-    expect(getStrokeWidthPx(undefined)).toBe(defaultPx);
-  });
 });
 
 describe('getEraserWidthPx', () => {

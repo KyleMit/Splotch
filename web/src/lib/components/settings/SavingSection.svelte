@@ -77,7 +77,7 @@
   .folder-info {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--setting-icon-gap);
     min-width: 0;
   }
 

@@ -1282,3 +1282,337 @@ half-implies that policy; the type should state it.
 #### Why it was deferred
 
 verifier gave no usable brief
+
+### [Maintainability] Three hand-rolled copies of the iOS-style segmented control — extract a design primitive
+
+**File(s):** `web/src/lib/components/settings/AppearanceSection.svelte` (`.theme-picker`, lines
+33–47 markup, 89–135 styles), `web/src/lib/components/settings/CompactShell.svelte` (`.orient-seg`,
+lines 97–111 markup, 169–219 styles), `web/src/lib/components/settings/ReportForm.svelte`
+(`.report-kind`, lines 115–128 markup, 235–270 styles) @ 9ae62ff1
+
+**Priority:** P2
+
+#### Problem
+
+The same segmented-control widget is implemented three times inside this one section, and two of the
+copies openly admit it in comments:
+
+* `AppearanceSection.svelte:89`:
+  `/* iOS-style segmented control: the active segment reads as a raised card. */`
+* `CompactShell.svelte:169`:
+  `/* iOS-style segmented control, matching the Theme picker in AppearanceSection. … */`
+* `ReportForm.svelte:235`:
+  `/* Bug / feature segmented control — mirrors the Appearance theme picker. */`
+
+Each copy re-declares the flex row + `--slider-track` well + padded segments + active raised card +
+hover rules, but they have already drifted: the theme picker uses `border-radius: var(--radius-md)`
+outer / `9px` inner with `--shadow-segment`; CompactShell uses `10px` outer / `var(--radius-sm)`
+inner, `12.5px` font, and `touch-action: manipulation`; ReportForm uses a bordered `--surface` well,
+`10px`/`7px` radii, **no** `--shadow-segment` on the active segment, and a filled `--brand` active
+state instead of the raised-card look. The accessibility patterns diverge too: two are
+`role="radiogroup"`/`role="radio"`+`aria-checked`, one is `role="group"`+`aria-pressed`.
+"Matching"/"mirrors" comments are cross-file agreement by prose — exactly what CLAUDE.md calls a
+defect, and the drift shows the prose isn't holding.
+
+The design-system tree (`web/src/lib/components/design/`) already exists for this (Button,
+Disclosure, StatusMessage), and `web/src/lib/design/tokens.ts:108` even documents `--shadow-segment`
+as "the tight lift on the selected segment of a segmented toggle (theme, …)" — the vocabulary
+anticipates a shared primitive that never got built.
+
+#### Proposed solution
+
+Add `web/src/lib/components/design/SegmentedControl.svelte`, generic over the option value:
+
+```svelte
+<script lang="ts" generics="T extends string">
+  interface Option { value: T; label: string; icon?: CommonIconName; id?: string }
+  interface Props {
+    options: Option[];
+    selected: T | null;          // null = nothing active (CompactShell's unlocked state)
+    onSelect: (value: T) => void;
+    ariaLabel: string;
+  }
+</script>
+```
+
+The primitive owns the well, segment chrome, active state, and the radiogroup/radio ARIA wiring;
+call sites keep sizing tweaks via a forwarded `class`, the established Disclosure pattern.
+CompactShell's "tap the active side to release" behavior stays in its `onSelect` handler.
+ReportForm's filled-brand active style can either adopt the raised-card look (visual consistency
+win) or pass a variant — decide with the `design` skill open. Note the a11y wrinkle:
+`selected: null` with `role="radio"` is legal (no radio checked), so CompactShell's `aria-pressed`
+variant can be dropped.
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* `docs/adrs/0071-design-token-single-source.md:152-155` still states "The report-kind row
+  (`ReportFields`) stays native radios on purpose … `SegmentedPicker`'s `<button role="radio">`
+  markup cannot [submit without JavaScript] — that one hand-rolled picker is a deliberate carve-out,
+  not a migration gap." That is now false; amend the picker amendment to record that `inputName`
+  gives the primitive a native-radio skin and the report-kind row migrated onto it.
+* `.ruler/skills/design/SKILL.md:116-117` still tells the reader "(The report-kind row stays
+  hand-rolled on native radios so the `/feedback` form posts without JavaScript)", and the
+  `SegmentedPicker.svelte` row of that same table (lines 118-121) lists
+  `mode`/`variant`/sizes/`fill` but not the new `inputName` prop. Fix both in the `.ruler/` source
+  and run `npm run ruler:apply` so `.claude/skills/design/SKILL.md` and
+  `.agents/skills/design/SKILL.md` regenerate.
+* `docs/COMPATIBILITY.md:128` locates the CSS `:has()` usage at
+  `lib/components/report/ReportFields.svelte:190` ("focus ring around the report-kind label"); that
+  selector now lives at `web/src/lib/components/design/SegmentedPicker.svelte:136` and applies to
+  every native-radio picker, not just the report kind. Update the row's file:line and description.
+* ReportFields' `@media (max-width: 400px)` tightening (gap/padding shrink, `font-size-xs`,
+  `white-space: nowrap`) was deleted with no equivalent in the primitive or at the call site, and
+  `SegmentedPicker` forwards no `class` prop. `.segment.md .option` is `font-size-sm` with
+  `min-width: 0` and no nowrap/ellipsis, so on a ~320-360px viewport the two long labels
+  ("Something's broken", "I have an idea") can wrap to two lines in both `/feedback` and the
+  settings Send Feedback card — the exact narrow-phone case the removed comment says was handled
+  deliberately. Restore the tightening (a forwarded `class`, an extra size, or a `:global()`
+  override in `ReportFields`) and cover it with a narrow-viewport assertion, since no current spec
+  exercises it.
+
+#### What was tried
+
+Gave SegmentedPicker an opt-in `inputName` prop that renders its options as a native
+`<input type="radio">` group inside the same track/option chrome (shared with the button skin via a
+snippet), so the feedback kind picker can drop its hand-rolled copy without losing no-JS form
+submission. ReportFields now renders it with the default `segment` variant — the choose-one skin,
+matching Appearance/CompactShell — and `/feedback`'s `:global()` radius overrides are deleted since
+the primitive's md/sm radii already land in the page's one radius family.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/maintainability-three-hand-rolled-copies-of-the-ios-style-segmented-cont.patch`
+(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/maintainability-three-hand-rolled-copies-of-the-ios-style-segmented-cont.patch`.
+
+### [Readability] AiKeyManager's open-effect calls `latest.begin()` for its side effect only, behind a pointless alias
+
+**File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (`$effect`, lines 62–70) @
+9ae62ff1
+
+**Priority:** P3
+
+#### Problem
+
+```ts
+$effect(() => {
+  const isOpen = open;
+  latest.begin();
+  if (isOpen) {
+    platform = getPlatform();
+    keyInput = '';
+    resetKeyFeedback();
+  }
+});
+```
+
+Two readability problems. First, `latest.begin()` is called with its return value (`{ id, signal }`)
+discarded — the *actual* intent is "abort any in-flight verify whenever the modal opens or closes,
+and invalidate its `isCurrent` token", but nothing says so; `begin` reads like the start of a
+request, so a discarded `begin()` looks like a half-finished refactor or a bug. Second,
+`const isOpen = open` exists (presumably) to establish the reactive read before the early-branch,
+but `open` is read in the `if` anyway, so the alias adds nothing — the untracked-reads subtlety it
+hints at doesn't apply here.
+
+Compare `ReportForm.svelte:50–52`, which handles the same prop with a bare `if (open) reset();` and
+no abort — the asymmetry (does ReportForm leak an in-flight submit across close? it deliberately
+doesn't abort, or it was missed?) is unanswerable from the code.
+
+#### Proposed solution
+
+Give the abort a name on the `LatestRequest` interface — e.g. add `cancel(): void` to
+`web/src/lib/latestRequest.ts` (aborts the controller and bumps the counter, same as `begin` minus
+the handout) — and write the effect as:
+
+```ts
+$effect(() => {
+  latest.cancel(); // opening or closing obsoletes any in-flight verify
+  if (open) {
+    platform = getPlatform();
+    keyInput = '';
+    resetKeyFeedback();
+  }
+});
+```
+
+Then decide whether `ReportForm` should do the same on close (it probably should — a success message
+from a submit that finished after close would greet the next open, except `reset()` on open happens
+to clear it; a one-line comment either way).
+
+#### Why it was deferred
+
+fix broke the test suite
+
+The driver's gates were red at the final round: npm run test:unit && npm run test:scripts && npm run
+test:asset-gen is red.
+
+Reviewer's unresolved objections:
+
+* The finding's second half is unimplemented:
+  `web/src/lib/components/settings/ReportForm.svelte:44-46` still has a bare
+  `$effect(() => { if (open) reset(); })` with no `latest.cancel()` and no comment, so the
+  AiKeyManager/ReportForm asymmetry the finding called out — does closing leak an in-flight submit?
+  — is still unanswerable from the code. Either add `latest.cancel()` on open/close there too, or
+  add the one-line comment saying why ReportForm deliberately relies on `reset()`-on-open instead of
+  aborting.
+* `ReportForm.svelte:50` calls `latest.cancel()`, which aborts the AbortController whose signal is
+  passed to the report `fetch` (`ReportForm.svelte:74`) — so reopening Settings during an in-flight
+  submit kills the POST, directly contradicting the comment three lines above it that says a sent
+  report "must be left to land" (reachable in the wide/tablet layout, where ReportForm stays mounted
+  across close).
+* `LatestRequest` needs a bump-only invalidation for ReportForm's case — increment `current` so a
+  late result fails `isCurrent(id)` without touching the controller — and `ReportForm.svelte:50`
+  should call that instead of the aborting `cancel()`; alternatively drop the `cancel()` call and
+  rewrite the comment to state the real chosen behaviour, but the current pairing of abort + "do not
+  abort" comment cannot stand.
+* The new abort-on-reopen behaviour in ReportForm is untested: there is no ReportForm component test
+  anywhere, and the only test added covers the `latestRequest` primitive. Add coverage for the
+  reopen-during-submit path once the intended behaviour is settled.
+
+#### What was tried
+
+1. Added a `cancel()` method to `LatestRequest` that performs the abort + counter bump without
+   handing out an id/signal, and switched `AiKeyManager`'s open/close effect to call it, so the
+   intent (obsolete any in-flight verify) is named rather than implied by a discarded `begin()`
+   return; also dropped the `isOpen` alias, which read `open` no differently than the `if` below it.
+   Covered `cancel()` with a unit test asserting the in-flight request goes stale, its signal
+   aborts, and a later `begin()` still yields a strictly increasing id.
+2. Implemented the finding's deferred second half in ReportForm.svelte. Rather than either option
+   the reviewer offered, I invalidate the in-flight submit on open only: `reset()`-on-open leaves a
+   real race uncovered (submit → close → reopen → type → the stale response passes `isCurrent` and
+   its success branch sets `message = ''`, wiping freshly typed text), so a comment claiming the
+   status quo is deliberate would document a bug as intent; but cancelling on close would abort a
+   POST that files a GitHub issue, making delivery nondeterministic, which is why AiKeyManager (an
+   idempotent verify) can abort and this cannot. A comment records that asymmetry and its reason, so
+   the question the finding raised is answerable from the code. Verified with npm run check,
+   test:unit (1157 passed), eslint, format:check, and the flows-settings + feedback E2E specs (18
+   passed). Flagged one gap: no test covers the ReportForm race itself — it is E2E-shaped and
+   outside the brief's acceptance criteria, offered to add it.
+3. All three review points addressed. (1) Confirmed the abort empirically with a throwaway probe
+   spec: at 1dde25b, reopening Settings mid-submit failed the report POST with net::ERR_ABORTED and
+   it never finished — the reviewer was right and my earlier "it may unmount first" reasoning was
+   wrong. (2) Took the reviewer's second alternative (drop the cancel() call, rewrite the comment)
+   rather than adding a bump-only invalidate(), because the probe also showed SettingsModal resets
+   view='hub' on reopen and mounts one section at a time, so ReportForm unmounts and the next visit
+   gets a fresh createLatestRequest() — an invalidate() call site would change no outcome, i.e.
+   speculative surface. This retracts 1dde25b's claimed stale-response-wipes-typed-text race, which
+   requires the instance to survive the reopen. (3) Added E2E spec 'reopening Settings mid-submit
+   leaves the sent report to land' to flows-settings.spec.ts asserting the held POST's outcome is
+   exactly ['finished'], and verified it is a real guard by restoring cancel() and watching it fail
+   with net::ERR_ABORTED. Generalized openAiSettings into openSettingsSection instead of copying the
+   helper. Verified: npm run check (0 errors), test:unit (1157 passed), eslint, format:check,
+   flows-settings at --repeat-each=3 (33 passed). latestRequest.ts unchanged from 12d47ad. Flagged
+   that reset()-on-open now looks vestigial but left it, as proving it dead spans the compact/phone
+   shells and is outside this finding's scope.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/readability-aikeymanager-s-open-effect-calls-latest-begin-for-its-side-e.patch`
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/readability-aikeymanager-s-open-effect-calls-latest-begin-for-its-side-e.patch`.
+
+### [Maintainability] Off-scale hardcoded font sizes where the token scale is the convention
+
+**File(s):** `web/src/lib/components/SettingsModal.svelte` (lines 271 `24px`, 277 `20px`, 441
+`15px`), `web/src/lib/components/settings/CompactShell.svelte` (line 193 `12.5px`),
+`web/src/lib/components/settings/SetupInstructions.svelte` (lines 239 `24px`, 280 `20px`) @ 9ae62ff1
+
+**Priority:** P4
+
+#### Problem
+
+`tokens.css:37–43` defines a seven-step type scale (`--font-size-xs` 12px … `--font-size-3xl` 28px)
+and these same files use it dozens of times — then break out into raw pixels in six places: the
+SettingsModal `h2` at `24px` and `20px`, the sidebar nav item at `15px`, CompactShell's segment
+label at `12.5px`, and SetupInstructions' chevron at `24px` / check at `20px`. Three of these
+(`15px`, `12.5px`, `24px`) don't even exist on the scale, so they can't be a token-name-forgotten
+slip — they're ad-hoc sizes that silently fork the type ramp. The `design` skill owns this
+vocabulary ("read before … picking a color/size"), and a mixed file (tokens on line 388, raw px on
+line 441 of the same component) is the worst of both: a reader can't tell which sizes are decisions
+and which are drift.
+
+#### Proposed solution
+
+Audit each against the scale with the `design` skill open: `20px` and `24px` headings likely become
+`--font-size-2xl` (22px) or justify a new heading token; `15px` nav items are a hair off
+`--font-size-lg`/`md` and almost certainly round to one; `12.5px` rounds to `--font-size-sm` (13px)
+or `--font-size-xs` (12px) — CompactShell is space-constrained, so verify in the landscape-phone
+viewport. Any size that genuinely must stay off-scale gets a local named custom property with a WHY
+comment (the `--drawer-transition` pattern from the svelte rules). Same treatment for the
+`install-check`'s `font-size: 20px`.
+
+#### Why it was deferred
+
+verifier unavailable
+
+### [Maintainability] Sound-volume bounds 0/100 are duplicated between `clampVolume` and the slider markup
+
+**File(s):** `web/src/lib/state/settings.svelte.ts` (`clampVolume`, lines 78–81) @ 9ae62ff1
+
+**Priority:** P3
+
+#### Problem
+
+```ts
+function clampVolume(v: number) {
+  if (!Number.isFinite(v)) return SOUND_VOLUME_DEFAULT;
+  return Math.max(0, Math.min(100, Math.round(v)));
+}
+```
+
+The `0`/`100` bounds are re-stated as bare literals in
+`web/src/lib/components/settings/SoundSection.svelte:53-54` (`min={0} max={100}`). These two sites
+must agree — a slider whose range exceeds the clamp silently snaps on release; a clamp wider than
+the slider makes stored values unreachable. The module already demonstrates the correct pattern one
+screen down: `ACTION_BUTTON_SCALE_MIN`/`MAX` (lines 86–87) are exported and imported by
+`ControlsSection.svelte:118` and `actionButtonLayout.ts:103`. Volume is the one slider setting that
+skipped it.
+
+#### Proposed solution
+
+Export `SOUND_VOLUME_MIN = 0` and `SOUND_VOLUME_MAX = 100` beside `SOUND_VOLUME_DEFAULT`, use them
+in `clampVolume`, and import them in `SoundSection.svelte` for `min`/`max`. Mirrors the existing
+scale-constant pattern exactly.
+
+#### Why it was deferred
+
+verifier gave no usable brief
+
+### [Maintainability] Three different SSR-guard idioms across the state modules (and docs say `appearance` uses `browser`)
+
+**File(s):** `web/src/lib/state/appearance.svelte.ts` (lines 17–18, 35),
+`web/src/lib/state/settings.svelte.ts` (lines 16, 234), `web/src/lib/state/saveFolder.svelte.ts`
+(line 72) @ 9ae62ff1
+
+**Priority:** P4
+
+#### Problem
+
+The state directory's documented pattern (web/src CLAUDE.md) is self-initialization "gated on
+`browser`", and it explicitly lists `appearance.svelte.ts` among the examples. In fact `appearance`
+gates on `typeof matchMedia !== 'undefined'` (line 17) and `typeof document !== 'undefined'` (line
+35); `settings.svelte.ts` uses `typeof window === 'undefined'` (lines 16, 234);
+`saveFolder.svelte.ts` uses `typeof window === 'undefined'` (line 72); while `layout`, `network`,
+`fullscreen`, and `install` import `browser` from `$app/environment`. Three idioms for one concept
+make it harder to grep for "client-only" gates and leave the orientation doc mildly wrong about one
+of its own examples.
+
+#### Proposed solution
+
+Standardize on `browser` from `$app/environment` in all five spots. Gotcha:
+`appearance.svelte.test.ts` and `settings.svelte.test.ts` currently import these modules without
+mocking `$app/environment`; under Vitest the SvelteKit plugin resolves it but `browser` may be
+`false`, so the tests will need the same `vi.mock('$app/environment', () => ({ browser: true }))`
+that `layout.svelte.test.ts` and `install.svelte.test.ts` already use. If that test churn is judged
+not worth it, the fallback is to fix the CLAUDE.md source (`.ruler/`) so the doc stops claiming
+`appearance` is browser-gated — either way the current doc/code disagreement should not stand.
+
+#### Why it was deferred
+
+implementation failed

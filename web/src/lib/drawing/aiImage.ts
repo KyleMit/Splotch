@@ -1,5 +1,5 @@
-import { ui } from '$lib/state/ui.svelte';
 import {
+  aiResult,
   startAiGeneration,
   setAiPreview,
   finishAiGeneration,
@@ -23,12 +23,35 @@ export const AI_TIMEOUT_MESSAGE = "That's taking too long — please try again."
 const UPLOAD_WEBP_QUALITY = 0.85;
 const FIRST_SERVER_ERROR_STATUS = 500;
 
+// No API reports canvas encode capability directly; the spec-mandated PNG
+// fallback for an unsupported type IS the feature signal, so a 1×1 probe
+// answers in ~1 ms. Memoized per page load and deliberately never persisted:
+// a stored "no" would outlive a Safari upgrade that adds a WebP encoder and
+// silently disable the smaller upload forever.
+let webpEncodeSupported: boolean | null = null;
+
+function canEncodeWebp(): boolean {
+  if (webpEncodeSupported === null) {
+    const probe = document.createElement('canvas');
+    probe.width = 1;
+    probe.height = 1;
+    webpEncodeSupported = probe.toDataURL('image/webp').startsWith('data:image/webp');
+  }
+  return webpEncodeSupported;
+}
+
 // Transcode the composited drawing to WebP for the upload only. Decoding the PNG
 // and re-encoding is exact on the source pixels, so the model sees the same
 // image at a fraction of the bytes. Returns null (caller falls back to the PNG)
 // if the platform can't decode/encode or the encoder declines.
 async function encodeWebpUpload(png: Blob): Promise<Blob | null> {
   try {
+    // Skipping outright on a non-encoding engine matters: Safari has no canvas
+    // WebP encoder (the WebP-encoder row in docs/COMPATIBILITY.md), so without
+    // this gate an iPad spends ~105 ms of blocked main thread per generation
+    // decoding and re-encoding a blob the type guard below then discards —
+    // measured on device, docs/scratchpad/webp-upload-encode-cost-2026-08.md.
+    if (!canEncodeWebp()) return null;
     const bitmap = await createImageBitmap(png);
     const canvas = document.createElement('canvas');
     canvas.width = bitmap.width;
@@ -117,16 +140,16 @@ async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, runId: number) {
 // the failed-export case closes the result modal itself, so the caller can bail
 // on null without distinguishing the two.
 async function exportUploadImage(
-  blob: Blob | null,
+  drawing: Blob | null,
   runId: number
 ): Promise<{ preview: Blob; upload: Blob } | null> {
-  const imageBlob = blob ?? (await exportCanvasBlob({ includePaperTexture: false }));
+  const imageBlob = drawing ?? (await exportCanvasBlob({ includePaperTexture: false }));
   if (!isAiGenerationActive(runId)) return null;
   if (!imageBlob) {
     closeAiResult();
     return null;
   }
-  if (!blob) setAiPreview(runId, URL.createObjectURL(imageBlob));
+  if (!drawing) setAiPreview(runId, URL.createObjectURL(imageBlob));
 
   // Upload a high-quality WebP rather than the PNG: a flat-color toddler drawing
   // encodes to a fraction of the bytes, so the single buffered generate-image
@@ -194,10 +217,10 @@ function applyResponse(runId: number, response: AiImageResponse): { committedBlo
 }
 
 export async function generateAiImage({
-  blob = null,
+  drawing = null,
   style = '',
-}: { blob?: Blob | null; style?: StyleName | '' } = {}) {
-  if (ui.aiGenerating) return;
+}: { drawing?: Blob | null; style?: StyleName | '' } = {}) {
+  if (aiResult.generating) return;
 
   const controller = new AbortController();
 
@@ -206,11 +229,11 @@ export async function generateAiImage({
   // behind the dial straight away; otherwise open with the dial alone and slot
   // the preview in once the canvas export finishes — so the spinner never waits
   // on the export, even when customization is off and we skip the picker.
-  const runId = startAiGeneration(blob ? URL.createObjectURL(blob) : null, controller);
+  const runId = startAiGeneration(drawing ? URL.createObjectURL(drawing) : null, controller);
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   try {
-    const exported = await exportUploadImage(blob, runId);
+    const exported = await exportUploadImage(drawing, runId);
     if (!exported) return;
 
     const { endpoint, headers, body } = buildRequest(exported.upload, style);

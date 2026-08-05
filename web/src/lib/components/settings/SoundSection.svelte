@@ -12,6 +12,7 @@
   import { SECTION_SLIDE } from './sections';
 
   const PREVIEW_SPEED = 0.45;
+  // Intentionally untracked: only read/written inside event handlers, never rendered.
   let previewingVolume = false;
 
   // While the volume slider is being adjusted, loop the pencil-scratch sound so

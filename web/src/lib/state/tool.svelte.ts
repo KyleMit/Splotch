@@ -12,27 +12,36 @@ import type { CommonIconName } from '../components/iconTypes';
 // Pen and crayon are the "ink brushes": both lay down the active palette color.
 export type BrushType = 'pen' | 'crayon' | 'magic' | 'eraser';
 
-// Presentation order in the Brush Menu.
-export const BRUSH_TYPES: BrushType[] = ['pen', 'crayon', 'magic', 'eraser'];
+// Fields are readonly, not just the array slots: BRUSH_TYPES is derived from
+// this list once at module load, so a mutable `brush` would let a consumer
+// reintroduce the very drift deriving it removed.
+export interface BrushOption {
+  readonly brush: BrushType;
+  readonly icon: CommonIconName;
+  readonly label: string;
+  readonly id: string;
+}
 
 // The Brush Menu's entries, in presentation order — the icon/label/id metadata
 // the Brush Button trigger (its stacked faces) and the Brush Menu popover both
 // render. The eraser keeps its long-standing #eraserButton id (and the magic
 // brush #magicBrushButton) from their days as top-level buttons — the
 // data-off-eraser CSS driven by Settings and the E2E suite address them by id.
-export const BRUSH_OPTIONS: {
-  brush: BrushType;
-  icon: CommonIconName;
-  label: string;
-  id: string;
-}[] = [
+export const BRUSH_OPTIONS: readonly BrushOption[] = [
   { brush: 'pen', icon: 'pen', label: 'Pen', id: 'penBrushButton' },
   { brush: 'crayon', icon: 'crayon', label: 'Crayon', id: 'crayonBrushButton' },
   { brush: 'magic', icon: 'magic-brush', label: 'Magic brush', id: 'magicBrushButton' },
   { brush: 'eraser', icon: 'eraser', label: 'Eraser', id: 'eraserButton' },
 ];
 
+// Derived from the Brush Menu's entries, so the two lists can't drift apart.
+export const BRUSH_TYPES: readonly BrushType[] = BRUSH_OPTIONS.map((o) => o.brush);
+
 const DEFAULT_BRUSH: BrushType = 'pen';
+
+function isBrushType(raw: string): raw is BrushType {
+  return (BRUSH_TYPES as readonly string[]).includes(raw);
+}
 
 export function isInkBrush(brush: BrushType): brush is 'pen' | 'crayon' {
   return brush === 'pen' || brush === 'crayon';
@@ -45,9 +54,7 @@ export function isInkBrush(brush: BrushType): brush is 'pen' | 'crayon' {
 // stored choice, and a stored value is never restored as the eraser.
 function readBrush(fallback: BrushType): BrushType {
   const raw = readString(STORAGE_KEYS.brushType, fallback);
-  return (BRUSH_TYPES as string[]).includes(raw) && raw !== 'eraser'
-    ? (raw as BrushType)
-    : fallback;
+  return isBrushType(raw) && raw !== 'eraser' ? raw : fallback;
 }
 
 export const toolState = $state({

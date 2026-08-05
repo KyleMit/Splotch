@@ -1,5 +1,5 @@
 import { perceivedBrightness } from '../colorRing';
-import { BLACK_INK, PALETTE_COLORS } from '../palette';
+import { BLACK_INK, PALETTE_COLORS, type PaletteLabel } from '../palette';
 
 export { BLACK_INK, PALETTE_COLORS };
 
@@ -19,7 +19,7 @@ export function themedSwatchColor(hex: string, dark: boolean): string {
 // the core seven, red goes first, then orange, green, yellow; blue and purple
 // (the default selection) hang on longer, and black is kept the longest.
 const paletteByLabel = Object.fromEntries(PALETTE_COLORS.map(({ hex, label }) => [label, hex]));
-export const TRIM_ORDER: string[] = [
+const TRIM_LABELS: readonly PaletteLabel[] = [
   'Brown',
   'Teal',
   'Pink',
@@ -30,7 +30,8 @@ export const TRIM_ORDER: string[] = [
   'Blue',
   'Purple',
   'Black',
-].map((label) => paletteByLabel[label]);
+];
+export const TRIM_ORDER: readonly string[] = TRIM_LABELS.map((label) => paletteByLabel[label]);
 
 export const CUSTOM_SWATCH = 'custom';
 

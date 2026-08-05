@@ -11,13 +11,15 @@ import {
 } from '../storage';
 import { applyTheme, isThemePreference, THEME_DEFAULT, type ThemePreference } from '../theme';
 import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
+import { TABLET_MIN_SIDE_PX } from '$lib/platform';
+import type { CredentialKind } from '$lib/aiCredential';
 
+// Phone-class devices stay below the shared tablet floor even in landscape, so
+// they default to portrait. The threshold itself is owned by platform.ts, which
+// applies the same boundary to orientation-lock capability.
 function defaultForceLandscapeOrientation() {
   if (typeof window === 'undefined') return true;
-  // iPad Mini and larger tablets have a smallest CSS viewport side around
-  // 744px; Android tablet layouts commonly start at 600dp. Phone-class devices
-  // stay below that, even in landscape, so they default to portrait.
-  return Math.min(window.innerWidth, window.innerHeight) >= 600;
+  return Math.min(window.innerWidth, window.innerHeight) >= TABLET_MIN_SIDE_PX;
 }
 
 // Single source of truth for every boolean setting: live-state property name ->
@@ -72,6 +74,9 @@ const BOOL_SETTINGS = {
 
 type BoolSettingKey = keyof typeof BOOL_SETTINGS;
 
+const boolSettingEntries = () =>
+  Object.entries(BOOL_SETTINGS) as [BoolSettingKey, [StorageKey, boolean]][];
+
 // 50 is the normal authored volume (the slider's midpoint and its snap detent).
 export const SOUND_VOLUME_DEFAULT = 50;
 
@@ -109,6 +114,9 @@ const INT_SETTINGS = {
 
 type IntSettingKey = keyof typeof INT_SETTINGS;
 
+const intSettingEntries = () =>
+  Object.entries(INT_SETTINGS) as [IntSettingKey, [StorageKey, number, (v: number) => number]][];
+
 function readTheme(fallback: ThemePreference): ThemePreference {
   const raw = readString(STORAGE_KEYS.theme, fallback);
   return isThemePreference(raw) ? raw : fallback;
@@ -132,13 +140,10 @@ interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey
 
 export const settings: Settings = $state({
   ...(Object.fromEntries(
-    Object.entries(BOOL_SETTINGS).map(([prop, [key, def]]) => [prop, readBool(key, def)])
+    boolSettingEntries().map(([prop, [key, def]]) => [prop, readBool(key, def)])
   ) as Record<BoolSettingKey, boolean>),
   ...(Object.fromEntries(
-    Object.entries(INT_SETTINGS).map(([prop, [key, def, clamp]]) => [
-      prop,
-      clamp(readInt(key, def)),
-    ])
+    intSettingEntries().map(([prop, [key, def, clamp]]) => [prop, clamp(readInt(key, def))])
   ) as Record<IntSettingKey, number>),
   theme: readTheme(THEME_DEFAULT),
   aiAccessToken: readString(STORAGE_KEYS.aiAccessToken, ''),
@@ -197,7 +202,11 @@ export function setAiAccessToken(v: string) {
   writeString(STORAGE_KEYS.aiAccessToken, v);
 }
 
-export type AiCredentialKind = 'apiKey' | 'accessCode' | 'none';
+// Extends the verification vocabulary rather than restating it, so a new
+// credential kind cannot compile in aiCredential.ts while being silently absent
+// from persisted-state classification. 'none' is this module's own addition:
+// verification always has a kind, but stored state may have neither credential.
+export type AiCredentialKind = CredentialKind | 'none';
 
 // Which AI credential is "active" when both happen to be set (nothing clears
 // one when the other is submitted): a BYOK key wins over an access code.
@@ -211,16 +220,10 @@ export function aiCredentialKind(): AiCredentialKind {
 // storage layer recovers values that the native WebView had evicted (see
 // hydrateDurableStorage in storage.ts). A no-op visually when nothing changed.
 export function reloadSettings() {
-  for (const [prop, [key]] of Object.entries(BOOL_SETTINGS) as [
-    BoolSettingKey,
-    [StorageKey, boolean],
-  ][]) {
+  for (const [prop, [key]] of boolSettingEntries()) {
     settings[prop] = readBool(key, settings[prop]);
   }
-  for (const [prop, [key, , clamp]] of Object.entries(INT_SETTINGS) as [
-    IntSettingKey,
-    [StorageKey, number, (v: number) => number],
-  ][]) {
+  for (const [prop, [key, , clamp]] of intSettingEntries()) {
     settings[prop] = clamp(readInt(key, settings[prop]));
   }
   settings.aiAccessToken = readString(STORAGE_KEYS.aiAccessToken, settings.aiAccessToken);

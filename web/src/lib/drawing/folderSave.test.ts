@@ -31,14 +31,6 @@ let folderSave: FolderSave;
 
 const blob = new Blob(['png'], { type: 'image/png' });
 
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((res) => {
-    resolve = res;
-  });
-  return { promise, resolve };
-}
-
 function makeHandle(permission: PermissionState = 'granted', name = 'My Pictures') {
   const writable = { write: vi.fn(async () => {}), close: vi.fn(async () => {}) };
   const fileHandle = { createWritable: vi.fn(async () => writable) };
@@ -226,7 +218,7 @@ describe('saveBlobToFolder', () => {
     const { handle, writable } = makeHandle('granted', 'Old Folder');
     seedFolder(handle);
     setPicker(vi.fn());
-    const delayedGet = deferred<unknown>();
+    const delayedGet = Promise.withResolvers<unknown>();
     pendingGet = delayedGet.promise;
 
     const save = folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: false });
@@ -248,7 +240,7 @@ describe('saveBlobToFolder', () => {
     const { handle: newHandle, writable } = makeHandle('granted', 'New Folder');
     seedFolder(oldHandle);
     setPicker(vi.fn(async () => newHandle));
-    const delayedGet = deferred<unknown>();
+    const delayedGet = Promise.withResolvers<unknown>();
     pendingGet = delayedGet.promise;
 
     const save = folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: false });

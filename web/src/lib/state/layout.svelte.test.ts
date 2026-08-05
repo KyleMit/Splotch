@@ -14,7 +14,9 @@ vi.mock('$lib/safeArea', () => ({
 
 function setMatchMedia() {
   window.matchMedia = ((query: string) => ({
-    matches: query.includes('portrait') ? mocks.portrait : !mocks.portrait,
+    get matches() {
+      return query.includes('portrait') ? mocks.portrait : !mocks.portrait;
+    },
     media: query,
     addEventListener() {},
     removeEventListener() {},

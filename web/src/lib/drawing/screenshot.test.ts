@@ -27,22 +27,6 @@ vi.mock('./perf', () => ({
   },
 }));
 
-interface Deferred<T> {
-  promise: Promise<T>;
-  resolve: (value: T) => void;
-  reject: (reason: unknown) => void;
-}
-
-function deferred<T>(): Deferred<T> {
-  let resolve!: (value: T) => void;
-  let reject!: (reason: unknown) => void;
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-}
-
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
@@ -55,7 +39,7 @@ beforeEach(() => {
 
 describe('saveScreenshot', () => {
   it('starts lightweight capture feedback before the PNG export settles', async () => {
-    const exported = deferred<Blob | null>();
+    const exported = Promise.withResolvers<Blob | null>();
     mocks.exportCanvasBlob.mockReturnValue(exported.promise);
     const { saveScreenshot } = await import('./screenshot');
 
@@ -92,7 +76,7 @@ describe('saveScreenshot', () => {
 
   it('coalesces overlapping saves and permits a later save after persistence settles', async () => {
     const now = vi.spyOn(performance, 'now').mockReturnValue(1_000);
-    const save = deferred<boolean>();
+    const save = Promise.withResolvers<boolean>();
     mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
     mocks.saveBlobToFolder.mockReturnValueOnce(save.promise).mockResolvedValueOnce(true);
     const { saveScreenshot } = await import('./screenshot');

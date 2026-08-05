@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Component } from 'svelte';
   import { browser } from '$app/environment';
   import Icon from './Icon.svelte';
   import SectionIcon from './SectionIcon.svelte';
@@ -13,27 +14,70 @@
   import ReportForm from './settings/ReportForm.svelte';
   import AboutSection from './settings/AboutSection.svelte';
   import CompactShell from './settings/CompactShell.svelte';
-  import { SECTIONS, sectionSubtitle, type SectionId } from './settings/sections';
+  import { SECTIONS, sectionSubtitle, type SectionId, type SectionMeta } from './settings/sections';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
+  import { TABLET_MIN_SIDE_PX } from '$lib/platform';
+
+  // Not every section takes `open` (only AiKeyManager/SetupInstructions/ReportForm do); passing it
+  // uniformly is fine — Svelte drops props a component doesn't declare — but the generated types
+  // can't express that, so the map admits both prop shapes and the render site widens to the one
+  // that carries `open`.
+  type SectionComponent = Component<Record<string, never>> | Component<{ open?: boolean }>;
+
+  const SECTION_CONTENT: Record<SectionId, SectionComponent> = {
+    appearance: AppearanceSection,
+    sound: SoundSection,
+    saving: SavingSection,
+    controls: ControlsSection,
+    ai: AiKeyManager,
+    setup: SetupInstructions,
+    whatsnew: WhatsNewSection,
+    feedback: ReportForm,
+    about: AboutSection,
+  };
+
+  const SECTION_BY_ID = Object.fromEntries(SECTIONS.map((s) => [s.id, s] as const)) as Record<
+    SectionId,
+    SectionMeta
+  >;
+
+  // Seeds from the live viewport at construction time (before first paint) so
+  // a flag that's already true on open renders its shell on the first frame —
+  // no narrow-then-wide flash — then keeps itself live via a `change` listener
+  // until the component is destroyed.
+  function mediaQueryFlag(query: string): { readonly current: boolean } {
+    let current = $state(browser ? matchMedia(query).matches : false);
+    $effect(() => {
+      if (typeof matchMedia === 'undefined') return;
+      const mql = matchMedia(query);
+      const apply = () => (current = mql.matches);
+      apply();
+      mql.addEventListener('change', apply);
+      return () => mql.removeEventListener('change', apply);
+    });
+    return {
+      get current() {
+        return current;
+      },
+    };
+  }
 
   // Two shells, one section list (ADR-0061). Below the breakpoint it's a hub
   // that drills into a full-page section; at or above it's a persistent sidebar
   // + content pane. The choice is viewport width, so a rotate re-picks it live.
-  // SettingsModal first mounts on the opening tap (bootHiddenOverlays), so seed
-  // `wide` from the live viewport to render the right shell on the first frame —
-  // no narrow-then-wide flash — then keep it fresh with the listener below.
   const WIDE_QUERY = '(min-width: 700px)';
-  let wide = $state(browser ? matchMedia(WIDE_QUERY).matches : false);
+  const wide = mediaQueryFlag(WIDE_QUERY);
 
   // A landscape *phone* has plenty of width (so it would match WIDE_QUERY) but
   // almost no height — the full section list is unusably cramped there. Detect
-  // it by orientation + the same sub-600px height floor the tablet defaults use
-  // (see defaultForceLandscapeOrientation), and swap in a stripped-down shell of
-  // quick toggles. A landscape tablet keeps its height ≥ 600px, so it stays on
-  // the sidebar shell untouched.
-  const COMPACT_QUERY = '(orientation: landscape) and (max-height: 599px)';
-  let compact = $state(browser ? matchMedia(COMPACT_QUERY).matches : false);
+  // it by orientation plus the shared tablet-class floor, and swap in a
+  // stripped-down shell of quick toggles. A landscape tablet keeps its height at
+  // or above that floor, so it stays on the sidebar shell untouched. The bound
+  // is derived from the threshold rather than restated, so retuning the floor
+  // cannot leave shell selection disagreeing with the orientation defaults.
+  const COMPACT_QUERY = `(orientation: landscape) and (max-height: ${TABLET_MIN_SIDE_PX - 1}px)`;
+  const compact = mediaQueryFlag(COMPACT_QUERY);
 
   // 'hub' = the phone top-level list; a section id = that section is open.
   let view = $state<'hub' | SectionId>('hub');
@@ -41,24 +85,7 @@
   // The section whose content the pane shows. The tablet pane always shows one
   // (the hub itself never renders there), defaulting to the first section.
   let activeSection = $derived<SectionId>(view === 'hub' ? SECTIONS[0].id : view);
-  let activeMeta = $derived(SECTIONS.find((s) => s.id === activeSection) ?? SECTIONS[0]);
-
-  $effect(() => {
-    if (typeof matchMedia === 'undefined') return;
-    const wideMql = matchMedia(WIDE_QUERY);
-    const compactMql = matchMedia(COMPACT_QUERY);
-    const sync = () => {
-      wide = wideMql.matches;
-      compact = compactMql.matches;
-    };
-    sync();
-    wideMql.addEventListener('change', sync);
-    compactMql.addEventListener('change', sync);
-    return () => {
-      wideMql.removeEventListener('change', sync);
-      compactMql.removeEventListener('change', sync);
-    };
-  });
+  let activeMeta = $derived(SECTION_BY_ID[activeSection]);
 
   // Each reopen lands on the hub (phone) / first section (tablet).
   $effect(() => {
@@ -74,9 +101,11 @@
   }
 
   // Tier-2 accessibility (ADR-0076): let a low-vision parent pinch to enlarge the
-  // reading content. The bound element gets CSS `zoom`; whichever scroll shell is
-  // mounted binds it. Zoom resets to normal whenever the overlay closes or the
-  // parent navigates to another section.
+  // reading content. The bound element gets CSS `zoom`; both full-size scroll shells
+  // (wide sidebar pane, phone hub/section scroll) bind it. The compact
+  // landscape-phone shell is deliberately excluded — it has no vertical room to zoom
+  // into; rotate to portrait for the full zoomable settings. Zoom resets to normal
+  // whenever the overlay closes or the parent navigates to another section.
   let zoomTarget = $state<HTMLElement>();
   const textZoom = () => ({
     target: zoomTarget,
@@ -86,32 +115,15 @@
 </script>
 
 {#snippet sectionContent(id: SectionId)}
-  {#if id === 'appearance'}
-    <AppearanceSection />
-  {:else if id === 'sound'}
-    <SoundSection />
-  {:else if id === 'saving'}
-    <SavingSection />
-  {:else if id === 'controls'}
-    <ControlsSection />
-  {:else if id === 'ai'}
-    <AiKeyManager open={settingsModal.open} />
-  {:else if id === 'setup'}
-    <SetupInstructions open={settingsModal.open} />
-  {:else if id === 'whatsnew'}
-    <WhatsNewSection />
-  {:else if id === 'feedback'}
-    <ReportForm open={settingsModal.open} />
-  {:else if id === 'about'}
-    <AboutSection />
-  {/if}
+  {@const Section = SECTION_CONTENT[id] as Component<{ open?: boolean }>}
+  <Section open={settingsModal.open} />
 {/snippet}
 
 <dialog
   class="settings-modal modal-dialog modal-fly-in modal-shell"
   class:resizing={ui.resizingActionButtons}
-  class:wide
-  class:compact
+  class:wide={wide.current}
+  class:compact={compact.current}
   id="settingsModal"
   use:modalDialog={() => ({
     open: settingsModal.open,
@@ -124,9 +136,9 @@
       <Icon name="close" class="modal-close-icon" />
     </button>
 
-    {#if compact}
+    {#if compact.current}
       <CompactShell />
-    {:else if wide}
+    {:else if wide.current}
       <!-- Tablet / desktop: persistent sidebar + scrolling content pane. -->
       <header class="settings-header">
         <h2>Settings</h2>
@@ -263,8 +275,7 @@
     align-items: center;
     gap: 12px;
     padding: 28px 32px 18px;
-    /* Clear the absolute close button in the top-right corner. */
-    padding-right: 68px;
+    padding-right: var(--modal-close-clearance-x);
   }
 
   .settings-header h2 {
@@ -513,7 +524,7 @@
   @media (max-width: 480px) {
     .settings-header {
       padding: 24px 20px 16px;
-      padding-right: 64px;
+      padding-right: var(--modal-close-clearance-x);
     }
 
     .settings-scroll {

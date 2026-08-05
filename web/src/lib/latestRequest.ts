@@ -8,6 +8,10 @@ export interface LatestRequest {
   isCurrent(id: number): boolean;
 }
 
+export const NETWORK_ERROR_MESSAGE =
+  'Could not reach the server. Check your connection and try again.';
+export type SubmitStatus = 'idle' | 'busy' | 'success' | 'error';
+
 export function createLatestRequest(): LatestRequest {
   let current = 0;
   let controller: AbortController | null = null;

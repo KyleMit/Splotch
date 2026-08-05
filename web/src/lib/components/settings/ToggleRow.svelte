@@ -47,12 +47,10 @@
     align-items: center;
   }
 
-  /* Indented past the icon column so the help line starts under the label:
-     .setting-icon's width + .setting-info's gap, both declared below.
-     --text-soft is pinned to hold 4.5:1 for this small help text on --surface
+  /* --text-soft is pinned to hold 4.5:1 for this small help text on --surface
      (the /design axe scan enforces it). */
   .setting-help {
-    margin: 6px 0 0 calc(20px + 10px);
+    margin: 6px 0 0 var(--setting-indent);
     font-size: var(--font-size-sm);
     color: var(--text-soft);
     line-height: 1.4;
@@ -61,13 +59,13 @@
   .setting-info {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--setting-icon-gap);
     cursor: pointer;
   }
 
   :global(.setting-icon) {
-    width: 20px;
-    height: 20px;
+    width: var(--setting-icon-size);
+    height: var(--setting-icon-size);
     flex-shrink: 0;
   }
 

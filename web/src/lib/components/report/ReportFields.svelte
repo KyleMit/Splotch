@@ -2,8 +2,23 @@
   import { slide } from 'svelte/transition';
   import Disclosure from '../design/Disclosure.svelte';
   import { collectDeviceInfo } from '$lib/deviceInfo';
+  import { createSingleFlight } from '$lib/singleFlight';
   import { describeDeviceInfo, type DeviceInfo } from '$lib/deviceReport';
-  import { MAX_REPORT_MESSAGE_LENGTH, REPORT_KINDS, type ReportKind } from '$lib/report';
+  import {
+    MAX_REPORT_MESSAGE_LENGTH,
+    REPORT_HONEYPOT_FIELD,
+    REPORT_KINDS,
+    type ReportKind,
+  } from '$lib/report';
+
+  // One reveal timing for both device disclosures below — the outer toggle and
+  // the details block it wraps. Named locally rather than taken from settings'
+  // SECTION_SLIDE because this field set is also hosted by /feedback, outside
+  // Settings, and reaching for that constant would couple a component used
+  // outside Settings to Settings internals. Shorter than a section reveal
+  // because these uncover a couple of rows inside an already-open block rather
+  // than opening a section.
+  const DEVICE_REVEAL_SLIDE_MS = 180;
 
   // The feedback form's field set, shared by its two hosts: Settings'
   // ReportForm (which posts JSON to /api/report) and the standalone /feedback
@@ -26,6 +41,14 @@
     device?: DeviceInfo | null;
     /** Bindable for the same reason — no host has business reading a bot trap. */
     honeypot?: string;
+    /**
+     * Bindable so ReportForm can await the same in-flight/memoized collection
+     * this component's own effect starts, instead of calling
+     * collectDeviceInfo independently — the two callers share one collection
+     * (in flight or already resolved into `device`), never two concurrent
+     * ones, so submit always sends what the preview last rendered.
+     */
+    ensureDevice?: () => Promise<DeviceInfo | undefined>;
   }
 
   let {
@@ -34,6 +57,7 @@
     includeDevice = $bindable(),
     device = $bindable(null),
     honeypot = $bindable(''),
+    ensureDevice = $bindable(),
   }: Props = $props();
 
   let deviceRows = $derived(device ? describeDeviceInfo(device) : []);
@@ -45,13 +69,33 @@
     kind === 'bug' && includeDevice && device ? JSON.stringify(device) : ''
   );
 
+  // One collection shared by every caller, writing through into `device` as it
+  // resolves. The single-flight memo is what makes the preview and submit agree:
+  // both await the same in-flight run rather than racing two collections, so
+  // submit cannot send a snapshot the preview never rendered. Its behaviour in
+  // the in-flight window is covered by singleFlight.test.ts — an end-to-end test
+  // can only observe the settled state, where a weaker result-only memo looks
+  // identical.
+  const collectDeviceOnce = createSingleFlight(async () => {
+    const info = await collectDeviceInfo();
+    device = info;
+    return info;
+  });
+
   // Collect the device snapshot the first time the parent opts in, so the
-  // preview below reflects exactly what will be sent.
+  // preview below reflects exactly what will be sent. Shared with ReportForm via
+  // the bindable ensureDevice above. A failed collection resolves to undefined
+  // rather than throwing — an unavailable snapshot must not surface to the
+  // reporter as a failed send — and clears the memo so a later opt-in retries.
+  function ensureDeviceInfo(): Promise<DeviceInfo | undefined> {
+    if (device) return Promise.resolve(device);
+    return collectDeviceOnce().catch(() => undefined);
+  }
+  ensureDevice = ensureDeviceInfo;
+
   $effect(() => {
     if (includeDevice && kind === 'bug' && !device) {
-      collectDeviceInfo()
-        .then((info) => (device = info))
-        .catch(() => {});
+      void ensureDeviceInfo();
     }
   });
 </script>
@@ -86,7 +130,7 @@
     bind:value={message}></textarea>
 
   {#if kind === 'bug'}
-    <div class="report-device" transition:slide={{ duration: 180 }}>
+    <div class="report-device" transition:slide={{ duration: DEVICE_REVEAL_SLIDE_MS }}>
       <label class="report-check">
         <input type="checkbox" name="includeDevice" bind:checked={includeDevice} />
         <span>Include device info <em>(helps us reproduce the bug)</em></span>
@@ -95,7 +139,7 @@
       {#if includeDevice}
         <!-- The slide rides a wrapper: transition directives only attach to DOM
              elements, never to a component instance. -->
-        <div transition:slide={{ duration: 160 }}>
+        <div transition:slide={{ duration: DEVICE_REVEAL_SLIDE_MS }}>
           <Disclosure class="report-device-details">
             {#snippet summary()}What will be sent?{/snippet}
             {#if deviceRows.length}
@@ -130,7 +174,7 @@
   <input
     class="report-hp"
     type="text"
-    name="hp"
+    name={REPORT_HONEYPOT_FIELD}
     tabindex="-1"
     autocomplete="off"
     aria-hidden="true"
