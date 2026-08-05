@@ -22,6 +22,9 @@
 [dev]
   framework = "#custom"
   command = "node ../scripts/web.mjs dev"
-  # Keep in sync with server.port in web/vite.config.ts and its documented dev-port consumers.
+  # Both ports are guarded by scripts/tests/dev-ports.test.mjs against vite.config.ts
+  # and the dev:kill script — declared here rather than left to netlify-cli's default
+  # so every consumer reads one source.
   targetPort = 5173
+  port = 8888
   publish = "static"

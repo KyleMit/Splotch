@@ -15054,26 +15054,6 @@ both configs. Tradeoff: it's a two-line duplication today, and the fix adds a fi
 because the value gates the repo's most consequential build fork; reasonable to bundle into any
 change that next touches either config rather than as standalone churn.
 
-### [DX] netlify-cli's own dev port (8888) is implicit while dev:kill hardcodes it
-
-**File(s):** `web/netlify.toml` (`[dev]` block, lines 22–27) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The `[dev]` block pins `targetPort = 5173` but leaves netlify-cli's *listening* port to the tool's
-default (8888). Meanwhile root `package.json:16` (`dev:kill": "npx kill-port 5173 8888"`) and its
-scripts-info line 144 both hardcode 8888. If netlify-cli ever changes its default (or a second
-instance bumps to 8889), `dev:kill` silently stops killing the right listener. The agreement exists
-only in contributors' heads.
-
-#### Proposed solution
-
-Add `port = 8888` to the `[dev]` block so the value is declared where it's configured, and include
-8888 in the dev-ports drift test proposed above (assert `netlify.toml` `[dev].port` matches the port
-list in `dev:kill`).
-
 ### [DX] `includeAssets` likely duplicates what `globPatterns` already precaches
 
 **File(s):** `web/vite.config.ts` (`includeAssets`, lines 83–88) @ 9ae62ff1

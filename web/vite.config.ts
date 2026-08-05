@@ -36,7 +36,8 @@ const NATIVE_API_BASE = isCapacitor ? 'https://splotch.art' : '';
 
 export default defineConfig({
   server: {
-    // Keep with web/netlify.toml's [dev].targetPort and Vite dev-port consumers:
+    // Guarded against web/netlify.toml's [dev].targetPort and the dev:kill port
+    // list by scripts/tests/dev-ports.test.mjs.
     // scripts/cloud-tunnel.mjs and root dev:kill/live-reload/ADB scripts must all update together.
     port: 5173,
     strictPort: true,
