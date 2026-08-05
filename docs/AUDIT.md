@@ -11820,28 +11820,6 @@ Add a `numericFlag(name, fallback)` helper to `args.mjs` that parses and `fail()
 
 ---
 
-### [Readability] `CONTAINER_EVENTS` is declared 175 lines after its first use, stranded mid-file between unrelated functions
-
-**File(s):** `scripts/perf/analyze.mjs` (line 304; first use line 129) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`classifyEvents` (line 108) reads `CONTAINER_EVENTS` at line 129, but the constant is declared at
-line 304, wedged between `perPhase` and `attributeLongTasks`. It only works because `classifyEvents`
-isn't called until `analyze()` runs post-module-evaluation — a temporal-dead-zone trap for anyone
-who refactors module-load-time calls in, and a navigation cost for anyone reading `classifyEvents`
-top-down (the natural reading order suggests the constant doesn't exist). Every other event-name set
-(`SCRIPTING`, `RENDERING`, `PAINTING`, `HARNESS_SYMBOLS`) lives at the top of the file, lines 24–80.
-
-#### Proposed solution
-
-Move `CONTAINER_EVENTS` (with its attribution comment) up beside the other event-name sets, around
-line 58. Pure move, no behavior change.
-
----
-
 ### [Maintainability] `LONG_FRAME_MS` lives in `capture.mjs` while `analyze.mjs` hardcodes ">32 ms" in the report label
 
 **File(s):** `scripts/perf/capture.mjs` (line 19); `scripts/perf/analyze.mjs` (line 393);

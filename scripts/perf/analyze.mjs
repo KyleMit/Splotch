@@ -57,6 +57,10 @@ const PAINTING = new Set([
   'DrawFrame',
 ]);
 
+// Container events that wrap other work — excluded from long-task attribution
+// so the attribution names the payload, not the wrapper.
+const CONTAINER_EVENTS = new Set(['RunTask', 'ThreadControllerImpl::RunTask']);
+
 const LONG_TASK_US = LONG_TASK_MS * US_PER_MS;
 
 // Symbols that exist only because of profiling/driving, not in the shipped app:
@@ -298,10 +302,6 @@ function perPhase(tasks, commits, windows) {
     };
   });
 }
-
-// Container events that wrap other work — excluded from long-task attribution
-// so the attribution names the payload, not the wrapper.
-const CONTAINER_EVENTS = new Set(['RunTask', 'ThreadControllerImpl::RunTask']);
 
 // The top long (>50 ms) main-thread tasks, each attributed to the phase it fell
 // in and its dominant nested timeline events — so "which phase janked" (the
