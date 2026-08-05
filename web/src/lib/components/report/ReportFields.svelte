@@ -10,6 +10,9 @@
     type ReportKind,
   } from '$lib/report';
 
+  const DEVICE_TOGGLE_SLIDE_MS = 180;
+  const DEVICE_DETAILS_SLIDE_MS = 160;
+
   // The feedback form's field set, shared by its two hosts: Settings'
   // ReportForm (which posts JSON to /api/report) and the standalone /feedback
   // page (which posts to a SvelteKit form action). Only the submit mechanism,
@@ -91,7 +94,7 @@
     bind:value={message}></textarea>
 
   {#if kind === 'bug'}
-    <div class="report-device" transition:slide={{ duration: 180 }}>
+    <div class="report-device" transition:slide={{ duration: DEVICE_TOGGLE_SLIDE_MS }}>
       <label class="report-check">
         <input type="checkbox" name="includeDevice" bind:checked={includeDevice} />
         <span>Include device info <em>(helps us reproduce the bug)</em></span>
@@ -100,7 +103,7 @@
       {#if includeDevice}
         <!-- The slide rides a wrapper: transition directives only attach to DOM
              elements, never to a component instance. -->
-        <div transition:slide={{ duration: 160 }}>
+        <div transition:slide={{ duration: DEVICE_DETAILS_SLIDE_MS }}>
           <Disclosure class="report-device-details">
             {#snippet summary()}What will be sent?{/snippet}
             {#if deviceRows.length}
