@@ -181,9 +181,10 @@ body {
 }
 
 /* Absolute-positioned close button (top-right corner) and its icon, shared
-   across all icon-style modal close buttons. An outlined white disc, sized as a
-   44px touch target so small fingers can spot and hit it (the icon inside stays
-   ~20px — the extra box is hit area and the ring that makes it pop). */
+   across all icon-style modal close buttons. An outlined white disc sized to
+   --modal-close-size, deliberately chunky so small fingers can spot and hit it;
+   the padding below keeps the glyph itself visibly smaller than the disc, so
+   the extra box reads as hit area and the ring that makes it pop. */
 .modal-close-btn {
   position: absolute;
   top: var(--modal-close-inset);
