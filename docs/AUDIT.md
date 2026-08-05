@@ -15347,29 +15347,6 @@ manifest `name` equals the `<title>` text, manifest `description` equals the met
 manifest `theme_color` equals the theme-color meta content. ~15 lines, same shape as
 `browserFloor.test.ts`.
 
-### [Docs] ICONS-README.md is a stale AI-session artifact published at splotch.art/ICONS-README.md
-
-**File(s):** `web/static/ICONS-README.md` (26 lines) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The file is celebratory session prose, not documentation — "All required icons have been
-successfully implemented!" (line 3), a ✅-emoji checklist of files that exist two directories away,
-and generic PWA marketing copy (lines 18–26). Because it sits in `static/`, it is served publicly on
-the production domain and copied into both native binaries. As documentation it is already drifting:
-it describes only the favicon/manifest set and knows nothing of `icons/`, `styles/`, `sounds/`, or
-the coloring set that now dominate `static/`. Icon provenance documentation is separately tracked as
-issue \#234 ("Document icon source + move toward hand-drawn icons") — this file isn't that; it's
-clutter that will mislead whoever picks that issue up.
-
-#### Proposed solution
-
-Delete it. If any fact in it is worth keeping (the icon-design description, lines 12–16), fold that
-sentence into the artifact produced for issue \#234 (a `docs/` page, not a `static/` file). Zero
-code references exist — only the regenerated `.svelte-kit` asset union.
-
 ### [Maintainability] `CAPACITOR === 'true'` is parsed independently in both build configs
 
 **File(s):** `web/svelte.config.js` (line 10), `web/vite.config.ts` (line 10) @ 9ae62ff1

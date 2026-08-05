@@ -24,7 +24,6 @@ export const WEB_ONLY_STATIC_FILES = [
   'robots.txt',
   'sitemap.xml',
   'deny.html',
-  'ICONS-README.md',
   'styles/source.svg',
   'coloring/COLORING-BOOK.md',
 ];
