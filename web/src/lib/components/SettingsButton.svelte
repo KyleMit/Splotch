@@ -28,7 +28,6 @@
     position: fixed;
     bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
     right: calc(var(--space-2) + env(safe-area-inset-right));
-    color: #999;
     z-index: var(--z-corner-button);
   }
 </style>
