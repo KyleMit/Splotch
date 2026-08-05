@@ -27,41 +27,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — App state (runes)
 
-### [Maintainability] Name the 600px tablet threshold in `defaultForceLandscapeOrientation`
-
-**File(s):** `web/src/lib/state/settings.svelte.ts` (`defaultForceLandscapeOrientation`, lines
-15–21) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-function defaultForceLandscapeOrientation() {
-  if (typeof window === 'undefined') return true;
-  // iPad Mini and larger tablets have a smallest CSS viewport side around
-  // 744px; Android tablet layouts commonly start at 600dp. Phone-class devices
-  // stay below that, even in landscape, so they default to portrait.
-  return Math.min(window.innerWidth, window.innerHeight) >= 600;
-}
-```
-
-`600` is a tuning literal — a device-classification threshold with a researched rationale — and
-CLAUDE.md requires exactly this kind of number to be a named module-scope constant with the unit in
-the name ("Tuning literals get names… the WHY comment lives on the constant"). Inline, it can't be
-found by grepping for a name, and the comment is attached to the function instead of the decision.
-
-#### Proposed solution
-
-```ts
-// iPad Mini and larger tablets have a smallest CSS viewport side around 744px;
-// Android tablet layouts commonly start at 600dp. Phone-class devices stay
-// below this even in landscape, so they default to portrait.
-const TABLET_MIN_VIEWPORT_SIDE_PX = 600;
-```
-
-and use it in the comparison.
-
 ### [Maintainability] `BRUSH_TYPES` and `BRUSH_OPTIONS` are two hand-maintained copies of the same ordered list
 
 **File(s):** `web/src/lib/state/tool.svelte.ts` (lines 15–33, 46–51) @ 9ae62ff1

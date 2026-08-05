@@ -12,12 +12,14 @@ import {
 import { applyTheme, isThemePreference, THEME_DEFAULT, type ThemePreference } from '../theme';
 import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 
+// iPad Mini and larger tablets have a smallest CSS viewport side around 744px;
+// Android tablet layouts commonly start at 600dp. Phone-class devices stay
+// below this even in landscape, so they default to portrait.
+const TABLET_MIN_VIEWPORT_SIDE_PX = 600;
+
 function defaultForceLandscapeOrientation() {
   if (typeof window === 'undefined') return true;
-  // iPad Mini and larger tablets have a smallest CSS viewport side around
-  // 744px; Android tablet layouts commonly start at 600dp. Phone-class devices
-  // stay below that, even in landscape, so they default to portrait.
-  return Math.min(window.innerWidth, window.innerHeight) >= 600;
+  return Math.min(window.innerWidth, window.innerHeight) >= TABLET_MIN_VIEWPORT_SIDE_PX;
 }
 
 // Single source of truth for every boolean setting: live-state property name ->
