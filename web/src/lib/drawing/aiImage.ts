@@ -30,19 +30,37 @@ const FIRST_SERVER_ERROR_STATUS = 500;
 async function encodeWebpUpload(png: Blob): Promise<Blob | null> {
   try {
     const bitmap = await createImageBitmap(png);
-    const canvas = document.createElement('canvas');
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
+    // OffscreenCanvas.convertToBlob keeps the encode off the layout-coupled
+    // HTMLCanvasElement/toBlob path; fall back to the DOM canvas where it's
+    // unavailable. `HTMLCanvasElement.getContext` and `OffscreenCanvas.getContext`
+    // return distinct context types the compiler won't unify across a union
+    // canvas, so each path builds and reads its own concretely-typed canvas.
+    let webp: Blob | null;
+    if (typeof OffscreenCanvas !== 'undefined') {
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        bitmap.close();
+        return null;
+      }
+      ctx.drawImage(bitmap, 0, 0);
       bitmap.close();
-      return null;
+      webp = await canvas.convertToBlob({ type: 'image/webp', quality: UPLOAD_WEBP_QUALITY });
+    } else {
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        bitmap.close();
+        return null;
+      }
+      ctx.drawImage(bitmap, 0, 0);
+      bitmap.close();
+      webp = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/webp', UPLOAD_WEBP_QUALITY)
+      );
     }
-    ctx.drawImage(bitmap, 0, 0);
-    bitmap.close();
-    const webp = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, 'image/webp', UPLOAD_WEBP_QUALITY)
-    );
     // A platform without WebP encoding hands back a PNG (or null) here; only take
     // the result when it's genuinely smaller WebP, so we never upload a fatter
     // re-encode than the original.
