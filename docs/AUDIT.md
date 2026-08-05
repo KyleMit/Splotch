@@ -16368,30 +16368,6 @@ Collapse to one wrapped statement, e.g.:
 # skip-delete to false for a full reconciliation.
 ```
 
-### [DX] `.claude/cloud/setup.sh` never `cd`s to the project dir, unlike its Codex siblings
-
-**File(s):** `.claude/cloud/setup.sh` (lines 12, 42); `.codex/cloud/setup.sh` (line 12) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-Both Codex cloud scripts open with `cd "${CODEX_PROJECT_DIR:-$PWD}"`, but the Claude setup script
-assumes it is already at the repo root: line 42 reads `./package.json` relative to whatever cwd the
-environment dialog invoked it from. If the dialog's one-liner (`bash .claude/cloud/setup.sh`) ever
-runs from elsewhere — or the invocation convention changes — the Playwright version derivation fails
-and the browser install is skipped with only a warning banner, the exact "#1 cloud-session E2E
-failure" the derivation comment (lines 36–41) exists to prevent. The failure is graceful but
-avoidable.
-
-#### Proposed solution
-
-Mirror the sibling scripts' first line, using whichever project-dir variable Claude's environment
-provides (`cd "${CLAUDE_PROJECT_DIR:-$PWD}"` degrades to today's behavior when unset). One line, and
-the three cloud scripts then share the same defensive shape —
-`scripts/tests/claude-cloud-setup.test.mjs` already exercises this script and can pin the
-cwd-independence with a fixture run from a temp dir.
-
 ### [Maintainability] Personal device serial and simulator UDIDs are hardcoded into shared npm scripts
 
 **File(s):** `package.json` (lines 109, 116–117; scripts-info lines 237, 244–245) @ 9ae62ff1
