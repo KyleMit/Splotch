@@ -95,12 +95,17 @@ it forgets each one as it lifts or cancels, the ghost-click swallow — are unit
 itself (a browser ignores a capture request for a pointer id it has no active pointer for), so the
 capture path is covered only by the compositor-touch specs; E2Es synthesize a two-finger spread and
 assert the pane enlarges then resets on close, and drive real CDP multitouch to assert one-finger
-scrolling survives and that a pinch whose finger lifts outside the pane leaves it usable
-(`tests/settings-zoom.spec.ts`); `tests/page.spec.ts` asserts the viewport meta carries neither
-attribute and `/privacy` permits touch zoom; `tests/multitouch.spec.ts` asserts
-`visualViewport.scale` stays 1 after a five-pointer spread. CSS `zoom` is registered in
-`docs/COMPATIBILITY.md` (above the Firefox 114 floor — standardized in Firefox 126; below that it is
-a graceful no-op).
+scrolling survives and that a finger lifting outside the pane is reported to it as a `pointerup` at
+a coordinate beyond its bounds — the recorded pointer trace is asserted, not assumed, because the
+action handles `pointercancel` too and a gesture that quietly became a cancel would satisfy the
+behavioural checks while covering a different path (`tests/settings-zoom.spec.ts`). CDP cannot
+express a partial release — a non-empty `touchEnd` is off-contract and dropping a point from a
+`touchMove` releases nothing — so both fingers lift together there and the interleaved case (one
+finger up while the other stays down) is only reachable on a device. `tests/page.spec.ts` asserts
+the viewport meta carries neither attribute and `/privacy` permits touch zoom;
+`tests/multitouch.spec.ts` asserts `visualViewport.scale` stays 1 after a five-pointer spread. CSS
+`zoom` is registered in `docs/COMPATIBILITY.md` (above the Firefox 114 floor — standardized in
+Firefox 126; below that it is a graceful no-op).
 
 ## How the zoom model works
 
