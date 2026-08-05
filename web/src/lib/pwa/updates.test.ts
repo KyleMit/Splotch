@@ -80,6 +80,7 @@ describe('checkVersionMismatch', () => {
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
+    canvasState.canvasEmpty = true;
     Object.defineProperty(window, 'location', {
       value: { href: 'https://splotch.art/', replace: vi.fn() },
       writable: true,
@@ -159,6 +160,30 @@ describe('checkVersionMismatch', () => {
     await pwaUpdates.checkVersionMismatch('1.0.1');
 
     expect(window.location.replace).toHaveBeenCalledWith(expect.stringContaining('?v=1.0.2'));
+  });
+
+  // The canvas starts blank and gains ink while /version.json is still in flight —
+  // the real post-deploy race, since the child can draw from the first frame
+  // (ADR-0072) and the fetch takes seconds on a slow connection. Asserting from an
+  // already-inked canvas would also pass against a guard that read canvasEmpty
+  // before the await, which is exactly the implementation this must reject.
+  it('does not redirect when the canvas gains content while the version fetch is in flight', async () => {
+    let deliverVersion = (_: Response) => {};
+    globalThis.fetch = vi.fn().mockReturnValue(
+      new Promise<Response>((resolve) => {
+        deliverVersion = resolve;
+      })
+    );
+
+    const mismatchCheck = pwaUpdates.checkVersionMismatch();
+    canvasState.canvasEmpty = false;
+    deliverVersion({
+      ok: true,
+      json: () => Promise.resolve({ version: '1.0.1' }),
+    } as Response);
+    await mismatchCheck;
+
+    expect(window.location.replace).not.toHaveBeenCalled();
   });
 });
 

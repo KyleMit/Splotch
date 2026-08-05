@@ -1,8 +1,10 @@
 # ADR-0022: PWA Service Worker Strategy — vite-plugin-pwa as Manifest Injector with Custom Update Lifecycle
 
 **Status:** Active — amended 2026-07 (issue #462) to make `src/lib/pwa/updates.ts` own registration
-end-to-end, and 2026-08-02 (issue #621) to keep responsive coloring derivatives out of the precache
-with an explicit canonical offline fallback. **Date:** 2026-06
+end-to-end, 2026-08-02 (issue #621) to keep responsive coloring derivatives out of the precache with
+an explicit canonical offline fallback, and 2026-08-05 (issue #778) to place the version-mismatch
+cache-bust redirect under the same canvas-empty guard as the waiting-worker reload. **Date:**
+2026-06
 
 ## Context
 
@@ -107,7 +109,12 @@ It:
   `?v=<deployed-version>`, which the SW's NetworkFirst handler sees as an uncached URL and fetches
   fresh from the origin. The `?v=` param is stripped from the URL on the next init. This is the
   escape hatch for clients already stuck on a broken SW (e.g. from before this update lifecycle was
-  in place).
+  in place). That redirect is a hard navigation, so it obeys the same blank-canvas condition as the
+  waiting-worker reload — and reads the flag **after** the fetch resolves, not when the check is
+  kicked off, because the response can land seconds into a session in which the child is already
+  drawing (ADR-0072). An inked canvas cancels the redirect for that boot; the check runs once per
+  init, so a stale session recovers on the next blank-canvas launch rather than through a deferred
+  retry.
 
 ### Build output
 
@@ -139,6 +146,11 @@ navigation can hydrate rather than stopping after server-rendered markup.
 **+** The `version.json` cache-bust handles clients that were already stuck on a broken SW before
 this strategy was locked in, without requiring a server-side redirect or unregistering the SW.
 
+**+** The canvas-empty guard covers *every* path that can navigate the page, not just SW activation.
+A single deploy makes every returning client stale at once, so the cache-bust redirect fires far
+more often than a waiting worker does; leaving it unguarded meant the most common navigation was the
+one exempt from the invariant the rest of the module defends.
+
 **-** Several vite-plugin-pwa defaults must be explicitly overridden (`registerType`,
 `navigateFallback`, `skipWaiting`, `manifest`, `globPatterns`). A future upgrade to vite-plugin-pwa
 could silently re-introduce a conflicting default — the config and this ADR should be reviewed
@@ -151,6 +163,13 @@ the SW version in control can briefly diverge.
 
 **-** If the canvas is never blank in a session (unlikely but possible), the update defers
 indefinitely until the app is closed and reopened.
+
+**-** The guarded cache-bust narrows the escape hatch: a client on stale HTML that starts drawing
+before `/version.json` answers keeps running that stale HTML for the rest of the session. The
+alternative — discarding a toddler's in-progress drawing, which nothing autosaves — is worse, and
+this is the tradeoff already accepted for waiting workers. If a stuck client ever needs recovery
+sooner, the fix is to stash the pending version and retry from `checkForUpdates()` when the canvas
+empties, mirroring the `owed` state.
 
 **-** `version.json` adds one extra network round-trip per page load (async, non-blocking, only in
 production). It fails silently when offline.
