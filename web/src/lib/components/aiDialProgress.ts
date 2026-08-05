@@ -11,8 +11,8 @@ const OVERRUN_HEADROOM = 0.06;
 const OVERRUN_TAU_MS = 5000;
 // Per-frame fraction of the remaining gap closed once the result is revealed.
 const REVEAL_RATE = 0.16;
-// Snap progress to 1 once it climbs within this of full.
-const REVEAL_EPSILON = 0.999;
+// Snap progress to 1 once it crosses this.
+const REVEAL_SNAP_THRESHOLD = 0.999;
 // Weight on the linear term of the fill curve; the sine-ease term takes the rest.
 const LINEAR_MIX = 0.55;
 
@@ -49,7 +49,7 @@ export function createDialProgress(estimateMs: number) {
       // Iterative ease off the previous frame's progress, not off elapsed time,
       // so `progress` must persist as private state across ticks.
       progress += (1 - progress) * REVEAL_RATE;
-      if (progress >= REVEAL_EPSILON) {
+      if (progress >= REVEAL_SNAP_THRESHOLD) {
         progress = 1;
         return { progress, waiting: false, revealed: true };
       }

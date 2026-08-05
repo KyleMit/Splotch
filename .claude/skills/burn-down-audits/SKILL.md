@@ -28,6 +28,35 @@ bulk path for a backlog where filing one GitHub issue per finding is impractical
 findings, e.g. a whole-codebase `/code-audit` pass). It replaces both vet and fix: its verifier
 subprocess *is* the adversarial vet, applied per finding at HEAD.
 
+### The hand-driven cherry-pick — when the ask is "the easy ones"
+
+A third mode, and the one the driver is *wrong* for: "cherry-pick the findings you could do in a
+couple of minutes and leave the rest." That is a selection problem, and the driver has no selector —
+it pops findings in file order and spends a full verify/impl/review cycle on whatever it gets.
+Answer it by hand: index the backlog once (`findingPriority` plus body length over each entry — the
+shortest P4/P5 bodies really are the mechanical ones), then work them inline, one commit per
+finding, using `pop.mjs` and `deleteEntryByTitle` for the excision so the file surgery stays
+identical to a driver run.
+
+Three of the driver's economics invert here, and each one cost a real mistake on 2026-08-05:
+
+* **`npm run format:check` belongs in the gate.** It stays out of `CHECK_CMD` because ~23s × 450
+  findings is three hours, and because the `format-edited-file.sh` `PostToolUse` hook covers every
+  `Edit`/`Write` a role makes. Neither holds by hand: batches are few, so the cost is seconds, and a
+  supervising agent reaches for `sed`/`python`/heredocs constantly — which is exactly the "editing
+  through `Bash`" residual risk the hook cannot see. That is what reddened CI on that run.
+* **The per-commit comments have no `comment.mjs` behind them.** The driver's whole
+  render→`next`→post→`done` loop exists so the SHA reaches GitHub from a tool rather than from the
+  agent's memory. Writing comments by hand removes that, and 32 of 62 went out with a 7-char prefix
+  padded to 12 — plausible, unlinkable, and (with this session's toolset) unrepairable except by a
+  correction comment. Either drive `comment.mjs` for the rendering, or verify every SHA before
+  posting (see the repo's "Writing on GitHub" rule).
+* **Nothing forces the adversarial second pair of eyes.** There is no blind reviewer, so a fix is as
+  good as the one context that wrote it. The cheap substitute is a *negative check* on anything that
+  claims to be a guard: break the source the new assertion covers and confirm the assertion goes
+  red. Revert only the source file for that — `git stash` takes the fix **and** the new test with it
+  and reports a cheerful pass that proves nothing.
+
 ## Architecture — why subprocesses, not subagents
 
 The orchestrator is a Node script, so the "main context" is process state, not a conversation. Three
@@ -100,7 +129,7 @@ LINT_CMD='npx eslint'          # per-finding lint gate, on the fix's changed fil
 PUSH_TEST_CMD=''      # local full-suite gate before a push — OFF; CI on the draft PR is the backstop
 COMMENT_STORE=.audit-work/pending-comments.jsonl   # per-commit comment records awaiting your MCP post
 MAX_DEFERRALS=3       # consecutive deferrals before halting
-RETRIES=3             # retries per claude call before treating it as a deferral
+RETRIES=3             # total attempts per claude call (N-1 retries) before deferring
 MODEL_VERIFY=sonnet          # verification is mostly grep-and-confirm (`sonnet` alias → Sonnet 5)
 MODEL_IMPL=claude-opus-5     # pinned id, not the `opus` alias — see below
 MODEL_IMPL_MINOR=sonnet      # impl model for P4/P5 findings only — see Tuning & lessons

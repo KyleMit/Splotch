@@ -59,7 +59,7 @@ function scannedFiles() {
   );
 }
 
-export function countPaletteHexes(text) {
+function countPaletteHexes(text) {
   return (text.replace(/var\([^)]*\)/g, 'var()').match(hexRegex) ?? []).length;
 }
 

@@ -22,7 +22,7 @@
 
 <style>
   .disclosure {
-    border: 1px solid var(--border);
+    border: var(--border-width) solid var(--border);
     border-radius: var(--radius-sm);
     overflow: hidden;
   }

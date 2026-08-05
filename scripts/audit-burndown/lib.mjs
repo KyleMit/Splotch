@@ -358,7 +358,10 @@ export function commandFailureOutput(result, maxLength = 6000) {
 // context window, and hundreds of sequential Edit calls against one file is a
 // corruption risk. These helpers (via pop.mjs) are the only thing touching it.
 
-const isEntryStart = (line) => /^### \[/.test(line);
+export const isEntryStart = (line) => /^### \[/.test(line);
+
+// The title as the burndown records it: the heading line minus its `### ` prefix.
+export const entryTitle = (line) => line.replace(/^### /, '');
 const isBoundary = (line) => isEntryStart(line) || /^## /.test(line);
 
 function readLines(file) {
@@ -420,7 +423,7 @@ export function deleteFirstEntry(file = auditFile()) {
 export function deleteEntryByTitle(title, file = auditFile()) {
   const lines = readLines(file);
   if (!lines) return false;
-  const start = entryStarts(lines).find((i) => lines[i].replace(/^### /, '') === title);
+  const start = entryStarts(lines).find((i) => entryTitle(lines[i]) === title);
   return deleteEntryAt(start, file, lines);
 }
 

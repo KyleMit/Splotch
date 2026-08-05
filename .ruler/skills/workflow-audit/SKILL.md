@@ -21,9 +21,10 @@ The two standing priorities are **token efficiency** and **reducing repetitive p
    the sources, never the generated copies). Direct-provider exceptions are declared in
    `scripts/direct-provider-skills.mjs`; this Claude-focused audit may inspect and edit only a
    declared Claude package, never synthesize or sync another provider's package.
-3. **Session history** — the JSONL transcripts under
-   `~/.claude/projects/-Users-kylemit-Code-Splotch/`. Aggregate across sessions; do not read them
-   one line at a time in the main context. Pull out:
+3. **Session history** — the JSONL transcripts under `~/.claude/projects/<slug>/`, where `<slug>` is
+   the checkout's absolute path with every `/` replaced by `-` (list `~/.claude/projects/` and match
+   the current checkout). Aggregate across sessions; do not read them one line at a time in the main
+   context. Pull out:
    * **Tool usage counts** (Bash, Read, Edit, Write, Skill, ToolSearch, AskUserQuestion, …).
    * **Bash command breakdown by first word** — flag read-only shell
      (`grep`/`ls`/`cat`/`find`/`head`/`tail`/`wc`) that the dedicated Grep/Glob/Read tools should be

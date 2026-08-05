@@ -11,7 +11,9 @@ import {
   pickCustomColor,
   themedSwatchColor,
   isWhite,
+  isDarkInk,
 } from './colors.svelte';
+import { PICKER_DIM_BORDER } from '$lib/hexPickerLayout';
 
 beforeEach(() => {
   // Reset to the documented default selection (Purple at index 0).
@@ -109,5 +111,23 @@ describe('isWhite', () => {
   it('returns false for malformed input', () => {
     expect(isWhite('')).toBe(false);
     expect(isWhite('#fffffe')).toBe(false);
+  });
+});
+
+describe('isDarkInk', () => {
+  it('claims the near-black ink that drives the keyline', () => {
+    expect(isDarkInk(BLACK_INK)).toBe(true);
+  });
+
+  it('leaves every other palette color and the white ink alone', () => {
+    for (const { hex } of PALETTE_COLORS) {
+      if (hex === BLACK_INK) continue;
+      expect(isDarkInk(hex), hex).toBe(false);
+    }
+    expect(isDarkInk(WHITE_INK)).toBe(false);
+  });
+
+  it("claims the picker's darkest swatch, which carries the dim border for the same reason", () => {
+    expect(isDarkInk(PICKER_DIM_BORDER)).toBe(true);
   });
 });

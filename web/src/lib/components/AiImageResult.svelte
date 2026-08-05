@@ -30,7 +30,7 @@
   let imgAspect = $state(DEFAULT_ASPECT);
   $effect(() => {
     if (ui.aiResultOpen && ui.aiGenerating) {
-      if (typeof window !== 'undefined' && window.innerHeight > 0) {
+      if (window.innerHeight > 0) {
         imgAspect = window.innerWidth / window.innerHeight;
       }
     }

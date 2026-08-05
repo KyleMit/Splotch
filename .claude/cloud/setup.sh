@@ -11,6 +11,8 @@
 # never block session startup, so each step swallows its own failure.
 set -uo pipefail
 
+cd "${CLAUDE_PROJECT_DIR:-$PWD}"
+
 warnings=()
 warn() {
   warnings+=("$1")

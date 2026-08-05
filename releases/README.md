@@ -10,7 +10,7 @@ is generated from them:
 | Google Play "What's new"               | `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` |
 | App Store "What's New in This Version" | `fastlane/metadata/en-US/release_notes.txt`                    |
 | GitHub Release                         | the file body, via `gh release create`                         |
-| App version                            | `package.json`, Android `build.gradle`, iOS `Info.plist`       |
+| App version                            | `package.json`, Android `build.gradle`, iOS `project.pbxproj`  |
 
 ## File format
 

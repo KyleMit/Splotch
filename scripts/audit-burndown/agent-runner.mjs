@@ -225,7 +225,7 @@ export async function runAgentStep({
   maxTurns,
   budget,
   sessionId = '',
-  retries,
+  maxAttempts,
   root,
   workDir,
   logsDir,
@@ -243,7 +243,7 @@ export async function runAgentStep({
     parsed: {},
   };
 
-  for (let attempt = 1; attempt <= retries; attempt += 1) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     let mintedSession = sessionId;
     let cmd;
     let args;
@@ -315,7 +315,7 @@ export async function runAgentStep({
 
     const waitSeconds = attempt * attempt * 30;
     logLine(
-      `  ${tag} attempt ${attempt}/${retries} failed (${subtype}) — backing off ${waitSeconds}s`
+      `  ${tag} attempt ${attempt}/${maxAttempts} failed (${subtype}) — backing off ${waitSeconds}s`
     );
     await sleep(waitSeconds * 1000);
   }

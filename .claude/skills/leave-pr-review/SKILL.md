@@ -124,8 +124,8 @@ the equivalent `gh api` pending-review endpoints. Preserve the same single-revie
 head-OID recheck, and `COMMENT`-only rules.
 
 Afterwards, report what was posted (comment count, severities, review event) so the author knows
-what to expect — and know that working through those comments is `address-pr-review`' job on the
-other side.
+what to expect — and know that working through those comments is the job of `address-pr-review` on
+the other side.
 
 ## Filing as GitHub issues instead
 

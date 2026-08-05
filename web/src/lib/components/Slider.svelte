@@ -56,12 +56,12 @@
   // Position of the snap detent along the track, so we can mark it with a tick.
   const snapPercent = $derived(snap == null ? null : ((snap - min) / range) * 100);
 
-  function clamp(v: number) {
+  function roundAndClamp(v: number) {
     return Math.round(Math.min(max, Math.max(min, v)));
   }
 
   function apply(next: number) {
-    const clamped = clamp(next);
+    const clamped = roundAndClamp(next);
     if (clamped === value) return;
     onInput(clamped);
   }

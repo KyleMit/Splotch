@@ -13,7 +13,7 @@ function writeExecutable(path, body) {
   chmodSync(path, 0o755);
 }
 
-function runSetup(failures) {
+function runSetup(failures, { cwd = repoRoot, projectDir } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'splotch-claude-setup-'));
   roots.push(root);
   const bin = join(root, 'bin');
@@ -40,6 +40,11 @@ exit 1`
     `if [[ "\${FAIL_PLAYWRIGHT_VERSION:-0}" != 0 ]]; then
   exit "$FAIL_PLAYWRIGHT_VERSION"
 fi
+# The real derivation reads ./package.json, so the stub fails the same way when
+# the script has not landed in the project dir — that is what pins the cd.
+if [[ ! -f ./package.json ]]; then
+  exit 1
+fi
 printf '%s\\n' "\${PLAYWRIGHT_VERSION:-1.61.1}"`
   );
   writeExecutable(
@@ -53,11 +58,12 @@ printf 'stub chisel'`
   writeExecutable(join(bin, 'chmod'), `exit 0`);
 
   return spawnSync('/bin/bash', [fixtureSetupPath], {
-    cwd: repoRoot,
+    cwd,
     encoding: 'utf8',
     env: {
       ...process.env,
       PATH: bin,
+      ...(projectDir ? { CLAUDE_PROJECT_DIR: projectDir } : {}),
       FAIL_NPM: String(failures.npm ?? 0),
       FAIL_PLAYWRIGHT: String(failures.playwright ?? 0),
       FAIL_PLAYWRIGHT_VERSION: String(failures.playwrightVersionDerivation ?? 0),
@@ -97,6 +103,17 @@ describe('Claude cloud setup warnings', () => {
 ==> The environment is up but may be incomplete; address the warnings above.
 `
     );
+  });
+
+  it('derives the Playwright version when invoked from outside the project dir', () => {
+    const elsewhere = mkdtempSync(join(tmpdir(), 'splotch-claude-setup-cwd-'));
+    roots.push(elsewhere);
+
+    const result = runSetup({}, { cwd: elsewhere, projectDir: repoRoot });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('playwright install invoked');
+    expect(result.stderr).not.toContain('could not derive a numeric @playwright/test version');
   });
 
   it.each([

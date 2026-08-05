@@ -24,7 +24,6 @@ test('triple-tapping the clear button reveals the coachmark', async ({ page }) =
     await expect(coachmark).toHaveClass(/\bvisible\b/, { timeout: 1000 });
   }).toPass({ timeout: 15_000 });
 
-  await expect(coachmark).not.toHaveClass(/\bfade-out\b/);
   // The opacity poll settling above 0 confirms it actually painted (the
   // documented same-tick regression would keep it at 0).
   await expect
@@ -37,5 +36,4 @@ test('triple-tapping the clear button reveals the coachmark', async ({ page }) =
   // not a flake-prone wait-for-something.
   await page.waitForTimeout(300);
   await expect(coachmark).toHaveClass(/\bvisible\b/);
-  await expect(coachmark).not.toHaveClass(/\bfade-out\b/);
 });

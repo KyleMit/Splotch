@@ -11,7 +11,7 @@ export const commonPlaywrightConfig = {
 };
 
 export const productionPreviewCommand = `npx vite build && npx vite preview --port ${playwrightPort}`;
-const PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET = 180_000;
+const PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET_MS = 180_000;
 
 /** The managed access code tests/generate-image.spec.ts bursts against. */
 const MANAGED_ACCESS_TOKEN = 'daycare-club';
@@ -54,7 +54,7 @@ const UNUSABLE_GEMINI_KEY = 'not-a-usable-gemini-key';
 
 export const commonWebServer = {
   url: playwrightBaseURL,
-  timeout: PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET,
+  timeout: PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET_MS,
   // Every credential the app reads is declared here rather than inherited, for
   // the server Playwright starts from `command`. Vite gives process.env
   // precedence over web/.env, so this is what keeps a developer's real dotenv

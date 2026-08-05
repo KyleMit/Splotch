@@ -781,6 +781,61 @@ the fuller treatment under **Surviving the context window**; collapsed to a poin
 directions did occur this run (a monitor armed dead, and two monitors double-reporting), so the rule
 is right — it just does not need saying twice at per-invocation context cost.
 
+### 2026-08-05 — the hand-driven cherry-pick, and what the driver was silently doing for us
+
+The ask was "cherry-pick the ones you could do in 1–2 minutes, leave the rest," which the driver
+cannot serve: it has no selector, pops in file order, and spends a full verify/impl/review cycle on
+whatever it gets. Run by hand instead — index by `findingPriority` + body length, work the shortest
+P4/P5 entries inline, `deleteEntryByTitle` for the excision. 58 fixed / 4 dropped / 62 consumed, 535
+→ 473, arithmetic reconciled against `pop.mjs --count`.
+
+The interesting result is not the throughput, it is **which of the driver's guarantees turn out to
+be load-bearing once you remove them.** Three failed, all three predictable in hindsight, and the
+skill now carries them as a "hand-driven cherry-pick" subsection rather than as generic advice:
+
+* **Comment SHAs.** The `comment.mjs` → `next` → post → `done` loop exists so a SHA reaches GitHub
+  from a *tool*. Writing comments by hand puts the agent's transcription in that path, and 32 of 62
+  went out as a correct 7-char `%h` prefix padded with 5 invented characters — right length, right
+  leading characters, resolves to nothing. Nothing downstream validates a SHA and a bad one renders
+  as ordinary text, so it is invisible until someone clicks. Worse, `add_issue_comment` has no
+  update counterpart in *this session's* GitHub toolset, so the only remedy left was a 32-row
+  correction comment — other runners' toolsets do expose a comment updater, so check before assuming
+  a correction comment is the only option. The general rule went into `.ruler/github.md` (so it
+  reaches every session via CLAUDE.md/AGENTS.md, not just this skill): take SHAs from `%H`, never
+  retype, and batch-verify with `git rev-parse --verify --quiet "$sha^{commit}"`. **The verification
+  is the load-bearing half** — "be careful" is not a control, and one command over the whole set
+  caught all 32 in seconds once it was finally run.
+* **`format:check`.** Deliberately out of `CHECK_CMD` on a cost argument (~23s × 450 findings ≈ 3
+  hours) plus the `format-edited-file.sh` `PostToolUse` hook. Both premises are driver-specific: by
+  hand there are a dozen batches, not 450 findings, and a supervising agent edits through
+  `sed`/`python`/heredocs constantly — precisely the "editing through `Bash`" residual risk the
+  skill already names as the hook's blind spot. It reddened CI on the first batch that removed a
+  Svelte attribute (the shortened element then wanted collapsing onto one line).
+* **The blind reviewer.** No adversarial second pass means a fix is only as good as the context that
+  wrote it. The substitute adopted mid-run — and worth keeping — is a **negative check** on any new
+  guard: break the source the assertion covers, confirm it goes red. It caught nothing wrong, but it
+  is what makes "the viewport-sync/blank-env/app-name/dev-port guards actually work" a claim rather
+  than a hope. One trap found the hard way: `git stash` removes the fix *and* the new test, so the
+  suite passes and proves nothing — revert only the source file.
+
+Two things the hand-driven mode did **better** than the driver, worth noting before anyone concludes
+it is strictly worse:
+
+* **Drift detection was far more aggressive**, because a human-scale reader checks the premise
+  before the fix. Four findings were dropped as invalid (`targetRepo` had gained a second caller;
+  `a11y.spec.ts` had already adopted `gotoApp`; two icon findings assumed a `KNOWN_ORPHANS`
+  carve-out that no longer exists — and one of them would now *break* `/design` if implemented) and
+  three more were fixed only in part with the drift recorded. The verifier subprocess drops on a
+  false premise too, but it cannot notice that a *neighbouring* half of the finding already landed.
+* **Findings that overlap were reconciled rather than fought over.** Two separate entries covered
+  `isDarkInk` coverage; the second commit says so and closes only what the first left. The driver,
+  processing them hours apart in separate contexts, would have had the second verifier drop it as
+  already-fixed — losing the `isLightColor` half that was still genuinely missing.
+
+Open question this leaves: the selection heuristic (shortest P4/P5 body) is a proxy for
+"mechanical", and it held up here — but every finding it picked was in the tail the whole-repo
+`/code-audit` produces. Whether it degrades on a hand-curated backlog is unvalidated.
+
 ## Rejected, and why
 
 Proposals that were considered on their merits and turned down. Each is here so it does not get
@@ -974,3 +1029,4 @@ the stale timing table for free.
 | 2026-07-26 | —        | Verifier must name which kind of "stale" on INVALID; HALT env-cause note  |
 | 2026-07-28 | —        | Body-line `**Priority:**` fallback — tiering was silently off for 642     |
 | 2026-07-29 | —        | First clean run (39/4/0, PR #627); goalpost-moving fixes named as a shape |
+| 2026-08-05 | —        | Hand-driven cherry-pick (58/4/62, PR #770); SHA + format gaps it exposed  |

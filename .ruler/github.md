@@ -20,3 +20,30 @@ auto-links a plain-text SHA into a link to that commit; a code span suppresses t
 renders as dead monospace text. So write "fixed in 863ee85aaa43", not ``"fixed in `863ee85aaa43`"``.
 Backticks around file paths, identifiers, and commands are still correct — this is only about SHAs
 (and the `#`-numbers above, where backticks are one of the ways to *defuse* an unwanted link).
+
+**Never write a SHA from memory — copy it from command output, and verify before you post.** A SHA
+is the one value in agent-authored text with no redundancy: every character is load-bearing, nothing
+downstream validates it, and a wrong one renders as ordinary plain text rather than failing. The
+specific trap is mixing widths. `git log --format=%h` abbreviates to 7 characters; extending one to
+the 12 a comment wants means inventing 5, which yields a string with the right length and the right
+leading characters that resolves to nothing. It looks correct in every way except the one that
+matters, and the only symptom is a heading that quietly stops being a link.
+
+So take SHAs from `%H` (or `git rev-list`) and paste them, never retype them — and when a batch is
+already posted, verify rather than trusting the transcription:
+
+```bash
+git rev-parse --verify --quiet "$sha^{commit}" >/dev/null || echo "BAD $sha"
+```
+
+Worth running over every SHA in a body you are about to post, and over the whole set after posting a
+batch — it is one command and it is the only thing that distinguishes a live link from a dead
+string. This bit a 2026-08-05 burndown: 32 of 62 per-commit comments carried a padded 7-char prefix
+and were individually plausible.
+
+**Verify before posting, because repairing after depends on a capability you may not have.** Whether
+a posted comment can be edited varies by runner and by which GitHub toolset is connected — some
+expose an update-comment call, others only a create. So when you do find a bad SHA in something
+already posted, check your available tools for a comment-update capability first and edit the
+comment in place; fall back to a correction comment only when there is none, since that leaves the
+wrong SHA on the thread and costs every later reader a cross-reference.

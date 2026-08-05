@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { scoreEyeFill } from '../lib/eye-fill.mjs';
 import { diffGoldenPage, scoreGoldenNightEyes } from '../lib/golden-catalog.mjs';
 import { loadTrio } from './fixtures/composite-eye/load.mjs';
@@ -41,10 +41,18 @@ describe('golden catalog frame coverage direction', () => {
 });
 
 describe('golden catalog blank-orb verdict', () => {
-  it('reports shipped-good to recovered-blank as a regression while the band judge stays true', async () => {
-    const good = await scoreFixture('unicorn-tall');
-    const blank = await scoreFixture('stegosaurus-tall');
+  // Scoring a fixture runs the full-resolution eye pipeline (~550 ms each), and
+  // both direction tests need the same pair — only the argument order to diff()
+  // differs. diffGoldenPage treats the score objects as read-only, so one scoring
+  // pass feeds both.
+  let good;
+  let blank;
+  beforeAll(async () => {
+    good = await scoreFixture('unicorn-tall');
+    blank = await scoreFixture('stegosaurus-tall');
+  });
 
+  it('reports shipped-good to recovered-blank as a regression while the band judge stays true', () => {
     expect(good.night.eyesOk).toBe(true);
     expect(blank.night.eyesOk).toBe(true);
     expect(good.night.orbOk).toBe(true);
@@ -55,10 +63,7 @@ describe('golden catalog blank-orb verdict', () => {
     expect(out.improvements).toEqual([]);
   });
 
-  it('reports recovered-blank to shipped-good as an improvement', async () => {
-    const blank = await scoreFixture('stegosaurus-tall');
-    const good = await scoreFixture('unicorn-tall');
-
+  it('reports recovered-blank to shipped-good as an improvement', () => {
     const out = diff(blank, good);
     expect(out.improvements).toContain('fixture/page  night.orbOk FAIL -> ok');
     expect(out.regressions).toEqual([]);

@@ -47,7 +47,8 @@ describe('dilateMask', () => {
     const w = 5,
       h = 5;
     const empty = mask(w, h, () => false);
-    const expandedBorder = dilateMask(empty, w, h, 1, 1);
+    const OUT_OF_BOUNDS_SET = 1;
+    const expandedBorder = dilateMask(empty, w, h, 1, OUT_OF_BOUNDS_SET);
     expect(count(expandedBorder)).toBe(16);
     for (let y = 0; y < h; y++)
       for (let x = 0; x < w; x++)

@@ -100,8 +100,6 @@ run from the repo root; the web toolchain is dispatched into `web/` by `scripts/
 > then `node scripts/stage-netlify.mjs`, which copies `web/build → build` and
 > `web/.netlify → .netlify` so Netlify sees the standard root layout (`publish = "build"`, SSR
 > function in `.netlify/functions-internal`). Local `netlify dev` uses `web/netlify.toml` instead.
-> This is implemented but **must be confirmed green on a Netlify deploy preview before merging to
-> `main`** — don't assume the live `splotch.art` deploy works until that preview passes.
 
 On native the AI button calls the **hosted** endpoint (`https://splotch.art/api/generate-image`) via
 `__NATIVE_API_BASE__`. On web it uses a same-origin relative path.
@@ -117,7 +115,7 @@ npx tsc --noEmit       # TypeScript only
 ## Testing
 
 ```bash
-npm test                   # unit + asset-pipeline + E2E (what CI runs on every push)
+npm test                   # unit + asset-pipeline + repo-script + E2E (what CI runs on every push)
 npm run test:unit:watch    # Vitest watch mode
 npm run test:e2e:headed    # Playwright with browser visible (SLOWMO=500)
 npm run test:e2e:ui        # Playwright UI mode
@@ -132,8 +130,12 @@ Set `PUBLIC_ENABLE_DEV_HARNESS=true` in `.env.local` to unlock:
 
 | Route           | Purpose                                                              |
 | --------------- | -------------------------------------------------------------------- |
+| `/dev`          | Index of the dev harnesses                                           |
 | `/dev/engine`   | Blank canvas with debug controls for testing the drawing engine      |
 | `/dev/ai-timer` | Full AI round-trip with timing display; used by Playwright E2E specs |
+
+The source of truth for this list is `web/src/routes/dev/`. The design-token styleguide is not a dev
+harness — it ships as the public `/design` route (see the `design` skill).
 
 ## Code conventions
 

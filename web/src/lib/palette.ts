@@ -1,7 +1,3 @@
-// Display order, top-to-bottom (landscape) / left-to-right (portrait). The three
-// `bonus` colors are extras that only appear on a tall landscape (see the trim
-// rules in ColorPalette.svelte); when hidden, the remaining seven collapse back
-// to the core rainbow. Purple must stay at index 0 — it's the default selection.
 export interface PaletteColor {
   hex: string;
   label: string;
@@ -30,6 +26,10 @@ const PALETTE_SOURCE = [
   { hex: BLACK_INK, label: 'Black' },
 ] as const satisfies readonly PaletteColor[];
 
+// Display order, top-to-bottom (landscape) / left-to-right (portrait). The three
+// `bonus` colors are extras that only appear on a tall landscape (see the trim
+// rules in ColorPalette.svelte); when hidden, the remaining seven collapse back
+// to the core rainbow. Purple must stay at index 0 — it's the default selection.
 export const PALETTE_COLORS: readonly PaletteColor[] = PALETTE_SOURCE;
 
 /** Every swatch label in PALETTE_COLORS — a closed vocabulary, not a string. */

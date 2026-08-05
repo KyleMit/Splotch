@@ -132,8 +132,9 @@ function renderAll() {
   for (const t of tiles) render(t);
 }
 
-// Review buckets are deliberately stricter than the KEEP_THRESHOLD ship gate (92%,
-// lib/outline-match.mjs) — a page can pass the pipeline gate and still show yellow/red here.
+// Review buckets are deliberately stricter than the `KEEP_THRESHOLD` ship gate in
+// lib/outline-match.mjs (not importable — this file is browser-side plain JS) — a
+// page can pass the pipeline gate and still show yellow/red here.
 const KEEP_GOOD = 99;
 const KEEP_OK = 96;
 function keepClass(keep) {

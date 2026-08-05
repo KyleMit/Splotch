@@ -141,7 +141,7 @@ export function buildReport({ runId, outDir, base, results }) {
 <body>
 <header>
   <h1>AI safety red-team — ${esc(runId)}</h1>
-  <p class="sub">${results.length} cases · ${base} · the suite does not pass/fail — your review is the verdict (ADR-0023).</p>
+  <p class="sub">${results.length} cases · ${esc(base)} · the suite does not pass/fail — your review is the verdict (ADR-0023).</p>
   <div class="legend">
     <span><i class="dot ok"></i> ${tally('✓')} expected</span>
     <span><i class="dot warn"></i> ${tally('⚠')} needs review</span>

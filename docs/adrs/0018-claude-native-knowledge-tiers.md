@@ -6,7 +6,10 @@
 > on-demand tiers are now mostly *generated*: `CLAUDE.md`/`AGENTS.md` files and shared skills are
 > authored in `.ruler/` and propagated to `.claude/skills/` and `.agents/skills/`, which also closes
 > the "layout is Claude Code-specific" downside noted in Consequences. The provider-specific
-> `burn-down-audits` packages and path-scoped `.claude/rules/` are edited in place.
+> `burn-down-audits` packages and path-scoped `.claude/rules/` are edited in place. The `docs/`
+> invariant below has also moved on: `docs/BACKLOG.md` was retired in 2026-07 in favor of GitHub
+> Issues (see `docs/ISSUE-WORKFLOW.md`), and `docs/` has since grown other human-process docs
+> (`COMPATIBILITY.md`, `ISSUE-WORKFLOW.md`, `DEPENDABOT.md`, `CLOUD/`).
 
 ## Context
 

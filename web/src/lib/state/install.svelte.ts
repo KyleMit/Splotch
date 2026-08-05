@@ -26,6 +26,10 @@ export type InstallMode = 'none' | 'oneTap' | 'android' | 'ios';
 // from mode: an iOS in-app-browser user is an 'ios' device but mode 'none'.
 export type InstallDeviceOs = 'ios' | 'android' | 'desktop';
 
+// The result of promptInstall(): the user's choice, or 'unavailable' when there
+// was no live prompt to show.
+export type InstallPromptOutcome = 'accepted' | 'dismissed' | 'unavailable';
+
 export const install = $state({
   mode: 'none' as InstallMode,
   // Parent tapped "not now" — suppress the floating banner (the Setup Guide
@@ -125,14 +129,14 @@ export function initInstallPrompt() {
 // (already used, gone stale, never fired, or non-Chromium). On 'unavailable'
 // a still-'oneTap' mode drops to the manual hint so the UI falls back to
 // something a tap can actually do.
-export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unavailable'> {
+export async function promptInstall(): Promise<InstallPromptOutcome> {
   if (!deferredPrompt) {
     fallBackToManualHint();
     return 'unavailable';
   }
   const evt = deferredPrompt;
   deferredPrompt = null; // a beforeinstallprompt event can only be prompt()ed once
-  let outcome: 'accepted' | 'dismissed';
+  let outcome: Exclude<InstallPromptOutcome, 'unavailable'>;
   try {
     await evt.prompt();
     ({ outcome } = await evt.userChoice);

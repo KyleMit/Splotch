@@ -26,7 +26,7 @@
 
   let delayMs = $state(10000);
   let pending: ReturnType<typeof setTimeout> | null = null; // setTimeout id for the scheduled "finish"
-  let runId = 0;
+  let runId = 0; // run id guarding stale timeouts — intentionally untracked
 
   function clearPending() {
     if (pending !== null) {

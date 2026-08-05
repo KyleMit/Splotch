@@ -79,7 +79,6 @@ import { scoreEyeFill, judgeNightEyes } from '../lib/eye-fill.mjs';
 import { scoreCompositeEyes } from '../lib/composite-eye.mjs';
 import { darkFillPrompt } from '../lib/prompts.mjs';
 
-const OUT_DIR = SAMPLES_DARK_DIR;
 const WEBP_QUALITY = 90;
 
 async function generateDarkPage(ai, { imageBytes, mimeType, temperature, chalked, notes }) {
@@ -349,7 +348,7 @@ for (const page of pages) {
       });
       const colored = await sharp(take.aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
-      const dir = join(OUT_DIR, dirname(rel));
+      const dir = join(SAMPLES_DARK_DIR, dirname(rel));
       await mkdir(dir, { recursive: true });
       const base = rel.split('/').pop();
       const out = join(dir, samples > 1 ? `${base}.sample-${i + 1}.webp` : `${base}.webp`);

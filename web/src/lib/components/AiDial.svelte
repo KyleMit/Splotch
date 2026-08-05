@@ -22,7 +22,7 @@
   const DIAL_EXIT_START_SCALE = 1.35;
 
   let waiting = $state(false);
-  let rafId = 0;
+  let rafId = 0; // rAF handle — intentionally untracked
   const dial = createDialProgress(ESTIMATE_MS);
 
   function loop(now: number) {

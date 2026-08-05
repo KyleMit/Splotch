@@ -18,6 +18,7 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
+| 2026-08-05 | [burn-down-audits](#2026-08-05--burn-down-audits)               |
 | 2026-07-29 | [burn-down-audits](#2026-07-29--burn-down-audits-run-3)         |
 | 2026-07-29 | [burn-down-audits](#2026-07-29--burn-down-audits-run-2)         |
 | 2026-07-29 | [burn-down-audits](#2026-07-29--burn-down-audits-run-1)         |
@@ -78,6 +79,38 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-07-03 | [code-audit](#2026-07-03--code-audit)                           |
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
+
+## 2026-08-05 · burn-down-audits
+
+Hand-driven cherry-pick on
+[`claude/audit-burndown-sprint-ewc5s2`](https://github.com/KyleMit/Splotch/pull/770): **58 fixed**
+and 4 dropped across 62 findings, one commit each; backlog 535 → 473. The scripted driver was not
+used — the brief was to take only findings small enough to verify and implement completely in a
+couple of minutes and leave the larger ones in place, so selection ran over the shortest P4/P5
+entries and every fix was written, gated, and committed inline.
+
+The work concentrated on naming (tuning literals gaining their units, constants moving beside what
+they document, sentinels and magic bytes getting names), dead code (unreachable CSS rules and
+guards, inert component state, speculative exports), and cross-file agreements that were being held
+by prose — which produced three new drift guards: `scripts/tests/dev-ports.test.mjs`, an `appName`
+pass in `check-native-app-id.mjs`, and a cwd-independence case for the Claude cloud setup script.
+Two real correctness repairs landed: blank env values were parsing as `0` and silently shipping
+`quality: 0` webp output, and the AI access-token scrub was replacing the whole URL rather than
+deleting its own parameter.
+
+Drift was the recurring theme, and four findings were dropped rather than force-fitted: `targetRepo`
+had gained a second caller, `a11y.spec.ts` had already adopted `gotoApp`, and the two icon findings
+both assumed a `KNOWN_ORPHANS` carve-out that no longer exists — the /design styleguide now
+references both icons, so deleting them would break it. Three more findings were fixed only in part
+because the rest had already landed (`releases/README.md`'s path, `/dev/design` having moved to the
+public `/design` route), with the drift recorded in the commit and the PR comment.
+
+Every fix commit deleted exactly one backlog entry apart from the one deliberate paired drop, and
+`535 − 62 == 473` reconciles against `pop.mjs --count`. New assertions were checked against
+deliberately broken sources rather than assumed: the viewport-sync, blank-env, app-name, and
+dev-port guards each fail when the behaviour they cover is removed. One CI failure was
+self-inflicted and fixed in 17ab66b — a script-driven edit bypassed the `format-edited-file.sh`
+hook, so `format:check` is now part of the per-batch gate.
 
 ## 2026-07-29 · burn-down-audits (run 3)
 

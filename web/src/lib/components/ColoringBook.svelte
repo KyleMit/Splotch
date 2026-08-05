@@ -162,7 +162,7 @@
         >
           {#if overlayActive}
             <button
-              class="coloring-tile coloring-book-tile coloring-remove-tile"
+              class="coloring-tile coloring-book-tile"
               type="button"
               aria-label="Clear Page"
               onclick={clearAndClose}

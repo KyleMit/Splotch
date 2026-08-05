@@ -84,98 +84,6 @@ encode off the layout-coupled canvas path, and the whole helper could later move
 profiling (`npm run perf:*`) shows the hitch is real — measure first; if the profile shows nothing
 on floor devices, downgrade this to a comment.
 
-### [Readability] Dead `.ai-prompt-close:disabled` styles — the close button is never disabled
-
-**File(s):** `web/src/lib/components/AiImagePrompt.svelte` (lines 111–114) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```css
-.ai-prompt-close:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-```
-
-The close button (lines 60–62) never receives a `disabled` attribute — only the style-option buttons
-do (`disabled={!previewUrl}`, line 72), and those have their own `:disabled` rule (lines 192–195).
-This selector can never match; it's residue from an earlier design where closing was blocked during
-load.
-
-#### Proposed solution
-
-Delete the rule.
-
-### [Readability] Dead `typeof window` guard inside a `$effect`
-
-**File(s):** `web/src/lib/components/AiImageResult.svelte` (lines 26–32, guard at line 28) @
-9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-$effect(() => {
-  if (ui.aiResultOpen && ui.aiGenerating) {
-    if (typeof window !== 'undefined' && window.innerHeight > 0) {
-```
-
-`$effect` bodies never run during SSR (the repo's own svelte rules lean on exactly this for
-teardown), so `typeof window !== 'undefined'` is unreachable-false — dead defensive code that
-implies an SSR hazard that doesn't exist and invites cargo-culting into other effects.
-
-#### Proposed solution
-
-Reduce the guard to `if (window.innerHeight > 0)`.
-
-### [Readability] `REVEAL_EPSILON` names a threshold, not an epsilon
-
-**File(s):** `web/src/lib/components/aiDialProgress.ts` (lines 14–15, use at line 52) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-// Snap progress to 1 once it climbs within this of full.
-const REVEAL_EPSILON = 0.999;
-...
-if (progress >= REVEAL_EPSILON) {
-```
-
-The comment says "within this of full", which describes an epsilon of `0.001`; the constant actually
-holds the absolute snap threshold `0.999`. Name and comment disagree with the value's semantics — a
-tuner "tightening the epsilon" would move the number the wrong way.
-
-#### Proposed solution
-
-Rename to `REVEAL_SNAP_THRESHOLD` (comment: "snap to 1 once progress crosses this"), or keep the
-epsilon framing with `const REVEAL_EPSILON = 0.001;` and `progress >= 1 - REVEAL_EPSILON`.
-
-### [Maintainability] Deliberately untracked component `let`s lack the required one-line comment
-
-**File(s):** `web/src/lib/components/AiDial.svelte` (line 20),
-`web/src/routes/dev/ai-timer/+page.svelte` (line 27) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`.claude/rules/svelte.md`: "a deliberately non-reactive `let` (timer handles, transition-time
-latches) carries a one-line comment saying it's intentionally untracked." `AiDial.svelte` declares
-`let rafId = 0;` (line 20) with no comment; the ai-timer page declares `let runId = 0;` (line 27)
-likewise (its sibling `pending` on line 26 *does* carry the comment, highlighting the omission).
-Both are legitimate untracked handles — they just don't say so, leaving a reviewer to wonder whether
-`$state` was forgotten.
-
-#### Proposed solution
-
-Add the one-liners, e.g. `let rafId = 0; // rAF handle — intentionally untracked` and
-`let runId = 0; // aiGeneration run id — intentionally untracked`.
-
 ### [Testing] `deferred<T>()` helper is re-declared per test file
 
 **File(s):** `web/src/lib/drawing/aiImage.test.ts` (lines 22–36),
@@ -977,31 +885,6 @@ hazard this one call site knows about (none).
 `const adminHref = __IS_CAPACITOR__ ? '/admin/native' : '/admin';` — and run `npm run check` + unit
 tests to confirm no config actually relies on the guard.
 
-### [Readability] AboutSection's `showAdminLink` is a pass-through `$derived` alias
-
-**File(s):** `web/src/lib/components/settings/AboutSection.svelte` (line 21, template line 54) @
-9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-let showAdminLink = $derived(settings.adminLinkVisible);
-```
-
-A `$derived` that wraps a single reactive property read adds no computation, no memoization value,
-and one extra name to track; the template's `{#if showAdminLink}` could read
-`{#if settings.adminLinkVisible}` directly, as this section's sibling components do throughout
-(`settings.aiImageEnabled`, `settings.applePencilSeen`, etc.). The alias mildly obscures that the
-flag is shared persisted state (reset by the admin console) rather than local component state.
-
-#### Proposed solution
-
-Inline it: `{#if settings.adminLinkVisible}`. The valuable context (who sets/resets the flag)
-already lives in the comment block at lines 7–11 and on the setting's declaration in
-`settings.svelte.ts:52–56`.
-
 ### [Docs] SettingsModal's pinch-zoom comment says "whichever scroll shell is mounted binds it," but the compact shell never does
 
 **File(s):** `web/src/lib/components/SettingsModal.svelte` (comment, lines 76–79; compact branch,
@@ -1584,85 +1467,6 @@ rename should be coordinated with it.
 Suffix the modal handles: `colorPickerModal`, `coloringBookModal`, `settingsModalModal`,
 `aiPromptModal`. Purely mechanical rename across ~10 importing components; the payoff is that every
 use is self-identifying and the `coloringBook` name is freed for the domain that owns it.
-
-### [Correctness] `captureAiAccessTokenFromUrl` rewrites the URL to a bare `/`, dropping unrelated params and hash
-
-**File(s):** `web/src/lib/state/settings.svelte.ts` (`captureAiAccessTokenFromUrl`, lines 233–241) @
-9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-const url = new URL(window.location.href);
-const token = url.searchParams.get(AI_ACCESS_TOKEN_PARAM);
-if (!token) return;
-setAiAccessToken(token);
-window.history.replaceState({}, '', '/');
-```
-
-The scrub replaces the entire URL with `/`, discarding any other query params (campaign tags a
-parent's messenger app appended, a future feature param) and any hash — not just the token. Today
-invite links (`lib/server/admin.ts:90`) carry only the token so impact is nil, which is why this is
-P5, but the function's name promises "capture the token from the URL", not "reset the URL".
-
-#### Proposed solution
-
-Delete only the captured param:
-
-```ts
-url.searchParams.delete(AI_ACCESS_TOKEN_PARAM);
-window.history.replaceState({}, '', url);
-```
-
-Same length, no behavior change for current links, and future-proof against additional params.
-
-### [Types] Name the `promptInstall` outcome union
-
-**File(s):** `web/src/lib/state/install.svelte.ts` (lines 128, 135) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`'accepted' | 'dismissed' | 'unavailable'` is written out inline in the return type (line 128) and
-`'accepted' | 'dismissed'` again for the local `outcome` (line 135). The module already names its
-other closed sets (`InstallMode`, `InstallDeviceOs`, lines 23–27); the prompt outcome is the one
-vocabulary left anonymous, so callers switching on the result have no named type to import.
-
-#### Proposed solution
-
-```ts
-export type InstallPromptOutcome = 'accepted' | 'dismissed' | 'unavailable';
-```
-
-Return `Promise<InstallPromptOutcome>`; type the local as
-`Exclude<InstallPromptOutcome, 'unavailable'>`.
-
-### [Testing] Small coverage gaps: `isDarkInk` and the layout viewport dimensions
-
-**File(s):** `web/src/lib/state/colors.svelte.test.ts` (imports, lines 2–14),
-`web/src/lib/state/layout.svelte.test.ts` (lines 38–89) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-Two exports in the section have colocated test files that skip them entirely. (a)
-`colors.svelte.test.ts` tests `isWhite` thoroughly (lines 93–113) but never imports `isDarkInk`
-(`colors.svelte.ts:83-85`) — the tuned `DARK_INK_LUMINANCE_MAX = 0.15` cutoff that drives the
-keyline on dark action-button cards has no test pinning that Black ink is below it and, say, Purple
-is above. (b) `layout.svelte.test.ts` asserts orientation and safe-area syncing but never
-`layout.viewportWidth`/`viewportHeight` (`layout.svelte.ts:62-63`), which `actionButtonLayout.ts`
-and Settings size ceiling consume; a regression that stopped syncing them would pass the suite.
-
-#### Proposed solution
-
-(a) Add an `isDarkInk` describe: `expect(isDarkInk(BLACK_INK)).toBe(true)` and false for each
-non-black palette hex. (b) In the existing "re-measures on resize" test, set
-`window.innerWidth/innerHeight` (happy-dom allows assignment) before dispatching `resize` and assert
-the two fields track.
 
 ### [Readability] `tool.svelte.test.ts` duplicates its three-line `beforeEach` in both describes
 
@@ -2285,75 +2089,6 @@ Then the loader's unauthed branch becomes `invites: [] satisfies Invite[]` (or a
 Name collision warning: `AdminConsole.svelte` exports a client-side `Invite` (with the optional
 `usage` field) — the server type is its base; keep the names distinct or import aliased in any file
 that sees both.
-
-### [Maintainability] `SESSION_MAX_AGE` lacks the unit suffix the constants convention requires
-
-**File(s):** `web/src/routes/admin/+page.server.ts` (line 25) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-const SESSION_MAX_AGE = 60 * 60 * 24 * 365 * 10;
-```
-
-Cookie `maxAge` is seconds, but nothing in the name says so — and this repo has both conventions in
-play (`_MS` timers everywhere else), so a reader must recall the cookie API to know the unit.
-CLAUDE.md: "a named module-scope constant with the unit in the name (`_MS`, `_PX` …)".
-
-#### Proposed solution
-
-Rename to `SESSION_MAX_AGE_S` (one call site, line 32). Trivial, but it's the convention's exact
-letter.
-
-### [Readability] `targetRepo()` is a single-use one-line indirection
-
-**File(s):** `web/src/lib/server/github.ts` (lines 12–14, sole use line 62) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-function targetRepo(): string {
-  return config.githubIssueRepo();
-}
-```
-
-Called exactly once, inside the fetch URL template (line 62). It renames `config.githubIssueRepo()`
-without adding behavior, defaulting, or validation — a reader chasing the URL has to hop through it
-only to land on the config call the name already described. Its sibling `isReportingConfigured()` is
-different: it *is* the module's exported feature-flag seam with an external caller.
-
-#### Proposed solution
-
-Inline it: ``fetch(`${GITHUB_API}/repos/${config.githubIssueRepo()}/issues`, … )`` and delete the
-function.
-
-### [Maintainability] GitHub error-detail truncation length is a bare `300`
-
-**File(s):** `web/src/lib/server/github.ts` (`createIssue`, line 77) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-throw new Error(`GitHub issue creation failed (${res.status}): ${detail.slice(0, 300)}`);
-```
-
-The truncation cap is a tunable log-hygiene decision (how much of an arbitrary GitHub error body may
-enter the thrown message and any downstream log), which per the tuning-literal rule should be a
-named constant carrying its unit.
-
-#### Proposed solution
-
-```ts
-const ERROR_DETAIL_MAX_CHARS = 300;
-```
-
-with the WHY (bound the log line; GitHub error bodies can be large HTML) on the constant.
 
 ### [Architecture] `ASSUME_PERSISTENT` is a status default living in a formatting module
 
@@ -3574,36 +3309,6 @@ the lookup is `undefined` so the inconsistent build screams in dev instead of sh
 Optionally tighten `iconNameFromPath` to return `IconName` at this one boundary rather than
 `string`.
 
-### [Maintainability] Delete the grandfathered orphan icons instead of carving them out of the guard
-
-**File(s):** `web/src/lib/icons/chevron-up.svg` (235 B), `web/src/lib/icons/settings.svg` (948 B),
-`web/src/lib/components/icon-orphans.test.ts` (lines 47–51, 109–114) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-// Pre-existing orphans, grandfathered rather than deleted here — this guard's
-// job is to stop *new* orphans appearing. chevron-up: the drawer's chevron is a
-// single chevron-right rotated with CSS. settings: nothing renders it; the only
-// mentions of the word are prose about the `settings` state module.
-const KNOWN_ORPHANS = ['chevron-up', 'settings'];
-```
-
-The comment explains why the *test* doesn't fail on them, not why the files should exist. They cost
-on every axis the guard was built to protect: both are eagerly bundled into the boot chunk by
-`Icon.svelte`'s glob and shipped to every user, both inflate the generated `IconName` union, and the
-test file carries a second describe block (lines 109–114) whose only job is proving the carve-out is
-still needed. ~1.2 KB of dead asset plus ~15 lines of test machinery to keep dead assets dead.
-
-#### Proposed solution
-
-Delete the two SVGs, run `npm run gen:icons` to shrink the union, empty (or remove) `KNOWN_ORPHANS`
-and its "still an orphan" describe block. If the mascot-era originals are worth keeping for
-reference, `git log` already has them — or promote them to `/scrapbook`, which exists for exactly
-this kind of keeper. Zero behavioral risk: the orphan guard itself proves nothing references them.
-
 ### [Testing] `iconInk`'s "matches the SVGs' baked fill" is prose agreement across ~50 files
 
 **File(s):** `web/src/lib/design/tokens.ts` (lines 193–194, 278), `web/src/lib/icons/*.svg` @
@@ -3668,52 +3373,6 @@ Remove the parameters and let each function close over `PALETTE_COLUMN_GEOMETRY`
 `viewportFraction` as a plain argument or reads the constant). `portraitLadderPx()` etc. shrink to
 one-liners over the module constants. Purely mechanical; the drift-guard test is unaffected since it
 already calls with defaults.
-
-### [Testing] `KNOWN_ORPHANS` entries are neither typed nor checked to exist
-
-**File(s):** `web/src/lib/components/icon-orphans.test.ts` (lines 51, 97–115) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`const KNOWN_ORPHANS = ['chevron-up', 'settings'];` is a bare `string[]`. Two gaps: (1) a typo'd or
-stale entry is invisible — if `chevron-up.svg` were deleted, the first describe block skips it (it
-iterates actual SVGs) and the second block passes vacuously (`isReferenced('chevron-up')` is false
-for a nonexistent icon too), so the dead carve-out lingers forever; (2) the list isn't typed against
-the icon vocabulary (`CommonIconName`), the repo's standard for closed sets. (If the P4 finding to
-delete the orphans lands, this whole list disappears and this finding is moot — it applies only if
-the grandfather list survives.)
-
-#### Proposed solution
-
-Type it `const KNOWN_ORPHANS: CommonIconName[] = [...]` (compile-time typo guard, auto-invalidated
-when `gen:icons` drops a deleted icon from the union) and add one assertion that every entry is a
-key of `svgs`, so a stale entry fails with "no longer exists — remove the carve-out" instead of
-passing silently.
-
-### [Maintainability] Disclosure hard-codes `1px` instead of the `--border-width` token
-
-**File(s):** `web/src/lib/components/design/Disclosure.svelte` (line 25) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```css
-.disclosure {
-  border: 1px solid var(--border);
-```
-
-`scale.borderWidth` exists precisely for this (`tokens.ts` line 64), and the sibling primitive
-`Button.svelte` uses it (`border: var(--border-width) solid var(--border)`, line 82). A
-design-system primitive off its own token vocabulary is the worst place for the inconsistency — it's
-the exemplar other components copy.
-
-#### Proposed solution
-
-`border: var(--border-width) solid var(--border);`. One-line change, no visual difference at the
-current token value.
 
 ### [Readability] StatusMessage: off-ramp `10px` padding and hand-rolled class toggles
 
@@ -4335,30 +3994,6 @@ and delete the props (SliderRow needs no change). If a future setting genuinely 
 reintroduce `step` then — and make `clamp` quantize to it on the pointer path too so the contract is
 honest.
 
-### [Readability] ClearCoachmark's `tutorialFadeOut` state and `.fade-out` rule are dead weight
-
-**File(s):** `web/src/lib/components/ClearCoachmark.svelte` (lines 10, 54, 68, 82, 115–117) @
-9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`dismiss()` sets `tutorialVisible = false; tutorialFadeOut = true` and the template binds
-`class:fade-out={tutorialFadeOut}`. But the base rule already declares `opacity: 0` with a `0.4s`
-opacity transition and delayed `visibility` (lines 98–108); removing `.visible` alone produces
-exactly the fade-out the `.fade-out` class (line 115–117: `opacity: 0`) restates. Since `.fade-out`
-is only ever present when `.visible` is absent, the class changes nothing — the extra `$state`, the
-two writes, the class binding, and the CSS rule are all inert, and a reader has to reason through
-the transition timing to discover that.
-
-#### Proposed solution
-
-Delete `tutorialFadeOut`, its writes in `show()`/`dismiss()`, the `class:fade-out` binding, and the
-`.clear-coachmark.fade-out` rule; verify the dismiss fade in the browser (the base
-`transition: opacity 0.4s ease, visibility 0.4s` carries it). If some engine quirk actually needs
-the explicit class, that's a WHY comment the current code is missing.
-
 ### [Maintainability] Deliberately non-reactive `let`s lack the required "intentionally untracked" comments
 
 **File(s):** `web/src/lib/components/Slider.svelte` (lines 47–50),
@@ -4492,30 +4127,6 @@ chain like `installContextMenuGuard`), taking the end-of-history nudge callback 
 plays — or keep the nudge panel-local and have the boot helper call `undo()` guarded on
 `canvasState.canUndo`. Decide and document the `undoButtonEnabled` interaction (a one-line WHY if
 the bypass is deliberate; a `settings` check if not).
-
-### [Readability] Slider's `clamp()` hides a `Math.round`
-
-**File(s):** `web/src/lib/components/Slider.svelte` (lines 59–61) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-function clamp(v: number) {
-  return Math.round(Math.min(max, Math.max(min, v)));
-}
-```
-
-The name promises clamping; the function also quantizes to integers — a behavior callers rely on
-(drag deltas are fractional) but cannot see at the call sites (`apply` line 64). Anyone extending
-the slider to fractional values (or wiring `step` quantization, see the step finding) would
-reasonably not expect `clamp` to round.
-
-#### Proposed solution
-
-Rename to `roundAndClamp` (or `toSliderValue`), or split the round into `apply()` where the drag →
-value conversion happens.
 
 ### [Testing] NotchBand's native status-bar branching is untested inline effect logic with an unguarded dynamic import
 
@@ -4991,48 +4602,6 @@ Extract `cancelHoldTimer()` and call it from both sites; have the scheduled call
 `onPointerMove`'s `o.onTutorialDismiss()` at line 155 must stay *outside* the null-guard — it also
 dismisses a tutorial the hold already showed.
 
-### [Readability] `playClearExit` shadows the action's `node` with a redundant parameter
-
-**File(s):** `web/src/lib/actions/dragToClear.ts` (`playClearExit`, lines 224–244; call site
-line 272) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-function playClearExit(node: HTMLButtonElement, o: DragToClearOptions): void {
-```
-
-The only call passes the enclosing action's `node` (line 272: `playClearExit(node, o)`), so the
-parameter shadows the closure variable every sibling helper (`finishDrag`, `resetDragVisuals`,
-`onTransitionEnd`) reads directly. The shadowing invites the classic bug of the two diverging, and
-the inconsistency makes a reader ask why this one helper is parameterized.
-
-#### Proposed solution
-
-Drop the parameter; use the closed-over `node` like the other helpers:
-`function playClearExit(o: DragToClearOptions): void`.
-
-### [Readability] `homeButtonCenter` is dead module-scope state — written and read only inside `armAcceptZone`
-
-**File(s):** `web/src/lib/actions/dragToClear.ts` (lines 39, 84–100) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`let homeButtonCenter = { x: 0, y: 0 };` (line 39) is assigned at line 89 and read only at lines
-91–92 — all within `armAcceptZone`. Nothing else in the file touches it, so hoisting it to
-gesture-lifetime state is a lie about its scope: a reader auditing the (already large) per-drag
-state block must trace it to discover it carries nothing between events.
-
-#### Proposed solution
-
-Delete the module-scope `let`; inside `armAcceptZone` use the `center` parameter directly
-(`o.acceptZoneEl.style.left = \`${center.x - radius}px\`` …). The parameter name already documents
-it.
-
 ### [Performance] Pinch move path allocates per pointermove, against the repo's hot-path rule
 
 **File(s):** `web/src/lib/actions/pinchZoom.svelte.ts` (`centroid` lines 54–62, `recompute` lines
@@ -5091,68 +4660,6 @@ Remove the two `pointermove` `preventDefault()` calls, or — if on-device testi
 browsers in `docs/COMPATIBILITY.md`) reveals an engine that still honors them — keep them behind a
 WHY comment naming that engine. Verify with the existing `settings-zoom.spec.ts` plus a manual iOS
 Safari pass, since this is exactly the class of behavior E2E in Chromium can't fully certify.
-
-### [Readability] `isPointInLaunchZone` is a query with hidden writes and a hand-rolled loop
-
-**File(s):** `web/src/lib/actions/launchGuard.ts` (lines 52–61) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-export function isPointInLaunchZone(x: number, y: number): boolean {
-  zones = liveZones();
-  let hit = false;
-  for (const zone of zones) {
-    ...
-    if (dx * dx + dy * dy <= zone.radiusSq) hit = true;
-  }
-  return hit;
-}
-```
-
-Two small things: an `is*` predicate mutates module state (the prune) — the comment discloses it,
-but the *name* doesn't; and the loop keeps scanning after a hit instead of early-returning (or just
-`return zones.some(...)`). Neither matters for perf (zones is ~1 element), but both cost a beat of
-reader attention in a security-adjacent input path.
-
-#### Proposed solution
-
-```ts
-export function isPointInLaunchZone(x: number, y: number): boolean {
-  zones = liveZones();
-  return zones.some((z) => (x - z.x) ** 2 + (y - z.y) ** 2 <= z.radiusSq);
-}
-```
-
-The prune is worth keeping (it's the timer-free reclamation strategy); consider renaming the private
-step so the side effect is named where it happens (`pruneLapsedZones()` instead of assigning from
-`liveZones()` inline).
-
-### [Readability] `allowDismiss && o.allowDismiss() === false` — verbose gate duplicated twice
-
-**File(s):** `web/src/lib/actions/modalDialog.svelte.ts` (lines 72, 95) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-if (o.allowDismiss && o.allowDismiss() === false) return;   // onPointerDown
-...
-if (o.allowDismiss && o.allowDismiss() === false) e.preventDefault();  // onCancel
-```
-
-The double mention plus `=== false` obscures the simple semantics ("absent gate means allowed") and
-calls the getter through a guard that optional chaining already handles:
-`o.allowDismiss?.() === false` is exactly equivalent (absent → `undefined === false` → allowed).
-
-#### Proposed solution
-
-Extract `function dismissAllowed(o: ModalOptions) { return o.allowDismiss?.() !== false; }` and use
-it at both sites (`if (!dismissAllowed(o)) ...`). One name, one place, one truth for the
-default-allowed policy.
 
 ### [Docs] launchGuard comment restates the fly-in duration owned by tokens.css — and misattributes the file
 
@@ -5832,52 +5339,6 @@ function resetDragState() {
 `pickCustomColor(hex); releaseAllPointers(); colorPicker.hide(); resetDragState();`. Consider
 whether `hexCenters = null` belongs in it too (currently only reset on window resize, line 119) —
 clearing per-drag cache on drag end is cheap and removes a class of staleness questions.
-
-### [Testing] `isDarkInk` (and `isLightColor`) have zero direct unit coverage beside heavily-tested siblings
-
-**File(s):** `web/src/lib/state/colors.svelte.ts` (`isDarkInk`, lines 83–85);
-`web/src/lib/colorRing.ts` (`isLightColor`, lines 24–26) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`colors.svelte.test.ts` exhaustively tests its neighbors — `isWhite` gets three describe-blocks
-including palette-wide negative cases (lines 93–113) — but `isDarkInk`, the function gating the
-dark-ink keyline on action buttons (`ActionsPanel.svelte` line 142, per ADR-0052), is never imported
-by any test. Its load-bearing invariants are unpinned: `BLACK_INK` must be dark ink, every other
-palette color (and `WHITE_INK`) must not be, and the darkest picker greys sit on a deliberate side
-of the `0.15` cutoff. A retune of `DARK_INK_LUMINANCE_MAX` or a palette color edit could silently
-flip a keyline. `isLightColor` is only covered transitively through `notchBand` tests (outside this
-section), so its own threshold semantics are similarly unpinned.
-
-#### Proposed solution
-
-Add a `describe('isDarkInk')` to `colors.svelte.test.ts` mirroring the `isWhite` structure:
-`expect(isDarkInk(BLACK_INK)).toBe(true)`, loop `PALETTE_COLORS` excluding `BLACK_INK` expecting
-`false`, plus the boundary greys from the picker (`PICKER_DIM_BORDER` true, `'#263238'`/nearby
-expected value). A small direct `isLightColor` spec in `colorRing.test.ts` (both sides of `0.5`)
-closes the other gap.
-
-### [Readability] palette.ts's ordering/invariant comment is attached to the interface, not the constant it documents
-
-**File(s):** `web/src/lib/palette.ts` (lines 1–10, 17) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The header comment — "Display order, top-to-bottom (landscape) / left-to-right (portrait)… Purple
-must stay at index 0 — it's the default selection" (lines 1–4) — describes `PALETTE_COLORS`, but it
-sits directly above `export interface PaletteColor` (line 5). A reader who jumps to the
-`PALETTE_COLORS` definition (line 17), e.g. via go-to-definition from any of its many import sites,
-lands on an uncommented array and misses both the ordering semantics and the index-0 invariant.
-
-#### Proposed solution
-
-Move the comment block from above the interface to immediately above `export const PALETTE_COLORS`
-(line 17). The interface keeps only interface-relevant prose (the existing `bonus` doc-comment on
-line 8 already covers it).
 
 ### [Maintainability] Picker's dim keyline `#4d4d5b` coincides with the dark-theme `borderWarmStrong` token value with no declared relationship
 
@@ -6780,30 +6241,6 @@ export type InstallPromptOutcome = NativePromptOutcome | 'unavailable';
 in `install.svelte.ts`, using `InstallPromptOutcome` as `promptInstall`'s return type and
 `NativePromptOutcome` for the local. Callers (`InstallBanner.svelte:86`,
 `SetupInstructions.svelte:20`) compare against `'unavailable'` and keep compiling unchanged.
-
-### [Readability] Drop the temporal "identical to before" phrasing from the storage module header
-
-**File(s):** `web/src/lib/storage.ts` (lines 18–19) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-// On the web, isNative() is false and the Preferences layer is skipped entirely
-// — behaviour is identical to before.
-```
-
-"identical to before" is exactly the temporal phrasing the conventions ban ("no temporal phrasing
-('now', 'previously')"): "before" refers to a change-time baseline no future reader has, and the
-clause carries no information once the migration context is gone — the preceding sentence already
-states the web behavior completely.
-
-#### Proposed solution
-
-Delete the trailing clause: "On the web, isNative() is false and the Preferences layer is skipped
-entirely." (Or, if the intent was to stress single-layer semantics: "— the web is a pure
-localStorage store.") One-line comment edit, no code change.
 
 ### [Testing] The restore integration test re-declares store defaults instead of importing them
 
@@ -7957,32 +7394,6 @@ lock call), latch reset on failure, `supportsOrientationLock() === false` short-
 `vi.mock('$lib/platform')` as `pencilEraser.test.ts` already demonstrates), and the web `unlock()`
 path.
 
-### [Types] Dead `?? platform` fallback on a total `Record<Platform, string>` lookup
-
-**File(s):** `web/src/lib/deviceInfo.ts` (line 52; `PLATFORM_LABEL`, line 7) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-platform: PLATFORM_LABEL[platform] ?? platform,
-```
-
-`platform` is the closed union `Platform` (`'android' | 'ios' | 'web'`) returned by `getPlatform()`,
-and `PLATFORM_LABEL` is `Record<Platform, string>` — a total map. The `?? platform` arm can never
-execute; TypeScript types the indexed access as `string`, so the `??` isn't even flagged as
-unnecessary, but it reads as if unlabeled platforms were possible, undermining the closed-union
-guarantee the repo's conventions work hard to establish ("never bare `string` … plus a runtime
-fallback"). `getPlatform()` itself already funnels every unexpected value to `'web'` (platform.ts
-lines 71–75), which is the single sanctioned boundary.
-
-#### Proposed solution
-
-`platform: PLATFORM_LABEL[platform],` — delete the fallback. If a future `Platform` member is added,
-the `Record` type errors at `PLATFORM_LABEL`'s declaration until a label is provided, which is the
-intended failure mode.
-
 ### [Readability] `isStandalone` spells out three identical `matchMedia` probes
 
 **File(s):** `web/src/lib/platform.ts` (`isStandalone`, lines 23–31) @ 9ae62ff1
@@ -8114,29 +7525,6 @@ worst-case latency. Tradeoff: a timeout-fired callback runs even when genuinely 
 competing with a stroke — pick a timeout long enough that this is a rare fallback, or accept the
 current unbounded behavior explicitly with a WHY comment saying starvation is acceptable for every
 current caller (which would also satisfy the convention — today the divergence is undocumented).
-
-### [Readability] Dead `coloring-remove-tile` class on the Clear Page tile
-
-**File(s):** `web/src/lib/components/ColoringBook.svelte` (line 123) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```svelte
-class="coloring-tile coloring-book-tile coloring-remove-tile"
-```
-
-Grep across `web/` finds no `.coloring-remove-tile` selector in this component's `<style>` block, no
-global stylesheet rule, and no test referencing it — the class is attached to nothing. Svelte's
-unused-CSS warning only fires for the inverse case (selector without markup), so this rots silently;
-a reader hunting for the tile's styling burns time confirming the class does nothing.
-
-#### Proposed solution
-
-Delete the class from the markup. If a distinct hook for the Clear Page tile is wanted later
-(styling or test targeting), reintroduce it together with its consumer; today
-`aria-label="Clear Page"` is already the stable test handle.
 
 ### [Maintainability] `handleDoubleTap` is exported only for tests without the required seam comment
 
@@ -8858,29 +8246,6 @@ that decodes, calls the lib, and rewraps.
 
 ---
 
-### [Readability] `OUT_DIR = SAMPLES_DARK_DIR` alias adds indirection without meaning
-
-**File(s):** `tools/asset-gen/bin/gen-coloring-fills-dark.mjs` (line 82) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```js
-const OUT_DIR = SAMPLES_DARK_DIR;
-```
-
-A bare rename of an imported path constant. In `gen-coloring-chalk.mjs:79` the same-named binding
-earns its keep (`join(SAMPLES_DARK_DIR, 'chalk')` — a real subdirectory), but here it's identity, so
-a reader greps `OUT_DIR` (line 352) and has to bounce through line 82 to learn it's just the shared
-samples dir.
-
-#### Proposed solution
-
-Delete the alias and use `SAMPLES_DARK_DIR` directly at line 352.
-
----
-
 ### [Readability] `gen-coloring-fills-dark` validates "no targets given" after resolving targets
 
 **File(s):** `tools/asset-gen/bin/gen-coloring-fills-dark.mjs` (lines 288–295) @ 9ae62ff1
@@ -9526,30 +8891,6 @@ to 0 after) so per-ring array allocation disappears. Keep the two-phase semantic
 direction-neutral bleed depends on not consuming this ring's results within the same pass (the WHY
 comment at lines 50–52 already explains this; keep it).
 
-### [Correctness] CLI number parsers accept empty-string env values as 0
-
-**File(s):** `tools/asset-gen/lib/cli.mjs` (`parsePngToWebpOptions` lines 8–20, `parseNonNegative`
-lines 47–54, `parseTemperature` lines 38–45) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`parsePngToWebpOptions` resolves `values.quality ?? env.QUALITY`. An empty environment variable
-(`QUALITY= npm run …`, or an unset-but-exported var in a wrapper script) yields `''`, which is not
-`undefined`, so the fallback never applies — and `Number('') === 0` passes the `value >= 0` check in
-`parseNonNegative`, silently producing `quality: 0` (maximally destroyed webp output) instead of the
-intended default 80. `parseTemperature` has the same hole (`'' → 0`, in range). `parsePositiveInt`
-is safe by accident (`0` fails `>= 1`). The failure is silent precisely where these helpers
-otherwise fail loudly on garbage (`fail(...)` for `'abc'`).
-
-#### Proposed solution
-
-Treat blank as unset at the top of each parser:
-`if (raw === undefined || raw === '') return fallback;` — or normalize once in
-`parsePngToWebpOptions` (`env.QUALITY || undefined`). One-line change per parser; add the `''` case
-to `tests/cli.test.mjs`'s existing env-precedence tests.
-
 ### [Readability] outline-match's tile bucketing is an opaque inline expression with a dead clamp
 
 **File(s):** `tools/asset-gen/lib/outline-match.mjs` (lines 102–107) @ 9ae62ff1
@@ -10004,27 +9345,6 @@ Extract a shared helper, e.g. `tools/asset-gen/tests/helpers/pipeline-harness.mj
 line while the shape lives once. Gotcha: `state` must stay in `vi.hoisted`, so the helper functions
 should take it as a parameter rather than importing it.
 
-### [Performance] golden-catalog scores the same fixture pair in both async tests
-
-**File(s):** `tools/asset-gen/tests/golden-catalog.test.mjs` (`scoreFixture`, lines 6–12; tests at
-lines 21–33, 35–42) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`scoreFixture` runs `scoreEyeFill` + `scoreGoldenNightEyes` over the full-resolution composite-eye
-fixtures (~550 ms per fixture). The regression-direction test (lines 21–33) and the
-improvement-direction test (lines 35–42) each compute the identical `unicorn-tall` /
-`stegosaurus-tall` pair — the only difference is the argument order to `diff()`. Measured: 1125 ms +
-1136 ms, half of it duplicate work.
-
-#### Proposed solution
-
-Score the pair once in a `beforeAll` (or memoize `scoreFixture` the same way as proposed for
-composite-eye.test.mjs) and let both direction tests diff the shared results. The score objects are
-treated as read-only by `diffGoldenPage`, so sharing is safe.
-
 ### [Maintainability] gate-redundancy leans on a mutable module `src` closure and states the broken/good split twice
 
 **File(s):** `tools/asset-gen/tests/gate-redundancy.test.mjs` (lines 85–103) @ 9ae62ff1
@@ -10242,90 +9562,6 @@ Take the parser args as a trailing options object or rest tuple:
 `expectFailure(parsePositiveInt, msg, raw, '--samples', 3)`, mirroring the real
 `parse(raw, name, fallback, source)` call order with no placeholder. Only worth doing while touching
 the file for the other cli.test.mjs findings.
-
-### [Readability] PNG signature asserted as unexplained magic bytes
-
-**File(s):** `tools/asset-gen/tests/outline-match.test.mjs` (line 30) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```js
-expect(r.overlay.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
-```
-
-The eight bytes are the PNG file signature, but nothing says so — a reader must recognize
-`137 80 78 71` ("‰PNG") on sight. The repo convention names tuning/boundary literals.
-
-#### Proposed solution
-
-`const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);` at module
-scope (hex makes the ASCII visible), then
-`expect(r.overlay.subarray(0, 8)).toEqual(PNG_SIGNATURE);`.
-
-### [Readability] addOutline derives the parent directory with `join(path, '..')` instead of `dirname`
-
-**File(s):** `tools/asset-gen/tests/outline-targets.test.mjs` (`addOutline`, lines 9–14) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```js
-await mkdir(join(path, '..'), { recursive: true });
-```
-
-`join(path, '..')` works, but it makes the reader resolve the `..` mentally; `dirname(path)` states
-the intent (`node:path` is already imported one symbol away).
-
-#### Proposed solution
-
-Import `dirname` alongside `join` and use `await mkdir(dirname(path), { recursive: true });`.
-
-### [Maintainability] audit-cli's corrupt/drift sentinels are bare strings coordinated across three sites
-
-**File(s):** `tools/asset-gen/tests/audit-cli.test.mjs` (`assertReadable` lines 8–10, `outlineMatch`
-mock line 51, `addPage` lines 134–135) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The string `'corrupt'` links `assertReadable` (line 9:
-`if (buffer.toString() === 'corrupt') throw ...`) to `addPage`'s file contents (line 134), and
-`'drift fill'` links the outline-match mock (line 51) to `addPage` (line 135). The coordination is
-invisible at each site — a typo in one produces tests that pass vacuously (a "corrupt" page that
-scores clean) rather than fail loudly.
-
-#### Proposed solution
-
-Name them once at module scope — `const CORRUPT_BYTES = 'corrupt';` /
-`const DRIFT_FILL_BYTES = 'drift fill';` — and reference the constants from all three sites. Small,
-but it turns a stringly-typed protocol into a greppable one.
-
-### [Readability] Bare positional `1` for dilateMask's out-of-bounds flag
-
-**File(s):** `tools/asset-gen/tests/morphology.test.mjs` (line 50) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```js
-const expandedBorder = dilateMask(empty, w, h, 1, 1);
-```
-
-The fifth argument is `outOfBounds` (lib/morphology.mjs:44, default 0) — here set to 1 meaning
-"treat off-image pixels as set". Two adjacent `1`s with different meanings (radius, then a
-boolean-ish flag) force a trip to the lib signature; the test title explains it but the call site
-doesn't.
-
-#### Proposed solution
-
-A local named value: `const OUT_OF_BOUNDS_SET = 1;` then
-`dilateMask(empty, w, h, 1, OUT_OF_BOUNDS_SET)`. (Changing the lib to an options bag is out of this
-section's scope; the local name is enough.)
 
 ### [Maintainability] eye-rings' exact-object pins hard-code fixture geometry defined in synthetic.mjs
 
@@ -10717,77 +9953,6 @@ canonical paths (the report's Status line already says this). The `gen/` dir (ou
 previews that never shipped) is genuine evidence and stays. Fold into the same commit as the other
 ideas-exploration pruning.
 
-### [Docs] pipeline.md has an empty link target: `[docs/]()`
-
-**File(s):** `tools/asset-gen/docs/pipeline.md` (line 10) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```markdown
-Companion docs: `README.md` (runbook), `coloring-book-proof-sheet.md` (review surface), the decision
-records in [`docs/`]() — [pen/chalk fork](pen-chalk-fork.md),
-```
-
-`[`docs/`]()` is a Markdown link with an **empty** URL — it renders as a link to the current page
-(or as broken markup, viewer-dependent). Presumably a leftover from the docs-folder move. Also
-slightly off conceptually: pipeline.md itself lives in `docs/`, so "the decision records in `docs/`"
-pointing anywhere is redundant — the individual record links that follow already do the job.
-
-#### Proposed solution
-
-Drop the link wrapper: "…the sibling decision records — [pen/chalk fork](pen-chalk-fork.md), …".
-One-line change.
-
-### [Docs] pen-chalk-fork.md points the alternatives chronicle at pipeline.md; it lives in legacy/README.md
-
-**File(s):** `tools/asset-gen/docs/pen-chalk-fork.md` (lines 24–25) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```markdown
-Alternatives evaluated for dark mode (chronicled with illustrations in
-`tools/asset-gen/docs/pipeline.md`): a build-time morphological classifier …
-```
-
-The illustrated alternatives table (options A–D, with the option-A prototype screenshots) is in
-`tools/asset-gen/legacy/README.md` ("Alternatives considered and rejected for dark mode", lines
-74–90), not in pipeline.md — pipeline.md itself defers to legacy for exactly this chronicle (line
-41–42: "…is chronicled in `legacy/README.md`"). A reader sent to pipeline.md for the illustrations
-won't find them.
-
-#### Proposed solution
-
-Change the pointer to `tools/asset-gen/legacy/README.md`. (Once the legacy README's broken image
-links are fixed — the P2 finding — the illustrations will actually render there too.)
-
-### [Maintainability] Duplicate identical JSON committed twice within idea-15 and idea-18
-
-**File(s):** `tools/asset-gen/ideas-exploration/idea-15/hotspots.json` vs
-`idea-15/hotspots/hotspots.json`;
-`idea-18/code/{creatures-mermaid-tall,objects-balloon-tall,shapes-circle-tall}-plan.json` vs the
-same three names under `idea-18/work/` @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`diff -q` confirms each pair is byte-identical. idea-15 commits `hotspots.json` both at the idea
-root and inside `hotspots/`; idea-18 commits its three color-plan JSONs in both `code/` (presented
-as the re-appliable artifact) and `work/` (the run dir). Frozen records are read by future sessions
-deciding whether to promote an OPEN idea (idea-18 *is* OPEN) — two copies with no marked canonical
-one invites reading the wrong file if they ever diverge, and pads the record for no benefit.
-
-#### Proposed solution
-
-Keep one canonical copy each: `idea-15/hotspots.json` at the root (where `report.md` line 163's
-evidence list points) and the plans under `idea-18/code/` (the "working code" home the README layout
-defines); delete the duplicates. Verify `report.md`/`meta.json` don't reference the removed paths
-before deleting.
-
 ### [Maintainability] Crayon stage vocabulary triplicated — and the samples.mjs copy already drifted (missing stage 6)
 
 **File(s):** `tools/asset-gen/crayon-brush-samples/samples.mjs` (header lines 1–10, stage arrays
@@ -10950,37 +10115,6 @@ Two small defects in the (maintained, re-runnable) dashboard builder:
 Use `${dirs.length}` in the subtitle (or drop the denominator), and log the missing-file case
 explicitly (`console.error(\`missing meta.json in ${d}\`)`) before`continue` so the exit message's
 promise holds for both failure modes.
-
-### [Readability] Proof-sheet review thresholds restate cross-file gate values in prose
-
-**File(s):** `tools/asset-gen/coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js`
-(lines 135–138), `tools/asset-gen/docs/coloring-book-proof-sheet.md` (line 70) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```js
-// Review buckets are deliberately stricter than the KEEP_THRESHOLD ship gate (92%,
-// lib/outline-match.mjs) — a page can pass the pipeline gate and still show yellow/red here.
-const KEEP_GOOD = 99;
-const KEEP_OK = 96;
-```
-
-The comment correctly names the owning identifier and file (good) but also restates its current
-value ("92%"), which the root conventions forbid ("no restating mutable facts (counts, dates,
-values…) owned elsewhere"): if `KEEP_THRESHOLD` in `lib/outline-match.mjs` (line 38, `0.92`) ever
-moves, this comment silently lies. Likewise `docs/coloring-book-proof-sheet.md` line 70 restates the
-client's bucket values as prose: "Badge colors: green ≥ 99, yellow ≥ 96, red below."
-
-#### Proposed solution
-
-In the comment, drop the literal: "deliberately stricter than `KEEP_THRESHOLD`
-(`lib/outline-match.mjs`)". In the doc, either drop the numbers ("badge buckets are defined by
-`KEEP_GOOD`/`KEEP_OK` in `coloring-book-proof-sheet.client.js`") or accept the doc restatement as
-the one place a human reads the values and instead leave a pointer next to the constants. The
-client.js file is browser-side plain JS and can't import from `lib/`, so a comment pointer (without
-the value) is the right form there.
 
 ## Source: Code audit — scripts — root build/dev drivers
 
@@ -12326,28 +11460,6 @@ Add a `numericFlag(name, fallback)` helper to `args.mjs` that parses and `fail()
 
 ---
 
-### [Readability] `CONTAINER_EVENTS` is declared 175 lines after its first use, stranded mid-file between unrelated functions
-
-**File(s):** `scripts/perf/analyze.mjs` (line 304; first use line 129) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`classifyEvents` (line 108) reads `CONTAINER_EVENTS` at line 129, but the constant is declared at
-line 304, wedged between `perPhase` and `attributeLongTasks`. It only works because `classifyEvents`
-isn't called until `analyze()` runs post-module-evaluation — a temporal-dead-zone trap for anyone
-who refactors module-load-time calls in, and a navigation cost for anyone reading `classifyEvents`
-top-down (the natural reading order suggests the constant doesn't exist). Every other event-name set
-(`SCRIPTING`, `RENDERING`, `PAINTING`, `HARNESS_SYMBOLS`) lives at the top of the file, lines 24–80.
-
-#### Proposed solution
-
-Move `CONTAINER_EVENTS` (with its attribution comment) up beside the other event-name sets, around
-line 58. Pure move, no behavior change.
-
----
-
 ### [Maintainability] `LONG_FRAME_MS` lives in `capture.mjs` while `analyze.mjs` hardcodes ">32 ms" in the report label
 
 **File(s):** `scripts/perf/capture.mjs` (line 19); `scripts/perf/analyze.mjs` (line 393);
@@ -13079,30 +12191,6 @@ const stop = () => {
 Tradeoff: with multiple servers, each still installs its own SIGINT handler — that's fine once they
 deregister on stop; the last one standing performs the exit.
 
-### [Correctness] redteam-report interpolates `base` into HTML unescaped
-
-**File(s):** `scripts/lib/redteam-report.mjs` (`buildReport`, line 144) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Line 144:
-
-```js
-<p class='sub'>${results.length} cases · ${base} · the suite does not pass/fail …</p>;
-```
-
-Every other dynamic value in this file goes through `esc()` (`runId` line 143, ids, details,
-labels), but `base` — the target URL, which arrives from CLI/env in `redteam-run.mjs` — is
-interpolated raw. A base containing `&` (query string) renders invalid HTML; one containing `<`
-breaks the header markup. It's an internal report, so this is a consistency/robustness issue rather
-than a security one, but it's a one-word fix and the file's own convention.
-
-#### Proposed solution
-
-`${esc(base)}`.
-
 ### [Maintainability] `argFlag` is a hand-rolled flag parser competing with the repo's parseArgs convention
 
 **File(s):** `scripts/lib/proc.mjs` (`argFlag`, lines 35–38) @ 9ae62ff1
@@ -13186,29 +12274,6 @@ Drop the enumerations and describe the *kind* of consumer: "Shared pass/fail rep
 scripts" / "Playwright helpers for scripts that drive the live Splotch app in a browser (the gen:*
 generators, driver smoke, perf sessions)". Grep, not the header, is the source of truth for the
 actual list.
-
-### [Performance] `statsFor` aggregates are computed twice per report build
-
-**File(s):** `scripts/lib/model-eval-report.mjs` (`renderReportHtml` line 167; `buildReport`
-line 351) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`renderReportHtml` computes
-`const agg = Object.fromEntries(modelIds.map((m) => [m, statsFor(results, m)]))` (line 167), and
-`buildReport` then recomputes the identical structure at line 351 for `summary.json`. Each
-`statsFor` call itself makes five-plus filter passes over `results` (lines 66–83). The corpus is
-small so the cost is negligible; the real issue is duplication — the two aggregates can drift if one
-call site changes (e.g. someone adds a filter to one), and the double computation obscures that
-report HTML and summary.json are meant to describe the same numbers.
-
-#### Proposed solution
-
-Compute `agg` once in `buildReport`, pass it into `renderReportHtml({ …, agg })`, and reuse it for
-`summary.json`. Alternatively have `renderReportHtml` return `{ html, agg }`. Either way there is
-exactly one aggregation.
 
 ### [Readability] Zip structural sizes/offsets in artifact-version are unnamed magic numbers
 
@@ -13782,31 +12847,6 @@ existing `ruleToRegex` so the glob semantics stay in one place.
 
 ---
 
-### [Readability] Dead `export` on `countPaletteHexes` inside a test file
-
-**File(s):** `scripts/tests/palette-source.test.mjs` (`countPaletteHexes`, line 62) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```js
-export function countPaletteHexes(text) {
-```
-
-Nothing in the repo imports it — its only callers are within this same file (lines 73–85). An
-`export` on a test-file function advertises a reuse surface that doesn't exist and invites another
-test file to couple to this one; the repo's no-speculative-surface convention applies. (Vitest's
-include is `tests/**/*.test.mjs`, so nothing can legitimately import from a `.test.mjs` without
-creating a cross-test dependency.)
-
-#### Proposed solution
-
-Drop the `export` keyword. If cross-file reuse ever becomes real, the function belongs in a
-`scripts/tests/helpers/` module, not exported from a test.
-
----
-
 ### [Readability] `renderReport(summary)` recomputed for every substring assertion
 
 **File(s):** `scripts/tests/perf-analyze.test.mjs` (lines 122–125 and 138–140) @ 9ae62ff1
@@ -13882,28 +12922,6 @@ hand-YAML tests accumulate, the shared line-oriented helpers could later move to
 `scripts/tests/helpers/`, carrying the comment once.
 
 ---
-
-### [Testing] `parseFrontmatter`'s CRLF handling is implemented but never tested
-
-**File(s):** `scripts/tests/frontmatter.test.mjs` (whole file, lines 1–24) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`parseFrontmatter` (`scripts/lib/frontmatter.mjs:8–11`) spends four `\r?\n` alternations tolerating
-CRLF fences and line splits — deliberate robustness for release files authored elsewhere — but all
-three tests feed pure-`\n` input. If a refactor dropped the `\r?` (plausible now that Windows dev
-support is gone, per ADR-0062, even though *data files* can still arrive with CRLF), no test would
-notice, and the failure mode is `parseFrontmatter` returning `null` → `parseRelease` failing the
-whole release run.
-
-#### Proposed solution
-
-One additional case: `parseFrontmatter('---\r\nversion: 1.3.1\r\n---\r\nNotes')` asserting
-`meta.version === '1.3.1'` and the body. Alternatively, if CRLF tolerance is judged obsolete, remove
-the `\r?`s from the source instead — either way the current silent mismatch between implementation
-and coverage ends.
 
 ## Source: Code audit — scripts/audit-burndown — audit burndown tooling
 
@@ -14537,28 +13555,6 @@ duration math becomes plain `Date` subtraction. Gotcha: a format change orphans 
 *existing* run.logs mid-campaign; land it between runs, or accept both formats in the helper for one
 transition.
 
-### [Maintainability] status.mjs re-implements lib.mjs's entry-heading detection for AUDIT-DEFERRED headings
-
-**File(s):** `scripts/audit-burndown/status.mjs` (line 21), `lib.mjs` (`isEntryStart`, line 356) @
-9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-lib.mjs owns the finding-heading grammar — `const isEntryStart = (line) => /^### \[/.test(line);`
-(line 356, module-private) — with a comment block explaining the format's source of truth
-(`.claude/audit-conventions.md`). status.mjs pastes the same regex inline to count deferred
-findings: `.filter((l) => /^### \[/.test(l))` (line 21), then strips the prefix again at line 114
-(`l.replace(/^### /, '')`), which also duplicates the title-from-heading strip in burndown.mjs line
-535 and lib.mjs line 418. If the heading grammar ever changes (it has one owner and three shadow
-copies), status silently reports zero deferred.
-
-#### Proposed solution
-
-Export `isEntryStart` (and a small `entryTitle(line)` for the `replace(/^### /, '')` triplet) from
-lib.mjs and import in status.mjs/burndown.mjs. Zero behavior change; one grammar owner.
-
 ### [Testing] `runAgentStep` — the retry/cap/session-minting core — has no test despite carrying injected seams for one
 
 **File(s):** `scripts/audit-burndown/agent-runner.mjs` (`runAgentStep`, lines 216–323) @ 9ae62ff1;
@@ -14670,28 +13666,6 @@ on every fix round" is describing exactly this hazard.
 Make the data flow explicit:
 `const captureSummary = (step) => { const text = (step.structured.summary ?? '').trim(); if (text) fixSummaries.push(text); };`
 called as `captureSummary(impl)`. One-line change; the hazard and half the comment disappear.
-
-### [Readability] `RETRIES` is actually the total attempt count, not the retry count
-
-**File(s):** `scripts/audit-burndown/burndown.mjs` (line 111), `agent-runner.mjs` (line 246) @
-9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`const RETRIES = Number(process.env.RETRIES ?? 3); // retries for transient agent failures`
-(burndown line 111) feeds `for (let attempt = 1; attempt <= retries; attempt += 1)` (agent-runner
-line 246) — so `RETRIES=3` yields three *attempts*, i.e. two retries; `RETRIES=1` yields **zero**
-retries. An operator tuning the knob by its name will consistently get one less recovery than
-expected. The env-var name is a published knob (it's in `LAUNCH_KNOBS`, lib.mjs line 151), so
-renaming has compat cost; the comment and the parameter name are free to fix.
-
-#### Proposed solution
-
-Minimally, correct the docs: `// total attempts per agent step (N-1 retries)` at line 111 and rename
-the `retries` parameter/loop reading in `runAgentStep` to `maxAttempts`. If a breaking rename is
-ever palatable, `MAX_ATTEMPTS` in `LAUNCH_KNOBS` with `RETRIES` accepted as a deprecated alias.
 
 ### [Maintainability] preflight re-implements `shellOk` inline and hand-rolls its check-reporting instead of naming the pattern
 
@@ -15322,52 +14296,6 @@ open-at-size, and the ladder test's stated subject is the offset restatement in 
 resize exercises identically. Verify with `--repeat-each=10` that resize-with-open-dialog is stable
 before committing (the fly-in has finished by then, so it should be).
 
-### [Maintainability] `admin.spec.ts` route mock hard-codes the Playwright preview origin
-
-**File(s):** `web/tests/admin.spec.ts` (line 83) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-invites: … [{ token, url: `http://localhost:4173/?ai_access_token=${token}` }],
-```
-
-The port is owned by `web/playwright.shared.ts:3-4` (`playwrightPort = 4173`, `playwrightBaseURL`).
-If the port ever changes, this mock silently serves an invite URL for the wrong origin — harmless
-today (the UI only displays/copies it) but a copied-URL assertion added later would chase a phantom
-mismatch.
-
-#### Proposed solution
-
-`import { playwrightBaseURL } from '../playwright.shared';` and interpolate it — or build the URL
-from the test's `baseURL` fixture. One-line change.
-
-### [Readability] `a11y.spec.ts` inlines the `gotoApp` hydration wait
-
-**File(s):** `web/tests/a11y.spec.ts` (lines 66–67) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-await page.goto('/');
-await expect(page.locator('#drawingCanvas')).toBeVisible();
-```
-
-is `gotoApp(page)` (`helpers.ts:66-69`) written out longhand, in a file that already imports from
-`./helpers` (line 4). Trivial, but the helper exists precisely so the "canvas visible ⇒ hydrated"
-reasoning lives in one commented place; inline copies erode that. (`settings-zoom.spec.ts` similarly
-uses bare `page.goto('/')` eight times — acceptable there since `openSettingsModal` immediately
-retries, but worth normalizing if touched.)
-
-#### Proposed solution
-
-Replace with `await gotoApp(page);` in `a11y.spec.ts`; optionally sweep `settings-zoom.spec.ts` in
-the same commit.
-
 ### [Readability] `flows-palette-brush.spec.ts` duplicates the crayon/pen comparison scene inline in both tests
 
 **File(s):** `web/tests/flows-palette-brush.spec.ts` (lines 88–89 and 114–115) @ 9ae62ff1
@@ -15835,27 +14763,6 @@ Gotcha: changing to `=== 'true'` requires confirming what CI's e2e step actually
 (`.github/workflows` sets `REQUIRE_WEBKIT` — align the workflow value in the same change so the gate
 never silently loosens).
 
-### [Maintainability] Timeout constant lacks the unit suffix the conventions require
-
-**File(s):** `web/playwright.shared.ts` (line 14) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET = 180_000;
-```
-
-CLAUDE.md: "Tuning literals get names … with the unit in the name (`_MS`, `_PX` …)". This is
-precisely such a tuning literal (it feeds Playwright's `webServer.timeout`, which is milliseconds),
-but the name omits the unit — a reader can plausibly misread 180_000 as 180 seconds only after
-checking Playwright's docs.
-
-#### Proposed solution
-
-Rename to `PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET_MS` (one definition, one use at line 18).
-
 ### [Maintainability] vitest include/exclude globs contradict the repo's TS-only and test-naming conventions
 
 **File(s):** `web/vitest.config.ts` (lines 31–33) @ 9ae62ff1
@@ -15921,29 +14828,6 @@ manifest `name` equals the `<title>` text, manifest `description` equals the met
 manifest `theme_color` equals the theme-color meta content. ~15 lines, same shape as
 `browserFloor.test.ts`.
 
-### [Docs] ICONS-README.md is a stale AI-session artifact published at splotch.art/ICONS-README.md
-
-**File(s):** `web/static/ICONS-README.md` (26 lines) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The file is celebratory session prose, not documentation — "All required icons have been
-successfully implemented!" (line 3), a ✅-emoji checklist of files that exist two directories away,
-and generic PWA marketing copy (lines 18–26). Because it sits in `static/`, it is served publicly on
-the production domain and copied into both native binaries. As documentation it is already drifting:
-it describes only the favicon/manifest set and knows nothing of `icons/`, `styles/`, `sounds/`, or
-the coloring set that now dominate `static/`. Icon provenance documentation is separately tracked as
-issue \#234 ("Document icon source + move toward hand-drawn icons") — this file isn't that; it's
-clutter that will mislead whoever picks that issue up.
-
-#### Proposed solution
-
-Delete it. If any fact in it is worth keeping (the icon-design description, lines 12–16), fold that
-sentence into the artifact produced for issue \#234 (a `docs/` page, not a `static/` file). Zero
-code references exist — only the regenerated `.svelte-kit` asset union.
-
 ### [Maintainability] `CAPACITOR === 'true'` is parsed independently in both build configs
 
 **File(s):** `web/svelte.config.js` (line 10), `web/vite.config.ts` (line 10) @ 9ae62ff1
@@ -15974,26 +14858,6 @@ TS loader) exporting `export const isCapacitor = process.env.CAPACITOR === 'true
 both configs. Tradeoff: it's a two-line duplication today, and the fix adds a file — worth it mainly
 because the value gates the repo's most consequential build fork; reasonable to bundle into any
 change that next touches either config rather than as standalone churn.
-
-### [DX] netlify-cli's own dev port (8888) is implicit while dev:kill hardcodes it
-
-**File(s):** `web/netlify.toml` (`[dev]` block, lines 22–27) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The `[dev]` block pins `targetPort = 5173` but leaves netlify-cli's *listening* port to the tool's
-default (8888). Meanwhile root `package.json:16` (`dev:kill": "npx kill-port 5173 8888"`) and its
-scripts-info line 144 both hardcode 8888. If netlify-cli ever changes its default (or a second
-instance bumps to 8889), `dev:kill` silently stops killing the right listener. The agreement exists
-only in contributors' heads.
-
-#### Proposed solution
-
-Add `port = 8888` to the `[dev]` block so the value is declared where it's configured, and include
-8888 in the dev-ports drift test proposed above (assert `netlify.toml` `[dev].port` matches the port
-list in `dev:kill`).
 
 ### [DX] `includeAssets` likely duplicates what `globPatterns` already precaches
 
@@ -16451,70 +15315,6 @@ Add a `describe('Android support floor single source')` block to `android-config
 7.0 / API 24+" phrases in `docs/COMPATIBILITY.md` (and `.ruler/skills/mobile/android.md` if it
 states the floor) match. Use the same allowlist + context-anchored-pattern approach the file already
 established for the emulator level, so historical docs stay exempt.
-
-### [Testing] The user-visible app name agrees across four files with no guard
-
-**File(s):** `capacitor.config.json` (line 3) · `android/app/src/main/res/values/strings.xml`
-(line 3) · `ios/App/App/Info.plist` (lines 9–10) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-"Splotch" as the installed-app display name is declared independently in `capacitor.config.json:3`
-(`"appName"`), `strings.xml:3` (`app_name`), and `Info.plist:9–10` (`CFBundleDisplayName`).
-`scripts/check-native-app-id.mjs` guards exactly this shape of agreement for the app **id** (appId ↔
-gradle ↔ pbxproj ↔ docs) but never checks the app **name**, so a rename would have to find every
-copy by hand — the same failure mode the id checker exists to prevent, one field over.
-
-#### Proposed solution
-
-Extend `check-native-app-id.mjs` (or a sibling check) with an `appName` pass:
-`capacitor.config.json → appName` as the source, matched against `strings.xml`'s `app_name` and
-`Info.plist`'s `CFBundleDisplayName`. The script's existing `checks` table structure takes this with
-two more entries and a second expected value.
-
-### [Readability] Info.plist mixes space and tab indentation
-
-**File(s):** `ios/App/App/Info.plist` (lines 5–6, 9–10) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The file is tab-indented throughout except two hand-edited spots: the `CAPACITOR_DEBUG` key at line
-5 uses four spaces while its value at line 6 uses a tab, and `CFBundleDisplayName`'s value at line
-10 is indented with eight spaces under a tab-indented key at line 9. Harmless to builds, but every
-future diff of these lines shows spurious whitespace churn, and neither Prettier nor dprint owns
-`.plist` files so nothing auto-fixes it.
-
-#### Proposed solution
-
-Normalize the four lines to tabs to match the rest of the file (Xcode's own convention for plists).
-One-line-each mechanical fix.
-
-### [Docs] Photo-library permission copy says "screenshot" for saving the drawing itself
-
-**File(s):** `ios/App/App/Info.plist` (lines 29–30) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```xml
-<key>NSPhotoLibraryAddUsageDescription</key>
-<string>Splotch can save a screenshot of your drawing to your photo library.</string>
-```
-
-The save feature (via `@capacitor-community/media`) writes the drawing's exported image, not a
-screen capture. "Screenshot" is the one word a parent reads in the iOS permission alert, and it
-misdescribes the action — the store listing and changelogs consistently say "save your drawing".
-Permission strings are also reviewed by App Review for accuracy.
-
-#### Proposed solution
-
-Reword to something like "Splotch saves your child's drawing to your photo library." No code change;
-re-ships with the next release.
 
 ### [Maintainability] Pencil-eraser attach silently no-ops if the web view is missing
 
@@ -17074,29 +15874,6 @@ which is exactly the right strength: a visible nudge, not a wall. The cloud scri
 (they *fix* the version; engines only warns), but their comments can then point at the engines field
 as the canonical statement of the requirement.
 
-### [Docs] `knip.json` `$schema` points at the knip v5 schema while knip v6 is installed
-
-**File(s):** `knip.json` (line 2); `package.json` (line 282) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```json
-"$schema": "https://unpkg.com/knip@5/schema.json",
-```
-
-but the installed tool is `knip@6.29.0` (devDependencies line 282; confirmed in `node_modules`).
-Editor validation/completion for this config is checked against a major-old schema — options added
-or changed in v6 will be flagged as unknown (or missing options not flagged), which is quietly
-misleading in the one file whose purpose is tooling precision.
-
-#### Proposed solution
-
-Point at the installed major: `"$schema": "https://unpkg.com/knip@6/schema.json"`. Worth a one-line
-check in the next dependency-update pass so the schema ref rides along with future knip majors
-(Dependabot bumps the package but not this string).
-
 ### [Readability] `package.json` script blocks interleave: `perf:*` splits the `test` tier list, and `scripts-info` ordering has drifted
 
 **File(s):** `package.json` (lines 40–65; scripts-info lines 168–199) @ 9ae62ff1
@@ -17145,30 +15922,6 @@ Collapse to one wrapped statement, e.g.:
 # by accident; runs still apply creates/updates (dry-run: false). Set
 # skip-delete to false for a full reconciliation.
 ```
-
-### [DX] `.claude/cloud/setup.sh` never `cd`s to the project dir, unlike its Codex siblings
-
-**File(s):** `.claude/cloud/setup.sh` (lines 12, 42); `.codex/cloud/setup.sh` (line 12) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-Both Codex cloud scripts open with `cd "${CODEX_PROJECT_DIR:-$PWD}"`, but the Claude setup script
-assumes it is already at the repo root: line 42 reads `./package.json` relative to whatever cwd the
-environment dialog invoked it from. If the dialog's one-liner (`bash .claude/cloud/setup.sh`) ever
-runs from elsewhere — or the invocation convention changes — the Playwright version derivation fails
-and the browser install is skipped with only a warning banner, the exact "#1 cloud-session E2E
-failure" the derivation comment (lines 36–41) exists to prevent. The failure is graceful but
-avoidable.
-
-#### Proposed solution
-
-Mirror the sibling scripts' first line, using whichever project-dir variable Claude's environment
-provides (`cd "${CLAUDE_PROJECT_DIR:-$PWD}"` degrades to today's behavior when unset). One line, and
-the three cloud scripts then share the same defensive shape —
-`scripts/tests/claude-cloud-setup.test.mjs` already exercises this script and can pin the
-cwd-independence with a fixture run from a temp dir.
 
 ### [Maintainability] Personal device serial and simulator UDIDs are hardcoded into shared npm scripts
 
@@ -17456,60 +16209,6 @@ the file's own convention ("it's okay to drain the audit finding, but do so with
 and delete the associated `.patch` file. Fold the outstanding DEPENDENCIES.md update into the
 DEPENDENCIES refresh finding rather than keeping this entry open for it.
 
-### [Docs] Stale "not yet validated on a real Netlify build" caveats — the root staging deploy has been production for weeks
-
-**File(s):** `docs/adrs/0024-web-app-subdirectory-for-netlify-watcher.md` (lines 59–61),
-`docs/CONTRIBUTING.md` (lines 103–104) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-Both docs carry the same warning about the `stage-netlify.mjs` production deploy path:
-
-* ADR-0024:59–61: "**This must still be confirmed green on a Netlify deploy preview before merging**
-  — it is implemented but not yet validated against a real Netlify build."
-* CONTRIBUTING.md:103–104: "This is implemented but **must be confirmed green on a Netlify deploy
-  preview before merging to `main`** — don't assume the live `splotch.art` deploy works until that
-  preview passes."
-
-The layout has been the live production path since June 2026 and has been validated many times over:
-ADR-0025 records an end-to-end deploy-preview verification of the SSR function ("verified end-to-end
-on a deploy preview"), ADR-0063 measured the *deployed* function's 26 s ceiling on a branch preview,
-ADR-0030 documents fixing the tag fetch in the root `netlify.toml` build after observing real
-deploys, and releases 1.0.0–1.4.0 all shipped through it. A reader today is told to distrust
-infrastructure that has been production-proven for six-plus weeks — the exact "temporal phrasing /
-mutable facts" smell the repo's comment convention bans in code.
-
-#### Proposed solution
-
-In CONTRIBUTING.md, delete the caveat sentence. In ADR-0024, replace the bolded warning with a short
-validation note ("Validated in production since 2026-06; see ADR-0025's deploy-preview verification
-and ADR-0030's tag-fetch fix for the deploy-time wrinkles found since"), keeping the record's
-history intact.
-
-### [Docs] CONTRIBUTING.md dev-routes table omits `/dev/design` (and the `/dev` index)
-
-**File(s):** `docs/CONTRIBUTING.md` (lines 129–137) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The "Dev routes" table lists only `/dev/engine` and `/dev/ai-timer`. The gated dev surface actually
-has four routes: `web/src/routes/dev/` contains `+page.svelte` (a landing index, gated by
-`requireDevHarness()` in `dev/+page.ts`), `ai-timer/`, `design/`, and `engine/`. `/dev/design` is
-the design-system styleguide that the `design` skill and root CLAUDE.md treat as a first-class
-surface ("the token vocabulary, primitives, and `/dev/design`"), so its absence from the contributor
-doc's supposedly-complete table is a discoverability gap — a human contributor reading only
-CONTRIBUTING.md wouldn't learn the styleguide exists or that `/dev` itself lists the harnesses.
-
-#### Proposed solution
-
-Add two rows — `/dev` ("index of the dev harnesses") and `/dev/design` ("design-token styleguide —
-every token, primitive, and component state; see the `design` skill") — and consider a trailing
-sentence noting the list's source of truth is `web/src/routes/dev/`.
-
 ### [Docs] ISSUE-WORKFLOW.md's "full label glossary" is missing the `user-report` meta label
 
 **File(s):** `docs/ISSUE-WORKFLOW.md` (lines 70–78, meta table) @ 9ae62ff1
@@ -17593,76 +16292,6 @@ encoded in `docs/audit-deferred/decisions/README.md`'s verdict scheme and templa
 Heal": if the retro pattern is genuinely reusable, it belongs in the skill machinery (a note in the
 relevant skill or skill-notes), not here; otherwise delete it too. If any workflow prompt is kept,
 at minimum retitle the doc's purpose line in CLAUDE.md — but trimming the file is the better fix.
-
-### [Docs] releases/README.md cites pre-ADR-0024 paths and the wrong iOS version artifact
-
-**File(s):** `releases/README.md` (lines 9, 13) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The generated-artifacts table has two loose facts:
-
-* Line 9: "In-app About tab → `src/lib/releases.json`" — the generator writes
-  `web/src/lib/releases.json` (`scripts/generate-releases.mjs:73`:
-  `write(join(ROOT, 'web', 'src', 'lib', 'releases.json'), …)`). `src/lib/…` was the pre-ADR-0024
-  layout; every path in a root-level doc should be repo-root-relative.
-* Line 13: "App version → `package.json`, Android `build.gradle`, iOS `Info.plist`" — the iOS value
-  `release.mjs` writes is `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` in
-  `ios/App/App.xcodeproj/project.pbxproj`; `Info.plist` merely contains the `$(MARKETING_VERSION)`
-  build-setting passthrough (verified at `ios/App/App/Info.plist:21–24`). Someone auditing "did the
-  version bump land" would open the wrong file and find no literal version in it.
-
-#### Proposed solution
-
-Change line 9 to `web/src/lib/releases.json` and line 13's iOS cell to "iOS `project.pbxproj`
-(`MARKETING_VERSION`/`CURRENT_PROJECT_VERSION`)".
-
-### [Docs] ADR-0018's invariant list still names the deleted `docs/BACKLOG.md` as a current docs/ resident
-
-**File(s):** `docs/adrs/0018-claude-native-knowledge-tiers.md` (line 55) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The Decision's invariant reads: "`docs/` retains only human-process artifacts: `adrs/`,
-`CONTRIBUTING.md`, `BACKLOG.md`, `PROMPTS.md`, and the generated `AUDIT.md` / `AUDIT-LOG.md`."
-`docs/BACKLOG.md` no longer exists — `docs/ISSUE-WORKFLOW.md:4–5` records that it (and `IDEAS.md`)
-were migrated into GitHub Issues in 2026-07, and the root CLAUDE.md now says "don't look for a
-backlog file." The ADR already carries an ADR-0058 amendment blockquote at the top, so the record is
-maintained — this one enumerated invariant just wasn't touched when the backlog moved. Low stakes
-(ADR-0031's BACKLOG mentions are Context-narrative and fine), but this line is phrased as a
-prescriptive invariant about the present.
-
-#### Proposed solution
-
-Extend the existing amendment blockquote with one clause: "…and `docs/BACKLOG.md` was retired in
-2026-07 in favor of GitHub Issues (see `docs/ISSUE-WORKFLOW.md`); `docs/` has since grown other
-human-process docs (COMPATIBILITY, ISSUE-WORKFLOW, DEPENDABOT, CLOUD/)." No body rewrite needed.
-
-### [Docs] CONTRIBUTING.md's `npm test` description omits the repo-script test tier
-
-**File(s):** `docs/CONTRIBUTING.md` (line 120) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-Line 120: `npm test  # unit + asset-pipeline + E2E (what CI runs on every push)`. The script is four
-tiers: `package.json:40` —
-`"test": "npm run test:unit && npm run test:asset-gen && npm run test:scripts && npm run test:e2e"`.
-Both root CLAUDE.md ("Unit (Vitest) + asset-pipeline + repo-script + E2E") and the `scripts-info`
-entry (`package.json:168`) name all four; ADR-0019 explicitly requires "Description wording matches
-the prose docs … so the catalog and the guides never disagree about what a script is for." A
-contributor whose change breaks `scripts/tests/` would be surprised that `npm test` (and CI) catches
-it, since the doc they read said it doesn't run.
-
-#### Proposed solution
-
-Change the comment to `# unit + asset-pipeline + repo-script + E2E (what CI runs on every push)` —
-one word, restoring the ADR-0019 wording agreement.
 
 ## Source: Code audit — .ruler — agent-instruction & skill sources
 
@@ -18073,56 +16702,6 @@ Delete the sentence. If a stand-in is wanted, the modern equivalent is the `over
 `sharp` entanglement already documented in dependency-health-audit Phase 1 — but a pointer there is
 optional; the landmine list in Phase 1 (lines 41–48) already covers coordinated families.
 
-### [Docs] Machine-specific absolute paths baked into shared skills (`/Users/kylemit/…`)
-
-**File(s):** `.ruler/skills/run-splotch/SKILL.md` (line 13), `.ruler/skills/workflow-audit/SKILL.md`
-(lines 24–25) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-* `run-splotch/SKILL.md:13`: "**All paths below are relative to the repo root**
-  (`/Users/kylemit/Code/Splotch`)." The parenthetical is one contributor's macOS checkout; in a
-  cloud session the root is `/home/user/Splotch`, and for any other machine it's something else. The
-  clause before the parenthesis is complete on its own.
-* `workflow-audit/SKILL.md:24–25`: "the JSONL transcripts under
-  `~/.claude/projects/-Users-kylemit-Code-Splotch/`". The directory name is derived from the
-  absolute repo path, so this is wrong on every machine but one — an agent on another checkout greps
-  an empty/nonexistent dir and concludes there's no session history.
-
-Skills are shared cross-runner, cross-machine artifacts (ADR-0058); per-machine facts belong in
-untracked local config, the same principle that keeps `DEVELOPMENT_TEAM` out of the pbxproj (ios.md
-§4).
-
-#### Proposed solution
-
-run-splotch: drop the parenthetical. workflow-audit: describe the derivation instead — "under
-`~/.claude/projects/<slug>/`, where `<slug>` is the absolute repo path with `/` replaced by `-`
-(list `~/.claude/projects/` and match the current checkout)".
-
-### [Docs] knowledge-map's ADR-0059 link breaks in the generated root CLAUDE.md/AGENTS.md
-
-**File(s):** `.ruler/knowledge-map.md` (line 79) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Line 79 links `[ADR-0059](../docs/adrs/0059-committed-run-artifacts-github-pages.md)`. The path is
-correct relative to the *source* location (`.ruler/`), but the root `.ruler/*.md` files are
-concatenated into `CLAUDE.md` and `AGENTS.md` at the **repo root** (agent-files.md lines 7–9), where
-`../docs/…` points outside the repository — the generated `CLAUDE.md:260` and `AGENTS.md:262` carry
-the broken link today. It's the only relative markdown link in the root sources (every other
-cross-reference uses plain backticked paths), so it's also a one-off style break.
-
-#### Proposed solution
-
-Write it for the generated location —
-`[ADR-0059](docs/adrs/0059-committed-run-artifacts-github-pages.md)` — or match the file's own
-convention and use a backticked plain path with no hyperlink. (Root sources should generally use
-root-relative link targets since the concatenation destination is fixed at the root.)
-
 ### [Readability] dprint-mangled bullet corrupts a sentence in burn-down-backlog's review step
 
 **File(s):** `.ruler/skills/burn-down-backlog/SKILL.md` (lines 104–108) @ 9ae62ff1
@@ -18213,24 +16792,6 @@ filter `-prime` from the glob. Keeping the "read whatever's there" behavior behi
 `--summarize-existing` flag would preserve the re-summarize use case without contaminating fresh
 runs.
 
-### [Docs] build skill says the reveal command opens "Explorer" — Windows was dropped (ADR-0062)
-
-**File(s):** `.ruler/skills/build/SKILL.md` (line 60) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Step 6 of the Android flow: "that `npm run android:open` will reveal the file in Explorer." Explorer
-is the Windows file manager; Windows dev support was dropped in ADR-0062 and conventions.md ships
-the cross-platform phrasing already — `scripts-info` for `ios:open` says "Reveal … in the OS file
-manager" and the opener is the platform-neutral `scripts/open-path.mjs`. On the supported platforms
-(macOS/Linux) the sentence names a program that doesn't exist there.
-
-#### Proposed solution
-
-"…will reveal the file in the OS file manager" (matching the scripts-info wording).
-
 ### [Docs] skill-forks and per-skill notes are documented as populated trees, but zero instances exist
 
 **File(s):** `.ruler/agent-files.md` (lines 12–19, 24–28), `.ruler/knowledge-map.md` (lines 5–6),
@@ -18256,22 +16817,3 @@ One clause in each spot: e.g. agent-files.md — "…live in
 `scripts/tests/`)"; skill-notes README — "one file per skill, named after it (absent until a skill
 accrues design history — currently only the direct `burn-down-audits` notes exist, in the provider
 trees)". Cheap, and it converts a dead-end search into a one-line read.
-
-### [Readability] Stray apostrophe garbles the address-pr-review handoff sentence in leave-pr-review
-
-**File(s):** `.ruler/skills/leave-pr-review/SKILL.md` (lines 105–107) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The closing paragraph reads: "…and know that working through those comments is `address-pr-review`'
-job on the other side." — a code span followed by a bare apostrophe
-(`` `address-pr-review`' job ``), which renders as a dangling quote rather than a possessive.
-Trivial, but it sits in the sentence that wires the two PR skills together, and the sister skill's
-mirror sentence (address-pr-review line 13) is clean.
-
-#### Proposed solution
-
-Reword to avoid possessive-on-code-span: "…working through those comments is the job of
-`address-pr-review` on the other side."

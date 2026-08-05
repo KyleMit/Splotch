@@ -19,7 +19,6 @@
   // sticks on '/admin', whose full-navigation white-screens in the WebView.
   const ADMIN_UNLOCK_TAPS = 5;
   let versionClicks = $state(0);
-  let showAdminLink = $derived(settings.adminLinkVisible);
   const adminHref =
     typeof __IS_CAPACITOR__ !== 'undefined' && __IS_CAPACITOR__ ? '/admin/native' : '/admin';
   function handleVersionClick() {
@@ -53,7 +52,7 @@
     <button type="button" class="version-text" onclick={handleVersionClick}
       >Version {APP_VERSION}</button
     >
-    {#if showAdminLink}
+    {#if settings.adminLinkVisible}
       <p class="admin-link"><a href={adminHref}>Admin</a></p>
     {/if}
     {#if import.meta.env.DEV}
