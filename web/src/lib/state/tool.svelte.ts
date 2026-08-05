@@ -12,11 +12,14 @@ import type { CommonIconName } from '../components/iconTypes';
 // Pen and crayon are the "ink brushes": both lay down the active palette color.
 export type BrushType = 'pen' | 'crayon' | 'magic' | 'eraser';
 
+// Fields are readonly, not just the array slots: BRUSH_TYPES is derived from
+// this list once at module load, so a mutable `brush` would let a consumer
+// reintroduce the very drift deriving it removed.
 export interface BrushOption {
-  brush: BrushType;
-  icon: CommonIconName;
-  label: string;
-  id: string;
+  readonly brush: BrushType;
+  readonly icon: CommonIconName;
+  readonly label: string;
+  readonly id: string;
 }
 
 // The Brush Menu's entries, in presentation order — the icon/label/id metadata
