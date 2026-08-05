@@ -27,39 +27,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — App state (runes)
 
-### [Maintainability] The folder-save support predicate is duplicated and kept in sync by prose
-
-**File(s):** `web/src/lib/state/saveFolder.svelte.ts` (`hydrateSaveFolder`, lines 65–76) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-Line 72 inlines the support check:
-
-```ts
-if (typeof window === 'undefined' || !('showDirectoryPicker' in window)) return;
-```
-
-and the comment above (lines 67–70) says it is "the same predicate as folderSaveSupported" — which
-lives in `web/src/lib/drawing/folderSave.ts:75-76` as
-`return browser && 'showDirectoryPicker' in window;`. CLAUDE.md is explicit that this pattern is a
-defect, not a mitigation: "Cross-file agreement is never maintained by prose. … A 'keep in sync with
-X' comment marks a defect." If the folderSave predicate ever changes (e.g. adds a permissions
-probe), the boot hydration gate silently diverges. The duplication exists for a good reason —
-importing `folderSave.ts` here would defeat the lazy-chunk optimization (issue #461) — but the fix
-doesn't require importing the chunk.
-
-#### Proposed solution
-
-Extract the predicate to a tiny dependency-light module, e.g.
-`web/src/lib/drawing/folderSaveSupport.ts` exporting `folderSaveSupported(): boolean`, imported
-statically by both `folderSave.ts` and `saveFolder.svelte.ts`. A one-function module adds nothing
-measurable to the startup bundle, keeps the folderSave chunk lazy, and deletes the prose contract.
-Alternative (weaker): a drift-guard test that greps both sites, per the `app.html.test.ts` pattern —
-but the shared module is simpler here since both sides are importable TS. `folderSave.ts` is owned
-by the drawing section; coordinate.
-
 ### [Maintainability] Sound-volume bounds 0/100 are duplicated between `clampVolume` and the slider markup
 
 **File(s):** `web/src/lib/state/settings.svelte.ts` (`clampVolume`, lines 78–81) @ 9ae62ff1
