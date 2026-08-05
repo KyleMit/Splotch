@@ -16923,28 +16923,6 @@ Heal": if the retro pattern is genuinely reusable, it belongs in the skill machi
 relevant skill or skill-notes), not here; otherwise delete it too. If any workflow prompt is kept,
 at minimum retitle the doc's purpose line in CLAUDE.md — but trimming the file is the better fix.
 
-### [Docs] CONTRIBUTING.md's `npm test` description omits the repo-script test tier
-
-**File(s):** `docs/CONTRIBUTING.md` (line 120) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-Line 120: `npm test  # unit + asset-pipeline + E2E (what CI runs on every push)`. The script is four
-tiers: `package.json:40` —
-`"test": "npm run test:unit && npm run test:asset-gen && npm run test:scripts && npm run test:e2e"`.
-Both root CLAUDE.md ("Unit (Vitest) + asset-pipeline + repo-script + E2E") and the `scripts-info`
-entry (`package.json:168`) name all four; ADR-0019 explicitly requires "Description wording matches
-the prose docs … so the catalog and the guides never disagree about what a script is for." A
-contributor whose change breaks `scripts/tests/` would be surprised that `npm test` (and CI) catches
-it, since the doc they read said it doesn't run.
-
-#### Proposed solution
-
-Change the comment to `# unit + asset-pipeline + repo-script + E2E (what CI runs on every push)` —
-one word, restoring the ADR-0019 wording agreement.
-
 ## Source: Code audit — .ruler — agent-instruction & skill sources
 
 ### [Correctness] run-splotch driver.mjs commits the exact orphaned-vite anti-pattern its own SKILL.md forbids
