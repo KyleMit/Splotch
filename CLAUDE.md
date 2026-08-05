@@ -123,7 +123,14 @@ one-line entry in the `scripts-info` block of `package.json`.
   `scripts/tests/android-config.test.mjs`, and `web/src/browserFloor.test.ts`. A "keep in sync with
   X" comment marks a defect, not a mitigation. Same rule for boundary strings (storage keys, query
   params, event names, special-case ids): declared once, imported everywhere (tests deliberately
-  excepted).
+  excepted). A **bundle boundary** is one of the places that can't share code: a static import into
+  a startup-path module hands Rollup an edge that re-partitions chunks no matter how small the
+  imported module, so there the duplication is deliberate and the sharing itself is the defect
+  (`web/src/lib/state/saveFolder.svelte.ts` vs `folderSave.ts`, drift-guarded by
+  `saveFolder.svelte.test.ts` and pinned by `web/tests/startup-bundle.spec.ts`). Such a site keeps
+  its inline copy, adds the drift-guard test, and carries a comment stating the constraint and
+  naming the enforcing spec — that comment is load-bearing evidence of intent, not the "keep in
+  sync" defect above, and refactoring the duplication away past it breaks the boundary it protects.
 * **TypeScript everywhere.** No plain `.js` source files in `src/`.
 * **Close finite value sets in the type.** A value drawn from a fixed vocabulary (style names,
   platforms, sizes, themes) is a literal union or `keyof typeof`, threaded end to end — never bare

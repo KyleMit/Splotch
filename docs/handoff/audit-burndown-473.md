@@ -122,14 +122,14 @@ Deliberately **excluded**, each for a reason:
 * **Deferral causes were all distinct** (budget cap, review rejection, verifier turn cap, verifier
   wrote no brief). No mechanism recurred, so none met the bar for a mid-run intervention.
 
-### Known driver rough edge — `verifier gave no usable brief`
+### Driver rough edges — fixed since the wrap-up
 
-One finding deferred after the verifier returned a perfectly good `verdict: VALID` with
-`reason: completed` and no error, but never wrote the brief file it named in `brief_path`. The
-driver correctly refused to proceed on the *previous* finding's stale brief. This looks **retryable
-rather than deferrable** — the verifier call succeeded and simply skipped a side effect, which is
-the "check the observable side effect, not just the envelope" pattern the runbook already applies to
-`resolveImplSha`. Worth a driver fix if it recurs.
+The `verifier gave no usable brief` deferral (VALID verdict, brief never written) is no longer
+deferred on first occurrence: the driver now retries the verify step once in a fresh session before
+deferring. The same follow-up pass raised the `BUDGET_IMPL` default to `7.00` (so the override in
+the relaunch command above is now redundant but harmless) and added a bundle-composition gate that
+runs `tests/startup-bundle.spec.ts` whenever a fix adds a static import under `web/src` — the
+regression class this run could only catch in CI.
 
 ## Unverified assumptions
 

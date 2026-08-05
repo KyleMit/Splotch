@@ -18,6 +18,18 @@ Your checks, in order:
 4. Would fixing it be a net improvement without substantial tradeoffs? Weigh public API changes,
    behavioural risk, and churn against the benefit.
 
+One finding shape is reliably wrong about its premise: a "duplication kept in sync by prose" whose
+comment is actually documenting a **deliberate boundary**. When the code beside the duplication
+states a constraint — "inlined so this module never pulls X's chunk", a named enforcing spec — the
+comment is the evidence, not the defect. A new static import edge between `web/src` modules can
+re-partition the bundle however dependency-light the imported module is; the edge itself is the
+problem, not the payload (a six-line predicate hoist once pulled the whole save pipeline onto the
+startup critical path and broke `startup-bundle.spec.ts`, from a fix its finding believed respected
+that exact constraint). Judge such a finding INVALID unless the proposed fix demonstrably preserves
+the constraint. The driver independently gates any fix that adds a static import under `web/src` on
+`tests/startup-bundle.spec.ts`, but your verdict is what keeps a doomed finding from burning a full
+implement/review cycle first.
+
 If INVALID because the problem no longer exists at HEAD, your reason must say which of two things
 happened, not just that it's stale: either the finding was **never accurate** (check it against the
 pinned SHA too — quote what you find there), or it was **valid at the pin and has since been

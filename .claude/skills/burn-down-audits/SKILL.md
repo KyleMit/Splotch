@@ -125,6 +125,7 @@ BRANCH=audit/burndown
 CHECK_CMD='npm run check'      # per-finding type-check gate
 TEST_CMD='npm run test:unit'   # per-finding fast-test gate (see the layered gate below)
 E2E_CMD='npm run test:e2e -- --retries=1'  # per-finding targeted E2E (retry past flakes), UI findings only
+BUNDLE_SPEC='tests/startup-bundle.spec.ts' # joins the E2E gate when a fix adds a static import under web/src; '' disables
 LINT_CMD='npx eslint'          # per-finding lint gate, on the fix's changed files
 PUSH_TEST_CMD=''      # local full-suite gate before a push — OFF; CI on the draft PR is the backstop
 COMMENT_STORE=.audit-work/pending-comments.jsonl   # per-commit comment records awaiting your MCP post
@@ -135,7 +136,7 @@ MODEL_IMPL=claude-opus-5     # pinned id, not the `opus` alias — see below
 MODEL_IMPL_MINOR=sonnet      # impl model for P4/P5 findings only — see Tuning & lessons
 MODEL_REVIEW=claude-opus-5
 BUDGET_VERIFY=3.00    # --max-budget-usd per call; verify is code-read-heavy — see Tuning & lessons
-BUDGET_IMPL=4.00
+BUDGET_IMPL=7.00      # deepest cap: multi-file extraction fix rounds exceed 4.00 finished and green
 BUDGET_REVIEW=3.00
 EFFORT_VERIFY=medium  # --effort per role; the main wall-clock lever — see Tuning & lessons
 EFFORT_IMPL=high
@@ -204,6 +205,17 @@ as possible:
   the fix commit. A finding that edits any `.ruler/` source must run `npm run ruler:apply` itself
   and commit the regenerated output in the same commit — several did, unprompted, but nothing
   enforces it.
+* **Bundle composition gets its own conditional gate, because no other gate can see it.** A fix that
+  adds a static import edge under `web/src` can re-partition Rollup's chunks however small the
+  imported module, and the fallout lands in a chunk the fix never touched — PR 771's one CI
+  regression was a six-line predicate hoist that pulled the save pipeline onto the startup critical
+  path, red only on `startup-bundle.spec.ts` with a failing marker naming a module the commit never
+  edited, attributable only by `git bisect`. The driver now scans the range's diff at each review
+  round and, when it adds a static import / re-export in a client-bundle file (type-only imports,
+  server modules, and tests excluded — `diffAddsClientStaticImport` in `lib.mjs`), appends
+  `BUNDLE_SPEC` (default `tests/startup-bundle.spec.ts`) to that finding's E2E gate. The cost is a
+  production build per import-adding finding, paid via Playwright's web server; set `BUNDLE_SPEC=''`
+  to fall back to CI-only detection if a backlog makes that too slow.
 * **Cross-finding interactions the per-finding specs can't see are CI's job, not the driver's.**
   `PUSH_TEST_CMD` (the local full-suite gate) defaults to empty and does not run. Every finding is
   pushed to the draft PR, and the PR's CI runs the whole suite on that push — in parallel, off the
@@ -805,7 +817,13 @@ Notes from real runs — set these before a large run rather than discovering th
   below ~$2.50 for a big run. `BUDGET_REVIEW` was raised from `2.00` to `3.00` for the same reason:
   a cap mid-verdict costs the *whole finding*, since the fix rolls back unreviewed. A budget knob
   set too tight doesn't save money — it converts finished work into a deferral and pays for it again
-  on the re-run.
+  on the re-run. `BUDGET_IMPL` learned the same lesson on the 2026-08-05 canary: a three-component
+  extraction hit exactly `$4.0036` on its fix round with the work finished and every gate green,
+  while every other role call stayed under `$2` — the default is now `7.00`, sized for the
+  multi-file extraction fix rounds a `/code-audit` tail is full of. The turn caps have the same
+  failure shape as the dollar caps and no knob: both turn-cap deferrals on that run landed on
+  sweeping multi-file findings, so expect the deferral pile to skew toward the widest findings and
+  triage them as budget casualties, not hard problems.
 * **On a Claude subscription the `audit:cost` dollars are notional** — no API bill; the real ceiling
   is your usage window. A big run self-pauses when the window is exhausted (retries fail → deferrals
   → halt) and resumes cleanly on relaunch. Size a run by wall-clock and usage, not the dollar
@@ -937,6 +955,11 @@ Notes from real runs — set these before a large run rather than discovering th
     looked at was rolled back and filed under "failed adversarial review", which is a lie to whoever
     triages `docs/AUDIT-DEFERRED.md` later. It now defers as `reviewer unavailable`, and the log
     reports the real fix-round count instead of a hardcoded "2".
+  * A verifier returned a clean `verdict: VALID` with `reason: completed` — and never wrote the
+    brief file it named. The driver rightly refused to hand the implementer the *previous* finding's
+    brief, but deferring was the wrong response to a successful call that merely skipped a side
+    effect: it is not a judgement about the finding. The driver now re-runs the verify step once
+    (fresh session, `verify-retry` envelope) before deferring `verifier gave no usable brief`.
 
   Two rules fall out. **An optional field in a role schema is a silent work-discard risk** — where
   an observable side effect exists (a commit, a file, a branch), check the side effect, because it
