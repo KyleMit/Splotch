@@ -5859,26 +5859,6 @@ Add a `describe('isDarkInk')` to `colors.svelte.test.ts` mirroring the `isWhite`
 expected value). A small direct `isLightColor` spec in `colorRing.test.ts` (both sides of `0.5`)
 closes the other gap.
 
-### [Readability] palette.ts's ordering/invariant comment is attached to the interface, not the constant it documents
-
-**File(s):** `web/src/lib/palette.ts` (lines 1–10, 17) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The header comment — "Display order, top-to-bottom (landscape) / left-to-right (portrait)… Purple
-must stay at index 0 — it's the default selection" (lines 1–4) — describes `PALETTE_COLORS`, but it
-sits directly above `export interface PaletteColor` (line 5). A reader who jumps to the
-`PALETTE_COLORS` definition (line 17), e.g. via go-to-definition from any of its many import sites,
-lands on an uncommented array and misses both the ordering semantics and the index-0 invariant.
-
-#### Proposed solution
-
-Move the comment block from above the interface to immediately above `export const PALETTE_COLORS`
-(line 17). The interface keeps only interface-relevant prose (the existing `bonus` doc-comment on
-line 8 already covers it).
-
 ### [Maintainability] Picker's dim keyline `#4d4d5b` coincides with the dark-theme `borderWarmStrong` token value with no declared relationship
 
 **File(s):** `web/src/lib/components/ColorPicker.svelte` (`.hexagon.border-dim`, lines 453–455);
