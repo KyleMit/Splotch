@@ -3309,36 +3309,6 @@ the lookup is `undefined` so the inconsistent build screams in dev instead of sh
 Optionally tighten `iconNameFromPath` to return `IconName` at this one boundary rather than
 `string`.
 
-### [Maintainability] Delete the grandfathered orphan icons instead of carving them out of the guard
-
-**File(s):** `web/src/lib/icons/chevron-up.svg` (235 B), `web/src/lib/icons/settings.svg` (948 B),
-`web/src/lib/components/icon-orphans.test.ts` (lines 47–51, 109–114) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-// Pre-existing orphans, grandfathered rather than deleted here — this guard's
-// job is to stop *new* orphans appearing. chevron-up: the drawer's chevron is a
-// single chevron-right rotated with CSS. settings: nothing renders it; the only
-// mentions of the word are prose about the `settings` state module.
-const KNOWN_ORPHANS = ['chevron-up', 'settings'];
-```
-
-The comment explains why the *test* doesn't fail on them, not why the files should exist. They cost
-on every axis the guard was built to protect: both are eagerly bundled into the boot chunk by
-`Icon.svelte`'s glob and shipped to every user, both inflate the generated `IconName` union, and the
-test file carries a second describe block (lines 109–114) whose only job is proving the carve-out is
-still needed. ~1.2 KB of dead asset plus ~15 lines of test machinery to keep dead assets dead.
-
-#### Proposed solution
-
-Delete the two SVGs, run `npm run gen:icons` to shrink the union, empty (or remove) `KNOWN_ORPHANS`
-and its "still an orphan" describe block. If the mascot-era originals are worth keeping for
-reference, `git log` already has them — or promote them to `/scrapbook`, which exists for exactly
-this kind of keeper. Zero behavioral risk: the orphan guard itself proves nothing references them.
-
 ### [Testing] `iconInk`'s "matches the SVGs' baked fill" is prose agreement across ~50 files
 
 **File(s):** `web/src/lib/design/tokens.ts` (lines 193–194, 278), `web/src/lib/icons/*.svg` @
@@ -3403,29 +3373,6 @@ Remove the parameters and let each function close over `PALETTE_COLUMN_GEOMETRY`
 `viewportFraction` as a plain argument or reads the constant). `portraitLadderPx()` etc. shrink to
 one-liners over the module constants. Purely mechanical; the drift-guard test is unaffected since it
 already calls with defaults.
-
-### [Testing] `KNOWN_ORPHANS` entries are neither typed nor checked to exist
-
-**File(s):** `web/src/lib/components/icon-orphans.test.ts` (lines 51, 97–115) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`const KNOWN_ORPHANS = ['chevron-up', 'settings'];` is a bare `string[]`. Two gaps: (1) a typo'd or
-stale entry is invisible — if `chevron-up.svg` were deleted, the first describe block skips it (it
-iterates actual SVGs) and the second block passes vacuously (`isReferenced('chevron-up')` is false
-for a nonexistent icon too), so the dead carve-out lingers forever; (2) the list isn't typed against
-the icon vocabulary (`CommonIconName`), the repo's standard for closed sets. (If the P4 finding to
-delete the orphans lands, this whole list disappears and this finding is moot — it applies only if
-the grandfather list survives.)
-
-#### Proposed solution
-
-Type it `const KNOWN_ORPHANS: CommonIconName[] = [...]` (compile-time typo guard, auto-invalidated
-when `gen:icons` drops a deleted icon from the union) and add one assertion that every entry is a
-key of `svgs`, so a stale entry fails with "no longer exists — remove the carve-out" instead of
-passing silently.
 
 ### [Readability] StatusMessage: off-ramp `10px` padding and hand-rolled class toggles
 
