@@ -64,10 +64,15 @@ export async function forgetSaveFolder() {
 
 // Boot hydration (web/desktop only): read the remembered folder name from the
 // directory handle in IndexedDB into the live store so Settings can
-// show it. No side effects on the save features. The support check is inlined
-// (same predicate as folderSaveSupported) so unsupported platforms — every
-// phone — never fetch the folder-save chunk just to learn there's nothing to
-// hydrate.
+// show it. No side effects on the save features.
+//
+// The support check is inlined rather than imported, and the duplication with
+// folderSaveSupported is deliberate: this module is on the startup path, so any
+// static import reaching into lib/drawing/ gives the bundler an edge from the
+// startup graph into the save pipeline. Hoisting this predicate into a shared
+// module — however small — re-partitions the chunks and merges save-pipeline
+// code into a modulepreloaded chunk, which is what tests/startup-bundle.spec.ts
+// pins against. Keep the predicate inline; the spec is the drift guard.
 export async function hydrateSaveFolder() {
   if (typeof window === 'undefined' || !('showDirectoryPicker' in window)) return;
   const mod = await tryLoadFolderSave();
