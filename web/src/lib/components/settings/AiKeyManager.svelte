@@ -44,6 +44,13 @@
     },
   };
 
+  const KEY_STORAGE_NOTE: Record<Platform, string> = {
+    ios: "Your key is saved in this device's iOS Keychain — encrypted by the system and kept only on this device.",
+    android:
+      "Your key is saved in this device's Android Keystore — encrypted by the system and kept only on this device.",
+    web: 'Your key is encrypted and stored only in this browser on this device.',
+  };
+
   interface Props {
     // `open` flips true when the Settings modal opens; we use it to clear
     // the input and any stale feedback, and to re-read the current platform.
@@ -75,13 +82,7 @@
   }
 
   // How/where the key is stored, in plain language, per platform.
-  let keyStorageNote = $derived(
-    platform === 'ios'
-      ? "Your key is saved in this device's iOS Keychain — encrypted by the system and kept only on this device"
-      : platform === 'android'
-        ? "Your key is saved in this device's Android Keystore — encrypted by the system and kept only on this device."
-        : 'Your key is encrypted and stored only in this browser on this device.'
-  );
+  let keyStorageNote = $derived(KEY_STORAGE_NOTE[platform]);
 
   function resetKeyFeedback() {
     keyStatus = 'idle';

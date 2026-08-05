@@ -25,47 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Readability] `keyStorageNote`'s nested ternary should be a `Record<Platform, string>` per the closed-union convention
-
-**File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (lines 48–55) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-let keyStorageNote = $derived(
-  platform === 'ios'
-    ? "Your key is saved in this device's iOS Keychain — encrypted by the system and kept only on this device"
-    : platform === 'android'
-    ? "Your key is saved in this device's Android Keystore — encrypted by the system and kept only on this device."
-    : 'Your key is encrypted and stored only in this browser on this device.',
-);
-```
-
-`Platform` is a closed literal union (`'android' | 'ios' | 'web'`, `platform.ts:69`). CLAUDE.md:
-"constant maps are `Record<UnionType, V>` … not bare string plus a runtime fallback" — and a nested
-ternary over a union is the fallback-shaped version of that. A `Record` also gets exhaustiveness for
-free (adding a platform breaks the build here instead of silently landing in the web copy).
-Incidentally, the iOS string is missing its trailing period while the other two have one — the kind
-of asymmetry a table layout makes visible.
-
-The codebase already does this correctly for the same union:
-`PLATFORM_LABEL: Record<Platform, string>` in `deviceInfo.ts:7`.
-
-#### Proposed solution
-
-```ts
-const KEY_STORAGE_NOTE: Record<Platform, string> = {
-  ios:
-    "Your key is saved in this device's iOS Keychain — encrypted by the system and kept only on this device.",
-  android:
-    "Your key is saved in this device's Android Keystore — encrypted by the system and kept only on this device.",
-  web: 'Your key is encrypted and stored only in this browser on this device.',
-};
-let keyStorageNote = $derived(KEY_STORAGE_NOTE[platform]);
-```
-
 ### [Maintainability] Off-scale hardcoded font sizes where the token scale is the convention
 
 **File(s):** `web/src/lib/components/SettingsModal.svelte` (lines 271 `24px`, 277 `20px`, 441
