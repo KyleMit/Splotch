@@ -25,39 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Maintainability] SettingsButton hardcodes `color: #999` instead of a theme token
-
-**File(s):** `web/src/lib/components/SettingsButton.svelte` (line 28) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```css
-.settings-button {
-  position: fixed;
-  bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
-  right: calc(var(--space-2) + env(safe-area-inset-right));
-  color: #999;
-  z-index: var(--z-corner-button);
-}
-```
-
-Every other declaration in the rule uses tokens; the `color` is a raw hex. `app.css:196–199`
-describes the shared corner-button chrome ("gray icon tint … steps up idle → hover → pressed") that
-this component participates in, and the theme system has muted-gray tokens (`--text-muted`,
-`--icon-muted` — the latter is what the sibling modal-close icon uses at `app.css:181`). A literal
-`#999` is invisible to theme switches: whatever dark-mode treatment the token family gets, this
-button keeps its light-mode gray.
-
-#### Proposed solution
-
-Replace with the token that matches the corner-button family's intent — check with the `design`
-skill whether `.corner-button` chrome expects `currentColor` fed by `--icon-muted` or
-`--text-muted`, and whether `FullscreenToggle.svelte` (the other corner button) has the same
-literal; if it does, fix both and consider moving the color into the shared `.corner-button` rule in
-`app.css` so the family can't diverge.
-
 ### [Maintainability] SoundSection's non-reactive `previewingVolume` latch lacks the required "intentionally untracked" comment
 
 **File(s):** `web/src/lib/components/settings/SoundSection.svelte` (line 15) @ 9ae62ff1

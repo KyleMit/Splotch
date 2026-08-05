@@ -96,8 +96,6 @@ const BASELINE = new Map(
     'lib/components/AiConfetti.svelte': 1,
     // Paper-white backing behind the baked-light style-cover thumbnails.
     'lib/components/AiImagePrompt.svelte': 1,
-    // Constant on-paper ink for the floating "?" button.
-    'lib/components/SettingsButton.svelte': 1,
     // Deliberate console-key chip (dark slab + white glyph in both themes).
     'routes/dev/ai-timer/+page.svelte': 1,
   })
