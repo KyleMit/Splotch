@@ -17379,29 +17379,6 @@ The generated-artifacts table has two loose facts:
 Change line 9 to `web/src/lib/releases.json` and line 13's iOS cell to "iOS `project.pbxproj`
 (`MARKETING_VERSION`/`CURRENT_PROJECT_VERSION`)".
 
-### [Docs] ADR-0018's invariant list still names the deleted `docs/BACKLOG.md` as a current docs/ resident
-
-**File(s):** `docs/adrs/0018-claude-native-knowledge-tiers.md` (line 55) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The Decision's invariant reads: "`docs/` retains only human-process artifacts: `adrs/`,
-`CONTRIBUTING.md`, `BACKLOG.md`, `PROMPTS.md`, and the generated `AUDIT.md` / `AUDIT-LOG.md`."
-`docs/BACKLOG.md` no longer exists — `docs/ISSUE-WORKFLOW.md:4–5` records that it (and `IDEAS.md`)
-were migrated into GitHub Issues in 2026-07, and the root CLAUDE.md now says "don't look for a
-backlog file." The ADR already carries an ADR-0058 amendment blockquote at the top, so the record is
-maintained — this one enumerated invariant just wasn't touched when the backlog moved. Low stakes
-(ADR-0031's BACKLOG mentions are Context-narrative and fine), but this line is phrased as a
-prescriptive invariant about the present.
-
-#### Proposed solution
-
-Extend the existing amendment blockquote with one clause: "…and `docs/BACKLOG.md` was retired in
-2026-07 in favor of GitHub Issues (see `docs/ISSUE-WORKFLOW.md`); `docs/` has since grown other
-human-process docs (COMPATIBILITY, ISSUE-WORKFLOW, DEPENDABOT, CLOUD/)." No body rewrite needed.
-
 ### [Docs] CONTRIBUTING.md's `npm test` description omits the repo-script test tier
 
 **File(s):** `docs/CONTRIBUTING.md` (line 120) @ 9ae62ff1
