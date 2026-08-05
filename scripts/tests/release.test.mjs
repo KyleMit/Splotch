@@ -1,6 +1,37 @@
 import { describe, expect, it } from 'vitest';
-import { findStrayReleasePaths, renderReleaseFile } from '../release.mjs';
+import { findStrayReleasePaths, parseReleaseArgs, renderReleaseFile } from '../release.mjs';
 import { parseFrontmatter } from '../lib/frontmatter.mjs';
+
+describe('parseReleaseArgs', () => {
+  it('takes a version and the two flags', () => {
+    expect(parseReleaseArgs(['1.4.0'])).toEqual({
+      version: '1.4.0',
+      dryRun: false,
+      noPublish: false,
+    });
+    expect(parseReleaseArgs(['1.4.0-beta.1', '--dry-run'])).toEqual({
+      version: '1.4.0-beta.1',
+      dryRun: true,
+      noPublish: false,
+    });
+    expect(parseReleaseArgs(['--no-publish', '1.4.0']).noPublish).toBe(true);
+  });
+
+  // A typo'd --dry-run used to be dropped silently, which ran the full publish
+  // path: commit, tag, push, gh release create.
+  it('rejects an unknown flag instead of ignoring it', () => {
+    expect(() => parseReleaseArgs(['1.4.0', '--dry-rn'])).toThrow(/--dry-rn/);
+    expect(() => parseReleaseArgs(['1.4.0', '--dryrun'])).toThrow(/release\.mjs <semver>/);
+    expect(() => parseReleaseArgs(['1.4.0', '--dry_run'])).toThrow();
+    expect(() => parseReleaseArgs(['1.4.0', '--no-publsh'])).toThrow();
+  });
+
+  it('rejects a missing, malformed, or duplicated version', () => {
+    expect(() => parseReleaseArgs(['--dry-run'])).toThrow(/must look like 1\.2\.0/);
+    expect(() => parseReleaseArgs(['v1.4.0'])).toThrow(/must look like 1\.2\.0/);
+    expect(() => parseReleaseArgs(['1.4.0', '1.5.0'])).toThrow(/must look like 1\.2\.0/);
+  });
+});
 
 describe('renderReleaseFile', () => {
   // Pinning androidVersionCode rewrites the file; dropping the blank line after

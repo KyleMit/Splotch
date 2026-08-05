@@ -23,8 +23,9 @@
 import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { ROOT, fail, run, capture, isMain } from './lib/proc.mjs';
-import { parseFrontmatter } from './lib/frontmatter.mjs';
+import { parseArgs } from 'node:util';
+import { ROOT, fail, run, capture, isMain, parseOrFail } from './lib/proc.mjs';
+import { parseFrontmatter, SEMVER } from './lib/frontmatter.mjs';
 import { setAndroidVersion, setIosVersion } from './lib/native-version.mjs';
 
 const RELEASE_PATHS = [
@@ -52,17 +53,32 @@ export const findStrayReleasePaths = (status) =>
     .map((path) => path.replace(/^"(.*)"$/, '$1'))
     .filter((path) => !isReleasePath(path));
 
-function parseReleaseArgs(args) {
-  const version = args.find((arg) => !arg.startsWith('-'));
-  if (!version || !/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(version)) {
-    fail(
-      'Usage: node scripts/release.mjs <semver> [--no-publish] [--dry-run]\n  <semver> must look like 1.2.0'
-    );
+const RELEASE_USAGE =
+  'Usage: node scripts/release.mjs <semver> [--no-publish] [--dry-run]\n  <semver> must look like 1.2.0';
+
+// Strict parsing is the safety here: a mistyped --dry-run must not fall through
+// to the real publish path, so an unknown flag is rejected rather than ignored.
+// Throws instead of exiting so tests can observe the rejection; main() turns the
+// throw into the usual one-line exit.
+export function parseReleaseArgs(args) {
+  let parsed;
+  try {
+    parsed = parseArgs({
+      args,
+      allowPositionals: true,
+      options: { 'dry-run': { type: 'boolean' }, 'no-publish': { type: 'boolean' } },
+    });
+  } catch (err) {
+    throw new Error(`${err.message}\n${RELEASE_USAGE}`, { cause: err });
   }
+
+  const [version, ...extra] = parsed.positionals;
+  if (extra.length || !version || !SEMVER.test(version)) throw new Error(RELEASE_USAGE);
+
   return {
     version,
-    dryRun: args.includes('--dry-run'),
-    noPublish: args.includes('--no-publish'),
+    dryRun: parsed.values['dry-run'] ?? false,
+    noPublish: parsed.values['no-publish'] ?? false,
   };
 }
 
@@ -168,7 +184,7 @@ function publish(version, body) {
 }
 
 export function main(args = process.argv.slice(2)) {
-  const { version, dryRun, noPublish } = parseReleaseArgs(args);
+  const { version, dryRun, noPublish } = parseOrFail(() => parseReleaseArgs(args));
   const { body, versionCode } = resolveVersionCode(releasePath(version), version);
 
   console.log(`\nReleasing v${version} (versionCode ${versionCode})\n`);

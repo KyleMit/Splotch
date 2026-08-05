@@ -18,8 +18,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { ROOT, fail, run, isMain } from './lib/proc.mjs';
-import { parseFrontmatter } from './lib/frontmatter.mjs';
+import { parseArgs } from 'node:util';
+import { ROOT, fail, run, isMain, parseOrFail } from './lib/proc.mjs';
+import { parseFrontmatter, SEMVER } from './lib/frontmatter.mjs';
 import { RELEASE_AAB } from './lib/android.mjs';
 import { readAabVersion, readIpaVersion } from './lib/artifact-version.mjs';
 
@@ -37,18 +38,42 @@ const ARTIFACTS = {
   ios: { label: 'iOS app', path: RELEASE_IPA, read: readIpaVersion, rebuild: 'npm run ios:ipa' },
 };
 
+const PUBLISH_USAGE =
+  'Usage: node scripts/publish-artifacts.mjs [semver] [--only=android|ios] [--dry-run]';
+
+// Strict parsing is the safety here: a mistyped --dry-run must not fall through
+// to a real upload, so an unknown flag is rejected rather than ignored. Throws
+// instead of exiting so tests can observe the rejection; main() turns the throw
+// into the usual one-line exit.
 export function parsePublishArgs(args) {
-  const version = args.find((arg) => !arg.startsWith('-'));
-  if (version && !/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(version)) {
-    fail(
-      `Not a version: ${version}\nUsage: node scripts/publish-artifacts.mjs [semver] [--only=android|ios] [--dry-run]`
-    );
+  let parsed;
+  try {
+    parsed = parseArgs({
+      args,
+      allowPositionals: true,
+      options: { only: { type: 'string' }, 'dry-run': { type: 'boolean' } },
+    });
+  } catch (err) {
+    throw new Error(`${err.message}\n${PUBLISH_USAGE}`, { cause: err });
   }
-  const only = args.find((arg) => arg.startsWith('--only='))?.slice('--only='.length);
-  if (only && !PLATFORMS.includes(only)) {
-    fail(`--only must be one of: ${PLATFORMS.join(', ')}`);
+
+  const [version, ...extra] = parsed.positionals;
+  if (extra.length) {
+    throw new Error(`Unexpected argument: ${extra[0]}\n${PUBLISH_USAGE}`);
   }
-  return { version, only, dryRun: args.includes('--dry-run') };
+  if (version && !SEMVER.test(version)) {
+    throw new Error(`Not a version: ${version}\n${PUBLISH_USAGE}`);
+  }
+
+  // Tested against undefined rather than falsiness: `--only=` parses as the
+  // empty string, and a truthiness check would let it through as "no filter",
+  // widening a scoped publish back to every platform.
+  const only = parsed.values.only;
+  if (only !== undefined && !PLATFORMS.includes(only)) {
+    throw new Error(`--only must be one of: ${PLATFORMS.join(', ')}`);
+  }
+
+  return { version, only, dryRun: parsed.values['dry-run'] ?? false };
 }
 
 // Pure so the mismatch rules are testable without building a real bundle.
@@ -125,7 +150,7 @@ export function inspectArtifacts(expected, platforms) {
 }
 
 export function main(args = process.argv.slice(2)) {
-  const { version: explicit, only, dryRun } = parsePublishArgs(args);
+  const { version: explicit, only, dryRun } = parseOrFail(() => parsePublishArgs(args));
   const version = resolveVersion(explicit);
   const expected = readExpected(version);
   const platforms = only ? [only] : PLATFORMS;
