@@ -10542,29 +10542,6 @@ canonical paths (the report's Status line already says this). The `gen/` dir (ou
 previews that never shipped) is genuine evidence and stays. Fold into the same commit as the other
 ideas-exploration pruning.
 
-### [Docs] pipeline.md has an empty link target: `[docs/]()`
-
-**File(s):** `tools/asset-gen/docs/pipeline.md` (line 10) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```markdown
-Companion docs: `README.md` (runbook), `coloring-book-proof-sheet.md` (review surface), the decision
-records in [`docs/`]() — [pen/chalk fork](pen-chalk-fork.md),
-```
-
-`[`docs/`]()` is a Markdown link with an **empty** URL — it renders as a link to the current page
-(or as broken markup, viewer-dependent). Presumably a leftover from the docs-folder move. Also
-slightly off conceptually: pipeline.md itself lives in `docs/`, so "the decision records in `docs/`"
-pointing anywhere is redundant — the individual record links that follow already do the job.
-
-#### Proposed solution
-
-Drop the link wrapper: "…the sibling decision records — [pen/chalk fork](pen-chalk-fork.md), …".
-One-line change.
-
 ### [Docs] pen-chalk-fork.md points the alternatives chronicle at pipeline.md; it lives in legacy/README.md
 
 **File(s):** `tools/asset-gen/docs/pen-chalk-fork.md` (lines 24–25) @ 9ae62ff1

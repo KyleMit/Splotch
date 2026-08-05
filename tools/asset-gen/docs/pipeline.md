@@ -7,7 +7,7 @@ retouching, thin-stroke normalization as the dark-mode fix, the rejected alterna
 eye-failure gallery that produced today's gates) live in [`legacy/README.md`](../legacy/README.md).
 
 Companion docs: `README.md` (runbook), `coloring-book-proof-sheet.md` (review surface), the decision
-records in [`docs/`]() — [pen/chalk fork](pen-chalk-fork.md),
+records beside it — [pen/chalk fork](pen-chalk-fork.md),
 [alpha line-art overlays](alpha-line-art-overlays.md),
 [chalk edge crisping](chalk-edge-crisping.md), [inpainted fill punch](inpainted-fill-punch.md),
 [asset naming](asset-naming.md), [fill vocabulary](fill-vocabulary.md),
