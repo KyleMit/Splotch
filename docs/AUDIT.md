@@ -25,36 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Maintainability] Off-scale hardcoded font sizes where the token scale is the convention
-
-**File(s):** `web/src/lib/components/SettingsModal.svelte` (lines 271 `24px`, 277 `20px`, 441
-`15px`), `web/src/lib/components/settings/CompactShell.svelte` (line 193 `12.5px`),
-`web/src/lib/components/settings/SetupInstructions.svelte` (lines 239 `24px`, 280 `20px`) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`tokens.css:37–43` defines a seven-step type scale (`--font-size-xs` 12px … `--font-size-3xl` 28px)
-and these same files use it dozens of times — then break out into raw pixels in six places: the
-SettingsModal `h2` at `24px` and `20px`, the sidebar nav item at `15px`, CompactShell's segment
-label at `12.5px`, and SetupInstructions' chevron at `24px` / check at `20px`. Three of these
-(`15px`, `12.5px`, `24px`) don't even exist on the scale, so they can't be a token-name-forgotten
-slip — they're ad-hoc sizes that silently fork the type ramp. The `design` skill owns this
-vocabulary ("read before … picking a color/size"), and a mixed file (tokens on line 388, raw px on
-line 441 of the same component) is the worst of both: a reader can't tell which sizes are decisions
-and which are drift.
-
-#### Proposed solution
-
-Audit each against the scale with the `design` skill open: `20px` and `24px` headings likely become
-`--font-size-2xl` (22px) or justify a new heading token; `15px` nav items are a hair off
-`--font-size-lg`/`md` and almost certainly round to one; `12.5px` rounds to `--font-size-sm` (13px)
-or `--font-size-xs` (12px) — CompactShell is space-constrained, so verify in the landscape-phone
-viewport. Any size that genuinely must stay off-scale gets a local named custom property with a WHY
-comment (the `--drawer-transition` pattern from the svelte rules). Same treatment for the
-`install-check`'s `font-size: 20px`.
-
 ### [Maintainability] SettingsButton hardcodes `color: #999` instead of a theme token
 
 **File(s):** `web/src/lib/components/SettingsButton.svelte` (line 28) @ 9ae62ff1
