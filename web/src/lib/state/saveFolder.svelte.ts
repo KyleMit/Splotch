@@ -71,8 +71,14 @@ export async function forgetSaveFolder() {
 // static import reaching into lib/drawing/ gives the bundler an edge from the
 // startup graph into the save pipeline. Hoisting this predicate into a shared
 // module — however small — re-partitions the chunks and merges save-pipeline
-// code into a modulepreloaded chunk, which is what tests/startup-bundle.spec.ts
-// pins against. Keep the predicate inline; the spec is the drift guard.
+// code into a modulepreloaded chunk.
+//
+// Two tests hold the two halves of that arrangement, and neither covers the
+// other: tests/startup-bundle.spec.ts pins the bundle boundary by scanning
+// modulepreloaded chunks for save-module markers, while saveFolder.svelte.test.ts
+// is the drift guard for the duplication itself — it reads both sites and fails
+// if this inline check and folderSaveSupported stop probing the same
+// capabilities.
 export async function hydrateSaveFolder() {
   if (typeof window === 'undefined' || !('showDirectoryPicker' in window)) return;
   const mod = await tryLoadFolderSave();
