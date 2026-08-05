@@ -6600,30 +6600,6 @@ in `install.svelte.ts`, using `InstallPromptOutcome` as `promptInstall`'s return
 `NativePromptOutcome` for the local. Callers (`InstallBanner.svelte:86`,
 `SetupInstructions.svelte:20`) compare against `'unavailable'` and keep compiling unchanged.
 
-### [Readability] Drop the temporal "identical to before" phrasing from the storage module header
-
-**File(s):** `web/src/lib/storage.ts` (lines 18–19) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-// On the web, isNative() is false and the Preferences layer is skipped entirely
-// — behaviour is identical to before.
-```
-
-"identical to before" is exactly the temporal phrasing the conventions ban ("no temporal phrasing
-('now', 'previously')"): "before" refers to a change-time baseline no future reader has, and the
-clause carries no information once the migration context is gone — the preceding sentence already
-states the web behavior completely.
-
-#### Proposed solution
-
-Delete the trailing clause: "On the web, isNative() is false and the Preferences layer is skipped
-entirely." (Or, if the intent was to stress single-layer semantics: "— the web is a pure
-localStorage store.") One-line comment edit, no code change.
-
 ### [Testing] The restore integration test re-declares store defaults instead of importing them
 
 **File(s):** `web/src/lib/storage.restore.integration.test.ts` (lines 58–60) @ 9ae62ff1

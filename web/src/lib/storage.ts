@@ -16,7 +16,7 @@ export { STORAGE_KEYS, type StorageKey } from './storageKeys';
 //    startup `hydrateDurableStorage()` repopulates localStorage from it.
 //
 // On the web, isNative() is false and the Preferences layer is skipped entirely
-// — behaviour is identical to before.
+// — a pure localStorage store.
 
 const hydrationKeys: StorageKey[] = Object.values(STORAGE_KEYS);
 
