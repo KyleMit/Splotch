@@ -21,15 +21,43 @@ import { POST } from './+server';
 const address = '203.0.113.9';
 const key = reportBucket(address);
 
-function post(body: unknown) {
-  const request = new Request('http://localhost/api/report', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+function handle(request: Request) {
   return POST({ request, getClientAddress: () => address } as unknown as Parameters<
     typeof POST
   >[0]);
+}
+
+function post(body: unknown) {
+  return handle(
+    new Request('http://localhost/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  );
+}
+
+/**
+ * A request whose body rejects on any read, by any method. It is what makes
+ * "before reading the body" checkable rather than asserted: a handler that
+ * touches the body ahead of the limiter gets readJsonBody's 400 instead of the
+ * throttle, so the assertion fails on the reorder rather than on a payload that
+ * happened to parse either way.
+ */
+function postUnreadableBody() {
+  const body = new ReadableStream({
+    start: (controller) => controller.error(new Error('body read before the rate limit')),
+  });
+  return handle(
+    new Request('http://localhost/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      // A streamed request body needs an explicit duplex, which lib.dom's
+      // RequestInit does not yet carry.
+      duplex: 'half',
+    } as RequestInit)
+  );
 }
 
 beforeEach(() => {
@@ -49,7 +77,7 @@ describe('POST /api/report', () => {
   it('throttles a limited IP before reading the body', async () => {
     rateLimit.mockReturnValue({ limited: true, retryAfter: 30 });
 
-    const response = await post({ kind: 'bug', message: 'the crayon is stuck' });
+    const response = await postUnreadableBody();
 
     expect(response.status).toBe(429);
     expect(response.headers.get('Retry-After')).toBe('30');
