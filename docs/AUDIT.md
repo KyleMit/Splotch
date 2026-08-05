@@ -25,46 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Readability] `submitKey` is a 52-line four-outcome state machine — extract the persist step and name the phases
-
-**File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (`submitKey`, lines 72–124) @
-9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`submitKey` interleaves five concerns in one function body: input gating, latest-request
-bookkeeping, network verification, credential persistence (with its own inner `try/catch` and
-kind-dependent branching), and four different terminal UI states — verify-failed (86–91),
-persist-failed (99–107), superseded (81, 100, 109), and success (111–117). The staleness guard
-`latest.isCurrent(id)` appears four times at different depths, and the inner `try/catch` around
-persistence (93–108) nests a kind-ternary inside a guard inside a catch. A first-time reader has to
-simulate the whole flow to answer "what happens if the save fails after a successful verify?".
-
-Per the audit brief, a long function splittable into named helpers that explain the steps is itself
-a finding; the numbered-steps rule in CLAUDE.md ("write it that way the first time") points the same
-direction.
-
-#### Proposed solution
-
-Extract the persistence phase, which is the self-contained chunk with a clean boundary:
-
-```ts
-// throws on persist failure; returns false when superseded
-async function persistCredential(
-  result: VerifyCredentialResult,
-  value: string,
-  id: number,
-): Promise<boolean>;
-```
-
-and hoist the four user-facing message pairs into a small `const` map (e.g.
-`KEY_MESSAGES: Record<'invalid' | 'saveFailed' | 'accepted', Record<CredentialKind, string>>`),
-which also removes the string-building ternaries from the control flow. `submitKey` then reads as:
-gate → verify → persist → celebrate, each ≤6 lines. Keep `latest` handling in `submitKey` itself so
-the supersede semantics stay in one place.
-
 ### [Readability] AiKeyManager's open-effect calls `latest.begin()` for its side effect only, behind a pointless alias
 
 **File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (`$effect`, lines 62–70) @

@@ -11,10 +11,35 @@
     aiCredentialKind,
   } from '$lib/state/settings.svelte';
   import { setAiUserApiKey } from '$lib/state/aiKey';
-  import { verifyCredential, type VerifyCredentialResult } from '$lib/aiCredential';
+  import {
+    verifyCredential,
+    type CredentialKind,
+    type VerifyCredentialResult,
+  } from '$lib/aiCredential';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
   import { createLatestRequest } from '$lib/latestRequest';
   import { getPlatform, type Platform } from '$lib/platform';
+
+  // The copy for every kind-dependent outcome of a submission, so each terminal
+  // branch of `submitKey` is a single lookup rather than an inline ternary.
+  const KEY_MESSAGES: Record<
+    'invalid' | 'saveFailed' | 'accepted',
+    Record<CredentialKind, string>
+  > = {
+    invalid: {
+      apiKey: "That key didn't work. Double-check it and try again.",
+      accessCode: "That doesn't look like a valid key or access code. Please try again.",
+    },
+    saveFailed: {
+      apiKey: 'Your key works, but could not be saved securely on this device. Please try again.',
+      accessCode: 'Your credential works, but could not be saved securely.',
+    },
+    accepted: {
+      apiKey: 'Your key works and has been accepted!',
+      accessCode: 'Access granted! You have special access — no API key needed.',
+    },
+  };
+  const UNREACHABLE_MESSAGE = 'Could not reach the server. Check your connection and try again.';
 
   interface Props {
     // `open` flips true when the Settings modal opens; we use it to clear
@@ -98,11 +123,7 @@
 
       if (!result.ok) {
         keyStatus = 'error';
-        keyMessage =
-          result.error ||
-          (result.kind === 'apiKey'
-            ? "That key didn't work. Double-check it and try again."
-            : "That doesn't look like a valid key or access code. Please try again.");
+        keyMessage = result.error || KEY_MESSAGES.invalid[result.kind];
         return;
       }
 
@@ -112,10 +133,7 @@
       } catch {
         if (latest.isCurrent(id)) {
           keyStatus = 'error';
-          keyMessage =
-            result.kind === 'apiKey'
-              ? 'Your key works, but could not be saved securely on this device. Please try again.'
-              : 'Your credential works, but could not be saved securely.';
+          keyMessage = KEY_MESSAGES.saveFailed[result.kind];
         }
         return;
       }
@@ -124,14 +142,11 @@
       setAiImage(true); // turn the feature on the moment a valid credential lands
       keyInput = '';
       keyStatus = 'success';
-      keyMessage =
-        result.kind === 'apiKey'
-          ? 'Your key works and has been accepted!'
-          : 'Access granted! You have special access — no API key needed.';
+      keyMessage = KEY_MESSAGES.accepted[result.kind];
     } catch {
       if (latest.isCurrent(id)) {
         keyStatus = 'error';
-        keyMessage = 'Could not reach the server. Check your connection and try again.';
+        keyMessage = UNREACHABLE_MESSAGE;
       }
     }
   }
