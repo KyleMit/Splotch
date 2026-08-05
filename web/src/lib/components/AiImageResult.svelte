@@ -139,10 +139,10 @@
     </button>
 
     {#if aiResult.error}
-      {@const safety = aiResult.errorKind === 'safety'}
+      {@const safety = aiResult.error.kind === 'safety'}
       <div class="ai-result-error" class:safety>
         <span class="ai-result-error-emoji">{safety ? '🎨' : '😕'}</span>
-        <p>{aiResult.errorMessage ?? "Hmm, that didn't work. Please try again!"}</p>
+        <p>{aiResult.error.message ?? "Hmm, that didn't work. Please try again!"}</p>
         {#if safety}
           <p class="ai-result-error-sub">
             That picture didn't work — try drawing something different!

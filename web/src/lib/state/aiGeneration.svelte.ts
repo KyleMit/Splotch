@@ -6,12 +6,10 @@ export interface AiResultState {
   resultUrl: string | null;
   resultType: string | null;
   previewUrl: string | null;
-  error: boolean;
-  errorMessage: string | null;
   // 'safety'  — Gemini refused the drawing; guide the child to draw something else.
   // 'retry'   — a transient failure (timeout, server); the same drawing may work.
   // 'generic' — anything else.
-  errorKind: AiErrorKind;
+  error: { kind: AiErrorKind; message: string | null } | null;
 }
 
 export const aiResult: AiResultState = $state({
@@ -20,9 +18,7 @@ export const aiResult: AiResultState = $state({
   resultUrl: null,
   resultType: null,
   previewUrl: null,
-  error: false,
-  errorMessage: null,
-  errorKind: 'generic',
+  error: null,
 });
 
 interface ActiveAiGeneration {
@@ -46,9 +42,7 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     resultState.previewUrl = swapObjectUrl(resultState.previewUrl, previewUrl);
     resultState.resultUrl = swapObjectUrl(resultState.resultUrl);
     resultState.resultType = null;
-    resultState.error = false;
-    resultState.errorMessage = null;
-    resultState.errorKind = 'generic';
+    resultState.error = null;
   }
 
   // Open the result modal in its loading state. `previewUrl` is an object URL of
@@ -102,9 +96,7 @@ export function createAiGenerationMachine(resultState: AiResultState) {
   function failAiGeneration(id: number, message?: string, kind: AiErrorKind = 'generic') {
     if (!isAiGenerationActive(id) || !resultState.open) return;
     resultState.generating = false;
-    resultState.error = true;
-    resultState.errorMessage = message ?? null;
-    resultState.errorKind = kind;
+    resultState.error = { kind, message: message ?? null };
   }
 
   function closeAiResult() {

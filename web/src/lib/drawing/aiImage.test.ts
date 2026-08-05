@@ -95,7 +95,7 @@ describe('generateAiImage request ownership', () => {
     await generateAiImage();
 
     expect(aiResult.generating).toBe(false);
-    expect(aiResult.error).toBe(true);
+    expect(aiResult.error).not.toBeNull();
     expect(console.error).toHaveBeenCalledWith(exportError);
   });
 
@@ -170,9 +170,8 @@ describe('generateAiImage response handling', () => {
     await generateAiImage();
 
     expect(aiResult.generating).toBe(false);
-    expect(aiResult.error).toBe(true);
-    expect(aiResult.errorKind).toBe('safety');
-    expect(aiResult.errorMessage).toBe("Let's try drawing something else!");
+    expect(aiResult.error?.kind).toBe('safety');
+    expect(aiResult.error?.message).toBe("Let's try drawing something else!");
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
   });
 
@@ -196,9 +195,8 @@ describe('generateAiImage response handling', () => {
     await generateAiImage();
 
     expect(aiResult.generating).toBe(false);
-    expect(aiResult.error).toBe(true);
-    expect(aiResult.errorKind).toBe('retry');
-    expect(aiResult.errorMessage).toBeNull();
+    expect(aiResult.error?.kind).toBe('retry');
+    expect(aiResult.error?.message).toBeNull();
     expect(console.error).toHaveBeenCalledWith(
       'AI image request throttled (retry after 12s): Please wait'
     );
@@ -220,9 +218,8 @@ describe('generateAiImage response handling', () => {
     await generateAiImage();
 
     expect(aiResult.generating).toBe(false);
-    expect(aiResult.error).toBe(true);
-    expect(aiResult.errorKind).toBe('retry');
-    expect(aiResult.errorMessage).toBeNull();
+    expect(aiResult.error?.kind).toBe('retry');
+    expect(aiResult.error?.message).toBeNull();
     expect(console.error).toHaveBeenCalledWith(
       'AI image request failed (502): Upstream unavailable'
     );
@@ -243,7 +240,7 @@ describe('generateAiImage response handling', () => {
 
     await generateAiImage();
 
-    expect(aiResult.errorKind).toBe('generic');
+    expect(aiResult.error?.kind).toBe('generic');
     expect(console.error).toHaveBeenCalledWith('AI image request failed (413): Image is too large');
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
   });
@@ -285,7 +282,7 @@ describe('generateAiImage response handling', () => {
     await generateAiImage();
 
     expect(aiResult.generating).toBe(false);
-    expect(aiResult.error).toBe(false);
+    expect(aiResult.error).toBeNull();
     expect(aiResult.resultUrl).toBe('blob:test-2');
     expect(aiResult.resultType).toBe('image/webp');
     expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);

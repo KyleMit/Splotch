@@ -153,11 +153,11 @@
     </div>
     <div>
       <dt>error</dt>
-      <dd>{aiResult.error}</dd>
+      <dd>{!!aiResult.error}</dd>
     </div>
     <div>
       <dt>errorKind</dt>
-      <dd>{aiResult.errorKind}</dd>
+      <dd>{aiResult.error?.kind}</dd>
     </div>
     <div>
       <dt>hasResult</dt>

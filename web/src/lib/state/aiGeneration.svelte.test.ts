@@ -8,9 +8,7 @@ function createAiResultState(): AiResultState {
     resultUrl: null,
     resultType: null,
     previewUrl: null,
-    error: false,
-    errorMessage: null,
-    errorKind: 'generic',
+    error: null,
   };
 }
 
@@ -53,9 +51,7 @@ describe('createAiGenerationMachine', () => {
       resultUrl: null,
       resultType: null,
       previewUrl: 'blob:second-preview',
-      error: false,
-      errorMessage: null,
-      errorKind: 'generic',
+      error: null,
     });
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:first-result');
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:first-preview');
@@ -77,9 +73,7 @@ describe('createAiGenerationMachine', () => {
       resultUrl: null,
       resultType: null,
       previewUrl: null,
-      error: false,
-      errorMessage: null,
-      errorKind: 'generic',
+      error: null,
     });
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:result');
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
@@ -119,7 +113,7 @@ describe('createAiGenerationMachine', () => {
     expect(resultState.resultUrl).toBe('blob:result');
     expect(resultState.resultType).toBe('image/jpeg');
     expect(resultState.generating).toBe(false);
-    expect(resultState.error).toBe(false);
+    expect(resultState.error).toBeNull();
   });
 
   it('commits an active failure with its message and kind', () => {
@@ -130,8 +124,6 @@ describe('createAiGenerationMachine', () => {
     machine.failAiGeneration(run, 'Try again', 'retry');
 
     expect(resultState.generating).toBe(false);
-    expect(resultState.error).toBe(true);
-    expect(resultState.errorMessage).toBe('Try again');
-    expect(resultState.errorKind).toBe('retry');
+    expect(resultState.error).toEqual({ kind: 'retry', message: 'Try again' });
   });
 });
