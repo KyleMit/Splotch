@@ -22,6 +22,9 @@ export function writeFileDeep(path, contents) {
   writeFileSync(path, contents);
 }
 
+// What the release scripts accept as a version on the command line.
+export const SEMVER = /^\d+\.\d+\.\d+(-[\w.]+)?$/;
+
 export function compareSemverDesc(a, b) {
   const pa = a.split('.').map(Number);
   const pb = b.split('.').map(Number);

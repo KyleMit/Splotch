@@ -59,6 +59,19 @@ describe('parsePublishArgs', () => {
     });
     expect(parsePublishArgs(['--only=android']).only).toBe('android');
   });
+
+  // A typo'd safety flag used to be dropped silently, which uploaded real artifacts.
+  it('rejects an unknown flag instead of ignoring it', () => {
+    expect(() => parsePublishArgs(['1.4.0', '--dry-rn'])).toThrow(/--dry-rn/);
+    expect(() => parsePublishArgs(['1.4.0', '--dryrun'])).toThrow(/publish-artifacts\.mjs/);
+    expect(() => parsePublishArgs(['1.4.0', '--only-android'])).toThrow();
+  });
+
+  it('rejects a bad version, an unknown platform, and a stray positional', () => {
+    expect(() => parsePublishArgs(['v1.4.0'])).toThrow(/Not a version: v1\.4\.0/);
+    expect(() => parsePublishArgs(['--only=web'])).toThrow(/--only must be one of: android, ios/);
+    expect(() => parsePublishArgs(['1.4.0', '1.5.0'])).toThrow(/Unexpected argument: 1\.5\.0/);
+  });
 });
 
 // release.mjs attaching a build artifact is the bug this whole seam exists to

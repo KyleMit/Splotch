@@ -35,6 +35,16 @@ export function fail(message) {
   process.exit(1);
 }
 
+// Runs an argument parser that reports bad input by throwing — which keeps the
+// rejection testable — and turns the throw into the usual one-line exit.
+export function parseOrFail(parse) {
+  try {
+    return parse();
+  } catch (err) {
+    fail(err.message);
+  }
+}
+
 export function requireEnv(name, hint) {
   const value = process.env[name];
   if (!value) fail(`Missing ${name}${hint ? ` — ${hint}` : ''}`);
