@@ -22,8 +22,10 @@ interface LayoutState {
   viewportHeight: number;
 }
 
+const portraitQuery = browser ? window.matchMedia('(orientation: portrait)') : null;
+
 function readLiveOrientation(): Orientation {
-  return window.matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape';
+  return (portraitQuery?.matches ?? false) ? 'portrait' : 'landscape';
 }
 
 function readOrientation(): Orientation {

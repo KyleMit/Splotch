@@ -27,41 +27,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — App state (runes)
 
-### [Performance] `syncViewport` constructs a fresh `MediaQueryList` on every resize event
-
-**File(s):** `web/src/lib/state/layout.svelte.ts` (`syncViewport`, lines 55–64; `readOrientation`,
-line 26) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-function syncViewport() {
-  const next = window.matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape';
-```
-
-`window.matchMedia(...)` allocates and evaluates a new `MediaQueryList` per call, and `syncViewport`
-runs on every `resize` — which fires in bursts during desktop window drags and mobile URL-bar
-show/hide transitions. The repo's hot-path rule flags per-resize allocation; the fix is the standard
-hoist. Line 26 (`readOrientation`'s fallback) creates another one at module load — harmless once,
-but it can share the same hoisted instance. Secondary micro-nit in the same function:
-`document.documentElement.dataset.orientation = next` (line 59) writes the attribute even when
-unchanged; engines short-circuit same-value `setAttribute`, so this is optional to guard.
-
-#### Proposed solution
-
-```ts
-const portraitQuery = browser ? window.matchMedia('(orientation: portrait)') : null;
-```
-
-at module scope; `syncViewport` and `readOrientation`'s fallback read `portraitQuery.matches`.
-(Keeping the resize/orientationchange listeners rather than subscribing to the MQL's `change` event
-is fine — the function must re-measure insets/viewport anyway.) The existing `layout.svelte.test.ts`
-stubs `window.matchMedia` per test and calls `freshModule()`, so a module-scope query still picks up
-the stub; verify the stub is installed before import (it is — `beforeEach` runs `setMatchMedia()`
-first).
-
 ### [Maintainability] Three different SSR-guard idioms across the state modules (and docs say `appearance` uses `browser`)
 
 **File(s):** `web/src/lib/state/appearance.svelte.ts` (lines 17–18, 35),
