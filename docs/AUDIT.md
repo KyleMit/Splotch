@@ -8492,29 +8492,6 @@ that decodes, calls the lib, and rewraps.
 
 ---
 
-### [Readability] `OUT_DIR = SAMPLES_DARK_DIR` alias adds indirection without meaning
-
-**File(s):** `tools/asset-gen/bin/gen-coloring-fills-dark.mjs` (line 82) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```js
-const OUT_DIR = SAMPLES_DARK_DIR;
-```
-
-A bare rename of an imported path constant. In `gen-coloring-chalk.mjs:79` the same-named binding
-earns its keep (`join(SAMPLES_DARK_DIR, 'chalk')` — a real subdirectory), but here it's identity, so
-a reader greps `OUT_DIR` (line 352) and has to bounce through line 82 to learn it's just the shared
-samples dir.
-
-#### Proposed solution
-
-Delete the alias and use `SAMPLES_DARK_DIR` directly at line 352.
-
----
-
 ### [Readability] `gen-coloring-fills-dark` validates "no targets given" after resolving targets
 
 **File(s):** `tools/asset-gen/bin/gen-coloring-fills-dark.mjs` (lines 288–295) @ 9ae62ff1
