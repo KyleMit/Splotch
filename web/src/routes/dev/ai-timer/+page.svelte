@@ -2,8 +2,8 @@
   import AiImageResult from '$lib/components/AiImageResult.svelte';
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import Button from '$lib/components/design/Button.svelte';
-  import { ui } from '$lib/state/ui.svelte';
   import {
+    aiResult,
     startAiGeneration,
     finishAiGeneration,
     failAiGeneration,
@@ -19,10 +19,10 @@
   const drawingInputUrl = `/dev/ai-timer/artifacts/${AI_TIMER_ARTIFACTS[0]}`;
   const aiOutputUrl = `/dev/ai-timer/artifacts/${AI_TIMER_ARTIFACTS[1]}`;
 
-  // We drive AiImageResult.svelte through the exact ui.svelte.ts seam the real
-  // generate flow uses (see src/lib/drawing/aiImage.ts): open in the loading
-  // state with a preview, then deliver the finished image after a delay. No
-  // production code is touched — this page just calls the same public actions.
+  // We drive AiImageResult.svelte through the exact aiGeneration.svelte.ts seam
+  // the real generate flow uses (see src/lib/drawing/aiImage.ts): open in the
+  // loading state with a preview, then deliver the finished image after a delay.
+  // No production code is touched — this page just calls the same public actions.
 
   let delayMs = $state(10000);
   let pending: ReturnType<typeof setTimeout> | null = null; // setTimeout id for the scheduled "finish"
@@ -47,7 +47,7 @@
   // Skip the wait and reveal immediately.
   function finishNow() {
     clearPending();
-    if (!ui.aiResultOpen) runId = startAiGeneration(drawingInputUrl);
+    if (!aiResult.open) runId = startAiGeneration(drawingInputUrl);
     finishAiGeneration(runId, aiOutputUrl, 'image/jpeg');
   }
 
@@ -56,7 +56,7 @@
   // failAiGeneration() for a 422 safety refusal, a timeout, and a server error.
   function fail(message: string | undefined, kind: 'safety' | 'retry' | 'generic') {
     clearPending();
-    if (!ui.aiResultOpen) runId = startAiGeneration(drawingInputUrl);
+    if (!aiResult.open) runId = startAiGeneration(drawingInputUrl);
     failAiGeneration(runId, message, kind);
   }
   const triggerSafety = () => fail(AI_SAFETY_REFUSAL_MESSAGE, 'safety');
@@ -144,24 +144,24 @@
 
   <dl class="state" aria-label="ui state">
     <div>
-      <dt>aiResultOpen</dt>
-      <dd>{ui.aiResultOpen}</dd>
+      <dt>open</dt>
+      <dd>{aiResult.open}</dd>
     </div>
     <div>
-      <dt>aiGenerating</dt>
-      <dd>{ui.aiGenerating}</dd>
+      <dt>generating</dt>
+      <dd>{aiResult.generating}</dd>
     </div>
     <div>
-      <dt>aiError</dt>
-      <dd>{ui.aiError}</dd>
+      <dt>error</dt>
+      <dd>{aiResult.error}</dd>
     </div>
     <div>
-      <dt>aiErrorKind</dt>
-      <dd>{ui.aiErrorKind}</dd>
+      <dt>errorKind</dt>
+      <dd>{aiResult.errorKind}</dd>
     </div>
     <div>
       <dt>hasResult</dt>
-      <dd>{!!ui.aiResultUrl}</dd>
+      <dd>{!!aiResult.resultUrl}</dd>
     </div>
   </dl>
 

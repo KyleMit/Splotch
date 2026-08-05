@@ -1,5 +1,5 @@
-import { ui } from '$lib/state/ui.svelte';
 import {
+  aiResult,
   startAiGeneration,
   setAiPreview,
   finishAiGeneration,
@@ -217,7 +217,7 @@ export async function generateAiImage({
   drawing = null,
   style = '',
 }: { drawing?: Blob | null; style?: StyleName | '' } = {}) {
-  if (ui.aiGenerating) return;
+  if (aiResult.generating) return;
 
   const controller = new AbortController();
 

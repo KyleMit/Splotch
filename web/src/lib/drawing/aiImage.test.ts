@@ -90,12 +90,12 @@ describe('generateAiImage request ownership', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const { generateAiImage } = await import('./aiImage');
-    const { ui } = await import('$lib/state/ui.svelte');
+    const { aiResult } = await import('$lib/state/aiGeneration.svelte');
 
     await generateAiImage();
 
-    expect(ui.aiGenerating).toBe(false);
-    expect(ui.aiError).toBe(true);
+    expect(aiResult.generating).toBe(false);
+    expect(aiResult.error).toBe(true);
     expect(console.error).toHaveBeenCalledWith(exportError);
   });
 
@@ -109,8 +109,7 @@ describe('generateAiImage request ownership', () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValueOnce(requestB.promise));
 
     const { generateAiImage } = await import('./aiImage');
-    const { ui } = await import('$lib/state/ui.svelte');
-    const { closeAiResult } = await import('$lib/state/aiGeneration.svelte');
+    const { aiResult, closeAiResult } = await import('$lib/state/aiGeneration.svelte');
 
     const runA = generateAiImage();
     closeAiResult();
@@ -121,11 +120,11 @@ describe('generateAiImage request ownership', () => {
     exportA.resolve(new Blob(['drawing-a']));
     await runA;
     expect(fetch).toHaveBeenCalledOnce();
-    expect(ui.aiGenerating).toBe(true);
+    expect(aiResult.generating).toBe(true);
 
     requestB.resolve(okResponse(new Blob(['result-b'])));
     await runB;
-    expect(ui.aiResultUrl).toBe('blob:test-2');
+    expect(aiResult.resultUrl).toBe('blob:test-2');
   });
 
   it('never auto-saves a stale run after close and restart', async () => {
@@ -166,14 +165,14 @@ describe('generateAiImage response handling', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('blocked', { status: 422 })));
 
     const { generateAiImage } = await import('./aiImage');
-    const { ui } = await import('$lib/state/ui.svelte');
+    const { aiResult } = await import('$lib/state/aiGeneration.svelte');
 
     await generateAiImage();
 
-    expect(ui.aiGenerating).toBe(false);
-    expect(ui.aiError).toBe(true);
-    expect(ui.aiErrorKind).toBe('safety');
-    expect(ui.aiErrorMessage).toBe("Let's try drawing something else!");
+    expect(aiResult.generating).toBe(false);
+    expect(aiResult.error).toBe(true);
+    expect(aiResult.errorKind).toBe('safety');
+    expect(aiResult.errorMessage).toBe("Let's try drawing something else!");
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
   });
 
@@ -192,14 +191,14 @@ describe('generateAiImage response handling', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const { generateAiImage } = await import('./aiImage');
-    const { ui } = await import('$lib/state/ui.svelte');
+    const { aiResult } = await import('$lib/state/aiGeneration.svelte');
 
     await generateAiImage();
 
-    expect(ui.aiGenerating).toBe(false);
-    expect(ui.aiError).toBe(true);
-    expect(ui.aiErrorKind).toBe('retry');
-    expect(ui.aiErrorMessage).toBeNull();
+    expect(aiResult.generating).toBe(false);
+    expect(aiResult.error).toBe(true);
+    expect(aiResult.errorKind).toBe('retry');
+    expect(aiResult.errorMessage).toBeNull();
     expect(console.error).toHaveBeenCalledWith(
       'AI image request throttled (retry after 12s): Please wait'
     );
@@ -216,14 +215,14 @@ describe('generateAiImage response handling', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const { generateAiImage } = await import('./aiImage');
-    const { ui } = await import('$lib/state/ui.svelte');
+    const { aiResult } = await import('$lib/state/aiGeneration.svelte');
 
     await generateAiImage();
 
-    expect(ui.aiGenerating).toBe(false);
-    expect(ui.aiError).toBe(true);
-    expect(ui.aiErrorKind).toBe('retry');
-    expect(ui.aiErrorMessage).toBeNull();
+    expect(aiResult.generating).toBe(false);
+    expect(aiResult.error).toBe(true);
+    expect(aiResult.errorKind).toBe('retry');
+    expect(aiResult.errorMessage).toBeNull();
     expect(console.error).toHaveBeenCalledWith(
       'AI image request failed (502): Upstream unavailable'
     );
@@ -240,11 +239,11 @@ describe('generateAiImage response handling', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const { generateAiImage } = await import('./aiImage');
-    const { ui } = await import('$lib/state/ui.svelte');
+    const { aiResult } = await import('$lib/state/aiGeneration.svelte');
 
     await generateAiImage();
 
-    expect(ui.aiErrorKind).toBe('generic');
+    expect(aiResult.errorKind).toBe('generic');
     expect(console.error).toHaveBeenCalledWith('AI image request failed (413): Image is too large');
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
   });
@@ -281,14 +280,14 @@ describe('generateAiImage response handling', () => {
     );
 
     const { generateAiImage } = await import('./aiImage');
-    const { ui } = await import('$lib/state/ui.svelte');
+    const { aiResult } = await import('$lib/state/aiGeneration.svelte');
 
     await generateAiImage();
 
-    expect(ui.aiGenerating).toBe(false);
-    expect(ui.aiError).toBe(false);
-    expect(ui.aiResultUrl).toBe('blob:test-2');
-    expect(ui.aiResultType).toBe('image/webp');
+    expect(aiResult.generating).toBe(false);
+    expect(aiResult.error).toBe(false);
+    expect(aiResult.resultUrl).toBe('blob:test-2');
+    expect(aiResult.resultType).toBe('image/webp');
     expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
   });
 });

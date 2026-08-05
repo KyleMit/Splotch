@@ -1,6 +1,29 @@
-import { ui, type UiState } from './ui.svelte';
-
 export type AiErrorKind = 'generic' | 'safety' | 'retry';
+
+export interface AiResultState {
+  generating: boolean;
+  open: boolean;
+  resultUrl: string | null;
+  resultType: string | null;
+  previewUrl: string | null;
+  error: boolean;
+  errorMessage: string | null;
+  // 'safety'  — Gemini refused the drawing; guide the child to draw something else.
+  // 'retry'   — a transient failure (timeout, server); the same drawing may work.
+  // 'generic' — anything else.
+  errorKind: AiErrorKind;
+}
+
+export const aiResult: AiResultState = $state({
+  generating: false,
+  open: false,
+  resultUrl: null,
+  resultType: null,
+  previewUrl: null,
+  error: false,
+  errorMessage: null,
+  errorKind: 'generic',
+});
 
 interface ActiveAiGeneration {
   id: number;
@@ -15,17 +38,17 @@ function swapObjectUrl(prev: string | null, next: string | null = null): string 
   return next;
 }
 
-export function createAiGenerationMachine(uiState: UiState) {
+export function createAiGenerationMachine(resultState: AiResultState) {
   let nextAiGenerationId = 0;
   let activeAiGeneration: ActiveAiGeneration | null = null;
 
   function resetAiRunUi(previewUrl: string | null) {
-    uiState.aiPreviewUrl = swapObjectUrl(uiState.aiPreviewUrl, previewUrl);
-    uiState.aiResultUrl = swapObjectUrl(uiState.aiResultUrl);
-    uiState.aiResultType = null;
-    uiState.aiError = false;
-    uiState.aiErrorMessage = null;
-    uiState.aiErrorKind = 'generic';
+    resultState.previewUrl = swapObjectUrl(resultState.previewUrl, previewUrl);
+    resultState.resultUrl = swapObjectUrl(resultState.resultUrl);
+    resultState.resultType = null;
+    resultState.error = false;
+    resultState.errorMessage = null;
+    resultState.errorKind = 'generic';
   }
 
   // Open the result modal in its loading state. `previewUrl` is an object URL of
@@ -39,8 +62,8 @@ export function createAiGenerationMachine(uiState: UiState) {
     const id = ++nextAiGenerationId;
     activeAiGeneration = { id, controller };
     resetAiRunUi(previewUrl);
-    uiState.aiGenerating = true;
-    uiState.aiResultOpen = true;
+    resultState.generating = true;
+    resultState.open = true;
     return id;
   }
 
@@ -56,39 +79,39 @@ export function createAiGenerationMachine(uiState: UiState) {
   // modal was opened ahead of the canvas export (so the spinner launches on tap),
   // then the preview arrives a beat later.
   function setAiPreview(id: number, previewUrl: string) {
-    if (!isAiGenerationActive(id) || !uiState.aiResultOpen) {
+    if (!isAiGenerationActive(id) || !resultState.open) {
       URL.revokeObjectURL(previewUrl);
       return;
     }
-    uiState.aiPreviewUrl = swapObjectUrl(uiState.aiPreviewUrl, previewUrl);
+    resultState.previewUrl = swapObjectUrl(resultState.previewUrl, previewUrl);
   }
 
   // The finished image has arrived — hand it to the modal so the dial can race to
   // completion and reveal it.
   function finishAiGeneration(id: number, url: string, imageType: string): boolean {
-    if (!isAiGenerationActive(id) || !uiState.aiResultOpen) {
+    if (!isAiGenerationActive(id) || !resultState.open) {
       URL.revokeObjectURL(url);
       return false;
     }
-    uiState.aiResultUrl = swapObjectUrl(uiState.aiResultUrl, url);
-    uiState.aiResultType = imageType;
-    uiState.aiGenerating = false;
+    resultState.resultUrl = swapObjectUrl(resultState.resultUrl, url);
+    resultState.resultType = imageType;
+    resultState.generating = false;
     return true;
   }
 
   function failAiGeneration(id: number, message?: string, kind: AiErrorKind = 'generic') {
-    if (!isAiGenerationActive(id) || !uiState.aiResultOpen) return;
-    uiState.aiGenerating = false;
-    uiState.aiError = true;
-    uiState.aiErrorMessage = message ?? null;
-    uiState.aiErrorKind = kind;
+    if (!isAiGenerationActive(id) || !resultState.open) return;
+    resultState.generating = false;
+    resultState.error = true;
+    resultState.errorMessage = message ?? null;
+    resultState.errorKind = kind;
   }
 
   function closeAiResult() {
     activeAiGeneration?.controller.abort();
     activeAiGeneration = null;
-    uiState.aiResultOpen = false;
-    uiState.aiGenerating = false;
+    resultState.open = false;
+    resultState.generating = false;
     resetAiRunUi(null);
   }
 
@@ -103,7 +126,7 @@ export function createAiGenerationMachine(uiState: UiState) {
   };
 }
 
-const aiGenerationMachine = createAiGenerationMachine(ui);
+const aiGenerationMachine = createAiGenerationMachine(aiResult);
 
 export const {
   startAiGeneration,
