@@ -1526,28 +1526,6 @@ window.history.replaceState({}, '', url);
 
 Same length, no behavior change for current links, and future-proof against additional params.
 
-### [Types] Name the `promptInstall` outcome union
-
-**File(s):** `web/src/lib/state/install.svelte.ts` (lines 128, 135) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`'accepted' | 'dismissed' | 'unavailable'` is written out inline in the return type (line 128) and
-`'accepted' | 'dismissed'` again for the local `outcome` (line 135). The module already names its
-other closed sets (`InstallMode`, `InstallDeviceOs`, lines 23–27); the prompt outcome is the one
-vocabulary left anonymous, so callers switching on the result have no named type to import.
-
-#### Proposed solution
-
-```ts
-export type InstallPromptOutcome = 'accepted' | 'dismissed' | 'unavailable';
-```
-
-Return `Promise<InstallPromptOutcome>`; type the local as
-`Exclude<InstallPromptOutcome, 'unavailable'>`.
-
 ### [Testing] Small coverage gaps: `isDarkInk` and the layout viewport dimensions
 
 **File(s):** `web/src/lib/state/colors.svelte.test.ts` (imports, lines 2–14),
