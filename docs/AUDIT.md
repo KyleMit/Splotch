@@ -2194,30 +2194,6 @@ Name collision warning: `AdminConsole.svelte` exports a client-side `Invite` (wi
 `usage` field) — the server type is its base; keep the names distinct or import aliased in any file
 that sees both.
 
-### [Maintainability] GitHub error-detail truncation length is a bare `300`
-
-**File(s):** `web/src/lib/server/github.ts` (`createIssue`, line 77) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-throw new Error(`GitHub issue creation failed (${res.status}): ${detail.slice(0, 300)}`);
-```
-
-The truncation cap is a tunable log-hygiene decision (how much of an arbitrary GitHub error body may
-enter the thrown message and any downstream log), which per the tuning-literal rule should be a
-named constant carrying its unit.
-
-#### Proposed solution
-
-```ts
-const ERROR_DETAIL_MAX_CHARS = 300;
-```
-
-with the WHY (bound the log line; GitHub error bodies can be large HTML) on the constant.
-
 ### [Architecture] `ASSUME_PERSISTENT` is a status default living in a formatting module
 
 **File(s):** `web/src/lib/adminFormat.ts` (lines 3–5) @ 9ae62ff1

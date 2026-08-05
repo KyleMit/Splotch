@@ -8,6 +8,9 @@ const GITHUB_API = 'https://api.github.com';
 const GITHUB_ACCEPT = 'application/vnd.github+json';
 const GITHUB_API_VERSION = '2022-11-28';
 const GITHUB_USER_AGENT = 'splotch-feedback';
+// Bounds the thrown message (and every log line downstream) — a GitHub error
+// body can be a full HTML page.
+const ERROR_DETAIL_MAX_CHARS = 300;
 
 function targetRepo(): string {
   return config.githubIssueRepo();
@@ -83,7 +86,9 @@ export async function createIssue(
 
   if (res.status !== 201) {
     const detail = await res.text().catch(() => '');
-    throw new Error(`GitHub issue creation failed (${res.status}): ${detail.slice(0, 300)}`);
+    throw new Error(
+      `GitHub issue creation failed (${res.status}): ${detail.slice(0, ERROR_DETAIL_MAX_CHARS)}`
+    );
   }
 
   const data = (await res.json()) as { html_url?: string; number?: number };
