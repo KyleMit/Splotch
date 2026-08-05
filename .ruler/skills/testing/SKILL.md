@@ -102,9 +102,11 @@ The suite also hosts the **drift guards** over things prose can't keep in agreem
 `e2e-engine-tags.test.mjs` and `e2e-harness-imports.test.mjs` over the specs themselves, and
 `skill-spec-citations.test.mjs` over the docs: every `tests/…` path an agent-instruction file names
 must resolve to a real file in `web/tests/`, so a spec split can't strand a documented command that
-then selects zero tests. Globs and placeholders (`engine-*.spec.ts`, `tests/<name>.ts`) read as
+then selects zero tests. The scan covers the skill trees, every `CLAUDE.md`/`AGENTS.md`, and the
+audit-burndown role prompts. Globs and placeholders (`engine-*.spec.ts`, `tests/<name>.ts`) read as
 prose and are skipped; design history — skill notes, ADRs, `docs/AUDIT.md` — is outside the scanned
-surface on purpose.
+surface on purpose, as is any non-Markdown source, whose spec names are indistinguishable from the
+synthetic ones the `scripts/tests/` fixtures feed their reporters.
 
 ## E2E web tests — Playwright
 
