@@ -107,30 +107,6 @@ implies an SSR hazard that doesn't exist and invites cargo-culting into other ef
 
 Reduce the guard to `if (window.innerHeight > 0)`.
 
-### [Readability] `REVEAL_EPSILON` names a threshold, not an epsilon
-
-**File(s):** `web/src/lib/components/aiDialProgress.ts` (lines 14–15, use at line 52) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-// Snap progress to 1 once it climbs within this of full.
-const REVEAL_EPSILON = 0.999;
-...
-if (progress >= REVEAL_EPSILON) {
-```
-
-The comment says "within this of full", which describes an epsilon of `0.001`; the constant actually
-holds the absolute snap threshold `0.999`. Name and comment disagree with the value's semantics — a
-tuner "tightening the epsilon" would move the number the wrong way.
-
-#### Proposed solution
-
-Rename to `REVEAL_SNAP_THRESHOLD` (comment: "snap to 1 once progress crosses this"), or keep the
-epsilon framing with `const REVEAL_EPSILON = 0.001;` and `progress >= 1 - REVEAL_EPSILON`.
-
 ### [Testing] `deferred<T>()` helper is re-declared per test file
 
 **File(s):** `web/src/lib/drawing/aiImage.test.ts` (lines 22–36),
