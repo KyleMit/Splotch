@@ -38,11 +38,16 @@
   }
 
   function handlePickerDown(e: PointerEvent) {
-    const hex = (e.target as HTMLElement).closest('.hexagon') as HTMLElement | null;
-    if (!hex) return;
-    isTrackingDrag = true;
-    hoveredHex = hex.dataset.color ?? null;
+    // Re-snapshotted per gesture rather than lazily: the picker can reopen from a
+    // new origin, and a snapshot kept across that would snap to stale centers.
     hexCenters = snapshotHexCenters();
+    const direct = e.target instanceof Element ? e.target.closest('.hexagon') : null;
+    const color =
+      (direct instanceof HTMLElement ? direct.dataset.color : undefined) ??
+      findHexagonInPicker(e.clientX, e.clientY);
+    if (!color) return;
+    isTrackingDrag = true;
+    hoveredHex = color;
     // Capture so the terminating pointerup always reaches handlePickerUp, even
     // when the drag wanders off the picker. Without capture that up is lost
     // (pen/mouse get no implicit capture), leaving isTrackingDrag/hoveredHex
@@ -57,11 +62,13 @@
   // A pointed Apple Pencil tip often lands in the clip-path gap between
   // hexagons, where an element hit-test sees only the picker background. Snap
   // to the nearest hexagon center within this radius (px) so gap hits still
-  // resolve — for the hover highlight while dragging and the committed color
-  // alike. The radius reaches half the hexagon height plus enough slop to bridge
-  // its gaps, so nearest-center also covers direct hits without a DOM hit-test.
-  // Centers are snapshotted once per drag: per-move rect reads after each
-  // hover-class flip forced a reflow per hexagon per pointer event.
+  // resolve — for the pointerdown that starts the gesture (a tap in a gap
+  // otherwise selects nothing at all), the hover highlight while dragging, and
+  // the committed color alike. The radius reaches half the hexagon height plus
+  // enough slop to bridge its gaps, so nearest-center also covers direct hits
+  // without a DOM hit-test. Centers are snapshotted once per drag: per-move rect
+  // reads after each hover-class flip forced a reflow per hexagon per pointer
+  // event.
   const HEX_SNAP_GAP_SLOP_PX = 5.5;
   const HEX_SNAP_RADIUS = HEX_GRID_GEOMETRY.firstRowPx / 2 + HEX_SNAP_GAP_SLOP_PX;
 
