@@ -13442,31 +13442,6 @@ existing `ruleToRegex` so the glob semantics stay in one place.
 
 ---
 
-### [Readability] Dead `export` on `countPaletteHexes` inside a test file
-
-**File(s):** `scripts/tests/palette-source.test.mjs` (`countPaletteHexes`, line 62) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```js
-export function countPaletteHexes(text) {
-```
-
-Nothing in the repo imports it — its only callers are within this same file (lines 73–85). An
-`export` on a test-file function advertises a reuse surface that doesn't exist and invites another
-test file to couple to this one; the repo's no-speculative-surface convention applies. (Vitest's
-include is `tests/**/*.test.mjs`, so nothing can legitimately import from a `.test.mjs` without
-creating a cross-test dependency.)
-
-#### Proposed solution
-
-Drop the `export` keyword. If cross-file reuse ever becomes real, the function belongs in a
-`scripts/tests/helpers/` module, not exported from a test.
-
----
-
 ### [Readability] `renderReport(summary)` recomputed for every substring assertion
 
 **File(s):** `scripts/tests/perf-analyze.test.mjs` (lines 122–125 and 138–140) @ 9ae62ff1
