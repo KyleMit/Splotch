@@ -4,7 +4,11 @@
   import ReportFields from '../report/ReportFields.svelte';
   import { apiUrl } from '$lib/api';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
-  import { createLatestRequest } from '$lib/latestRequest';
+  import {
+    createLatestRequest,
+    NETWORK_ERROR_MESSAGE,
+    type SubmitStatus,
+  } from '$lib/latestRequest';
   import { collectDeviceInfo } from '$lib/deviceInfo';
   import type { DeviceInfo } from '$lib/deviceReport';
   import { REPORT_HONEYPOT_FIELD, type ReportKind } from '$lib/report';
@@ -22,11 +26,11 @@
   let device = $state<DeviceInfo | null>(null);
   let honeypot = $state('');
 
-  let status = $state<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  let status = $state<SubmitStatus>('idle');
   let feedback = $state('');
   let resultUrl = $state('');
 
-  let submitting = $derived(status === 'submitting');
+  let submitting = $derived(status === 'busy');
 
   const latest = createLatestRequest();
 
@@ -50,7 +54,7 @@
     if (!text || submitting) return;
 
     const { id, signal } = latest.begin();
-    status = 'submitting';
+    status = 'busy';
     feedback = '';
     resultUrl = '';
 
@@ -83,7 +87,7 @@
     } catch {
       if (!latest.isCurrent(id)) return;
       status = 'error';
-      feedback = 'Could not reach the server. Check your connection and try again.';
+      feedback = NETWORK_ERROR_MESSAGE;
     }
   }
 </script>

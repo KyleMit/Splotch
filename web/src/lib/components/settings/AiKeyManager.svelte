@@ -17,7 +17,11 @@
     type VerifyCredentialResult,
   } from '$lib/aiCredential';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
-  import { createLatestRequest } from '$lib/latestRequest';
+  import {
+    createLatestRequest,
+    NETWORK_ERROR_MESSAGE,
+    type SubmitStatus,
+  } from '$lib/latestRequest';
   import { getPlatform, type Platform } from '$lib/platform';
 
   // The copy for every kind-dependent outcome of a submission, so each terminal
@@ -39,7 +43,6 @@
       accessCode: 'Access granted! You have special access — no API key needed.',
     },
   };
-  const UNREACHABLE_MESSAGE = 'Could not reach the server. Check your connection and try again.';
 
   interface Props {
     // `open` flips true when the Settings modal opens; we use it to clear
@@ -54,7 +57,7 @@
   // The single AI field accepts either a Gemini API key (BYOK) or a secret
   // access code. AI unlocks when the parent has provided either one.
   let keyInput = $state('');
-  let keyStatus = $state<'idle' | 'checking' | 'error' | 'success'>('idle');
+  let keyStatus = $state<SubmitStatus>('idle');
   let keyMessage = $state('');
   let credentialKind = $derived(aiCredentialKind());
   let hasApiKey = $derived(credentialKind === 'apiKey');
@@ -112,9 +115,9 @@
 
   async function submitKey() {
     const value = keyInput.trim();
-    if (!value || keyStatus === 'checking') return;
+    if (!value || keyStatus === 'busy') return;
     const { id, signal } = latest.begin();
-    keyStatus = 'checking';
+    keyStatus = 'busy';
     keyMessage = '';
 
     try {
@@ -146,7 +149,7 @@
     } catch {
       if (latest.isCurrent(id)) {
         keyStatus = 'error';
-        keyMessage = UNREACHABLE_MESSAGE;
+        keyMessage = NETWORK_ERROR_MESSAGE;
       }
     }
   }
@@ -213,9 +216,9 @@
           variant="brand"
           class="access-code-submit"
           onclick={submitKey}
-          disabled={!keyInput.trim() || keyStatus === 'checking'}
+          disabled={!keyInput.trim() || keyStatus === 'busy'}
         >
-          {keyStatus === 'checking' ? 'Checking…' : 'Save'}
+          {keyStatus === 'busy' ? 'Checking…' : 'Save'}
         </Button>
       </div>
       <p class="byok-storage-note">

@@ -25,37 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Maintainability] AiKeyManager and ReportForm hand-roll the same async-submit status machine, including identical error copy
-
-**File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (lines 31–32, 57–60, 118–123,
-239–241), `web/src/lib/components/settings/ReportForm.svelte` (lines 30–31, 34, 99–103, 200–209) @
-9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Both components independently implement: a status union (`'idle' | 'checking' | 'error' | 'success'`
-vs `'idle' | 'submitting' | 'success' | 'error'` — same shape, different busy-word), a message
-string, a `createLatestRequest()` guard, a network-failure catch that checks `latest.isCurrent(id)`
-and sets the **byte-identical** message
-`'Could not reach the server. Check your connection and try again.'` (AiKeyManager:121,
-ReportForm:102), and a `<StatusMessage status={x === 'error' ? 'error' : 'success'}>` render. The
-duplicated copy string alone means a wording fix will miss one of the two.
-
-This stops short of a full extraction mandate — the two flows differ enough (verify-then-persist vs
-single POST) that a heavy abstraction would obscure them — but the shared vocabulary should be
-shared.
-
-#### Proposed solution
-
-Minimum: hoist the shared copy to one exported constant (e.g. `NETWORK_ERROR_MESSAGE` in
-`web/src/lib/latestRequest.ts` or a small `$lib/submitCopy.ts`) and unify the status union name
-(`type SubmitStatus = 'idle' | 'busy' | 'success' | 'error'`, exported once). Optional next step if
-a third form ever appears: a `createSubmitState()` rune factory owning `status` + `message` + the
-latest-request guard, with the fetch itself staying in the component. Don't build that third-caller
-abstraction speculatively — the constant + type is the right size today.
-
 ### [Correctness] CompactShell's Night Mode toggle silently discards a parent's `system` theme preference
 
 **File(s):** `web/src/lib/components/settings/CompactShell.svelte` (Night Mode `ToggleRow`, lines
