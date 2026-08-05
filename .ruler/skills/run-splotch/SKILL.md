@@ -151,8 +151,10 @@ magic-brush E2E test, `web/tests/flows.spec.ts`.
 >   `scripts/lib/vite-server.mjs` — it launches vite in a **detached process group** and its
 >   `stop()` kills the whole group (`process.kill(-pid)`), so nothing is orphaned. `freePort(port)`
 >   clears a stale listener first, and `release()` hands a still-running server to the OS (what
->   `--keep` does) so your script can exit without killing it. `driver.mjs`'s `startServer` /
->   `finishServer` are the worked example — copy those, not a fresh `spawn`.
+>   `--keep` does) so your script can exit without killing it — give a server you intend to release
+>   `'pipe'`/`'ignore'` streams, never `'inherit'`, or the survivor holds your caller's pipe open
+>   and the command that ran you never returns. `driver.mjs`'s `startServer` / `finishServer` are
+>   the worked example — copy those, not a fresh `spawn`.
 >
 > Either way, **reap what you spawned before ending**: kill the script/browser, run
 > `npx kill-port <n>`, and confirm with `ps`/`ss -ltnp` that no `vite dev` or headless Chromium is

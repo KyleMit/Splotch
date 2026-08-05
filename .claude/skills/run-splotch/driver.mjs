@@ -106,13 +106,24 @@ function startServer() {
   // spawnViteServer runs vite's bin directly in a detached process group, so
   // stop() reaps the process that actually holds the port — `spawn('npx', …)` +
   // child.kill() orphans a `vite dev` on the port for hours, the failure this
-  // skill's own SKILL.md warns about. --keep releases the group instead, and a
-  // piped stdout would then keep this process alive forever, so it logs nowhere.
+  // skill's own SKILL.md warns about.
+  //
+  // --keep releases that group instead of killing it, so the server must hold
+  // none of this process's stdio. An inherited stream is a dup of our own fd: a
+  // released vite pins the caller's stderr pipe open and the invoking command
+  // never sees EOF (every agent Bash call and CI log capture). A piped stream
+  // release() has dropped is the opposite hazard — vite's routine chatter is
+  // stdout, and a kept server whose stdout pipe is gone dies of EPIPE within a
+  // few HMR reloads, while the same server with stdout on /dev/null survives.
+  // So under --keep: chatter to /dev/null, diagnostics on a pipe release() cuts.
   vite = spawnViteServer(port, {
     env: { PUBLIC_ENABLE_DEV_HARNESS: 'true' },
     stdout: keep ? 'ignore' : 'pipe',
+    stderr: keep ? 'pipe' : 'inherit',
   });
-  vite.server.stdout?.on('data', (d) => process.stderr.write(d)); // vite logs on stderr
+  const forwardToStderr = (d) => process.stderr.write(d); // vite logs on stderr
+  vite.server.stdout?.on('data', forwardToStderr);
+  vite.server.stderr?.on('data', forwardToStderr);
 }
 
 function finishServer(baseURL) {

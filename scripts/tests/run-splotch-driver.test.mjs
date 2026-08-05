@@ -36,8 +36,14 @@ describe.each(DRIVERS)('run-splotch driver $path', ({ path, source }) => {
     expect(realpathSync(resolve(dirname(join(repoRoot, path)), match[2]))).toBe(VITE_SERVER);
   });
 
-  it('spawns nothing itself', () => {
-    expect(body).not.toMatch(/(^|[^\w])spawn\(/);
+  // The invariant is that the driver reaches for no child-process API at all, not
+  // that it avoids one spelling: `execFile('npx', ['vite', 'dev', …])` torn down
+  // with `kill-port` is the same orphaning hand-roll and slips past a bare
+  // `spawn(` / `.kill(` grep. Every such API has to name the module it comes
+  // from, so the import is the chokepoint that closes the whole family.
+  it('reaches for no child-process API of its own', () => {
+    expect(body).not.toMatch(/child_process/);
+    expect(body).not.toMatch(/(^|[^\w.])(spawn|exec|execFile|fork)(Sync)?\(/);
   });
 
   it('tears the server down through the helper instead of a bare kill', () => {

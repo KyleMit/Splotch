@@ -32,12 +32,15 @@ export function freePort(port) {
   }
 }
 
-export function spawnViteServer(port, { env = {}, command = 'dev', stdout = 'ignore' } = {}) {
+export function spawnViteServer(
+  port,
+  { env = {}, command = 'dev', stdout = 'ignore', stderr = 'inherit' } = {}
+) {
   const vite = join(ROOT, 'node_modules', 'vite', 'bin', 'vite.js');
   const server = spawn(process.execPath, [vite, command, '--port', String(port), '--strictPort'], {
     cwd: join(ROOT, 'web'),
     env: { ...process.env, ...env },
-    stdio: ['ignore', stdout, 'inherit'],
+    stdio: ['ignore', stdout, stderr],
     detached: true,
   });
 
@@ -71,13 +74,19 @@ export function spawnViteServer(port, { env = {}, command = 'dev', stdout = 'ign
   };
 
   // release() hands the detached group over to the OS: the exit/SIGINT nets come
-  // off and the child is unref'd so this process can exit while vite keeps
-  // serving (the run-splotch driver's --keep). Spawn with `stdout: 'ignore'` when
-  // releasing — a piped stdout is a second handle that keeps the event loop alive
+  // off, the pipes this process holds are dropped, and the child is unref'd, so
+  // this process can exit while vite keeps serving (the run-splotch driver's
+  // --keep). Both pipes must go: each is a handle that keeps the event loop alive
   // after the child is unref'd, which is what makes a hand-rolled server hang on
-  // exit in the first place.
+  // exit in the first place. An 'inherit' stream cannot be dropped here — the
+  // child holds a dup of this process's own fd, so a released vite pins the
+  // caller's stderr pipe open (an agent's Bash call, `2>&1 | tee`, a CI log
+  // collector) and the reader never sees EOF. A caller that releases therefore
+  // spawns every stream it does not want held as 'pipe' or 'ignore'.
   const release = () => {
     dropSafetyNets();
+    server.stdout?.destroy();
+    server.stderr?.destroy();
     server.unref();
   };
   process.on('exit', kill);
