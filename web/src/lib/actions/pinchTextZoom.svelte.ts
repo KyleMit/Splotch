@@ -39,6 +39,22 @@ export interface PinchTextZoomOptions {
 // The argument is a *getter* read inside a $effect (like `pinchZoom`), so the
 // runes it touches — `enabled`, `resetKey`, the bound `target` — stay reactive.
 export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoomOptions) {
+  const gesture = attachPinchTextZoom(node, getOptions);
+
+  // Calling the option getter performs the reactive reads that subscribe this
+  // effect to gate changes and overlay reopens.
+  $effect(() => {
+    getOptions();
+    gesture.reset();
+  });
+
+  return { destroy: gesture.destroy };
+}
+
+// The gesture itself, with no reactive context of its own — the $effect above is
+// the only rune in `pinchTextZoom`, so splitting it off lets the pointer
+// bookkeeping be unit-tested against a real element (`pinchTextZoom.svelte.test.ts`).
+export function attachPinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoomOptions) {
   const tracker = createSpreadTracker();
   let zoom = MIN_TEXT_ZOOM;
   // Snapshot at the moment the pinch becomes two-fingered, so scaling is relative
@@ -78,11 +94,18 @@ export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoom
     // pinch that produced no click doesn't swallow a later legitimate tap.
     if (tracker.pointerCount === 0) pinchedRecently = false;
     tracker.down(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (tracker.pointerCount === 2) {
-      pinchedRecently = true;
-      rebase();
-      capturePointer(node, e.pointerId);
-    }
+    if (tracker.pointerCount < 2) return;
+    pinchedRecently = true;
+    rebase();
+    // Capture every finger that is down, not just the incoming one. A lone finger
+    // stays uncaptured so it keeps scrolling natively, but a pinch spreads the
+    // fingers apart and the resting one can lift outside `node` — uncaptured, its
+    // `pointerup` never arrives here and the tracker keeps that finger forever,
+    // zooming the text from a stale spread on every later one-finger scroll and
+    // jamming `pinchedRecently` on so `onClickCapture` eats every later tap.
+    // Capturing only once the pinch is confirmed leaves one-finger scrolling
+    // untouched: that gesture never reaches two fingers.
+    for (const id of tracker.ids()) capturePointer(node, id);
   }
 
   function onPointerMove(e: PointerEvent) {
@@ -115,21 +138,24 @@ export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoom
   node.addEventListener('pointermove', onPointerMove);
   node.addEventListener('pointerup', onPointerUp);
   node.addEventListener('pointercancel', onPointerUp);
+  // The other half of the phantom-finger guard above: a finger that is still
+  // uncaptured (no second finger has landed) can wander out of the pane and lift
+  // there unreported, and the browser only sends `pointercancel` if the scroll
+  // claimed it. A touch pointer leaving the element's bounds fires
+  // `pointerleave`, which reclaims the entry — safe to drop, since a single
+  // finger drives nothing here. For a captured finger the event arrives with the
+  // release, after `pointerup` already removed the entry, so `up()` no-ops.
+  node.addEventListener('pointerleave', onPointerUp);
   node.addEventListener('click', onClickCapture, true);
 
-  // Calling the option getter performs the reactive reads that subscribe this
-  // effect to gate changes and overlay reopens.
-  $effect(() => {
-    getOptions();
-    reset();
-  });
-
   return {
+    reset,
     destroy() {
       node.removeEventListener('pointerdown', onPointerDown);
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);
       node.removeEventListener('pointercancel', onPointerUp);
+      node.removeEventListener('pointerleave', onPointerUp);
       node.removeEventListener('click', onClickCapture, true);
     },
   };

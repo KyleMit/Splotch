@@ -4,8 +4,9 @@ import { gotoApp, openSettingsModal } from './helpers';
 // Tier-2 accessibility (ADR-0076): a low-vision parent can pinch to enlarge the
 // Settings' reading content, while the drawing page itself stays
 // zoom-locked. The pinchTextZoom action drives CSS `zoom` on a `.settings-zoom` wrapper
-// inside the scrolling pane. The gesture math is unit-tested
-// (pinchTextZoom.svelte.test.ts); this covers the action wiring — that two
+// inside the scrolling pane. The gesture math and pointer bookkeeping are
+// unit-tested (pinchTextZoom.svelte.test.ts); this covers the wiring in a real
+// browser — that two
 // fingers enlarge and reset, that ONE finger is never intercepted (so native
 // scrolling survives — the invariant the whole design rests on), that a
 // non-touch pointer is ignored, and that navigating away resets the zoom.

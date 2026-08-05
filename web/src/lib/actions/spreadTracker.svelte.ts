@@ -24,6 +24,12 @@ export function createSpreadTracker() {
     points(): Point[] {
       return [...pointers.values()];
     },
+    // Every finger currently down, so a caller can act on the ones that landed
+    // before its gesture engaged — `pinchTextZoom` captures them all at that
+    // moment so none of their lifts can escape the element.
+    ids(): number[] {
+      return [...pointers.keys()];
+    },
     down(id: number, p: Point) {
       pointers.set(id, p);
     },
