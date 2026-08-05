@@ -108,7 +108,9 @@ const PUSH_TEST_CMD = process.env.PUSH_TEST_CMD ?? '';
 // container would matter.
 const COMMENT_STORE = process.env.COMMENT_STORE ?? join(WORK, 'pending-comments.jsonl');
 const MAX_DEFERRALS = Number(process.env.MAX_DEFERRALS ?? 3); // consecutive deferrals before halting
-const RETRIES = Number(process.env.RETRIES ?? 3); // retries for transient agent failures
+// Total attempts per agent step on a transient failure — N-1 retries. Named
+// RETRIES as an env var because that knob is published in LAUNCH_KNOBS.
+const RETRIES = Number(process.env.RETRIES ?? 3);
 
 // The runner-specific skills set this explicitly. Claude remains the default
 // for backward compatibility with existing launch commands.
@@ -175,7 +177,7 @@ function halt(message) {
 const agentStep = (options) =>
   runAgentStep({
     runner: AGENT_RUNNER,
-    retries: RETRIES,
+    maxAttempts: RETRIES,
     root: process.cwd(),
     workDir: WORK,
     logsDir: LOGS,

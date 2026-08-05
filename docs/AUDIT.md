@@ -14306,28 +14306,6 @@ Make the data flow explicit:
 `const captureSummary = (step) => { const text = (step.structured.summary ?? '').trim(); if (text) fixSummaries.push(text); };`
 called as `captureSummary(impl)`. One-line change; the hazard and half the comment disappear.
 
-### [Readability] `RETRIES` is actually the total attempt count, not the retry count
-
-**File(s):** `scripts/audit-burndown/burndown.mjs` (line 111), `agent-runner.mjs` (line 246) @
-9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`const RETRIES = Number(process.env.RETRIES ?? 3); // retries for transient agent failures`
-(burndown line 111) feeds `for (let attempt = 1; attempt <= retries; attempt += 1)` (agent-runner
-line 246) — so `RETRIES=3` yields three *attempts*, i.e. two retries; `RETRIES=1` yields **zero**
-retries. An operator tuning the knob by its name will consistently get one less recovery than
-expected. The env-var name is a published knob (it's in `LAUNCH_KNOBS`, lib.mjs line 151), so
-renaming has compat cost; the comment and the parameter name are free to fix.
-
-#### Proposed solution
-
-Minimally, correct the docs: `// total attempts per agent step (N-1 retries)` at line 111 and rename
-the `retries` parameter/loop reading in `runAgentStep` to `maxAttempts`. If a breaking rename is
-ever palatable, `MAX_ATTEMPTS` in `LAUNCH_KNOBS` with `RETRIES` accepted as a deprecated alias.
-
 ### [Maintainability] preflight re-implements `shellOk` inline and hand-rolls its check-reporting instead of naming the pattern
 
 **File(s):** `scripts/audit-burndown/preflight.mjs` (lines 108–110) @ 9ae62ff1
