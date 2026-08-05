@@ -10217,30 +10217,6 @@ canonical paths (the report's Status line already says this). The `gen/` dir (ou
 previews that never shipped) is genuine evidence and stays. Fold into the same commit as the other
 ideas-exploration pruning.
 
-### [Docs] pen-chalk-fork.md points the alternatives chronicle at pipeline.md; it lives in legacy/README.md
-
-**File(s):** `tools/asset-gen/docs/pen-chalk-fork.md` (lines 24–25) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```markdown
-Alternatives evaluated for dark mode (chronicled with illustrations in
-`tools/asset-gen/docs/pipeline.md`): a build-time morphological classifier …
-```
-
-The illustrated alternatives table (options A–D, with the option-A prototype screenshots) is in
-`tools/asset-gen/legacy/README.md` ("Alternatives considered and rejected for dark mode", lines
-74–90), not in pipeline.md — pipeline.md itself defers to legacy for exactly this chronicle (line
-41–42: "…is chronicled in `legacy/README.md`"). A reader sent to pipeline.md for the illustrations
-won't find them.
-
-#### Proposed solution
-
-Change the pointer to `tools/asset-gen/legacy/README.md`. (Once the legacy README's broken image
-links are fixed — the P2 finding — the illustrations will actually render there too.)
-
 ### [Maintainability] Duplicate identical JSON committed twice within idea-15 and idea-18
 
 **File(s):** `tools/asset-gen/ideas-exploration/idea-15/hotspots.json` vs

@@ -22,10 +22,11 @@ correct pixels underneath it. Two generations of fixes attacked the symptom:
   constraint.
 
 Alternatives evaluated for dark mode (chronicled with illustrations in
-`tools/asset-gen/docs/pipeline.md`): a build-time morphological classifier that preserves solid
-interiors (can only *keep* what the pen contains — it can never decide a thin-ringed sclera should
-go solid); the same classifier at runtime (main-thread cost ADR-0043 exists to avoid); and fully
-independent AI-generated night line art (registration drift — the ghosting class ADR-0043 prevents).
+[`legacy/README.md`](../legacy/README.md)): a build-time morphological classifier that preserves
+solid interiors (can only *keep* what the pen contains — it can never decide a thin-ringed sclera
+should go solid); the same classifier at runtime (main-thread cost ADR-0043 exists to avoid); and
+fully independent AI-generated night line art (registration drift — the ghosting class ADR-0043
+prevents).
 
 ## Decision
 
