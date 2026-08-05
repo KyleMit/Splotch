@@ -26,8 +26,14 @@ export function parsePngToWebpOptions(args = process.argv.slice(2), env = proces
 // tests, and any future gated loop all read it from one place.
 export const MAX_ATTEMPTS = 5;
 
+// A blank value means "unset", not zero. An exported-but-empty env var
+// (`QUALITY= npm run …`, or a wrapper script exporting an unset var) arrives as
+// '' rather than undefined, and Number('') is 0 — which passes the >= 0 checks
+// below and silently ships quality: 0 instead of the intended default.
+const isBlank = (raw) => raw === undefined || raw === '';
+
 export function parsePositiveInt(raw, name, fallback, source) {
-  if (raw === undefined) return fallback;
+  if (isBlank(raw)) return fallback;
   const value = Number(raw);
   if (!(Number.isInteger(value) && value >= 1)) {
     fail(`${name} must be a positive integer, got "${raw}"${source ? ` (${source})` : ''}`);
@@ -36,7 +42,7 @@ export function parsePositiveInt(raw, name, fallback, source) {
 }
 
 export function parseTemperature(raw, name, fallback, source) {
-  if (raw === undefined) return fallback;
+  if (isBlank(raw)) return fallback;
   const value = Number(raw);
   if (!(value >= 0 && value <= 2)) {
     fail(`${name} must be a number between 0 and 2, got "${raw}"${source ? ` (${source})` : ''}`);
@@ -45,7 +51,7 @@ export function parseTemperature(raw, name, fallback, source) {
 }
 
 export function parseNonNegative(raw, name, fallback, source) {
-  if (raw === undefined) return fallback;
+  if (isBlank(raw)) return fallback;
   const value = Number(raw);
   if (!(value >= 0)) {
     fail(`${name} must be a non-negative number, got "${raw}"${source ? ` (${source})` : ''}`);

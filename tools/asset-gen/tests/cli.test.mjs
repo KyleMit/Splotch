@@ -33,6 +33,7 @@ function expectFailure(parse, raw, name, fallback, source, message) {
 describe('parsePositiveInt', () => {
   it('returns the fallback for an omitted value and parses positive integer strings', () => {
     expect(parsePositiveInt(undefined, '--samples', 3)).toBe(3);
+    expect(parsePositiveInt('', '--samples', 3)).toBe(3);
     expect(parsePositiveInt('1', '--samples', 3)).toBe(1);
     expect(parsePositiveInt('12', '--samples', 3)).toBe(12);
   });
@@ -52,6 +53,7 @@ describe('parsePositiveInt', () => {
 describe('parseTemperature', () => {
   it('returns the fallback and accepts numeric strings at both bounds', () => {
     expect(parseTemperature(undefined, '--temperature', 0.5)).toBe(0.5);
+    expect(parseTemperature('', '--temperature', 0.5)).toBe(0.5);
     expect(parseTemperature(undefined, '--temperature', undefined)).toBeUndefined();
     expect(parseTemperature('0', '--temperature', 0.5)).toBe(0);
     expect(parseTemperature('1.25', '--temperature', 0.5)).toBe(1.25);
@@ -73,6 +75,7 @@ describe('parseTemperature', () => {
 describe('parseNonNegative', () => {
   it('returns the fallback and accepts non-negative numeric strings', () => {
     expect(parseNonNegative(undefined, '--threshold', 2)).toBe(2);
+    expect(parseNonNegative('', '--threshold', 2)).toBe(2);
     expect(parseNonNegative('0', '--threshold', 2)).toBe(0);
     expect(parseNonNegative('1.5', '--threshold', 2)).toBe(1.5);
   });
@@ -96,6 +99,12 @@ describe('parsePngToWebpOptions', () => {
       quality: 90,
       lossless: true,
     });
+  });
+
+  // An exported-but-empty env var arrives as '' rather than undefined, and
+  // Number('') is 0 — which would silently ship maximally-destroyed webp output.
+  it('treats a blank environment quality as unset', () => {
+    expect(parsePngToWebpOptions([], { QUALITY: '' })).toEqual({ quality: 80, lossless: false });
   });
 
   it('parses flags with precedence over environment fallbacks', () => {

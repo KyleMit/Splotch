@@ -9041,30 +9041,6 @@ to 0 after) so per-ring array allocation disappears. Keep the two-phase semantic
 direction-neutral bleed depends on not consuming this ring's results within the same pass (the WHY
 comment at lines 50–52 already explains this; keep it).
 
-### [Correctness] CLI number parsers accept empty-string env values as 0
-
-**File(s):** `tools/asset-gen/lib/cli.mjs` (`parsePngToWebpOptions` lines 8–20, `parseNonNegative`
-lines 47–54, `parseTemperature` lines 38–45) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`parsePngToWebpOptions` resolves `values.quality ?? env.QUALITY`. An empty environment variable
-(`QUALITY= npm run …`, or an unset-but-exported var in a wrapper script) yields `''`, which is not
-`undefined`, so the fallback never applies — and `Number('') === 0` passes the `value >= 0` check in
-`parseNonNegative`, silently producing `quality: 0` (maximally destroyed webp output) instead of the
-intended default 80. `parseTemperature` has the same hole (`'' → 0`, in range). `parsePositiveInt`
-is safe by accident (`0` fails `>= 1`). The failure is silent precisely where these helpers
-otherwise fail loudly on garbage (`fail(...)` for `'abc'`).
-
-#### Proposed solution
-
-Treat blank as unset at the top of each parser:
-`if (raw === undefined || raw === '') return fallback;` — or normalize once in
-`parsePngToWebpOptions` (`env.QUALITY || undefined`). One-line change per parser; add the `''` case
-to `tests/cli.test.mjs`'s existing env-precedence tests.
-
 ### [Readability] outline-match's tile bucketing is an opaque inline expression with a dead clamp
 
 **File(s):** `tools/asset-gen/lib/outline-match.mjs` (lines 102–107) @ 9ae62ff1
