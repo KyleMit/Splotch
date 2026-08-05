@@ -5,9 +5,15 @@ import { ROOT, fail } from './lib/proc.mjs';
 const configPath = 'capacitor.config.json';
 const config = JSON.parse(readFileSync(join(ROOT, configPath), 'utf8'));
 const expectedAppId = config.appId;
+const expectedAppName = config.appName;
 
-if (typeof expectedAppId !== 'string' || expectedAppId.length === 0) {
-  fail(`[check-native-app-id] ${configPath}: appId must be a non-empty string`);
+for (const [field, value] of [
+  ['appId', expectedAppId],
+  ['appName', expectedAppName],
+]) {
+  if (typeof value !== 'string' || value.length === 0) {
+    fail(`[check-native-app-id] ${configPath}: ${field} must be a non-empty string`);
+  }
 }
 
 function xcodeBundleIdentifier(source, configuration) {
@@ -106,17 +112,38 @@ const checks = [
   ...skillChecks,
 ];
 
+// The installed-app display name is declared independently in the same three-way
+// shape the app id is, so it gets the same guard: capacitor.config.json is the
+// source, and a rename that misses a copy fails here instead of shipping a
+// mismatched launcher label.
+const appNameChecks = [
+  {
+    path: 'android/app/src/main/res/values/strings.xml',
+    values: [['app_name', /^\s*<string\s+name="app_name">([^<]+)<\/string>\s*$/m]],
+  },
+  {
+    path: 'ios/App/App/Info.plist',
+    values: [
+      [
+        'CFBundleDisplayName',
+        /<key>CFBundleDisplayName<\/key>\s*\r?\n\s*<string>([^<]+)<\/string>/,
+      ],
+    ],
+  },
+].map((check) => ({ ...check, expected: expectedAppName }));
+
 const errors = [];
 
-for (const check of checks) {
+for (const check of [...checks, ...appNameChecks]) {
   const source = readFileSync(join(ROOT, check.path), 'utf8');
+  const expected = check.expected ?? expectedAppId;
   for (const [name, extractor] of check.values) {
-    const actualAppId =
+    const actual =
       typeof extractor === 'function' ? extractor(source) : source.match(extractor)?.[1]?.trim();
-    if (actualAppId !== expectedAppId) {
+    if (actual !== expected) {
       errors.push(
-        `${check.path} (${name}): expected "${expectedAppId}", found ${
-          actualAppId === undefined ? 'no matching value' : `"${actualAppId}"`
+        `${check.path} (${name}): expected "${expected}", found ${
+          actual === undefined ? 'no matching value' : `"${actual}"`
         }`
       );
     }
@@ -125,8 +152,10 @@ for (const check of checks) {
 
 if (errors.length > 0) {
   fail(
-    `[check-native-app-id] Native app ID mismatch:\n${errors.map((error) => `  - ${error}`).join('\n')}`
+    `[check-native-app-id] Native app identity mismatch:\n${errors.map((error) => `  - ${error}`).join('\n')}`
   );
 }
 
-console.log(`[check-native-app-id] all native app IDs match "${expectedAppId}".`);
+console.log(
+  `[check-native-app-id] all native app IDs match "${expectedAppId}" and names match "${expectedAppName}".`
+);

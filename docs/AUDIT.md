@@ -15466,28 +15466,6 @@ Add a `describe('Android support floor single source')` block to `android-config
 states the floor) match. Use the same allowlist + context-anchored-pattern approach the file already
 established for the emulator level, so historical docs stay exempt.
 
-### [Testing] The user-visible app name agrees across four files with no guard
-
-**File(s):** `capacitor.config.json` (line 3) · `android/app/src/main/res/values/strings.xml`
-(line 3) · `ios/App/App/Info.plist` (lines 9–10) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-"Splotch" as the installed-app display name is declared independently in `capacitor.config.json:3`
-(`"appName"`), `strings.xml:3` (`app_name`), and `Info.plist:9–10` (`CFBundleDisplayName`).
-`scripts/check-native-app-id.mjs` guards exactly this shape of agreement for the app **id** (appId ↔
-gradle ↔ pbxproj ↔ docs) but never checks the app **name**, so a rename would have to find every
-copy by hand — the same failure mode the id checker exists to prevent, one field over.
-
-#### Proposed solution
-
-Extend `check-native-app-id.mjs` (or a sibling check) with an `appName` pass:
-`capacitor.config.json → appName` as the source, matched against `strings.xml`'s `app_name` and
-`Info.plist`'s `CFBundleDisplayName`. The script's existing `checks` table structure takes this with
-two more entries and a second expected value.
-
 ### [Maintainability] Pencil-eraser attach silently no-ops if the web view is missing
 
 **File(s):** `ios/App/App/MainViewController.swift` (lines 13–19) @ 9ae62ff1
