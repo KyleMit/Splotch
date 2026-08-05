@@ -17950,24 +17950,6 @@ filter `-prime` from the glob. Keeping the "read whatever's there" behavior behi
 `--summarize-existing` flag would preserve the re-summarize use case without contaminating fresh
 runs.
 
-### [Docs] build skill says the reveal command opens "Explorer" — Windows was dropped (ADR-0062)
-
-**File(s):** `.ruler/skills/build/SKILL.md` (line 60) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Step 6 of the Android flow: "that `npm run android:open` will reveal the file in Explorer." Explorer
-is the Windows file manager; Windows dev support was dropped in ADR-0062 and conventions.md ships
-the cross-platform phrasing already — `scripts-info` for `ios:open` says "Reveal … in the OS file
-manager" and the opener is the platform-neutral `scripts/open-path.mjs`. On the supported platforms
-(macOS/Linux) the sentence names a program that doesn't exist there.
-
-#### Proposed solution
-
-"…will reveal the file in the OS file manager" (matching the scripts-info wording).
-
 ### [Docs] skill-forks and per-skill notes are documented as populated trees, but zero instances exist
 
 **File(s):** `.ruler/agent-files.md` (lines 12–19, 24–28), `.ruler/knowledge-map.md` (lines 5–6),

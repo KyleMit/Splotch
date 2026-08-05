@@ -57,7 +57,7 @@ and skip iOS with a note if it doesn't).
    * the version + versionCode read back out of the built `.aab` and its path
      (`android/app/build/outputs/bundle/release/app-release.aab`),
    * that signature verification passed,
-   * that `npm run android:open` will reveal the file in Explorer.
+   * that `npm run android:open` will reveal the file in the OS file manager.
 
    Uploading to the Google Play Console is still a **manual** step (no Fastfile/CI lane yet) — point
    the user at the Console and the `.aab`. The matching Play "What's new" text lives at
