@@ -12455,30 +12455,6 @@ const stop = () => {
 Tradeoff: with multiple servers, each still installs its own SIGINT handler — that's fine once they
 deregister on stop; the last one standing performs the exit.
 
-### [Correctness] redteam-report interpolates `base` into HTML unescaped
-
-**File(s):** `scripts/lib/redteam-report.mjs` (`buildReport`, line 144) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Line 144:
-
-```js
-<p class='sub'>${results.length} cases · ${base} · the suite does not pass/fail …</p>;
-```
-
-Every other dynamic value in this file goes through `esc()` (`runId` line 143, ids, details,
-labels), but `base` — the target URL, which arrives from CLI/env in `redteam-run.mjs` — is
-interpolated raw. A base containing `&` (query string) renders invalid HTML; one containing `<`
-breaks the header markup. It's an internal report, so this is a consistency/robustness issue rather
-than a security one, but it's a one-word fix and the file's own convention.
-
-#### Proposed solution
-
-`${esc(base)}`.
-
 ### [Maintainability] `argFlag` is a hand-rolled flag parser competing with the repo's parseArgs convention
 
 **File(s):** `scripts/lib/proc.mjs` (`argFlag`, lines 35–38) @ 9ae62ff1
