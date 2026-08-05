@@ -124,13 +124,11 @@
     align-items: center;
     gap: 12px;
     padding: 14px 24px 10px;
-    /* Clear the absolute close button in the top-right corner. */
-    padding-right: 64px;
-    /* Reserve the close button's full vertical extent (top:12 + 44px height =
-       56px, plus a little breathing room) so the top-right toggle cell starts
-       below it instead of sliding up under the button. Mirrors the padding-right
-       that clears it horizontally. */
-    min-height: 62px;
+    padding-right: var(--modal-close-clearance-x);
+    /* Reserve the close button's full vertical extent (--modal-close-clearance-y
+       in app.css) so the top-right toggle cell starts below it instead of
+       sliding up under the button. */
+    min-height: var(--modal-close-clearance-y);
   }
 
   .settings-header-compact h2 {

@@ -166,16 +166,30 @@ body {
   fill: var(--icon-ink);
 }
 
+/* The close disc's touch-target size and its inset from the modal's top-right
+   corner, plus the room a header must leave so its own content clears the disc
+   — horizontally beside it, vertically below it. Global so the modal headers
+   that reserve that room derive it from the button's own geometry instead of
+   restating it. */
+:root {
+  --modal-close-size: 44px;
+  --modal-close-inset: var(--space-3);
+  --modal-close-clearance-x: calc(
+    var(--modal-close-inset) + var(--modal-close-size) + var(--space-2)
+  );
+  --modal-close-clearance-y: calc(var(--modal-close-inset) + var(--modal-close-size) + 6px);
+}
+
 /* Absolute-positioned close button (top-right corner) and its icon, shared
    across all icon-style modal close buttons. An outlined white disc, sized as a
    44px touch target so small fingers can spot and hit it (the icon inside stays
    ~20px — the extra box is hit area and the ring that makes it pop). */
 .modal-close-btn {
   position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
-  width: 44px;
-  height: 44px;
+  top: var(--modal-close-inset);
+  right: var(--modal-close-inset);
+  width: var(--modal-close-size);
+  height: var(--modal-close-size);
   background: var(--surface);
   border: 2px solid var(--border-warm);
   border-radius: 50%;

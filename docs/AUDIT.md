@@ -25,51 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Maintainability] Close-button clearance is hardcoded at four sites against geometry owned by `app.css`, with a comment restating the numbers
-
-**File(s):** `web/src/lib/components/SettingsModal.svelte` (`.settings-header`
-`padding-right: 68px`, line 266; media-query `padding-right: 64px`, line 513),
-`web/src/lib/components/settings/CompactShell.svelte` (`.settings-header-compact`
-`padding-right: 64px` and `min-height: 62px`, lines 129–142), `web/src/app.css` (`.modal-close-btn`,
-lines 146–151) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The modal close button's geometry — `top: var(--space-3)` (12px), `width/height: 44px` — is owned by
-`.modal-close-btn` in `app.css`. Four rules in this section hardcode clearances derived from it, and
-CompactShell's comment restates the owned values verbatim:
-
-```css
-/* Reserve the close button's full vertical extent (top:12 + 44px height =
-   56px, plus a little breathing room) so the top-right toggle cell starts
-   below it instead of sliding up under the button. … */
-min-height: 62px;
-```
-
-CLAUDE.md forbids exactly this: comments must not restate values "owned elsewhere — name the owning
-identifier or file instead", and cross-file numeric agreement should flow through one declared
-value. If the touch target ever grows (it's sized for "small fingers" per the app.css comment, a
-plausible knob), the header paddings and CompactShell's `min-height` all silently stop clearing it.
-
-#### Proposed solution
-
-Beside `.modal-close-btn` in `app.css`, declare the derived clearances as custom properties on
-`:root` (or on `.modal-shell`):
-
-```css
---modal-close-size: 44px;
---modal-close-inset: var(--space-3);
---modal-close-clearance-x: calc(var(--modal-close-inset) + var(--modal-close-size) + var(--space-2));
---modal-close-clearance-y: calc(var(--modal-close-inset) + var(--modal-close-size) + 6px);
-```
-
-`.modal-close-btn` consumes `--modal-close-size`/`--modal-close-inset`; SettingsModal headers and
-CompactShell consume the clearance values. The 68px/64px variance between breakpoints suggests the
-horizontal clearance can collapse to one value once it's computed instead of eyeballed — verify
-visually at both widths (the `run-splotch` skill covers screenshots).
-
 ### [Readability] `submitKey` is a 52-line four-outcome state machine — extract the persist step and name the phases
 
 **File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (`submitKey`, lines 72–124) @

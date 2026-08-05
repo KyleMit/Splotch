@@ -270,8 +270,7 @@
     align-items: center;
     gap: 12px;
     padding: 28px 32px 18px;
-    /* Clear the absolute close button in the top-right corner. */
-    padding-right: 68px;
+    padding-right: var(--modal-close-clearance-x);
   }
 
   .settings-header h2 {
@@ -520,7 +519,7 @@
   @media (max-width: 480px) {
     .settings-header {
       padding: 24px 20px 16px;
-      padding-right: 64px;
+      padding-right: var(--modal-close-clearance-x);
     }
 
     .settings-scroll {
