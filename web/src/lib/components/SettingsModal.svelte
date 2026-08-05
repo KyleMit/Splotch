@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Component } from 'svelte';
   import { browser } from '$app/environment';
   import Icon from './Icon.svelte';
   import SectionIcon from './SectionIcon.svelte';
@@ -13,9 +14,32 @@
   import ReportForm from './settings/ReportForm.svelte';
   import AboutSection from './settings/AboutSection.svelte';
   import CompactShell from './settings/CompactShell.svelte';
-  import { SECTIONS, sectionSubtitle, type SectionId } from './settings/sections';
+  import { SECTIONS, sectionSubtitle, type SectionId, type SectionMeta } from './settings/sections';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
+
+  // Not every section takes `open` (only AiKeyManager/SetupInstructions/ReportForm do); passing it
+  // uniformly is fine — Svelte drops props a component doesn't declare — but the generated types
+  // can't express that, so the map admits both prop shapes and the render site widens to the one
+  // that carries `open`.
+  type SectionComponent = Component<Record<string, never>> | Component<{ open?: boolean }>;
+
+  const SECTION_CONTENT: Record<SectionId, SectionComponent> = {
+    appearance: AppearanceSection,
+    sound: SoundSection,
+    saving: SavingSection,
+    controls: ControlsSection,
+    ai: AiKeyManager,
+    setup: SetupInstructions,
+    whatsnew: WhatsNewSection,
+    feedback: ReportForm,
+    about: AboutSection,
+  };
+
+  const SECTION_BY_ID = Object.fromEntries(SECTIONS.map((s) => [s.id, s] as const)) as Record<
+    SectionId,
+    SectionMeta
+  >;
 
   // Two shells, one section list (ADR-0061). Below the breakpoint it's a hub
   // that drills into a full-page section; at or above it's a persistent sidebar
@@ -41,7 +65,7 @@
   // The section whose content the pane shows. The tablet pane always shows one
   // (the hub itself never renders there), defaulting to the first section.
   let activeSection = $derived<SectionId>(view === 'hub' ? SECTIONS[0].id : view);
-  let activeMeta = $derived(SECTIONS.find((s) => s.id === activeSection) ?? SECTIONS[0]);
+  let activeMeta = $derived(SECTION_BY_ID[activeSection]);
 
   $effect(() => {
     if (typeof matchMedia === 'undefined') return;
@@ -86,25 +110,8 @@
 </script>
 
 {#snippet sectionContent(id: SectionId)}
-  {#if id === 'appearance'}
-    <AppearanceSection />
-  {:else if id === 'sound'}
-    <SoundSection />
-  {:else if id === 'saving'}
-    <SavingSection />
-  {:else if id === 'controls'}
-    <ControlsSection />
-  {:else if id === 'ai'}
-    <AiKeyManager open={settingsModal.open} />
-  {:else if id === 'setup'}
-    <SetupInstructions open={settingsModal.open} />
-  {:else if id === 'whatsnew'}
-    <WhatsNewSection />
-  {:else if id === 'feedback'}
-    <ReportForm open={settingsModal.open} />
-  {:else if id === 'about'}
-    <AboutSection />
-  {/if}
+  {@const Section = SECTION_CONTENT[id] as Component<{ open?: boolean }>}
+  <Section open={settingsModal.open} />
 {/snippet}
 
 <dialog

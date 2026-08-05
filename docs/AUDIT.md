@@ -25,68 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Types] Section→content mapping is an unchecked if/else chain — a new `SectionId` silently renders nothing
-
-**File(s):** `web/src/lib/components/SettingsModal.svelte` (`sectionContent` snippet, lines 88–108;
-`activeMeta`, line 44), `web/src/lib/components/settings/sections.ts` (`SectionId`, lines 18–27;
-`SECTIONS`, lines 29–39) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-Three artifacts must agree for a section to work, and only one of them is compiler-checked:
-
-1. The `SectionId` union (`sections.ts:18–27`) — hand-written.
-2. The `SECTIONS` array (`sections.ts:29–39`) — each entry's `id` is checked *against* the union,
-   but nothing guarantees every union member appears (or appears once). Removing an entry while
-   forgetting the union member compiles clean.
-3. The `sectionContent` snippet in `SettingsModal.svelte:88–108` — a 9-branch `{#if}/{:else if}`
-   chain with no final `{:else}` and no exhaustiveness: add a tenth `SectionId`, register it in
-   `SECTIONS`, and the hub row/nav item appears but drilling in renders an empty pane.
-   `sectionSubtitle`'s `switch` (`sections.ts:50–83`) is the only exhaustiveness-checked consumer
-   (via the `string` return type with no default).
-
-The `?? SECTIONS[0]` fallback on line 44
-(`SECTIONS.find((s) => s.id === activeSection) ?? SECTIONS[0]`) exists only because the array lookup
-isn't total — dead code under a closed mapping, and a `find` scan per render besides.
-
-CLAUDE.md's convention is explicit: "Close finite value sets in the type … constant maps are
-`Record<UnionType, V>` (or `satisfies`), not `Record<string, V>`."
-
-#### Proposed solution
-
-Two steps:
-
-1. In `sections.ts`, derive the union from the data instead of maintaining it by hand:
-
-```ts
-export const SECTIONS = [
-  { id: 'appearance', label: 'Appearance & Display', icon: 'theme-auto' },
-  // …
-] as const satisfies readonly { id: string; label: string; title?: string; icon: IconName }[];
-export type SectionId = (typeof SECTIONS)[number]['id'];
-```
-
-Duplicates and drift become impossible; `SectionMeta` becomes `(typeof SECTIONS)[number]`.
-
-2. In `SettingsModal.svelte`, replace the chain with a closed component map (Svelte 5 components are
-   values):
-
-```ts
-const SECTION_CONTENT: Record<SectionId, Component<{ open?: boolean }>> = {
-  appearance: AppearanceSection,
-  sound: SoundSection, /* … */
-};
-```
-
-then `{@const Section = SECTION_CONTENT[id]}<Section open={settingsModal.open} />`. Wrinkle: only
-`AiKeyManager`, `SetupInstructions`, and `ReportForm` accept `open` today; passing it to all nine
-either means adding an unused prop (violates no-speculative-surface) or typing the map as
-`Component<{ open?: boolean }>` and letting Svelte ignore the extra prop for the others — the latter
-is fine, but say so at the map. `activeMeta` similarly becomes a `Record<SectionId, SectionMeta>`
-lookup (or keep `find` and drop the now-provably-dead `??` fallback).
-
 ### [Maintainability] ReportForm's 4000-char limit and `hp` honeypot field duplicate the server's contract as bare literals
 
 **File(s):** `web/src/lib/components/settings/ReportForm.svelte` (line 137 `maxlength={4000}`, line

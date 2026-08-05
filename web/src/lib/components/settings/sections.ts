@@ -5,28 +5,7 @@ import { aiCredentialKind, settings } from '$lib/state/settings.svelte';
 // Settings is one flat list of sections (ADR-0061). Both shells — the
 // phone hub with full-page drill-in and the tablet sidebar + content pane —
 // render from this single ordered list, so the two layouts can never drift.
-export interface SectionMeta {
-  id: SectionId;
-  label: string;
-  // Heading shown once drilled in (phone) or as the pane title (tablet), when
-  // it should differ from the nav label — e.g. "What's New" reads best in the
-  // menu, but "Updates" avoids stacking on the "✨ New" headings inside.
-  title?: string;
-  icon: IconName;
-}
-
-export type SectionId =
-  | 'appearance'
-  | 'sound'
-  | 'saving'
-  | 'controls'
-  | 'ai'
-  | 'setup'
-  | 'whatsnew'
-  | 'feedback'
-  | 'about';
-
-export const SECTIONS: SectionMeta[] = [
+export const SECTIONS = [
   { id: 'appearance', label: 'Appearance & Display', icon: 'theme-auto' },
   { id: 'sound', label: 'Sound', icon: 'volume-on' },
   { id: 'saving', label: 'Saving', icon: 'download' },
@@ -36,7 +15,20 @@ export const SECTIONS: SectionMeta[] = [
   { id: 'whatsnew', label: "What's New", title: 'Updates', icon: 'magic-brush' },
   { id: 'feedback', label: 'Submit Feedback', icon: 'more-horiz' },
   { id: 'about', label: 'About', icon: 'splotchy' },
-];
+] as const satisfies readonly {
+  id: string;
+  label: string;
+  // Heading shown once drilled in (phone) or as the pane title (tablet), when
+  // it should differ from the nav label — e.g. "What's New" reads best in the
+  // menu, but "Updates" avoids stacking on the "✨ New" headings inside.
+  title?: string;
+  icon: IconName;
+}[];
+
+export type SectionId = (typeof SECTIONS)[number]['id'];
+// The intersection re-states the optional `title`, which is otherwise readable only on the one
+// entry that sets it — every other member of the derived union lacks the key entirely.
+export type SectionMeta = (typeof SECTIONS)[number] & { readonly title?: string };
 
 // Reveal timing shared by every conditional settings block inside a section.
 // It lives here rather than in tokens.css because `transition:slide` takes a JS
