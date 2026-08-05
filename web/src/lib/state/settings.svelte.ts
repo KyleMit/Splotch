@@ -237,5 +237,6 @@ export function captureAiAccessTokenFromUrl() {
   const token = url.searchParams.get(AI_ACCESS_TOKEN_PARAM);
   if (!token) return;
   setAiAccessToken(token);
-  window.history.replaceState({}, '', '/');
+  url.searchParams.delete(AI_ACCESS_TOKEN_PARAM);
+  window.history.replaceState({}, '', url);
 }

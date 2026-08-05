@@ -1468,39 +1468,6 @@ Suffix the modal handles: `colorPickerModal`, `coloringBookModal`, `settingsModa
 `aiPromptModal`. Purely mechanical rename across ~10 importing components; the payoff is that every
 use is self-identifying and the `coloringBook` name is freed for the domain that owns it.
 
-### [Correctness] `captureAiAccessTokenFromUrl` rewrites the URL to a bare `/`, dropping unrelated params and hash
-
-**File(s):** `web/src/lib/state/settings.svelte.ts` (`captureAiAccessTokenFromUrl`, lines 233–241) @
-9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-const url = new URL(window.location.href);
-const token = url.searchParams.get(AI_ACCESS_TOKEN_PARAM);
-if (!token) return;
-setAiAccessToken(token);
-window.history.replaceState({}, '', '/');
-```
-
-The scrub replaces the entire URL with `/`, discarding any other query params (campaign tags a
-parent's messenger app appended, a future feature param) and any hash — not just the token. Today
-invite links (`lib/server/admin.ts:90`) carry only the token so impact is nil, which is why this is
-P5, but the function's name promises "capture the token from the URL", not "reset the URL".
-
-#### Proposed solution
-
-Delete only the captured param:
-
-```ts
-url.searchParams.delete(AI_ACCESS_TOKEN_PARAM);
-window.history.replaceState({}, '', url);
-```
-
-Same length, no behavior change for current links, and future-proof against additional params.
-
 ### [Readability] `tool.svelte.test.ts` duplicates its three-line `beforeEach` in both describes
 
 **File(s):** `web/src/lib/state/tool.svelte.test.ts` (lines 15–19, 101–105) @ 9ae62ff1
