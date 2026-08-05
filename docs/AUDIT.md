@@ -2265,27 +2265,6 @@ Name collision warning: `AdminConsole.svelte` exports a client-side `Invite` (wi
 `usage` field) — the server type is its base; keep the names distinct or import aliased in any file
 that sees both.
 
-### [Maintainability] `SESSION_MAX_AGE` lacks the unit suffix the constants convention requires
-
-**File(s):** `web/src/routes/admin/+page.server.ts` (line 25) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-const SESSION_MAX_AGE = 60 * 60 * 24 * 365 * 10;
-```
-
-Cookie `maxAge` is seconds, but nothing in the name says so — and this repo has both conventions in
-play (`_MS` timers everywhere else), so a reader must recall the cookie API to know the unit.
-CLAUDE.md: "a named module-scope constant with the unit in the name (`_MS`, `_PX` …)".
-
-#### Proposed solution
-
-Rename to `SESSION_MAX_AGE_S` (one call site, line 32). Trivial, but it's the convention's exact
-letter.
-
 ### [Readability] `targetRepo()` is a single-use one-line indirection
 
 **File(s):** `web/src/lib/server/github.ts` (lines 12–14, sole use line 62) @ 9ae62ff1

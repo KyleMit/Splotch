@@ -23,14 +23,14 @@ export const ssr = true;
 // is renewed on every authenticated load so it slides forward and never lapses
 // while in use. The logout button is the explicit way to clear it.
 const SESSION_COOKIE = 'admin_session';
-const SESSION_MAX_AGE = 60 * 60 * 24 * 365 * 10;
+const SESSION_MAX_AGE_S = 60 * 60 * 24 * 365 * 10;
 
 function setSession(cookies: Cookies) {
   cookies.set(SESSION_COOKIE, sessionToken(), {
     path: '/admin',
     httpOnly: true,
     sameSite: 'strict',
-    maxAge: SESSION_MAX_AGE,
+    maxAge: SESSION_MAX_AGE_S,
   });
 }
 
