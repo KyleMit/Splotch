@@ -161,45 +161,6 @@ modal-rename finding if that lands.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Maintainability] The MutationFailure→HTTP-status mapping is duplicated and kept in agreement only by prose
-
-**File(s):** `web/src/routes/admin/+page.server.ts` (`tokenMutation`, line 99) @ 9ae62ff1;
-`web/src/lib/server/tokens.ts` (`MutationFailure`, line 170)
-
-**Priority:** P2
-
-#### Problem
-
-The rule "`reason: 'conflict'` → 409, `reason: 'invalid'` → 400" exists twice: in the `/admin` form
-action —
-
-```ts
-if (!result.ok) return fail(result.reason === 'conflict' ? 409 : 400, { error: result.error });
-```
-
-— and in `/api/admin/tokens`' `mutationError` (`web/src/routes/api/admin/tokens/+server.ts`,
-`json(payload, { status: result.reason === 'conflict' ? 409 : 400 })`). The only thing tying them
-together is the comment at `+page.server.ts` lines 85–88 ("The status mapping mirrors
-/api/admin/tokens' mutationError…"). CLAUDE.md is explicit: "Cross-file agreement is never
-maintained by prose … a value that must agree with another module is imported from one exported
-constant." The two integration tests (`tokenActions.integration.test.ts`,
-`wire.integration.test.ts`) each pin their own side, so a change to one side plus its own test keeps
-CI green while the two front doors diverge — exactly the drift the convention exists to prevent.
-
-#### Proposed solution
-
-Export the mapping once from the module that owns `MutationFailure`, e.g. in
-`web/src/lib/server/tokens.ts`:
-
-```ts
-export function mutationFailureStatus(failure: MutationFailure): 400 | 409 {
-  return failure.reason === 'conflict' ? 409 : 400;
-}
-```
-
-Both `tokenMutation` and `mutationError` call it. The return type stays a closed literal union so
-any new `reason` (see the P1 finding) forces both call sites through the compiler at once.
-
 ### [Maintainability] AdminConsole duplicates the copy-code/copy-link button markup three times
 
 **File(s):** `web/src/lib/components/admin/AdminConsole.svelte` (invite row, lines 243–288) @
