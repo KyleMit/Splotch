@@ -27,35 +27,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — App state (runes)
 
-### [Maintainability] Sound-volume bounds 0/100 are duplicated between `clampVolume` and the slider markup
-
-**File(s):** `web/src/lib/state/settings.svelte.ts` (`clampVolume`, lines 78–81) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-function clampVolume(v: number) {
-  if (!Number.isFinite(v)) return SOUND_VOLUME_DEFAULT;
-  return Math.max(0, Math.min(100, Math.round(v)));
-}
-```
-
-The `0`/`100` bounds are re-stated as bare literals in
-`web/src/lib/components/settings/SoundSection.svelte:53-54` (`min={0} max={100}`). These two sites
-must agree — a slider whose range exceeds the clamp silently snaps on release; a clamp wider than
-the slider makes stored values unreachable. The module already demonstrates the correct pattern one
-screen down: `ACTION_BUTTON_SCALE_MIN`/`MAX` (lines 86–87) are exported and imported by
-`ControlsSection.svelte:118` and `actionButtonLayout.ts:103`. Volume is the one slider setting that
-skipped it.
-
-#### Proposed solution
-
-Export `SOUND_VOLUME_MIN = 0` and `SOUND_VOLUME_MAX = 100` beside `SOUND_VOLUME_DEFAULT`, use them
-in `clampVolume`, and import them in `SoundSection.svelte` for `min`/`max`. Mirrors the existing
-scale-constant pattern exactly.
-
 ### [Maintainability] Name the 600px tablet threshold in `defaultForceLandscapeOrientation`
 
 **File(s):** `web/src/lib/state/settings.svelte.ts` (`defaultForceLandscapeOrientation`, lines
