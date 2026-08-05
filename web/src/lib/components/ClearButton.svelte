@@ -5,6 +5,7 @@
   import { clearCanvas } from '$lib/drawing/engine';
   import { saveDrawingIfEnabled } from '$lib/drawing/saveOnDelete';
   import { dragToClear } from '$lib/actions/dragToClear';
+  import { scribbleGuard } from '$lib/actions/scribbleGuard';
   import { layout, type Orientation } from '$lib/state/layout.svelte';
   import { resetToolAfterClear } from '$lib/state/tool.svelte';
 
@@ -36,11 +37,17 @@
 </script>
 
 <div class="clear-container" id="clearContainer" bind:this={containerEl}>
+  <!-- scribbleGuard cancels a stylus tap's touch stream so it can't arm iPadOS
+       Scribble against the next stroke (ADR-0038) — a pen tap here that starts
+       no drag is exactly the arming gesture, and the swallowed stroke that
+       follows is invisible. No companion scribbleTap: dragToClear activates off
+       pointerup, so the click the guard suppresses is one nothing listens for. -->
   <button
     class="clear-button"
     id="clearButton"
     aria-label="Clear drawing"
     bind:this={buttonEl}
+    use:scribbleGuard
     use:dragToClear={() => ({
       containerEl,
       acceptZoneEl,
