@@ -30,30 +30,26 @@ const AUDIT_PATH = join('docs', 'AUDIT.md');
 const BRIEF_PATH = join('.audit-work', 'current-brief.md');
 const COMPLETED_LOG = join('.audit-work', 'completed.log');
 const COMMENT_STORE = join('.audit-work', 'pending-comments.jsonl');
+const LAUNCH_COMMAND_PATH = join('.audit-work', 'launch-command');
 const DEFERRED_PATH = join('docs', 'AUDIT-DEFERRED.md');
 
 const FIRST_TITLE = '[P1][complexity] First finding';
 const SECOND_TITLE = '[P2][dead-code] Second finding';
+const THIRD_TITLE = '[P3][readability] Third finding';
+const entry = (title, body) => [`### ${title}`, '', '#### Problem', '', body, '', '---', ''];
 const FIXTURE = [
   '# Audit',
   '',
   '## Source: Code audit — Area one',
   '',
-  `### ${FIRST_TITLE}`,
-  '',
-  '#### Problem',
-  '',
-  'The first thing is wrong.',
-  '',
-  '---',
-  '',
-  `### ${SECOND_TITLE}`,
-  '',
-  '#### Problem',
-  '',
-  'The second thing is wrong.',
-  '',
+  ...entry(FIRST_TITLE, 'The first thing is wrong.'),
+  ...entry(SECOND_TITLE, 'The second thing is wrong.'),
 ].join('\n');
+// A run needs three outcomes to show a counter being *reset* rather than merely
+// not incremented, so the deferral-streak tests stage one more finding.
+const THREE_FINDING_FIXTURE = [FIXTURE, ...entry(THIRD_TITLE, 'The third thing is wrong.')].join(
+  '\n'
+);
 
 // A finished agent envelope, in the shape agent-runner.mjs normalizes to.
 const verifiedValid = (api) => {
@@ -63,6 +59,10 @@ const verifiedValid = (api) => {
     structured: { verdict: 'VALID', reason: '', brief_path: BRIEF_PATH, e2e_specs: [] },
   };
 };
+const invalidVerdict = (reason = 'already fixed') => ({
+  ok: true,
+  structured: { verdict: 'INVALID', reason, brief_path: '', e2e_specs: [] },
+});
 const implemented = (api, summary = 'made the change') => ({
   ok: true,
   sessionId: 'impl-session',
@@ -70,18 +70,20 @@ const implemented = (api, summary = 'made the change') => ({
 });
 const approved = { ok: true, structured: { status: 'APPROVED', findings: [] } };
 
-// Drives one run against a temp repo. `respond` stands in for every agent call;
-// `shellResult` for the deterministic gates. Every observable the driver emits
-// in order — its log lines and its pushes — lands in one `events` array, because
-// what distinguishes a push at the cadence from the exit flush is *when* it
-// happens, not what it looks like.
-function createRun({ env = {}, respond, shellResult } = {}) {
+// Drives one run against a temp repo. `respond` stands in for every agent call,
+// `shellResult` for the deterministic gates, `shellOk` for the tree-is-green
+// checks, and `hasCommand` for preflight's runner-binary probe. Every observable
+// the driver emits in order — its log lines and its pushes — lands in one
+// `events` array, because what distinguishes a push at the cadence from the exit
+// flush is *when* it happens, not what it looks like.
+function createRun({ env = {}, respond, shellResult, shellOk, hasCommand } = {}) {
   const config = readConfig({ BUNDLE_SPEC: '', ...env });
   const events = [];
   const gitCalls = [];
   const agentCalls = [];
   const runCmdCalls = [];
   const shellCommands = [];
+  const probedBinaries = [];
   let head = 1;
 
   const sha = () => String(head).padStart(40, '0');
@@ -127,9 +129,13 @@ function createRun({ env = {}, respond, shellResult } = {}) {
       runCmdCalls.push([cmd, ...args]);
       return { status: 0, stdout: '', stderr: '' };
     },
+    hasCommand: (binary) => {
+      probedBinaries.push(binary);
+      return hasCommand?.(binary) ?? true;
+    },
     shellOk: (command) => {
       shellCommands.push(command);
-      return true;
+      return shellOk?.(command) ?? true;
     },
     shellResult: (command) => {
       shellCommands.push(command);
@@ -147,6 +153,7 @@ function createRun({ env = {}, respond, shellResult } = {}) {
     agentCalls,
     runCmdCalls,
     shellCommands,
+    probedBinaries,
     api,
     run: createBurndownRun({ config, effects }),
   };
@@ -204,12 +211,7 @@ describe('push cadence', () => {
   });
 
   it('pushes an invalid drop where it happens', async () => {
-    const { events, run } = createRun({
-      respond: () => ({
-        ok: true,
-        structured: { verdict: 'INVALID', reason: 'already fixed', brief_path: '', e2e_specs: [] },
-      }),
-    });
+    const { events, run } = createRun({ respond: () => invalidVerdict() });
 
     await run.execute();
 
@@ -245,6 +247,18 @@ describe('push cadence', () => {
     expect(events.indexOf('PUSH')).toBeLessThan(eventAt(events, 'backlog empty'));
   });
 
+  it('flushes a commit the batch never filled when the run ends', async () => {
+    // The other half of the same 2026-07-25 bug: counting the deferral toward
+    // the cadence is useless if a batch that never fills is dropped at exit.
+    const { events, run } = createRun({ env: { PUSH_EVERY: '3' }, respond: () => ({ ok: false }) });
+
+    await run.execute();
+
+    expect(events.filter((event) => event === 'PUSH')).toHaveLength(1);
+    expect(events.indexOf('PUSH')).toBeGreaterThan(eventAt(events, 'backlog empty'));
+    expect(events.indexOf('PUSH')).toBeLessThan(eventAt(events, 'finished:'));
+  });
+
   it('halts the run once deferrals go consecutive', async () => {
     const { events, run } = createRun({
       env: { MAX_DEFERRALS: '2' },
@@ -253,6 +267,91 @@ describe('push cadence', () => {
 
     await expect(run.execute()).rejects.toThrow('2 consecutive deferrals');
     expect(events).toContain('HALT: 2 consecutive deferrals');
+  });
+
+  // "Consecutive" is the whole point of the halt: a run that keeps producing
+  // outcomes is working, and only an unbroken deferral streak means the driver
+  // is failing at everything it tries. Both non-deferral outcomes therefore
+  // break the streak, and a counter that is never reset turns MAX_DEFERRALS into
+  // a lifetime budget that stops a healthy run.
+  it('breaks the deferral streak on an invalid drop', async () => {
+    writeFileSync(AUDIT_PATH, THREE_FINDING_FIXTURE);
+    let finding = 0;
+    const { events, run } = createRun({
+      env: { MAX_DEFERRALS: '2' },
+      respond: (options) => {
+        if (options.role === 'verify') finding += 1;
+        return finding === 2 ? invalidVerdict() : { ok: false };
+      },
+    });
+
+    await run.execute();
+
+    expect(events).toContain('finished: 0 fixed, 1 dropped, 2 deferred, 0 remaining');
+    expect(events.some((event) => event.startsWith('HALT'))).toBe(false);
+  });
+
+  it('breaks the deferral streak on an accepted fix', async () => {
+    writeFileSync(AUDIT_PATH, THREE_FINDING_FIXTURE);
+    let finding = 0;
+    const { events, run } = createRun({
+      env: { MAX_DEFERRALS: '2' },
+      respond: (options, api) => {
+        if (options.role === 'verify') {
+          finding += 1;
+          return finding === 2 ? verifiedValid(api) : { ok: false };
+        }
+        if (options.role === 'implement') return implemented(api);
+        return approved;
+      },
+    });
+
+    await run.execute();
+
+    expect(events).toContain('finished: 1 fixed, 0 dropped, 2 deferred, 0 remaining');
+    expect(events.some((event) => event.startsWith('HALT'))).toBe(false);
+  });
+});
+
+describe('preflight', () => {
+  const passingRun = (overrides) =>
+    createRun({ env: { MAX_ISSUES: '7', PUSH_EVERY: '3' }, ...overrides });
+
+  it('probes the runner binary before touching git', () => {
+    const { gitCalls, probedBinaries, run } = passingRun({ hasCommand: () => false });
+
+    expect(() => run.preflight()).toThrow('missing dependency: claude');
+    expect(probedBinaries).toEqual(['claude']);
+    expect(gitCalls).toEqual([]);
+  });
+
+  it('leaves an in-flight run’s launch record intact when a gate halts', () => {
+    // recordLaunch runs last for exactly this reason: halt() exits the process
+    // without restoring the file, so a launch that dies on an already-red tree
+    // must not overwrite the record of the run that is still going.
+    writeFileSync(LAUNCH_COMMAND_PATH, 'IN_FLIGHT=1 npm run audit:burndown:overnight -- 600\n');
+    const { run } = passingRun({ shellOk: () => false });
+
+    expect(() => run.preflight()).toThrow('tree is already red before we start');
+    expect(readFileSync(LAUNCH_COMMAND_PATH, 'utf8')).toContain('IN_FLIGHT=1');
+  });
+
+  it('records the run’s own knobs once every gate passes', () => {
+    // The knobs come from the config the run was built with, not from the
+    // ambient environment — a launch-command naming knobs that were never in
+    // force is worse than none, since nothing else can re-derive them.
+    vi.stubEnv('PUSH_EVERY', '99');
+    const { run } = passingRun();
+
+    run.preflight();
+
+    const recorded = readFileSync(LAUNCH_COMMAND_PATH, 'utf8').trim();
+    expect(recorded).toContain("PUSH_EVERY='3'");
+    expect(recorded).not.toContain('99');
+    expect(recorded).toMatch(/-- 7$/);
+    expect(readFileSync(join('.audit-work', 'launch-pid'), 'utf8').trim()).toBe(
+      String(process.pid)
+    );
   });
 });
 

@@ -90,9 +90,14 @@ export function readConfig(env = process.env) {
   // for backward compatibility with existing launch commands.
   const AGENT_RUNNER = normalizeAgentRunner(env.AGENT_RUNNER);
   const RUNNER_DEFAULTS = agentRunnerDefaults(AGENT_RUNNER);
+  const MAX_ISSUES = Number(env.MAX_ISSUES ?? DEFAULT_MAX_ISSUES); // canary; raise once proven
 
   return {
-    MAX_ISSUES: Number(env.MAX_ISSUES ?? DEFAULT_MAX_ISSUES), // canary; raise once proven
+    MAX_ISSUES,
+    // The command that relaunches this exact run, resolved from the same env the
+    // knobs above came from so the recorded line can never describe a different
+    // run than the one in force (see recordLaunch).
+    LAUNCH_COMMAND: launchCommand(env, MAX_ISSUES),
     // A supervised detached segment must stop for CI and comment reconciliation
     // after a bounded number of outcomes. Unlike MAX_ISSUES, this counts invalid
     // drops and deferrals too. Zero keeps the historical unbounded behavior.
@@ -185,6 +190,7 @@ export function createEffects(config) {
       process.exit(1);
     },
     logLine,
+    hasCommand,
     git,
     gitOk,
     gitOut,
@@ -271,6 +277,7 @@ function uniqueDraftPath(title) {
 export function createBurndownRun({ config, effects }) {
   const {
     MAX_ISSUES,
+    LAUNCH_COMMAND,
     MAX_HANDLED,
     PUSH_EVERY,
     BRANCH,
@@ -296,7 +303,8 @@ export function createBurndownRun({ config, effects }) {
     EFFORT_REVIEW,
     RESUME,
   } = config;
-  const { agentStep, git, gitOk, gitOut, halt, logLine, runCmd, shellOk, shellResult } = effects;
+  const { agentStep, git, gitOk, gitOut, halt, hasCommand, logLine, runCmd, shellOk, shellResult } =
+    effects;
 
   // Fixes and drops are both "handled", but only fixes are work — conflating them
   // in the summary makes the closeout AUDIT-LOG row wrong in the flattering
@@ -334,11 +342,11 @@ export function createBurndownRun({ config, effects }) {
     return true;
   }
 
-  // Both non-fix outcomes (a deferral and an invalid drop) `continue` past the
-  // loop's own push check, so a commit either one makes has to reach the cadence
-  // here instead. It did not, so a run whose last finding deferred exited with
-  // that commit sitting unpushed — the exit flush is guarded on `sincePush > 0`,
-  // and nothing had incremented it. Observed on the 2026-07-25 smoke run.
+  // Both non-fix outcomes (a deferral and an invalid drop) return from
+  // runFinding before its push check, so a commit either one makes has to reach
+  // the cadence here instead. It did not, so a run whose last finding deferred
+  // exited with that commit sitting unpushed — the exit flush is guarded on
+  // `sincePush > 0`, and nothing had incremented it (2026-07-25 smoke run).
   function countCommitTowardPush() {
     sincePush += 1;
     if (sincePush >= PUSH_EVERY) pushBatch();
@@ -608,7 +616,7 @@ export function createBurndownRun({ config, effects }) {
   // itself. The pid goes in its own file so launch-command stays a pasteable line;
   // the snapshot hook cross-checks it against the driver pid it finds in `pgrep`.
   function recordLaunch() {
-    writeFileSync(join(WORK, 'launch-command'), `${launchCommand(process.env, MAX_ISSUES)}\n`);
+    writeFileSync(join(WORK, 'launch-command'), `${LAUNCH_COMMAND}\n`);
     writeFileSync(join(WORK, 'launch-pid'), `${process.pid}\n`);
   }
 
@@ -622,7 +630,6 @@ export function createBurndownRun({ config, effects }) {
     recordLaunch();
   }
 
-  // ---- 1. POP -----------------------------------------------------------------
   function popNextFinding(tag) {
     const issue = getEntry();
     if (issue === null) return null;
@@ -634,7 +641,6 @@ export function createBurndownRun({ config, effects }) {
     return { issue, title, issueWrittenAt };
   }
 
-  // ---- 2. VERIFY --------------------------------------------------------------
   // One semantic retry on VALID-without-brief: a verifier can finish cleanly,
   // return VALID, and still skip writing the brief — a successful call that
   // omitted a side effect, not a judgement about the finding, so it earns a
@@ -714,7 +720,6 @@ export function createBurndownRun({ config, effects }) {
     countCommitTowardPush();
   }
 
-  // ---- 3. IMPLEMENT -----------------------------------------------------------
   // Impl-model tiering: P4/P5 findings are the mechanical tail (dead code,
   // renames, dedup), where the cheaper model shaves the long pole and the
   // unchanged adversarial review still gates the result. Anything more
@@ -763,7 +768,8 @@ export function createBurndownRun({ config, effects }) {
     };
   }
 
-  // ---- 4/5. REVIEW, at most two fix rounds ------------------------------------
+  // Gate, review, and at most two fix rounds handed back to the implementer's own
+  // session; returns the head the caller closes out or rolls back.
   async function reviewWithFixRounds({
     tag,
     title,
@@ -934,7 +940,6 @@ export function createBurndownRun({ config, effects }) {
     };
   }
 
-  // ---- 6. CLOSE OUT -----------------------------------------------------------
   // Nothing reaching close-out needs re-gating: the gates run at the top of every
   // round on the very commit the reviewer then read, and the reviewer cannot
   // mutate the tree. Only the post-amend CHECK_CMD below, which guards the amend.
@@ -1095,8 +1100,8 @@ export function createBurndownRun({ config, effects }) {
       e2eSpecs,
     });
 
-    // Step 7, push: every finding by default. The commit is the durable artifact
-    // and the container is not, so there is no reason to sit on one.
+    // Push every finding by default. The commit is the durable artifact and the
+    // container is not, so there is no reason to sit on one.
     if (sincePush >= PUSH_EVERY) pushBatch();
     return true;
   }

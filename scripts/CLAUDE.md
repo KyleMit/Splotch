@@ -53,11 +53,12 @@
   status instead of exiting. `prompts/*.md` are runner-neutral role prompts. Entry points are the
   `audit:*` npm scripts. A run is a `createBurndownRun({ config, effects })` instance — the counters
   it shares (`done`/`dropped`/`deferred`/`consecutive`/`sincePush`) live there, each lifecycle step
-  is a named helper, and `effects` is the git/shell/agent-runner/log/halt surface the tests
-  substitute; `readConfig(env)` resolves the knobs and `main()` runs only under `isMain`, so
-  importing the driver starts nothing. The backlog surgery, the runner seam, and the driver's own
-  sequencing are locked by `scripts/tests/audit-burndown-*.test.mjs` (`npm run test:scripts`, in
-  CI).
+  is a named helper, and `effects` is the whole outside-world surface the tests substitute — git,
+  shell, the binary probe, the agent runner, the log, and `halt` — so both `preflight()` and
+  `execute()` are drivable from a test; `readConfig(env)` resolves every knob (including the
+  `launch-command` line recorded at startup) and `main()` runs only under `isMain`, so importing the
+  driver starts nothing. The backlog surgery, the runner seam, and the driver's own sequencing are
+  locked by `scripts/tests/audit-burndown-*.test.mjs` (`npm run test:scripts`, in CI).
 * `direct-provider-skills.mjs` declares the provider packages and notes that are edited in place.
   `ruler-apply.mjs` snapshots and restores those paths around Ruler's atomic skill-tree replacement,
   including on failure. `apply-ruler-skill-forks.mjs` then replaces complete generated packages for
