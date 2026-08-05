@@ -5,12 +5,10 @@ export interface UiState {
   // True while the parent is dragging the button-size slider. Settings
   // hides everything but the slider so the live-resizing action buttons show.
   resizingActionButtons: boolean;
-  clearTutorialVisible: boolean;
 }
 
 export const ui: UiState = $state({
   resizingActionButtons: false,
-  clearTutorialVisible: false,
 });
 
 export const SETTINGS_BUTTON_ID = 'settingsButton';

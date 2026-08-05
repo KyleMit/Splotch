@@ -27,25 +27,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — App state (runes)
 
-### [Readability] Delete the dead `clearTutorialVisible` field
-
-**File(s):** `web/src/lib/state/ui.svelte.ts` (lines 9, 24) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-`clearTutorialVisible: boolean` is declared in `UiState` (line 9) and initialized to `false` (line
-24), but a repo-wide grep (`web/src` + `web/tests`, `.ts`/`.svelte`/`.spec.ts`) finds no other
-reference — nothing ever reads or writes it. It is a leftover from a removed (or never-shipped)
-clear-tutorial feature and now misleads a reader into hunting for a tutorial flow that doesn't
-exist.
-
-#### Proposed solution
-
-Remove both lines. If a clear tutorial is planned, its state should arrive with the feature (the "no
-speculative surface" convention).
-
 ### [Maintainability] The folder-save support predicate is duplicated and kept in sync by prose
 
 **File(s):** `web/src/lib/state/saveFolder.svelte.ts` (`hydrateSaveFolder`, lines 65–76) @ 9ae62ff1
