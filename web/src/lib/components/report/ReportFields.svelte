@@ -2,6 +2,7 @@
   import { slide } from 'svelte/transition';
   import Disclosure from '../design/Disclosure.svelte';
   import { collectDeviceInfo } from '$lib/deviceInfo';
+  import { createSingleFlight } from '$lib/singleFlight';
   import { describeDeviceInfo, type DeviceInfo } from '$lib/deviceReport';
   import {
     MAX_REPORT_MESSAGE_LENGTH,
@@ -68,31 +69,27 @@
     kind === 'bug' && includeDevice && device ? JSON.stringify(device) : ''
   );
 
-  // In-flight collectDeviceInfo() call, so a second caller awaits the same
-  // collection instead of starting its own — intentionally untracked, no
-  // template reads it. Cleared on rejection so a later opt-in can retry.
-  let pendingDevice: Promise<DeviceInfo | undefined> | null = null;
+  // One collection shared by every caller, writing through into `device` as it
+  // resolves. The single-flight memo is what makes the preview and submit agree:
+  // both await the same in-flight run rather than racing two collections, so
+  // submit cannot send a snapshot the preview never rendered. Its behaviour in
+  // the in-flight window is covered by singleFlight.test.ts — an end-to-end test
+  // can only observe the settled state, where a weaker result-only memo looks
+  // identical.
+  const collectDeviceOnce = createSingleFlight(async () => {
+    const info = await collectDeviceInfo();
+    device = info;
+    return info;
+  });
 
   // Collect the device snapshot the first time the parent opts in, so the
-  // preview below reflects exactly what will be sent. Shared with ReportForm
-  // via the bindable ensureDevice above: both call sites await this same
-  // pending collection (never two concurrent ones) and write through it into
-  // the same device state, so submit can't send a snapshot the preview never
-  // rendered.
+  // preview below reflects exactly what will be sent. Shared with ReportForm via
+  // the bindable ensureDevice above. A failed collection resolves to undefined
+  // rather than throwing — an unavailable snapshot must not surface to the
+  // reporter as a failed send — and clears the memo so a later opt-in retries.
   function ensureDeviceInfo(): Promise<DeviceInfo | undefined> {
     if (device) return Promise.resolve(device);
-    if (!pendingDevice) {
-      pendingDevice = collectDeviceInfo()
-        .then((info) => {
-          device = info;
-          return info;
-        })
-        .catch(() => {
-          pendingDevice = null;
-          return undefined;
-        });
-    }
-    return pendingDevice;
+    return collectDeviceOnce().catch(() => undefined);
   }
   ensureDevice = ensureDeviceInfo;
 
