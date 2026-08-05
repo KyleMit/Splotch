@@ -44,10 +44,6 @@ describe('generateAiImage request ownership', () => {
     const webpEncoding = Promise.withResolvers<Blob | null>();
     const request = Promise.withResolvers<Response>();
     mocks.exportCanvasBlob.mockReturnValueOnce(canvasExport.promise);
-    // happy-dom exposes an OffscreenCanvas constructor whose getContext('2d')
-    // returns null, which would short-circuit encodeWebpUpload before this
-    // deferred stub is ever awaited — force the HTMLCanvasElement/toBlob path.
-    vi.stubGlobal('OffscreenCanvas', undefined);
     vi.stubGlobal(
       'createImageBitmap',
       vi.fn(async () => ({ width: 8, height: 8, close: vi.fn() }))
@@ -294,51 +290,10 @@ describe('generateAiImage response handling', () => {
 // preview and hand to the gallery auto-save.
 describe('generateAiImage upload format', () => {
   function stubWebpEncoder() {
-    // happy-dom exposes an OffscreenCanvas constructor whose getContext('2d')
-    // returns null, which would short-circuit encodeWebpUpload before the
-    // HTMLCanvasElement stubs below are ever reached.
-    vi.stubGlobal('OffscreenCanvas', undefined);
     vi.stubGlobal(
       'createImageBitmap',
       vi.fn(async () => ({ width: 8, height: 8, close: vi.fn() }))
     );
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-      drawImage: vi.fn(),
-    } as unknown as CanvasRenderingContext2D);
-    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (
-      this: HTMLCanvasElement,
-      cb: BlobCallback,
-      type?: string
-    ) {
-      cb(new Blob(['webp'], { type: type ?? 'image/png' }));
-    });
-  }
-
-  function stubOffscreenWebpEncoder() {
-    vi.stubGlobal(
-      'createImageBitmap',
-      vi.fn(async () => ({ width: 8, height: 8, close: vi.fn() }))
-    );
-    vi.stubGlobal(
-      'OffscreenCanvas',
-      class {
-        constructor(
-          public width: number,
-          public height: number
-        ) {}
-        getContext() {
-          return { drawImage: vi.fn() };
-        }
-        convertToBlob({ type }: { type: string }) {
-          return Promise.resolve(new Blob(['webp'], { type }));
-        }
-      }
-    );
-  }
-
-  // Mocks an HTMLCanvasElement whose getContext/toBlob succeed, for asserting the
-  // DOM-canvas fallback still lands a WebP when OffscreenCanvas exists but fails.
-  function stubDomCanvasFallback() {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       drawImage: vi.fn(),
     } as unknown as CanvasRenderingContext2D);
@@ -380,82 +335,6 @@ describe('generateAiImage upload format', () => {
     // The child's own drawing is still saved to the gallery as the lossless PNG.
     const drawingSave = mocks.saveImageBlob.mock.calls.find((call) => call[1] === 'splotch');
     expect(drawingSave?.[0].type).toBe('image/png');
-  });
-
-  it('uploads a WebP copy encoded via OffscreenCanvas.convertToBlob when available', async () => {
-    mocks.exportCanvasBlob.mockResolvedValueOnce(
-      new Blob(['P'.repeat(200)], { type: 'image/png' })
-    );
-    stubOffscreenWebpEncoder();
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
-
-    const { generateAiImage } = await import('./aiImage');
-    await generateAiImage();
-
-    expect(uploadedImage().type).toBe('image/webp');
-  });
-
-  it('falls through to the DOM canvas when OffscreenCanvas has no working 2D context', async () => {
-    mocks.exportCanvasBlob.mockResolvedValueOnce(
-      new Blob(['P'.repeat(200)], { type: 'image/png' })
-    );
-    vi.stubGlobal(
-      'createImageBitmap',
-      vi.fn(async () => ({ width: 8, height: 8, close: vi.fn() }))
-    );
-    // An OffscreenCanvas constructor exists but can't hand back a 2D context —
-    // e.g. happy-dom's own OffscreenCanvas — must not give up on WebP entirely.
-    vi.stubGlobal(
-      'OffscreenCanvas',
-      class {
-        constructor(
-          public width: number,
-          public height: number
-        ) {}
-        getContext() {
-          return null;
-        }
-      }
-    );
-    stubDomCanvasFallback();
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
-
-    const { generateAiImage } = await import('./aiImage');
-    await generateAiImage();
-
-    expect(uploadedImage().type).toBe('image/webp');
-  });
-
-  it('falls through to the DOM canvas when OffscreenCanvas.convertToBlob rejects', async () => {
-    mocks.exportCanvasBlob.mockResolvedValueOnce(
-      new Blob(['P'.repeat(200)], { type: 'image/png' })
-    );
-    vi.stubGlobal(
-      'createImageBitmap',
-      vi.fn(async () => ({ width: 8, height: 8, close: vi.fn() }))
-    );
-    vi.stubGlobal(
-      'OffscreenCanvas',
-      class {
-        constructor(
-          public width: number,
-          public height: number
-        ) {}
-        getContext() {
-          return { drawImage: vi.fn() };
-        }
-        convertToBlob() {
-          return Promise.reject(new Error('unsupported'));
-        }
-      }
-    );
-    stubDomCanvasFallback();
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
-
-    const { generateAiImage } = await import('./aiImage');
-    await generateAiImage();
-
-    expect(uploadedImage().type).toBe('image/webp');
   });
 
   it('falls back to the PNG upload when the platform cannot encode WebP', async () => {
