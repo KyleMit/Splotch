@@ -2,7 +2,6 @@ import type { DBSchema } from 'idb';
 import { browser } from '$app/environment';
 import { STORAGE_KEYS, readBool, writeBool, removeKey } from '$lib/storage';
 import { idbKvStore } from '$lib/idb';
-import { folderSaveSupported } from './folderSaveSupport';
 
 // Silent folder save for the web target. On desktop Chromium (in-tab or
 // installed PWA) the File System Access API lets the parent optionally pick a
@@ -70,7 +69,10 @@ async function storeHandle(handle: FileSystemDirectoryHandle): Promise<void> {
   await handleStore.put(HANDLE_KEY, handle);
 }
 
-export { folderSaveSupported };
+/** Whether the browser exposes the File System Access directory picker. */
+export function folderSaveSupported(): boolean {
+  return browser && 'showDirectoryPicker' in window;
+}
 
 /** The name of the remembered destination folder, or null if none is set. */
 export async function getSaveFolderName(): Promise<string | null> {

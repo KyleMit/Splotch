@@ -1,4 +1,3 @@
-import { folderSaveSupported } from '$lib/drawing/folderSaveSupport';
 import { settings } from './settings.svelte';
 
 // folderSave is save-time-only, so it loads on demand and stays out of the
@@ -65,12 +64,12 @@ export async function forgetSaveFolder() {
 
 // Boot hydration (web/desktop only): read the remembered folder name from the
 // directory handle in IndexedDB into the live store so Settings can
-// show it. No side effects on the save features. The support check comes from
-// the dependency-light folderSaveSupport module so unsupported platforms — every
+// show it. No side effects on the save features. The support check is inlined
+// (same predicate as folderSaveSupported) so unsupported platforms — every
 // phone — never fetch the folder-save chunk just to learn there's nothing to
 // hydrate.
 export async function hydrateSaveFolder() {
-  if (!folderSaveSupported()) return;
+  if (typeof window === 'undefined' || !('showDirectoryPicker' in window)) return;
   const mod = await tryLoadFolderSave();
   if (!mod) return;
   settings.saveFolderName = await mod.getSaveFolderName();
