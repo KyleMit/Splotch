@@ -1,9 +1,10 @@
 // Validates every asset referenced in the coloring-book catalog exists on disk,
-// and that the platform filtering used by strip-native-assets.mjs is consistent
-// with booksForPlatform. Run with:
+// that the platform filtering used by strip-native-assets.mjs is consistent with
+// booksForPlatform, and that no authoring doc sits in the publicly served static
+// tree. Run with:
 //   npm run check:assets
 
-import { existsSync } from 'node:fs';
+import { existsSync, globSync } from 'node:fs';
 import { join } from 'node:path';
 import { webOnlyBooks } from './lib/book-assets.mjs';
 import { ROOT, fail, isMain } from './lib/proc.mjs';
@@ -51,10 +52,26 @@ function reportPlatformFilterMismatch(books, mobileEligibleBooks) {
   return 0;
 }
 
+// Everything under static/ is served verbatim from splotch.art and copied into
+// the native bundles, so an authoring doc dropped here is published the moment
+// it is committed — the trap COLORING-BOOK.md fell into. Prose belongs in
+// docs/ or tools/asset-gen/docs/; nothing the app fetches is Markdown.
+function reportPubliclyServedDocs(staticDir) {
+  const docs = globSync('**/*.md', { cwd: staticDir });
+  for (const doc of docs) {
+    console.error(
+      `[check-assets] PUBLISHED DOC: ${doc} — web/static/ is served publicly; move it under docs/`
+    );
+  }
+  if (docs.length === 0) console.log('[check-assets] no authoring docs in the static tree.');
+  return docs.length;
+}
+
 export function checkAssets(staticDir, books, mobileEligibleBooks) {
   const errors =
     reportMissingCatalogAssets(staticDir, books) +
-    reportPlatformFilterMismatch(books, mobileEligibleBooks);
+    reportPlatformFilterMismatch(books, mobileEligibleBooks) +
+    reportPubliclyServedDocs(staticDir);
   if (errors > 0) {
     throw new Error(`[check-assets] ${errors} error(s) found — fix before releasing.`);
   }

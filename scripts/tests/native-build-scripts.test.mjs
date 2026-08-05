@@ -108,6 +108,20 @@ function fixtureBook(id, platforms) {
   };
 }
 
+function catalogAssetPaths(book) {
+  return [
+    book.cover,
+    ...book.pages.flatMap((page) => [
+      ...Object.values(page.images),
+      ...Object.values(page.colorImages),
+      ...Object.values(page.nightImages),
+      ...Object.values(page.chalkImages),
+    ]),
+    `/coloring/max-1152px/${book.id}/page-tall.overlay.webp`,
+    `/coloring/max-240px/${book.id}/page-tall.thumb.webp`,
+  ];
+}
+
 function writeFixture(path, contents = 'fixture') {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, contents);
@@ -353,18 +367,9 @@ describe('native build script entry points', () => {
   it('reports success for a complete catalog', () => {
     const staticDir = join(state.root, 'complete-static');
     const mobileBook = fixtureBook('mobile-complete', ['mobile']);
-    const assetPaths = [
-      mobileBook.cover,
-      ...mobileBook.pages.flatMap((page) => [
-        ...Object.values(page.images),
-        ...Object.values(page.colorImages),
-        ...Object.values(page.nightImages),
-        ...Object.values(page.chalkImages),
-      ]),
-      `/coloring/max-1152px/${mobileBook.id}/page-tall.overlay.webp`,
-      `/coloring/max-240px/${mobileBook.id}/page-tall.thumb.webp`,
-    ];
-    for (const assetPath of assetPaths) writeFixture(join(staticDir, assetPath));
+    for (const assetPath of catalogAssetPaths(mobileBook)) {
+      writeFixture(join(staticDir, assetPath));
+    }
     exit.mockClear();
     error.mockClear();
     log.mockClear();
@@ -374,5 +379,26 @@ describe('native build script entry points', () => {
     expect(exit).not.toHaveBeenCalled();
     expect(error).not.toHaveBeenCalled();
     expect(log).toHaveBeenCalledWith('[check-assets] all checks passed.');
+  });
+
+  it('fails when an authoring doc sits in the publicly served static tree', () => {
+    const staticDir = join(state.root, 'doc-static');
+    const mobileBook = fixtureBook('mobile-doc', ['mobile']);
+    for (const assetPath of catalogAssetPaths(mobileBook)) {
+      writeFixture(join(staticDir, assetPath));
+    }
+    writeFixture(join(staticDir, 'coloring', 'PLANNING.md'), '# internal notes');
+    exit.mockClear();
+    error.mockClear();
+    log.mockClear();
+
+    expect(() => checkAssets(staticDir, [mobileBook], [mobileBook])).toThrow(
+      /^\[check-assets\] \d+ error\(s\) found/
+    );
+
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('[check-assets] PUBLISHED DOC: coloring/PLANNING.md')
+    );
+    expect(log).not.toHaveBeenCalledWith('[check-assets] all checks passed.');
   });
 });
