@@ -17,6 +17,7 @@
   import { SECTIONS, sectionSubtitle, type SectionId, type SectionMeta } from './settings/sections';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
+  import { TABLET_MIN_SIDE_PX } from '$lib/platform';
 
   // Not every section takes `open` (only AiKeyManager/SetupInstructions/ReportForm do); passing it
   // uniformly is fine — Svelte drops props a component doesn't declare — but the generated types
@@ -70,11 +71,12 @@
 
   // A landscape *phone* has plenty of width (so it would match WIDE_QUERY) but
   // almost no height — the full section list is unusably cramped there. Detect
-  // it by orientation + the same sub-600px height floor the tablet defaults use
-  // (see defaultForceLandscapeOrientation), and swap in a stripped-down shell of
-  // quick toggles. A landscape tablet keeps its height ≥ 600px, so it stays on
-  // the sidebar shell untouched.
-  const COMPACT_QUERY = '(orientation: landscape) and (max-height: 599px)';
+  // it by orientation plus the shared tablet-class floor, and swap in a
+  // stripped-down shell of quick toggles. A landscape tablet keeps its height at
+  // or above that floor, so it stays on the sidebar shell untouched. The bound
+  // is derived from the threshold rather than restated, so retuning the floor
+  // cannot leave shell selection disagreeing with the orientation defaults.
+  const COMPACT_QUERY = `(orientation: landscape) and (max-height: ${TABLET_MIN_SIDE_PX - 1}px)`;
   const compact = mediaQueryFlag(COMPACT_QUERY);
 
   // 'hub' = the phone top-level list; a section id = that section is open.
@@ -100,10 +102,10 @@
 
   // Tier-2 accessibility (ADR-0076): let a low-vision parent pinch to enlarge the
   // reading content. The bound element gets CSS `zoom`; both full-size scroll shells
-  // (wide sidebar pane, phone hub/section scroll) bind it. The compact landscape-phone
-  // shell is deliberately excluded: it has no prose to read and no vertical room to
-  // zoom into, only quick toggles. Zoom resets to normal whenever the overlay closes
-  // or the parent navigates to another section.
+  // (wide sidebar pane, phone hub/section scroll) bind it. The compact
+  // landscape-phone shell is deliberately excluded — it has no vertical room to zoom
+  // into; rotate to portrait for the full zoomable settings. Zoom resets to normal
+  // whenever the overlay closes or the parent navigates to another section.
   let zoomTarget = $state<HTMLElement>();
   const textZoom = () => ({
     target: zoomTarget,

@@ -4,7 +4,10 @@ const ctrl = vi.hoisted(() => ({ native: false }));
 const prefsStore = vi.hoisted(() => new Map<string, string>());
 const secureStore = vi.hoisted(() => ({ apiKey: null as string | null }));
 
-vi.mock('../platform', () => ({
+// Spread the real module so only the two platform *behaviours* are faked; the
+// constants it also exports stay real rather than being restated here.
+vi.mock('../platform', async (importActual) => ({
+  ...(await importActual<typeof import('../platform')>()),
   isNative: () => ctrl.native,
   getPlatform: () => (ctrl.native ? 'android' : 'web'),
 }));

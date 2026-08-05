@@ -74,8 +74,18 @@ export function getPlatform(): Platform {
   return platform === 'android' || platform === 'ios' ? platform : 'web';
 }
 
-// This boundary implements the tablet-class heuristic documented by supportsOrientationLock().
-const TABLET_MIN_SIDE_PX = 600;
+// The tablet-class floor, shared by every site that classifies a device by size:
+// this module's orientation-lock capability check, settings' default orientation
+// (`defaultForceLandscapeOrientation`), and SettingsModal's compact-shell media
+// query, which derives its max-height from this value. iPad Mini and larger
+// tablets have a smallest side around 744px and Android tablet layouts commonly
+// start at 600dp; phone-class devices stay below this even in landscape.
+//
+// The sites measure different things on purpose — screen size here, viewport
+// size in settings — but they must agree on where the class boundary sits, or
+// default orientation, native lock capability and shell selection disagree on
+// the same device.
+export const TABLET_MIN_SIDE_PX = 600;
 
 /**
  * Whether the app may force its own device orientation.
