@@ -9,7 +9,6 @@
     NETWORK_ERROR_MESSAGE,
     type SubmitStatus,
   } from '$lib/latestRequest';
-  import { collectDeviceInfo } from '$lib/deviceInfo';
   import type { DeviceInfo } from '$lib/deviceReport';
   import { REPORT_HONEYPOT_FIELD, type ReportKind } from '$lib/report';
 
@@ -25,6 +24,7 @@
   let includeDevice = $state(false);
   let device = $state<DeviceInfo | null>(null);
   let honeypot = $state('');
+  let ensureDevice = $state<() => Promise<DeviceInfo | undefined>>();
 
   let status = $state<SubmitStatus>('idle');
   let feedback = $state('');
@@ -66,7 +66,7 @@
         body: JSON.stringify({
           kind,
           message: text,
-          device: attachDevice ? (device ?? (await collectDeviceInfo())) : undefined,
+          device: attachDevice ? await ensureDevice?.() : undefined,
           [REPORT_HONEYPOT_FIELD]: honeypot,
         }),
         signal,
@@ -100,7 +100,14 @@
   </p>
 
   <div class="setting report-card">
-    <ReportFields bind:kind bind:message bind:includeDevice bind:device bind:honeypot />
+    <ReportFields
+      bind:kind
+      bind:message
+      bind:includeDevice
+      bind:device
+      bind:honeypot
+      bind:ensureDevice
+    />
 
     <Button
       variant="brand"

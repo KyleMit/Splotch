@@ -40,6 +40,12 @@
     device?: DeviceInfo | null;
     /** Bindable for the same reason — no host has business reading a bot trap. */
     honeypot?: string;
+    /**
+     * Bindable so ReportForm can await the same memoizing collection this
+     * component's own effect uses, instead of calling collectDeviceInfo
+     * independently and risking a second, unpreviewed snapshot.
+     */
+    ensureDevice?: () => Promise<DeviceInfo | undefined>;
   }
 
   let {
@@ -48,6 +54,7 @@
     includeDevice = $bindable(),
     device = $bindable(null),
     honeypot = $bindable(''),
+    ensureDevice = $bindable(),
   }: Props = $props();
 
   let deviceRows = $derived(device ? describeDeviceInfo(device) : []);
@@ -60,12 +67,24 @@
   );
 
   // Collect the device snapshot the first time the parent opts in, so the
-  // preview below reflects exactly what will be sent.
+  // preview below reflects exactly what will be sent. Shared with ReportForm
+  // via the bindable ensureDevice above, so both call sites write through the
+  // same memoizing function into the same device state.
+  async function ensureDeviceInfo(): Promise<DeviceInfo | undefined> {
+    if (device) return device;
+    try {
+      const info = await collectDeviceInfo();
+      device = info;
+      return info;
+    } catch {
+      return undefined;
+    }
+  }
+  ensureDevice = ensureDeviceInfo;
+
   $effect(() => {
     if (includeDevice && kind === 'bug' && !device) {
-      collectDeviceInfo()
-        .then((info) => (device = info))
-        .catch(() => {});
+      void ensureDeviceInfo();
     }
   });
 </script>
