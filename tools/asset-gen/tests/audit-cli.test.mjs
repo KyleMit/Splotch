@@ -5,8 +5,15 @@ import { join } from 'node:path';
 
 const state = vi.hoisted(() => ({ roots: null, pages: [], overlayRequests: 0 }));
 
+// The fixture files carry their meaning in their bytes: addPage writes one of
+// these, and the mocked decoders below recognise it. Named so a typo at either
+// end is a reference error instead of a test that passes vacuously — a
+// "corrupt" page that quietly scores clean.
+const CORRUPT_BYTES = 'corrupt';
+const DRIFT_FILL_BYTES = 'drift fill';
+
 const assertReadable = (buffer) => {
-  if (buffer.toString() === 'corrupt') throw new Error('corrupt image');
+  if (buffer.toString() === CORRUPT_BYTES) throw new Error('corrupt image');
 };
 
 vi.mock('../lib/paths.mjs', () => ({
@@ -55,7 +62,7 @@ vi.mock('../lib/outline-match.mjs', () => ({
     assertReadable(source);
     assertReadable(fill);
     if (overlay) state.overlayRequests++;
-    const drifted = fill.toString() === 'drift fill';
+    const drifted = fill.toString() === DRIFT_FILL_BYTES;
     return {
       keep: drifted ? 0.5 : 1,
       localKeep: drifted ? 0.4 : 1,
@@ -151,8 +158,11 @@ async function addPage(
 ) {
   const outline = join(state.roots.coloring, `test/${name}.outline.webp`);
   const fill = join(state.roots.fillSrc, `test/${name}.light.raw.webp`);
-  await writeFile(outline, corruptOutline ? 'corrupt' : `valid outline ${outlineIssues.join(' ')}`);
-  await writeFile(fill, corruptFill ? 'corrupt' : drifted ? 'drift fill' : 'valid fill');
+  await writeFile(
+    outline,
+    corruptOutline ? CORRUPT_BYTES : `valid outline ${outlineIssues.join(' ')}`
+  );
+  await writeFile(fill, corruptFill ? CORRUPT_BYTES : drifted ? DRIFT_FILL_BYTES : 'valid fill');
   return outline;
 }
 

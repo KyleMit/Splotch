@@ -9713,27 +9713,6 @@ Take the parser args as a trailing options object or rest tuple:
 `parse(raw, name, fallback, source)` call order with no placeholder. Only worth doing while touching
 the file for the other cli.test.mjs findings.
 
-### [Maintainability] audit-cli's corrupt/drift sentinels are bare strings coordinated across three sites
-
-**File(s):** `tools/asset-gen/tests/audit-cli.test.mjs` (`assertReadable` lines 8–10, `outlineMatch`
-mock line 51, `addPage` lines 134–135) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The string `'corrupt'` links `assertReadable` (line 9:
-`if (buffer.toString() === 'corrupt') throw ...`) to `addPage`'s file contents (line 134), and
-`'drift fill'` links the outline-match mock (line 51) to `addPage` (line 135). The coordination is
-invisible at each site — a typo in one produces tests that pass vacuously (a "corrupt" page that
-scores clean) rather than fail loudly.
-
-#### Proposed solution
-
-Name them once at module scope — `const CORRUPT_BYTES = 'corrupt';` /
-`const DRIFT_FILL_BYTES = 'drift fill';` — and reference the constants from all three sites. Small,
-but it turns a stringly-typed protocol into a greppable one.
-
 ### [Maintainability] eye-rings' exact-object pins hard-code fixture geometry defined in synthetic.mjs
 
 **File(s):** `tools/asset-gen/tests/eye-rings.test.mjs` (lines 43–61) @ 9ae62ff1
