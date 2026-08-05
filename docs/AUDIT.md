@@ -2217,30 +2217,6 @@ Name collision warning: `AdminConsole.svelte` exports a client-side `Invite` (wi
 `usage` field) — the server type is its base; keep the names distinct or import aliased in any file
 that sees both.
 
-### [Readability] `targetRepo()` is a single-use one-line indirection
-
-**File(s):** `web/src/lib/server/github.ts` (lines 12–14, sole use line 62) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-function targetRepo(): string {
-  return config.githubIssueRepo();
-}
-```
-
-Called exactly once, inside the fetch URL template (line 62). It renames `config.githubIssueRepo()`
-without adding behavior, defaulting, or validation — a reader chasing the URL has to hop through it
-only to land on the config call the name already described. Its sibling `isReportingConfigured()` is
-different: it *is* the module's exported feature-flag seam with an external caller.
-
-#### Proposed solution
-
-Inline it: ``fetch(`${GITHUB_API}/repos/${config.githubIssueRepo()}/issues`, … )`` and delete the
-function.
-
 ### [Maintainability] GitHub error-detail truncation length is a bare `300`
 
 **File(s):** `web/src/lib/server/github.ts` (`createIssue`, line 77) @ 9ae62ff1
