@@ -25,60 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Readability] AiKeyManager's open-effect calls `latest.begin()` for its side effect only, behind a pointless alias
-
-**File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (`$effect`, lines 62–70) @
-9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-$effect(() => {
-  const isOpen = open;
-  latest.begin();
-  if (isOpen) {
-    platform = getPlatform();
-    keyInput = '';
-    resetKeyFeedback();
-  }
-});
-```
-
-Two readability problems. First, `latest.begin()` is called with its return value (`{ id, signal }`)
-discarded — the *actual* intent is "abort any in-flight verify whenever the modal opens or closes,
-and invalidate its `isCurrent` token", but nothing says so; `begin` reads like the start of a
-request, so a discarded `begin()` looks like a half-finished refactor or a bug. Second,
-`const isOpen = open` exists (presumably) to establish the reactive read before the early-branch,
-but `open` is read in the `if` anyway, so the alias adds nothing — the untracked-reads subtlety it
-hints at doesn't apply here.
-
-Compare `ReportForm.svelte:50–52`, which handles the same prop with a bare `if (open) reset();` and
-no abort — the asymmetry (does ReportForm leak an in-flight submit across close? it deliberately
-doesn't abort, or it was missed?) is unanswerable from the code.
-
-#### Proposed solution
-
-Give the abort a name on the `LatestRequest` interface — e.g. add `cancel(): void` to
-`web/src/lib/latestRequest.ts` (aborts the controller and bumps the counter, same as `begin` minus
-the handout) — and write the effect as:
-
-```ts
-$effect(() => {
-  latest.cancel(); // opening or closing obsoletes any in-flight verify
-  if (open) {
-    platform = getPlatform();
-    keyInput = '';
-    resetKeyFeedback();
-  }
-});
-```
-
-Then decide whether `ReportForm` should do the same on close (it probably should — a success message
-from a submit that finished after close would greet the next open, except `reset()` on open happens
-to clear it; a one-line comment either way).
-
 ### [Maintainability] AiKeyManager and ReportForm hand-roll the same async-submit status machine, including identical error copy
 
 **File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (lines 31–32, 57–60, 118–123,
