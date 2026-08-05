@@ -30,9 +30,6 @@ export const ERASER_SIZE_ICON: Record<StrokeSize, CommonIconName> = {
 // feel. Matching the pen exactly makes precise erasing frustrating.
 export const ERASER_SIZE_MULTIPLIER = 2;
 
-// Drawing brushes (pen/crayon/magic) share one remembered level and the eraser
-// keeps its own, persisted separately, so switching tools restores the size the
-// child last used for that tool.
 const SIZE_TO_PX: Record<StrokeSize, number> = {
   1: 2,
   2: 4,
@@ -45,6 +42,9 @@ function readStrokeLevel(key: StorageKey, fallback: StrokeSize): StrokeSize {
   return readInt(key, fallback, STROKE_SIZES) as StrokeSize;
 }
 
+// Drawing brushes (pen/crayon/magic) share one remembered level and the eraser
+// keeps its own, persisted separately, so switching tools restores the size the
+// child last used for that tool.
 export const strokeState = $state({
   penSize: readStrokeLevel(STORAGE_KEYS.strokeWidthSize, DEFAULT_SIZE),
   eraserSize: readStrokeLevel(STORAGE_KEYS.eraserWidthSize, DEFAULT_SIZE),

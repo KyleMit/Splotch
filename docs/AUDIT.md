@@ -27,32 +27,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — App state (runes)
 
-### [Readability] The persistence-split comment sits on `SIZE_TO_PX` instead of on `strokeState`
-
-**File(s):** `web/src/lib/state/strokeWidth.svelte.ts` (lines 33–42, 48–51) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-// Drawing brushes (pen/crayon/magic) share one remembered level and the eraser
-// keeps its own, persisted separately, so switching tools restores the size the
-// child last used for that tool.
-const SIZE_TO_PX: Record<StrokeSize, number> = { ... };
-```
-
-The comment describes the pen/eraser persistence split — i.e. the `strokeState` object declared at
-lines 48–51 — but is attached to the level→pixel lookup table, which has nothing to do with
-persistence. A reader scanning `SIZE_TO_PX` gets an explanation for the wrong thing, and
-`strokeState` (the thing that actually encodes the split via its two keys) carries no comment.
-
-#### Proposed solution
-
-Move the comment down to sit directly above `export const strokeState = $state({ ... })`. If
-`SIZE_TO_PX` wants a comment at all, one line ("stroke level → brush width in CSS px") suffices,
-though the name already says it.
-
 ### [Maintainability] `getStrokeWidthPx`/`getEraserWidthPx` default parameters and the `??` fallback have no production caller
 
 **File(s):** `web/src/lib/state/strokeWidth.svelte.ts` (lines 80–86) @ 9ae62ff1
