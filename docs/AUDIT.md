@@ -14699,30 +14699,6 @@ open-at-size, and the ladder test's stated subject is the offset restatement in 
 resize exercises identically. Verify with `--repeat-each=10` that resize-with-open-dialog is stable
 before committing (the fly-in has finished by then, so it should be).
 
-### [Readability] `a11y.spec.ts` inlines the `gotoApp` hydration wait
-
-**File(s):** `web/tests/a11y.spec.ts` (lines 66–67) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-await page.goto('/');
-await expect(page.locator('#drawingCanvas')).toBeVisible();
-```
-
-is `gotoApp(page)` (`helpers.ts:66-69`) written out longhand, in a file that already imports from
-`./helpers` (line 4). Trivial, but the helper exists precisely so the "canvas visible ⇒ hydrated"
-reasoning lives in one commented place; inline copies erode that. (`settings-zoom.spec.ts` similarly
-uses bare `page.goto('/')` eight times — acceptable there since `openSettingsModal` immediately
-retries, but worth normalizing if touched.)
-
-#### Proposed solution
-
-Replace with `await gotoApp(page);` in `a11y.spec.ts`; optionally sweep `settings-zoom.spec.ts` in
-the same commit.
-
 ### [Readability] `flows-palette-brush.spec.ts` duplicates the crayon/pen comparison scene inline in both tests
 
 **File(s):** `web/tests/flows-palette-brush.spec.ts` (lines 88–89 and 114–115) @ 9ae62ff1
