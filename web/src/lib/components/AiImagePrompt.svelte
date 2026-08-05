@@ -100,11 +100,6 @@
     z-index: 1;
   }
 
-  .ai-prompt-close:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
   .ai-prompt-styles {
     border: none;
     padding: 0;

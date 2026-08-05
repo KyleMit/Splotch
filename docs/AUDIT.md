@@ -84,30 +84,6 @@ encode off the layout-coupled canvas path, and the whole helper could later move
 profiling (`npm run perf:*`) shows the hitch is real — measure first; if the profile shows nothing
 on floor devices, downgrade this to a comment.
 
-### [Readability] Dead `.ai-prompt-close:disabled` styles — the close button is never disabled
-
-**File(s):** `web/src/lib/components/AiImagePrompt.svelte` (lines 111–114) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```css
-.ai-prompt-close:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-```
-
-The close button (lines 60–62) never receives a `disabled` attribute — only the style-option buttons
-do (`disabled={!previewUrl}`, line 72), and those have their own `:disabled` rule (lines 192–195).
-This selector can never match; it's residue from an earlier design where closing was blocked during
-load.
-
-#### Proposed solution
-
-Delete the rule.
-
 ### [Readability] Dead `typeof window` guard inside a `$effect`
 
 **File(s):** `web/src/lib/components/AiImageResult.svelte` (lines 26–32, guard at line 28) @
