@@ -158,17 +158,17 @@
     padding: 6px;
   }
 
-  /* Non-toggle fourth cell: mirrors ToggleRow's icon + label left edge so the
+  /* Non-toggle fourth cell: it sits on the same icon column as ToggleRow so the
      grid reads as one family. */
   .about-cell {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--setting-icon-gap);
   }
 
   :global(.about-cell-icon) {
-    width: 20px;
-    height: 20px;
+    width: var(--setting-icon-size);
+    height: var(--setting-icon-size);
     flex-shrink: 0;
   }
 

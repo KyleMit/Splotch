@@ -46,10 +46,11 @@ body {
   }
 }
 
-/* The settings rows' icon column: ToggleRow's icon box and the gap to its label,
-   plus the indent that lines a help line or an icon-less sub-row (SliderRow)
-   up under that label. Global rather than scoped to SettingsModal because those
-   rows also render outside it, in the /design styleguide's furniture demo. */
+/* The settings rows' icon column: the icon box and the gap to its label, shared
+   by every icon-and-label row in Settings, plus the indent that lines a help
+   line or an icon-less sub-row (SliderRow) up under that label. Global rather
+   than scoped to SettingsModal because those rows also render outside it, in
+   the /design styleguide's furniture demo. */
 :root {
   --setting-icon-size: 20px;
   --setting-icon-gap: 10px;

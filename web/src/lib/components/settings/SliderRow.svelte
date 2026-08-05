@@ -73,7 +73,7 @@
   .slider-label-name {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--setting-icon-gap);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     color: var(--text);

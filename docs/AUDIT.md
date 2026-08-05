@@ -25,53 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Maintainability] ToggleRow's icon-column indent is duplicated into SliderRow and kept in sync by prose
-
-**File(s):** `web/src/lib/components/settings/ToggleRow.svelte` (`.setting-help`, lines 50–57;
-`.setting-icon`/`.setting-info`, lines 59–70), `web/src/lib/components/settings/SliderRow.svelte`
-(`.slider-row.indented`, lines 55–61) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-ToggleRow indents its help line past the icon column:
-
-```css
-/* Indented past the icon column so the help line starts under the label:
-   .setting-icon's width + .setting-info's gap, both declared below. */
-.setting-help { margin: 6px 0 0 calc(20px + 10px); … }
-```
-
-SliderRow re-derives the same `calc(20px + 10px)` and documents the coupling instead of fixing it:
-
-```css
-/* … Mirrors ToggleRow's .setting-icon width + .setting-info gap; there's no
-   shared token for that pairing. */
-.slider-row.indented { margin-left: calc(20px + 10px); }
-```
-
-CLAUDE.md: "Cross-file agreement is never maintained by prose … A 'keep in sync with X' comment
-marks a defect, not a mitigation." Change ToggleRow's icon size or gap and SliderRow's sub-setting
-alignment silently drifts — the exact failure mode the rule exists for. The comment even
-acknowledges the missing token.
-
-#### Proposed solution
-
-Since scoped `<style>` blocks can't import TS constants, use the CSS-native sharing mechanism:
-declare the pairing once as custom properties in `tokens.css` (or on `.settings-content` in
-`SettingsModal.svelte`, whose `:global(.setting)` rules already act as the shared setting-card token
-block, lines 489–508):
-
-```css
---setting-icon-size: 20px;
---setting-icon-gap: 10px;
---setting-indent: calc(var(--setting-icon-size) + var(--setting-icon-gap));
-```
-
-Both components then consume `var(--setting-indent)`, and ToggleRow's
-`.setting-icon`/`.setting-info` use the two base properties. The prose comments go away.
-
 ### [Maintainability] Close-button clearance is hardcoded at four sites against geometry owned by `app.css`, with a comment restating the numbers
 
 **File(s):** `web/src/lib/components/SettingsModal.svelte` (`.settings-header`

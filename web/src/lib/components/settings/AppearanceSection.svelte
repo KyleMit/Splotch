@@ -67,7 +67,7 @@
   .appearance-label {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--setting-icon-gap);
     margin-bottom: 10px;
   }
 
