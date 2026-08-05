@@ -14747,28 +14747,6 @@ open-at-size, and the ladder test's stated subject is the offset restatement in 
 resize exercises identically. Verify with `--repeat-each=10` that resize-with-open-dialog is stable
 before committing (the fly-in has finished by then, so it should be).
 
-### [Maintainability] `admin.spec.ts` route mock hard-codes the Playwright preview origin
-
-**File(s):** `web/tests/admin.spec.ts` (line 83) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-invites: … [{ token, url: `http://localhost:4173/?ai_access_token=${token}` }],
-```
-
-The port is owned by `web/playwright.shared.ts:3-4` (`playwrightPort = 4173`, `playwrightBaseURL`).
-If the port ever changes, this mock silently serves an invite URL for the wrong origin — harmless
-today (the UI only displays/copies it) but a copied-URL assertion added later would chase a phantom
-mismatch.
-
-#### Proposed solution
-
-`import { playwrightBaseURL } from '../playwright.shared';` and interpolate it — or build the URL
-from the test's `baseURL` fixture. One-line change.
-
 ### [Readability] `a11y.spec.ts` inlines the `gotoApp` hydration wait
 
 **File(s):** `web/tests/a11y.spec.ts` (lines 66–67) @ 9ae62ff1

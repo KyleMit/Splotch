@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
+import { playwrightBaseURL } from '../playwright.shared';
 import { adminConsole, ADMIN_ACCESS_TOKEN, signInToAdmin, submitAdminKey } from './admin-helpers';
 
 // The admin console has two front doors over one shared core ($lib/server/admin
@@ -120,7 +121,7 @@ test('native console updates persistence status from every API snapshot', async 
         tokens: isInitialSnapshot ? [] : [token],
         invites: isInitialSnapshot
           ? []
-          : [{ token, url: `http://localhost:4173/?ai_access_token=${token}` }],
+          : [{ token, url: `${playwrightBaseURL}/?ai_access_token=${token}` }],
         persistent: isInitialSnapshot,
       },
     });
