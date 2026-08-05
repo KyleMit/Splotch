@@ -17,22 +17,6 @@ vi.mock('./screenshot', () => ({
 }));
 vi.mock('$lib/state/settings.svelte', () => ({ settings: mocks.settings }));
 
-interface Deferred<T> {
-  promise: Promise<T>;
-  resolve: (value: T) => void;
-  reject: (reason: unknown) => void;
-}
-
-function deferred<T>(): Deferred<T> {
-  let resolve!: (value: T) => void;
-  let reject!: (reason: unknown) => void;
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-}
-
 function okResponse(blob: Blob): Response {
   return new Response(blob, { status: 200 });
 }
@@ -56,9 +40,9 @@ afterEach(() => {
 describe('generateAiImage request ownership', () => {
   it('starts the request timeout after canvas export and transcoding finish', async () => {
     vi.useFakeTimers();
-    const canvasExport = deferred<Blob | null>();
-    const webpEncoding = deferred<Blob | null>();
-    const request = deferred<Response>();
+    const canvasExport = Promise.withResolvers<Blob | null>();
+    const webpEncoding = Promise.withResolvers<Blob | null>();
+    const request = Promise.withResolvers<Response>();
     mocks.exportCanvasBlob.mockReturnValueOnce(canvasExport.promise);
     // happy-dom exposes an OffscreenCanvas constructor whose getContext('2d')
     // returns null, which would short-circuit encodeWebpUpload before this
@@ -116,9 +100,9 @@ describe('generateAiImage request ownership', () => {
   });
 
   it('drops a closed run whose canvas export finishes after its replacement starts', async () => {
-    const exportA = deferred<Blob | null>();
-    const exportB = deferred<Blob | null>();
-    const requestB = deferred<Response>();
+    const exportA = Promise.withResolvers<Blob | null>();
+    const exportB = Promise.withResolvers<Blob | null>();
+    const requestB = Promise.withResolvers<Response>();
     mocks.exportCanvasBlob
       .mockReturnValueOnce(exportA.promise)
       .mockReturnValueOnce(exportB.promise);
@@ -146,8 +130,8 @@ describe('generateAiImage request ownership', () => {
 
   it('never auto-saves a stale run after close and restart', async () => {
     mocks.settings.autoSaveAiEnabled = true;
-    const requestA = deferred<Response>();
-    const requestB = deferred<Response>();
+    const requestA = Promise.withResolvers<Response>();
+    const requestB = Promise.withResolvers<Response>();
     mocks.exportCanvasBlob
       .mockResolvedValueOnce(new Blob(['drawing-a']))
       .mockResolvedValueOnce(new Blob(['drawing-b']));

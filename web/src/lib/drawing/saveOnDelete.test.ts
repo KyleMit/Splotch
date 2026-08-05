@@ -18,19 +18,6 @@ vi.mock('./screenshot', () => {
   return { saveImageBlob: mocks.saveImageBlob };
 });
 
-interface Deferred<T> {
-  promise: Promise<T>;
-  resolve: (value: T) => void;
-}
-
-function deferred<T>(): Deferred<T> {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((resolvePromise) => {
-    resolve = resolvePromise;
-  });
-  return { promise, resolve };
-}
-
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
@@ -41,7 +28,7 @@ beforeEach(() => {
 
 describe('saveDrawingIfEnabled', () => {
   it('starts loading the screenshot module while export is pending', async () => {
-    const exportResult = deferred<Blob | null>();
+    const exportResult = Promise.withResolvers<Blob | null>();
     const blob = new Blob(['drawing']);
     mocks.exportCanvasBlob.mockReturnValue(exportResult.promise);
     const { saveDrawingIfEnabled } = await import('./saveOnDelete');

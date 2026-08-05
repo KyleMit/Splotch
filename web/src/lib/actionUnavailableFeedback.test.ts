@@ -4,19 +4,6 @@ import {
   replayActionUnavailableFeedback,
 } from './actionUnavailableFeedback';
 
-interface Deferred {
-  promise: Promise<void>;
-  resolve: () => void;
-}
-
-function deferred(): Deferred {
-  let resolve!: () => void;
-  const promise = new Promise<void>((done) => {
-    resolve = done;
-  });
-  return { promise, resolve };
-}
-
 interface MockAnimation {
   animationName?: string;
   finished: Promise<void>;
@@ -36,8 +23,8 @@ beforeEach(() => {
 describe('action unavailable feedback', () => {
   it('keeps the class until every running animation settles', async () => {
     const button = document.querySelector('button')!;
-    const shake = deferred();
-    const flash = deferred();
+    const shake = Promise.withResolvers<void>();
+    const flash = Promise.withResolvers<void>();
     mockAnimations(button, [
       { animationName: 'action-unavailable-shake', finished: shake.promise },
       { animationName: 'action-unavailable-flash', finished: flash.promise },
@@ -65,9 +52,9 @@ describe('action unavailable feedback', () => {
 
   it('does not let unrelated animations delay cue cleanup', async () => {
     const button = document.querySelector('button')!;
-    const cue = deferred();
-    const transition = deferred();
-    const spinner = deferred();
+    const cue = Promise.withResolvers<void>();
+    const transition = Promise.withResolvers<void>();
+    const spinner = Promise.withResolvers<void>();
     mockAnimations(button, [
       { finished: transition.promise },
       { animationName: 'ai-spin', finished: spinner.promise },
@@ -82,8 +69,8 @@ describe('action unavailable feedback', () => {
 
   it('does not let a superseded replay clear the current cue', async () => {
     const button = document.querySelector('button')!;
-    const first = deferred();
-    const second = deferred();
+    const first = Promise.withResolvers<void>();
+    const second = Promise.withResolvers<void>();
     let callCount = 0;
     Object.defineProperty(button, 'getAnimations', {
       configurable: true,

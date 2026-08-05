@@ -23,29 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Testing] `deferred<T>()` helper is re-declared per test file
-
-**File(s):** `web/src/lib/drawing/aiImage.test.ts` (lines 22–36),
-`web/src/lib/components/aiPreview.test.ts` (lines 5–11) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-Both files (and, outside this section, `pwa/updates.test.ts`, `drawing/undoHistory.test.ts`,
-`state/install.svelte.test.ts` — five in total) hand-roll the identical
-promise-with-exposed-resolvers helper. The testing rule that "a page-driving helper needed by a
-second spec moves to the shared helpers module at that moment" is written for Playwright, but the
-same duplication cost applies here: five drifting copies of the same fixture (some with `reject`,
-some without).
-
-#### Proposed solution
-
-Add a shared test util (e.g. `web/src/lib/testUtils/deferred.ts`, or adopt the platform's
-`Promise.withResolvers()` if the toolchain's TS lib target includes it — it's Baseline 2024, and
-Vitest's runtime certainly has it) and migrate the five call sites. Low urgency; do it
-opportunistically when next touching these specs.
-
 ### [Readability] `generateAiImage`'s `blob` option and `exportUploadImage`'s `blob` parameter under-describe what they carry
 
 **File(s):** `web/src/lib/drawing/aiImage.ts` (`generateAiImage`, lines 198–201;
