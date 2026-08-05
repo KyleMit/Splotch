@@ -16299,29 +16299,6 @@ Extend `check-native-app-id.mjs` (or a sibling check) with an `appName` pass:
 `Info.plist`'s `CFBundleDisplayName`. The script's existing `checks` table structure takes this with
 two more entries and a second expected value.
 
-### [Docs] Photo-library permission copy says "screenshot" for saving the drawing itself
-
-**File(s):** `ios/App/App/Info.plist` (lines 29–30) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```xml
-<key>NSPhotoLibraryAddUsageDescription</key>
-<string>Splotch can save a screenshot of your drawing to your photo library.</string>
-```
-
-The save feature (via `@capacitor-community/media`) writes the drawing's exported image, not a
-screen capture. "Screenshot" is the one word a parent reads in the iOS permission alert, and it
-misdescribes the action — the store listing and changelogs consistently say "save your drawing".
-Permission strings are also reviewed by App Review for accuracy.
-
-#### Proposed solution
-
-Reword to something like "Splotch saves your child's drawing to your photo library." No code change;
-re-ships with the next release.
-
 ### [Maintainability] Pencil-eraser attach silently no-ops if the web view is missing
 
 **File(s):** `ios/App/App/MainViewController.swift` (lines 13–19) @ 9ae62ff1
