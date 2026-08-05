@@ -67,7 +67,7 @@
   });
 
   // The reactive stop paths above are skipped if the parent unmounts this
-  // component in the same flush (e.g. the aiError branch swap), so the rAF
+  // component in the same flush (e.g. the aiResult.error branch swap), so the rAF
   // loop must also be cancelled unconditionally at destroy.
   $effect(() => () => cancelAnimationFrame(rafId));
 

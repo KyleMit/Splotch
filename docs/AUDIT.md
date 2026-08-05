@@ -27,40 +27,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — App state (runes)
 
-### [Types] Collapse the `aiError`/`aiErrorMessage`/`aiErrorKind` tri-field into one nullable error value
-
-**File(s):** `web/src/lib/state/ui.svelte.ts` (lines 14–19, 29–31) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The error state is spread across three parallel fields:
-
-```ts
-aiError: boolean;
-aiErrorMessage: string | null;
-aiErrorKind: AiErrorKind;
-```
-
-Illegal combinations are representable (`aiError: false` with a stale message/kind), so every writer
-must reset all three in lockstep — and does, three times over, in `aiGeneration.svelte.ts`
-(`startAiGeneration`, `failAiGeneration`, `closeAiResult` each touch the full triple). Readers
-re-derive the grouping too: `AiImageResult.svelte:107-111` branches on `aiError`, then reads
-`aiErrorKind` and `aiErrorMessage` separately.
-
-#### Proposed solution
-
-One field models the whole thing:
-
-```ts
-aiError: { kind: AiErrorKind; message: string | null } | null;
-```
-
-`failAiGeneration` sets it in one assignment; `startAiGeneration`/`closeAiResult` reset with
-`= null`; truthiness replaces the boolean at every read site. Best folded into the `ai*`-field
-relocation finding above (same files, same writers) rather than done as a separate pass.
-
 ### [Performance] `syncViewport` constructs a fresh `MediaQueryList` on every resize event
 
 **File(s):** `web/src/lib/state/layout.svelte.ts` (`syncViewport`, lines 55–64; `readOrientation`,
