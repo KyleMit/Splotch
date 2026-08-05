@@ -27,51 +27,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — App state (runes)
 
-### [Architecture] Move the seven `ai*` fields out of `ui.svelte.ts` into the AI-generation state module
-
-**File(s):** `web/src/lib/state/ui.svelte.ts` (`UiState`/`ui`, lines 1–32) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-Seven of the nine fields in the generic `ui` state object are AI-result view state:
-
-```ts
-interface UiState {
-  resizingActionButtons: boolean;
-  clearTutorialVisible: boolean;
-  aiGenerating: boolean;
-  aiResultOpen: boolean;
-  aiResultUrl: string | null;
-  aiPreviewUrl: string | null;
-  aiError: boolean;
-  aiErrorMessage: string | null;
-  aiErrorKind: AiErrorKind;
-}
-```
-
-Every writer of those fields lives in `web/src/lib/state/aiGeneration.svelte.ts`
-(`startAiGeneration`, `setAiPreview`, `finishAiGeneration`, `failAiGeneration`, `closeAiResult` —
-that module's entire body is `ui.ai* = …` assignments). The split produces a module cycle as its
-telltale: `ui.svelte.ts:1` does `import type { AiErrorKind } from './aiGeneration.svelte'` while
-`aiGeneration.svelte.ts:1` does `import { ui } from './ui.svelte'`. The type-only import erases at
-runtime so nothing breaks, but the cycle is the signature of state declared on the wrong side of the
-boundary: the lifecycle owner (`aiGeneration`) has to reach into a foreign module for every
-mutation, and a first-time reader looking for "where does `aiResultUrl` live" finds the declaration
-in a file that knows nothing about its invariants.
-
-#### Proposed solution
-
-Move the seven `ai*` fields into an exported `$state` object in `aiGeneration.svelte.ts` (e.g.
-`export const aiResult = $state({ generating: false, open: false, resultUrl: null, … })`), dropping
-the `ai` prefix that the module name now carries. `ui.svelte.ts` keeps `resizingActionButtons`, the
-modal instances, `SETTINGS_BUTTON_ID`, and `buttonCenter`, and loses its `aiGeneration` import —
-cycle gone. Readers to update: `ActionsPanel.svelte`, `AiImageResult.svelte`, `AiDial.svelte`,
-`SettingsModal.svelte` (reads `ui.resizingActionButtons` only), `lib/drawing/aiImage.ts`,
-`routes/dev/ai-timer/+page.svelte`, plus tests. Mechanical rename churn is the only cost;
-`aiGeneration.svelte.ts` itself is owned by the AI section, so coordinate the halves as one change.
-
 ### [Readability] Delete the dead `clearTutorialVisible` field
 
 **File(s):** `web/src/lib/state/ui.svelte.ts` (lines 9, 24) @ 9ae62ff1
