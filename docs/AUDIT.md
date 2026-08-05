@@ -15470,27 +15470,6 @@ Gotcha: changing to `=== 'true'` requires confirming what CI's e2e step actually
 (`.github/workflows` sets `REQUIRE_WEBKIT` — align the workflow value in the same change so the gate
 never silently loosens).
 
-### [Maintainability] Timeout constant lacks the unit suffix the conventions require
-
-**File(s):** `web/playwright.shared.ts` (line 14) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET = 180_000;
-```
-
-CLAUDE.md: "Tuning literals get names … with the unit in the name (`_MS`, `_PX` …)". This is
-precisely such a tuning literal (it feeds Playwright's `webServer.timeout`, which is milliseconds),
-but the name omits the unit — a reader can plausibly misread 180_000 as 180 seconds only after
-checking Playwright's docs.
-
-#### Proposed solution
-
-Rename to `PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET_MS` (one definition, one use at line 18).
-
 ### [Maintainability] vitest include/exclude globs contradict the repo's TS-only and test-naming conventions
 
 **File(s):** `web/vitest.config.ts` (lines 31–33) @ 9ae62ff1
