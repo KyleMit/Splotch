@@ -18,6 +18,7 @@ import {
   deferralReason,
   deleteEntryByTitle,
   deleteFirstEntry,
+  diffAddsClientStaticImport,
   draftPatchPath,
   findingPriority,
   getEntry,
@@ -470,6 +471,98 @@ describe('incomplete audit commit recovery', () => {
     ]);
 
     expect(plan(initialSha, commits, `${FIXTURE}\nSee ${title} for context.\n`)).toBeNull();
+  });
+});
+
+// The bundle gate's trigger: a new static import edge under web/src
+// re-partitions Rollup's chunks however small the imported module (PR #771 —
+// a six-line predicate hoist pulled the save pipeline onto the startup
+// critical path, and only CI could see it). These pin what counts as an edge.
+describe('diffAddsClientStaticImport', () => {
+  const diffFor = (path, addedLines) =>
+    [
+      `diff --git a/${path} b/${path}`,
+      `--- a/${path}`,
+      `+++ b/${path}`,
+      '@@ -1,1 +1,2 @@',
+      ' const unchanged = 1;',
+      ...addedLines.map((line) => `+${line}`),
+    ].join('\n');
+
+  it('flags an added static import in a client module', () => {
+    expect(
+      diffAddsClientStaticImport(
+        diffFor('web/src/lib/state/saveFolder.svelte.ts', [
+          "import { folderSaveSupported } from '$lib/drawing/folderSaveSupport';",
+        ])
+      )
+    ).toBe(true);
+  });
+
+  it('flags an added re-export, which is the same bundler edge', () => {
+    expect(
+      diffAddsClientStaticImport(
+        diffFor('web/src/lib/drawing/folderSave.ts', [
+          "export { folderSaveSupported } from './folderSaveSupport';",
+        ])
+      )
+    ).toBe(true);
+  });
+
+  it('ignores type-only imports and re-exports — no runtime edge', () => {
+    expect(
+      diffAddsClientStaticImport(
+        diffFor('web/src/lib/a.ts', [
+          "import type { Foo } from './foo';",
+          "export type { Foo } from './foo';",
+        ])
+      )
+    ).toBe(false);
+  });
+
+  it('ignores dynamic import() — the lazy edge is the safe kind', () => {
+    expect(
+      diffAddsClientStaticImport(diffFor('web/src/lib/a.ts', ["import('./lazy').then(run);"]))
+    ).toBe(false);
+  });
+
+  it('ignores server-only modules and tests, which never enter the client bundle', () => {
+    for (const path of [
+      'web/src/lib/server/github.ts',
+      'web/src/routes/api/report/+server.ts',
+      'web/src/routes/admin/+page.server.ts',
+      'web/src/lib/a.test.ts',
+      'web/tests/flows.spec.ts',
+      'scripts/audit-burndown/lib.mjs',
+    ]) {
+      expect(diffAddsClientStaticImport(diffFor(path, ["import { x } from './x';"]))).toBe(false);
+    }
+  });
+
+  it('ignores an import that is merely diff context, not an added line', () => {
+    const diff = [
+      'diff --git a/web/src/lib/a.ts b/web/src/lib/a.ts',
+      '--- a/web/src/lib/a.ts',
+      '+++ b/web/src/lib/a.ts',
+      '@@ -1,2 +1,2 @@',
+      " import { x } from './x';",
+      '-const a = 1;',
+      '+const a = 2;',
+    ].join('\n');
+    expect(diffAddsClientStaticImport(diff)).toBe(false);
+  });
+
+  it('tracks the current file across a multi-file diff', () => {
+    const diff = [
+      diffFor('web/src/lib/a.test.ts', ["import { y } from './y';"]),
+      diffFor('web/src/lib/a.ts', ["import { y } from './y';"]),
+    ].join('\n');
+    expect(diffAddsClientStaticImport(diff)).toBe(true);
+  });
+
+  it('returns false for an empty or missing diff', () => {
+    expect(diffAddsClientStaticImport('')).toBe(false);
+    expect(diffAddsClientStaticImport(null)).toBe(false);
   });
 });
 

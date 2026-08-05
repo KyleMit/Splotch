@@ -1030,3 +1030,40 @@ the stale timing table for free.
 | 2026-07-28 | —        | Body-line `**Priority:**` fallback — tiering was silently off for 642     |
 | 2026-07-29 | —        | First clean run (39/4/0, PR #627); goalpost-moving fixes named as a shape |
 | 2026-08-05 | —        | Hand-driven cherry-pick (58/4/62, PR #770); SHA + format gaps it exposed  |
+| 2026-08-05 | —        | PR #771 retro: bundle gate, `BUDGET_IMPL` 4→7, verify retry on no-brief   |
+
+## 2026-08-05 — what the PR 771 retrospective changed (and why)
+
+A review of PR 771's 33 per-commit comments (31 fixed · 1 dropped · 5 deferred from a 473-finding
+backlog) mapped every failure point to either a programmatic detection or written guidance. Three
+driver changes came out of it:
+
+* **The bundle gate** (`withBundleGate` + `diffAddsClientStaticImport`). The run's one CI regression
+  was a fix the finding *and* the first-pass reviewer both believed respected the lazy-chunk
+  constraint: hoisting a six-line predicate into `lib/drawing/` handed Rollup a static edge into the
+  save graph, and `startup-bundle.spec.ts` went red naming `screenshotFeedback` — a module the
+  commit never touched. No per-finding gate could see it by construction, so the driver now watches
+  for the *cause* (an added static import / re-export in a client-bundle file) instead of trying to
+  observe the effect, and buys the production build only for findings that trigger it. Rejected
+  alternative: running the spec for every finding (a build per finding is hours over a backlog);
+  also rejected: verifier-nominated only (the 42960c3f finding shows the shape defeats prediction —
+  both the finding author and the reviewer reasoned about the payload, not the edge).
+* **`BUDGET_IMPL` 4.00 → 7.00.** The canary's segmented-control extraction hit `$4.0036` on its fix
+  round, finished and green. The knob's failure mode is identical to the `BUDGET_VERIFY` 1→3 lesson
+  already on record: a cap below the work's cost pays for the finding twice. Verify/review peaked
+  under `$1` on the same run, so those caps stay.
+* **One semantic retry on VALID-without-brief.** A verifier finished cleanly, returned VALID, and
+  never wrote the brief. Deferring treated a skipped side effect as a judgement; the handoff packet
+  called it "retryable rather than deferrable" and the retry is the same check-the-side-effect
+  pattern as `resolveImplSha`.
+
+Guidance (not code) covered the rest: the verifier prompt now names the deliberate-boundary finding
+shape ("the comment is the evidence, not the defect"), and `.ruler/conventions.md` documents the
+bundle boundary as the sanctioned exception to "cross-file agreement is never maintained by prose" —
+the constraint comment + drift-guard-test pattern that `saveFolder.svelte.ts` now models.
+
+Deliberately **not** built: a SHA-verifying helper script for hand-written comments (the
+`.ruler/github.md` rule already carries the one-line `git rev-parse` check, and the driver path gets
+SHAs from git — a script would be speculative surface), and pre-classifying sweeping multi-file
+findings to raise their turn caps (two data points, no mechanism recurring; recorded as a triage
+note in the skill instead).

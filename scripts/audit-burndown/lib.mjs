@@ -123,6 +123,43 @@ export function lintablePaths(paths, exists) {
   return paths.filter((path) => /\.(ts|svelte|mjs|cjs|js)$/.test(path) && exists(path));
 }
 
+// A new static import edge in the client source tree is the one fix shape none
+// of the per-finding gates can see: Rollup re-partitions chunks around the new
+// edge however dependency-light the imported module is, and the fallout can
+// land in a chunk the fix never touched (PR #771 — a six-line predicate hoist
+// pulled the save pipeline onto the startup critical path, visible only in
+// CI). This scans a unified diff for added static import / re-export lines in
+// files that can reach the client bundle, so the driver can gate such fixes on
+// the startup-bundle spec before they commit. Type-only imports leave no
+// runtime edge; server-only modules and test files never enter the bundle.
+export function diffAddsClientStaticImport(diff) {
+  let inClientFile = false;
+  for (const line of String(diff ?? '').split('\n')) {
+    const header = /^\+\+\+ b\/(.*)$/.exec(line);
+    if (header) {
+      inClientFile = isClientBundlePath(header[1]);
+      continue;
+    }
+    if (!inClientFile || !line.startsWith('+') || line.startsWith('+++')) continue;
+    const added = line.slice(1);
+    if (/^\s*(import|export)\s+type[\s{*]/.test(added)) continue;
+    if (/^\s*import\s/.test(added)) return true;
+    if (/^\s*export\s+[*{]/.test(added) && /\bfrom\s+['"]/.test(added)) return true;
+  }
+  return false;
+}
+
+function isClientBundlePath(path) {
+  return (
+    path.startsWith('web/src/') &&
+    !path.startsWith('web/src/lib/server/') &&
+    !path.startsWith('web/src/routes/api/') &&
+    !/(^|\/)\+server\.[tj]s$/.test(path) &&
+    !/\.server\.[tj]s$/.test(path) &&
+    !/\.(test|spec)\.[cm]?[jt]s$/.test(path)
+  );
+}
+
 export function removeNewUntrackedPaths(baseline, current, removePath) {
   const kept = new Set(baseline);
   const added = current.filter((path) => !kept.has(path));
@@ -149,6 +186,7 @@ export const LAUNCH_KNOBS = [
   'CHECK_CMD',
   'TEST_CMD',
   'E2E_CMD',
+  'BUNDLE_SPEC',
   'LINT_CMD',
   'PUSH_TEST_CMD',
   'COMMENT_STORE',

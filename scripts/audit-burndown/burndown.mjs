@@ -40,6 +40,7 @@ import {
   DEFAULT_MAX_ISSUES,
   deferralReason,
   deleteEntryByTitle,
+  diffAddsClientStaticImport,
   DRAFT_DIR,
   draftPatchPath,
   ensureWorkDirs,
@@ -90,6 +91,11 @@ const BRANCH = process.env.BRANCH ?? 'audit/burndown';
 const CHECK_CMD = process.env.CHECK_CMD ?? 'npm run check'; // type-check gate, every finding
 const TEST_CMD = process.env.TEST_CMD ?? 'npm run test:unit'; // fast-test gate, every finding
 const E2E_CMD = process.env.E2E_CMD ?? 'npm run test:e2e -- --retries=1'; // targeted E2E (retry past transient flakes), UI-touching findings only
+// Joins the targeted E2E gate whenever the fix's range adds a static import
+// edge under web/src (see withBundleGate). Playwright's web server builds
+// first, so this pays a production build per import-adding finding — set it
+// empty to fall back to CI-only detection of bundle re-partitioning.
+const BUNDLE_SPEC = process.env.BUNDLE_SPEC ?? 'tests/startup-bundle.spec.ts';
 const LINT_CMD = process.env.LINT_CMD ?? 'npx eslint'; // per-finding lint gate, on the fix's changed files
 // Local full-suite gate before a push — OFF by default. Every push lands on the
 // draft PR, whose CI runs the whole suite anyway, in parallel, without sitting
@@ -124,8 +130,16 @@ const MODEL_REVIEW = process.env.MODEL_REVIEW ?? RUNNER_DEFAULTS.reviewModel;
 
 // Claude Code enforces these per-call dollar caps. Codex subscription-backed
 // runs have no equivalent CLI switch, so its backend ignores them.
+//
+// Impl gets the deepest budget: a multi-file extraction fix round hit the old
+// 4.00 cap with the work finished and every gate green (2026-08-05 canary,
+// $4.0036), while verify and review peaked under $1 against their $3.00 caps.
+// A cap below what the work costs saves nothing — it converts a done,
+// gate-passing fix into a deferral and pays for the finding again on the
+// re-run. Dollars are notional on a subscription; the real ceiling is the
+// usage window.
 const BUDGET_VERIFY = process.env.BUDGET_VERIFY ?? '3.00';
-const BUDGET_IMPL = process.env.BUDGET_IMPL ?? '4.00';
+const BUDGET_IMPL = process.env.BUDGET_IMPL ?? '7.00';
 const BUDGET_REVIEW = process.env.BUDGET_REVIEW ?? '3.00';
 
 // Both backends expose reasoning effort. Verify stays medium because an INVALID
@@ -345,6 +359,19 @@ function defer(title, why, notes = {}) {
 // Returns null when green, else { reason, detail, output }: `reason` is the
 // deferral label a human reads months later in docs/AUDIT-DEFERRED.md;
 // `detail` and the bounded command output are what the implementer gets.
+// Bundle composition is the one regression class every other gate is blind to:
+// a new static import edge under web/src re-partitions Rollup's chunks however
+// small the imported module, and the failing marker can name a module the fix
+// never touched (PR #771). When the range under review adds one, gate on the
+// startup-bundle spec so the regression becomes this finding's fix round
+// instead of an asynchronous CI red the supervisor has to bisect.
+function withBundleGate(baseSha, specs) {
+  if (!BUNDLE_SPEC || specs.includes(BUNDLE_SPEC)) return specs;
+  if (!diffAddsClientStaticImport(gitOut('diff', baseSha, 'HEAD', '--', 'web/src'))) return specs;
+  logLine(`  bundle gate: ${BUNDLE_SPEC} (the fix adds a static import under web/src)`);
+  return [...specs, BUNDLE_SPEC];
+}
+
 function gateFailure(baseSha, specs) {
   const runGate = (command, reason, detail) => {
     const result = shellResult(command);
@@ -360,11 +387,12 @@ function gateFailure(baseSha, specs) {
   // Targeted E2E — only for findings the verifier flagged as touching a runtime
   // surface. Catches a behavioural regression attributed to this one finding,
   // without paying full-suite E2E per finding; the batch push still runs it all.
-  if (specs.length) {
+  const e2eSpecs = withBundleGate(baseSha, specs);
+  if (e2eSpecs.length) {
     const e2eFailure = runGate(
-      `${E2E_CMD} ${specs.join(' ')}`,
+      `${E2E_CMD} ${e2eSpecs.join(' ')}`,
       'fix broke a targeted E2E spec',
-      `the Playwright spec(s) ${specs.join(' ')} are red`
+      `the Playwright spec(s) ${e2eSpecs.join(' ')} are red`
     );
     if (e2eFailure) return e2eFailure;
   }
@@ -540,22 +568,40 @@ while (done < MAX_ISSUES) {
   logLine(`${tag}  (${remaining} remaining)  ${title}`);
 
   // ---- 2. VERIFY ------------------------------------------------------------
-  const verify = await agentStep({
-    tag: `${tag}.verify`,
-    prompt: 'Verify the finding in .audit-work/current-issue.md against HEAD.',
-    systemPromptFile: join(PROMPTS, 'verifier.md'),
-    model: MODEL_VERIFY,
-    effort: EFFORT_VERIFY,
-    role: 'verify',
-    schema: SCHEMA_VERIFY,
-    maxTurns: 40,
-    budget: BUDGET_VERIFY,
-  });
+  // One semantic retry on VALID-without-brief: a verifier can finish cleanly,
+  // return VALID, and still skip writing the brief — a successful call that
+  // omitted a side effect, not a judgement about the finding, so it earns a
+  // fresh attempt where a budget/turn cap would not (2026-08-05: one finding
+  // deferred exactly this way). The retry is a full re-verify in a fresh
+  // session; deferral is the fallback, never the first response.
+  let verify;
+  let verdict = 'ERROR';
+  let briefMissing = false;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    verify = await agentStep({
+      tag: attempt === 1 ? `${tag}.verify` : `${tag}.verify-retry`,
+      prompt: 'Verify the finding in .audit-work/current-issue.md against HEAD.',
+      systemPromptFile: join(PROMPTS, 'verifier.md'),
+      model: MODEL_VERIFY,
+      effort: EFFORT_VERIFY,
+      role: 'verify',
+      schema: SCHEMA_VERIFY,
+      maxTurns: 40,
+      budget: BUDGET_VERIFY,
+    });
+    if (!verify.ok) break;
+    verdict = verify.structured.verdict ?? 'ERROR';
+    briefMissing =
+      verdict === 'VALID' &&
+      briefIsStale(issueWrittenAt, existsSync(briefPath) ? statSync(briefPath).mtimeMs : null);
+    if (!briefMissing) break;
+    if (attempt === 1)
+      logLine('  verifier returned VALID without writing the brief — retrying once');
+  }
   if (!verify.ok) {
     defer(title, 'verifier unavailable');
     continue;
   }
-  const verdict = verify.structured.verdict ?? 'ERROR';
 
   if (verdict === 'INVALID') {
     const reason = verify.structured.reason ?? 'no reason given';
@@ -587,10 +633,11 @@ while (done < MAX_ISSUES) {
 
   // A VALID verdict is only actionable if the verifier actually wrote this
   // finding's brief; otherwise the implementer opens the previous finding's
-  // one. See briefIsStale — deferring here is a cheap, honest loss, whereas
-  // proceeding mis-attributes a commit and destroys an unrelated finding.
-  if (briefIsStale(issueWrittenAt, existsSync(briefPath) ? statSync(briefPath).mtimeMs : null)) {
-    logLine('  brief not rewritten for this finding — verifier returned VALID without one');
+  // one. See briefIsStale — deferring here (after the retry above) is a cheap,
+  // honest loss, whereas proceeding mis-attributes a commit and destroys an
+  // unrelated finding.
+  if (briefMissing) {
+    logLine('  brief still not rewritten for this finding — deferring');
     defer(title, 'verifier gave no usable brief');
     continue;
   }
