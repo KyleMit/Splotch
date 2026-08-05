@@ -16857,29 +16857,6 @@ which is exactly the right strength: a visible nudge, not a wall. The cloud scri
 (they *fix* the version; engines only warns), but their comments can then point at the engines field
 as the canonical statement of the requirement.
 
-### [Docs] `knip.json` `$schema` points at the knip v5 schema while knip v6 is installed
-
-**File(s):** `knip.json` (line 2); `package.json` (line 282) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```json
-"$schema": "https://unpkg.com/knip@5/schema.json",
-```
-
-but the installed tool is `knip@6.29.0` (devDependencies line 282; confirmed in `node_modules`).
-Editor validation/completion for this config is checked against a major-old schema — options added
-or changed in v6 will be flagged as unknown (or missing options not flagged), which is quietly
-misleading in the one file whose purpose is tooling precision.
-
-#### Proposed solution
-
-Point at the installed major: `"$schema": "https://unpkg.com/knip@6/schema.json"`. Worth a one-line
-check in the next dependency-update pass so the schema ref rides along with future knip majors
-(Dependabot bumps the package but not this string).
-
 ### [Readability] `package.json` script blocks interleave: `perf:*` splits the `test` tier list, and `scripts-info` ordering has drifted
 
 **File(s):** `package.json` (lines 40–65; scripts-info lines 168–199) @ 9ae62ff1
