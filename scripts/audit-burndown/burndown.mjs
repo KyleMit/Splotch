@@ -94,6 +94,12 @@ export function readConfig(env = process.env) {
 
   return {
     MAX_ISSUES,
+    // The backlog the whole run pops from, deletes from, and counts. Resolved
+    // here rather than read per-call from the ambient environment so it cannot
+    // disagree with the AUDIT_FILE the recorded launch command names — a run
+    // that relabels its backlog while processing another one leaves an "exact
+    // relaunch" record for a run that never happened.
+    AUDIT_FILE: auditFile(env),
     // The command that relaunches this exact run, resolved from the same env the
     // knobs above came from so the recorded line can never describe a different
     // run than the one in force (see recordLaunch).
@@ -277,6 +283,7 @@ function uniqueDraftPath(title) {
 export function createBurndownRun({ config, effects }) {
   const {
     MAX_ISSUES,
+    AUDIT_FILE,
     LAUNCH_COMMAND,
     MAX_HANDLED,
     PUSH_EVERY,
@@ -375,8 +382,8 @@ export function createBurndownRun({ config, effects }) {
     // The header + appended entries aren't wrapped at dprint's width, which would
     // redden CI's Quality (format) job. Normalise before it goes into the commit.
     runCmd('npx', ['dprint', 'fmt', DEFERRED_FILE]);
-    deleteEntryByTitle(title);
-    git('add', 'docs/AUDIT.md', DEFERRED_FILE);
+    deleteEntryByTitle(title, AUDIT_FILE);
+    git('add', AUDIT_FILE, DEFERRED_FILE);
     if (patchPath) git('add', patchPath);
     git('commit', '-q', '-m', `chore(audit): defer — ${why}\n\nAudit: ${title}`);
     deferred += 1;
@@ -423,7 +430,7 @@ export function createBurndownRun({ config, effects }) {
       return '';
     }
 
-    const protectedPaths = protectedImplementationPaths(paths);
+    const protectedPaths = protectedImplementationPaths(paths, AUDIT_FILE);
     if (protectedPaths.length) {
       logLine(`  Codex changed protected audit state: ${protectedPaths.join(', ')}`);
       return '';
@@ -437,7 +444,7 @@ export function createBurndownRun({ config, effects }) {
       }
       logLine('  driver applied Ruler outside the nested Codex sandbox');
       paths = changedImplementationPaths();
-      const generatedProtectedPaths = protectedImplementationPaths(paths);
+      const generatedProtectedPaths = protectedImplementationPaths(paths, AUDIT_FILE);
       if (generatedProtectedPaths.length) {
         logLine(`  Ruler changed protected audit state: ${generatedProtectedPaths.join(', ')}`);
         return '';
@@ -580,7 +587,7 @@ export function createBurndownRun({ config, effects }) {
     const headSha = gitOut('rev-parse', 'HEAD');
     const rollback = incompleteAuditCommitPlan({
       headSha,
-      auditBody: existsSync(auditFile()) ? readFileSync(auditFile(), 'utf8') : '',
+      auditBody: existsSync(AUDIT_FILE) ? readFileSync(AUDIT_FILE, 'utf8') : '',
       commitAt: (sha) => ({
         message: gitOut('show', '-s', '--format=%B', sha),
         parentSha: gitOut('rev-parse', `${sha}^`),
@@ -631,12 +638,12 @@ export function createBurndownRun({ config, effects }) {
   }
 
   function popNextFinding(tag) {
-    const issue = getEntry();
+    const issue = getEntry(1, AUDIT_FILE);
     if (issue === null) return null;
     writeFileSync(ISSUE_FILE, `${issue}\n`);
     const issueWrittenAt = statSync(ISSUE_FILE).mtimeMs;
     const title = entryTitle(issue.split('\n', 1)[0]);
-    const remaining = countEntries();
+    const remaining = countEntries(AUDIT_FILE);
     logLine(`${tag}  (${remaining} remaining)  ${title}`);
     return { issue, title, issueWrittenAt };
   }
@@ -703,8 +710,8 @@ export function createBurndownRun({ config, effects }) {
 
   function dropInvalidFinding(title, reason) {
     logLine(`  INVALID: ${reason}`);
-    deleteEntryByTitle(title);
-    git('add', 'docs/AUDIT.md');
+    deleteEntryByTitle(title, AUDIT_FILE);
+    git('add', AUDIT_FILE);
     git(
       'commit',
       '-q',
@@ -949,8 +956,9 @@ export function createBurndownRun({ config, effects }) {
     // Keyed on the title: a role that deleted the entry itself (which the prompts
     // forbid, but the reviewer talked the implementer into it three times on the
     // 2026-07-25 canary) makes this a no-op instead of eating the next finding.
-    if (!deleteEntryByTitle(title)) logLine('  entry already gone — a role edited the audit file');
-    git('add', 'docs/AUDIT.md');
+    if (!deleteEntryByTitle(title, AUDIT_FILE))
+      logLine('  entry already gone — a role edited the audit file');
+    git('add', AUDIT_FILE);
     git('commit', '-q', '--amend', '--no-edit');
     const amendedSha = gitOut('rev-parse', 'HEAD');
 
@@ -994,7 +1002,7 @@ export function createBurndownRun({ config, effects }) {
     // and only a reflog that dies with the container still names them.
     const draftPatch =
       sha && sha !== baseSha
-        ? gitOut('diff', baseSha, sha, '--', '.', `:(exclude)${auditFile()}`)
+        ? gitOut('diff', baseSha, sha, '--', '.', `:(exclude)${AUDIT_FILE}`)
         : '';
     const draftCommits = draftPatch
       ? gitOut('rev-list', '--count', `${baseSha}..${sha}`).trim()
@@ -1034,7 +1042,7 @@ export function createBurndownRun({ config, effects }) {
     rmSync(join(WORK, 'compact-snapshot.md'), { force: true });
 
     logLine(
-      `finished: ${done} fixed, ${dropped} dropped, ${deferred} deferred, ${countEntries()} remaining`
+      `finished: ${done} fixed, ${dropped} dropped, ${deferred} deferred, ${countEntries(AUDIT_FILE)} remaining`
     );
   }
 

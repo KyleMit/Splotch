@@ -13,7 +13,10 @@ export const WORK = '.audit-work';
 export const LOGS = join(WORK, 'logs');
 export const PROMPTS = 'scripts/audit-burndown/prompts';
 
-export const auditFile = () => process.env.AUDIT_FILE || 'docs/AUDIT.md';
+// The backlog every entry helper below reads. `env` is a parameter for the same
+// reason readConfig's is: a run built from a supplied environment must select
+// the backlog that environment names, not the ambient one.
+export const auditFile = (env = process.env) => env.AUDIT_FILE || 'docs/AUDIT.md';
 
 // The priority drives impl-model tiering: P4/P5 are the mechanical tail (dead
 // code, renames, dedup) that a cheaper model implements fine under the same

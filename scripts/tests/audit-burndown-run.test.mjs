@@ -355,6 +355,47 @@ describe('preflight', () => {
   });
 });
 
+describe('backlog selection', () => {
+  const CUSTOM_PATH = join('docs', 'AUDIT-CUSTOM.md');
+  const CUSTOM_TITLE = '[P1][complexity] Custom-backlog finding';
+
+  // AUDIT_FILE picks the file the whole run pops, deletes from, stages, and
+  // counts, so it has to come from the config like every other knob. Read per
+  // call from the ambient environment instead, a run built through the exported
+  // seam recorded `AUDIT_FILE='…'` in its launch command — the one fact nothing
+  // else can re-derive — while processing a different backlog entirely.
+  it('works the backlog its config names, not the ambient one', async () => {
+    writeFileSync(
+      CUSTOM_PATH,
+      [
+        '# Audit',
+        '',
+        '## Source: Code audit — Area two',
+        '',
+        ...entry(CUSTOM_TITLE, 'The custom thing is wrong.'),
+      ].join('\n')
+    );
+    // Bounded by MAX_HANDLED because the regression this locks does not merely
+    // return a wrong answer: popping one backlog while deleting from another
+    // re-pops the same finding forever, which would hang the suite instead of
+    // failing it.
+    const { events, gitCalls, run } = createRun({
+      env: { AUDIT_FILE: CUSTOM_PATH, MAX_HANDLED: '1' },
+      respond: () => invalidVerdict(),
+    });
+
+    await run.execute();
+
+    expect(readFileSync(CUSTOM_PATH, 'utf8')).not.toContain(CUSTOM_TITLE);
+    expect(audit()).toContain(FIRST_TITLE);
+    expect(gitCalls).toContainEqual(['add', CUSTOM_PATH]);
+    expect(events).toContain('finished: 0 fixed, 1 dropped, 0 deferred, 0 remaining');
+    // The ambient AUDIT_FILE still names the default backlog throughout: the
+    // supplied one is selected by construction, never by mutating the process.
+    expect(process.env.AUDIT_FILE).toBe(AUDIT_PATH);
+  });
+});
+
 describe('close-out', () => {
   it('deletes the finding it worked on by title and records the fix', async () => {
     const { events, run } = createRun({
