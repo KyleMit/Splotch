@@ -10,6 +10,7 @@ import {
   PICKER_GREEN,
   renderedCanvasHandle,
   retryOpen,
+  settleFlyIn,
   swatch,
   TEST_PALETTE,
   touchEventPrevented,
@@ -231,6 +232,28 @@ test('palette colors and custom hexagons activate from the keyboard', async ({ p
   await expect(dialog).not.toBeVisible();
 });
 
+// How far left of a hexagon's center the gap probe sits. The picker's swatches
+// are clip-path hexagons, so a point beside the first column's center is over
+// the picker background rather than any swatch, while 39px stays inside
+// ColorPicker's 40px snap radius (half the 69px hexagon height plus slop) and
+// nearer that hexagon than any other — the pencil-tip miss the snap exists for.
+const PICKER_GAP_PROBE_PX = 39;
+
+// The gap point beside `target`, plus whether an element hit-test still finds a
+// hexagon there, so a caller can prove the point really is in a gap.
+async function pickerGapBeside(page: Page, target: Locator) {
+  const box = (await target.boundingBox())!;
+  const point = {
+    x: box.x + box.width / 2 - PICKER_GAP_PROBE_PX,
+    y: box.y + box.height / 2,
+  };
+  const overHexagon = await page.evaluate(
+    ({ x, y }) => !!document.elementFromPoint(x, y)?.closest('.hexagon'),
+    point
+  );
+  return { ...point, overHexagon };
+}
+
 test('pointer exploration still snaps a hexagon gap and commits the highlighted color', async ({
   page,
 }) => {
@@ -257,19 +280,49 @@ test('pointer exploration still snaps a hexagon gap and commits the highlighted 
     await expect(target).toHaveClass(/hover/);
   }).toPass();
 
-  const targetBox = (await target.boundingBox())!;
-  const gap = {
-    x: targetBox.x + targetBox.width / 2 - 39,
-    y: targetBox.y + targetBox.height / 2,
-  };
-  expect(
-    await page.evaluate(({ x, y }) => !document.elementFromPoint(x, y)?.closest('.hexagon'), gap)
-  ).toBe(true);
+  const gap = await pickerGapBeside(page, target);
+  expect(gap.overHexagon).toBe(false);
   await page.mouse.move(gap.x, gap.y);
   await expect(target).toHaveClass(/hover/);
   await page.mouse.up();
 
   await expect(dialog).not.toBeVisible();
+  await expect(target).toHaveClass(/selected/);
+});
+
+// The gesture the snap radius is really for: a tap — down and up at the same
+// point — that lands in the picker background between hexagons. It only resolves
+// if the opening pointerdown itself falls back to the snap; gate the snap behind
+// a direct clip-path hit and this tap selects nothing at all (issue #777).
+test('a tap that lands in a hexagon gap snaps to the nearest swatch', async ({ page }) => {
+  await gotoApp(page);
+
+  const dialog = page.locator('#color-picker');
+  await retryOpen(dialog, () =>
+    page.getByRole('button', { name: 'Custom Color' }).click({ timeout: 1000 })
+  );
+  // The tap dispatches at a measured coordinate rather than through an
+  // actionability-checked click, so the dialog has to have landed first.
+  await settleFlyIn(dialog);
+
+  const target = dialog.locator('.grid.landscape .row.r5 .hexagon.c1');
+  await expect(target).not.toHaveClass(/selected/);
+
+  const gap = await pickerGapBeside(page, target);
+  expect(gap.overHexagon).toBe(false);
+
+  // A tap swallowed by the launch dead zone guarding the opening swatch changes
+  // nothing at all, so retry the whole down+up until the picker commits and
+  // closes — and skip re-tapping once it has, since that would land on the canvas.
+  await expect(async () => {
+    if (await dialog.isVisible()) {
+      await page.mouse.move(gap.x, gap.y);
+      await page.mouse.down();
+      await page.mouse.up();
+    }
+    await expect(dialog).not.toBeVisible({ timeout: 1000 });
+  }).toPass();
+
   await expect(target).toHaveClass(/selected/);
 });
 
