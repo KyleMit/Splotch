@@ -25,35 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Maintainability] SoundSection's non-reactive `previewingVolume` latch lacks the required "intentionally untracked" comment
-
-**File(s):** `web/src/lib/components/settings/SoundSection.svelte` (line 15) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const PREVIEW_SPEED = 0.45;
-let previewingVolume = false;
-```
-
-`.claude/rules/svelte.md`: "Mutable component-level state defaults to `$state`; a deliberately
-non-reactive `let` (timer handles, transition-time latches) carries a one-line comment saying it's
-intentionally untracked." `previewingVolume` is mutated in `onVolumeActive` (line 25) and read in
-`previewVolume` (line 20), never in the template — a legitimate untracked latch, but the mandatory
-comment is missing, so the next reader (or reviewer) must re-derive whether the missing `$state` is
-a bug. The nearby comment (lines 17–18) explains the *feature*, not the tracking choice.
-
-#### Proposed solution
-
-One line:
-
-```ts
-// Intentionally untracked: only read inside event handlers, never rendered.
-let previewingVolume = false;
-```
-
 ### [Readability] ReportForm's submit-time device fallback duplicates the effect's collection and can send data the preview never showed
 
 **File(s):** `web/src/lib/components/settings/ReportForm.svelte` (collection `$effect`, lines 56–62;
