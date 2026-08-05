@@ -7,7 +7,6 @@
   let coachmarkGhostEl: HTMLDivElement;
 
   let tutorialVisible = $state(false);
-  let tutorialFadeOut = $state(false);
 
   let tutorialDismissTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -51,7 +50,6 @@
       el.style.animation = '';
     }
 
-    tutorialFadeOut = false;
     tutorialVisible = true;
     tutorialDismissTimer = setTimeout(dismiss, 6000);
   }
@@ -65,7 +63,6 @@
       tutorialDismissTimer = null;
     }
     tutorialVisible = false;
-    tutorialFadeOut = true;
   }
 
   onMount(() => {
@@ -79,7 +76,6 @@
 <div
   class="clear-coachmark"
   class:visible={tutorialVisible}
-  class:fade-out={tutorialFadeOut}
   aria-hidden="true"
 >
   <div class="coachmark-ring" bind:this={coachmarkRingEl}></div>
@@ -110,10 +106,6 @@
   .clear-coachmark.visible {
     opacity: 1;
     visibility: visible;
-  }
-
-  .clear-coachmark.fade-out {
-    opacity: 0;
   }
 
   /* Soft preview of the accept zone — uses the friendlier coral, not the

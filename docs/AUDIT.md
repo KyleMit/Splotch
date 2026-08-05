@@ -4104,30 +4104,6 @@ and delete the props (SliderRow needs no change). If a future setting genuinely 
 reintroduce `step` then — and make `clamp` quantize to it on the pointer path too so the contract is
 honest.
 
-### [Readability] ClearCoachmark's `tutorialFadeOut` state and `.fade-out` rule are dead weight
-
-**File(s):** `web/src/lib/components/ClearCoachmark.svelte` (lines 10, 54, 68, 82, 115–117) @
-9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`dismiss()` sets `tutorialVisible = false; tutorialFadeOut = true` and the template binds
-`class:fade-out={tutorialFadeOut}`. But the base rule already declares `opacity: 0` with a `0.4s`
-opacity transition and delayed `visibility` (lines 98–108); removing `.visible` alone produces
-exactly the fade-out the `.fade-out` class (line 115–117: `opacity: 0`) restates. Since `.fade-out`
-is only ever present when `.visible` is absent, the class changes nothing — the extra `$state`, the
-two writes, the class binding, and the CSS rule are all inert, and a reader has to reason through
-the transition timing to discover that.
-
-#### Proposed solution
-
-Delete `tutorialFadeOut`, its writes in `show()`/`dismiss()`, the `class:fade-out` binding, and the
-`.clear-coachmark.fade-out` rule; verify the dismiss fade in the browser (the base
-`transition: opacity 0.4s ease, visibility 0.4s` carries it). If some engine quirk actually needs
-the explicit class, that's a WHY comment the current code is missing.
-
 ### [Maintainability] Deliberately non-reactive `let`s lack the required "intentionally untracked" comments
 
 **File(s):** `web/src/lib/components/Slider.svelte` (lines 47–50),
