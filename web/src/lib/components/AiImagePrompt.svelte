@@ -34,7 +34,7 @@
     // the progress dial (and any error) over the blurred drawing.
     const blob = drawingBlob;
     aiPrompt.hide();
-    generateAiImage({ blob, style });
+    generateAiImage({ drawing: blob, style });
   }
 </script>
 

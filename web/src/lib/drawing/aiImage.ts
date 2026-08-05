@@ -137,16 +137,16 @@ async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, runId: number) {
 // the failed-export case closes the result modal itself, so the caller can bail
 // on null without distinguishing the two.
 async function exportUploadImage(
-  blob: Blob | null,
+  drawing: Blob | null,
   runId: number
 ): Promise<{ preview: Blob; upload: Blob } | null> {
-  const imageBlob = blob ?? (await exportCanvasBlob({ includePaperTexture: false }));
+  const imageBlob = drawing ?? (await exportCanvasBlob({ includePaperTexture: false }));
   if (!isAiGenerationActive(runId)) return null;
   if (!imageBlob) {
     closeAiResult();
     return null;
   }
-  if (!blob) setAiPreview(runId, URL.createObjectURL(imageBlob));
+  if (!drawing) setAiPreview(runId, URL.createObjectURL(imageBlob));
 
   // Upload a high-quality WebP rather than the PNG: a flat-color toddler drawing
   // encodes to a fraction of the bytes, so the single buffered generate-image
@@ -214,9 +214,9 @@ function applyResponse(runId: number, response: AiImageResponse): { committedBlo
 }
 
 export async function generateAiImage({
-  blob = null,
+  drawing = null,
   style = '',
-}: { blob?: Blob | null; style?: StyleName | '' } = {}) {
+}: { drawing?: Blob | null; style?: StyleName | '' } = {}) {
   if (ui.aiGenerating) return;
 
   const controller = new AbortController();
@@ -226,11 +226,11 @@ export async function generateAiImage({
   // behind the dial straight away; otherwise open with the dial alone and slot
   // the preview in once the canvas export finishes — so the spinner never waits
   // on the export, even when customization is off and we skip the picker.
-  const runId = startAiGeneration(blob ? URL.createObjectURL(blob) : null, controller);
+  const runId = startAiGeneration(drawing ? URL.createObjectURL(drawing) : null, controller);
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   try {
-    const exported = await exportUploadImage(blob, runId);
+    const exported = await exportUploadImage(drawing, runId);
     if (!exported) return;
 
     const { endpoint, headers, body } = buildRequest(exported.upload, style);

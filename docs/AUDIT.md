@@ -23,37 +23,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — AI image generation (client + state + UI)
 
-### [Readability] `generateAiImage`'s `blob` option and `exportUploadImage`'s `blob` parameter under-describe what they carry
-
-**File(s):** `web/src/lib/drawing/aiImage.ts` (`generateAiImage`, lines 198–201;
-`exportUploadImage`, lines 121–126) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The public entry point reads:
-
-```ts
-export async function generateAiImage({
-  blob = null,
-  style = '',
-}: { blob?: Blob | null; style?: StyleName | '' } = {});
-```
-
-`blob` is specifically *the already-exported drawing handed over by the style picker* (vs. `null`
-meaning "export the canvas yourself") — a meaning only recoverable from the comment at lines 205–210
-and from reading `AiImagePrompt.svelte`. Inside, `exportUploadImage(blob, runId)` reuses the same
-bare name, and `if (!blob) setAiPreview(...)` (line 132) makes the branch's intent opaque.
-Everywhere else the module names blobs by role (`aiBlob`, `drawingBlob`, `uploadBlob`, `imageBlob`).
-
-#### Proposed solution
-
-Rename the option to `drawing` (or `drawingBlob`) at both signatures:
-`generateAiImage({ drawing = null, style = '' }: { drawing?: Blob | null; ... })`. Two call sites
-change (`AiImagePrompt.svelte` line 45 becomes `generateAiImage({ drawing: blob, style })`;
-`ActionsPanel.svelte` line 247 passes nothing).
-
 ## Source: Code audit — Settings / settings UI
 
 ### [Maintainability] Three hand-rolled copies of the iOS-style segmented control — extract a design primitive
