@@ -88,8 +88,8 @@ describe('POST /api/report', () => {
   // past this endpoint's limit with honeypotted payloads so the run can never
   // open a real issue whatever GITHUB_ISSUE_TOKEN the server was given, and it
   // still asserts the 429. Charging the bucket after the honeypot short-circuit
-  // would silently disarm that safety, and the junk `[Bug] burst 0` issues the
-  // smoke has already filed are what it costs.
+  // would silently disarm that safety; junk `[Bug] burst 0` issues in the
+  // tracker are the failure mode this protects against.
   it('charges the bucket for a honeypot submission and opens no issue', async () => {
     const response = await post({
       kind: 'bug',
