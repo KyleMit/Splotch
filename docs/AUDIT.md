@@ -4287,30 +4287,6 @@ plays — or keep the nudge panel-local and have the boot helper call `undo()` g
 `canvasState.canUndo`. Decide and document the `undoButtonEnabled` interaction (a one-line WHY if
 the bypass is deliberate; a `settings` check if not).
 
-### [Readability] Slider's `clamp()` hides a `Math.round`
-
-**File(s):** `web/src/lib/components/Slider.svelte` (lines 59–61) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-function clamp(v: number) {
-  return Math.round(Math.min(max, Math.max(min, v)));
-}
-```
-
-The name promises clamping; the function also quantizes to integers — a behavior callers rely on
-(drag deltas are fractional) but cannot see at the call sites (`apply` line 64). Anyone extending
-the slider to fractional values (or wiring `step` quantization, see the step finding) would
-reasonably not expect `clamp` to round.
-
-#### Proposed solution
-
-Rename to `roundAndClamp` (or `toSliderValue`), or split the round into `apply()` where the drag →
-value conversion happens.
-
 ### [Testing] NotchBand's native status-bar branching is untested inline effect logic with an unguarded dynamic import
 
 **File(s):** `web/src/lib/components/NotchBand.svelte` (lines 41–56) @ 9ae62ff1
