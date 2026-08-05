@@ -16455,25 +16455,6 @@ Extend `check-native-app-id.mjs` (or a sibling check) with an `appName` pass:
 `Info.plist`'s `CFBundleDisplayName`. The script's existing `checks` table structure takes this with
 two more entries and a second expected value.
 
-### [Readability] Info.plist mixes space and tab indentation
-
-**File(s):** `ios/App/App/Info.plist` (lines 5–6, 9–10) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The file is tab-indented throughout except two hand-edited spots: the `CAPACITOR_DEBUG` key at line
-5 uses four spaces while its value at line 6 uses a tab, and `CFBundleDisplayName`'s value at line
-10 is indented with eight spaces under a tab-indented key at line 9. Harmless to builds, but every
-future diff of these lines shows spurious whitespace churn, and neither Prettier nor dprint owns
-`.plist` files so nothing auto-fixes it.
-
-#### Proposed solution
-
-Normalize the four lines to tabs to match the rest of the file (Xcode's own convention for plists).
-One-line-each mechanical fix.
-
 ### [Docs] Photo-library permission copy says "screenshot" for saving the drawing itself
 
 **File(s):** `ios/App/App/Info.plist` (lines 29–30) @ 9ae62ff1
