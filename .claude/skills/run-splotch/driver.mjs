@@ -19,12 +19,15 @@
 // Exit code is non-zero if the target route never became interactive.
 
 import { chromium } from '@playwright/test';
-import { spawn } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+// The generated copies under .claude/skills/ and .agents/skills/ sit at the same
+// depth as this .ruler/skills/ source, so one relative specifier resolves from
+// all three; scripts/tests/run-splotch-driver.test.mjs holds that depth.
+import { spawnViteServer } from '../../../scripts/lib/vite-server.mjs';
 
 const repoRoot = resolve(fileURLToPath(import.meta.url), '../../../..');
 
@@ -92,17 +95,36 @@ const ready = {
 };
 const isReady = ready[route] ?? (() => document.readyState === 'complete');
 
-let server;
+// { server, stop, release } from spawnViteServer once this run owns a server.
+let vite = null;
+
 function startServer() {
   // `vite dev` is fastest for a screenshot and serves every route except the
   // /api/* functions (use `npm run dev:netlify` by hand if you need those).
   // PUBLIC_ENABLE_DEV_HARNESS unlocks the /dev/* harness routes (404 otherwise).
-  server = spawn('npx', ['vite', 'dev', '--port', String(port), '--strictPort'], {
-    cwd: resolve(repoRoot, 'web'),
-    env: { ...process.env, PUBLIC_ENABLE_DEV_HARNESS: 'true' },
-    stdio: ['ignore', 'pipe', 'inherit'],
+  //
+  // spawnViteServer runs vite's bin directly in a detached process group, so
+  // stop() reaps the process that actually holds the port — `spawn('npx', …)` +
+  // child.kill() orphans a `vite dev` on the port for hours, the failure this
+  // skill's own SKILL.md warns about. --keep releases the group instead, and a
+  // piped stdout would then keep this process alive forever, so it logs nowhere.
+  vite = spawnViteServer(port, {
+    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true' },
+    stdout: keep ? 'ignore' : 'pipe',
   });
-  server.stdout.on('data', (d) => process.stderr.write(d)); // surface vite logs on stderr
+  vite.server.stdout?.on('data', (d) => process.stderr.write(d)); // vite logs on stderr
+}
+
+function finishServer(baseURL) {
+  if (!vite) return;
+  if (!keep) {
+    vite.stop();
+    return;
+  }
+  vite.release();
+  console.log(
+    `server left running: ${baseURL} (pid ${vite.server.pid}) — kill with: npx kill-port ${port}`
+  );
 }
 
 async function waitForServer(baseURL) {
@@ -117,24 +139,10 @@ async function waitForServer(baseURL) {
   }
 }
 
-async function main() {
-  const baseURL = externalUrl ? String(externalUrl) : `http://localhost:${port}`;
-  if (!externalUrl) {
-    startServer();
-    await waitForServer(baseURL);
-  }
-
-  const executablePath = chromiumExecutablePath();
-  if (executablePath) {
-    process.stderr.write(`playwright's pinned Chromium is missing; using ${executablePath}\n`);
-  }
-  const browser = await chromium.launch({ headless: !headed, executablePath });
-  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-
-  // Cold `vite dev` re-optimizes deps on first hit, briefly 504-ing modules and
-  // auto-reloading. Poll the readiness predicate (don't keep re-navigating) so we
-  // ride that reload to a settled page — same trick as web/tests/global-setup.ts.
-  const url = baseURL + route;
+// Cold `vite dev` re-optimizes deps on first hit, briefly 504-ing modules and
+// auto-reloading. Poll the readiness predicate (don't keep re-navigating) so we
+// ride that reload to a settled page — same trick as web/tests/global-setup.ts.
+async function waitForRoute(page, url) {
   const deadline = Date.now() + 90_000;
   let last = 0;
   for (;;) {
@@ -146,44 +154,62 @@ async function main() {
     if (Date.now() > deadline) throw new Error(`${route} never became interactive`);
     await page.waitForTimeout(500);
   }
+}
 
-  if (draw && route === '/') {
-    const box = await page.locator('#drawingCanvas').boundingBox();
-    if (box) {
-      const cx = box.x + box.width / 2;
-      const cy = box.y + box.height / 2;
-      await page.mouse.move(cx - 200, cy - 80);
-      await page.mouse.down();
-      for (const [dx, dy] of [
-        [-100, 80],
-        [40, -120],
-        [160, 100],
-        [240, -40],
-      ]) {
-        await page.mouse.move(cx + dx, cy + dy, { steps: 12 });
-      }
-      await page.mouse.up();
-      await page.waitForTimeout(200);
-    }
+async function drawStroke(page) {
+  const box = await page.locator('#drawingCanvas').boundingBox();
+  if (!box) return;
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  await page.mouse.move(cx - 200, cy - 80);
+  await page.mouse.down();
+  for (const [dx, dy] of [
+    [-100, 80],
+    [40, -120],
+    [160, 100],
+    [240, -40],
+  ]) {
+    await page.mouse.move(cx + dx, cy + dy, { steps: 12 });
+  }
+  await page.mouse.up();
+  await page.waitForTimeout(200);
+}
+
+// The browser is closed in a finally so a throw between launch and screenshot
+// still reaps it; the server's own teardown is main()'s job either way.
+async function captureRoute(baseURL) {
+  const executablePath = chromiumExecutablePath();
+  if (executablePath) {
+    process.stderr.write(`playwright's pinned Chromium is missing; using ${executablePath}\n`);
+  }
+  const browser = await chromium.launch({ headless: !headed, executablePath });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await waitForRoute(page, baseURL + route);
+    if (draw && route === '/') await drawStroke(page);
+    await mkdir(dirname(out), { recursive: true });
+    await page.screenshot({ path: out });
+  } finally {
+    await browser.close();
+  }
+}
+
+async function main() {
+  const baseURL = externalUrl ? String(externalUrl) : `http://localhost:${port}`;
+  if (!externalUrl) {
+    startServer();
+    await waitForServer(baseURL);
   }
 
-  await mkdir(dirname(out), { recursive: true });
-  await page.screenshot({ path: out });
+  await captureRoute(baseURL);
   console.log(`screenshot: ${out}`);
   console.log(`route ready: ${baseURL}${route}`);
 
-  await browser.close();
-  if (keep && !externalUrl) {
-    console.log(
-      `server left running: ${baseURL} (pid ${server.pid}) — kill with: npx kill-port ${port}`
-    );
-  } else if (server) {
-    server.kill('SIGTERM');
-  }
+  finishServer(baseURL);
 }
 
 main().catch((err) => {
   console.error('driver failed:', err.message);
-  if (server) server.kill('SIGTERM');
+  vite?.stop();
   process.exit(1);
 });

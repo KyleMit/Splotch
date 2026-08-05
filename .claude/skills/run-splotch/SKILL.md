@@ -147,10 +147,12 @@ magic-brush E2E test, `web/tests/flows.spec.ts`.
 > * **Reuse the driver's server** (preferred): `driver.mjs … --keep`, connect your own Playwright
 >   script with `--url`/`page.goto`, and when done free the port with `npx kill-port <n>` (default
 >   5199). Your script should only manage the *browser*, never the server.
-> * **If you truly must spawn one**, use `spawnViteServer(port, env)` from
+> * **If you truly must spawn one**, use `spawnViteServer(port, { env, stdout })` from
 >   `scripts/lib/vite-server.mjs` — it launches vite in a **detached process group** and its
 >   `stop()` kills the whole group (`process.kill(-pid)`), so nothing is orphaned. `freePort(port)`
->   clears a stale listener first.
+>   clears a stale listener first, and `release()` hands a still-running server to the OS (what
+>   `--keep` does) so your script can exit without killing it. `driver.mjs`'s `startServer` /
+>   `finishServer` are the worked example — copy those, not a fresh `spawn`.
 >
 > Either way, **reap what you spawned before ending**: kill the script/browser, run
 > `npx kill-port <n>`, and confirm with `ps`/`ss -ltnp` that no `vite dev` or headless Chromium is

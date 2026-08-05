@@ -57,16 +57,31 @@ export function spawnViteServer(port, { env = {}, command = 'dev', stdout = 'ign
     process.exit(1);
   };
 
-  // stop() drops its own safety-net listeners, so a caller that boots one server
-  // per iteration (scripts/e2e-sweep.mjs) doesn't accumulate a listener and a
-  // captured child per rep — Node starts warning about the leak at eleven.
-  const stop = () => {
+  // stop() and release() drop their own safety-net listeners, so a caller that
+  // boots one server per iteration (scripts/e2e-sweep.mjs) doesn't accumulate a
+  // listener and a captured child per rep — Node starts warning about the leak
+  // at eleven.
+  const dropSafetyNets = () => {
     process.off('exit', kill);
     process.off('SIGINT', onInterrupt);
+  };
+  const stop = () => {
+    dropSafetyNets();
     kill();
+  };
+
+  // release() hands the detached group over to the OS: the exit/SIGINT nets come
+  // off and the child is unref'd so this process can exit while vite keeps
+  // serving (the run-splotch driver's --keep). Spawn with `stdout: 'ignore'` when
+  // releasing — a piped stdout is a second handle that keeps the event loop alive
+  // after the child is unref'd, which is what makes a hand-rolled server hang on
+  // exit in the first place.
+  const release = () => {
+    dropSafetyNets();
+    server.unref();
   };
   process.on('exit', kill);
   process.on('SIGINT', onInterrupt);
 
-  return { server, stop };
+  return { server, stop, release };
 }
