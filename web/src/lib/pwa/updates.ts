@@ -27,6 +27,10 @@
 // unfamiliar URL, fetches fresh HTML from the origin, and we're unstuck. A
 // ?v= already in the URL means we just tried that version, so we never
 // redirect to it again — one attempt per deployed version, no reload loop.
+// That navigation obeys the same blank-canvas rule as the waiting-worker
+// reload: the fetch can take seconds on a slow connection and the child can
+// draw from the first frame (ADR-0072), so a stale session that has ink on it
+// keeps running until the next blank-canvas boot.
 
 import { canvasState } from '$lib/state/canvas.svelte';
 import { scheduleIdle } from '$lib/idle';
@@ -141,6 +145,7 @@ export function createPWAUpdates() {
       if (!resp.ok) return;
       const { version } = await resp.json();
       if (version !== __APP_VERSION__ && version !== attemptedVersion) {
+        if (!canvasState.canvasEmpty) return;
         const next = new URL(window.location.href);
         next.searchParams.set('v', version);
         window.location.replace(next.toString());

@@ -80,6 +80,7 @@ describe('checkVersionMismatch', () => {
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
+    canvasState.canvasEmpty = true;
     Object.defineProperty(window, 'location', {
       value: { href: 'https://splotch.art/', replace: vi.fn() },
       writable: true,
@@ -159,6 +160,18 @@ describe('checkVersionMismatch', () => {
     await pwaUpdates.checkVersionMismatch('1.0.1');
 
     expect(window.location.replace).toHaveBeenCalledWith(expect.stringContaining('?v=1.0.2'));
+  });
+
+  it('does not redirect while the canvas has content', async () => {
+    canvasState.canvasEmpty = false;
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ version: '1.0.1' }),
+    } as Response);
+
+    await pwaUpdates.checkVersionMismatch();
+
+    expect(window.location.replace).not.toHaveBeenCalled();
   });
 });
 
