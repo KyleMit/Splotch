@@ -17552,34 +17552,6 @@ Delete the sentence. If a stand-in is wanted, the modern equivalent is the `over
 `sharp` entanglement already documented in dependency-health-audit Phase 1 — but a pointer there is
 optional; the landmine list in Phase 1 (lines 41–48) already covers coordinated families.
 
-### [Docs] Machine-specific absolute paths baked into shared skills (`/Users/kylemit/…`)
-
-**File(s):** `.ruler/skills/run-splotch/SKILL.md` (line 13), `.ruler/skills/workflow-audit/SKILL.md`
-(lines 24–25) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-* `run-splotch/SKILL.md:13`: "**All paths below are relative to the repo root**
-  (`/Users/kylemit/Code/Splotch`)." The parenthetical is one contributor's macOS checkout; in a
-  cloud session the root is `/home/user/Splotch`, and for any other machine it's something else. The
-  clause before the parenthesis is complete on its own.
-* `workflow-audit/SKILL.md:24–25`: "the JSONL transcripts under
-  `~/.claude/projects/-Users-kylemit-Code-Splotch/`". The directory name is derived from the
-  absolute repo path, so this is wrong on every machine but one — an agent on another checkout greps
-  an empty/nonexistent dir and concludes there's no session history.
-
-Skills are shared cross-runner, cross-machine artifacts (ADR-0058); per-machine facts belong in
-untracked local config, the same principle that keeps `DEVELOPMENT_TEAM` out of the pbxproj (ios.md
-§4).
-
-#### Proposed solution
-
-run-splotch: drop the parenthetical. workflow-audit: describe the derivation instead — "under
-`~/.claude/projects/<slug>/`, where `<slug>` is the absolute repo path with `/` replaced by `-`
-(list `~/.claude/projects/` and match the current checkout)".
-
 ### [Docs] knowledge-map's ADR-0059 link breaks in the generated root CLAUDE.md/AGENTS.md
 
 **File(s):** `.ruler/knowledge-map.md` (line 79) @ 9ae62ff1

@@ -10,7 +10,7 @@ Splotch is a SvelteKit web app (`/` drawing canvas, `/admin` console, `/privacy`
 `vite dev` server, opens Playwright's bundled Chromium, optionally draws a stroke, and saves a
 screenshot. Playwright is already a devDependency; the same Chromium the E2E suite uses.
 
-**All paths below are relative to the repo root** (`/Users/kylemit/Code/Splotch`).
+**All paths below are relative to the repo root.**
 
 ## Prerequisites
 
