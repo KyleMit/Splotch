@@ -18,13 +18,30 @@ forward at the bottom of this file.
 BRANCH=claude/audit-burndown-overnight-6isff3 \
 CHECK_CMD='npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check && npm run img:audit:check && npm run check:assets:manifest && npm run lint:dead' \
 TEST_CMD='npm run test:unit && npm run test:scripts && npm run test:asset-gen' \
+BUDGET_IMPL=7.00 \
 npm run audit:burndown:overnight -- 600
 ```
 
 Every other knob is at its default (`PUSH_EVERY=1`, `PUSH_TEST_CMD=''`, `MODEL_IMPL=claude-opus-5`,
 `MODEL_IMPL_MINOR=sonnet`, `EFFORT_IMPL=high`, `EFFORT_VERIFY=medium`, `EFFORT_REVIEW=medium`,
-budgets 3/4/3). Both overrides are literal strings — nothing depends on a helper script in
-gitignored `.audit-work/`.
+`BUDGET_VERIFY=3.00`, `BUDGET_REVIEW=3.00`). All overrides are literal strings — nothing depends on
+a helper script in gitignored `.audit-work/`.
+
+### Why `BUDGET_IMPL=7.00` (raised from the 4.00 default)
+
+The canary's fifth finding — extracting three hand-rolled segmented controls into one design
+primitive — hit exactly `$4.0036` on its fix round and deferred with `error_max_budget_usd`. Every
+other role call in the canary finished under `$2`: verify peaked at `$0.94` and review at `$0.89`,
+both far below their `$3.00` caps, so those stay at the default.
+
+The cap was binding only on multi-file extraction fix rounds, which are common in a `/code-audit`
+tail. A cap set below what the work costs does not save anything — it converts a finished,
+gate-passing fix into a deferral and pays for the finding again on the re-run. Dollars are notional
+on a Claude subscription; the real ceiling is the usage window.
+
+The deferred finding's draft is recoverable at
+`docs/audit-deferred/*-hand-rolled-copies-of-the-ios-style-segmented-cont.patch` (259 lines) — it is
+worth re-staging under the raised budget rather than re-deriving.
 
 **`BRANCH` is not optional.** The driver defaults to `audit/burndown`; this session was assigned
 `claude/audit-burndown-overnight-6isff3`. Preflight echoes `branch: <name>` — read that line and
