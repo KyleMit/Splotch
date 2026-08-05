@@ -25,50 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Correctness] CompactShell's Night Mode toggle silently discards a parent's `system` theme preference
-
-**File(s):** `web/src/lib/components/settings/CompactShell.svelte` (Night Mode `ToggleRow`, lines
-73–81) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```svelte
-<ToggleRow
-  icon={resolvedTheme() === 'dark' ? 'theme-dark' : 'theme-light'}
-  label="Night Mode"
-  checked={resolvedTheme() === 'dark'}
-  onToggle={(next) => setTheme(next ? 'dark' : 'light')}
-/>
-```
-
-A parent whose theme is `system` (the default follow-the-OS mode, one of three explicit choices in
-AppearanceSection) who taps this toggle — even toggling it off again immediately — has their
-preference rewritten to a pinned `'dark'` or `'light'`. Nothing restores `system`; the only way back
-is finding the three-way picker in the full portrait settings. Every other CompactShell cell
-round-trips losslessly to its full-settings counterpart (sound, advanced controls, orientation
-lock), so this one silently destroying state is surprising. The file's other subtle behaviors (the
-orientation release-on-retap, lines 46–55) get thorough WHY comments; this tradeoff gets none, so it
-reads as an oversight rather than a decision.
-
-#### Proposed solution
-
-Cheapest correct option: when the requested resolved theme equals what `system` would currently
-resolve to, set `'system'` instead of pinning:
-
-```ts
-onToggle={(next) => {
-  const wanted: ResolvedTheme = next ? 'dark' : 'light';
-  setTheme(resolveTheme('system', appearanceSystemDark()) === wanted ? 'system' : wanted);
-}}
-```
-
-(needs a small exported read of the OS preference from `appearance.svelte.ts`, or a
-`setResolvedTheme(wanted)` helper there). If pinning is actually the intended semantic for a "quick
-toggle", keep the code and add the WHY comment — but the asymmetric data loss deserves one or the
-other.
-
 ### [Readability] `keyStorageNote`'s nested ternary should be a `Record<Platform, string>` per the closed-union convention
 
 **File(s):** `web/src/lib/components/settings/AiKeyManager.svelte` (lines 48–55) @ 9ae62ff1

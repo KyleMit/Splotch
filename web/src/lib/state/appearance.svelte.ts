@@ -11,7 +11,7 @@
 // resolvedTheme() and repaints the meta, so both an OS switch (systemDark) and
 // an explicit setting change (settings.theme) update it from one reactive path,
 // with no separate matchMedia listener for the meta.
-import { settings } from './settings.svelte';
+import { settings, setTheme } from './settings.svelte';
 import { resolveTheme, type ResolvedTheme, updateThemeColorMeta } from '../theme';
 
 const systemQuery =
@@ -27,8 +27,19 @@ export function resolvedTheme(): ResolvedTheme {
   return resolveTheme(settings.theme, appearance.systemDark);
 }
 
-export function systemPrefersDark(): boolean {
-  return appearance.systemDark;
+// A quick toggle (no three-way UI to name 'system' explicitly) can only
+// request an appearance, not a preference — so it writes back the LOOSEST
+// preference that still resolves to the requested appearance: 'system' when
+// the OS already renders that appearance, otherwise an explicit pin. This is
+// what keeps a parent who never touched theming (still on the 'system'
+// default) from getting pinned by one tap. The same rule can also overwrite
+// an explicit pin that happens to match the OS: e.g. a light-OS parent who
+// pinned 'light' explicitly, then taps Night Mode on and back off, lands on
+// 'system' rather than their original explicit pin — an accepted trade since
+// a quick toggle has no way to tell "explicit light" from "system resolving
+// to light" apart, and 'system' still renders the appearance they asked for.
+export function setResolvedTheme(wanted: ResolvedTheme): void {
+  setTheme(resolveTheme('system', appearance.systemDark) === wanted ? 'system' : wanted);
 }
 
 // Keep <meta name="theme-color"> on the resolved theme. A detached effect root

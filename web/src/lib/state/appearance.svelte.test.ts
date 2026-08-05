@@ -116,3 +116,53 @@ describe('single prefers-color-scheme source', () => {
     expect(themeColorContent()).toBe(THEME_COLOR_DARK);
   });
 });
+
+describe('setResolvedTheme', () => {
+  it('requesting the appearance the dark OS already renders restores system', async () => {
+    installMatchMedia();
+    query.matches = true;
+    const { settings, setResolvedTheme } = await freshModule();
+    await tick();
+
+    setResolvedTheme('dark');
+    await tick();
+
+    expect(settings.theme).toBe('system');
+  });
+
+  it('requesting the appearance opposite a dark OS pins an explicit choice', async () => {
+    installMatchMedia();
+    query.matches = true;
+    const { settings, setResolvedTheme } = await freshModule();
+    await tick();
+
+    setResolvedTheme('light');
+    await tick();
+
+    expect(settings.theme).toBe('light');
+  });
+
+  it('requesting the appearance opposite a light OS pins an explicit choice', async () => {
+    installMatchMedia();
+    query.matches = false;
+    const { settings, setResolvedTheme } = await freshModule();
+    await tick();
+
+    setResolvedTheme('dark');
+    await tick();
+
+    expect(settings.theme).toBe('dark');
+  });
+
+  it('requesting the appearance the light OS already renders restores system', async () => {
+    installMatchMedia();
+    query.matches = false;
+    const { settings, setResolvedTheme } = await freshModule();
+    await tick();
+
+    setResolvedTheme('light');
+    await tick();
+
+    expect(settings.theme).toBe('system');
+  });
+});
