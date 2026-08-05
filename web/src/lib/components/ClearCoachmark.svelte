@@ -73,11 +73,7 @@
 </script>
 
 <!-- Animated coachmark: a ghost button + hand mimes the drag-to-clear gesture. -->
-<div
-  class="clear-coachmark"
-  class:visible={tutorialVisible}
-  aria-hidden="true"
->
+<div class="clear-coachmark" class:visible={tutorialVisible} aria-hidden="true">
   <div class="coachmark-ring" bind:this={coachmarkRingEl}></div>
   <div class="coachmark-ghost" bind:this={coachmarkGhostEl}>
     <div class="coachmark-button">
