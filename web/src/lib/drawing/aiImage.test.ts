@@ -44,6 +44,9 @@ describe('generateAiImage request ownership', () => {
     const webpEncoding = Promise.withResolvers<Blob | null>();
     const request = Promise.withResolvers<Response>();
     mocks.exportCanvasBlob.mockReturnValueOnce(canvasExport.promise);
+    // The capability gate must report a WebP encoder or the deferred toBlob
+    // stub below is skipped and never awaited.
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/webp,probe');
     vi.stubGlobal(
       'createImageBitmap',
       vi.fn(async () => ({ width: 8, height: 8, close: vi.fn() }))
@@ -290,6 +293,7 @@ describe('generateAiImage response handling', () => {
 // preview and hand to the gallery auto-save.
 describe('generateAiImage upload format', () => {
   function stubWebpEncoder() {
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/webp,probe');
     vi.stubGlobal(
       'createImageBitmap',
       vi.fn(async () => ({ width: 8, height: 8, close: vi.fn() }))
@@ -337,17 +341,35 @@ describe('generateAiImage upload format', () => {
     expect(drawingSave?.[0].type).toBe('image/png');
   });
 
-  it('falls back to the PNG upload when the platform cannot encode WebP', async () => {
+  it('skips the transcode entirely when the platform cannot encode WebP', async () => {
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['png'], { type: 'image/png' }));
-    // No WebP encoder stubbed: createImageBitmap is absent, so encodeWebpUpload
-    // throws and we upload the original PNG.
-    vi.stubGlobal('createImageBitmap', undefined);
+    // Safari's canvas answers an unsupported toDataURL type with the
+    // spec-mandated PNG fallback; the capability gate reads that as "no WebP
+    // encoder" and must skip without ever decoding the export — on an iPad the
+    // decode + discarded re-encode costs ~105 ms of blocked main thread.
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,');
+    const decode = vi.fn();
+    vi.stubGlobal('createImageBitmap', decode);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
 
     const { generateAiImage } = await import('./aiImage');
     await generateAiImage();
 
     expect(uploadedImage().type).toBe('image/png');
+    expect(decode).not.toHaveBeenCalled();
+  });
+
+  it('probes WebP encode support once across generations', async () => {
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['P'.repeat(200)], { type: 'image/png' }));
+    stubWebpEncoder();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+
+    const { generateAiImage } = await import('./aiImage');
+    await generateAiImage();
+    await generateAiImage();
+
+    expect(uploadedImage().type).toBe('image/webp');
+    expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalledTimes(1);
   });
 });
 
