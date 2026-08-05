@@ -4853,25 +4853,6 @@ the inconsistency makes a reader ask why this one helper is parameterized.
 Drop the parameter; use the closed-over `node` like the other helpers:
 `function playClearExit(o: DragToClearOptions): void`.
 
-### [Readability] `homeButtonCenter` is dead module-scope state — written and read only inside `armAcceptZone`
-
-**File(s):** `web/src/lib/actions/dragToClear.ts` (lines 39, 84–100) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`let homeButtonCenter = { x: 0, y: 0 };` (line 39) is assigned at line 89 and read only at lines
-91–92 — all within `armAcceptZone`. Nothing else in the file touches it, so hoisting it to
-gesture-lifetime state is a lie about its scope: a reader auditing the (already large) per-drag
-state block must trace it to discover it carries nothing between events.
-
-#### Proposed solution
-
-Delete the module-scope `let`; inside `armAcceptZone` use the `center` parameter directly
-(`o.acceptZoneEl.style.left = \`${center.x - radius}px\`` …). The parameter name already documents
-it.
-
 ### [Performance] Pinch move path allocates per pointermove, against the repo's hot-path rule
 
 **File(s):** `web/src/lib/actions/pinchZoom.svelte.ts` (`centroid` lines 54–62, `recompute` lines

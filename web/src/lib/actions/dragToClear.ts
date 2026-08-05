@@ -36,7 +36,6 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   let activePointerId: number | null = null;
   let startPointerX = 0;
   let startPointerY = 0;
-  let homeButtonCenter = { x: 0, y: 0 };
   let clearReady = false;
   let holdTimer: ReturnType<typeof setTimeout> | null = null;
   let acceptZoneFrame: number | null = null;
@@ -86,10 +85,8 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     center: { x: number; y: number },
     radius: number
   ): void {
-    homeButtonCenter = center;
-
-    o.acceptZoneEl.style.left = `${homeButtonCenter.x - radius}px`;
-    o.acceptZoneEl.style.top = `${homeButtonCenter.y - radius}px`;
+    o.acceptZoneEl.style.left = `${center.x - radius}px`;
+    o.acceptZoneEl.style.top = `${center.y - radius}px`;
     o.acceptZoneEl.style.width = `${radius * 2}px`;
     o.acceptZoneEl.style.height = `${radius * 2}px`;
     o.acceptZoneEl.style.display = 'block';
