@@ -76,7 +76,12 @@ the scrolling pane (`web/src/lib/components/SettingsModal.svelte`). Invariants:
   two-finger pinch sets `zoom`. This is the key difference from the transform-based `pinchZoom`
   action (used for the fixed-size AI preview): CSS `zoom` reflows and *grows the scroll extent*, so
   enlarged text stays reachable by ordinary scrolling with no custom pan, and native momentum
-  scrolling is preserved.
+  scrolling is preserved. Leaving that first finger uncaptured is safe because a touch pointer's
+  events go to the element it went down on for the pointer's whole life (implicit pointer capture),
+  so the pane hears the lift even when the finger has drifted outside its bounds — and when the
+  pane's scroll claims a finger instead, the tracker hears `pointercancel`. Those two paths are the
+  only ways a finger leaves, which is what keeps the tracker balanced without capturing everything;
+  `tests/settings-zoom.spec.ts` holds that property in place with real compositor touch.
 * **It leaves the shared `createPinchZoom` engine untouched** — that engine's clamp assumes the
   target fits its surface at scale 1, which a taller-than-viewport scroll pane violates; reusing it
   here would have broken scrolling.
@@ -84,13 +89,23 @@ the scrolling pane (`web/src/lib/components/SettingsModal.svelte`). Invariants:
   action's `$effect` on `enabled`/`resetKey`), so no enlarged state leaks between opens and none can
   reach the canvas.
 
-Coverage: gesture math is unit-tested (`pinchTextZoom.svelte.test.ts`); an E2E synthesizes a
-two-finger spread and asserts the pane enlarges then resets on close
-(`tests/settings-zoom.spec.ts`); `tests/page.spec.ts` asserts the viewport meta carries neither
-attribute and `/privacy` permits touch zoom; `tests/multitouch.spec.ts` asserts
-`visualViewport.scale` stays 1 after a five-pointer spread. CSS `zoom` is registered in
-`docs/COMPATIBILITY.md` (above the Firefox 114 floor — standardized in Firefox 126; below that it is
-a graceful no-op).
+Coverage: the gesture math and the action's own pointer bookkeeping — which finger it captures, that
+it forgets each one as it lifts or cancels, the ghost-click swallow — are unit-tested
+(`pinchTextZoom.svelte.test.ts`), though a synthetic `PointerEvent` cannot exercise pointer capture
+itself (a browser ignores a capture request for a pointer id it has no active pointer for), so the
+capture path is covered only by the compositor-touch specs; E2Es synthesize a two-finger spread and
+assert the pane enlarges then resets on close, and drive real CDP multitouch to assert one-finger
+scrolling survives and that a finger lifting outside the pane is reported to it as a `pointerup` at
+a coordinate beyond its bounds — the recorded pointer trace is asserted, not assumed, because the
+action handles `pointercancel` too and a gesture that quietly became a cancel would satisfy the
+behavioural checks while covering a different path (`tests/settings-zoom.spec.ts`). CDP cannot
+express a partial release — a non-empty `touchEnd` is off-contract and dropping a point from a
+`touchMove` releases nothing — so both fingers lift together there and the interleaved case (one
+finger up while the other stays down) is only reachable on a device. `tests/page.spec.ts` asserts
+the viewport meta carries neither attribute and `/privacy` permits touch zoom;
+`tests/multitouch.spec.ts` asserts `visualViewport.scale` stays 1 after a five-pointer spread. CSS
+`zoom` is registered in `docs/COMPATIBILITY.md` (above the Firefox 114 floor — standardized in
+Firefox 126; below that it is a graceful no-op).
 
 ## How the zoom model works
 

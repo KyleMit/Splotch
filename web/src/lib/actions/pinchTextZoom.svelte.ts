@@ -39,6 +39,22 @@ export interface PinchTextZoomOptions {
 // The argument is a *getter* read inside a $effect (like `pinchZoom`), so the
 // runes it touches — `enabled`, `resetKey`, the bound `target` — stay reactive.
 export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoomOptions) {
+  const gesture = attachPinchTextZoom(node, getOptions);
+
+  // Calling the option getter performs the reactive reads that subscribe this
+  // effect to gate changes and overlay reopens.
+  $effect(() => {
+    getOptions();
+    gesture.reset();
+  });
+
+  return { destroy: gesture.destroy };
+}
+
+// The gesture itself, with no reactive context of its own — the $effect above is
+// the only rune in `pinchTextZoom`, so splitting it off lets the pointer
+// bookkeeping be unit-tested against a real element (`pinchTextZoom.svelte.test.ts`).
+export function attachPinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoomOptions) {
   const tracker = createSpreadTracker();
   let zoom = MIN_TEXT_ZOOM;
   // Snapshot at the moment the pinch becomes two-fingered, so scaling is relative
@@ -81,6 +97,14 @@ export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoom
     if (tracker.pointerCount === 2) {
       pinchedRecently = true;
       rebase();
+      // Only the finger that completes the pair is captured; the earlier one is
+      // deliberately left alone so a lone finger keeps scrolling natively. Its lift
+      // still arrives here regardless: a touch pointer's events go to the element
+      // it went down on for the pointer's whole life (implicit pointer capture),
+      // and if the pane's scroll claims it instead the tracker hears
+      // `pointercancel`. Those are the only two ways a finger leaves, so nothing
+      // is left stranded in the tracker — `tests/settings-zoom.spec.ts` holds that
+      // down with real compositor touch.
       capturePointer(node, e.pointerId);
     }
   }
@@ -117,14 +141,8 @@ export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoom
   node.addEventListener('pointercancel', onPointerUp);
   node.addEventListener('click', onClickCapture, true);
 
-  // Calling the option getter performs the reactive reads that subscribe this
-  // effect to gate changes and overlay reopens.
-  $effect(() => {
-    getOptions();
-    reset();
-  });
-
   return {
+    reset,
     destroy() {
       node.removeEventListener('pointerdown', onPointerDown);
       node.removeEventListener('pointermove', onPointerMove);
