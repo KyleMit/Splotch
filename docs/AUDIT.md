@@ -27,41 +27,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — App state (runes)
 
-### [Maintainability] `getStrokeWidthPx`/`getEraserWidthPx` default parameters and the `??` fallback have no production caller
-
-**File(s):** `web/src/lib/state/strokeWidth.svelte.ts` (lines 80–86) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-export function getStrokeWidthPx(size: StrokeSize = strokeState.penSize): number {
-  return SIZE_TO_PX[size] ?? SIZE_TO_PX[DEFAULT_SIZE];
-}
-export function getEraserWidthPx(size: StrokeSize = strokeState.eraserSize): number {
-  return getStrokeWidthPx(size) * ERASER_SIZE_MULTIPLIER;
-}
-```
-
-Every production call site passes an explicit argument (`DrawingCanvas.svelte:82,88,177,231`,
-`earlyBoot.ts:39`); only the unit test exercises the no-arg form (`strokeWidth.svelte.test.ts:34`,
-via `undefined`). Per the "no speculative surface" convention, an optional parameter needs a
-production caller or a test-only-seam comment. The defaults are also subtly hazardous: they read
-reactive state, so a future zero-arg call inside a `$derived` would silently subscribe to `penSize`.
-Separately, the `?? SIZE_TO_PX[DEFAULT_SIZE]` fallback is unreachable for the closed `StrokeSize`
-union — the only unvalidated inputs are the test's deliberate `0 as StrokeSize` casts, and the
-storage path already validates through `readStrokeLevel`'s allowed-list. A runtime fallback
-shadowing a closed union is exactly what the "close finite value sets in the type" convention argues
-against.
-
-#### Proposed solution
-
-Make `size` required in both functions and drop the `??` fallback (updating the garbage-input test,
-which currently proves behavior no caller can reach). If the defensive fallback is judged worth
-keeping for belt-and-braces, keep it but delete the default parameters and add the convention's
-test-only-seam comment.
-
 ### [Architecture] `ColorPalette` mutates `layout.paletteWidth/Height` directly instead of through a setter
 
 **File(s):** `web/src/lib/state/layout.svelte.ts` (lines 29–36) @ 9ae62ff1

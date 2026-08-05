@@ -77,10 +77,10 @@ export function setStrokeSize(size: StrokeSize) {
   }
 }
 
-export function getStrokeWidthPx(size: StrokeSize = strokeState.penSize): number {
-  return SIZE_TO_PX[size] ?? SIZE_TO_PX[DEFAULT_SIZE];
+export function getStrokeWidthPx(size: StrokeSize): number {
+  return SIZE_TO_PX[size];
 }
 
-export function getEraserWidthPx(size: StrokeSize = strokeState.eraserSize): number {
+export function getEraserWidthPx(size: StrokeSize): number {
   return getStrokeWidthPx(size) * ERASER_SIZE_MULTIPLIER;
 }
