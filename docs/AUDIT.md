@@ -17310,28 +17310,6 @@ Delete the sentence. If a stand-in is wanted, the modern equivalent is the `over
 `sharp` entanglement already documented in dependency-health-audit Phase 1 — but a pointer there is
 optional; the landmine list in Phase 1 (lines 41–48) already covers coordinated families.
 
-### [Docs] knowledge-map's ADR-0059 link breaks in the generated root CLAUDE.md/AGENTS.md
-
-**File(s):** `.ruler/knowledge-map.md` (line 79) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Line 79 links `[ADR-0059](../docs/adrs/0059-committed-run-artifacts-github-pages.md)`. The path is
-correct relative to the *source* location (`.ruler/`), but the root `.ruler/*.md` files are
-concatenated into `CLAUDE.md` and `AGENTS.md` at the **repo root** (agent-files.md lines 7–9), where
-`../docs/…` points outside the repository — the generated `CLAUDE.md:260` and `AGENTS.md:262` carry
-the broken link today. It's the only relative markdown link in the root sources (every other
-cross-reference uses plain backticked paths), so it's also a one-off style break.
-
-#### Proposed solution
-
-Write it for the generated location —
-`[ADR-0059](docs/adrs/0059-committed-run-artifacts-github-pages.md)` — or match the file's own
-convention and use a backticked plain path with no hyperlink. (Root sources should generally use
-root-relative link targets since the concatenation destination is fixed at the root.)
-
 ### [Readability] dprint-mangled bullet corrupts a sentence in burn-down-backlog's review step
 
 **File(s):** `.ruler/skills/burn-down-backlog/SKILL.md` (lines 104–108) @ 9ae62ff1
