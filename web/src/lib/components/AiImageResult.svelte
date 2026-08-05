@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
   import AiDial from './AiDial.svelte';
   import AiConfetti from './AiConfetti.svelte';
@@ -15,7 +16,22 @@
   } from '$lib/saveNaming';
 
   let dialogEl: HTMLDialogElement;
+  let aiStageEl = $state<HTMLDivElement | undefined>();
   let zoomLayerEl = $state<HTMLDivElement | undefined>();
+
+  // Tracks the stage's rendered height so AiConfetti's fall distance (--stage-h)
+  // spans the real stage instead of a fixed pixel guess — the stage's height is
+  // capped by .stage-sizer's viewport-relative max-height, which varies by
+  // viewport and by the autosave variant.
+  let stageHeight = $state(0);
+  onMount(() => {
+    if (!aiStageEl) return;
+    const ro = new ResizeObserver(([entry]) => {
+      stageHeight = entry.contentRect.height;
+    });
+    ro.observe(aiStageEl);
+    return () => ro.disconnect();
+  });
 
   let revealed = $state(false);
   let progress = $state(0);
@@ -63,6 +79,11 @@
   // At 4:3 this resolves to the original 41%.
   const DIAL_MASK_RX = 31;
   const confettiMaskRy = $derived(`${(DIAL_MASK_RX * imgAspect).toFixed(1)}%`);
+
+  const stageStyle = $derived(
+    `--confetti-rx: ${DIAL_MASK_RX}%; --confetti-ry: ${confettiMaskRy};` +
+      (stageHeight > 0 ? ` --stage-h: ${stageHeight}px;` : '')
+  );
 
   function handleDownload() {
     if (!ui.aiResultUrl || exiting) return;
@@ -126,7 +147,8 @@
     {:else}
       <div
         class="ai-stage"
-        style="--confetti-rx: {DIAL_MASK_RX}%; --confetti-ry: {confettiMaskRy};"
+        bind:this={aiStageEl}
+        style={stageStyle}
         use:pinchZoom={() => ({
           target: zoomLayerEl!,
           // Only once the finished picture is on screen — the loading dial and

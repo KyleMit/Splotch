@@ -88,6 +88,14 @@
     will-change: transform, opacity;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
     animation: leafFall var(--duration) var(--delay) linear infinite;
+    /* Fall-path stops as a fraction of --stage-h (the real stage height, set by
+       the parent's ResizeObserver) — derived from the original fixed-540px
+       ladder's own proportions (110/540, 260/540, 410/540) so the fall keeps
+       the same easing feel while spanning whatever height the stage actually
+       renders at. */
+    --fall-25: 0.204;
+    --fall-50: 0.481;
+    --fall-75: 0.759;
   }
 
   .confetti.round {
@@ -103,19 +111,22 @@
       opacity: 1;
     }
     25% {
-      transform: translateY(110px) translateX(var(--sway)) rotate(55deg);
+      transform: translateY(calc(var(--stage-h, 540px) * var(--fall-25))) translateX(var(--sway))
+        rotate(55deg);
     }
     50% {
-      transform: translateY(260px) translateX(calc(var(--sway) * -1)) rotate(-40deg);
+      transform: translateY(calc(var(--stage-h, 540px) * var(--fall-50)))
+        translateX(calc(var(--sway) * -1)) rotate(-40deg);
     }
     75% {
-      transform: translateY(410px) translateX(var(--sway)) rotate(65deg);
+      transform: translateY(calc(var(--stage-h, 540px) * var(--fall-75))) translateX(var(--sway))
+        rotate(65deg);
     }
     90% {
       opacity: 1;
     }
     100% {
-      transform: translateY(540px) translateX(0) rotate(-20deg);
+      transform: translateY(calc(var(--stage-h, 540px) + 40px)) translateX(0) rotate(-20deg);
       opacity: 0;
     }
   }
