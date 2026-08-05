@@ -1,13 +1,16 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { themes, toCssVarName, type ThemeTokens } from '../src/lib/design/tokens';
+import { gotoApp, openSettingsModal } from './helpers';
 
 // /design is the public living styleguide (ADR-0096). Axe coverage lives in
-// a11y.spec.ts; the value here is the two regressions a scan can't see: the
+// a11y.spec.ts; the value here is the regressions a scan can't see: the
 // theme picker must expose its selected state to assistive tech (a role=radio
-// aria-checked segment, not styled buttons), and every color chip must paint
+// aria-checked segment, not styled buttons), every color chip must paint
 // a real fill — a non-color token dropped straight into `background` computes
 // as transparent and renders a silently blank chip (the --brand-rgb channel
-// triplet did exactly that).
+// triplet did exactly that) — and the specimens must lay out the way the real
+// app lays them out, which for a shared component means the styleguide is the
+// one place it renders outside its usual ancestor.
 
 test('theme picker exposes and updates its selected state', async ({ page }) => {
   await page.goto('/design');
@@ -81,6 +84,48 @@ test('every color chip paints a real fill', async ({ page }) => {
     .filter((key) => themes.light[key] === 'transparent')
     .map((key) => toCssVarName(key));
   expect(unpainted.sort()).toEqual(transparentByDesign.sort());
+});
+
+// The icon column a settings row hangs off — the icon's box, the gap to its
+// label, and the indent that lines a help line (and an icon-less SliderRow) up
+// under that label — comes from custom properties declared outside the row
+// components. Scoped to the modal, they simply don't resolve in the furniture
+// demo: the icon falls back to its intrinsic size and the indent collapses to
+// zero, with nothing in the suite the wiser.
+async function iconColumnMetrics(scope: Locator) {
+  return scope.evaluate((root) => {
+    const styleOf = (selector: string) => {
+      const el = root.querySelector(selector);
+      if (!el) throw new Error(`no ${selector} inside ${root.className}`);
+      return getComputedStyle(el);
+    };
+    const icon = styleOf('.setting-icon');
+    return {
+      iconWidth: icon.width,
+      iconHeight: icon.height,
+      gap: styleOf('.setting-info').columnGap,
+      indent: styleOf('.setting-help').marginLeft,
+    };
+  });
+}
+
+test('the styleguide lays settings rows out on the modal’s icon column', async ({ page }) => {
+  await gotoApp(page);
+  const modal = await openSettingsModal(page);
+  await modal.locator('.settings-nav').getByRole('button', { name: 'Saving' }).click();
+  const inModal = await iconColumnMetrics(modal.locator('.settings-zoom'));
+
+  // Asserted as a relationship rather than against pixel literals, so the
+  // pairing stays free to change: whatever the icon box is, the indent clears
+  // it plus the gap. Equality alone would still hold if both contexts lost the
+  // properties together.
+  const px = (value: string) => Number.parseFloat(value);
+  expect(px(inModal.iconWidth)).toBeGreaterThan(0);
+  expect(inModal.iconHeight).toBe(inModal.iconWidth);
+  expect(px(inModal.indent)).toBeCloseTo(px(inModal.iconWidth) + px(inModal.gap));
+
+  await page.goto('/design');
+  expect(await iconColumnMetrics(page.locator('.furniture-demo'))).toEqual(inModal);
 });
 
 // 390 is the common phone width; 320 is the narrowest supported one, where a
