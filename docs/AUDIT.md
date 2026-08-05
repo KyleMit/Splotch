@@ -13210,28 +13210,6 @@ hand-YAML tests accumulate, the shared line-oriented helpers could later move to
 
 ---
 
-### [Testing] `parseFrontmatter`'s CRLF handling is implemented but never tested
-
-**File(s):** `scripts/tests/frontmatter.test.mjs` (whole file, lines 1–24) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`parseFrontmatter` (`scripts/lib/frontmatter.mjs:8–11`) spends four `\r?\n` alternations tolerating
-CRLF fences and line splits — deliberate robustness for release files authored elsewhere — but all
-three tests feed pure-`\n` input. If a refactor dropped the `\r?` (plausible now that Windows dev
-support is gone, per ADR-0062, even though *data files* can still arrive with CRLF), no test would
-notice, and the failure mode is `parseFrontmatter` returning `null` → `parseRelease` failing the
-whole release run.
-
-#### Proposed solution
-
-One additional case: `parseFrontmatter('---\r\nversion: 1.3.1\r\n---\r\nNotes')` asserting
-`meta.version === '1.3.1'` and the body. Alternatively, if CRLF tolerance is judged obsolete, remove
-the `\r?`s from the source instead — either way the current silent mismatch between implementation
-and coverage ends.
-
 ## Source: Code audit — scripts/audit-burndown — audit burndown tooling
 
 ### [Architecture] Extract burndown.mjs's numbered loop steps into named helpers behind a factory
