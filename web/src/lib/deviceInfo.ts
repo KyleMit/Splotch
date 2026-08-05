@@ -49,7 +49,7 @@ export async function collectDeviceInfo(): Promise<DeviceInfo> {
   const platform = getPlatform();
   const info: DeviceInfo = {
     app: APP_VERSION,
-    platform: PLATFORM_LABEL[platform] ?? platform,
+    platform: PLATFORM_LABEL[platform],
   };
   if (!browser) return info;
 

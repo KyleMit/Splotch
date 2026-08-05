@@ -7752,32 +7752,6 @@ lock call), latch reset on failure, `supportsOrientationLock() === false` short-
 `vi.mock('$lib/platform')` as `pencilEraser.test.ts` already demonstrates), and the web `unlock()`
 path.
 
-### [Types] Dead `?? platform` fallback on a total `Record<Platform, string>` lookup
-
-**File(s):** `web/src/lib/deviceInfo.ts` (line 52; `PLATFORM_LABEL`, line 7) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-platform: PLATFORM_LABEL[platform] ?? platform,
-```
-
-`platform` is the closed union `Platform` (`'android' | 'ios' | 'web'`) returned by `getPlatform()`,
-and `PLATFORM_LABEL` is `Record<Platform, string>` — a total map. The `?? platform` arm can never
-execute; TypeScript types the indexed access as `string`, so the `??` isn't even flagged as
-unnecessary, but it reads as if unlabeled platforms were possible, undermining the closed-union
-guarantee the repo's conventions work hard to establish ("never bare `string` … plus a runtime
-fallback"). `getPlatform()` itself already funnels every unexpected value to `'web'` (platform.ts
-lines 71–75), which is the single sanctioned boundary.
-
-#### Proposed solution
-
-`platform: PLATFORM_LABEL[platform],` — delete the fallback. If a future `Platform` member is added,
-the `Record` type errors at `PLATFORM_LABEL`'s declaration until a label is provided, which is the
-intended failure mode.
-
 ### [Readability] `isStandalone` spells out three identical `matchMedia` probes
 
 **File(s):** `web/src/lib/platform.ts` (`isStandalone`, lines 23–31) @ 9ae62ff1
