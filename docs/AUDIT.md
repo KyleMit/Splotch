@@ -9989,27 +9989,6 @@ Take the parser args as a trailing options object or rest tuple:
 `parse(raw, name, fallback, source)` call order with no placeholder. Only worth doing while touching
 the file for the other cli.test.mjs findings.
 
-### [Readability] PNG signature asserted as unexplained magic bytes
-
-**File(s):** `tools/asset-gen/tests/outline-match.test.mjs` (line 30) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```js
-expect(r.overlay.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
-```
-
-The eight bytes are the PNG file signature, but nothing says so — a reader must recognize
-`137 80 78 71` ("‰PNG") on sight. The repo convention names tuning/boundary literals.
-
-#### Proposed solution
-
-`const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);` at module
-scope (hex makes the ASCII visible), then
-`expect(r.overlay.subarray(0, 8)).toEqual(PNG_SIGNATURE);`.
-
 ### [Maintainability] audit-cli's corrupt/drift sentinels are bare strings coordinated across three sites
 
 **File(s):** `tools/asset-gen/tests/audit-cli.test.mjs` (`assertReadable` lines 8–10, `outlineMatch`

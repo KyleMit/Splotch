@@ -10,6 +10,8 @@
 // reproducing the "passes global, fails local" split exactly.
 import { describe, it, expect } from 'vitest';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
+
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 import { matchSource, matchDrifted } from './fixtures/synthetic.mjs';
 
 describe('outlineMatch — localized drift the global keep buries', () => {
@@ -27,7 +29,7 @@ describe('outlineMatch — localized drift the global keep buries', () => {
     const src = await matchSource();
     const r = await outlineMatch(src, await matchSource(), { overlay: true });
     expect(Buffer.isBuffer(r.overlay)).toBe(true);
-    expect(r.overlay.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    expect(r.overlay.subarray(0, PNG_SIGNATURE.length)).toEqual(PNG_SIGNATURE);
   });
 
   it('flags a locally-drifted feature that passes the GLOBAL bar', async () => {
