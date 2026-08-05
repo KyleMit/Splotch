@@ -9,6 +9,8 @@ export type ReportKind = 'bug' | 'feature';
 
 export const MAX_REPORT_MESSAGE_LENGTH = 4000;
 
+export const REPORT_HONEYPOT_FIELD = 'hp';
+
 export const REPORT_KINDS: { value: ReportKind; label: string }[] = [
   { value: 'bug', label: "Something's broken" },
   { value: 'feature', label: 'I have an idea' },

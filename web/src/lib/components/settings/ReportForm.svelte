@@ -7,7 +7,7 @@
   import { createLatestRequest } from '$lib/latestRequest';
   import { collectDeviceInfo } from '$lib/deviceInfo';
   import type { DeviceInfo } from '$lib/deviceReport';
-  import type { ReportKind } from '$lib/report';
+  import { REPORT_HONEYPOT_FIELD, type ReportKind } from '$lib/report';
 
   interface Props {
     // Flips true when the Settings modal opens; we use it to clear the form
@@ -63,7 +63,7 @@
           kind,
           message: text,
           device: attachDevice ? (device ?? (await collectDeviceInfo())) : undefined,
-          hp: honeypot,
+          [REPORT_HONEYPOT_FIELD]: honeypot,
         }),
         signal,
       });

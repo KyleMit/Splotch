@@ -5,7 +5,7 @@ import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
 import { throttledMessage } from '$lib/server/http';
 import { issueUrl } from '$lib/server/github';
 import { parseDeviceField, submitReport } from '$lib/server/report';
-import { REPORT_KINDS, type ReportKind } from '$lib/report';
+import { REPORT_HONEYPOT_FIELD, REPORT_KINDS, type ReportKind } from '$lib/report';
 import type { Actions, PageServerLoad } from './$types';
 
 // The standalone feedback page. It has a form action, so it can't join the
@@ -70,7 +70,7 @@ export const actions: Actions = {
       message: values.message,
       device: parseDeviceField(data.get('device')),
       wantsDevice: values.includeDevice,
-      hp: data.get('hp'),
+      hp: data.get(REPORT_HONEYPOT_FIELD),
     });
 
     if (!result.ok) return fail(result.status, { error: result.error, values });

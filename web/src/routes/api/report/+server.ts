@@ -4,6 +4,7 @@ import { reportBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
 import { asRecord, readJsonBody, throttled } from '$lib/server/http';
 import { submitReport } from '$lib/server/report';
+import { REPORT_HONEYPOT_FIELD } from '$lib/report';
 import type { RequestHandler } from './$types';
 
 /**
@@ -29,7 +30,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     kind: body?.kind,
     message: body?.message,
     device: body?.device,
-    hp: body?.hp,
+    hp: body?.[REPORT_HONEYPOT_FIELD],
   });
 
   return result.ok

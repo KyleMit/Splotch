@@ -3,7 +3,12 @@
   import Disclosure from '../design/Disclosure.svelte';
   import { collectDeviceInfo } from '$lib/deviceInfo';
   import { describeDeviceInfo, type DeviceInfo } from '$lib/deviceReport';
-  import { MAX_REPORT_MESSAGE_LENGTH, REPORT_KINDS, type ReportKind } from '$lib/report';
+  import {
+    MAX_REPORT_MESSAGE_LENGTH,
+    REPORT_HONEYPOT_FIELD,
+    REPORT_KINDS,
+    type ReportKind,
+  } from '$lib/report';
 
   // The feedback form's field set, shared by its two hosts: Settings'
   // ReportForm (which posts JSON to /api/report) and the standalone /feedback
@@ -130,7 +135,7 @@
   <input
     class="report-hp"
     type="text"
-    name="hp"
+    name={REPORT_HONEYPOT_FIELD}
     tabindex="-1"
     autocomplete="off"
     aria-hidden="true"
