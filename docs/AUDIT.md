@@ -8005,29 +8005,6 @@ competing with a stroke — pick a timeout long enough that this is a rare fallb
 current unbounded behavior explicitly with a WHY comment saying starvation is acceptable for every
 current caller (which would also satisfy the convention — today the divergence is undocumented).
 
-### [Readability] Dead `coloring-remove-tile` class on the Clear Page tile
-
-**File(s):** `web/src/lib/components/ColoringBook.svelte` (line 123) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```svelte
-class="coloring-tile coloring-book-tile coloring-remove-tile"
-```
-
-Grep across `web/` finds no `.coloring-remove-tile` selector in this component's `<style>` block, no
-global stylesheet rule, and no test referencing it — the class is attached to nothing. Svelte's
-unused-CSS warning only fires for the inverse case (selector without markup), so this rots silently;
-a reader hunting for the tile's styling burns time confirming the class does nothing.
-
-#### Proposed solution
-
-Delete the class from the markup. If a distinct hook for the Clear Page tile is wanted later
-(styling or test targeting), reintroduce it together with its consumer; today
-`aria-label="Clear Page"` is already the stable test handle.
-
 ### [Maintainability] `handleDoubleTap` is exported only for tests without the required seam comment
 
 **File(s):** `web/src/lib/plugins/pencilEraser.ts` (`handleDoubleTap`, line 25) @ 9ae62ff1
