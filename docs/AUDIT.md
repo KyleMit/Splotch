@@ -16817,28 +16817,6 @@ the file's own convention ("it's okay to drain the audit finding, but do so with
 and delete the associated `.patch` file. Fold the outstanding DEPENDENCIES.md update into the
 DEPENDENCIES refresh finding rather than keeping this entry open for it.
 
-### [Docs] CONTRIBUTING.md dev-routes table omits `/dev/design` (and the `/dev` index)
-
-**File(s):** `docs/CONTRIBUTING.md` (lines 129–137) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The "Dev routes" table lists only `/dev/engine` and `/dev/ai-timer`. The gated dev surface actually
-has four routes: `web/src/routes/dev/` contains `+page.svelte` (a landing index, gated by
-`requireDevHarness()` in `dev/+page.ts`), `ai-timer/`, `design/`, and `engine/`. `/dev/design` is
-the design-system styleguide that the `design` skill and root CLAUDE.md treat as a first-class
-surface ("the token vocabulary, primitives, and `/dev/design`"), so its absence from the contributor
-doc's supposedly-complete table is a discoverability gap — a human contributor reading only
-CONTRIBUTING.md wouldn't learn the styleguide exists or that `/dev` itself lists the harnesses.
-
-#### Proposed solution
-
-Add two rows — `/dev` ("index of the dev harnesses") and `/dev/design` ("design-token styleguide —
-every token, primitive, and component state; see the `design` skill") — and consider a trailing
-sentence noting the list's source of truth is `web/src/routes/dev/`.
-
 ### [Docs] ISSUE-WORKFLOW.md's "full label glossary" is missing the `user-report` meta label
 
 **File(s):** `docs/ISSUE-WORKFLOW.md` (lines 70–78, meta table) @ 9ae62ff1
