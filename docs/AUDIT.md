@@ -25,45 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Maintainability] ReportForm's inline `slide` durations are unnamed tuning literals that bypass the section-wide `SECTION_SLIDE` convention
-
-**File(s):** `web/src/lib/components/settings/ReportForm.svelte` (lines 149, 158),
-`web/src/lib/components/settings/sections.ts` (`SECTION_SLIDE`, lines 41–44) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`sections.ts` establishes exactly one reveal timing for conditional blocks in this section, with a
-comment explaining why it's a JS constant:
-
-```ts
-// Reveal timing shared by every conditional settings block inside a section.
-export const SECTION_SLIDE = { duration: 220 };
-```
-
-Every other conditional block in the section uses it (AppearanceSection, SoundSection,
-ControlsSection ×3, AiFeatureToggles ×2). ReportForm alone hand-rolls two different anonymous
-durations:
-
-```svelte
-<div class="report-device" transition:slide={{ duration: 180 }}>
-…
-<div transition:slide={{ duration: 160 }}>
-```
-
-That's a double convention miss: the "every conditional settings block" claim in the `SECTION_SLIDE`
-comment is now false, and `180`/`160` are unnamed tuning literals (CLAUDE.md: "Tuning literals get
-names… the WHY comment lives on the constant"). There is no visible reason these two reveals need to
-be 40–60ms faster than every sibling.
-
-#### Proposed solution
-
-Use `SECTION_SLIDE` for both. If the slightly snappier feel inside the nested disclosure is
-deliberate, name it in `sections.ts` beside `SECTION_SLIDE` (e.g.
-`NESTED_SLIDE = { duration: 160 }`) with a WHY comment, and update `SECTION_SLIDE`'s "every
-conditional settings block" comment to describe the two-tier scheme.
-
 ### [Maintainability] ToggleRow's icon-column indent is duplicated into SliderRow and kept in sync by prose
 
 **File(s):** `web/src/lib/components/settings/ToggleRow.svelte` (`.setting-help`, lines 50–57;

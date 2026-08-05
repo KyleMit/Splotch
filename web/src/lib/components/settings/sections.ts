@@ -30,9 +30,12 @@ export type SectionId = (typeof SECTIONS)[number]['id'];
 // entry that sets it — every other member of the derived union lacks the key entirely.
 export type SectionMeta = (typeof SECTIONS)[number] & { readonly title?: string };
 
-// Reveal timing shared by every conditional settings block inside a section.
-// It lives here rather than in tokens.css because `transition:slide` takes a JS
-// number, not a `var(--duration-*)` string.
+// Reveal timing for every conditional block a settings section itself owns. The
+// exception is the shared feedback field set, ReportFields: it is also hosted by
+// /feedback, outside Settings, so its nested device reveals name their own
+// shorter duration locally instead of importing this one. It lives here rather
+// than in tokens.css because `transition:slide` takes a JS number, not a
+// `var(--duration-*)` string.
 export const SECTION_SLIDE = { duration: 220 };
 
 const THEME_LABEL = { light: 'Light', dark: 'Dark', system: 'System' } as const;

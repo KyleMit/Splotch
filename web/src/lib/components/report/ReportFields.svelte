@@ -10,8 +10,14 @@
     type ReportKind,
   } from '$lib/report';
 
-  const DEVICE_TOGGLE_SLIDE_MS = 180;
-  const DEVICE_DETAILS_SLIDE_MS = 160;
+  // One reveal timing for both device disclosures below — the outer toggle and
+  // the details block it wraps. Named locally rather than taken from settings'
+  // SECTION_SLIDE because this field set is also hosted by /feedback, outside
+  // Settings, and reaching for that constant would couple a component used
+  // outside Settings to Settings internals. Shorter than a section reveal
+  // because these uncover a couple of rows inside an already-open block rather
+  // than opening a section.
+  const DEVICE_REVEAL_SLIDE_MS = 180;
 
   // The feedback form's field set, shared by its two hosts: Settings'
   // ReportForm (which posts JSON to /api/report) and the standalone /feedback
@@ -94,7 +100,7 @@
     bind:value={message}></textarea>
 
   {#if kind === 'bug'}
-    <div class="report-device" transition:slide={{ duration: DEVICE_TOGGLE_SLIDE_MS }}>
+    <div class="report-device" transition:slide={{ duration: DEVICE_REVEAL_SLIDE_MS }}>
       <label class="report-check">
         <input type="checkbox" name="includeDevice" bind:checked={includeDevice} />
         <span>Include device info <em>(helps us reproduce the bug)</em></span>
@@ -103,7 +109,7 @@
       {#if includeDevice}
         <!-- The slide rides a wrapper: transition directives only attach to DOM
              elements, never to a component instance. -->
-        <div transition:slide={{ duration: DEVICE_DETAILS_SLIDE_MS }}>
+        <div transition:slide={{ duration: DEVICE_REVEAL_SLIDE_MS }}>
           <Disclosure class="report-device-details">
             {#snippet summary()}What will be sent?{/snippet}
             {#if deviceRows.length}
