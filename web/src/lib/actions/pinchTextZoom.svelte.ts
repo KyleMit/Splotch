@@ -94,18 +94,19 @@ export function attachPinchTextZoom(node: HTMLElement, getOptions: () => PinchTe
     // pinch that produced no click doesn't swallow a later legitimate tap.
     if (tracker.pointerCount === 0) pinchedRecently = false;
     tracker.down(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (tracker.pointerCount < 2) return;
-    pinchedRecently = true;
-    rebase();
-    // Capture every finger that is down, not just the incoming one. A lone finger
-    // stays uncaptured so it keeps scrolling natively, but a pinch spreads the
-    // fingers apart and the resting one can lift outside `node` — uncaptured, its
-    // `pointerup` never arrives here and the tracker keeps that finger forever,
-    // zooming the text from a stale spread on every later one-finger scroll and
-    // jamming `pinchedRecently` on so `onClickCapture` eats every later tap.
-    // Capturing only once the pinch is confirmed leaves one-finger scrolling
-    // untouched: that gesture never reaches two fingers.
-    for (const id of tracker.ids()) capturePointer(node, id);
+    if (tracker.pointerCount === 2) {
+      pinchedRecently = true;
+      rebase();
+      // Only the finger that completes the pair is captured; the earlier one is
+      // deliberately left alone so a lone finger keeps scrolling natively. Its lift
+      // still arrives here regardless: a touch pointer's events go to the element
+      // it went down on for the pointer's whole life (implicit pointer capture),
+      // and if the pane's scroll claims it instead the tracker hears
+      // `pointercancel`. Those are the only two ways a finger leaves, so nothing
+      // is left stranded in the tracker — `tests/settings-zoom.spec.ts` holds that
+      // down with real compositor touch.
+      capturePointer(node, e.pointerId);
+    }
   }
 
   function onPointerMove(e: PointerEvent) {
@@ -138,14 +139,6 @@ export function attachPinchTextZoom(node: HTMLElement, getOptions: () => PinchTe
   node.addEventListener('pointermove', onPointerMove);
   node.addEventListener('pointerup', onPointerUp);
   node.addEventListener('pointercancel', onPointerUp);
-  // The other half of the phantom-finger guard above: a finger that is still
-  // uncaptured (no second finger has landed) can wander out of the pane and lift
-  // there unreported, and the browser only sends `pointercancel` if the scroll
-  // claimed it. A touch pointer leaving the element's bounds fires
-  // `pointerleave`, which reclaims the entry — safe to drop, since a single
-  // finger drives nothing here. For a captured finger the event arrives with the
-  // release, after `pointerup` already removed the entry, so `up()` no-ops.
-  node.addEventListener('pointerleave', onPointerUp);
   node.addEventListener('click', onClickCapture, true);
 
   return {
@@ -155,7 +148,6 @@ export function attachPinchTextZoom(node: HTMLElement, getOptions: () => PinchTe
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);
       node.removeEventListener('pointercancel', onPointerUp);
-      node.removeEventListener('pointerleave', onPointerUp);
       node.removeEventListener('click', onClickCapture, true);
     },
   };

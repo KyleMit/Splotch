@@ -68,15 +68,12 @@ function touch(type: string, pointerId: number, clientX = 0, clientY = 0) {
   });
 }
 
-// A finger that goes down in the pane, wanders out of its bounds, and lifts out
-// there: the pane never sees the `pointerup`, so only the `pointerleave` on the
-// way out can reclaim the entry.
-function strandLoneFinger(node: HTMLElement) {
-  node.dispatchEvent(touch('pointerdown', 1, 50, 50));
-  node.dispatchEvent(touch('pointermove', 1, -10, 50));
-  node.dispatchEvent(touch('pointerleave', 1, -10, 50));
-}
-
+// `hasPointerCapture` here reports happy-dom's own bookkeeping of the action's
+// `setPointerCapture` calls — which is all these assertions claim. A real browser
+// ignores a capture request for a pointer id it has no active pointer for (in
+// Chromium `setPointerCapture` neither throws nor captures), so no synthetic-event
+// test can prove the browser actually redirected anything. The real capture path
+// is covered with compositor touch in `tests/settings-zoom.spec.ts`.
 describe('attachPinchTextZoom', () => {
   afterEach(() => {
     for (const gesture of attached) gesture.destroy();
@@ -91,16 +88,16 @@ describe('attachPinchTextZoom', () => {
     expect(node.hasPointerCapture(1)).toBe(false);
   });
 
-  it('captures both fingers once the pinch engages, not just the incoming one', () => {
+  it('captures the finger that completes the pinch, leaving the resting one native', () => {
     const { node } = pinchPane();
     node.dispatchEvent(touch('pointerdown', 1, 0, 0));
     node.dispatchEvent(touch('pointerdown', 2, 100, 0));
 
-    expect(node.hasPointerCapture(1)).toBe(true);
     expect(node.hasPointerCapture(2)).toBe(true);
+    expect(node.hasPointerCapture(1)).toBe(false);
   });
 
-  it('scales the target as the captured fingers spread apart', () => {
+  it('scales the target as the fingers spread apart', () => {
     const { node, target } = pinchPane();
     node.dispatchEvent(touch('pointerdown', 1, 0, 0));
     node.dispatchEvent(touch('pointerdown', 2, 100, 0));
@@ -109,15 +106,42 @@ describe('attachPinchTextZoom', () => {
     expect(target.style.zoom).toBe('2');
   });
 
-  it('releases each capture as its finger lifts', () => {
+  it('releases the capture as the finger lifts', () => {
     const { node } = pinchPane();
     node.dispatchEvent(touch('pointerdown', 1, 0, 0));
     node.dispatchEvent(touch('pointerdown', 2, 100, 0));
-    node.dispatchEvent(touch('pointerup', 1, 0, 0));
     node.dispatchEvent(touch('pointerup', 2, 100, 0));
 
-    expect(node.hasPointerCapture(1)).toBe(false);
     expect(node.hasPointerCapture(2)).toBe(false);
+  });
+
+  it('forgets every finger as it lifts, so a later lone finger cannot pinch', () => {
+    const { node, target } = pinchPane();
+    node.dispatchEvent(touch('pointerdown', 1, 0, 0));
+    node.dispatchEvent(touch('pointerdown', 2, 100, 0));
+    node.dispatchEvent(touch('pointerup', 2, 100, 0));
+    node.dispatchEvent(touch('pointerup', 1, 0, 0));
+
+    // Browsers reuse touch pointer ids, so the next gesture can land on one the
+    // pinch already used. A finger the tracker failed to drop would put the count
+    // back at two here, and this lone drag would zoom instead of scrolling.
+    node.dispatchEvent(touch('pointerdown', 1, 0, 0));
+    node.dispatchEvent(touch('pointermove', 1, 0, 300));
+
+    expect(target.style.zoom).toBe('');
+  });
+
+  it('drops a finger the browser cancels, so it cannot linger as a phantom', () => {
+    const { node, target } = pinchPane();
+    node.dispatchEvent(touch('pointerdown', 1, 50, 50));
+    // The pane's scroll claimed it — the browser's way of saying this finger is no
+    // longer ours, and the only way one leaves without a `pointerup`.
+    node.dispatchEvent(touch('pointercancel', 1, 50, 50));
+
+    node.dispatchEvent(touch('pointerdown', 2, 100, 0));
+    node.dispatchEvent(touch('pointermove', 2, 200, 0));
+
+    expect(target.style.zoom).toBe('');
   });
 
   it('swallows the one trailing click a pinch leaks onto the control beneath it', () => {
@@ -134,30 +158,6 @@ describe('attachPinchTextZoom', () => {
     const realTap = new MouseEvent('click', { bubbles: true, cancelable: true });
     node.dispatchEvent(realTap);
     expect(realTap.defaultPrevented).toBe(false);
-  });
-
-  it('does not zoom on a one-finger scroll after a finger was stranded outside the pane', () => {
-    const { node, target } = pinchPane();
-    strandLoneFinger(node);
-
-    // Were the stranded finger still tracked, this second finger would take the
-    // count to two and its move would drive the zoom from a stale spread.
-    node.dispatchEvent(touch('pointerdown', 2, 100, 0));
-    node.dispatchEvent(touch('pointermove', 2, 200, 0));
-
-    expect(target.style.zoom).toBe('');
-  });
-
-  it('does not swallow a tap after a finger was stranded outside the pane', () => {
-    const { node } = pinchPane();
-    strandLoneFinger(node);
-
-    node.dispatchEvent(touch('pointerdown', 2, 100, 0));
-    node.dispatchEvent(touch('pointerup', 2, 100, 0));
-    const tap = new MouseEvent('click', { bubbles: true, cancelable: true });
-    node.dispatchEvent(tap);
-
-    expect(tap.defaultPrevented).toBe(false);
   });
 
   it('detaches on destroy', () => {

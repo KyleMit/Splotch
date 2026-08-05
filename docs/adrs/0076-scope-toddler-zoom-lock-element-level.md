@@ -76,11 +76,12 @@ the scrolling pane (`web/src/lib/components/SettingsModal.svelte`). Invariants:
   two-finger pinch sets `zoom`. This is the key difference from the transform-based `pinchZoom`
   action (used for the fixed-size AI preview): CSS `zoom` reflows and *grows the scroll extent*, so
   enlarged text stays reachable by ordinary scrolling with no custom pan, and native momentum
-  scrolling is preserved. Once a pinch *is* confirmed, every finger then down is pointer-captured
-  (not only the one that completed the pair), and a still-uncaptured finger that wanders out of the
-  pane is dropped on `pointerleave` — otherwise a finger lifting outside the pane is never reported
-  up and strands a phantom entry that zooms the text from a stale spread and jams the ghost-click
-  guard on, killing every later tap.
+  scrolling is preserved. Leaving that first finger uncaptured is safe because a touch pointer's
+  events go to the element it went down on for the pointer's whole life (implicit pointer capture),
+  so the pane hears the lift even when the finger has drifted outside its bounds — and when the
+  pane's scroll claims a finger instead, the tracker hears `pointercancel`. Those two paths are the
+  only ways a finger leaves, which is what keeps the tracker balanced without capturing everything;
+  `tests/settings-zoom.spec.ts` holds that property in place with real compositor touch.
 * **It leaves the shared `createPinchZoom` engine untouched** — that engine's clamp assumes the
   target fits its surface at scale 1, which a taller-than-viewport scroll pane violates; reusing it
   here would have broken scrolling.
@@ -88,9 +89,13 @@ the scrolling pane (`web/src/lib/components/SettingsModal.svelte`). Invariants:
   action's `$effect` on `enabled`/`resetKey`), so no enlarged state leaks between opens and none can
   reach the canvas.
 
-Coverage: the gesture math and the action's pointer bookkeeping — which fingers get captured, the
-phantom-finger reclaim, the ghost-click swallow — are unit-tested (`pinchTextZoom.svelte.test.ts`);
-an E2E synthesizes a two-finger spread and asserts the pane enlarges then resets on close
+Coverage: the gesture math and the action's own pointer bookkeeping — which finger it captures, that
+it forgets each one as it lifts or cancels, the ghost-click swallow — are unit-tested
+(`pinchTextZoom.svelte.test.ts`), though a synthetic `PointerEvent` cannot exercise pointer capture
+itself (a browser ignores a capture request for a pointer id it has no active pointer for), so the
+capture path is covered only by the compositor-touch specs; E2Es synthesize a two-finger spread and
+assert the pane enlarges then resets on close, and drive real CDP multitouch to assert one-finger
+scrolling survives and that a pinch whose finger lifts outside the pane leaves it usable
 (`tests/settings-zoom.spec.ts`); `tests/page.spec.ts` asserts the viewport meta carries neither
 attribute and `/privacy` permits touch zoom; `tests/multitouch.spec.ts` asserts
 `visualViewport.scale` stays 1 after a five-pointer spread. CSS `zoom` is registered in

@@ -17,18 +17,6 @@ describe('createSpreadTracker', () => {
     ]);
   });
 
-  it('lists the ids of the fingers that are down, in the order they landed', () => {
-    const tracker = createSpreadTracker();
-    expect(tracker.ids()).toEqual([]);
-
-    tracker.down(7, { x: 0, y: 0 });
-    tracker.down(3, { x: 6, y: 8 });
-    expect(tracker.ids()).toEqual([7, 3]);
-
-    tracker.up(7);
-    expect(tracker.ids()).toEqual([3]);
-  });
-
   it('reports 0 spread until a second finger lands', () => {
     const tracker = createSpreadTracker();
     expect(tracker.spread()).toBe(0);
