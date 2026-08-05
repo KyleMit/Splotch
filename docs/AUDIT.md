@@ -27,37 +27,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — App state (runes)
 
-### [Types] `settings.svelte.ts` repeats its typed-entries casts in two places
-
-**File(s):** `web/src/lib/state/settings.svelte.ts` (lines 133–147, 213–229) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The `$state` initializer casts `Object.fromEntries(Object.entries(BOOL_SETTINGS)...)` through
-`as Record<BoolSettingKey, boolean>` (lines 134–136) and the INT equivalent (137–142), and
-`reloadSettings` re-states the sibling casts
-`Object.entries(BOOL_SETTINGS) as [BoolSettingKey, [StorageKey, boolean]][]` (lines 214–217) and the
-three-tuple INT form (220–223). Four `as`-casts encode the same two facts (the entries of each table
-keep their key/value types), each written out longhand, and any change to a table's tuple shape must
-be mirrored in two casts.
-
-#### Proposed solution
-
-Hoist the typed iteration once, next to each table:
-
-```ts
-const boolSettingEntries = () =>
-  Object.entries(BOOL_SETTINGS) as [BoolSettingKey, [StorageKey, boolean]][];
-const intSettingEntries = () =>
-  Object.entries(INT_SETTINGS) as [IntSettingKey, [StorageKey, number, (v: number) => number]][];
-```
-
-Both the `$state` initializer (`Object.fromEntries(boolSettingEntries().map(...))`) and
-`reloadSettings` iterate the helpers; the casts live exactly once per table, beside the structure
-they describe.
-
 ### [Readability] The persistence-split comment sits on `SIZE_TO_PX` instead of on `strokeState`
 
 **File(s):** `web/src/lib/state/strokeWidth.svelte.ts` (lines 33–42, 48–51) @ 9ae62ff1

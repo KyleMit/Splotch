@@ -74,6 +74,9 @@ const BOOL_SETTINGS = {
 
 type BoolSettingKey = keyof typeof BOOL_SETTINGS;
 
+const boolSettingEntries = () =>
+  Object.entries(BOOL_SETTINGS) as [BoolSettingKey, [StorageKey, boolean]][];
+
 // 50 is the normal authored volume (the slider's midpoint and its snap detent).
 export const SOUND_VOLUME_DEFAULT = 50;
 
@@ -111,6 +114,9 @@ const INT_SETTINGS = {
 
 type IntSettingKey = keyof typeof INT_SETTINGS;
 
+const intSettingEntries = () =>
+  Object.entries(INT_SETTINGS) as [IntSettingKey, [StorageKey, number, (v: number) => number]][];
+
 function readTheme(fallback: ThemePreference): ThemePreference {
   const raw = readString(STORAGE_KEYS.theme, fallback);
   return isThemePreference(raw) ? raw : fallback;
@@ -134,13 +140,10 @@ interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey
 
 export const settings: Settings = $state({
   ...(Object.fromEntries(
-    Object.entries(BOOL_SETTINGS).map(([prop, [key, def]]) => [prop, readBool(key, def)])
+    boolSettingEntries().map(([prop, [key, def]]) => [prop, readBool(key, def)])
   ) as Record<BoolSettingKey, boolean>),
   ...(Object.fromEntries(
-    Object.entries(INT_SETTINGS).map(([prop, [key, def, clamp]]) => [
-      prop,
-      clamp(readInt(key, def)),
-    ])
+    intSettingEntries().map(([prop, [key, def, clamp]]) => [prop, clamp(readInt(key, def))])
   ) as Record<IntSettingKey, number>),
   theme: readTheme(THEME_DEFAULT),
   aiAccessToken: readString(STORAGE_KEYS.aiAccessToken, ''),
@@ -213,16 +216,10 @@ export function aiCredentialKind(): AiCredentialKind {
 // storage layer recovers values that the native WebView had evicted (see
 // hydrateDurableStorage in storage.ts). A no-op visually when nothing changed.
 export function reloadSettings() {
-  for (const [prop, [key]] of Object.entries(BOOL_SETTINGS) as [
-    BoolSettingKey,
-    [StorageKey, boolean],
-  ][]) {
+  for (const [prop, [key]] of boolSettingEntries()) {
     settings[prop] = readBool(key, settings[prop]);
   }
-  for (const [prop, [key, , clamp]] of Object.entries(INT_SETTINGS) as [
-    IntSettingKey,
-    [StorageKey, number, (v: number) => number],
-  ][]) {
+  for (const [prop, [key, , clamp]] of intSettingEntries()) {
     settings[prop] = clamp(readInt(key, settings[prop]));
   }
   settings.aiAccessToken = readString(STORAGE_KEYS.aiAccessToken, settings.aiAccessToken);
