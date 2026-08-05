@@ -25,38 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Readability] ControlsSection's `.slider-setting` class duplicates `.button-size-setting` on the same lone element
-
-**File(s):** `web/src/lib/components/settings/ControlsSection.svelte` (line 112; styles, lines
-162–168) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```svelte
-<div class="setting slider-setting button-size-setting" transition:slide={SECTION_SLIDE}>
-```
-
-is the only element in this component carrying either class, and the two scoped rules say the same
-thing twice:
-
-```css
-.slider-setting { margin-top: 12px; }
-.button-size-setting { margin: 12px 0 0; }
-```
-
-`.button-size-setting` is load-bearing (SettingsModal's resize-melt reaches it via
-`:global(.button-size-setting)`, SettingsModal.svelte:240); `.slider-setting` here is a leftover
-from the shared naming that `SoundSection.svelte:65` still uses for its own scoped rule. One
-redundant class + one dead-weight rule.
-
-#### Proposed solution
-
-Drop `slider-setting` from the element and delete the `.slider-setting` rule in this component (keep
-SoundSection's — it's a separate scoped rule). Grep `web/tests` for `.slider-setting` first; the E2E
-suite selects by ids (`actionButtonScaleLabel`), so this should be inert.
-
 ### [Readability] AboutSection's `typeof __IS_CAPACITOR__ !== 'undefined'` guard is dead defensive code, unique in the codebase
 
 **File(s):** `web/src/lib/components/settings/AboutSection.svelte` (lines 22–23) @ 9ae62ff1

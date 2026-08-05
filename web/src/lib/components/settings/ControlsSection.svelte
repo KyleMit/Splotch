@@ -143,7 +143,7 @@
 
   {#if settings.advancedControlsEnabled}
     <div class="advanced-controls-settings" transition:slide={SECTION_SLIDE}>
-      <div class="setting slider-setting button-size-setting">
+      <div class="setting button-size-setting">
         <SliderRow
           id="actionButtonScaleLabel"
           label="Button Size"
@@ -201,10 +201,6 @@
 <style>
   .advanced-controls-settings {
     display: flow-root;
-  }
-
-  .slider-setting {
-    margin-top: 12px;
   }
 
   .button-size-setting {
