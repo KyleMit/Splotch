@@ -18,6 +18,7 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
+| 2026-08-05 | [vet-audits](#2026-08-05--vet-audits)                           |
 | 2026-08-05 | [session-audit](#2026-08-05--session-audit)                     |
 | 2026-08-05 | [burn-down-audits](#2026-08-05--burn-down-audits-run-2)         |
 | 2026-08-05 | [burn-down-audits](#2026-08-05--burn-down-audits-run-1)         |
@@ -81,6 +82,34 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-07-03 | [code-audit](#2026-07-03--code-audit)                           |
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
+
+## 2026-08-05 · vet-audits
+
+Partial drain of the high-priority head of `docs/AUDIT.md`, run on request rather than as a full
+vetting pass: **12 findings filed as issues #774–#785**, backlog 436 → 424. Scope was every P1 in
+the file (8) plus four P2 correctness findings whose blast radius outranked their within-section
+rank — priority in that file is ranked *within* each section, so a P1 in the agent-instruction
+section and a P2 in the drawing section are not comparable.
+
+From the P1 set: the Blobs-degraded token mutation that reports success while a revocation
+evaporates (#774), the unguarded Clear Button under ADR-0038's Scribble contract (#775), picker taps
+dropped in the very hexagon gaps the snap machinery exists to catch (#777), the internal
+COLORING-BOOK planning doc served publicly from `web/static/` with third-party IP character rosters
+(#781), the burndown.mjs step-extraction refactor (#782), CONTRIBUTING.md's three wrong server
+env-var names (#783), run-splotch's driver committing the orphaned-vite anti-pattern its own
+SKILL.md forbids (#784), and the testing/run-splotch skills citing spec files deleted in the spec
+split (#785).
+
+Promoted from P2 on severity: the cache-bust redirect that discards an in-progress drawing after
+every deploy (#778), release.mjs's hand-rolled flag parsing where a typo'd `--dry-run` performs the
+real release (#780), pinchTextZoom's phantom-pointer leak that deadens every subsequent tap (#776),
+and the api-smoke burst that can still create real GitHub issues (#779).
+
+Three findings were re-checked against the tree at 0feabf0a8ce7e8e2ca73750ff0ded2ff977f6129 and
+confirmed still live — `web/static/coloring/COLORING-BOOK.md` present, `parseReleaseArgs` still on
+`args.includes`, `checkVersionMismatch` still unguarded. The rest carry the 2026-07-28
+adversarial-verification blockquote or were filed as written. Nothing was dropped: this pass filed
+only, and the remaining 424 findings still await a full `/vet-audits`.
 
 ## 2026-08-05 · session-audit
 
