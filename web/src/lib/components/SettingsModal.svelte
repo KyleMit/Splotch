@@ -99,9 +99,11 @@
   }
 
   // Tier-2 accessibility (ADR-0076): let a low-vision parent pinch to enlarge the
-  // reading content. The bound element gets CSS `zoom`; whichever scroll shell is
-  // mounted binds it. Zoom resets to normal whenever the overlay closes or the
-  // parent navigates to another section.
+  // reading content. The bound element gets CSS `zoom`; both full-size scroll shells
+  // (wide sidebar pane, phone hub/section scroll) bind it. The compact landscape-phone
+  // shell is deliberately excluded: it has no prose to read and no vertical room to
+  // zoom into, only quick toggles. Zoom resets to normal whenever the overlay closes
+  // or the parent navigates to another section.
   let zoomTarget = $state<HTMLElement>();
   const textZoom = () => ({
     target: zoomTarget,

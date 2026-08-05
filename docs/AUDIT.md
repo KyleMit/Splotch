@@ -25,39 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Docs] SettingsModal's pinch-zoom comment says "whichever scroll shell is mounted binds it," but the compact shell never does
-
-**File(s):** `web/src/lib/components/SettingsModal.svelte` (comment, lines 76–79; compact branch,
-lines 131–132), `web/src/lib/components/settings/CompactShell.svelte` (`.quick-toggles` scroller,
-lines 151–160) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The tier-2 accessibility comment claims universal coverage:
-
-```ts
-// Tier-2 accessibility (ADR-0076): let a low-vision parent pinch to enlarge the
-// reading content. The bound element gets CSS `zoom`; whichever scroll shell is
-// mounted binds it.
-```
-
-but the compact branch renders `<CompactShell />` with no `use:pinchTextZoom` and no
-`.settings-zoom` target — CompactShell has its own scroll region (`.quick-toggles`,
-`overflow-y: auto`) that a low-vision parent cannot enlarge. Skipping the cramped landscape-phone
-shell may well be the right call (there's barely room at 1×, and its content is toggles rather than
-reading material), but as written the comment asserts coverage the code doesn't provide, so a reader
-auditing ADR-0076 compliance gets a false all-clear.
-
-#### Proposed solution
-
-Either amend the comment to record the exclusion and its rationale ("…both full shells bind it; the
-compact quick-toggle shell is deliberately excluded — no prose to read, no vertical room to zoom
-into") or, if the exclusion wasn't a decision, thread the action through CompactShell like the other
-shells (bind `.quick-toggles`' inner content and pass the `textZoom` getter as a prop). Check
-ADR-0076 for whether the tier-2 commitment scoped itself to reading content before choosing.
-
 ## Source: Code audit — App state (runes)
 
 ### [Architecture] Move the seven `ai*` fields out of `ui.svelte.ts` into the AI-generation state module
