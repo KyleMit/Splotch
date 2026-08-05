@@ -11,7 +11,7 @@
     aiCredentialKind,
   } from '$lib/state/settings.svelte';
   import { setAiUserApiKey } from '$lib/state/aiKey';
-  import { verifyCredential } from '$lib/aiCredential';
+  import { verifyCredential, type VerifyCredentialResult } from '$lib/aiCredential';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
   import { createLatestRequest } from '$lib/latestRequest';
   import { getPlatform, type Platform } from '$lib/platform';
@@ -70,6 +70,21 @@
     }
   });
 
+  // Throws when the credential could not be stored; returns false when a newer
+  // submitKey superseded this one and its outcome should be discarded.
+  async function persistCredential(
+    result: VerifyCredentialResult,
+    value: string,
+    id: number
+  ): Promise<boolean> {
+    if (result.kind === 'apiKey') {
+      await setAiUserApiKey(value, () => latest.isCurrent(id));
+    } else {
+      setAiAccessToken(result.accessCode || value);
+    }
+    return latest.isCurrent(id);
+  }
+
   async function submitKey() {
     const value = keyInput.trim();
     if (!value || keyStatus === 'checking') return;
@@ -91,12 +106,9 @@
         return;
       }
 
+      let persisted: boolean;
       try {
-        if (result.kind === 'apiKey') {
-          await setAiUserApiKey(value, () => latest.isCurrent(id));
-        } else {
-          setAiAccessToken(result.accessCode || value);
-        }
+        persisted = await persistCredential(result, value, id);
       } catch {
         if (latest.isCurrent(id)) {
           keyStatus = 'error';
@@ -107,7 +119,7 @@
         }
         return;
       }
-      if (!latest.isCurrent(id)) return;
+      if (!persisted) return;
 
       setAiImage(true); // turn the feature on the moment a valid credential lands
       keyInput = '';
