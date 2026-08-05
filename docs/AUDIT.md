@@ -17,6 +17,13 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 `> **Verified 2026-07-28**` blockquote have been through that pass; the rest have not, so
 `/vet-audits` still owns validating them.
 
+A **high-priority drain** then removed 12 findings from this file: every P1 (8 of them) plus four
+P2-ranked correctness findings whose blast radius outranked their within-section rank. Priority here
+is ranked *within* each section, so a P1 in the agent-instruction section and a P2 in the drawing
+section are not comparable — the drain re-sorted across sections on severity. Those 12 are filed as
+issues #774–#785; see the 2026-08-05 `vet-audits` entry in `docs/AUDIT-LOG.md`. No P1 remains in
+this file.
+
 ## Source: Code audit — App state (runes)
 
 ### [Testing] `fullscreen.svelte.ts` has no unit tests
@@ -153,68 +160,6 @@ matters — though with ~4 importers, updating them directly is cleaner. Low urg
 modal-rename finding if that lands.
 
 ## Source: Code audit — Admin console + token backend
-
-### [Correctness] Token mutations silently "succeed" into the per-request memory fallback during a transient Blobs failure
-
-**File(s):** `web/src/lib/server/tokens.ts` (`readStore` lines 105–115, `persist` lines 122–130,
-`mutateList` lines 178–196) @ 9ae62ff1
-
-**Priority:** P1
-
-#### Problem
-
-`readStore` deliberately collapses two very different situations into the same `source: 'memory'`
-result: Blobs genuinely unconfigured (plain `vite dev` — `openStore` returns null, line 49) and a
-*transient* Blobs read failure on an instance where Blobs is configured (the catch at lines 105–111
-falls through to the memory fallback at lines 113–114):
-
-```ts
-  } catch (err) {
-    // Transient Blobs error: degrade to memory for THIS request only. Do not
-    // latch blobsUnavailable, or one blip would make the warm instance
-    // silently drop every future write.
-    const detail = err instanceof Error ? err.message : err;
-    console.warn('[tokens] Netlify Blobs read failed, using in-memory list:', detail);
-  }
-}
-if (memoryTokens === null) memoryTokens = seedFromEnv();
-return { source: 'memory', store: null, list: memoryTokens };
-```
-
-For *reads* this degradation is fine (and the `persistent: false` banner covers it). But
-`mutateList` (lines 182–193) makes no distinction: it calls `persist(store, result.next, etag)` with
-`store === null`, and `persist` then writes to `memoryTokens` and returns `true` (lines 123–126).
-The mutation reports `{ ok: true }`, the `/admin` form action shows "Added …"/"Removed …", and the
-write is gone the moment Blobs recovers — the next `readStore` reads the real blob, which never saw
-the change.
-
-This directly contradicts the module's own stated design goal at lines 160–164:
-
-```ts
-// Unlike usage.ts we do NOT concede after the retries: under eventual
-// consistency (ADR-0025) they can exhaust, and an admin mutation that quietly
-// did nothing is as bad as the clobber the CAS prevents — so it surfaces as
-// `{ ok: false, error }` ...
-```
-
-The worst case is security-relevant: an admin revokes a token during a one-request Blobs blip, sees
-"Removed “X”", but the token is still in the durable list and remains a valid AI-generation
-credential after recovery (`isAllowedToken`, line 152, reads the recovered Blobs list). The success
-message plus a recovered `persistent: true` on the next load means nothing ever tells the operator
-the revocation didn't happen.
-
-#### Proposed solution
-
-Distinguish the two memory cases in `StoreRead` — e.g. split `source: 'memory'` into `'memory'`
-(Blobs unconfigured; local dev, writes to `memoryTokens` are the intended behavior) and `'degraded'`
-(Blobs configured but this read failed). In `mutateList`, treat `'degraded'` like `'unconfirmed'`:
-return `{ ok: false, reason: 'conflict', error: TOKEN_CONFLICT_ERROR }` (or introduce a third
-`reason: 'unavailable'` mapped to 503 by both front doors) instead of persisting to memory. Gotchas:
-widening the `reason` union ripples into the 400/409 mapping in
-`web/src/routes/admin/+page.server.ts` (line 99) and `/api/admin/tokens`' `mutationError`, and into
-`tokenActions.integration.test.ts` / `wire.integration.test.ts`; the distinction is cheap to compute
-— `openStore()` already tells you whether Blobs is configured (the catch block runs only when
-`store` was non-null).
 
 ### [Maintainability] The MutationFailure→HTTP-status mapping is duplicated and kept in agreement only by prose
 
@@ -2177,46 +2122,6 @@ self-contained while making the duplication safe.
 
 ## Source: Code audit — Core UI controls
 
-### [Correctness] Apply the scribbleGuard/scribbleTap contract to the Clear Button
-
-**File(s):** `web/src/lib/components/ClearButton.svelte` (lines 38–74) @ 9ae62ff1
-
-**Priority:** P1
-
-> **Verified 2026-07-28.** An adversarial re-check confirmed the ClearButton half and **refuted** an
-> original second half naming `FullscreenToggle.svelte`: `fullscreenSupported()` in
-> `web/src/lib/state/fullscreen.svelte.ts` returns `isAndroidBrowser()` (after bailing on
-> `isNative()`/`isStandalone()`), and `platform.ts` line 47 matches `/android/i` against the UA — so
-> the toggle never renders on any WebKit surface, the only place iPadOS Scribble exists. Guarding it
-> would be dead work; that half has been removed from this finding.
-
-#### Problem
-
-ADR-0038 closes with an explicit standing rule: "Any future control a pen can tap right before
-drawing gets `use:scribbleGuard` on its surface and `use:scribbleTap` instead of `onclick`." The ADR
-also documents that the *arming tap itself* is the trigger — it does not matter what the app does
-with the tap; a pen tap anywhere followed within ~450ms by a stroke gets that stroke silently
-swallowed by iPadOS Scribble (the ink commits to the engine and undo log but never paints).
-
-The Clear Button, a toddler-facing control sitting directly on the canvas, is unguarded: the whole
-`dragToClear` gesture surface (lines 44–67) is pointer-event driven, and neither the component nor
-`web/src/lib/actions/dragToClear.ts` cancels the parallel stylus touch stream (grep for `touch` in
-`dragToClear.ts` finds nothing). A pen tap on the Clear Button arms Scribble exactly like a swatch
-tap did before ADR-0038 — and because a plain tap does nothing app-visible, the subsequent invisible
-stroke is even more mysterious than the swatch case.
-
-Currently guarded surfaces are only `ColorPalette`, `ColorPicker`, and `ActionsPanel` (the three
-`use:scribbleGuard` sites in the repo).
-
-#### Proposed solution
-
-Add `use:scribbleGuard` to `.clear-container` (or the button). Verify on-device that cancelling
-stylus `touchstart` doesn't break `dragToClear` — it is pointer-driven and does its own capture, so
-it should be unaffected; the guard also only fires for `touchType === 'stylus'`.
-
-If the exclusion turns out to be deliberate (e.g. verified inert), the ADR-0038 rule deserves a
-written carve-out; today nothing documents it.
-
 ### [Maintainability] The hydrated button-size formula exists in three copies; two are kept in step only by comments
 
 **File(s):** `web/src/lib/actionButtonLayout.ts` (`availablePerButton`, lines 73–91),
@@ -2799,64 +2704,6 @@ gate + lazy import + one call.
 
 ## Source: Code audit — Gestures / Svelte actions
 
-### [Correctness] pinchTextZoom can leak a phantom pointer — a lone finger then drives zoom and every tap gets swallowed
-
-**File(s):** `web/src/lib/actions/pinchTextZoom.svelte.ts` (`onPointerDown` lines 75–86,
-`onPointerMove` lines 88–96, `onClickCapture` lines 107–112) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-Only the finger that *completes* the pair is captured (line 84, inside
-`if (tracker.pointerCount === 2)`):
-
-```ts
-if (tracker.pointerCount === 2) {
-  pinchedRecently = true;
-  rebase();
-  capturePointer(node, e.pointerId);
-}
-```
-
-The first finger is deliberately left uncaptured so one-finger scrolling stays native — but that
-means its `pointerup` is only seen when it fires inside `node`'s subtree. During a pinch the fingers
-spread apart; if the resting first finger drifts outside the `.settings-pane` bounds (easy in the
-exact scenario the comment at lines 49–53 describes: primary finger resting on a hub row while the
-second finger spreads) and lifts there, `node`'s `pointerup` listener never fires for it,
-`tracker.up()` is never called, and the tracker keeps a phantom entry forever. The pane's
-`touch-action` permits panning, so a scroll-claimed finger would get `pointercancel` — but a
-*stationary-then-lifted-outside* finger gets nothing.
-
-Consequences while the phantom persists (until an option change reruns the reset `$effect`, e.g.
-navigating sections via `resetKey: view` or closing the overlay):
-
-* `onPointerMove` (line 92): `tracker.pointerCount` is now 2 with one real finger, so ordinary
-  one-finger scrolling drives `nextTextZoom` against a stale spread — the text zooms erratically
-  while the user tries to scroll.
-* `onPointerDown` (line 79): `tracker.pointerCount === 0` is never true again, so `pinchedRecently`
-  is never cleared at gesture start, and every subsequent tap re-enters the `pointerCount === 2`
-  branch setting `pinchedRecently = true` — `onClickCapture` then swallows the tap's click. Settings
-  rows, toggles, and links go dead.
-
-`pinchZoom` does not have this hole because it captures *every* finger on `pointerdown`
-(`web/src/lib/actions/pinchZoom.svelte.ts` line 197).
-
-#### Proposed solution
-
-Two options, cheapest first:
-
-1. When the pinch engages (count reaches 2), capture *both* pointers, not just the incoming one. The
-   tracker knows the other id — expose it (e.g. `tracker.ids(): number[]`) and call
-   `capturePointer(node, id)` for each. Capturing the first finger only once a pinch is confirmed
-   does not disturb native one-finger scrolling (that gesture never reaches count 2).
-2. Alternatively (or additionally, as belt-and-braces), listen for `pointerleave` on `node` and
-   route it to `onPointerUp` — for touch pointers, leaving the element's bounds fires
-   `pointerleave`, which reclaims the entry.
-
-Add a unit test that simulates down(1), down(2), lift of pointer 1 *not* delivered to the node, then
-asserts a single-finger move does not change zoom / a following tap's click is not swallowed.
-
 ### [Performance] spreadTracker's SvelteMap is dead reactivity — nothing reads it in a reactive context, and its comment claims otherwise
 
 **File(s):** `web/src/lib/actions/spreadTracker.svelte.ts` (lines 1, 13–18) @ 9ae62ff1; consumers
@@ -3405,70 +3252,6 @@ when optional — these actions all require their parameter, so use the two-gene
 it required.
 
 ## Source: Code audit — Color palette & picker
-
-### [Correctness] Picker taps that land in a hexagon gap are silently dropped, defeating the snap machinery's stated purpose
-
-**File(s):** `web/src/lib/components/ColorPicker.svelte` (`handlePickerDown`, lines 40–55; snap
-rationale comment, lines 57–64) @ 9ae62ff1
-
-**Priority:** P1
-
-#### Problem
-
-The nearest-center snapping (`findHexagonInPicker`, lines 80–92, radius `HEX_SNAP_RADIUS`, line 66)
-exists explicitly because — per the comment at lines 57–64 — "A pointed Apple Pencil tip often lands
-in the clip-path gap between hexagons, where an element hit-test sees only the picker background.
-Snap to the nearest hexagon center within this radius (px) so gap hits still resolve — for the hover
-highlight while dragging and the committed color alike."
-
-But the gesture can only reach the snapping code if it *starts* on a direct hexagon hit.
-`handlePickerDown` bails on anything that isn't inside a hexagon's clip-path:
-
-```ts
-function handlePickerDown(e: PointerEvent) {
-  const hex = (e.target as HTMLElement).closest('.hexagon') as HTMLElement | null;
-  if (!hex) return;
-  isTrackingDrag = true;
-  ...
-}
-```
-
-`clip-path` clips hit-testing as well as painting, so a pointerdown in the gap between hexagons
-targets the `.picker` div, `closest('.hexagon')` returns `null`, and the handler returns without
-setting `isTrackingDrag`. Both `handlePickerMove` (line 95) and `handlePickerUp` (line 102)
-early-return when `!isTrackingDrag`, and `handleHexClick` (line 115) only fires for keyboard clicks
-(`e.detail === 0`). Net effect: a **tap** — down + up at the same gap point, the single most common
-toddler/pencil interaction — selects nothing, even though the up-coordinate is well inside
-`HEX_SNAP_RADIUS` of a hexagon center. The snap only helps when a drag that began on a hexagon
-*wanders* into a gap, which is the rarer case; the comment's claim that gap hits resolve for "the
-committed color alike" is not true for taps.
-
-(Related but distinct from issue #164, which is about multi-tap color *palette* reliability, not the
-picker's gap hit-testing.)
-
-#### Proposed solution
-
-In `handlePickerDown`, when the direct hit-test misses, fall back to the snap before bailing:
-
-```ts
-function handlePickerDown(e: PointerEvent) {
-  const direct = e.target instanceof Element ? e.target.closest('.hexagon') : null;
-  const color =
-    (direct instanceof HTMLElement ? direct.dataset.color : null) ??
-    findHexagonInPicker(e.clientX, e.clientY);
-  if (!color) return;
-  isTrackingDrag = true;
-  hoveredHex = color;
-  ...
-}
-```
-
-`findHexagonInPicker` already lazy-snapshots centers (`hexCenters ??= snapshotHexCenters()`, line
-81), so the eager `hexCenters = snapshotHexCenters()` on line 45 can stay or be dropped. Gotchas: a
-down on the picker padding far from any hexagon still (correctly) bails and can continue to
-light-dismiss via the dialog backdrop path; and this is a chance to replace the double
-`as HTMLElement` cast with the `instanceof` guards shown, per the repo's "`as` is a boundary tool"
-convention. Verify with an E2E tap at a known gap coordinate.
 
 ### [Architecture] ColorPalette owns the black-ink/theme sync invariant and writes shared state directly from an `$effect`
 
@@ -4154,65 +3937,6 @@ colors.customColor = DEFAULT_STROKE_COLOR;
 ```
 
 ## Source: Code audit — Storage / persistence + PWA / service worker
-
-### [Correctness] Guard the version-mismatch cache-bust redirect with the canvas-empty check
-
-**File(s):** `web/src/lib/pwa/updates.ts` (`checkVersionMismatch`, lines 138–151) @ 9ae62ff1
-
-**Priority:** P2
-
-> **Verified 2026-07-28** — no drawing autosave/restore exists, so the hard navigation does lose
-> in-progress work. Caveat: the module header (lines 23–29) does describe the cache-bust redirect as
-> intentional design, and the blank-canvas invariant is scoped to waiting workers — so this is an
-> unconsidered gap rather than a documented tradeoff.
-
-#### Problem
-
-The entire update machinery is built around one invariant, stated in the module header (lines
-20–21): a waiting worker is applied "(with a reload) only while the canvas is blank — never
-mid-drawing". `activateWaitingSW` (lines 153–187) and the `owed` state exist solely to defend it.
-But the cache-bust path violates it:
-
-```ts
-async function checkVersionMismatch(attemptedVersion: string | null = null) {
-  try {
-    const resp = await fetch('/version.json', { cache: 'no-store' });
-    if (!resp.ok) return;
-    const { version } = await resp.json();
-    if (version !== __APP_VERSION__ && version !== attemptedVersion) {
-      const next = new URL(window.location.href);
-      next.searchParams.set('v', version);
-      window.location.replace(next.toString());
-    }
-```
-
-`window.location.replace` is a hard navigation with no `canvasState.canvasEmpty` check. The scenario
-is not exotic: after every deploy, every returning client is stale, so `version !== __APP_VERSION__`
-is true on that boot. `checkVersionMismatch` is kicked off at init (line 105, from `initPWAUpdates`
-via `initWebOnlyServices` in the drawing route's `onMount`), but its `fetch` can take seconds on a
-slow connection — and the app is explicitly designed so the child can draw immediately, including
-pre-hydration strokes (ADR-0072, and the comment in `web/src/routes/+page.svelte` lines 47–55). A
-toddler who starts scribbling in the first seconds after a deploy gets their drawing wiped by the
-redirect when the response lands.
-
-#### Proposed solution
-
-Apply the same policy the SW-activation path already uses: only navigate while
-`canvasState.canvasEmpty` is true. Minimal version — early-return when the canvas has ink:
-
-```ts
-if (version !== __APP_VERSION__ && version !== attemptedVersion) {
-  if (!canvasState.canvasEmpty) return; // never discard a drawing for a cache-bust
-  ...
-}
-```
-
-The tradeoff (a stale-HTML session keeps running until the next blank-canvas boot) is exactly the
-tradeoff the module already accepts for waiting workers. A richer version could stash the pending
-version and retry from `checkForUpdates` when the canvas empties, mirroring the `owed` state — but
-given `checkVersionMismatch` runs once per boot, the early-return is likely enough. Add a unit test
-in `updates.test.ts` ("does not redirect while the canvas has content") alongside the existing
-`checkVersionMismatch` suite (lines 78–163).
 
 ### [Types] Give `readInt`/`readString` allowed-list generics so callers stop casting and hand-rolling validators
 
@@ -4909,66 +4633,6 @@ compute `restoredSize = DEFAULT_SIZE === 5 ? 4 : 5`) or simply assert `not.toBe`
 injected value before restoring.
 
 ## Source: Code audit — Server / API backend
-
-### [Correctness] Make the /api/report smoke burst incapable of creating real GitHub issues (payload-level honeypot, not just env clearing)
-
-**File(s):** `web/src/routes/api/report/+server.ts` (`POST`, lines 57–70) and
-`scripts/api-smoke.mjs` (`checkReport` burst loop, lines ~198–208) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-The repo currently has three open junk issues titled `[Bug] burst 0` (`#586`, `#539`, `#537`,
-labeled `type:bug,user-report`) — the exact output of `titleFor('bug', 'burst 0')` in
-`web/src/routes/api/report/+server.ts`. They were created by the api-smoke script's throttle burst:
-
-```js
-const res = await report({ kind: 'bug', message: `burst ${i}` });
-```
-
-running against a server that *did* have `GITHUB_ISSUE_TOKEN` configured. The chosen defense is
-environment-level: `scripts/api-smoke.mjs` line 404 passes `GITHUB_ISSUE_TOKEN: ''` when spawning
-its dev server. That defense has already failed twice — commit 8788642 (2026-07-24, "Prevent
-api-smoke test from creating real GitHub issues") and commit 3c4e443 (2026-07-28, "Prevent API smoke
-test issue creation"), and issue `#586` was still created on 2026-07-28. Any future path that runs
-these payloads against a configured server (a deploy smoke, `dev:netlify` with injected Netlify env,
-someone pointing `BASE` at production) recreates the problem.
-
-The endpoint itself provides a payload-level kill switch that the smoke doesn't use: the handler
-charges the rate limit **before** the honeypot check (lines 58–62 vs 66–70):
-
-```ts
-const { limited, retryAfter } = rateLimit(
-  reportBucket(getClientAddress()),
-  rateLimitPolicy.report
-);
-if (limited) return throttled(retryAfter);
-...
-if (typeof body?.hp === 'string' && body.hp.trim()) {
-  return json({ ok: true });
-}
-```
-
-So a burst payload carrying `hp: 'smoke'` still consumes budget and still trips the 429 the burst
-asserts — but can never create an issue, on any server, under any env configuration.
-
-#### Proposed solution
-
-1. In `scripts/api-smoke.mjs`, send `hp: 'smoke-burst'` in the burst-loop payloads (and arguably in
-   every payload except the ones that assert honeypot/validation semantics). Keep the env clear as
-   belt-and-braces.
-2. In `web/src/routes/api/report/+server.ts`, the ordering "rate limit is charged before the
-   honeypot short-circuit" becomes load-bearing for this defense — add a colocated unit test
-   asserting a honeypot submission still charges the bucket (mock `rateLimit` like
-   `verify-access-code/server.test.ts` does), so a future reorder fails a test instead of silently
-   disarming the smoke's safety.
-3. Close/clean the three `burst 0` junk issues as part of the fix.
-
-Gotcha: the smoke's honeypot contract case (line ~178) must keep asserting `{ ok: true }` without
-`url`, so give the burst payloads a distinct `hp` value to keep the two cases readable. (The
-burst-loop half of the fix lives in `scripts/`, outside this section; the in-section half is the
-ordering guard test.)
 
 ### [Maintainability] Deduplicate the sliding-window arithmetic shared by `rateLimit` and `peekRateLimit`
 
@@ -8752,61 +8416,6 @@ promise holds for both failure modes.
 
 ## Source: Code audit — scripts — root build/dev drivers
 
-### [Correctness] Hand-rolled flag parsing in release.mjs silently ignores typos — a misspelled `--dry-run` performs the full destructive release
-
-**File(s):** `scripts/release.mjs` (`parseReleaseArgs`, lines 54–66),
-`scripts/publish-artifacts.mjs` (`parsePublishArgs`, lines 40–52) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-`scripts/CLAUDE.md` mandates "Script options are flags via `parseArgs`". `release.mjs` instead does:
-
-```js
-return {
-  version,
-  dryRun: args.includes('--dry-run'),
-  noPublish: args.includes('--no-publish'),
-};
-```
-
-An unknown flag is silently dropped: `node scripts/release.mjs 1.5.0 --dry-rn` (or `--dryrun`,
-`--dry_run`) parses as `dryRun: false, noPublish: false` and proceeds to the *full* release path —
-`bumpVersions`, `commitAndTag` (lines 130–134: `git add -A`, `git commit`, `git tag`), and `publish`
-(lines 136–159: `git push`, `git push origin v<version>`, `gh release create`). A one-character typo
-in the safety flag converts a rehearsal into an irreversible published release. `parsePublishArgs`
-in `publish-artifacts.mjs` has the same shape (`args.includes('--dry-run')` at line 51,
-prefix-sliced `--only=` at line 47), where a typo'd `--dry-run` uploads real artifacts.
-
-Node's `util.parseArgs` is strict by default and throws on unknown options — the repo already uses
-it correctly in `scripts/gha-versions.mjs` (lines 108–110), `scripts/gen-tokens.mjs` (lines 68–70),
-`scripts/image-audit.mjs` (lines 38–40), and `scripts/publish-scrapbook.mjs` (lines 54–57), so these
-two scripts (the most dangerous ones in the directory) are the outliers.
-
-#### Proposed solution
-
-Rewrite both parsers on `parseArgs`:
-
-```js
-function parseReleaseArgs(args) {
-  const { values, positionals } = parseArgs({
-    args,
-    allowPositionals: true,
-    options: { 'dry-run': { type: 'boolean' }, 'no-publish': { type: 'boolean' } },
-  });
-  const version = positionals[0];
-  // existing semver validation …
-  return { version, dryRun: values['dry-run'], noPublish: values['no-publish'] };
-}
-```
-
-Wrap the `parseArgs` call in try/catch to re-emit the existing usage string via `fail()` so the
-error stays actionable. `parsePublishArgs` gets `only: { type: 'string' }` with the existing
-`PLATFORMS.includes` check. Both functions are already exported and covered by
-`scripts/tests/release.test.mjs` / `publish-artifacts.test.mjs`, so add a case asserting an unknown
-flag fails instead of being ignored.
-
 ### [Correctness] android-emulator-smoke boot wait can spin forever and crashes opaquely when no serial matches
 
 **File(s):** `scripts/android-emulator-smoke.mjs` (lines 70–73) @ 9ae62ff1
@@ -11559,59 +11168,6 @@ hand-YAML tests accumulate, the shared line-oriented helpers could later move to
 
 ## Source: Code audit — scripts/audit-burndown — audit burndown tooling
 
-### [Architecture] Extract burndown.mjs's numbered loop steps into named helpers behind a factory
-
-**File(s):** `scripts/audit-burndown/burndown.mjs` (main loop, lines 513–873) @ 9ae62ff1
-
-**Priority:** P1
-
-#### Problem
-
-The driver's entire lifecycle is one ~360-line `while` loop at module scope, structured by exactly
-the section banners the repo convention names as the signal to extract: `// ---- 1. POP ----` (line
-525), `// ---- 2. VERIFY ----` (line 539), `// ---- 3. IMPLEMENT ----` (line 606),
-`// ---- 4/5. REVIEW, at most two fix rounds ----` (line 671), `// ---- 6. CLOSE OUT ----` (line
-803), `// ---- 7. PUSH ----` (line 869). CLAUDE.md: "Numbered step comments (`// 1. …`) or section
-banners inside one function are the signal to extract each step into a named helper — write it that
-way the first time."
-
-The cost is not hypothetical — `comment.mjs` lines 3–4 admit the consequence outright:
-
-```js
-// its own module so burndown.mjs and the backfill share one implementation and
-// it can be unit-tested (burndown.mjs runs its loop on import and can't be).
-```
-
-Every piece of pure-ish logic that needed testing has had to be exiled to `lib.mjs`/`comment.mjs`
-one function at a time (`resolveImplSha`, `deferralReason`, `briefIsStale`, `reachedHandledLimit`,
-…), while the sequencing itself — the part where the 2026-07-25 canary bugs actually lived (push
-cadence on deferrals, line 316–326; positional vs by-title delete, line 841) — remains untestable.
-
-The loop also communicates through five module-scope mutable `let`s (`deferred`/`consecutive` at
-lines 275–276, `done`/`dropped`/`sincePush` at 458–460) mutated from `defer()` (lines 317–326), the
-INVALID branch (lines 572–574), and the close-out (lines 865–867), with `defer()` calling
-`pushBatch()` that is declared *below* it — the comment at line 324 has to explain "`pushBatch` is a
-hoisted declaration" instead of the code just reading top-down. CLAUDE.md's rule is that
-module-scope mutable state lives behind a `createX()` factory.
-
-#### Proposed solution
-
-Restructure around a `createBurndownRun(config)` factory holding the counters plus
-`pushBatch`/`defer`, and extract each banner into a helper the loop calls in sequence, e.g.:
-
-```js
-function popNextFinding()                      // step 1 → { issue, title, tag, issueWrittenAt } | null
-async function verifyFinding({ tag, title })   // step 2 → { verdict, e2eSpecs, briefOk } outcome
-async function implementFinding({ … })         // step 3 → { impl, sha, implSession } | failure
-async function reviewWithFixRounds({ … })      // steps 4/5 → { status, sha, fixSummaries, reviewCatches, … }
-function closeOutApproved({ title, sha, … })   // step 6
-```
-
-The loop body then reads as the seven-step pipeline the banners currently narrate. Pair with the
-next finding (isMain gating) so the extracted pieces become importable by `scripts/tests/`. Gotcha:
-`defer()`'s coupling to `sincePush`/`pushBatch` is exactly why the factory (rather than free
-functions plus globals) is the right shape.
-
 ### [Correctness] Iteration tag omits `dropped`, so a drop makes the next finding reuse the same log-file names
 
 **File(s):** `scripts/audit-burndown/burndown.mjs` (line 523) @ 9ae62ff1;
@@ -12963,39 +12519,6 @@ const BUILDUP_REGION = { x: 220, y: 280, width: 320, height: 80 };
 # Section 27 — web/* build & test configuration
 
 ## Source: Code audit — web/* — build & test configuration
-
-### [Architecture] Internal coloring-book planning doc (with third-party IP character lists) is publicly served from static/
-
-**File(s):** `web/static/coloring/COLORING-BOOK.md` (346 lines) @ 9ae62ff1
-
-**Priority:** P1
-
-#### Problem
-
-`web/static/**` ships verbatim to production and into the native app bundles.
-`web/static/coloring/COLORING-BOOK.md` is a 346-line internal planning document — publicly reachable
-at `https://splotch.art/coloring/COLORING-BOOK.md` — containing:
-
-* Brainstormed coloring-book sections built around trademarked third-party IP (lines 1–40: "Frozen …
-  Ana, Elsa, Kristoph", "Bluey", "Paw Patrol", "Spidey and His Amazing Friends" with full character
-  rosters).
-* Draft AI-generation prompt text for the coloring pipeline ("## Style Rules … Create a
-  coloring-page background image for a kids digital coloring app…", the trailing ~40 lines).
-
-Nothing in the repo references the file as a served asset (`grep -rn "COLORING-BOOK"` matches
-nothing in `web/src`, `scripts/`, or `tools/`). Serving an internal ideation doc that name-drops
-Disney/BBC/Nickelodeon/Marvel characters from a kids-app production domain is a needless legal/PR
-exposure, and it bloats the native bundles (adapter-static copies `static/` wholesale). The repo
-already has a designated home for reusable AI art prompts: `docs/PROMPTS.md` (per CLAUDE.md's docs
-table), and asset-pipeline records live in `tools/asset-gen/docs/`.
-
-#### Proposed solution
-
-Move the file out of `web/static/` — the prompt sections belong with `docs/PROMPTS.md` or
-`tools/asset-gen/docs/`; the section-idea lists belong in a GitHub issue (the repo's stated backlog
-mechanism) or the same docs tree. Delete it from `static/`. Gotchas: `.svelte-kit/non-ambient.d.ts`
-regenerates its `Asset()` union on the next `svelte-kit sync` (no manual edit needed); double-check
-no external bookmark relies on the URL (nothing in-repo does).
 
 ### [Maintainability] Dev/preview ports (5173, 4173) are synced by prose comments and hand-maintained duplicates, with no drift guard
 
@@ -14663,50 +14186,6 @@ grep -n "storage.persist" web/src/lib/secureStorage.ts
 grep -n "aspect-ratio" web/src/app.css
 ```
 
-### [Correctness] CONTRIBUTING.md documents three server env vars under names the code never reads
-
-**File(s):** `docs/CONTRIBUTING.md` (lines 60–66, env-var table) @ 9ae62ff1
-
-**Priority:** P1
-
-#### Problem
-
-The environment-variable table tells a contributor/operator:
-
-```
-| `AI_ACCESS_TOKENS`          | Netlify env   | Comma-separated list of valid AI invite tokens (server-only)          |
-| `ADMIN_PASSWORD`            | Netlify env   | Password for the `/admin` token console (server-only)                 |
-| `GOOGLE_API_KEY`            | Netlify env   | Gemini API key for the hosted image generation endpoint (server-only) |
-```
-
-None of those names exist anywhere in the codebase. The server reads:
-
-* `ALLOWED_TOKENS_LIST` — `web/src/lib/server/tokens.ts:37`
-  (`const raw = env.ALLOWED_TOKENS_LIST || ''`), the env-seeded token allowlist (ADR-0025).
-* `ADMIN_ACCESS_TOKEN` — `web/src/lib/server/admin.ts:28` and `:46`, the admin secret (also the HMAC
-  key, ADR-0016).
-* `GEMINI_API_KEY` — `web/src/lib/server/config.ts:4` (`geminiApiKey: () => env.GEMINI_API_KEY`);
-  `generationAuthorization.ts:41` even errors with the literal message "Server is missing
-  GEMINI_API_KEY".
-
-Someone following this doc to configure a Netlify site (or a local `netlify dev` env) would set
-three variables that do nothing: the AI endpoint would 500 with "Server is missing GEMINI_API_KEY",
-admin login would be unconfigured, and the token allowlist empty — with the doc actively pointing
-away from the fix. The table is also incomplete: it omits `GITHUB_ISSUE_TOKEN` / `GITHUB_ISSUE_REPO`
-(feedback endpoint, `web/src/lib/server/config.ts:5–6`, ADR-0060) and `REDTEAM_FIXTURE_KEY`
-(ADR-0023, local-only). Note the sibling docs get this right — `docs/CLOUD/Codex.md:16` names
-`GEMINI_API_KEY`, `ADMIN_ACCESS_TOKEN`, and `ALLOWED_TOKENS_LIST` — so CONTRIBUTING.md contradicts
-them too.
-
-#### Proposed solution
-
-Replace the three rows with the real names (`ALLOWED_TOKENS_LIST`, `ADMIN_ACCESS_TOKEN`,
-`GEMINI_API_KEY`) and add rows for `GITHUB_ISSUE_TOKEN` / `GITHUB_ISSUE_REPO` (Netlify env, feedback
-issue proxy — ADR-0060) and optionally `REDTEAM_FIXTURE_KEY` (local `.env`, red-team corpus —
-ADR-0023). Per the repo's cross-file-agreement convention, consider noting in the table that the
-authoritative reader is `web/src/lib/server/config.ts` / `tokens.ts` / `admin.ts` so future renames
-have one obvious sync target.
-
 ### [Docs] DEPENDENCIES.md still inventories two dependencies that were removed from the repo — one with a claimed usage site that was never true
 
 **File(s):** `docs/DEPENDENCIES.md` (lines 9, 19, 29, 68–75, 109, 175–190, 533–546, 944) @ 9ae62ff1
@@ -14928,109 +14407,6 @@ relevant skill or skill-notes), not here; otherwise delete it too. If any workfl
 at minimum retitle the doc's purpose line in CLAUDE.md — but trimming the file is the better fix.
 
 ## Source: Code audit — .ruler — agent-instruction & skill sources
-
-### [Correctness] run-splotch driver.mjs commits the exact orphaned-vite anti-pattern its own SKILL.md forbids
-
-**File(s):** `.ruler/skills/run-splotch/driver.mjs` (`startServer`, lines 92–103; shutdown at lines
-173–186) and `.ruler/skills/run-splotch/SKILL.md` (lines 139–155) @ 9ae62ff1
-
-**Priority:** P1
-
-#### Problem
-
-The SKILL.md contains an emphatic, hard-won warning (lines 139–151):
-
-> **Never hand-roll the dev server in a throwaway script.** `spawn('npx', ['vite', 'dev', …])` +
-> `server.kill('SIGTERM')` does **not** work: `npx` exits but the real `vite` keeps running, and
-> because its stdout is piped to your script the Node event loop never drains — the script hangs on
-> exit and leaves an **orphaned `vite dev` holding the port for hours** … **If you truly must spawn
-> one**, use `spawnViteServer(port, env)` from `scripts/lib/vite-server.mjs` — it launches vite in a
-> **detached process group** and its `stop()` kills the whole group.
-
-Yet `driver.mjs` — the very driver that SKILL.md tells every agent to run — does exactly the
-forbidden thing:
-
-```js
-server = spawn('npx', ['vite', 'dev', '--port', String(port), '--strictPort'], {
-  cwd: resolve(repoRoot, 'web'),
-  env: { ...process.env, PUBLIC_ENABLE_DEV_HARNESS: 'true' },
-  stdio: ['ignore', 'pipe', 'inherit'],
-});
-server.stdout.on('data', (d) => process.stderr.write(d));
-```
-
-(lines 97–102), and tears down with `server.kill('SIGTERM')` (lines 178 and 184).
-`scripts/lib/vite-server.mjs` (lines 1–7 of its header comment) explains precisely why this leaks:
-`npx vite` adds a wrapper layer, so killing the child leaves the process that actually holds the
-port alive. `spawnViteServer()` runs vite's bin directly with node in a `detached: true` process
-group and `stop()` kills the whole group (`process.kill(-server.pid, 'SIGTERM')`), plus it installs
-`process.on('exit'/'SIGINT')` cleanup — none of which the driver has. The driver also has no cleanup
-for the case where the browser launch or screenshot throws after the server started but before
-`main()`'s teardown besides the single top-level `catch` (which again only kills the npx wrapper).
-
-So every non-`--keep` driver run risks leaving a `vite dev` holding port 5199 — the "task running
-for hours" failure the skill itself documents.
-
-#### Proposed solution
-
-Have `driver.mjs` reuse the shared helper:
-`import { spawnViteServer, freePort } from '<repoRoot>/scripts/lib/vite-server.mjs'` (the driver
-already computes `repoRoot` at line 29; use a `pathToFileURL`-based dynamic import or a relative
-`../../../scripts/lib/vite-server.mjs` — the generated copies live at a fixed depth in
-`.claude/skills/` and `.agents/skills/`, same depth as the source).
-`spawnViteServer(port, { env: { PUBLIC_ENABLE_DEV_HARNESS: 'true' }, stdout: 'pipe' })` covers the
-current behavior; replace the two `server.kill('SIGTERM')` calls with the returned `stop()`. Gotcha:
-`spawnViteServer` currently hardcodes `stdio` ignore/inherit choices — its `stdout` option already
-supports `'pipe'`, so the driver's log-forwarding still works. Keep `--keep` behavior by simply not
-calling `stop()` (the detached group survives the parent exiting, which is exactly what `--keep`
-wants).
-
-### [Docs] testing and run-splotch skills still document `flows.spec.ts` / `engine.spec.ts`, deleted in the spec split
-
-**File(s):** `.ruler/skills/testing/SKILL.md` (lines 107, 134–135, 145, 152, 168, 189) and
-`.ruler/skills/run-splotch/SKILL.md` (lines 137, 211) @ 9ae62ff1
-
-**Priority:** P1
-
-#### Problem
-
-`web/tests/` no longer contains `flows.spec.ts` or `engine.spec.ts` — they were split into
-`flows-ai.spec.ts`, `flows-coloring-book.spec.ts`, `flows-icons.spec.ts`,
-`flows-magic-brush.spec.ts`, `flows-palette-brush.spec.ts`, `flows-settings.spec.ts`,
-`flows-undo-persistence.spec.ts` and the `engine-*.spec.ts` family, with shared helpers extracted to
-`helpers.ts`, `flows-harness.ts`, `engine-harness.ts`, and `cdp.ts`. The skills still cite the dead
-files in eight places:
-
-* `testing/SKILL.md:107` — the canonical "run one spec" example:
-  `npm run test:e2e -- flows.spec.ts -g "the undo button enables on a stroke and reverts it"`.
-  Playwright treats the CLI arg as a pattern; `flows.spec.ts` matches none of the `flows-*.spec.ts`
-  files, so the doc-prescribed command runs **zero tests**. (That test title now lives in
-  `web/tests/flows-undo-persistence.spec.ts`.)
-* `testing/SKILL.md:134–135` — "`flows.spec.ts` has a shared `retryOpen(ready, open, opts?)`
-  primitive". `retryOpen` is exported from `web/tests/helpers.ts:78`; the one-liner wrappers are in
-  `flows-harness.ts`.
-* `testing/SKILL.md:145` — "the stroke-resume gap in `engine.spec.ts`" → now
-  `web/tests/engine-pointer-recovery.spec.ts` (line 25).
-* `testing/SKILL.md:152` — "`MAGIC_REVEAL_TIMEOUT` in `flows.spec.ts`" →
-  `web/tests/flows-magic-brush.spec.ts:21`.
-* `testing/SKILL.md:168` — "`drawMagicReveal` in `flows.spec.ts`" → `flows-magic-brush.spec.ts:41`.
-* `testing/SKILL.md:189` — "the viewport-rotation and touch-synthesis helpers in `flows.spec.ts` are
-  Chromium-only" → `web/tests/cdp.ts` (`rotateViewportViaCdp`).
-* `run-splotch/SKILL.md:137` — "A full worked example … lives in the magic-brush E2E test,
-  `web/tests/flows.spec.ts`."
-* `run-splotch/SKILL.md:211` — troubleshooting row repeats the dead
-  `npm run test:e2e -- flows.spec.ts -g "<title>"` example.
-
-The testing skill is the designated reference for "writing/running tests" — an agent following it
-verbatim runs an empty suite and then greps for helpers in a file that doesn't exist.
-
-#### Proposed solution
-
-Update all eight citations to the current file names (`flows-undo-persistence.spec.ts` for the
-example command, `helpers.ts`/`flows-harness.ts` for `retryOpen`, `flows-magic-brush.spec.ts` for
-`MAGIC_REVEAL_TIMEOUT`/`drawMagicReveal`, `engine-pointer-recovery.spec.ts`, `cdp.ts`), then
-`npm run ruler:apply`. Consider phrasing that survives future splits ("the flows specs' shared
-harness, `web/tests/flows-harness.ts`") per the repo's own no-mutable-facts convention.
 
 ### [Correctness] create-adr's "count the files" numbering rule produces wrong, colliding ADR numbers — and already has
 
