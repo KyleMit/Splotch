@@ -41,14 +41,32 @@
     SectionMeta
   >;
 
+  // Seeds from the live viewport at construction time (before first paint) so
+  // a flag that's already true on open renders its shell on the first frame —
+  // no narrow-then-wide flash — then keeps itself live via a `change` listener
+  // until the component is destroyed.
+  function mediaQueryFlag(query: string): { readonly current: boolean } {
+    let current = $state(browser ? matchMedia(query).matches : false);
+    $effect(() => {
+      if (typeof matchMedia === 'undefined') return;
+      const mql = matchMedia(query);
+      const apply = () => (current = mql.matches);
+      apply();
+      mql.addEventListener('change', apply);
+      return () => mql.removeEventListener('change', apply);
+    });
+    return {
+      get current() {
+        return current;
+      },
+    };
+  }
+
   // Two shells, one section list (ADR-0061). Below the breakpoint it's a hub
   // that drills into a full-page section; at or above it's a persistent sidebar
   // + content pane. The choice is viewport width, so a rotate re-picks it live.
-  // SettingsModal first mounts on the opening tap (bootHiddenOverlays), so seed
-  // `wide` from the live viewport to render the right shell on the first frame —
-  // no narrow-then-wide flash — then keep it fresh with the listener below.
   const WIDE_QUERY = '(min-width: 700px)';
-  let wide = $state(browser ? matchMedia(WIDE_QUERY).matches : false);
+  const wide = mediaQueryFlag(WIDE_QUERY);
 
   // A landscape *phone* has plenty of width (so it would match WIDE_QUERY) but
   // almost no height — the full section list is unusably cramped there. Detect
@@ -57,7 +75,7 @@
   // quick toggles. A landscape tablet keeps its height ≥ 600px, so it stays on
   // the sidebar shell untouched.
   const COMPACT_QUERY = '(orientation: landscape) and (max-height: 599px)';
-  let compact = $state(browser ? matchMedia(COMPACT_QUERY).matches : false);
+  const compact = mediaQueryFlag(COMPACT_QUERY);
 
   // 'hub' = the phone top-level list; a section id = that section is open.
   let view = $state<'hub' | SectionId>('hub');
@@ -66,28 +84,6 @@
   // (the hub itself never renders there), defaulting to the first section.
   let activeSection = $derived<SectionId>(view === 'hub' ? SECTIONS[0].id : view);
   let activeMeta = $derived(SECTION_BY_ID[activeSection]);
-
-  function watchMedia(mql: MediaQueryList, apply: () => void): () => void {
-    mql.addEventListener('change', apply);
-    return () => mql.removeEventListener('change', apply);
-  }
-
-  $effect(() => {
-    if (typeof matchMedia === 'undefined') return;
-    const wideMql = matchMedia(WIDE_QUERY);
-    const compactMql = matchMedia(COMPACT_QUERY);
-    const sync = () => {
-      wide = wideMql.matches;
-      compact = compactMql.matches;
-    };
-    sync();
-    const unwatchWide = watchMedia(wideMql, sync);
-    const unwatchCompact = watchMedia(compactMql, sync);
-    return () => {
-      unwatchWide();
-      unwatchCompact();
-    };
-  });
 
   // Each reopen lands on the hub (phone) / first section (tablet).
   $effect(() => {
@@ -122,8 +118,8 @@
 <dialog
   class="settings-modal modal-dialog modal-fly-in modal-shell"
   class:resizing={ui.resizingActionButtons}
-  class:wide
-  class:compact
+  class:wide={wide.current}
+  class:compact={compact.current}
   id="settingsModal"
   use:modalDialog={() => ({
     open: settingsModal.open,
@@ -136,9 +132,9 @@
       <Icon name="close" class="modal-close-icon" />
     </button>
 
-    {#if compact}
+    {#if compact.current}
       <CompactShell />
-    {:else if wide}
+    {:else if wide.current}
       <!-- Tablet / desktop: persistent sidebar + scrolling content pane. -->
       <header class="settings-header">
         <h2>Settings</h2>

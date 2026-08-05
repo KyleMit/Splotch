@@ -25,55 +25,6 @@ cited code: 23 confirmed, 2 partial, 1 refuted and removed. Findings carrying a
 
 ## Source: Code audit — Settings / settings UI
 
-### [Readability] SettingsModal's two media-query flags are four pieces of duplicated wiring — extract a `mediaQueryFlag` helper
-
-**File(s):** `web/src/lib/components/SettingsModal.svelte` (lines 26–61) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Each of `wide` and `compact` needs: a query constant, a seeded `$state`
-(`browser ? matchMedia(Q).matches : false`), a `MediaQueryList` re-created inside the `$effect`, and
-paired add/remove listener calls — eight lines of ceremony per flag, interleaved so the effect body
-syncs both at once:
-
-```ts
-let wide = $state(browser ? matchMedia(WIDE_QUERY).matches : false);
-…
-let compact = $state(browser ? matchMedia(COMPACT_QUERY).matches : false);
-$effect(() => {
-  if (typeof matchMedia === 'undefined') return;
-  const wideMql = matchMedia(WIDE_QUERY);
-  const compactMql = matchMedia(COMPACT_QUERY);
-  const sync = () => { wide = wideMql.matches; compact = compactMql.matches; };
-  sync();
-  wideMql.addEventListener('change', sync);
-  compactMql.addEventListener('change', sync);
-  return () => { … };
-});
-```
-
-The excellent WHY comments (seed-before-first-frame, landscape-phone detection) are the valuable
-part; the plumbing around them is boilerplate that a third breakpoint would copy again. The
-immediate `sync()` inside the effect also re-does the seeding the `$state` initializers already did
-— harmless, but a reader must convince themselves of that.
-
-#### Proposed solution
-
-A small rune factory in `$lib` (or file-local, if no second consumer exists yet — check
-`bootHiddenOverlays`/layout code before promoting):
-
-```ts
-function mediaQueryFlag(query: string): { readonly matches: boolean }; // seeds from matchMedia, subscribes in $effect.root or via action
-```
-
-used as `const wide = mediaQueryFlag(WIDE_QUERY);` … `wide.matches` in the template. Gotcha: the
-current design deliberately seeds *before* mount to avoid the narrow-then-wide flash — the helper
-must keep constructor-time seeding, not effect-time. If a shared helper feels heavy, even a local
-`function watchMedia(mql: MediaQueryList, apply: () => void)` collapsing the listener pairs would
-halve the block.
-
 ### [Readability] ControlsSection's `.slider-setting` class duplicates `.button-size-setting` on the same lone element
 
 **File(s):** `web/src/lib/components/settings/ControlsSection.svelte` (line 112; styles, lines
