@@ -885,31 +885,6 @@ hazard this one call site knows about (none).
 `const adminHref = __IS_CAPACITOR__ ? '/admin/native' : '/admin';` — and run `npm run check` + unit
 tests to confirm no config actually relies on the guard.
 
-### [Readability] AboutSection's `showAdminLink` is a pass-through `$derived` alias
-
-**File(s):** `web/src/lib/components/settings/AboutSection.svelte` (line 21, template line 54) @
-9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-let showAdminLink = $derived(settings.adminLinkVisible);
-```
-
-A `$derived` that wraps a single reactive property read adds no computation, no memoization value,
-and one extra name to track; the template's `{#if showAdminLink}` could read
-`{#if settings.adminLinkVisible}` directly, as this section's sibling components do throughout
-(`settings.aiImageEnabled`, `settings.applePencilSeen`, etc.). The alias mildly obscures that the
-flag is shared persisted state (reset by the admin console) rather than local component state.
-
-#### Proposed solution
-
-Inline it: `{#if settings.adminLinkVisible}`. The valuable context (who sets/resets the flag)
-already lives in the comment block at lines 7–11 and on the setting's declaration in
-`settings.svelte.ts:52–56`.
-
 ### [Docs] SettingsModal's pinch-zoom comment says "whichever scroll shell is mounted binds it," but the compact shell never does
 
 **File(s):** `web/src/lib/components/SettingsModal.svelte` (comment, lines 76–79; compact branch,
