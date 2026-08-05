@@ -12,7 +12,8 @@
     setAdvancedControls,
     setTheme,
   } from '$lib/state/settings.svelte';
-  import { resolvedTheme } from '$lib/state/appearance.svelte';
+  import { resolvedTheme, systemPrefersDark } from '$lib/state/appearance.svelte';
+  import { resolveTheme, type ResolvedTheme } from '$lib/theme';
   import { supportsOrientationLock } from '$lib/platform';
 
   const showOrientationControls = supportsOrientationLock();
@@ -71,7 +72,10 @@
       label="Night Mode"
       id="quickNightToggle"
       checked={resolvedTheme() === 'dark'}
-      onToggle={(next) => setTheme(next ? 'dark' : 'light')}
+      onToggle={(next) => {
+        const wanted: ResolvedTheme = next ? 'dark' : 'light';
+        setTheme(resolveTheme('system', systemPrefersDark()) === wanted ? 'system' : wanted);
+      }}
     />
   </div>
   <div class="setting">

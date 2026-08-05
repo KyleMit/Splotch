@@ -27,6 +27,10 @@ export function resolvedTheme(): ResolvedTheme {
   return resolveTheme(settings.theme, appearance.systemDark);
 }
 
+export function systemPrefersDark(): boolean {
+  return appearance.systemDark;
+}
+
 // Keep <meta name="theme-color"> on the resolved theme. A detached effect root
 // (no component host) runs this at module load and re-runs it whenever the
 // setting or the OS preference changes — replacing the old per-module watcher +
