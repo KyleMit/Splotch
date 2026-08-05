@@ -499,6 +499,12 @@
   /* Shared setting-card tokens for the section bodies. The sections only ever
      render inside this modal, so scoping the :global reach here keeps these
      rules in one place instead of copied into each section component. */
+  .settings-content {
+    --setting-icon-size: 20px;
+    --setting-icon-gap: 10px;
+    --setting-indent: calc(var(--setting-icon-size) + var(--setting-icon-gap));
+  }
+
   .settings-content :global(.setting-group) {
     margin-bottom: 24px;
   }
