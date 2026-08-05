@@ -10152,29 +10152,6 @@ Name them once at module scope — `const CORRUPT_BYTES = 'corrupt';` /
 `const DRIFT_FILL_BYTES = 'drift fill';` — and reference the constants from all three sites. Small,
 but it turns a stringly-typed protocol into a greppable one.
 
-### [Readability] Bare positional `1` for dilateMask's out-of-bounds flag
-
-**File(s):** `tools/asset-gen/tests/morphology.test.mjs` (line 50) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```js
-const expandedBorder = dilateMask(empty, w, h, 1, 1);
-```
-
-The fifth argument is `outOfBounds` (lib/morphology.mjs:44, default 0) — here set to 1 meaning
-"treat off-image pixels as set". Two adjacent `1`s with different meanings (radius, then a
-boolean-ish flag) force a trip to the lib signature; the test title explains it but the call site
-doesn't.
-
-#### Proposed solution
-
-A local named value: `const OUT_OF_BOUNDS_SET = 1;` then
-`dilateMask(empty, w, h, 1, OUT_OF_BOUNDS_SET)`. (Changing the lib to an options bag is out of this
-section's scope; the local name is enough.)
-
 ### [Maintainability] eye-rings' exact-object pins hard-code fixture geometry defined in synthetic.mjs
 
 **File(s):** `tools/asset-gen/tests/eye-rings.test.mjs` (lines 43–61) @ 9ae62ff1
