@@ -28,6 +28,35 @@ bulk path for a backlog where filing one GitHub issue per finding is impractical
 findings, e.g. a whole-codebase `/code-audit` pass). It replaces both vet and fix: its verifier
 subprocess *is* the adversarial vet, applied per finding at HEAD.
 
+### The hand-driven cherry-pick — when the ask is "the easy ones"
+
+A third mode, and the one the driver is *wrong* for: "cherry-pick the findings you could do in a
+couple of minutes and leave the rest." That is a selection problem, and the driver has no selector —
+it pops findings in file order and spends a full verify/impl/review cycle on whatever it gets.
+Answer it by hand: index the backlog once (`findingPriority` plus body length over each entry — the
+shortest P4/P5 bodies really are the mechanical ones), then work them inline, one commit per
+finding, using `pop.mjs` and `deleteEntryByTitle` for the excision so the file surgery stays
+identical to a driver run.
+
+Three of the driver's economics invert here, and each one cost a real mistake on 2026-08-05:
+
+* **`npm run format:check` belongs in the gate.** It stays out of `CHECK_CMD` because ~23s × 450
+  findings is three hours, and because the `format-edited-file.sh` `PostToolUse` hook covers every
+  `Edit`/`Write` a role makes. Neither holds by hand: batches are few, so the cost is seconds, and a
+  supervising agent reaches for `sed`/`python`/heredocs constantly — which is exactly the "editing
+  through `Bash`" residual risk the hook cannot see. That is what reddened CI on that run.
+* **The per-commit comments have no `comment.mjs` behind them.** The driver's whole
+  render→`next`→post→`done` loop exists so the SHA reaches GitHub from a tool rather than from the
+  agent's memory. Writing comments by hand removes that, and 32 of 62 went out with a 7-char prefix
+  padded to 12 — plausible, unlinkable, and uneditable through the MCP tools. Either drive
+  `comment.mjs` for the rendering, or verify every SHA before posting (see the repo's "Writing on
+  GitHub" rule).
+* **Nothing forces the adversarial second pair of eyes.** There is no blind reviewer, so a fix is as
+  good as the one context that wrote it. The cheap substitute is a *negative check* on anything that
+  claims to be a guard: break the source the new assertion covers and confirm the assertion goes
+  red. Revert only the source file for that — `git stash` takes the fix **and** the new test with it
+  and reports a cheerful pass that proves nothing.
+
 ## Architecture — why subprocesses, not subagents
 
 The orchestrator is a Node script, so the "main context" is process state, not a conversation. Three
