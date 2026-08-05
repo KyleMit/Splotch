@@ -84,6 +84,8 @@ Deliberately **excluded**, each for a reason:
 ## State
 
 * Base: f775675a996a751dde0cee270219ae3439ef4135 (`origin/main` at launch).
+* Progress: **27 fixed · 0 dropped · 4 deferred · 442 remaining** as of 2026-08-05 09:09 (canary 5 +
+  overnight run 22). Plus two supervisor commits repairing the startup-bundle regression.
 * Backlog at launch: **473** findings (`node scripts/audit-burndown/pop.mjs --count`).
 * Priority mix: P1 8 · P2 52 · P3 136 · P4 194 · P5 83 → **277 route to `MODEL_IMPL_MINOR`**.
 * Priority parse verified before launch: 473 findings, **0 unparsable** — impl tiering will fire.
@@ -96,6 +98,30 @@ Deliberately **excluded**, each for a reason:
 * **Impl tiering verified before launch**, not assumed — its failure mode is silent (every
   mechanical finding quietly billing Opus at `EFFORT_IMPL=high`).
 * **Fresh branch from `main` rather than stacking**, since the previous campaign's PR had merged.
+
+## What this run established (so the next one need not re-derive it)
+
+* **`BUDGET_IMPL=4.00` was too tight for multi-file extraction fix rounds** — one canary finding hit
+  exactly `$4.0036` and deferred. Raised to `7.00`; no budget deferral since.
+* **A finding can be right about the duplication and wrong about the fix.** `docs/AUDIT.md` contains
+  findings that name a *deliberate* boundary as accidental duplication. The folder-save support
+  predicate is the worked example: sharing it broke `startup-bundle.spec.ts` (see below). When a
+  finding proposes to hoist something that a comment says is inlined on purpose, the comment is the
+  evidence, not the defect.
+* **Bundle composition is invisible to every per-finding gate.** Only the draft PR's CI sees it, and
+  the failing marker can name a module the offending commit never touched — `git bisect` with a
+  build-and-grep script is the fast path to attribution.
+* **Deferral causes were all distinct** (budget cap, review rejection, verifier turn cap, verifier
+  wrote no brief). No mechanism recurred, so none met the bar for a mid-run intervention.
+
+### Known driver rough edge — `verifier gave no usable brief`
+
+One finding deferred after the verifier returned a perfectly good `verdict: VALID` with
+`reason: completed` and no error, but never wrote the brief file it named in `brief_path`. The
+driver correctly refused to proceed on the *previous* finding's stale brief. This looks **retryable
+rather than deferrable** — the verifier call succeeded and simply skipped a side effect, which is
+the "check the observable side effect, not just the envelope" pattern the runbook already applies to
+`resolveImplSha`. Worth a driver fix if it recurs.
 
 ## Unverified assumptions
 
