@@ -84,29 +84,6 @@ encode off the layout-coupled canvas path, and the whole helper could later move
 profiling (`npm run perf:*`) shows the hitch is real — measure first; if the profile shows nothing
 on floor devices, downgrade this to a comment.
 
-### [Readability] Dead `typeof window` guard inside a `$effect`
-
-**File(s):** `web/src/lib/components/AiImageResult.svelte` (lines 26–32, guard at line 28) @
-9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-$effect(() => {
-  if (ui.aiResultOpen && ui.aiGenerating) {
-    if (typeof window !== 'undefined' && window.innerHeight > 0) {
-```
-
-`$effect` bodies never run during SSR (the repo's own svelte rules lean on exactly this for
-teardown), so `typeof window !== 'undefined'` is unreachable-false — dead defensive code that
-implies an SSR hazard that doesn't exist and invites cargo-culting into other effects.
-
-#### Proposed solution
-
-Reduce the guard to `if (window.innerHeight > 0)`.
-
 ### [Testing] `deferred<T>()` helper is re-declared per test file
 
 **File(s):** `web/src/lib/drawing/aiImage.test.ts` (lines 22–36),
