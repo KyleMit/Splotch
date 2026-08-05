@@ -70,6 +70,84 @@ async function gestureOnPane(
     }, opts);
 }
 
+interface TouchPoint {
+  x: number;
+  y: number;
+  id: number;
+}
+
+// Real compositor touch, which synthetic PointerEvents cannot stand in for here:
+// `setPointerCapture` silently no-ops on a pointer id the browser doesn't know
+// about (verified in Chromium — it neither throws nor captures), so only genuine
+// touch exercises the action's capture path.
+//
+// `touchEnd` names the points being *released*; every other type names the full
+// set of active points.
+async function touchDriver(page: Page) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+  return (type: 'touchStart' | 'touchMove' | 'touchEnd', touchPoints: TouchPoint[]) =>
+    cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
+}
+
+type TouchSend = Awaited<ReturnType<typeof touchDriver>>;
+
+async function paneBox(page: Page) {
+  const pane = page.locator('.settings-pane, .settings-scroll').first();
+  const box = await pane.boundingBox();
+  if (!box) throw new Error('pane not visible');
+  return { pane, box };
+}
+
+// Drag one finger up the pane — a plain scroll, and also a *fresh* gesture, which
+// is what clears the pinch's ghost-click latch (`pointerCount === 0` on
+// pointerdown). Both misbehave if the tracker is still holding a finger that the
+// pane never saw lift.
+async function scrollOneFinger(
+  send: TouchSend,
+  box: { x: number; y: number; width: number; height: number }
+) {
+  const x = box.x + box.width / 2;
+  const yBottom = box.y + box.height * 0.8;
+  const yTop = box.y + box.height * 0.2;
+  await send('touchStart', [{ x, y: yBottom, id: 0 }]);
+  await send('touchMove', [{ x, y: (yBottom + yTop) / 2, id: 0 }]);
+  await send('touchMove', [{ x, y: yTop, id: 0 }]);
+  await send('touchEnd', [{ x, y: yTop, id: 0 }]);
+}
+
+// Two real fingers pinch, then the resting finger drifts above the pane's top
+// edge and lifts *outside* it — the pane is not where that finger comes up.
+//
+// A touch pointer's events keep going to the element it went down on for the
+// pointer's whole life (implicit pointer capture, Pointer Events §"Implicit
+// Pointer Capture"), so the pane does still receive that lift and the tracker
+// stays balanced. That is the property these tests hold in place: it is the
+// browser's to provide, and the action leans on it — a change that forfeited it
+// (releasing capture mid-gesture, `touch-action: none` turning the drift into a
+// `pointercancel` that arrives elsewhere) would strand a finger in the tracker,
+// and from then on one-finger scrolling would drive the zoom from a stale spread
+// and the ghost-click guard would eat every tap.
+//
+// Setup only; the callers assert.
+async function pinchLiftingAFingerOutsideThePane(page: Page) {
+  const { pane, box } = await paneBox(page);
+  const send = await touchDriver(page);
+
+  const resting = { x: box.x + box.width * 0.3, y: box.y + box.height * 0.5, id: 0 };
+  const spreading = { x: box.x + box.width * 0.7, y: box.y + box.height * 0.5, id: 1 };
+  const spread = { ...spreading, x: box.x + box.width * 0.95 };
+  const drifted = { ...resting, y: box.y - 40 };
+
+  await send('touchStart', [resting]);
+  await send('touchStart', [resting, spreading]);
+  await send('touchMove', [drifted, spread]);
+  await send('touchEnd', [drifted]);
+  await send('touchEnd', [spread]);
+
+  return { pane, box, send };
+}
+
 async function pinchUntilZoomed(page: Page, factor = 2): Promise<boolean> {
   let movePrevented = false;
   await expect(async () => {
@@ -134,28 +212,56 @@ test('a one-finger drag actually scrolls the pane (native scrolling survives)', 
   await page.locator('.settings-nav').getByRole('button', { name: 'Setup Guide' }).click();
   await pinchUntilZoomed(page, 3);
 
-  const pane = page.locator('.settings-pane, .settings-scroll').first();
-  const box = await pane.boundingBox();
-  if (!box) throw new Error('pane not visible');
-  const cx = box.x + box.width / 2;
-  const yBottom = box.y + box.height * 0.8;
-  const yTop = box.y + box.height * 0.2;
-
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
-  const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', y: number) =>
-    cdp.send('Input.dispatchTouchEvent', {
-      type,
-      touchPoints: type === 'touchEnd' ? [] : [{ x: cx, y }],
-    });
-  await touch('touchStart', yBottom);
-  await touch('touchMove', (yBottom + yTop) / 2);
-  await touch('touchMove', yTop);
-  await touch('touchEnd', yTop);
+  const { pane, box } = await paneBox(page);
+  await scrollOneFinger(await touchDriver(page), box);
 
   await expect
     .poll(() => pane.evaluate((el) => el.scrollTop), { timeout: 2000 })
     .toBeGreaterThan(0);
+});
+
+// These two run the whole gesture through real compositor touch, so they cover
+// what no synthetic-pointer test can: whether the pane is left usable after a
+// finger comes up somewhere else. They assert the outcome a parent would notice,
+// not the mechanism — the pinch's own pointer bookkeeping is unit-tested.
+test('a scroll after a pinch finger lifted outside the pane scrolls instead of zooming', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openSettingsModal(page);
+  await page.locator('.settings-nav').getByRole('button', { name: 'Setup Guide' }).click();
+
+  const { pane, box, send } = await pinchLiftingAFingerOutsideThePane(page);
+  await expect.poll(() => paneZoom(page)).toBeGreaterThan(1);
+  const zoomed = await paneZoom(page);
+
+  await scrollOneFinger(send, box);
+
+  // Were the lifted finger still tracked, the count would read two, so this lone
+  // finger would drive the zoom and `preventDefault` would block the scroll.
+  await expect
+    .poll(() => pane.evaluate((el) => el.scrollTop), { timeout: 2000 })
+    .toBeGreaterThan(0);
+  expect(await paneZoom(page)).toBe(zoomed);
+});
+
+test('a tap after a pinch finger lifted outside the pane is not swallowed', async ({ page }) => {
+  await gotoApp(page);
+  await openSettingsModal(page);
+  await page.locator('.settings-nav').getByRole('button', { name: 'Setup Guide' }).click();
+
+  const { pane, box, send } = await pinchLiftingAFingerOutsideThePane(page);
+  await scrollOneFinger(send, box);
+
+  // That fresh one-finger gesture disarms the pinch's ghost-click latch — unless a
+  // still-tracked finger holds the count at two, which re-arms it on every
+  // pointerdown and kills every later tap.
+  const swallowed = await pane.evaluate((node) => {
+    const ev = new MouseEvent('click', { bubbles: true, cancelable: true });
+    node.dispatchEvent(ev);
+    return ev.defaultPrevented;
+  });
+  expect(swallowed).toBe(false);
 });
 
 test('a non-touch (mouse) pinch is ignored', async ({ page }) => {
