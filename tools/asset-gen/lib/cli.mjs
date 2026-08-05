@@ -30,7 +30,10 @@ export const MAX_ATTEMPTS = 5;
 // (`QUALITY= npm run …`, or a wrapper script exporting an unset var) arrives as
 // '' rather than undefined, and Number('') is 0 — which passes the >= 0 checks
 // below and silently ships quality: 0 instead of the intended default.
-const isBlank = (raw) => raw === undefined || raw === '';
+// Number() treats any all-whitespace string the same way, so templating or shell
+// interpolation that leaves a stray space is the same failure with no visible
+// cause. notes.json supplies real JSON numbers, so only strings are trimmed.
+const isBlank = (raw) => raw === undefined || (typeof raw === 'string' && raw.trim() === '');
 
 export function parsePositiveInt(raw, name, fallback, source) {
   if (isBlank(raw)) return fallback;

@@ -34,6 +34,7 @@ describe('parsePositiveInt', () => {
   it('returns the fallback for an omitted value and parses positive integer strings', () => {
     expect(parsePositiveInt(undefined, '--samples', 3)).toBe(3);
     expect(parsePositiveInt('', '--samples', 3)).toBe(3);
+    expect(parsePositiveInt('   ', '--samples', 3)).toBe(3);
     expect(parsePositiveInt('1', '--samples', 3)).toBe(1);
     expect(parsePositiveInt('12', '--samples', 3)).toBe(12);
   });
@@ -54,6 +55,7 @@ describe('parseTemperature', () => {
   it('returns the fallback and accepts numeric strings at both bounds', () => {
     expect(parseTemperature(undefined, '--temperature', 0.5)).toBe(0.5);
     expect(parseTemperature('', '--temperature', 0.5)).toBe(0.5);
+    expect(parseTemperature('  \t ', '--temperature', 0.5)).toBe(0.5);
     expect(parseTemperature(undefined, '--temperature', undefined)).toBeUndefined();
     expect(parseTemperature('0', '--temperature', 0.5)).toBe(0);
     expect(parseTemperature('1.25', '--temperature', 0.5)).toBe(1.25);
@@ -76,6 +78,7 @@ describe('parseNonNegative', () => {
   it('returns the fallback and accepts non-negative numeric strings', () => {
     expect(parseNonNegative(undefined, '--threshold', 2)).toBe(2);
     expect(parseNonNegative('', '--threshold', 2)).toBe(2);
+    expect(parseNonNegative('   ', '--threshold', 2)).toBe(2);
     expect(parseNonNegative('0', '--threshold', 2)).toBe(0);
     expect(parseNonNegative('1.5', '--threshold', 2)).toBe(1.5);
   });
@@ -103,8 +106,21 @@ describe('parsePngToWebpOptions', () => {
 
   // An exported-but-empty env var arrives as '' rather than undefined, and
   // Number('') is 0 — which would silently ship maximally-destroyed webp output.
-  it('treats a blank environment quality as unset', () => {
-    expect(parsePngToWebpOptions([], { QUALITY: '' })).toEqual({ quality: 80, lossless: false });
+  // Number() reads an all-whitespace string the same way, so templating or shell
+  // interpolation leaving a stray space is the same failure with no visible cause.
+  it.each(['', '   ', '\t\n'])('treats a blank environment quality (%j) as unset', (quality) => {
+    expect(parsePngToWebpOptions([], { QUALITY: quality })).toEqual({
+      quality: 80,
+      lossless: false,
+    });
+  });
+
+  // notes.json carries real JSON numbers, so the blank check must not assume a
+  // string — trimming one would throw rather than parse.
+  it('parses a non-string numeric value from the notes registry', () => {
+    expect(parseTemperature(0.45, '--temperature', 0.5)).toBe(0.45);
+    expect(parsePositiveInt(4, '--max-attempts', 3)).toBe(4);
+    expect(parseNonNegative(0, '--threshold', 2)).toBe(0);
   });
 
   it('parses flags with precedence over environment fallbacks', () => {
