@@ -17,6 +17,7 @@ import { adminClient } from './lib/adminClient.mjs';
 // security header is covered here the moment it's added to that module.
 import { SECURITY_HEADERS } from '../web/src/lib/server/securityHeaders.ts';
 import { tinyPngBuffer } from '../web/tests/fixtures.ts';
+import { REPORT_HONEYPOT_FIELD } from '../web/src/lib/report.ts';
 
 const PORT = Number(process.env.SMOKE_PORT ?? 5199);
 const BASE = `http://localhost:${PORT}`;
@@ -158,8 +159,8 @@ async function checkVerifyAccessCode(base) {
 // --- report: validation + honeypot + graceful-unconfigured. GITHUB_ISSUE_TOKEN is
 // force-cleared in the server env (see spawnViteServer below), so reporting is always
 // unconfigured here and a valid submission gets a 503 — never a real issue. Without
-// that clear, a developer's local web/.env token would make the valid case (and the
-// burst loop below) open real issues on every run. ---
+// that clear, a developer's local web/.env token would make the valid case open real
+// issues on every run. The burst loop below carries its own payload-level guard. ---
 async function checkReport(base) {
   const report = (payload) => postJson(base, '/api/report', payload);
 
@@ -176,7 +177,11 @@ async function checkReport(base) {
   const badKind = await report({ kind: 'nope', message: 'hi' });
   check('report invalid kind → 400', badKind.status === 400, `got ${badKind.status}`);
 
-  const honeypot = await report({ kind: 'bug', message: 'spam', hp: 'iam-a-bot' });
+  const honeypot = await report({
+    kind: 'bug',
+    message: 'spam',
+    [REPORT_HONEYPOT_FIELD]: 'iam-a-bot',
+  });
   const honeypotBody = await json(honeypot);
   check(
     'report with filled honeypot → 200 {ok:true} and no issue',
@@ -194,10 +199,18 @@ async function checkReport(base) {
     `got ${unconfigured.status} ${JSON.stringify(unconfiguredBody)}`
   );
 
-  // report has its own tighter per-IP bucket (5/min); burst past it.
+  // report has its own tighter per-IP bucket (5/min); burst past it. Every burst
+  // payload fills the honeypot, so it cannot open an issue on any server under any
+  // env — the endpoint charges the bucket before the honeypot short-circuit
+  // (pinned by web/src/routes/api/report/server.test.ts), so the 429 still trips.
+  // A value distinct from the contract case above keeps the two apart in a log.
   let reportLimited = null;
   for (let i = 0; i < 8 && !reportLimited; i++) {
-    const res = await report({ kind: 'bug', message: `burst ${i}` });
+    const res = await report({
+      kind: 'bug',
+      message: `burst ${i}`,
+      [REPORT_HONEYPOT_FIELD]: 'smoke-burst',
+    });
     if (res.status === 429) reportLimited = res;
   }
   check(
