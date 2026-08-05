@@ -16,7 +16,11 @@ import type { RequestHandler } from './$types';
  * page's form action shares them; this route only adds the wire shape.
  *
  * Unauthenticated, so it is rate-limited per IP and each issue creation is a
- * write; the limit is deliberately tighter than the read-only oracles.
+ * write; the limit is deliberately tighter than the read-only oracles. The
+ * bucket is charged before submitReport sees the body, so a honeypot submission
+ * still costs budget — scripts/api-smoke.mjs bursts past the limit with
+ * honeypotted payloads that cannot open an issue on any server, and
+ * server.test.ts pins that order.
  */
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   const { limited, retryAfter } = rateLimit(
