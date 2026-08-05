@@ -67,6 +67,11 @@
   let activeSection = $derived<SectionId>(view === 'hub' ? SECTIONS[0].id : view);
   let activeMeta = $derived(SECTION_BY_ID[activeSection]);
 
+  function watchMedia(mql: MediaQueryList, apply: () => void): () => void {
+    mql.addEventListener('change', apply);
+    return () => mql.removeEventListener('change', apply);
+  }
+
   $effect(() => {
     if (typeof matchMedia === 'undefined') return;
     const wideMql = matchMedia(WIDE_QUERY);
@@ -76,11 +81,11 @@
       compact = compactMql.matches;
     };
     sync();
-    wideMql.addEventListener('change', sync);
-    compactMql.addEventListener('change', sync);
+    const unwatchWide = watchMedia(wideMql, sync);
+    const unwatchCompact = watchMedia(compactMql, sync);
     return () => {
-      wideMql.removeEventListener('change', sync);
-      compactMql.removeEventListener('change', sync);
+      unwatchWide();
+      unwatchCompact();
     };
   });
 
