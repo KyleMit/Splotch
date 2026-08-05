@@ -201,9 +201,15 @@ git rev-parse --verify --quiet "$sha^{commit}" >/dev/null || echo "BAD $sha"
 
 Worth running over every SHA in a body you are about to post, and over the whole set after posting a
 batch — it is one command and it is the only thing that distinguishes a live link from a dead
-string. This bit a 2026-08-05 burndown: 32 of 62 per-commit comments carried a padded 7-char prefix,
-were individually plausible, and had to be corrected in a follow-up comment because issue comments
-cannot be edited through the GitHub MCP tools.
+string. This bit a 2026-08-05 burndown: 32 of 62 per-commit comments carried a padded 7-char prefix
+and were individually plausible.
+
+**Verify before posting, because repairing after depends on a capability you may not have.** Whether
+a posted comment can be edited varies by runner and by which GitHub toolset is connected — some
+expose an update-comment call, others only a create. So when you do find a bad SHA in something
+already posted, check your available tools for a comment-update capability first and edit the
+comment in place; fall back to a correction comment only when there is none, since that leaves the
+wrong SHA on the thread and costs every later reader a cross-reference.
 
 <!-- Source: .ruler/knowledge-map.md -->
 

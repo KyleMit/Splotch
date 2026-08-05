@@ -798,12 +798,13 @@ skill now carries them as a "hand-driven cherry-pick" subsection rather than as 
   went out as a correct 7-char `%h` prefix padded with 5 invented characters — right length, right
   leading characters, resolves to nothing. Nothing downstream validates a SHA and a bad one renders
   as ordinary text, so it is invisible until someone clicks. Worse, `add_issue_comment` has no
-  update counterpart in the GitHub MCP toolset, so the only remedy was a 32-row correction comment.
-  The general rule went into `.ruler/github.md` (so it reaches every session via
-  CLAUDE.md/AGENTS.md, not just this skill): take SHAs from `%H`, never retype, and batch-verify
-  with `git rev-parse --verify --quiet "$sha^{commit}"`. **The verification is the load-bearing
-  half** — "be careful" is not a control, and one command over the whole set caught all 32 in
-  seconds once it was finally run.
+  update counterpart in *this session's* GitHub toolset, so the only remedy left was a 32-row
+  correction comment — other runners' toolsets do expose a comment updater, so check before assuming
+  a correction comment is the only option. The general rule went into `.ruler/github.md` (so it
+  reaches every session via CLAUDE.md/AGENTS.md, not just this skill): take SHAs from `%H`, never
+  retype, and batch-verify with `git rev-parse --verify --quiet "$sha^{commit}"`. **The verification
+  is the load-bearing half** — "be careful" is not a control, and one command over the whole set
+  caught all 32 in seconds once it was finally run.
 * **`format:check`.** Deliberately out of `CHECK_CMD` on a cost argument (~23s × 450 findings ≈ 3
   hours) plus the `format-edited-file.sh` `PostToolUse` hook. Both premises are driver-specific: by
   hand there are a dozen batches, not 450 findings, and a supervising agent edits through

@@ -48,9 +48,9 @@ Three of the driver's economics invert here, and each one cost a real mistake on
 * **The per-commit comments have no `comment.mjs` behind them.** The driver's whole
   render→`next`→post→`done` loop exists so the SHA reaches GitHub from a tool rather than from the
   agent's memory. Writing comments by hand removes that, and 32 of 62 went out with a 7-char prefix
-  padded to 12 — plausible, unlinkable, and uneditable through the MCP tools. Either drive
-  `comment.mjs` for the rendering, or verify every SHA before posting (see the repo's "Writing on
-  GitHub" rule).
+  padded to 12 — plausible, unlinkable, and (with this session's toolset) unrepairable except by a
+  correction comment. Either drive `comment.mjs` for the rendering, or verify every SHA before
+  posting (see the repo's "Writing on GitHub" rule).
 * **Nothing forces the adversarial second pair of eyes.** There is no blind reviewer, so a fix is as
   good as the one context that wrote it. The cheap substitute is a *negative check* on anything that
   claims to be a guard: break the source the new assertion covers and confirm the assertion goes
