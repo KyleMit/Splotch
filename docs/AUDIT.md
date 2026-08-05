@@ -155,27 +155,6 @@ tuner "tightening the epsilon" would move the number the wrong way.
 Rename to `REVEAL_SNAP_THRESHOLD` (comment: "snap to 1 once progress crosses this"), or keep the
 epsilon framing with `const REVEAL_EPSILON = 0.001;` and `progress >= 1 - REVEAL_EPSILON`.
 
-### [Maintainability] Deliberately untracked component `let`s lack the required one-line comment
-
-**File(s):** `web/src/lib/components/AiDial.svelte` (line 20),
-`web/src/routes/dev/ai-timer/+page.svelte` (line 27) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`.claude/rules/svelte.md`: "a deliberately non-reactive `let` (timer handles, transition-time
-latches) carries a one-line comment saying it's intentionally untracked." `AiDial.svelte` declares
-`let rafId = 0;` (line 20) with no comment; the ai-timer page declares `let runId = 0;` (line 27)
-likewise (its sibling `pending` on line 26 *does* carry the comment, highlighting the omission).
-Both are legitimate untracked handles — they just don't say so, leaving a reviewer to wonder whether
-`$state` was forgotten.
-
-#### Proposed solution
-
-Add the one-liners, e.g. `let rafId = 0; // rAF handle — intentionally untracked` and
-`let runId = 0; // aiGeneration run id — intentionally untracked`.
-
 ### [Testing] `deferred<T>()` helper is re-declared per test file
 
 **File(s):** `web/src/lib/drawing/aiImage.test.ts` (lines 22–36),
