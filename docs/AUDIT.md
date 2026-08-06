@@ -28,53 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Maintainability] The `[ai-usage]` log-line format is duplicated between the BYOK and managed-token writers
-
-**File(s):** `web/src/lib/server/usage.ts` (`recordByokUsage`, lines 27–31; `recordTokenUsage`,
-lines 51–53) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-`[ai-usage] token=byok style=${style || 'none'} prompt=${JSON.stringify(prompt)} at=${
-  new Date().toISOString()
-}`;
-```
-
-```ts
-`[ai-usage] token=${maskToken(token)} style=${style || 'none'} prompt=${
-  JSON.stringify(prompt)
-} at=${now}`;
-```
-
-The structured format (`[ai-usage] token=… style=… prompt=… at=…`) is the de-facto schema for anyone
-grepping the Netlify function log or wiring a log drain, and it exists twice with only the token
-label differing. `usage.test.ts` (line 37) pins the format with a regex — against only the BYOK
-variant, so the managed-token line can drift (field renamed, reordered) without any test failing,
-silently splitting the log schema in two.
-
-#### Proposed solution
-
-Extract one formatter:
-
-```ts
-function usageLogLine(
-  tokenLabel: string,
-  style: string | null,
-  prompt: string,
-  at: string,
-): string {
-  return `[ai-usage] token=${tokenLabel} style=${style || 'none'} prompt=${
-    JSON.stringify(prompt)
-  } at=${at}`;
-}
-```
-
-called with `'byok'` and `maskToken(token)` respectively. The existing regex test then covers both
-call sites by construction.
-
 ### [Types] Native console's `authedFetch` takes a bare `string` method
 
 **File(s):** `web/src/routes/admin/native/+page.svelte` (`authedFetch`, line 37) @ 9ae62ff1

@@ -31,10 +31,17 @@ const CAS_BACKOFF_MS = 50;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function usageLogLine(
+  tokenLabel: string,
+  style: string | null,
+  prompt: string,
+  at: string
+): string {
+  return `[ai-usage] token=${tokenLabel} style=${style || 'none'} prompt=${JSON.stringify(prompt)} at=${at}`;
+}
+
 export function recordByokUsage(style: string | null, prompt: string): void {
-  console.log(
-    `[ai-usage] token=byok style=${style || 'none'} prompt=${JSON.stringify(prompt)} at=${new Date().toISOString()}`
-  );
+  console.log(usageLogLine('byok', style, prompt, new Date().toISOString()));
 }
 
 /**
@@ -55,9 +62,7 @@ export async function recordTokenUsage(
   { style, prompt }: { style: string | null; prompt: string }
 ) {
   const now = new Date().toISOString();
-  console.log(
-    `[ai-usage] token=${maskToken(token)} style=${style || 'none'} prompt=${JSON.stringify(prompt)} at=${now}`
-  );
+  console.log(usageLogLine(maskToken(token), style, prompt, now));
 
   try {
     const store = getStore(STORE_NAME);

@@ -44,6 +44,22 @@ describe('recordByokUsage', () => {
 });
 
 describe('recordTokenUsage', () => {
+  it('logs the same structured usage fields as recordByokUsage, masking the token', async () => {
+    const store = makeStore();
+    store.getWithMetadata.mockResolvedValue(null);
+    getStoreMock.mockReturnValue(store);
+
+    await recordTokenUsage('supersecrettok', { style: 'crayon', prompt: 'make it "bright"' });
+
+    expect(console.log).toHaveBeenCalledTimes(1);
+    const message = vi.mocked(console.log).mock.calls[0][0];
+    expect(message).toMatch(
+      /^\[ai-usage\] token=…ttok style=crayon prompt="make it \\"bright\\"" at=/
+    );
+    const timestamp = message.slice(message.lastIndexOf(' at=') + 4);
+    expect(new Date(timestamp).toISOString()).toBe(timestamp);
+  });
+
   it('creates the first tally with onlyIfNew so a concurrent first write cannot be lost', async () => {
     const store = makeStore();
     store.getWithMetadata.mockResolvedValue(null);
