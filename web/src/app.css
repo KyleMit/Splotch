@@ -326,6 +326,8 @@ body {
 }
 
 .flyout-option {
+  /* Mirrors ACTION_BUTTON_BASE_LANDSCAPE, drift-guarded by
+     actionButtonLayout.fallback.test.ts. */
   width: calc(60px * var(--action-btn-scale, 1));
   height: calc(60px * var(--action-btn-scale, 1));
   background: var(--float-surface);

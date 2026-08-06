@@ -30,40 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Maintainability] `.flyout-option`'s `60px` silently mirrors `ACTION_BUTTON_BASE_LANDSCAPE`
-
-**File(s):** `web/src/app.css` (lines 289–311) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```css
-.flyout-option {
-  width: calc(60px * var(--action-btn-scale, 1));
-  height: calc(60px * var(--action-btn-scale, 1));
-```
-
-The `60` is the landscape action-button base size — `web/src/lib/actionButtonLayout.ts:19` exports
-`ACTION_BUTTON_BASE_LANDSCAPE = 60`, and `ActionsPanel.svelte:569` uses the same
-`calc(60px * var(--action-btn-scale, 1))` expression for the buttons the flyout options are designed
-to visually match. Three sites, one value, zero linkage: bump the base button size and the flyout
-options stay 60px, with nothing failing. This is the exact case CLAUDE.md's cross-file rule
-addresses — agreeing sites that can't share code (CSS can't import TS) get either a generated
-constant or a drift-guard test.
-
-#### Proposed solution
-
-Since `tokens.css` is already generated from TS (ADR-0071, `gen:tokens`), the cleanest fix is a
-generated custom property (e.g. `--action-btn-base-landscape: 60px;`) sourced from
-`ACTION_BUTTON_BASE_LANDSCAPE`, consumed by both `app.css` and `ActionsPanel.svelte`. Cheaper
-alternative: a drift-guard test in `actionButtonLayout.test.ts` that reads `app.css` (and the
-`ActionsPanel.svelte` style block) and asserts the `calc(<N>px * var(--action-btn-scale` literals
-equal the exported constant — the same pattern as `app.html.test.ts`. Gotcha: confirm the flyout's
-`60px` is genuinely intended to track the landscape base (the visual parity with action buttons
-strongly suggests it) rather than coincidentally equal; if it's a coincidence, the fix is instead a
-comment saying so.
-
 ### [Readability] The boot-script comment restates the clamp values and says "keep them in sync" instead of naming its drift guard
 
 **File(s):** `web/src/app.html` (lines 73–74) @ 9ae62ff1
