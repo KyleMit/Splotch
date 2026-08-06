@@ -1,6 +1,8 @@
 // @vitest-environment node
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, expectTypeOf, vi, afterEach } from 'vitest';
 import { timeAgo, usageDetail } from './adminFormat';
+import type { Usage } from './components/admin/AdminConsole.svelte';
+import type { TokenUsage } from './server/usage';
 
 const NOW = new Date('2026-03-15T12:00:00Z').getTime();
 const ago = (seconds: number) => new Date(NOW - seconds * 1000).toISOString();
@@ -32,6 +34,12 @@ describe('timeAgo', () => {
     expect(timeAgo(ago(2 * 604_800))).toBe('2 weeks ago');
     expect(timeAgo(ago(2 * 2_592_000))).toBe('2 months ago');
     expect(timeAgo(ago(3 * 31_536_000))).toBe('3 years ago');
+  });
+});
+
+describe('Usage / TokenUsage drift guard', () => {
+  it('keeps the client Usage mirror equal to the server TokenUsage shape', () => {
+    expectTypeOf<Usage>().toEqualTypeOf<TokenUsage>();
   });
 });
 
