@@ -145,6 +145,37 @@ test('returning to the paper angle preserves it across viewport drift', async ({
   expect(await page.evaluate(() => window.__engine.pixelAt(121, 60)[3])).toBeGreaterThan(0);
 });
 
+// The grow side of the drift tolerance (ADR-0099). A viewport a few pixels
+// LARGER than the paper still preserves it — re-adopting inset settle
+// invalidates every tile — but it must NOT take the identity `window` a shrink
+// gets: identity maps the paper one-to-one, so those extra pixels would have no
+// paper or tile behind them, unpresented yet still accepting gestures (the
+// engine's out-of-paper guard only arms on a non-identity view). It is fitted
+// instead, which scales the paper over the drift. The paper is deliberately
+// non-square here: a square one turns any single-axis change into an
+// orientation flip, which reaches `fit` down the rotation path instead and
+// would pass this test without exercising the grow at all.
+test('a tolerated grow past the paper is fitted, never windowed', async ({ page }) => {
+  await page.evaluate(() => window.__engine.resizeTo(320, 300));
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await drawStroke(page, box, [
+    { x: 40, y: 60 },
+    { x: 200, y: 60 },
+  ]);
+
+  await page.evaluate(() => window.__engine.resizeTo(326, 306));
+
+  const view = await page.evaluate(() => window.__engine.getViewState());
+  // Non-identity: the paper is presented over the drift, so the guard is armed
+  // and the leftover pixels read as margin rather than as drawable paper.
+  expect(view.active).toBe(true);
+  expect(view.scale).toBeCloseTo(326 / 320, 5);
+  // And the paper itself was preserved — the whole point of tolerating drift.
+  expect(view.paperCssWidth).toBe(320);
+  expect(view.paperCssHeight).toBe(300);
+  expect(await count(page)).toBeGreaterThan(0);
+});
+
 test('returning to the paper angle re-adopts a materially resized viewport', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
   await drawStroke(page, box, [

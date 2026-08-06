@@ -42,10 +42,10 @@ const PAPER_COVERAGE_TOLERANCE_CSS_PX = 8;
 // part of it behind nothing.
 const SYSTEM_BAR_OCCLUSION_MAX_CSS_PX = 96;
 
-// Whether the viewport is the paper with a band of system chrome laid over it:
-// inside the paper on both axes, and short by no more than bars can account
-// for. Then no fitting is needed and the paper can simply be windowed.
-function viewportIsBarOcclusion(paper: Size, viewport: Size): boolean {
+// Whether the viewport differs from the paper by no more than system chrome and
+// inset drift can account for — the band inside which the paper is worth
+// keeping at all, rather than re-adopting and invalidating every tile.
+function viewportDeltaIsChromeSized(paper: Size, viewport: Size): boolean {
   const lostWidth = paper.width - viewport.width;
   const lostHeight = paper.height - viewport.height;
   return (
@@ -54,6 +54,13 @@ function viewportIsBarOcclusion(paper: Size, viewport: Size): boolean {
     lostWidth <= SYSTEM_BAR_OCCLUSION_MAX_CSS_PX &&
     lostHeight <= SYSTEM_BAR_OCCLUSION_MAX_CSS_PX
   );
+}
+
+// Whether every visible pixel is paper. This is what `window` requires: an
+// identity view maps the paper one-to-one and cannot stretch to cover anything
+// beyond it, so a viewport even slightly larger has to be fitted instead.
+function paperCoversViewport(paper: Size, viewport: Size): boolean {
+  return viewport.width <= paper.width && viewport.height <= paper.height;
 }
 
 // How a resize reconciles the live viewport with the paper (ADR-0050, ADR-0099):
@@ -68,7 +75,8 @@ function viewportIsBarOcclusion(paper: Size, viewport: Size): boolean {
 //   back untouched when the bars go away. A larger shrink is a real resize and
 //   adopts, so a dragged-in window edge still re-fits the page.
 // * `fit` — the paper is kept and presented upright, contain-fit and centered,
-//   so a rotated drawing stays fully visible (ADR-0050).
+//   so a rotated drawing stays fully visible (ADR-0050). Also the landing spot
+//   for a tolerated grow, which `window` cannot cover.
 //
 // Only `adopt` resizes the paper, and resizing the paper is what pulls the
 // coloring art and the magic fill (both contain-fit WITHIN the paper) out of
@@ -90,7 +98,14 @@ export function paperPresentationFor(state: {
     rotationDelta(paperAngle, screenAngle) !== 0 ||
     paper.width > paper.height !== viewport.width > viewport.height;
   if (rotated) return 'fit';
-  return viewportIsBarOcclusion(paper, viewport) ? 'window' : 'adopt';
+  if (!viewportDeltaIsChromeSized(paper, viewport)) return 'adopt';
+  // Inside the band the paper is kept either way; only a paper that actually
+  // covers the viewport may take the identity `window`. A tolerated grow falls
+  // through to `fit`, which scales the paper over the drift and re-arms the
+  // engine's out-of-paper guard — an identity view there would leave those
+  // pixels with no paper or tile behind them, unpresented yet still accepting
+  // gestures that record invisible ops.
+  return paperCoversViewport(paper, viewport) ? 'window' : 'fit';
 }
 
 export const IDENTITY_PAPER_VIEW: Readonly<PaperView> = Object.freeze<PaperView>({

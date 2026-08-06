@@ -48,16 +48,16 @@ third outcome. `resizeCanvas()` picks a `PaperPresentation` (`engine.ts`):
   for a viewport that grew past the paper, or for a shrink too large to be system chrome (nothing to
   preserve, or a deliberate resize the drawing should re-fit into).
 * **`window`** — the paper is kept and presented at **identity**; the viewport is a window onto it.
-  Chosen when the canvas has ink, the angle and orientation are unchanged, and
-  `viewportIsBarOcclusion()` (`paperView.ts`) reports the viewport is the paper minus a band of
-  system chrome. Nothing moves: the occluded band is simply cropped by the canvas container's
-  `overflow: hidden`, and it returns untouched when the bars go away.
+  Chosen when the canvas has ink, the angle and orientation are unchanged, the delta is
+  chrome-sized, and — critically — `paperCoversViewport()` holds. Nothing moves: the occluded band
+  is simply cropped by the canvas container's `overflow: hidden`, and it returns untouched when the
+  bars go away.
 * **`fit`** — the paper is kept and presented upright, contain-fit and centered, so a rotated
   drawing stays fully visible. This is ADR-0050's behavior, now reached only on a genuine rotation
   or orientation flip.
 
-`viewportIsBarOcclusion()` replaces `smallViewportDrift()`. It is asymmetric: the old ±8 px band is
-kept as the **grow** tolerance, so native rotation settling its insets a few pixels late still
+`viewportDeltaIsChromeSized()` replaces `smallViewportDrift()`. It is asymmetric: the old ±8 px band
+is kept as the **grow** tolerance, so native rotation settling its insets a few pixels late still
 avoids invalidating every tile, while the **shrink** side opens up to
 `SYSTEM_BAR_OCCLUSION_MAX_CSS_PX` (96). That bound is the load-bearing part of the decision. System
 chrome is absolute-sized — Material's navigation bar is 48dp and a status bar with a display cutout
@@ -67,6 +67,14 @@ hiding part of it behind nothing. Without the bound, dragging a desktop window e
 the coloring page instead of re-fitting it, and it would also strand the tile-backing rebuild path
 with no same-orientation resize left to reach it (caught by `flows-tile-history.spec.ts`'s resize
 test, which is why that spec now resizes far past the band).
+
+**`window` may only be chosen when the paper actually covers the viewport.** An identity view maps
+the paper one-to-one and cannot stretch, so a viewport even slightly larger leaves pixels with no
+paper and no tile behind them — and `startDrawing`'s out-of-paper guard arms only on a NON-identity
+view, so those pixels are unpresented yet still accept gestures, recording ops and undo entries that
+paint nothing. The grow tolerance therefore routes to `fit`, which scales the paper over the drift
+and re-arms the guard, exactly as the pre-change drift path did. Only the shrink side takes
+`window`. This was caught in review, not by the original tests.
 
 Gotchas encoded in the code:
 
@@ -84,8 +92,11 @@ Gotchas encoded in the code:
   still carries the cropped band.
 
 Covered by `tests/engine-system-bars.spec.ts` (crop-not-shift, exact restore on re-hide, and the
-paper freeing on clear) and `paperView.test.ts`'s `paperPresentationFor` cases, which pin both sides
-of the occlusion bound.
+paper freeing on clear), `engine-rotation.spec.ts`'s allowed-grow boundary case (on a deliberately
+non-square paper, since a square one turns any single-axis change into an orientation flip and would
+reach `fit` down the rotation path without exercising the grow at all), and `paperView.test.ts`'s
+`paperPresentationFor` cases, which pin both sides of the occlusion bound and both sides of the
+coverage split.
 
 ## Consequences
 
@@ -98,6 +109,9 @@ of the occlusion bound.
   had just quietly stopped being true.
 * − A third presentation mode is more surface than ADR-0050's binary adopt/lock, and the three-way
   choice has to be read to know which resize does what.
+* − Two thresholds now shape one decision — a grow tolerance and an occlusion bound, with a coverage
+  test splitting the band between `window` and `fit`. Reading the routing means holding all three in
+  mind at once.
 * − The bound is a tuned literal. A device whose bars exceed 96 px falls back to the old re-adopting
   behavior and the original bug; a deliberate resize *under* 96 px crops a band instead of
   re-fitting. Both are quiet failures — nothing announces which side of the line a resize landed on

@@ -61,9 +61,21 @@ describe('paperPresentationFor', () => {
     expect(presentation({ width: 316, height: 915 })).toBe('window');
   });
 
-  it('tolerates a viewport a few pixels larger than the paper it was adopted from', () => {
-    expect(presentation({ width: 412, height: 923 })).toBe('window');
-    expect(presentation({ width: 420, height: 915 })).toBe('window');
+  // An identity view maps the paper one-to-one, so it cannot cover a viewport
+  // even slightly larger: those pixels would have no paper or tile behind them,
+  // unpresented yet still accepting gestures (the out-of-paper guard only arms
+  // on a non-identity view). Keep the paper — re-adopting inset drift
+  // invalidates every tile — but fit it over the drift.
+  it('fits rather than windows a viewport a few pixels larger than the paper', () => {
+    expect(presentation({ width: 412, height: 923 })).toBe('fit');
+    expect(presentation({ width: 420, height: 915 })).toBe('fit');
+    expect(presentation({ width: 413, height: 915 })).toBe('fit');
+    // Both axes at once — the shape the tolerance exists for.
+    expect(presentation({ width: 420, height: 923 })).toBe('fit');
+  });
+
+  it('windows a bar occlusion that also drifts a pixel WITHIN the paper', () => {
+    expect(presentation({ width: 411, height: 867 })).toBe('window');
   });
 
   it('adopts once either axis grows past the tolerance', () => {
