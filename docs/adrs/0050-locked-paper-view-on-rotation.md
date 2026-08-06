@@ -1,10 +1,11 @@
 # ADR-0050: Lock the "Paper" on Rotation and Present It Upright Through a Contain-Fit View
 
-**Status:** Active — amended by ADR-0066 and
-[ADR-0089](0089-css-presented-tiled-paper-on-rotation.md). The paper lock and upright contain-fit
-view stand unchanged. ADR-0066 changed replay-era margin retention; ADR-0089 moves tiled production
-presentation to CSS and makes those temporary letterbox margins non-drawable. See the amendments at
-the end. **Date:** 2026-07
+**Status:** Active — amended by ADR-0066, [ADR-0089](0089-css-presented-tiled-paper-on-rotation.md),
+and [ADR-0099](0099-window-the-paper-under-transient-system-bars.md). The paper lock and upright
+contain-fit view stand unchanged. ADR-0066 changed replay-era margin retention; ADR-0089 moves tiled
+production presentation to CSS and makes those temporary letterbox margins non-drawable; ADR-0099
+narrows the adopt-vs-lock rule so a same-angle viewport shrink windows the paper instead of
+re-adopting it. See the amendments at the end. **Date:** 2026-07
 
 ## Context
 
