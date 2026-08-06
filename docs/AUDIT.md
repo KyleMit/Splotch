@@ -28,29 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Maintainability] The mutation success-message copy is duplicated between the two front doors
-
-**File(s):** `web/src/routes/admin/+page.server.ts` (`tokenMutation`, line 100) @ 9ae62ff1;
-`web/src/routes/admin/native/+page.svelte` (lines 183–185)
-
-**Priority:** P5
-
-#### Problem
-
-The web action builds `` `${verb} “${token}”` `` (with `verb: 'Added' | 'Removed'`), and the native
-page independently hardcodes `` `Added “${token}”` `` / `` `Removed “${token}”` `` as `mutate`'s
-`message` arguments. The two consoles deliberately present one identical UI (shared `AdminConsole`),
-so identical actions wording success differently would read as a bug; today only coincidence keeps
-the strings (including the curly quotes) aligned. Low stakes — divergence breaks nothing
-functionally — hence P5.
-
-#### Proposed solution
-
-Export a tiny formatter from the shared client-safe home (see the `ASSUME_PERSISTENT` finding — same
-destination): `export const mutationMessage = (verb: 'Added' | 'Removed', token: string) =>`
-${verb} “${token}”`;` and use it in both pages. The `tokenActions.integration.test.ts` assertion at
-line 82 keeps pinning the rendered result.
-
 ### [Readability] tokens.ts header comment uses the temporal phrasing the comment convention bans
 
 **File(s):** `web/src/lib/server/tokens.ts` (lines 5–8) @ 9ae62ff1

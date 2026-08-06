@@ -4,7 +4,7 @@
   import { apiUrl } from '$lib/api';
   import { saveAdminSession, loadAdminSession, clearAdminSession } from '$lib/secureStorage';
   import { setAdminLinkVisible } from '$lib/state/settings.svelte';
-  import { ASSUME_PERSISTENT } from '$lib/adminPersistence';
+  import { ASSUME_PERSISTENT, mutationMessage } from '$lib/adminPersistence';
   import type { LoginResponse } from '../../api/admin/login/+server';
   import { parseSnapshot } from './snapshot';
 
@@ -135,9 +135,9 @@
     {loginError}
     onlogin={login}
     onlogout={async () => signOutLocally()}
-    onadd={(token) => mutate('POST', token, `Added “${token}”`)}
+    onadd={(token) => mutate('POST', token, mutationMessage('Added', token))}
     onremove={async (token) => {
-      await mutate('DELETE', token, `Removed “${token}”`);
+      await mutate('DELETE', token, mutationMessage('Removed', token));
     }}
   />
 {/if}

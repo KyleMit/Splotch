@@ -10,7 +10,7 @@ import {
 } from '$lib/server/tokens';
 import type { MutationResult } from '$lib/server/tokens';
 import { getUsage } from '$lib/server/usage';
-import { ASSUME_PERSISTENT } from '$lib/adminPersistence';
+import { ASSUME_PERSISTENT, mutationMessage } from '$lib/adminPersistence';
 import type { Actions, PageServerLoad } from './$types';
 
 // Must be server-rendered: it has form actions and validates the admin secret
@@ -103,7 +103,7 @@ async function tokenMutation(
   const token = String(form.get('token') ?? '').trim();
   const result = await op(token);
   if (!result.ok) return fail(MUTATION_FAILURE_STATUS[result.reason], { error: result.error });
-  return { success: true, message: `${verb} “${token}”` };
+  return { success: true, message: mutationMessage(verb, token) };
 }
 
 export const actions: Actions = {
