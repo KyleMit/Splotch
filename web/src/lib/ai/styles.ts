@@ -52,7 +52,7 @@ export const DARK_STYLE_SUFFIXES = {
  * tools/asset-gen/lib/flat-background-punch.mjs, which flood-fills it from the
  * border, and the drop shadow AiImagePrompt draws in CSS to replace the baked one.
  */
-export const PUNCHED_BACKGROUND_STYLES = ['Sticker'] as const satisfies readonly StyleName[];
+const PUNCHED_BACKGROUND_STYLES = ['Sticker'] as const satisfies readonly StyleName[];
 
 export function hasPunchedBackground(style: StyleName): boolean {
   return (PUNCHED_BACKGROUND_STYLES as readonly StyleName[]).includes(style);
