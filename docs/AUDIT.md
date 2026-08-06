@@ -28,43 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Types] The invite pair shape is re-declared inline instead of being a named export of its builder
-
-**File(s):** `web/src/lib/server/admin.ts` (`buildInvites`, lines 87–92) @ 9ae62ff1;
-`web/src/routes/admin/+page.server.ts` (line 64)
-
-**Priority:** P4
-
-#### Problem
-
-`buildInvites` has no named return type, so its consumers each improvise: the `/admin` loader writes
-the shape out longhand —
-
-```ts
-invites: [] as { token: string; url: string }[],
-```
-
-— and `/api/admin/tokens/+server.ts` reaches for `invites: ReturnType<typeof buildInvites>` (line
-21). The inline `as` on an empty array is an annotation-by-cast that duplicates the shape by hand,
-and `ReturnType<typeof …>` is an indirection where a noun would do. (Issue #567 covers sharing
-contract types between API routes and *client* callers; this is the server-internal half — a named
-type would also give #567 something to re-export.)
-
-#### Proposed solution
-
-In `admin.ts`:
-
-```ts
-export type Invite = { token: string; url: string };
-export function buildInvites(tokens: string[], origin: string): Invite[] { … }
-```
-
-Then the loader's unauthed branch becomes `invites: [] satisfies Invite[]` (or a typed
-`const NO_INVITES: Invite[] = []`), and the API route's `TokenSnapshot` uses `invites: Invite[]`.
-Name collision warning: `AdminConsole.svelte` exports a client-side `Invite` (with the optional
-`usage` field) — the server type is its base; keep the names distinct or import aliased in any file
-that sees both.
-
 ### [Architecture] `ASSUME_PERSISTENT` is a status default living in a formatting module
 
 **File(s):** `web/src/lib/adminFormat.ts` (lines 3–5) @ 9ae62ff1

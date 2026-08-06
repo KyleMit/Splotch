@@ -1,5 +1,6 @@
 import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
 import { sessionToken, beginAdminLogin, verifySessionToken, buildInvites } from '$lib/server/admin';
+import type { Invite } from '$lib/server/admin';
 import { throttledMessage } from '$lib/server/http';
 import {
   getTokensStatus,
@@ -67,7 +68,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
       authed: false,
       hasSession,
       persistent: ASSUME_PERSISTENT,
-      invites: [] as { token: string; url: string }[],
+      invites: [] satisfies Invite[],
     };
   }
   // Renew the session on each authenticated load so its expiry keeps sliding
