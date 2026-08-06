@@ -32,31 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Readability] StatusMessage: off-ramp `10px` padding and hand-rolled class toggles
-
-**File(s):** `web/src/lib/components/design/StatusMessage.svelte` (lines 20–21, 31) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-Two small deviations in a design-system primitive: (1) line 31 `padding: 10px var(--space-3);` —
-`10px` sits off the spacing ramp (`--space-2` = 8, `--space-3` = 12) with no comment earning the
-exception, in the component whose job is to model token usage; (2) lines 20–21 spell out both class
-toggles even though `status` is exactly the closed union of the two class names:
-
-```svelte
-class:error={status === 'error'}
-class:success={status === 'success'}
-```
-
-#### Proposed solution
-
-For (2), `class={['status-message', status]}` — the union type guarantees the emitted class is one
-of the two styled selectors. For (1), either snap to `var(--space-2)` or `var(--space-3)` (needs a
-quick visual check across ReportForm/AiKeyManager/SetupInstructions), or keep 10px deliberately with
-a one-line WHY on the declaration.
-
 ### [Testing] tokens.test.ts re-asserts what the compiler already enforces
 
 **File(s):** `web/src/lib/design/tokens.test.ts` (lines 25–29), `web/src/lib/design/tokens.ts`
