@@ -28,35 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Testing] `parseSnapshot` and its guards are component-inline logic whose only coverage is E2E
-
-**File(s):** `web/src/routes/admin/native/+page.svelte`
-(`isInvite`/`isSnapshot`/`responseError`/`parseSnapshot`, lines 48–92) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-Forty-plus lines of pure response-parsing logic — two hand-rolled type guards, an error extractor,
-and the `SnapshotResult` state machine (401 → expired, malformed → error, ok → data) — live inline
-in the `<script>` of a Svelte page. The testing rule is direct about this: "Imperative logic whose
-only coverage is E2E (inline in a component or config) is an extraction candidate: pure injectable
-module + unit tests." Today the only exercise these branches get is `web/tests/admin.spec.ts`, which
-can't cheaply reach cases like "200 with a malformed body", "non-401 error with a JSON `error`
-field", or "401 during a mutation vs during the initial load". Note: issue #567 (share
-request/response contract types between API routes and client callers) will likely replace the
-guards themselves; the extraction is complementary — wherever the validation ends up, it should be a
-plain module, not page-inline.
-
-#### Proposed solution
-
-Move the four functions and the `SnapshotResult` type into a sibling plain-TS module, e.g.
-`web/src/routes/admin/native/snapshot.ts`, exporting
-`parseSnapshot(response: Response): Promise<SnapshotResult>`, and add a colocated `snapshot.test.ts`
-(node environment, `new Response(...)` fixtures) covering the 401 / malformed / error-body / happy
-paths. The page keeps only `applySnapshot`, which is where the state writes belong. If #567 lands
-first, fold this into that work rather than doing it twice.
-
 ### [Correctness] CAS retry loops re-read instantly, so under replica lag the retries are spent in microseconds
 
 **File(s):** `web/src/lib/server/tokens.ts` (`mutateList`, lines 182–194) @ 9ae62ff1;
