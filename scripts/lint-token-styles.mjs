@@ -94,8 +94,6 @@ const BASELINE = new Map(
     'lib/components/PointerHalos.svelte': 9,
     // Confetti particle colors are content, not chrome.
     'lib/components/AiConfetti.svelte': 1,
-    // Paper-white backing behind the baked-light style-cover thumbnails.
-    'lib/components/AiImagePrompt.svelte': 1,
     // Deliberate console-key chip (dark slab + white glyph in both themes).
     'routes/dev/ai-timer/+page.svelte': 1,
   })

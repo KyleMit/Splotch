@@ -19,7 +19,7 @@
 // matchMedia out of here also keeps module layering acyclic — appearance
 // imports these helpers, so they must not reach back for appearance's state.
 
-import { themes } from './design/tokens';
+import { themes } from './design/tokens.ts';
 
 export const RESOLVED_THEMES = ['light', 'dark'] as const;
 

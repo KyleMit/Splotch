@@ -31,6 +31,7 @@ carve-out):
 | `asset-naming.md`            | Uniform dot-separated variant suffixes — `{name}.{variant}.webp` (ex ADR-0054).                 |
 | `fill-vocabulary.md`         | The magic-brush reveal assets are "fills", not "twins" (ex ADR-0055).                           |
 | `pen-chalk-fork.md`          | Fork the line art per theme — pen outline (light) + Gemini-authored chalk (dark) (ex ADR-0056). |
+| `style-cover-theme-fork.md`  | Fork the AI style covers per theme — a second render each, endpoint deliberately still light.   |
 | `alpha-line-art-overlays.md` | Derive alpha-native runtime overlays while retaining opaque pipeline sources.                   |
 | `chalk-edge-crisping.md`     | Crisp the chalk's edges at render time, not in the punch or the app compositor.                 |
 | `inpainted-fill-punch.md`    | Punch by inpainting — shipped fills stay opaque, outline pixels replaced by bled fill color.    |
@@ -58,9 +59,12 @@ carve-out):
   with deliberate solid whites (eye sclera, catchlights), **stored ink-on-white** — negate it before
   showing it to Gemini or a human as "dark mode art". Night fills condition on the chalk and punch
   against it; after changing a chalk, regenerate the page's night fill and re-punch.
-* **The only sanctioned imports from `web/src`** are the four modules listed in `docs/README.md`
-  (styles, prompt, geminiSafety, books) — the app's single source of truth for
-  prompts/safety/catalog. Don't reach into anything else under `web/src`.
+* **The only sanctioned imports from `web/src`** are the five modules listed in `docs/README.md`
+  (styles, prompt, theme, geminiSafety, books) — the app's single source of truth for
+  prompts/safety/catalog/theme. Don't reach into anything else under `web/src`, and note the
+  constraint that list carries: each of those modules must be loadable by bare Node under
+  `--experimental-strip-types`, so its own imports are either type-only or spelled with an explicit
+  `.ts` (Vite resolves extensionless specifiers; Node does not).
 * **macOS/Linux (ADR-0017):** plain Node `.mjs`, forward-slash glob patterns with a resolved `cwd`
   (not `join`-built patterns).
 * **Ad-hoc analysis scripts go inside this folder, not the session scratchpad.** A throwaway `.mjs`
@@ -77,9 +81,10 @@ carve-out):
   `channels: 3, hasAlpha: false`, no error). Interleave an explicit RGBA buffer and construct
   `sharp(rgba, { raw: { width,
   height, channels: 4 } })` instead, and verify outputs with
-  `sharp(out).metadata()` → `hasAlpha: true`. The runtime line-art overlays intentionally use this
-  explicit-RGBA path (`lib/overlay-alpha.mjs`); the fill punch still inpaints instead of cutting
-  holes (`docs/inpainted-fill-punch.md`).
+  `sharp(out).metadata()` → `hasAlpha: true`. The runtime line-art overlays and the style-cover
+  backdrop key intentionally use this explicit-RGBA path (`lib/overlay-alpha.mjs`,
+  `lib/flat-background-punch.mjs`); the fill punch still inpaints instead of cutting holes
+  (`docs/inpainted-fill-punch.md`).
 * **Outputs are committed artifacts**, reviewed by a human before shipping. The generators write
   shipped art into `web/static/` and review scratch into the gitignored `.coloring-samples*/`. Never
   commit the scratch dirs.

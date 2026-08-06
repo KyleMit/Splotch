@@ -3,11 +3,21 @@
   import { aiPromptModal } from '$lib/state/ui.svelte';
   import { exportCanvasBlob } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
-  import { STYLE_NAMES, type StyleName, styleThumbPath } from '$lib/ai/styles';
+  import {
+    STYLE_NAMES,
+    type StyleName,
+    hasPunchedBackground,
+    styleThumbPath,
+  } from '$lib/ai/styles';
+  import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { createAiPreviewLoader } from './aiPreview';
 
   let drawingBlob = $state<Blob | null>(null);
+
+  // The covers are forked art, not a filtered light asset — each theme has its
+  // own Gemini render (see tools/asset-gen/bin/gen-style-covers.mjs).
+  const theme = $derived(resolvedTheme());
 
   const previewLoader = createAiPreviewLoader(
     () => exportCanvasBlob({ includePaperTexture: false }),
@@ -57,6 +67,7 @@
       <legend>Pick a style</legend>
       <div class="ai-style-options">
         {#each STYLE_NAMES as s (s)}
+          {@const thumb = styleThumbPath(s, theme)}
           <button
             type="button"
             class="ai-style-option"
@@ -65,7 +76,8 @@
           >
             <img
               class="ai-style-thumb"
-              src={styleThumbPath(s)}
+              class:ai-style-thumb-cutout={hasPunchedBackground(s)}
+              src={thumb}
               alt=""
               loading="lazy"
               decoding="async"
@@ -138,10 +150,24 @@
     object-fit: cover;
     border-radius: var(--radius-md);
     border: 3px solid transparent;
-    background: #fcfbf8;
     transition:
       border-color var(--duration-fast) ease,
       transform var(--duration-fast) ease;
+  }
+
+  /* An opaque cover gets a paper plate to fill the tile before it decodes. A
+     cutout must NOT: `filter` rasterizes the element's own background along with
+     its content, so a plate here would hand drop-shadow the rounded tile to
+     trace instead of the sticker silhouette — and the transparency exists
+     precisely so the picker's own surface shows through. */
+  .ai-style-thumb:not(.ai-style-thumb-cutout) {
+    background: var(--paper);
+  }
+
+  /* Replaces the shadow the render used to bake in, where it can follow the
+     silhouette and the theme rather than sitting on a plate. */
+  .ai-style-thumb-cutout {
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
   }
 
   .ai-style-label {

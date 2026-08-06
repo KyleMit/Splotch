@@ -94,7 +94,7 @@ no CDN headers and no built service worker):
 
 * **Response headers** — `Cache-Control` on `/sounds/*`, `/styles/*`, `/icons/*`, `/*.js`, `/*.css`
   (`netlify.toml`), security headers, content types. The egress proxy reaches `*.netlify.app`, so
-  `curl -sSI <branch-url>/styles/crayon.webp` from the sandbox shows exactly what a browser
+  `curl -sSI <branch-url>/styles/crayon.light.webp` from the sandbox shows exactly what a browser
   receives.
 * **The service-worker precache** — `curl -s <branch-url>/sw.js` returns the Workbox-generated SW
   with its inlined precache manifest (`{url,revision}` entries). The `revision` is the md5 of the
