@@ -32,36 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Maintainability] Button's `ghost` variant has no production caller
-
-**File(s):** `web/src/lib/components/design/Button.svelte` (lines 14–15, 80–84, 100–103) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Grepping all of `web/src`, `variant="ghost"` (or `'ghost'`) appears only in
-`web/src/routes/dev/design/+page.svelte` (the styleguide harness, lines 46 and 68), which is gated
-behind `PUBLIC_ENABLE_DEV_HARNESS` and enumerates every variant by construction. Production usage is
-`brand` ×5, `danger` ×2, `wash` ×1 (+ the default). The root convention: "No speculative surface. A
-new prop, option, or optional parameter needs a production caller that exercises it; a seam kept
-only for tests gets a comment saying so at the declaration." `ghost` has neither — and meanwhile
-`AdminConsole.svelte` hand-rolls its own quiet button (`.btn-ghost`, lines 559–569) with
-admin-accent styling rather than using the primitive, so the variant isn't even serving as shared
-vocabulary.
-
-A secondary wrinkle: `ghost` is the only variant with a real border (line 82) while `.btn` sets
-`border: none` (line 33), so a ghost button renders 2 × `--border-width` taller than a sibling
-`brand`/`wash` button in the same row — a baked-in misalignment for the first real caller.
-
-#### Proposed solution
-
-Either delete the variant (narrowing the union at line 15 and removing lines 80–84 / 100–103, plus
-the styleguide row and ADR-0071's variant list), or land its first production caller. If kept, fix
-the box model so variants align: give `.btn` `border: var(--border-width) solid transparent` and let
-`.ghost` recolor the border instead of adding one. Note ADR-0071 documents the four-variant set, so
-removal should touch that ADR's wording (an amendment, not a rewrite).
-
 ### [Types] SplotchyIcon's string-interpolated class forces SectionIcon to narrow `ClassValue` to `string`
 
 **File(s):** `web/src/lib/components/SplotchyIcon.svelte` (line 10),

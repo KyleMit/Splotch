@@ -5,7 +5,8 @@ light-only — see the amendment at the end. Amended 2026-08-03: the styleguide 
 `/design` route (ADR-0096) — see the amendment at the end. Amended 2026-08-04: the selection
 controls now share the `SegmentedPicker` primitive — see the amendment at the end. Amended
 2026-08-04: `/admin` left the light-only set — the console redesign moved it onto the themed tokens
-— see the amendment at the end.
+— see the amendment at the end. Amended 2026-08-06: `Button`'s `ghost` variant was removed — see the
+amendment at the end.
 
 ## Context
 
@@ -46,8 +47,8 @@ guarded in CI by `npm run gen:tokens:check` (same pattern as `ruler:check`).
 theme-color from `themes.*` — the hand-synced copies are gone.
 
 **Primitives grow in `lib/components/design/`**, styled entirely from tokens; `Button.svelte`
-(variants `brand`/`wash`/`danger`) is the first. Extraction rule: at the third duplicate, not
-before. Canvas-floating controls keep their bespoke paper treatments.
+(variants `brand`/`wash`/`danger`/`ghost`) is the first. Extraction rule: at the third duplicate,
+not before. Canvas-floating controls keep their bespoke paper treatments.
 
 **A living styleguide at `/dev/design`** (dev-harness-gated like the other `routes/dev/*` routes)
 renders every token group and primitive from the real source objects with a theme toggle, so
@@ -179,3 +180,14 @@ along with the console's `--page-*` pins — `PageShell` runs on its themed defa
   self-contained contrast, allowlisted in the ratchet.
 * `/privacy` and `/android-beta` remain light-only per the 2026-07-22 amendment; their shared
   `--page-shadow` drift guard (`pinnedPalette.test.ts`) now covers just those two pages.
+
+## Amendment (2026-08-06): `Button`'s `ghost` variant is removed
+
+`ghost` — a quiet bordered action, meant for any surface — shipped in the original decision but
+never gained a production caller: the only reference was `/design`'s `PrimitiveSections` iterating
+the variant union for its specimen row, not a real use of the "quiet bordered" treatment. Its box
+model also diverged from its siblings (`.btn` sets `border: none`; `.ghost` was the only variant
+adding a real border), so a `ghost` button in a row with `brand`/`wash`/`danger` rendered taller by
+`2 × var(--border-width)`. Per the root convention that a variant needs a production caller to
+justify its surface, `ghost` is deleted: `Button`'s `variant` prop is now `brand`/`wash`/`danger`,
+and the specimen row lists only those three.
