@@ -150,6 +150,86 @@ Full parameter tables, response headers, rate limiting, and timeouts:
 [`reference/output-options.md`](reference/output-options.md). Every error status and code:
 [`reference/errors.md`](reference/errors.md).
 
+## Recipe: flat icon art → transparent-background SVG
+
+The common ask — a flat, few-color icon (a PNG export of a logo, an app icon, a sticker) traced to a
+clean SVG with the white background dropped. Two passes, and only the second costs anything.
+
+**Pass 1, free — discover the real colors.** Trace in test mode with retention and read the fills
+back out:
+
+```bash
+node .claude/skills/vectorize-image/vectorize.mjs icon.png \
+  --out vectorized/discover.svg --retain 1 --param processing.max_colors=0
+grep -o 'fill="#[0-9a-f]\{6\}"' vectorized/discover.svg | sort | uniq -c | sort -rn
+```
+
+**Use `processing.max_colors=0` for discovery specifically** — see the watermark gotcha below.
+Ignore the greys `#7f7f7f`, `#696d69`, `#6b6d6b`, and `#323533`; they are watermark, not artwork.
+
+**Pass 2 — the keeper.** Re-run through the token (free to rehearse, `--production` to commit):
+
+```bash
+node .claude/skills/vectorize-image/vectorize.mjs "token:<image-token>" \
+  --out vectorized/icon.svg --production \
+  --param 'processing.palette=#FFFFFF -> #00000000 ~ 0.05;' \
+  --param output.gap_filler.enabled=false \
+  --param output.shape_stacking=stacked \
+  --param output.group_by=color
+```
+
+### Dropping white without losing near-white
+
+Remapping a color to a fully transparent one deletes it, since transparent colors are omitted from
+the result. The tolerance is what makes this safe. It is **max-channel ARGB distance** — the metric
+that satisfies all three anchors the docs give (opaque red → opaque black = 1.0, black → white =
+1.0, transparent black → opaque white = 2.0) — so:
+
+```
+distance(a, b) = max(|Δr|, |Δg|, |Δb|) / 255   +   |Δalpha| / 255
+```
+
+A cream `#F5EFE1` frame sits `max(10, 16, 30) / 255 = 0.118` from white. Measured on a fixture built
+to that exact trap, holding everything else constant:
+
+| Tolerance on white | Cream frame | White background |
+| ------------------ | ----------- | ---------------- |
+| `~ 0.05`           | **kept**    | gone             |
+| `~ 0.15`           | gone        | gone             |
+
+So compute the distance from white to your nearest surviving color and pick a tolerance comfortably
+below it. `0.05` is a good default: loose enough to catch anti-aliased near-white pixels, tight
+enough to spare anything a viewer would read as a distinct off-white.
+
+### Which output options actually earn their place
+
+Measured on the same fixture, each option applied alone on top of the transparency palette. Shape
+and byte counts are test-mode figures — watermark-inflated, but the *relative* comparison holds:
+
+| Setting                               | Effect                                                                                                      |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `output.gap_filler.enabled=false`     | 563 → 299 shapes, 275 → 193 KB. **The biggest single win.**                                                 |
+| `output.shape_stacking=stacked`       | 275 → 150 KB                                                                                                |
+| `output.group_by=color`               | Size unchanged; one `<g>` per color, for easy recoloring                                                    |
+| `output.parameterized_shapes.flatten` | **Leave it `false`.** `true` costs 275 → 282 KB *and* converts every native `<rect>`/`<circle>` into a path |
+| `processing.shapes.min_area_px=4`     | Marginal, and it ate two real shapes on clean art. Raise only for noisy or scanned sources                  |
+
+The gap filler is the one with a genuine trade-off: it exists to hide the white seams many renderers
+draw between exactly-abutting shapes. Turning it off is right for flat icons — it halves the shape
+count and stops the filler blending *new* intermediate colors into a result you asked to have N
+colors — and pairing it with `shape_stacking=stacked` makes shapes overlap rather than abut, which
+is what removes the seam risk. If you see hairlines in a viewer, turn the filler back on rather than
+fighting it.
+
+Combined on a real production run, a 5-color 600×600 icon came out as **4 shapes in 2 KB**, one of
+them a native `<circle>`, with 59% of the rendered pixels fully transparent.
+
+Not worth changing for icons: `output.svg.fixed_size` (the `false` default gives a scalable SVG),
+`output.curves.line_fit_tolerance` (the default only matters when curves get flattened to lines),
+and `processing.palette` snapping for colors that are *already* flat — on synthetic art, snapping
+each color to itself is a verified no-op. Snapping earns its keep on anti-aliased or photographic
+sources, or when the output must use exact brand hexes rather than sampled approximations.
+
 ## Choosing parameters for Splotch-shaped work
 
 The repo's natural input is coloring-page line art (`web/static/coloring/**`) — black ink on white,
@@ -181,14 +261,23 @@ filled shapes once each; it is not a centerline.
 * **Rate limits.** `429` means back off *linearly* — 5s, then 10s, then 15s — per thread, reset on
   success. For batch work start at 5 concurrent and add one every 5 minutes. The driver retries
   429/503 with that schedule.
+* **`processing.max_colors` counts the test-mode watermark.** The watermark is drawn in greys
+  (`#7f7f7f`, `#696d69`, `#6b6d6b`, `#323533`) that occupy slots in the color budget like any other
+  color, so a limit tuned for the artwork silently starves it. On a 5-color fixture at
+  `max_colors=5`, the near-white cream frame was merged into the white background and disappeared
+  before any palette rule ran — a result that looks like a palette bug and is not one. **Discover
+  colors with `max_colors=0`** and apply the real limit only on the production pass, or add a
+  handful of slots to cover the greys.
 * **Exactly one image source per call**: `image`, `image.url`, `image.base64`, or `image.token`.
 * **`image.base64` caps at 1 MB.** Upload the binary instead for anything real.
 * **Input limits:** 33,554,432 px (w × h) and 31,457,280 bytes; larger inputs are rejected, not
   shrunk. `input.max_pixels` (default 2,097,252) is the shrink-to size, not the accept limit.
 * **A 400 is free but it still burns wall-clock**, and `code` is the thing to match on, not the
   message text — messages are not stable.
-* **Test-mode output is not a size proxy.** The watermark inflates it wildly: the same owl outline
-  came back as 1.9 MB in test mode and 124 KB in production.
+* **Test-mode output is not a size proxy, and the inflation is not a fixed ratio.** The watermark
+  adds hundreds of its own shapes, so it swamps simple artwork: a coloring outline went 1.9 MB test
+  → 124 KB production (15×), while a flat 5-color icon went 144 KB → **2 KB** (70×). Compare test
+  runs against each other, never against a production expectation.
 
 ## Why direct HTTP, and not the SDK or CLI
 

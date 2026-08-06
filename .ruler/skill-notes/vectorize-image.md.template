@@ -79,6 +79,32 @@ Two numbers worth remembering from that run: test-mode output was **15× larger*
 for the same input (watermarking, not complexity — do not use test output to judge file size), and
 the production trace was **twice as fast** as the test one.
 
+## The flat-icon recipe (added after the first icon conversion)
+
+The `max_colors`/watermark interaction cost real debugging time and is worth remembering as a
+*class* of bug, not just an entry in the gotcha list: test mode does not merely annotate the result,
+it participates in it. The watermark greys consume color-budget slots, so `max_colors=5` on
+five-color artwork silently merged the near-white frame into the background. The symptom — a color
+vanishing — points at the palette rules, which were innocent. Anything else that budgets or ranks
+*result* content is suspect under test mode for the same reason.
+
+Two measurement traps caught during the same session, both worth guarding against when quoting
+numbers from a traced SVG:
+
+* **Fill counts undercount under `group_by`.** With grouping on, the fill moves to the `<g>` and the
+  children inherit it, so a naive `grep 'fill="#'` over shapes reports a fraction of the real count
+  and looks like a dramatic simplification. Count fills on shapes *and* groups.
+* **Two runs came back byte-identical** and the difference was briefly read as a real effect. On
+  synthetic flat art, snapping each color to itself is a no-op — worth checking a checksum before
+  attributing a change to a parameter.
+
+The tolerance metric is inferred, not documented: `max(|Δr|,|Δg|,|Δb|)/255 + |Δa|/255` is the only
+simple form satisfying all three anchors the docs give (red→black = 1.0, black→white = 1.0,
+transparent-black→opaque-white = 2.0). It predicted the cream/white boundary at 0.118 and the
+fixture behaved accordingly (survives at 0.05, dies at 0.15) — but that is one confirmation of a
+guess, not a proof. If a palette ever behaves unexpectedly around a *partially transparent* color,
+the alpha term is the least-tested half of it.
+
 ## Open questions
 
 * Nothing in the repo calls this yet. It is agent-invoked tooling, not pipeline code — if a real
