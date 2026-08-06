@@ -46,8 +46,8 @@ guarded in CI by `npm run gen:tokens:check` (same pattern as `ruler:check`).
 theme-color from `themes.*` — the hand-synced copies are gone.
 
 **Primitives grow in `lib/components/design/`**, styled entirely from tokens; `Button.svelte`
-(variants `brand`/`wash`/`danger`/`ghost`) is the first. Extraction rule: at the third duplicate,
-not before. Canvas-floating controls keep their bespoke paper treatments.
+(variants `brand`/`wash`/`danger`) is the first. Extraction rule: at the third duplicate, not
+before. Canvas-floating controls keep their bespoke paper treatments.
 
 **A living styleguide at `/dev/design`** (dev-harness-gated like the other `routes/dev/*` routes)
 renders every token group and primitive from the real source objects with a theme toggle, so

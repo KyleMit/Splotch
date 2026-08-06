@@ -6,7 +6,7 @@
   } from '$lib/components/design/SegmentedPicker.svelte';
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
 
-  const buttonVariants = ['brand', 'wash', 'danger', 'ghost'] as const;
+  const buttonVariants = ['brand', 'wash', 'danger'] as const;
   const buttonSizes = ['md', 'sm'] as const;
   const statusMessageStatuses = ['success', 'error'] as const;
 
