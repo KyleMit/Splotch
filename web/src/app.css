@@ -103,8 +103,6 @@ body {
 @media (orientation: portrait) {
   .app-container {
     flex-direction: column;
-    height: 100vh;
-    height: 100dvh;
   }
 }
 
