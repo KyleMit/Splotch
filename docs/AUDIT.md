@@ -30,44 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Maintainability] The dev-harness index list is hand-maintained and can silently drift from `routes/dev/*`
-
-**File(s):** `web/src/routes/dev/+page.svelte` (lines 4–20) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const harnesses = [
-  { href: '/dev/design', ... },
-  { href: '/dev/engine', ... },
-  { href: '/dev/ai-timer', ... },
-];
-```
-
-The index's whole job is to enumerate the harnesses, but the enumeration is a hand-typed list with
-no tie to the filesystem. Add `/dev/crayon` (issue \#382's plan) and the index silently omits it;
-delete a harness and the index links a 404. The route set is knowledge the bundler already has.
-
-#### Proposed solution
-
-Derive the hrefs from the filesystem and keep only the blurbs by hand:
-
-```ts
-const routes = Object.keys(import.meta.glob('./*/+page.svelte')).map(
-  (p) => `/dev/${p.split('/')[1]}`
-);
-const blurbs: Record<string, { name: string; blurb: string }> = { '/dev/design': {...}, ... };
-```
-
-Render from `routes`, falling back to the bare path when a blurb entry is missing — a new harness
-then appears automatically (unstyled prose is a visible nudge to add its blurb, vs. today's silent
-absence). Alternative with less cleverness: keep the static list and add a tiny unit test that globs
-`web/src/routes/dev/*/+page.svelte` and asserts set-equality with the list's hrefs (the
-`app.html.test.ts` read-both-sides pattern). Either satisfies the cross-file-agreement rule; the
-test variant keeps the page dead simple.
-
 ### [Correctness] `/dev/design` blocks pinch-zoom with `touch-action: pan-y`, and both dev pages carry stale `user-select` opt-outs
 
 **File(s):** `web/src/routes/dev/design/+page.svelte` (lines 286–295),
