@@ -5,17 +5,23 @@ export function installWakeLock(): () => void {
   let wakeLock: WakeLockSentinel | null = null;
   let pendingRequest = false;
   let hasInteracted = false;
+  let disposed = false;
 
   function hasLiveLock(): boolean {
     return wakeLock !== null && !wakeLock.released;
   }
 
   async function requestWakeLock() {
-    if (pendingRequest || hasLiveLock()) return;
+    if (disposed || pendingRequest || hasLiveLock()) return;
     pendingRequest = true;
     try {
       if ('wakeLock' in navigator) {
-        wakeLock = await navigator.wakeLock.request('screen');
+        const sentinel = await navigator.wakeLock.request('screen');
+        // Teardown can land while this request is in flight, and it can only
+        // release what it can see — so a sentinel arriving after disposal
+        // releases itself rather than being stored where nothing will.
+        if (disposed) void sentinel.release().catch(() => {});
+        else wakeLock = sentinel;
       }
     } catch {
     } finally {
@@ -36,6 +42,7 @@ export function installWakeLock(): () => void {
   document.addEventListener('visibilitychange', onVisibilityChange);
 
   return () => {
+    disposed = true;
     document.removeEventListener('pointerdown', onPointerDown);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     void wakeLock?.release().catch(() => {});

@@ -58,6 +58,23 @@ describe('installWakeLock', () => {
     expect(release).toHaveBeenCalled();
   });
 
+  it('releases a sentinel whose request resolves after teardown', async () => {
+    let resolveRequest: (sentinel: WakeLockSentinel) => void = () => {};
+    request.mockReturnValueOnce(
+      new Promise<WakeLockSentinel>((resolve) => {
+        resolveRequest = resolve;
+      })
+    );
+    const teardown = install();
+    document.dispatchEvent(new Event('pointerdown'));
+    await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+
+    teardown();
+    resolveRequest(sentinel as unknown as WakeLockSentinel);
+
+    await vi.waitFor(() => expect(release).toHaveBeenCalled());
+  });
+
   it('tears down without throwing when no sentinel was acquired', () => {
     const teardown = install();
 
