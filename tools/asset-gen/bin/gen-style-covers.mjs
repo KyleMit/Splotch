@@ -28,13 +28,13 @@ import {
   styleThumbPath,
 } from '../../../web/src/lib/ai/styles.ts';
 import { buildPromptForStyle } from '../../../web/src/lib/ai/prompt.ts';
-import { PAPER_COLORS } from '../../../web/src/lib/theme.ts';
+import { PAPER_COLORS, RESOLVED_THEMES } from '../../../web/src/lib/theme.ts';
 import { punchFlatBackground } from '../lib/flat-background-punch.mjs';
 
 const SOURCE_SVG = join(STYLES_DIR, 'source.svg');
 const THUMB_SIZE = 448;
 const WEBP_QUALITY = 75;
-const THEMES = Object.keys(PAPER_COLORS);
+const THEMES = RESOLVED_THEMES;
 
 // A keyed cover should lose most of its field but keep a substantial subject.
 // Outside this band the model gave us a shadowed or textured backdrop the flood
