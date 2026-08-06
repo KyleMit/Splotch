@@ -12,6 +12,7 @@
 
   let tutorialVisible = $state(false);
 
+  // Untracked on purpose: a timer handle, nothing renders from it.
   let tutorialDismissTimer: ReturnType<typeof setTimeout> | null = null;
 
   function getAcceptRadius() {

@@ -16,7 +16,7 @@
   let pageTurnOverlayEl: HTMLDivElement;
   let coachmark: ClearCoachmark;
 
-  // Tracked so resetButtonPosition can skip a reset mid-gesture.
+  // Untracked latch — read imperatively by resetButtonPosition to skip a reset mid-gesture.
   let isDragging = false;
 
   function resetButtonPosition(_orientation: Orientation) {

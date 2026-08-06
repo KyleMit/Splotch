@@ -42,6 +42,7 @@
   const snapBand = $derived((max - min) * SNAP_BAND_FRACTION);
 
   let trackEl: HTMLDivElement;
+  // Untracked on purpose: drag bookkeeping, nothing renders from these.
   let dragPointerId: number | null = null;
   let dragStartX = 0;
   let dragStartValue = 0;

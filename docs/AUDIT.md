@@ -26,38 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Maintainability] Deliberately non-reactive `let`s lack the required "intentionally untracked" comments
-
-**File(s):** `web/src/lib/components/Slider.svelte` (lines 47–50),
-`web/src/lib/components/ClearCoachmark.svelte` (line 12),
-`web/src/lib/components/ClearButton.svelte` (lines 18–19) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`.claude/rules/svelte.md`: "a deliberately non-reactive `let` (timer handles, transition-time
-latches) carries a one-line comment saying it's intentionally untracked." Violations in this
-section:
-
-* `Slider.svelte:47–50` — `dragPointerId`, `dragStartX`, `dragStartValue`, `active`: four
-  uncommented plain `let`s (all correctly non-reactive — nothing renders from them — but nothing
-  says so).
-* `ClearCoachmark.svelte:12` — `tutorialDismissTimer`: a timer handle, the rule's own canonical
-  example, uncommented.
-* `ClearButton.svelte:18–19` — `isDragging` has a comment ("Tracked so resetButtonPosition can skip
-  a reset mid-gesture") that explains its purpose but not that it is deliberately untracked — and
-  the word "Tracked" actively suggests the opposite of its reactivity status.
-
-A reviewer (or a lint pass someday) can't distinguish these from forgotten `$state`.
-
-#### Proposed solution
-
-One-line comments per the rule, e.g.
-`// Untracked on purpose: drag bookkeeping, nothing renders from these.` above the Slider block;
-reword ClearButton's to
-`// Untracked latch — read imperatively by resetButtonPosition to skip a reset mid-gesture.`
-
 ### [Maintainability] The accept-radius derivation is duplicated between ClearCoachmark and dragToClear
 
 **File(s):** `web/src/lib/components/ClearCoachmark.svelte` (`getAcceptRadius`, lines 14–16),
