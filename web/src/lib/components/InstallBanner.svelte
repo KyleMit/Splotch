@@ -32,6 +32,8 @@
   let busy = $state(false);
   let parting = $state(false);
   let exitIntoSettingsButton = $state(false);
+  // Intentionally untracked: only read/written from within the effects below.
+  let partingTimer: ReturnType<typeof setTimeout> | undefined;
 
   // Wait until the child has actually drawn a little, so the prompt feels earned
   // and never competes with the very first finger-on-screen moment.
@@ -50,10 +52,19 @@
     if (showHint || busy) return;
     if (!autoDismissInstallIfDue()) return;
     parting = true;
-    setTimeout(() => {
+    partingTimer = setTimeout(() => {
       exitIntoSettingsButton = true;
       parting = false;
     }, PARTING_MESSAGE_MS);
+  });
+
+  // A nested effect so its cleanup only runs on unmount, not on every re-run
+  // of the effect above (which would clear the live timer on ordinary
+  // dependency changes during the parting window).
+  $effect(() => {
+    return () => {
+      if (partingTimer) clearTimeout(partingTimer);
+    };
   });
 
   // Auto-clear exit: shrink the pill into the Settings Button so the parting
