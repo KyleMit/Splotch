@@ -30,56 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Correctness] `mountBootHiddenOverlays` discards the idle-callback cancel handle and leaves `onSettingsModal` unguarded
-
-**File(s):** `web/src/lib/boot/bootHiddenOverlays.ts` (`mountBootHiddenOverlays`, lines 15–47) @
-9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Two gaps in the teardown story:
-
-```ts
-let stopped = false;
-scheduleIdle(() => {            // cancel handle returned by scheduleIdle is dropped
-  import('$lib/components/bootHiddenOverlays')
-    .then((module) => {
-      onSettingsModal(module.SettingsModal);   // runs even when stopped
-      ...
-```
-
-(a) `scheduleIdle` returns a cancel function (see `lib/idle.ts:6–13`) that this caller throws away;
-the returned teardown only flips `stopped`. If the drawing page unmounts before the idle callback
-fires (fast navigation to `/privacy`), the callback still runs and kicks off the dynamic chunk
-import for a page that's gone — wasted network/parse on exactly the slow devices the idle pump
-exists to protect. (b) Inside the `.then`, `mountNext()` checks `stopped` but
-`onSettingsModal(module.SettingsModal)` does not, so the unmounted page's `$state` setter still
-runs. Harmless in practice today (writing to orphaned `$state` is inert), but the asymmetry — one
-callback guarded, its sibling not — reads as an oversight, and the comment at lines 15–17 explains
-the `stopped` flag as *the* guard for "running after unmount".
-
-#### Proposed solution
-
-Keep and use the cancel handle, and guard the whole continuation:
-
-```ts
-let stopped = false;
-const cancelIdle = scheduleIdle(() => { ... });
-// inside .then:
-if (stopped) return;
-onSettingsModal(module.SettingsModal);
-...
-return () => {
-  stopped = true;
-  cancelIdle();
-};
-```
-
-The `stopped` flag is still needed (the cancel can't reach the in-flight import continuation, as the
-existing comment says), but the two mechanisms together close both windows.
-
 ### [Correctness] `body { width: 100vw }` causes horizontal overflow on body-scrolling routes
 
 **File(s):** `web/src/app.css` (lines 20–31) @ 9ae62ff1
