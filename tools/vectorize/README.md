@@ -298,6 +298,64 @@ filled shapes once each; it is not a centerline.
   adds hundreds of its own shapes, so it swamps simple artwork: a coloring outline went 1.9 MB test
   → 124 KB production (15×), while a flat 5-color icon went 144 KB → **2 KB** (70×). Compare test
   runs against each other, never against a production expectation.
+* **A test-mode result cannot be de-watermarked, so test mode can never preview appearance.** The
+  watermark is not an overlay sitting on top of the art — the lettering is *knocked out of the
+  artwork's own geometry*. Dropping every shape whose fill is a watermark grey leaves word-shaped
+  holes through the drawing, not a clean preview. Test mode proves **parameters** (colors,
+  transparency, shape counts, curve types, viewBox); judging how a result *looks* costs a credit,
+  and there is no way around that.
+* **`X-Credits-Remaining` lags the charge.** The value the driver prints straight after a production
+  run can still be the pre-charge balance; `GET /account` a moment later shows the debit. Confirm a
+  spend with `--account`, not with the header from the run that spent it.
+
+## Batch conversion: what ten icons actually taught
+
+From tracing the thirteen-icon refresh (ten traces, ten credits). The parameters in the recipe above
+did not change once after the first icon, so the per-icon work is only ever **two calls**: a free
+discovery pass, then the keeper.
+
+* **Separate watermark from artwork by measuring, not by eye.** Discovery reports every color it
+  finds, and on these icons 4–11 of them were watermark. Guessing from the hex is unreliable —
+  `#383723` and `#5E3A52` look plausibly like artwork. Sample each candidate against the source PNG
+  instead: a watermark color occupies **0.000%** of it. Anti-aliased edge blends show up as real but
+  vanishing (0.001–0.03%), which is a different and equally clear signal.
+* **Squaring the viewBox and un-grouping are pure serialization — never re-spend a credit on them.**
+  `output.size.*` only pads the viewBox; it does not move coordinates. Neither does moving a `<g>`
+  fill onto its children. Both are text edits on the file you already paid for, and both were
+  verified pixel-identical (0 of 262,144 pixels differ). Pass `output.group_by=none` in the keeper
+  and square the box offline.
+* **Stacking cannot recover geometry the pixels never contained.** `shape_stacking=stacked` keeps a
+  shape whole where the tracer can infer containment — a night sky under its stars, a lens ring
+  under its glass. But where an overlapping shape *fully severs* the one beneath (a slider knob
+  taller than its track, a folder back hidden behind a photo), the visible region is genuinely two
+  disconnected areas and comes back as two shapes. No parameter changes this; it is a property of
+  the artwork. Budget for it when a "single bar" turns out to be two fills to recolor.
+* **Primitive recognition is a lottery. Expect nothing.** Across ten icons it produced four
+  `<circle>` elements and seven rotated rounded `<rect>` elements — genuinely valuable, a whole
+  eight-rayed sun in 982 bytes. But it cannot be forced or predicted: one star of three, a lens but
+  not its visually-identical ring, seven of eight sun rays whose areas differ by 2%, and one of two
+  heads in the same drawing where the unrecognized one is within 0.8% of square. There is no
+  parameter and no property of the artwork that reliably predicts it. Treat every primitive as found
+  money and never plan a byte budget around getting one.
+* **Interior alpha bleed is real, and is not worth fixing.** With the gap filler off, two abutting
+  opaque shapes composite to roughly 0.76 alpha along their shared edge rather than 1.0, so the
+  background shows faintly through internal joins. Every icon in the batch had some (0.24%–7.3% of
+  interior pixels at 128 px, lowest alpha ~180). None of it is perceptible at 44 or 128 px on either
+  a light or a dark ground — check by eye rather than by metric. Stroking each shape in its own fill
+  to force an overlap was tried and rejected: at sub-pixel widths it clears the artifact at one
+  raster size and worsens another.
+* **A low fidelity score is usually the drawing.** Comparing a traced SVG to its source per opaque
+  pixel, the disagreeing pixels are almost all anti-aliased ones on a color boundary. Across the
+  ten, boundary density versus fidelity gives **r = −0.77**: the icon with the least boundary per
+  unit area scored 99.1%, the busiest scored 95.3%. Watch for a score that moves without the drawing
+  explaining it, not for an absolute number.
+* **Measurement traps that produced wrong answers in this batch**, all worth guarding against:
+  flood-filling the background 4-connected reports diagonally-pinched *outside* pockets as interior
+  holes (use 8-connected for background, 4 for foreground); the axis-aligned bounding box of a
+  rotated shape is not its dimensions, so comparing a rotated ray's bbox to an upright one's
+  "proves" a size difference that isn't there; and rasterizing one shape in isolation with
+  fit-to-contain can rescale it, so radii measured that way are meaningless — take geometry from
+  `getBBox()` in a browser instead.
 
 ## Why direct HTTP, and not the SDK or CLI
 

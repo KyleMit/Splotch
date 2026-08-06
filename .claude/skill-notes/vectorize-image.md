@@ -123,12 +123,45 @@ numbers from a traced SVG:
   synthetic flat art, snapping each color to itself is a no-op — worth checking a checksum before
   attributing a change to a parameter.
 
-The tolerance metric is inferred, not documented: `max(|Δr|,|Δg|,|Δb|)/255 + |Δa|/255` is the only
-simple form satisfying all three anchors the docs give (red→black = 1.0, black→white = 1.0,
+The tolerance metric was inferred rather than documented: `max(|Δr|,|Δg|,|Δb|)/255 + |Δa|/255` is
+the only simple form satisfying all three anchors the docs give (red→black = 1.0, black→white = 1.0,
 transparent-black→opaque-white = 2.0). It predicted the cream/white boundary at 0.118 and the
-fixture behaved accordingly (survives at 0.05, dies at 0.15) — but that is one confirmation of a
-guess, not a proof. If a palette ever behaves unexpectedly around a *partially transparent* color,
-the alpha term is the least-tested half of it.
+fixture behaved accordingly — but that was one confirmation of a guess, not a proof, and the note
+said so.
+
+**The guess was wrong**, and the way it failed is the lesson. The fixture could not discriminate:
+cream `#F5EFE1` sits at 0.118 by max-channel and 0.139 by Euclidean, and *both* predict "survives
+0.05, dies 0.15". A single well-chosen confirmation can be consistent with several hypotheses at
+once. It took a case where the two metrics disagreed — and deliberately bisecting until one broke —
+to settle it. See `tools/vectorize/README.md` for the measured result: three colors, four brackets,
+every max-channel prediction falsified.
+
+Worth keeping as a caution rather than a closed question: the Euclidean form does not satisfy the
+docs' anchors either (black→white comes out 1.732, not 1.0), so the anchors describe something the
+observed behaviour contradicts. The formula now in the README is an empirical fit over opaque
+colors, not a specification, and the alpha term remains completely untested. If a palette ever
+misbehaves around a partially transparent color, that is still the least-known half.
+
+## What a real batch taught (thirteen-icon refresh)
+
+The first conversion was one icon. Doing ten in sequence surfaced things a single run cannot, and
+they are recorded in the README's *Batch conversion* section rather than here because they change
+what an operator does. The two that are design history rather than procedure:
+
+**Primitive recognition is not a feature you can design around.** It is tempting to read "seven of
+eight sun rays came back as native `<rect>` elements" as a capability and plan for it. Across ten
+icons the hit rate was arbitrary in a way no measurement predicted: one star of three, a lens but
+not its visually-identical ring, and one of two heads in a single drawing where the *unrecognized*
+one measured within 0.8% of square. Each near-miss was investigated and each investigation found
+nothing distinguishing. The honest framing — and the one the README now uses — is that primitives
+are found money.
+
+**Three separate wrong answers came from measurement code, not from the service.** A seam check that
+flood-filled the background 4-connected reported diagonal pockets as interior holes; a comparison of
+a rotated shape's bounding box against an upright one's "showed" a size difference that did not
+exist; and a circularity check that rasterized shapes in isolation silently rescaled them. All three
+were plausible enough to have been reported as findings. When a result about the tracer looks
+surprising, suspect the instrument first — it was the instrument three times out of three here.
 
 ## Open questions
 
