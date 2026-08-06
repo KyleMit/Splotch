@@ -18,6 +18,7 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
+| 2026-08-06 | [burn-down-audits](#2026-08-06--burn-down-audits)               |
 | 2026-08-05 | [vet-audits](#2026-08-05--vet-audits)                           |
 | 2026-08-05 | [session-audit](#2026-08-05--session-audit)                     |
 | 2026-08-05 | [burn-down-audits](#2026-08-05--burn-down-audits-run-2)         |
@@ -82,6 +83,42 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-07-03 | [code-audit](#2026-07-03--code-audit)                           |
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
+
+## 2026-08-06 · burn-down-audits
+
+Bulk burndown on PR [#805](https://github.com/KyleMit/Splotch/pull/805) (branch
+`claude/audit-burn-down-72heuj`), forked fresh from `main` because the previous campaign's PR #771
+had merged: **54 fixed · 4 dropped · 2 deferred**, backlog 427 → 367, across a 5-finding canary and
+a 55-finding unattended run. Work concentrated in the admin console and token backend, the app shell
+and dev harness, and the design-system/icon layer — four `## Source:` sections drained completely
+and were removed.
+
+The correctness fixes were the valuable half: `installWakeLock`'s teardown never released its
+sentinel, so navigating off the drawing route held the screen awake for the tab's life; a failed
+first wake-lock request was never retried, so one unlucky tap disabled screen-sleep prevention for
+the whole session; `mountBootHiddenOverlays` discarded its idle-callback cancel handle and mounted
+overlays after unmount; `StatusMessage`'s explicit `aria-live="polite"` silently downgraded its own
+`role="alert"`; and `Disclosure`'s chevron rotation only worked because every caller happened to
+blockify the pseudo-element from outside.
+
+The adversarial reviewer rejected roughly one fix in four, and twice caught the same subtle failure:
+a fix that removed one hand-written copy of a closed set while leaving or creating another, so the
+new drift guard would have stayed green through exactly the divergence it was written to catch. It
+also rejected rewriting an ADR's Decision paragraph in place (retroactively falsifying what that
+decision recorded) in favour of a dated amendment. On the `Disclosure` fix the implementer then
+found the reviewer's *own* proposed assertion insufficient — Chromium reports a specified transform
+matrix even on a non-transformable inline box — and proved it by reverting the fix and watching the
+test still pass.
+
+All four drops were stale rather than wrong: three targeted files that ADR-0096's design-system
+consolidation had deleted, and the fourth named four icons as deferrable when three are core toolbar
+icons rendered on first paint. Both deferrals were 3-round review exhaustions that rolled back
+cleanly, each leaving a post-mortem and an applicable draft patch under `docs/audit-deferred/`.
+
+One incidental repair worth noting: an implementer diagnosed a red gate as a pre-existing 1-in-49
+flake in the parental-gate backspace test — a fixed digit typed into a randomly generated challenge
+auto-submitted when `randomOperand()` drew 3×3 — reproduced it by pinning `Math.random`, and fixed
+it in its own commit (e1e4810bfb33).
 
 ## 2026-08-05 · vet-audits
 

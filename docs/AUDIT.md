@@ -24,14 +24,6 @@ section are not comparable — the drain re-sorted across sections on severity. 
 issues #774–#785; see the 2026-08-05 `vet-audits` entry in `docs/AUDIT-LOG.md`. No P1 remains in
 this file.
 
-## Source: Code audit — App state (runes)
-
-## Source: Code audit — Admin console + token backend
-
-## Source: Code audit — Routes / app shell / dev harness
-
-## Source: Code audit — Design system + icons
-
 ## Source: Code audit — Core UI controls
 
 ### [Maintainability] The hydrated button-size formula exists in three copies; two are kept in step only by comments

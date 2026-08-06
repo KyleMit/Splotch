@@ -4,7 +4,22 @@
 > [#805](https://github.com/KyleMit/Splotch/pull/805) · Bulk-burn the `docs/AUDIT.md` backlog with
 > `scripts/audit-burndown/burndown.mjs`, running unattended.
 
-## Current state
+## Current state — wrapped up, resumable
+
+Wrapped on request after **54 fixed · 4 dropped · 2 deferred**; backlog 427 → 367 (canary 5 + full
+run 49 fixed). Nothing is in flight, `HEAD` == `origin/<branch>`, the comment store is drained, and
+`capture` reports `skipped 54 already posted` against 54 fixes. Continue by relaunching with the
+command below — or, if PR 805 has merged by then, fork a fresh branch from the new `main` and open a
+new PR, because a merged PR cannot track new work.
+
+**The container was reclaimed mid-run** (~08:48, during iteration 52's E2E gate), which is why the
+run has no final `finished:` line and why a `push failed` line precedes it. Iteration 52 left a
+clean tree, so its finding is intact in the backlog and simply re-processes. The counts above were
+reconstructed from git and the entry-deletion identity, which closes exactly:
+`427 − 60 consumed == 367 == pop.mjs --count`, with commit-derived drop (4) and deferral (2) counts
+matching independently.
+
+## Original state
 
 Fresh campaign forked from `origin/main` at 6e063e677e4b26b67e0dda6c6cb502dc3ee23741. The previous
 packet (`audit-burndown-473.md`) was **spent** — its PR
@@ -115,6 +130,29 @@ git merge-base --is-ancestor "$sha" HEAD && echo REACHABLE || echo "ORPHAN $sha"
 ```
 
 `git rev-parse --verify` is **not** sufficient — it resolves orphaned objects happily.
+
+## What this run established (so the next one need not re-derive it)
+
+* **Two supervising traps, both about SHAs in role prose.** An implementer routinely cites *its own
+  pre-amend commit*, which the driver orphans when it amends the backlog excision in — hit 3× here.
+  And it sometimes writes a 7-char abbreviation where the renderer's heading uses 12. Neither is
+  caught by `git rev-parse --verify`, which resolves orphaned objects happily. Use reachability:
+  `git merge-base --is-ancestor "$sha" HEAD`. Roughly one fix-round comment in three needed a SHA
+  corrected before posting.
+* **The runbook's suggested monitor filter misses drops.** It greps for `dropped`, but the driver
+  logs the verdict as `INVALID:` — so four drops arrived silently before the filter was widened.
+  Include `INVALID` in the alternation.
+* **Iteration tags repeat on a drop** (`iter${done + deferred + 1}` excludes drops), so two or three
+  consecutive `iter0031` lines with a falling remaining-count is a drop signature, not a bug.
+* **Stale findings cluster by consolidation commit.** Three of four drops targeted files ADR-0096
+  deleted when it moved `/dev/design` to the public `/design` route. Cheap (~30 s each at verify)
+  and self-limiting, but a backlog pinned before a big consolidation will show a run of them.
+* **`npm run ruler:check` really does mutate the tree** — it runs `dprint fmt`. Do not run it while
+  the driver is live (it was a no-op here only because everything was already formatted). CI's
+  Agent-file drift job is the safe place to learn this.
+* **Deferrals stayed safe.** Both were 3-round review exhaustions that rolled back to the previous
+  good commit and committed a post-mortem plus an applicable draft patch — no work silently lost, so
+  neither met the bar for a mid-run interrupt at a ~4 % rate.
 
 ## Wall-clock projection — a multi-day campaign, not one night
 
