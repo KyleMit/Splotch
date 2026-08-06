@@ -30,39 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Readability] `+layout.svelte` uses an inline `import('svelte').Snippet` though `svelte` is already imported
-
-**File(s):** `web/src/routes/+layout.svelte` (lines 2, 14–17) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```svelte
-import { onMount } from 'svelte';
-...
-interface Props {
-  children: import('svelte').Snippet;
-}
-```
-
-The file already has an import statement from `'svelte'` two lines up; the dynamic
-`import('svelte').Snippet` type reference is the pattern for files that *can't* add an import
-(ambient `.d.ts`), and here it just adds noise. Every other component in the repo that needs
-`Snippet` imports it as a named type.
-
-#### Proposed solution
-
-```ts
-import { onMount, type Snippet } from 'svelte';
-interface Props {
-  children: Snippet;
-}
-```
-
-Or inline the props type entirely: `let { children }: { children: Snippet } = $props();` and drop
-the single-use interface. Cosmetic, one-minute change.
-
 ### [Readability] Two modules named `bootHiddenOverlays.ts` in sibling `lib/` directories
 
 **File(s):** `web/src/lib/boot/bootHiddenOverlays.ts`,
