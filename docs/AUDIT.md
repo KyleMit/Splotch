@@ -32,32 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Testing] `QUICKSAND_FONT_FAMILY` agrees with the @fontsource package's registered family only by convention
-
-**File(s):** `web/src/lib/fonts.ts` (line 1), `web/src/routes/+layout.svelte` (line 8),
-`web/src/lib/design/tokens.ts` (line 85) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`fonts.ts` is one line: `export const QUICKSAND_FONT_FAMILY = 'Quicksand Variable';`. That string
-must equal the `font-family` name declared by `@fontsource-variable/quicksand/index.css` (imported
-in `+layout.svelte` line 8) — a third-party file that could rename the family on a major bump. If it
-drifts, the app-wide stack (`tokens.ts` line 85) silently falls through `'Quicksand Variable'` →
-`'Quicksand'` (also absent) → system sans, and nothing fails; a font swap on a toddler app is easy
-to miss in review. This is cross-file agreement with a file that can't share the constant — the
-stated trigger for a drift-guard test.
-
-#### Proposed solution
-
-Add a tiny node-environment test (beside `fonts.ts` or in `tokens.test.ts`) that reads
-`node_modules/@fontsource-variable/quicksand/index.css` and asserts
-`font-family: 'Quicksand Variable'` (i.e. `QUICKSAND_FONT_FAMILY`) appears in its `@font-face`
-rules. Runs against the locked dependency, so it fails exactly when a Dependabot bump changes the
-registered name. Gotcha: resolve the file via `import.meta.resolve`/`require.resolve` rather than a
-relative path so hoisting layout changes don't break it.
-
 ### [Readability] Icon.svelte.test.ts classifies every icon twice
 
 **File(s):** `web/src/lib/components/Icon.svelte.test.ts` (lines 25–27, 34–43) @ 9ae62ff1
