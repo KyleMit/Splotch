@@ -55,29 +55,4 @@
   :global(.actions-panel[data-action-panel-live][data-off-eraser]) #eraserButton {
     display: none;
   }
-
-  /* White brush color is invisible on the white buttons, so ring the tinted
-     shapes with a solid black edge while white is active. paint-order draws the
-     stroke behind the white fill (so only an outer keyline shows), and
-     non-scaling-stroke pins it to 2 screen px across the icons' very different
-     viewBoxes. Only the currentColor paths are stroked, leaving each icon's
-     fixed-palette parts (colored pencils, the crayon's wrapper, the magic/eraser
-     entries) untouched. The #000 keyline is a deliberate one-off — black reads
-     against every pen color and both papers. */
-  .brush-menu.white-stroke :global(svg path[fill='currentColor']) {
-    stroke: #000;
-    stroke-width: 2px;
-    paint-order: stroke;
-    vector-effect: non-scaling-stroke;
-  }
-
-  /* The dark-mode mirror: ring near-black ink with a light keyline so it reads
-     on the dark cards. Same paint-order trick; the keyline token is transparent
-     in light mode, so this rule is inert there. */
-  .brush-menu.dark-stroke :global(svg path[fill='currentColor']) {
-    stroke: var(--dark-ink-keyline);
-    stroke-width: 2px;
-    paint-order: stroke;
-    vector-effect: non-scaling-stroke;
-  }
 </style>

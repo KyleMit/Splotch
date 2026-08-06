@@ -280,7 +280,7 @@ body {
 
 /* Flyout chrome shared by the Brush Menu and the Stroke Width Menu: the popover
    shell and its option buttons. Each component keeps only what differs — the
-   eraser-mode sizing and the white-stroke/dark-stroke keylines.
+   eraser-mode sizing.
 
    Landscape base rule (portrait overrides below): the action panel hugs the
    bottom with little height to spare, so the flyout pops up as a horizontal
@@ -373,6 +373,37 @@ body {
    keep the current color (currentColor), so only tint non-color icons here. */
 .flyout-option.active .action-icon:not(.icon-color) svg {
   fill: var(--brand);
+}
+
+/* Ink keylines shared by the action buttons, the Brush Menu and the Stroke
+   Width Menu. A white brush color is invisible on the white buttons and cards,
+   so ring the tinted shapes with a solid black edge while white is active;
+   the dark-stroke pair is the mirror, ringing near-black ink with a light
+   keyline so it reads on the dark cards (the token is transparent in light
+   mode, so that rule is inert there). paint-order draws the stroke behind the
+   fill so only an outer keyline shows, and non-scaling-stroke pins it to 2
+   screen px across the icons' very different viewBoxes (pen/crayon ~272). The
+   action buttons and the Brush Menu stroke only the currentColor paths, leaving
+   each icon's fixed-palette parts (colored pencils, the crayon's wrapper, the
+   magic/eraser entries) untouched; the Stroke Width Menu's icon is a single
+   currentColor path, so plain `path` suffices there. The #000 is a deliberate
+   one-off — black reads against every pen color and both papers. */
+.action-button.white-stroke svg path[fill='currentColor'],
+.brush-menu.white-stroke svg path[fill='currentColor'],
+.stroke-width-menu.white-stroke svg path {
+  stroke: #000;
+  stroke-width: 2px;
+  paint-order: stroke;
+  vector-effect: non-scaling-stroke;
+}
+
+.action-button.dark-stroke svg path[fill='currentColor'],
+.brush-menu.dark-stroke svg path[fill='currentColor'],
+.stroke-width-menu.dark-stroke svg path {
+  stroke: var(--dark-ink-keyline);
+  stroke-width: 2px;
+  paint-order: stroke;
+  vector-effect: non-scaling-stroke;
 }
 
 /* Spin animation reused by any "AI thinking" icon. */
