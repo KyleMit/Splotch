@@ -26,31 +26,6 @@ this file.
 
 ## Source: Code audit — App state (runes)
 
-### [Testing] `captureAiAccessTokenFromUrl` and `aiCredentialKind` are untested
-
-**File(s):** `web/src/lib/state/settings.svelte.ts` (`aiCredentialKind`, lines 204–208;
-`captureAiAccessTokenFromUrl`, lines 233–241) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`settings.svelte.test.ts` covers the generated setters, clamps, and `reloadSettings`, but not these
-two exports. `captureAiAccessTokenFromUrl` has real branching worth pinning: no-op without the
-param, persisting the token via `setAiAccessToken`, and scrubbing the URL with
-`history.replaceState` — it is the landing path for every parent invite link (`/​?ai_access_token=…`,
-built in `lib/server/admin.ts:90`), so a silent regression here breaks token onboarding.
-`aiCredentialKind` encodes the BYOK-beats-access-code precedence that `AiKeyManager.svelte:33` and
-`settings/sections.ts:69` rely on.
-
-#### Proposed solution
-
-In `settings.svelte.test.ts`, add a `describe('captureAiAccessTokenFromUrl')` that sets
-`window.location` (happy-dom allows `window.happyDOM`-style navigation or `history.replaceState` to
-seed the URL) and asserts token persistence + URL scrub + the no-param no-op, and a small
-`describe('aiCredentialKind')` covering the three states (key set, token only, neither) by assigning
-`settings.aiUserApiKey`/`settings.aiAccessToken` directly.
-
 ### [Readability] `coloringBook` exported from `ui.svelte.ts` collides with the coloring-book state module's domain name
 
 **File(s):** `web/src/lib/state/ui.svelte.ts` (lines 36–39) @ 9ae62ff1
