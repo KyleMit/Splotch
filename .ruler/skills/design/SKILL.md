@@ -180,11 +180,13 @@ so its theme toggle keeps working.
 
 ## Brand & iconography
 
-* **Mascot & marks.** Splotchy (`static/splotchy.svg`) is the mascot and PWA icon, rendered
-  structurally via `SplotchyIcon.svelte` (it's in `NON_RENDERABLE_ICONS`, so `<Icon>` won't take
-  it). The wordmark is plain Quicksand — no drawn logo. The crayon strip (`CrayonStrip.svelte`,
-  seven pills in rainbow order, hues looked up from `lib/palette.ts`) is the wordmark's companion
-  mark on parent pages.
+* **Mascot & marks.** Splotchy (`web/src/lib/icons/splotchy.svg`) is the mascot, rendered
+  structurally via `SplotchyIcon.svelte`, which pulls that one canonical file in as a Vite URL
+  import (it's in `NON_RENDERABLE_ICONS`, so `<Icon>` won't take it). The installed-app icons are
+  separate: `site.webmanifest` points at the `web-app-manifest-*.png` files in `web/static/`. The
+  wordmark is plain Quicksand — no drawn logo. The crayon strip (`CrayonStrip.svelte`, seven pills
+  in rainbow order, hues looked up from `lib/palette.ts`) is the wordmark's companion mark on parent
+  pages.
 * **Icons are first-party inline SVG** through `<Icon name="…">` — no icon font, no CDN set, no
   emoji-as-icons. Monochrome glyphs bake a near-black fill and get re-inked with
   `fill: var(--icon-ink)` on themed surfaces; full-color "spot" icons carry their own palette and

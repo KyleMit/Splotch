@@ -32,56 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Architecture] `splotchy.svg` is an 88 KB byte-identical duplicate with no drift guard
-
-**File(s):** `web/src/lib/icons/splotchy.svg` (88,461 bytes), `web/static/splotchy.svg`
-(byte-identical), `web/src/lib/components/SplotchyIcon.svelte` (line 10) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-The repo carries two byte-identical 88 KB copies of the mascot SVG:
-
-* `web/src/lib/icons/splotchy.svg` — read by `scripts/lib/scrapbook-index.mjs`
-  (`ICONS_DIR = web/src/lib/icons`, line 35/41) and by `scripts/generate-icon-names.mjs`, which is
-  why `'splotchy'` appears in the `IconName` union at all. It is excluded from every runtime glob
-  (`Icon.svelte` line 53, both guard tests) via the whole `NON_RENDERABLE_ICONS` apparatus.
-* `web/static/splotchy.svg` — the copy the app actually renders, hard-coded by URL in
-  `SplotchyIcon.svelte` line 10:
-
-```svelte
-<span class="{className} icon-color" {...rest} data-icon="splotchy">
-  <img src="/splotchy.svg" alt="" />
-</span>
-```
-
-Nothing asserts the two files stay identical. Edit one (re-export the mascot, optimize it) and the
-app and the scrapbook/icon tooling silently diverge. This is precisely the "cross-file agreement
-maintained by prose" failure mode the root conventions call a defect — except here there isn't even
-prose; nothing documents that the static copy mirrors the lib copy. The hard-coded `/splotchy.svg`
-URL is also unguarded: rename the static file and the `<img>` 404s silently (`alt=""` hides it).
-
-#### Proposed solution
-
-Keep exactly one canonical file — `web/src/lib/icons/splotchy.svg` (the scripts already read it, and
-it keeps the icon beside its siblings) — and delete `web/static/splotchy.svg`. In
-`SplotchyIcon.svelte`, import the asset so Vite emits a hashed URL and the build fails loudly if the
-file moves:
-
-```svelte
-import splotchyUrl from '../icons/splotchy.svg';
-...
-<img src={splotchyUrl} alt="" />
-```
-
-Gotchas: confirm nothing external hotlinks `https://splotch.art/splotchy.svg` (no in-repo consumer
-was found — not the manifest, not `app.html`, not any route); the Vite URL import must not collide
-with the `?raw` globs (it doesn't — different import query); and the hashed asset works identically
-in the `CAPACITOR=true` static export. Alternative if the stable public URL must be preserved: keep
-`static/` canonical, point the scrapbook script at it, and add a drift-guard test comparing the two
-files — but the single-copy solution is strictly simpler.
-
 ### [Correctness] Disclosure's chevron rotation only works when callers happen to blockify the pseudo-element
 
 **File(s):** `web/src/lib/components/design/Disclosure.svelte` (lines 40–48) @ 9ae62ff1
