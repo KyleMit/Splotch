@@ -26,38 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Testing] `MAX_ACTION_BUTTON_COUNT` agrees with `visibleActionButtonCount` only by prose; the test pins a bare `6`
-
-**File(s):** `web/src/lib/actionButtonLayout.ts` (lines 35–38),
-`web/src/lib/actionButtonLayout.test.ts` (lines 49–51) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`MAX_ACTION_BUTTON_COUNT = 6` (line 38) must equal `visibleActionButtonCount()`'s value with every
-toggle on — the constant sizes the SSR worst case, the function sizes the live row. The link is
-maintained by the comment listing the six buttons (lines 35–37). The existing test asserts the
-all-on count as a literal `6` (test line 50: `expect(visibleActionButtonCount()).toBe(6)`), not
-against the constant — so adding a seventh button to the function while forgetting the constant
-keeps every test green (the fallback test would still pass: it checks the CSS matches the stale
-constant), and first paint budgets for one button too few, letting the pre-hydration row overflow
-into the Settings Button. The testing rule is explicit: "Parametrized tests import the
-constant/manifest they exercise — never re-declare the value."
-
-#### Proposed solution
-
-In `actionButtonLayout.test.ts`, add (or amend the existing AI test):
-
-```ts
-it('all-on count equals MAX_ACTION_BUTTON_COUNT', () => {
-  setAiAccessToken('tok');
-  expect(visibleActionButtonCount()).toBe(MAX_ACTION_BUTTON_COUNT);
-});
-```
-
-which turns the prose comment into a mechanical guard.
-
 ### [Architecture] The global Ctrl+Z shortcut lives inside ActionsPanel and bypasses the undo parent toggle
 
 **File(s):** `web/src/lib/components/ActionsPanel.svelte` (lines 168–174) @ 9ae62ff1

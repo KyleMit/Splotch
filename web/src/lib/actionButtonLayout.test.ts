@@ -33,6 +33,7 @@ import {
   resolvedPortraitPaletteHeight,
   maxActionButtonScale,
   publishActionPanelState,
+  MAX_ACTION_BUTTON_COUNT,
 } from './actionButtonLayout';
 
 const originalMatchMedia = window.matchMedia;
@@ -120,6 +121,11 @@ describe('visibleActionButtonCount', () => {
   it('the eraser toggle hides a Brush Menu entry, not a button', () => {
     setEraser(false);
     expect(visibleActionButtonCount()).toBe(5);
+  });
+
+  it('all-on count equals MAX_ACTION_BUTTON_COUNT', () => {
+    setAiAccessToken('tok');
+    expect(visibleActionButtonCount()).toBe(MAX_ACTION_BUTTON_COUNT);
   });
 });
 
