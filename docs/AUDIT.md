@@ -32,38 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Maintainability] trimGeometry's `geometry` parameters are speculative surface — nothing ever passes them
-
-**File(s):** `web/src/lib/design/trimGeometry.ts` (lines 68–118, 208–232) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-All six exported ladder functions (and the two internal helpers behind them) take an optional
-geometry argument defaulted to the module constant, e.g. lines 76–80:
-
-```ts
-export function landscapeSingleColumnFloorPx(
-  geometry: PaletteStackGeometry = PALETTE_COLUMN_GEOMETRY
-): number {
-```
-
-No caller anywhere passes a non-default value: `ColorPicker.svelte`/`ColorPalette.svelte` import
-only the geometry constants, and every call in `trimGeometry.test.ts` is zero-arg (lines 139,
-144–148, 152–155, 158–161, 164, 205, 209). The convention is explicit: "A new prop, option, or
-optional parameter needs a production caller that exercises it; a seam kept only for tests gets a
-comment saying so" — and these aren't even used by tests. The injectable-geometry seam suggests a
-what-if flexibility the module doesn't have, and every signature pays for it.
-
-#### Proposed solution
-
-Remove the parameters and let each function close over `PALETTE_COLUMN_GEOMETRY` /
-`PALETTE_ROW_GEOMETRY` / `HEX_GRID_GEOMETRY` directly (the internal `hexGridBreakpointPx` keeps
-`viewportFraction` as a plain argument or reads the constant). `portraitLadderPx()` etc. shrink to
-one-liners over the module constants. Purely mechanical; the drift-guard test is unaffected since it
-already calls with defaults.
-
 ### [Readability] StatusMessage: off-ramp `10px` padding and hand-rolled class toggles
 
 **File(s):** `web/src/lib/components/design/StatusMessage.svelte` (lines 20–21, 31) @ 9ae62ff1

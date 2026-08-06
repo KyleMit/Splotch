@@ -73,18 +73,13 @@ const LANDSCAPE_TWO_COLUMN_LADDER = [4, 3, 2, 1] as const;
 const PORTRAIT_LADDER = [7, 6, 5, 4, 3, 2, 1] as const;
 
 /** Height at which a landscape single column still holds `swatches`. */
-function landscapeSingleColumnMinHeightPx(
-  swatches: number,
-  geometry: PaletteStackGeometry = PALETTE_COLUMN_GEOMETRY
-): number {
-  return stackExtentPx(swatches, geometry);
+function landscapeSingleColumnMinHeightPx(swatches: number): number {
+  return stackExtentPx(swatches, PALETTE_COLUMN_GEOMETRY);
 }
 
 /** Height below which the single column falls back to the two-column grid. */
-export function landscapeSingleColumnFloorPx(
-  geometry: PaletteStackGeometry = PALETTE_COLUMN_GEOMETRY
-): number {
-  return landscapeSingleColumnMinHeightPx(LANDSCAPE_SINGLE_COLUMN_LADDER.at(-1)!, geometry);
+export function landscapeSingleColumnFloorPx(): number {
+  return landscapeSingleColumnMinHeightPx(LANDSCAPE_SINGLE_COLUMN_LADDER.at(-1)!);
 }
 
 export function landscapeSingleColumnMediaQuery(): string {
@@ -95,37 +90,31 @@ export function landscapeSingleColumnMediaQuery(): string {
  * Heights below which the single column loses another swatch. One step shorter
  * than the ladder: its last entry is the floor above, not a trim.
  */
-export function landscapeSingleColumnTrimLadderPx(
-  geometry: PaletteStackGeometry = PALETTE_COLUMN_GEOMETRY
-): number[] {
+export function landscapeSingleColumnTrimLadderPx(): number[] {
   return LANDSCAPE_SINGLE_COLUMN_LADDER.slice(0, -1).map((swatches) =>
-    justBelowPx(landscapeSingleColumnMinHeightPx(swatches, geometry))
+    justBelowPx(landscapeSingleColumnMinHeightPx(swatches))
   );
 }
 
 /** Heights at which the single column opens each bonus color's slot. */
-export function landscapeBonusRevealLadderPx(
-  geometry: PaletteStackGeometry = PALETTE_COLUMN_GEOMETRY
-): number[] {
-  return LANDSCAPE_BONUS_REVEAL_LADDER.map((slot) =>
-    landscapeSingleColumnMinHeightPx(slot, geometry)
-  );
+export function landscapeBonusRevealLadderPx(): number[] {
+  return LANDSCAPE_BONUS_REVEAL_LADDER.map((slot) => landscapeSingleColumnMinHeightPx(slot));
 }
 
 /** Heights below which the landscape two-column grid loses a row of two. */
-export function landscapeTwoColumnLadderPx(
-  geometry: PaletteStackGeometry = PALETTE_COLUMN_GEOMETRY
-): number[] {
-  return LANDSCAPE_TWO_COLUMN_LADDER.map((rows) => justBelowPx(stackExtentPx(rows, geometry)));
+export function landscapeTwoColumnLadderPx(): number[] {
+  return LANDSCAPE_TWO_COLUMN_LADDER.map((rows) =>
+    justBelowPx(stackExtentPx(rows, PALETTE_COLUMN_GEOMETRY))
+  );
 }
 
 /**
  * Widths below which the portrait row loses a core swatch. The always-present
  * gradient swatch occupies one slot on top of the core count.
  */
-export function portraitLadderPx(geometry: PaletteStackGeometry = PALETTE_ROW_GEOMETRY): number[] {
+export function portraitLadderPx(): number[] {
   return PORTRAIT_LADDER.map((coreSwatches) =>
-    justBelowPx(stackExtentPx(coreSwatches + 1, geometry))
+    justBelowPx(stackExtentPx(coreSwatches + 1, PALETTE_ROW_GEOMETRY))
   );
 }
 
@@ -217,28 +206,37 @@ function hexGridBreakpointPx(
 }
 
 /** Height below which the honeycomb drops below `step.count` rows. */
-function hexGridRowMaxHeightPx(
-  step: HexGridStep,
-  geometry: HexGridGeometry = HEX_GRID_GEOMETRY
-): number {
+function hexGridRowMaxHeightPx(step: HexGridStep): number {
   const contentPx =
-    geometry.firstRowPx + geometry.rowPitchPx * (step.count - 1) + geometry.paddingPx;
-  return hexGridBreakpointPx(contentPx, HEX_GRID_ROW_RULE, step, geometry.viewportFraction);
+    HEX_GRID_GEOMETRY.firstRowPx +
+    HEX_GRID_GEOMETRY.rowPitchPx * (step.count - 1) +
+    HEX_GRID_GEOMETRY.paddingPx;
+  return hexGridBreakpointPx(
+    contentPx,
+    HEX_GRID_ROW_RULE,
+    step,
+    HEX_GRID_GEOMETRY.viewportFraction
+  );
 }
 
 /** Width below which the honeycomb drops below `step.count` columns. */
-function hexGridColumnMaxWidthPx(
-  step: HexGridStep,
-  geometry: HexGridGeometry = HEX_GRID_GEOMETRY
-): number {
-  const contentPx = geometry.columnPitchPx * step.count + geometry.rowOffsetPx + geometry.paddingPx;
-  return hexGridBreakpointPx(contentPx, HEX_GRID_COLUMN_RULE, step, geometry.viewportFraction);
+function hexGridColumnMaxWidthPx(step: HexGridStep): number {
+  const contentPx =
+    HEX_GRID_GEOMETRY.columnPitchPx * step.count +
+    HEX_GRID_GEOMETRY.rowOffsetPx +
+    HEX_GRID_GEOMETRY.paddingPx;
+  return hexGridBreakpointPx(
+    contentPx,
+    HEX_GRID_COLUMN_RULE,
+    step,
+    HEX_GRID_GEOMETRY.viewportFraction
+  );
 }
 
-export function hexGridRowLadderPx(geometry: HexGridGeometry = HEX_GRID_GEOMETRY): number[] {
-  return HEX_GRID_ROW_LADDER.map((step) => hexGridRowMaxHeightPx(step, geometry));
+export function hexGridRowLadderPx(): number[] {
+  return HEX_GRID_ROW_LADDER.map((step) => hexGridRowMaxHeightPx(step));
 }
 
-export function hexGridColumnLadderPx(geometry: HexGridGeometry = HEX_GRID_GEOMETRY): number[] {
-  return HEX_GRID_COLUMN_LADDER.map((step) => hexGridColumnMaxWidthPx(step, geometry));
+export function hexGridColumnLadderPx(): number[] {
+  return HEX_GRID_COLUMN_LADDER.map((step) => hexGridColumnMaxWidthPx(step));
 }
