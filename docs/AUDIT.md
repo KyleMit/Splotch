@@ -30,42 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Readability] Portrait `.app-container` height overrides are redundant with `height: 100%`
-
-**File(s):** `web/src/app.css` (lines 56–83) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`.app-container` already gets `height: 100%` (line 59), resolving against `body`'s `100dvh` (the
-`display: contents` wrapper in `app.html:128` generates no box, so percentages resolve against
-`body`). The portrait media query then re-declares the same height directly:
-
-```css
-@media (orientation: portrait) {
-  .app-container {
-    flex-direction: column;
-    height: 100vh;
-    height: 100dvh;
-  }
-}
-```
-
-`100dvh` here equals the inherited `100%`-of-`100dvh` in every case, so the two height lines are
-dead weight — and actively misleading: a reader hunting for why portrait sizing differs from
-landscape will study these lines for a difference that doesn't exist. They also re-encode the vh→dvh
-fallback pattern a second time, whose rationale comment lives only on the `body` rule (lines 23–27).
-The media query's real payload is one line: `flex-direction: column`.
-
-#### Proposed solution
-
-Delete the two `height` declarations from the portrait block, leaving `flex-direction: column`.
-Verify with a quick portrait screenshot (the palette-centering symptom described in the body comment
-is the regression to watch). If a real historical reason for the direct heights exists (e.g. a
-browser where percentage-of-dvh misresolved), it's exactly the kind of WHY that must be a comment —
-but git history for these lines predates the dvh comment, and the current code gives no such reason.
-
 ### [Maintainability] `.flyout-option`'s `60px` silently mirrors `ACTION_BUTTON_BASE_LANDSCAPE`
 
 **File(s):** `web/src/app.css` (lines 289–311) @ 9ae62ff1
