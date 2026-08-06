@@ -16,11 +16,9 @@
 </script>
 
 <p
-  class="status-message"
-  class:error={status === 'error'}
-  class:success={status === 'success'}
+  class={['status-message', status]}
   role={status === 'error' ? 'alert' : 'status'}
-  aria-live="polite"
+  aria-live={status === 'error' ? 'assertive' : 'polite'}
 >
   {@render children()}
 </p>
@@ -28,7 +26,7 @@
 <style>
   .status-message {
     margin: var(--space-3) 0 0 0;
-    padding: 10px var(--space-3);
+    padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
     font-size: var(--font-size-sm);
     line-height: 1.5;

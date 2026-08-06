@@ -135,6 +135,46 @@ test('native console updates persistence status from every API snapshot', async 
   await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
 });
 
+// The native console keeps its flash in component state, so a success banner
+// from one session must not greet the next one. Both admin endpoints are stubbed
+// so this spec's two sign-ins stay off the shared adminLogin rate-limit budget
+// tallied in admin-helpers.ts.
+test('native console drops a success flash on sign-out', async ({ page }) => {
+  const token = `e2e-native-flash-${Date.now()}`;
+  let added = false;
+  await page.route('**/api/admin/login', (route) =>
+    route.fulfill({ json: { ok: true, session: 'e2e-native-flash-session' } })
+  );
+  await page.route('**/api/admin/tokens', async (route) => {
+    if (route.request().method() === 'POST') added = true;
+    const tokens = added ? [token] : [];
+    await route.fulfill({
+      json: {
+        ok: true,
+        tokens,
+        invites: tokens.map((name) => ({
+          token: name,
+          url: `${playwrightBaseURL}/?ai_access_token=${name}`,
+        })),
+        persistent: true,
+      },
+    });
+  });
+
+  await signInToAdmin(page, '/admin/native');
+  await adminConsole(page).fill(token);
+  await page.getByRole('button', { name: 'Add code' }).click();
+  const flash = page.getByText(`Added “${token}”`);
+  await expect(flash).toBeVisible();
+
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+
+  await submitAdminKey(page, ADMIN_ACCESS_TOKEN);
+  await expect(adminConsole(page)).toBeVisible();
+  await expect(flash).toBeHidden();
+});
+
 test('web /admin surfaces a network failure instead of failing silently', async ({ page }) => {
   await signInToAdmin(page, '/admin');
   await page.route(

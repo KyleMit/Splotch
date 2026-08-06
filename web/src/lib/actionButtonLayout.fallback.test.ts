@@ -103,4 +103,10 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
     );
     expect(portrait).toMatch(new RegExp(`/\\s*${MAX_ACTION_BUTTON_COUNT}\\b`));
   });
+
+  it('flyout-option size matches the landscape constant', () => {
+    const expected = `calc(${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1))`;
+    expect(appCssSource).toContain(`width: ${expected}`);
+    expect(appCssSource).toContain(`height: ${expected}`);
+  });
 });

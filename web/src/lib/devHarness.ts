@@ -9,8 +9,10 @@ function devHarnessEnabled(): boolean {
   return dev || env.PUBLIC_ENABLE_DEV_HARNESS === 'true';
 }
 
-// Throws a 404 when the gate is closed; call it from every dev-harness
-// `load`/request handler.
+// Throws a 404 when the gate is closed. Pages under `routes/dev/` are covered by
+// `routes/dev/+layout.ts`; a `+server.ts` request handler needs its own call,
+// since layout loads don't run for one (see
+// `routes/dev/ai-timer/artifacts/[name]/+server.ts`).
 export function requireDevHarness() {
   if (!devHarnessEnabled()) throw error(404, 'Not found');
 }

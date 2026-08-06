@@ -42,11 +42,11 @@ import {
   type Point,
 } from './strokeMath';
 import {
-  computePaperView,
   isIdentityView,
   IDENTITY_PAPER_VIEW,
-  rotationDelta,
-  smallViewportDrift,
+  paperPresentationFor,
+  viewForPresentation,
+  type PaperPresentation,
   visiblePaperBounds,
   viewMatrix,
   viewToPaper,
@@ -260,7 +260,7 @@ function readoptPaperAfterTiledCanvasHides() {
         tiledRendererActive() &&
         canvasEmpty &&
         activePointers.size === 0 &&
-        !isIdentityView(paperView)
+        paperLocked
       ) {
         resizeCanvas();
       }
@@ -274,8 +274,9 @@ function setCanvasEmptyState(empty: boolean) {
   callbacks.onCanvasEmptyChange?.(empty);
   // A blank canvas frees the locked paper to match the live viewport again
   // (clear, undo-to-blank, erase-to-blank): re-adopt right away instead of
-  // leaving the child a letterboxed blank page until the next rotation.
-  if (empty && activePointers.size === 0 && !isIdentityView(paperView)) {
+  // leaving the child a letterboxed — or system-bar-cropped — blank page until
+  // the next rotation.
+  if (empty && activePointers.size === 0 && paperLocked) {
     if (tiledRendererActive()) readoptPaperAfterTiledCanvasHides();
     else resizeCanvas();
   }
@@ -284,13 +285,11 @@ function setCanvasEmptyState(empty: boolean) {
 // --- Paper space and the rotation-lock view (ADR-0050) --------------------
 
 // The paper: the coordinate space every recorded op, the committed paper
-// raster, and the magic sheet live in (ADR-0050). It tracks the viewport
-// while the canvas is empty or the screen angle is unchanged (today's
-// semantics), but a device rotation with ink on the canvas LOCKS it: the
-// drawing keeps its space — and its tall/wide coloring page — and is instead
-// *presented* through `paperView` (upright contain-fit + center, scaled down
-// when the paper doesn't fit the rotated viewport), so nothing rotates
-// off-screen and rotating back restores the exact layout.
+// raster, and the magic sheet live in (ADR-0050). It tracks the viewport while
+// the canvas is empty, but ink LOCKS it: the drawing keeps its space — and its
+// tall/wide coloring page — and is instead *presented* through `paperView`,
+// contain-fit upright for a rotation or at identity for a viewport the system
+// bars merely shrank. See PaperPresentation in ./paperView.
 let paper = { pxW: 0, pxH: 0, cssW: 0, cssH: 0 };
 // Screen Orientation angle when the paper was adopted, so a later resize can
 // tell an actual rotation (angle delta ≠ 0) from a plain viewport resize.
@@ -300,6 +299,10 @@ let paperAngle = 0;
 // re-sync can tell whether the device rotated while the document was hidden.
 let resizedAngle = 0;
 let paperView: PaperView = IDENTITY_PAPER_VIEW;
+// True while the paper is held apart from the live viewport. Not inferable from
+// the view transform — a windowed paper presents at identity yet is still held
+// — so the "blank canvas frees the paper" paths consult this instead.
+let paperLocked = false;
 
 // The /dev/engine harness intentionally mutates this unlike the drawing route's
 // read-only seams: simulated rotation has no equivalent DOM state to drive.
@@ -424,32 +427,21 @@ export function getCanvasRect(): Readonly<CanvasRect> {
 
 // --- Resize and rotation ----------------------------------------------------
 
-// Adopt vs lock (ADR-0050): an empty canvas — or a same-angle resize (desktop
-// window drag, mobile URL bar) — re-adopts the paper as the live viewport,
-// exactly the pre-lock semantics. Only a rotation with ink on the canvas keeps
-// the paper (and its angle) so the drawing can be presented instead of
-// remapped. Returns whether the paper is locked.
-function adoptPaperUnlessLocked(rect: DOMRect): boolean {
-  const angle = currentScreenAngle();
-  const paperAngleChanged = rotationDelta(paperAngle, angle) !== 0;
-  const paperOrientationChanged = paper.cssW > paper.cssH !== rect.width > rect.height;
-  const minorDrift = !paperAngleChanged && smallViewportDrift(paper.cssW, paper.cssH, rect);
-  const lockPaper = !canvasEmpty && (paperAngleChanged || paperOrientationChanged || minorDrift);
-  if (!lockPaper) {
-    const { w, h } = backingSizeOf(rect);
-    paper = { pxW: w, pxH: h, cssW: rect.width, cssH: rect.height };
-    paperAngle = angle;
-  }
-  return lockPaper;
+function adoptPaper(rect: DOMRect) {
+  const { w, h } = backingSizeOf(rect);
+  paper = { pxW: w, pxH: h, cssW: rect.width, cssH: rect.height };
+  paperAngle = currentScreenAngle();
 }
 
-// Present the locked paper through the view: the visible ctx keeps painting in
-// paper coordinates (live ops, repaints, and the sheet pattern all map through
-// the transform untouched), persisting until the next backing-store reset. The
-// paper is presented UPRIGHT (view rotation 0): the picture rotates with the
-// device and contain-fits — scaled down when it must — rather than
+// Present the paper through the view: the visible ctx keeps painting in paper
+// coordinates (live ops, repaints, and the sheet pattern all map through the
+// transform untouched), persisting until the next backing-store reset. A `fit`
+// presentation puts the paper UPRIGHT (view rotation 0): the picture rotates
+// with the device and contain-fits — scaled down when it must — rather than
 // counter-rotating to stay fixed on the glass (rejected in ADR-0050). A 180°
-// flip on an unchanged viewport therefore computes an identity view.
+// flip on an unchanged viewport therefore computes an identity view, as does
+// `window`, where the paper already covers the viewport and the surplus is
+// cropped by the canvas container.
 //
 // The margins around the fitted paper stay DRAWABLE (no clip): a child mid-
 // scribble shouldn't hit dead zones. Margin ink records at out-of-paper
@@ -458,11 +450,9 @@ function adoptPaperUnlessLocked(rect: DOMRect): boolean {
 // its commit folds it past the paper-square raster's bounds. Rasters covering
 // the mapped margins would cost tens of MB at 2× DPR (the fit maps a phone
 // viewport to ~2× the paper's long side), so that corner is accepted — see
-// ADR-0050.
-function applyPaperView(lockPaper: boolean) {
-  paperView = lockPaper
-    ? computePaperView({ width: paper.pxW, height: paper.pxH }, viewport, 0)
-    : IDENTITY_PAPER_VIEW;
+// ADR-0050. A `window` presentation has no margins: every visible pixel is paper.
+function applyPaperView(presentation: PaperPresentation) {
+  paperView = viewForPresentation(presentation, { width: paper.pxW, height: paper.pxH }, viewport);
   if (!tiledRendererActive() && !isIdentityView(paperView)) {
     ctx.setTransform(...viewMatrix(paperView));
   }
@@ -471,7 +461,15 @@ function applyPaperView(lockPaper: boolean) {
 
 function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
   if (PERF_MARKS) performance.mark('engine.resize:start');
-  const lockPaper = adoptPaperUnlessLocked(rect);
+  const presentation = paperPresentationFor({
+    canvasEmpty,
+    paper: { width: paper.cssW, height: paper.cssH },
+    paperAngle,
+    screenAngle: currentScreenAngle(),
+    viewport: rect,
+  });
+  paperLocked = presentation !== 'adopt';
+  if (!paperLocked) adoptPaper(rect);
   resizedAngle = currentScreenAngle();
 
   // The paper raster is a max(w,h) square of the viewport so it covers both
@@ -494,7 +492,7 @@ function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   resizeLegacyCrayonOverlays(viewport.width, viewport.height);
-  applyPaperView(lockPaper);
+  applyPaperView(presentation);
 
   resizeMagicSheet(magicActive);
   if (tiledRendererActive()) {

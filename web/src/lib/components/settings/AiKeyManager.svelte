@@ -344,10 +344,6 @@
     color: var(--brand);
   }
 
-  .byok :global(.byok-howto summary::after) {
-    float: right;
-  }
-
   .byok :global(.byok-howto ol) {
     margin: 0;
     padding: 0 16px 8px 32px;

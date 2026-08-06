@@ -32,6 +32,17 @@
   let showUsage = $derived(invites.some((invite) => invite.usage !== undefined));
 </script>
 
+{#snippet copyCodeButton(invite: Invite)}
+  <button
+    type="button"
+    class="copy-btn"
+    class:copied={copied === copyKey(invite.token, 'code')}
+    onclick={() => oncopy(copyKey(invite.token, 'code'), invite.token)}
+  >
+    {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
+  </button>
+{/snippet}
+
 {#if invites.length === 0}
   <div class="ledger">
     <div class="empty">
@@ -91,14 +102,7 @@
 
           <div role="cell" class="cell-actions">
             <div class="wide-actions">
-              <button
-                type="button"
-                class="copy-btn"
-                class:copied={copied === copyKey(invite.token, 'code')}
-                onclick={() => oncopy(copyKey(invite.token, 'code'), invite.token)}
-              >
-                {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
-              </button>
+              {@render copyCodeButton(invite)}
               <button
                 type="button"
                 class="link-action"
@@ -119,14 +123,7 @@
             </div>
 
             <div class="compact-actions">
-              <button
-                type="button"
-                class="copy-btn"
-                class:copied={copied === copyKey(invite.token, 'code')}
-                onclick={() => oncopy(copyKey(invite.token, 'code'), invite.token)}
-              >
-                {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
-              </button>
+              {@render copyCodeButton(invite)}
               <button
                 type="button"
                 class="more-btn"

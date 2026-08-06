@@ -1,14 +1,12 @@
 <script lang="ts">
+  import splotchyUrl from '../icons/splotchy.svg';
   import type { HTMLAttributes } from 'svelte/elements';
 
-  interface Props extends HTMLAttributes<HTMLSpanElement> {
-    class?: string;
-  }
-  let { class: className = '', ...rest }: Props = $props();
+  let { class: className, ...rest }: HTMLAttributes<HTMLSpanElement> = $props();
 </script>
 
-<span class="{className} icon-color" {...rest} data-icon="splotchy">
-  <img src="/splotchy.svg" alt="" />
+<span class={[className, 'icon-color']} {...rest} data-icon="splotchy">
+  <img src={splotchyUrl} alt="" />
 </span>
 
 <style>

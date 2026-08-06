@@ -13,6 +13,6 @@ export const NON_RENDERABLE_ICONS = ['splotchy'] as const;
 
 export type CommonIconName = Exclude<IconName, (typeof NON_RENDERABLE_ICONS)[number]>;
 
-export function iconNameFromPath(path: string): string {
-  return (path.split('/').pop() ?? '').replace('.svg', '');
+export function iconNameFromPath(path: string): IconName {
+  return (path.split('/').pop() ?? '').replace(/\.svg$/, '') as IconName;
 }

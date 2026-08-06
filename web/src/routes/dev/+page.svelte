@@ -1,18 +1,11 @@
 <script lang="ts">
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
+  import { DEV_HARNESSES } from './dev-harnesses';
 
-  const harnesses = [
-    {
-      href: '/dev/engine',
-      name: 'Drawing engine',
-      blurb: 'Bare canvas harness driven by the Playwright specs.',
-    },
-    {
-      href: '/dev/ai-timer',
-      name: 'AI render timer',
-      blurb: 'Debug view for the generation timer animation.',
-    },
-  ];
+  // Landing page listing the dev-only harnesses under routes/dev/*. It sits
+  // behind the same gate as the harnesses themselves, so it never ships to real
+  // users (an ungated index would be a real route advertising them).
+  const harnesses = DEV_HARNESSES;
 </script>
 
 <svelte:head>
@@ -46,8 +39,6 @@
     padding: var(--space-6);
     background: var(--app-bg);
     color: var(--text);
-    user-select: text;
-    -webkit-user-select: text;
   }
 
   h1 {

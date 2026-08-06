@@ -9,10 +9,11 @@ orientation-tagged measurement retained as a hydrated correction.
 The web target is built with `@sveltejs/adapter-netlify` (ADR-0001), which is *capable* of runtime
 SSR: it emits a `sveltekit-render` Netlify function wired to a `/*` catch-all with
 `preferStatic: true`. But most of the app doesn't use it. The site-wide default is
-`prerender = true` (`web/src/routes/+layout.ts`, alongside `ssr = true; csr = true`), so every route
-that doesn't opt out is prerendered to static HTML at build time. Because `preferStatic: true`
-serves a matching static file without invoking the function, the prerendered routes are served
-straight from the CDN and the SSR function only runs for the routes that set `prerender = false`.
+`prerender = true` (`web/src/routes/+layout.ts`; SSR and CSR both stay on SvelteKit's own defaults),
+so every route that doesn't opt out is prerendered to static HTML at build time. Because
+`preferStatic: true` serves a matching static file without invoking the function, the prerendered
+routes are served straight from the CDN and the SSR function only runs for the routes that set
+`prerender = false`.
 
 This split had never been written down. It surfaced during a question about whether the home page's
 server render could be made to respect the visitor's stored preferences and device orientation —

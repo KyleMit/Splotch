@@ -54,8 +54,9 @@
   // only post-hydration strokes count — acceptable, it only defers
   // registration slightly further.
   $effect(() => {
+    if (__IS_CAPACITOR__) return;
     if (canvasState.strokeCount < SETTLED_IN_STROKES) return;
-    if (!__IS_CAPACITOR__) pwaUpdates.registerDeferredServiceWorker();
+    pwaUpdates.registerDeferredServiceWorker();
   });
 
   // Filled one at a time by the idle mount pump (see boot/bootHiddenOverlays.ts).

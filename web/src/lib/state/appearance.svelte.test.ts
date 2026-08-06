@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { tick } from 'svelte';
 import { themes } from '$lib/design/tokens';
+import { THEME_COLORS } from '../theme';
 
 // secureStorage reaches for IndexedDB/WebCrypto on the web path; settings.svelte
 // (imported transitively via appearance) only needs its function bindings, so
@@ -11,7 +12,6 @@ vi.mock('../secureStorage', () => ({
   clearApiKey: vi.fn(async () => {}),
 }));
 
-const THEME_COLOR_LIGHT = '#ffffff';
 const THEME_COLOR_DARK = themes.dark.appBg;
 
 // One controllable prefers-color-scheme query, recording every subscription so
@@ -53,7 +53,7 @@ function themeColorContent() {
 
 beforeEach(() => {
   localStorage.clear();
-  document.head.innerHTML = `<meta name="theme-color" content="${THEME_COLOR_LIGHT}" />`;
+  document.head.innerHTML = `<meta name="theme-color" content="${THEME_COLORS.light}" />`;
 });
 
 describe('single prefers-color-scheme source', () => {
@@ -75,7 +75,7 @@ describe('single prefers-color-scheme source', () => {
 
     // Default setting is 'system' with the OS reporting light.
     expect(resolvedTheme()).toBe('light');
-    expect(themeColorContent()).toBe(THEME_COLOR_LIGHT);
+    expect(themeColorContent()).toBe(THEME_COLORS.light);
 
     emitSystemChange(true);
     await tick();
@@ -87,7 +87,7 @@ describe('single prefers-color-scheme source', () => {
     await tick();
 
     expect(resolvedTheme()).toBe('light');
-    expect(themeColorContent()).toBe(THEME_COLOR_LIGHT);
+    expect(themeColorContent()).toBe(THEME_COLORS.light);
   });
 
   it('an explicit setting change repaints the meta from the same reactive source', async () => {
@@ -103,7 +103,7 @@ describe('single prefers-color-scheme source', () => {
     setTheme('light');
     await tick();
     expect(resolvedTheme()).toBe('light');
-    expect(themeColorContent()).toBe(THEME_COLOR_LIGHT);
+    expect(themeColorContent()).toBe(THEME_COLORS.light);
   });
 
   it('seeds systemDark from the query at load so a dark OS resolves before any event', async () => {

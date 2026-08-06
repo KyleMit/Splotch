@@ -51,10 +51,9 @@
     import: 'default',
   });
 
-  const icons: Record<string, string> = {};
-  for (const [path, src] of Object.entries(modules)) {
-    icons[iconNameFromPath(path)] = src as string;
-  }
+  const icons = Object.fromEntries(
+    Object.entries(modules).map(([path, src]) => [iconNameFromPath(path), src as string])
+  ) as Record<CommonIconName, string>;
 
   /** Every name <Icon> can render, sorted — the /design styleguide iterates it. */
   export const ICON_NAMES = Object.keys(icons).sort() as CommonIconName[];
@@ -68,7 +67,7 @@
   }
   let { name, class: className, ...rest }: Props = $props();
 
-  const markup = $derived(icons[name] ?? '');
+  const markup = $derived(icons[name]);
 </script>
 
 <!-- data-icon exposes the icon identity to the DOM: the SVG goes in via {@html}, so

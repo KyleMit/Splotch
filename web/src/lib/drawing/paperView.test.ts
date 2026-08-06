@@ -8,6 +8,7 @@ import {
   paperToView,
   rotationDelta,
   visiblePaperBounds,
+  paperPresentationFor,
   viewMatrix,
   viewToPaper,
   type PaperView,
@@ -31,6 +32,80 @@ describe('containFit', () => {
       offsetX: 0,
       offsetY: 75,
     });
+  });
+});
+
+describe('paperPresentationFor', () => {
+  // A portrait phone in immersive mode; the system bars are worth ~48 CSS px.
+  const PAPER = { width: 412, height: 915 };
+  const presentation = (
+    viewport: { width: number; height: number },
+    overrides: { canvasEmpty?: boolean; screenAngle?: number } = {}
+  ) =>
+    paperPresentationFor({
+      canvasEmpty: false,
+      paper: PAPER,
+      paperAngle: 0,
+      screenAngle: 0,
+      viewport,
+      ...overrides,
+    });
+
+  it('windows the paper when the system bars shrink the viewport', () => {
+    expect(presentation({ width: 412, height: 867 })).toBe('window');
+  });
+
+  it('windows an exact match and a bar-sized loss on either axis alone', () => {
+    expect(presentation(PAPER)).toBe('window');
+    expect(presentation({ width: 412, height: 819 })).toBe('window');
+    expect(presentation({ width: 316, height: 915 })).toBe('window');
+  });
+
+  // An identity view maps the paper one-to-one, so it cannot cover a viewport
+  // even slightly larger: those pixels would have no paper or tile behind them,
+  // unpresented yet still accepting gestures (the out-of-paper guard only arms
+  // on a non-identity view). Keep the paper — re-adopting inset drift
+  // invalidates every tile — but fit it over the drift.
+  it('fits rather than windows a viewport a few pixels larger than the paper', () => {
+    expect(presentation({ width: 412, height: 923 })).toBe('fit');
+    expect(presentation({ width: 420, height: 915 })).toBe('fit');
+    expect(presentation({ width: 413, height: 915 })).toBe('fit');
+    // Both axes at once — the shape the tolerance exists for.
+    expect(presentation({ width: 420, height: 923 })).toBe('fit');
+  });
+
+  it('windows a bar occlusion that also drifts a pixel WITHIN the paper', () => {
+    expect(presentation({ width: 411, height: 867 })).toBe('window');
+  });
+
+  it('adopts once either axis grows past the tolerance', () => {
+    expect(presentation({ width: 412, height: 924 })).toBe('adopt');
+    expect(presentation({ width: 421, height: 915 })).toBe('adopt');
+  });
+
+  // A deliberate resize — a dragged window edge, split-screen, a keyboard — is
+  // too big to be system chrome, and re-fits the drawing rather than hiding
+  // part of it behind nothing.
+  it('adopts a shrink too large to be system chrome', () => {
+    expect(presentation({ width: 412, height: 818 })).toBe('adopt');
+    expect(presentation({ width: 315, height: 915 })).toBe('adopt');
+    expect(presentation({ width: 412, height: 500 })).toBe('adopt');
+  });
+
+  it('adopts for an empty canvas whatever the geometry', () => {
+    expect(presentation({ width: 412, height: 867 }, { canvasEmpty: true })).toBe('adopt');
+    expect(presentation({ width: 915, height: 412 }, { canvasEmpty: true, screenAngle: 90 })).toBe(
+      'adopt'
+    );
+  });
+
+  it('fits a rotation, by changed angle or by flipped orientation', () => {
+    expect(presentation({ width: 915, height: 412 }, { screenAngle: 90 })).toBe('fit');
+    // A 180° flip keeps the orientation, so only the angle marks it a rotation.
+    expect(presentation(PAPER, { screenAngle: 180 })).toBe('fit');
+    // An angle the platform never reported still reads as a rotation when the
+    // viewport's orientation flipped under it.
+    expect(presentation({ width: 915, height: 412 })).toBe('fit');
   });
 });
 

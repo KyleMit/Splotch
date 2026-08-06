@@ -13,13 +13,21 @@
 //
 // modalDialog registers the zone on open and consults it before dismissing on a
 // backdrop tap, so any modal that passes an `origin` is covered automatically.
+//
+// The hazard is not really about modals, though — it is about any tap that
+// repaints something else under the finger, which the follow-up taps then work.
+// guardTapZone exposes the primitive for those: the coloring book picker arms a
+// zone when a cover tile swaps the grid for that book's pages, so the rest of
+// the burst can't pick whichever page landed under the finger and close the
+// picker before the child ever saw the pages.
 import type { Origin } from '$lib/state/modal.svelte';
 
 // Buttons are 48px; a 72px radius covers the target plus the slop of a
 // toddler's aim without reaching neighbouring controls.
 export const DEFAULT_RADIUS = 72;
-// Fly-in is 0.35s (app.css); hold a little past it so the dialog is plainly
-// present before the backdrop goes live.
+// Long enough to outlast a toddler's tap burst, and past the modal fly-in
+// (0.35s in app.css) so the dialog is plainly present before the backdrop goes
+// live.
 export const DEFAULT_DURATION_MS = 600;
 
 interface DeadZone {
@@ -34,17 +42,25 @@ interface DeadZone {
 // on close.
 let zones: DeadZone[] = [];
 
+// Arm a dead zone at a tap point. Callers outside a modal launch pass the
+// pointer's own coordinates rather than the tapped element's center: a coloring
+// tile is far wider than the 48px buttons DEFAULT_RADIUS was sized for, so a
+// zone centred on the tile would leave a corner tap's repeats outside it.
+export function guardTapZone(x: number, y: number) {
+  pruneLapsedZones();
+  zones.push({
+    x,
+    y,
+    radiusSq: DEFAULT_RADIUS * DEFAULT_RADIUS,
+    expiresAt: Date.now() + DEFAULT_DURATION_MS,
+  });
+}
+
 // Arm a dead zone at the launching button's center. A null origin (a modal
 // opened with no anchor, e.g. via keyboard) simply arms nothing.
 export function guardLaunchZone(origin: Origin | null) {
   if (!origin) return;
-  pruneLapsedZones();
-  zones.push({
-    x: origin.x,
-    y: origin.y,
-    radiusSq: DEFAULT_RADIUS * DEFAULT_RADIUS,
-    expiresAt: Date.now() + DEFAULT_DURATION_MS,
-  });
+  guardTapZone(origin.x, origin.y);
 }
 
 // True while a point sits inside an unexpired dead zone.

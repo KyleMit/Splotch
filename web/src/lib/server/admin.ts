@@ -83,8 +83,10 @@ export function bearerToken(request: Request): string {
   return auth.startsWith(BEARER_PREFIX) ? auth.slice(BEARER_PREFIX.length).trim() : '';
 }
 
+export type Invite = { token: string; url: string };
+
 /** Pair each access token with the invite URL an admin hands out. */
-export function buildInvites(tokens: string[], origin: string) {
+export function buildInvites(tokens: string[], origin: string): Invite[] {
   return tokens.map((token) => ({
     token,
     url: `${origin}/?${AI_ACCESS_TOKEN_PARAM}=${encodeURIComponent(token)}`,

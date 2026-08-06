@@ -1,5 +1,4 @@
 import { createModal } from './modal.svelte';
-import type { Origin } from './modal.svelte';
 
 export interface UiState {
   // True while the parent is dragging the button-size slider. Settings
@@ -13,15 +12,10 @@ export const ui: UiState = $state({
 
 export const SETTINGS_BUTTON_ID = 'settingsButton';
 
-export const colorPicker = createModal();
-export const coloringBook = createModal();
+export const colorPickerModal = createModal();
+export const coloringBookModal = createModal();
 export const settingsModal = createModal();
-export const aiPrompt = createModal();
-
-export function buttonCenter(el: HTMLElement): Origin {
-  const rect = el.getBoundingClientRect();
-  return { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2 };
-}
+export const aiPromptModal = createModal();
 
 export function setResizingActionButtons(active: boolean) {
   ui.resizingActionButtons = active;

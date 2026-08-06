@@ -1,5 +1,6 @@
 import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
 import { sessionToken, beginAdminLogin, verifySessionToken, buildInvites } from '$lib/server/admin';
+import type { Invite } from '$lib/server/admin';
 import { throttledMessage } from '$lib/server/http';
 import {
   getTokensStatus,
@@ -9,7 +10,7 @@ import {
 } from '$lib/server/tokens';
 import type { MutationResult } from '$lib/server/tokens';
 import { getUsage } from '$lib/server/usage';
-import { ASSUME_PERSISTENT } from '$lib/adminFormat';
+import { ASSUME_PERSISTENT, mutationMessage } from '$lib/adminPersistence';
 import type { Actions, PageServerLoad } from './$types';
 
 // Must be server-rendered: it has form actions and validates the admin secret
@@ -67,7 +68,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
       authed: false,
       hasSession,
       persistent: ASSUME_PERSISTENT,
-      invites: [] as { token: string; url: string }[],
+      invites: [] satisfies Invite[],
     };
   }
   // Renew the session on each authenticated load so its expiry keeps sliding
@@ -102,7 +103,7 @@ async function tokenMutation(
   const token = String(form.get('token') ?? '').trim();
   const result = await op(token);
   if (!result.ok) return fail(MUTATION_FAILURE_STATUS[result.reason], { error: result.error });
-  return { success: true, message: `${verb} “${token}”` };
+  return { success: true, message: mutationMessage(verb, token) };
 }
 
 export const actions: Actions = {

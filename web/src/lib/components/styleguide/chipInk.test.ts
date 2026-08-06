@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { brand, scale, themes, type ThemeTokens } from '../../design/tokens';
+import { brand, isColorToken, scale, themes, type ThemeTokens } from '../../design/tokens';
 import { CHIP_INK_DARK, CHIP_INK_LIGHT, chipInkContrast, pickChipInk } from './chipInk';
 
 // The /design color chips print each token's var name and value on the
@@ -11,9 +11,6 @@ import { CHIP_INK_DARK, CHIP_INK_LIGHT, chipInkContrast, pickChipInk } from './c
 // dual-theme check).
 const AA_MIN_CONTRAST = 4.5;
 
-// Mirrors ColorSections' split: these theme keys aren't paintable fills.
-const NON_COLOR_KEYS = new Set<keyof ThemeTokens>(['lineartFilter', 'lineartBlend', 'floatShadow']);
-
 const themeNames = ['light', 'dark'] as const;
 
 describe('pickChipInk clears AA on every token fill', () => {
@@ -21,7 +18,7 @@ describe('pickChipInk clears AA on every token fill', () => {
     const theme = themes[themeName];
     const ground = theme.appBg;
     const colorKeys = (Object.keys(theme) as (keyof ThemeTokens)[]).filter(
-      (key) => !NON_COLOR_KEYS.has(key)
+      (key) => isColorToken[key]
     );
 
     it.each(colorKeys)(`${themeName} %s`, (key) => {
