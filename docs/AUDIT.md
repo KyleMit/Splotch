@@ -30,41 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Correctness] `/dev/design` blocks pinch-zoom with `touch-action: pan-y`, and both dev pages carry stale `user-select` opt-outs
-
-**File(s):** `web/src/routes/dev/design/+page.svelte` (lines 286–295),
-`web/src/routes/dev/+page.svelte` (lines 48–55) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```css
-.styleguide {
-  ...
-  touch-action: pan-y;
-  user-select: text;
-  -webkit-user-select: text;
-}
-```
-
-Post-ADR-0076, the app-surface locks are scoped to the drawing route; every other route "is a normal
-scrollable, selectable, zoomable document by default" (`app.css:33–47`), and `/privacy` was cleaned
-accordingly (its comment at `privacy/+page.svelte:162–164` explicitly notes "no opt-out is needed").
-The dev pages weren't: `user-select: text` on both pages sets the default value (a no-op opt-out
-from a lock that no longer reaches them), and `touch-action: pan-y` on the styleguide actively
-*disallows* pinch-zoom — the very behavior ADR-0076 restored to non-drawing routes. On a tablet, a
-designer inspecting a swatch can't zoom into it. Dev-only audience, so low stakes, but the
-declarations contradict the documented model and will confuse the next reader reconciling routes
-against ADR-0076.
-
-#### Proposed solution
-
-Delete `touch-action: pan-y` and both `user-select` pairs from `.styleguide`, and the `user-select`
-pair from `.index` in `dev/+page.svelte`. If any is retained deliberately (e.g. `pan-y` to stop
-accidental horizontal rubber-banding), it needs a WHY comment referencing ADR-0076's default — but
-the simplest reconciliation is deletion, matching `/privacy`.
-
 ### [Types] `/dev/design` widens token keys to `string`, forcing four `as keyof typeof scale` casts in the template
 
 **File(s):** `web/src/routes/dev/design/+page.svelte` (lines 32–41, 133, 146, 173) @ 9ae62ff1

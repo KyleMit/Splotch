@@ -39,8 +39,6 @@
     padding: var(--space-6);
     background: var(--app-bg);
     color: var(--text);
-    user-select: text;
-    -webkit-user-select: text;
   }
 
   h1 {
