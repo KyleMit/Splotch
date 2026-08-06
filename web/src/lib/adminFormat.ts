@@ -14,8 +14,7 @@ const TIME_AGO_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
   ['minute', 60],
 ];
 
-// Compact "3 days ago" label for a last-used timestamp, falling back to a
-// plain date if the value won't parse.
+// Compact "3 days ago" label for a last-used timestamp; returns '' if the value won't parse.
 export function timeAgo(iso: string) {
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return '';

@@ -28,35 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Docs] `timeAgo`'s comment promises a plain-date fallback the code doesn't implement
-
-**File(s):** `web/src/lib/adminFormat.ts` (lines 7–11) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-// Compact "3 days ago" label for a last-used timestamp, falling back to a
-// plain date if the value won't parse.
-export function timeAgo(iso: string) {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return '';
-```
-
-The fallback is an empty string, not a plain date (an unparseable value has no date to show, so `''`
-is the only sensible fallback — the comment describes a behavior that can't exist). Downstream,
-`AdminConsole.svelte` line 235 renders `last used {timeAgo(invite.usage.lastUsed)}`, which for a
-corrupt timestamp shows the dangling fragment "last used ". The test at `adminFormat.test.ts` line
-18 pins the empty-string behavior, so the comment is simply wrong.
-
-#### Proposed solution
-
-Fix the comment ("returns '' if the value won't parse") — and optionally harden the call site to
-skip the "last used" fragment when `timeAgo` returns `''`. If the dangling-label case is deemed
-worth handling, that's a two-line `{#if}` in `AdminConsole.svelte`; the comment fix alone resolves
-the finding.
-
 ### [Maintainability] The `[ai-usage]` log-line format is duplicated between the BYOK and managed-token writers
 
 **File(s):** `web/src/lib/server/usage.ts` (`recordByokUsage`, lines 27–31; `recordTokenUsage`,
