@@ -32,39 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Maintainability] `brandTintFilter`'s "keep the two in sync" comment marks a defect — add a computed drift guard
-
-**File(s):** `web/src/lib/design/tokens.ts` (lines 33–36) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-// Filter chain that renders a black icon in --brand. Filters can't reference
-// a color directly, so this hand-tuned chain re-encodes the brand color —
-// keep the two in sync if the brand color ever changes.
-brandTintFilter:
-  'invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%)',
-```
-
-The root conventions say verbatim: "A 'keep in sync with X' comment marks a defect, not a
-mitigation." If `BRAND_HEX` (line 16) ever changes, nothing fails — icons tinted through this filter
-just silently render the old purple.
-
-#### Proposed solution
-
-Add a unit test beside `tokens.test.ts` that numerically applies the filter chain to black and
-asserts the result lands within a tolerance of `BRAND_HEX`. Every primitive in the chain has an
-exact definition in the Filter Effects spec — `invert`/`brightness`/`contrast` are per-channel
-transfer functions and `sepia`/`saturate`/`hue-rotate` are 3×3 color matrices — so a ~40-line pure
-implementation (e.g. `applyFilterChain(rgb: [number, number, number], filter: string)`) can compute
-the filtered color deterministically. Assert per-channel distance (or a simple deltaE) under a
-tolerance loose enough for the hand-tuned chain (it won't be exact — measure the current distance
-first and set the tolerance just above it, so any *drift* of `BRAND_HEX` trips it). Gotcha: sRGB vs
-linear-RGB — CSS shorthand filters operate in sRGB, so no linearization is needed; note that in the
-test.
-
 ### [Performance] Eager `?raw` glob inlines ~84 KB of SVG source into the main bundle
 
 **File(s):** `web/src/lib/components/Icon.svelte` (lines 53–57) @ 9ae62ff1
