@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
 import { STORAGE_KEYS } from './lib/storage';
-import { RESOLVED_THEMES } from './lib/theme';
+import { RESOLVED_THEMES, THEME_COLORS } from './lib/theme';
 import {
   ACTION_BUTTON_SCALE_DEFAULT,
   ACTION_BUTTON_SCALE_MAX,
@@ -24,8 +24,9 @@ import { BRUSH_TYPES } from './lib/state/tool.svelte';
 // The registry and clamp bounds are imported directly. Boolean defaults are
 // parsed as text because BOOL_SETTINGS itself is module-private.
 
+const html = readFileSync(new URL('./app.html', import.meta.url), 'utf8');
+
 const bootScript = (() => {
-  const html = readFileSync(new URL('./app.html', import.meta.url), 'utf8');
   const match = html.match(/<script>([\s\S]*?)<\/script>/);
   expect(match, 'app.html has an inline boot <script>').not.toBeNull();
   return match![1];
@@ -57,6 +58,14 @@ function bootStringLiteral(pattern: RegExp): string {
   expect(match, `app.html's boot script matches ${pattern}`).not.toBeNull();
   return match![1];
 }
+
+describe("app.html's prerendered head mirrors the theme module", () => {
+  it('seeds theme-color with THEME_COLORS.light', () => {
+    const match = html.match(/<meta name="theme-color" content="([^"]*)" \/>/);
+    expect(match, 'app.html has a theme-color meta').not.toBeNull();
+    expect(match![1]).toBe(THEME_COLORS.light);
+  });
+});
 
 describe("app.html's boot script mirrors the state modules", () => {
   const bootKeys = [...new Set([...bootScript.matchAll(/'(splotch-[\w-]+)'/g)].map((m) => m[1]))];
