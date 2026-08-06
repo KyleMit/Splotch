@@ -32,46 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Types] Icon map typed `Record<string, string>` with a silent-blank fallback instead of a closed union
-
-**File(s):** `web/src/lib/components/Icon.svelte` (lines 59–62, 69) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const icons: Record<string, string> = {};
-for (const [path, src] of Object.entries(modules)) {
-  icons[iconNameFromPath(path)] = src as string;
-}
-...
-const markup = $derived(icons[name] ?? '');
-```
-
-The repo convention says constant maps over a closed vocabulary are `Record<UnionType, V>`, "never
-bare `string`/`number` plus a runtime fallback". `name` is already `CommonIconName`, and the
-generated union is derived from the same directory the glob reads, so a miss is a
-build-inconsistency bug — yet the `?? ''` swallows it and renders an empty span, the
-hardest-to-notice possible failure (the guard comments in `iconTypes.ts` lines 8–11 even name "an
-empty icon at runtime" as the symptom this machinery exists to prevent).
-
-#### Proposed solution
-
-Type the map at the glob boundary and fail loud on the impossible miss:
-
-```ts
-const icons = Object.fromEntries(
-  Object.entries(modules).map(([path, src]) => [iconNameFromPath(path), src as string]),
-) as Record<CommonIconName, string>;
-```
-
-(the `as` is a legitimate boundary cast — glob paths are untyped input). With the value
-non-optional, `icons[name]` needs no `?? ''`; if extra safety is wanted, throw in `$derived` when
-the lookup is `undefined` so the inconsistent build screams in dev instead of shipping blank chrome.
-Optionally tighten `iconNameFromPath` to return `IconName` at this one boundary rather than
-`string`.
-
 ### [Testing] `iconInk`'s "matches the SVGs' baked fill" is prose agreement across ~50 files
 
 **File(s):** `web/src/lib/design/tokens.ts` (lines 193–194, 278), `web/src/lib/icons/*.svg` @
