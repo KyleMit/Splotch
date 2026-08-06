@@ -32,50 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Maintainability] `THEME_COLOR_LIGHT` agrees with `app.html`'s meta tag only by prose
-
-**File(s):** `web/src/lib/theme.ts` (lines 30–32), `web/src/app.html` (line 24),
-`web/src/lib/state/appearance.svelte.test.ts` (line 14) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`theme.ts` lines 30–32:
-
-```ts
-// Light keeps app.html's original white; dark is --app-bg, read from the
-// design-token source of truth (ADR-0071) so it can never drift from the CSS.
-const THEME_COLOR_LIGHT = '#ffffff';
-```
-
-`app.html` line 24:
-
-```html
-<meta name="theme-color" content="#ffffff" />
-```
-
-The dark value is properly derived from `themes.dark.appBg`, but the light value's agreement with
-the prerendered meta tag is maintained purely by the comment "Light keeps app.html's original
-white". Change the meta in `app.html` and the browser chrome color now flips from the new value to
-stale `#ffffff` the moment appearance state hydrates — with no failing test. The repo convention is
-explicit: when agreeing sites can't share code (the `app.html` boot markup is exactly that case),
-add a drift-guard test "the pattern of `web/src/app.html.test.ts`" — and `app.html.test.ts` exists
-but contains no theme-color assertion.
-
-Additionally, `appearance.svelte.test.ts` line 14 re-declares its own mirror copy
-(`const THEME_COLOR_LIGHT = '#ffffff';`) because the constant isn't exported — the mirrored-copy
-anti-pattern the testing rules call out.
-
-#### Proposed solution
-
-Export the pair from `theme.ts` (e.g.
-`export const THEME_COLORS: Record<ResolvedTheme, string> = { light: '#ffffff', dark: themes.dark.appBg }`,
-mirroring the existing `PAPER_COLORS` shape and simplifying `updateThemeColorMeta`'s ternary at line
-57 to a lookup). Then: (1) add an assertion in `web/src/app.html.test.ts` that the `theme-color`
-meta's `content` equals `THEME_COLORS.light`; (2) import the constant in `appearance.svelte.test.ts`
-instead of re-declaring it.
-
 ### [Maintainability] `brandTintFilter`'s "keep the two in sync" comment marks a defect — add a computed drift guard
 
 **File(s):** `web/src/lib/design/tokens.ts` (lines 33–36) @ 9ae62ff1
