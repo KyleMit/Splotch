@@ -190,6 +190,28 @@ export function maxActionButtonScale(): number {
 // first-paint seed from <html> and reads live state from the panel subtree.
 export const ACTION_PANEL_LIVE_ATTRIBUTE = 'data-action-panel-live';
 
+type BooleanSettingKey = {
+  [K in keyof typeof settings]: (typeof settings)[K] extends boolean ? K : never;
+}[keyof typeof settings];
+
+// Every Actions Panel control a parent can switch off, mapped to the attribute
+// that marks it off. app.html's inline boot script re-types these names as
+// literals because it can't import (see publishActionPanelState below);
+// app.html.test.ts diffs its list against this table.
+export const CONTROL_OFF_ATTRIBUTES = {
+  advancedControlsEnabled: 'data-off-adv',
+  strokeWidthControlEnabled: 'data-off-stroke',
+  eraserEnabled: 'data-off-eraser',
+  coloringBookEnabled: 'data-off-coloring',
+  screenshotEnabled: 'data-off-screenshot',
+  undoButtonEnabled: 'data-off-undo',
+} as const satisfies Partial<Record<BooleanSettingKey, `data-off-${string}`>>;
+
+const controlOffEntries = Object.entries(CONTROL_OFF_ATTRIBUTES) as [
+  keyof typeof CONTROL_OFF_ATTRIBUTES,
+  string,
+][];
+
 // Publish the Actions Panel's hydrated UI state onto its own root so CSS can
 // drive each control's visibility, the drawer's open state, and the Brush
 // Button's face without invalidating the full document. The home page is
@@ -214,12 +236,9 @@ export function publishActionPanelState(
 ): void {
   el.style.setProperty('--action-btn-scale', String(buttonScale));
   el.toggleAttribute('data-drawer-open', drawerExpanded);
-  el.toggleAttribute('data-off-adv', !settings.advancedControlsEnabled);
-  el.toggleAttribute('data-off-stroke', !settings.strokeWidthControlEnabled);
-  el.toggleAttribute('data-off-eraser', !settings.eraserEnabled);
-  el.toggleAttribute('data-off-coloring', !settings.coloringBookEnabled);
-  el.toggleAttribute('data-off-screenshot', !settings.screenshotEnabled);
-  el.toggleAttribute('data-off-undo', !settings.undoButtonEnabled);
+  for (const [key, attribute] of controlOffEntries) {
+    el.toggleAttribute(attribute, !settings[key]);
+  }
   // The Brush Button's face is the active brush's icon. All four icons are in
   // the DOM and CSS shows the one matching this attribute ({@html} icons can't
   // swap during hydration — see .claude/rules/svelte.md), absent for the

@@ -23,6 +23,7 @@ import {
   ACTION_BUTTON_BASE_LANDSCAPE,
   ACTION_BUTTON_BASE_PORTRAIT,
   ACTION_PANEL_LIVE_ATTRIBUTE,
+  CONTROL_OFF_ATTRIBUTES,
   PALETTE_BAR_RESERVE,
   availablePerButton,
   buttonSizeCssExpr,
@@ -411,14 +412,7 @@ describe('publishActionPanelState', () => {
     expect(el.style.getPropertyValue('--action-btn-scale')).toBe('1');
     expect(el.hasAttribute(ACTION_PANEL_LIVE_ATTRIBUTE)).toBe(true);
     expect(el.hasAttribute('data-drawer-open')).toBe(false);
-    for (const attr of [
-      'data-off-adv',
-      'data-off-stroke',
-      'data-off-eraser',
-      'data-off-coloring',
-      'data-off-screenshot',
-      'data-off-undo',
-    ]) {
+    for (const attr of Object.values(CONTROL_OFF_ATTRIBUTES)) {
       expect(el.hasAttribute(attr)).toBe(false);
     }
     expect(el.hasAttribute('data-brush')).toBe(false);
@@ -450,14 +444,7 @@ describe('publishActionPanelState', () => {
     setUndoButton(false);
     const el = document.createElement('div');
     publishActionPanelState(el, false, 1);
-    for (const attr of [
-      'data-off-adv',
-      'data-off-stroke',
-      'data-off-eraser',
-      'data-off-coloring',
-      'data-off-screenshot',
-      'data-off-undo',
-    ]) {
+    for (const attr of Object.values(CONTROL_OFF_ATTRIBUTES)) {
       expect(el.hasAttribute(attr)).toBe(true);
     }
   });

@@ -1,7 +1,6 @@
-// No `@vitest-environment node` docblock despite this being pure text parsing:
-// importing settings.svelte.ts for the clamp constants runs that module's
-// load-time localStorage reads, so the file has to stay on the happy-dom
-// default (.claude/rules/testing.md).
+// @vitest-environment node
+// Pure text parsing (.claude/rules/testing.md): every input is read off disk
+// through import.meta.url, which resolves to a file URL only under node.
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
@@ -22,7 +21,9 @@ import { BRUSH_TYPES } from './lib/state/tool.svelte';
 // test.
 //
 // The registry and clamp bounds are imported directly. Boolean defaults are
-// parsed as text because BOOL_SETTINGS itself is module-private.
+// parsed as text because BOOL_SETTINGS itself is module-private, and
+// CONTROL_OFF_ATTRIBUTES because actionButtonLayout.ts pulls in state modules
+// that register window listeners as they load.
 
 const html = readFileSync(new URL('./app.html', import.meta.url), 'utf8');
 
@@ -37,6 +38,13 @@ const settingsSource = readFileSync(
   'utf8'
 );
 const registryKeys = new Set(Object.values(STORAGE_KEYS));
+
+// CONTROL_OFF_ATTRIBUTES entries are `settingKey: 'data-off-name',`.
+const controlOffAttributes = [
+  ...readFileSync(new URL('./lib/actionButtonLayout.ts', import.meta.url), 'utf8').matchAll(
+    /^ +\w+: '(data-off-[\w-]+)',$/gm
+  ),
+].map((m) => m[1]);
 
 // BOOL_SETTINGS entries are `propName: [STORAGE_KEYS.someKey, default]`; re-key
 // them by the key's string literal, which is the only handle the boot script has.
@@ -121,6 +129,17 @@ describe("app.html's boot script mirrors the state modules", () => {
     expect(new Set(bootBrushes)).toEqual(
       new Set(BRUSH_TYPES.filter((b) => b !== 'pen' && b !== 'eraser'))
     );
+  });
+
+  // The panel-state vocabulary publishActionPanelState owns: the boot script
+  // must seed exactly those names, or a returning user gets a first-paint flash
+  // as hydration corrects an attribute the seeded CSS never saw.
+  it('seeds exactly the panel-state attributes publishActionPanelState stamps', () => {
+    expect(controlOffAttributes.length).toBeGreaterThan(0);
+    const bootAttributes = [
+      ...bootScript.matchAll(/toggleAttribute\('(data-off-[\w-]+|data-drawer-open)'/g),
+    ].map((m) => m[1]);
+    expect(new Set(bootAttributes)).toEqual(new Set([...controlOffAttributes, 'data-drawer-open']));
   });
 
   it('stamps data-theme for every resolved theme', () => {
