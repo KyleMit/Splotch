@@ -154,8 +154,6 @@
   }
 
   section :global(.disclosure-demo summary) {
-    align-items: center;
-    justify-content: space-between;
     padding: var(--space-3);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);

@@ -343,7 +343,6 @@
   }
 
   .report-device :global(.report-device-details summary) {
-    align-items: center;
     padding: 8px 12px;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);

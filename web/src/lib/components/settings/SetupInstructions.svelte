@@ -223,8 +223,6 @@
     color: var(--text);
     background: var(--surface-2);
     transition: background var(--duration-base) ease;
-    justify-content: space-between;
-    align-items: center;
     text-align: left;
   }
 
