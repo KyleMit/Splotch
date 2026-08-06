@@ -26,34 +26,6 @@ this file.
 
 ## Source: Code audit — App state (runes)
 
-### [Testing] `fullscreen.svelte.ts` has no unit tests
-
-**File(s):** `web/src/lib/state/fullscreen.svelte.ts` (whole file, 67 lines) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Every other logic-bearing state module in the directory has a colocated test file (`layout`,
-`colors`, `strokeWidth`, `tool`, `settings`, `install`, `appearance`, `coloringBook`, `aiKey`);
-`fullscreen.svelte.ts` has none. Its behavior is exactly the kind the neighboring
-`install.svelte.test.ts` proves testable with the `freshModule()` + platform-mock pattern: the
-four-way `supported` gating (`fullscreenSupported`, lines 25–29 — native, standalone,
-`document.fullscreenEnabled`, Android-browser sniff), the `fullscreenchange` sync keeping `active`
-truthful (lines 47–51), and `toggleFullscreen`'s guard + swallow semantics (lines 58–67). A
-regression in the gating (e.g. the toggle appearing on iOS, where `fullscreenEnabled` is false, or
-inside the native shell) currently has no unit-level net.
-
-#### Proposed solution
-
-Add `fullscreen.svelte.test.ts` mirroring `install.svelte.test.ts`'s structure:
-`vi.mock('$app/environment', ...)`, `vi.mock('$lib/platform', ...)` for
-`isNative`/`isStandalone`/`isAndroidBrowser`, drive `document.fullscreenEnabled`/`fullscreenElement`
-via `Object.defineProperty`, and `vi.resetModules()` per test since the module seeds at load. Cover:
-supported=false for native/standalone/non-Android/no-API; supported=true path syncs `active` on
-`fullscreenchange`; `toggleFullscreen` no-ops when unsupported and swallows a rejected
-`requestFullscreen`.
-
 ### [Testing] `captureAiAccessTokenFromUrl` and `aiCredentialKind` are untested
 
 **File(s):** `web/src/lib/state/settings.svelte.ts` (`aiCredentialKind`, lines 204–208;
