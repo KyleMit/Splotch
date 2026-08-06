@@ -30,49 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Correctness] A failed first wake-lock request is never retried
-
-**File(s):** `web/src/lib/boot/wakeLock.ts` (lines 12–18) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const onFirstPointerDown = () => requestWakeLock();
-const onVisibilityChange = () => {
-  if (wakeLock !== null && document.visibilityState === 'visible') { ... }
-};
-document.addEventListener('pointerdown', onFirstPointerDown, { once: true });
-```
-
-The pointerdown listener is `{ once: true }`, so the request fires exactly once per page lifetime.
-If that request rejects — `NotAllowedError` under battery-saver, a transient policy denial, low
-battery on Android — `wakeLock` stays `null`, and the `visibilitychange` re-request path is
-explicitly gated on `wakeLock !== null`. Result: one unlucky first tap permanently disables
-screen-sleep prevention for the whole drawing session, the one feature this module exists for.
-Contrast `pwa/updates.ts:66–76`, which releases its `registrationScheduled` latch on failure
-precisely so "a later gate call retries".
-
-#### Proposed solution
-
-Track success rather than the listener firing: keep a `let requested = false` latch set only when
-`request()` resolves, re-arm on failure by re-adding the once-listener (or drop `{ once: true }` and
-early-return when `wakeLock` is held):
-
-```ts
-const onPointerDown = () => {
-  if (wakeLock !== null) return;
-  void requestWakeLock();
-};
-document.addEventListener('pointerdown', onPointerDown);
-```
-
-A per-pointerdown null-check is one comparison — well within the hot-path rule's budget (no
-allocation, no DOM) — and makes both the retry and the visibility path self-healing. Also loosen the
-`visibilitychange` guard to attempt when `wakeLock === null` but a request was previously wanted,
-since a sentinel can be system-released while hidden.
-
 ### [Performance] Native builds' service-worker `$effect` subscribes to `strokeCount` forever for a no-op
 
 **File(s):** `web/src/routes/+page.svelte` (lines 55–58) @ 9ae62ff1
