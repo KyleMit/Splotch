@@ -6,11 +6,8 @@
 
   interface Props extends HTMLAttributes<HTMLSpanElement> {
     icon: IconName;
-    // Narrowed from ClassValue to match SplotchyIcon, which interpolates it
-    // into a class string.
-    class?: string;
   }
-  let { icon, class: className = '', ...rest }: Props = $props();
+  let { icon, class: className, ...rest }: Props = $props();
 </script>
 
 {#if icon === 'splotchy'}

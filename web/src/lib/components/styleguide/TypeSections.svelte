@@ -214,9 +214,6 @@
   }
 
   section :global(.type-usage-disclosure summary) {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     padding: 10px var(--space-3);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);

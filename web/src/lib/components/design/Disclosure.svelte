@@ -27,7 +27,13 @@
     overflow: hidden;
   }
 
+  /* Flex is load-bearing, not cosmetic: an inline box is not transformable, so
+     the chevron's rotate() no-ops unless the ::after is blockified as a flex
+     item. Owning it here keeps callers from each having to blockify it. */
   .disclosure summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     cursor: pointer;
     user-select: none;
     list-style: none;

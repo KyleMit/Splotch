@@ -1,0 +1,211 @@
+diff --git a/docs/adrs/0030-git-derived-web-version.md b/docs/adrs/0030-git-derived-web-version.md
+index 13b1c42..e985c9d 100644
+--- a/docs/adrs/0030-git-derived-web-version.md
++++ b/docs/adrs/0030-git-derived-web-version.md
+@@ -31,7 +31,7 @@ existing `CAPACITOR` build flag (ADR-0001), the single web-vs-native signal:
+
+ > Amended 2026-07: the derivation originally lived inline in `web/vite.config.ts`; it moved to the
+ > root-level `web/buildVersion.ts` module (the `web/defines.ts` pattern) so the fallback chain is
+-> unit-testable (`web/src/lib/buildVersion.test.ts`). The version semantics are unchanged.
++> unit-testable (`web/buildVersion.test.ts`). The version semantics are unchanged.
+
+ * **Native** (`CAPACITOR=true`): use the `package.json` version verbatim. Store submissions need
+   deliberate numbers; `capacitor-set-version` keeps Android/iOS in sync from the same source.
+diff --git a/scripts/tests/web-root-unit-tests.test.mjs b/scripts/tests/web-root-unit-tests.test.mjs
+new file mode 100644
+index 0000000..d109221
+--- /dev/null
++++ b/scripts/tests/web-root-unit-tests.test.mjs
+@@ -0,0 +1,44 @@
++import { readFileSync } from 'node:fs';
++import { join } from 'node:path';
++import { describe, expect, it } from 'vitest';
++
++// web/buildVersion.test.ts sits at the web root, beside the build-time module it
++// tests, which puts it outside two globs that only cover src/: Vitest's collection
++// include (web/vitest.config.ts) and the type-check include SvelteKit generates
++// into .svelte-kit/tsconfig.json, restated in web/tsconfig.json.
++//
++// Dropping either glob is silent. Without the Vitest entry the root tests stop
++// being collected and the suite still reports green; without the tsconfig entry
++// svelte-check skips the files and still reports zero errors. So the guard cannot
++// live in a web-root test — that file is itself collected by the glob it would be
++// guarding. It runs here, in the scripts suite, which reaches both configs as
++// plain files.
++//
++// Regex-level for vitest.config.ts on purpose: no TypeScript parser runs in this
++// Node-only suite, and importing that config would pull in the SvelteKit plugin.
++const repoRoot = join(import.meta.dirname, '..', '..');
++
++const VITEST_ROOT_TEST_GLOB = '*.test.ts';
++const TSCONFIG_ROOT_TEST_GLOB = `./${VITEST_ROOT_TEST_GLOB}`;
++
++const vitestIncludeGlobs = () => {
++  const source = readFileSync(join(repoRoot, 'web', 'vitest.config.ts'), 'utf8');
++  const include = /\binclude:\s*\[([^\]]*)\]/.exec(source);
++  expect(include, 'web/vitest.config.ts declares a test.include array').not.toBeNull();
++  return [...include[1].matchAll(/'([^']*)'/g)].map((match) => match[1]);
++};
++
++const tsconfigIncludeGlobs = () => {
++  const source = readFileSync(join(repoRoot, 'web', 'tsconfig.json'), 'utf8');
++  return JSON.parse(source.replace(/^\s*\/\/.*$/gm, '')).include;
++};
++
++describe('web-root unit tests', () => {
++  it('are collected by Vitest', () => {
++    expect(vitestIncludeGlobs()).toContain(VITEST_ROOT_TEST_GLOB);
++  });
++
++  it('are type-checked by svelte-check', () => {
++    expect(tsconfigIncludeGlobs()).toContain(TSCONFIG_ROOT_TEST_GLOB);
++  });
++});
+diff --git a/web/src/lib/buildVersion.test.ts b/web/buildVersion.test.ts
+similarity index 97%
+rename from web/src/lib/buildVersion.test.ts
+rename to web/buildVersion.test.ts
+index d80c5cf..baa3a5a 100644
+--- a/web/src/lib/buildVersion.test.ts
++++ b/web/buildVersion.test.ts
+@@ -1,6 +1,6 @@
+ // @vitest-environment node
+ import { describe, expect, it, vi } from 'vitest';
+-import { buildMetadata, deriveWebVersion } from '../../buildVersion';
++import { buildMetadata, deriveWebVersion } from './buildVersion';
+
+ describe('deriveWebVersion', () => {
+   it('uses the commit count without asking for the short SHA', () => {
+diff --git a/web/tests/.ruler/AGENTS.md b/web/tests/.ruler/AGENTS.md
+index d3cd39c..ea6d8d6 100644
+--- a/web/tests/.ruler/AGENTS.md
++++ b/web/tests/.ruler/AGENTS.md
+@@ -7,8 +7,9 @@
+   automatically on path match; other agents: read that file before editing specs). The full guide —
+   commands, the three-tier strategy (ADR-0008), Maestro install, CI triggers — is the `testing`
+   skill.
+-* Specs here are Playwright E2E (`*.spec.ts`). Unit tests are Vitest, colocated with source as
+-  `web/src/**/*.test.ts`. Pick the lowest layer that can catch the regression.
++* Specs here are Playwright E2E (`*.spec.ts`). Unit tests are Vitest, colocated with their subject:
++  `web/src/**/*.test.ts` for app modules, `web/*.test.ts` for the build-time modules that sit at the
++  web root. Pick the lowest layer that can catch the regression.
+ * Playwright builds the production artifact and serves it with `vite preview` by default; set
+   `DEV_SERVER=1` to iterate against `vite dev` instead. The server's private env is declared by
+   `commonWebServer.env` (`playwright.shared.ts`) — known test credentials in, `GITHUB_ISSUE_TOKEN`
+diff --git a/web/tests/AGENTS.md b/web/tests/AGENTS.md
+index 933e43b..74d6c54 100644
+--- a/web/tests/AGENTS.md
++++ b/web/tests/AGENTS.md
+@@ -11,8 +11,9 @@
+   automatically on path match; other agents: read that file before editing specs). The full guide —
+   commands, the three-tier strategy (ADR-0008), Maestro install, CI triggers — is the `testing`
+   skill.
+-* Specs here are Playwright E2E (`*.spec.ts`). Unit tests are Vitest, colocated with source as
+-  `web/src/**/*.test.ts`. Pick the lowest layer that can catch the regression.
++* Specs here are Playwright E2E (`*.spec.ts`). Unit tests are Vitest, colocated with their subject:
++  `web/src/**/*.test.ts` for app modules, `web/*.test.ts` for the build-time modules that sit at the
++  web root. Pick the lowest layer that can catch the regression.
+ * Playwright builds the production artifact and serves it with `vite preview` by default; set
+   `DEV_SERVER=1` to iterate against `vite dev` instead. The server's private env is declared by
+   `commonWebServer.env` (`playwright.shared.ts`) — known test credentials in, `GITHUB_ISSUE_TOKEN`
+diff --git a/web/tests/CLAUDE.md b/web/tests/CLAUDE.md
+index dde8185..c3736b7 100644
+--- a/web/tests/CLAUDE.md
++++ b/web/tests/CLAUDE.md
+@@ -9,8 +9,9 @@
+   automatically on path match; other agents: read that file before editing specs). The full guide —
+   commands, the three-tier strategy (ADR-0008), Maestro install, CI triggers — is the `testing`
+   skill.
+-* Specs here are Playwright E2E (`*.spec.ts`). Unit tests are Vitest, colocated with source as
+-  `web/src/**/*.test.ts`. Pick the lowest layer that can catch the regression.
++* Specs here are Playwright E2E (`*.spec.ts`). Unit tests are Vitest, colocated with their subject:
++  `web/src/**/*.test.ts` for app modules, `web/*.test.ts` for the build-time modules that sit at the
++  web root. Pick the lowest layer that can catch the regression.
+ * Playwright builds the production artifact and serves it with `vite preview` by default; set
+   `DEV_SERVER=1` to iterate against `vite dev` instead. The server's private env is declared by
+   `commonWebServer.env` (`playwright.shared.ts`) — known test credentials in, `GITHUB_ISSUE_TOKEN`
+diff --git a/web/tsconfig.json b/web/tsconfig.json
+index d308773..4ec7351 100644
+--- a/web/tsconfig.json
++++ b/web/tsconfig.json
+@@ -10,5 +10,28 @@
+     // --experimental-strip-types), which needs the real .ts specifier on its
+     // relative imports since there's no bundler to resolve an extensionless one.
+     "allowImportingTsExtensions": true
+-  }
++  },
++  // Restates the include list generated into .svelte-kit/tsconfig.json (rebased from
++  // .svelte-kit/ to here) so the web-root unit tests — outside every SvelteKit-generated
++  // glob, and imported by nothing — are type-checked too. tsconfig.test.ts fails when the
++  // generated list gains an entry this one lacks; scripts/tests/web-root-unit-tests.test.mjs
++  // fails when the `*.test.ts` entry here or its counterpart in vitest.config.ts goes missing.
++  "include": [
++    "./.svelte-kit/ambient.d.ts",
++    "./.svelte-kit/env.d.ts",
++    "./.svelte-kit/non-ambient.d.ts",
++    "./.svelte-kit/types/**/$types.d.ts",
++    "./vite.config.js",
++    "./vite.config.ts",
++    "./*.test.ts",
++    "./src/**/*.js",
++    "./src/**/*.ts",
++    "./src/**/*.svelte",
++    "./test/**/*.js",
++    "./test/**/*.ts",
++    "./test/**/*.svelte",
++    "./tests/**/*.js",
++    "./tests/**/*.ts",
++    "./tests/**/*.svelte"
++  ]
+ }
+diff --git a/web/tsconfig.test.ts b/web/tsconfig.test.ts
+new file mode 100644
+index 0000000..84477dd
+--- /dev/null
++++ b/web/tsconfig.test.ts
+@@ -0,0 +1,29 @@
++// @vitest-environment node
++import { readFileSync } from 'node:fs';
++import { describe, expect, it } from 'vitest';
++
++// tsconfig.json restates the include list SvelteKit generates into
++// .svelte-kit/tsconfig.json so it can add the web-root tests; this fails when the
++// generated list gains an entry the restatement lacks. That the root-test globs
++// themselves survive in tsconfig.json and vitest.config.ts is guarded from outside
++// both, by scripts/tests/web-root-unit-tests.test.mjs.
++const includeOf = (path: string): string[] => {
++  const withoutLineComments = readFileSync(new URL(path, import.meta.url), 'utf8').replace(
++    /^\s*\/\/.*$/gm,
++    ''
++  );
++  return JSON.parse(withoutLineComments).include;
++};
++
++const rebasedFromSvelteKitDir = (entry: string) =>
++  entry.startsWith('../')
++    ? `./${entry.slice('../'.length)}`
++    : `./.svelte-kit/${entry.replace(/^\.\//, '')}`;
++
++describe('web/tsconfig.json include', () => {
++  it('restates every glob SvelteKit generates', () => {
++    expect(includeOf('./tsconfig.json')).toEqual(
++      expect.arrayContaining(includeOf('./.svelte-kit/tsconfig.json').map(rebasedFromSvelteKitDir))
++    );
++  });
++});
+diff --git a/web/vitest.config.ts b/web/vitest.config.ts
+index 5b7c238..4cbaf93 100644
+--- a/web/vitest.config.ts
++++ b/web/vitest.config.ts
+@@ -29,7 +29,10 @@ export default defineConfig({
+     // per-file DOM setup is the suite's biggest fixed cost.
+     pool: 'threads',
+     setupFiles: ['./vitest-setup.ts'],
+-    include: ['src/**/*.{test,spec}.{js,ts}'],
++    // The root-level `*.test.ts` files cover the build-time modules that sit
++    // beside them (buildVersion.ts) — no generated glob reaches them, so
++    // scripts/tests/web-root-unit-tests.test.mjs fails if this entry is dropped.
++    include: ['src/**/*.{test,spec}.{js,ts}', '*.test.ts'],
+     // The Playwright specs live under tests/ and must not be picked up here.
+     exclude: ['tests/**', 'node_modules/**', '.svelte-kit/**'],
+   },

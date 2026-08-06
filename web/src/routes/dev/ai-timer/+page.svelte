@@ -12,6 +12,8 @@
   import { AI_SAFETY_REFUSAL_MESSAGE, AI_TIMEOUT_MESSAGE } from '$lib/drawing/aiImage';
   import { AI_TIMER_ARTIFACTS } from './artifactNames';
 
+  // Dev-only debug harness for the AI render timer animation.
+
   // Sample artifacts stand in for a real generation: the child's drawing (shown
   // blurred behind the dial) and the finished "AI" image that's revealed. They
   // live under tests/ so the Playwright spec can share them, and are streamed by

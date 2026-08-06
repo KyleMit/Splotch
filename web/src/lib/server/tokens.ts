@@ -2,10 +2,9 @@ import { env } from '$env/dynamic/private';
 import { getStore } from '@netlify/blobs';
 import { deleteUsage } from './usage';
 
-// Access tokens used to be a static comma-separated env var (ALLOWED_TOKENS_LIST).
-// They now live in Netlify Blobs so they can be added/removed at runtime from the
-// admin page. The env var is only used as a one-time seed on first read, which
-// keeps existing tokens working through the migration and during local dev.
+// Access tokens live in Netlify Blobs so they can be added/removed at runtime from the
+// admin page. ALLOWED_TOKENS_LIST is only a one-time seed on first read, which keeps
+// pre-Blobs deployments and local dev working.
 const STORE_NAME = 'access-tokens';
 const KEY = 'list';
 
@@ -159,16 +158,10 @@ async function persist(store: TokenStore | null, list: string[], etag: string | 
   return modified;
 }
 
-/** All currently allowed access tokens. */
-export async function getTokens() {
-  const { list } = await readStore();
-  return [...list];
-}
-
 /**
- * Like getTokens, but also reports whether the list is durably backed by Netlify
- * Blobs (`persistent: true`) or came from the per-instance in-memory fallback
- * seeded from ALLOWED_TOKENS_LIST (`persistent: false`). A null store from
+ * All currently allowed access tokens, plus whether the list is durably backed
+ * by Netlify Blobs (`persistent: true`) or came from the per-instance in-memory
+ * fallback seeded from ALLOWED_TOKENS_LIST (`persistent: false`). A null store from
  * readStore is exactly the fallback case — `getStore()` failed, or this read
  * did. Edits behave differently across those two: the first accepts them into
  * the in-memory list, where they won't survive a cold start; the second refuses
@@ -195,6 +188,11 @@ export async function isAllowedToken(token: unknown) {
 // `{ ok: false, error }` for the /admin form action and /api/admin/tokens to
 // report.
 const MUTATION_ATTEMPTS = 3;
+// Same rationale as SEED_CONFIRMATION_BACKOFF_MS above: a lost CAS race means the
+// write landed on a replica this instance hasn't caught up to yet, so rereading
+// instantly just re-hits the same lag. Only retries (attempt > 1) pace themselves —
+// the first, uncontended attempt always fires immediately.
+const MUTATION_BACKOFF_MS = 50;
 export const TOKEN_CONFLICT_ERROR = 'The token list changed while saving — please try again';
 export const TOKEN_UNAVAILABLE_ERROR =
   'Token storage is unavailable right now — nothing was saved. Please try again.';
@@ -235,6 +233,7 @@ async function mutateList(
   afterPersist?: (next: string[]) => Promise<void>
 ): Promise<MutationResult> {
   for (let attempt = 1; attempt <= MUTATION_ATTEMPTS; attempt++) {
+    if (attempt > 1) await sleep(MUTATION_BACKOFF_MS * attempt);
     const read = await readStore();
     // Neither exit knows the durable list, so neither may write. They differ
     // only in what to tell the caller: a store that answered is a race worth

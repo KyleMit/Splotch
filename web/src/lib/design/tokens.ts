@@ -367,6 +367,48 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
   },
 };
 
+// Whether a themed token's value is a paintable color. A handful carry filters,
+// blend modes and shadows instead, so anything that renders tokens as swatches
+// (the /design styleguide) has to split them apart. Typed as a total Record so
+// the compiler forces every new themed token to be classified here rather than
+// letting a consumer re-derive the split by hand.
+export const isColorToken: Record<keyof ThemeTokens, boolean> = {
+  appBg: true,
+  surface: true,
+  surface2: true,
+  surfaceHover: true,
+  border: true,
+  borderWarm: true,
+  borderWarmStrong: true,
+  controlTrack: true,
+  controlTrackHover: true,
+  sliderNotch: true,
+  textStrong: true,
+  text: true,
+  textSoft: true,
+  iconInk: true,
+  iconMuted: true,
+  brandWash: true,
+  brandWashHover: true,
+  brandText: true,
+  brandSolid: true,
+  brandSolidHover: true,
+  successWash: true,
+  successText: true,
+  dangerWash: true,
+  dangerText: true,
+  paper: true,
+  paperMargin: true,
+  holeStroke: true,
+  lineartFilter: false,
+  lineartBlend: false,
+  floatSurface: true,
+  floatSurfaceHover: true,
+  floatBorder: true,
+  floatShadow: false,
+  darkInkKeyline: true,
+};
+
 // `appBg` → `--app-bg`, `surface2` → `--surface-2`, `brandSolidHover` → `--brand-solid-hover`.
 export function toCssVarName(key: string): string {
   return `--${key.replace(/([a-z])([A-Z0-9])/g, '$1-$2').toLowerCase()}`;

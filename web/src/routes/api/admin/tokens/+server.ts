@@ -1,5 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { verifySessionToken, buildInvites, bearerToken } from '$lib/server/admin';
+import type { Invite } from '$lib/server/admin';
 import {
   getTokensStatus,
   addToken,
@@ -23,7 +24,7 @@ export const prerender = false;
 export type TokenSnapshot = {
   ok: true;
   tokens: string[];
-  invites: ReturnType<typeof buildInvites>;
+  invites: Invite[];
   persistent: boolean;
 };
 

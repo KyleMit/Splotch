@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { coloringBook } from '$lib/state/ui.svelte';
+  import { coloringBookModal } from '$lib/state/ui.svelte';
   import {
     booksForPlatform,
     setOverlayPage,
@@ -105,12 +105,12 @@
     cancelImagePrefetchesExcept(selectedOverlayUrl);
     for (const img of dialogEl.querySelectorAll('img')) cancelImageRequest(img);
     setOverlayPage(page, orientation);
-    coloringBook.hide();
+    coloringBookModal.hide();
   }
 
   function clearAndClose() {
     clearOverlay();
-    coloringBook.hide();
+    coloringBookModal.hide();
   }
 
   // A tile that merely *appears* under a stationary pointer/finger — on open, or
@@ -152,9 +152,9 @@
   class="coloring-book-modal modal-dialog modal-fly-in modal-shell"
   id="coloring-book-dialog"
   use:modalDialog={() => ({
-    open: coloringBook.open,
-    origin: coloringBook.origin,
-    onRequestClose: coloringBook.hide,
+    open: coloringBookModal.open,
+    origin: coloringBookModal.origin,
+    onRequestClose: coloringBookModal.hide,
     onOpen: () => showView(null),
   })}
 >
@@ -162,7 +162,7 @@
     <button
       class="coloring-book-close modal-close-btn"
       aria-label="Close"
-      onclick={coloringBook.hide}
+      onclick={coloringBookModal.hide}
     >
       <Icon name="close" class="modal-close-icon" />
     </button>

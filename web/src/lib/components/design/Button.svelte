@@ -10,9 +10,8 @@
   //   brand  — solid purple, the primary action
   //   wash   — brand-tinted fill, secondary / selected
   //   danger — destructive confirm (Clear, delete key)
-  //   ghost  — quiet bordered action on any surface
   interface Props extends HTMLButtonAttributes {
-    variant?: 'brand' | 'wash' | 'danger' | 'ghost';
+    variant?: 'brand' | 'wash' | 'danger';
     size?: 'sm' | 'md';
     children: Snippet;
   }
@@ -79,12 +78,6 @@
     color: var(--danger-text);
   }
 
-  .ghost {
-    background: transparent;
-    border: var(--border-width) solid var(--border);
-    color: var(--text-soft);
-  }
-
   @media (hover: hover) {
     .brand:hover:not(:disabled) {
       background: var(--brand-solid-hover);
@@ -97,11 +90,6 @@
     .danger:hover:not(:disabled) {
       background: var(--danger-text);
       color: var(--danger-wash);
-    }
-
-    .ghost:hover:not(:disabled) {
-      background: var(--surface-hover);
-      color: var(--text-strong);
     }
   }
 </style>

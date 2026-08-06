@@ -26,11 +26,11 @@ Alternatives considered:
 
 ## Decision
 
-The six boot-hidden overlays live in one lazy chunk, `web/src/lib/components/bootHiddenOverlays.ts`,
-which the `mountBootHiddenOverlays()` pump in `web/src/lib/boot/bootHiddenOverlays.ts` imports
-inside a `requestIdleCallback` (setTimeout fallback — iOS lacks rIC, see `docs/COMPATIBILITY.md`).
-Five of them then mount **one per idle callback** (`{#each overlays as Overlay (Overlay)}`), so no
-idle slice forms its own long task.
+The six boot-hidden overlays live in one lazy chunk, `web/src/lib/components/overlayChunk.ts`, which
+the `mountBootHiddenOverlays()` pump in `web/src/lib/boot/bootHiddenOverlays.ts` imports inside a
+`requestIdleCallback` (setTimeout fallback — iOS lacks rIC, see `docs/COMPATIBILITY.md`). Five of
+them then mount **one per idle callback** (`{#each overlays as Overlay (Overlay)}`), so no idle
+slice forms its own long task.
 
 The **Settings dialog is the exception**: at ~200 ms mounted (throttled) it is too heavy even for an
 idle slice, so it mounts on its **first open** — `settingsModal.open` latches
@@ -54,8 +54,8 @@ context creation onto the child's first pointerdown.
 
 * \+ ~150–250 ms less main-thread blocking in the Lighthouse TBT window on a throttled phone; the
   canvas is stroke-ready sooner.
-* \+ A place to put the *next* boot-hidden overlay: add it to `lib/components/bootHiddenOverlays.ts`
-  and to the idle queue in `lib/boot/bootHiddenOverlays.ts`, and it stays off the load path by
+* \+ A place to put the *next* boot-hidden overlay: add it to `lib/components/overlayChunk.ts` and
+  to the idle queue in `lib/boot/bootHiddenOverlays.ts`, and it stays off the load path by
   construction. Re-importing one eagerly in `+page.svelte` silently reverts the win —
   `npm run perf:mount` is the regression check.
 * − Settings' first open pays its mount (~50 ms on a real phone, masked by the fly-in animation).
@@ -76,8 +76,8 @@ are ~1.6 KB gzip each, so the co-evaluation never forms a >50 ms task in a `perf
 crossing the 50 ms long-task line at idle.
 
 The documented fix at that point — measured neutral now (2026-07), so **not adopted yet**: change
-`lib/components/bootHiddenOverlays.ts` from static re-exports to a list of per-component lazy
-loaders (`() => import('./X.svelte')`) and have the pump walk them **one loader per idle callback**,
-so each overlay's chunk loads, evaluates, and mounts in its own slice. Cost: one idle request per
-overlay instead of one for the set (precached on repeat visits). Verify with `npm run perf:mount`
-that no per-overlay slice exceeds ~50 ms before adopting it.
+`lib/components/overlayChunk.ts` from static re-exports to a list of per-component lazy loaders
+(`() => import('./X.svelte')`) and have the pump walk them **one loader per idle callback**, so each
+overlay's chunk loads, evaluates, and mounts in its own slice. Cost: one idle request per overlay
+instead of one for the set (precached on repeat visits). Verify with `npm run perf:mount` that no
+per-overlay slice exceeds ~50 ms before adopting it.
