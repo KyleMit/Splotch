@@ -4,7 +4,7 @@ import { impactThreshold } from '$lib/haptics';
 import { capturePointer, releasePointer } from './pointerCapture';
 
 // Drag-to-clear gesture constants.
-export const ACCEPT_RADIUS_FACTOR = 0.4;
+const ACCEPT_RADIUS_FACTOR = 0.4;
 const HOLD_DURATION = 500;
 const MOVEMENT_THRESHOLD = 50;
 const MULTI_CLICK_WINDOW = 1000;

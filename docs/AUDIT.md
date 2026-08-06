@@ -26,39 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Maintainability] The accept-radius derivation is duplicated between ClearCoachmark and dragToClear
-
-**File(s):** `web/src/lib/components/ClearCoachmark.svelte` (`getAcceptRadius`, lines 14–16),
-`web/src/lib/actions/dragToClear.ts` (lines 59–61) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-Both files define the identical function:
-
-```ts
-function getAcceptRadius() {
-  return Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
-}
-```
-
-Sharing only the factor constant but duplicating the derivation means the coachmark's "faint preview
-of the real accept-zone ring" (its stated purpose, line 29) only matches the live ring as long as
-both formulas stay identical by hand — e.g. if the gesture ever switches to `visualViewport`
-dimensions or clamps the radius, the tutorial would silently demonstrate the wrong threshold.
-
-#### Proposed solution
-
-Export the function, not just the factor, from `dragToClear.ts`:
-
-```ts
-export function acceptRadiusPx(): number { … }
-```
-
-and delete both local copies (dragToClear's internal `getAcceptRadius` becomes the exported one;
-ClearCoachmark imports it instead of `ACCEPT_RADIUS_FACTOR`).
-
 ### [Testing] `MAX_ACTION_BUTTON_COUNT` agrees with `visibleActionButtonCount` only by prose; the test pins a bare `6`
 
 **File(s):** `web/src/lib/actionButtonLayout.ts` (lines 35–38),
