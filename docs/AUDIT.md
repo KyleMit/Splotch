@@ -28,45 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Types] `recordTokenUsage` casts blob data without the runtime validation its sibling reader applies
-
-**File(s):** `web/src/lib/server/usage.ts` (`recordTokenUsage`, lines 58–66; contrast `getUsage`,
-line 123) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-const existing = await store.getWithMetadata(token, { type: 'json' });
-const prev = (existing?.data as Partial<TokenUsage> | null) || {};
-const next: TokenUsage = {
-  count: (prev.count || 0) + 1,
-```
-
-The cast is at a storage boundary but with *no* runtime validation — CLAUDE.md allows `as` only
-"where typed code meets untyped input … after runtime validation". `getUsage` in the same file does
-validate (`usage && typeof usage.count === 'number'`, line 123) before trusting the blob, so the
-module is internally inconsistent. Concretely: if a usage blob ever holds `count` as a string (a
-hand-edit in the Netlify dashboard, or an older/foreign writer), `("3" || 0) + 1` produces the
-string `"31"` and the corrupted value is written back as the new tally — the exact "spot a token
-going rogue" signal this store exists for silently becomes garbage, while `getUsage` then hides the
-row entirely (non-number `count`), so the admin sees "Never used" for an actively used token.
-
-#### Proposed solution
-
-Validate before use, mirroring the reader:
-
-```ts
-const prev = existing && typeof (existing.data as Partial<TokenUsage>)?.count === 'number'
-  ? (existing.data as Partial<TokenUsage>)
-  : {};
-```
-
-or extract a tiny `parseTokenUsage(data: unknown): Partial<TokenUsage>` guard used by both
-`recordTokenUsage` and `getUsage` so the two ends of the store share one notion of a well-formed
-record.
-
 ### [Testing] The client `Usage` mirror of server `TokenUsage` has no drift guard
 
 **File(s):** `web/src/lib/components/admin/AdminConsole.svelte` (`Usage` interface, lines 8–16) @

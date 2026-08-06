@@ -56,7 +56,8 @@ export async function recordTokenUsage(
     const store = getStore(STORE_NAME);
     for (let attempt = 1; attempt <= CAS_ATTEMPTS; attempt++) {
       const existing = await store.getWithMetadata(token, { type: 'json' });
-      const prev = (existing?.data as Partial<TokenUsage> | null) || {};
+      const existingData = existing?.data as Partial<TokenUsage> | null;
+      const prev = existingData && typeof existingData.count === 'number' ? existingData : {};
       const next: TokenUsage = {
         count: (prev.count || 0) + 1,
         firstUsed: prev.firstUsed || now,

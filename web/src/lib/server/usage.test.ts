@@ -76,6 +76,23 @@ describe('recordTokenUsage', () => {
     expect(condition).toEqual({ onlyIfMatch: 'v4' });
   });
 
+  it('restarts the tally when the stored count is malformed', async () => {
+    const store = makeStore();
+    store.getWithMetadata.mockResolvedValue({
+      data: { count: 'not-a-number', firstUsed: '2020-01-01T00:00:00.000Z' },
+      etag: 'v1',
+      metadata: {},
+    });
+    getStoreMock.mockReturnValue(store);
+
+    await recordTokenUsage('tok', { style: 'crayon', prompt: 'a cat' });
+
+    const [, value, condition] = store.setJSON.mock.calls[0];
+    expect(value.count).toBe(1);
+    expect(value.firstUsed).toBe(value.lastUsed);
+    expect(condition).toEqual({ onlyIfMatch: 'v1' });
+  });
+
   it('retries a conflicting write against the freshly read value', async () => {
     const store = makeStore();
     store.getWithMetadata
