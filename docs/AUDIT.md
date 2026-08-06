@@ -28,38 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Performance] `timeAgo` allocates an `Intl.RelativeTimeFormat` and the units table on every call
-
-**File(s):** `web/src/lib/adminFormat.ts` (`timeAgo`, lines 12–21) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
-const units: [Intl.RelativeTimeFormatUnit, number][] = [ ... ];
-```
-
-Both are invariant across calls, yet are rebuilt per invocation. `Intl` formatter construction is
-the classic expensive-constructor case (locale-data lookup, ICU object allocation — comfortably the
-dominant cost of this function), and `timeAgo` runs once per invite row on every render of the
-console list, re-running whenever `invites` is replaced (each mutation snapshot, each
-`invalidateAll`). Not user-visible at today's token counts, but it's pure waste with a two-line fix,
-and the constants convention prefers named module-scope values for tables like this anyway.
-
-#### Proposed solution
-
-Hoist both to module scope:
-
-```ts
-const RELATIVE_TIME = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
-const TIME_AGO_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [ ... ];
-```
-
-Note the module is client-loaded only (both consoles), so module-eval cost moves to first import —
-fine. The existing `adminFormat.test.ts` cases pass unchanged.
-
 ### [Docs] `timeAgo`'s comment promises a plain-date fallback the code doesn't implement
 
 **File(s):** `web/src/lib/adminFormat.ts` (lines 7–11) @ 9ae62ff1
