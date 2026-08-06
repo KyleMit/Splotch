@@ -26,64 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Testing] The `data-*` attribute names written by publishActionPanelState are mirrored in app.html and two test files with no drift guard
-
-**File(s):** `web/src/lib/actionButtonLayout.ts` (`publishActionPanelState`, lines 126–145),
-`web/src/app.html` (lines 103–115), `web/src/app.html.test.ts`,
-`web/src/lib/actionButtonLayout.test.ts` (lines 150–157, 189–196) @ 9ae62ff1
-
-**Priority:** P2
-
-> **Verified 2026-07-28** — every mirror site confirmed; `app.html.test.ts` guards `STORAGE_KEYS`,
-> `BOOL_SETTINGS` defaults and `data-app-surface`, but nothing checks the `data-off-*` vocabulary
-> against the TS writer. Citation correction: the "must stay in lockstep" prose is at
-> `actionButtonLayout.ts` lines 113–114, not 115–116.
-
-#### Problem
-
-The `data-drawer-open` / `data-off-adv` / `data-off-stroke` / `data-off-eraser` /
-`data-off-coloring` / `data-off-screenshot` / `data-off-undo` / `data-brush` attribute vocabulary is
-hardcoded independently in:
-
-* `publishActionPanelState` (actionButtonLayout.ts lines 131–144),
-* the app.html boot IIFE (lines 106–115),
-* the CSS selectors in `ActionsPanel.svelte` (lines 447, 451, 493–513, 541, 749–754) and
-  `BrushMenu.svelte` (line 54),
-* both hardcoded attribute lists in `actionButtonLayout.test.ts` (lines 150–157 and 189–196,
-  duplicated within the file).
-
-`app.html.test.ts` mechanically guards the boot script's *storage keys and boolean defaults* against
-`STORAGE_KEYS`/`BOOL_SETTINGS`, but nothing guards the *attribute names* the two writers stamp.
-`publishActionPanelState`'s own header admits the contract ("Those two writers must stay in
-lockstep", lines 115–116) yet the lockstep is prose. Rename an attribute in the TS + its test + the
-CSS and forget app.html, and every test stays green while returning users get a first-paint flash
-(seed writes a dead attribute; the real one arrives only at hydration) — precisely the flash this
-machinery exists to prevent.
-
-#### Proposed solution
-
-Export the mapping as data, iterate it in the function, and guard it in the app.html test:
-
-```ts
-export const CONTROL_OFF_ATTRIBUTES = {
-  advancedControlsEnabled: 'data-off-adv',
-  strokeWidthControlEnabled: 'data-off-stroke',
-  // …
-} as const satisfies Record<BoolControlSetting, `data-off-${string}`>;
-```
-
-`publishActionPanelState` loops the table; `actionButtonLayout.test.ts` iterates
-`Object.values(CONTROL_OFF_ATTRIBUTES)` instead of two hand-copied lists; `app.html.test.ts` (which
-already regex-parses the boot script) asserts every `toggleAttribute('data-…')` name in the boot
-script appears in the exported table + `data-drawer-open`. The CSS selectors stay literal
-(tests-excepted rule doesn't cover CSS, but the CSS side breaks visibly in E2E; the seed/publish
-split is the silent one).
-
-Merged from the app-shell section's duplicate of this finding: the same missing guard was
-independently flagged from the `app.html` boot-script side, which raises its priority — one drift
-guard (asserting the attribute vocabulary against an exported constant, the `app.html.test.ts`
-pattern) resolves both reports.
-
 ### [Maintainability] The white-stroke/dark-stroke keyline rule is copied six times across three components
 
 **File(s):** `web/src/lib/components/ActionsPanel.svelte` (lines 766–781),

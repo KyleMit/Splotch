@@ -212,8 +212,9 @@ const controlOffEntries = Object.entries(CONTROL_OFF_ATTRIBUTES) as [
   string,
 ][];
 
-// Carries the active brush, and the last name in the seeded vocabulary
-// app.html's boot script re-types.
+// The rest of the seeded vocabulary app.html's boot script re-types: the
+// drawer's open state, and the brush the Brush Button wears.
+export const DRAWER_OPEN_ATTRIBUTE = 'data-drawer-open';
 export const BRUSH_ATTRIBUTE = 'data-brush';
 
 // Publish the Actions Panel's hydrated UI state onto its own root so CSS can
@@ -239,7 +240,7 @@ export function publishActionPanelState(
   buttonScale: number
 ): void {
   el.style.setProperty('--action-btn-scale', String(buttonScale));
-  el.toggleAttribute('data-drawer-open', drawerExpanded);
+  el.toggleAttribute(DRAWER_OPEN_ATTRIBUTE, drawerExpanded);
   for (const [key, attribute] of controlOffEntries) {
     el.toggleAttribute(attribute, !settings[key]);
   }

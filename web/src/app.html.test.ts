@@ -6,7 +6,11 @@
 // leading comment, sentence or not.
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { BRUSH_ATTRIBUTE, CONTROL_OFF_ATTRIBUTES } from './lib/actionButtonLayout';
+import {
+  BRUSH_ATTRIBUTE,
+  CONTROL_OFF_ATTRIBUTES,
+  DRAWER_OPEN_ATTRIBUTE,
+} from './lib/actionButtonLayout';
 import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
 import { STORAGE_KEYS } from './lib/storage';
 import { RESOLVED_THEMES, THEME_COLORS } from './lib/theme';
@@ -135,11 +139,13 @@ describe("app.html's boot script mirrors the state modules", () => {
   // must seed exactly those names, or a returning user gets a first-paint flash
   // as hydration corrects an attribute the seeded CSS never saw.
   it('seeds exactly the panel-state attributes publishActionPanelState stamps', () => {
-    const bootAttributes = [
-      ...bootScript.matchAll(/toggleAttribute\('(data-off-[\w-]+|data-drawer-open)'/g),
-    ].map((m) => m[1]);
+    const seeded = new RegExp(
+      `toggleAttribute\\('(data-off-[\\w-]+|${DRAWER_OPEN_ATTRIBUTE})'`,
+      'g'
+    );
+    const bootAttributes = [...bootScript.matchAll(seeded)].map((m) => m[1]);
     expect(new Set(bootAttributes)).toEqual(
-      new Set([...Object.values(CONTROL_OFF_ATTRIBUTES), 'data-drawer-open'])
+      new Set([...Object.values(CONTROL_OFF_ATTRIBUTES), DRAWER_OPEN_ATTRIBUTE])
     );
   });
 
