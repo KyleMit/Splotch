@@ -32,54 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Correctness] StatusMessage's explicit `aria-live="polite"` defeats its own `role="alert"`
-
-**File(s):** `web/src/lib/components/design/StatusMessage.svelte` (lines 18–24, comment lines 8–9) @
-9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-The component's own header comment states the intent (lines 8–9):
-
-```
-// Errors take role="alert" (interrupt) while successes take role="status"
-// (queue behind whatever is speaking).
-```
-
-But the markup pins `aria-live="polite"` on both branches (lines 18–24):
-
-```svelte
-<p
-  class="status-message"
-  class:error={status === 'error'}
-  class:success={status === 'success'}
-  role={status === 'error' ? 'alert' : 'status'}
-  aria-live="polite"
->
-```
-
-Per the ARIA spec, an explicit `aria-live` attribute overrides the role's implicit live-region
-politeness. `role="alert"` implies `aria-live="assertive"`; the explicit `polite` downgrades it, so
-error messages queue politely instead of interrupting — exactly the behavior the comment says errors
-should *not* have. For `role="status"` the attribute is a no-op (its implicit value is already
-`polite`). So the one thing the attribute does is break the error case.
-
-This is a production a11y defect on the parent-facing forms that use the primitive (ReportForm,
-AiKeyManager, SetupInstructions).
-
-#### Proposed solution
-
-Drop the `aria-live` attribute entirely — both roles carry the correct implicit politeness — or, if
-an explicit value is wanted for older AT, make it follow the role:
-
-```svelte
-aria-live={status === 'error' ? 'assertive' : 'polite'}
-```
-
-Verify with an axe scan / screen reader smoke that the error banner interrupts. No visual change.
-
 ### [Architecture] `splotchy.svg` is an 88 KB byte-identical duplicate with no drift guard
 
 **File(s):** `web/src/lib/icons/splotchy.svg` (88,461 bytes), `web/static/splotchy.svg`

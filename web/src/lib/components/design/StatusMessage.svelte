@@ -20,7 +20,7 @@
   class:error={status === 'error'}
   class:success={status === 'success'}
   role={status === 'error' ? 'alert' : 'status'}
-  aria-live="polite"
+  aria-live={status === 'error' ? 'assertive' : 'polite'}
 >
   {@render children()}
 </p>
