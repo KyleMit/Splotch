@@ -6,12 +6,12 @@ export const STYLE_SUFFIXES = {
   Magical:
     'Add a gentle storybook enchantment: a few soft golden sparkles drifting through the air, a subtle warm glow around the main characters, and dreamy, inviting light across the scene.',
   Crayon:
-    'Render the final image as a vibrant crayon drawing on lightly textured paper with playful wax strokes.',
+    'Render the final image as a vibrant crayon drawing on lightly textured paper with playful wax strokes. Cover the entire sheet with wax: every area, the sky and ground included, is crayoned in solid color running right off all four edges, leaving no bare paper margin, border, or matte anywhere in the frame.',
   Watercolor:
-    'Render the final image as a soft watercolor painting with gentle washes and bleeding edges.',
+    'Render the final image as a soft watercolor painting with gentle washes and bleeding edges. The painting fills the whole frame edge to edge, with the washes running off all four edges and no dry paper margin, border, or matte around them.',
   Paper:
     'Render the final image as a handmade layered paper-craft collage photographed from above: cut each element from thick, textured construction paper with soft rounded edges and lay it on a warm off-white textured-paper background, with soft natural drop shadows between the layers for a tactile, three-dimensional feel. Use no drawn outlines; the shapes are defined only by the paper color and the gentle shadows where the layers overlap. Fill the whole frame edge to edge, with no surrounding border or matte.',
-  Felt: 'Render the final image as a handmade felt craft scene, with fuzzy 3D fabric textures and stitched details.',
+  Felt: 'Render the final image as a handmade felt craft scene, with fuzzy 3D fabric textures and stitched details. The felt fills the whole frame edge to edge, running off all four edges, with no surrounding border, hoop, table, or backdrop visible.',
   Sticker:
     'Render the final image as a bold sticker illustration with thick outlines, solid colors, and a white die-cut border, sitting on a plain white background with a soft drop shadow beneath it so it looks like a sticker peeling off the page.',
   Cartoon:
