@@ -30,43 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Performance] Native builds' service-worker `$effect` subscribes to `strokeCount` forever for a no-op
-
-**File(s):** `web/src/routes/+page.svelte` (lines 55–58) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-$effect(() => {
-  if (canvasState.strokeCount < SETTLED_IN_STROKES) return;
-  if (!__IS_CAPACITOR__) pwaUpdates.registerDeferredServiceWorker();
-});
-```
-
-`__IS_CAPACITOR__` is a compile-time literal, so in the native build the second line
-dead-code-eliminates — but the first line's reactive read survives. The effect subscribes to
-`canvasState.strokeCount` and re-runs on **every stroke for the app's whole lifetime**, doing
-nothing. (On web the re-runs are deliberate — `registerDeferredServiceWorker` is a retrying latch,
-see `pwa/updates.ts:66–76` — so only the native ordering is wrong.)
-
-#### Proposed solution
-
-Put the build-time guard first:
-
-```ts
-$effect(() => {
-  if (__IS_CAPACITOR__) return;
-  if (canvasState.strokeCount < SETTLED_IN_STROKES) return;
-  pwaUpdates.registerDeferredServiceWorker();
-});
-```
-
-Native: the effect returns before any reactive read, so it runs once and never again. Web:
-`if (false) return;` is eliminated and behavior is byte-identical. Micro but free, and it aligns
-with the repo's stated preference for `__IS_CAPACITOR__` as the first-class build-time branch.
-
 ### [Readability] `+layout.ts` restates the SvelteKit defaults `ssr = true` and `csr = true`
 
 **File(s):** `web/src/routes/+layout.ts` (lines 1–3) @ 9ae62ff1
