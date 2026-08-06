@@ -30,53 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Testing] The boot script's brush (`'crayon' | 'magic'`) and theme (`'light' | 'dark'`) value literals are unguarded
-
-**File(s):** `web/src/app.html` (lines 114–118), `web/src/app.html.test.ts` @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The boot script re-types two closed value sets as literals:
-
-```js
-var brush = localStorage.getItem('splotch-brush-type');
-if (brush === 'crayon' || brush === 'magic') el.setAttribute('data-brush', brush);
-
-var theme = localStorage.getItem('splotch-theme');
-if (theme === 'light' || theme === 'dark') el.setAttribute('data-theme', theme);
-```
-
-The brush set mirrors `tool.svelte.ts` (`BrushType = 'pen' | 'crayon' | 'magic' | 'eraser'`, with
-`readBrush` at lines 46–50 accepting everything but `'eraser'`, and `'pen'` being the no-attribute
-default); the theme set mirrors `theme.ts`'s `isThemePreference` minus `'system'`. Neither is
-covered by `app.html.test.ts`, which stops at keys, boolean defaults, the clamp, and the route. Add
-a fourth persistable ink brush (say `'chalk'`) and every stored-chalk user gets a pen-faced Brush
-Button at first paint with all tests green — the identical silent-divergence failure the file's own
-header comment (lines 15–20) describes for keys and defaults.
-
-#### Proposed solution
-
-In `app.html.test.ts`, import `BRUSH_TYPES` from `$lib/state/tool.svelte` (the file already
-tolerates happy-dom imports with load-time storage reads — see its lines 1–4) and assert the boot
-literal set equals the persistable non-default set:
-
-```ts
-it('stamps data-brush for every persistable non-default brush', () => {
-  const bootBrushes = bootScript.match(/brush === '(\w+)' \|\| brush === '(\w+)'/)!.slice(1, 3);
-  expect(new Set(bootBrushes)).toEqual(
-    new Set(BRUSH_TYPES.filter((b) => b !== 'pen' && b !== 'eraser')),
-  );
-});
-```
-
-For the theme pair, either export a `RESOLVED_THEMES: ResolvedTheme[]` constant from `theme.ts` to
-assert against, or at minimum assert the two literals with the same regex approach. Gotcha: the
-`'pen'`/`'eraser'` exclusions re-state knowledge from `tool.svelte.ts` (`DEFAULT_BRUSH`, the
-`readBrush` eraser filter) — importing `DEFAULT_BRUSH` (would need exporting) makes the test track a
-default change too.
-
 ### [Correctness] `installWakeLock` teardown never releases the held sentinel
 
 **File(s):** `web/src/lib/boot/wakeLock.ts` (`installWakeLock`, lines 3–25) @ 9ae62ff1
