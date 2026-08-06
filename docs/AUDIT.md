@@ -32,36 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Testing] tokens.test.ts re-asserts what the compiler already enforces
-
-**File(s):** `web/src/lib/design/tokens.test.ts` (lines 25–29), `web/src/lib/design/tokens.ts`
-(lines 12–14) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-describe('themes', () => {
-  it('light and dark stay structurally identical', () => {
-    expect(Object.keys(themes.dark)).toEqual(Object.keys(themes.light));
-  });
-});
-```
-
-`tokens.ts`'s own header says (lines 12–14): "The `ThemeTokens` interface is what keeps light and
-dark structurally identical — the compiler now enforces what app.css previously demanded via a
-comment." Both theme objects are literals annotated `ThemeTokens`, so excess-property checking plus
-required members make key divergence a compile error; the only thing the runtime test adds is
-*declaration order* equality, which nothing depends on (`gen-tokens.mjs` iterates each theme's own
-`Object.entries` independently, and per-block ordering of emitted custom properties is inert).
-
-#### Proposed solution
-
-Delete the test, or — if key order is deemed worth pinning for diff-readability of the generated CSS
-— keep it with a one-line comment saying order (not structure) is what it guards, so the next reader
-doesn't conclude the interface guarantee is distrusted.
-
 ### [Correctness] `iconNameFromPath` uses an unanchored `.replace('.svg', ...)`
 
 **File(s):** `web/src/lib/components/iconTypes.ts` (lines 16–18), `scripts/generate-icon-names.mjs`

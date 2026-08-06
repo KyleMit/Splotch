@@ -22,12 +22,6 @@ describe('toCssVarName', () => {
   });
 });
 
-describe('themes', () => {
-  it('light and dark stay structurally identical', () => {
-    expect(Object.keys(themes.dark)).toEqual(Object.keys(themes.light));
-  });
-});
-
 describe('isColorToken', () => {
   it('classifies every themed token', () => {
     expect(Object.keys(isColorToken).sort()).toEqual(Object.keys(themes.light).sort());
