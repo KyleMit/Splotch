@@ -32,39 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Testing] `iconInk`'s "matches the SVGs' baked fill" is prose agreement across ~50 files
-
-**File(s):** `web/src/lib/design/tokens.ts` (lines 193–194, 278), `web/src/lib/icons/*.svg` @
-9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The token interface documents:
-
-```ts
-/** monochrome icon fill (matches the SVGs' baked fill) */
-iconInk: string;
-```
-
-and light `iconInk` is `'#1f1f1f'` (line 278) — matching the `fill="#1f1f1f"` baked into every
-monochrome icon (verified: `chevron-right`, `download`, `home`, `lock`, `more-horiz`, `theme-dark`,
-`volume-on`, …). Untinted icons read correctly only because these two agree. Nothing enforces it:
-drop in a fresh Material export with `fill="#000"` (Material's default) and the icon renders subtly
-off wherever it isn't run through a tint filter, with no failing test. This is exactly the
-"cross-file agreement maintained by prose" pattern the conventions ban — and the agreeing sites (SVG
-assets vs a TS module) can't share code, which is the stated trigger for a drift-guard test.
-
-#### Proposed solution
-
-Extend one of the existing glob-based icon tests (natural home: `Icon.svelte.test.ts`, which already
-loads every renderable SVG raw and imports the chroma helpers) with an assertion: for every icon
-*not* in `COLOR_ICONS`, all painted `fill`/`stroke` values are drawn from
-`{ themes.light.iconInk, 'currentColor', 'none', 'white' }` (measure the actual set first — build it
-from what the icons legitimately use today, then lock it). Reuse `paintHexes`-style extraction from
-`scripts/lib/iconChroma.mjs` rather than re-writing the attribute regex.
-
 ### [Maintainability] trimGeometry's `geometry` parameters are speculative surface — nothing ever passes them
 
 **File(s):** `web/src/lib/design/trimGeometry.ts` (lines 68–118, 208–232) @ 9ae62ff1
