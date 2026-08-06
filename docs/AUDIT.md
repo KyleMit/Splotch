@@ -28,43 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Correctness] Native console shows a stale success flash after logout → login
-
-**File(s):** `web/src/routes/admin/native/+page.svelte` (`signOutLocally`, lines 27–35; `flash`
-state, line 22; `login`, lines 135–158) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`signOutLocally` resets `session`, `authed`, `invites`, `persistent`, and `loginError`, but never
-clears `flash`:
-
-```ts
-function signOutLocally(message: string | null = null) {
-  session = '';
-  authed = false;
-  invites = [];
-  persistent = ASSUME_PERSISTENT;
-  loginError = message;
-  setAdminLinkVisible(false);
-  void clearAdminSession();
-}
-```
-
-`login()` (line 136) clears only `loginError`. `AdminConsole` renders `flash` only in the authed
-branch (lines 179–188 of `AdminConsole.svelte`), so the sequence: add a token (→
-`flash = { kind: 'success', text: 'Added “X”' }` in `mutate`, line 164) → sign out → sign back in
-re-enters the authed branch with the old flash still set, and the console greets the fresh session
-with a stale "Added “X”" banner for an action from the previous session. The web `/admin` twin has
-no such leak (its flash derives from the per-request `form` prop).
-
-#### Proposed solution
-
-Add `flash = null;` to `signOutLocally` (or clear it at the top of `login()`, symmetric with
-`loginError = null`). One-line fix; the admin E2E spec's native sign-out path is the natural place
-to pin it if coverage is wanted.
-
 ### [Maintainability] `getTokens` has no production caller — test-only export without the required marker
 
 **File(s):** `web/src/lib/server/tokens.ts` (`getTokens`, lines 132–136) @ 9ae62ff1

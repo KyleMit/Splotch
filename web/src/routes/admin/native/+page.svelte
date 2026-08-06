@@ -29,6 +29,7 @@
     authed = false;
     invites = [];
     persistent = ASSUME_PERSISTENT;
+    flash = null;
     loginError = message;
     setAdminLinkVisible(false);
     void clearAdminSession();
