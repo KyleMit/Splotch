@@ -245,7 +245,7 @@ PHP, Ruby) and a standalone CLI (`vectorizer vectorize logo.png -o logo.svg`, re
 <https://github.com/clv/vectorizer-ai-cli/releases>) wrap this same API with identical results,
 auth, pricing, and options. Specs: `/api/openapi.json`, `/api/openapi-codegen.json`,
 `/api/openapi-swagger.json`. This repo calls the HTTP API directly — see the *Why direct HTTP*
-section of `SKILL.md`.
+section of `../README.md`.
 
 ## Changelog highlights
 

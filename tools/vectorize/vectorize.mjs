@@ -11,13 +11,13 @@
 // explicit --production / --mode.
 //
 // Usage:
-//   node .claude/skills/vectorize-image/vectorize.mjs <input> [--out file] [options]
-//   node .claude/skills/vectorize-image/vectorize.mjs --download <token> [--out file]
-//   node .claude/skills/vectorize-image/vectorize.mjs --delete <token>
-//   node .claude/skills/vectorize-image/vectorize.mjs --account
+//   node tools/vectorize/vectorize.mjs <input> [--out file] [options]
+//   node tools/vectorize/vectorize.mjs --download <token> [--out file]
+//   node tools/vectorize/vectorize.mjs --delete <token>
+//   node tools/vectorize/vectorize.mjs --account
 //
 // <input> is a file path, an http(s) URL, or token:<image-token>.
-// See SKILL.md for the flag table and reference/api.md for every --param name.
+// See README.md for the flag table and docs/api.md for every --param name.
 
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, resolve } from 'node:path';
@@ -374,10 +374,10 @@ export function parseArgs(argv) {
 function printUsage() {
   console.log(`Vectorize a bitmap through Vectorizer.AI. Defaults to the free, watermarked test mode.
 
-  node .claude/skills/vectorize-image/vectorize.mjs <input> [--out file] [options]
-  node .claude/skills/vectorize-image/vectorize.mjs --download <token> [--out file] [--receipt r]
-  node .claude/skills/vectorize-image/vectorize.mjs --delete <token>
-  node .claude/skills/vectorize-image/vectorize.mjs --account
+  node tools/vectorize/vectorize.mjs <input> [--out file] [options]
+  node tools/vectorize/vectorize.mjs --download <token> [--out file] [--receipt r]
+  node tools/vectorize/vectorize.mjs --delete <token>
+  node tools/vectorize/vectorize.mjs --account
 
   <input>          file path | http(s) URL | token:<image-token>
   --out <file>     output path; its extension picks the format (default ${DEFAULT_OUT_DIR}/vectorized.svg)
@@ -389,5 +389,5 @@ function printUsage() {
   --json           also print a machine-readable summary line
 
 Credits: test modes are free, preview 0.2, production 1.0, extra format 0.1.
-See SKILL.md and reference/api.md.`);
+See README.md and docs/api.md.`);
 }

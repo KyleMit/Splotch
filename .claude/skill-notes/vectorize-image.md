@@ -5,6 +5,29 @@
 Why the skill is shaped the way it is. Not linked from `SKILL.md` on purpose (see `README.md` in
 this folder).
 
+## Why the tool is in `tools/`, not in the skill package
+
+It started as a self-contained skill package — driver, runbook, and four inlined documentation pages
+under `.ruler/skills/vectorize-image/`. Ruler copies a skill package verbatim into both `.claude/`
+and `.agents/`, so that put **84 KB in three places, 252 KB total**, with a 390-line executable
+triplicated. Every driver fix meant three identical files in the diff, and the first review round
+had to reason about which copy it was looking at.
+
+Moving the substance to `tools/vectorize/` leaves one copy of the driver and the docs and reduces
+the generated skill to an ~2 KB pointer in each tree. The skill still earns its place: the
+frontmatter `description` is what makes it model-invocable, and an agent reaching for "vectorize
+this" needs a door into the runbook. What it no longer does is carry the payload.
+
+The general rule this suggests: **a skill package should hold instructions, not implementations.**
+The drivers that do still live under `.ruler/skills/` (`run-splotch/driver.mjs`,
+`lighthouse-audit/run-audit.mjs`, `prune-remote-branches/gather.mjs`) are each small and tightly
+coupled to their skill's procedure. Once a skill ships a real program *plus* reference material, the
+triplication is cost with no benefit — nothing about the generated copies differs by runner.
+
+The links are `../../../tools/vectorize/…`, the same depth from `.ruler/`, `.claude/`, and
+`.agents/`, so one link text resolves from every copy. A link that only worked in the source tree
+would be worse than no link.
+
 ## The integration choice was measured, not assumed
 
 The opening assumption was "we call it from Node scripts, so the official Node SDK is probably the

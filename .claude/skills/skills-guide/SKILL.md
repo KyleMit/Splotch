@@ -109,10 +109,12 @@ shipped a 1.2.0 bundle; see ADR-0077.
 | ----------------- | ------------------------------------------------------------------------------------ |
 | `vectorize-image` | Trace a bitmap to SVG/PDF/EPS/DXF/PNG through Vectorizer.AI's metered credit account |
 
-The account is a 50-credit metered plan, so the skill defaults to Vectorizer.AI's free watermarked
-test mode and spends a credit only behind an explicit flag. It is standalone — the asset-generation
-pipeline in `tools/asset-gen/` (Gemini line art and fills) is unrelated and documents its own
-decisions under `tools/asset-gen/docs/`.
+The account is a 50-credit metered plan, so the tool defaults to Vectorizer.AI's free watermarked
+test mode and spends a credit only behind an explicit flag. **This skill is a pointer, not a
+package** — the driver, runbook, and inlined API documentation live in `tools/vectorize/`, so the
+bulk is not copied into both `.claude/` and `.agents/` on every Ruler run. It is standalone: the
+asset-generation pipeline in `tools/asset-gen/` (Gemini line art and fills) is unrelated and
+documents its own decisions under `tools/asset-gen/docs/`.
 
 ## Repo hygiene & meta
 

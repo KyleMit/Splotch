@@ -19,6 +19,7 @@
     "scripts/tests/*.test.mjs",
     ".ruler/skills/*/*.mjs",
     "tools/asset-gen/bin/*.mjs",
+    "tools/vectorize/*.mjs",
     "tools/asset-gen/crayon-brush-samples/*.mjs",
     "tools/asset-gen/tests/*.test.mjs"
   ],
@@ -26,7 +27,8 @@
     "web/src/**/*.{ts,svelte}",
     "web/tests/**/*.ts",
     "scripts/**/*.mjs",
-    "tools/asset-gen/{bin,lib}/**/*.{mjs,ts}"
+    "tools/asset-gen/{bin,lib}/**/*.{mjs,ts}",
+    "tools/vectorize/**/*.mjs"
   ],
   "ignoreDependencies": [".*"],
   "paths": {

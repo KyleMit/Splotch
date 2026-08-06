@@ -8,14 +8,10 @@ import { describe, expect, it } from 'vitest';
 // two ways that promise could be broken silently — a request that spends despite
 // announcing itself as free, and a paid run that reports itself as failed.
 //
-// Every generated copy, because each one is a script an agent is told to run and
-// each must carry the same guard.
+// One copy: the driver lives in tools/, not in a skill package Ruler would
+// triplicate into .claude/ and .agents/.
 const repoRoot = join(import.meta.dirname, '..', '..');
-const DRIVERS = [
-  '.ruler/skills/vectorize-image/vectorize.mjs',
-  '.claude/skills/vectorize-image/vectorize.mjs',
-  '.agents/skills/vectorize-image/vectorize.mjs',
-];
+const DRIVERS = ['tools/vectorize/vectorize.mjs'];
 
 const load = (path) => import(pathToFileURL(join(repoRoot, path)).href);
 
