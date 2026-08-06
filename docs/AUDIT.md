@@ -26,29 +26,6 @@ this file.
 
 ## Source: Code audit — App state (runes)
 
-### [Architecture] `buttonCenter` computes an `Origin` but lives a module away from the `Origin` type
-
-**File(s):** `web/src/lib/state/ui.svelte.ts` (`buttonCenter`, lines 41–44),
-`web/src/lib/state/modal.svelte.ts` (lines 1–12) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`modal.svelte.ts` defines `Origin` and the `Modal` interface whose `show(origin)` consumes it;
-`ui.svelte.ts` imports the type (line 3) solely to define `buttonCenter(el): Origin` — the standard
-producer of that value (`ColorPalette.svelte:15`, `SettingsButton.svelte:3`,
-`ActionsPanel.svelte:11` all import it to call `someModal.show(buttonCenter(el))`). The helper is
-pure DOM geometry with no dependency on the `ui` state object; it sits in `ui.svelte.ts` only by
-historical accident, splitting the modal-origin concept across two files.
-
-#### Proposed solution
-
-Move `buttonCenter` into `modal.svelte.ts` beside `Origin` and `createModal` (it has no runes, so
-the `.svelte.ts` home is fine), re-exporting from `ui.svelte.ts` only if avoiding import churn
-matters — though with ~4 importers, updating them directly is cleaner. Low urgency; bundle with the
-modal-rename finding if that lands.
-
 ## Source: Code audit — Admin console + token backend
 
 ### [Maintainability] AdminConsole duplicates the copy-code/copy-link button markup three times

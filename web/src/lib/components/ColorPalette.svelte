@@ -12,7 +12,8 @@
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { releaseAllPointers } from '$lib/drawing/engine';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
-  import { colorPickerModal, buttonCenter } from '$lib/state/ui.svelte';
+  import { colorPickerModal } from '$lib/state/ui.svelte';
+  import { buttonCenter } from '$lib/state/modal.svelte';
   import { toolState, selectInkBrush } from '$lib/state/tool.svelte';
   import { clearPaletteMeasurement, publishPaletteMeasurement } from '$lib/state/layout.svelte';
   import { getRingColor } from '$lib/colorRing';

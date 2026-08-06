@@ -9,7 +9,8 @@
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
   import { setStrokeSize, activeStrokeSize, type StrokeSize } from '$lib/state/strokeWidth.svelte';
   import { toolState, selectBrush, type BrushType } from '$lib/state/tool.svelte';
-  import { ui, coloringBookModal, aiPromptModal, buttonCenter } from '$lib/state/ui.svelte';
+  import { ui, coloringBookModal, aiPromptModal } from '$lib/state/ui.svelte';
+  import { buttonCenter } from '$lib/state/modal.svelte';
   import { aiResult } from '$lib/state/aiGeneration.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { browser } from '$app/environment';

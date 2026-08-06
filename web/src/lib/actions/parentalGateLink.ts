@@ -1,5 +1,5 @@
 import { requireParentalGate } from '$lib/state/parentalGate.svelte';
-import { buttonCenter } from '$lib/state/ui.svelte';
+import { buttonCenter } from '$lib/state/modal.svelte';
 
 // Gate an external link at its operation boundary (ADR-0094): the click is
 // intercepted and the Grown-Ups Only challenge opens with `force: true` —
