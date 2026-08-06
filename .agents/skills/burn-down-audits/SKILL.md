@@ -265,8 +265,11 @@ Monitor events, not by repeatedly loading every role envelope:
 
 ```bash
 tail -f -n 0 .audit-work/logs/run.log | grep -E --line-buffered \
-  "HALT|red at batch|red on the final|push failed|no impl session|DEFERRED|finished:|iter"
+  "HALT|red at batch|red on the final|push failed|no impl session|DEFERRED|INVALID|finished:|iter"
 ```
+
+`INVALID` is how a drop appears — the driver logs the verdict verbatim and only reports `dropped` in
+the closing `finished:` tally, so a filter without it stays silent through every drop.
 
 Treat CI supervision as independent from comment posting:
 

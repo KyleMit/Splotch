@@ -279,6 +279,24 @@ you can be bothered (and always at wrap-up), drain the store:
 the loop is at-least-once. A duplicate comment is a triviality; a silently dropped one is the
 reviewer's only written catch, gone.
 
+**Check every SHA the role wrote into its own prose — `git rev-parse --verify` is not the check.**
+The renderer's heading SHA is always right, but a fix that went through a review round routinely
+narrates its work ("committed as `<sha>`", "the handles from commit `<sha>` are untouched"), and
+that SHA is the implementer's **pre-amend** commit. The driver amends the `docs/AUDIT.md` excision
+into it, orphaning the object the role named: it still resolves locally, so `rev-parse --verify`
+happily confirms it, but it was never pushed and renders as dead plain text on GitHub. Roles also
+abbreviate to 7 characters where the heading uses 12, which is the width-mixing trap in the repo's
+"Writing on GitHub" rule. Reachability is the check that catches both:
+
+```bash
+full=$(git rev-parse --verify --quiet "$sha^{commit}") \
+  && git merge-base --is-ancestor "$full" HEAD && echo "OK ${full:0:12}" || echo "ORPHAN/BAD $sha"
+```
+
+A 2026-08-06 run needed this on 3 of ~15 fix-round comments. When a cited SHA is an orphan, the
+landed commit is the record's own heading SHA — swap it in and say so, rather than deleting the
+sentence: the narration is usually load-bearing (which of several commits did what).
+
 `npm run audit:status` prints the unposted count, and `audit:preflight` warns about a non-empty
 store, so an undrained backlog of comments is visible rather than discovered at closeout.
 
@@ -429,6 +447,16 @@ this is only about SHAs.)
   destroyed a half-finished set of uncommitted doc edits. If you are holding uncommitted work,
   commit or stash it before any hard reset, and prefer `git reset --soft HEAD~1` when all you want
   is to undo a commit.
+
+  **"Editing a tracked file" includes running a command that writes one.** The obvious reading of
+  this rule is about `Edit`/`Write`, so a read-sounding verification command slips past it:
+  `npm run ruler:check` runs `dprint fmt` and formats the tree, and `npm run gen:tokens` /
+  `gen:assets:manifest` regenerate committed output. Run one mid-finding and its writes land inside
+  the driver's in-flight fix commit, attributed to a finding that never touched them. A 2026-08-06
+  supervisor ran `ruler:check` to confirm a fix's `ruler:apply` had taken; it was a no-op only
+  because the tree happened to be clean already. These are excluded from `CHECK_CMD` for exactly
+  this reason — the exclusion is about the command being mutating, not about where it runs, so it
+  applies to you too. CI's Agent-file drift job is the safe place to learn the same thing.
 * **A session hook will nag every turn that the commits are unsigned. It is a false positive —
   ignore it.** Verified 2026-07-25 by reading the commit objects: they *do* carry
   `gpgsig -----BEGIN SSH SIGNATURE-----`. Signing is delegated to `gpg.ssh.program=/tmp/code-sign`
@@ -723,12 +751,22 @@ state in the conversation:
   "healthy and working":
   ```bash
   tail -f -n 0 .audit-work/logs/run.log | grep -E --line-buffered \
-    "HALT|hit a cap|red at batch|red on the final|push failed|no impl session|DEFERRED|finished:|iter"
+    "HALT|hit a cap|red at batch|red on the final|push failed|no impl session|DEFERRED|INVALID|finished:|iter"
   ```
   `push failed` matters as much as a halt: the run keeps committing perfectly well against a remote
   it cannot reach, and every commit it makes after that is unprotected. `no impl session` means a
   fix round lost the resume handoff and re-derived the change from review text — one such line is
   tolerable, a pattern of them means the session minting is broken again.
+
+  **`INVALID` is what a drop looks like — the word "dropped" never appears.** The driver logs the
+  verdict verbatim (`INVALID: <reason>`) and only reports `dropped` in the closing `finished:`
+  tally, so a filter without it stays silent through every drop. That silence is easy to misread as
+  progress, because the only other trace is an `iter` line whose tag *repeats* the previous one (the
+  tag is `done + deferred + 1`, which excludes drops) while the remaining-count still falls. Two or
+  three consecutive `iterNNNN` lines with a falling count is the drop signature, not a bug — but you
+  should be reading the verdict, not inferring it. Worth watching because a drop is the one
+  unrecoverable outcome: it deletes a finding permanently, so a wrong `INVALID` is the only mistake
+  this loop makes that nothing downstream can catch.
 
   **Arming it in the same breath as the launch does not work, and fails silently-ish.** A fresh
   container has no `run.log` until the driver's first write, and `tail -f` on a missing file exits
@@ -753,7 +791,7 @@ state in the conversation:
   command, and then **close the gap** — `tail -f -n 0` starts from the end of the file, so anything
   written between death and re-arm is never reported. One scoped catch-up read covers it:
   ```bash
-  awk '/starting — target/{f=1} f' .audit-work/logs/run.log | grep -E "iter|DEFERRED|finished:|HALT" | tail -4
+  awk '/starting — target/{f=1} f' .audit-work/logs/run.log | grep -E "iter|DEFERRED|INVALID|finished:|HALT" | tail -4
   ```
 
   **Do not infer elapsed time from a monitor's lifecycle.** A timeout fires 30 minutes after the
@@ -966,6 +1004,17 @@ Notes from real runs — set these before a large run rather than discovering th
   cannot forget; reserve the envelope for what only the model knows. And **when a role fails to run,
   say so in the deferral reason.** Rolling back unreviewed work is right; calling it rejected is
   not. A deferral reason is read months later by someone deciding whether to re-stage the finding.
+* **Read a drop's reason whenever it concedes the finding is still true.** Most `INVALID` verdicts
+  are cheap and obviously right — the named file no longer exists — and cluster by cause: a
+  consolidation commit landing after the backlog's pin orphans every finding that named the moved
+  code, so a run of drops usually shares one culprit and is not worth investigating individually
+  (2026-08-06: three of four traced to one ADR's route consolidation). The one to actually read is
+  the verdict that starts by agreeing — "the observation is real and unchanged since the pin" — and
+  then drops on the finding's *specifics*. That shape is either the verifier doing careful work or
+  the single unrecoverable mistake this loop can make, and the reason text is the only way to tell.
+  On that run it was careful work: the finding was right that an eager glob inlines ~84 KB, and
+  wrong that three of the four icons it named were parent-only when they render on the toddler
+  toolbar's first paint — applying it as written would have shipped a visible regression.
 * **Scope every `run.log` grep to the current run.** `run.log` accumulates across runs and iteration
   numbers restart at `iter0001` each time, so a bare `grep iter0008` silently matches a different
   finding from hours ago. Anchor on the run's start line:

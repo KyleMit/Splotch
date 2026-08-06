@@ -34,8 +34,11 @@ export function findingProblem(issue) {
 
 // GitHub linkifies a bare #<digits> into an issue/PR reference; escape those in
 // these machine-authored bodies so a finding that mentions "#42" doesn't ping an
-// unrelated PR (CLAUDE.md, "Writing on GitHub").
-export const escapeHashRefs = (s) => s.replace(/#(\d)/g, '\\#$1');
+// unrelated PR (CLAUDE.md, "Writing on GitHub"). Findings are themselves written
+// to that rule, so many arrive already escaped — the lookbehind keeps this
+// idempotent, since double-escaping renders a literal backslash AND leaves the
+// number free to autolink, which is worse than not escaping at all.
+export const escapeHashRefs = (s) => s.replace(/(?<!\\)#(\d)/g, '\\#$1');
 
 // `fix` is the implementer's own account of the change: an array with one entry
 // per round for a fix that went through review revisions, or a plain string from
