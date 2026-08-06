@@ -13,19 +13,26 @@
   // stroke-size previews below are monochrome in their raw SVG but still opt
   // out because they tint via currentColor / theme vars.
   export const COLOR_ICONS = new Set<CommonIconName>([
+    'appearance',
     'camera',
+    'controls',
     'crayon',
     'eraser',
+    'feedback',
     'line-weight',
     'line-weight-eraser',
     'magic-brush',
     'more-colors',
     'pen',
+    'save-picture',
+    'setup',
     'shapes',
+    'sound',
     'trash-closed',
     'trash-open',
     'undo',
     'wand-stars',
+    'whats-new',
     // Stroke-size previews carry their own coloring — the pen sizes via
     // currentColor (the active ink color), the eraser sizes and its
     // line-weight-eraser trigger via theme vars (--paper / --hole-stroke) —

@@ -2,6 +2,7 @@
 // Run `node scripts/generate-icon-names.mjs` (or any dev/build) to regenerate.
 export type IconName =
   | 'add-homescreen'
+  | 'appearance'
   | 'backspace'
   | 'camera'
   | 'camera-party'
@@ -11,6 +12,7 @@ export type IconName =
   | 'chevron-right'
   | 'chevron-up'
   | 'close'
+  | 'controls'
   | 'crayon'
   | 'customize'
   | 'dashboard-customize'
@@ -21,6 +23,7 @@ export type IconName =
   | 'eraser-size-3'
   | 'eraser-size-4'
   | 'eraser-size-5'
+  | 'feedback'
   | 'folder'
   | 'fullscreen'
   | 'fullscreen-exit'
@@ -40,9 +43,10 @@ export type IconName =
   | 'more-horiz'
   | 'pen'
   | 'photo-size-select-small'
-  | 'pin'
   | 'remove-page'
+  | 'save-picture'
   | 'settings'
+  | 'setup'
   | 'shapes'
   | 'share-ios'
   | 'size-1'
@@ -50,6 +54,7 @@ export type IconName =
   | 'size-3'
   | 'size-4'
   | 'size-5'
+  | 'sound'
   | 'splotchy'
   | 'swipe-down'
   | 'theme-auto'
@@ -60,4 +65,5 @@ export type IconName =
   | 'undo'
   | 'volume-off'
   | 'volume-on'
-  | 'wand-stars';
+  | 'wand-stars'
+  | 'whats-new';
