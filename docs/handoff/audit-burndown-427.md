@@ -79,6 +79,43 @@ Deliberately **excluded**, each for a reason:
   P1 findings remain.
 * Preflight: OK — deps, auth, clean tree, origin reachable, all three role prompts present.
 
+## Canary result — 5 fixed · 0 dropped · 0 deferred
+
+Backlog 427 → 422. **CI fully green** on the final canary push (Quality, Unit, all three Test
+shards, WebKit smoke, release build smoke). No capped or errored role calls. `$1.46`/finding, 21 min
+wall for five — but the canary drew mostly P5/test findings, so expect the real mix to run slower.
+
+What the canary **verified rather than assumed**:
+
+* **The resume handoff fires.** Iteration 3 took a review round, and `fix1`'s `session_id` is
+  byte-identical to `impl`'s (`e82a9940…`) while verify/review1/review2 each hold distinct ids. The
+  implementer resumed *its own* context; the reviewers are blind. This is the exact mechanism that
+  was silently void on 2026-07-25, so re-check it on any run whose driver or runner changed.
+* **Impl tiering actually fires** — `impl model: sonnet (P5)` in the log, not just a clean parse.
+* **The bundle gate fires on its own.** Iteration 3 added a static import under `web/src` and the
+  driver appended `tests/startup-bundle.spec.ts` unprompted — the regression class that could only
+  be caught in CI last campaign.
+* **No moved goalposts.** No eslint `max-lines` cap raised, no ratchet baseline widened.
+* **Entry accounting exact.** One entry consumed per finding; 427 − 5 = 422 = `pop.mjs --count`.
+  (Iteration 3 logged `removed=0` on its pre-amend commit and `removed=1` on the revert — judge per
+  finding, not per commit.)
+
+### Driver rough edge found here — verify SHAs when draining comments
+
+An implementer's summary can name **its own pre-amend commit**, which the driver then orphans when
+it amends the backlog excision in. Iteration 3's rendered comment cited 7f9059dd931e, an object that
+exists locally but was never pushed — it would have rendered as a dead link. The landed commit is
+75b4d0ab8599.
+
+`comment.mjs` renders the *heading* SHA correctly; this is only about SHAs the role wrote into its
+own prose. So when draining, check reachability rather than mere existence:
+
+```bash
+git merge-base --is-ancestor "$sha" HEAD && echo REACHABLE || echo "ORPHAN $sha"
+```
+
+`git rev-parse --verify` is **not** sufficient — it resolves orphaned objects happily.
+
 ## Wall-clock projection — a multi-day campaign, not one night
 
 256 P4/P5 findings on the `sonnet` minor tier at ~5.5 min ≈ 23 h, and 171 P2–P3 (plus 4 unparsable)
