@@ -26,60 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Maintainability] The white-stroke/dark-stroke keyline rule is copied six times across three components
-
-**File(s):** `web/src/lib/components/ActionsPanel.svelte` (lines 766–781),
-`web/src/lib/components/BrushMenu.svelte` (lines 66–81),
-`web/src/lib/components/StrokeWidthMenu.svelte` (lines 87–102) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-Each of the three files carries a near-identical pair of rules (six blocks total) differing only in
-the stroke color and, for StrokeWidthMenu, the selector (`path` vs `path[fill='currentColor']`):
-
-```css
-.action-button.white-stroke :global(svg path[fill='currentColor']) {
-  stroke: #000;
-  stroke-width: 2px;
-  paint-order: stroke;
-  vector-effect: non-scaling-stroke;
-}
-.action-button.dark-stroke :global(svg path[fill='currentColor']) {
-  stroke: var(--dark-ink-keyline);
-  …same three lines…
-}
-```
-
-Six copies of a four-declaration technique (plus six copies of the explanatory comment) mean a
-future tweak — say the stroke-width, or a third keyline state — touches six blocks in three files.
-The shared flyout chrome for these same components already lives in `app.css` ("Each component keeps
-only what differs — the eraser-mode sizing and the white-stroke/dark-stroke keylines", app.css lines
-242–245), so the precedent for hoisting is established; the keylines only stayed local because the
-color differs per state.
-
-#### Proposed solution
-
-Reduce each pair to one rule via a custom property: a shared rule (in `app.css` beside the flyout
-chrome, or one per component) does
-
-```css
-.white-stroke { --keyline: #000; }
-.dark-stroke { --keyline: var(--dark-ink-keyline); }
-.keylined :global(svg path[fill='currentColor']) {
-  stroke: var(--keyline);
-  stroke-width: 2px;
-  paint-order: stroke;
-  vector-effect: non-scaling-stroke;
-}
-```
-
-Both classes can coexist today (`inkWhite`/`inkDark` are mutually exclusive in practice — `isWhite`
-vs `isDarkInk` — but define the cascade order deliberately). Gotcha: StrokeWidthMenu deliberately
-strokes plain `path` (single-path icons); confirm `path[fill='currentColor']` also matches its icons
-or keep its selector local while sharing the declarations.
-
 ### [Maintainability] ClearCoachmark's timing/geometry tuning literals lack named constants
 
 **File(s):** `web/src/lib/components/ClearCoachmark.svelte` (`show`, lines 38 and 56) @ 9ae62ff1
