@@ -10,11 +10,38 @@ const svgs = import.meta.glob<string>('./*.svg', {
   import: 'default',
 });
 
+// `matchAll` (not `match`) so a file with more than one occurrence — like
+// line-weight-eraser.svg's three circles — gets every fallback checked, not
+// just the first. Optional whitespace after the comma tolerates the
+// `var(--x, #hex)` spelling already used elsewhere in the repo (e.g. --app-bg).
+const PAPER_FALLBACK_RE = /var\(--paper,\s*(#[0-9a-fA-F]{3,8})\)/g;
+const HOLE_STROKE_FALLBACK_RE = /var\(--hole-stroke,\s*(#[0-9a-fA-F]{3,8})\)/g;
+
+const fallbackHexes = (src: string, pattern: RegExp) =>
+  [...src.matchAll(pattern)].map(([, hex]) => hex);
+
+// The six icons the finding names (eraser-size-1..5, line-weight-eraser) — if
+// this drops, the regexes stopped matching anything (fallback removed, var
+// renamed, spelling changed) and every it.each case below would otherwise pass
+// vacuously with zero assertions.
+const ICONS_WITH_TOKEN_FALLBACKS = 6;
+
 describe('icon token fallbacks match themes.light', () => {
   it.each(Object.entries(svgs))('%s', (_path, src) => {
-    const paperMatch = src.match(/var\(--paper,(#[0-9a-fA-F]{3,8})\)/);
-    if (paperMatch) expect(paperMatch[1]).toBe(themes.light.paper);
-    const holeMatch = src.match(/var\(--hole-stroke,(#[0-9a-fA-F]{3,8})\)/);
-    if (holeMatch) expect(holeMatch[1]).toBe(themes.light.holeStroke);
+    for (const hex of fallbackHexes(src, PAPER_FALLBACK_RE)) {
+      expect(hex).toBe(themes.light.paper);
+    }
+    for (const hex of fallbackHexes(src, HOLE_STROKE_FALLBACK_RE)) {
+      expect(hex).toBe(themes.light.holeStroke);
+    }
+  });
+
+  it('checks fallbacks in every icon that has one', () => {
+    const filesWithFallbacks = Object.values(svgs).filter(
+      (src) =>
+        fallbackHexes(src, PAPER_FALLBACK_RE).length > 0 ||
+        fallbackHexes(src, HOLE_STROKE_FALLBACK_RE).length > 0
+    );
+    expect(filesWithFallbacks).toHaveLength(ICONS_WITH_TOKEN_FALLBACKS);
   });
 });

@@ -32,37 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Testing] Eraser-size SVGs bake token fallback hexes that can drift from tokens.ts
-
-**File(s):** `web/src/lib/icons/eraser-size-1.svg` … `eraser-size-5.svg`,
-`web/src/lib/icons/line-weight-eraser.svg`, `web/src/lib/design/tokens.ts` (lines 289, 291) @
-9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The eraser-size previews style themselves through theme vars with literal fallbacks, e.g.
-`eraser-size-1.svg`:
-
-```
-style="fill:var(--paper,#fcfbf8);stroke:var(--hole-stroke,#8a8a93);stroke-width:1.5"
-```
-
-The fallback hexes duplicate `themes.light.paper` (`'#fcfbf8'`, tokens.ts line 289) and
-`themes.light.holeStroke` (`'#8a8a93'`, line 291) across five-plus SVG files. In-app the vars always
-resolve, so the fallbacks are inert — but they're exactly what renders anywhere `tokens.css` isn't
-loaded (an SVG previewed standalone, a future email/docs embed, the scrapbook's `inlineIcon`
-output), and retuning the light paper color leaves six stale copies with no failing test. Boundary
-values are supposed to be declared once or drift-guarded.
-
-#### Proposed solution
-
-Add a small assertion to an existing icon test (node environment): for every SVG whose source
-contains `var(--paper,` or `var(--hole-stroke,`, the fallback hex equals the corresponding
-`themes.light` token. A ~10-line regex loop over the already-globbed raw sources; keeps the SVGs
-self-contained while making the duplication safe.
-
 ## Source: Code audit — Core UI controls
 
 ### [Maintainability] The hydrated button-size formula exists in three copies; two are kept in step only by comments
