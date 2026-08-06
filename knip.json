@@ -17,6 +17,7 @@
     "scripts/perf/*.mjs",
     "scripts/audit-burndown/*.mjs",
     "scripts/tests/*.test.mjs",
+    ".ruler/skills/*/*.mjs",
     "tools/asset-gen/bin/*.mjs",
     "tools/asset-gen/crayon-brush-samples/*.mjs",
     "tools/asset-gen/tests/*.test.mjs"
