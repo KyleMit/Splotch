@@ -225,7 +225,7 @@ const SCHEMA_VERIFY = {
     verdict: { type: 'string', enum: ['VALID', 'INVALID'] },
     reason: { type: 'string' },
     brief_path: { type: 'string' },
-    // Playwright specs (relative to web/, e.g. "tests/flows-undo-persistence.spec.ts") that
+    // Playwright specs (relative to web/, shaped "tests/<name>.spec.ts") that
     // exercise this finding's runtime surface — empty for a change with no
     // behavioural surface. The per-finding E2E gate runs exactly these.
     e2e_specs: { type: 'array', items: { type: 'string' } },

@@ -20,9 +20,10 @@ const testsDir = join(repoRoot, 'web', 'tests');
 //
 // Markdown only, so the walk never reaches the synthetic spec names that
 // `scripts/tests/*.test.mjs` feeds its reporter and comment fixtures — payload
-// strings that must stay free to name a file that does not exist. A source
-// comment citing a spec (`burndown.mjs`'s `e2e_specs` example) is unguarded for
-// the same reason: nothing in the text distinguishes it from that fixture data.
+// strings that must stay free to name a file that does not exist, and which no
+// pattern distinguishes from a real citation. A source comment needing to show
+// a spec path spells it as a `tests/<name>.spec.ts` placeholder instead, so
+// there is no agreement for this walk to have missed.
 const INSTRUCTION_ROOTS = ['.ruler', '.claude', '.agents', 'scripts'];
 const INSTRUCTION_FILENAMES = ['CLAUDE.md', 'AGENTS.md'];
 const EXCLUDED_DIRS = new Set([
