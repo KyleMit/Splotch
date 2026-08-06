@@ -32,34 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Correctness] `iconNameFromPath` uses an unanchored `.replace('.svg', ...)`
-
-**File(s):** `web/src/lib/components/iconTypes.ts` (lines 16–18), `scripts/generate-icon-names.mjs`
-(lines 11–18) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-export function iconNameFromPath(path: string): string {
-  return (path.split('/').pop() ?? '').replace('.svg', '');
-}
-```
-
-`String.replace` with a string pattern replaces the *first* occurrence anywhere, not the extension —
-a hypothetical `foo.svg-outline.svg` maps to `foo-outline.svg` while the generator's anchored
-`replace(/\.svg$/, '')` maps it to `foo.svg-outline`. The runtime map key and the generated union
-entry would disagree, producing exactly the blank-icon failure the guard machinery works so hard to
-prevent. No current filename triggers it, but the two implementations of the same mapping quietly
-differ, and this is the cheapest possible convergence.
-
-#### Proposed solution
-
-Anchor it: `.replace(/\.svg$/, '')`. (Truly sharing one implementation isn't practical — the `.mjs`
-generator can't import the `.ts` module without adding a loader — so matching semantics is the
-right-sized fix; a one-line pointer comment in either file is optional.)
-
 ### [Testing] `QUICKSAND_FONT_FAMILY` agrees with the @fontsource package's registered family only by convention
 
 **File(s):** `web/src/lib/fonts.ts` (line 1), `web/src/routes/+layout.svelte` (line 8),
