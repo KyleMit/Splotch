@@ -26,47 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Maintainability] Alarm-palette rgba literals repeated 5–7× per file in ClearButton and ClearCoachmark styles
-
-**File(s):** `web/src/lib/components/ClearButton.svelte` (lines 180, 200–201, 220, 222),
-`web/src/lib/components/ClearCoachmark.svelte` (lines 125–126, 209, 219, 223–224, 231–233, 252–254)
-@ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`.claude/rules/svelte.md`: "A value repeated 3+ times in a component's `<style>` … becomes a local
-custom property on the block's root selector."
-
-* ClearButton repeats the alarm red `255, 56, 56` seven times across five lines (accept-zone
-  border/gradients, delete-ready shadow, threshold state).
-* ClearCoachmark repeats the hint coral `255, 107, 107` six times and the "ready" rose
-  `238, 90, 111` six more — including a wholesale copy of the 70% keyframe's border+gradient into
-  the reduced-motion block (lines 231–233 duplicated at 252–254).
-
-A palette tweak (e.g. matching the ready color to the live threshold red) currently means a dozen
-coordinated edits, and the coachmark's reduced-motion fork can silently drift from the animated
-keyframe it is supposed to freeze.
-
-#### Proposed solution
-
-Local custom properties on each block root, e.g. in ClearCoachmark:
-
-```css
-.clear-coachmark {
-  --hint-rgb: 255, 107, 107;
-  --ready-border: rgba(238, 90, 111, 0.85);
-  --ready-fill: radial-gradient(circle, rgba(238, 90, 111, 0) 50%, rgba(238, 90, 111, 0.18) 100%);
-}
-```
-
-and the analog (`--alarm-rgb: 255, 56, 56`) in ClearButton. Gotcha: custom properties are fine
-inside `@keyframes` frame bodies (the property is resolved at use), but keep the rgba fallback
-ordering where `color-mix` fallbacks already exist. Optionally fold the hardcoded delete-ready
-gradient (`#ff3838, #d63031`, line 179) into a `--clear-gradient-ready` token beside the existing
-`--clear-gradient-rest` — flag to the design-skill vocabulary if done.
-
 ### [Correctness] InstallBanner's parting timer is never cleaned up
 
 **File(s):** `web/src/lib/components/InstallBanner.svelte` (`$effect`, lines 45–57) @ 9ae62ff1
