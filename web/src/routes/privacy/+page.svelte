@@ -10,10 +10,10 @@
   import PageShell from '$lib/components/page/PageShell.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import { paletteHex, type PaletteLabel } from '$lib/palette';
+  // Splotch has no email; questions/concerns go through GitHub issues.
+  import { GITHUB_NEW_ISSUE_URL as CONTACT_URL } from '$lib/githubRepo';
 
   const LAST_UPDATED = 'July 28, 2026';
-  // Splotch has no email; questions/concerns go through GitHub issues.
-  const CONTACT_URL = 'https://github.com/KyleMit/Splotch/issues/new/choose';
 
   // The headline promises, each led by a crayon chip in the brand rainbow —
   // the same visual vocabulary as the masthead's CrayonStrip.

@@ -30,39 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Maintainability] The GitHub repo URL is a duplicated boundary string (4 copies)
-
-**File(s):** `web/src/routes/privacy/+page.svelte` (line 12) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const CONTACT_URL = 'https://github.com/KyleMit/Splotch/issues/new/choose';
-```
-
-The `KyleMit/Splotch` repo URL is independently hardcoded in four client/server files: this page,
-`lib/components/settings/AboutSection.svelte`, `lib/components/settings/WhatsNewSection.svelte`, and
-`lib/server/config.ts`. A repo rename/transfer (or an org move — a real event for a project heading
-to app stores) means a four-site hunt, and a missed one ships a dead support link inside the privacy
-policy the stores require. CLAUDE.md's rule: boundary strings are "declared once, imported
-everywhere".
-
-#### Proposed solution
-
-Add a tiny shared module, e.g. `web/src/lib/githubRepo.ts`:
-
-```ts
-export const GITHUB_REPO_URL = 'https://github.com/KyleMit/Splotch';
-export const GITHUB_NEW_ISSUE_URL = `${GITHUB_REPO_URL}/issues/new/choose`;
-```
-
-and import it from the three client sites. `lib/server/config.ts` can import it too (client→server
-imports are forbidden, but server→shared-lib is fine); if the server value is deliberately
-configuration (env-overridable), leave it and note the intentional divergence there instead. Keep it
-out of `lib/server/` so the client pages can reach it.
-
 ### [Maintainability] The dev-harness index list is hand-maintained and can silently drift from `routes/dev/*`
 
 **File(s):** `web/src/routes/dev/+page.svelte` (lines 4–20) @ 9ae62ff1
