@@ -50,7 +50,7 @@
 
   p {
     margin: 0;
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-md, 16px);
     color: var(--text-soft, #666);
     max-width: 320px;
   }
@@ -59,13 +59,13 @@
     margin-top: 8px;
     padding: 14px 32px;
     border: none;
-    border-radius: var(--radius-pill);
+    border-radius: var(--radius-pill, 999px);
     /* --brand-solid, not --brand: an 18px bold label sits below WCAG's
        large-text threshold, and --brand is only 3.4:1 under white. */
     background: var(--brand-solid, #7c50bb);
     color: var(--on-brand, #fff);
     font: inherit;
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-lg, 18px);
     font-weight: var(--font-weight-bold);
     cursor: pointer;
   }
