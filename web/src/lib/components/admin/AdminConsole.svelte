@@ -32,6 +32,7 @@
   }
   export type CopyTarget = 'code' | 'url';
   export const copyKey = (token: string, target: CopyTarget) => `${token}:${target}`;
+  const COPY_FEEDBACK_MS = 1500;
 </script>
 
 <script lang="ts">
@@ -136,7 +137,7 @@
       copied = key;
       setTimeout(() => {
         if (copied === key) copied = '';
-      }, 1500);
+      }, COPY_FEEDBACK_MS);
     } catch {
       // Clipboard may be unavailable (e.g. non-secure context); ignore.
     }

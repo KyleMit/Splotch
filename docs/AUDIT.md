@@ -28,34 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Maintainability] Copy-feedback duration is a bare `1500` literal
-
-**File(s):** `web/src/lib/components/admin/AdminConsole.svelte` (`copy`, line 111) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-setTimeout(() => {
-  if (copied === key) copied = '';
-}, 1500);
-```
-
-The 1.5 s "Copied!" flash duration is exactly the class of value CLAUDE.md's tuning-literal rule
-targets: "a numeric literal that encodes a tunable decision — threshold, duration … gets a named
-module-scope constant with the unit in the name (`_MS` …)". Anyone tuning the feedback (or reusing
-it in `InviteMenu`) has to find a naked number inside a callback.
-
-#### Proposed solution
-
-```ts
-const COPY_FEEDBACK_MS = 1500;
-```
-
-at module scope (the `<script module>` block is a fine home since `copyKey` already lives there) and
-use it in the `setTimeout`.
-
 ### [Testing] `createIssue` has zero test coverage — only the Markdown escaper is tested
 
 **File(s):** `web/src/lib/server/github.ts` (`createIssue`, lines 56–85) @ 9ae62ff1;
