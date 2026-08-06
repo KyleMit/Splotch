@@ -26,38 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Maintainability] Slider's `step`/`pageStep` props are speculative surface, and pointer drags ignore `step` anyway
-
-**File(s):** `web/src/lib/components/Slider.svelte` (lines 12–13, 35–36, 59–61, 87–97, 116–145) @
-9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-No production caller passes `step` or `pageStep`: the only consumer is `SliderRow.svelte`, whose
-`Props` (lines 6–24) don't even include them, so both sliders in Settings always get the defaults
-(`1`/`10`). CLAUDE.md: "A new prop, option, or optional parameter needs a production caller that
-exercises it; a seam kept only for tests gets a comment saying so" — these have neither.
-
-The props are also misleading as a contract: `step` only quantizes the keyboard path (lines 121,
-124), while `apply()`/`clamp()` (lines 59–67) round pointer-drag values to whole integers regardless
-— a `step={5}` slider would arrow-key in fives but drag to any integer. Nobody hits this today
-precisely because nothing passes `step`, which is the tell that the surface is speculative.
-
-#### Proposed solution
-
-Demote both to named module constants:
-
-```ts
-const KEY_STEP = 1;
-const PAGE_STEP = 10;
-```
-
-and delete the props (SliderRow needs no change). If a future setting genuinely needs coarser steps,
-reintroduce `step` then — and make `clamp` quantize to it on the pointer path too so the contract is
-honest.
-
 ### [Maintainability] Deliberately non-reactive `let`s lack the required "intentionally untracked" comments
 
 **File(s):** `web/src/lib/components/Slider.svelte` (lines 47–50),

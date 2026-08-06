@@ -9,8 +9,6 @@
     value: number;
     min?: number;
     max?: number;
-    step?: number;
-    pageStep?: number;
     // id of the label element that names this slider (aria-labelledby).
     labelId: string;
     // Human-readable value for aria-valuetext (e.g. "50%").
@@ -27,13 +25,13 @@
   // Half-width of the snap band, in value units: ~4.5% of the track, so the
   // detent feels the same size on any range (0–100 volume or 70–130 size).
   const SNAP_BAND_FRACTION = 0.045;
+  const KEY_STEP = 1;
+  const PAGE_STEP = 10;
 
   let {
     value,
     min = 0,
     max = 100,
-    step = 1,
-    pageStep = 10,
     labelId,
     valueText,
     snap,
@@ -118,17 +116,17 @@
     switch (event.key) {
       case 'ArrowLeft':
       case 'ArrowDown':
-        next -= step;
+        next -= KEY_STEP;
         break;
       case 'ArrowRight':
       case 'ArrowUp':
-        next += step;
+        next += KEY_STEP;
         break;
       case 'PageDown':
-        next -= pageStep;
+        next -= PAGE_STEP;
         break;
       case 'PageUp':
-        next += pageStep;
+        next += PAGE_STEP;
         break;
       case 'Home':
         next = min;
