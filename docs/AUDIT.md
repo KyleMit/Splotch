@@ -28,35 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Correctness] CAS retry loops re-read instantly, so under replica lag the retries are spent in microseconds
-
-**File(s):** `web/src/lib/server/tokens.ts` (`mutateList`, lines 182–194) @ 9ae62ff1;
-`web/src/lib/server/usage.ts` (`recordTokenUsage`, lines 57–70)
-
-**Priority:** P4
-
-#### Problem
-
-`tokens.ts` itself documents (lines 25–32) why an instant re-read after a lost write is futile under
-eventual consistency: "rereading instantly just re-hits the same lag; a short, growing pause gives
-eventual consistency a moment to converge" — and `confirmSeedRaceWinner` accordingly paces its
-re-reads with `SEED_CONFIRMATION_BACKOFF_MS`. But the two CAS loops ignore their own module's
-lesson: when `persist`/`setJSON` returns `modified: false`, both `mutateList` and `recordTokenUsage`
-loop back to `readStore()`/`getWithMetadata` immediately. A lagging replica can serve the same stale
-etag on all three attempts back-to-back, so the retry budget is exhausted in one burst and the admin
-gets the 409 `TOKEN_CONFLICT_ERROR` (or the usage write is conceded) in situations a 50–150 ms pause
-would have resolved.
-
-#### Proposed solution
-
-Reuse the existing pacing: `await sleep(SEED_CONFIRMATION_BACKOFF_MS * attempt)` before each retry
-iteration (attempts 2+) in `mutateList`, and the same in `recordTokenUsage` (usage.ts would need its
-own small constant or an export from a shared spot). Tradeoff: adds up to ~300 ms latency to a
-genuinely conflicting admin mutation — negligible for a human-driven console, and `recordTokenUsage`
-is already fire-and-forget relative to the generation response. The fake-store tests serialize
-writes so they need no change; add one test asserting the retry paths still pass with fake timers if
-sleep-in-tests is a concern.
-
 ### [Performance] `timeAgo` allocates an `Intl.RelativeTimeFormat` and the units table on every call
 
 **File(s):** `web/src/lib/adminFormat.ts` (`timeAgo`, lines 12–21) @ 9ae62ff1

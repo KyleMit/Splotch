@@ -23,6 +23,13 @@ function maskToken(token: unknown) {
 }
 
 const CAS_ATTEMPTS = 3;
+// A `modified: false` means the write landed on a replica this instance hasn't
+// caught up to yet, so rereading instantly just re-hits the same lag (same
+// pattern as tokens.ts's SEED_CONFIRMATION_BACKOFF_MS). Only retries (attempt > 1)
+// pace themselves — the first, uncontended attempt always fires immediately.
+const CAS_BACKOFF_MS = 50;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function recordByokUsage(style: string | null, prompt: string): void {
   console.log(
@@ -55,6 +62,7 @@ export async function recordTokenUsage(
   try {
     const store = getStore(STORE_NAME);
     for (let attempt = 1; attempt <= CAS_ATTEMPTS; attempt++) {
+      if (attempt > 1) await sleep(CAS_BACKOFF_MS * attempt);
       const existing = await store.getWithMetadata(token, { type: 'json' });
       const existingData = existing?.data as Partial<TokenUsage> | null;
       const prev = existingData && typeof existingData.count === 'number' ? existingData : {};

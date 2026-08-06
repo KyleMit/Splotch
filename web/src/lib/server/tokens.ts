@@ -189,6 +189,11 @@ export async function isAllowedToken(token: unknown) {
 // `{ ok: false, error }` for the /admin form action and /api/admin/tokens to
 // report.
 const MUTATION_ATTEMPTS = 3;
+// Same rationale as SEED_CONFIRMATION_BACKOFF_MS above: a lost CAS race means the
+// write landed on a replica this instance hasn't caught up to yet, so rereading
+// instantly just re-hits the same lag. Only retries (attempt > 1) pace themselves —
+// the first, uncontended attempt always fires immediately.
+const MUTATION_BACKOFF_MS = 50;
 export const TOKEN_CONFLICT_ERROR = 'The token list changed while saving — please try again';
 export const TOKEN_UNAVAILABLE_ERROR =
   'Token storage is unavailable right now — nothing was saved. Please try again.';
@@ -229,6 +234,7 @@ async function mutateList(
   afterPersist?: (next: string[]) => Promise<void>
 ): Promise<MutationResult> {
   for (let attempt = 1; attempt <= MUTATION_ATTEMPTS; attempt++) {
+    if (attempt > 1) await sleep(MUTATION_BACKOFF_MS * attempt);
     const read = await readStore();
     // Neither exit knows the durable list, so neither may write. They differ
     // only in what to tell the caller: a store that answered is a race worth
