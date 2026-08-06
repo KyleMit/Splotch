@@ -30,36 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Testing] `buildVersion.test.ts` lives two directories away from the module it tests
-
-**File(s):** `web/src/lib/buildVersion.test.ts` (line 3) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-import { buildMetadata, deriveWebVersion } from '../../buildVersion';
-```
-
-The subject is `web/buildVersion.ts` (build-time config code), but its test is filed under
-`web/src/lib/` — presumably because `vitest.config.ts:31` only includes
-`src/**/*.{test,spec}.{js,ts}`. The repo's testing rule is colocation ("Vitest unit tests
-(`src/**/*.test.ts`), colocated with source"), and this file silently violates the spirit while
-satisfying the glob: someone editing `web/buildVersion.ts` sees no sibling test and can reasonably
-conclude it's untested; conversely, a reader browsing `src/lib/` finds a test for something that
-isn't in `src/` at all. Nothing in the file explains the placement.
-
-#### Proposed solution
-
-Widen the vitest `include` to also match `*.test.ts` at the `web/` root (e.g.
-`['src/**/*.{test,spec}.{js,ts}', '*.test.ts']`) and move the file to `web/buildVersion.test.ts`
-beside its subject — it's already `// @vitest-environment node`, so no DOM-environment concern. If
-widening the glob is unwanted (risk of accidentally picking up config-adjacent files), the minimal
-fix is a one-line comment at the top of the test explaining why it lives in `src/lib/`, so the
-placement reads as deliberate instead of lost. The move is strictly better for grepability; check
-nothing else (coverage config, CODE-MAP LOC buckets) keys on the current path.
-
 ### [Correctness] `mountBootHiddenOverlays` discards the idle-callback cancel handle and leaves `onSettingsModal` unguarded
 
 **File(s):** `web/src/lib/boot/bootHiddenOverlays.ts` (`mountBootHiddenOverlays`, lines 15–47) @
