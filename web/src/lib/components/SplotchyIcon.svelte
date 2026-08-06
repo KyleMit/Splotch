@@ -1,4 +1,5 @@
 <script lang="ts">
+  import splotchyUrl from '../icons/splotchy.svg';
   import type { HTMLAttributes } from 'svelte/elements';
 
   interface Props extends HTMLAttributes<HTMLSpanElement> {
@@ -8,7 +9,7 @@
 </script>
 
 <span class="{className} icon-color" {...rest} data-icon="splotchy">
-  <img src="/splotchy.svg" alt="" />
+  <img src={splotchyUrl} alt="" />
 </span>
 
 <style>
