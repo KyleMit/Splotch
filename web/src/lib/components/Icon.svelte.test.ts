@@ -22,19 +22,21 @@ const svgs = import.meta.glob<string>(['../icons/*.svg', '!../icons/splotchy.svg
 });
 
 describe('COLOR_ICONS allowlist', () => {
-  const colorful = Object.entries(svgs)
-    .filter(([, src]) => isSpot(src))
-    .map(([path]) => iconNameFromPath(path));
+  const colorful = new Set(
+    Object.entries(svgs)
+      .filter(([, src]) => isSpot(src))
+      .map(([path]) => iconNameFromPath(path))
+  );
 
   it('flags at least the known spot icons (classifier sanity check)', () => {
-    expect(colorful).toContain('camera');
-    expect(colorful.length).toBeGreaterThan(5);
+    expect(colorful.has('camera')).toBe(true);
+    expect(colorful.size).toBeGreaterThan(5);
   });
 
   it.each(Object.keys(svgs).map(iconNameFromPath).sort())(
     '%s: if colorful, it opts out of the monochrome tint',
     (name) => {
-      if (!isSpot(svgs[`../icons/${name}.svg`])) return;
+      if (!colorful.has(name)) return;
       expect(
         COLOR_ICONS.has(name as CommonIconName),
         `${name} paints a saturated hue but is missing from COLOR_ICONS`

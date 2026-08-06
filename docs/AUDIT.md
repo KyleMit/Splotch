@@ -32,33 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Readability] Icon.svelte.test.ts classifies every icon twice
-
-**File(s):** `web/src/lib/components/Icon.svelte.test.ts` (lines 25–27, 34–43) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-Lines 25–27 compute the full classification once:
-
-```ts
-const colorful = Object.entries(svgs)
-  .filter(([, src]) => isSpot(src))
-  .map(([path]) => iconNameFromPath(path));
-```
-
-but the per-icon test re-runs the classifier instead of consulting it (line 37):
-`if (!isSpot(svgs[`../icons/${name}.svg`])) return;` — re-deriving the key string by hand along the
-way. Harmless at this scale, but the second derivation invites the two to diverge (e.g. if the key
-format or classifier call ever changes in one place).
-
-#### Proposed solution
-
-Use the computed set in the guard: `if (!colorful.includes(name)) return;` (or convert `colorful` to
-a `Set<string>`). Drops the hand-rebuilt glob key and makes the sanity-check test and the guard test
-provably examine the same classification.
-
 ### [Testing] Eraser-size SVGs bake token fallback hexes that can drift from tokens.ts
 
 **File(s):** `web/src/lib/icons/eraser-size-1.svg` … `eraser-size-5.svg`,
