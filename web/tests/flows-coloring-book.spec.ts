@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { rotateViewportViaCdp } from './cdp';
-import { draw, gotoApp, openSettingsModal, renderedCanvasHandle } from './helpers';
+import { draw, gotoApp, openSettingsModal, renderedCanvasHandle, settleFlyIn } from './helpers';
 import { COLORING_IMAGE_SIZES, coloringBookGridLayout } from '../src/lib/state/books';
 
 import {
@@ -10,6 +10,7 @@ import {
   openDrawer,
   openFarmPageGrid,
   pickBrush,
+  settleTapGuard,
 } from './flows-harness';
 
 // A healthy Magic fill commits well within this window; holding the next overlay for the full
@@ -512,6 +513,62 @@ test('a repeat tap where the launch button sat does not dismiss the just-opened 
   const vp = page.viewportSize()!;
   await page.mouse.click(vp.width - 10, 10);
   await expect(dialog).toBeHidden();
+});
+
+// The same tap burst, one level into the picker. Tapping a book cover swaps the
+// grid for that book's pages, so the follow-up taps land on whichever page tile
+// painted where the cover was and apply it — the picker closes on a page nobody
+// chose, before the child ever saw the pages. ColoringBook arms the same
+// short-lived dead zone at the tap point (launchGuard.guardTapZone).
+test('a repeat tap on a book cover does not pick the page that lands under it', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await openColoringDialog(page);
+
+  const dialog = page.locator('#coloring-book-dialog');
+  // This spec dispatches raw input at a remembered coordinate, so the fly-in has
+  // to land before the tile is measured — mid-animation the whole grid sits
+  // scaled down onto the launcher and the box belongs to a different book.
+  await settleFlyIn(dialog);
+  const coverBox = (await dialog
+    .getByRole('button', { name: 'Farm coloring book' })
+    .boundingBox())!;
+  const cx = coverBox.x + coverBox.width / 2;
+  const cy = coverBox.y + coverBox.height / 2;
+
+  // Establish the hazard before testing the guard: drill in once and confirm a
+  // page tile really does occupy the spot the cover just vacated, so the
+  // guarded taps below can't pass by landing on nothing.
+  const pageTiles = await openFarmPageGrid(page);
+  const tileBoxes = await pageTiles.evaluateAll((tiles) =>
+    tiles.map((tile) => {
+      const { left, top, right, bottom } = tile.getBoundingClientRect();
+      return { left, top, right, bottom };
+    })
+  );
+  expect(
+    tileBoxes.filter((b) => cx >= b.left && cx <= b.right && cy >= b.top && cy <= b.bottom)
+  ).toHaveLength(1);
+
+  await dialog.getByRole('button', { name: 'Back' }).click();
+  await expect(dialog.getByRole('heading', { name: 'Coloring Books' })).toBeVisible();
+  await settleTapGuard(page);
+
+  // The double tap. The second click has the whole guard window to land in, and
+  // back-to-back CDP input is orders of magnitude inside it.
+  await page.mouse.click(cx, cy);
+  await page.mouse.click(cx, cy);
+
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
+
+  // Once the guard lapses that same spot picks the page as usual.
+  await settleTapGuard(page);
+  await page.mouse.click(cx, cy);
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('#coloringOverlay')).toBeVisible();
 });
 
 // A touch tap activates the launcher on pointerup (scribbleTap), so the dialog

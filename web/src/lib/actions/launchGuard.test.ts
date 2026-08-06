@@ -4,6 +4,7 @@ import {
   DEFAULT_DURATION_MS,
   DEFAULT_RADIUS,
   guardLaunchZone,
+  guardTapZone,
   isPointInLaunchZone,
   clearLaunchZones,
 } from './launchGuard';
@@ -52,6 +53,14 @@ describe('launchGuard', () => {
   it('clearLaunchZones drops every armed zone', () => {
     guardLaunchZone({ x: 100, y: 100 });
     clearLaunchZones();
+    expect(isPointInLaunchZone(100, 100)).toBe(false);
+  });
+
+  it('guardTapZone rejects repeat taps at the point, then lapses', () => {
+    guardTapZone(100, 100);
+    expect(isPointInLaunchZone(100, 100)).toBe(true);
+    expect(isPointInLaunchZone(100 + DEFAULT_RADIUS + 1, 100)).toBe(false);
+    vi.advanceTimersByTime(DEFAULT_DURATION_MS + 1);
     expect(isPointInLaunchZone(100, 100)).toBe(false);
   });
 });
