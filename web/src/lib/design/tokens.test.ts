@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { brand, scale, themes, toCssVarName } from './tokens';
+import { brand, isColorToken, scale, themes, toCssVarName } from './tokens';
 
 // The gen:tokens drift gate only proves the committed CSS matches the
 // generator's output — it would happily bless a wrong var name on both sides.
@@ -25,5 +25,18 @@ describe('toCssVarName', () => {
 describe('themes', () => {
   it('light and dark stay structurally identical', () => {
     expect(Object.keys(themes.dark)).toEqual(Object.keys(themes.light));
+  });
+});
+
+describe('isColorToken', () => {
+  it('classifies every themed token', () => {
+    expect(Object.keys(isColorToken).sort()).toEqual(Object.keys(themes.light).sort());
+  });
+
+  it('marks the filter, blend-mode and shadow tokens as non-colors', () => {
+    const nonColors = Object.keys(isColorToken).filter(
+      (key) => !isColorToken[key as keyof typeof isColorToken]
+    );
+    expect(nonColors.sort()).toEqual(['floatShadow', 'lineartBlend', 'lineartFilter']);
   });
 });
