@@ -30,39 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Types] `/dev/design` widens token keys to `string`, forcing four `as keyof typeof scale` casts in the template
-
-**File(s):** `web/src/routes/dev/design/+page.svelte` (lines 32–41, 133, 146, 173) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const spaceKeys = Object.keys(scale).filter((k) => k.startsWith('space'));
-```
-
-`Object.keys` returns `string[]`, so every downstream indexed read needs a cast — the template does
-`{scale[key as keyof typeof scale]}` at lines 133, 146, and 173. Per CLAUDE.md, `as` is a boundary
-tool, not a way to re-narrow a union the code itself widened; and a typo'd prefix (`'font-size'`
-instead of `'fontSize'`) currently produces an empty section instead of a type error. The
-`themeKeys` line above (line 22) already shows the right move:
-`Object.keys(themes.light) as (keyof ThemeTokens)[]`.
-
-#### Proposed solution
-
-Cast once at the `Object.keys` boundary and let inference carry the rest:
-
-```ts
-const scaleKeys = Object.keys(scale) as (keyof typeof scale)[];
-const spaceKeys = scaleKeys.filter((k) => k.startsWith('space'));
-```
-
-`filter` preserves the element type, so all three template casts disappear. Same treatment for
-`cssVar` (line 43): typing its parameter as `keyof typeof scale | keyof ThemeTokens | ...` (or a
-shared `TokenKey` union exported from `tokens.ts`) would catch the string literals passed at lines
-96, 150, 159, 177 etc. against the real token vocabulary — currently `cssVar('anything')` compiles.
-
 ### [Readability] `/dev/design`'s hand-written one-off type-scale rows repeat the same 5-line block five times
 
 **File(s):** `web/src/routes/dev/design/+page.svelte` (lines 165–199) @ 9ae62ff1
