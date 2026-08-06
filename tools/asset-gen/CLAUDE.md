@@ -61,9 +61,12 @@ carve-out):
   with deliberate solid whites (eye sclera, catchlights), **stored ink-on-white** — negate it before
   showing it to Gemini or a human as "dark mode art". Night fills condition on the chalk and punch
   against it; after changing a chalk, regenerate the page's night fill and re-punch.
-* **The only sanctioned imports from `web/src`** are the four modules listed in `docs/README.md`
-  (styles, prompt, geminiSafety, books) — the app's single source of truth for
-  prompts/safety/catalog. Don't reach into anything else under `web/src`.
+* **The only sanctioned imports from `web/src`** are the five modules listed in `docs/README.md`
+  (styles, prompt, theme, geminiSafety, books) — the app's single source of truth for
+  prompts/safety/catalog/theme. Don't reach into anything else under `web/src`, and note the
+  constraint that list carries: each of those modules must be loadable by bare Node under
+  `--experimental-strip-types`, so its own imports are either type-only or spelled with an explicit
+  `.ts` (Vite resolves extensionless specifiers; Node does not).
 * **macOS/Linux (ADR-0017):** plain Node `.mjs`, forward-slash glob patterns with a resolved `cwd`
   (not `join`-built patterns).
 * **Ad-hoc analysis scripts go inside this folder, not the session scratchpad.** A throwaway `.mjs`

@@ -79,3 +79,43 @@ test('the AI button posts the drawing and reveals the generated result', async (
   await expect((await download).suggestedFilename()).toMatch(/^splotch-ai-.+\.webp$/);
   expect(postedImage).toBe(true);
 });
+
+// A cutout cover ships with real alpha so the picker's own surface shows
+// through, and leans on a CSS drop-shadow to lift it. `filter` rasterizes the
+// element's background along with its content, so giving this <img> a plate of
+// its own would silently hand drop-shadow the rounded tile to trace instead of
+// the sticker silhouette — a regression invisible in a diff and easy to
+// reintroduce by "tidying" the background back onto every thumb.
+test('a cutout style cover carries no plate of its own', async ({ page }) => {
+  await gotoApp(page, '/?ai_access_token=test-token');
+  await openDrawer(page);
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+  ]);
+
+  const ai = page.locator('#aiImageButton');
+  await expect(ai).toBeVisible();
+  await expect(ai).toBeEnabled();
+  await ai.click();
+
+  const cutout = page.locator('.ai-style-thumb-cutout');
+  await expect(cutout).toBeVisible();
+  await expect
+    .poll(() => cutout.evaluate((el) => getComputedStyle(el).backgroundColor))
+    .toBe('rgba(0, 0, 0, 0)');
+  await expect
+    .poll(() => cutout.evaluate((el) => getComputedStyle(el).filter))
+    .toContain('drop-shadow');
+
+  // Its opaque siblings still get the plate, so they have something to show
+  // before the lazy image decodes.
+  await expect
+    .poll(() =>
+      page
+        .locator('.ai-style-thumb:not(.ai-style-thumb-cutout)')
+        .first()
+        .evaluate((el) => getComputedStyle(el).backgroundColor)
+    )
+    .not.toBe('rgba(0, 0, 0, 0)');
+});

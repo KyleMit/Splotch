@@ -150,15 +150,22 @@
     object-fit: cover;
     border-radius: var(--radius-md);
     border: 3px solid transparent;
-    background: var(--paper);
     transition:
       border-color var(--duration-fast) ease,
       transform var(--duration-fast) ease;
   }
 
-  /* A cutout cover has no backdrop of its own, so --paper shows through and the
-     shadow the render used to bake in is drawn here instead — where it can sit
-     on the silhouette rather than on a plate, and follow the theme. */
+  /* An opaque cover gets a paper plate to fill the tile before it decodes. A
+     cutout must NOT: `filter` rasterizes the element's own background along with
+     its content, so a plate here would hand drop-shadow the rounded tile to
+     trace instead of the sticker silhouette — and the transparency exists
+     precisely so the picker's own surface shows through. */
+  .ai-style-thumb:not(.ai-style-thumb-cutout) {
+    background: var(--paper);
+  }
+
+  /* Replaces the shadow the render used to bake in, where it can follow the
+     silhouette and the theme rather than sitting on a plate. */
   .ai-style-thumb-cutout {
     filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
   }
