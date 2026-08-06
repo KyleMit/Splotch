@@ -34,12 +34,25 @@ export interface Size {
 // genuine grow invalidates every tile.
 const PAPER_COVERAGE_TOLERANCE_CSS_PX = 8;
 
-// Whether the paper still covers everything the viewport can show, in which
-// case no fitting is needed and the paper can simply be windowed.
-function viewportWithinPaper(paper: Size, viewport: Size): boolean {
+// System chrome is absolute-sized, not a proportion of the screen: Material's
+// navigation bar is 48dp and a status bar with a display cutout runs to about
+// the same, so the pair tops out near this even stacked. A viewport that lost
+// MORE than this on an axis is a deliberate resize — a dragged window edge,
+// split-screen, a keyboard — which should re-fit the drawing rather than hide
+// part of it behind nothing.
+const SYSTEM_BAR_OCCLUSION_MAX_CSS_PX = 96;
+
+// Whether the viewport is the paper with a band of system chrome laid over it:
+// inside the paper on both axes, and short by no more than bars can account
+// for. Then no fitting is needed and the paper can simply be windowed.
+function viewportIsBarOcclusion(paper: Size, viewport: Size): boolean {
+  const lostWidth = paper.width - viewport.width;
+  const lostHeight = paper.height - viewport.height;
   return (
-    viewport.width <= paper.width + PAPER_COVERAGE_TOLERANCE_CSS_PX &&
-    viewport.height <= paper.height + PAPER_COVERAGE_TOLERANCE_CSS_PX
+    lostWidth >= -PAPER_COVERAGE_TOLERANCE_CSS_PX &&
+    lostHeight >= -PAPER_COVERAGE_TOLERANCE_CSS_PX &&
+    lostWidth <= SYSTEM_BAR_OCCLUSION_MAX_CSS_PX &&
+    lostHeight <= SYSTEM_BAR_OCCLUSION_MAX_CSS_PX
   );
 }
 
@@ -49,10 +62,11 @@ function viewportWithinPaper(paper: Size, viewport: Size): boolean {
 //   canvas has nothing to preserve, and a viewport that grew past the paper has
 //   visible area the old paper cannot cover.
 // * `window` — the paper is kept and presented at IDENTITY; the viewport is a
-//   window onto it. A viewport that only shrank at an unchanged angle is a
-//   transient occlusion — Android's immersive nav bar swiped back, a mobile URL
-//   bar, a dragged-in window edge — so nothing may move: the covered band is
-//   cropped and comes back untouched when the bars go away.
+//   window onto it. A viewport that lost only a bar's worth at an unchanged
+//   angle is a transient occlusion — Android's immersive nav bar swiped back, a
+//   mobile URL bar — so nothing may move: the covered band is cropped and comes
+//   back untouched when the bars go away. A larger shrink is a real resize and
+//   adopts, so a dragged-in window edge still re-fits the page.
 // * `fit` — the paper is kept and presented upright, contain-fit and centered,
 //   so a rotated drawing stays fully visible (ADR-0050).
 //
@@ -76,7 +90,7 @@ export function paperPresentationFor(state: {
     rotationDelta(paperAngle, screenAngle) !== 0 ||
     paper.width > paper.height !== viewport.width > viewport.height;
   if (rotated) return 'fit';
-  return viewportWithinPaper(paper, viewport) ? 'window' : 'adopt';
+  return viewportIsBarOcclusion(paper, viewport) ? 'window' : 'adopt';
 }
 
 export const IDENTITY_PAPER_VIEW: Readonly<PaperView> = Object.freeze<PaperView>({

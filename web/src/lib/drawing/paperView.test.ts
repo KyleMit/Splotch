@@ -55,10 +55,10 @@ describe('paperPresentationFor', () => {
     expect(presentation({ width: 412, height: 867 })).toBe('window');
   });
 
-  it('windows an exact match and a shrink on either axis alone', () => {
+  it('windows an exact match and a bar-sized loss on either axis alone', () => {
     expect(presentation(PAPER)).toBe('window');
-    expect(presentation({ width: 300, height: 915 })).toBe('window');
-    expect(presentation({ width: 412, height: 500 })).toBe('window');
+    expect(presentation({ width: 412, height: 819 })).toBe('window');
+    expect(presentation({ width: 316, height: 915 })).toBe('window');
   });
 
   it('tolerates a viewport a few pixels larger than the paper it was adopted from', () => {
@@ -69,6 +69,15 @@ describe('paperPresentationFor', () => {
   it('adopts once either axis grows past the tolerance', () => {
     expect(presentation({ width: 412, height: 924 })).toBe('adopt');
     expect(presentation({ width: 421, height: 915 })).toBe('adopt');
+  });
+
+  // A deliberate resize — a dragged window edge, split-screen, a keyboard — is
+  // too big to be system chrome, and re-fits the drawing rather than hiding
+  // part of it behind nothing.
+  it('adopts a shrink too large to be system chrome', () => {
+    expect(presentation({ width: 412, height: 818 })).toBe('adopt');
+    expect(presentation({ width: 315, height: 915 })).toBe('adopt');
+    expect(presentation({ width: 412, height: 500 })).toBe('adopt');
   });
 
   it('adopts for an empty canvas whatever the geometry', () => {

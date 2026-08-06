@@ -45,20 +45,28 @@ Make **paper size, not the view transform, the thing that is held**, and give th
 third outcome. `resizeCanvas()` picks a `PaperPresentation` (`engine.ts`):
 
 * **`adopt`** — the paper becomes the viewport, the pre-lock semantics. Chosen for an empty canvas,
-  or for a viewport that grew past the paper (nothing to preserve, or visible area the old paper
-  cannot cover).
+  for a viewport that grew past the paper, or for a shrink too large to be system chrome (nothing to
+  preserve, or a deliberate resize the drawing should re-fit into).
 * **`window`** — the paper is kept and presented at **identity**; the viewport is a window onto it.
   Chosen when the canvas has ink, the angle and orientation are unchanged, and
-  `viewportWithinPaper()` (`paperView.ts`) reports the paper still covers the viewport. Nothing
-  moves: the occluded band is simply cropped by the canvas container's `overflow: hidden`, and it
-  returns untouched when the bars go away.
+  `viewportIsBarOcclusion()` (`paperView.ts`) reports the viewport is the paper minus a band of
+  system chrome. Nothing moves: the occluded band is simply cropped by the canvas container's
+  `overflow: hidden`, and it returns untouched when the bars go away.
 * **`fit`** — the paper is kept and presented upright, contain-fit and centered, so a rotated
   drawing stays fully visible. This is ADR-0050's behavior, now reached only on a genuine rotation
   or orientation flip.
 
-`viewportWithinPaper()` replaces `smallViewportDrift()`. It is one-sided — viewport ≤ paper on both
-axes — with the old ±8 px band kept as a **grow** tolerance, so native rotation settling its insets
-a few pixels late still avoids invalidating every tile, exactly as before.
+`viewportIsBarOcclusion()` replaces `smallViewportDrift()`. It is asymmetric: the old ±8 px band is
+kept as the **grow** tolerance, so native rotation settling its insets a few pixels late still
+avoids invalidating every tile, while the **shrink** side opens up to
+`SYSTEM_BAR_OCCLUSION_MAX_CSS_PX` (96). That bound is the load-bearing part of the decision. System
+chrome is absolute-sized — Material's navigation bar is 48dp and a status bar with a display cutout
+runs to about the same — so 96 px covers the pair even stacked. Beyond it, a shrink is a dragged
+window edge, split-screen, or a keyboard: a deliberate resize, where re-fitting the drawing beats
+hiding part of it behind nothing. Without the bound, dragging a desktop window edge in would crop
+the coloring page instead of re-fitting it, and it would also strand the tile-backing rebuild path
+with no same-orientation resize left to reach it (caught by `flows-tile-history.spec.ts`'s resize
+test, which is why that spec now resizes far past the band).
 
 Gotchas encoded in the code:
 
@@ -76,7 +84,8 @@ Gotchas encoded in the code:
   still carries the cropped band.
 
 Covered by `tests/engine-system-bars.spec.ts` (crop-not-shift, exact restore on re-hide, and the
-paper freeing on clear) and `paperView.test.ts`'s `viewportWithinPaper` cases.
+paper freeing on clear) and `paperView.test.ts`'s `paperPresentationFor` cases, which pin both sides
+of the occlusion bound.
 
 ## Consequences
 
@@ -89,10 +98,10 @@ paper freeing on clear) and `paperView.test.ts`'s `viewportWithinPaper` cases.
   had just quietly stopped being true.
 * − A third presentation mode is more surface than ADR-0050's binary adopt/lock, and the three-way
   choice has to be read to know which resize does what.
-* − A viewport that shrinks a lot at an unchanged angle (dragging a desktop window edge far in with
-  ink present) now crops instead of re-adopting, so the drawing keeps its size and the surplus is
-  hidden until the window grows back or the canvas is cleared. Ink already clipped this way before
-  the change; the art no longer disagrees with it, but neither is brought back into view.
+* − The bound is a tuned literal. A device whose bars exceed 96 px falls back to the old re-adopting
+  behavior and the original bug; a deliberate resize *under* 96 px crops a band instead of
+  re-fitting. Both are quiet failures — nothing announces which side of the line a resize landed on
+  — and the number is justified by Material's dp sizes rather than measured across a device matrix.
 * − The asymmetry is deliberate and incomplete: a viewport that *grows* past the paper still adopts,
   so a drawing started while the bars were showing will re-center its art when they hide. That
   ordering needs the child to draw during a transient bar reveal, and adopting on grow is what keeps
