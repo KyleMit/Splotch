@@ -45,4 +45,15 @@ describe('installWakeLock', () => {
     expect(() => teardown()).not.toThrow();
     expect(release).not.toHaveBeenCalled();
   });
+
+  it('retries on a later pointerdown after the first request is rejected', async () => {
+    request.mockRejectedValueOnce(new Error('NotAllowedError'));
+    installWakeLock();
+
+    document.dispatchEvent(new Event('pointerdown'));
+    await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+
+    document.dispatchEvent(new Event('pointerdown'));
+    await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(2));
+  });
 });

@@ -9,17 +9,20 @@ export function installWakeLock(): () => void {
       }
     } catch {}
   }
-  const onFirstPointerDown = () => requestWakeLock();
+  const onPointerDown = () => {
+    if (wakeLock !== null) return;
+    void requestWakeLock();
+  };
   const onVisibilityChange = () => {
-    if (wakeLock !== null && document.visibilityState === 'visible') {
+    if (wakeLock === null && document.visibilityState === 'visible') {
       void requestWakeLock();
     }
   };
-  document.addEventListener('pointerdown', onFirstPointerDown, { once: true });
+  document.addEventListener('pointerdown', onPointerDown);
   document.addEventListener('visibilitychange', onVisibilityChange);
 
   return () => {
-    document.removeEventListener('pointerdown', onFirstPointerDown);
+    document.removeEventListener('pointerdown', onPointerDown);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     void wakeLock?.release().catch(() => {});
     wakeLock = null;
