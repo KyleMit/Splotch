@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { backOut, cubicIn } from 'svelte/easing';
   import Icon from './Icon.svelte';
@@ -32,7 +33,8 @@
   let busy = $state(false);
   let parting = $state(false);
   let exitIntoSettingsButton = $state(false);
-  // Intentionally untracked: only read/written from within the effects below.
+  // Intentionally untracked: only read/written from the effect and the
+  // onMount teardown below.
   let partingTimer: ReturnType<typeof setTimeout> | undefined;
 
   // Wait until the child has actually drawn a little, so the prompt feels earned
@@ -58,13 +60,8 @@
     }, PARTING_MESSAGE_MS);
   });
 
-  // A nested effect so its cleanup only runs on unmount, not on every re-run
-  // of the effect above (which would clear the live timer on ordinary
-  // dependency changes during the parting window).
-  $effect(() => {
-    return () => {
-      if (partingTimer) clearTimeout(partingTimer);
-    };
+  onMount(() => () => {
+    if (partingTimer) clearTimeout(partingTimer);
   });
 
   // Auto-clear exit: shrink the pill into the Settings Button so the parting

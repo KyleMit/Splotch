@@ -26,53 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Correctness] InstallBanner's parting timer is never cleaned up
-
-**File(s):** `web/src/lib/components/InstallBanner.svelte` (`$effect`, lines 45–57) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-$effect(() => {
-  if (!visible || parting) return;
-  …
-  parting = true;
-  setTimeout(() => {
-    exitIntoParentButton = true;
-    parting = false;
-  }, PARTING_MESSAGE_MS);
-});
-```
-
-The `setTimeout` handle is discarded and the effect returns no cleanup. If the component unmounts
-during the 4-second parting window (route teardown, or the boot-hidden-overlay tree being torn down
-in a test), the callback still fires and writes component state after destroy. It is also the only
-latch that ever resets `parting` — an effect re-run can't cancel or double-schedule it today only
-because `parting = true` guards re-entry; that invariant is implicit and one refactor away from
-stacked timers. Every other timer in this section is cleaned up (`ClearCoachmark` clears
-`tutorialDismissTimer` on dismiss and unmount; `dragToClear` tracks a `resetTimers` set).
-
-#### Proposed solution
-
-Store the handle and return a cleanup from the `$effect` (cleanup never runs on the server, matching
-the repo's SSR-teardown rule):
-
-```ts
-let partingTimer: ReturnType<typeof setTimeout>;
-$effect(() => {
-  …
-  partingTimer = setTimeout(…, PARTING_MESSAGE_MS);
-  return () => clearTimeout(partingTimer);
-});
-```
-
-Note the cleanup also runs on dependency re-runs — verify the `parting` guard ordering still
-schedules exactly once (the early `if (!visible || parting) return` runs before any scheduling, so a
-re-run during parting registers no new timer and must not clear the live one; scoping the clear to
-unmount via a nested `$effect` or an explicit `onMount`-style teardown may be cleaner).
-
 ### [Correctness] `.install-cta:hover` is not guarded behind `@media (hover: hover)`
 
 **File(s):** `web/src/lib/components/InstallBanner.svelte` (lines 285–287) @ 9ae62ff1
