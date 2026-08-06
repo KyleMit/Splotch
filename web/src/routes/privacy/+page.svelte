@@ -4,8 +4,9 @@
   // deliberately turns on or sends: a magic-image request (see "When the
   // internet is used") or the optional feedback form (see "Sending feedback").
   // This page exists mostly to *prove* that. It's required by the app stores
-  // (see MOBILE.md). Keep the tone simple enough for a parent to skim in 30
-  // seconds. Bump LAST_UPDATED whenever the wording changes.
+  // (see the `mobile` skill's store-release checklist). Keep the tone simple
+  // enough for a parent to skim in 30 seconds. Bump LAST_UPDATED whenever the
+  // wording changes.
 
   import PageShell from '$lib/components/page/PageShell.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';

@@ -30,31 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Docs] Privacy page comment points to a `MOBILE.md` that no longer exists
-
-**File(s):** `web/src/routes/privacy/+page.svelte` (line 7) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-// This page exists mostly to *prove* that. It's required by the app stores
-// (see MOBILE.md). Keep the tone simple enough for a parent to skim in 30 seconds.
-```
-
-There is no `MOBILE.md` anywhere in the repo (verified with a full-tree find). The store-release and
-kids-compliance material now lives in the `mobile` skill (`.claude/skills/mobile/`). A stale pointer
-in the file agents read before editing the store-required privacy policy sends them hunting for a
-dead document. CLAUDE.md: "If you discover any doc, skill, or rule is out of date while working,
-update it as part of the same task."
-
-#### Proposed solution
-
-Change the parenthetical to `(see the \`mobile\` skill's store-release
-checklist)`. While there, note the adjacent line "Bump LAST_UPDATED whenever the wording changes" is a keep-in-sync-by-prose instruction — acceptable here since a legal effective-date is inherently a human judgment, but worth a glance at whether the`leave-pr-review`/PR
-flow should nudge it (out of scope for this finding).
-
 ## Source: Code audit — Design system + icons
 
 ### [Correctness] StatusMessage's explicit `aria-live="polite"` defeats its own `role="alert"`
