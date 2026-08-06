@@ -172,9 +172,6 @@
   }
 
   .trouble :global(.beta-disclosure > summary) {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     gap: 16px;
     padding: 18px 20px;
   }

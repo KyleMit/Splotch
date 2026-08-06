@@ -32,62 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Correctness] Disclosure's chevron rotation only works when callers happen to blockify the pseudo-element
-
-**File(s):** `web/src/lib/components/design/Disclosure.svelte` (lines 40–48) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The primitive claims to own "the chevron" (comment lines 4–8) and rotates it when open:
-
-```css
-.disclosure summary::after {
-  content: '›';
-  color: var(--text-faint);
-  transition: transform var(--duration-base) ease;
-}
-
-.disclosure[open] summary::after {
-  transform: rotate(90deg);
-}
-```
-
-A `::after` pseudo-element defaults to `display: inline`, and per CSS Transforms, non-replaced
-inline boxes are **not transformable** — `transform: rotate(90deg)` silently no-ops. The rotation
-only works today because every Settings caller happens to blockify the pseudo-element from outside:
-
-* `SetupInstructions.svelte` makes `summary` a flexbox (lines 226–228) so `::after` becomes a flex
-  item (line 240 even sets `flex-shrink: 0` on it);
-* `AiKeyManager.svelte` line 311–313 and `ReportForm.svelte` line 352–354 both set `float: right` on
-  `::after` (floats are blockified).
-
-The one caller that styles nothing — the `/dev/design` styleguide's own demo
-(`web/src/routes/dev/design/+page.svelte`, lines 335–341 style only `summary`) — renders a chevron
-that neither rotates nor sits at the right edge. The primitive's core affordance is broken in its
-default state, and each caller re-invents the positioning (`float: right` duplicated twice, flex
-once).
-
-#### Proposed solution
-
-Make the primitive own the chevron's layout as well as its glyph. Minimal fix: add
-`display: inline-block` to the `::after` rule so the transform always applies. Better: give the
-primitive the layout every caller rebuilds —
-
-```css
-.disclosure summary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-```
-
-— then delete the per-caller `float: right` / flex duplication. Check each caller visually after the
-change (SetupInstructions' `text-align: left` and `.summary-text` wrapper should be unaffected; the
-two float-based callers lose a line each). Screenshot per the `pr-screenshots` skill since this
-touches visible UI.
-
 ### [Maintainability] `THEME_COLOR_LIGHT` agrees with `app.html`'s meta tag only by prose
 
 **File(s):** `web/src/lib/theme.ts` (lines 30–32), `web/src/app.html` (line 24),
