@@ -28,36 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Maintainability] `getTokens` has no production caller — test-only export without the required marker
-
-**File(s):** `web/src/lib/server/tokens.ts` (`getTokens`, lines 132–136) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-/** All currently allowed access tokens. */
-export async function getTokens() {
-  const { list } = await readStore();
-  return [...list];
-}
-```
-
-Every production consumer uses something else: the `/admin` loader and `/api/admin/tokens` call
-`getTokensStatus()` (they need the `persistent` flag), and the generation/verification paths call
-`isAllowedToken()`. The only callers of `getTokens` are in `tokens.test.ts` (lines 110–116, 314).
-CLAUDE.md's no-speculative-surface rule: "a seam kept only for tests gets a comment saying so at the
-declaration" — and ideally the seam wouldn't exist, since `getTokensStatus().tokens` covers the same
-need.
-
-#### Proposed solution
-
-Delete `getTokens` and rewrite the handful of test assertions against `getTokensStatus()` (e.g.
-`(await getTokensStatus()).tokens`). If keeping it is preferred for test ergonomics, add the
-convention's test-seam comment at the declaration — but removal is cleaner and shrinks the public
-surface of a security-sensitive module.
-
 ### [Types] `recordTokenUsage` casts blob data without the runtime validation its sibling reader applies
 
 **File(s):** `web/src/lib/server/usage.ts` (`recordTokenUsage`, lines 58–66; contrast `getUsage`,

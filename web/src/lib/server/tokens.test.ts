@@ -126,15 +126,15 @@ beforeEach(() => {
   vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
-describe('getTokens / seeding', () => {
+describe('getTokensStatus / seeding', () => {
   it('seeds from ALLOWED_TOKENS_LIST, trimming and dropping blanks', async () => {
-    const { getTokens } = await freshTokens(' a , b ,, c ');
-    expect(await getTokens()).toEqual(['a', 'b', 'c']);
+    const { getTokensStatus } = await freshTokens(' a , b ,, c ');
+    expect((await getTokensStatus()).tokens).toEqual(['a', 'b', 'c']);
   });
 
   it('returns an empty list when nothing is seeded', async () => {
-    const { getTokens } = await freshTokens('');
-    expect(await getTokens()).toEqual([]);
+    const { getTokensStatus } = await freshTokens('');
+    expect((await getTokensStatus()).tokens).toEqual([]);
   });
 });
 
@@ -355,7 +355,7 @@ describe('mutations during a transient Blobs read failure', () => {
     });
     // The in-memory stand-in must not absorb the write either: a revocation
     // that only lands there is undone the moment Blobs recovers.
-    expect(await tokens.getTokens()).toEqual(['legacy', 'durable']);
+    expect((await tokens.getTokensStatus()).tokens).toEqual(['legacy', 'durable']);
     recoverBlobs();
     expect(await tokens.isAllowedToken('durable')).toBe(true);
     expect(await storeFor('access-tokens').get('list')).toEqual(['legacy', 'durable']);
@@ -368,7 +368,7 @@ describe('mutations during a transient Blobs read failure', () => {
       error: tokens.TOKEN_UNAVAILABLE_ERROR,
       reason: 'unavailable',
     });
-    expect(await tokens.getTokens()).toEqual(['legacy']);
+    expect((await tokens.getTokensStatus()).tokens).toEqual(['legacy']);
     recoverBlobs();
     expect(await tokens.isAllowedToken('mine')).toBe(false);
   });
@@ -392,14 +392,14 @@ describe('usage cleanup on remove', () => {
   });
 
   it('still removes the token when usage cleanup fails', async () => {
-    const { removeToken, getTokens } = await freshTokensWithBlobs(['a', 'revoked']);
+    const { removeToken, getTokensStatus } = await freshTokensWithBlobs(['a', 'revoked']);
     const usage = storeFor('ai-usage');
     await usage.setJSON('revoked', { count: 3 });
     usage.delete = async () => {
       throw new Error('blobs outage');
     };
     expect(await removeToken('revoked')).toEqual({ ok: true, tokens: ['a'] });
-    expect(await getTokens()).toEqual(['a']);
+    expect((await getTokensStatus()).tokens).toEqual(['a']);
   });
 
   it('does not touch usage for a no-op remove', async () => {

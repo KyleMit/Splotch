@@ -159,16 +159,10 @@ async function persist(store: TokenStore | null, list: string[], etag: string | 
   return modified;
 }
 
-/** All currently allowed access tokens. */
-export async function getTokens() {
-  const { list } = await readStore();
-  return [...list];
-}
-
 /**
- * Like getTokens, but also reports whether the list is durably backed by Netlify
- * Blobs (`persistent: true`) or came from the per-instance in-memory fallback
- * seeded from ALLOWED_TOKENS_LIST (`persistent: false`). A null store from
+ * All currently allowed access tokens, plus whether the list is durably backed
+ * by Netlify Blobs (`persistent: true`) or came from the per-instance in-memory
+ * fallback seeded from ALLOWED_TOKENS_LIST (`persistent: false`). A null store from
  * readStore is exactly the fallback case — `getStore()` failed, or this read
  * did. Edits behave differently across those two: the first accepts them into
  * the in-memory list, where they won't survive a cold start; the second refuses
