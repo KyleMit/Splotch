@@ -159,4 +159,13 @@ describe('escapeHashRefs', () => {
     expect(escapeHashRefs('see #7 and #123')).toBe('see \\#7 and \\#123');
     expect(escapeHashRefs('#### Problem')).toBe('#### Problem');
   });
+
+  // Findings are authored to the same "escape bare #-numbers" rule, so the
+  // backlog carries plenty of already-escaped refs. Escaping those again emits
+  // a literal backslash and still lets GitHub linkify the number.
+  it('is idempotent — an already-escaped ref is left alone', () => {
+    expect(escapeHashRefs('floated in issue \\#382')).toBe('floated in issue \\#382');
+    expect(escapeHashRefs(escapeHashRefs('see #7'))).toBe('see \\#7');
+    expect(escapeHashRefs('mixed \\#382 and #383')).toBe('mixed \\#382 and \\#383');
+  });
 });
