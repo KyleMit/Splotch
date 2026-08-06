@@ -26,43 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Architecture] The global Ctrl+Z shortcut lives inside ActionsPanel and bypasses the undo parent toggle
-
-**File(s):** `web/src/lib/components/ActionsPanel.svelte` (lines 168–174) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-const onKeyDown = (e: KeyboardEvent) => {
-  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z') {
-    e.preventDefault();
-    handleUndoClick();
-  }
-};
-window.addEventListener('keydown', onKeyDown);
-```
-
-Two issues:
-
-1. **Placement.** A window-level, app-wide keyboard shortcut is not panel UI; it works only because
-   ActionsPanel happens to be always-mounted on the drawing route. A first-time reader looking for
-   "where is Ctrl+Z handled" has no reason to open the actions panel component, and any future
-   route/layout where the panel unmounts silently loses the shortcut. The repo's own pattern for
-   page-lifecycle imperative wiring is a named helper in `lib/boot/` returning a teardown.
-2. **Setting bypass.** When the parent switches the undo control off (`settings.undoButtonEnabled` →
-   `data-off-undo` hides the button), Ctrl+Z still undoes. Whether that's intended (the toggle is
-   about button clutter, not forbidding undo) is undocumented either way.
-
-#### Proposed solution
-
-Extract e.g. `installUndoShortcut(): () => void` into `lib/boot/` (called from the route's `onMount`
-chain like `installContextMenuGuard`), taking the end-of-history nudge callback so the shake still
-plays — or keep the nudge panel-local and have the boot helper call `undo()` guarded on
-`canvasState.canUndo`. Decide and document the `undoButtonEnabled` interaction (a one-line WHY if
-the bypass is deliberate; a `settings` check if not).
-
 ### [Testing] NotchBand's native status-bar branching is untested inline effect logic with an unguarded dynamic import
 
 **File(s):** `web/src/lib/components/NotchBand.svelte` (lines 41–56) @ 9ae62ff1

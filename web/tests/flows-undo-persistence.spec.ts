@@ -66,6 +66,29 @@ test('the undo button enables on a stroke and reverts it', async ({ page }) => {
   expect(await firstOpaquePixel(page)).toBeNull();
 });
 
+// installUndoShortcut (lib/boot/undoShortcut.ts) is wired from +page.svelte's
+// onMount, not from ActionsPanel — this proves the route-level listener is
+// actually installed and working, not just handleUndoClick's click path.
+test('Ctrl+Z undoes the last stroke from the keyboard', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const undo = page.locator('#undoButton');
+  await expect(undo).toBeDisabled();
+
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+  ]);
+  await expect(undo).toBeEnabled();
+  expect(await firstOpaquePixel(page)).not.toBeNull();
+
+  await page.keyboard.press('Control+Z');
+
+  await expect(undo).toBeDisabled();
+  expect(await firstOpaquePixel(page)).toBeNull();
+});
+
 test('the end-of-history cue still plays with reduced motion enabled', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await gotoApp(page);
@@ -88,7 +111,7 @@ test('the end-of-history cue still plays with reduced motion enabled', async ({ 
   await expect(undo).not.toHaveClass(/action-unavailable/, { timeout: 2000 });
 });
 
-test('an unavailable Undo cue clears while the button is hidden', async ({ page }) => {
+test('Ctrl+Z still undoes while the button is hidden, and plays no cue', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
 
@@ -97,10 +120,26 @@ test('an unavailable Undo cue clears while the button is hidden', async ({ page 
   await panel.evaluate((element) => element.setAttribute('data-off-undo', ''));
   await expect(undo).toBeHidden();
 
-  await page.keyboard.press('Control+Z');
-  await panel.evaluate((element) => element.removeAttribute('data-off-undo'));
+  // settings.undoButtonEnabled only hides the button (data-off-undo is a CSS-only
+  // toggle) — it does not disable undo history, so the keyboard shortcut
+  // deliberately bypasses it too (installUndoShortcut, lib/boot/undoShortcut.ts).
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+  ]);
+  expect(await firstOpaquePixel(page)).not.toBeNull();
 
+  await page.keyboard.press('Control+Z');
+  // The button is hidden, so the toBeEnabled/toBeDisabled sync point the
+  // sibling tests use is unavailable here — undo() resolves asynchronously
+  // through queuePaperStep, so poll the canvas instead of reading it once.
+  await expect.poll(() => firstOpaquePixel(page)).toBeNull();
+
+  await panel.evaluate((element) => element.removeAttribute('data-off-undo'));
   await expect(undo).toBeVisible();
+  // The shake/flash cue is panel-local (targets #undoButton directly), so the
+  // keyboard path — which has no element handle while the button is hidden —
+  // never plays it, even once the button reappears.
   await expect(undo).not.toHaveClass(/action-unavailable/);
   await expect.poll(() => undo.evaluate((button) => button.getAnimations().length)).toBe(0);
 });

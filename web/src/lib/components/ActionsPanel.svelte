@@ -192,17 +192,8 @@
     };
     document.addEventListener('pointerdown', onDocPointerDown);
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z') {
-        e.preventDefault();
-        handleUndoClick();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-
     return () => {
       document.removeEventListener('pointerdown', onDocPointerDown);
-      window.removeEventListener('keydown', onKeyDown);
     };
   });
 
