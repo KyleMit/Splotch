@@ -30,33 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Readability] `+layout.ts` restates the SvelteKit defaults `ssr = true` and `csr = true`
-
-**File(s):** `web/src/routes/+layout.ts` (lines 1–3) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-export const prerender = true;
-export const ssr = true;
-export const csr = true;
-```
-
-`ssr` and `csr` default to `true` in SvelteKit; only `prerender = true` changes anything. Restating
-defaults with no comment reads as if the values were deliberate deviations, sending a reader to the
-docs to discover they aren't — and it's uncommented dead configuration, which the
-no-speculative-surface convention frowns on. Notably `dev/engine/+page.ts` sets `ssr = false` *with*
-a five-line WHY comment; the contrast makes these bare re-defaults look like they carry similar
-weight when they carry none.
-
-#### Proposed solution
-
-Delete the `ssr` and `csr` exports, leaving `export const prerender = true;`. If they were written
-to pin behavior against a future SvelteKit default change, that intent is exactly a WHY comment —
-but that's not a realistic risk SvelteKit has signaled, so deletion is the honest fix.
-
 ### [Readability] `+layout.svelte` uses an inline `import('svelte').Snippet` though `svelte` is already imported
 
 **File(s):** `web/src/routes/+layout.svelte` (lines 2, 14–17) @ 9ae62ff1
