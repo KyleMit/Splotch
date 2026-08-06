@@ -26,33 +26,6 @@ this file.
 
 ## Source: Code audit — App state (runes)
 
-### [Readability] `tool.svelte.test.ts` duplicates its three-line `beforeEach` in both describes
-
-**File(s):** `web/src/lib/state/tool.svelte.test.ts` (lines 15–19, 101–105) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-Both `describe('tool state')` and `describe('reloadBrushType')` contain the identical reset block:
-
-```ts
-beforeEach(() => {
-  localStorage.clear();
-  selectBrush('pen');
-  localStorage.clear();
-});
-```
-
-The double-`clear()` dance (reset the store to pen, then wipe the write that `selectBrush` just
-persisted) is non-obvious enough that having it twice invites the copies drifting; every sibling
-test file (`strokeWidth`, `colors`, `settings`) uses a single file-level `beforeEach`.
-
-#### Proposed solution
-
-Hoist one `beforeEach` to file level above both describes; optionally add a one-line WHY on the
-second `clear()` ("selectBrush persists; tests start with empty storage").
-
 ### [Architecture] `buttonCenter` computes an `Origin` but lives a module away from the `Origin` type
 
 **File(s):** `web/src/lib/state/ui.svelte.ts` (`buttonCenter`, lines 41–44),

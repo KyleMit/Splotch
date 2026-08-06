@@ -11,13 +11,14 @@ import {
   reloadBrushType,
 } from './tool.svelte';
 
-describe('tool state', () => {
-  beforeEach(() => {
-    localStorage.clear();
-    selectBrush('pen');
-    localStorage.clear();
-  });
+beforeEach(() => {
+  localStorage.clear();
+  selectBrush('pen');
+  // selectBrush persists the brush; tests expect to start with empty storage.
+  localStorage.clear();
+});
 
+describe('tool state', () => {
   it('presents the brushes in menu order', () => {
     expect(BRUSH_TYPES).toEqual(['pen', 'crayon', 'magic', 'eraser']);
   });
@@ -98,12 +99,6 @@ describe('tool state', () => {
 });
 
 describe('reloadBrushType', () => {
-  beforeEach(() => {
-    localStorage.clear();
-    selectBrush('pen');
-    localStorage.clear();
-  });
-
   it('re-reads the persisted brush into the live store (durable-recovery path)', () => {
     localStorage.setItem(STORAGE_KEYS.brushType, 'crayon');
     reloadBrushType();
