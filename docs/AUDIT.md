@@ -30,45 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Readability] `/dev/design`'s hand-written one-off type-scale rows repeat the same 5-line block five times
-
-**File(s):** `web/src/routes/dev/design/+page.svelte` (lines 165–199) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-After the `fontSizeKeys` loop, the Type-scale section hand-writes near-identical `scale-row` blocks
-for `inputFontSize`, `fontFamily`, `fontMono`, and `fontWeightSemibold` (lines 175–197), each
-differing only in the token key and which CSS property the sample styles (`font-size` vs
-`font-family` vs `font-weight`). The Radius section repeats the pattern for `radiusPill` and
-`borderWidth` (lines 149–162), and Elevation for the two float shadows (lines 210–217). ~40 lines of
-copy-paste where the varying data is two fields — exactly the "numbered step comments / repeated
-blocks → extract" shape the conventions call out, and each new one-off token grows the page by
-another pasted block.
-
-#### Proposed solution
-
-Fold the one-offs into data the existing loop shape can render, e.g.:
-
-```ts
-const extraTypeEntries: {
-  key: keyof typeof scale;
-  styleProp: 'font-size' | 'font-family' | 'font-weight';
-}[] = [
-  { key: 'inputFontSize', styleProp: 'font-size' },
-  { key: 'fontFamily', styleProp: 'font-family' },
-  { key: 'fontMono', styleProp: 'font-family' },
-  { key: 'fontWeightSemibold', styleProp: 'font-weight' },
-];
-```
-
-and one `{#each}` whose sample span uses `style:{...}` via a small dynamic-style helper (Svelte's
-`style:` directive needs a static property name, so use `style=` string interpolation for the
-dynamic case — a real gotcha; the current static markup avoids it, which is worth weighing). If the
-dynamic-style ergonomics feel worse than the duplication, at minimum group the four rows under one
-mapped snippet (`{#snippet typeRow(key, sampleStyle)}`) so the structure is written once.
-
 ### [Correctness] A failed first wake-lock request is never retried
 
 **File(s):** `web/src/lib/boot/wakeLock.ts` (lines 12–18) @ 9ae62ff1
