@@ -21,5 +21,7 @@ export function installWakeLock(): () => void {
   return () => {
     document.removeEventListener('pointerdown', onFirstPointerDown);
     document.removeEventListener('visibilitychange', onVisibilityChange);
+    void wakeLock?.release().catch(() => {});
+    wakeLock = null;
   };
 }

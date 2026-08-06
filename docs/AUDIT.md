@@ -30,48 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Correctness] `installWakeLock` teardown never releases the held sentinel
-
-**File(s):** `web/src/lib/boot/wakeLock.ts` (`installWakeLock`, lines 3–25) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The teardown only removes the listeners:
-
-```ts
-return () => {
-  document.removeEventListener('pointerdown', onFirstPointerDown);
-  document.removeEventListener('visibilitychange', onVisibilityChange);
-};
-```
-
-The `WakeLockSentinel` acquired on the first pointerdown is never released. `installWakeLock` is a
-page-scoped boot step — `routes/+page.svelte:83–92` runs the teardown on unmount precisely so the
-drawing route's behaviors don't leak to other routes (the same commit scoped the zoom/scroll locks
-per ADR-0076). But after a client-side navigation from `/` to `/privacy` (Settings links there), the
-screen-sleep suppression persists for the life of the tab: a parent who leaves the privacy policy
-open keeps burning battery with a screen that never dims, on a route that has no reason to hold a
-wake lock.
-
-#### Proposed solution
-
-Release in the teardown and null the handle:
-
-```ts
-return () => {
-  document.removeEventListener('pointerdown', onFirstPointerDown);
-  document.removeEventListener('visibilitychange', onVisibilityChange);
-  void wakeLock?.release().catch(() => {});
-  wakeLock = null;
-};
-```
-
-`release()` on an already-released sentinel resolves fine, so no released-state check is needed.
-Cheap to unit-test with a mocked `navigator.wakeLock` (the module currently has no test at all —
-worth adding while touching it).
-
 ### [Maintainability] `/dev/design`'s `nonColorKeys` hand-list duplicates token-kind knowledge that belongs in `tokens.ts`
 
 **File(s):** `web/src/routes/dev/design/+page.svelte` (lines 23–30, 81) @ 9ae62ff1
