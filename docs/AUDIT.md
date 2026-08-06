@@ -28,31 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Readability] tokens.ts header comment uses the temporal phrasing the comment convention bans
-
-**File(s):** `web/src/lib/server/tokens.ts` (lines 5–8) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-```ts
-// Access tokens used to be a static comma-separated env var (ALLOWED_TOKENS_LIST).
-// They now live in Netlify Blobs so they can be added/removed at runtime from the
-// admin page. The env var is only used as a one-time seed on first read, ...
-```
-
-"used to be" / "now live" is history-relative narration — CLAUDE.md: "A comment that does survive
-states stable facts: no temporal phrasing ('now', 'previously')." As the migration recedes, the
-first sentence becomes trivia, and the load-bearing facts (Blobs is the store; the env var is only a
-first-read seed) are buried behind it.
-
-#### Proposed solution
-
-Restate as stable facts: "Access tokens live in Netlify Blobs so they can be added/removed at
-runtime from the admin page. ALLOWED_TOKENS_LIST is only a one-time seed on first read, which keeps
-pre-Blobs deployments and local dev working." Same information, no timeline.
-
 ## Source: Code audit — Routes / app shell / dev harness
 
 ### [Architecture] Centralize the dev-harness gate in a `routes/dev/+layout.ts` so new harnesses are gated by default

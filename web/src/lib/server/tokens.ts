@@ -2,10 +2,9 @@ import { env } from '$env/dynamic/private';
 import { getStore } from '@netlify/blobs';
 import { deleteUsage } from './usage';
 
-// Access tokens used to be a static comma-separated env var (ALLOWED_TOKENS_LIST).
-// They now live in Netlify Blobs so they can be added/removed at runtime from the
-// admin page. The env var is only used as a one-time seed on first read, which
-// keeps existing tokens working through the migration and during local dev.
+// Access tokens live in Netlify Blobs so they can be added/removed at runtime from the
+// admin page. ALLOWED_TOKENS_LIST is only a one-time seed on first read, which keeps
+// pre-Blobs deployments and local dev working.
 const STORE_NAME = 'access-tokens';
 const KEY = 'list';
 
