@@ -19,6 +19,10 @@ function suppress(e: Event) {
   e.stopPropagation();
 }
 
+export function getAcceptRadius() {
+  return Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
+}
+
 export interface DragToClearOptions {
   containerEl: HTMLDivElement;
   acceptZoneEl: HTMLDivElement;
@@ -53,10 +57,6 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     }, delay);
     resetTimers.add(id);
     return id;
-  }
-
-  function getAcceptRadius() {
-    return Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
   }
 
   function dragDistance(clientX: number, clientY: number): number {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { ACCEPT_RADIUS_FACTOR } from '$lib/actions/dragToClear';
+  import { getAcceptRadius } from '$lib/actions/dragToClear';
   import Icon from './Icon.svelte';
 
   const COACHMARK_AUTO_DISMISS_MS = 6000;
@@ -14,10 +14,6 @@
 
   // Untracked on purpose: a timer handle, nothing renders from it.
   let tutorialDismissTimer: ReturnType<typeof setTimeout> | null = null;
-
-  function getAcceptRadius() {
-    return Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
-  }
 
   export function show(anchorEl: HTMLElement) {
     if (tutorialVisible) return;
