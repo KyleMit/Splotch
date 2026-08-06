@@ -31,6 +31,7 @@ carve-out):
 | `asset-naming.md`            | Uniform dot-separated variant suffixes — `{name}.{variant}.webp` (ex ADR-0054).                 |
 | `fill-vocabulary.md`         | The magic-brush reveal assets are "fills", not "twins" (ex ADR-0055).                           |
 | `pen-chalk-fork.md`          | Fork the line art per theme — pen outline (light) + Gemini-authored chalk (dark) (ex ADR-0056). |
+| `style-cover-theme-fork.md`  | Fork the AI style covers per theme — a second render each, endpoint deliberately still light.   |
 | `alpha-line-art-overlays.md` | Derive alpha-native runtime overlays while retaining opaque pipeline sources.                   |
 | `chalk-edge-crisping.md`     | Crisp the chalk's edges at render time, not in the punch or the app compositor.                 |
 | `inpainted-fill-punch.md`    | Punch by inpainting — shipped fills stay opaque, outline pixels replaced by bled fill color.    |
