@@ -26,32 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Correctness] `.install-cta:hover` is not guarded behind `@media (hover: hover)`
-
-**File(s):** `web/src/lib/components/InstallBanner.svelte` (lines 285–287) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```css
-.install-cta:hover {
-  filter: brightness(1.05);
-}
-```
-
-The same file wraps `.install-dismiss:hover` in `@media (hover: hover)` (lines 206–212), and
-ActionsPanel documents the WHY at length (lines 625–632: "iOS WebKit applies :hover on tap and keeps
-it sticky until the user taps elsewhere"). The install banner is primarily a *touch* surface (its
-whole purpose is phones/tablets), so the unguarded rule leaves the CTA stuck 5% brighter after every
-tap — minor visually, but it is the exact documented bug class this codebase already fights, applied
-inconsistently within one component.
-
-#### Proposed solution
-
-Move `.install-cta:hover` inside an `@media (hover: hover)` block (can share the existing one at
-line 206).
-
 ### [Maintainability] Slider's `step`/`pageStep` props are speculative surface, and pointer drags ignore `step` anyway
 
 **File(s):** `web/src/lib/components/Slider.svelte` (lines 12–13, 35–36, 59–61, 87–97, 116–145) @

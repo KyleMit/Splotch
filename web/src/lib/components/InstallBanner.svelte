@@ -292,8 +292,10 @@
       filter 0.12s ease;
   }
 
-  .install-cta:hover {
-    filter: brightness(1.05);
+  @media (hover: hover) {
+    .install-cta:hover {
+      filter: brightness(1.05);
+    }
   }
 
   .install-cta:active {
