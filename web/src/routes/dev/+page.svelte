@@ -1,6 +1,9 @@
 <script lang="ts">
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 
+  // Landing page listing the dev-only harnesses under routes/dev/*. It sits
+  // behind the same gate as the harnesses themselves, so it never ships to real
+  // users (an ungated index would be a real route advertising them).
   const harnesses = [
     {
       href: '/dev/engine',

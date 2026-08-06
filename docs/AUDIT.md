@@ -30,60 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Architecture] Centralize the dev-harness gate in a `routes/dev/+layout.ts` so new harnesses are gated by default
-
-**File(s):** `web/src/routes/dev/+page.ts` (lines 7–12), `web/src/routes/dev/design/+page.ts` (lines
-7–12) @ 9ae62ff1 (same pattern in `dev/engine/+page.ts` and `dev/ai-timer/+page.ts`, owned by other
-sections)
-
-**Priority:** P2
-
-#### Problem
-
-Every page under `routes/dev/*` repeats the identical boilerplate:
-
-```ts
-export const prerender = false;
-
-export const load: PageLoad = () => {
-  requireDevHarness();
-  return {};
-};
-```
-
-Four copies exist today (`dev/+page.ts`, `dev/design/+page.ts`, `dev/engine/+page.ts`,
-`dev/ai-timer/+page.ts`). Beyond the duplication, the security posture is opt-in: a future
-`/dev/crayon` playground (already floated in issue \#382) ships to production unless its author
-remembers to add the `load` gate. `devHarness.ts:10` even instructs "call it from every dev-harness
-`load`/request handler" — a per-page convention maintained by prose, which is exactly the failure
-mode the repo's cross-file-agreement rule exists to prevent. The gate should be structural: anything
-placed under `routes/dev/` should 404 in production with zero per-page code.
-
-#### Proposed solution
-
-Add `web/src/routes/dev/+layout.ts`:
-
-```ts
-import { requireDevHarness } from '$lib/devHarness';
-import type { LayoutLoad } from './$types';
-
-export const prerender = false;
-
-export const load: LayoutLoad = () => {
-  requireDevHarness();
-  return {};
-};
-```
-
-A layout `load` runs before any child page renders, so the whole subtree is gated; delete the
-now-redundant `load` functions and `prerender = false` exports from the four `+page.ts` files
-(`dev/engine/+page.ts` keeps its `ssr = false` and its comment). Gotchas: (a) the `+server.ts` under
-`dev/ai-timer/artifacts/[name]/` does **not** run layout loads — server endpoints must keep their
-own `requireDevHarness()` call, so soften (don't delete) the "call it from every load" comment in
-`devHarness.ts` to say pages are covered by `routes/dev/+layout.ts` and only `+server.ts` handlers
-need their own call; (b) confirm the Playwright engine spec still reaches `/dev/engine` under
-`PUBLIC_ENABLE_DEV_HARNESS=true` (it should — the gate logic is unchanged, only its location moves).
-
 ### [Testing] The boot script's brush (`'crayon' | 'magic'`) and theme (`'light' | 'dark'`) value literals are unguarded
 
 **File(s):** `web/src/app.html` (lines 114–118), `web/src/app.html.test.ts` @ 9ae62ff1
