@@ -30,35 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Readability] The boot-script comment restates the clamp values and says "keep them in sync" instead of naming its drift guard
-
-**File(s):** `web/src/app.html` (lines 73–74) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```
-The keys, defaults, and the 70/130/100 scale clamp mirror settings.svelte.ts
-(ACTION_BUTTON_SCALE_* and BOOL_SETTINGS) — keep them in sync.
-```
-
-Two convention violations in one sentence. First, it restates the mutable values `70/130/100`, which
-are owned by `ACTION_BUTTON_SCALE_MIN/MAX/DEFAULT` in `settings.svelte.ts:86–88` — CLAUDE.md: "no
-restating mutable facts (counts, dates, values ...) owned elsewhere — name the owning identifier".
-Change the clamp and this comment silently lies. Second, "keep them in sync" is the phrasing
-CLAUDE.md calls "a defect, not a mitigation" — yet here the sync *is* mechanically enforced by
-`app.html.test.ts`, and the comment doesn't say so. A reader (or agent) editing the boot script has
-no pointer to the test that will fail, and may conclude the mirroring is guarded by vigilance alone.
-(`app.html.test.ts:19–20` even quotes this comment as the problem it solves — the comment was never
-updated when the test landed.)
-
-#### Proposed solution
-
-Reword the tail of the comment block to name the guard and drop the literals, e.g.: "The keys,
-defaults, and the scale clamp mirror settings.svelte.ts (`ACTION_BUTTON_SCALE_*`, `BOOL_SETTINGS`);
-`app.html.test.ts` fails on divergence." One-line change, no behavior.
-
 ### [Maintainability] The GitHub repo URL is a duplicated boundary string (4 copies)
 
 **File(s):** `web/src/routes/privacy/+page.svelte` (line 12) @ 9ae62ff1
