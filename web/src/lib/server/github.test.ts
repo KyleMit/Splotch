@@ -99,7 +99,7 @@ describe('createIssue', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 500, text: async () => longBody }));
 
     await expect(createIssue(input)).rejects.toThrow(
-      `GitHub issue creation failed (500): ${'x'.repeat(300)}`
+      new Error(`GitHub issue creation failed (500): ${'x'.repeat(300)}`)
     );
   });
 

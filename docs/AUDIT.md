@@ -28,31 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Testing] `createIssue` has zero test coverage — only the Markdown escaper is tested
-
-**File(s):** `web/src/lib/server/github.ts` (`createIssue`, lines 56–85) @ 9ae62ff1;
-`web/src/lib/server/github.test.ts`
-
-**Priority:** P4
-
-#### Problem
-
-`github.test.ts` covers `escapeIssueMarkdown` thoroughly (6 cases) but nothing else in the module.
-Untested behavior in `createIssue`: the missing-token throw (line 60), the request contract (Bearer
-header, `X-GitHub-Api-Version`, the User-Agent GitHub mandates — line 62–73), the non-201 error path
-including the `res.text().catch(() => '')` fallback and 300-char truncation (lines 75–78), and the
-malformed-payload rejection (lines 80–83). Any of these regressing (say, dropping the `User-Agent`
-header during a refactor — which makes GitHub reject every report) would ship silently; the
-`/api/report` endpoint tests presumably mock this seam, so nothing exercises the real request shape.
-
-#### Proposed solution
-
-Add `describe('createIssue')` cases using `vi.stubGlobal('fetch', …)` (the file already mocks
-`$env/dynamic/private`; extend the env mock so `config.githubIssueToken()`/`githubIssueRepo()`
-resolve): (1) happy path asserts URL, method, headers, and body; (2) 404/422 response → throws with
-status and truncated detail; (3) 201 with missing `html_url` → throws the unexpected-payload error;
-(4) unset token → throws without fetching. Node-environment, no network — cheap and fast.
-
 ### [Types] The invite pair shape is re-declared inline instead of being a named export of its builder
 
 **File(s):** `web/src/lib/server/admin.ts` (`buildInvites`, lines 87–92) @ 9ae62ff1;
