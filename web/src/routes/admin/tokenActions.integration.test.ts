@@ -9,7 +9,10 @@ const { envState } = vi.hoisted(() => ({
 }));
 vi.mock('$env/dynamic/private', () => ({ env: envState }));
 
-vi.mock('$lib/server/tokens', () => ({
+// Only the mutations are stubbed: the action reads the real
+// MUTATION_FAILURE_STATUS, which is the shared mapping under test.
+vi.mock('$lib/server/tokens', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/server/tokens')>()),
   getTokensStatus: vi.fn(),
   addToken: vi.fn(),
   removeToken: vi.fn(),
@@ -38,6 +41,12 @@ const conflict: MutationResult = {
   reason: 'conflict',
 };
 
+const unavailable: MutationResult = {
+  ok: false,
+  error: 'Token storage is unavailable right now — nothing was saved. Please try again.',
+  reason: 'unavailable',
+};
+
 beforeEach(() => {
   envState.ADMIN_ACCESS_TOKEN = SECRET;
   vi.mocked(addToken).mockReset();
@@ -61,8 +70,15 @@ describe('the /admin token form actions', () => {
     });
   });
 
-  // The conflict status is the only thing that moved — a caller-fault failure
-  // must still be a 400.
+  it('answers 503 when the token store is unreachable, like the JSON endpoint', async () => {
+    vi.mocked(removeToken).mockResolvedValue(unavailable);
+    expect(await tokenDoor('remove', 'mine')).toMatchObject({
+      status: 503,
+      data: { error: unavailable.error },
+    });
+  });
+
+  // A caller-fault failure must still be a 400.
   it('keeps a validation failure at 400', async () => {
     vi.mocked(addToken).mockResolvedValue({
       ok: false,

@@ -61,8 +61,8 @@ comment, a type-only edit, or dead-code removal), find the Playwright E2E spec(s
 grep `web/tests/` for the component, route, or behaviour — and:
 
 * list them in the structured result's `e2e_specs`, as paths relative to `web/`, e.g.
-  `tests/flows.spec.ts` (the driver runs exactly these as a per-finding gate before the fix
-  commits); and
+  `tests/flows-undo-persistence.spec.ts` (the driver runs exactly these as a per-finding gate before
+  the fix commits); and
 * name the same commands in the "Acceptance criteria" section.
 
 Leave `e2e_specs` empty for a change with **no behavioural surface** — a pure refactor, a script or

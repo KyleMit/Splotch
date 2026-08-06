@@ -16,10 +16,21 @@ let memoryTokens: string[] | null = null;
 let blobsUnavailable = false;
 
 type TokenStore = ReturnType<typeof getStore>;
+type MemorySource = 'memory' | 'degraded';
+// Why the seed-race winner stayed unknown. Reads deny either way, but a store
+// that never once answered is the same unreachable condition as `degraded`, so
+// a mutation must report it as such rather than as a losable race.
+type UnconfirmedCause = 'stale' | 'unreachable';
 type StoreRead =
   | { source: 'blobs'; store: TokenStore; list: string[]; etag?: string }
-  | { source: 'memory'; store: null; list: string[]; etag?: undefined }
-  | { source: 'unconfirmed'; store: TokenStore; list: []; etag?: undefined };
+  | { source: MemorySource; store: null; list: string[]; etag?: undefined }
+  | {
+      source: 'unconfirmed';
+      cause: UnconfirmedCause;
+      store: TokenStore;
+      list: [];
+      etag?: undefined;
+    };
 
 const SEED_CONFIRMATION_ATTEMPTS = 3;
 // Backoff before each confirmation reread. A `modified: false` means the write
@@ -58,10 +69,14 @@ function openStore(): TokenStore | null {
 }
 
 async function confirmSeedRaceWinner(store: TokenStore): Promise<StoreRead> {
+  // An attempt that resolves — even to an absent key — proves the store is
+  // answering, so only an all-throws exhaustion counts as unreachable.
+  let answered = false;
   for (let attempt = 1; attempt <= SEED_CONFIRMATION_ATTEMPTS; attempt++) {
     await sleep(SEED_CONFIRMATION_BACKOFF_MS * attempt);
     try {
       const winner = await store.getWithMetadata(KEY, { type: 'json' });
+      answered = true;
       if (winner && Array.isArray(winner.data)) {
         return { source: 'blobs', store, list: winner.data, etag: winner.etag };
       }
@@ -70,15 +85,30 @@ async function confirmSeedRaceWinner(store: TokenStore): Promise<StoreRead> {
     }
   }
   console.warn('[tokens] Lost env-seed race but could not confirm the current list');
-  return { source: 'unconfirmed', store, list: [] };
+  return { source: 'unconfirmed', cause: answered ? 'stale' : 'unreachable', store, list: [] };
+}
+
+// The in-memory list stands in for Blobs in two situations reads may treat
+// alike but writes may not. `memory` is an instance where `getStore()` itself
+// fails — local dev, or a deployed function without the Blobs context
+// (ADR-0025) — and mutating this list is the intended behavior only in the
+// former; the deployed case is a known residual false-success that the
+// `persistent: false` banner is the current mitigation for (issue #798).
+// `degraded` is an instance whose Blobs read failed on this request, where the
+// durable list still exists and holds values this one does not, so writing here
+// would report a success the blob never saw.
+function memoryRead(source: MemorySource): StoreRead {
+  if (memoryTokens === null) memoryTokens = seedFromEnv();
+  return { source, store: null, list: memoryTokens };
 }
 
 /**
  * Resolve the current token list and the backing store (if available).
- * `source` distinguishes confirmed Blobs data, the explicit local-memory
- * fallback, and a lost seed race whose winning value could not be confirmed.
- * `etag` identifies the exact blob version the list came from so mutations can
- * compare-and-set against it; read-only callers ignore it.
+ * `source` distinguishes confirmed Blobs data, the two in-memory stand-ins
+ * (`memory`/`degraded`, see above), and a lost seed race whose winning value
+ * could not be confirmed. `etag` identifies the exact blob version the list
+ * came from so mutations can compare-and-set against it; read-only callers
+ * ignore it.
  */
 async function readStore(): Promise<StoreRead> {
   const store = openStore();
@@ -108,10 +138,10 @@ async function readStore(): Promise<StoreRead> {
       // silently drop every future write.
       const detail = err instanceof Error ? err.message : err;
       console.warn('[tokens] Netlify Blobs read failed, using in-memory list:', detail);
+      return memoryRead('degraded');
     }
   }
-  if (memoryTokens === null) memoryTokens = seedFromEnv();
-  return { source: 'memory', store: null, list: memoryTokens };
+  return memoryRead('memory');
 }
 
 // Compare-and-set write, same pattern as usage.ts's recordTokenUsage: two
@@ -139,8 +169,10 @@ export async function getTokens() {
  * Like getTokens, but also reports whether the list is durably backed by Netlify
  * Blobs (`persistent: true`) or came from the per-instance in-memory fallback
  * seeded from ALLOWED_TOKENS_LIST (`persistent: false`). A null store from
- * readStore is exactly the fallback case — Blobs is unconfigured or a read
- * failed — so edits won't survive a cold start. The /admin page surfaces this as
+ * readStore is exactly the fallback case — `getStore()` failed, or this read
+ * did. Edits behave differently across those two: the first accepts them into
+ * the in-memory list, where they won't survive a cold start; the second refuses
+ * them outright (see mutateList). The /admin page surfaces the shared signal as
  * a banner so an operator isn't fooled by env-seeded data that looks live.
  */
 export async function getTokensStatus(): Promise<{ tokens: string[]; persistent: boolean }> {
@@ -164,12 +196,35 @@ export async function isAllowedToken(token: unknown) {
 // report.
 const MUTATION_ATTEMPTS = 3;
 export const TOKEN_CONFLICT_ERROR = 'The token list changed while saving — please try again';
+export const TOKEN_UNAVAILABLE_ERROR =
+  'Token storage is unavailable right now — nothing was saved. Please try again.';
 
 // `reason` is what callers branch on (HTTP status, form handling) — the `error`
 // string is UX copy and rewording it must never change behaviour.
-export type MutationFailure = { ok: false; error: string; reason: 'invalid' | 'conflict' };
+export type MutationFailure = {
+  ok: false;
+  error: string;
+  reason: 'invalid' | 'conflict' | 'unavailable';
+};
+
+// Both front doors — the /admin form action and /api/admin/tokens — must answer
+// the same underlying failure with the same status, so the mapping is declared
+// once here instead of restated at each door. A caller-fault validation failure
+// is the caller's to correct; a conflict and an unreachable store are both
+// transient and worth retrying as-is.
+export const MUTATION_FAILURE_STATUS = {
+  invalid: 400,
+  conflict: 409,
+  unavailable: 503,
+} as const satisfies Record<MutationFailure['reason'], number>;
 
 export type MutationResult = { ok: true; tokens: string[] } | MutationFailure;
+
+function unconfirmedFailure(cause: UnconfirmedCause): MutationFailure {
+  return cause === 'unreachable'
+    ? { ok: false, error: TOKEN_UNAVAILABLE_ERROR, reason: 'unavailable' }
+    : { ok: false, error: TOKEN_CONFLICT_ERROR, reason: 'conflict' };
+}
 
 type Transform = (
   list: string[]
@@ -181,8 +236,16 @@ async function mutateList(
 ): Promise<MutationResult> {
   for (let attempt = 1; attempt <= MUTATION_ATTEMPTS; attempt++) {
     const read = await readStore();
-    if (read.source === 'unconfirmed')
-      return { ok: false, error: TOKEN_CONFLICT_ERROR, reason: 'conflict' };
+    // Neither exit knows the durable list, so neither may write. They differ
+    // only in what to tell the caller: a store that answered is a race worth
+    // retrying as-is, a store that never answered is an outage.
+    if (read.source === 'unconfirmed') return unconfirmedFailure(read.cause);
+    // A degraded read hands back the in-memory stand-in for a list that is
+    // still durably stored elsewhere. Persisting into it would report a
+    // revocation the blob never saw — one recovery silently undoes, leaving the
+    // token valid — so fail loudly instead.
+    if (read.source === 'degraded')
+      return { ok: false, error: TOKEN_UNAVAILABLE_ERROR, reason: 'unavailable' };
     const { store, list, etag } = read;
     const result = transform(list);
     if ('error' in result) return { ok: false, error: result.error, reason: result.reason };

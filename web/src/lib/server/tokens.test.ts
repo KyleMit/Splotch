@@ -93,6 +93,27 @@ async function freshTokensWithSeedRace(seed: string, list: string[], hiddenReads
   return import('./tokens');
 }
 
+// Blobs is configured and holds `list`, but every read of it throws until
+// `recoverBlobs()` is called — the transient-outage shape, as distinct from the
+// unconfigured-Blobs shape `freshTokens` sets up.
+async function freshTokensWithFailingBlobs(seed: string, list: string[]) {
+  vi.resetModules();
+  envState.ALLOWED_TOKENS_LIST = seed;
+  blobsState.stores = new Map();
+  const store = storeFor('access-tokens');
+  await store.setJSON('list', list);
+  const read = store.getWithMetadata.bind(store);
+  store.getWithMetadata = async () => {
+    throw new Error('transient blobs read failure');
+  };
+  return {
+    tokens: await import('./tokens'),
+    recoverBlobs: () => {
+      store.getWithMetadata = read;
+    },
+  };
+}
+
 async function freshTokensWithEmptyBlobs(seed: string) {
   vi.resetModules();
   envState.ALLOWED_TOKENS_LIST = seed;
@@ -175,6 +196,35 @@ describe('stale-empty seed races', () => {
     // A single transient blip must not collapse to unconfirmed/deny.
     expect(await isAllowedToken('current')).toBe(true);
     expect(await isAllowedToken('legacy')).toBe(false);
+  });
+
+  it('calls an all-throws confirmation an outage, not a losable race', async () => {
+    vi.resetModules();
+    envState.ALLOWED_TOKENS_LIST = 'legacy';
+    blobsState.stores = new Map();
+    const store = storeFor('access-tokens');
+    await store.setJSON('list', ['current']);
+    let calls = 0;
+    store.getWithMetadata = async () => {
+      // Each readStore consumes four calls: a lagging initial read reporting
+      // the key absent (→ seed branch → modified:false), then three
+      // confirmation rereads that an unreachable store never answers.
+      if (calls++ % 4 === 0) return null;
+      throw new Error('blobs unreachable');
+    };
+    const { addToken, isAllowedToken, TOKEN_UNAVAILABLE_ERROR } = await import('./tokens');
+    // Nothing changed and the store never answered — the same shape as a
+    // degraded read, so it must not be reported as a retryable CAS conflict.
+    expect(await addToken('mine')).toEqual({
+      ok: false,
+      error: TOKEN_UNAVAILABLE_ERROR,
+      reason: 'unavailable',
+    });
+    // Still fails closed: an unconfirmed winner denies every token, including
+    // the env seed that lost the race.
+    expect(await isAllowedToken('legacy')).toBe(false);
+    expect(await isAllowedToken('current')).toBe(false);
+    expect(await storeFor('access-tokens').get('list')).toEqual(['current']);
   });
 
   it('fails closed and rejects mutations when the winning list cannot be confirmed', async () => {
@@ -289,6 +339,44 @@ describe('concurrent mutations against Blobs', () => {
       error: TOKEN_CONFLICT_ERROR,
       reason: 'conflict',
     });
+  });
+});
+
+describe('mutations during a transient Blobs read failure', () => {
+  it('refuses a revocation instead of reporting one the durable list never saw', async () => {
+    const { tokens, recoverBlobs } = await freshTokensWithFailingBlobs('legacy,durable', [
+      'legacy',
+      'durable',
+    ]);
+    expect(await tokens.removeToken('durable')).toEqual({
+      ok: false,
+      error: tokens.TOKEN_UNAVAILABLE_ERROR,
+      reason: 'unavailable',
+    });
+    // The in-memory stand-in must not absorb the write either: a revocation
+    // that only lands there is undone the moment Blobs recovers.
+    expect(await tokens.getTokens()).toEqual(['legacy', 'durable']);
+    recoverBlobs();
+    expect(await tokens.isAllowedToken('durable')).toBe(true);
+    expect(await storeFor('access-tokens').get('list')).toEqual(['legacy', 'durable']);
+  });
+
+  it('refuses an add rather than banking it in memory', async () => {
+    const { tokens, recoverBlobs } = await freshTokensWithFailingBlobs('legacy', ['legacy']);
+    expect(await tokens.addToken('mine')).toEqual({
+      ok: false,
+      error: tokens.TOKEN_UNAVAILABLE_ERROR,
+      reason: 'unavailable',
+    });
+    expect(await tokens.getTokens()).toEqual(['legacy']);
+    recoverBlobs();
+    expect(await tokens.isAllowedToken('mine')).toBe(false);
+  });
+
+  it('still serves reads from the in-memory stand-in', async () => {
+    const { tokens } = await freshTokensWithFailingBlobs('legacy', ['legacy', 'durable']);
+    expect(await tokens.getTokensStatus()).toEqual({ tokens: ['legacy'], persistent: false });
+    expect(await tokens.isAllowedToken('legacy')).toBe(true);
   });
 });
 

@@ -186,7 +186,7 @@
       <div class="flash flash-warning" role="alert">
         <strong>Netlify Blobs is unavailable.</strong> You're viewing a local-only copy seeded from
         the <code>ALLOWED_TOKENS_LIST</code> env var. Any codes you add or remove here won't be saved
-        and may reset at any time.
+        — the change is either refused outright or lost on the next restart.
       </div>
     {/if}
 

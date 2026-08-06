@@ -16,7 +16,9 @@
   env and arg handling, the OS opener); `net.mjs` has `waitForUrl()` for polling a URL until ready;
   `playwright.mjs` resolves the Chromium binary; `maestro.mjs` the Maestro location;
   `frontmatter.mjs` the release frontmatter/semver parsing; `vite-server.mjs` spawns a throwaway
-  vite dev/preview server in a detached process group so `stop()` can't orphan the vite grandchild;
+  vite dev/preview server in a detached process group so `stop()` can't orphan the vite grandchild,
+  and `release()` hands that group to the OS instead — which is why it takes only the
+  `RELEASABLE_STDIO` sinks it exports and throws on anything this process would take with it;
   `smoke.mjs` has the `check()`/`fatal()`/`summarize()` pass-fail reporter shared by the smoke
   tests; `adminClient.mjs` the `/api/admin` login + token-CRUD request plumbing they both drive; and
   `native-export.mjs` owns what the native static export drops — the web-only static file list plus
@@ -51,8 +53,17 @@
   defaults, and output normalization; `pop.mjs` is the **only** thing that reads or edits
   `docs/AUDIT.md` at that scale; `lib.mjs` holds the shared state helpers, which deliberately return
   status instead of exiting. `prompts/*.md` are runner-neutral role prompts. Entry points are the
-  `audit:*` npm scripts. The backlog surgery and runner seam are locked by
-  `scripts/tests/audit-burndown-*.test.mjs` (`npm run test:scripts`, in CI).
+  `audit:*` npm scripts. A run is a `createBurndownRun({ config, effects })` instance — the counters
+  it shares (`done`/`dropped`/`deferred`/`consecutive`/`sincePush`) live there, each lifecycle step
+  is a named helper, and `effects` is the whole outside-world surface the tests substitute — git,
+  shell, the binary probe, the agent runner, the log, and `halt` — so both `preflight()` and
+  `execute()` are drivable from a test; `readConfig(env)` resolves every knob from the supplied
+  `env` — including the `launch-command` line recorded at startup and the `AUDIT_FILE` backlog path
+  the run pops, deletes, stages, and counts, both of which the run reads from `config` rather than
+  from `process.env`, so they cannot name different files — and `main()` runs only under `isMain`,
+  so importing the driver starts nothing. The backlog surgery, the runner seam, and the driver's own
+  sequencing are locked by `scripts/tests/audit-burndown-*.test.mjs` (`npm run test:scripts`, in
+  CI).
 * `direct-provider-skills.mjs` declares the provider packages and notes that are edited in place.
   `ruler-apply.mjs` snapshots and restores those paths around Ruler's atomic skill-tree replacement,
   including on failure. `apply-ruler-skill-forks.mjs` then replaces complete generated packages for

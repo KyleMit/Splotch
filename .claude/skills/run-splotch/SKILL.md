@@ -45,15 +45,15 @@ stroke on the canvas. A blank canvas with no stroke means the draw flow regresse
 
 Options (see the header of `driver.mjs`):
 
-| Flag              | Effect                                                                 |
-| ----------------- | ---------------------------------------------------------------------- |
-| `--route <path>`  | Route to open — `/`, `/admin`, `/privacy`, `/dev/engine` (default `/`) |
-| `--draw`          | Drag a stroke across the canvas before the shot (route `/` only)       |
-| `--out <file>`    | Screenshot path (default `screenshots/splotch.png`)                    |
-| `--headed`        | Show the browser window instead of headless                            |
-| `--keep`          | Leave the dev server running afterward and print its URL               |
-| `--url <baseURL>` | Drive an already-running server instead of launching one               |
-| `--port <n>`      | Dev server port (default `5199`)                                       |
+| Flag              | Effect                                                                          |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `--route <path>`  | Route to open — `/`, `/admin`, `/privacy`, `/dev/engine` (default `/`)          |
+| `--draw`          | Drag a stroke across the canvas before the shot (route `/` only)                |
+| `--out <file>`    | Screenshot path (default `screenshots/splotch.png`)                             |
+| `--headed`        | Show the browser window instead of headless                                     |
+| `--keep`          | Leave the dev server running afterward and print its URL (it then logs nowhere) |
+| `--url <baseURL>` | Drive an already-running server instead of launching one                        |
+| `--port <n>`      | Dev server port (default `5199`)                                                |
 
 Output (`screenshots/`) is gitignored. **Write your shots there** (or another gitignored dir) — a
 PNG dropped elsewhere in the repo shows up as an untracked file and trips the stop-hook git check.
@@ -135,8 +135,9 @@ await page.locator('#magicBrushButton').click();
 > CommonJS-only resolver hint and is ignored by the ESM `import` loader.
 
 To apply a coloring page: click `#coloringBookButton`, then in the `dialog` pick a book and a page,
-and wait for `#coloringOverlay` to be visible. A full worked example (all these steps) lives in the
-magic-brush E2E test, `web/tests/flows.spec.ts`.
+and wait for `#coloringOverlay` to be visible. A full worked example (all these steps) is the
+`applyFarmPage` helper in `web/tests/flows-harness.ts`, which the magic-brush E2E spec
+(`web/tests/flows-magic-brush.spec.ts`) drives.
 
 > **Never hand-roll the dev server in a throwaway script.** `spawn('npx', ['vite',
 > 'dev', …])` +
@@ -147,10 +148,18 @@ magic-brush E2E test, `web/tests/flows.spec.ts`.
 > * **Reuse the driver's server** (preferred): `driver.mjs … --keep`, connect your own Playwright
 >   script with `--url`/`page.goto`, and when done free the port with `npx kill-port <n>` (default
 >   5199). Your script should only manage the *browser*, never the server.
-> * **If you truly must spawn one**, use `spawnViteServer(port, env)` from
+> * **If you truly must spawn one**, use `spawnViteServer(port, { env, stdout, stderr })` from
 >   `scripts/lib/vite-server.mjs` — it launches vite in a **detached process group** and its
 >   `stop()` kills the whole group (`process.kill(-pid)`), so nothing is orphaned. `freePort(port)`
->   clears a stale listener first.
+>   clears a stale listener first, and `release()` hands a still-running server to the OS (what
+>   `--keep` does) so your script can exit without killing it. **A server you intend to release
+>   needs a durable OS sink on *both* streams — `'ignore'` or a file descriptor**, because the
+>   alternatives fail in opposite directions: `'inherit'` hands the survivor a dup of your own fd,
+>   so it holds your caller's pipe open and the command that ran you never returns, while `'pipe'`
+>   is a handle `release()` must drop, and the survivor's next log line then dies of EPIPE — a few
+>   HMR reloads on stdout, a single filesystem-allowlist 403 on stderr. `release()` throws rather
+>   than accept anything else. `driver.mjs`'s `startServer` / `finishServer` are the worked example
+>   — copy those, not a fresh `spawn`.
 >
 > Either way, **reap what you spawned before ending**: kill the script/browser, run
 > `npx kill-port <n>`, and confirm with `ps`/`ss -ltnp` that no `vite dev` or headless Chromium is
@@ -204,11 +213,11 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
 
 ## Troubleshooting
 
-| Symptom                                                                                                  | Fix                                                                                                                                                                                                                                                                                                                                                         |
-| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Executable doesn't exist … playwright` (local)                                                          | `npm run test:e2e:install`                                                                                                                                                                                                                                                                                                                                  |
-| `Executable doesn't exist … playwright` (Claude Code Cloud session)                                      | The env's cached Chromium revision drifted from the one this Playwright version wants. `driver.mjs` now self-heals — it falls back to any Chromium under `PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`). Override with `PLAYWRIGHT_CHROMIUM=/path/to/chrome`. Never run `npx playwright install` in Claude Code Cloud. See `docs/CLOUD/Claude.md`. |
-| `server never came up at http://localhost:5199`                                                          | Port in use — pass `--port <n>` or `npx kill-port 5199`                                                                                                                                                                                                                                                                                                     |
-| `<route> never became interactive`                                                                       | Route 404s or crashes — check it loads at `npm run dev` first                                                                                                                                                                                                                                                                                               |
-| Blank canvas in the `--draw` screenshot                                                                  | Drawing engine regressed; reproduce at `npm run dev`                                                                                                                                                                                                                                                                                                        |
-| Want one E2E spec, not the whole suite / `Cannot navigate to invalid URL` from raw `npx playwright test` | The config + `baseURL` live in `web/`, and raw `npx` from the repo root also loses the Chromium fallback. Filter through the npm script instead: `npm run test:e2e -- flows.spec.ts -g "<title>"` — `scripts/web.mjs` sets the `web/` cwd and Chromium path and forwards the args to Playwright. See the `testing` skill.                                   |
+| Symptom                                                                                                  | Fix                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Executable doesn't exist … playwright` (local)                                                          | `npm run test:e2e:install`                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `Executable doesn't exist … playwright` (Claude Code Cloud session)                                      | The env's cached Chromium revision drifted from the one this Playwright version wants. `driver.mjs` now self-heals — it falls back to any Chromium under `PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`). Override with `PLAYWRIGHT_CHROMIUM=/path/to/chrome`. Never run `npx playwright install` in Claude Code Cloud. See `docs/CLOUD/Claude.md`.                                                                                                                        |
+| `server never came up at http://localhost:5199`                                                          | Port in use — pass `--port <n>` or `npx kill-port 5199`                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `<route> never became interactive`                                                                       | Route 404s or crashes — check it loads at `npm run dev` first                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Blank canvas in the `--draw` screenshot                                                                  | Drawing engine regressed; reproduce at `npm run dev`                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Want one E2E spec, not the whole suite / `Cannot navigate to invalid URL` from raw `npx playwright test` | The config + `baseURL` live in `web/`, and raw `npx` from the repo root also loses the Chromium fallback. Filter through the npm script instead: `npm run test:e2e -- flows-undo-persistence.spec.ts -g "<title>"` — `scripts/web.mjs` sets the `web/` cwd and Chromium path and forwards the args to Playwright. The positional arg is a path *pattern*, so a filename that no longer exists matches nothing and Playwright exits with `No tests found`. See the `testing` skill. |

@@ -256,6 +256,15 @@ Mutations are etag compare-and-set writes with a few retries; if concurrent admi
 colliding (possible under Blobs eventual consistency, ADR-0025), `POST`/`DELETE` return
 `409 { ok: false, error }` — safe to retry as-is.
 
+A mutation on an instance where Blobs is configured but unreadable — the read threw, or every
+seed-race confirmation read threw — returns `503 { ok: false, error }` and changes nothing. Writing
+into the in-memory fallback there would report a token add/revoke that the durable list never saw
+and that vanishes on recovery. The fallback still absorbs writes when `getStore()` itself fails,
+which is local dev **and** the deployed-without-Blobs-context case (ADR-0025) — in the latter that
+is a known false success, mitigated only by the `persistent: false` banner (issue #798). The status
+per failure reason is `MUTATION_FAILURE_STATUS` in `web/src/lib/server/tokens.ts`, shared with the
+`/admin` form action so both front doors answer the same failure identically.
+
 Invite URLs are built from the request origin, so they point at the host that served the API.
 
 ### Example
