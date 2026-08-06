@@ -28,41 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Maintainability] AdminConsole duplicates the copy-code/copy-link button markup three times
-
-**File(s):** `web/src/lib/components/admin/AdminConsole.svelte` (invite row, lines 243–288) @
-9ae62ff1; `web/src/lib/components/admin/InviteMenu.svelte` (lines 41–60)
-
-**Priority:** P3
-
-#### Problem
-
-The full-width action row (lines 243–269) and the compact row (lines 271–288) repeat the same
-copy-button pattern verbatim — same `class:copied={copied === copyKey(invite.token, 'code')}`, same
-`onclick={() => copy(copyKey(invite.token, 'code'), invite.token)}`, same ternary label — four
-button instances differing only in target (`'code'`/`'url'`) and label text. `InviteMenu.svelte`
-then repeats the same two copy actions a third time (lines 44–60) in menu-item form. Any change to
-the copy interaction (feedback duration, an aria-live announcement, analytics) has to be applied in
-up to six places, and the 46-line block in the invite row makes the `{#each}` body hard to scan.
-
-#### Proposed solution
-
-Extract a Svelte 5 snippet inside `AdminConsole.svelte` for the in-row buttons:
-
-```svelte
-{#snippet copyButton(invite: Invite, target: CopyTarget, label: string)}
-  <button type="button" class="btn btn-ghost"
-    class:copied={copied === copyKey(invite.token, target)}
-    onclick={() => copy(copyKey(invite.token, target), target === 'code' ? invite.token : invite.url)}>
-    {copied === copyKey(invite.token, target) ? 'Copied!' : label}
-  </button>
-{/snippet}
-```
-
-and render it four times (`{@render copyButton(invite, 'code', 'Copy code')}` etc.). The
-`InviteMenu` items have different markup (`more-menu-item`) so leave them; the shared `copyKey`
-helper already keeps the keys in agreement there.
-
 ### [Correctness] Native console shows a stale success flash after logout → login
 
 **File(s):** `web/src/routes/admin/native/+page.svelte` (`signOutLocally`, lines 27–35; `flash`
