@@ -89,6 +89,53 @@ Deliberately **excluded**, each for a reason:
 * `test:driver:smoke` and full `test:e2e` — the driver runs *targeted* E2E for UI-touching findings
   via `E2E_CMD`; CI is the full-suite backstop.
 
+## Canary result — 5 fixed · 0 dropped · 0 deferred
+
+Backlog 367 → 362. `$4.28`/finding, 63 min for five (~12.6 min each), **no capped or errored role
+calls**. Entry accounting exact: five entries consumed for five fixes (three `removed=0` commits are
+pre-amend fix rounds), and 367 − 5 = 362 = `pop.mjs --count`.
+
+What the canary **verified rather than assumed**:
+
+* **The resume handoff fires.** Iteration 3 took two review rounds, and `impl`, `fix1`, `fix2` all
+  share session `f9c9c452…` while `review1/2/3` and `verify` each hold distinct ids — the
+  implementer resumed its own context and the reviewers are blind. Its `fix1` summary recalls its
+  own earlier decision ("back on the happy-dom default with its original rationale … which is what
+  had silently put the file on node in the first place"), which is held context, not a
+  re-derivation. This is the exact mechanism that was silently void on 2026-07-25.
+* **The reviewer earns its place.** It caught that a comment merely *mentioning*
+  `@vitest-environment` is honoured by vitest from any leading comment, silently moving
+  `app.html.test.ts` onto the node environment; and that a renamed `data-drawer-open` would leave
+  every test green while the boot script diverged.
+* **No moved goalposts — the ratchet moved the right way.** Iteration 4's red gate was `lint:tokens`
+  failing *because the fix was an improvement*. The repair bumped `app.css` 2 → 3 and **deleted**
+  the three now-zero component entries: net −2 tracked raw hexes and three allowlist entries gone.
+  `eslint.config.js` untouched across all five findings.
+* **The dedup preserved a real asymmetry.** The keyline hoist unified three rules whose selectors
+  were *not* identical — `StrokeWidthMenu` used `svg path`, the other two
+  `svg path[fill='currentColor']`. The merged rule keeps that difference and documents why. Checked
+  the scoped→global move separately: nothing else sets `stroke` in `app.css`, and
+  `white-stroke`/`dark-stroke` are applied only in those three components, so the one-class
+  specificity drop reaches nothing new.
+
+## CI is not running — this changes the supervision posture
+
+**GitHub Actions is not picking up work for this repo.** Four runs sat `queued` from 16:53 onward,
+and PR #821 never got a run created at all. The base commit b8f7013283f8 has no run either, which is
+how `main` landed red unnoticed.
+
+CI is normally the *only* full-suite gate in this configuration, so while it is down:
+
+* the per-finding gates still hold (composed `CHECK_CMD`, all three unit tiers, eslint on changed
+  files, targeted E2E for UI findings, plus the bundle spec when a fix adds a static import);
+* what is lost is the **cross-finding** backstop — a regression one finding causes that another
+  finding's targeted specs don't cover.
+
+Do **not** substitute `PUSH_TEST_CMD='npm test'`: at ~5–6 min per finding over 362 findings that is
+~35 extra hours. Instead run the full suite locally at intervals (it was run green at the base
+commit and again at the end of the canary) and re-check CI whenever draining comments — if it
+recovers, it backfills coverage on the next push.
+
 ## Risks
 
 * The container is ephemeral and `.audit-work/` dies with it, so **drain PR comments as you go**.
