@@ -28,53 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Testing] The client `Usage` mirror of server `TokenUsage` has no drift guard
-
-**File(s):** `web/src/lib/components/admin/AdminConsole.svelte` (`Usage` interface, lines 8–16) @
-9ae62ff1; `web/src/lib/server/usage.ts` (`TokenUsage`, lines 10–16)
-
-**Priority:** P3
-
-#### Problem
-
-`AdminConsole.svelte` re-declares the usage record shape:
-
-```ts
-// Per-token AI generation tally (mirrors $lib/server/usage TokenUsage). Kept
-// structural here so this client component never imports server code.
-export interface Usage {
-  count: number;
-  firstUsed: string;
-  lastUsed: string;
-  lastStyle: string | null;
-  lastPrompt: string;
-}
-```
-
-Not importing server code from a client component is a sound, commented decision. But the
-*agreement* between `Usage` and `TokenUsage` is maintained purely by the "mirrors" comment —
-precisely what CLAUDE.md forbids: "when the agreeing sites can't share code … add a drift-guard test
-that reads both sides and fails on divergence." If `TokenUsage` grows or renarrows a field (e.g.
-`lastPrompt` becomes nullable under issue #228's minimization work), the `/admin` loader keeps
-compiling (the extra/changed field flows through `PageData` structurally) and the console silently
-renders wrong or missing data.
-
-#### Proposed solution
-
-Tests are explicitly excepted from the no-server-import rule, so add a type-level drift guard in an
-existing node test (e.g. `adminFormat.test.ts`, which already imports `Usage` adjacent types):
-
-```ts
-import type { Usage } from './components/admin/AdminConsole.svelte';
-import type { TokenUsage } from './server/usage';
-// Mutual assignability: fails to compile the moment the shapes diverge.
-const _serverToClient: Usage = {} as TokenUsage;
-const _clientToServer: TokenUsage = {} as Usage;
-```
-
-(`expectTypeOf<TokenUsage>().toEqualTypeOf<Usage>()` from Vitest is the tidier spelling.) Zero
-runtime cost; `svelte-check`/`vitest` both catch it.
-
 ### [Testing] `parseSnapshot` and its guards are component-inline logic whose only coverage is E2E
 
 **File(s):** `web/src/routes/admin/native/+page.svelte`

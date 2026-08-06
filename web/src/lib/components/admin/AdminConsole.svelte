@@ -9,6 +9,8 @@
   // component knows when to reset.
   // Per-token AI generation tally (mirrors $lib/server/usage TokenUsage). Kept
   // structural here so this client component never imports server code.
+  // adminFormat.test.ts is the drift guard for that duplication — it reads both
+  // shapes and fails to type-check if they stop agreeing.
   export interface Usage {
     count: number;
     firstUsed: string;
