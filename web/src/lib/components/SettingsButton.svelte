@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { settingsModal, buttonCenter, SETTINGS_BUTTON_ID } from '$lib/state/ui.svelte';
+  import { settingsModalModal, buttonCenter, SETTINGS_BUTTON_ID } from '$lib/state/ui.svelte';
 
   let buttonEl: HTMLButtonElement;
 
@@ -9,7 +9,7 @@
   // inside gate themselves at their own boundary.
   function openModal() {
     if (!buttonEl) return;
-    settingsModal.show(buttonCenter(buttonEl));
+    settingsModalModal.show(buttonCenter(buttonEl));
   }
 </script>
 

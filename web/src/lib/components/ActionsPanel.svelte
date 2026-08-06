@@ -9,7 +9,7 @@
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
   import { setStrokeSize, activeStrokeSize, type StrokeSize } from '$lib/state/strokeWidth.svelte';
   import { toolState, selectBrush, type BrushType } from '$lib/state/tool.svelte';
-  import { ui, coloringBook, aiPrompt, buttonCenter } from '$lib/state/ui.svelte';
+  import { ui, coloringBookModal, aiPromptModal, buttonCenter } from '$lib/state/ui.svelte';
   import { aiResult } from '$lib/state/aiGeneration.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { browser } from '$app/environment';
@@ -250,7 +250,7 @@
 
   function handleColoringBookClick() {
     if (!coloringBtnEl) return;
-    coloringBook.show(buttonCenter(coloringBtnEl));
+    coloringBookModal.show(buttonCenter(coloringBtnEl));
   }
 
   // The AI flow is a grown-ups area (it sends the drawing off-device), so the
@@ -262,7 +262,7 @@
     const origin = buttonCenter(aiBtnEl);
     requireParentalGate(() => {
       if (settings.aiCustomizationEnabled) {
-        aiPrompt.show(origin);
+        aiPromptModal.show(origin);
         return;
       }
 

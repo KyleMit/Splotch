@@ -3,7 +3,7 @@
   import { browser } from '$app/environment';
   import Icon from './Icon.svelte';
   import SectionIcon from './SectionIcon.svelte';
-  import { ui, settingsModal } from '$lib/state/ui.svelte';
+  import { ui, settingsModalModal } from '$lib/state/ui.svelte';
   import AppearanceSection from './settings/AppearanceSection.svelte';
   import SoundSection from './settings/SoundSection.svelte';
   import SavingSection from './settings/SavingSection.svelte';
@@ -89,7 +89,7 @@
 
   // Each reopen lands on the hub (phone) / first section (tablet).
   $effect(() => {
-    if (settingsModal.open) view = 'hub';
+    if (settingsModalModal.open) view = 'hub';
   });
 
   function openSection(id: SectionId) {
@@ -109,14 +109,14 @@
   let zoomTarget = $state<HTMLElement>();
   const textZoom = () => ({
     target: zoomTarget,
-    enabled: settingsModal.open,
+    enabled: settingsModalModal.open,
     resetKey: view,
   });
 </script>
 
 {#snippet sectionContent(id: SectionId)}
   {@const Section = SECTION_CONTENT[id] as Component<{ open?: boolean }>}
-  <Section open={settingsModal.open} />
+  <Section open={settingsModalModal.open} />
 {/snippet}
 
 <dialog
@@ -126,13 +126,17 @@
   class:compact={compact.current}
   id="settingsModal"
   use:modalDialog={() => ({
-    open: settingsModal.open,
-    origin: settingsModal.origin,
-    onRequestClose: settingsModal.hide,
+    open: settingsModalModal.open,
+    origin: settingsModalModal.origin,
+    onRequestClose: settingsModalModal.hide,
   })}
 >
   <div class="settings-content">
-    <button class="settings-close modal-close-btn" aria-label="Close" onclick={settingsModal.hide}>
+    <button
+      class="settings-close modal-close-btn"
+      aria-label="Close"
+      onclick={settingsModalModal.hide}
+    >
       <Icon name="close" class="modal-close-icon" />
     </button>
 

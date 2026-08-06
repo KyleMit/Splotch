@@ -12,7 +12,7 @@
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { releaseAllPointers } from '$lib/drawing/engine';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
-  import { colorPicker, buttonCenter } from '$lib/state/ui.svelte';
+  import { colorPickerModal, buttonCenter } from '$lib/state/ui.svelte';
   import { toolState, selectInkBrush } from '$lib/state/tool.svelte';
   import { clearPaletteMeasurement, publishPaletteMeasurement } from '$lib/state/layout.svelte';
   import { getRingColor } from '$lib/colorRing';
@@ -75,7 +75,7 @@
   function selectCustomColor() {
     selectInkBrush();
     selectCustomSwatch();
-    colorPicker.show(customSwatchEl ? buttonCenter(customSwatchEl) : null);
+    colorPickerModal.show(customSwatchEl ? buttonCenter(customSwatchEl) : null);
     releaseAllPointers();
   }
 

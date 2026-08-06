@@ -13,10 +13,10 @@ export const ui: UiState = $state({
 
 export const SETTINGS_BUTTON_ID = 'settingsButton';
 
-export const colorPicker = createModal();
-export const coloringBook = createModal();
-export const settingsModal = createModal();
-export const aiPrompt = createModal();
+export const colorPickerModal = createModal();
+export const coloringBookModal = createModal();
+export const settingsModalModal = createModal();
+export const aiPromptModal = createModal();
 
 export function buttonCenter(el: HTMLElement): Origin {
   const rect = el.getBoundingClientRect();
