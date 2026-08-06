@@ -17,7 +17,6 @@ import {
   PALETTE_LANDSCAPE_WIDTHS_PX,
 } from '$lib/design/trimGeometry';
 
-// Keep in sync with the .actions-drawer-inner gap in ActionsPanel.svelte.
 export const ACTION_BUTTON_GAP = 12;
 
 // Unscaled button size (matches the Color Swatch touch target per orientation).

@@ -26,51 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Maintainability] The drawer gap's "keep in sync" comment pair needs a drift-guard test instead
-
-**File(s):** `web/src/lib/components/ActionsPanel.svelte` (lines 436–437),
-`web/src/lib/actionButtonLayout.ts` (lines 15–16), `web/src/lib/actionButtonLayout.fallback.test.ts`
-@ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`actionButtonLayout.ts:15–16`:
-
-```ts
-// Keep in sync with the .actions-drawer-inner gap in ActionsPanel.svelte.
-export const ACTION_BUTTON_GAP = 12;
-```
-
-`ActionsPanel.svelte:436–437`:
-
-```css
-/* Keep in sync with ACTION_BUTTON_GAP in actionButtonLayout.ts. */
-gap: 12px;
-```
-
-CLAUDE.md: "A 'keep in sync with X' comment marks a defect, not a mitigation" — when the agreeing
-sites can't share code (CSS vs TS), the prescribed fix is a drift-guard test. The infrastructure
-already exists: `actionButtonLayout.fallback.test.ts` imports `ActionsPanel.svelte?raw` and asserts
-the CSS fallback literals against the constants (guarding `WORST_CASE_CHROME`, which *contains* the
-gap — but only in the pre-hydration fallback; the hydrated path's CSS `gap: 12px` on
-`.actions-drawer-inner` is unguarded, and a changed `ACTION_BUTTON_GAP` would leave the rendered gap
-and the sizing math disagreeing by a few px per gap).
-
-#### Proposed solution
-
-Add one assertion to `actionButtonLayout.fallback.test.ts`:
-
-```ts
-it('the drawer gap matches ACTION_BUTTON_GAP', () => {
-  expect(actionsPanelSource).toMatch(new RegExp(`gap: ${ACTION_BUTTON_GAP}px;`));
-});
-```
-
-(anchor it to `.actions-drawer-inner` context if a second `gap:` ever appears in the file). Then
-delete both "keep in sync" comments, or replace them with a pointer to the guard.
-
 ### [Testing] The `data-*` attribute names written by publishActionPanelState are mirrored in app.html and two test files with no drift guard
 
 **File(s):** `web/src/lib/actionButtonLayout.ts` (`publishActionPanelState`, lines 126–145),

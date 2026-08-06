@@ -463,7 +463,6 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    /* Keep in sync with ACTION_BUTTON_GAP in actionButtonLayout.ts. */
     gap: 12px;
     min-width: 0;
     min-height: 0;

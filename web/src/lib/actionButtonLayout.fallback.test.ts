@@ -94,6 +94,10 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
     expect(LANDSCAPE_FIXED_RESERVE).toBe(SETTINGS_BUTTON_RESERVE + PANEL_FIXED_CHROME);
   });
 
+  it('hydrated drawer gap matches ACTION_BUTTON_GAP', () => {
+    expect(actionsPanelSource).toMatch(new RegExp(`gap: ${ACTION_BUTTON_GAP}px;`));
+  });
+
   it('portrait fallback matches the constants', () => {
     const portrait = fallbackBlocks[1];
     expect(portrait).toContain(`${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)`);
