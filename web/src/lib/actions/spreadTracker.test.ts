@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSpreadTracker } from './spreadTracker.svelte';
+import { createSpreadTracker } from './spreadTracker';
 
 describe('createSpreadTracker', () => {
   it('counts the fingers that are down and snapshots their positions', () => {

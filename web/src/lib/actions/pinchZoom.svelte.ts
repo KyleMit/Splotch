@@ -6,7 +6,7 @@
 // everything is clamped to the preview's own bounds — the drawing surface stays
 // locked.
 
-import { createSpreadTracker, type Point } from './spreadTracker.svelte';
+import { createSpreadTracker, type Point } from './spreadTracker';
 import { capturePointer, releasePointer } from './pointerCapture';
 
 export type { Point };

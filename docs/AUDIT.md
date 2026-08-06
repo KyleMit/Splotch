@@ -28,43 +28,6 @@ this file.
 
 ## Source: Code audit — Gestures / Svelte actions
 
-### [Performance] spreadTracker's SvelteMap is dead reactivity — nothing reads it in a reactive context, and its comment claims otherwise
-
-**File(s):** `web/src/lib/actions/spreadTracker.svelte.ts` (lines 1, 13–18) @ 9ae62ff1; consumers
-`web/src/lib/actions/pinchZoom.svelte.ts`, `web/src/lib/actions/pinchTextZoom.svelte.ts`
-
-**Priority:** P2
-
-#### Problem
-
-```ts
-// It is a SvelteMap so `pointerCount` stays reactive for `pinchZoom`'s
-// `pointerCount`/`isZoomed` getters.
-export function createSpreadTracker() {
-  const pointers = new SvelteMap<number, Point>();
-```
-
-The stated justification is false at 9ae62ff1: every read of
-`pointerCount`/`isZoomed`/`points()`/`spread()` happens inside plain pointer-event handlers
-(`engaged()` at pinchZoom line 189–191, `apply()` line 174–178, pinchTextZoom lines 79/81/92/101),
-never in a template, `$derived`, or tracking `$effect`. The only component-visible output is the
-`.zoomed` class, toggled imperatively via `classList.toggle` (pinchZoom line 177) —
-`AiImageResult.svelte` line 241 even documents that. The two `$effect`s in the actions only *write*
-(via `reset()` → `tracker.clear()`).
-
-Cost of keeping it: `SvelteMap.set()` runs on **every pointermove** of both pinch gestures (signal
-version bumps and reaction scheduling on a path the repo's hot-path rule says must stay lean), and
-the comment sends the next reader hunting for a reactive consumer that doesn't exist. It also props
-up the misleading `.svelte.ts` suffix story — nothing in the file uses runes.
-
-#### Proposed solution
-
-Replace `SvelteMap` with a plain `Map`, delete the reactivity comment, and rename the file
-`spreadTracker.ts` (updating the two imports and the test import). If a future consumer genuinely
-needs a reactive `pointerCount`, that is the moment to reintroduce it — with a real reader to point
-at. Check `git log` first (f3faf52 already trimmed an allocation here) to confirm no reactive
-consumer existed and was removed without downgrading the map; the current tree has none.
-
 ### [Maintainability] dragToClear's exit-choreography timings agree with ClearButton.svelte's CSS by prose only
 
 **File(s):** `web/src/lib/actions/dragToClear.ts` (lines 14–15, `playClearExit` lines 224–244) @
