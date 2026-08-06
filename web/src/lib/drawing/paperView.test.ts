@@ -8,6 +8,7 @@ import {
   paperToView,
   rotationDelta,
   visiblePaperBounds,
+  paperPresentationFor,
   viewMatrix,
   viewToPaper,
   type PaperView,
@@ -31,6 +32,59 @@ describe('containFit', () => {
       offsetX: 0,
       offsetY: 75,
     });
+  });
+});
+
+describe('paperPresentationFor', () => {
+  // A portrait phone in immersive mode; the system bars are worth ~48 CSS px.
+  const PAPER = { width: 412, height: 915 };
+  const presentation = (
+    viewport: { width: number; height: number },
+    overrides: { canvasEmpty?: boolean; screenAngle?: number } = {}
+  ) =>
+    paperPresentationFor({
+      canvasEmpty: false,
+      paper: PAPER,
+      paperAngle: 0,
+      screenAngle: 0,
+      viewport,
+      ...overrides,
+    });
+
+  it('windows the paper when the system bars shrink the viewport', () => {
+    expect(presentation({ width: 412, height: 867 })).toBe('window');
+  });
+
+  it('windows an exact match and a shrink on either axis alone', () => {
+    expect(presentation(PAPER)).toBe('window');
+    expect(presentation({ width: 300, height: 915 })).toBe('window');
+    expect(presentation({ width: 412, height: 500 })).toBe('window');
+  });
+
+  it('tolerates a viewport a few pixels larger than the paper it was adopted from', () => {
+    expect(presentation({ width: 412, height: 923 })).toBe('window');
+    expect(presentation({ width: 420, height: 915 })).toBe('window');
+  });
+
+  it('adopts once either axis grows past the tolerance', () => {
+    expect(presentation({ width: 412, height: 924 })).toBe('adopt');
+    expect(presentation({ width: 421, height: 915 })).toBe('adopt');
+  });
+
+  it('adopts for an empty canvas whatever the geometry', () => {
+    expect(presentation({ width: 412, height: 867 }, { canvasEmpty: true })).toBe('adopt');
+    expect(presentation({ width: 915, height: 412 }, { canvasEmpty: true, screenAngle: 90 })).toBe(
+      'adopt'
+    );
+  });
+
+  it('fits a rotation, by changed angle or by flipped orientation', () => {
+    expect(presentation({ width: 915, height: 412 }, { screenAngle: 90 })).toBe('fit');
+    // A 180° flip keeps the orientation, so only the angle marks it a rotation.
+    expect(presentation(PAPER, { screenAngle: 180 })).toBe('fit');
+    // An angle the platform never reported still reads as a rotation when the
+    // viewport's orientation flipped under it.
+    expect(presentation({ width: 915, height: 412 })).toBe('fit');
   });
 });
 

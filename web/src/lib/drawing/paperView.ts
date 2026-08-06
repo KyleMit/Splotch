@@ -28,18 +28,55 @@ export interface Size {
   height: number;
 }
 
-// Native rotation can settle its insets a few pixels late; adopting that drift invalidates every tile.
-const PAPER_VIEWPORT_DRIFT_TOLERANCE_CSS_PX = 8;
+// Absorbs a viewport that reads a hair larger than the paper it was adopted
+// from: native rotation can settle its insets a few pixels late, and the
+// container's measured rect carries subpixel rounding. Adopting either as a
+// genuine grow invalidates every tile.
+const PAPER_COVERAGE_TOLERANCE_CSS_PX = 8;
 
-export function smallViewportDrift(
-  paperWidth: number,
-  paperHeight: number,
-  viewport: Size
-): boolean {
+// Whether the paper still covers everything the viewport can show, in which
+// case no fitting is needed and the paper can simply be windowed.
+function viewportWithinPaper(paper: Size, viewport: Size): boolean {
   return (
-    Math.abs(viewport.width - paperWidth) <= PAPER_VIEWPORT_DRIFT_TOLERANCE_CSS_PX &&
-    Math.abs(viewport.height - paperHeight) <= PAPER_VIEWPORT_DRIFT_TOLERANCE_CSS_PX
+    viewport.width <= paper.width + PAPER_COVERAGE_TOLERANCE_CSS_PX &&
+    viewport.height <= paper.height + PAPER_COVERAGE_TOLERANCE_CSS_PX
   );
+}
+
+// How a resize reconciles the live viewport with the paper (ADR-0050, ADR-0099):
+//
+// * `adopt` — the paper becomes the viewport, the pre-lock semantics. An empty
+//   canvas has nothing to preserve, and a viewport that grew past the paper has
+//   visible area the old paper cannot cover.
+// * `window` — the paper is kept and presented at IDENTITY; the viewport is a
+//   window onto it. A viewport that only shrank at an unchanged angle is a
+//   transient occlusion — Android's immersive nav bar swiped back, a mobile URL
+//   bar, a dragged-in window edge — so nothing may move: the covered band is
+//   cropped and comes back untouched when the bars go away.
+// * `fit` — the paper is kept and presented upright, contain-fit and centered,
+//   so a rotated drawing stays fully visible (ADR-0050).
+//
+// Only `adopt` resizes the paper, and resizing the paper is what pulls the
+// coloring art and the magic fill (both contain-fit WITHIN the paper) out of
+// alignment with ink, which is anchored at the paper origin.
+export type PaperPresentation = 'adopt' | 'window' | 'fit';
+
+// Paper and viewport are both CSS px — the space the paper's dimensions are
+// adopted in — so the caller compares like with like.
+export function paperPresentationFor(state: {
+  canvasEmpty: boolean;
+  paper: Size;
+  paperAngle: number;
+  screenAngle: number;
+  viewport: Size;
+}): PaperPresentation {
+  const { canvasEmpty, paper, paperAngle, screenAngle, viewport } = state;
+  if (canvasEmpty) return 'adopt';
+  const rotated =
+    rotationDelta(paperAngle, screenAngle) !== 0 ||
+    paper.width > paper.height !== viewport.width > viewport.height;
+  if (rotated) return 'fit';
+  return viewportWithinPaper(paper, viewport) ? 'window' : 'adopt';
 }
 
 export const IDENTITY_PAPER_VIEW: Readonly<PaperView> = Object.freeze<PaperView>({
@@ -98,6 +135,17 @@ export function computePaperView(paper: Size, viewport: Size, rotate: ViewRotati
     case 270:
       return { scale, rotate, tx: marginX, ty: marginY + rotatedH * scale };
   }
+}
+
+// The view a presentation is shown through. Production always presents UPRIGHT
+// (rotate 0 — see computePaperView); `window` and `adopt` need no mapping at
+// all, since the paper's origin already sits at the viewport's.
+export function viewForPresentation(
+  presentation: PaperPresentation,
+  paper: Size,
+  viewport: Size
+): PaperView {
+  return presentation === 'fit' ? computePaperView(paper, viewport, 0) : IDENTITY_PAPER_VIEW;
 }
 
 // The view as a 2D affine matrix in the argument order shared by
