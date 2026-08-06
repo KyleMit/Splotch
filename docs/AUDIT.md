@@ -32,44 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Performance] Eager `?raw` glob inlines ~84 KB of SVG source into the main bundle
-
-**File(s):** `web/src/lib/components/Icon.svelte` (lines 53–57) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-const modules = import.meta.glob(['../icons/*.svg', '!../icons/splotchy.svg'], {
-  eager: true,
-  query: '?raw',
-  import: 'default',
-});
-```
-
-Every icon ships as an inline JS string in whatever chunk `Icon.svelte` lands in — and `Icon` is
-imported by core drawing chrome, so that's the boot-path bundle. The 69 bundled SVGs total 84,377
-bytes of source, and the heaviest are spot icons used only on parent/AI surfaces, not the toddler
-canvas: `magic-brush.svg` 13,222 B (What's New), `wand-stars.svg` 10,241 B (AI Art section),
-`shapes.svg` 10,766 B, `camera.svg` 7,534 B. Gzip roughly halves this, but ~40 KB of compressed
-payload parsed at boot for icons the drawing screen never shows is real cost on the slow devices the
-`lighthouse-audit` skill targets. (The orphan guard test exists precisely because every SVG in the
-directory is unconditionally bundled.)
-
-#### Proposed solution
-
-Keep the eager glob for the small monochrome glyph set, and move the heavy parent-surface spot icons
-to a lazy path — either a second, non-eager glob resolved on first use (cache the promise; render
-nothing or a fixed-size placeholder until it settles), or plain `<img src={assetUrl}>` for spot
-icons that contain no `currentColor` parts (they opt out of the tint filter anyway; verify which
-ones mix `currentColor` — `pen`/`crayon`/`line-weight` do and must stay inline). Gotchas: the
-`{@html}`-hydration rule in `.claude/rules/svelte.md` (an async-loaded icon must not swap the
-`{@html}` body based on client-only state), icon pop-in inside the parent dialog (preload on dialog
-open), and the `COLOR_ICONS`/chroma guard test globs would need the same split. Measure with
-`npm run perf:*` / Lighthouse before and after; if the win is under a few KB gzipped, document the
-tradeoff instead of splitting.
-
 ### [Maintainability] Button's `ghost` variant has no production caller
 
 **File(s):** `web/src/lib/components/design/Button.svelte` (lines 14–15, 80–84, 100–103) @ 9ae62ff1
