@@ -86,6 +86,18 @@ and adding one is a decision about what the button *produces* — not about how 
   sheet are a night render drifting bright enough to read as daylight and a cutout whose die-cut
   band disappears into the surface behind it. Both are invisible against a neutral review background
   and obvious against the real one.
+* **Re-roll before rewriting.** Crayon burned more rolls than every other style combined, across
+  four rewrites of its suffix — flat, then hollow and muddy, then too bright, then flat again. What
+  finally settled it was re-rolling an *unchanged* prompt at a lower temperature: the wording had
+  been adequate for rounds, and each rewrite was chasing sampling noise. When a render disappoints,
+  take a second sample at `--temperature 0.7` before concluding the prompt is wrong — one roll
+  cannot tell a bad prompt from a bad draw.
+* **Above about temperature 1.0 these styles start inventing.** Seen at 1.0 and 1.35 on Paper (a
+  sleeping fox; hatching drawn onto the mountains, which its own suffix forbids) and on Crayon (a
+  heart). Raise the temperature to break out of a rut, then come back down to pick the keeper.
+* **The shipped Crayon draws its sun as a gibbous moon**, and the suffix still says "sun" because
+  the source drawing has one. That substitution was accepted on review rather than asked for, so a
+  later regeneration returning an actual sun is correct, not a regression.
 * **Cutouts are fitted with `contain`, not `cover`.** Cropping to fill shaves the die-cut band off
   whichever edge the model drew closest, and the band is the whole point of the style.
 * **`punchedFraction` is a cheap failure detector.** A run that keys far too little or far too much
