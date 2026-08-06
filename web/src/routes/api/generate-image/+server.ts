@@ -125,7 +125,11 @@ export const POST: RequestHandler = async ({ request, url, platform, getClientAd
   }
   const style = source.style;
 
-  const finalPrompt = buildPromptForStyle(style, STYLE_SUFFIXES);
+  // Pinned to light: the request carries no theme yet, so a player in dark mode
+  // still gets a daylight picture. The dark half of the prompt exists and is
+  // exercised by the cover generator — wiring it here is a product decision
+  // about what the button produces, not a rendering one.
+  const finalPrompt = buildPromptForStyle(style, STYLE_SUFFIXES, 'light');
 
   recordGenerationUsage(authorization, style, finalPrompt, platform);
 

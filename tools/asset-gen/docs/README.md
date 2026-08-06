@@ -41,22 +41,30 @@ Edit or regenerate a raw, then re-punch; never hand-edit a shipped fill.
 ### The one coupling to the app
 
 The AI generators reuse the app's single source of truth rather than duplicating
-prompts/safety/catalog. This is the **entire** sanctioned import surface from `web/src` — keep it to
-these four modules (ADR-0047 keeps `geminiSafety.ts` dependency-free precisely so this stays clean):
+prompts/safety/catalog/theme. This is the **entire** sanctioned import surface from `web/src` — keep
+it to these five modules (ADR-0047 keeps `geminiSafety.ts` dependency-free precisely so this stays
+clean):
 
 | Import                                  | Used by                         |
 | --------------------------------------- | ------------------------------- |
 | `web/src/lib/ai/styles.ts`              | `gen-style-covers`              |
 | `web/src/lib/ai/prompt.ts`              | `gen-style-covers`              |
+| `web/src/lib/theme.ts`                  | `gen-style-covers`              |
 | `web/src/lib/server/ai/geminiSafety.ts` | every Gemini generator          |
 | `web/src/lib/state/books.ts`            | `gen-coloring-book-proof-sheet` |
+
+A module on this list must be importable by bare Node under `--experimental-strip-types`, which —
+unlike Vite — will not resolve an extensionless specifier. So each one spells its own imports with
+an explicit `.ts` (`theme.ts` → `./design/tokens.ts`, `tokens.ts` → `../fonts.ts`) or keeps them
+type-only, which strips away entirely.
 
 ## Running
 
 From the **repo root** (the discoverable entry points — ADR-0019):
 
 ```bash
-npm run gen:style-covers        # AI style thumbnails  -> web/static/styles/
+npm run gen:style-covers        # AI style thumbnails, both themes -> web/static/styles/{style}.{light,dark}.webp
+                                #   --theme dark / --style Crayon / --temperature 1.4 to narrow or re-roll
 npm run gen:coloring-chalk      # chalk outlines (dark-mode line art) -> web/static/coloring/**/*.chalk.webp
 npm run gen:coloring-outlines:fresh # brand-new pen outline from a text scene (same subject, new drawing)
 npm run gen:coloring-fills      # light fill candidates -> .coloring-samples/ (--apply to ship)

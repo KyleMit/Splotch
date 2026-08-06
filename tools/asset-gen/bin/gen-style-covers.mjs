@@ -1,13 +1,19 @@
 // Regenerates the AI style cover thumbnails in web/static/styles/ by running
 // the source drawing (web/static/styles/source.svg) through Gemini once per
-// style in STYLE_SUFFIXES, using the same prompt assembly as /api/generate-image.
+// style per theme, using the same prompt assembly as /api/generate-image.
 // Requires GEMINI_API_KEY in the environment. Run via npm so the TypeScript
 // imports resolve (node --experimental-strip-types):
-//   npm run gen:style-covers                                  all styles
-//   npm run gen:style-covers -- --style Crayon                one style
+//   npm run gen:style-covers                                  every style, both themes
+//   npm run gen:style-covers -- --theme dark                  every style, dark only
+//   npm run gen:style-covers -- --style Crayon --theme dark   one style, one theme
 //   npm run gen:style-covers -- --style Crayon --temperature 1.4
 // Bump --temperature (model default is 1) for different takes on a re-run when
 // a style's first render isn't the look you want.
+//
+// The source is flattened onto the theme's own paper color before it is shown
+// to the model: on dark paper the model reads the scene as a night drawing,
+// which is half of what makes a dark cover a dark cover (the other half is the
+// night clause buildPromptForStyle appends).
 import { parseArgs } from 'node:util';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -15,62 +21,82 @@ import sharp from 'sharp';
 import { STYLES_DIR } from '../lib/paths.mjs';
 import { fail, parseTemperature } from '../lib/cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
-import { STYLE_SUFFIXES, STYLE_NAMES } from '../../../web/src/lib/ai/styles.ts';
+import { STYLE_NAMES, styleSuffixesFor, styleThumbPath } from '../../../web/src/lib/ai/styles.ts';
 import { buildPromptForStyle } from '../../../web/src/lib/ai/prompt.ts';
+import { PAPER_COLORS } from '../../../web/src/lib/theme.ts';
 
 const SOURCE_SVG = join(STYLES_DIR, 'source.svg');
 const THUMB_SIZE = 448;
 const WEBP_QUALITY = 75;
+const THEMES = Object.keys(PAPER_COLORS);
 
 // Generate one styled render of a drawing. Returns raw image bytes + mime type,
 // or throws with the refusal/empty reason.
-async function generateStyledImage(ai, { imageBytes, mimeType, style, temperature }) {
-  const prompt = buildPromptForStyle(style, STYLE_SUFFIXES);
+async function generateStyledImage(ai, { imageBytes, mimeType, style, theme, temperature }) {
+  const prompt = buildPromptForStyle(style, styleSuffixesFor(theme), theme);
   return generateImage(ai, { imageBytes, mimeType, prompt, temperature });
 }
 
-function resolveStyle(name) {
-  const match = STYLE_NAMES.find((s) => s.toLowerCase() === name.toLowerCase());
-  if (!match) fail(`Unknown style "${name}". Available: ${STYLE_NAMES.join(', ')}`);
+function resolveOne(name, available, label) {
+  const match = available.find((s) => s.toLowerCase() === name.toLowerCase());
+  if (!match) fail(`Unknown ${label} "${name}". Available: ${available.join(', ')}`);
   return match;
 }
 
 const { values } = parseArgs({
   options: {
     style: { type: 'string', short: 's', multiple: true },
+    theme: { type: 'string', multiple: true },
     temperature: { type: 'string', short: 't' },
   },
 });
 
-const styles = values.style?.length ? values.style.map(resolveStyle) : STYLE_NAMES;
+const styles = values.style?.length
+  ? values.style.map((s) => resolveOne(s, STYLE_NAMES, 'style'))
+  : STYLE_NAMES;
+const themes = values.theme?.length
+  ? values.theme.map((t) => resolveOne(t, THEMES, 'theme'))
+  : THEMES;
 const temperature = parseTemperature(values.temperature, '--temperature', undefined);
 const ai = makeClient();
 
-const sourcePng = await sharp(await readFile(SOURCE_SVG))
-  .png()
-  .toBuffer();
+const sourceSvg = await readFile(SOURCE_SVG);
+const sourceForTheme = Object.fromEntries(
+  await Promise.all(
+    themes.map(async (theme) => [
+      theme,
+      await sharp(sourceSvg).flatten({ background: PAPER_COLORS[theme] }).png().toBuffer(),
+    ])
+  )
+);
 
 let failures = 0;
-for (const style of styles) {
-  const out = join(STYLES_DIR, `${style.toLowerCase()}.webp`);
-  process.stdout.write(`${style} ... `);
-  try {
-    const { bytes } = await generateStyledImage(ai, {
-      imageBytes: sourcePng,
-      mimeType: 'image/png',
-      style,
-      temperature,
-    });
-    await sharp(bytes)
-      .resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover' })
-      .webp({ quality: WEBP_QUALITY })
-      .toFile(out);
-    console.log(`saved ${out}`);
-  } catch (err) {
-    failures++;
-    console.log(`FAILED (${err instanceof Error ? err.message : err})`);
+for (const theme of themes) {
+  for (const style of styles) {
+    // styleThumbPath is the app's URL for the asset; under web/static/ the
+    // route and the file path are the same string, so the app and the
+    // generator can never disagree about where a cover lives.
+    const out = join(STYLES_DIR, styleThumbPath(style, theme).replace('/styles/', ''));
+    process.stdout.write(`${theme}/${style} ... `);
+    try {
+      const { bytes } = await generateStyledImage(ai, {
+        imageBytes: sourceForTheme[theme],
+        mimeType: 'image/png',
+        style,
+        theme,
+        temperature,
+      });
+      await sharp(bytes)
+        .resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover' })
+        .webp({ quality: WEBP_QUALITY })
+        .toFile(out);
+      console.log(`saved ${out}`);
+    } catch (err) {
+      failures++;
+      console.log(`FAILED (${err instanceof Error ? err.message : err})`);
+    }
   }
 }
 
-if (failures) fail(`${failures} style(s) failed.`);
+if (failures) fail(`${failures} cover(s) failed.`);
 console.log('Done.');

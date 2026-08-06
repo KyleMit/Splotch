@@ -4,10 +4,15 @@
   import { exportCanvasBlob } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
   import { STYLE_NAMES, type StyleName, styleThumbPath } from '$lib/ai/styles';
+  import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { createAiPreviewLoader } from './aiPreview';
 
   let drawingBlob = $state<Blob | null>(null);
+
+  // The covers are forked art, not a filtered light asset — each theme has its
+  // own Gemini render (see tools/asset-gen/bin/gen-style-covers.mjs).
+  const theme = $derived(resolvedTheme());
 
   const previewLoader = createAiPreviewLoader(
     () => exportCanvasBlob({ includePaperTexture: false }),
@@ -57,19 +62,14 @@
       <legend>Pick a style</legend>
       <div class="ai-style-options">
         {#each STYLE_NAMES as s (s)}
+          {@const thumb = styleThumbPath(s, theme)}
           <button
             type="button"
             class="ai-style-option"
             onclick={() => handleSelectStyle(s)}
             disabled={!drawingBlob}
           >
-            <img
-              class="ai-style-thumb"
-              src={styleThumbPath(s)}
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
+            <img class="ai-style-thumb" src={thumb} alt="" loading="lazy" decoding="async" />
             <span class="ai-style-label">{s}</span>
           </button>
         {/each}
@@ -138,7 +138,7 @@
     object-fit: cover;
     border-radius: var(--radius-md);
     border: 3px solid transparent;
-    background: #fcfbf8;
+    background: var(--paper);
     transition:
       border-color var(--duration-fast) ease,
       transform var(--duration-fast) ease;
