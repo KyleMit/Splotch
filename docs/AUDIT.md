@@ -26,36 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Maintainability] ClearCoachmark's timing/geometry tuning literals lack named constants
-
-**File(s):** `web/src/lib/components/ClearCoachmark.svelte` (`show`, lines 38 and 56) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-Two tunable decisions are inline literals, against the CLAUDE.md rule that tuning literals
-(threshold, duration, curve shaping) get named module-scope constants with the unit in the name:
-
-* Line 56: `tutorialDismissTimer = setTimeout(dismiss, 6000);` — the coachmark's auto-dismiss
-  duration, completely uncommented and unitless at the call site.
-* Line 38: `const travel = radius * 1.18;` — the overshoot factor (the comment above explains the
-  WHY, but the value itself is unnamed, so a tuner greps for nothing).
-
-Compare the same file's neighbor `dragToClear.ts`, which names all its knobs (`HOLD_DURATION`,
-`MULTI_CLICK_WINDOW`, …), and `InstallBanner.svelte`, which names every duration
-(`PARTING_MESSAGE_MS`, `BANNER_ENTER_MS`).
-
-#### Proposed solution
-
-```ts
-const COACHMARK_AUTO_DISMISS_MS = 6000;
-// Overshoot past the ring edge so the mime reads "pull past the threshold, not just to it".
-const GHOST_TRAVEL_OVERSHOOT = 1.18;
-```
-
-and move the existing overshoot comment onto the constant.
-
 ### [Correctness] ErrorScreen's crash-path premise is undermined by three token references without fallbacks
 
 **File(s):** `web/src/lib/components/ErrorScreen.svelte` (lines 52, 62, 66) @ 9ae62ff1
