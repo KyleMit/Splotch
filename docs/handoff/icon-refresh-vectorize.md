@@ -1,7 +1,8 @@
 # Handoff — icon refresh, vectorization pass
 
-> 2026-08-06 · branch `claude/icon-updates-variants-v6kdlh` · vectorize the thirteen approved icon
-> designs and wire them into the app
+> 2026-08-06 · branch `claude/icon-updates-variants-v6kdlh` · PR
+> [#816](https://github.com/KyleMit/Splotch/pull/816) · vectorize the thirteen approved icon designs
+> and wire them into the app
 
 ## Objective & non-goals
 
