@@ -4,6 +4,7 @@
   import { APP_VERSION } from '$lib/appVersion';
   import { settings, setAdminLinkVisible } from '$lib/state/settings.svelte';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
+  import { GITHUB_REPO_URL } from '$lib/githubRepo';
 
   // Hidden admin unlock: tapping the version text 5 times reveals the link to
   // the admin console. The reveal is persisted (so it survives a refresh) and
@@ -38,7 +39,7 @@
     <p><a href="/privacy">Privacy Policy</a></p>
     <p class="github-link">
       <a
-        href="https://github.com/KyleMit/Splotch"
+        href={GITHUB_REPO_URL}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="View source on GitHub"

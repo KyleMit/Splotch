@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { brand, scale, themes, toCssVarName, type ThemeTokens } from '$lib/design/tokens';
+  import {
+    brand,
+    isColorToken,
+    scale,
+    themes,
+    toCssVarName,
+    type ThemeTokens,
+  } from '$lib/design/tokens';
   import { brandUsage, scaleUsage, themeUsage } from '$lib/design/tokenUsage';
   import type { ResolvedTheme } from '$lib/theme';
   import { pickChipInk } from './chipInk';
@@ -105,7 +112,9 @@
     ]),
   ];
 
-  const nonColorKeys: (keyof ThemeTokens)[] = ['lineartFilter', 'lineartBlend', 'floatShadow'];
+  const nonColorKeys = (Object.keys(isColorToken) as (keyof ThemeTokens)[]).filter(
+    (key) => !isColorToken[key]
+  );
 
   // One usage detail open at a time — the advice stays out of the way until asked for.
   let expanded = $state<string | null>(null);

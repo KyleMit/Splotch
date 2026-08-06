@@ -27,6 +27,10 @@ function correctAnswer() {
   return String(gate.x * gate.y);
 }
 
+// randomOperand() maps [0, 1) across [GATE_OPERAND_MIN, GATE_OPERAND_MAX], so
+// the top of that range pins both operands to GATE_OPERAND_MAX.
+const MAX_OPERAND_RANDOM = 0.999;
+
 // A same-length string that cannot equal the real answer: no product of two
 // operands in [3, 9] is all-nines (9, 99).
 function wrongAnswer() {
@@ -46,6 +50,7 @@ describe('parental gate', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('defaults to asking every time with no stored unlock', () => {
@@ -93,9 +98,13 @@ describe('parental gate', () => {
   });
 
   it('backspace deletes the last typed digit', () => {
+    // Backspace only exists mid-entry, and entry auto-submits the moment it
+    // reaches the answer's digit count — so a random 3 × 3 would submit the
+    // first digit as a wrong answer and clear it. Pin a two-digit challenge.
+    vi.spyOn(Math, 'random').mockReturnValue(MAX_OPERAND_RANDOM);
     requireParentalGate(vi.fn());
-    // Only meaningful mid-entry, so force a two-digit answer situation by
-    // typing a single digit and deleting it again.
+    expect(correctAnswer()).toBe(String(GATE_OPERAND_MAX * GATE_OPERAND_MAX));
+
     pressGateDigit(5);
     expect(gate.input).toBe('5');
     pressGateBackspace();

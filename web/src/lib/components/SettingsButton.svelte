@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { settingsModal, buttonCenter, SETTINGS_BUTTON_ID } from '$lib/state/ui.svelte';
+  import { settingsModal, SETTINGS_BUTTON_ID } from '$lib/state/ui.svelte';
+  import { buttonCenter } from '$lib/state/modal.svelte';
 
   let buttonEl: HTMLButtonElement;
 

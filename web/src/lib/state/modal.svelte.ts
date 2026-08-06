@@ -11,6 +11,11 @@ export interface Modal {
   hide(): void;
 }
 
+export function buttonCenter(el: HTMLElement): Origin {
+  const rect = el.getBoundingClientRect();
+  return { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2 };
+}
+
 export function createModal(): Modal {
   const s = $state<{ open: boolean; origin: Origin | null }>({ open: false, origin: null });
   return {

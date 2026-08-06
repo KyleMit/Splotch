@@ -86,6 +86,41 @@ test('every color chip paints a real fill', async ({ page }) => {
   expect(unpainted.sort()).toEqual(transparentByDesign.sort());
 });
 
+// The Disclosure primitive's chevron rotates via `transform` on a ::after
+// pseudo-element, and a non-replaced *inline* box is not transformable — so the
+// rotation silently no-ops unless the primitive blockifies it. It once relied on
+// every call site to do that from outside, which meant a new caller that styled
+// nothing got a dead chevron. /design renders the primitive with only its own
+// padding/type/color on top, so it is the one place this is observable without a
+// caller's layout confounding it.
+test('the disclosure chevron rotates open', async ({ page }) => {
+  await page.goto('/design');
+  const summary = page.locator('.disclosure-demo summary');
+  const chevronTransform = () =>
+    summary.evaluate((el) => getComputedStyle(el, '::after').transform);
+
+  // getComputedStyle reports a transform on an inline box even though it is
+  // never applied, so the matrix below proves the rule is declared, not that it
+  // renders. This is the assertion that fails when the chevron stops rotating.
+  await expect
+    .poll(() => summary.evaluate((el) => getComputedStyle(el, '::after').display))
+    .not.toBe('inline');
+
+  await expect.poll(chevronTransform).toBe('none');
+
+  await summary.click();
+  await expect
+    .poll(() => summary.evaluate((el) => el.closest('details')?.hasAttribute('open')))
+    .toBe(true);
+
+  // Any non-identity matrix, rather than the exact 90° one: what regresses here
+  // is the rotation being dropped entirely, and pinning the angle would make the
+  // spec a second home for a value the primitive owns.
+  await expect
+    .poll(chevronTransform)
+    .not.toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\)|matrix\(1,0,0,1,0,0\))$/);
+});
+
 // The icon column a settings row hangs off — the icon's box, the gap to its
 // label, and the indent that lines a help line (and an icon-less SliderRow) up
 // under that label — comes from custom properties declared outside the row

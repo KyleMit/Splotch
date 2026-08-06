@@ -21,15 +21,20 @@
 
 import { themes } from './design/tokens';
 
-export type ResolvedTheme = 'light' | 'dark';
+export const RESOLVED_THEMES = ['light', 'dark'] as const;
+
+export type ResolvedTheme = (typeof RESOLVED_THEMES)[number];
 export type ThemePreference = ResolvedTheme | 'system';
 
 export const THEME_DEFAULT: ThemePreference = 'system';
 
 // Light keeps app.html's original white; dark is --app-bg, read from the
 // design-token source of truth (ADR-0071) so it can never drift from the CSS.
-const THEME_COLOR_LIGHT = '#ffffff';
-const THEME_COLOR_DARK = themes.dark.appBg;
+// app.html can't import, so its literal is drift-guarded by app.html.test.ts.
+export const THEME_COLORS: Record<ResolvedTheme, string> = {
+  light: '#ffffff',
+  dark: themes.dark.appBg,
+};
 
 // The drawing paper per resolved theme, for the JS consumers that can't read
 // the CSS token (canvas export fill, Notch Band eraser color). Derived from
@@ -54,7 +59,7 @@ export function setThemeColorMeta(color: string) {
 }
 
 export function updateThemeColorMeta(resolved: ResolvedTheme) {
-  setThemeColorMeta(resolved === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
+  setThemeColorMeta(THEME_COLORS[resolved]);
 }
 
 export function applyTheme(preference: ThemePreference) {

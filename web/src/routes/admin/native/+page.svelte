@@ -4,9 +4,9 @@
   import { apiUrl } from '$lib/api';
   import { saveAdminSession, loadAdminSession, clearAdminSession } from '$lib/secureStorage';
   import { setAdminLinkVisible } from '$lib/state/settings.svelte';
-  import { ASSUME_PERSISTENT } from '$lib/adminFormat';
+  import { ASSUME_PERSISTENT, mutationMessage } from '$lib/adminPersistence';
   import type { LoginResponse } from '../../api/admin/login/+server';
-  import type { TokenMutationError, TokenSnapshot } from '../../api/admin/tokens/+server';
+  import { parseSnapshot } from './snapshot';
 
   // API-backed twin of /admin for the native apps, whose static bundle has no
   // server to run the form actions. Same console UI, but auth rides as a
@@ -29,12 +29,13 @@
     authed = false;
     invites = [];
     persistent = ASSUME_PERSISTENT;
+    flash = null;
     loginError = message;
     setAdminLinkVisible(false);
     void clearAdminSession();
   }
 
-  async function authedFetch(method: string, body?: { token: string }) {
+  async function authedFetch(method: 'GET' | 'POST' | 'DELETE', body?: { token: string }) {
     return fetch(apiUrl('/api/admin/tokens'), {
       method,
       headers: {
@@ -43,52 +44,6 @@
       },
       body: body ? JSON.stringify(body) : undefined,
     });
-  }
-
-  function isInvite(value: unknown): value is Invite {
-    if (typeof value !== 'object' || value === null) return false;
-    const invite = value as Record<string, unknown>;
-    return typeof invite.token === 'string' && typeof invite.url === 'string';
-  }
-
-  function isSnapshot(value: unknown): value is TokenSnapshot {
-    if (typeof value !== 'object' || value === null) return false;
-    const snapshot = value as Record<string, unknown>;
-    return (
-      snapshot.ok === true &&
-      Array.isArray(snapshot.tokens) &&
-      snapshot.tokens.every((token) => typeof token === 'string') &&
-      Array.isArray(snapshot.invites) &&
-      snapshot.invites.every(isInvite) &&
-      typeof snapshot.persistent === 'boolean'
-    );
-  }
-
-  function responseError(value: unknown) {
-    if (typeof value !== 'object' || value === null) return null;
-    const error = (value as Record<string, unknown>).error;
-    return typeof error === 'string' ? error : null;
-  }
-
-  type SnapshotResult =
-    | { ok: true; invites: Invite[]; persistent: boolean }
-    | { ok: false; expired: true }
-    | { ok: false; expired: false; error: string };
-
-  async function parseSnapshot(response: Response): Promise<SnapshotResult> {
-    if (response.status === 401) return { ok: false, expired: true };
-    const data = (await response.json().catch(() => null)) as
-      | TokenSnapshot
-      | TokenMutationError
-      | null;
-    if (!response.ok || !isSnapshot(data)) {
-      return {
-        ok: false,
-        expired: false,
-        error: responseError(data) ?? 'Something went wrong. Please try again.',
-      };
-    }
-    return { ok: true, invites: data.invites, persistent: data.persistent };
   }
 
   // Every /api/admin/tokens response carries the full { tokens, invites, persistent }
@@ -180,9 +135,9 @@
     {loginError}
     onlogin={login}
     onlogout={async () => signOutLocally()}
-    onadd={(token) => mutate('POST', token, `Added “${token}”`)}
+    onadd={(token) => mutate('POST', token, mutationMessage('Added', token))}
     onremove={async (token) => {
-      await mutate('DELETE', token, `Removed “${token}”`);
+      await mutate('DELETE', token, mutationMessage('Removed', token));
     }}
   />
 {/if}

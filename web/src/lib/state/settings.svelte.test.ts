@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { STORAGE_KEYS } from '../storage';
 
 import {
@@ -14,7 +14,10 @@ import {
   setAiAccessToken,
   setTheme,
   reloadSettings,
+  aiCredentialKind,
+  captureAiAccessTokenFromUrl,
 } from './settings.svelte';
+import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 
 beforeEach(() => {
   localStorage.clear();
@@ -157,5 +160,61 @@ describe('reloadSettings', () => {
     localStorage.setItem(STORAGE_KEYS.theme, 'blorange');
     reloadSettings();
     expect(settings.theme).toBe('dark');
+  });
+});
+
+describe('aiCredentialKind', () => {
+  beforeEach(() => {
+    settings.aiUserApiKey = '';
+    settings.aiAccessToken = '';
+  });
+
+  it('returns apiKey when only the BYOK key is set', () => {
+    settings.aiUserApiKey = 'user-key';
+    expect(aiCredentialKind()).toBe('apiKey');
+  });
+
+  it('returns accessCode when only the access token is set', () => {
+    settings.aiAccessToken = 'access-token';
+    expect(aiCredentialKind()).toBe('accessCode');
+  });
+
+  it('returns none when neither credential is set', () => {
+    expect(aiCredentialKind()).toBe('none');
+  });
+
+  it('prefers apiKey when both credentials are set', () => {
+    settings.aiUserApiKey = 'user-key';
+    settings.aiAccessToken = 'access-token';
+    expect(aiCredentialKind()).toBe('apiKey');
+  });
+});
+
+describe('captureAiAccessTokenFromUrl', () => {
+  beforeEach(() => {
+    settings.aiAccessToken = '';
+    window.history.replaceState({}, '', '/');
+  });
+
+  afterEach(() => {
+    window.history.replaceState({}, '', '/');
+  });
+
+  it('captures the token and scrubs it from the URL', () => {
+    window.history.replaceState({}, '', `/?${AI_ACCESS_TOKEN_PARAM}=abc123`);
+
+    captureAiAccessTokenFromUrl();
+
+    expect(settings.aiAccessToken).toBe('abc123');
+    expect(localStorage.getItem(STORAGE_KEYS.aiAccessToken)).toBe('abc123');
+    expect(window.location.search).not.toContain(AI_ACCESS_TOKEN_PARAM);
+  });
+
+  it('is a no-op when the param is absent', () => {
+    window.history.replaceState({}, '', '/?other=1');
+
+    captureAiAccessTokenFromUrl();
+
+    expect(settings.aiAccessToken).toBe('');
   });
 });
