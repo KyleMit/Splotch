@@ -1,7 +1,8 @@
 # Handoff — audit burndown (367 findings at launch)
 
-> 2026-08-06 · branch `claude/audit-burn-down-727egi` · PR TBD · Bulk-burn the `docs/AUDIT.md`
-> backlog with `scripts/audit-burndown/burndown.mjs`, running unattended.
+> 2026-08-06 · branch `claude/audit-burn-down-727egi` · PR
+> [#821](https://github.com/KyleMit/Splotch/pull/821) · Bulk-burn the `docs/AUDIT.md` backlog with
+> `scripts/audit-burndown/burndown.mjs`, running unattended.
 
 ## Current state
 
