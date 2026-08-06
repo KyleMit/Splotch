@@ -26,41 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Testing] NotchBand's native status-bar branching is untested inline effect logic with an unguarded dynamic import
-
-**File(s):** `web/src/lib/components/NotchBand.svelte` (lines 41–56) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-The `$effect` maps `band.statusBarStyle`/`band.statusBarHidden` to plugin calls inline:
-
-```ts
-import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
-  if (style) {
-    StatusBar.setStyle({ style: style === 'DARK' ? Style.Dark : Style.Light }).catch(() => {});
-  }
-  if (hidden !== null) {
-    (hidden ? StatusBar.hide() : StatusBar.show()).catch(() => {});
-  }
-});
-```
-
-Per the testing rule, imperative logic whose only coverage is E2E (here: none — it needs a device)
-inline in a component is an extraction candidate. The mapping (`'DARK'` → `Style.Dark`, tri-state
-`hidden`) is pure decision logic married to plugin I/O. Also, the two plugin calls swallow
-rejections but the `import()` itself has no `.catch` — a failed chunk resolution would surface as an
-unhandled rejection (unlikely on native where the chunk is local, hence P5).
-
-#### Proposed solution
-
-Extract
-`applyStatusBar(style: 'DARK' | 'LIGHT' | null, hidden: boolean | null, bar: Pick<StatusBarPlugin, 'setStyle' | 'hide' | 'show'>)`
-into `lib/notchBand.ts` (or a sibling), unit-test the branch matrix with a stub, and add
-`.catch(() => {})` to the import chain. The component effect shrinks to the `__IS_CAPACITOR__`
-gate + lazy import + one call.
-
 ## Source: Code audit — Gestures / Svelte actions
 
 ### [Performance] spreadTracker's SvelteMap is dead reactivity — nothing reads it in a reactive context, and its comment claims otherwise

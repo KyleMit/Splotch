@@ -1,6 +1,8 @@
 // @vitest-environment node
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import type { Style } from '@capacitor/status-bar';
 import {
+  applyStatusBar,
   bandColor,
   hasNotch,
   statusBarStyleForBand,
@@ -70,6 +72,72 @@ describe('statusBarStyleForBand', () => {
     for (const { hex } of PALETTE_COLORS) {
       expect(['DARK', 'LIGHT']).toContain(statusBarStyleForBand(hex));
     }
+  });
+});
+
+describe('applyStatusBar', () => {
+  const STYLE_ENUM: { Dark: Style; Light: Style } = {
+    Dark: 'DARK' as Style,
+    Light: 'LIGHT' as Style,
+  };
+
+  function stubBar() {
+    return {
+      setStyle: vi.fn().mockResolvedValue(undefined),
+      hide: vi.fn().mockResolvedValue(undefined),
+      show: vi.fn().mockResolvedValue(undefined),
+    };
+  }
+
+  it('translates DARK to the dark style enum value', () => {
+    const bar = stubBar();
+    applyStatusBar('DARK', null, bar, STYLE_ENUM);
+    expect(bar.setStyle).toHaveBeenCalledWith({ style: STYLE_ENUM.Dark });
+  });
+
+  it('translates LIGHT to the light style enum value', () => {
+    const bar = stubBar();
+    applyStatusBar('LIGHT', null, bar, STYLE_ENUM);
+    expect(bar.setStyle).toHaveBeenCalledWith({ style: STYLE_ENUM.Light });
+  });
+
+  it('makes no style call when style is null', () => {
+    const bar = stubBar();
+    applyStatusBar(null, null, bar, STYLE_ENUM);
+    expect(bar.setStyle).not.toHaveBeenCalled();
+  });
+
+  it('hides the status bar when hidden is true', () => {
+    const bar = stubBar();
+    applyStatusBar(null, true, bar, STYLE_ENUM);
+    expect(bar.hide).toHaveBeenCalled();
+    expect(bar.show).not.toHaveBeenCalled();
+  });
+
+  it('shows the status bar when hidden is false', () => {
+    const bar = stubBar();
+    applyStatusBar(null, false, bar, STYLE_ENUM);
+    expect(bar.show).toHaveBeenCalled();
+    expect(bar.hide).not.toHaveBeenCalled();
+  });
+
+  it('makes no visibility call when hidden is null', () => {
+    const bar = stubBar();
+    applyStatusBar(null, null, bar, STYLE_ENUM);
+    expect(bar.hide).not.toHaveBeenCalled();
+    expect(bar.show).not.toHaveBeenCalled();
+  });
+
+  it('swallows a rejected setStyle call', async () => {
+    const bar = { ...stubBar(), setStyle: vi.fn().mockRejectedValue(new Error('nope')) };
+    expect(() => applyStatusBar('DARK', null, bar, STYLE_ENUM)).not.toThrow();
+    await vi.waitFor(() => expect(bar.setStyle).toHaveBeenCalled());
+  });
+
+  it('swallows a rejected hide/show call', async () => {
+    const bar = { ...stubBar(), hide: vi.fn().mockRejectedValue(new Error('nope')) };
+    expect(() => applyStatusBar(null, true, bar, STYLE_ENUM)).not.toThrow();
+    await vi.waitFor(() => expect(bar.hide).toHaveBeenCalled());
   });
 });
 
