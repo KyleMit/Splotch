@@ -26,53 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Maintainability] The hydrated button-size formula exists in three copies; two are kept in step only by comments
-
-**File(s):** `web/src/lib/actionButtonLayout.ts` (`availablePerButton`, lines 73–91),
-`web/src/lib/components/ActionsPanel.svelte` (`buttonSize`, lines 98–104; CSS fallback lines 568–571
-and 607–610) @ 9ae62ff1
-
-**Priority:** P2
-
-#### Problem
-
-The "space per button" formula lives in three places:
-
-1. The CSS `--action-btn-fallback` blocks (first paint) — drift-guarded by
-   `actionButtonLayout.fallback.test.ts` against the exported constants. Fine.
-2. The hydrated inline calc string built in ActionsPanel's `buttonSize` derived (lines 98–104) — a
-   six-line nested ternary producing opaque template strings like:
-
-```ts
-? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((${layout.viewportHeight - layout.paletteHeight - PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
-```
-
-3. The JS mirror `availablePerButton` in `actionButtonLayout.ts` (lines 73–91), whose header comment
-   says "Mirrors the CSS cap in ActionsPanel — keep the two formulas in step" (lines 70–72).
-
-Copies 2 and 3 are the same budget arithmetic (viewport − palette − reserve/clearance − insets −
-chrome, ÷ count) with no mechanical guard between them — exactly the "keep in sync with X" comment
-that CLAUDE.md calls a defect, not a mitigation. A change to one (e.g. adding a new fixed cost)
-silently desynchronizes the slider ceiling from the rendered cap, defeating the module's stated
-purpose ("two consumers that must agree", lines 1–5).
-
-#### Proposed solution
-
-Move the calc-string builders into `actionButtonLayout.ts` beside `availablePerButton`, e.g.:
-
-```ts
-export function buttonSizeCssExpr(orientation: Orientation, buttonCount: number): string;
-```
-
-so both formulas live in one file, share the same constants and sub-expressions, and ActionsPanel's
-derived collapses to `browser ? buttonSizeCssExpr(layout.orientation, buttonCount) : undefined`
-(reactive reads still tracked, same as `publishActionPanelState`). Then add a unit test that
-evaluates the returned expression with `env(...)` = 0 and `--action-btn-scale` = 1 (trivial string
-substitution + arithmetic) and asserts it equals `min(base, availablePerButton(n))` for a few layout
-fixtures — making the mirror mechanical instead of prose. Gotcha: the CSS string uses `env()` for
-insets while the JS uses measured `layout.safeArea`; the test should pin both formulas with zero
-insets and document that divergence surface.
-
 ### [Maintainability] The drawer gap's "keep in sync" comment pair needs a drift-guard test instead
 
 **File(s):** `web/src/lib/components/ActionsPanel.svelte` (lines 436–437),

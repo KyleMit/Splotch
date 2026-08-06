@@ -10,7 +10,7 @@ import {
   ACTION_BUTTON_SCALE_MAX,
 } from '$lib/state/settings.svelte';
 import { network } from '$lib/state/network.svelte';
-import { layout } from '$lib/state/layout.svelte';
+import { layout, type Orientation } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
 import {
   landscapeSingleColumnMediaQuery,
@@ -109,28 +109,70 @@ export function resolvedPortraitPaletteHeight(): number {
   return PALETTE_BAR_RESERVE;
 }
 
+// Everything the panel spends out of the viewport extent before the rest is
+// divided between the buttons: the palette bar the row/column must clear, the
+// orientation's edge reserve, and the panel's own chrome (screen inset, drawer
+// toggle, and the gaps between buttons).
+function fixedRowCost(
+  orientation: Orientation,
+  buttonCount: number,
+  paletteExtent: number
+): number {
+  const edgeReserve = orientation === 'portrait' ? PALETTE_CLEARANCE : SETTINGS_BUTTON_RESERVE;
+  return paletteExtent + edgeReserve + PANEL_FIXED_CHROME + (buttonCount - 1) * ACTION_BUTTON_GAP;
+}
+
 // The space one button may occupy on the current screen, in px, before the row
 // (landscape: up to the reserve for the Settings Button) or the column (portrait:
-// up to the palette bar) runs out. Mirrors the CSS cap in ActionsPanel — keep
-// the two formulas in step.
-function availablePerButton(buttonCount: number): number {
+// up to the palette bar) runs out. buttonSizeCssExpr builds the render-time cap
+// from the same fixedRowCost, so the two can't drift.
+// Exported only so the equivalence test can hold that CSS expression against
+// this number; maxActionButtonScale is the production caller.
+export function availablePerButton(buttonCount: number): number {
   const { orientation, safeArea } = layout;
-  const chrome = PANEL_FIXED_CHROME + (buttonCount - 1) * ACTION_BUTTON_GAP;
-  const budget =
+  const [viewportExtent, paletteExtent, insets] =
     orientation === 'portrait'
-      ? layout.viewportHeight -
-        resolvedPortraitPaletteHeight() -
-        PALETTE_CLEARANCE -
-        safeArea.top -
-        safeArea.bottom -
-        chrome
-      : layout.viewportWidth -
-        resolvedLandscapePaletteWidth() -
-        SETTINGS_BUTTON_RESERVE -
-        safeArea.left -
-        safeArea.right -
-        chrome;
-  return budget / buttonCount;
+      ? [layout.viewportHeight, resolvedPortraitPaletteHeight(), safeArea.top + safeArea.bottom]
+      : [layout.viewportWidth, resolvedLandscapePaletteWidth(), safeArea.left + safeArea.right];
+  return (
+    (viewportExtent - fixedRowCost(orientation, buttonCount, paletteExtent) - insets) / buttonCount
+  );
+}
+
+export type ActionButtonSizeInputs =
+  | {
+      orientation: 'portrait';
+      buttonCount: number;
+      paletteHeight: number;
+      viewportHeight: number;
+    }
+  | { orientation: 'landscape'; buttonCount: number; paletteWidth: number };
+
+// The hydrated render cap as a CSS length: the scaled base size, capped by the
+// same budget availablePerButton computes. Two terms stay symbolic because the
+// browser resolves them at paint time — the safe-area insets, where
+// availablePerButton subtracts the measured layout.safeArea instead, and the
+// landscape viewport width. Portrait takes the measured viewportHeight rather
+// than 100vh (see ActionsPanel).
+export function buttonSizeCssExpr(inputs: ActionButtonSizeInputs): string {
+  const { orientation, buttonCount } = inputs;
+  const axis =
+    inputs.orientation === 'portrait'
+      ? {
+          base: ACTION_BUTTON_BASE_PORTRAIT,
+          viewportExtent: `${inputs.viewportHeight}px`,
+          paletteExtent: inputs.paletteHeight,
+          insets: 'env(safe-area-inset-top) - env(safe-area-inset-bottom)',
+        }
+      : {
+          base: ACTION_BUTTON_BASE_LANDSCAPE,
+          viewportExtent: '100vw',
+          paletteExtent: inputs.paletteWidth,
+          insets: 'env(safe-area-inset-left) - env(safe-area-inset-right)',
+        };
+  const fixedCost = fixedRowCost(orientation, buttonCount, axis.paletteExtent);
+  const budget = `${axis.viewportExtent} - ${fixedCost}px - ${axis.insets}`;
+  return `min(calc(${axis.base}px * var(--action-btn-scale, 1)), calc((${budget}) / ${buttonCount}))`;
 }
 
 // Largest Button Size percentage the current screen can show without the

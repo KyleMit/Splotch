@@ -16,14 +16,9 @@
   import { browser } from '$app/environment';
   import { layout } from '$lib/state/layout.svelte';
   import {
-    ACTION_BUTTON_GAP,
-    ACTION_BUTTON_BASE_LANDSCAPE,
-    ACTION_BUTTON_BASE_PORTRAIT,
-    SETTINGS_BUTTON_RESERVE,
     PANEL_INSET,
-    PANEL_FIXED_CHROME,
-    PALETTE_CLEARANCE,
     MAX_ACTION_BUTTON_COUNT,
+    buttonSizeCssExpr,
     isAiImageButtonVisible,
     visibleActionButtonCount,
     resolvedLandscapePaletteWidth,
@@ -78,9 +73,10 @@
 
   // Cap the button size so the expanded panel always fits the screen —
   // landscape: the row stops short of the bottom-right Settings Button;
-  // portrait: the column stops short of the palette bar at the top. Constants
-  // and the mirror JS formula (the Button Size slider's dynamic max in Settings) live in
-  // actionButtonLayout. An explicit equal per-button size — rather than letting
+  // portrait: the column stops short of the palette bar at the top. The formula
+  // lives in actionButtonLayout, which builds this CSS length and the Button
+  // Size slider's dynamic max in Settings from one budget. An explicit equal
+  // per-button size — rather than letting
   // the row flex-shrink — keeps the buttons identical (flex distributes by
   // inner base size, which padding skews) and keeps their positions stable
   // while the drawer's expand animation sweeps the row's width through zero.
@@ -103,14 +99,20 @@
   // the ceiling can't disagree.
   const buttonCount = $derived(browser ? visibleActionButtonCount() : MAX_ACTION_BUTTON_COUNT);
   const aiImageButtonVisible = $derived(isAiImageButtonVisible());
-  const buttonSpread = $derived((buttonCount - 1) * ACTION_BUTTON_GAP + PANEL_FIXED_CHROME);
 
   const buttonSize = $derived(
     !browser
       ? undefined
-      : isPortrait
-        ? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((${layout.viewportHeight - portraitPaletteHeight - PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
-        : `min(calc(${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)), calc((100vw - ${landscapePaletteWidth + SETTINGS_BUTTON_RESERVE}px - env(safe-area-inset-left) - env(safe-area-inset-right) - ${buttonSpread}px) / ${buttonCount}))`
+      : buttonSizeCssExpr(
+          isPortrait
+            ? {
+                orientation: 'portrait',
+                buttonCount,
+                paletteHeight: portraitPaletteHeight,
+                viewportHeight: layout.viewportHeight,
+              }
+            : { orientation: 'landscape', buttonCount, paletteWidth: landscapePaletteWidth }
+        )
   );
 
   // When advanced controls are disabled the chevron is hidden and the drawer
