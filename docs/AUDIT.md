@@ -26,36 +26,6 @@ this file.
 
 ## Source: Code audit — App state (runes)
 
-### [Readability] `coloringBook` exported from `ui.svelte.ts` collides with the coloring-book state module's domain name
-
-**File(s):** `web/src/lib/state/ui.svelte.ts` (lines 36–39) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-export const colorPicker = createModal();
-export const coloringBook = createModal();
-export const settingsModal = createModal();
-export const aiPrompt = createModal();
-```
-
-`import { coloringBook } from '$lib/state/ui.svelte'` (as in `ColoringBook.svelte:3` and
-`ActionsPanel.svelte:11`) reads as if it were the coloring-book selection state, which actually
-lives in `lib/state/coloringBook.svelte.ts` (as `coloringBookState`). Nothing in the binding names
-says these four are modal open/origin handles; at a call site, `coloringBook.show(...)` vs
-`coloringBookState.overlayPage` forces the reader to know which module each identifier came from.
-Note: issue #564 tracks unifying `$state` object naming across state modules — these are `Modal`
-factory instances rather than `$state` objects, so they likely fall outside that issue, but the
-rename should be coordinated with it.
-
-#### Proposed solution
-
-Suffix the modal handles: `colorPickerModal`, `coloringBookModal`, `settingsModalModal`,
-`aiPromptModal`. Purely mechanical rename across ~10 importing components; the payoff is that every
-use is self-identifying and the `coloringBook` name is freed for the domain that owns it.
-
 ### [Readability] `tool.svelte.test.ts` duplicates its three-line `beforeEach` in both describes
 
 **File(s):** `web/src/lib/state/tool.svelte.test.ts` (lines 15–19, 101–105) @ 9ae62ff1

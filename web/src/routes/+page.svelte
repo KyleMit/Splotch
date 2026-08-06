@@ -12,7 +12,7 @@
   import ClearButton from '$lib/components/ClearButton.svelte';
   import NotchBand from '$lib/components/NotchBand.svelte';
   import SettingsButton from '$lib/components/SettingsButton.svelte';
-  import { settingsModalModal } from '$lib/state/ui.svelte';
+  import { settingsModal } from '$lib/state/ui.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
   import { pwaUpdates } from '$lib/pwa/updates';
   import { captureAiAccessTokenFromUrl, settings } from '$lib/state/settings.svelte';
@@ -63,13 +63,13 @@
 
   // The Settings dialog is the one overlay too heavy even for an idle
   // slice (~200 ms mounted under a 4× throttle), so it waits for its first
-  // open — the tap that flips settingsModalModal.open latches the mount, and the
+  // open — the tap that flips settingsModal.open latches the mount, and the
   // dialog's modalDialog $effect shows it as soon as it lands. The corner
   // button that opens it (SettingsButton) stays eagerly mounted above.
   let SettingsModal = $state<Component | null>(null);
   let settingsModalEverOpened = $state(false);
   $effect(() => {
-    if (settingsModalModal.open) settingsModalEverOpened = true;
+    if (settingsModal.open) settingsModalEverOpened = true;
   });
 
   onMount(() => {
