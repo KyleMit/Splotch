@@ -30,32 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Readability] Two modules named `bootHiddenOverlays.ts` in sibling `lib/` directories
-
-**File(s):** `web/src/lib/boot/bootHiddenOverlays.ts`,
-`web/src/lib/components/bootHiddenOverlays.ts` @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`lib/boot/bootHiddenOverlays.ts` (the idle mount pump, `mountBootHiddenOverlays`) and
-`lib/components/bootHiddenOverlays.ts` (the lazy barrel of overlay components) share an exact
-basename. Each file's header comment cross-references the other by path — necessary precisely
-because the names alone can't distinguish them. A grep for `bootHiddenOverlays` returns both plus
-every import of either; an agent (or human) opening "bootHiddenOverlays.ts" from a fuzzy-finder has
-a coin-flip. The pump is a verb-thing (it mounts); the barrel is a noun-thing (it lists) — the names
-should reflect that, per the repo's own workflow-vs-reference naming instinct.
-
-#### Proposed solution
-
-Rename one side — the barrel is the better candidate since the pump's name is load-bearing in the
-boot sequence docs: e.g. `lib/components/bootHiddenOverlays.ts` → `lib/components/overlayChunk.ts`
-(or `bootHiddenOverlayChunk.ts`). Update the dynamic import in the pump (line 20), the two header
-comments, and the `src/` orientation doc if it names the file (it references
-`components/bootHiddenOverlays.ts`). Pure rename, no behavior; the dynamic-import specifier is the
-one easy-to-miss call site.
-
 ### [Docs] Privacy page comment points to a `MOBILE.md` that no longer exists
 
 **File(s):** `web/src/routes/privacy/+page.svelte` (line 7) @ 9ae62ff1
