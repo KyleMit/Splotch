@@ -22,6 +22,7 @@
   } from '$lib/state/books';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
+  import { guardTapZone } from '$lib/actions/launchGuard';
   import { layout } from '$lib/state/layout.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import {
@@ -130,6 +131,20 @@
     activeBook = book;
     hoverArmed = false;
   }
+
+  // The tap-burst hazard modalDialog guards at launch (launchGuard), one level
+  // in. A toddler mashes a cover tile several times before registering that
+  // anything happened; the first tap swaps the grid, so the follow-ups land on
+  // whichever page tile painted under the finger and apply it — the picker
+  // closes on a page nobody chose, before the child ever saw the pages. Arm the
+  // same short-lived dead zone at the tap point: modalDialog's capture-phase
+  // handlers already swallow pointerdown and click inside it, and once it
+  // lapses a deliberate tap in that spot picks normally. detail 0 is
+  // keyboard/AT activation — no coordinates, and no finger to guard.
+  function swapView(book: Book | null, event: MouseEvent) {
+    if (event.detail > 0) guardTapZone(event.clientX, event.clientY);
+    showView(book);
+  }
 </script>
 
 <dialog
@@ -177,7 +192,7 @@
               class="coloring-tile coloring-book-tile"
               type="button"
               aria-label="{book.name} coloring book"
-              onclick={() => showView(book)}
+              onclick={(e) => swapView(book, e)}
               onpointerenter={() => prefetchBookPages(book)}
               onpointerdown={() => prefetchBookPages(book)}
             >
@@ -196,7 +211,7 @@
     {:else}
       <div class="coloring-book-view">
         <div class="coloring-book-header">
-          <button class="coloring-back-button" aria-label="Back" onclick={() => showView(null)}>
+          <button class="coloring-back-button" aria-label="Back" onclick={(e) => swapView(null, e)}>
             <Icon name="chevron-left" class="coloring-back-icon" />
           </button>
           <h2>{activeBook.name}</h2>

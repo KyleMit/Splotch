@@ -202,6 +202,15 @@ specs that can't race in the first place:
   second caller needs it, so lift it there rather than copying the wait. Query `getAnimations()` on
   the dialog element alone — the fly-in animates it directly, and `{ subtree: true }` would start
   waiting on unrelated descendant animations too.
+* **A modal open is not the only thing that arms a dead zone.** `launchGuard.guardTapZone` is armed
+  by any tap that repaints something else under the finger, so a spec can be swallowed well after
+  the fly-in has landed. `ColoringBook` arms one when a book cover swaps the grid for that book's
+  pages, which is exactly where a spec then clicks a page tile — two specs went red on the first run
+  of that guard. `flows-harness`'s `settleTapGuard(page)` idles past the window (it is one of the
+  few legitimate fixed sleeps: a known duration, and a zone self-clears on the next query rather
+  than exposing state to poll), and `openFarmPageGrid` already calls it so its callers don't have
+  to. When a click at a just-tapped point mysteriously does nothing, check for a zone before
+  suspecting the control.
 * **Drive strokes through `draw`/`dragStroke`, never a hand-rolled run of `mouse.move`s.** The
   engine reads a sample far from the previous one and more than `POINTER_RESUME_GAP_MS` later as a
   finger that lifted and set down (`strokeMath.pointerWasResumed`), restarts the stroke there, and

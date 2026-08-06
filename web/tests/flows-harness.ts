@@ -1,6 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 
 import { retryOpen, settleFlyIn } from './helpers';
+import { DEFAULT_DURATION_MS } from '../src/lib/actions/launchGuard';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
 // Svelte component wiring (palette, action drawer, tool/stroke state, AI fetch,
@@ -123,6 +124,18 @@ export async function openColoringDialog(page: Page) {
   );
 }
 
+// Slack past a lapsed dead-zone window; zones self-clear on the next query, so
+// this only has to cover clock slop.
+const TAP_GUARD_LAPSE_MARGIN_MS = 100;
+
+// Idle past a launchGuard dead zone so the next click at a just-tapped point
+// registers instead of being swallowed. A fixed sleep is the right tool here:
+// the window is a known duration and a zone self-clears on the next query, so
+// there is no state to poll.
+export async function settleTapGuard(page: Page) {
+  await page.waitForTimeout(DEFAULT_DURATION_MS + TAP_GUARD_LAPSE_MARGIN_MS);
+}
+
 export async function openFarmPageGrid(page: Page) {
   const dialog = page.locator('#coloring-book-dialog');
   const pages = dialog.getByRole('button', { name: /Farm coloring page/i });
@@ -131,6 +144,11 @@ export async function openFarmPageGrid(page: Page) {
     () => dialog.getByRole('button', { name: /Farm coloring book/i }).click({ timeout: 1000 }),
     { settle: 1000 }
   );
+  // The cover tap that opened this grid armed a dead zone at its own point
+  // (ColoringBook's double-tap guard) and a page tile now sits there, so an
+  // immediate click on one is swallowed by design. Callers click straight after
+  // this returns — idle past the window so none of them has to know.
+  await settleTapGuard(page);
   return pages;
 }
 
