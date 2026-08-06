@@ -32,43 +32,6 @@ this file.
 
 ## Source: Code audit — Design system + icons
 
-### [Types] SplotchyIcon's string-interpolated class forces SectionIcon to narrow `ClassValue` to `string`
-
-**File(s):** `web/src/lib/components/SplotchyIcon.svelte` (line 10),
-`web/src/lib/components/SectionIcon.svelte` (lines 8–12) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-`SplotchyIcon` builds its class by string interpolation:
-
-```svelte
-<span class="{className} icon-color" {...rest} data-icon="splotchy">
-```
-
-which only works for `string`, so `SectionIcon` must narrow its prop and carry a comment explaining
-why:
-
-```ts
-// Narrowed from ClassValue to match SplotchyIcon, which interpolates it
-// into a class string.
-class?: string;
-```
-
-`Icon.svelte` (line 76) already uses the Svelte 5 class-array form —
-`class={[className, COLOR_ICONS.has(name) && 'icon-color']}` — which accepts full `ClassValue`. The
-narrowing is an avoidable seam: any caller passing a class array/object through `SectionIcon` gets a
-type error that `Icon` itself would accept, and the interpolated form also emits a stray leading
-space when `className` is empty (`class=" icon-color"`).
-
-#### Proposed solution
-
-Change `SplotchyIcon` to `class={[className, 'icon-color']}`, widen its `Props['class']` to the
-inherited `HTMLAttributes<HTMLSpanElement>['class']`, delete `SectionIcon`'s narrowing and its
-comment, and drop the now-unneeded `= ''` defaults in both. Purely a type/markup cleanup; no visual
-change.
-
 ### [Types] Icon map typed `Record<string, string>` with a silent-blank fallback instead of a closed union
 
 **File(s):** `web/src/lib/components/Icon.svelte` (lines 59–62, 69) @ 9ae62ff1
