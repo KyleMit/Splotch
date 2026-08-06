@@ -6,11 +6,13 @@ import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
 import { STORAGE_KEYS } from './lib/storage';
+import { RESOLVED_THEMES } from './lib/theme';
 import {
   ACTION_BUTTON_SCALE_DEFAULT,
   ACTION_BUTTON_SCALE_MAX,
   ACTION_BUTTON_SCALE_MIN,
 } from './lib/state/settings.svelte';
+import { BRUSH_TYPES } from './lib/state/tool.svelte';
 
 // app.html's pre-hydration boot IIFE is vanilla JS in a template file, so it
 // can't import anything — it re-types every localStorage key, every boolean
@@ -101,6 +103,20 @@ describe("app.html's boot script mirrors the state modules", () => {
     expect(bootLiteral(/scaleRaw == null \? (\d+)/)).toBe(ACTION_BUTTON_SCALE_DEFAULT);
     expect(bootLiteral(/isNaN\(pct\)\) pct = (\d+)/)).toBe(ACTION_BUTTON_SCALE_DEFAULT);
     expect(bootLiteral(/pct !== (\d+)/)).toBe(ACTION_BUTTON_SCALE_DEFAULT);
+  });
+
+  // 'pen' is the default, which needs no attribute to render; 'eraser' is never
+  // persisted (see readBrush in tool.svelte.ts), so neither is ever stamped.
+  it('stamps data-brush for every persistable non-default brush', () => {
+    const bootBrushes = [...bootScript.matchAll(/brush === '(\w+)'/g)].map((m) => m[1]);
+    expect(new Set(bootBrushes)).toEqual(
+      new Set(BRUSH_TYPES.filter((b) => b !== 'pen' && b !== 'eraser'))
+    );
+  });
+
+  it('stamps data-theme for every resolved theme', () => {
+    const bootThemes = [...bootScript.matchAll(/theme === '(\w+)'/g)].map((m) => m[1]);
+    expect(new Set(bootThemes)).toEqual(new Set(RESOLVED_THEMES));
   });
 
   it('seeds data-app-surface for DRAWING_ROUTE', () => {

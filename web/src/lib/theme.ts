@@ -24,6 +24,8 @@ import { themes } from './design/tokens';
 export type ResolvedTheme = 'light' | 'dark';
 export type ThemePreference = ResolvedTheme | 'system';
 
+export const RESOLVED_THEMES: readonly ResolvedTheme[] = ['light', 'dark'];
+
 export const THEME_DEFAULT: ThemePreference = 'system';
 
 // Light keeps app.html's original white; dark is --app-bg, read from the
