@@ -19,8 +19,9 @@
 // <input> is a file path, an http(s) URL, or token:<image-token>.
 // See SKILL.md for the flag table and reference/api.md for every --param name.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const BASE_URL = 'https://api.vectorizer.ai/api/v1';
 
@@ -28,9 +29,13 @@ const BASE_URL = 'https://api.vectorizer.ai/api/v1';
 // a trace never lands in the tree as a stray untracked file.
 const DEFAULT_OUT_DIR = 'vectorized';
 
-// The service documents transient load spikes and asks for an idle timeout of
-// at least this long; a shorter one reads as a hang rather than a slow trace.
-const REQUEST_TIMEOUT_MS = 180_000;
+// A deliberately conservative OVERALL deadline, not the idle timeout the service
+// asks for. Vectorizer.AI wants at least 180s without activity; AbortSignal.timeout
+// measures elapsed time instead, so an active-but-slow response would be killed
+// mid-stream at any 180s limit. Global fetch exposes no idle timeout without an
+// undici Agent, so the substitute is a ceiling far above any real trace (observed:
+// 9-20s) that still stops a genuine hang from running forever.
+const REQUEST_DEADLINE_MS = 600_000;
 
 // Documented back-off for 429: linear, 5s per consecutive failure, reset on success.
 const BACKOFF_STEP_MS = 5_000;
@@ -39,6 +44,22 @@ const MAX_RETRIES = 3;
 const FORMATS = ['svg', 'eps', 'pdf', 'dxf', 'png'];
 const MODES = ['test', 'test_preview', 'preview', 'production'];
 const FREE_MODES = ['test', 'test_preview'];
+
+// Fields the driver derives from a dedicated flag and then reports to the user.
+// A generic --param carrying one of these could make the submitted request
+// disagree with the printed summary — and for `mode` that means spending a credit
+// a run announced as free. Rejected by name rather than silently overridden, so
+// the caller learns which flag owns the field.
+const RESERVED_PARAMS = new Map([
+  ['mode', '--mode / --production'],
+  ['image', '<input>'],
+  ['image.url', '<input>'],
+  ['image.base64', '<input>'],
+  ['image.token', '<input> or --download'],
+  ['output.file_format', '--format / --out'],
+  ['policy.retention_days', '--retain'],
+  ['receipt', '--receipt'],
+]);
 
 const EXTENSION_MIME = {
   '.png': 'image/png',
@@ -51,41 +72,67 @@ const EXTENSION_MIME = {
   '.tiff': 'image/tiff',
 };
 
-const args = parseArgs(process.argv.slice(2));
-const auth = resolveAuth();
-
-if (args.help) {
-  printUsage();
-  process.exit(0);
+// Importable for tests; only a direct `node vectorize.mjs` run executes anything.
+if (
+  process.argv[1] &&
+  realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
+) {
+  // parseArgs rejects bad flags and reserved --param names, so it needs the same
+  // one-line error treatment as a failed call rather than a raw stack trace.
+  try {
+    await main(parseArgs(process.argv.slice(2)));
+  } catch (err) {
+    console.error(`\n${err.message}`);
+    process.exitCode = 1;
+  }
 }
 
-try {
-  if (args.account) await printAccount();
-  else if (args.delete) await runDelete(args.delete);
-  else if (args.download) await runDownload(args.download);
-  else await runVectorize();
-} catch (err) {
-  console.error(`\n${err.message}`);
-  process.exit(1);
+export async function main(args) {
+  if (args.help) {
+    printUsage();
+    return;
+  }
+  try {
+    if (args.account) await printAccount();
+    else if (args.delete) await runDelete(args.delete);
+    else if (args.download) await runDownload(args.download, args);
+    else await runVectorize(args);
+  } catch (err) {
+    console.error(`\n${err.message}`);
+    process.exitCode = 1;
+  }
 }
 
-async function runVectorize() {
+// The single source for what a vectorize run both PRINTS and SUBMITS. Callers
+// read `mode` for the summary and `form` for the request, so the two cannot
+// describe different calls — see the credit-safety note on RESERVED_PARAMS.
+export function buildVectorizeRequest(args) {
   const input = args._[0];
   if (!input)
     throw new Error('No input. Pass a file path, an http(s) URL, or token:<image-token>.');
 
-  const mode = args.production ? 'production' : (args.mode ?? 'test');
-  if (!MODES.includes(mode)) throw new Error(`Unknown --mode ${mode}. One of: ${MODES.join(', ')}`);
-
-  const format = resolveFormat();
+  const mode = resolveMode(args);
+  const format = resolveFormat(args);
   const out = resolve(args.out ?? `${DEFAULT_OUT_DIR}/vectorized.${format}`);
 
   const form = new FormData();
+  for (const [key, value] of args.params) form.set(key, value);
   attachInput(form, input);
   form.set('mode', mode);
   form.set('output.file_format', format);
   if (args.retain !== undefined) form.set('policy.retention_days', String(args.retain));
-  for (const [key, value] of args.params) form.set(key, value);
+
+  return { input, mode, format, out, form };
+}
+
+export function resolveMode(args) {
+  const mode = args.production ? 'production' : (args.mode ?? 'test');
+  if (!MODES.includes(mode)) throw new Error(`Unknown --mode ${mode}. One of: ${MODES.join(', ')}`);
+  return mode;
+}
+
+async function runVectorize(args) {
+  const { input, mode, out, form } = buildVectorizeRequest(args);
 
   console.log(`Input  : ${input}`);
   console.log(`Mode   : ${mode}${FREE_MODES.includes(mode) ? ' (free)' : ''}`);
@@ -97,25 +144,25 @@ async function runVectorize() {
 
   const res = await request('/vectorize', form);
   await writeResult(res, out);
-  await reportCredits(res);
+  await reportCredits(res, args);
 }
 
-async function runDownload(token) {
-  const format = resolveFormat();
+async function runDownload(token, args) {
+  const format = resolveFormat(args);
   const out = resolve(args.out ?? `${DEFAULT_OUT_DIR}/vectorized.${format}`);
 
   const form = new FormData();
+  for (const [key, value] of args.params) form.set(key, value);
   form.set('image.token', token);
   form.set('output.file_format', format);
   if (args.receipt) form.set('receipt', args.receipt);
-  for (const [key, value] of args.params) form.set(key, value);
 
   console.log(`Download: ${format} from image token`);
   console.log(`Output  : ${out}\n`);
 
   const res = await request('/download', form);
   await writeResult(res, out);
-  await reportCredits(res);
+  await reportCredits(res, args);
 }
 
 async function runDelete(token) {
@@ -147,7 +194,7 @@ async function writeResult(res, out) {
 // The Image Token and both credit counters exist only as response headers, so a
 // run that does not surface them loses the ability to download extra formats at
 // the 0.1 rate — and loses the record of what the call cost.
-async function reportCredits(res) {
+async function reportCredits(res, args) {
   const token = res.headers.get('x-image-token');
   const receipt = res.headers.get('x-receipt');
   const charged = Number(res.headers.get('x-credits-charged') ?? 0);
@@ -158,9 +205,16 @@ async function reportCredits(res) {
   if (token) console.log(`Image token: ${token}`);
   if (receipt) console.log(`Receipt: ${receipt}`);
 
+  // Best-effort: the credit is already spent and the result already written, so a
+  // failure here must not exit non-zero. An agent that reads a paid, completed run
+  // as a failure retries it and spends the credit again.
   if (charged > 0) {
-    const account = await fetchAccount();
-    console.log(`Credits remaining: ${account.credits}`);
+    try {
+      const account = await fetchAccount();
+      console.log(`Credits remaining: ${account.credits}`);
+    } catch (err) {
+      console.warn(`Credits remaining: unavailable (${err.message})`);
+    }
   }
 
   if (args.json) {
@@ -190,7 +244,7 @@ function attachInput(form, input) {
   form.set('image', new Blob([readFileSync(path)], { type }), basename(path));
 }
 
-function resolveFormat() {
+function resolveFormat(args) {
   if (args.format) {
     if (!FORMATS.includes(args.format)) {
       throw new Error(`Unknown --format ${args.format}. One of: ${FORMATS.join(', ')}`);
@@ -203,13 +257,14 @@ function resolveFormat() {
 }
 
 async function request(path, body, method = 'POST') {
+  const auth = resolveAuth();
   let attempt = 0;
   for (;;) {
     const res = await fetch(`${BASE_URL}${path}`, {
       method,
       body,
       headers: { Authorization: auth },
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(REQUEST_DEADLINE_MS),
     });
     if (res.ok) return res;
 
@@ -267,7 +322,7 @@ function loadEnvFile(path) {
   }
 }
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const parsed = { _: [], params: [] };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -289,7 +344,14 @@ function parseArgs(argv) {
         const pair = argv[++i] ?? '';
         const eq = pair.indexOf('=');
         if (eq < 1) throw new Error(`--param expects name=value, got "${pair}"`);
-        parsed.params.push([pair.slice(0, eq), pair.slice(eq + 1)]);
+        const name = pair.slice(0, eq).trim();
+        const owner = RESERVED_PARAMS.get(name);
+        if (owner) {
+          throw new Error(
+            `--param ${name} is not allowed; the driver reports this field, so use ${owner} instead.`
+          );
+        }
+        parsed.params.push([name, pair.slice(eq + 1)]);
         break;
       }
       case '--out':

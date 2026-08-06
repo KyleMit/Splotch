@@ -129,6 +129,12 @@ response headers, and the body is the binary result.
 parameters, they are documented by their dotted names, and a passthrough keeps the driver honest
 against [`reference/api.md`](reference/api.md) instead of drifting from it.
 
+**Fields owned by a dedicated flag are rejected as `--param`** — `mode`, `image*`,
+`output.file_format`, `policy.retention_days`, and `receipt`. The driver prints those in its
+summary, so a passthrough copy could make the request disagree with what the run announced; for
+`mode` that means spending a credit on a run that reported itself as free. The error names the flag
+to use instead.
+
 Results default to **`vectorized/`**, which is gitignored like `screenshots/` and
 `lighthouse-reports/`. Write elsewhere in the tree only when the file is meant to be committed — a
 stray untracked SVG trips the stop-hook git check.
@@ -256,8 +262,12 @@ filled shapes once each; it is not a centerline.
 
 ## Gotchas
 
-* **Timeouts.** Normal calls finish in seconds; the docs require an idle timeout of **≥ 180s**
-  because load spikes happen. The driver sets it. A bare `fetch` without one will look like a hang.
+* **Timeouts are an *idle* requirement, and `AbortSignal.timeout` is not idle.** The docs ask for ≥
+  180s without activity; `AbortSignal.timeout(ms)` measures elapsed time, so a 180s value cancels an
+  actively-streaming slow response — verified locally against a server writing a byte every 200ms,
+  aborted at 3004ms under a 3s signal. Node's global `fetch` exposes no idle timeout without an
+  undici `Agent`, so the driver uses a deliberately generous **overall** deadline (600s) as a
+  conservative substitute. Hand-rolled calls should do the same, or reach for a real idle timeout.
 * **Rate limits.** `429` means back off *linearly* — 5s, then 10s, then 15s — per thread, reset on
   success. For batch work start at 5 concurrent and add one every 5 minutes. The driver retries
   429/503 with that schedule.
