@@ -1,9 +1,5 @@
 import type { Usage } from './components/admin/AdminConsole.svelte';
 
-// Netlify Blobs status is unknown until the first real read proves otherwise —
-// assume persistent so the "Blobs unavailable" banner doesn't flash on load.
-export const ASSUME_PERSISTENT = true;
-
 const RELATIVE_TIME = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
 const TIME_AGO_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
   ['year', 31_536_000],

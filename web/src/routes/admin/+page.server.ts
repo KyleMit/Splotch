@@ -10,7 +10,7 @@ import {
 } from '$lib/server/tokens';
 import type { MutationResult } from '$lib/server/tokens';
 import { getUsage } from '$lib/server/usage';
-import { ASSUME_PERSISTENT } from '$lib/adminFormat';
+import { ASSUME_PERSISTENT } from '$lib/adminPersistence';
 import type { Actions, PageServerLoad } from './$types';
 
 // Must be server-rendered: it has form actions and validates the admin secret

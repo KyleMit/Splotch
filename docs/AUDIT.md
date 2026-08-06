@@ -28,33 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Architecture] `ASSUME_PERSISTENT` is a status default living in a formatting module
-
-**File(s):** `web/src/lib/adminFormat.ts` (lines 3–5) @ 9ae62ff1
-
-**Priority:** P5
-
-#### Problem
-
-`adminFormat.ts` advertises itself (by name and by its other exports, `timeAgo`/`usageDetail`) as
-display formatting, yet its first export is a behavioral default for the Blobs-persistence banner:
-
-```ts
-export const ASSUME_PERSISTENT = true;
-```
-
-It's imported by both console pages (`routes/admin/+page.server.ts` line 6,
-`routes/admin/native/+page.svelte` line 7) precisely because it needs a client-safe shared home —
-but a first-time reader grepping for the banner's initial state won't look in a "format" module, and
-a formatter importing nothing about persistence has no reason to own it.
-
-#### Proposed solution
-
-Move it into `AdminConsole.svelte`'s `<script module>` block, which is already the shared,
-client-safe home for the console's contract types (`Invite`, `Flash`, `copyKey`) that both pages
-import. Alternative: rename the module to something honest like `adminConsoleShared.ts` — but the
-component-module home is the smaller change and keeps one shared surface.
-
 ### [Maintainability] The mutation success-message copy is duplicated between the two front doors
 
 **File(s):** `web/src/routes/admin/+page.server.ts` (`tokenMutation`, line 100) @ 9ae62ff1;

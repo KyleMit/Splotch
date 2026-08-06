@@ -4,7 +4,7 @@
   import { apiUrl } from '$lib/api';
   import { saveAdminSession, loadAdminSession, clearAdminSession } from '$lib/secureStorage';
   import { setAdminLinkVisible } from '$lib/state/settings.svelte';
-  import { ASSUME_PERSISTENT } from '$lib/adminFormat';
+  import { ASSUME_PERSISTENT } from '$lib/adminPersistence';
   import type { LoginResponse } from '../../api/admin/login/+server';
   import { parseSnapshot } from './snapshot';
 
