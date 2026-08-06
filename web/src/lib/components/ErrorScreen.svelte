@@ -45,7 +45,7 @@
     /* fallback is a fixed 32px near the token's fluid floor: the crash path
        must render a sane size even if tokens.css fails to load */
     font-size: var(--font-size-display, 32px);
-    font-weight: var(--font-weight-bold);
+    font-weight: var(--font-weight-bold, 700);
   }
 
   p {
@@ -66,7 +66,7 @@
     color: var(--on-brand, #fff);
     font: inherit;
     font-size: var(--font-size-lg, 18px);
-    font-weight: var(--font-weight-bold);
+    font-weight: var(--font-weight-bold, 700);
     cursor: pointer;
   }
 

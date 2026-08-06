@@ -26,37 +26,6 @@ this file.
 
 ## Source: Code audit — Core UI controls
 
-### [Correctness] ErrorScreen's crash-path premise is undermined by three token references without fallbacks
-
-**File(s):** `web/src/lib/components/ErrorScreen.svelte` (lines 52, 62, 66) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The component's stated contract (lines 2–4) is "dependency-light crash fallback … can render even
-when the rest of the app failed to", and most declarations honor it with literal fallbacks:
-`var(--app-bg, #fcfbf8)` (29), `var(--text-strong, #333)` (30), `var(--font-family, …)` (31),
-`var(--font-size-3xl, 32px)` with a WHY comment (44–47), `var(--text-mid, #666)` (53),
-`var(--brand, #ab71e1)` (38, 63), `var(--on-brand, #fff)` (64). But three slipped through:
-
-* Line 52: `font-size: var(--font-size-lg);` — the message paragraph.
-* Line 62: `border-radius: var(--radius-pill);` — the restart button.
-* Line 66: `font-size: var(--font-size-xl);` — the restart button label.
-
-If `tokens.css` failed to load (the exact scenario the other fallbacks are budgeted for), these
-resolve to the guaranteed-invalid initial value: the paragraph and button drop to default UA sizing
-and the button loses its pill shape — a degraded restart CTA on the one screen that must always
-work.
-
-#### Proposed solution
-
-Add literal fallbacks matching the tokens' light values (e.g. `var(--font-size-lg, 18px)`,
-`var(--radius-pill, 999px)`, `var(--font-size-xl, 20px)` — read the actual token values from
-`tokens.css` when implementing). Consider a comment on the block reminding future edits that *every*
-token use here needs a fallback; or a tiny drift test over the component source asserting each
-`var(--` in this file carries a comma fallback.
-
 ### [Maintainability] Alarm-palette rgba literals repeated 5–7× per file in ClearButton and ClearCoachmark styles
 
 **File(s):** `web/src/lib/components/ClearButton.svelte` (lines 180, 200–201, 220, 222),
