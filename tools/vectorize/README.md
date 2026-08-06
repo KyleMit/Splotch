@@ -185,25 +185,37 @@ node tools/vectorize/vectorize.mjs "token:<image-token>" \
 ### Dropping white without losing near-white
 
 Remapping a color to a fully transparent one deletes it, since transparent colors are omitted from
-the result. The tolerance is what makes this safe. It is **max-channel ARGB distance** — the metric
-that satisfies all three anchors the docs give (opaque red → opaque black = 1.0, black → white =
-1.0, transparent black → opaque white = 2.0) — so:
+the result. The tolerance is what makes this safe. Measured against the service, it is **Euclidean
+RGB distance over 255**:
 
 ```
-distance(a, b) = max(|Δr|, |Δg|, |Δb|) / 255   +   |Δalpha| / 255
+distance(a, b) = hypot(Δr, Δg, Δb) / 255
 ```
 
-A cream `#F5EFE1` frame sits `max(10, 16, 30) / 255 = 0.118` from white. Measured on a fixture built
-to that exact trap, holding everything else constant:
+This was established by bisecting the tolerance on `setup.png`, whose screen cream and check green
+sit far apart, and asking after each run whether the color survived:
 
-| Tolerance on white | Cream frame | White background |
-| ------------------ | ----------- | ---------------- |
-| `~ 0.05`           | **kept**    | gone             |
-| `~ 0.15`           | gone        | gone             |
+| Color           | Euclidean | Max-channel | Survives at | Deleted at | Bracket contains |
+| --------------- | --------- | ----------- | ----------- | ---------- | ---------------- |
+| Cream `#F2EBD9` | 0.176     | 0.149       | 0.17        | 0.18       | Euclidean only   |
+| Green `#6AB86D` | 0.864     | 0.584       | 0.85        | 0.90       | Euclidean only   |
+| Blue `#326999`  | 1.073     | 0.804       | 0.90        | —          | Euclidean only   |
 
-So compute the distance from white to your nearest surviving color and pick a tolerance comfortably
-below it. `0.05` is a good default: loose enough to catch anti-aliased near-white pixels, tight
-enough to spare anything a viewer would read as a distinct off-white.
+Every max-channel prediction is falsified: each color outlived the tolerance that metric says would
+delete it. Test-mode runs cost nothing, so re-measure rather than trusting either formula if a
+result ever looks wrong.
+
+Two caveats worth keeping. The docs' own anchors (opaque red → opaque black = 1.0, black → white =
+1.0, transparent black → opaque white = 2.0) do **not** fit this formula either — black → white is
+`hypot(255,255,255)/255 = 1.732` — so the anchors describe something the observed behaviour
+contradicts, and the alpha term has not been measured at all. Treat the formula above as an
+empirical fit over opaque colors, not as the service's specification.
+
+The practical guidance is unchanged, and the correction only widens its margin: compute the distance
+from white to your nearest surviving color and pick a tolerance comfortably below it. `0.05` is a
+good default — loose enough to catch anti-aliased near-white pixels, tight enough to spare anything
+a viewer would read as a distinct off-white. Across the thirteen-icon refresh the tightest case was
+this same cream at 0.176, giving the default more than 3× margin.
 
 ### Which output options actually earn their place
 
