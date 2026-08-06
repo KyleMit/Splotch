@@ -30,46 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Maintainability] `/dev/design`'s `nonColorKeys` hand-list duplicates token-kind knowledge that belongs in `tokens.ts`
-
-**File(s):** `web/src/routes/dev/design/+page.svelte` (lines 23–30, 81) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The styleguide classifies theme tokens by hand:
-
-```ts
-// Tokens whose value isn't a paintable color get listed as text, not swatches.
-const nonColorKeys = new Set<keyof ThemeTokens>([
-  'lineartFilter',
-  'lineartBlend',
-  'floatShadow',
-  'floatShadowFlyout',
-]);
-```
-
-and separately excludes `brandTintFilter` inline at line 81
-(`Object.entries(brand).filter(([k]) => k !== 'brandTintFilter')`) — two different exclusion
-mechanisms for the same concept. When someone adds a new non-color theme token (another filter, a
-gradient, a shadow), this page silently renders it as a blank/garbage swatch, defeating the page's
-stated purpose ("If it's not on this page, it's not part of the visual language", line 62). The
-classification "this token is not a paintable color" is a fact about the token, owned by
-`tokens.ts`, currently re-derived by hand in a consumer — the shape CLAUDE.md's closed-value-set and
-cross-file-agreement rules both target.
-
-#### Proposed solution
-
-Move the classification to the source: either export a
-`NON_COLOR_THEME_TOKENS: ReadonlySet<keyof ThemeTokens>` (and a brand equivalent, or a naming
-convention like `*Filter`/`*Blend`/`*Shadow` checked by one exported predicate `isColorToken(key)`),
-or derive it — a token whose value doesn't parse as a color (`CSS.supports('color', value)` works
-in-browser; a regex works at build time) is non-color. The styleguide then imports the predicate,
-and the inline `brandTintFilter` special case collapses into the same mechanism. Tradeoff: a
-derivation is self-maintaining but slightly magic; an exported set is explicit but still a list —
-either way it lives next to the tokens it describes, and `tokens.ts`'s own tests can pin it.
-
 ### [Testing] `buildVersion.test.ts` lives two directories away from the module it tests
 
 **File(s):** `web/src/lib/buildVersion.test.ts` (line 3) @ 9ae62ff1
