@@ -13,6 +13,9 @@
 # Lighthouse audit reports (.claude/skills/lighthouse-audit) — attach to the PR, don't commit.
 /lighthouse-reports/
 
+# Vectorizer.AI traces (.claude/skills/vectorize-image) — promote a keeper deliberately.
+/vectorized/
+
 # Logs
 logs
 *.log
