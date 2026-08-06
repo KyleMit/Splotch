@@ -21,14 +21,27 @@ import sharp from 'sharp';
 import { STYLES_DIR } from '../lib/paths.mjs';
 import { fail, parseTemperature } from '../lib/cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
-import { STYLE_NAMES, styleSuffixesFor, styleThumbPath } from '../../../web/src/lib/ai/styles.ts';
+import {
+  STYLE_NAMES,
+  hasPunchedBackground,
+  styleSuffixesFor,
+  styleThumbPath,
+} from '../../../web/src/lib/ai/styles.ts';
 import { buildPromptForStyle } from '../../../web/src/lib/ai/prompt.ts';
 import { PAPER_COLORS } from '../../../web/src/lib/theme.ts';
+import { punchFlatBackground } from '../lib/flat-background-punch.mjs';
 
 const SOURCE_SVG = join(STYLES_DIR, 'source.svg');
 const THUMB_SIZE = 448;
 const WEBP_QUALITY = 75;
 const THEMES = Object.keys(PAPER_COLORS);
+
+// A keyed cover should lose most of its field but keep a substantial subject.
+// Outside this band the model gave us a shadowed or textured backdrop the flood
+// fill could only nibble at, or a flat image it ate whole — either way the
+// render is unusable and the run says so rather than shipping a ghost.
+const MIN_PUNCHED_FRACTION = 0.05;
+const MAX_PUNCHED_FRACTION = 0.95;
 
 // Generate one styled render of a drawing. Returns raw image bytes + mime type,
 // or throws with the refusal/empty reason.
@@ -86,11 +99,34 @@ for (const theme of themes) {
         theme,
         temperature,
       });
-      await sharp(bytes)
-        .resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover' })
+      // Key the backdrop at full resolution, before the resize resamples its
+      // edge into a gradient the flood fill would stop partway through.
+      let image = bytes;
+      let note = '';
+      if (hasPunchedBackground(style)) {
+        const punched = await punchFlatBackground(bytes);
+        image = punched.buffer;
+        note = ` (punched ${(punched.punchedFraction * 100).toFixed(0)}%)`;
+        if (
+          punched.punchedFraction < MIN_PUNCHED_FRACTION ||
+          punched.punchedFraction > MAX_PUNCHED_FRACTION
+        ) {
+          note += ' — SUSPECT, the model probably ignored the flat backdrop; re-roll';
+        }
+      }
+      await sharp(image)
+        // A cutout is fitted whole rather than cropped to fill: 'cover' would
+        // shave the die-cut band off whichever edge the model drew closest.
+        .resize(
+          THUMB_SIZE,
+          THUMB_SIZE,
+          hasPunchedBackground(style)
+            ? { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }
+            : { fit: 'cover' }
+        )
         .webp({ quality: WEBP_QUALITY })
         .toFile(out);
-      console.log(`saved ${out}`);
+      console.log(`saved ${out}${note}`);
     } catch (err) {
       failures++;
       console.log(`FAILED (${err instanceof Error ? err.message : err})`);

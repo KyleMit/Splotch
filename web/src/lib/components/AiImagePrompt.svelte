@@ -3,7 +3,12 @@
   import { aiPrompt } from '$lib/state/ui.svelte';
   import { exportCanvasBlob } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
-  import { STYLE_NAMES, type StyleName, styleThumbPath } from '$lib/ai/styles';
+  import {
+    STYLE_NAMES,
+    type StyleName,
+    hasPunchedBackground,
+    styleThumbPath,
+  } from '$lib/ai/styles';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { createAiPreviewLoader } from './aiPreview';
@@ -69,7 +74,14 @@
             onclick={() => handleSelectStyle(s)}
             disabled={!drawingBlob}
           >
-            <img class="ai-style-thumb" src={thumb} alt="" loading="lazy" decoding="async" />
+            <img
+              class="ai-style-thumb"
+              class:ai-style-thumb-cutout={hasPunchedBackground(s)}
+              src={thumb}
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
             <span class="ai-style-label">{s}</span>
           </button>
         {/each}
@@ -142,6 +154,13 @@
     transition:
       border-color var(--duration-fast) ease,
       transform var(--duration-fast) ease;
+  }
+
+  /* A cutout cover has no backdrop of its own, so --paper shows through and the
+     shadow the render used to bake in is drawn here instead — where it can sit
+     on the silhouette rather than on a plate, and follow the theme. */
+  .ai-style-thumb-cutout {
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
   }
 
   .ai-style-label {

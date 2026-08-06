@@ -82,9 +82,10 @@ carve-out):
   `channels: 3, hasAlpha: false`, no error). Interleave an explicit RGBA buffer and construct
   `sharp(rgba, { raw: { width,
   height, channels: 4 } })` instead, and verify outputs with
-  `sharp(out).metadata()` → `hasAlpha: true`. The runtime line-art overlays intentionally use this
-  explicit-RGBA path (`lib/overlay-alpha.mjs`); the fill punch still inpaints instead of cutting
-  holes (`docs/inpainted-fill-punch.md`).
+  `sharp(out).metadata()` → `hasAlpha: true`. The runtime line-art overlays and the style-cover
+  backdrop key intentionally use this explicit-RGBA path (`lib/overlay-alpha.mjs`,
+  `lib/flat-background-punch.mjs`); the fill punch still inpaints instead of cutting holes
+  (`docs/inpainted-fill-punch.md`).
 * **Outputs are committed artifacts**, reviewed by a human before shipping. The generators write
   shipped art into `web/static/` and review scratch into the gitignored `.coloring-samples*/`. Never
   commit the scratch dirs.

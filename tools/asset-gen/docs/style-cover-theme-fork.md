@@ -47,8 +47,23 @@ A dark cover is made of two halves, and it needs both:
 
 Five styles take that unchanged. Three carry a `DARK_STYLE_SUFFIXES` override, because a night
 clause recolors a scene but **cannot re-stage a craft**: Crayon becomes wax on black construction
-paper, Paper swaps its off-white sheet for charcoal, and Sticker keeps its white die-cut band over a
-charcoal backing so the band still reads.
+paper, Paper swaps its off-white sheet for charcoal, and Clay has to declare the scene one
+continuous mass — on a dark ground the model reads every silhouette as an outline and the sculpted
+forms flatten into stacked cutouts.
+
+**Sticker has no backdrop at all.** It is the one style whose backdrop was never scenery — a white
+die-cut band needs something behind it, and whatever we baked in was wrong in one theme or the
+other. So it is generated on a **chroma-key field** that `lib/flat-background-punch.mjs` floods away
+from the border, and ships as RGBA with the field transparent, letting the picker's own `--paper`
+show through in both themes. The shadow that used to be baked into the render is drawn in CSS
+instead, where it sits on the silhouette rather than on a plate. `PUNCHED_BACKGROUND_STYLES` is the
+one list both sides read.
+
+The key is seeded from the border and spreads only through connected backdrop, so a matching color
+*inside* the artwork is never cut away. The field is **magenta**, not grey: an early grey field came
+back near-white, the flood fill could not tell it from the white die-cut band, and it ate both — the
+sticker shipped with no border at all. A backdrop color that cannot occur in the subject is the
+whole trick.
 
 The endpoint stays on `'light'`, with the reasoning at the call site. The request carries no theme,
 and adding one is a decision about what the button *produces* — not about how the picker looks.
@@ -67,12 +82,22 @@ and adding one is a decision about what the button *produces* — not about how 
   * **Paper's dark suffix has no "photographed from above … lay it on a background".** That staging
     language is what kept inventing a mounted card to photograph, and no amount of "no border, no
     mount, no frame" overrode it — deleting the staging did, on the roll after. Six rolls.
+* **A cover is judged on `--paper`, never on white.** The two failure modes that survive a contact
+  sheet are a night render drifting bright enough to read as daylight and a cutout whose die-cut
+  band disappears into the surface behind it. Both are invisible against a neutral review background
+  and obvious against the real one.
+* **Cutouts are fitted with `contain`, not `cover`.** Cropping to fill shaves the die-cut band off
+  whichever edge the model drew closest, and the band is the whole point of the style.
+* **`punchedFraction` is a cheap failure detector.** A run that keys far too little or far too much
+  means the model gave us a shadowed, textured, or absent backdrop, and the generator says so per
+  cover instead of shipping a ghost.
 * **`theme.ts` is now on the sanctioned `web/src` import list** ([`README.md`](README.md)) and
   spells its own tokens import with an explicit `.ts`, because bare Node under
   `--experimental-strip-types` will not resolve an extensionless specifier the way Vite does.
 * **`AiImagePrompt.svelte` left the raw-hex allowlist** in `scripts/lint-token-styles.mjs`: its
   paper-white plate is `var(--paper)` now that both themes have real art behind it.
-* **Sticker is a light-flavoured style by definition** — a white die-cut border. Its dark variant
-  keeps the band and changes the backing rather than inventing a different sticker.
+* **Sticker still ships two variants even though its backdrop is gone.** The band and the cut are
+  identical; what differs is the scene inside it, which the night clause recolors like any other
+  style. Only the plate stopped being a per-theme decision.
 * Adding a third theme means a third full cover set: `styles.test.ts` derives its expectations from
   `PAPER_COLORS`, so it fails rather than letting one theme's art silently serve another.
