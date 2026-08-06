@@ -212,6 +212,10 @@ const controlOffEntries = Object.entries(CONTROL_OFF_ATTRIBUTES) as [
   string,
 ][];
 
+// Carries the active brush, and the last name in the seeded vocabulary
+// app.html's boot script re-types.
+export const BRUSH_ATTRIBUTE = 'data-brush';
+
 // Publish the Actions Panel's hydrated UI state onto its own root so CSS can
 // drive each control's visibility, the drawer's open state, and the Brush
 // Button's face without invalidating the full document. The home page is
@@ -243,7 +247,7 @@ export function publishActionPanelState(
   // the DOM and CSS shows the one matching this attribute ({@html} icons can't
   // swap during hydration — see .claude/rules/svelte.md), absent for the
   // default pen so the raw prerendered HTML is already correct.
-  if (toolState.brush === 'pen') el.removeAttribute('data-brush');
-  else el.setAttribute('data-brush', toolState.brush);
+  if (toolState.brush === 'pen') el.removeAttribute(BRUSH_ATTRIBUTE);
+  else el.setAttribute(BRUSH_ATTRIBUTE, toolState.brush);
   el.setAttribute(ACTION_PANEL_LIVE_ATTRIBUTE, '');
 }
