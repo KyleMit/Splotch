@@ -35,7 +35,7 @@
     void clearAdminSession();
   }
 
-  async function authedFetch(method: string, body?: { token: string }) {
+  async function authedFetch(method: 'GET' | 'POST' | 'DELETE', body?: { token: string }) {
     return fetch(apiUrl('/api/admin/tokens'), {
       method,
       headers: {

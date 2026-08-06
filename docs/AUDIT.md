@@ -28,31 +28,6 @@ this file.
 
 ## Source: Code audit — Admin console + token backend
 
-### [Types] Native console's `authedFetch` takes a bare `string` method
-
-**File(s):** `web/src/routes/admin/native/+page.svelte` (`authedFetch`, line 37) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-async function authedFetch(method: string, body?: { token: string }) {
-```
-
-The endpoint supports exactly three methods, and the callers already prove it: `mutate` is typed
-`(method: 'POST' | 'DELETE', …)` (line 160) and the two other call sites pass the literal `'GET'`
-(lines 122, 153). CLAUDE.md: "a value drawn from a fixed vocabulary … is a literal union … threaded
-end to end — never bare `string`." As written, a typo like `authedFetch('PSOT')` type-checks and
-fails only at runtime with a confusing 405.
-
-#### Proposed solution
-
-`async function authedFetch(method: 'GET' | 'POST' | 'DELETE', body?: { token: string })` — or
-tighter, encode the valid combinations (`'GET'` never carries a body):
-`(method: 'GET') | (method: 'POST' | 'DELETE', body: { token: string })` via two overloads if that
-reads better. The one-union change is sufficient.
-
 ### [Maintainability] Copy-feedback duration is a bare `1500` literal
 
 **File(s):** `web/src/lib/components/admin/AdminConsole.svelte` (`copy`, line 111) @ 9ae62ff1
