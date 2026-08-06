@@ -18,7 +18,6 @@
 }
 
 body {
-  width: 100vw;
   height: 100vh;
   /* dvh tracks the *visible* viewport as the mobile browser's URL bar shows/hides;
      plain vh reports the large (URL-bar-hidden) height, which is taller than what's

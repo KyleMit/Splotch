@@ -30,39 +30,6 @@ this file.
 
 ## Source: Code audit — Routes / app shell / dev harness
 
-### [Correctness] `body { width: 100vw }` causes horizontal overflow on body-scrolling routes
-
-**File(s):** `web/src/app.css` (lines 20–31) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-```css
-body {
-  width: 100vw;
-  height: 100vh;
-  ...
-  height: 100dvh;
-```
-
-`100vw` is the viewport width *including* the vertical scrollbar gutter. On the drawing route this
-is masked (`overflow: hidden` under `[data-app-surface]`), and `/privacy` and `/dev/design` scroll
-inside `position: fixed` / fixed-height containers — but `/dev` (the harness index) scrolls the body
-itself (`.index { min-height: 100dvh; ... }`, `dev/+page.svelte:48–55`). On any browser with classic
-(non-overlay) scrollbars, the moment the index grows a vertical scrollbar the body is ~15px wider
-than the available space and a horizontal scrollbar appears. The same trap awaits any future
-normal-document route, which ADR-0076 explicitly invites ("any page added later ... is a normal
-scrollable ... document by default"). `width: 100vw` also buys nothing: `body` is a block element
-and fills its containing block at `width: auto`.
-
-#### Proposed solution
-
-Delete the `width: 100vw` declaration (or replace with `width: 100%` if an explicit width is wanted
-for clarity). Verify the drawing route and `/privacy` visually after the change — `run-splotch`
-covers all three surfaces — but since block-level `auto` width equals `100%` here, no pixel should
-move except the overflow fix.
-
 ### [Readability] Portrait `.app-container` height overrides are redundant with `height: 100%`
 
 **File(s):** `web/src/app.css` (lines 56–83) @ 9ae62ff1
