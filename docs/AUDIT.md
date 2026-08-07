@@ -44,43 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] judgeNightEyes pairs night and light cores by array index on an undocumented invariant
-
-**File(s):** `tools/asset-gen/lib/eye-fill.mjs` (`judgeNightEyes`, lines 345–360; the
-invariant-bearing skip at line 288) @ f5bf8767
-
-**Priority:** P3
-
-#### Problem
-
-```js
-for (let i = 0; i < scoredLight.cores.length; i++) {
-  const lightCore = scoredLight.cores[i];
-  const nightCore = scoredNight.cores[i];
-```
-
-The pairing is positional across two independent `scoreEyeFill` runs (night fill vs light fill). It
-is correct today only because `scoreEyeFill`'s single skip condition —
-`if (bandVals.length < MIN_BAND_SAMPLES) continue;` (line 352) — happens to depend purely on source
-geometry (`sampleAnnulus` counts non-ink annulus pixels of the *source*), so both runs skip the same
-cores and the arrays stay parallel. Nothing states this invariant, and it is easy to break: any
-future fill-dependent filter in `scoreEyeFill` (e.g. skipping saturated cores) would silently
-misalign the arrays, and `judgeNightEyes` would start comparing eye A's light score with eye B's
-night score. The `!nightCore` guard on line 417 handles length mismatch but not *shift* — a shifted
-pairing produces wrong verdicts, not crashes. `golden-catalog.mjs:5` and
-`bin/gen-coloring-fills-dark.mjs:253` both feed gates through this path.
-
-#### Proposed solution
-
-Make the identity explicit: `scoreEyeFill` already emits `x`/`y` per core (lines 361–362) — match
-night cores to light cores by rounded core coordinates (they come from the same source analysis, so
-coordinates are identical), e.g. build a `Map` keyed by `${x},${y}` from `scoredNight.cores` and
-look up per light core. Alternatively, cheaper: keep positional pairing but include the source
-core's identity in each entry and
-`if (nightCore && (nightCore.x !== lightCore.x || nightCore.y !== lightCore.y)) throw` — an
-assertion that fails loudly the day the invariant breaks. Either removes the trap; the map version
-also removes the need for the invariant at all.
-
 ### [Correctness] retouch-line-art.mjs double-encodes its output, silently discarding WEBP_QUALITY
 
 **File(s):** `tools/asset-gen/legacy/retouch-line-art.mjs` (`normalize` lines 112–119, write at
