@@ -450,6 +450,7 @@ describe('deferred service worker registration', () => {
     restore();
   });
 
+  // prettier-ignore
   it('does not re-register an existing worker when Save-Data is on', async () => { const container = stubServiceWorker(makeRegistration()); const restore = stubConnection(true); const teardown = pwaUpdates.initPWAUpdates(); await flushAsync(); idle.flush(); await flushAsync(); expect(container.register).not.toHaveBeenCalled(); restore(); teardown?.(); });
 
   it('still registers when the connection reports Save-Data off', async () => {

@@ -41,41 +41,6 @@ within-section ranks and are not comparable across groups; the grouping supersed
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
 eventually arrive as a bug report — but the reporter is a two-year-old, so they won't.
 
-### [Correctness] The Save-Data guard is bypassed on the repeat-visit registration path
-
-**File(s):** `web/src/lib/pwa/updates.ts` (`registerDeferredServiceWorker` lines 88–93,
-`initPWAUpdates` lines 113–118, `scheduleRegistration` lines 70–83) @ cd04c367
-
-**Priority:** P4
-
-#### Problem
-
-`registerDeferredServiceWorker` refuses to register under Save-Data — "Save-Data users never get the
-~35 MB precache forced on them" (lines 85–87). But `initPWAUpdates` calls `scheduleRegistration()`
-directly when a registration already exists (lines 113–118), and `scheduleRegistration` has no
-Save-Data check. The stated purpose of that re-register is to *resume an interrupted precache*
-(lines 12–13: "so an install interrupted mid-precache resumes") — which is precisely the ~35 MB
-download the guard exists to prevent. Sequence: first visit on wifi with Save-Data off →
-registration starts, precache interrupted; later visit on metered data with Save-Data on → the
-resume path re-registers and the precache continues against the user's expressed preference.
-
-#### Proposed solution
-
-Move the `saveDataEnabled()` check into `scheduleRegistration` (the single choke point), so both
-entry paths honor it:
-
-```ts
-function scheduleRegistration() {
-  if (registrationScheduled || saveDataEnabled()) return;
-  ...
-}
-```
-
-This is safe for update checks: the module header (lines 14–16) already documents that
-`checkForUpdates` reaches the existing registration through `getRegistration` without any
-re-register. A fully-precached repeat visitor with Save-Data on loses only a redundant `register()`
-call. Add a unit test: existing registration + Save-Data on → `register` not called.
-
 ### [Correctness] modalDialog leaves stale `--origin-x/y` behind for a later unanchored open
 
 **File(s):** `web/src/lib/actions/modalDialog.svelte.ts` (`$effect`, lines 118–133) @ cd04c367
