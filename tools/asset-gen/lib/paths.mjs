@@ -1,7 +1,8 @@
 // Path + tree resolution for the asset-gen scripts, self-contained so this
 // project doesn't reach back into scripts/lib/ (docs/architecture.md). The generators are
-// producers for the app's committed assets: inputs and outputs both live under
-// web/static/, and review scratch lands in the gitignored .coloring-samples*/.
+// producers for the app's committed assets: source inputs live under tools/asset-gen/,
+// shipped outputs live under web/static/, and review scratch lands in the gitignored
+// .coloring-samples*/.
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
@@ -14,6 +15,7 @@ export const REPO_ROOT = join(ASSET_GEN_DIR, '..', '..');
 export const WEB_STATIC = join(REPO_ROOT, 'web', 'static');
 export const COLORING_DIR = join(WEB_STATIC, 'coloring');
 export const STYLES_DIR = join(WEB_STATIC, 'styles');
+export const STYLE_SOURCE_SVG = join(ASSET_GEN_DIR, 'source.svg');
 
 // Committed source-of-truth for the colored fills WITH their outlines intact (the
 // raw model output). The shipped web/static/coloring/*.{light,night}.webp are the

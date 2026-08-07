@@ -1,5 +1,5 @@
-// Regenerates static/large-image.png by replaying the SVG drawing instructions
-// in static/large-image.svg onto the live Splotch canvas.
+// Regenerates web/static/large-image.png by replaying the SVG drawing instructions
+// in scripts/assets/large-image.svg onto the live Splotch canvas.
 // The output is 1920x1080 (16:9 landscape, same as Google Play tablet spec).
 //
 // This PNG is also the social/link-preview image: app.html points og:image and
@@ -29,7 +29,7 @@ import {
   dismissMenu,
 } from './lib/app-driver.mjs';
 
-const SVG_FILE = join(ROOT, 'web', 'static', 'large-image.svg');
+const SVG_FILE = join(ROOT, 'scripts', 'assets', 'large-image.svg');
 const OUT = join(ROOT, 'web', 'static', 'large-image.png');
 const PORT = 4173;
 

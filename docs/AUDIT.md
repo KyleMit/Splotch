@@ -46,32 +46,6 @@ eventually arrive as a bug report — but the reporter is a two-year-old, so the
 Unbounded work, unvalidated input reaching a shell, unpinned remote code, and files that reach the
 production bundle or the clone weight without being needed there.
 
-### [Architecture] Generator input files live in web/static and ship to production
-
-**File(s):** `web/static/large-image.svg`, `web/static/styles/source.svg` @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-Both SVGs are *inputs* to offline tooling, not app assets: `scripts/gen-large-image.mjs:32` reads
-`web/static/large-image.svg` to replay strokes onto the live canvas, and
-`tools/asset-gen/bin/gen-style-covers.mjs:102` reads `web/static/styles/source.svg` to generate the
-style-cover webps. Neither is referenced by any runtime code path (only `scripts/image-audit.mjs:38`
-— which has to special-case both in its `IGNORE` set precisely because they aren't app images).
-Housing tool inputs in the production publish directory means they are served publicly, copied into
-the web build, and precached (previous finding), and it muddies the otherwise-clean rule that
-`static/` is "the files meant to be served verbatim" (`web/netlify.toml:16-17`). The native build's
-`scripts/lib/native-export.mjs` already strips both inputs, so they no longer reach Android/iOS.
-
-#### Proposed solution
-
-Move `large-image.svg` beside its consumer (e.g. `scripts/assets/large-image.svg`) and `source.svg`
-into `tools/asset-gen/` (its docs at `tools/asset-gen/docs/README.md:152` already describe it as a
-committed pipeline input). Update the two generator paths and drop both entries from
-`scripts/image-audit.mjs`'s `IGNORE` set. Gotcha: confirm neither URL is referenced externally
-(nothing in-repo fetches them over HTTP).
-
 ### [Correctness] `install-maestro` pipes an unpinned remote script to bash and never verifies the pin took effect
 
 **File(s):** `.github/actions/install-maestro/action.yml` (lines 7–13) @ cd04c367

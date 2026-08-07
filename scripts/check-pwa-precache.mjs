@@ -7,7 +7,7 @@ const SW_PATH = join(CLIENT_DIR, 'sw.js');
 const STATIC_COLORING_DIR = join(ROOT, 'web/static/coloring');
 const RESPONSIVE_TIER_PATTERN = /^max-\d+px$/;
 const RUNTIME_GENERATED_PRECACHE_URLS = new Set(['_app/env.js']);
-const SERVED_ONLY_ASSET_URLS = new Set(['large-image.png', 'large-image.svg', 'styles/source.svg']);
+const SERVED_ONLY_ASSET_URLS = new Set(['large-image.png']);
 // Leaves room for ordinary app growth while rejecting another duplicated coloring tier.
 export const MAX_PWA_PRECACHE_BYTES = 38_000_000;
 
