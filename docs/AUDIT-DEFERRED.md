@@ -598,7 +598,7 @@ In `app.css`, directly after the `.flyout-option` rules:
    transparent in light mode, so the dark rule is inert there). paint-order
    draws the stroke behind the fill; non-scaling-stroke pins it to 2 screen px
    across very different viewBoxes. The second selector branch catches the
-   size-N icons, which carry fill="currentColor" on the svg root, not the path. */
+   size-brush-N icons, which carry fill="currentColor" on the svg root, not the path. */
 .white-stroke :is(svg path[fill='currentColor'], svg[fill='currentColor'] path) {
   stroke: #000;
   stroke-width: 2px;

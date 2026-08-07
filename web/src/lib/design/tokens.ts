@@ -257,7 +257,7 @@ export interface ThemeTokens {
   /** the flat tone behind the rotation-locked sheet */
   paperMargin: string;
   /**
-   * Dashed outline of the eraser-size "hole" previews (ActionsPanel flyout +
+   * Dashed outline of the size-eraser "hole" previews (ActionsPanel flyout +
    * trigger icon) — neutral gray so the holes never read as ink. Their fill
    * is --paper, so the holes literally show the canvas through the flyout.
    */

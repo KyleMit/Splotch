@@ -49,7 +49,7 @@ function inkColors(svg) {
 // and tag it. A plain glyph painted in a SINGLE ink color — whatever that color
 // is (usually black `#1f1f1f`, but a white Material export counts too) — has
 // that one ink remapped to currentColor so it follows the theme and stays
-// legible on the card. Two-tone plain icons (e.g. the grey eraser-size rings)
+// legible on the card. Two-tone plain icons (e.g. the grey size-eraser rings)
 // keep their colors.
 function inlineSvg(svg, spot) {
   let out = svg.replace(/<svg\b[^>]*>/, (tag) => {
