@@ -512,18 +512,17 @@ export function renderReport(s) {
   }
 
   out.push('\n## Memory\n');
-  if (s.heap && s.heap.afterBytes) {
-    const delta = toMiB(s.heap.afterBytes - s.heap.beforeBytes);
-    out.push(
-      table(
-        ['Metric', 'Value'],
-        [
-          ['JS heap before', `${toMiB(s.heap.beforeBytes).toFixed(1)} MiB`],
-          ['JS heap after', `${toMiB(s.heap.afterBytes).toFixed(1)} MiB`],
-          ['Delta', `${delta.toFixed(1)} MiB`],
-        ]
-      )
-    );
+  if (s.heap && s.heap.afterBytes != null) {
+    const beforeKnown = s.heap.beforeBytes != null;
+    const rows = [
+      ['JS heap before', beforeKnown ? `${toMiB(s.heap.beforeBytes).toFixed(1)} MiB` : 'n/a'],
+      ['JS heap after', `${toMiB(s.heap.afterBytes).toFixed(1)} MiB`],
+    ];
+    if (beforeKnown) {
+      const delta = toMiB(s.heap.afterBytes - s.heap.beforeBytes);
+      rows.push(['Delta', `${delta.toFixed(1)} MiB`]);
+    }
+    out.push(table(['Metric', 'Value'], rows));
   } else {
     out.push('_No heap metrics captured._');
   }

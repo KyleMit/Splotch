@@ -714,7 +714,7 @@ export async function runUndoScenarios() {
     const metrics = buildMetrics({
       settings,
       obs,
-      heapBefore: 0,
+      heapBefore: null,
       heapAfter: obs.heapBytes,
     });
     writeProfileArtifacts({
