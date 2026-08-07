@@ -53,6 +53,14 @@ test('rejects an unsupported image type with 415', async ({ request }) => {
   expect(await res.json()).toEqual({ ok: false, error: 'Unsupported image type' });
 });
 
+test('returns the authorization error wire shape for an invalid managed token', async ({
+  request,
+}) => {
+  const res = await postImage(request, tinyPngBuffer(), 'image/png', { token: 'invalid-token' });
+  expect(res.status()).toBe(403);
+  expect(await res.json()).toEqual({ ok: false, error: 'Invalid access token' });
+});
+
 test('lets a normal-sized, allowed upload past the guards', async ({ request }) => {
   // The throwaway key means the Gemini call itself fails downstream (≈502), but
   // the point is only that the size/type guards do NOT reject it.

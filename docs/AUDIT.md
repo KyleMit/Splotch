@@ -41,45 +41,6 @@ within-section ranks and are not comparable across groups; the grouping supersed
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
 eventually arrive as a bug report — but the reporter is a two-year-old, so they won't.
 
-### [Architecture] Give `authorizeGenerationRequest` one failure channel instead of three exit modes
-
-**File(s):** `web/src/lib/server/generationAuthorization.ts` (`authorizeGenerationRequest`, lines
-17–57) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-The function terminates through three different channels:
-
-* returns a `GenerationAuthorization` object on success (lines 42–46, 56);
-* **returns** a `Response` for throttling (lines 31, 39, 55);
-* **throws** a SvelteKit `HttpError` for auth/config failures (line 34 `throw error(403, …)`, line
-  41 `throw error(500, …)`).
-
-The caller (`generate-image/+server.ts:113–118`) must know that the union return type only covers
-two of the three outcomes and that a third escapes via exceptions — the signature
-`Promise<GenerationAuthorization | Response>` under-describes the contract. Tests mirror the
-awkwardness: some assert `result instanceof Response`, others `rejects.toMatchObject`. For a
-first-time reader, the mixed convention obscures which failures are "expected flow" and which are
-exceptional.
-
-#### Proposed solution
-
-Pick one convention. The lightest change is to throw nothing and return a discriminated union:
-
-```ts
-export type GenerationAuthorization =
-  | { authorized: true; usingByok: boolean; effectiveKey: string; managedToken: string | null }
-  | { authorized: false; response: Response };
-```
-
-with the 403/500 branches producing `{ authorized: false, response: json({...}, { status }) }` (or
-keep `error()` throws for *both* 403/500 and throttling by throwing `HttpError`-shaped 429s — but
-`throttled()` is the repo's canonical 429, so the return-based shape fits better). Tradeoff: the
-route's `instanceof Response` check becomes a plain discriminant check, which is also more grepable.
-Update `generationAuthorization.test.ts` accordingly.
-
 ### [Performance] Pinch move path allocates per pointermove, against the repo's hot-path rule
 
 **File(s):** `web/src/lib/actions/pinchZoom.svelte.ts` (`centroid` lines 54–62, `recompute` lines

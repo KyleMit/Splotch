@@ -115,7 +115,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     token: source.token,
     clientAddress: getClientAddress(),
   });
-  if (authorization instanceof Response) return authorization;
+  if (!authorization.authorized) return authorization.response;
 
   const { bytes: inputBytes, mimeType } = await source.readValidatedImage();
   // An empty type is fine (default to PNG below); only reject a type that's
