@@ -11,15 +11,23 @@ class MainViewController: CAPBridgeViewController {
     private let pencilEraser = PencilEraserPlugin()
 
     override func capacitorDidLoad() {
-        guard let bridge, let webView = bridge.webView else {
+        guard let bridge else {
             assertionFailure(
-                "Capacitor lifecycle contract violated: bridge and webView must be set before capacitorDidLoad()"
+                "Capacitor lifecycle contract violated: bridge must be set before capacitorDidLoad()"
             )
             return
         }
 
         bridge.registerPluginInstance(DeviceLockPlugin())
         bridge.registerPluginInstance(pencilEraser)
+
+        guard let webView = bridge.webView else {
+            assertionFailure(
+                "Capacitor lifecycle contract violated: webView must be set before capacitorDidLoad()"
+            )
+            return
+        }
+
         pencilEraser.attach(to: webView)
     }
 }

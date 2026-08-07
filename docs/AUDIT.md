@@ -41,45 +41,6 @@ within-section ranks and are not comparable across groups; the grouping supersed
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
 eventually arrive as a bug report — but the reporter is a two-year-old, so they won't.
 
-### [Maintainability] Pencil-eraser attach silently no-ops if the web view is missing
-
-**File(s):** `ios/App/App/MainViewController.swift` (lines 13–19) @ cd04c367
-
-**Priority:** P5
-
-#### Problem
-
-```swift
-override func capacitorDidLoad() {
-    bridge?.registerPluginInstance(DeviceLockPlugin())
-    bridge?.registerPluginInstance(pencilEraser)
-    if let webView = bridge?.webView {
-        pencilEraser.attach(to: webView)
-    }
-}
-```
-
-If `bridge` or `bridge?.webView` were ever nil at `capacitorDidLoad` (a Capacitor upgrade changing
-lifecycle timing is the realistic path), Apple Pencil double-tap would silently stop working — no
-log, no assertion, and the plugin still registers so the web side sees nothing wrong. The repo's
-stated preference elsewhere (e.g. `native-version.mjs`'s "fail closed" transforms) is loud failure
-over silent degradation.
-
-#### Proposed solution
-
-Make the impossible case loud in debug builds:
-
-```swift
-guard let webView = bridge?.webView else {
-    assertionFailure("capacitorDidLoad without a webView — pencil eraser not attached")
-    return
-}
-pencilEraser.attach(to: webView)
-```
-
-`assertionFailure` compiles out of Release, so shipping behavior is unchanged; only development
-against a future Capacitor picks up the regression immediately.
-
 ### [Readability] `ringAnimateKey`'s `Date.now()` suffix is dead — and the flourish cannot replay on a same-swatch re-tap
 
 **File(s):** `web/src/lib/components/ColorPalette.svelte` (lines 58–60, 72, 122) @ cd04c367
