@@ -1,6 +1,8 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
 
 import { managedAccessTokenForRetry } from '../playwright.shared';
+import { MAX_IMAGE_BYTES } from '../src/lib/server/generateImagePolicy';
+import { rateLimitPolicy } from '../src/lib/server/rateLimitPolicy';
 import { tinyPngBuffer } from './fixtures';
 
 // Server-side guards on /api/generate-image. These hit the endpoint directly
@@ -16,9 +18,8 @@ import { tinyPngBuffer } from './fixtures';
 // the suite's fullyParallel mode.
 test.describe.configure({ mode: 'default' });
 
-// Mirrors of generateToken / generateByok in src/lib/server/rateLimitPolicy.ts.
-const GENERATE_LIMIT = 15;
-const BYOK_LIMIT = 30;
+const GENERATE_LIMIT = rateLimitPolicy.generateToken.limit;
+const BYOK_LIMIT = rateLimitPolicy.generateByok.limit;
 const UNSUPPORTED_TYPE_STATUS = 415;
 
 // Raw-body POST to the endpoint. A raw image body (Content-Type: image/*) is not
@@ -40,15 +41,14 @@ function postImage(
 }
 
 test('rejects an oversized upload with 413', async ({ request }) => {
-  // 16 MB — just over the 15 MB cap.
-  const tooBig = Buffer.alloc(16 * 1024 * 1024);
+  const tooBig = Buffer.alloc(MAX_IMAGE_BYTES + 1);
   const res = await postImage(request, tooBig, 'image/png');
   expect(res.status()).toBe(413);
   expect(await res.json()).toEqual({ ok: false, error: 'Image is too large' });
 });
 
 test('rejects an oversized upload with an unsupported type with 415', async ({ request }) => {
-  const tooBig = Buffer.alloc(16 * 1024 * 1024);
+  const tooBig = Buffer.alloc(MAX_IMAGE_BYTES + 1);
   const res = await postImage(request, tooBig, 'image/gif');
   expect(res.status()).toBe(UNSUPPORTED_TYPE_STATUS);
   expect(await res.json()).toEqual({ ok: false, error: 'Unsupported image type' });

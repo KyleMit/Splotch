@@ -8,6 +8,7 @@ import {
   authorizeGenerationRequest,
   type GenerationAuthorization,
 } from '$lib/server/generationAuthorization';
+import { MAX_IMAGE_BYTES } from '$lib/server/generateImagePolicy';
 import { contentTypeOf, fail, readBodyWithinLimit } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
@@ -20,9 +21,6 @@ function safetyRefusal(reason: string): never {
   throw error(SAFETY_STATUS, `Drawing was blocked for safety: ${reason}`);
 }
 
-// A drawing screenshot is well under a megabyte; cap the upload so a valid-token
-// holder can't push us into a memory/DoS situation by base64-ing a huge blob.
-const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 function assertAllowedImageType(mimeType: string): void {
