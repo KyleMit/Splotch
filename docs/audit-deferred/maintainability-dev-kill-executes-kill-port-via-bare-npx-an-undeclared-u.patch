@@ -1,0 +1,361 @@
+diff --git a/.agents/skills/run-splotch/SKILL.md b/.agents/skills/run-splotch/SKILL.md
+index 24ab2605..ab0c8ff9 100644
+--- a/.agents/skills/run-splotch/SKILL.md
++++ b/.agents/skills/run-splotch/SKILL.md
+@@ -146,8 +146,9 @@ and wait for `#coloringOverlay` to be visible. A full worked example (all these
+ > exit and leaves an **orphaned `vite dev` holding the port for hours**. Instead, pick one:
+ >
+ > * **Reuse the driver's server** (preferred): `driver.mjs … --keep`, connect your own Playwright
+->   script with `--url`/`page.goto`, and when done free the port with `npx kill-port <n>` (default
+->   5199). Your script should only manage the *browser*, never the server.
++>   script with `--url`/`page.goto`, and when done free the port with
++>   `node scripts/dev-kill.mjs --port <n>` (default 5199). Your script should only manage the
++>   *browser*, never the server.
+ > * **If you truly must spawn one**, use `spawnViteServer(port, { env, stdout, stderr })` from
+ >   `scripts/lib/vite-server.mjs` — it launches vite in a **detached process group** and its
+ >   `stop()` kills the whole group (`process.kill(-pid)`), so nothing is orphaned. `freePort(port)`
+@@ -162,8 +163,8 @@ and wait for `#coloringOverlay` to be visible. A full worked example (all these
+ >   — copy those, not a fresh `spawn`.
+ >
+ > Either way, **reap what you spawned before ending**: kill the script/browser, run
+-> `npx kill-port <n>`, and confirm with `ps`/`ss -ltnp` that no `vite dev` or headless Chromium is
+-> left behind. A leaked server reads as a "task running for hours".
++> `node scripts/dev-kill.mjs --port <n>`, and confirm with `ps`/`ss -ltnp` that no `vite dev` or
++> headless Chromium is left behind. A leaked server reads as a "task running for hours".
+
+ ## Run (human path)
+
+@@ -217,7 +218,7 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
+ | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+ | `Executable doesn't exist … playwright` (local)                                                          | `npm run test:e2e:install`                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+ | `Executable doesn't exist … playwright` (Claude Code Cloud session)                                      | The env's cached Chromium revision drifted from the one this Playwright version wants. `driver.mjs` now self-heals — it falls back to any Chromium under `PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`). Override with `PLAYWRIGHT_CHROMIUM=/path/to/chrome`. Never run `npx playwright install` in Claude Code Cloud. See `docs/CLOUD/Claude.md`.                                                                                                                        |
+-| `server never came up at http://localhost:5199`                                                          | Port in use — pass `--port <n>` or `npx kill-port 5199`                                                                                                                                                                                                                                                                                                                                                                                                                            |
++| `server never came up at http://localhost:5199`                                                          | Port in use — pass `--port <n>` or `node scripts/dev-kill.mjs --port 5199`                                                                                                                                                                                                                                                                                                                                                                                                         |
+ | `<route> never became interactive`                                                                       | Route 404s or crashes — check it loads at `npm run dev` first                                                                                                                                                                                                                                                                                                                                                                                                                      |
+ | Blank canvas in the `--draw` screenshot                                                                  | Drawing engine regressed; reproduce at `npm run dev`                                                                                                                                                                                                                                                                                                                                                                                                                               |
+ | Want one E2E spec, not the whole suite / `Cannot navigate to invalid URL` from raw `npx playwright test` | The config + `baseURL` live in `web/`, and raw `npx` from the repo root also loses the Chromium fallback. Filter through the npm script instead: `npm run test:e2e -- flows-undo-persistence.spec.ts -g "<title>"` — `scripts/web.mjs` sets the `web/` cwd and Chromium path and forwards the args to Playwright. The positional arg is a path *pattern*, so a filename that no longer exists matches nothing and Playwright exits with `No tests found`. See the `testing` skill. |
+diff --git a/.agents/skills/run-splotch/driver.mjs b/.agents/skills/run-splotch/driver.mjs
+index e685ea2a..3ae56b35 100644
+--- a/.agents/skills/run-splotch/driver.mjs
++++ b/.agents/skills/run-splotch/driver.mjs
+@@ -134,7 +134,7 @@ function finishServer(baseURL) {
+   }
+   vite.release();
+   console.log(
+-    `server left running: ${baseURL} (pid ${vite.server.pid}) — kill with: npx kill-port ${port}`
++    `server left running: ${baseURL} (pid ${vite.server.pid}) — kill with: node scripts/dev-kill.mjs --port ${port}`
+   );
+ }
+
+diff --git a/.claude/skills/run-splotch/SKILL.md b/.claude/skills/run-splotch/SKILL.md
+index 24ab2605..ab0c8ff9 100644
+--- a/.claude/skills/run-splotch/SKILL.md
++++ b/.claude/skills/run-splotch/SKILL.md
+@@ -146,8 +146,9 @@ and wait for `#coloringOverlay` to be visible. A full worked example (all these
+ > exit and leaves an **orphaned `vite dev` holding the port for hours**. Instead, pick one:
+ >
+ > * **Reuse the driver's server** (preferred): `driver.mjs … --keep`, connect your own Playwright
+->   script with `--url`/`page.goto`, and when done free the port with `npx kill-port <n>` (default
+->   5199). Your script should only manage the *browser*, never the server.
++>   script with `--url`/`page.goto`, and when done free the port with
++>   `node scripts/dev-kill.mjs --port <n>` (default 5199). Your script should only manage the
++>   *browser*, never the server.
+ > * **If you truly must spawn one**, use `spawnViteServer(port, { env, stdout, stderr })` from
+ >   `scripts/lib/vite-server.mjs` — it launches vite in a **detached process group** and its
+ >   `stop()` kills the whole group (`process.kill(-pid)`), so nothing is orphaned. `freePort(port)`
+@@ -162,8 +163,8 @@ and wait for `#coloringOverlay` to be visible. A full worked example (all these
+ >   — copy those, not a fresh `spawn`.
+ >
+ > Either way, **reap what you spawned before ending**: kill the script/browser, run
+-> `npx kill-port <n>`, and confirm with `ps`/`ss -ltnp` that no `vite dev` or headless Chromium is
+-> left behind. A leaked server reads as a "task running for hours".
++> `node scripts/dev-kill.mjs --port <n>`, and confirm with `ps`/`ss -ltnp` that no `vite dev` or
++> headless Chromium is left behind. A leaked server reads as a "task running for hours".
+
+ ## Run (human path)
+
+@@ -217,7 +218,7 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
+ | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+ | `Executable doesn't exist … playwright` (local)                                                          | `npm run test:e2e:install`                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+ | `Executable doesn't exist … playwright` (Claude Code Cloud session)                                      | The env's cached Chromium revision drifted from the one this Playwright version wants. `driver.mjs` now self-heals — it falls back to any Chromium under `PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`). Override with `PLAYWRIGHT_CHROMIUM=/path/to/chrome`. Never run `npx playwright install` in Claude Code Cloud. See `docs/CLOUD/Claude.md`.                                                                                                                        |
+-| `server never came up at http://localhost:5199`                                                          | Port in use — pass `--port <n>` or `npx kill-port 5199`                                                                                                                                                                                                                                                                                                                                                                                                                            |
++| `server never came up at http://localhost:5199`                                                          | Port in use — pass `--port <n>` or `node scripts/dev-kill.mjs --port 5199`                                                                                                                                                                                                                                                                                                                                                                                                         |
+ | `<route> never became interactive`                                                                       | Route 404s or crashes — check it loads at `npm run dev` first                                                                                                                                                                                                                                                                                                                                                                                                                      |
+ | Blank canvas in the `--draw` screenshot                                                                  | Drawing engine regressed; reproduce at `npm run dev`                                                                                                                                                                                                                                                                                                                                                                                                                               |
+ | Want one E2E spec, not the whole suite / `Cannot navigate to invalid URL` from raw `npx playwright test` | The config + `baseURL` live in `web/`, and raw `npx` from the repo root also loses the Chromium fallback. Filter through the npm script instead: `npm run test:e2e -- flows-undo-persistence.spec.ts -g "<title>"` — `scripts/web.mjs` sets the `web/` cwd and Chromium path and forwards the args to Playwright. The positional arg is a path *pattern*, so a filename that no longer exists matches nothing and Playwright exits with `No tests found`. See the `testing` skill. |
+diff --git a/.claude/skills/run-splotch/driver.mjs b/.claude/skills/run-splotch/driver.mjs
+index e685ea2a..3ae56b35 100644
+--- a/.claude/skills/run-splotch/driver.mjs
++++ b/.claude/skills/run-splotch/driver.mjs
+@@ -134,7 +134,7 @@ function finishServer(baseURL) {
+   }
+   vite.release();
+   console.log(
+-    `server left running: ${baseURL} (pid ${vite.server.pid}) — kill with: npx kill-port ${port}`
++    `server left running: ${baseURL} (pid ${vite.server.pid}) — kill with: node scripts/dev-kill.mjs --port ${port}`
+   );
+ }
+
+diff --git a/.ruler/skills/run-splotch/SKILL.md b/.ruler/skills/run-splotch/SKILL.md
+index 24ab2605..ab0c8ff9 100644
+--- a/.ruler/skills/run-splotch/SKILL.md
++++ b/.ruler/skills/run-splotch/SKILL.md
+@@ -146,8 +146,9 @@ and wait for `#coloringOverlay` to be visible. A full worked example (all these
+ > exit and leaves an **orphaned `vite dev` holding the port for hours**. Instead, pick one:
+ >
+ > * **Reuse the driver's server** (preferred): `driver.mjs … --keep`, connect your own Playwright
+->   script with `--url`/`page.goto`, and when done free the port with `npx kill-port <n>` (default
+->   5199). Your script should only manage the *browser*, never the server.
++>   script with `--url`/`page.goto`, and when done free the port with
++>   `node scripts/dev-kill.mjs --port <n>` (default 5199). Your script should only manage the
++>   *browser*, never the server.
+ > * **If you truly must spawn one**, use `spawnViteServer(port, { env, stdout, stderr })` from
+ >   `scripts/lib/vite-server.mjs` — it launches vite in a **detached process group** and its
+ >   `stop()` kills the whole group (`process.kill(-pid)`), so nothing is orphaned. `freePort(port)`
+@@ -162,8 +163,8 @@ and wait for `#coloringOverlay` to be visible. A full worked example (all these
+ >   — copy those, not a fresh `spawn`.
+ >
+ > Either way, **reap what you spawned before ending**: kill the script/browser, run
+-> `npx kill-port <n>`, and confirm with `ps`/`ss -ltnp` that no `vite dev` or headless Chromium is
+-> left behind. A leaked server reads as a "task running for hours".
++> `node scripts/dev-kill.mjs --port <n>`, and confirm with `ps`/`ss -ltnp` that no `vite dev` or
++> headless Chromium is left behind. A leaked server reads as a "task running for hours".
+
+ ## Run (human path)
+
+@@ -217,7 +218,7 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
+ | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+ | `Executable doesn't exist … playwright` (local)                                                          | `npm run test:e2e:install`                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+ | `Executable doesn't exist … playwright` (Claude Code Cloud session)                                      | The env's cached Chromium revision drifted from the one this Playwright version wants. `driver.mjs` now self-heals — it falls back to any Chromium under `PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`). Override with `PLAYWRIGHT_CHROMIUM=/path/to/chrome`. Never run `npx playwright install` in Claude Code Cloud. See `docs/CLOUD/Claude.md`.                                                                                                                        |
+-| `server never came up at http://localhost:5199`                                                          | Port in use — pass `--port <n>` or `npx kill-port 5199`                                                                                                                                                                                                                                                                                                                                                                                                                            |
++| `server never came up at http://localhost:5199`                                                          | Port in use — pass `--port <n>` or `node scripts/dev-kill.mjs --port 5199`                                                                                                                                                                                                                                                                                                                                                                                                         |
+ | `<route> never became interactive`                                                                       | Route 404s or crashes — check it loads at `npm run dev` first                                                                                                                                                                                                                                                                                                                                                                                                                      |
+ | Blank canvas in the `--draw` screenshot                                                                  | Drawing engine regressed; reproduce at `npm run dev`                                                                                                                                                                                                                                                                                                                                                                                                                               |
+ | Want one E2E spec, not the whole suite / `Cannot navigate to invalid URL` from raw `npx playwright test` | The config + `baseURL` live in `web/`, and raw `npx` from the repo root also loses the Chromium fallback. Filter through the npm script instead: `npm run test:e2e -- flows-undo-persistence.spec.ts -g "<title>"` — `scripts/web.mjs` sets the `web/` cwd and Chromium path and forwards the args to Playwright. The positional arg is a path *pattern*, so a filename that no longer exists matches nothing and Playwright exits with `No tests found`. See the `testing` skill. |
+diff --git a/.ruler/skills/run-splotch/driver.mjs b/.ruler/skills/run-splotch/driver.mjs
+index e685ea2a..3ae56b35 100644
+--- a/.ruler/skills/run-splotch/driver.mjs
++++ b/.ruler/skills/run-splotch/driver.mjs
+@@ -134,7 +134,7 @@ function finishServer(baseURL) {
+   }
+   vite.release();
+   console.log(
+-    `server left running: ${baseURL} (pid ${vite.server.pid}) — kill with: npx kill-port ${port}`
++    `server left running: ${baseURL} (pid ${vite.server.pid}) — kill with: node scripts/dev-kill.mjs --port ${port}`
+   );
+ }
+
+diff --git a/docs/DEPENDENCIES.md b/docs/DEPENDENCIES.md
+index 52abd96e..b08791a6 100644
+--- a/docs/DEPENDENCIES.md
++++ b/docs/DEPENDENCIES.md
+@@ -916,13 +916,13 @@ major tag. GitHub's own hardening advice is to pin third-party actions to a full
+ than a moving tag — worth considering for `reactivecircus/*` and `crazy-max/*`, though the current
+ tag pins are conventional. No action pins to a SHA today.
+
+-### Runtime-fetched CLIs (npm scripts, not in `package.json`)
++### Runtime-provisioned CLIs and local helpers (npm scripts, not in `package.json`)
+
+-| Tool                           | Where                                                      | Source / provisioning                                                                                                                        | Verdict                                                                                                                                               |
+-| ------------------------------ | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+-| `netlify-cli`                  | `dev:netlify` (`netlify dev --cwd web`)                    | **global install** (`npm i -g netlify-cli`), deliberately not a project dep — `scripts/check-netlify-cli.mjs` guards its presence/login/link | keep — kept out of the tree on purpose (heavy CLI); the guard documents the requirement                                                               |
+-| `kill-port`                    | `dev:kill` (`npx kill-port 5173 8888`)                     | fetched on demand via `npx` (unpinned)                                                                                                       | monitor — unpinned `npx` fetch runs latest each time; a small dev-only convenience, but pin a version or vendor it if supply-chain strictness matters |
+-| Playwright browsers (Chromium) | `test.yml` (`npx playwright install --with-deps chromium`) | browser **binaries** downloaded by the `@playwright/test` package (in `package.json`); cached by lockfile version in CI                      | keep — versioned by the npm package; the binaries are a separate download, not a separate dep                                                         |
++| Tool                           | Where                                                      | Source / provisioning                                                                                                                        | Verdict                                                                                                   |
++| ------------------------------ | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
++| `netlify-cli`                  | `dev:netlify` (`netlify dev --cwd web`)                    | **global install** (`npm i -g netlify-cli`), deliberately not a project dep — `scripts/check-netlify-cli.mjs` guards its presence/login/link | keep — kept out of the tree on purpose (heavy CLI); the guard documents the requirement                   |
++| Local port cleanup             | `dev:kill` (`node scripts/dev-kill.mjs`)                   | repo-local `freePort(port)` from `scripts/lib/vite-server.mjs`; `--port <n>` clears a kept server's port                                     | keep — runs project code without a registry lookup; `lsof` is the supported macOS/Linux system dependency |
++| Playwright browsers (Chromium) | `test.yml` (`npx playwright install --with-deps chromium`) | browser **binaries** downloaded by the `@playwright/test` package (in `package.json`); cached by lockfile version in CI                      | keep — versioned by the npm package; the binaries are a separate download, not a separate dep             |
+
+ ### System toolchains (native builds & tests — no npm range)
+
+diff --git a/package.json b/package.json
+index daa6a076..e708c597 100644
+--- a/package.json
++++ b/package.json
+@@ -13,7 +13,7 @@
+     "dev:host": "node scripts/web.mjs vite dev --host",
+     "dev:cap": "CAPACITOR=true node scripts/web.mjs vite dev --host",
+     "dev:tunnel": "node scripts/cloud-tunnel.mjs",
+-    "dev:kill": "npx kill-port 5173 8888",
++    "dev:kill": "node scripts/dev-kill.mjs",
+     "prebuild": "node scripts/web.mjs svelte-kit sync && npm run gen:icons && npm run gen:releases",
+     "build": "node scripts/web.mjs vite build",
+     "postbuild": "node scripts/check-release-seams.mjs && node scripts/check-pwa-precache.mjs",
+diff --git a/scripts/dev-kill.mjs b/scripts/dev-kill.mjs
+new file mode 100644
+index 00000000..ce8d650a
+--- /dev/null
++++ b/scripts/dev-kill.mjs
+@@ -0,0 +1,56 @@
++import { isMain, runMain, sleep } from './lib/proc.mjs';
++import { freePort } from './lib/vite-server.mjs';
++import { spawnSync } from 'node:child_process';
++import { parseArgs } from 'node:util';
++
++const DEV_PORTS = [5173, 8888];
++const PORT_TERM_GRACE_MS = 1_000;
++const PORT_KILL_GRACE_MS = 1_000;
++const PORT_RECHECK_INTERVAL_MS = 50;
++
++function validatePort(port) {
++  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
++    throw new Error(`Invalid port ${port}: expected an integer from 1 to 65535.`);
++  }
++  return port;
++}
++
++function listenerPids(port) {
++  const result = spawnSync('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
++  if (result.error) throw result.error;
++  return (result.stdout || '')
++    .split('\n')
++    .map((pid) => pid.trim())
++    .filter(Boolean)
++    .map(Number);
++}
++
++async function waitForPortToClear(port, timeoutMs) {
++  const deadline = Date.now() + timeoutMs;
++  for (;;) {
++    const pids = listenerPids(port);
++    if (!pids.length || Date.now() >= deadline) return pids;
++    await sleep(PORT_RECHECK_INTERVAL_MS);
++  }
++}
++
++export async function killDevPorts(ports = DEV_PORTS) {
++  const validatedPorts = ports.map(validatePort);
++  for (const port of validatedPorts) freePort(port);
++  for (const port of validatedPorts) {
++    let pids = await waitForPortToClear(port, PORT_TERM_GRACE_MS);
++    if (!pids.length) continue;
++    for (const pid of pids) {
++      try {
++        process.kill(pid, 'SIGKILL');
++      } catch {}
++    }
++    pids = await waitForPortToClear(port, PORT_KILL_GRACE_MS);
++    if (pids.length) throw new Error(`Port ${port} is still in use after SIGKILL.`);
++  }
++}
++
++if (isMain(import.meta.url)) {
++  const { values } = parseArgs({ options: { port: { type: 'string', multiple: true } } });
++  runMain(() => killDevPorts(values.port?.map(Number)));
++}
+diff --git a/scripts/tests/dev-kill.test.mjs b/scripts/tests/dev-kill.test.mjs
+new file mode 100644
+index 00000000..e75afcc9
+--- /dev/null
++++ b/scripts/tests/dev-kill.test.mjs
+@@ -0,0 +1,59 @@
++import { afterEach, describe, expect, it, vi } from 'vitest';
++
++vi.mock('node:child_process', () => ({ spawnSync: vi.fn() }));
++vi.mock('../lib/vite-server.mjs', () => ({ freePort: vi.fn() }));
++vi.mock('../lib/proc.mjs', async (importOriginal) => {
++  const actual = await importOriginal();
++  return { ...actual, sleep: vi.fn() };
++});
++
++import { spawnSync } from 'node:child_process';
++import { killDevPorts } from '../dev-kill.mjs';
++import { sleep } from '../lib/proc.mjs';
++import { freePort } from '../lib/vite-server.mjs';
++
++afterEach(() => {
++  vi.restoreAllMocks();
++  vi.clearAllMocks();
++  vi.useRealTimers();
++});
++
++describe('killDevPorts', () => {
++  it.each([0, 1.5, 65_536, Number.NaN, 'nope'])(
++    'rejects invalid port %s before cleanup',
++    async (port) => {
++      await expect(killDevPorts([port])).rejects.toThrow('expected an integer from 1 to 65535');
++      expect(freePort).not.toHaveBeenCalled();
++    }
++  );
++
++  it('escalates a listener that survives SIGTERM and verifies that it exits', async () => {
++    vi.useFakeTimers({ now: 0 });
++    sleep.mockImplementation(async () => vi.setSystemTime(1_000));
++    spawnSync
++      .mockReturnValueOnce({ stdout: '123\n' })
++      .mockReturnValueOnce({ stdout: '123\n' })
++      .mockReturnValueOnce({ stdout: '' });
++    const kill = vi.spyOn(process, 'kill').mockImplementation(() => true);
++
++    await killDevPorts([5199]);
++
++    expect(freePort).toHaveBeenCalledWith(5199);
++    expect(kill).toHaveBeenCalledWith(123, 'SIGKILL');
++  });
++
++  it('fails when a listener survives SIGKILL', async () => {
++    vi.useFakeTimers({ now: 0 });
++    sleep.mockImplementation(async () => vi.setSystemTime(Date.now() + 1_000));
++    spawnSync.mockReturnValue({ stdout: '123\n' });
++    vi.spyOn(process, 'kill').mockImplementation(() => true);
++
++    await expect(killDevPorts([5199])).rejects.toThrow('Port 5199 is still in use after SIGKILL.');
++  });
++
++  it('fails when lsof cannot verify that a port is clear', async () => {
++    spawnSync.mockReturnValue({ error: new Error('lsof missing') });
++
++    await expect(killDevPorts([5199])).rejects.toThrow('lsof missing');
++  });
++});
+diff --git a/scripts/tests/dev-ports.test.mjs b/scripts/tests/dev-ports.test.mjs
+index 1ada9cfb..1b855b1d 100644
+--- a/scripts/tests/dev-ports.test.mjs
++++ b/scripts/tests/dev-ports.test.mjs
+@@ -15,6 +15,7 @@ const read = (relative) => readFileSync(join(repoRoot, relative), 'utf8');
+ const viteConfig = read('web/vite.config.ts');
+ const netlifyToml = read('web/netlify.toml');
+ const packageJson = JSON.parse(read('package.json'));
++const devKill = read('scripts/dev-kill.mjs');
+
+ const match = (source, pattern, label) => {
+   const found = source.match(pattern);
+@@ -24,7 +25,9 @@ const match = (source, pattern, label) => {
+
+ const vitePort = match(viteConfig, /^\s*port: (\d+),$/m, 'vite server.port');
+ const netlifyPort = match(netlifyToml, /^\s*port = (\d+)$/m, 'netlify [dev].port');
+-const killedPorts = (packageJson.scripts['dev:kill'].match(/\d+/g) ?? []).map(Number);
++const killedPorts = (devKill.match(/const DEV_PORTS = \[([^\]]+)]/)?.[1].match(/\d+/g) ?? []).map(
++  Number
++);
+
+ // Every executable consumer of the vite dev port — anything that would send a
+ // device, a tunnel, or a process at the wrong place if the port moved. Prose
+diff --git a/scripts/tests/run-splotch-driver.test.mjs b/scripts/tests/run-splotch-driver.test.mjs
+index 5bed5080..abf63419 100644
+--- a/scripts/tests/run-splotch-driver.test.mjs
++++ b/scripts/tests/run-splotch-driver.test.mjs
+@@ -15,6 +15,7 @@ import { describe, expect, it } from 'vitest';
+ // keep naming the anti-pattern in the WHY comment that explains the helper.
+ const repoRoot = join(import.meta.dirname, '..', '..');
+ const VITE_SERVER = realpathSync(join(repoRoot, 'scripts', 'lib', 'vite-server.mjs'));
++const SKILL = readFileSync(join(repoRoot, '.ruler', 'skills', 'run-splotch', 'SKILL.md'), 'utf8');
+
+ // Every generated copy, because each one is a script an agent is told to run and
+ // the shared import specifier is relative — it has to resolve from all of them.
+@@ -51,4 +52,14 @@ describe.each(DRIVERS)('run-splotch driver $path', ({ path, source }) => {
+     expect(body).toContain('.stop()');
+     expect(body).toContain('.release()');
+   });
++
++  it('prints a project-local command for reaping a kept server', () => {
++    expect(body).not.toContain('npx kill-port');
++    expect(body).toContain('node scripts/dev-kill.mjs --port ${port}');
++  });
++});
++
++it('documents project-local port cleanup for kept servers', () => {
++  expect(SKILL).not.toContain('npx kill-port');
++  expect(SKILL).toContain('node scripts/dev-kill.mjs --port <n>');
+ });

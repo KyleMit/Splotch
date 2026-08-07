@@ -46,33 +46,6 @@ eventually arrive as a bug report — but the reporter is a two-year-old, so the
 Unbounded work, unvalidated input reaching a shell, unpinned remote code, and files that reach the
 production bundle or the clone weight without being needed there.
 
-### [Maintainability] `dev:kill` executes `kill-port` via bare `npx` — an undeclared, unpinned dependency fetched at run time
-
-**File(s):** `package.json` (line 16) @ cd04c367
-
-**Priority:** P4
-
-#### Problem
-
-```json
-"dev:kill": "npx kill-port 5173 8888",
-```
-
-`kill-port` is not in `devDependencies` (only `tree-kill` exists in `node_modules/.bin`), so `npx`
-resolves it from the registry on each first use: the script needs network to run (it exists
-precisely for when the local environment is wedged), executes whatever version is `latest` that day,
-and is exposed to registry-side supply-chain swaps. The repo's own ESLint config bans the bare
-`playwright` import specifically because "bare playwright is an undeclared transitive dependency"
-(eslint.config.js lines 65–69) — the same principle applies to tooling invoked from scripts.
-
-#### Proposed solution
-
-Either pin it as a devDependency (`"kill-port": "^2"`) so `npx` resolves the local, locked copy — or
-drop the dependency entirely with a tiny Node helper in `scripts/` (consistent with ADR-0017's
-"platform-specific tools are invoked via Node helpers"): find the PID listening on 5173/8888 via
-`lsof -ti :5173` / reading `/proc` and `process.kill` it. The helper route also removes the one
-remaining scripted network dependency for a purely local operation.
-
 ### [Maintainability] Prune the full-resolution working-set images committed under ideas-exploration (~34 MB)
 
 **File(s):** `tools/asset-gen/ideas-exploration/idea-16/work/` (~14 MB),
