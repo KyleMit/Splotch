@@ -28,37 +28,6 @@ this file.
 
 ## Source: Code audit — Gestures / Svelte actions
 
-### [Readability] `holdStartX/holdStartY` are byte-for-byte duplicates of `startPointerX/startPointerY`
-
-**File(s):** `web/src/lib/actions/dragToClear.ts` (lines 37–38, 43–44, 108–117, 146–147) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`onPointerDown` assigns both pairs from the same event coordinates:
-
-```ts
-holdStartX = clientX;   // line 110
-holdStartY = clientY;   // line 111
-...
-startPointerX = clientX; // line 116
-startPointerY = clientY; // line 117
-```
-
-Neither pair is written anywhere else, so they are always equal. `onPointerMove` measures
-hold-cancel movement against `holdStartX/Y` (lines 146–147) and drag distance against
-`startPointerX/Y` (via `dragDistance`, lines 63–65) — two names for one anchor point. A reader must
-diff the assignments to discover they can't diverge, and a future edit that moves one assignment
-silently forks the semantics.
-
-#### Proposed solution
-
-Delete `holdStartX/holdStartY` and compute the hold-cancel deltas from
-`startPointerX/startPointerY`. If the per-axis (Chebyshev) check at line 148 versus the Euclidean
-`dragDistance` elsewhere is deliberate, keep the check shape and just swap the variables; the
-behavior is identical.
-
 ### [Types] `onRequestClose` is documented required but typed optional
 
 **File(s):** `web/src/lib/actions/modalDialog.svelte.ts` (`ModalOptions`, lines 38–46; doc lines

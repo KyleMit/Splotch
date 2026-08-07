@@ -44,8 +44,6 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   let clearReady = false;
   let holdTimer: ReturnType<typeof setTimeout> | null = null;
   let acceptZoneFrame: number | null = null;
-  let holdStartX = 0;
-  let holdStartY = 0;
   let clickCount = 0;
   let lastClickTime = 0;
 
@@ -105,8 +103,6 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
     const clientX = e.clientX;
     const clientY = e.clientY;
-    holdStartX = clientX;
-    holdStartY = clientY;
     holdTimer = scheduleReset(o.onTutorialShow, HOLD_DURATION_MS);
 
     activePointerId = e.pointerId;
@@ -141,8 +137,8 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const clientX = e.clientX;
     const clientY = e.clientY;
 
-    const deltaX = Math.abs(clientX - holdStartX);
-    const deltaY = Math.abs(clientY - holdStartY);
+    const deltaX = Math.abs(clientX - startPointerX);
+    const deltaY = Math.abs(clientY - startPointerY);
     if (deltaX > MOVEMENT_THRESHOLD_PX || deltaY > MOVEMENT_THRESHOLD_PX) {
       if (holdTimer !== null) {
         resetTimers.delete(holdTimer);
