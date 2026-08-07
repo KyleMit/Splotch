@@ -1,7 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { stopDrawSound } from '$lib/audio/drawingSound';
 import { impactThreshold } from '$lib/haptics';
-import { dragToClear, type DragToClearOptions } from './dragToClear';
+import { dragToClear, PAGE_TURN_DURATION_MS, type DragToClearOptions } from './dragToClear';
 
 vi.mock('$lib/drawing/engine', () => ({ releaseAllPointers: vi.fn() }));
 vi.mock('$lib/audio/drawingSound', () => ({ stopDrawSound: vi.fn() }));
@@ -300,5 +301,26 @@ describe('dragToClear hold-to-show-tutorial timer', () => {
     vi.advanceTimersByTime(1000);
 
     expect(options.onTutorialShow).not.toHaveBeenCalled();
+  });
+});
+
+// The page-turn hand-off waits out a ripple animation whose duration is
+// declared in ClearButton.svelte's CSS, where no module can import it — so the
+// agreement is checked by reading that source. The path stays a parameter
+// because Vite rewrites a literal `new URL('./literal', import.meta.url)` into
+// the served asset's http URL, which readFileSync rejects (precedent:
+// app.html.test.ts).
+function sourceFile(path: string): string {
+  return readFileSync(new URL(path, import.meta.url), 'utf8');
+}
+
+describe('dragToClear exit choreography timing', () => {
+  it("waits out ClearButton.svelte's ripple animation", () => {
+    const match = sourceFile('../components/ClearButton.svelte').match(
+      /animation:\s*ripple\s+([\d.]+)s/
+    );
+    expect(match, 'ClearButton.svelte declares a ripple animation duration').not.toBeNull();
+
+    expect(PAGE_TURN_DURATION_MS).toBe(Number(match![1]) * 1000);
   });
 });

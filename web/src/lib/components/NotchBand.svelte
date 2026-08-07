@@ -2,7 +2,7 @@
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import { isNative, getPlatform } from '$lib/platform';
-  import { computeNotchBandState } from '$lib/notchBand';
+  import { applyStatusBar, computeNotchBandState } from '$lib/notchBand';
   import { layout } from '$lib/state/layout.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { PAPER_COLORS, setThemeColorMeta } from '$lib/theme';
@@ -42,16 +42,9 @@
     const style = band.statusBarStyle;
     const hidden = band.statusBarHidden;
     if (__IS_CAPACITOR__ && isNative()) {
-      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
-        if (style) {
-          StatusBar.setStyle({ style: style === 'DARK' ? Style.Dark : Style.Light }).catch(
-            () => {}
-          );
-        }
-        if (hidden !== null) {
-          (hidden ? StatusBar.hide() : StatusBar.show()).catch(() => {});
-        }
-      });
+      import('@capacitor/status-bar')
+        .then(({ StatusBar, Style }) => applyStatusBar(style, hidden, StatusBar, Style))
+        .catch(() => {});
     }
   });
 </script>

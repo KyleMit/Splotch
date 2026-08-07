@@ -1,5 +1,3 @@
-import { SvelteMap } from 'svelte/reactivity';
-
 export interface Point {
   x: number;
   y: number;
@@ -11,11 +9,9 @@ export interface Point {
 // pan+zoom transform, `pinchTextZoom`'s 1D zoom ratio) on top.
 //
 // The map is a private detail so neither caller inherits the other's reactivity
-// assumptions; only `pointerCount` and a snapshot array are exposed. It is a
-// SvelteMap so `pointerCount` stays reactive for `pinchZoom`'s
-// `pointerCount`/`isZoomed` getters.
+// assumptions; only `pointerCount` and a snapshot array are exposed.
 export function createSpreadTracker() {
-  const pointers = new SvelteMap<number, Point>();
+  const pointers = new Map<number, Point>();
 
   return {
     get pointerCount() {

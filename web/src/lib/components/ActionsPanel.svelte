@@ -16,14 +16,9 @@
   import { browser } from '$app/environment';
   import { layout } from '$lib/state/layout.svelte';
   import {
-    ACTION_BUTTON_GAP,
-    ACTION_BUTTON_BASE_LANDSCAPE,
-    ACTION_BUTTON_BASE_PORTRAIT,
-    SETTINGS_BUTTON_RESERVE,
     PANEL_INSET,
-    PANEL_FIXED_CHROME,
-    PALETTE_CLEARANCE,
     MAX_ACTION_BUTTON_COUNT,
+    buttonSizeCssExpr,
     isAiImageButtonVisible,
     visibleActionButtonCount,
     resolvedLandscapePaletteWidth,
@@ -78,9 +73,10 @@
 
   // Cap the button size so the expanded panel always fits the screen —
   // landscape: the row stops short of the bottom-right Settings Button;
-  // portrait: the column stops short of the palette bar at the top. Constants
-  // and the mirror JS formula (the Button Size slider's dynamic max in Settings) live in
-  // actionButtonLayout. An explicit equal per-button size — rather than letting
+  // portrait: the column stops short of the palette bar at the top. The formula
+  // lives in actionButtonLayout, which builds this CSS length and the Button
+  // Size slider's dynamic max in Settings from one budget. An explicit equal
+  // per-button size — rather than letting
   // the row flex-shrink — keeps the buttons identical (flex distributes by
   // inner base size, which padding skews) and keeps their positions stable
   // while the drawer's expand animation sweeps the row's width through zero.
@@ -103,14 +99,20 @@
   // the ceiling can't disagree.
   const buttonCount = $derived(browser ? visibleActionButtonCount() : MAX_ACTION_BUTTON_COUNT);
   const aiImageButtonVisible = $derived(isAiImageButtonVisible());
-  const buttonSpread = $derived((buttonCount - 1) * ACTION_BUTTON_GAP + PANEL_FIXED_CHROME);
 
   const buttonSize = $derived(
     !browser
       ? undefined
-      : isPortrait
-        ? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((${layout.viewportHeight - portraitPaletteHeight - PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
-        : `min(calc(${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)), calc((100vw - ${landscapePaletteWidth + SETTINGS_BUTTON_RESERVE}px - env(safe-area-inset-left) - env(safe-area-inset-right) - ${buttonSpread}px) / ${buttonCount}))`
+      : buttonSizeCssExpr(
+          isPortrait
+            ? {
+                orientation: 'portrait',
+                buttonCount,
+                paletteHeight: portraitPaletteHeight,
+                viewportHeight: layout.viewportHeight,
+              }
+            : { orientation: 'landscape', buttonCount, paletteWidth: landscapePaletteWidth }
+        )
   );
 
   // When advanced controls are disabled the chevron is hidden and the drawer
@@ -190,17 +192,8 @@
     };
     document.addEventListener('pointerdown', onDocPointerDown);
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z') {
-        e.preventDefault();
-        handleUndoClick();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-
     return () => {
       document.removeEventListener('pointerdown', onDocPointerDown);
-      window.removeEventListener('keydown', onKeyDown);
     };
   });
 
@@ -461,7 +454,6 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    /* Keep in sync with ACTION_BUTTON_GAP in actionButtonLayout.ts. */
     gap: 12px;
     min-width: 0;
     min-height: 0;
@@ -744,30 +736,5 @@
      toggle in Settings). */
   .flyout-wrapper {
     position: relative;
-  }
-
-  /* White brush color is invisible on the white buttons, so ring the tinted
-     shapes with a solid black edge while white is active. paint-order draws the
-     stroke behind the white fill (so only an outer keyline shows), and
-     non-scaling-stroke pins it to 2 screen px across the icons' very different
-     viewBoxes (pen/crayon ~272). Only the currentColor paths are stroked,
-     leaving each icon's fixed-palette parts untouched. The matching keyline
-     rules for the menu popovers live in BrushMenu/StrokeWidthMenu. The #000 is
-     a deliberate one-off — black reads against every pen color and both papers. */
-  .action-button.white-stroke :global(svg path[fill='currentColor']) {
-    stroke: #000;
-    stroke-width: 2px;
-    paint-order: stroke;
-    vector-effect: non-scaling-stroke;
-  }
-
-  /* The dark-mode mirror: ring near-black ink with a light keyline so it reads
-     on the dark cards. Same paint-order trick; the keyline token is transparent
-     in light mode, so this rule is inert there. */
-  .action-button.dark-stroke :global(svg path[fill='currentColor']) {
-    stroke: var(--dark-ink-keyline);
-    stroke-width: 2px;
-    paint-order: stroke;
-    vector-effect: non-scaling-stroke;
   }
 </style>

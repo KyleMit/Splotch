@@ -20,14 +20,20 @@ import {
   PALETTE_LANDSCAPE_WIDTHS_PX,
 } from './design/trimGeometry';
 import {
+  ACTION_BUTTON_BASE_LANDSCAPE,
+  ACTION_BUTTON_BASE_PORTRAIT,
   ACTION_PANEL_LIVE_ATTRIBUTE,
+  CONTROL_OFF_ATTRIBUTES,
   PALETTE_BAR_RESERVE,
+  availablePerButton,
+  buttonSizeCssExpr,
   isAiImageButtonVisible,
   visibleActionButtonCount,
   resolvedLandscapePaletteWidth,
   resolvedPortraitPaletteHeight,
   maxActionButtonScale,
   publishActionPanelState,
+  MAX_ACTION_BUTTON_COUNT,
 } from './actionButtonLayout';
 
 const originalMatchMedia = window.matchMedia;
@@ -115,6 +121,11 @@ describe('visibleActionButtonCount', () => {
   it('the eraser toggle hides a Brush Menu entry, not a button', () => {
     setEraser(false);
     expect(visibleActionButtonCount()).toBe(5);
+  });
+
+  it('all-on count equals MAX_ACTION_BUTTON_COUNT', () => {
+    setAiAccessToken('tok');
+    expect(visibleActionButtonCount()).toBe(MAX_ACTION_BUTTON_COUNT);
   });
 });
 
@@ -235,6 +246,163 @@ describe('maxActionButtonScale', () => {
   });
 });
 
+// The hydrated render cap (a CSS length) and the slider ceiling (a number) are
+// one formula, so evaluating the string with both safe-area insets at zero — as
+// the fixtures' layout state has them — and --action-btn-scale at 1 has to land
+// on exactly the budget availablePerButton reports.
+const CSS_TOKEN_PATTERN = /min|calc|[-+*/(),]|\d+(?:\.\d+)?/g;
+
+function tokenizeCssLength(expr: string, viewportWidth: number): string[] {
+  const resolved = expr
+    .replace(/env\(safe-area-inset-\w+\)/g, '0px')
+    .replace('var(--action-btn-scale, 1)', '1')
+    .replace('100vw', `${viewportWidth}px`)
+    .replace(/px\b/g, '');
+  return resolved.match(CSS_TOKEN_PATTERN) ?? [];
+}
+
+// Recursive descent over the CSS subset buttonSizeCssExpr emits: min(), calc(),
+// px lengths, and the four arithmetic operators.
+function evaluateCssLength(expr: string, viewportWidth: number): number {
+  const tokens = tokenizeCssLength(expr, viewportWidth);
+  let index = 0;
+
+  function operand(): number {
+    const token = tokens[index++];
+    if (token === 'min') {
+      index++;
+      const operands = [sum()];
+      while (tokens[index] === ',') {
+        index++;
+        operands.push(sum());
+      }
+      index++;
+      return Math.min(...operands);
+    }
+    if (token === 'calc') index++;
+    if (token === 'calc' || token === '(') {
+      const grouped = sum();
+      index++;
+      return grouped;
+    }
+    return Number(token);
+  }
+
+  function product(): number {
+    let result = operand();
+    while (tokens[index] === '*' || tokens[index] === '/') {
+      const operator = tokens[index++];
+      result = operator === '*' ? result * operand() : result / operand();
+    }
+    return result;
+  }
+
+  function sum(): number {
+    let result = product();
+    while (tokens[index] === '+' || tokens[index] === '-') {
+      const operator = tokens[index++];
+      result = operator === '+' ? result + product() : result - product();
+    }
+    return result;
+  }
+
+  return sum();
+}
+
+const BUTTON_SIZE_FIXTURES = [
+  {
+    name: 'roomy landscape tablet',
+    orientation: 'landscape',
+    viewportWidth: 1280,
+    viewportHeight: 800,
+    paletteWidth: 156,
+    paletteHeight: 800,
+    buttonCount: 5,
+    budgetWins: false,
+  },
+  {
+    name: 'narrow landscape phone with every button',
+    orientation: 'landscape',
+    viewportWidth: 568,
+    viewportHeight: 320,
+    paletteWidth: 156,
+    paletteHeight: 320,
+    buttonCount: 6,
+    budgetWins: true,
+  },
+  {
+    name: 'single-column landscape palette',
+    orientation: 'landscape',
+    viewportWidth: 1024,
+    viewportHeight: 768,
+    paletteWidth: 84,
+    paletteHeight: 768,
+    buttonCount: 3,
+    budgetWins: false,
+  },
+  {
+    name: 'tall portrait phone',
+    orientation: 'portrait',
+    viewportWidth: 390,
+    viewportHeight: 844,
+    paletteWidth: 390,
+    paletteHeight: 76,
+    buttonCount: 5,
+    budgetWins: false,
+  },
+  {
+    name: 'short portrait phone with a deep palette',
+    orientation: 'portrait',
+    viewportWidth: 360,
+    viewportHeight: 440,
+    paletteWidth: 360,
+    paletteHeight: 92,
+    buttonCount: 6,
+    budgetWins: true,
+  },
+] as const;
+
+describe('buttonSizeCssExpr', () => {
+  it.each(BUTTON_SIZE_FIXTURES)(
+    'resolves to the same cap as the slider ceiling budget on a $name',
+    (fixture) => {
+      layout.orientation = fixture.orientation;
+      layout.viewportWidth = fixture.viewportWidth;
+      layout.viewportHeight = fixture.viewportHeight;
+      layout.paletteMeasurement = {
+        width: fixture.paletteWidth,
+        height: fixture.paletteHeight,
+        orientation: fixture.orientation,
+      };
+
+      const { buttonCount } = fixture;
+      const inputs =
+        fixture.orientation === 'portrait'
+          ? {
+              orientation: fixture.orientation,
+              buttonCount,
+              paletteHeight: resolvedPortraitPaletteHeight(),
+              viewportHeight: layout.viewportHeight,
+            }
+          : {
+              orientation: fixture.orientation,
+              buttonCount,
+              paletteWidth: resolvedLandscapePaletteWidth(),
+            };
+      const base =
+        fixture.orientation === 'portrait'
+          ? ACTION_BUTTON_BASE_PORTRAIT
+          : ACTION_BUTTON_BASE_LANDSCAPE;
+      const available = availablePerButton(buttonCount);
+
+      expect(available < base).toBe(fixture.budgetWins);
+      expect(evaluateCssLength(buttonSizeCssExpr(inputs), layout.viewportWidth)).toBeCloseTo(
+        Math.min(base, available)
+      );
+    }
+  );
+});
+
 // The publish contract mirrors the app.html seed script and BOOL_SETTINGS: an
 // attribute is present only when the value DEVIATES from the default, so the raw
 // prerendered HTML (no attributes) already renders the defaults. These tests pin
@@ -250,14 +418,7 @@ describe('publishActionPanelState', () => {
     expect(el.style.getPropertyValue('--action-btn-scale')).toBe('1');
     expect(el.hasAttribute(ACTION_PANEL_LIVE_ATTRIBUTE)).toBe(true);
     expect(el.hasAttribute('data-drawer-open')).toBe(false);
-    for (const attr of [
-      'data-off-adv',
-      'data-off-stroke',
-      'data-off-eraser',
-      'data-off-coloring',
-      'data-off-screenshot',
-      'data-off-undo',
-    ]) {
+    for (const attr of Object.values(CONTROL_OFF_ATTRIBUTES)) {
       expect(el.hasAttribute(attr)).toBe(false);
     }
     expect(el.hasAttribute('data-brush')).toBe(false);
@@ -289,14 +450,7 @@ describe('publishActionPanelState', () => {
     setUndoButton(false);
     const el = document.createElement('div');
     publishActionPanelState(el, false, 1);
-    for (const attr of [
-      'data-off-adv',
-      'data-off-stroke',
-      'data-off-eraser',
-      'data-off-coloring',
-      'data-off-screenshot',
-      'data-off-undo',
-    ]) {
+    for (const attr of Object.values(CONTROL_OFF_ATTRIBUTES)) {
       expect(el.hasAttribute(attr)).toBe(true);
     }
   });

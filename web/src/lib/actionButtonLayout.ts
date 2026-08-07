@@ -10,14 +10,13 @@ import {
   ACTION_BUTTON_SCALE_MAX,
 } from '$lib/state/settings.svelte';
 import { network } from '$lib/state/network.svelte';
-import { layout } from '$lib/state/layout.svelte';
+import { layout, type Orientation } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
 import {
   landscapeSingleColumnMediaQuery,
   PALETTE_LANDSCAPE_WIDTHS_PX,
 } from '$lib/design/trimGeometry';
 
-// Keep in sync with the .actions-drawer-inner gap in ActionsPanel.svelte.
 export const ACTION_BUTTON_GAP = 12;
 
 // Unscaled button size (matches the Color Swatch touch target per orientation).
@@ -109,28 +108,70 @@ export function resolvedPortraitPaletteHeight(): number {
   return PALETTE_BAR_RESERVE;
 }
 
+// Everything the panel spends out of the viewport extent before the rest is
+// divided between the buttons: the palette bar the row/column must clear, the
+// orientation's edge reserve, and the panel's own chrome (screen inset, drawer
+// toggle, and the gaps between buttons).
+function fixedRowCost(
+  orientation: Orientation,
+  buttonCount: number,
+  paletteExtent: number
+): number {
+  const edgeReserve = orientation === 'portrait' ? PALETTE_CLEARANCE : SETTINGS_BUTTON_RESERVE;
+  return paletteExtent + edgeReserve + PANEL_FIXED_CHROME + (buttonCount - 1) * ACTION_BUTTON_GAP;
+}
+
 // The space one button may occupy on the current screen, in px, before the row
 // (landscape: up to the reserve for the Settings Button) or the column (portrait:
-// up to the palette bar) runs out. Mirrors the CSS cap in ActionsPanel — keep
-// the two formulas in step.
-function availablePerButton(buttonCount: number): number {
+// up to the palette bar) runs out. buttonSizeCssExpr builds the render-time cap
+// from the same fixedRowCost, so the two can't drift.
+// Exported only so the equivalence test can hold that CSS expression against
+// this number; maxActionButtonScale is the production caller.
+export function availablePerButton(buttonCount: number): number {
   const { orientation, safeArea } = layout;
-  const chrome = PANEL_FIXED_CHROME + (buttonCount - 1) * ACTION_BUTTON_GAP;
-  const budget =
+  const [viewportExtent, paletteExtent, insets] =
     orientation === 'portrait'
-      ? layout.viewportHeight -
-        resolvedPortraitPaletteHeight() -
-        PALETTE_CLEARANCE -
-        safeArea.top -
-        safeArea.bottom -
-        chrome
-      : layout.viewportWidth -
-        resolvedLandscapePaletteWidth() -
-        SETTINGS_BUTTON_RESERVE -
-        safeArea.left -
-        safeArea.right -
-        chrome;
-  return budget / buttonCount;
+      ? [layout.viewportHeight, resolvedPortraitPaletteHeight(), safeArea.top + safeArea.bottom]
+      : [layout.viewportWidth, resolvedLandscapePaletteWidth(), safeArea.left + safeArea.right];
+  return (
+    (viewportExtent - fixedRowCost(orientation, buttonCount, paletteExtent) - insets) / buttonCount
+  );
+}
+
+export type ActionButtonSizeInputs =
+  | {
+      orientation: 'portrait';
+      buttonCount: number;
+      paletteHeight: number;
+      viewportHeight: number;
+    }
+  | { orientation: 'landscape'; buttonCount: number; paletteWidth: number };
+
+// The hydrated render cap as a CSS length: the scaled base size, capped by the
+// same budget availablePerButton computes. Two terms stay symbolic because the
+// browser resolves them at paint time — the safe-area insets, where
+// availablePerButton subtracts the measured layout.safeArea instead, and the
+// landscape viewport width. Portrait takes the measured viewportHeight rather
+// than 100vh (see ActionsPanel).
+export function buttonSizeCssExpr(inputs: ActionButtonSizeInputs): string {
+  const { orientation, buttonCount } = inputs;
+  const axis =
+    inputs.orientation === 'portrait'
+      ? {
+          base: ACTION_BUTTON_BASE_PORTRAIT,
+          viewportExtent: `${inputs.viewportHeight}px`,
+          paletteExtent: inputs.paletteHeight,
+          insets: 'env(safe-area-inset-top) - env(safe-area-inset-bottom)',
+        }
+      : {
+          base: ACTION_BUTTON_BASE_LANDSCAPE,
+          viewportExtent: '100vw',
+          paletteExtent: inputs.paletteWidth,
+          insets: 'env(safe-area-inset-left) - env(safe-area-inset-right)',
+        };
+  const fixedCost = fixedRowCost(orientation, buttonCount, axis.paletteExtent);
+  const budget = `${axis.viewportExtent} - ${fixedCost}px - ${axis.insets}`;
+  return `min(calc(${axis.base}px * var(--action-btn-scale, 1)), calc((${budget}) / ${buttonCount}))`;
 }
 
 // Largest Button Size percentage the current screen can show without the
@@ -148,6 +189,33 @@ export function maxActionButtonScale(): number {
 // Marks the point where Actions Panel CSS stops reading app.html's immutable
 // first-paint seed from <html> and reads live state from the panel subtree.
 export const ACTION_PANEL_LIVE_ATTRIBUTE = 'data-action-panel-live';
+
+type BooleanSettingKey = {
+  [K in keyof typeof settings]: (typeof settings)[K] extends boolean ? K : never;
+}[keyof typeof settings];
+
+// Every Actions Panel control a parent can switch off, mapped to the attribute
+// that marks it off. app.html's inline boot script re-types these names as
+// literals because it can't import (see publishActionPanelState below);
+// app.html.test.ts diffs its list against this table.
+export const CONTROL_OFF_ATTRIBUTES = {
+  advancedControlsEnabled: 'data-off-adv',
+  strokeWidthControlEnabled: 'data-off-stroke',
+  eraserEnabled: 'data-off-eraser',
+  coloringBookEnabled: 'data-off-coloring',
+  screenshotEnabled: 'data-off-screenshot',
+  undoButtonEnabled: 'data-off-undo',
+} as const satisfies Partial<Record<BooleanSettingKey, `data-off-${string}`>>;
+
+const controlOffEntries = Object.entries(CONTROL_OFF_ATTRIBUTES) as [
+  keyof typeof CONTROL_OFF_ATTRIBUTES,
+  string,
+][];
+
+// The rest of the seeded vocabulary app.html's boot script re-types: the
+// drawer's open state, and the brush the Brush Button wears.
+export const DRAWER_OPEN_ATTRIBUTE = 'data-drawer-open';
+export const BRUSH_ATTRIBUTE = 'data-brush';
 
 // Publish the Actions Panel's hydrated UI state onto its own root so CSS can
 // drive each control's visibility, the drawer's open state, and the Brush
@@ -172,18 +240,15 @@ export function publishActionPanelState(
   buttonScale: number
 ): void {
   el.style.setProperty('--action-btn-scale', String(buttonScale));
-  el.toggleAttribute('data-drawer-open', drawerExpanded);
-  el.toggleAttribute('data-off-adv', !settings.advancedControlsEnabled);
-  el.toggleAttribute('data-off-stroke', !settings.strokeWidthControlEnabled);
-  el.toggleAttribute('data-off-eraser', !settings.eraserEnabled);
-  el.toggleAttribute('data-off-coloring', !settings.coloringBookEnabled);
-  el.toggleAttribute('data-off-screenshot', !settings.screenshotEnabled);
-  el.toggleAttribute('data-off-undo', !settings.undoButtonEnabled);
+  el.toggleAttribute(DRAWER_OPEN_ATTRIBUTE, drawerExpanded);
+  for (const [key, attribute] of controlOffEntries) {
+    el.toggleAttribute(attribute, !settings[key]);
+  }
   // The Brush Button's face is the active brush's icon. All four icons are in
   // the DOM and CSS shows the one matching this attribute ({@html} icons can't
   // swap during hydration — see .claude/rules/svelte.md), absent for the
   // default pen so the raw prerendered HTML is already correct.
-  if (toolState.brush === 'pen') el.removeAttribute('data-brush');
-  else el.setAttribute('data-brush', toolState.brush);
+  if (toolState.brush === 'pen') el.removeAttribute(BRUSH_ATTRIBUTE);
+  else el.setAttribute(BRUSH_ATTRIBUTE, toolState.brush);
   el.setAttribute(ACTION_PANEL_LIVE_ATTRIBUTE, '');
 }

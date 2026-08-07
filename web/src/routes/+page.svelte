@@ -24,6 +24,7 @@
   import { hydratePersistedState } from '$lib/boot/persistedState';
   import { initWebOnlyServices } from '$lib/boot/webOnlyServices';
   import { installDevHarnessSeam } from '$lib/boot/devHarnessSeam';
+  import { installUndoShortcut } from '$lib/boot/undoShortcut';
 
   $effect(() => {
     applyDeviceOrientationPreference(
@@ -91,6 +92,7 @@
       installWakeLock(),
       initWebOnlyServices(),
       installDevHarnessSeam(),
+      installUndoShortcut(),
     ];
     return () => teardowns.forEach((teardown) => teardown());
   });

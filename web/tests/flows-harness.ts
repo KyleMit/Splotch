@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 
 import { retryOpen, settleFlyIn } from './helpers';
-import { DEFAULT_DURATION_MS } from '../src/lib/actions/launchGuard';
+import { LAUNCH_ZONE_DURATION_MS } from '../src/lib/actions/launchGuard';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
 // Svelte component wiring (palette, action drawer, tool/stroke state, AI fetch,
@@ -133,7 +133,7 @@ const TAP_GUARD_LAPSE_MARGIN_MS = 100;
 // the window is a known duration and a zone self-clears on the next query, so
 // there is no state to poll.
 export async function settleTapGuard(page: Page) {
-  await page.waitForTimeout(DEFAULT_DURATION_MS + TAP_GUARD_LAPSE_MARGIN_MS);
+  await page.waitForTimeout(LAUNCH_ZONE_DURATION_MS + TAP_GUARD_LAPSE_MARGIN_MS);
 }
 
 export async function openFarmPageGrid(page: Page) {

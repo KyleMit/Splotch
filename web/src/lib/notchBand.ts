@@ -21,6 +21,10 @@ import { isLightColor } from './colorRing';
 // Type-only import — erased at build time, so this file keeps its no-runtime-
 // plugin-import purity (no @capacitor/core reaches the pure layer).
 import type { Platform } from './platform';
+// Type-only — same purity guarantee as the Platform import above. The Style
+// enum's *values* are passed in by the call site (NotchBand.svelte), not
+// imported here, so this file never touches @capacitor/status-bar at runtime.
+import type { Style, StatusBarPlugin } from '@capacitor/status-bar';
 
 // Minimum top safe-area inset (CSS px) we treat as a real display cutout. Above
 // it: iPhone notches / Dynamic Island (~44–59px) and Android hole-punches.
@@ -114,6 +118,26 @@ export function cutoutEdge(input: NotchBandInput): { edge: NotchEdge; inset: num
 export function statusBarHiddenFor(input: NotchBandInput): boolean | null {
   if (!input.native || input.platform !== 'android') return null;
   return input.orientation === 'landscape';
+}
+
+// Plugin-call glue for the native status-bar effect in NotchBand.svelte: the
+// `StatusBarStyle` → `Style` enum translation and the hide/show dispatch, both
+// injected (`bar`, `statusBarStyleEnum`) so this stays a pure function the
+// component's dynamic-import call site drives.
+export function applyStatusBar(
+  style: StatusBarStyle | null,
+  hidden: boolean | null,
+  bar: Pick<StatusBarPlugin, 'setStyle' | 'hide' | 'show'>,
+  statusBarStyleEnum: { Dark: Style; Light: Style }
+): void {
+  if (style) {
+    bar
+      .setStyle({ style: style === 'DARK' ? statusBarStyleEnum.Dark : statusBarStyleEnum.Light })
+      .catch(() => {});
+  }
+  if (hidden !== null) {
+    (hidden ? bar.hide() : bar.show()).catch(() => {});
+  }
 }
 
 export function computeNotchBandState(input: NotchBandInput): NotchBandState {

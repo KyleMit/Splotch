@@ -1,18 +1,19 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { ACCEPT_RADIUS_FACTOR } from '$lib/actions/dragToClear';
+  import { getAcceptRadius } from '$lib/actions/dragToClear';
   import Icon from './Icon.svelte';
+
+  const COACHMARK_AUTO_DISMISS_MS = 6000;
+  // Overshoot past the ring edge so the mime reads "pull past the threshold, not just to it".
+  const GHOST_TRAVEL_OVERSHOOT = 1.18;
 
   let coachmarkRingEl: HTMLDivElement;
   let coachmarkGhostEl: HTMLDivElement;
 
   let tutorialVisible = $state(false);
 
+  // Untracked on purpose: a timer handle, nothing renders from it.
   let tutorialDismissTimer: ReturnType<typeof setTimeout> | null = null;
-
-  function getAcceptRadius() {
-    return Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
-  }
 
   export function show(anchorEl: HTMLElement) {
     if (tutorialVisible) return;
@@ -32,9 +33,8 @@
     coachmarkRingEl.style.height = `${radius * 2}px`;
 
     // Ghost button + hand start on the real button and drag down-left toward
-    // the canvas, overshooting the ring edge so it's clear you need to pull
-    // past the threshold, not just to it.
-    const travel = radius * 1.18;
+    // the canvas.
+    const travel = radius * GHOST_TRAVEL_OVERSHOOT;
     coachmarkGhostEl.style.left = `${cx - rect.width / 2}px`;
     coachmarkGhostEl.style.top = `${cy - rect.height / 2}px`;
     coachmarkGhostEl.style.width = `${rect.width}px`;
@@ -51,7 +51,7 @@
     }
 
     tutorialVisible = true;
-    tutorialDismissTimer = setTimeout(dismiss, 6000);
+    tutorialDismissTimer = setTimeout(dismiss, COACHMARK_AUTO_DISMISS_MS);
   }
 
   // Safe to call unconditionally, so callers never have to read this

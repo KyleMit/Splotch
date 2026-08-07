@@ -1,4 +1,4 @@
-import { createSpreadTracker } from './spreadTracker.svelte';
+import { createSpreadTracker } from './spreadTracker';
 import { capturePointer, releasePointer } from './pointerCapture';
 
 export const MIN_TEXT_ZOOM = 1;

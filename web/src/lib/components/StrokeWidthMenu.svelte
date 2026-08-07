@@ -77,27 +77,4 @@
     height: 56px;
     flex-shrink: 0;
   }
-
-  /* White brush color is invisible on the white buttons, so ring the tinted
-     shape with a solid black edge while white is active. The size menu holds a
-     single currentColor path, so plain `path` suffices. paint-order draws the
-     stroke behind the white fill and non-scaling-stroke pins it to 2 screen px.
-     The #000 keyline is a deliberate one-off — black reads against every pen
-     color and both papers. */
-  .stroke-width-menu.white-stroke :global(svg path) {
-    stroke: #000;
-    stroke-width: 2px;
-    paint-order: stroke;
-    vector-effect: non-scaling-stroke;
-  }
-
-  /* The dark-mode mirror: ring near-black ink with a light keyline so it reads
-     on the dark cards. Same paint-order trick; the keyline token is transparent
-     in light mode, so this rule is inert there. */
-  .stroke-width-menu.dark-stroke :global(svg path) {
-    stroke: var(--dark-ink-keyline);
-    stroke-width: 2px;
-    paint-order: stroke;
-    vector-effect: non-scaling-stroke;
-  }
 </style>

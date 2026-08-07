@@ -6,7 +6,7 @@
 // everything is clamped to the preview's own bounds — the drawing surface stays
 // locked.
 
-import { createSpreadTracker, type Point } from './spreadTracker.svelte';
+import { createSpreadTracker, type Point } from './spreadTracker';
 import { capturePointer, releasePointer } from './pointerCapture';
 
 export type { Point };
@@ -173,7 +173,10 @@ export function pinchZoom(node: HTMLElement, getOptions: () => PinchZoomOptions)
 
   function apply(target: HTMLElement | undefined) {
     const t = zoom.transform;
-    if (target) target.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
+    if (target) {
+      const identity = t.scale === MIN_SCALE && t.x === 0 && t.y === 0;
+      target.style.transform = identity ? '' : `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
+    }
     node.classList.toggle('zoomed', zoom.isZoomed);
   }
 

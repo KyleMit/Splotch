@@ -51,8 +51,11 @@ const BASELINE = new Map(
     // comment lives on .flash-warning.
     'lib/components/admin/AdminConsole.svelte': 4,
     // The polaroid flight's photographic near-paper whites — the print stays
-    // paper-white on both themes, like the AiImageResult stage it lands in.
-    'app.css': 2,
+    // paper-white on both themes, like the AiImageResult stage it lands in —
+    // plus the #000 white-stroke ink keyline shared by the action buttons and
+    // the Brush/Stroke Width popovers (black reads against every pen color and
+    // both papers).
+    'app.css': 3,
     // Light-only page (ADR-0071 amendment) — pins PageShell's themed
     // --page-* defaults to the same light values /android-beta pins (eleven),
     // plus the highlight panel's brand-tinted border and row hairline (two).
@@ -74,14 +77,6 @@ const BASELINE = new Map(
     'lib/components/androidBeta/StepLedger.svelte': 10,
     // Photographic stage/polaroid whites.
     'lib/components/AiImageResult.svelte': 2,
-    // #000 white-stroke keyline for the Brush/Stroke trigger faces.
-    'lib/components/ActionsPanel.svelte': 1,
-    // #000 white-stroke keyline for the Brush Menu popover (extracted from
-    // ActionsPanel — see the twin rule there).
-    'lib/components/BrushMenu.svelte': 1,
-    // #000 white-stroke keyline for the Stroke Width popover (extracted from
-    // ActionsPanel — see the twin rule there).
-    'lib/components/StrokeWidthMenu.svelte': 1,
     // Constant dim swatch ring + var(--color) usage documented in-file.
     'lib/components/ColorPicker.svelte': 1,
     // The armed (drag-past-threshold) danger red — unthemed on purpose, it

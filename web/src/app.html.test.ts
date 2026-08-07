@@ -1,9 +1,16 @@
-// No `@vitest-environment node` docblock despite this being pure text parsing:
-// importing settings.svelte.ts for the clamp constants runs that module's
-// load-time localStorage reads, so the file has to stay on the happy-dom
-// default (.claude/rules/testing.md).
+// No environment docblock despite this being pure text parsing: importing
+// settings.svelte.ts for the clamp constants runs that module's load-time
+// localStorage reads, so the file has to stay on the happy-dom default
+// (.claude/rules/testing.md). Spelling the node opt-out annotation out here,
+// even to say it is absent, applies it — vitest reads that annotation from any
+// leading comment, sentence or not.
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import {
+  BRUSH_ATTRIBUTE,
+  CONTROL_OFF_ATTRIBUTES,
+  DRAWER_OPEN_ATTRIBUTE,
+} from './lib/actionButtonLayout';
 import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
 import { STORAGE_KEYS } from './lib/storage';
 import { RESOLVED_THEMES, THEME_COLORS } from './lib/theme';
@@ -21,10 +28,18 @@ import { BRUSH_TYPES } from './lib/state/tool.svelte';
 // seeds the wrong first-paint attribute, with no type error and no failing
 // test.
 //
-// The registry and clamp bounds are imported directly. Boolean defaults are
-// parsed as text because BOOL_SETTINGS itself is module-private.
+// The registry, clamp bounds and attribute vocabulary are imported directly.
+// Boolean defaults are parsed as text because BOOL_SETTINGS itself is
+// module-private.
 
-const html = readFileSync(new URL('./app.html', import.meta.url), 'utf8');
+// The path stays a parameter: Vite rewrites a `new URL('./literal',
+// import.meta.url)` into the served asset's http URL, which readFileSync
+// rejects (precedent: lib/design/trimGeometry.test.ts).
+function sourceFile(path: string): string {
+  return readFileSync(new URL(path, import.meta.url), 'utf8');
+}
+
+const html = sourceFile('./app.html');
 
 const bootScript = (() => {
   const match = html.match(/<script>([\s\S]*?)<\/script>/);
@@ -32,10 +47,7 @@ const bootScript = (() => {
   return match![1];
 })();
 
-const settingsSource = readFileSync(
-  new URL('./lib/state/settings.svelte.ts', import.meta.url),
-  'utf8'
-);
+const settingsSource = sourceFile('./lib/state/settings.svelte.ts');
 const registryKeys = new Set(Object.values(STORAGE_KEYS));
 
 // BOOL_SETTINGS entries are `propName: [STORAGE_KEYS.someKey, default]`; re-key
@@ -121,6 +133,26 @@ describe("app.html's boot script mirrors the state modules", () => {
     expect(new Set(bootBrushes)).toEqual(
       new Set(BRUSH_TYPES.filter((b) => b !== 'pen' && b !== 'eraser'))
     );
+  });
+
+  // The panel-state vocabulary publishActionPanelState owns: the boot script
+  // must seed exactly those names, or a returning user gets a first-paint flash
+  // as hydration corrects an attribute the seeded CSS never saw.
+  it('seeds exactly the panel-state attributes publishActionPanelState stamps', () => {
+    const seeded = new RegExp(
+      `toggleAttribute\\('(data-off-[\\w-]+|${DRAWER_OPEN_ATTRIBUTE})'`,
+      'g'
+    );
+    const bootAttributes = [...bootScript.matchAll(seeded)].map((m) => m[1]);
+    expect(new Set(bootAttributes)).toEqual(
+      new Set([...Object.values(CONTROL_OFF_ATTRIBUTES), DRAWER_OPEN_ATTRIBUTE])
+    );
+  });
+
+  // The brush values are guarded above; this is the attribute they land on,
+  // which the boot script re-types as its own literal.
+  it('seeds the brush face under BRUSH_ATTRIBUTE', () => {
+    expect(bootStringLiteral(/setAttribute\('([\w-]+)', brush\)/)).toBe(BRUSH_ATTRIBUTE);
   });
 
   it('stamps data-theme for every resolved theme', () => {

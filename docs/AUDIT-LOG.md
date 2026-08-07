@@ -18,6 +18,7 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
+| 2026-08-07 | [burn-down-audits](#2026-08-07--burn-down-audits)               |
 | 2026-08-06 | [burn-down-audits](#2026-08-06--burn-down-audits)               |
 | 2026-08-05 | [vet-audits](#2026-08-05--vet-audits)                           |
 | 2026-08-05 | [session-audit](#2026-08-05--session-audit)                     |
@@ -83,6 +84,49 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-07-03 | [code-audit](#2026-07-03--code-audit)                           |
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
+
+## 2026-08-07 · burn-down-audits
+
+Bulk burndown on PR [#821](https://github.com/KyleMit/Splotch/pull/821) (branch
+`claude/audit-burn-down-727egi`), forked fresh from `main` because the previous campaign's PR #805
+had merged: **20 fixed · 0 dropped · 1 deferred**, backlog 367 → 346, across a 5-finding canary and
+a 16-finding unattended run wrapped on request. Work concentrated in the actions panel and its
+flyouts, the drag-to-clear gesture, and the install banner / crash screen. One `## Source:` section
+(Core UI controls) drained completely and was removed.
+
+**The base commit was red before any finding ran, and repairing it was the run's precondition.**
+Running the composed gates at `main` surfaced two failing Quality gates left by the settings-icon
+refresh merged hours earlier: `img:audit:check` (11 un-optimized SVGs) and `lint:dead` (knip
+flagging `PUNCHED_BACKGROUND_STYLES`, exported but consumed only inside its own module). Both sit in
+`CHECK_CMD`, so left alone they would have gated every finding red, burned a fix round each, and
+halted the run on three consecutive deferrals. Repaired in 3ba2b5666e4b. Two things that repair
+taught: the icon fix **cascades** — `scrapbook/index.html` inlines `line-weight.svg` as a card
+emoji, so `scrapbook:check` passed at base and went red only *after* `img:audit` ran — and nothing
+in the repo asserts an optimized SVG still *renders* the same, so all 11 were rasterized at 384 DPI
+before and after and pixel-compared (zero pixels differing past an 8/255 threshold). The reason
+nobody noticed: the merge commit b8f7013283f8 has **no CI run at all**, because `test.yml` sets
+`cancel-in-progress` and its push run was cancelled.
+
+**GitHub Actions was not running for the whole session** — runs sat `queued` for hours and PR #821
+never had one created — so the cross-finding backstop was absent. Substituting
+`PUSH_TEST_CMD='npm test'` would have cost ~5–6 min across 346 findings, so the full suite was run
+locally instead: green at the base commit, at the canary head, and at the final head (2193 unit +
+279 e2e).
+
+The adversarial reviewer rejected roughly one fix in three. Its sharpest catch was a **vacuous
+test**: extracting the global Ctrl+Z shortcut into `lib/boot/undoShortcut.ts` left an existing
+Playwright test asserting a cue that the new keyboard path can no longer trigger, so both assertions
+passed trivially — it demanded the test be rewritten to the new contract *and* that a test actually
+prove the route-level listener works. It also caught that a comment merely *mentioning*
+`@vitest-environment` is honoured by vitest from any leading comment, which had silently moved
+`app.html.test.ts` onto the node environment; and that renaming `data-drawer-open` would leave every
+test green while the boot script diverged.
+
+No goalposts moved: `eslint.config.js` is untouched and no `max-lines` cap was raised. The one
+ratchet edit went the *right* way — a red `lint:tokens` gate caused by a fix being an improvement
+(hoisting a shared `#000` keyline out of three components) was resolved by bumping `app.css` 2 → 3
+and **deleting** three now-zero allowlist entries. The single deferral was a type-check failure that
+rolled back cleanly with a post-mortem and an applicable draft patch.
 
 ## 2026-08-06 · burn-down-audits
 

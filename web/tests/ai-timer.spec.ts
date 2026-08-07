@@ -69,28 +69,40 @@ test.describe('AI render timer', () => {
         return ev;
       };
 
+      const layer = node.querySelector('.zoom-layer') as HTMLElement;
+
       // A lone finger on the un-zoomed preview must not be intercepted.
       fire('pointerdown', 9, cx, cy);
       const lonePrevented = fire('pointermove', 9, cx + 6, cy).defaultPrevented;
       fire('pointerup', 9, cx + 6, cy);
+      const afterLoneTap = layer.style.transform;
 
       // Two fingers spreading apart zoom the picture.
       fire('pointerdown', 1, cx - 10, cy);
       fire('pointerdown', 2, cx + 10, cy);
       fire('pointermove', 1, cx - 50, cy);
       fire('pointermove', 2, cx + 50, cy);
-      const transform = (node.querySelector('.zoom-layer') as HTMLElement).style.transform;
+      const transform = layer.style.transform;
       const zoomed = node.classList.contains('zoomed');
-      fire('pointerup', 1, cx - 50, cy);
-      fire('pointerup', 2, cx + 50, cy);
 
-      return { transform, zoomed, lonePrevented };
+      // Pinching back to the starting spread lands on scale 1 again.
+      fire('pointermove', 1, cx - 10, cy);
+      fire('pointermove', 2, cx + 10, cy);
+      fire('pointerup', 1, cx - 10, cy);
+      fire('pointerup', 2, cx + 10, cy);
+      const afterPinchBack = layer.style.transform;
+
+      return { transform, zoomed, lonePrevented, afterLoneTap, afterPinchBack };
     });
 
     expect(result.lonePrevented).toBe(false);
     expect(result.zoomed).toBe(true);
     expect(result.transform).toMatch(/scale\(/);
     expect(result.transform).not.toMatch(/scale\(1\)/);
+    // The rest state has one DOM representation — an empty inline transform —
+    // whether it was never left or was returned to.
+    expect(result.afterLoneTap).toBe('');
+    expect(result.afterPinchBack).toBe('');
   });
 
   // AiConfetti's fall keyframes read --stage-h off .ai-stage (set by a

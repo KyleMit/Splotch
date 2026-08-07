@@ -14,7 +14,7 @@
 //
 // Options:
 //   open            (required) whether the dialog should be shown.
-//   onRequestClose  (required) called to dismiss — should flip `open` to false.
+//   onRequestClose  called to dismiss — should flip `open` to false.
 //                   Invoked on a backdrop tap and on an Esc close.
 //   origin          {x, y} screen point to fly in from; omit for no fly-in.
 //   onOpen          side-effect fired just before showModal() on each open.
@@ -37,7 +37,7 @@ import type { Origin } from '$lib/state/modal.svelte';
 
 interface ModalOptions {
   open: boolean;
-  onRequestClose?: () => void;
+  onRequestClose: () => void;
   origin?: Origin | null;
   onOpen?: () => void;
   onClose?: () => void;
@@ -75,7 +75,7 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
     const o = getOptions();
     if (o.blockBackdropAt?.(e.clientX, e.clientY)) return;
     if (!dismissAllowed(o)) return;
-    o.onRequestClose?.();
+    o.onRequestClose();
   }
 
   // The opening tap itself activates on pointerup, so its trailing synthesized
@@ -107,7 +107,7 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
     const o = getOptions();
     o.onClose?.();
     // Closed via Esc while the flag is still set — re-sync it.
-    if (o.open) o.onRequestClose?.();
+    if (o.open) o.onRequestClose();
   }
 
   node.addEventListener('pointerdown', onPointerDown, true);
