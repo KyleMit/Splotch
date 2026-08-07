@@ -44,53 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] Dark-theme token values have drifted between the duplicated theme blocks in scrapbook-chrome
-
-**File(s):** `scripts/lib/scrapbook-chrome.mjs` (`CHROME_CSS`, lines 53–65 vs 77–87) @ f5bf8767
-
-**Priority:** P2
-
-#### Problem
-
-`CHROME_CSS` states each theme's custom properties twice: once for the OS preference
-(`@media (prefers-color-scheme: dark)`, lines 53–65) and once for the explicit toggle
-(`:root[data-theme=dark]`, lines 77–87). The light pair (`:root` at lines 38–51 vs
-`:root[data-theme=light]` at lines 66–76) is byte-identical, but the two dark blocks disagree on six
-tokens:
-
-| token           | `@media` dark (l. 55–57) | `[data-theme=dark]` (l. 79–83) |
-| --------------- | ------------------------ | ------------------------------ |
-| `--card`        | `#1d1f27`                | `#1c1e24`                      |
-| `--card-2`      | `#181a20`                | `#191b20`                      |
-| `--muted`       | `#a8a4af`                | `#a19da8`                      |
-| `--faint`       | `#807d89`                | `#797682`                      |
-| `--hair`        | `#34373f`                | `#2b2e36`                      |
-| `--hair-strong` | `#464a55`                | `#3a3e48`                      |
-
-So a viewer whose OS is dark sees different card/hairline/muted colors than a viewer who used a
-theme toggle to select dark — on every published scrapbook page (index, icons sheet, model-eval
-report, which layers `EXTRA_CSS` on this at `scripts/lib/model-eval-report.mjs` lines 90–94 using
-the same two-block pattern, there without drift). Nothing marks the divergence as intentional; it is
-exactly the failure mode the repo convention ("cross-file agreement is never maintained by prose")
-exists to prevent, here within a single file.
-
-#### Proposed solution
-
-Stop hand-writing each palette twice. Define the token sets once as JS objects and emit them into
-all selectors:
-
-```js
-const LIGHT_TOKENS = { paper: '#f5f3ee' /* … */ };
-const DARK_TOKENS = { paper: '#131418' /* … */ };
-const cssVars = (tokens) => Object.entries(tokens).map(([k, v]) => `--${k}:${v};`).join('');
-```
-
-then interpolate `cssVars(DARK_TOKENS)` into both the `@media` block and `:root[data-theme=dark]`.
-This removes the whole drift class (and shrinks the file). If the current rendered look must be
-preserved exactly, first decide which of the two dark palettes is the intended one. The same
-generator-object approach could also be offered to page-specific CSS like model-eval-report's
-`--a`/`--b` pair, but that is optional.
-
 ### [Correctness] `inlineImage` silently emits `data:undefined;…` for an unmapped extension
 
 **File(s):** `scripts/lib/scrapbook-chrome.mjs` (`inlineImage`, lines 282–292; `MIME`, lines
