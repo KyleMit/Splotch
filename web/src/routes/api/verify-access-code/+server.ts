@@ -25,7 +25,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 
   const body = asRecord(await readJsonBody(request));
   const code = typeof body?.code === 'string' ? body.code.trim() : '';
-  if (!code) return json({ ok: false, error: 'No access code provided' });
+  if (!code) return json({ ok: false, error: 'No access code provided' }, { status: 400 });
 
   if (!(await isAllowedToken(code))) {
     rateLimit(key, rateLimitPolicy.verifyAccessCode);

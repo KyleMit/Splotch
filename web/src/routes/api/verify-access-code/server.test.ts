@@ -75,6 +75,7 @@ describe('POST /api/verify-access-code', () => {
   it('never charges the bucket or reads the allowlist for an empty code', async () => {
     const response = await post({ code: '   ' });
 
+    expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ ok: false, error: 'No access code provided' });
     expect(isAllowedToken).not.toHaveBeenCalled();
     expect(rateLimit).not.toHaveBeenCalled();

@@ -22,7 +22,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 
   const body = asRecord(await readJsonBody(request));
   const apiKey = typeof body?.apiKey === 'string' ? body.apiKey.trim() : '';
-  if (!apiKey) return json({ ok: false, error: 'No API key provided' });
+  if (!apiKey) return json({ ok: false, error: 'No API key provided' }, { status: 400 });
 
   const check = await aiProvider.verifyKey(apiKey);
   if (!check.ok) {
