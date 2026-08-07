@@ -654,3 +654,38 @@ test('the eraser removes magic-brush strokes and later colors override them', as
   ]);
   expect(await hasRedDominantPixel(page)).toBe(true);
 });
+
+// The stroke-width control's magic faces are picked by CSS rather than swapped
+// reactively, because Icon.svelte renders its SVG through {@html}, which
+// hydration does not reconcile — and the magic brush is persisted and seeded
+// onto <html> before first paint. A reload while holding it therefore serves
+// the ink face, and a reactive branch would keep it forever. Nothing else pins
+// those selectors: renaming data-action-panel-live, or adding a brush, would
+// paint the wrong face with the whole suite still green.
+test('the stroke-width control keeps its magic faces across a reload', async ({ page }) => {
+  const trigger = (icon: string) => page.locator(`#strokeWidthButton [data-icon="${icon}"]`);
+  const preview = (icon: string) => page.locator(`.stroke-width-menu [data-icon="${icon}"]`);
+
+  await gotoApp(page);
+  await openDrawer(page);
+  await pickBrush(page, '#magicBrushButton');
+
+  await expect(trigger('line-weight-magic')).toBeVisible();
+  await expect(trigger('line-weight-brush')).toBeHidden();
+
+  // The reload is the whole point: the brush comes back from storage, so the
+  // server-rendered markup and the client's first value disagree.
+  await page.reload();
+  await openDrawer(page);
+
+  await expect(trigger('line-weight-magic')).toBeVisible();
+  await expect(trigger('line-weight-brush')).toBeHidden();
+
+  // Both faces stay in the DOM — that is what makes the CSS pick possible, and
+  // an implementation that dropped one would still pass the assertions above.
+  await expect(page.locator('#strokeWidthButton [data-icon]')).toHaveCount(2);
+
+  await page.locator('#strokeWidthButton').click();
+  await expect(preview('size-magic-3')).toBeVisible();
+  await expect(preview('size-brush-3')).toBeHidden();
+});
