@@ -1,7 +1,7 @@
 import type { CommonIconName } from '../components/iconTypes';
 import { toKebabCase } from './tokens.ts';
 
-// Per-icon-part theme colors for the full-color "spot" icons (ADR-0101).
+// Per-icon-part theme colors for the full-color "spot" icons (ADR-0102).
 //
 // The monochrome glyphs bake `fill="#1f1f1f"` and get re-inked wholesale by one
 // `--icon-ink` rule in app.css (ADR-0052). Spot icons opt out of that rule —
@@ -21,12 +21,17 @@ import { toKebabCase } from './tokens.ts';
 // plain string). The rest is covered at test time by the bidirectional drift
 // guard in ../icons/tokenFallback.test.ts.
 
-export interface IconPartTheme {
+// Module-local, all three: the map and its shape are an implementation detail
+// of `iconTokenEntries()`, which is the only view anything outside this file
+// needs. Exporting the map would also invite a component style to reference an
+// entry, which is exactly the reachability line that keeps these out of
+// `ThemeTokens`.
+interface IconPartTheme {
   light: string;
   dark: string;
 }
 
-export type IconThemes = Partial<Record<CommonIconName, Record<string, IconPartTheme>>>;
+type IconThemes = Partial<Record<CommonIconName, Record<string, IconPartTheme>>>;
 
 // Why these values: the same icon rests on `--surface`/`--surface-2` and on the
 // near-constant `--brand-solid` (#7c50bb light, #8058c0 dark), so each theme's
@@ -35,7 +40,7 @@ export type IconThemes = Partial<Record<CommonIconName, Record<string, IconPartT
 // deeper, in dark they go paler. Where one shape shades against a neighbour
 // (rocket body vs. window, brush handle vs. ferrule) the two sets invert the
 // relationship instead of preserving it.
-export const iconThemes = {
+const iconThemes = {
   // Worst offender before the pass: at #212d4c the night half measured 1.00:1
   // against the dark card — mathematically identical luminance — so the moon
   // dissolved and left a sun with stars floating beside it.

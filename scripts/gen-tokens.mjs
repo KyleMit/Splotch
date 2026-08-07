@@ -1,6 +1,6 @@
 // Generates web/src/tokens.css from the design-token source of truth in
 // web/src/lib/design/tokens.ts (ADR-0071), plus the per-icon-part spot-icon
-// colors in web/src/lib/design/iconTokens.ts (ADR-0101). Run via `npm run gen:tokens`;
+// colors in web/src/lib/design/iconTokens.ts (ADR-0102). Run via `npm run gen:tokens`;
 // `--check` is the CI drift gate (regenerate and fail if the committed file
 // differs, like ruler:check). See the emitted banner in render() below for why
 // the dark declarations are emitted twice.

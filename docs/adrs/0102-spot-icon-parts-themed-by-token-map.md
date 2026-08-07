@@ -1,4 +1,4 @@
-# ADR-0101: Theme Individual Spot-Icon Paths with a Per-Icon-Part Token Map
+# ADR-0102: Theme Individual Spot-Icon Paths with a Per-Icon-Part Token Map
 
 **Status:** Active — amends [ADR-0052](0052-dark-mode-theme-tokens.md) and
 [ADR-0071](0071-design-token-single-source.md). **Date:** 2026-08

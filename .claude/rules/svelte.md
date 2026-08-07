@@ -41,7 +41,7 @@ paths:
   `Icon.svelte` (so it gets the `icon-color` class instead of the monochrome tint filter) —
   `Icon.svelte.test.ts` enforces this against every icon's chroma. A spot icon whose paths need
   different fills per theme declares them in `lib/design/iconTokens.ts` and paints with
-  `style="fill:var(--icon-<icon>-<part>,#lightHex)"` (ADR-0101) — see the `design` skill.
+  `style="fill:var(--icon-<icon>-<part>,#lightHex)"` (ADR-0102) — see the `design` skill.
 * **`{@html}` is not reconciled against SSR markup during hydration.** `Icon.svelte` renders its SVG
   via `{@html}`, so an icon whose value depends on client-only state (orientation, a
   `localStorage`-backed setting) keeps the *server-rendered* SVG after hydration until something
