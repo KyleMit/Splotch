@@ -7,10 +7,12 @@ description: Full testing guide — the three-tier strategy (Vitest unit, Playwr
 
 # Splotch — Testing Guide
 
-Splotch has five core automated suites across three test layers. The app-unit, asset-pipeline,
-repo-script, and E2E suites run on every push/PR. A two-scenario WebKit timing gate runs on every
-pull request in parallel with them; its full seven-scenario form and the real-device launch tests
-run only on tagged releases.
+Splotch's automated suites span three test layers. The app-unit, asset-pipeline, repo-script, and
+E2E suites run on every push/PR, alongside the WebKit smoke job and a structural commit-path guard
+on Chromium. The two-scenario WebKit *timing* gate that guard complements runs post-merge, on pushes
+to `main`, because its verdict is a millisecond P95 that needs WebKit and a quiet host; its full
+seven-scenario form and the real-device launch tests run only on tagged releases. That split is
+ADR-0100 — see the commit-gate section under Continuous integration.
 
 | Layer                    | Tool                | Command                         | Runs in CI                                   |
 | ------------------------ | ------------------- | ------------------------------- | -------------------------------------------- |
