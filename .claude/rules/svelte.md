@@ -42,6 +42,12 @@ paths:
   `Icon.svelte.test.ts` enforces this against every icon's chroma. A spot icon whose paths need
   different fills per theme declares them in `lib/design/iconTokens.ts` and paints with
   `style="fill:var(--icon-<icon>-<part>,#lightHex)"` (ADR-0102) — see the `design` skill.
+* **An icon that needs an internal `id` must prefix it `icon-`** (a gradient, a `<use>` target).
+  Icons are inlined into one document, so an id is global across every icon on screen together, and
+  SVGO's `cleanupIds` otherwise minifies ids to `a`, `b`, … per file — which is how two
+  independently authored icons come to collide and `url(#a)` resolves to the wrong element.
+  `scripts/image-audit.mjs` preserves the `icon-` prefix from that minification; uniqueness across
+  the surviving ids is enforced by `web/src/lib/icons/iconIds.test.ts`.
 * **`{@html}` is not reconciled against SSR markup during hydration.** `Icon.svelte` renders its SVG
   via `{@html}`, so an icon whose value depends on client-only state (orientation, a
   `localStorage`-backed setting) keeps the *server-rendered* SVG after hydration until something
