@@ -44,35 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] lighthouse run-audit summary table ingests stale and priming reports from the output dir
-
-**File(s):** `.ruler/skills/lighthouse-audit/run-audit.mjs` (`printSummary`, lines 205–235; priming
-pass lines 63–65) @ f5bf8767
-
-**Priority:** P4
-
-#### Problem
-
-`printSummary()` globs **every** `*.report.json` in `--out` (line 208), not just the files this run
-wrote. Two consequences:
-
-* The default `--out lighthouse-reports/` is reused across runs (it's a stable gitignored dir), so a
-  `--device phone` run's summary silently includes last week's tablet rows — against a different URL
-  if `--url` changed — with nothing marking which rows are fresh. The skill then says to build the
-  AUDIT.md score table from "the console summary" (SKILL.md lines 99–101), so stale rows can flow
-  straight into findings.
-* A repeat-only run (`--visits repeat`) first executes a priming pass named `${name}-prime`
-  (line 64) whose reports land in the same dir; the summary prints the throwaway priming row
-  (`phone-portrait-repeat-prime`) as if it were a measurement.
-
-#### Proposed solution
-
-Track the names actually run this invocation (they're already computed in the main loop) and have
-`printSummary(names)` read only those files; alternatively write priming output to a temp subdir and
-filter `-prime` from the glob. Keeping the "read whatever's there" behavior behind an explicit
-`--summarize-existing` flag would preserve the re-summarize use case without contaminating fresh
-runs.
-
 ### [Testing] The cloud-setup test harness can rot silently: an unchecked source patch and an answer-anything `node` stub
 
 **File(s):** `scripts/tests/claude-cloud-setup.test.mjs` (`runSetup`, lines 16–74; the `replaceAll`

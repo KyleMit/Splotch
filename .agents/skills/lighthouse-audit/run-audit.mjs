@@ -51,6 +51,7 @@ console.log(
 );
 console.log('');
 
+const names = [];
 for (const key of pickedDevices) {
   const dev = DEVICES[key];
   const profileDir = join(OUT, `profile-${key}`);
@@ -65,11 +66,12 @@ for (const key of pickedDevices) {
     }
     const rc = runLighthouse({ name, dev, profileDir, repeat: isRepeat });
     reportLine(name, rc);
+    names.push(name);
   }
   console.log('');
 }
 
-printSummary();
+printSummary(names);
 
 // ---------------------------------------------------------------------------
 
@@ -202,15 +204,14 @@ function resolveChrome() {
   return null; // let chrome-launcher find a system install
 }
 
-function printSummary() {
+function printSummary(names) {
   const rows = [];
   const selfAttributedTbtRuns = [];
-  for (const f of readdirSync(OUT).filter((f) => f.endsWith('.report.json'))) {
+  for (const name of names) {
     try {
-      const r = JSON.parse(readFileSync(join(OUT, f), 'utf8'));
+      const r = JSON.parse(readFileSync(join(OUT, `${name}.report.json`), 'utf8'));
       if (r.runtimeError) continue;
       const a = r.audits;
-      const name = f.replace('.report.json', '');
       const cat = (k) => (r.categories[k] ? Math.round(r.categories[k].score * 100) : '—');
       const nr = a['network-requests']?.details?.items ?? [];
       const kb = Math.round(nr.reduce((s, i) => s + (i.transferSize || 0), 0) / 1024);
