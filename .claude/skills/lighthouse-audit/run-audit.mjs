@@ -20,7 +20,7 @@
 // Defaults: --url https://splotch.art/  --out lighthouse-reports  --device both --visits both
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { platform } from 'node:os';
 
@@ -65,8 +65,8 @@ for (const key of pickedDevices) {
       runLighthouse({ name: `${name}-prime`, dev, profileDir, repeat: false, quiet: true });
     }
     const rc = runLighthouse({ name, dev, profileDir, repeat: isRepeat });
-    reportLine(name, rc);
-    names.push(name);
+    // Only a run that succeeded this invocation reaches the summary table.
+    if (reportLine(name, rc)) names.push(name);
   }
   console.log('');
 }
@@ -76,6 +76,13 @@ printSummary(names);
 // ---------------------------------------------------------------------------
 
 function runLighthouse({ name, dev, profileDir, repeat, quiet }) {
+  // OUT is stable across invocations, so a run that dies before Lighthouse writes
+  // (Chrome won't launch, the 240s timeout fires) would otherwise leave the previous
+  // run's report in place for reportLine and printSummary to read as current.
+  for (const ext of ['report.json', 'report.html']) {
+    rmSync(join(OUT, `${name}.${ext}`), { force: true });
+  }
+
   const chromeFlags = [
     '--headless=new',
     '--no-sandbox',
@@ -116,6 +123,7 @@ function runLighthouse({ name, dev, profileDir, repeat, quiet }) {
   return res.status ?? 1;
 }
 
+/** Returns whether this invocation produced a usable report for `name`. */
 function reportLine(name, rc) {
   const jsonPath = join(OUT, `${name}.report.json`);
   let err = 'NOJSON';
@@ -124,8 +132,11 @@ function reportLine(name, rc) {
   } catch {
     /* leave NOJSON */
   }
-  const ok = err === 'ok';
+  // A nonzero exit disqualifies the report even when one parsed: Lighthouse can
+  // write partial output and still fail, and the summary must not present it.
+  const ok = rc === 0 && err === 'ok';
   console.log(`  ${ok ? '✓' : '✗'} ${name}  (exit=${rc}, runtimeError=${err})`);
+  return ok;
 }
 
 // The Claude-Code-on-web egress gateway is a TLS-terminating MITM proxy. To reach
