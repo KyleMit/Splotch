@@ -2,6 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 let stopDrawSound: (() => void) | undefined;
 
+// These tests drive real setTimeout/vi.waitFor polling against decode/fetch
+// mocks rather than fake timers, so a contended host can blow past Vitest's
+// default 5s test timeout mid-poll and leave a stray async chain to bleed
+// into the next test.
+const SLOW_HOST_TEST_TIMEOUT_MS = 20_000;
+vi.setConfig({ testTimeout: SLOW_HOST_TEST_TIMEOUT_MS });
+
 describe('playDrawSound', () => {
   afterEach(() => {
     stopDrawSound?.();

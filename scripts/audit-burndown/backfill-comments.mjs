@@ -190,16 +190,25 @@ if (mode === 'capture') {
     process.exit(1);
   }
   const store = readStore();
-  const remaining = store.filter((r) => !r.sha.startsWith(sha));
-  if (remaining.length === store.length) {
+  const matches = store.filter((r) => r.sha.startsWith(sha));
+  if (matches.length === 0) {
     console.error(`no pending record matching ${sha}`);
     process.exit(1);
   }
-  const [dropped] = store.filter((r) => r.sha.startsWith(sha));
+  if (matches.length > 1) {
+    console.error(
+      `ambiguous prefix ${sha} matches ${matches.length} pending records — use more characters`
+    );
+    process.exit(1);
+  }
+  const [dropped] = matches;
+  const remaining = store.filter((r) => r !== dropped);
   writeStore(remaining);
   appendFileSync(POSTED, `${dropped.sha}\n`);
-  logLine(`  posted per-commit comment for ${sha.slice(0, 12)}`);
-  console.log(`dropped ${sha.slice(0, 12)} — ${remaining.length} still pending in ${STORE}`);
+  logLine(`  posted per-commit comment for ${dropped.sha.slice(0, 12)}`);
+  console.log(
+    `dropped ${dropped.sha.slice(0, 12)} — ${remaining.length} still pending in ${STORE}`
+  );
 } else if (mode === 'show') {
   const store = readStore();
   console.log(`${store.length} pending comment(s) in ${STORE}\n`);

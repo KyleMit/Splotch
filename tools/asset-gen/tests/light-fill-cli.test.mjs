@@ -43,9 +43,8 @@ vi.mock('../lib/page-notes.mjs', () => ({ pageLevers: () => null, describeLevers
 vi.mock('../lib/align-to-source.mjs', () => ({
   alignToSource: async (buffer) => ({ buffer, dx: 0, dy: 0 }),
 }));
-vi.mock('../lib/outline-match.mjs', () => ({
-  KEEP_THRESHOLD: 0.92,
-  LOCAL_KEEP_THRESHOLD: 0.8,
+vi.mock('../lib/outline-match.mjs', async (importOriginal) => ({
+  ...(await importOriginal()),
   outlineMatch: async (_source, _filled, { overlay = false } = {}) => {
     if (overlay) {
       state.overlayRequests++;

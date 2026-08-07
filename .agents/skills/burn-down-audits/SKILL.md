@@ -287,8 +287,11 @@ Monitor events, not by repeatedly loading every role envelope:
 
 ```bash
 tail -f -n 0 .audit-work/logs/run.log | grep -E --line-buffered \
-  "HALT|red at batch|red on the final|push failed|no impl session|DEFERRED|INVALID|finished:|iter"
+  "HALT|red at batch|red on the final|push failed|WARNING|no impl session|DEFERRED|INVALID|finished:|iter"
 ```
+
+A final flush that cannot push logs `WARNING: <n> commit(s) not on origin` and makes the run exit
+non-zero; the `finished:` tally prints either way, so do not read it alone as a clean run.
 
 `INVALID` is how a drop appears — the driver logs the verdict verbatim and only reports `dropped` in
 the closing `finished:` tally, so a filter without it stays silent through every drop.
@@ -391,8 +394,10 @@ abort the batch immediately on a connector error. Confirm success from the conne
 result (`isError: false` when exposed); do not search its serialized text for the word `error`,
 because the success field itself contains that substring.
 
-Iteration filenames restart at `iter0001` and drops can reuse a number within one run. Correlate by
-the timestamped `run.log` line and file mtime, not by the number alone.
+Iteration filenames restart at `iter0001` every run, so a number belongs to as many findings as
+there have been runs; within one run the tag counts every outcome (fix, drop, and deferral alike),
+so it is unique there. Correlate by the timestamped `run.log` line and file mtime, not by the number
+alone.
 
 ## Resume after a crash
 

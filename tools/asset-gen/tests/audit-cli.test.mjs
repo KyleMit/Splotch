@@ -55,9 +55,8 @@ vi.mock('../lib/outline-analysis.mjs', () => ({
   },
 }));
 
-vi.mock('../lib/outline-match.mjs', () => ({
-  KEEP_THRESHOLD: 0.92,
-  LOCAL_KEEP_THRESHOLD: 0.8,
+vi.mock('../lib/outline-match.mjs', async (importOriginal) => ({
+  ...(await importOriginal()),
   outlineMatch: async (source, fill, { overlay = false } = {}) => {
     assertReadable(source);
     assertReadable(fill);
@@ -72,9 +71,8 @@ vi.mock('../lib/outline-match.mjs', () => ({
   },
 }));
 
-vi.mock('../lib/solid-regions.mjs', () => ({
-  SOLID_BLOB_MAX: 100,
-  SOLID_INTERIOR_MAX: 60,
+vi.mock('../lib/solid-regions.mjs', async (importOriginal) => ({
+  ...(await importOriginal()),
   scoreSolidity: async (buffer) => {
     assertReadable(buffer);
     const passes = !buffer.toString().includes('solid');
@@ -89,8 +87,8 @@ vi.mock('../lib/solid-regions.mjs', () => ({
   },
 }));
 
-vi.mock('../lib/eye-fill.mjs', () => ({
-  EYE_RING_DEPTH_MAX: 5,
+vi.mock('../lib/eye-fill.mjs', async (importOriginal) => ({
+  ...(await importOriginal()),
   scoreEyeRings: async (buffer) => {
     assertReadable(buffer);
     const passes = !buffer.toString().includes('ring');
@@ -108,10 +106,8 @@ vi.mock('../lib/composite-eye.mjs', () => ({
   scoreCompositeEyes: async () => ({ passes: true }),
 }));
 
-vi.mock('../lib/outline-frame.mjs', () => ({
-  FRAME_SIDE_COVERAGE_MIN: 0.7,
-  GHOST_LUMA_MAX: 245,
-  GHOST_SIDE_COVERAGE_MIN: 0.9,
+vi.mock('../lib/outline-frame.mjs', async (importOriginal) => ({
+  ...(await importOriginal()),
   scoreOutlineFrame: async (buffer) => {
     assertReadable(buffer);
     const passes = !buffer.toString().includes('frame');
@@ -123,16 +119,15 @@ vi.mock('../lib/night-composite.mjs', () => ({
   compositeNight: async (buffer) => buffer,
 }));
 
-vi.mock('../lib/golden-catalog.mjs', () => ({
+vi.mock('../lib/golden-catalog.mjs', async (importOriginal) => ({
+  ...(await importOriginal()),
   GOLDEN_VERDICTS: [],
   diffGoldenPage: () => {},
   scoreGoldenNightEyes: async () => ({}),
 }));
 
-vi.mock('../lib/night-scores.mjs', () => ({
-  DRIFT_THRESHOLD_DEFAULT: 0.1,
-  NIGHT_BG_LUMA_MAX_DEFAULT: 50,
-  LINE_WHITE_MIN_DEFAULT: 200,
+vi.mock('../lib/night-scores.mjs', async (importOriginal) => ({
+  ...(await importOriginal()),
   scoreDrift: async () => ({ ratio: 0 }),
   scoreNightness: async () => ({ bgLuma: 0 }),
   scoreLineColor: async () => ({ lineWhite: 255 }),

@@ -7,52 +7,92 @@
     <style>
 :root{
   color-scheme: light dark;
-  --paper:#f5f3ee; --paper-2:#efece5; --card:#fdfbf6; --card-2:#f6f3ec;
-  --ink:#23212a; --muted:#6b6774; --faint:#948f9c;
-  --hair:#e6e1d8; --hair-strong:#d9d3c8;
-  --accent:#2f6fed; --accent-ink:#1e50c4; --accent-wash:#e8effe;
+  --paper:#f5f3ee;
+  --paper-2:#efece5;
+  --card:#fdfbf6;
+  --card-2:#f6f3ec;
+  --ink:#23212a;
+  --muted:#6b6774;
+  --faint:#948f9c;
+  --hair:#e6e1d8;
+  --hair-strong:#d9d3c8;
+  --accent:#2f6fed;
+  --accent-ink:#1e50c4;
+  --accent-wash:#e8effe;
   --gold:#b1780a;
-  --ok:#3f9d55; --warn:#e08a1e; --bad:#d24b3f;
-  --c-red:#ec534e; --c-orange:#f89c45; --c-yellow:#f9d24f;
-  --c-green:#8cc864; --c-blue:#62a2e9; --c-purple:#ab71e1; --c-pink:#f47cb0;
+  --ok:#3f9d55;
+  --warn:#e08a1e;
+  --bad:#d24b3f;
   --shadow-sm:0 1px 2px rgba(30,28,40,.05);
   --shadow-md:0 1px 2px rgba(30,28,40,.05), 0 10px 26px rgba(30,28,40,.07);
   --shadow-lg:0 2px 6px rgba(30,28,40,.06), 0 22px 48px rgba(30,28,40,.12);
+  --c-red:#ec534e; --c-orange:#f89c45; --c-yellow:#f9d24f;
+  --c-green:#8cc864; --c-blue:#62a2e9; --c-purple:#ab71e1; --c-pink:#f47cb0;
   --r-sm:9px; --r-md:16px; --r-lg:18px;
   --shell:1160px;
   --font: ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
-@media (prefers-color-scheme: dark){
-  :root{
-    --paper:#131418; --paper-2:#0f1013; --card:#1d1f27; --card-2:#181a20;
-    --ink:#e9e7e2; --muted:#a8a4af; --faint:#807d89;
-    --hair:#34373f; --hair-strong:#464a55;
-    --accent:#7aa8ff; --accent-ink:#a9c6ff; --accent-wash:#1b2536;
-    --gold:#d9a441;
-    --ok:#5cc078; --warn:#e6a545; --bad:#e8695c;
-    --shadow-sm:0 1px 2px rgba(0,0,0,.3);
-    --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
-    --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
-  }
-}
+@media (prefers-color-scheme: dark){:root{
+  --paper:#131418;
+  --paper-2:#0f1013;
+  --card:#1c1e24;
+  --card-2:#191b20;
+  --ink:#e9e7e2;
+  --muted:#a19da8;
+  --faint:#797682;
+  --hair:#2b2e36;
+  --hair-strong:#3a3e48;
+  --accent:#7aa8ff;
+  --accent-ink:#a9c6ff;
+  --accent-wash:#1b2536;
+  --gold:#d9a441;
+  --ok:#5cc078;
+  --warn:#e6a545;
+  --bad:#e8695c;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
+}}
 :root[data-theme=light]{
   color-scheme: light;
-  --paper:#f5f3ee; --paper-2:#efece5; --card:#fdfbf6; --card-2:#f6f3ec;
-  --ink:#23212a; --muted:#6b6774; --faint:#948f9c;
-  --hair:#e6e1d8; --hair-strong:#d9d3c8;
-  --accent:#2f6fed; --accent-ink:#1e50c4; --accent-wash:#e8effe; --gold:#b1780a;
-  --ok:#3f9d55; --warn:#e08a1e; --bad:#d24b3f;
+  --paper:#f5f3ee;
+  --paper-2:#efece5;
+  --card:#fdfbf6;
+  --card-2:#f6f3ec;
+  --ink:#23212a;
+  --muted:#6b6774;
+  --faint:#948f9c;
+  --hair:#e6e1d8;
+  --hair-strong:#d9d3c8;
+  --accent:#2f6fed;
+  --accent-ink:#1e50c4;
+  --accent-wash:#e8effe;
+  --gold:#b1780a;
+  --ok:#3f9d55;
+  --warn:#e08a1e;
+  --bad:#d24b3f;
   --shadow-sm:0 1px 2px rgba(30,28,40,.05);
   --shadow-md:0 1px 2px rgba(30,28,40,.05), 0 10px 26px rgba(30,28,40,.07);
   --shadow-lg:0 2px 6px rgba(30,28,40,.06), 0 22px 48px rgba(30,28,40,.12);
 }
 :root[data-theme=dark]{
   color-scheme: dark;
-  --paper:#131418; --paper-2:#0f1013; --card:#1c1e24; --card-2:#191b20;
-  --ink:#e9e7e2; --muted:#a19da8; --faint:#797682;
-  --hair:#2b2e36; --hair-strong:#3a3e48;
-  --accent:#7aa8ff; --accent-ink:#a9c6ff; --accent-wash:#1b2536; --gold:#d9a441;
-  --ok:#5cc078; --warn:#e6a545; --bad:#e8695c;
+  --paper:#131418;
+  --paper-2:#0f1013;
+  --card:#1c1e24;
+  --card-2:#191b20;
+  --ink:#e9e7e2;
+  --muted:#a19da8;
+  --faint:#797682;
+  --hair:#2b2e36;
+  --hair-strong:#3a3e48;
+  --accent:#7aa8ff;
+  --accent-ink:#a9c6ff;
+  --accent-wash:#1b2536;
+  --gold:#d9a441;
+  --ok:#5cc078;
+  --warn:#e6a545;
+  --bad:#e8695c;
   --shadow-sm:0 1px 2px rgba(0,0,0,.3);
   --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
   --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);

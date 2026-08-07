@@ -36,8 +36,10 @@ async function beat(page, label, fn) {
   try {
     await markPhase(page, label, fn);
     console.log('ok');
+    return { label, ok: true };
   } catch (err) {
     console.log(`skipped (${err.message})`);
+    return { label, ok: false, error: err.message };
   }
 }
 
@@ -116,50 +118,72 @@ async function clearDrag(page) {
 }
 
 async function runToddlerSession(page, box) {
-  await beat(page, 'boot-settle', () => sleep(700));
-  await beat(page, 'draw-single', async () => {
-    await pickColor(page, COLORS[0]);
-    await drawStroke(
-      page,
-      box,
-      zigzag(box.width * 0.15, box.height * 0.3, box.width * 0.85, 40, 24)
-    );
-    await drawStroke(
-      page,
-      box,
-      circlePts(box.width * 0.5, box.height * 0.6, Math.min(box.width, box.height) * 0.22, 2)
-    );
-  });
-  await beat(page, 'multi-finger-draw', () => multiFingerDraw(page));
-  await beat(page, 'change-colors', async () => {
-    for (const c of COLORS) {
-      if (await pickColor(page, c)) {
-        await drawStroke(
-          page,
-          box,
-          arcPts(box.width * 0.5, box.height * 0.5, box.width * 0.3, 0, Math.PI)
-        );
+  const results = [];
+  results.push(await beat(page, 'boot-settle', () => sleep(700)));
+  results.push(
+    await beat(page, 'draw-single', async () => {
+      await pickColor(page, COLORS[0]);
+      await drawStroke(
+        page,
+        box,
+        zigzag(box.width * 0.15, box.height * 0.3, box.width * 0.85, 40, 24)
+      );
+      await drawStroke(
+        page,
+        box,
+        circlePts(box.width * 0.5, box.height * 0.6, Math.min(box.width, box.height) * 0.22, 2)
+      );
+    })
+  );
+  results.push(await beat(page, 'multi-finger-draw', () => multiFingerDraw(page)));
+  results.push(
+    await beat(page, 'change-colors', async () => {
+      for (const c of COLORS) {
+        if (await pickColor(page, c)) {
+          await drawStroke(
+            page,
+            box,
+            arcPts(box.width * 0.5, box.height * 0.5, box.width * 0.3, 0, Math.PI)
+          );
+        }
       }
-    }
-  });
-  await beat(page, 'stroke-size', async () => {
-    await setStrokeSize(page, 5);
-    await drawStroke(page, box, zigzag(box.width * 0.2, box.height * 0.7, box.width * 0.8, 30, 20));
-    await setStrokeSize(page, 1);
-    await drawStroke(page, box, zigzag(box.width * 0.2, box.height * 0.5, box.width * 0.8, 20, 20));
-  });
-  await beat(page, 'erase', async () => {
-    // The eraser is an entry in the Brush Menu flyout, not a top-level button.
-    const brushMenu = page.locator('#brushButton');
-    if (await brushMenu.count()) await brushMenu.click();
-    await sleep(150);
-    const eraser = page.locator('#eraserButton');
-    if (await eraser.isVisible().catch(() => false)) await eraser.click();
-    await sleep(150);
-    await drawStroke(page, box, zigzag(box.width * 0.2, box.height * 0.6, box.width * 0.8, 40, 16));
-  });
-  await beat(page, 'undo', () => undoToEmpty(page));
-  await beat(page, 'clear', () => clearDrag(page));
+    })
+  );
+  results.push(
+    await beat(page, 'stroke-size', async () => {
+      await setStrokeSize(page, 5);
+      await drawStroke(
+        page,
+        box,
+        zigzag(box.width * 0.2, box.height * 0.7, box.width * 0.8, 30, 20)
+      );
+      await setStrokeSize(page, 1);
+      await drawStroke(
+        page,
+        box,
+        zigzag(box.width * 0.2, box.height * 0.5, box.width * 0.8, 20, 20)
+      );
+    })
+  );
+  results.push(
+    await beat(page, 'erase', async () => {
+      // The eraser is an entry in the Brush Menu flyout, not a top-level button.
+      const brushMenu = page.locator('#brushButton');
+      if (await brushMenu.count()) await brushMenu.click();
+      await sleep(150);
+      const eraser = page.locator('#eraserButton');
+      if (await eraser.isVisible().catch(() => false)) await eraser.click();
+      await sleep(150);
+      await drawStroke(
+        page,
+        box,
+        zigzag(box.width * 0.2, box.height * 0.6, box.width * 0.8, 40, 16)
+      );
+    })
+  );
+  results.push(await beat(page, 'undo', () => undoToEmpty(page)));
+  results.push(await beat(page, 'clear', () => clearDrag(page)));
+  return results;
 }
 
 // Drive the full scenario against a ready page (canvas already loaded) with the
@@ -181,7 +205,8 @@ export async function driveSession(page, cdp, { outDir, settings }) {
   const box = await canvasBox(page);
   if (!box) throw new Error('drawing canvas not found / not visible');
 
-  await runToddlerSession(page, box);
+  const beatResults = await runToddlerSession(page, box);
+  const skippedBeats = beatResults.filter((r) => !r.ok).map((r) => `${r.label}: ${r.error}`);
 
   const obs = await readObservers(page);
   const heapAfter = await heapBytes(page);
@@ -195,6 +220,7 @@ export async function driveSession(page, cdp, { outDir, settings }) {
       captureMode: useTrace ? 'cdp-trace' : 'user-timing',
       startedAt: new Date(t0).toISOString(),
       durationMs: Date.now() - t0,
+      ...(skippedBeats.length ? { skippedBeats } : {}),
     },
     obs,
     heapBefore,

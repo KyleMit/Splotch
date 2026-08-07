@@ -27,4 +27,26 @@ describe('measureSafeAreaInsets', () => {
     expect(probe.style.visibility).toBe('hidden');
     expect(probe.style.pointerEvents).toBe('none');
   });
+
+  it('recreates the probe if it is detached from the document', () => {
+    vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(390);
+    vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(844);
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(3, 47, 376, 763)
+    );
+    const createElement = vi.spyOn(document, 'createElement');
+
+    const first = measureSafeAreaInsets();
+    const probe = document.body.lastElementChild as HTMLDivElement;
+    probe.remove();
+
+    const second = measureSafeAreaInsets();
+    const newProbe = document.body.lastElementChild as HTMLDivElement;
+
+    expect(createElement).toHaveBeenCalledTimes(2);
+    expect(newProbe).not.toBe(probe);
+    expect(document.body.lastElementChild).toBe(newProbe);
+    expect(second).toEqual(first);
+    expect(second).toEqual({ top: 47, right: 11, bottom: 34, left: 3 });
+  });
 });

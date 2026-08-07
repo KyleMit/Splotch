@@ -24,6 +24,8 @@ const repoRoot = join(import.meta.dirname, '..', '..');
 const analyzePath = join(repoRoot, 'scripts', 'perf', 'analyze.mjs');
 const webInspectorPath = join(repoRoot, 'scripts', 'perf', 'analyze-webinspector.mjs');
 const replayPath = join(repoRoot, 'scripts', 'perf', 'replay-scenario.mjs');
+const scenarioPath = join(repoRoot, 'scripts', 'perf', 'scenario.mjs');
+const undoScenariosPath = join(repoRoot, 'scripts', 'perf', 'undo-scenarios.mjs');
 
 let fixtureDir;
 
@@ -124,6 +126,22 @@ describe('performance CLI input failures', () => {
       [`--recording=${path}`],
       `Replay recording has no events array: ${path}`
     );
+  });
+
+  it('reports an unknown --device instead of profiling the default viewport', () => {
+    expectCliFailure(
+      scenarioPath,
+      ['--device=tabelt'],
+      'Unknown --device=tabelt — known: phone, tablet, desktop'
+    );
+  });
+
+  it('reports a malformed --strokes instead of building empty scenarios', () => {
+    expectCliFailure(undoScenariosPath, ['--strokes=abc'], '--strokes must be a number, got "abc"');
+  });
+
+  it('reports a malformed --hz instead of an unthrottled/NaN-derived run', () => {
+    expectCliFailure(undoScenariosPath, ['--hz=abc'], '--hz must be a number, got "abc"');
   });
 
   it('replays every recorded size level at the app stroke width', async () => {

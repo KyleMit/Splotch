@@ -52,4 +52,46 @@ describe('parsePerfArgs', () => {
     parsePerfArgs({ extra: ['turbo'], entry: true }, argv);
     expect(warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('Unknown flag --tubro'));
   });
+
+  it('yields NaN for a malformed --port without exiting when not entry', () => {
+    const exit = vi.spyOn(process, 'exit').mockImplementation(() => {});
+
+    const parsed = parsePerfArgs({ throttleDefault: 4 }, ['--port=abc']);
+
+    expect(parsed.port).toBeNaN();
+    expect(exit).not.toHaveBeenCalled();
+  });
+
+  it('fails fast on a malformed --port for direct entry', () => {
+    const exit = vi.spyOn(process, 'exit').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    parsePerfArgs({ throttleDefault: 4, entry: true }, ['--port=abc']);
+
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('--port must be a number, got "abc"')
+    );
+    expect(exit).toHaveBeenCalledWith(1);
+  });
+
+  it('yields a NaN throttle rate for a malformed --throttle without exiting when not entry', () => {
+    const exit = vi.spyOn(process, 'exit').mockImplementation(() => {});
+
+    const parsed = parsePerfArgs({ throttleDefault: 4 }, ['--throttle=abc']);
+
+    expect(parsed.throttle.rate).toBeNaN();
+    expect(exit).not.toHaveBeenCalled();
+  });
+
+  it('fails fast on a malformed --throttle for direct entry', () => {
+    const exit = vi.spyOn(process, 'exit').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    parsePerfArgs({ throttleDefault: 4, entry: true }, ['--throttle=abc']);
+
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('--throttle must be a number, got "abc"')
+    );
+    expect(exit).toHaveBeenCalledWith(1);
+  });
 });

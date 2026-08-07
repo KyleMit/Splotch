@@ -7,7 +7,7 @@ export function buildMetrics({ settings, obs, heapBefore, heapAfter }) {
     settings,
     longTasks: obs.longTasks,
     frames: obs.frames,
-    heap: { beforeBytes: heapBefore ?? 0, afterBytes: heapAfter ?? obs.heapBytes ?? 0 },
+    heap: { beforeBytes: heapBefore ?? null, afterBytes: heapAfter ?? obs.heapBytes ?? null },
   };
 }
 

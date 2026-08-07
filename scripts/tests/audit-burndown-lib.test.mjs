@@ -284,17 +284,15 @@ describe('resolveImplSha', () => {
   const baseSha = 'a'.repeat(40);
   const head = 'b'.repeat(40);
 
-  it('prefers the sha the implementer reported', () => {
-    expect(resolveImplSha({ reported: head, head: 'c'.repeat(40), baseSha })).toBe(head);
-  });
-
   it('recovers a committed fix whose sha the implementer forgot to report', () => {
-    expect(resolveImplSha({ reported: '', head, baseSha })).toBe(head);
+    expect(resolveImplSha({ head, baseSha })).toBe(head);
   });
 
+  // An unmoved HEAD means the step committed nothing, so there is no sha the
+  // envelope could offer that names this step's work — the resolver takes none.
   it('stays empty when HEAD never moved, so a genuine no-op still defers', () => {
-    expect(resolveImplSha({ reported: '', head: baseSha, baseSha })).toBe('');
-    expect(resolveImplSha({ reported: '', head: '', baseSha })).toBe('');
+    expect(resolveImplSha({ head: baseSha, baseSha })).toBe('');
+    expect(resolveImplSha({ head: '', baseSha })).toBe('');
   });
 });
 

@@ -7,6 +7,7 @@ import {
   countEntries,
   entryTitle,
   gitOut,
+  INVALID_DROP_MARKER,
   isEntryStart,
   LOGS,
   runCmd,
@@ -15,27 +16,29 @@ import {
 
 chdirRoot();
 
-const countLines = (file) =>
-  existsSync(file)
-    ? readFileSync(file, 'utf8')
-        .split('\n')
-        .filter((l) => l.trim()).length
-    : 0;
+const completedLog = join(WORK, 'completed.log');
+const completedLines = existsSync(completedLog)
+  ? readFileSync(completedLog, 'utf8')
+      .split('\n')
+      .filter((l) => l.trim())
+  : [];
 
 const remaining = countEntries() ?? 0;
-const done = countLines(join(WORK, 'completed.log'));
+const dropped = completedLines.filter((l) => l.includes(INVALID_DROP_MARKER)).length;
+const done = completedLines.length - dropped;
 const deferredHeadings = existsSync('docs/AUDIT-DEFERRED.md')
   ? readFileSync('docs/AUDIT-DEFERRED.md', 'utf8').split('\n').filter(isEntryStart)
   : [];
-const total = done + deferredHeadings.length + remaining;
+const total = done + dropped + deferredHeadings.length + remaining;
 
 console.log(`branch     ${gitOut('rev-parse', '--abbrev-ref', 'HEAD')}`);
 console.log(`completed  ${done}`);
+console.log(`dropped    ${dropped}`);
 console.log(`deferred   ${deferredHeadings.length}`);
 console.log(`remaining  ${remaining} of ${total}`);
 
 if (total > 0) {
-  const pct = Math.floor(((done + deferredHeadings.length) * 100) / total);
+  const pct = Math.floor(((done + dropped + deferredHeadings.length) * 100) / total);
   const bars = Math.floor(pct / 3);
   console.log(`progress   [${'#'.repeat(bars)}${'.'.repeat(33 - bars)}] ${pct}%`);
 }

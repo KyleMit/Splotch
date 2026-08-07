@@ -190,10 +190,13 @@ The remaining friction was supervisory rather than correctness-related:
 * A large comment queue was safe but expensive to drain through one connector round trip per body.
   Batches of at most ten can share one orchestration cell while retaining the at-least-once `next` →
   post → `done` ordering.
-* `pop.mjs --help` is not supported and falls through to printing the first finding. The helper also
-  cannot prune empty source sections, so the previous closeout instruction to tidy them contradicted
-  the prohibition on direct backlog edits. The runbook now lists the supported modes and removes
-  that unsafe cleanup step.
+* `pop.mjs --help` is not supported. It originally fell through to printing the first finding, which
+  made any mistyped mode look like a successful pop; the mode set is now closed, so `--help` and
+  every other unrecognized flag exit 2 with `pop: unknown mode <mode> (see header for usage)` and
+  leave the backlog untouched (`scripts/tests/audit-burndown-pop.test.mjs`). The helper also cannot
+  prune empty source sections, so the previous closeout instruction to tidy them contradicted the
+  prohibition on direct backlog edits. The runbook now lists the supported modes and removes that
+  unsafe cleanup step.
 
 ## PR 561 supervision retrospective
 

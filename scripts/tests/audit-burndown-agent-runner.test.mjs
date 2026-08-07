@@ -115,6 +115,27 @@ describe('saved agent output parsing', () => {
     });
   });
 
+  it("normalizes a Claude envelope's usage, folding cache creation and cache reads into total input", () => {
+    const parsed = parseSavedAgentOutput(
+      JSON.stringify({
+        session_id: 'claude-session',
+        is_error: false,
+        structured_output: { verdict: 'VALID' },
+        usage: {
+          input_tokens: 96,
+          cache_creation_input_tokens: 72230,
+          cache_read_input_tokens: 2445396,
+          output_tokens: 17563,
+        },
+      })
+    );
+    expect(parsed.usage).toEqual({
+      input_tokens: 96 + 72230 + 2445396,
+      cached_input_tokens: 2445396,
+      output_tokens: 17563,
+    });
+  });
+
   it('keeps a Claude tooling error attributed to Claude', () => {
     const parsed = parseSavedAgentOutput(
       JSON.stringify({ is_error: true, subtype: 'error_max_budget_usd' })

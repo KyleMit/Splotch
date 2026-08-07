@@ -65,6 +65,7 @@ export function run(cmd, args = [], { input, cwd = ROOT, echo = true } = {}) {
     input,
     stdio: input === undefined ? 'inherit' : ['pipe', 'inherit', 'inherit'],
   });
+  if (result.error) fail(`Failed to launch ${cmd}: ${result.error.message}`);
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
@@ -112,7 +113,10 @@ export async function pollUntil(callback, timeoutMs, intervalMs) {
 // Run a command and return its stdout; exits the script if it fails.
 export function capture(cmd, args = [], { cwd = ROOT } = {}) {
   const result = spawnSync(cmd, args, { cwd, encoding: 'utf8' });
-  if (result.status !== 0) fail(`${cmd} failed (exit ${result.status})\n${result.stderr ?? ''}`);
+  if (result.status !== 0) {
+    const reason = result.error ? `: ${result.error.message}` : '';
+    fail(`${cmd} failed (exit ${result.status})${reason}\n${result.stderr ?? ''}`);
+  }
   return result.stdout ?? '';
 }
 
