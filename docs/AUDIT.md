@@ -28,41 +28,6 @@ this file.
 
 ## Source: Code audit — Gestures / Svelte actions
 
-### [Maintainability] Tuning constants missing the mandated unit suffixes
-
-**File(s):** `web/src/lib/actions/dragToClear.ts` (lines 8–15) @ 9ae62ff1;
-`web/src/lib/actions/launchGuard.ts` (line 20)
-
-**Priority:** P3
-
-#### Problem
-
-CLAUDE.md: "a numeric literal that encodes a tunable decision … gets a named module-scope constant
-**with the unit in the name** (`_MS`, `_PX`, …)". These violate it:
-
-```ts
-const HOLD_DURATION = 500; // → HOLD_DURATION_MS
-const MOVEMENT_THRESHOLD = 50; // → MOVEMENT_THRESHOLD_PX
-const MULTI_CLICK_WINDOW = 1000; // → MULTI_CLICK_WINDOW_MS
-const ACCEPT_ZONE_HIDE_DELAY = 250; // → ..._MS
-const DRAW_SOUND_STOP_DELAY = 300; // → ..._MS
-const PAGE_TURN_DURATION = 600; // → ..._MS
-const EXIT_RETURN_DELAY = 650; // → ..._MS
-```
-
-and in launchGuard, `export const DEFAULT_RADIUS = 72;` (px). `MULTI_CLICK_THRESHOLD` (a count) and
-`ACCEPT_RADIUS_FACTOR` (dimensionless) are fine. The launchGuard names carry a second problem: the
-`DEFAULT_` prefix implies an override path that does not exist (no caller can pass a different
-radius/duration — that would be speculative surface anyway), so `LAUNCH_ZONE_RADIUS_PX` /
-`LAUNCH_ZONE_DURATION_MS` say what they are without promising configurability. `DEFAULT_DURATION_MS`
-at least has the unit; `DEFAULT_RADIUS` has neither.
-
-#### Proposed solution
-
-Mechanical rename (constants are module-private except `ACCEPT_RADIUS_FACTOR`, `DEFAULT_RADIUS`,
-`DEFAULT_DURATION_MS`; the latter two are imported by `launchGuard.test.ts` only, so the rename
-touches that one test). Keep the WHY comments on the constants as-is.
-
 ### [Readability] `holdStartX/holdStartY` are byte-for-byte duplicates of `startPointerX/startPointerY`
 
 **File(s):** `web/src/lib/actions/dragToClear.ts` (lines 37–38, 43–44, 108–117, 146–147) @ 9ae62ff1

@@ -110,7 +110,7 @@ export async function retryOpen(
 //
 // `dialogFlyFromOrigin` (app.css) starts the dialog scaled down onto the button
 // that opened it, and modalDialog arms a launch dead zone at that same point
-// (launchGuard's DEFAULT_RADIUS / DEFAULT_DURATION_MS) whose capture-phase
+// (launchGuard's LAUNCH_ZONE_RADIUS_PX / LAUNCH_ZONE_DURATION_MS) whose capture-phase
 // pointerdown handler swallows every event landing inside it — dialog content
 // included, by design, so a toddler's repeat taps can't work the controls that
 // painted under the finger. So for the opening frames the *whole* dialog sits

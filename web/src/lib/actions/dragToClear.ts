@@ -5,12 +5,12 @@ import { capturePointer, releasePointer } from './pointerCapture';
 
 // Drag-to-clear gesture constants.
 const ACCEPT_RADIUS_FACTOR = 0.4;
-const HOLD_DURATION = 500;
-const MOVEMENT_THRESHOLD = 50;
-const MULTI_CLICK_WINDOW = 1000;
+const HOLD_DURATION_MS = 500;
+const MOVEMENT_THRESHOLD_PX = 50;
+const MULTI_CLICK_WINDOW_MS = 1000;
 const MULTI_CLICK_THRESHOLD = 3;
-const ACCEPT_ZONE_HIDE_DELAY = 250;
-const DRAW_SOUND_STOP_DELAY = 300;
+const ACCEPT_ZONE_HIDE_DELAY_MS = 250;
+const DRAW_SOUND_STOP_DELAY_MS = 300;
 export const PAGE_TURN_DURATION_MS = 600;
 const RETURN_HANDOFF_GAP_MS = 50;
 const EXIT_RETURN_DELAY_MS = PAGE_TURN_DURATION_MS + RETURN_HANDOFF_GAP_MS;
@@ -67,7 +67,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   // True when the tap completed a multi-tap run and showed the tutorial, in which
   // case the caller must not start a drag.
   function registerTap(now: number, o: DragToClearOptions): boolean {
-    if (now - lastClickTime < MULTI_CLICK_WINDOW) {
+    if (now - lastClickTime < MULTI_CLICK_WINDOW_MS) {
       clickCount++;
       if (clickCount >= MULTI_CLICK_THRESHOLD) {
         o.onTutorialShow();
@@ -107,7 +107,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const clientY = e.clientY;
     holdStartX = clientX;
     holdStartY = clientY;
-    holdTimer = scheduleReset(o.onTutorialShow, HOLD_DURATION);
+    holdTimer = scheduleReset(o.onTutorialShow, HOLD_DURATION_MS);
 
     activePointerId = e.pointerId;
     capturePointer(node, e.pointerId);
@@ -143,7 +143,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
     const deltaX = Math.abs(clientX - holdStartX);
     const deltaY = Math.abs(clientY - holdStartY);
-    if (deltaX > MOVEMENT_THRESHOLD || deltaY > MOVEMENT_THRESHOLD) {
+    if (deltaX > MOVEMENT_THRESHOLD_PX || deltaY > MOVEMENT_THRESHOLD_PX) {
       if (holdTimer !== null) {
         resetTimers.delete(holdTimer);
         clearTimeout(holdTimer);
@@ -201,7 +201,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     o.acceptZoneEl.classList.remove('threshold-reached');
     scheduleReset(() => {
       if (activePointerId === null) o.acceptZoneEl.style.display = 'none';
-    }, ACCEPT_ZONE_HIDE_DELAY);
+    }, ACCEPT_ZONE_HIDE_DELAY_MS);
 
     clearReady = false;
     o.clearPreviewEl.classList.remove('committed');
@@ -225,7 +225,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
     scheduleReset(() => {
       stopDrawSound();
-    }, DRAW_SOUND_STOP_DELAY);
+    }, DRAW_SOUND_STOP_DELAY_MS);
 
     scheduleReset(() => {
       o.pageTurnOverlayEl.classList.remove('animating');

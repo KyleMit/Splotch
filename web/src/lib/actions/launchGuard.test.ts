@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  DEFAULT_DURATION_MS,
-  DEFAULT_RADIUS,
+  LAUNCH_ZONE_DURATION_MS,
+  LAUNCH_ZONE_RADIUS_PX,
   guardLaunchZone,
   guardTapZone,
   isPointInLaunchZone,
@@ -22,18 +22,18 @@ describe('launchGuard', () => {
   it('rejects taps within the radius of the launching button', () => {
     guardLaunchZone({ x: 100, y: 100 });
     expect(isPointInLaunchZone(100, 100)).toBe(true);
-    expect(isPointInLaunchZone(100 + DEFAULT_RADIUS - 1, 100)).toBe(true);
+    expect(isPointInLaunchZone(100 + LAUNCH_ZONE_RADIUS_PX - 1, 100)).toBe(true);
   });
 
   it('lets taps outside the radius through', () => {
     guardLaunchZone({ x: 100, y: 100 });
-    expect(isPointInLaunchZone(100 + DEFAULT_RADIUS + 1, 100)).toBe(false);
+    expect(isPointInLaunchZone(100 + LAUNCH_ZONE_RADIUS_PX + 1, 100)).toBe(false);
   });
 
   it('stops rejecting once the window lapses', () => {
     guardLaunchZone({ x: 100, y: 100 });
     expect(isPointInLaunchZone(100, 100)).toBe(true);
-    vi.advanceTimersByTime(DEFAULT_DURATION_MS + 1);
+    vi.advanceTimersByTime(LAUNCH_ZONE_DURATION_MS + 1);
     expect(isPointInLaunchZone(100, 100)).toBe(false);
   });
 
@@ -59,8 +59,8 @@ describe('launchGuard', () => {
   it('guardTapZone rejects repeat taps at the point, then lapses', () => {
     guardTapZone(100, 100);
     expect(isPointInLaunchZone(100, 100)).toBe(true);
-    expect(isPointInLaunchZone(100 + DEFAULT_RADIUS + 1, 100)).toBe(false);
-    vi.advanceTimersByTime(DEFAULT_DURATION_MS + 1);
+    expect(isPointInLaunchZone(100 + LAUNCH_ZONE_RADIUS_PX + 1, 100)).toBe(false);
+    vi.advanceTimersByTime(LAUNCH_ZONE_DURATION_MS + 1);
     expect(isPointInLaunchZone(100, 100)).toBe(false);
   });
 });
