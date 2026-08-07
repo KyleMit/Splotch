@@ -52,39 +52,6 @@ CLAUDE.md is explicit that a "keep in sync with X" comment marks a defect rather
 Kept only where the two sides can diverge *silently* and ship — release versions, ESLint's paired
 restricted-import blocks, policy values re-declared in specs. One of these has already drifted.
 
-### [Testing] The `scripts` ↔ `scripts-info` contract (ADR-0019) has no drift guard
-
-**File(s):** `package.json` (lines 8–166 vs 167–325) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-CLAUDE.md's command section states the contract: "every new or renamed script gets a matching
-one-line entry in the `scripts-info` block". With 157 scripts and 157 descriptions maintained as two
-parallel JSON objects, that agreement is currently kept purely by discipline — nothing fails when a
-script is added without a description or a description is orphaned by a rename. (Today the key sets
-happen to match exactly; the *ordering* has already drifted — first divergence at index 45,
-`preperf:ipad` vs `preperf:ipad:frames` — showing the two blocks are in fact edited independently.)
-The repo convention says exactly this situation gets a drift-guard test, and `scripts/tests/`
-already hosts the analogous guards (`workflow-hygiene.test.mjs`, `labels.test.mjs`,
-`claude-permissions.test.mjs`).
-
-#### Proposed solution
-
-Add `scripts/tests/scripts-info.test.mjs` (runs under the existing `test:scripts` tier):
-
-```js
-const { scripts, 'scripts-info': info } = JSON.parse(readFileSync(pkgPath, 'utf8'));
-it('every script has a scripts-info entry', () =>
-  expect(Object.keys(scripts).filter((k) => !(k in info))).toEqual([]));
-it('every scripts-info entry has a script', () =>
-  expect(Object.keys(info).filter((k) => !(k in scripts))).toEqual([]));
-```
-
-Optionally assert matching key order so the two blocks read in parallel; that's a style choice — the
-presence checks are the load-bearing part.
-
 ### [Maintainability] `COLOR_CHANGE_DEBOUNCE_SETTLE_MS` keeps cross-file agreement with the engine by prose, not import
 
 **File(s):** `web/tests/helpers.ts` (lines 29–30) and `web/src/lib/drawing/engine.ts`
