@@ -41,53 +41,6 @@ within-section ranks and are not comparable across groups; the grouping supersed
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
 eventually arrive as a bug report — but the reporter is a two-year-old, so they won't.
 
-### [Architecture] ColorPalette owns the black-ink/theme sync invariant and writes shared state directly from an `$effect`
-
-**File(s):** `web/src/lib/components/ColorPalette.svelte` (`$effect`, lines 36–40) @ cd04c367
-
-**Priority:** P2
-
-#### Problem
-
-```svelte
-$effect(() => {
-  if (colors.activeSwatch === BLACK_INK) {
-    colors.activeColor = themedSwatchColor(BLACK_INK, dark);
-  }
-});
-```
-
-This encodes a *state-level* invariant — "the black swatch paints white on dark paper, even when the
-theme flips live" — inside one component, by assigning `colors.activeColor` directly. Two problems:
-
-1. `.claude/rules/svelte.md` is explicit: "Components read state and call setters; they never own
-   shared state." Every other write to `colors` goes through `selectPaletteColor` /
-   `pickCustomColor` / `selectCustomSwatch` (`web/src/lib/state/colors.svelte.ts`, lines 48–65);
-   this is the sole direct field assignment from a component.
-2. The invariant only holds while `ColorPalette` happens to be mounted. Today it always is on the
-   drawing route, but the engine consumes `colors.activeColor` independently
-   (`web/src/lib/drawing/earlyBoot.ts`, line 51), and nothing about the rule is palette-UI-specific
-   — it's a property of the color state itself. A future surface that draws without mounting the
-   palette (or a test exercising theme flips against the state module) silently loses the sync.
-
-#### Proposed solution
-
-Move the rule into the state layer. Options, in increasing ambition:
-
-* Minimal: keep the effect where it is but route it through the setter —
-  `selectPaletteColor(BLACK_INK, themedSwatchColor(BLACK_INK, dark))` — removing the direct-write
-  violation only.
-* Better: export `syncInkToTheme(dark: boolean)` from `colors.svelte.ts` (guarding on
-  `activeSwatch === BLACK_INK` internally) and invoke it from the place that already observes theme
-  changes at module scope — `appearance.svelte.ts` runs `updateThemeColorMeta(resolvedTheme())` on
-  every flip (line 53); the ink sync belongs beside it. `ColorPalette` then drops the `$effect`
-  entirely.
-
-Tradeoff: option 2 introduces an `appearance → colors` module dependency; that direction seems safe
-(colors does not import appearance), but confirm no cycle. Unit-test the new function in
-`colors.svelte.test.ts` (theme flip while black selected repaints; while another swatch selected
-does not).
-
 ### [Maintainability] Missing-input on the verify endpoints answers 200 while the same class of validation answers 400 on `report`
 
 **File(s):** `web/src/routes/api/verify-access-code/+server.ts` (line 28),
