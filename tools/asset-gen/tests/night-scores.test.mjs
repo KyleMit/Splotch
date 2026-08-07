@@ -68,6 +68,43 @@ describe('scoreLineColor — the outlines must stay white', () => {
   });
 });
 
+// Every scorer indexes the FILL's raster with the SOURCE's width/height, so each
+// must resize the fill to the source's exact dimensions rather than to its own
+// aspect ratio — otherwise the reads run off the end of (or short of) the fill,
+// yielding undefined -> NaN lumas that flow into the medians and ratios with no
+// error. bin/audit-golden.mjs is the exposed caller: it scores a committed night
+// raw against the line art with no alignment step of its own.
+const ASPECT_SKEW_PX = 16; // enough off-square to shift the fill a multiple of the gates' 1px slack
+async function skewedNightFill(dy) {
+  const fill = await nightFillGood();
+  const { width, height } = await sharp(fill).metadata();
+  return sharp(fill)
+    .resize(width, height + dy, { fit: 'fill' })
+    .png()
+    .toBuffer();
+}
+
+describe('a fill whose aspect ratio differs from the source scores against the source', () => {
+  for (const dy of [ASPECT_SKEW_PX, -ASPECT_SKEW_PX]) {
+    it(`scores a fill ${dy}px off the source's aspect ratio like the matched fill`, async () => {
+      const source = await nightSource();
+      const fill = await skewedNightFill(dy);
+
+      const night = await scoreNightness(fill, source);
+      const drift = await scoreDrift(fill, source);
+      const line = await scoreLineColor(fill, source);
+
+      // Soft so a regression reports every scorer that broke, not just the first.
+      expect.soft(Number.isFinite(night.bgLuma)).toBe(true);
+      expect.soft(night.bgLuma).toBeLessThan(NIGHT_BG_LUMA_MAX_DEFAULT);
+      expect.soft(Number.isFinite(drift.ratio)).toBe(true);
+      expect.soft(drift.ratio).toBeLessThanOrEqual(DRIFT_THRESHOLD_DEFAULT);
+      expect.soft(Number.isFinite(line.lineWhite)).toBe(true);
+      expect.soft(line.lineWhite).toBeGreaterThanOrEqual(LINE_WHITE_MIN_DEFAULT);
+    });
+  }
+});
+
 it('scores a candidate with one shared 512px source preparation', async () => {
   const source = await nightSource();
   const fill = await nightFillGood();
