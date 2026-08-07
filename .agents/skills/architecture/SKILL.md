@@ -253,10 +253,12 @@ media queries + the head-script stamp in `app.html`).
     Feedback, What's New (drilled-in header: "Updates"), About. Both shells render from the same
     `SECTIONS` list in `settings/sections.ts`, chosen by viewport width (`SettingsModal.svelte`):
     below ~700px a **Hub** list drills into a full-page section with a back arrow; at/above ~700px a
-    persistent **Sidebar** (scrolls only where the section list outgrows the column — a 600px-tall
-    landscape tablet) sits beside a scrolling content **Pane**. Each section component lives in
-    `settings/` (`AppearanceSection`, `SoundSection`, `SavingSection`, `ControlsSection`,
-    `AiKeyManager`, `SetupInstructions`, `WhatsNewSection`, `ReportForm`, `AboutSection`).
+    persistent **Sidebar** (its own scroller below ~664px of viewport height, where the fixed 466px
+    section list outgrows the column — landscape iPad Safari lands there; scroll-position edge
+    shades mark it, and a reopen resets its scroll) sits beside a scrolling content **Pane**. Each
+    section component lives in `settings/` (`AppearanceSection`, `SoundSection`, `SavingSection`,
+    `ControlsSection`, `AiKeyManager`, `SetupInstructions`, `WhatsNewSection`, `ReportForm`,
+    `AboutSection`).
     * **Install Guide** - iOS / Android step-by-step PWA setup inside the **Install** section, plus
       the one-tap install button when the browser supports it
     * **Buttons Section** - Enable Advanced Controls toggle, a **Button Size** slider that rescales

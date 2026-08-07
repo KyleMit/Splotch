@@ -128,16 +128,25 @@ operation-level parental gates required by app-store policy; this responsive str
 ## Amendment (2026-08)
 
 The Decision's sidebar "never scrolls" — one scroller, the pane. Growing the section icons to the
-size the illustrations actually read at pushed the nine rows past the column on the shortest
-viewport this shell serves (a 600px-tall landscape tablet, where the 85vh card leaves the column
-~412px), and the clipping `overflow: hidden` hid the last two sections with no gesture that brought
-them back.
+size the illustrations actually read at pushed the nine rows past the column, and the clipping
+`overflow: hidden` hid the last sections with no gesture that brought them back.
 
-The nav is now `overflow-y: auto` with `overscroll-behavior: contain`. Everywhere with room there is
-nothing to scroll and no scrollbar appears, so the single-scroller reading still describes every
-tablet with normal height; the second scroller exists only where the alternative was unreachable
-sections. `flows-settings.spec.ts` holds the invariant at that viewport: the column either fits or
-it scrolls.
+The nav is now `overflow-y: auto` with `overscroll-behavior: contain`, plus scroll-position edge
+shades (paired `background-attachment: local`/`scroll` layers, so no scroll listener) as the
+affordance — a row clipped at a gap leaves the column looking finished, and touch overlay scrollbars
+don't paint until the flick starts.
+
+**The second scroller is not rare.** The list is a fixed 466px and the 85vh card gives the column
+the viewport height minus its own chrome, so it scrolls below **~664px of viewport height** — 54px
+of overflow at the 600px floor, 20px at 640px, none from 664px up. A landscape iPad in Safari
+(744–834 CSS px tall, less ~70–95 of browser chrome) lands in that band routinely, so "one scroller"
+now describes desktop and portrait tablets rather than every tablet.
+
+Because the dialog is closed rather than unmounted, the nav also has to be scrolled back to the top
+whenever Settings reopens: the section resets to the first one, so a nav left scrolled would reopen
+with the selected row above the visible top and no highlight in view. `flows-settings.spec.ts` holds
+both invariants at the 600px floor — the column either fits or scrolls, and a reopen leaves the
+active row inside the column.
 
 The section labels and their order also changed (Appearance, Sound, Buttons, Saving, AI Art,
 Install, Feedback, What's New, About) — a wording and ordering change within the same structure,

@@ -173,9 +173,10 @@
   }
 
   /* Borderless toggle chips in a two-column grid — the independent-toggles
-     skin. No hairline: --chip-surface sits a step off --surface-2 so an
-     unselected chip still reads as its own surface, which leaves the whole
-     chip box for the icon instead of spending it on the border and its inset. */
+     skin. No hairline: an unselected chip rests on the same recessed
+     --control-track the segment variant's track uses, which reads as its own
+     surface without one and leaves the whole chip box for the icon instead of
+     spending it on the border and its inset. */
   .chip {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -189,7 +190,7 @@
     min-width: 0;
     padding: 11px 12px;
     border-radius: var(--radius-md);
-    background: var(--chip-surface);
+    background: var(--control-track);
     font-size: var(--font-size-sm);
     transition:
       background var(--duration-fast) ease,
@@ -198,7 +199,7 @@
 
   @media (hover: hover) {
     .chip .option:not(.active):hover {
-      background: var(--chip-surface-hover);
+      background: var(--control-track-hover);
       color: var(--text-strong);
     }
   }

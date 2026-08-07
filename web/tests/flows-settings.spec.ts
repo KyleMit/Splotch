@@ -86,6 +86,41 @@ test('the shortest sidebar viewport can still reach every section', async ({ pag
   await expect(page.locator('.about-brand')).toBeVisible();
 });
 
+test('reopening a scrolled sidebar lands back on the active row', async ({ page }) => {
+  // The dialog is closed, not unmounted, so the nav keeps the scroll offset the
+  // parent left it at while the section resets to the first one — which would
+  // reopen with the selected row scrolled off the top and no highlight in view.
+  await page.setViewportSize({ width: 1024, height: TABLET_MIN_SIDE_PX });
+  await gotoApp(page);
+  const modal = await openSettingsModal(page);
+  const nav = page.locator('.settings-nav');
+
+  await retryOpen(page.locator('.about-brand'), () =>
+    nav.locator('[data-section="about"]').click({ timeout: 3000 })
+  );
+  expect(await nav.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+
+  await modal.getByRole('button', { name: 'Close' }).click();
+  await expect(async () => {
+    await page.locator('#settingsButton').click({ timeout: 1000 });
+    await expect(page.locator('.settings-nav')).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 5000 });
+
+  // Reopening selects the first section, so its row is the one that has to be
+  // in view — read off the nav rather than restating which section that is.
+  const active = nav.locator('.settings-nav-item.active');
+  await expect(nav.locator('.settings-nav-item').first()).toHaveClass(/active/);
+  await expect
+    .poll(() =>
+      active.evaluate((row) => {
+        const box = row.parentElement!.getBoundingClientRect();
+        const seat = row.getBoundingClientRect();
+        return seat.top >= box.top - 0.5 && seat.bottom <= box.bottom + 0.5;
+      })
+    )
+    .toBe(true);
+});
+
 test("What's New formats the current release date without runtime locale initialization", async ({
   page,
 }) => {
