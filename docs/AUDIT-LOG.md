@@ -18,6 +18,7 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
+| 2026-08-07 | [audit-triage](#2026-08-07--audit-triage)                       |
 | 2026-08-07 | [burn-down-audits](#2026-08-07--burn-down-audits)               |
 | 2026-08-06 | [burn-down-audits](#2026-08-06--burn-down-audits)               |
 | 2026-08-05 | [vet-audits](#2026-08-05--vet-audits)                           |
@@ -84,6 +85,63 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-07-03 | [code-audit](#2026-07-03--code-audit)                           |
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
+
+## 2026-08-07 · audit-triage
+
+Manual triage pass over the whole of `docs/AUDIT.md`, run on request to decide whether the backlog
+was still worth spending on: **346 findings cut to 75, the other 271 deleted.** No code changed and
+no issues were filed — this pass only decided what deserves to survive.
+
+The question behind it was whether to keep burning down the backlog or drop it and wait for real bug
+reports. The evidence said neither, quite. The value *had* been extracted: two `/vet-audits` passes
+had already drained the severity head into issues #774–#785 and successive burndowns had fixed
+roughly 300, so what remained was by construction the tail — **zero P1, and 183 of 346 (53%) sitting
+in P4/P5.** The composition had also shifted away from the product: only ~108 of the 346 were in
+shipped `web/src/` code, against ~238 in tooling, tests, config, and docs. Continuing uniformly
+meant paying full verify → implement → review cost to rename constants in the asset-gen pipeline.
+
+But "wait for bug reports" was wrong for one specific class, and that class became the first keep
+criterion. A meaningful share of the remaining Correctness findings are **instruments that lie**:
+`perf:undo` presenting last-scenario frame and heap metrics as session-wide, `heapBefore ?? 0`
+rendering "unavailable" as a confident zero, `diffGoldenPage` silently skipping metric paths missing
+from the score shape so a renamed producer key disables its own gate, `cost.mjs` reporting zero
+tokens for every Claude run, `status.mjs` counting invalid drops as completions. Nobody files a bug
+against a number that is wrong but plausible — they just make decisions on it. Three were
+spot-checked against `main` and confirmed still live before the pass committed to the criterion.
+
+The five criteria, in the order they are grouped in `docs/AUDIT.md`:
+
+| Group                               | Kept | What earns a place                                                             |
+| ----------------------------------- | ---- | ------------------------------------------------------------------------------ |
+| Silent wrong output                 | 26   | Produces a confident wrong answer, or lets a failure pass as success           |
+| App correctness reaching users      | 16   | Behaviour defects in shipped `web/src/` and native-shell code                  |
+| Safety, resource, ships-to-prod     | 10   | Unbounded work, unvalidated input reaching a shell, unpinned remote code       |
+| Cross-file agreement held by prose  | 14   | Two sides that can diverge *silently* and ship — one already has               |
+| Documentation that misdirects       | 8    | Read as instruction by an agent or contributor, and sends them somewhere wrong |
+| Coverage gaps on load-bearing paths | 1    | Untested surface whose silent breakage is expensive and not otherwise visible  |
+
+What went, went by category rather than by luck: 98 Maintainability, 60 Readability, 29 Testing, 24
+Docs, 16 Performance, 14 Architecture. The 11 deleted Correctness findings were the ones whose
+failure mode is loud and cheap — a script that crashes when run from the wrong cwd announces itself.
+18 P2s were deleted too, which is the point of the exercise: P2 is a *within-section* rank, so a P2
+in the asset-gen tests never meant what a P2 in the drawing engine meant.
+
+Two structural notes. Findings are grouped by criterion rather than by the usual
+`## Source: <audit>` sections, because after a triage pass the criterion is the argument for keeping
+a finding and the source is not; `.claude/audit-conventions.md` §1 now documents the curated-group
+shape alongside the producer shape, and the burndown parser is heading-agnostic so `pop.mjs --count`
+reads 75 unchanged. And every citation in the file is still pinned to `9ae62ff1` from 2026-07-28 —
+all cited paths were re-checked and still exist, but line numbers have drifted through several
+hundred fixes, so the header now tells whoever picks one up to re-verify first.
+
+The deleted 271 are recoverable from this file's git history and were deliberately not moved to
+`docs/AUDIT-DEFERRED.md`: parking them there would recreate the same standing backlog under a
+different name.
+
+**The intake is the actual defect.** 649 raw findings came from a single comprehensive per-section
+sweep with no scope boundary — it audited the workshop as thoroughly as the product. Scope the next
+`/code-audit` to shipped `web/src/` plus surfaces that changed since the last run, so the backlog
+never again reaches a size that needs a pass like this one.
 
 ## 2026-08-07 · burn-down-audits
 
