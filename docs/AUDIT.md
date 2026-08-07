@@ -58,42 +58,6 @@ Not cosmetic doc rot. Each of these is read by an agent or a contributor *as ins
 them somewhere wrong — a source map behind the code it describes, a retired API contract, a dead
 link in every generated tree, prescribed scripts that do not exist.
 
-### [Docs] `.claude/rules/testing.md` misstates what `npm test` runs (omits `test:scripts`)
-
-**File(s):** `.claude/rules/testing.md` (lines 22–23); `package.json` (line 46) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-The path-scoped testing rule — loaded into context whenever an agent edits any test file — says:
-
-```markdown
-* `npm test` = `test:unit` + `test:asset-gen` + `test:e2e`; the native smoke tests (`test:android`,
-  `test:ios`) are deliberately excluded (need an emulator/simulator + native toolchain).
-```
-
-but `package.json` line 46 is:
-
-```json
-"test": "npm run test:unit && npm run test:asset-gen && npm run test:scripts && npm run test:e2e",
-```
-
-The `test:scripts` tier (repo-automation tests in `scripts/tests/` — including the very
-workflow-hygiene, labels, and claude-permissions tests that guard this section's files) is missing
-from the rule. CLAUDE.md's command table has the correct four-tier description, so the two
-instruction surfaces disagree, and an agent following the rule may conclude `scripts/tests/` is not
-part of `npm test` and skip running it. This is also an instance of the repo's own comment
-convention violation: the rule restates a mutable composition owned by `package.json` instead of
-naming the owner.
-
-#### Proposed solution
-
-Update line 22 to include `test:scripts` — or better, stop enumerating: "`npm test` runs every CI
-tier (see the `test` entry in package.json `scripts-info`); the native smokes (`test:android`,
-`test:ios`) are deliberately excluded…". The pointer form can't drift when a fifth tier is added.
-`.claude/rules/` is edit-in-place (not ruler-generated), so this is a direct one-file fix.
-
 ### [Docs] CONTRIBUTING.md "Release process" predates the three-phase model — it describes exactly the flow ADR-0077 was written to kill
 
 **File(s):** `docs/CONTRIBUTING.md` (lines 226–230) @ cd04c367
