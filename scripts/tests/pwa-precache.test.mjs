@@ -40,6 +40,23 @@ it('rejects responsive precache entries, missing fallbacks, and an oversized bun
   ]);
 });
 
+it('rejects served-only social card and generator inputs', () => {
+  expect(
+    pwaPrecacheProblems({
+      precacheUrls: [
+        '_app/env.js',
+        'large-image.png',
+        'large-image.svg',
+        'styles/source.svg',
+      ],
+      precacheBytes: 1,
+      responsiveAssetUrls: [],
+    })
+  ).toEqual([
+    'Assets served but never fetched by the application remain in the PWA precache: large-image.png, large-image.svg, styles/source.svg',
+  ]);
+});
+
 it('requires the runtime-generated environment module for offline hydration', () => {
   expect(
     pwaPrecacheProblems({
