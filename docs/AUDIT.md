@@ -52,57 +52,6 @@ CLAUDE.md is explicit that a "keep in sync with X" comment marks a defect rather
 Kept only where the two sides can diverge *silently* and ship — release versions, ESLint's paired
 restricted-import blocks, policy values re-declared in specs. One of these has already drifted.
 
-### [Maintainability] `generate-image.spec.ts` re-declares server policy values (rate limits, upload cap) instead of importing them
-
-**File(s):** `web/tests/generate-image.spec.ts` (lines 19–22, 43–44) @ cd04c367
-
-**Priority:** P2
-
-> **Verified 2026-07-28** — `rateLimitPolicy.ts` is side-effect-free and `admin.spec.ts` line 2
-> already imports a server module by relative path, so the proposed import is proven viable. The
-> policy mirrors are on lines 19–21, and the upload-cap neighbor is on lines 43–44.
-
-#### Problem
-
-The testing rule says "Parametrized tests import the constant/manifest they exercise — never
-re-declare the value." This spec re-declares three server policy values:
-
-```ts
-// Mirrors of generateToken / generateByok in src/lib/server/rateLimitPolicy.ts.
-const GENERATE_LIMIT = 15;
-const BYOK_LIMIT = 30;
-```
-
-(lines 19–21), and lines 43–44 hard-code the upload cap's neighbor:
-
-```ts
-// 16 MB — just over the 15 MB cap.
-const tooBig = Buffer.alloc(16 * 1024 * 1024);
-```
-
-where the cap is `MAX_IMAGE_BYTES = 15 * 1024 * 1024` — a module-private const at
-`web/src/routes/api/generate-image/+server.ts:25`.
-
-`rateLimitPolicy.ts` is side-effect-free and exports `rateLimitPolicy.generateToken.limit` /
-`.generateByok.limit`, and the same spec directory already imports server modules (`admin.spec.ts:2`
-imports `SECURITY_HEADERS` from `../src/lib/server/securityHeaders`). If someone tunes a limit, the
-burst tests fail with a confusing throttle mismatch instead of tracking the source; the "Mirrors
-of…" comment is exactly the prose-sync pattern the conventions ban.
-
-#### Proposed solution
-
-```ts
-import { rateLimitPolicy } from '../src/lib/server/rateLimitPolicy';
-const GENERATE_LIMIT = rateLimitPolicy.generateToken.limit;
-const BYOK_LIMIT = rateLimitPolicy.generateByok.limit;
-```
-
-For the upload cap, export `MAX_IMAGE_BYTES` from the `+server.ts` (the server rules already
-sanction exporting contract values from `+server.ts` files) and use
-`Buffer.alloc(MAX_IMAGE_BYTES + 1)`. Gotcha: confirm the `+server.ts` imports cleanly in the
-Playwright Node context (it imports the AI provider seam); if it doesn't, move the cap into a small
-`generateImagePolicy.ts` module the route imports.
-
 ### [Maintainability] Crayon stage vocabulary triplicated — and the samples.mjs copy already drifted (missing stage 6)
 
 **File(s):** `tools/asset-gen/crayon-brush-samples/samples.mjs` (header lines 1–10, stage arrays

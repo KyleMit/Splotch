@@ -16,6 +16,7 @@ import { adminClient } from './lib/adminClient.mjs';
 // so the absence assertions below name the same headers the hook stamps — a new
 // security header is covered here the moment it's added to that module.
 import { SECURITY_HEADERS } from '../web/src/lib/server/securityHeaders.ts';
+import { MAX_IMAGE_BYTES } from '../web/src/lib/server/generateImagePolicy.ts';
 import { tinyPngBuffer } from '../web/tests/fixtures.ts';
 import { REPORT_HONEYPOT_FIELD } from '../web/src/lib/report.ts';
 
@@ -23,7 +24,7 @@ const PORT = Number(process.env.SMOKE_PORT ?? 5199);
 const BASE = `http://localhost:${PORT}`;
 const ADMIN_SECRET = randomUUID();
 const SEED_TOKENS = 'alpha,beta';
-const OVERSIZED_IMAGE_BYTES = 16 * 1024 * 1024;
+const OVERSIZED_IMAGE_BYTES = MAX_IMAGE_BYTES + 1;
 
 const postJson = (base, path, body, headers = {}) =>
   fetch(`${base}${path}`, {
