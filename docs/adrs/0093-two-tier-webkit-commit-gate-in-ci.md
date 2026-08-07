@@ -1,7 +1,9 @@
 # ADR-0093: Run a Two-Tier WebKit Commit Gate in CI
 
 **Status:** Active — amends [ADR-0032](0032-performance-profiling-harness.md) and
-[ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md). **Date:** 2026-08
+[ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md); amended by
+[ADR-0100](0100-split-the-commit-gate-by-what-each-half-can-decide.md), which moved this tier off
+the pull-request path and put the structural half of its verdict there instead. **Date:** 2026-08
 
 ## Context
 
@@ -24,10 +26,13 @@ GitHub Actions runs the WebKit commit gate in two tiers from `.github/workflows/
 
 * Pull requests run `npm run perf:undo:webkit:fast` on `macos-latest` in a job parallel to the
   ordinary Tests job. The first Ubuntu Actions measurement exceeded the 184-second Tests job, while
-  the same fast command completes in roughly 24 seconds on macOS. Its set is defined once by
-  `FAST_UNDO_SCENARIO_KEYS`: `multi-finger`, the only scenario that currently exhausts the resident
-  byte budget and exercises encoding, plus `crayon-scribbles`, which covers mid-stroke crayon pass
-  splits. The npm script selects `--suite=fast`; neither it nor the workflow repeats the keys.
+  the same fast command was measured at roughly 24 seconds on macOS when this tier was chosen. That
+  figure no longer describes the job — `docs/scratchpad/webkit-commit-gate-cost-2026-08.md`
+  decomposes the current cost — but the Ubuntu-versus-macOS ordering it rested on is unchanged. Its
+  set is defined once by `FAST_UNDO_SCENARIO_KEYS`: `multi-finger`, the only scenario that currently
+  exhausts the resident byte budget and exercises encoding, plus `crayon-scribbles`, which covers
+  mid-stroke crayon pass splits. The npm script selects `--suite=fast`; neither it nor the workflow
+  repeats the keys.
 * `v*` release tags run `npm run perf:undo:webkit`, retaining all seven scenarios at the point a
   release reaches users.
 * The fast tier attempts to upload `undo-scenarios.json` and `undo-scenarios.md` after a failure.
@@ -139,6 +144,14 @@ rather than in a delayed middle tier.
   measurements.
 * − The every-PR job consumes a macOS runner because the Ubuntu WebKit runtime does not fit the
   suite's wall-clock budget.
+* − The job was the wall-clock floor of a pull-request run until
+  [ADR-0100](0100-split-the-commit-gate-by-what-each-half-can-decide.md) moved it post-merge, and
+  `crayon-scribbles` is most of its cost: its synchronous draw phase renders six pattern-filled
+  surfaces per crayon op on a runner with no GPU-accelerated canvas. Splitting the fast set into
+  parallel one-scenario jobs was measured as worth 5–10 seconds, because the two scenarios differ in
+  cost by roughly 10×. Reducing the cost further means changing the scenario's op count, which is
+  the shape the 25 ms threshold and the fast-set history were calibrated against. See
+  `docs/scratchpad/webkit-commit-gate-cost-2026-08.md`.
 * − The rolling history has 90-day artifact retention. A longer release gap restarts from the
   compatible committed seed, so the first post-gap run has less historical depth.
 * − Declared paths can still diverge from scenario behavior. The encode path has a runtime proof,

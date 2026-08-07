@@ -38,6 +38,7 @@ import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
 import { percentile } from './real-screen-stats.mjs';
 import {
   ALL_UNDO_SCENARIO_KEYS,
+  ENCODE_PATH_UNDO_SCENARIO_KEYS,
   FAST_UNDO_SCENARIO_KEYS,
   UNDO_SCENARIO_KEYS,
   UNDO_SCENARIO_PATHS,
@@ -47,6 +48,7 @@ import { toMiB } from './units.mjs';
 import {
   COMMIT_GATE_MS,
   COMMIT_GATE_PERCENTILE,
+  encodeOnCommitBreaches,
   evaluateCommitTiming,
 } from './undo-commit-gate.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
@@ -539,6 +541,10 @@ export async function runUndoScenario(
       encodeMaxMs: encode.max,
       encodeInCommitMs: encodeInCommit.total,
       encodeInCommitMaxMs: encodeInCommit.max,
+      // The structural gate reads the count, not the duration: an engine whose
+      // encode is genuinely in-parallel reports ~0 ms for the very shape the
+      // gate exists to reject (see encodeOnCommitBreaches).
+      encodeInCommitCount: encodeInCommit.count,
     },
     undo: {
       steps: undoM.count,
@@ -589,6 +595,14 @@ function buildUndoSettings({ throttle, build, geom, t0 }) {
   };
 }
 
+// The scenario sets a run can ask for by name. `full` is deliberately absent:
+// it is the default, and the only suite a diagnostic --scenarios subset may
+// stand in for.
+const NAMED_SUITE_KEYS = {
+  fast: FAST_UNDO_SCENARIO_KEYS,
+  'encode-path': ENCODE_PATH_UNDO_SCENARIO_KEYS,
+};
+
 // Session frame health is the union of the per-scenario sampling windows, so
 // the counts and spans add and the rate is recomputed over the combined span —
 // carrying one scenario's fps forward would label it "whole session" in the
@@ -631,15 +645,17 @@ export async function runUndoScenarios() {
   warnIfNoPerfMarks(engine.script);
 
   const suite = flag('suite', 'full');
-  if (!['full', 'fast'].includes(suite)) {
-    throw new Error(`--suite=${suite} is not known — expected full or fast`);
+  const suiteKeys = NAMED_SUITE_KEYS[suite];
+  if (suite !== 'full' && !suiteKeys) {
+    throw new Error(
+      `--suite=${suite} is not known — expected full, ${Object.keys(NAMED_SUITE_KEYS).join(', or ')}`
+    );
   }
   const only = flag('scenarios', '');
-  if (suite === 'fast' && only) {
-    throw new Error('--suite=fast cannot be combined with --scenarios');
+  if (suiteKeys && only) {
+    throw new Error(`--suite=${suite} cannot be combined with --scenarios`);
   }
-  const requestedKeys =
-    suite === 'fast' ? FAST_UNDO_SCENARIO_KEYS : only ? only.split(',') : ALL_UNDO_SCENARIO_KEYS;
+  const requestedKeys = suiteKeys ?? (only ? only.split(',') : ALL_UNDO_SCENARIO_KEYS);
   const unknownKeys = requestedKeys.filter((key) => !ALL_UNDO_SCENARIO_KEYS.includes(key));
   if (unknownKeys.length > 0) {
     throw new Error(
@@ -740,6 +756,12 @@ export async function runUndoScenarios() {
 
     const gate = reportCommitGate(results, {
       normalizeSharedRunnerCrayon: suite === 'fast',
+      // Coverage guards protect whatever a run asserts, so they follow the
+      // assertion rather than the engine: a skipped scenario or a set that
+      // never reaches the encode path makes a pass vacuous. The gated engine
+      // asserts timing and the encode-path suite asserts structure; a
+      // diagnostic --scenarios subset on an ungated engine asserts neither.
+      enforcesCoverage: engine.gated || suite === 'encode-path',
     });
     const fullRun =
       requestedKeys.length === ALL_UNDO_SCENARIO_KEYS.length &&
@@ -895,7 +917,54 @@ function formatCompletedBreaches(breaches, timings) {
     : '\n';
 }
 
-function reportCommitGate(results, { normalizeSharedRunnerCrayon = false } = {}) {
+// Every measure absent reads exactly like a very fast commit — 0 ms, no breach,
+// green gate. That happens whenever the *served bundle* was built without
+// PERF_MARKS, which --no-build makes reachable since it reuses whatever is on
+// disk. warnIfNoPerfMarks cannot catch it: it reads this process's env var,
+// which the npm script always sets, not the build. Nor can the encode-path
+// warning — blobBytes comes from getUndoDebug(), which reports tiering whether
+// or not the marks were compiled in. So check the sample count, and fail rather
+// than certify a run that measured nothing.
+function reportMissingCommitSamples(measured) {
+  if (measured.length > 0 && measured.some((scenario) => scenario.draw.commitCount > 0))
+    return null;
+  process.exitCode = 1;
+  console.error(
+    `\n✗ Commit gate NOT EVALUATED on ${engineName}: no engine.commit samples in any of ` +
+      `${measured.length} scenario(s).\n` +
+      `  The served bundle carries no engine.* marks, so every duration reads 0 ms and a\n` +
+      `  pass would mean nothing. Rebuild with marks — \`${engine.script}\` without\n` +
+      `  --no-build — and re-run.\n`
+  );
+  return { breaches: [], evaluated: false };
+}
+
+// A verdict, not a can't-evaluate: it is reported and then the run carries on
+// to its timing checks, so a gated engine still prints the millisecond evidence
+// beside the structural finding rather than trading one diagnosis for the other.
+function reportEncodeOnCommit(onCommit) {
+  process.exitCode = 1;
+  console.error(
+    `\n✗ Commit path FAILED on ${engineName}: ${onCommit.length} scenario(s) ran an ` +
+      `engine.encode inside the commit window.\n` +
+      `  The cold encode belongs off the pointerup path, on scheduleIdle — an encode measured\n` +
+      `  here is #635 recurring. This is a count, not a budget: no host slowness can\n` +
+      `  manufacture it, and no engine's timing fidelity is required to read it.\n` +
+      onCommit
+        .map(
+          (scenario) =>
+            `  ${scenario.key}: ${scenario.draw.encodeInCommitCount} encode(s) in commit, ` +
+            `max ${f1(scenario.draw.encodeInCommitMaxMs)} ms`
+        )
+        .join('\n') +
+      '\n'
+  );
+}
+
+function reportCommitGate(
+  results,
+  { normalizeSharedRunnerCrayon = false, enforcesCoverage = engine.gated } = {}
+) {
   const budgetMs = COMMIT_GATE_MS;
   const { gated } = engine;
   const measured = results.filter((s) => !s.skipped);
@@ -905,23 +974,20 @@ function reportCommitGate(results, { normalizeSharedRunnerCrayon = false } = {})
   );
   const timings = new Map(scenarioTimings.map((timing) => [timing.key, timing]));
   const breaches = gated ? measured.filter((scenario) => timings.get(scenario.key).breached) : [];
+  const onCommit = encodeOnCommitBreaches(measured);
+  const base = {
+    engine: engineName,
+    gated,
+    budgetMs,
+    percentile: COMMIT_GATE_PERCENTILE,
+    breaches,
+    scenarioTimings,
+    encodeOnCommit: onCommit.map((scenario) => scenario.key),
+  };
 
-  if (!gated) {
-    console.log(
-      `Commit gate: not evaluated on ${engineName} — its absolute ms are advisory ` +
-        `(see COMMIT_GATE_MS). Run \`${ENGINES.webkit.script}\` for the gated engine.`
-    );
-    return {
-      engine: engineName,
-      gated,
-      budgetMs,
-      percentile: COMMIT_GATE_PERCENTILE,
-      breaches,
-      scenarioTimings,
-    };
-  }
-
-  if (skipped.length > 0) {
+  // Ordered most-specific-cause-first, so a run that never completed a scenario
+  // is not reported as a marks-less bundle.
+  if (enforcesCoverage && skipped.length > 0) {
     process.exitCode = 1;
     console.error(
       `\n✗ Commit gate NOT EVALUATED on ${engineName}: ${skipped.length} requested ` +
@@ -930,44 +996,23 @@ function reportCommitGate(results, { normalizeSharedRunnerCrayon = false } = {})
         skipped.map((s) => `  ${s.key}: ${s.error}`).join('\n') +
         formatCompletedBreaches(breaches, timings)
     );
-    return {
-      engine: engineName,
-      gated,
-      budgetMs,
-      percentile: COMMIT_GATE_PERCENTILE,
-      breaches,
-      scenarioTimings,
-      evaluated: false,
-      skipped: skipped.length,
-    };
+    return { ...base, evaluated: false, skipped: skipped.length };
   }
 
-  // Every measure absent reads exactly like a very fast commit — 0 ms, no
-  // breach, green gate. That happens whenever the *served bundle* was built
-  // without PERF_MARKS, which --no-build makes reachable since it reuses
-  // whatever is on disk. warnIfNoPerfMarks cannot catch it: it reads this
-  // process's env var, which the npm script always sets, not the build. Nor can
-  // the encode-path warning below — blobBytes comes from getUndoDebug(), which
-  // reports tiering whether or not the marks were compiled in. So check the
-  // sample count, and fail rather than certify a run that measured nothing.
-  if (measured.length === 0 || measured.every((s) => s.draw.commitCount === 0)) {
-    process.exitCode = 1;
-    console.error(
-      `\n✗ Commit gate NOT EVALUATED on ${engineName}: no engine.commit samples in any of ` +
-        `${measured.length} scenario(s).\n` +
-        `  The served bundle carries no engine.* marks, so every duration reads 0 ms and a\n` +
-        `  pass would mean nothing. Rebuild with marks — \`${engine.script}\` without\n` +
-        `  --no-build — and re-run.\n`
+  // Both of these hold on every engine, so they run ahead of the advisory
+  // return below: an encode on the commit path is a defect whether or not this
+  // engine's milliseconds mean anything, and a run that measured nothing would
+  // satisfy that check vacuously.
+  const vacuous = reportMissingCommitSamples(measured);
+  if (vacuous) return { ...base, ...vacuous };
+  if (onCommit.length > 0) reportEncodeOnCommit(onCommit);
+
+  if (!enforcesCoverage) {
+    console.log(
+      `Commit gate: timing not evaluated on ${engineName} — its absolute ms are advisory ` +
+        `(see COMMIT_GATE_MS). Run \`${ENGINES.webkit.script}\` for the gated engine.`
     );
-    return {
-      engine: engineName,
-      gated,
-      budgetMs,
-      percentile: COMMIT_GATE_PERCENTILE,
-      breaches: [],
-      scenarioTimings,
-      evaluated: false,
-    };
+    return base;
   }
 
   // The encode path only runs for a scenario whose patches exhaust the resident
@@ -997,6 +1042,20 @@ function reportCommitGate(results, { normalizeSharedRunnerCrayon = false } = {})
     };
   }
 
+  // An ungated engine that got this far ran the structural guard over covered
+  // scenarios and cannot say anything further: its milliseconds are advisory,
+  // so there is no timing verdict left to reach.
+  if (!gated) {
+    if (onCommit.length === 0) {
+      console.log(
+        `✓ Commit path: no engine.encode inside the commit window on ${engineName} ` +
+          `(${measured.length} measured, ${encoding.length} exercising the encode path). ` +
+          `Timing is gated separately on webkit — \`${ENGINES.webkit.script}\`.`
+      );
+    }
+    return { ...base, encoding: encoding.length };
+  }
+
   const unevaluable = scenarioTimings.filter((timing) => !timing.evaluable);
   if (unevaluable.length > 0) {
     process.exitCode = 1;
@@ -1016,19 +1075,13 @@ function reportCommitGate(results, { normalizeSharedRunnerCrayon = false } = {})
   }
 
   if (breaches.length === 0) {
-    console.log(
-      `✓ Commit gate: every scenario's gate p95 is within ${budgetMs} ms on ${engineName} ` +
-        `(${measured.length} measured, ${encoding.length} exercising the encode path).`
-    );
-    return {
-      engine: engineName,
-      gated,
-      budgetMs,
-      percentile: COMMIT_GATE_PERCENTILE,
-      breaches,
-      scenarioTimings,
-      encoding: encoding.length,
-    };
+    if (onCommit.length === 0) {
+      console.log(
+        `✓ Commit gate: every scenario's gate p95 is within ${budgetMs} ms on ${engineName} ` +
+          `(${measured.length} measured, ${encoding.length} exercising the encode path).`
+      );
+    }
+    return { ...base, encoding: encoding.length };
   }
 
   process.exitCode = 1;

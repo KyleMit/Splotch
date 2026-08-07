@@ -225,8 +225,12 @@ function fakePage({
             },
             'engine.snapshot': { count: 1, total: 1, max: 1 },
             'engine.fold': { count: 1, total: 1, max: 1 },
+            // engineMeasuresIn aggregates only names that actually had entries
+            // in the window, so a window with no encode reports no samples at
+            // all. The structural gate reads that count, so a fixture that
+            // always claimed one would make every scenario look like #635.
             'engine.encode': {
-              count: 1,
+              count: encodeMs > 0 ? 1 : 0,
               total: encodeMs,
               max: encodeMs,
             },
@@ -496,6 +500,71 @@ describe('engine selection', () => {
       expect.objectContaining({ key: 'crayon-scribbles', normalized: true }),
     ]);
     expect(report.fastSetEvaluation).toBeNull();
+  });
+
+  // The pre-merge tier's whole premise: this verdict is reachable on the
+  // engine whose milliseconds the timing gate refuses to trust.
+  it('fails an ungated Chromium run when an encode lands inside the commit window', async () => {
+    process.argv = [...process.argv, '--suite=encode-path'];
+    // Well inside the 25 ms budget, so nothing about the timing gate is what
+    // rejects this — only the presence of the measure.
+    fakeBrowser(fakePage({ commitMaxMs: 3, encodeInCommitMaxMs: 2 }));
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    expect(gate).toMatchObject({ engine: 'chromium', gated: false, breaches: [] });
+    expect(gate.encodeOnCommit).toEqual(['multi-finger']);
+    expect(process.exitCode).toBe(1);
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('Commit path FAILED on chromium'));
+  });
+
+  it('runs the pre-merge guard over the declared cold-encode scenarios and passes when clean', async () => {
+    process.argv = [...process.argv, '--suite=encode-path'];
+    fakeBrowser(fakePage({ commitMaxMs: 3, deferredEncodeMaxMs: 900 }));
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
+    expect(report.scenarios.map((scenario) => scenario.key)).toEqual(['multi-finger']);
+    // A large deferred encode is where the encode belongs, and must never be
+    // read as an encode on the commit path.
+    expect(report.scenarios[0].draw.encodeMaxMs).toBe(900);
+    expect(gate.encodeOnCommit).toEqual([]);
+    expect(process.exitCode).toBeUndefined();
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('✓ Commit path'));
+  });
+
+  // The guard asserts, so it must not be able to pass over a set that never
+  // reached the encode path — the same coverage rule the gated engine follows.
+  it('fails the pre-merge guard when no scenario demoted a patch to a blob', async () => {
+    process.argv = [...process.argv, '--suite=encode-path'];
+    fakeBrowser(fakePage({ commitMaxMs: 3, blobBytes: 0 }));
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    await runUndoScenarios();
+
+    expect(process.exitCode).toBe(1);
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('did not exercise the encode path'));
+  });
+
+  it('rejects a named suite combined with an explicit scenario subset', async () => {
+    process.argv = [...process.argv, '--suite=encode-path', '--scenarios=multi-finger'];
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+
+    await expect(runUndoScenarios()).rejects.toThrow(
+      '--suite=encode-path cannot be combined with --scenarios'
+    );
   });
 
   it('rejects an unknown engine instead of silently falling back to Chromium', async () => {
