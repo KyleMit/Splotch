@@ -41,36 +41,6 @@ within-section ranks and are not comparable across groups; the grouping supersed
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
 eventually arrive as a bug report — but the reporter is a two-year-old, so they won't.
 
-### [Correctness] modalDialog leaves stale `--origin-x/y` behind for a later unanchored open
-
-**File(s):** `web/src/lib/actions/modalDialog.svelte.ts` (`$effect`, lines 118–133) @ cd04c367
-
-**Priority:** P4
-
-#### Problem
-
-```ts
-if (o.origin) {
-  node.style.setProperty('--origin-x', `${o.origin.x - window.innerWidth / 2}px`);
-  node.style.setProperty('--origin-y', `${o.origin.y - window.innerHeight / 2}px`);
-}
-```
-
-There is no `else` clearing the vars. The `Modal` contract explicitly admits `show(null)`
-(`web/src/lib/state/modal.svelte.ts`: `show(origin: Origin | null)`, and `hide()` does not reset
-`origin` to null — but nothing forbids a caller passing null). After one anchored open, a later
-`show(null)` on the same dialog replays `dialogFlyFromOrigin` (`app.css` line 113, reading
-`var(--origin-x, 0px)`) from the *previous* button's position instead of the centered default. The
-launch guard handles this case correctly one line later (`guardLaunchZone(o.origin ?? null)` arms
-nothing); the fly-in doesn't.
-
-#### Proposed solution
-
-Add the else branch:
-`node.style.removeProperty('--origin-x'); node.style.removeProperty('--origin-y');` so the
-keyframe's `0px` fallback applies. One-line fix, and it makes the `origin: null` path actually mean
-"no anchor" end to end.
-
 ### [Correctness] Native shell chrome is hard-coded light while the app ships dark mode
 
 **File(s):** `android/app/src/main/res/values/styles.xml` (lines 5–10) · `capacitor.config.json`
