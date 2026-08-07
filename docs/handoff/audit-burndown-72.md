@@ -1,7 +1,8 @@
 # Handoff — audit burndown (72 triaged findings at launch)
 
-> 2026-08-07 · branch `claude/audit-burn-down-vf4iui` · PR — · Burn down the post-triage
-> `docs/AUDIT.md` backlog with `scripts/audit-burndown/burndown.mjs`, running unattended.
+> 2026-08-07 · branch `claude/audit-burn-down-vf4iui` · PR
+> [#830](https://github.com/KyleMit/Splotch/pull/830) · Burn down the post-triage `docs/AUDIT.md`
+> backlog with `scripts/audit-burndown/burndown.mjs`, running unattended.
 
 ## Objective & non-goals
 
