@@ -1,6 +1,13 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
-import { asRecord, contentTypeOf, readBodyWithinLimit, readJsonBody, throttled } from './http';
+import {
+  asRecord,
+  contentTypeOf,
+  fail,
+  readBodyWithinLimit,
+  readJsonBody,
+  throttled,
+} from './http';
 
 function jsonRequest(body: string) {
   return new Request('http://localhost/api/test', {
@@ -27,22 +34,37 @@ describe('contentTypeOf', () => {
 describe('readJsonBody', () => {
   it('returns the parsed object for a valid JSON body', async () => {
     expect(await readJsonBody(jsonRequest('{"code":"sunny-meadow"}'))).toEqual({
-      code: 'sunny-meadow',
+      ok: true,
+      body: { code: 'sunny-meadow' },
     });
   });
 
   it('returns a valid array body without treating it as an object', async () => {
-    const body = await readJsonBody(jsonRequest('["sunny-meadow"]'));
+    const result = await readJsonBody(jsonRequest('["sunny-meadow"]'));
 
-    expect(body).toEqual(['sunny-meadow']);
-    expect(asRecord(body)).toBeNull();
+    expect(result).toEqual({ ok: true, body: ['sunny-meadow'] });
+    if (result.ok) expect(asRecord(result.body)).toBeNull();
   });
 
-  it('throws a 400 HttpError for a malformed body', async () => {
-    await expect(readJsonBody(jsonRequest('not json'))).rejects.toMatchObject({
-      status: 400,
-      body: { message: 'Expected a JSON body' },
+  it('returns a canonical 400 response for a malformed body', async () => {
+    const result = await readJsonBody(jsonRequest('not json'));
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(400);
+    expect(await result.response.json()).toEqual({
+      ok: false,
+      error: 'Expected a JSON body',
     });
+  });
+});
+
+describe('fail', () => {
+  it('returns the canonical JSON failure response', async () => {
+    const response = fail(403, 'Not allowed');
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ ok: false, error: 'Not allowed' });
   });
 });
 

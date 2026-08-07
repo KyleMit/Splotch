@@ -44,11 +44,13 @@ test('rejects an oversized upload with 413', async ({ request }) => {
   const tooBig = Buffer.alloc(16 * 1024 * 1024);
   const res = await postImage(request, tooBig, 'image/png');
   expect(res.status()).toBe(413);
+  expect(await res.json()).toEqual({ ok: false, error: 'Image is too large' });
 });
 
 test('rejects an unsupported image type with 415', async ({ request }) => {
   const res = await postImage(request, tinyPngBuffer(), 'image/gif');
   expect(res.status()).toBe(UNSUPPORTED_TYPE_STATUS);
+  expect(await res.json()).toEqual({ ok: false, error: 'Unsupported image type' });
 });
 
 test('lets a normal-sized, allowed upload past the guards', async ({ request }) => {

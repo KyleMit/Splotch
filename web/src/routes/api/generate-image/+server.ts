@@ -1,4 +1,4 @@
-import { error } from '@sveltejs/kit';
+import { error, isHttpError } from '@sveltejs/kit';
 import { STYLE_SUFFIXES } from '$lib/ai/styles';
 import { buildPromptForStyle } from '$lib/ai/prompt';
 import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
@@ -8,7 +8,7 @@ import {
   authorizeGenerationRequest,
   type GenerationAuthorization,
 } from '$lib/server/generationAuthorization';
-import { contentTypeOf, readBodyWithinLimit } from '$lib/server/http';
+import { contentTypeOf, fail, readBodyWithinLimit } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 // A safety refusal is the model declining the drawing on policy grounds — the
@@ -107,7 +107,7 @@ function recordGenerationUsage(
   }
 }
 
-export const POST: RequestHandler = async ({ request, url, platform, getClientAddress }) => {
+const generateImage: RequestHandler = async ({ request, url, platform, getClientAddress }) => {
   const source = await readGenerationRequest(request, url);
 
   const authorization = await authorizeGenerationRequest({
@@ -150,4 +150,13 @@ export const POST: RequestHandler = async ({ request, url, platform, getClientAd
       'Cache-Control': 'no-store',
     },
   });
+};
+
+export const POST: RequestHandler = async (event) => {
+  try {
+    return await generateImage(event);
+  } catch (cause) {
+    if (isHttpError(cause)) return fail(cause.status, cause.body.message);
+    throw cause;
+  }
 };
