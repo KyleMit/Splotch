@@ -54,11 +54,11 @@ const THREE_FINDING_FIXTURE = [FIXTURE, ...entry(THIRD_TITLE, 'The third thing i
 );
 
 // A finished agent envelope, in the shape agent-runner.mjs normalizes to.
-const verifiedValid = (api) => {
+const verifiedValid = (api, e2eSpecs = []) => {
   api.writeBrief();
   return {
     ok: true,
-    structured: { verdict: 'VALID', reason: '', brief_path: BRIEF_PATH, e2e_specs: [] },
+    structured: { verdict: 'VALID', reason: '', brief_path: BRIEF_PATH, e2e_specs: e2eSpecs },
   };
 };
 const invalidVerdict = (reason = 'already fixed') => ({
@@ -479,6 +479,34 @@ describe('backlog selection', () => {
 });
 
 describe('close-out', () => {
+  it('runs only verifier E2E spec paths that match the documented contract', async () => {
+    const validSpec = 'tests/flows-undo-persistence.spec.ts';
+    const rejectedSpecs = [
+      '--grep-invert',
+      'tests/../../other.spec.ts',
+      'web/tests/flows-undo-persistence.spec.ts',
+      'tests/flows-undo-persistence.spec.js',
+      42,
+      null,
+    ];
+    const { events, shellCommands, run } = createRun({
+      env: { MAX_ISSUES: '1' },
+      respond: (options, api) => {
+        if (options.role === 'verify') return verifiedValid(api, [validSpec, ...rejectedSpecs]);
+        if (options.role === 'implement') return implemented(api);
+        return approved;
+      },
+    });
+
+    await run.execute();
+
+    expect(shellCommands.filter((command) => command.startsWith('npm run test:e2e'))).toEqual([
+      `npm run test:e2e -- --retries=1 ${validSpec}`,
+    ]);
+    for (const spec of rejectedSpecs)
+      expect(events).toContain(`  rejected E2E spec: ${JSON.stringify(spec)}`);
+  });
+
   it('deletes the finding it worked on by title and records the fix', async () => {
     const { events, run } = createRun({
       env: { MAX_ISSUES: '1' },
