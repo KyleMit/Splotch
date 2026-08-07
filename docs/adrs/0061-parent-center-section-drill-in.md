@@ -124,3 +124,21 @@ the About tab) is superseded here — it is now its own top-level section.
 
 ADR-0094 later renamed the shell to Settings and separated the surface's branding from the
 operation-level parental gates required by app-store policy; this responsive structure is unchanged.
+
+## Amendment (2026-08)
+
+The Decision's sidebar "never scrolls" — one scroller, the pane. Growing the section icons to the
+size the illustrations actually read at pushed the nine rows past the column on the shortest
+viewport this shell serves (a 600px-tall landscape tablet, where the 85vh card leaves the column
+~412px), and the clipping `overflow: hidden` hid the last two sections with no gesture that brought
+them back.
+
+The nav is now `overflow-y: auto` with `overscroll-behavior: contain`. Everywhere with room there is
+nothing to scroll and no scrollbar appears, so the single-scroller reading still describes every
+tablet with normal height; the second scroller exists only where the alternative was unreachable
+sections. `flows-settings.spec.ts` holds the invariant at that viewport: the column either fits or
+it scrolls.
+
+The section labels and their order also changed (Appearance, Sound, Buttons, Saving, AI Art,
+Install, Feedback, What's New, About) — a wording and ordering change within the same structure,
+listed here because the Decision names the original order.

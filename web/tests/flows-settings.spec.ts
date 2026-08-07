@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { TABLET_MIN_SIDE_PX } from '../src/lib/breakpoints';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 import { gotoApp, openSettingsModal, retryOpen } from './helpers';
@@ -59,6 +60,30 @@ test('Settings sidebar switches the content pane (tablet layout)', async ({ page
     .poll(() => aboutMascotImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .toBeGreaterThan(0);
   await expect(aboutMascot).toHaveClass(/icon-color/);
+});
+
+test('the shortest sidebar viewport can still reach every section', async ({ page }) => {
+  // One pixel shorter and the compact shell takes over, so this is the least
+  // vertical room the sidebar column ever gets — and the section icons are
+  // sized such that nine rows no longer fit inside it.
+  await page.setViewportSize({ width: 1024, height: TABLET_MIN_SIDE_PX });
+  await gotoApp(page);
+  await openSettingsModal(page);
+
+  const nav = page.locator('.settings-nav');
+  const column = await nav.evaluate((el) => ({
+    overflowing: el.scrollHeight > el.clientHeight,
+    overflowY: getComputedStyle(el).overflowY,
+  }));
+  // Reachable means the rows either all fit or the parent can scroll to the
+  // ones that don't. A clipping `overflow: hidden` column hides the tail with
+  // no gesture that brings it back — and Playwright's own scroll-into-view
+  // would sail past that, so the check is on the computed overflow.
+  expect(column.overflowing ? column.overflowY : 'auto').toMatch(/auto|scroll/);
+
+  // The last section opens for real once scrolled to.
+  await nav.getByRole('button').last().click();
+  await expect(page.locator('.about-brand')).toBeVisible();
 });
 
 test("What's New formats the current release date without runtime locale initialization", async ({

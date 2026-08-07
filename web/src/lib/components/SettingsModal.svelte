@@ -17,7 +17,7 @@
   import { SECTIONS, sectionSubtitle, type SectionId, type SectionMeta } from './settings/sections';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
-  import { TABLET_MIN_SIDE_PX } from '$lib/platform';
+  import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 
   // Not every section takes `open` (only AiKeyManager/SetupInstructions/ReportForm do); passing it
   // uniformly is fine — Svelte drops props a component doesn't declare — but the generated types
@@ -430,14 +430,20 @@
     padding: 0 24px 24px;
   }
 
-  /* Nav never scrolls — only the pane does. */
+  /* The pane is the scroller; the nav only becomes one where the column can't
+     hold all nine sections — a 600px-tall landscape tablet is the shortest
+     viewport this shell serves, and there the 85vh card leaves it ~50px short.
+     Everywhere taller there is nothing to scroll and no scrollbar appears.
+     Contained, so scrolling past either end never chains out to the pane. */
   .settings-nav {
     flex-shrink: 0;
     width: 232px;
     display: flex;
     flex-direction: column;
     gap: 2px;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
   }
 
   .settings-nav-item {
@@ -445,8 +451,8 @@
     align-items: center;
     gap: 12px;
     width: 100%;
-    /* Tighter vertically than the hub rows so the taller icon doesn't push the
-       nine-row column past the shortest supported tablet height. */
+    /* Tighter vertically than the hub rows: the taller icon carries most of the
+       row height on its own. */
     padding: 8px 14px;
     border: none;
     border-radius: var(--radius-md);
@@ -460,17 +466,6 @@
     transition:
       background var(--duration-fast) ease,
       color var(--duration-fast) ease;
-  }
-
-  /* The nav never scrolls, so all nine sections have to fit the shortest
-     viewport this shell serves — a 600px-tall landscape tablet, where the 85vh
-     card leaves the column no room for the padded rows above. There the rows
-     give their vertical padding back and the taller icon carries the row
-     height alone; the ninth section would otherwise be clipped away. */
-  @media (max-height: 700px) {
-    .settings-nav-item {
-      padding: 5px 14px;
-    }
   }
 
   @media (hover: hover) {
