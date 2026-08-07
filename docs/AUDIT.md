@@ -13,9 +13,23 @@ issues #774–#785. On 2026-08-07 the remaining 346 were re-triaged against `mai
 effect — the reasoning is in `docs/AUDIT-LOG.md` under 2026-08-07 · audit-triage, and every deleted
 finding remains in this file's git history.
 
-**Citations are still pinned to commit `9ae62ff1` (2026-07-28).** Every cited path was re-checked
-against `main` and all still exist, but line numbers and surrounding code have drifted through
-several hundred fixes since. Re-verify the cited code before acting on any finding here.
+**Citations are pinned to commit f5bf8767 (2026-08-06), the `main` head at the time of the
+re-pinning.** They were originally taken at 9ae62ff1 (2026-07-28). Every one of the 287 cited line
+numbers was re-derived against f5bf8767 by following the old line through the intervening diffs and
+requiring its content to match at the destination, so a citation here identifies the same code the
+finding was written about — not the same offset.
+
+Of the 75 findings, 59 re-derived automatically, 12 were re-pinned by hand where the mapping was
+ambiguous (a wholesale restructure, or a range endpoint that was itself edited), 3 carry a **Pin
+drift:** line, and one — the COMPATIBILITY.md register finding — cites a section rather than lines
+and needs no pin. Three citations changed file: the `report` endpoint's validation was extracted to
+`web/src/lib/server/report.ts`, the README's prerequisites moved to `docs/CONTRIBUTING.md`, and
+`spreadTracker.svelte.ts` was renamed to `spreadTracker.ts`.
+
+**A `Pin drift:` line means the citation resolves but the code there no longer says what the finding
+describes** — usually because the finding was fixed. Those three are the ones to score before
+acting. Every other finding's citation can be followed directly; re-verify the surrounding code
+anyway.
 
 The `##` sections below are **curated groups**, not the usual per-producer `## Source: <audit>`
 sections — each names the criterion that earned its findings a place, because that criterion is the
@@ -31,8 +45,8 @@ a success. Nobody files a bug against a number; they just make decisions on it.
 
 ### [Correctness] `perf:undo`'s frame/heap metrics silently cover only the last scenario, but the report presents them as session-wide
 
-**File(s):** `scripts/perf/undo-scenarios.mjs` (`runUndoScenario`, lines 326–330;
-`runUndoScenarios`, lines 484–496) @ 9ae62ff1
+**File(s):** `scripts/perf/undo-scenarios.mjs` (`runUndoScenario`, lines 432–436;
+`runUndoScenarios`, lines 670–684) @ f5bf8767
 
 **Priority:** P3
 
@@ -65,8 +79,8 @@ dropped frames while blobs encode" gate actually wants.
 ### [Correctness] `heapBefore ?? 0` masks "unavailable" as zero, producing a bogus Memory section for `perf:undo` runs
 
 **File(s):** `scripts/perf/profile-artifacts.mjs` (`buildMetrics`, line 10);
-`scripts/perf/undo-scenarios.mjs` (line 494); `scripts/perf/analyze.mjs` (`renderReport`, lines
-514–529) @ 9ae62ff1
+`scripts/perf/undo-scenarios.mjs` (line 682); `scripts/perf/analyze.mjs` (`renderReport`, lines
+514–529) @ f5bf8767
 
 **Priority:** P4
 
@@ -104,7 +118,7 @@ there anyway).
 ### [Correctness] `beat()` converts every failure — including harness bugs — into a console-only "skipped", leaving no trace in the artifacts
 
 **File(s):** `scripts/perf/session.mjs` (`beat`, lines 34–42; `runToddlerSession`, lines 118–163) @
-9ae62ff1
+f5bf8767
 
 **Priority:** P3
 
@@ -145,7 +159,7 @@ is the "driver rotted" signature.
 ### [DX] Unknown `--device` silently profiles the phone viewport while labeling artifacts with the typo
 
 **File(s):** `scripts/perf/devices.mjs` (`resolveDevice`, lines 9–11); `scripts/perf/scenario.mjs`
-(lines 28, 57) @ 9ae62ff1
+(lines 28, 57) @ f5bf8767
 
 **Priority:** P3
 
@@ -179,7 +193,7 @@ a vitest library import.
 ### [Types] Numeric flag values are never validated — `--throttle=abc`, `--port=abc`, `--hz=abc` all silently produce NaN behavior
 
 **File(s):** `scripts/perf/args.mjs` (`resolveThrottle`, lines 3–14; `parsePerfArgs`, line 52);
-`scripts/perf/undo-scenarios.mjs` (lines 56, 64–66, 71) @ 9ae62ff1
+`scripts/perf/undo-scenarios.mjs` (lines 75, 143–148, 153) @ f5bf8767
 
 **Priority:** P4
 
@@ -206,7 +220,7 @@ Add a `numericFlag(name, fallback)` helper to `args.mjs` that parses and `fail()
 ### [DX] cost.mjs reports zero tokens for Claude runs because `parseSavedAgentOutput` discards the Claude envelope's usage
 
 **File(s):** `scripts/audit-burndown/agent-runner.mjs` (`parseSavedAgentOutput`, lines 102–110),
-`cost.mjs` (lines 26–28, 62–65) @ 9ae62ff1
+`cost.mjs` (lines 26–28, 62–65) @ f5bf8767
 
 **Priority:** P4
 
@@ -231,7 +245,7 @@ why `{}` was the expedient placeholder.
 ### [Correctness] night-scores scorers index the fill raster with the source's dimensions after independent resizes
 
 **File(s):** `tools/asset-gen/lib/night-scores.mjs` (`scoreNightness` lines 51–77, `scoreDrift`
-lines 79–119, `scoreLineColor` lines 138–166) @ 9ae62ff1
+lines 79–119, `scoreLineColor` lines 138–166) @ f5bf8767
 
 **Priority:** P3
 
@@ -269,8 +283,8 @@ scorer usable on un-normalized buffers.
 
 ### [Correctness] judgeNightEyes pairs night and light cores by array index on an undocumented invariant
 
-**File(s):** `tools/asset-gen/lib/eye-fill.mjs` (`judgeNightEyes`, lines 409–424; the
-invariant-bearing skip at line 352) @ 9ae62ff1
+**File(s):** `tools/asset-gen/lib/eye-fill.mjs` (`judgeNightEyes`, lines 345–360; the
+invariant-bearing skip at line 288) @ f5bf8767
 
 **Priority:** P3
 
@@ -307,7 +321,7 @@ also removes the need for the invariant at all.
 ### [Correctness] retouch-line-art.mjs double-encodes its output, silently discarding WEBP_QUALITY
 
 **File(s):** `tools/asset-gen/legacy/retouch-line-art.mjs` (`normalize` lines 112–119, write at
-lines 134–137) @ 9ae62ff1
+lines 134–137) @ f5bf8767
 
 **Priority:** P3
 
@@ -356,8 +370,8 @@ await writeFile(dest, out);
 
 ### [Correctness] Mocked lib constants in audit-cli.test.mjs have already drifted from their real values
 
-**File(s):** `tools/asset-gen/tests/audit-cli.test.mjs` (mock factories, lines 44–112),
-`tools/asset-gen/tests/light-fill-cli.test.mjs` (lines 46–48) @ 9ae62ff1
+**File(s):** `tools/asset-gen/tests/audit-cli.test.mjs` (mock factories, lines 58–139),
+`tools/asset-gen/tests/light-fill-cli.test.mjs` (lines 46–48) @ f5bf8767
 
 **Priority:** P2
 
@@ -414,8 +428,8 @@ file already established.
 
 ### [Testing] diffGoldenPage silently ignores metric paths missing from the score shape — a renamed producer key disables its gate
 
-**File(s):** `tools/asset-gen/lib/golden-catalog.mjs` (`diffGoldenPage`, lines 57–79; skip
-conditions lines 61, 73) @ 9ae62ff1
+**File(s):** `tools/asset-gen/lib/golden-catalog.mjs` (`diffGoldenPage`, lines 60–82; skip
+conditions lines 64, 76) @ f5bf8767
 
 **Priority:** P4
 
@@ -451,7 +465,7 @@ shape producer belong together.
 
 ### [Correctness] Dark-theme token values have drifted between the duplicated theme blocks in scrapbook-chrome
 
-**File(s):** `scripts/lib/scrapbook-chrome.mjs` (`CHROME_CSS`, lines 53–65 vs 77–87) @ 9ae62ff1
+**File(s):** `scripts/lib/scrapbook-chrome.mjs` (`CHROME_CSS`, lines 53–65 vs 77–87) @ f5bf8767
 
 **Priority:** P2
 
@@ -499,7 +513,7 @@ generator-object approach could also be offered to page-specific CSS like model-
 ### [Correctness] `inlineImage` silently emits `data:undefined;…` for an unmapped extension
 
 **File(s):** `scripts/lib/scrapbook-chrome.mjs` (`inlineImage`, lines 282–292; `MIME`, lines
-273–278) @ 9ae62ff1
+273–278) @ f5bf8767
 
 **Priority:** P4
 
@@ -537,7 +551,7 @@ page. Name the quality constant while in the file.
 ### [Correctness] model-eval-fixtures silently renders fixtures with missing coloring assets
 
 **File(s):** `scripts/model-eval-fixtures.mjs` (`assetUri`, lines 78–82; used at 124, 156, 177–179,
-195–199) @ 9ae62ff1
+195–199) @ f5bf8767
 
 **Priority:** P4
 
@@ -568,7 +582,7 @@ ${p}\`)`(with the night fallback expressed as an explicit`optionalAssetUri`or a 
 
 ### [Correctness] model-eval-gen-inputs builds a data URI with the invalid MIME `image/*`
 
-**File(s):** `scripts/model-eval-gen-inputs.mjs` (line 87) @ 9ae62ff1
+**File(s):** `scripts/model-eval-gen-inputs.mjs` (line 87) @ f5bf8767
 
 **Priority:** P4
 
@@ -597,8 +611,8 @@ const dataUri = `data:image/${fmt === 'jpeg' ? 'jpeg' : 'png'};base64,${raw.toSt
 
 ### [Correctness] status.mjs labels invalid drops as "completed", the exact conflation burndown.mjs warns against
 
-**File(s):** `scripts/audit-burndown/status.mjs` (lines 16–33) @ 9ae62ff1;
-`scripts/audit-burndown/burndown.mjs` (lines 455–457, 568–571)
+**File(s):** `scripts/audit-burndown/status.mjs` (lines 25–40) @ f5bf8767;
+`scripts/audit-burndown/burndown.mjs` (lines 316–318, 721–724)
 
 **Priority:** P3
 
@@ -635,7 +649,7 @@ status parses it).
 
 ### [Correctness] `backfill-comments done <sha>` with a short prefix can drop several records while marking only one posted
 
-**File(s):** `scripts/audit-burndown/backfill-comments.mjs` (lines 186–202) @ 9ae62ff1
+**File(s):** `scripts/audit-burndown/backfill-comments.mjs` (lines 186–202) @ f5bf8767
 
 **Priority:** P4
 
@@ -675,7 +689,7 @@ then drop exactly `matches[0]`.
 
 ### [Correctness] Iteration tag omits `dropped`, so a drop makes the next finding reuse the same log-file names
 
-**File(s):** `scripts/audit-burndown/burndown.mjs` (line 523) @ 9ae62ff1;
+**File(s):** `scripts/audit-burndown/burndown.mjs` (line 1126) @ f5bf8767;
 `scripts/audit-burndown/cost.mjs` (lines 11–31, 57); `scripts/audit-burndown/backfill-comments.mjs`
 (lines 100–112)
 
@@ -713,8 +727,8 @@ A one-character fix plus a regression test in `scripts/tests/` once the loop is 
 
 ### [Correctness] The finish path swallows a failed final push — an unattended run can end "successfully" with unpushed commits
 
-**File(s):** `scripts/audit-burndown/burndown.mjs` (`pushBatch`, lines 472–487; finish, lines
-875–887) @ 9ae62ff1
+**File(s):** `scripts/audit-burndown/burndown.mjs` (`pushBatch`, lines 335–350; finish, lines
+1034–1046) @ f5bf8767
 
 **Priority:** P3
 
@@ -756,8 +770,8 @@ value then has a real consumer, the unused-return smell disappears too.
 
 ### [Correctness] The implementer's self-reported SHA is trusted verbatim over git, with no format or ancestry validation
 
-**File(s):** `scripts/audit-burndown/lib.mjs` (`resolveImplSha`, lines 34–37) @ 9ae62ff1;
-`scripts/audit-burndown/burndown.mjs` (lines 631–642, 702, 781–797, 819–823)
+**File(s):** `scripts/audit-burndown/lib.mjs` (`resolveImplSha`, lines 42–45) @ f5bf8767;
+`scripts/audit-burndown/burndown.mjs` (lines 755–766, 837, 916–932, 1004–1008)
 
 **Priority:** P3
 
@@ -802,7 +816,7 @@ the new precedence.
 
 ### [Correctness] pop.mjs treats any unknown flag as "print", so a typo'd `--delete` silently succeeds without deleting
 
-**File(s):** `scripts/audit-burndown/pop.mjs` (lines 18, 25–50) @ 9ae62ff1
+**File(s):** `scripts/audit-burndown/pop.mjs` (lines 18, 25–50) @ f5bf8767
 
 **Priority:** P3
 
@@ -838,7 +852,7 @@ if (!MODES.has(mode)) {
 ### [Correctness] lighthouse run-audit summary table ingests stale and priming reports from the output dir
 
 **File(s):** `.ruler/skills/lighthouse-audit/run-audit.mjs` (`printSummary`, lines 205–235; priming
-pass lines 63–65) @ 9ae62ff1
+pass lines 63–65) @ f5bf8767
 
 **Priority:** P4
 
@@ -866,7 +880,12 @@ runs.
 
 ### [Correctness] create-adr's "count the files" numbering rule produces wrong, colliding ADR numbers — and already has
 
-**File(s):** `.ruler/skills/create-adr/SKILL.md` (step 4, lines 42–43) @ 9ae62ff1
+**File(s):** `.ruler/skills/create-adr/SKILL.md` (step 4, lines 42–43) @ f5bf8767
+
+**Pin drift:** Step 4 of the skill was rewritten between 9ae62ff1 and f5bf8767. It now reads "Do not
+count files" and derives the next number from the highest already in use, which is the fix this
+finding asks for. The cited lines still exist and still hold step 4, but no longer hold the counting
+rule; re-verify before acting.
 
 **Priority:** P2
 
@@ -899,8 +918,8 @@ Optionally note that a duplicate number is a defect to flag, not to extend. Rege
 
 ### [Testing] The cloud-setup test harness can rot silently: an unchecked source patch and an answer-anything `node` stub
 
-**File(s):** `scripts/tests/claude-cloud-setup.test.mjs` (`runSetup`, lines 16–68; the `replaceAll`
-at line 23; the `node` stub at lines 39–44) @ 9ae62ff1
+**File(s):** `scripts/tests/claude-cloud-setup.test.mjs` (`runSetup`, lines 16–74; the `replaceAll`
+at line 23; the `node` stub at lines 39–49) @ f5bf8767
 
 **Priority:** P3
 
@@ -939,8 +958,8 @@ list of seams.
 
 ### [Testing] Replace the `fn.toString()`-sniffing evaluate stub in the undo-scenarios test with a routed fake that fails loudly
 
-**File(s):** `scripts/tests/undo-scenarios.test.mjs` (`page.evaluate` mock, lines 60–81; the single
-`it`, lines 52–131) @ 9ae62ff1
+**File(s):** `scripts/tests/undo-scenarios.test.mjs` (`page.evaluate` mock, lines 207–231; the
+single `it`, lines 198–281) @ f5bf8767
 
 **Priority:** P2
 
@@ -1003,7 +1022,7 @@ as an explicitly named `coldTierNeverSettlesOnNavigation(3)` route rather than a
 
 ### [DX] `run()` swallows the spawn error when the command itself can't be launched
 
-**File(s):** `scripts/lib/proc.mjs` (`run`, lines 42–50; `capture`, lines 94–98) @ 9ae62ff1
+**File(s):** `scripts/lib/proc.mjs` (`run`, lines 61–69; `capture`, lines 113–117) @ f5bf8767
 
 **Priority:** P3
 
@@ -1042,7 +1061,7 @@ eventually arrive as a bug report — but the reporter is a two-year-old, so the
 
 ### [Correctness] Validate the `version.json` payload — a versionless 200 response causes `?v=undefined` and an infinite redirect loop
 
-**File(s):** `web/src/lib/pwa/updates.ts` (`checkVersionMismatch`, lines 140–147) @ 9ae62ff1
+**File(s):** `web/src/lib/pwa/updates.ts` (`checkVersionMismatch`, lines 144–152) @ f5bf8767
 
 **Priority:** P3
 
@@ -1082,7 +1101,7 @@ covered by the catch.
 ### [Correctness] `hydrateDurableStorage` bypasses the module's own safe localStorage wrappers, so one throw aborts the whole restore
 
 **File(s):** `web/src/lib/storage.ts` (`hydrateDurableStorage`, lines 179–208; raw reads/writes at
-187 and 191) @ 9ae62ff1
+187 and 191) @ f5bf8767
 
 **Priority:** P3
 
@@ -1126,7 +1145,7 @@ re-read and fall back to defaults for the lost key) is acceptable and simpler. E
 ### [Correctness] A failed orientation lock latches `lastRequested`, permanently suppressing same-target retries for the session
 
 **File(s):** `web/src/lib/orientation.ts` (`applyDeviceOrientationPreference`, lines 11, 29–30,
-42–46, 57) @ 9ae62ff1
+42–46, 57) @ f5bf8767
 
 **Priority:** P3
 
@@ -1171,7 +1190,7 @@ the *next* explicit apply call, which is the right behavior.
 
 ### [Correctness] `measureSafeAreaInsets` silently returns garbage if its cached probe is ever detached
 
-**File(s):** `web/src/lib/safeArea.ts` (`measureSafeAreaInsets`, lines 16–37) @ 9ae62ff1
+**File(s):** `web/src/lib/safeArea.ts` (`measureSafeAreaInsets`, lines 16–37) @ f5bf8767
 
 **Priority:** P4
 
@@ -1205,8 +1224,8 @@ values on the next call.
 
 ### [Correctness] Every page tile in a book announces the same aria-label; `ColoringPage.name` has no production reader
 
-**File(s):** `web/src/lib/components/ColoringBook.svelte` (page-tile button, line 163);
-`web/src/lib/state/books.ts` (`ColoringPage.name`, line 54) @ 9ae62ff1
+**File(s):** `web/src/lib/components/ColoringBook.svelte` (page-tile button, line 228);
+`web/src/lib/state/books.ts` (`ColoringPage.name`, line 78) @ f5bf8767
 
 **Priority:** P3
 
@@ -1235,8 +1254,8 @@ reason the name should not be exposed, the alternative is deleting the `name` fi
 
 ### [Correctness] The Save-Data guard is bypassed on the repeat-visit registration path
 
-**File(s):** `web/src/lib/pwa/updates.ts` (`registerDeferredServiceWorker` lines 84–89,
-`initPWAUpdates` lines 109–114, `scheduleRegistration` lines 66–79) @ 9ae62ff1
+**File(s):** `web/src/lib/pwa/updates.ts` (`registerDeferredServiceWorker` lines 88–93,
+`initPWAUpdates` lines 113–118, `scheduleRegistration` lines 70–83) @ f5bf8767
 
 **Priority:** P4
 
@@ -1270,7 +1289,7 @@ call. Add a unit test: existing registration + Save-Data on → `register` not c
 
 ### [Correctness] modalDialog leaves stale `--origin-x/y` behind for a later unanchored open
 
-**File(s):** `web/src/lib/actions/modalDialog.svelte.ts` (`$effect`, lines 113–128) @ 9ae62ff1
+**File(s):** `web/src/lib/actions/modalDialog.svelte.ts` (`$effect`, lines 118–133) @ f5bf8767
 
 **Priority:** P4
 
@@ -1301,7 +1320,7 @@ keyframe's `0px` fallback applies. One-line fix, and it makes the `origin: null`
 ### [Correctness] Native shell chrome is hard-coded light while the app ships dark mode
 
 **File(s):** `android/app/src/main/res/values/styles.xml` (lines 5–10) · `capacitor.config.json`
-(lines 8–13) @ 9ae62ff1
+(lines 8–13) @ f5bf8767
 
 **Priority:** P2
 
@@ -1369,7 +1388,7 @@ already exist).
 
 ### [Maintainability] Pencil-eraser attach silently no-ops if the web view is missing
 
-**File(s):** `ios/App/App/MainViewController.swift` (lines 13–19) @ 9ae62ff1
+**File(s):** `ios/App/App/MainViewController.swift` (lines 13–19) @ f5bf8767
 
 **Priority:** P5
 
@@ -1408,7 +1427,7 @@ against a future Capacitor picks up the regression immediately.
 
 ### [Readability] `ringAnimateKey`'s `Date.now()` suffix is dead — and the flourish cannot replay on a same-swatch re-tap
 
-**File(s):** `web/src/lib/components/ColorPalette.svelte` (lines 59–61, 73, 123) @ 9ae62ff1
+**File(s):** `web/src/lib/components/ColorPalette.svelte` (lines 58–60, 72, 122) @ f5bf8767
 
 **Priority:** P3
 
@@ -1446,7 +1465,7 @@ Decide which behavior is wanted:
 
 ### [Architecture] ColorPalette owns the black-ink/theme sync invariant and writes shared state directly from an `$effect`
 
-**File(s):** `web/src/lib/components/ColorPalette.svelte` (`$effect`, lines 35–39) @ 9ae62ff1
+**File(s):** `web/src/lib/components/ColorPalette.svelte` (`$effect`, lines 36–40) @ f5bf8767
 
 **Priority:** P2
 
@@ -1494,8 +1513,8 @@ does not).
 ### [Maintainability] Missing-input on the verify endpoints answers 200 while the same class of validation answers 400 on `report`
 
 **File(s):** `web/src/routes/api/verify-access-code/+server.ts` (line 28),
-`web/src/routes/api/verify-key/+server.ts` (line 25), `web/src/routes/api/report/+server.ts` (lines
-74–81) @ 9ae62ff1
+`web/src/routes/api/verify-key/+server.ts` (line 25), `web/src/lib/server/report.ts` (lines 115–122)
+@ f5bf8767
 
 **Priority:** P4
 
@@ -1527,8 +1546,8 @@ currently says the opposite.
 
 ### [Maintainability] Two wire shapes for JSON errors: thrown `error()` produces `{ message }`, handlers produce `{ ok: false, error }`
 
-**File(s):** `web/src/lib/server/http.ts` (`readJsonBody`, line 15; `throttled`, lines 50–55),
-`web/src/routes/api/generate-image/+server.ts` (lines 20, 67–68, 79–81, 124, 140–141) @ 9ae62ff1
+**File(s):** `web/src/lib/server/http.ts` (`readJsonBody`, line 15; `throttled`, lines 59–64),
+`web/src/routes/api/generate-image/+server.ts` (lines 20, 67–68, 79–81, 124, 144–145) @ f5bf8767
 
 **Priority:** P3
 
@@ -1564,7 +1583,7 @@ for `/api/*`), and extend `scripts/api-smoke.mjs` assertions to pin the body sha
 ### [Architecture] Give `authorizeGenerationRequest` one failure channel instead of three exit modes
 
 **File(s):** `web/src/lib/server/generationAuthorization.ts` (`authorizeGenerationRequest`, lines
-17–57) @ 9ae62ff1
+17–57) @ f5bf8767
 
 **Priority:** P3
 
@@ -1602,9 +1621,9 @@ Update `generationAuthorization.test.ts` accordingly.
 
 ### [Testing] `platform.ts`'s riskiest logic — `supportsOrientationLock`, `isStandalone`, `isIosDevice` — has zero unit coverage
 
-**File(s):** `web/src/lib/platform.ts` (`supportsOrientationLock`, lines 112–116;
-`TABLET_MIN_SIDE_PX`, line 78; `isStandalone`, lines 23–31; `isIosDevice`, lines 38–44),
-`web/src/lib/platform.test.ts`, `web/src/lib/platform.osLabel.test.ts` @ 9ae62ff1
+**File(s):** `web/src/lib/platform.ts` (`supportsOrientationLock`, lines 122–126;
+`TABLET_MIN_SIDE_PX`, line 88; `isStandalone`, lines 23–31; `isIosDevice`, lines 38–44),
+`web/src/lib/platform.test.ts`, `web/src/lib/platform.osLabel.test.ts` @ f5bf8767
 
 **Priority:** P3
 
@@ -1640,8 +1659,8 @@ and `window.screen` width/height getters); `isStandalone` for each display-mode 
 ### [Performance] Pinch move path allocates per pointermove, against the repo's hot-path rule
 
 **File(s):** `web/src/lib/actions/pinchZoom.svelte.ts` (`centroid` lines 54–62, `recompute` lines
-89–108, `local` lines 169–172) @ 9ae62ff1; `web/src/lib/actions/spreadTracker.svelte.ts` (`points()`
-lines 24–26)
+89–108, `local` lines 169–172) @ f5bf8767; `web/src/lib/actions/spreadTracker.ts` (`points()` lines
+20–22)
 
 **Priority:** P4
 
@@ -1678,7 +1697,7 @@ production bundle or the clone weight without being needed there.
 ### [Performance] `generate-image` buffers up to 15 MB before rejecting an unsupported Content-Type on the raw path
 
 **File(s):** `web/src/routes/api/generate-image/+server.ts` (`POST`, lines 120–125; raw
-`readValidatedImage`, lines 77–84) @ 9ae62ff1
+`readValidatedImage`, lines 77–84) @ f5bf8767
 
 **Priority:** P4
 
@@ -1712,7 +1731,7 @@ api-smoke expectation if it pins that combination (it currently only pins the mu
 
 ### [Performance] Service-worker precache includes assets the app never fetches (social og:image, generator source SVGs)
 
-**File(s):** `web/vite.config.ts` (`workbox.globPatterns`, line 93) @ 9ae62ff1
+**File(s):** `web/vite.config.ts` (`workbox.globPatterns`, line 105) @ f5bf8767
 
 **Priority:** P3
 
@@ -1744,7 +1763,7 @@ precache manifest after `npm run build`.
 
 ### [Architecture] Generator input files live in web/static and ship to production
 
-**File(s):** `web/static/large-image.svg`, `web/static/styles/source.svg` @ 9ae62ff1
+**File(s):** `web/static/large-image.svg`, `web/static/styles/source.svg` @ f5bf8767
 
 **Priority:** P3
 
@@ -1769,7 +1788,7 @@ committed pipeline input). Update the two generator paths and drop both entries 
 
 ### [Correctness] `install-maestro` pipes an unpinned remote script to bash and never verifies the pin took effect
 
-**File(s):** `.github/actions/install-maestro/action.yml` (lines 7–13) @ 9ae62ff1
+**File(s):** `.github/actions/install-maestro/action.yml` (lines 7–13) @ f5bf8767
 
 **Priority:** P3
 
@@ -1812,7 +1831,7 @@ Tradeoff: vendoring means occasionally refreshing the script; the version assert
 
 ### [Correctness] The E2E spec sanitizer admits leading-dash values and `..` traversal
 
-**File(s):** `scripts/audit-burndown/burndown.mjs` (lines 595–601, 360–367) @ 9ae62ff1
+**File(s):** `scripts/audit-burndown/burndown.mjs` (lines 701–707, 517–524) @ f5bf8767
 
 **Priority:** P4
 
@@ -1846,7 +1865,7 @@ or minimally reject `spec.startsWith('-')` and `spec.split('/').includes('..')`.
 
 ### [Correctness] overnight.mjs neither validates the count argument nor shell-quotes it
 
-**File(s):** `scripts/audit-burndown/overnight.mjs` (lines 24, 51–52) @ 9ae62ff1
+**File(s):** `scripts/audit-burndown/overnight.mjs` (lines 24, 51–52) @ f5bf8767
 
 **Priority:** P3
 
@@ -1890,7 +1909,7 @@ and `MAX_ISSUES=${shellQuote(count)}` in the prefix for symmetry with the forwar
 
 ### [Correctness] android-emulator-smoke boot wait can spin forever and crashes opaquely when no serial matches
 
-**File(s):** `scripts/android-emulator-smoke.mjs` (lines 70–73) @ 9ae62ff1
+**File(s):** `scripts/android-emulator-smoke.mjs` (lines 70–73) @ f5bf8767
 
 **Priority:** P3
 
@@ -1938,7 +1957,7 @@ For the serial, guard the match:
 
 ### [Maintainability] `dev:kill` executes `kill-port` via bare `npx` — an undeclared, unpinned dependency fetched at run time
 
-**File(s):** `package.json` (line 16) @ 9ae62ff1
+**File(s):** `package.json` (line 16) @ f5bf8767
 
 **Priority:** P4
 
@@ -1967,7 +1986,7 @@ remaining scripted network dependency for a purely local operation.
 
 **File(s):** `tools/asset-gen/ideas-exploration/idea-16/work/` (~14 MB),
 `tools/asset-gen/ideas-exploration/idea-15/{hotspots,compare,img,regionmean}/` (~11 MB, 285 PNGs),
-plus smaller sets in `idea-18/work/`, `idea-2/`, `idea-12/img/` @ 9ae62ff1
+plus smaller sets in `idea-18/work/`, `idea-2/`, `idea-12/img/` @ f5bf8767
 
 **Priority:** P2
 
@@ -2004,7 +2023,7 @@ goal is checkout/clone weight and honoring the folder's own layout contract, not
 
 **File(s):** `tools/asset-gen/ideas-exploration/idea-21/farm-compare-46bc770.html` (6.9 MB),
 `idea-21/farm-git-46bc770.html` (5.7 MB); smaller: `owl-tall-compare-34a606f-prerename.html`,
-`owl-tall-compare-6e3f14f.html` @ 9ae62ff1
+`owl-tall-compare-6e3f14f.html` @ f5bf8767
 
 **Priority:** P3
 
@@ -2038,8 +2057,13 @@ drifted.
 ### [Maintainability] Engine constants mirrored into the harness by prose comment, with no drift guard
 
 **File(s):** `scripts/perf/replay-scenario.mjs` (`SIZE_PX`, lines 28–30);
-`scripts/perf/undo-scenarios.mjs` (`MAX_UNDO_DEPTH`, line 148; `MAX_HOT_RASTERS`, line 287) @
-9ae62ff1
+`scripts/perf/undo-scenarios.mjs` (`MAX_UNDO_DEPTH`, line 230; `MAX_HOT_RASTERS`, removed) @
+f5bf8767
+
+**Pin drift:** `MAX_HOT_RASTERS` no longer exists in `scripts/perf/undo-scenarios.mjs`, so that half
+of the citation has no successor line. `MAX_UNDO_DEPTH` survives at line 230 but is now guarded by
+`web/src/lib/drawing/undoDepthContract.test.ts`. Only the `SIZE_PX` mirror in
+`scripts/perf/replay-scenario.mjs` still matches the finding as written.
 
 **Priority:** P2
 
@@ -2087,7 +2111,7 @@ Then delete the hand-copied literals from the SIZE_PX replay test and assert aga
 ### [Testing] Version numbers must agree across three files but have no at-rest drift guard
 
 **File(s):** `android/app/build.gradle` (lines 28–29) · `ios/App/App.xcodeproj/project.pbxproj`
-(lines 311, 318, 333, 340) · `package.json` (line 3) @ 9ae62ff1
+(lines 311, 318, 333, 340) · `package.json` (line 3) @ f5bf8767
 
 **Priority:** P3
 
@@ -2127,7 +2151,7 @@ Release); assert all occurrences are identical, not just the first match.
 
 ### [Testing] The `scripts` ↔ `scripts-info` contract (ADR-0019) has no drift guard
 
-**File(s):** `package.json` (lines 8–135 vs 136–263) @ 9ae62ff1
+**File(s):** `package.json` (lines 8–165 vs 166–323) @ f5bf8767
 
 **Priority:** P3
 
@@ -2160,8 +2184,13 @@ presence checks are the load-bearing part.
 
 ### [Maintainability] Dev/preview ports (5173, 4173) are synced by prose comments and hand-maintained duplicates, with no drift guard
 
-**File(s):** `web/vite.config.ts` (lines 30–33), `web/netlify.toml` (lines 25–26),
-`web/playwright.shared.ts` (line 3) @ 9ae62ff1
+**File(s):** `web/vite.config.ts` (lines 39–43), `web/netlify.toml` (lines 25–28),
+`web/playwright.shared.ts` (line 3) @ f5bf8767
+
+**Pin drift:** Both cited comments were replaced. `scripts/tests/dev-ports.test.mjs` now exists and
+guards the ports against `vite.config.ts`, `netlify.toml`, and `dev:kill`, and the comments at the
+cited lines name it. The line numbers point at those successor comments, not at the prose-sync
+defect this finding describes — it reads as already resolved.
 
 **Priority:** P2
 
@@ -2204,7 +2233,7 @@ scripts run directly by node or for TOML/JSON, so the drift test is needed eithe
 
 ### [Maintainability] CI retry-token derivation formula is duplicated between playwright.config.ts and the spec that consumes it
 
-**File(s):** `web/playwright.config.ts` (`ciAllowedTokens`, lines 64–67) @ 9ae62ff1
+**File(s):** `web/playwright.config.ts` (`ciAllowedTokens`, lines 143–146) @ f5bf8767
 
 **Priority:** P2
 
@@ -2243,8 +2272,8 @@ becomes `Array.from({ length: ciRetries + 1 }, (_, r) => retryScopedToken(r)).jo
 
 ### [Maintainability] `COLOR_CHANGE_DEBOUNCE_SETTLE_MS` keeps cross-file agreement with the engine by prose, not import
 
-**File(s):** `web/tests/helpers.ts` (lines 27–28) and `web/src/lib/drawing/engine.ts`
-(`COLOR_CHANGE_DEBOUNCE_MS`, line 702) @ 9ae62ff1
+**File(s):** `web/tests/helpers.ts` (lines 29–30) and `web/src/lib/drawing/engine.ts`
+(`COLOR_CHANGE_DEBOUNCE_MS`, line 795) @ f5bf8767
 
 **Priority:** P2
 
@@ -2288,7 +2317,7 @@ Playwright's Node transform before choosing it as the export home; `strokeMath.t
 
 ### [Maintainability] `generate-image.spec.ts` re-declares server policy values (rate limits, upload cap) instead of importing them
 
-**File(s):** `web/tests/generate-image.spec.ts` (lines 19–21, 41–42) @ 9ae62ff1
+**File(s):** `web/tests/generate-image.spec.ts` (lines 20–23, 43–44) @ f5bf8767
 
 **Priority:** P2
 
@@ -2341,7 +2370,7 @@ Playwright Node context (it imports the AI provider seam); if it doesn't, move t
 
 **File(s):** `tools/asset-gen/crayon-brush-samples/samples.mjs` (header lines 1–10, stage arrays
 through line 174), `build-sheet.mjs` (`STAGES`, lines 26–57), `README.md` (table lines 16–23) @
-9ae62ff1
+f5bf8767
 
 **Priority:** P4
 
@@ -2373,7 +2402,7 @@ code source to check against.
 ### [Maintainability] The supported Node floor (engines 22.13) is never exercised — CI hardcodes Node 24 with no tie to `engines`
 
 **File(s):** `.github/actions/setup-node/action.yml` (line 19); `package.json` (lines 5–7);
-`README.md` (line 39) @ 9ae62ff1
+`docs/CONTRIBUTING.md` (line 14) @ f5bf8767
 
 **Priority:** P3
 
@@ -2384,7 +2413,9 @@ The Node version is stated independently in at least four places with three diff
 * `package.json` engines: `"node": ">=22.13"` (line 6)
 * `.github/actions/setup-node/action.yml`: `node-version: 24` (line 19) — every CI job (quality,
   tests, both deploy smokes, blobs smoke) runs on 24
-* `README.md` line 39: "Node.js 22+ and npm" (22.0 does not satisfy engines)
+* `docs/CONTRIBUTING.md` line 14: "**Node 22** via nvm" (22.0 does not satisfy engines). This was
+  `README.md` line 39, "Node.js 22+ and npm", at 9ae62ff1; the README's prerequisites moved into the
+  contributing guide before f5bf8767 and the version claim moved with them.
 * `.codex/cloud/setup.sh`: 22.12 (previous finding)
 
 Meanwhile the production Netlify build pins no `NODE_VERSION` in `netlify.toml`, so it runs
@@ -2408,13 +2439,13 @@ Pick one deliberate policy and encode it:
   `action.yml` and a drift-guard case in `scripts/tests/workflow-hygiene.test.mjs` asserting
   `node-version` ≥ the `engines` floor, so a future engines bump can't silently overtake CI.
 
-Fix `README.md`'s "Node.js 22+" to match `engines` (or reword to "the version in package.json
+Fix `docs/CONTRIBUTING.md`'s "Node 22" to match `engines` (or reword to "the version in package.json
 `engines`" so it can't drift again).
 
 ### [Testing] Android minSdk floor ↔ COMPATIBILITY.md agreement is maintained by prose
 
 **File(s):** `android/variables.gradle` (line 2) · `scripts/tests/android-config.test.mjs` (lines
-14–29) @ 9ae62ff1
+14–29) @ f5bf8767
 
 **Priority:** P4
 
@@ -2440,7 +2471,7 @@ established for the emulator level, so historical docs stay exempt.
 
 ### [Maintainability] `version.json` boundary string is declared in two places (emitter and fetcher)
 
-**File(s):** `web/vite.config.ts` (`emit-version-json` plugin, line 63) @ 9ae62ff1
+**File(s):** `web/vite.config.ts` (`emit-version-json` plugin, line 74) @ f5bf8767
 
 **Priority:** P3
 
@@ -2467,7 +2498,7 @@ tests exception.
 
 ### [Maintainability] ESLint keeps two `no-restricted-imports` blocks in sync by comment instead of a shared constant
 
-**File(s):** `eslint.config.js` (lines 52–67 and 139–164) @ 9ae62ff1
+**File(s):** `eslint.config.js` (lines 57–72 and 144–169) @ f5bf8767
 
 **Priority:** P3
 
@@ -2521,7 +2552,7 @@ const RATE_LIMIT_KEY_ARG_TYPES = ['Literal', 'TemplateLiteral', 'BinaryExpressio
 ### [Types] playwright.shared.ts config objects bypass excess-property checking when spread
 
 **File(s):** `web/playwright.shared.ts` (`commonPlaywrightConfig` lines 6–11, `commonWebServer`
-lines 16–24) @ 9ae62ff1
+lines 55–86) @ f5bf8767
 
 **Priority:** P3
 
@@ -2562,7 +2593,7 @@ consumers) while making unknown keys a compile error.
 ### [Types] `payloadStore`'s narrowed schema silently mistypes the master-key row — document or restructure the dual-schema trick
 
 **File(s):** `web/src/lib/secureStorage.ts` (`SecureDb`/`SecretPayloadDb` lines 37–49,
-`getDb`/`payloadStore` lines 64–65) @ 9ae62ff1
+`getDb`/`payloadStore` lines 64–65) @ f5bf8767
 
 **Priority:** P4
 
@@ -2603,8 +2634,8 @@ link in every generated tree, prescribed scripts that do not exist.
 
 ### [Docs] architecture skill's "file-by-file source map" and route table have drifted well behind `web/src/`
 
-**File(s):** `.ruler/skills/architecture/SKILL.md` (source map lines 62–112, route table lines
-124–137, tech-stack lines 18–19 and 55–56, `server/rateLimit.ts` row line 110) @ 9ae62ff1
+**File(s):** `.ruler/skills/architecture/SKILL.md` (source map lines 62–134, route table lines
+146–161, tech-stack lines 18–19 and 55–56, `server/rateLimit.ts` row line 132) @ f5bf8767
 
 **Priority:** P2
 
@@ -2656,7 +2687,7 @@ own "cross-file agreement is never maintained by prose" convention applied to it
 
 ### [Docs] architecture route table describes generate-image's retired "base64 PNG" contract, contradicting the api skill
 
-**File(s):** `.ruler/skills/architecture/SKILL.md` (line 127) @ 9ae62ff1
+**File(s):** `.ruler/skills/architecture/SKILL.md` (line 149) @ f5bf8767
 
 **Priority:** P2
 
@@ -2683,7 +2714,7 @@ skill owns.
 ### [Docs] mobile and profiling docs prescribe npm scripts that don't exist (`ios:run:choose`, `ios:run:ipad`, `npm run ios`)
 
 **File(s):** `.ruler/skills/mobile/ios.md` (lines 65, 143),
-`.ruler/skills/profiling/ipad-device-profiling.md` (line 212) @ 9ae62ff1
+`.ruler/skills/profiling/ipad-device-profiling.md` (line 605) @ f5bf8767
 
 **Priority:** P3
 
@@ -2713,7 +2744,7 @@ fence the whole category — this audit found these three by exactly that grep.
 
 ### [Docs] `.claude/rules/testing.md` misstates what `npm test` runs (omits `test:scripts`)
 
-**File(s):** `.claude/rules/testing.md` (lines 22–23); `package.json` (line 40) @ 9ae62ff1
+**File(s):** `.claude/rules/testing.md` (lines 22–23); `package.json` (line 46) @ f5bf8767
 
 **Priority:** P3
 
@@ -2749,7 +2780,7 @@ tier (see the `test` entry in package.json `scripts-info`); the native smokes (`
 
 ### [Docs] CONTRIBUTING.md "Release process" predates the three-phase model — it describes exactly the flow ADR-0077 was written to kill
 
-**File(s):** `docs/CONTRIBUTING.md` (lines 199–202) @ 9ae62ff1
+**File(s):** `docs/CONTRIBUTING.md` (lines 227–230) @ f5bf8767
 
 **Priority:** P3
 
@@ -2862,7 +2893,7 @@ grep -n "aspect-ratio" web/src/app.css
 
 ### [Docs] pr-screenshots links ADR-0046 one directory too shallow — dead link in every generated location
 
-**File(s):** `.ruler/skills/pr-screenshots/SKILL.md` (line 22) @ 9ae62ff1
+**File(s):** `.ruler/skills/pr-screenshots/SKILL.md` (line 22) @ f5bf8767
 
 **Priority:** P2
 
@@ -2884,11 +2915,11 @@ would have caught this too.
 
 ### [Maintainability] Audit skills link `audit-conventions.md` with a path that is broken in the `.agents/` tree (and inside `.ruler/` itself)
 
-**File(s):** `.ruler/skills/code-audit/SKILL.md` (line 55), `.ruler/skills/extract-audit/SKILL.md`
+**File(s):** `.ruler/skills/code-audit/SKILL.md` (line 63), `.ruler/skills/extract-audit/SKILL.md`
 (line 53), `.ruler/skills/lighthouse-audit/SKILL.md` (line 112),
-`.ruler/skills/session-audit/SKILL.md` (line 164), `.ruler/skills/dependency-health-audit/SKILL.md`
-(line 229), `.ruler/skills/dependency-update-audit/SKILL.md` (lines 23 vs 120),
-`.ruler/skills/workflow-audit/SKILL.md` (line 117) @ 9ae62ff1
+`.ruler/skills/session-audit/SKILL.md` (line 175), `.ruler/skills/dependency-health-audit/SKILL.md`
+(line 229), `.ruler/skills/dependency-update-audit/SKILL.md` (lines 28 vs 125),
+`.ruler/skills/workflow-audit/SKILL.md` (line 118) @ f5bf8767
 
 **Priority:** P2
 
@@ -2926,8 +2957,8 @@ observable.
 
 ### [Testing] Run the self-contained API-contract smoke (`test:api:smoke`) in CI
 
-**File(s):** `.github/workflows/test.yml` (`test` job, lines 87–152); `package.json` (line 63,
-scripts-info line 191) @ 9ae62ff1
+**File(s):** `.github/workflows/test.yml` (`test` job, lines 142–183); `package.json` (line 87,
+scripts-info line 245) @ f5bf8767
 
 **Priority:** P2
 
