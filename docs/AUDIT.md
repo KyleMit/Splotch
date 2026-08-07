@@ -44,43 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Testing] diffGoldenPage silently ignores metric paths missing from the score shape — a renamed producer key disables its gate
-
-**File(s):** `tools/asset-gen/lib/golden-catalog.mjs` (`diffGoldenPage`, lines 60–82; skip
-conditions lines 64, 76) @ f5bf8767
-
-**Priority:** P4
-
-#### Problem
-
-`GOLDEN_METRICS` and `GOLDEN_VERDICTS` (lines 18–53) address the score object built in
-`bin/audit-golden.mjs` via dotted string paths (`'night.bgLuma'`, `'light.eyesOk'`, …). The diff
-loops skip any path that doesn't resolve:
-
-```js
-if (was === now || was === undefined || now === undefined) continue;   // verdicts
-...
-if (was == null || now == null || was === now) continue;               // metrics
-```
-
-`null` legitimately means "not scoreable" (and the verdict loop reports it as "scoreability
-changed"), but `undefined` means "key absent" — and it takes the same silent path. So if
-`audit-golden.mjs` renames or drops a field (or a typo lands in a `GOLDEN_METRICS` key), that
-regression channel just stops firing: `gen:coloring-golden:diff` keeps exiting 0 while one of its
-gates is dead. The existing `tests/golden-catalog.test.mjs` exercises the diff with hand-built
-partial objects, so it cannot catch shape drift against the real producer.
-
-#### Proposed solution
-
-Two cheap layers: (1) in `diffGoldenPage`, distinguish `undefined` from `null` — push an
-`out.regressions` (or at least `out.info` with a loud prefix) entry like
-`"${rel}  ${path} MISSING from score shape"` when exactly one side is `undefined` on a *current*
-score; (2) add a drift-guard test that scores one committed fixture page through the same scoring
-path `audit-golden.mjs` uses and asserts every `GOLDEN_METRICS`/`GOLDEN_VERDICTS` path resolves to
-non-`undefined`. The second layer requires the score assembly to be importable — worth extracting
-from `bin/audit-golden.mjs` into `golden-catalog.mjs` anyway, since the path vocabulary and the
-shape producer belong together.
-
 ### [Correctness] Dark-theme token values have drifted between the duplicated theme blocks in scrapbook-chrome
 
 **File(s):** `scripts/lib/scrapbook-chrome.mjs` (`CHROME_CSS`, lines 53–65 vs 77–87) @ f5bf8767
