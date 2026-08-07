@@ -20,7 +20,9 @@ function runSetup(failures, { cwd = repoRoot, projectDir } = {}) {
   const chisel = join(root, 'chisel');
   mkdirSync(bin);
 
-  const setup = readFileSync(setupPath, 'utf8').replaceAll('/usr/local/bin/chisel', chisel);
+  const original = readFileSync(setupPath, 'utf8');
+  const setup = original.replaceAll('/usr/local/bin/chisel', chisel);
+  expect(setup).not.toBe(original);
   const fixtureSetupPath = join(root, 'setup.sh');
   writeFileSync(fixtureSetupPath, setup);
 
@@ -37,15 +39,19 @@ exit 1`
   );
   writeExecutable(
     join(bin, 'node'),
-    `if [[ "\${FAIL_PLAYWRIGHT_VERSION:-0}" != 0 ]]; then
-  exit "$FAIL_PLAYWRIGHT_VERSION"
+    `if [[ "$*" == "-p "*"require('./package.json')"*"@playwright/test"* ]]; then
+  if [[ "\${FAIL_PLAYWRIGHT_VERSION:-0}" != 0 ]]; then
+    exit "$FAIL_PLAYWRIGHT_VERSION"
+  fi
+  # The real derivation reads ./package.json, so the stub fails the same way when
+  # the script has not landed in the project dir — that is what pins the cd.
+  if [[ ! -f ./package.json ]]; then
+    exit 1
+  fi
+  printf '%s\\n' "\${PLAYWRIGHT_VERSION:-1.61.1}"
+  exit 0
 fi
-# The real derivation reads ./package.json, so the stub fails the same way when
-# the script has not landed in the project dir — that is what pins the cd.
-if [[ ! -f ./package.json ]]; then
-  exit 1
-fi
-printf '%s\\n' "\${PLAYWRIGHT_VERSION:-1.61.1}"`
+exit 1`
   );
   writeExecutable(
     join(bin, 'curl'),

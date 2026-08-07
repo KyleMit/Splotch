@@ -44,46 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Testing] The cloud-setup test harness can rot silently: an unchecked source patch and an answer-anything `node` stub
-
-**File(s):** `scripts/tests/claude-cloud-setup.test.mjs` (`runSetup`, lines 16–74; the `replaceAll`
-at line 23; the `node` stub at lines 39–49) @ f5bf8767
-
-**Priority:** P3
-
-#### Problem
-
-Two fixture seams in `runSetup` fail without signal when `.claude/cloud/setup.sh` changes:
-
-1. Line 23 patches the script under test by string replacement:
-
-```js
-const setup = readFileSync(setupPath, 'utf8').replaceAll('/usr/local/bin/chisel', chisel);
-```
-
-If setup.sh ever renames or parameterizes that install path, `replaceAll` silently matches nothing
-and the fixture runs the *unpatched* script, which then tries to write to the real
-`/usr/local/bin/chisel` — producing a permission-denied → spurious extra warning → a confusing
-assertion failure about warning counts, several steps removed from the actual cause (and on a
-privileged CI runner, potentially a real write outside the tmpdir).
-
-2. The `node` stub (lines 39–44) ignores its arguments entirely and always prints
-   `$PLAYWRIGHT_VERSION`. The sibling `npx` stub carefully branches on `"$*"`; if setup.sh gains any
-   *other* `node` invocation, the stub feeds it a version string and exits 0, silently corrupting
-   whatever that step does.
-
-#### Proposed solution
-
-For (1), assert the patch took: `expect(setup).not.toBe(original)` (or
-`expect(setup).toContain(chisel)`) immediately after the `replaceAll`, so a renamed path fails with
-"fixture patch no longer matches setup.sh" instead of a downstream warning-count mismatch. For (2),
-mirror the `npx` stub's shape — match the specific argument pattern setup.sh uses to derive the
-Playwright version and `exit 1` on anything else. Optionally extract the four `writeExecutable`
-blocks into named helpers (`stubNpx(bin)`, `stubNodeVersionProbe(bin)`, …) so `runSetup` reads as a
-list of seams.
-
----
-
 ### [Testing] Replace the `fn.toString()`-sniffing evaluate stub in the undo-scenarios test with a routed fake that fails loudly
 
 **File(s):** `scripts/tests/undo-scenarios.test.mjs` (`page.evaluate` mock, lines 207–231; the
