@@ -1,7 +1,8 @@
 # Handoff — audit burndown run
 
-> 2026-08-07 · branch `audit/burndown-20260807` · PR pending · burn down the staged audit backlog
-> through bounded, supervised Codex segments
+> 2026-08-07 · branch `audit/burndown-20260807` · PR
+> [#863](https://github.com/KyleMit/Splotch/pull/863) · burn down the staged audit backlog through
+> bounded, supervised Codex segments
 
 ## Objective & non-goals
 
@@ -13,10 +14,10 @@ into the campaign.
 ## State
 
 * Branch: `audit/burndown-20260807`
-* PR: pending
+* PR: [#863](https://github.com/KyleMit/Splotch/pull/863) (draft)
 * Initial backlog: 40 findings
 * `run.log` baseline: 2,853 lines
-* Campaign state: initial checkpoint; preflight and canary not yet run
+* Campaign state: preflight and base gates green; canary not yet run
 * Required runner: `AGENT_RUNNER=codex`
 
 Durable segment command:
@@ -39,8 +40,6 @@ AGENT_RUNNER=codex \
 
 ## Unverified assumptions
 
-* The composed quality gates are green at the base commit.
-* Codex authentication, origin reachability, and the driver configuration pass preflight.
 * The five-outcome canary exercises an accepted fix; if it does not, one additional bounded canary
   may be required.
 
@@ -50,14 +49,16 @@ AGENT_RUNNER=codex \
 * `main`, `origin/main`, and `HEAD` matched at 42ed9a8a6f741ee1d711696c9a78a674e994997e.
 * `node scripts/audit-burndown/pop.mjs --count` reported 40 findings.
 * No active audit-burndown process was found.
+* Codex preflight passed with the expected runner, branch, authentication, origin access, prompts,
+  backlog count, and composed build gate.
+* Base `format:check`, `check`, `lint:tokens`, `gen:tokens:check`, and `scrapbook:check` gates
+  passed independently.
 
 ## Risks & next 3 steps
 
-1. Commit and push this checkpoint, run preflight, and verify every composed gate independently.
-2. Open a draft PR, replace `PR: pending` with its number, commit, push, then run the bounded
-   canary.
-3. Inspect canary commits, require exact-head CI green, drain comments, and continue in supervised
-   five-outcome segments.
+1. Commit and push this PR-number checkpoint, then run the bounded five-outcome canary.
+2. Inspect canary commits, deletion counts, and thread reuse; require exact-head CI green.
+3. Drain pending comments, record cost, and continue in supervised five-outcome segments.
 
 ## Closeout tasks
 
