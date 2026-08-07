@@ -157,7 +157,7 @@ async function sceneColorPage(browser, base, device, dir) {
   await sleep(MENU_TRANSITION_MS);
   await pickBook(page, 'Farm');
   await sleep(PAGE_GRID_TRANSITION_MS);
-  await pickPage(page, 'Farm');
+  await pickPage(page, 'Cat');
   await waitForColoringOverlay(page);
   const box = await canvasBox(page);
   await colorInLines(page, box);

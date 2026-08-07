@@ -388,9 +388,11 @@ describe('deferred service worker registration', () => {
       value: { saveData },
       configurable: true,
     });
-    return () => {
-      delete navigator.connection;
-    };
+  }
+
+  async function flushIdle() {
+    idle.flush();
+    await flushAsync();
   }
 
   beforeEach(() => {
@@ -418,8 +420,7 @@ describe('deferred service worker registration', () => {
     pwaUpdates.registerDeferredServiceWorker();
     expect(container.register).not.toHaveBeenCalled();
 
-    idle.flush();
-    await flushAsync();
+    await flushIdle();
 
     expect(container.register).toHaveBeenCalledWith('/sw.js');
   });
@@ -431,8 +432,7 @@ describe('deferred service worker registration', () => {
     pwaUpdates.registerDeferredServiceWorker();
     expect(idle.queue).toHaveLength(1);
 
-    idle.flush();
-    await flushAsync();
+    await flushIdle();
     pwaUpdates.registerDeferredServiceWorker();
     idle.flush();
 
@@ -441,28 +441,34 @@ describe('deferred service worker registration', () => {
 
   it('skips registration when Save-Data is on', () => {
     const container = stubServiceWorker(undefined);
-    const restore = stubConnection(true);
+    stubConnection(true);
 
     pwaUpdates.registerDeferredServiceWorker();
     idle.flush();
 
     expect(container.register).not.toHaveBeenCalled();
-    restore();
   });
 
-  // prettier-ignore
-  it('does not re-register an existing worker when Save-Data is on', async () => { const container = stubServiceWorker(makeRegistration()); const restore = stubConnection(true); const teardown = pwaUpdates.initPWAUpdates(); await flushAsync(); idle.flush(); await flushAsync(); expect(container.register).not.toHaveBeenCalled(); restore(); teardown?.(); });
+  it('does not re-register an existing worker when Save-Data is on', async () => {
+    const container = stubServiceWorker(makeRegistration());
+    stubConnection(true);
+
+    const teardown = pwaUpdates.initPWAUpdates();
+    await flushAsync();
+    await flushIdle();
+
+    expect(container.register).not.toHaveBeenCalled();
+    teardown?.();
+  });
 
   it('still registers when the connection reports Save-Data off', async () => {
     const container = stubServiceWorker(undefined);
-    const restore = stubConnection(false);
+    stubConnection(false);
 
     pwaUpdates.registerDeferredServiceWorker();
-    idle.flush();
-    await flushAsync();
+    await flushIdle();
 
     expect(container.register).toHaveBeenCalledWith('/sw.js');
-    restore();
   });
 
   it('does nothing in dev builds', () => {
@@ -480,13 +486,11 @@ describe('deferred service worker registration', () => {
     container.register.mockRejectedValueOnce(new TypeError('Failed to fetch'));
 
     pwaUpdates.registerDeferredServiceWorker();
-    idle.flush();
-    await flushAsync();
+    await flushIdle();
     expect(container.register).toHaveBeenCalledTimes(1);
 
     pwaUpdates.registerDeferredServiceWorker();
-    idle.flush();
-    await flushAsync();
+    await flushIdle();
 
     expect(container.register).toHaveBeenCalledTimes(2);
   });
@@ -503,8 +507,7 @@ describe('deferred service worker registration', () => {
     const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
     container.getRegistration.mockResolvedValue(reg);
     pwaUpdates.registerDeferredServiceWorker();
-    idle.flush();
-    await flushAsync();
+    await flushIdle();
 
     expect(container.register).toHaveBeenCalledWith('/sw.js');
     expect(worker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
@@ -522,8 +525,7 @@ describe('deferred service worker registration', () => {
     await flushAsync();
     expect(container.register).not.toHaveBeenCalled(); // still waits for idle
 
-    idle.flush();
-    await flushAsync();
+    await flushIdle();
 
     expect(container.register).toHaveBeenCalledWith('/sw.js');
     teardown?.();
@@ -538,8 +540,7 @@ describe('deferred service worker registration', () => {
 
     const teardown = pwaUpdates.initPWAUpdates();
     await flushAsync();
-    idle.flush();
-    await flushAsync();
+    await flushIdle();
 
     expect(container.register).not.toHaveBeenCalled();
     teardown?.();
