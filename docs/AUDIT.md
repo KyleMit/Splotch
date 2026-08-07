@@ -44,38 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] model-eval-fixtures silently renders fixtures with missing coloring assets
-
-**File(s):** `scripts/model-eval-fixtures.mjs` (`assetUri`, lines 78–82; used at 124, 156, 177–179,
-195–199) @ f5bf8767
-
-**Priority:** P4
-
-#### Problem
-
-`assetUri` returns `null` when the `.webp` doesn't exist (line 80), and most call sites pass the
-result straight into a layer with no check:
-
-```js
-layers: [
-  …
-  { op: 'outline', uri: assetUri(book, page, o, 'outline') },
-],
-```
-
-Only the night category has fallbacks (`assetUri(…, 'chalk') || assetUri(…, 'outline')`, line 195).
-Everywhere else, a renamed page or book in `web/static/coloring/` yields `uri: null`, the in-page
-renderer draws nothing for that layer, and the corpus quietly gains a blank-or-partial "coloring
-page" fixture — which then skews the model eval it feeds. `scripts/CLAUDE.md` calls for exactly the
-opposite: "Multi-item CLI runs: validate inputs up front with a path-specific one-line error and a
-non-zero exit."
-
-#### Proposed solution
-
-Make missing assets loud: in `assetUri`, `throw new Error(\`missing coloring asset:
-${p}\`)`(with the night fallback expressed as an explicit`optionalAssetUri`or a try-order list), or collect all missing paths during spec construction and`fail()`with the list before launching the browser. The specs are built eagerly at module load, so an upfront sweep over`specs`checking every`uri
-!== null`before`main()` starts is a three-line guard.
-
 ### [Correctness] model-eval-gen-inputs builds a data URI with the invalid MIME `image/*`
 
 **File(s):** `scripts/model-eval-gen-inputs.mjs` (line 87) @ f5bf8767
