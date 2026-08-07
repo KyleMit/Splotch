@@ -6,7 +6,9 @@ amended by [the pen/chalk fork](../../tools/asset-gen/docs/pen-chalk-fork.md): c
 shipped chalk outline derive their dark presentation from it instead of the shared pen, superseding
 this ADR's "no pre-generated inverted assets" clause. Also amended by
 [ADR-0098](0098-second-token-prune-consolidated-ramps.md): `--float-shadow-flyout` folded into the
-one `--float-shadow` lift. **Date:** 2026-07
+one `--float-shadow` lift. Also amended by [ADR-0100](0100-opaque-per-theme-paper-tiles.md): the
+paper ships one opaque per-theme tile, reversing this ADR's "no pre-generated dark texture"
+decision. **Date:** 2026-07
 
 ## Context
 
@@ -20,11 +22,14 @@ coloring pages adapting. The design questions with real alternatives:
    OS changes) makes the default "system" behavior depend on a runtime listener. A `data-theme`
    attribute that is **absent in system mode** lets plain `prefers-color-scheme` CSS handle the
    default with no JS at all.
-2. **How the paper darkens without a second texture.** The handmade-paper webp turns out to be a
-   **low-alpha grain layer** (alpha ≈ 0.07–0.29) composited over a CSS `background-color`, so a
-   pre-generated dark texture asset is unnecessary — swapping the color under the same texture
-   darkens the paper with the grain intact. The same holds in the export path, which fills the paper
-   color and then patterns the texture over it.
+2. **How the paper darkens without a second texture.** *(Proposed for reversal by
+   [ADR-0100](0100-opaque-per-theme-paper-tiles.md), which bakes one opaque tile per theme — but
+   that change measured no paint win and is recommended for revert, so this point still describes
+   what ships.)* The handmade-paper webp turns out to be a **low-alpha grain layer** (alpha ≈
+   0.07–0.29) composited over a CSS `background-color`, so a pre-generated dark texture asset is
+   unnecessary — swapping the color under the same texture darkens the paper with the grain intact.
+   The same holds in the export path, which fills the paper color and then patterns the texture over
+   it.
 3. **How coloring pages stay usable.** The line art is black-on-white, composited with
    `mix-blend-mode: multiply` (white ≈ transparent over light paper). On dark paper that art would
    be invisible. Pre-generating inverted page assets was on the table, but a pure runtime treatment

@@ -355,10 +355,12 @@
     transform-origin: 0 0;
     z-index: 0;
     pointer-events: none;
-    /* The texture is a low-alpha grain layer, so the theme only has to swap
-       the color beneath it — same webp in light and dark. */
+    /* The grain comes pre-composited onto --paper as an opaque per-theme tile
+       (ADR-0100), so this fill costs no per-pixel blend. --paper stays beneath
+       it as the correct color for the beat before the tile decodes, and if it
+       never does. */
     background-color: var(--paper);
-    background-image: url('/icons/handmade-paper.webp');
+    background-image: var(--paper-texture);
     background-repeat: repeat;
   }
 

@@ -90,6 +90,7 @@
   --danger-wash: #fdecec;
   --danger-text: #b04a4a;
   --paper: #fcfbf8;
+  --paper-texture: url('/icons/handmade-paper-light.webp');
   --paper-margin: #f1efeb;
   --hole-stroke: #8a8a93;
   --lineart-filter: none;
@@ -128,6 +129,7 @@
   --danger-wash: #422a2c;
   --danger-text: #e09393;
   --paper: #211f29;
+  --paper-texture: url('/icons/handmade-paper-dark.webp');
   --paper-margin: #1a1922;
   --hole-stroke: #b9b9c2;
   --lineart-filter: invert(1);
@@ -167,6 +169,7 @@
     --danger-wash: #422a2c;
     --danger-text: #e09393;
     --paper: #211f29;
+    --paper-texture: url('/icons/handmade-paper-dark.webp');
     --paper-margin: #1a1922;
     --hole-stroke: #b9b9c2;
     --lineart-filter: invert(1);

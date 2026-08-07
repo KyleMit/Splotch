@@ -110,6 +110,8 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   dangerWash: 'Destructive-action fills and error banners.',
   dangerText: 'Ink on --danger-wash.',
   paper: 'The drawing paper under the grain texture; JS reads it via PAPER_COLORS.',
+  paperTexture:
+    "The generated opaque grain tile for the active theme; pair it with --paper beneath. A surface showing both themes' papers at once must name each tile from `themes` instead.",
   paperMargin: 'The flat tone behind the rotation-locked sheet.',
   holeStroke: 'The dashed outline of the eraser-size hole previews.',
   lineartFilter: 'Coloring-page line art inversion — dark mode turns lines to chalk.',

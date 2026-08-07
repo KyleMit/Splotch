@@ -451,7 +451,7 @@
   .demo-polaroid-image {
     width: 200px;
     height: 150px;
-    background-image: url('/icons/handmade-paper.webp');
+    background-image: var(--paper-texture);
     background-repeat: repeat;
   }
 

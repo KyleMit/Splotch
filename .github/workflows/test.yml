@@ -80,6 +80,13 @@ jobs:
       - name: Design-token drift
         run: npm run gen:tokens:check
 
+      # Drift guard: the two opaque paper tiles are baked from the grain in
+      # scripts/assets/ onto each theme's --paper (ADR-0100). Fails if a --paper
+      # change wasn't re-baked, or a tile was hand-edited. Fix with
+      # `npm run gen:paper-texture` and commit.
+      - name: Paper texture drift
+        run: npm run gen:paper-texture:check
+
       # Token-style ratchet: component <style> blocks must use the design tokens
       # (ADR-0071); the per-file allowlist of documented one-offs lives in
       # scripts/lint-token-styles.mjs. Fails on any new raw hex color or raw

@@ -27,10 +27,15 @@ describe('isColorToken', () => {
     expect(Object.keys(isColorToken).sort()).toEqual(Object.keys(themes.light).sort());
   });
 
-  it('marks the filter, blend-mode and shadow tokens as non-colors', () => {
+  it('marks the filter, blend-mode, shadow and texture tokens as non-colors', () => {
     const nonColors = Object.keys(isColorToken).filter(
       (key) => !isColorToken[key as keyof typeof isColorToken]
     );
-    expect(nonColors.sort()).toEqual(['floatShadow', 'lineartBlend', 'lineartFilter']);
+    expect(nonColors.sort()).toEqual([
+      'floatShadow',
+      'lineartBlend',
+      'lineartFilter',
+      'paperTexture',
+    ]);
   });
 });

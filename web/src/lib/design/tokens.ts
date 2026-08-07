@@ -247,12 +247,21 @@ export interface ThemeTokens {
   dangerWash: string;
   dangerText: string;
   /**
-   * The drawing paper. The handmade-paper texture webp is a LOW-ALPHA grain
-   * layer, so one texture serves both themes — only the color beneath it
-   * changes. JS consumers (canvas export fill, Notch Band eraser color) read
-   * this via PAPER_COLORS in lib/theme.ts, which derives from these objects.
+   * The drawing paper. JS consumers (canvas export fill, Notch Band eraser
+   * color) read this via PAPER_COLORS in lib/theme.ts, which derives from
+   * these objects.
    */
   paper: string;
+  /**
+   * The handmade-paper grain, pre-composited onto --paper as an OPAQUE tile,
+   * one per theme (ADR-0100). A low-alpha grain over a background-color costs
+   * a per-pixel blend across the whole sheet on every paint of the drawing
+   * route's layer; baking it flat drops that fill to the cost of an untextured
+   * one. The tiles are generated from this object's `paper` value — never hand
+   * -authored — by `npm run gen:paper-texture`; PAPER_TEXTURES holds the paths
+   * for the JS export compositor, and this token wraps them for CSS.
+   */
+  paperTexture: string;
   /** the flat tone behind the rotation-locked sheet */
   paperMargin: string;
   /**
@@ -292,6 +301,17 @@ export interface ThemeTokens {
   darkInkKeyline: string;
 }
 
+/**
+ * The baked, opaque handmade-paper tiles — the single source of truth for
+ * their location, shared by the CSS --paper-texture token below, the export
+ * compositor (lib/drawing/exportDrawing.ts), and the generator + drift guard
+ * (scripts/gen-paper-texture.mjs, scripts/tests/paper-texture.test.mjs).
+ */
+export const PAPER_TEXTURES = {
+  light: '/icons/handmade-paper-light.webp',
+  dark: '/icons/handmade-paper-dark.webp',
+} as const;
+
 export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
   light: {
     appBg: '#f5f5f5',
@@ -319,6 +339,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     dangerWash: '#fdecec',
     dangerText: '#b04a4a',
     paper: '#fcfbf8',
+    paperTexture: `url('${PAPER_TEXTURES.light}')`,
     paperMargin: '#f1efeb',
     holeStroke: '#8a8a93',
     lineartFilter: 'none',
@@ -355,6 +376,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     dangerWash: '#422a2c',
     dangerText: '#e09393',
     paper: '#211f29',
+    paperTexture: `url('${PAPER_TEXTURES.dark}')`,
     paperMargin: '#1a1922',
     holeStroke: '#b9b9c2',
     lineartFilter: 'invert(1)',
@@ -398,6 +420,7 @@ export const isColorToken: Record<keyof ThemeTokens, boolean> = {
   dangerWash: true,
   dangerText: true,
   paper: true,
+  paperTexture: false,
   paperMargin: true,
   holeStroke: true,
   lineartFilter: false,

@@ -192,9 +192,14 @@ so its theme toggle keeps working.
   `fill: var(--icon-ink)` on themed surfaces; full-color "spot" icons carry their own palette and
   are **never tinted** — the split is the `COLOR_ICONS` set in `Icon.svelte`. Adding an icon: see
   the icon steps in `.claude/rules/svelte.md`.
-* **Paper.** The canvas is warm off-white `--paper` under the low-alpha handmade-paper grain
-  (`static/icons/handmade-paper.webp`, tiled); dark paper keeps the same grain and changes only the
-  color beneath. `--paper-margin` is the flat tone behind the rotation-locked sheet.
+* **Paper.** The canvas is warm off-white `--paper` under the handmade-paper grain, tiled via
+  `--paper-texture`. Each theme ships its **own opaque tile** with the grain already composited onto
+  its paper color (ADR-0100) — an alpha grain over a background-color cost a per-pixel blend across
+  the whole sheet. The tiles are generated (`npm run gen:paper-texture`, CI gate
+  `gen:paper-texture:check`) from `scripts/assets/handmade-paper-grain.webp`; never hand-edit them,
+  and re-bake after any `--paper` change. A surface showing both papers at once must name each
+  theme's tile from `themes`, since `--paper-texture` only resolves to the active theme.
+  `--paper-margin` is the flat tone behind the rotation-locked sheet.
 * **Touch targets are chunky.** Nothing interactive goes below 44px; kid-facing controls run
   deliberately larger. Don't shrink a control to fit a layout — rework the layout.
 

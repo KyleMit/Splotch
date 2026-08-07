@@ -10,7 +10,8 @@
 // stroke snapshot is taken synchronously by engine.exportCanvasBlob BEFORE
 // the module load's await, so a clear racing the export can't blank it.
 
-import { PAPER_COLORS } from '../theme';
+import { PAPER_COLORS, type ResolvedTheme } from '../theme';
+import { PAPER_TEXTURES } from '../design/tokens';
 import { resolvedTheme } from '../state/appearance.svelte';
 import { drawExportOverlay, paintExportPaper, type ExportContext } from './exportCompositor';
 import type { ExportOverlaySource } from './overlay';
@@ -43,25 +44,32 @@ function getExportContext(canvas: ExportCanvas): ExportContext | null {
   return canvas instanceof HTMLCanvasElement ? canvas.getContext('2d') : canvas.getContext('2d');
 }
 
-let paperTextureImage: HTMLImageElement | null = null;
-let paperTexturePromise: Promise<HTMLImageElement | null> | null = null;
+// Keyed by theme: the tiles are opaque, with each theme's paper color baked in
+// (ADR-0100), so unlike the shared alpha grain they replaced there is no single
+// image that serves both. A save right after a theme switch must not composite
+// the other theme's paper.
+const paperTextureImages: Partial<Record<ResolvedTheme, HTMLImageElement>> = {};
+const paperTexturePromises: Partial<Record<ResolvedTheme, Promise<HTMLImageElement | null>>> = {};
 
-function loadPaperTexture(): Promise<HTMLImageElement | null> {
-  if (paperTextureImage) return Promise.resolve(paperTextureImage);
-  if (paperTexturePromise) return paperTexturePromise;
-  paperTexturePromise = new Promise((resolve) => {
+function loadPaperTexture(theme: ResolvedTheme): Promise<HTMLImageElement | null> {
+  const loaded = paperTextureImages[theme];
+  if (loaded) return Promise.resolve(loaded);
+  const pending = paperTexturePromises[theme];
+  if (pending) return pending;
+  const promise = new Promise<HTMLImageElement | null>((resolve) => {
     const img = new Image();
     img.onload = () => {
-      paperTextureImage = img;
+      paperTextureImages[theme] = img;
       resolve(img);
     };
     img.onerror = () => {
-      paperTexturePromise = null;
+      delete paperTexturePromises[theme];
       resolve(null);
     };
-    img.src = '/icons/handmade-paper.webp';
+    img.src = PAPER_TEXTURES[theme];
   });
-  return paperTexturePromise;
+  paperTexturePromises[theme] = promise;
+  return promise;
 }
 
 function loadExportOverlay(
@@ -83,8 +91,10 @@ function loadExportOverlay(
 
 // Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
 // first export. The engine calls this from its own idle warm of this module.
+// Only the active theme is warmed — warming both would double the transfer to
+// save a stall that only happens if the parent switches theme before saving.
 export function warmPaperTexture() {
-  void loadPaperTexture();
+  void loadPaperTexture(resolvedTheme());
 }
 
 export async function composeExportPng(
@@ -103,7 +113,7 @@ export async function composeExportPng(
   const theme = resolvedTheme();
 
   if ('source' in snapshot) {
-    const texture = includePaperTexture ? await loadPaperTexture() : null;
+    const texture = includePaperTexture ? await loadPaperTexture(theme) : null;
     const bitmapRequests: Promise<ExportBitmapResult>[] = [
       ...snapshot.source.tiles.map(
         async (tile): Promise<ExportBitmapResult> => ({
@@ -161,7 +171,7 @@ export async function composeExportPng(
   const target = getExportContext(snapshot);
   if (!target) return null;
   const [texture, overlayImage] = await Promise.all([
-    includePaperTexture ? loadPaperTexture() : null,
+    includePaperTexture ? loadPaperTexture(theme) : null,
     loadExportOverlay(overlaySource),
   ]);
   paintExportPaper(target, {

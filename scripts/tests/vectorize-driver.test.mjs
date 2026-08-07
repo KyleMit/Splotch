@@ -16,7 +16,7 @@ const DRIVERS = ['tools/vectorize/vectorize.mjs'];
 const load = (path) => import(pathToFileURL(join(repoRoot, path)).href);
 
 // A real repo file, so attachInput's existence and extension checks pass.
-const INPUT = join(repoRoot, 'web/static/icons/handmade-paper.webp');
+const INPUT = join(repoRoot, 'web/static/icons/handmade-paper-light.webp');
 
 describe.each(DRIVERS)('vectorize driver %s', (path) => {
   it('submits the mode it printed, whatever --param is passed', async () => {

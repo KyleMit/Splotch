@@ -122,7 +122,7 @@
   }
 
   .map.paper {
-    background: var(--paper) url('/icons/handmade-paper.webp') repeat;
+    background: var(--paper) var(--paper-texture) repeat;
     border: var(--border-width) solid var(--border-warm);
   }
 
