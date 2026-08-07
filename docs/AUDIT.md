@@ -41,39 +41,6 @@ within-section ranks and are not comparable across groups; the grouping supersed
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
 eventually arrive as a bug report — but the reporter is a two-year-old, so they won't.
 
-### [Performance] Pinch move path allocates per pointermove, against the repo's hot-path rule
-
-**File(s):** `web/src/lib/actions/pinchZoom.svelte.ts` (`centroid` lines 54–62, `recompute` lines
-89–108, `local` lines 169–172) @ cd04c367; `web/src/lib/actions/spreadTracker.ts` (`points()` lines
-20–22)
-
-**Priority:** P4
-
-#### Problem
-
-The svelte rule file is explicit that gesture trackers are hot paths: "code reached per pointermove
-… must not allocate arrays/objects". Each `pinchZoom` move allocates: `tracker.points()` builds a
-fresh array (twice per move — `recompute` line 91 and inside `centroid`'s caller), `centroid`
-returns a new object, `local` returns a new `Point`, `recompute` builds a new transform object, and
-`apply` builds a template string. A prior commit (f3faf52) already removed one such allocation from
-`spread()`, so the codebase treats this path as worth tightening; the remaining ones are the same
-class. In fairness this runs only while pinching the AI preview (not while drawing), so the
-practical stakes are modest — but the stated rule draws no such distinction, and the fix is cheap.
-
-Secondary: the `rect ?? node.getBoundingClientRect()` fallbacks (lines 165, 171) are defensive
-lazy-init on the move path — unreachable in practice (`rect` is always set by the `pointerdown` that
-made `pointerCount > 0`), which the hot-path rule also calls out.
-
-#### Proposed solution
-
-Give the tracker a non-allocating iteration surface (e.g. `forEach(cb)` or reused first/second
-accessors — it already has an allocation-free `spread()`); compute the centroid with a running sum
-over that; reuse a scratch `Point`/transform object in `recompute`. Replace the `??` fallbacks with
-a direct `rect!`-free structure: snapshot `rect` in `onPointerDown` and pass width/height/left/top
-through the closure invariant (a comment stating the invariant beats a silent re-measure). Verify
-with `npm run perf:*` only if the drawing path is ever routed through this tracker; otherwise a
-before/after allocation check in DevTools is enough.
-
 ## Safety, resource, and ships-to-production
 
 Unbounded work, unvalidated input reaching a shell, unpinned remote code, and files that reach the
